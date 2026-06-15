@@ -88,6 +88,8 @@ EXPORT      HTML direct / fly
 
 Principe de validation : **confiance par défaut**, pas de gate bloquant sur le plan (le journaliste non-tech ne peut souvent pas juger un plan abstrait, et il vient déléguer cette décision). La validation réelle se fait **sur le visuel produit** (correction/refine par chat), où il peut juger et où vit sa responsabilité éditoriale. Conforme au dossier : « l'outil compose la structure visuelle, qui sera ensuite vérifiée et ajustée par chat ».
 
+**Tier-awareness — le basic/pro traverse toute la boucle, pas seulement l'export.** Le suggesteur ② et la production ③ lisent un paramètre **« features accessibles »** (selon le tier du journaliste). Règle à PROPOSITION quand le visuel idéal est PRO et que l'utilisateur est en gratuit : **montrer le Pro verrouillé + toujours proposer un fallback gratuit correct**. Le suggesteur reste honnête sur ce qui sert le mieux la donnée (sa crédibilité best-practice), signale clairement le Pro (upsell), et garantit qu'un gratuit ne reste jamais bloqué. Condition : le fallback gratuit doit rester un *bon* choix, jamais un mauvais. À la PRODUCTION, on ne génère que ce que le tier autorise.
+
 ### 3.3 Export & livraison
 
 | | **HTML direct** | **Embed fly.io** |
