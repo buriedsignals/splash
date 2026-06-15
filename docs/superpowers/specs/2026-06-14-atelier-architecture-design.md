@@ -73,6 +73,21 @@ Trois étapes, en source unique (markdown/templates), réutilisées par les deux
 
 L'install est un **préalable unique** (onboarding), pas une couche du flux. Ensuite la boucle `article → ① → ② → ③ → export` se répète à chaque reportage. L'install fige *où* tourne le raisonnement ; la boucle est identique quelle que soit la route.
 
+**Flow par article (verrouillé — détail à reprendre dans le spec du sous-chantier Website) :**
+
+```
+INPUT       article et/ou données
+ANALYSE     lecture silencieuse → data, claims, structure narrative
+CADRAGE     questionnaire intentions/objectifs · mode guidé ou direct
+PROPOSITION où / quel visuel + guardrails · énoncé d'intention VETOABLE (pas de hard gate)
+PRODUCTION  génère direct
+              ├─ correction légère (tous, dans les garde-fous)
+              └─ override créatif (pro/libre, gros échanges, hors garde-fous)
+EXPORT      HTML direct / fly
+```
+
+Principe de validation : **confiance par défaut**, pas de gate bloquant sur le plan (le journaliste non-tech ne peut souvent pas juger un plan abstrait, et il vient déléguer cette décision). La validation réelle se fait **sur le visuel produit** (correction/refine par chat), où il peut juger et où vit sa responsabilité éditoriale. Conforme au dossier : « l'outil compose la structure visuelle, qui sera ensuite vérifiée et ajustée par chat ».
+
 ### 3.3 Export & livraison
 
 | | **HTML direct** | **Embed fly.io** |
