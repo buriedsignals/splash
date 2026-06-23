@@ -54,4 +54,27 @@ describe("validateChartSpec", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors.join()).toMatch(/transpose/);
   });
+  it("accepts all 24 chart types", () => {
+    const { CHART_TYPES } = require("../src/chart-spec");
+    for (const t of CHART_TYPES) {
+      const data = "a,b,c\n1,2,3"; // 3 cols satisfies single + multi minimums
+      const r = validateChartSpec({
+        type: t,
+        title: "An insight",
+        data,
+        altInsight: "x",
+      });
+      expect(r.ok).toBe(true);
+    }
+  });
+  it("rejects a multi-series type with only one value column", () => {
+    const r = validateChartSpec({
+      type: "stacked-column-chart",
+      title: "T",
+      data: "year,value\n2018,5",
+      altInsight: "x",
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/at least 3 columns/);
+  });
 });

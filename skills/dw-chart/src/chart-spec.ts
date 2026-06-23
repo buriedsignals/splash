@@ -1,3 +1,5 @@
+import { dataShape } from "./csv";
+
 export const OKABE_ITO = [
   "#0072B2",
   "#E69F00",
@@ -10,17 +12,52 @@ export const OKABE_ITO = [
 ] as const;
 
 export const CHART_TYPES = [
-  "d3-lines",
-  "d3-area",
+  // single-series: >=1 label + >=1 value
   "column-chart",
   "d3-bars",
-  "d3-dot-plot",
-  "d3-range-plot",
-  "d3-scatter-plot",
-  "stacked-column-chart",
+  "d3-lines",
+  "d3-area",
   "d3-pies",
+  "d3-donuts",
+  "election-donut-chart",
+  "d3-dot-plot",
+  "waterfall",
+  "tables",
+  // multi-series: >=1 label + >=2 value
+  "grouped-column-chart",
+  "stacked-column-chart",
+  "multiple-columns",
+  "d3-bars-grouped",
+  "d3-bars-stacked",
+  "d3-bars-split",
+  "multiple-lines",
+  "d3-multiple-pies",
+  "d3-multiple-donuts",
+  // two-value: >=2 value columns
+  "d3-scatter-plot",
+  "dual-axis",
+  "d3-range-plot",
+  "d3-arrow-plot",
+  "d3-bars-bullet",
 ] as const;
 export type ChartType = (typeof CHART_TYPES)[number];
+
+export const MULTI_SERIES_TYPES = new Set<ChartType>([
+  "grouped-column-chart",
+  "stacked-column-chart",
+  "multiple-columns",
+  "d3-bars-grouped",
+  "d3-bars-stacked",
+  "d3-bars-split",
+  "multiple-lines",
+  "d3-multiple-pies",
+  "d3-multiple-donuts",
+]);
+export const PART_TO_WHOLE_TYPES = new Set<ChartType>([
+  "d3-pies",
+  "d3-donuts",
+  "election-donut-chart",
+]);
 
 export interface ChartSpec {
   type: ChartType;
@@ -70,6 +107,14 @@ export function validateChartSpec(
   }
   if (s.transpose !== undefined && typeof s.transpose !== "boolean")
     errors.push("transpose must be a boolean");
+  if (typeof s.data === "string" && s.data.includes(",")) {
+    const shape = dataShape(s.data as string);
+    const min = MULTI_SERIES_TYPES.has(s.type as ChartType) ? 3 : 2;
+    if (shape.columns.length < min)
+      errors.push(
+        `${s.type} needs at least ${min} columns, got ${shape.columns.length}`,
+      );
+  }
   return errors.length
     ? { ok: false, errors }
     : { ok: true, spec: s as unknown as ChartSpec };
