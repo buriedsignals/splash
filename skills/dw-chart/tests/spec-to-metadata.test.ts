@@ -76,4 +76,17 @@ describe("specToMetadata", () => {
     const p = specToMetadata(spec);
     expect((p.metadata as any).data).toBeUndefined();
   });
+  it("maps annotations to visualize text-annotations", () => {
+    const p = specToMetadata({
+      type: "d3-lines",
+      title: "T",
+      data: "year,v\n2021,5",
+      altInsight: "x",
+      annotations: [{ text: "Peak", x: "2021", y: 5 }],
+    } as any);
+    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
+    expect(ann.text).toBe("Peak");
+    expect(ann.x).toBe("2021");
+    expect(String(ann.y)).toBe("5");
+  });
 });

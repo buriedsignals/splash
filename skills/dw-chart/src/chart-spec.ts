@@ -72,6 +72,7 @@ export interface ChartSpec {
   sort?: "asc" | "desc"; // ranking sort: sorts data rows by the last column
   source?: { name: string; url?: string };
   altInsight: string; // WCAG: alt = the insight, not the structure
+  annotations?: { text: string; x?: string | number; y?: number }[];
 }
 
 export function validateChartSpec(
