@@ -75,8 +75,11 @@ export interface ChartSpec {
 
 export function validateChartSpec(
   input: unknown,
-): { ok: true; spec: ChartSpec } | { ok: false; errors: string[] } {
+):
+  | { ok: true; spec: ChartSpec; warnings: string[] }
+  | { ok: false; errors: string[] } {
   const errors: string[] = [];
+  const warnings: string[] = [];
   if (!input || typeof input !== "object")
     return { ok: false, errors: ["spec must be an object"] };
   const s = input as Record<string, unknown>;
@@ -103,6 +106,13 @@ export function validateChartSpec(
         if (!(OKABE_ITO as readonly string[]).includes(val as string))
           errors.push(`seriesColors.${key} must be an Okabe-Ito colour`);
       }
+      const n = Object.keys(s.seriesColors as object).length;
+      if (n > 8)
+        errors.push("seriesColors: at most 8 colours (categorical ceiling)");
+      if (n > 2 && !MULTI_SERIES_TYPES.has(s.type as ChartType))
+        errors.push(
+          "seriesColors: a single-series chart should use at most 2 colours",
+        );
     }
   }
   if (s.transpose !== undefined && typeof s.transpose !== "boolean")
@@ -114,8 +124,28 @@ export function validateChartSpec(
       errors.push(
         `${s.type} needs at least ${min} columns, got ${shape.columns.length}`,
       );
+    if (PART_TO_WHOLE_TYPES.has(s.type as ChartType)) {
+      const slices = shape.rows;
+      if (slices > 5)
+        errors.push(
+          `${s.type} with ${slices} slices — group into 'Other' or use bars (data-to-viz caveat)`,
+        );
+    }
+  }
+  if (typeof s.title === "string") {
+    const cols =
+      typeof s.data === "string" && s.data.includes(",")
+        ? dataShape(s.data as string).columns.map((c) => c.toLowerCase())
+        : [];
+    if (
+      /^\d{4}\s*[-–]\s*\d{4}$/.test(s.title.trim()) ||
+      cols.includes(s.title.trim().toLowerCase())
+    )
+      warnings.push(
+        "title looks like a label, not an insight — state what the data shows",
+      );
   }
   return errors.length
     ? { ok: false, errors }
-    : { ok: true, spec: s as unknown as ChartSpec };
+    : { ok: true, spec: s as unknown as ChartSpec, warnings };
 }
