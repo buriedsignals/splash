@@ -57,16 +57,18 @@ Le fichier statique possédé (SVG/PNG) + le snippet embed. Rien hébergé chez 
 ## Critères de succès
 1. Donné un vrai CSV + une intention d'une ligne, la boucle produit un chart DW **publié** dont le **type
    correspond à l'intention** et dont le design **passe la checklist** `design-conformance`.
-2. Un **fichier statique possédé** (SVG ou PNG) est produit à chaque fois — la dépendance DW ne « rot » pas l'archive.
+2. Un **fichier statique possédé = PNG** est produit à chaque fois — la dépendance DW ne « rot » pas l'archive.
 3. Validé avec un **vrai token Datawrapper** (vraies clés, vrais échecs), pas un mock.
 4. Les 2 références KB sont autonomes (<500 lignes) et créditées.
 
-## Dépendances & risques (à lever avant la validation end-to-end)
-- **Token Datawrapper requis.** Sans clé, pas de validation réelle. → Rémy fournit/crée un token (compte gratuit).
-- **Tier d'export.** L'export SVG/PDF (voire PNG) via API peut exiger un **plan payant** DW. À confirmer avec le
-  vrai token. Si l'export statique gratuit n'est pas dispo → plan B pour le fallback possédé : screenshot
-  headless du chart publié (Playwright), déjà dans la boîte à outils.
-- **Rate limits** DW inconnus — à observer en réel.
+## Dépendances & risques — LEVÉS par spike du 2026-06-23 (vrai token)
+- **Token Datawrapper** : présent et valide, dans `/atelier/.env` (gitignored), `DATAWRAPPER_API_TOKEN`. Compte gratuit.
+- **Tier d'export — résolu** : sur compte gratuit, `GET /v3/charts/{id}/export/png` → **HTTP 200** ✅ ;
+  `export/svg` et `export/pdf` → **HTTP 401** (plan payant). **Donc le fallback possédé = PNG.** Plan B
+  Playwright **inutile**. SVG/PDF = feature payante (à signaler, non bloquant).
+- **Chaîne API validée** : `POST /v3/charts` (create) → `PUT /v3/charts/{id}/data` (CSV, 201) →
+  `POST /v3/charts/{id}/publish` (200) → `GET …/export/png` (200). Auth = `Bearer`.
+- **Rate limits** DW : à observer en réel pendant le build (non bloquant à ce stade).
 
 ## Hors-scope
 - Les 7 autres demos (vidéo, maps, image-scrolly, range-plot…).
