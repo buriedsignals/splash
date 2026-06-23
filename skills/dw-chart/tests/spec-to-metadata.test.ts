@@ -44,8 +44,18 @@ describe("specToMetadata", () => {
       altInsight: "x",
     });
     expect(p.metadata.visualize["base-color"]).toBeUndefined();
-    expect(p.metadata.describe["number-format"]).toBeUndefined();
+    expect(p.metadata.describe["number-format"]).toBe("0,0.[00]");
     expect((p.metadata as any).data).toBeUndefined();
+  });
+
+  it("defaults number-format when absent", () => {
+    const p = specToMetadata({
+      type: "d3-bars",
+      title: "T",
+      data: "a,b\n1,2",
+      altInsight: "x",
+    } as any);
+    expect(p.metadata.describe["number-format"]).toBe("0,0.[00]");
   });
   it("maps seriesColors to visualize['custom-colors']", () => {
     const p = specToMetadata({

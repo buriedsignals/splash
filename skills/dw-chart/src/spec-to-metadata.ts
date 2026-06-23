@@ -17,7 +17,7 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
     "source-url": spec.source?.url ?? "",
     "aria-description": spec.altInsight,
   };
-  if (spec.numberFormat) describe["number-format"] = spec.numberFormat;
+  describe["number-format"] = spec.numberFormat ?? "0,0.[00]";
 
   const visualize: Record<string, unknown> = {};
   if (spec.baseColor) visualize["base-color"] = spec.baseColor;

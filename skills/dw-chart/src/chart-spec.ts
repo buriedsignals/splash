@@ -69,6 +69,7 @@ export interface ChartSpec {
   transpose?: boolean; // DW data.transpose (rows↔columns)
   valueLabels?: boolean; // direct labelling
   numberFormat?: string; // DW number-format token (e.g. '0,0.[0]')
+  sort?: "asc" | "desc"; // ranking sort: sorts data rows by the last column
   source?: { name: string; url?: string };
   altInsight: string; // WCAG: alt = the insight, not the structure
 }
