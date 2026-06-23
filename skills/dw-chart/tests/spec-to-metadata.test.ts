@@ -45,5 +45,25 @@ describe("specToMetadata", () => {
     });
     expect(p.metadata.visualize["base-color"]).toBeUndefined();
     expect(p.metadata.describe["number-format"]).toBeUndefined();
+    expect((p.metadata as any).data).toBeUndefined();
+  });
+  it("maps seriesColors to visualize['custom-colors']", () => {
+    const p = specToMetadata({
+      ...spec,
+      seriesColors: { Coal: "#0072B2", Gas: "#E69F00", Renewables: "#009E73" },
+    } as any);
+    expect(p.metadata.visualize["custom-colors"]).toEqual({
+      Coal: "#0072B2",
+      Gas: "#E69F00",
+      Renewables: "#009E73",
+    });
+  });
+  it("maps transpose:true to metadata.data.transpose === true", () => {
+    const p = specToMetadata({ ...spec, transpose: true } as any);
+    expect((p.metadata as any).data?.transpose).toBe(true);
+  });
+  it("omits metadata.data when transpose is not defined", () => {
+    const p = specToMetadata(spec);
+    expect((p.metadata as any).data).toBeUndefined();
   });
 });

@@ -33,4 +33,25 @@ describe("validateChartSpec", () => {
     expect(OKABE_ITO).toContain("#0072B2");
     expect(OKABE_ITO.length).toBe(8);
   });
+  it("accepts a spec with valid Okabe-Ito seriesColors and transpose:true", () => {
+    const r = validateChartSpec({
+      ...base,
+      seriesColors: { Coal: "#0072B2", Gas: "#E69F00", Renewables: "#009E73" },
+      transpose: true,
+    });
+    expect(r.ok).toBe(true);
+  });
+  it("rejects seriesColors containing a non-Okabe hex", () => {
+    const r = validateChartSpec({
+      ...base,
+      seriesColors: { Coal: "#0072B2", Gas: "#deadff" },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/Okabe-Ito/);
+  });
+  it("rejects a non-boolean transpose", () => {
+    const r = validateChartSpec({ ...base, transpose: "yes" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/transpose/);
+  });
 });

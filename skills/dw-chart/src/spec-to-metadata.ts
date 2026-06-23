@@ -6,6 +6,7 @@ export interface DwPatch {
   metadata: {
     describe: Record<string, unknown>;
     visualize: Record<string, unknown>;
+    data?: Record<string, unknown>;
   };
 }
 
@@ -22,10 +23,14 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
   if (spec.baseColor) visualize["base-color"] = spec.baseColor;
   if (spec.valueLabels !== undefined)
     visualize["value-labels"] = { show: spec.valueLabels };
+  if (spec.seriesColors) visualize["custom-colors"] = spec.seriesColors;
 
-  return {
+  const patch: DwPatch = {
     title: spec.title,
     type: spec.type,
     metadata: { describe, visualize },
   };
+  if (spec.transpose !== undefined)
+    patch.metadata.data = { transpose: spec.transpose };
+  return patch;
 }

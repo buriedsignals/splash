@@ -28,6 +28,8 @@ export interface ChartSpec {
   intro?: string; // subtitle / insight elaboration
   data: string; // CSV text
   baseColor?: string; // single-series colour (Okabe-Ito)
+  seriesColors?: Record<string, string>; // multi-series: series name → Okabe-Ito hex
+  transpose?: boolean; // DW data.transpose (rows↔columns)
   valueLabels?: boolean; // direct labelling
   numberFormat?: string; // DW number-format token (e.g. '0,0.[0]')
   source?: { name: string; url?: string };
@@ -54,6 +56,20 @@ export function validateChartSpec(
     !(OKABE_ITO as readonly string[]).includes(s.baseColor as string)
   )
     errors.push("baseColor must be an Okabe-Ito colour (colorblind-safe)");
+  if (s.seriesColors !== undefined) {
+    if (typeof s.seriesColors !== "object" || s.seriesColors === null) {
+      errors.push("seriesColors must be an object");
+    } else {
+      for (const [key, val] of Object.entries(
+        s.seriesColors as Record<string, unknown>,
+      )) {
+        if (!(OKABE_ITO as readonly string[]).includes(val as string))
+          errors.push(`seriesColors.${key} must be an Okabe-Ito colour`);
+      }
+    }
+  }
+  if (s.transpose !== undefined && typeof s.transpose !== "boolean")
+    errors.push("transpose must be a boolean");
   return errors.length
     ? { ok: false, errors }
     : { ok: true, spec: s as unknown as ChartSpec };
