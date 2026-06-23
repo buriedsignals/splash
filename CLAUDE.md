@@ -37,6 +37,8 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - **Savoir à 2 grains** : *global* (transversal : couleur, typo, a11y, narration) + *par-type* (fin : 1 fiche par type FT, comme la map a sa fiche geo-prep). Les **skills** se groupent au grain du moteur (~11 groupes couvrent ~55 types FT), pas 1 skill par type.
 - **Maps** : factoriser **une couche geo-prep commune** (correctness de base) partagée par les renderers static/interactif/vidéo. Tom la duplique dans ses 2 skills car il n'avait besoin que de la vidéo.
 - **Datawrapper vs D3** : Datawrapper = charts standards (rendu délégué = mince, mais **savoir complet** appliqué via ses réglages) ; D3 = **un cœur de géométrie pur → 3 sorties** (static + interactif + vidéo), réservé aux cas vidéo / interactif-riche / custom. Prouvé par le pilote (`chart-geometry.ts` pur → rendu Svelte + snapshot + Remotion).
+- **2026-06-23 — Datawrapper reste la base des charts** (décision Rémy). Tension souveraineté reconnue (SaaS cloud propriétaire vs ADN local-first). **Mitigation obligatoire** : le skill Datawrapper produit **toujours un export statique possédé** (SVG/PNG) en fallback → la dépendance SaaS ne « rot » jamais l'archive.
+- **2026-06-23 — Build = tranche verticale sur Annemasse d'abord**, PAS la KB complète. On valide la boucle `KB minimale → ② minimal → 1 skill → export` sur **un cas réel d'Annemasse** avant de scaler la KB (13 synthèses) et la grille (55 types). De-risque ② (le vrai risque produit). La spec KB complète (`2026-06-23-knowledge-base-design.md`) reste la cible, construite à rebours de ce qui sert réellement.
 
 ## Ordre de construction (sous-chantiers)
 
@@ -64,7 +66,8 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 
 - Architecture révisée et à jour (spec-parapluie, sans tiers, Mycroft).
 - Grille type × format migrée ici → `docs/atelier/visual-element-grid.md`.
-- **PROCHAIN** : écrire la **spec ① KB** dans ce repo, alignée (sans tiers, RAG, crédits, 4 sources, structure = graphe de Tom + trous web), puis plan → build.
+- Spec ① KB écrite (`docs/superpowers/specs/2026-06-23-knowledge-base-design.md`) — la cible complète.
+- **PROCHAIN** : **tranche verticale Annemasse** — définir le(s) visuel(s) que l'enquête veut, puis construire end-to-end le slice minimal (KB juste-ce-qu'il-faut + ② minimal + 1 skill + export) pour valider la boucle. La KB complète se construit ensuite, à rebours.
 
 ## Conventions
 
