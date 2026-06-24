@@ -53,17 +53,16 @@ The unit of output is a `VisualProposal`. It is deliberately the **bridge** into
 
 ```jsonc
 {
-  "anchor": {                      // WHERE in the narrative
+  "anchor": {                      // WHERE in the narrative (advisory)
     "paragraphIndex": 3,           // 0-based index into the article's paragraphs
     "quote": "cross-border workers nearly doubled since 2015"  // the claim text, verbatim, for human placement
   },
   "claim": "Cross-border workers grew from ~40k to ~73k since 2015",  // the finding the visual carries
   "intent": "How did cross-border worker numbers grow since 2015?",   // → feeds prior cut verbatim
-  "family": "change-over-time",    // suggested FT family (advisory; prior cut re-decides the exact type)
   "data": "year,France,Switzerland\n2015,18,22\n...",  // the CSV SUBSET that feeds this visual → feeds prior cut
   "dataSource": { "table": "cross-border.csv", "columns": ["year","France","Switzerland"] },  // provenance
   "confidence": "high",            // high | medium | low — editorial strength of the opportunity
-  "rationale": "Two-side growth over a continuous period is the article's spine; a line chart makes it instant."
+  "rationale": "A two-side growth claim over a continuous period is the article's spine and deserves a visual."
 }
 ```
 
@@ -72,13 +71,17 @@ deliberately **not** proposed (and why) — this is what lets the eval check **u
 
 Key shape decisions:
 
+- **No `family` / no chart type.** The proposal carries **`claim` + `data` + `intent` only**. Choosing the
+  chart family/type is entirely the prior cut's job (it owns `FAMILY_TYPES` + `chart-selection.md`). Opportunity-
+  finding (here) and chart-choice (prior cut) stay **cleanly separated** — this cut never pre-empts the type
+  decision, and a wrong final chart can be attributed to exactly one stage.
+- **② binds the data to the claim itself.** ② is *not* handed pre-paired claim↔data; it reads the article,
+  finds the claim, and extracts the supporting CSV subset from the supplied tables. **This matching is ②'s
+  core value** — it is the work a non-equipped newsroom cannot do — and it is what `provenanceOk` keeps honest.
 - **`anchor` is location, not a hard insertion point.** The journalist places the visual; the anchor is a
   suggestion ("near this sentence"). No layout commitment — fidelity to "validation on the produced visual".
-- **`family` is advisory, `data`+`intent` are load-bearing.** ② suggests a family for editorial framing, but
-  the prior cut owns the final `type` decision (it already has `FAMILY_TYPES` + `chart-selection.md`). We do
-  not duplicate type-selection here; we hand it the same `(data, intent)` it is built to consume.
-- **`data` is a real CSV subset, not a pointer.** ② must extract the actual rows/columns (a self-contained
-  CSV) so the proposal is immediately producible — and so the eval can run a **deterministic** check that the
+- **`data` is a real CSV subset, not a pointer.** ② extracts the actual rows/columns (a self-contained CSV)
+  so the proposal is immediately producible — and so the eval can run a **deterministic** check that the
   subset passes downstream validation. `dataSource` keeps provenance back to the owned table.
 
 ### 2.4 How it plugs into the existing runtime
@@ -108,7 +111,7 @@ no gate). Each accepted proposal's `(data, intent)` runs the **unchanged** prior
 - **+** Faithful to the locked architecture: PROPOSITION is vetoable, validation lives on the produced visual.
 - **+** Clean reuse — zero change to `suggest-chart`/`dw-chart`; this cut is a pure upstream stage.
 - **+** Separable eval: ②'s *opportunity-finding* is judged here; *chart-choice* is already judged by the
-  prior harness. We don't re-litigate type selection.
+  prior harness. We don't re-litigate type selection — the proposal carries no chart type at all.
 - **+** Matches the non-tech journalist: a list of "here's where a visual would help, and why" is reviewable
   editorial language, not an abstract plan.
 - **−** Two-stage at runtime (propose, then produce per accepted item) — but that *is* the locked flow.
@@ -148,25 +151,24 @@ eval under `suggest-chart/eval/` stays green and untouched).
 
 ### 4.1 Case shape
 
-A case is **an article + its data + an expert gold standard** of the visual opportunities it contains:
+A case is **a generic small-newsroom sample article + its data + an authored gold standard** of the visual
+opportunities it contains:
 
 ```jsonc
 // eval/cases/<id>.json
 {
-  "id": "annemasse-cross-border",
-  "article": "## Annemasse under pressure\n\nThe town's population ...\n\nCross-border workers nearly doubled since 2015 ...\n\nThe mayor declined to comment ...",
+  "id": "cross-border-growth",
+  "article": "## A town under pressure\n\nThe population ...\n\nCross-border worker numbers nearly doubled since 2015 ...\n\nThe mayor declined to comment ...",
   "data": {
     "cross-border.csv": "year,France,Switzerland\n2015,18,22\n2017,21,25\n...",
-    "rents.csv": "district,rent\nGaillard,1450\n..."
+    "rents.csv": "district,rent\nNorth,1450\n..."
   },
   "expect": {
     "opportunities": [
       { "claimMatches": ["cross-border", "doubled", "2015"],   // keywords the proposal's claim/quote must hit
-        "family": "change-over-time",
         "dataTable": "cross-border.csv",
         "dataColumns": ["year", "France", "Switzerland"] },
       { "claimMatches": ["rent", "district"],
-        "family": "ranking",
         "dataTable": "rents.csv",
         "dataColumns": ["district", "rent"] }
     ],
@@ -177,9 +179,15 @@ A case is **an article + its data + an expert gold standard** of the visual oppo
 }
 ```
 
-The gold standard is **expert-marked** (Yvan/Rinny on real Annemasse copy): "a visual of kind X belongs here,
-from this table/columns." `claimMatches` is a keyword set rather than an exact string so a correct proposal
-phrased differently still matches — we are testing *did it find this opportunity*, not *did it phrase it our way*.
+**Gold-standard authorship (resolved).** We author both the sample articles **and** their gold marks
+ourselves, on **generic small-newsroom stories** (a typical local story + its data — not pilot-specific).
+Atelier is built for *all* small newsrooms; the grant's Annemasse pilot is a deliverable, not a design or
+validation dependency, so the eval corpus must not couple to it. Each gold mark — "a visual belongs here,
+drawn from this table/columns" — is **grounded in documented journalism best-practice** (the KB references:
+`chart-selection.md` for what claims warrant a visual, `design-conformance.md`), **not personal taste**.
+`claimMatches` is a keyword set, not an exact string, so a correctly-found opportunity phrased differently
+still matches — we test *did it find this opportunity*, not *did it phrase it our way*. The gold marks carry
+**no chart family/type** (that is the prior cut's call) — only *where* a visual belongs and *which data* backs it.
 
 ### 4.2 Deterministic gate (`score.ts`, pure, unit-tested)
 
@@ -200,10 +208,13 @@ export interface ProposalScore {
 
 Deterministic checks, each grounded in something code owns:
 
-- **`dataValid`** — the strongest reused gate. For each proposal, build a minimal candidate spec from
-  `(proposal.data, a default type for proposal.family)` and run **`validateChartSpec`** (the prior cut's
-  validator). If the extracted CSV subset can't even pass downstream validation, the proposal is mechanically
-  broken regardless of editorial merit. This directly answers "the right data for them" with code.
+- **`dataValid`** — the strongest reused gate. For each proposal, parse `proposal.data` as CSV and confirm it
+  is downstream-producible: it must be non-empty, rectangular, have a header, and ≥1 numeric column (the
+  minimum any chart needs). As a stronger reuse, build a minimal candidate spec by wrapping the CSV in the
+  *simplest valid type* (`column-chart`) plus a placeholder title/altInsight and run **`validateChartSpec`**
+  (the prior cut's validator) on it — a pure data-shape probe, **not** a chart-type choice (that stays the
+  prior cut's job). If the extracted subset can't pass this, the proposal is mechanically broken regardless of
+  editorial merit. This directly answers "the right data for them" with code.
 - **`provenanceOk`** — every column in `proposal.data` must exist in the cited `dataSource.table`; row values
   must be a subset of that table's. Catches invented/hallucinated data deterministically.
 - **`countOk`** + **`noChartRespected`** — catch over-proposing and the mayor-quote trap with code.
@@ -212,8 +223,9 @@ Deterministic checks, each grounded in something code owns:
   expert didn't mark would dent precision unfairly — which is why precision is judged leniently (threshold
   `τp` modest) and the **LLM-judge** has the final word on whether an "extra" proposal is actually good.
 
-Thresholds `τr`, `τp` are **tuning knobs (each a single number)** — start `τr = 1.0` (must find every marked
-opportunity on the tiny first corpus), `τp = 0.6` (some latitude for defensible extras). Flag for sign-off.
+Thresholds `τr`, `τp` are **tuning knobs (each a single number)**. Default: **start lenient** (`τr = 0.7`,
+`τp = 0.5`) so the tiny first corpus does not fail ② on a single missed/extra mark, then **tighten as the
+corpus grows** and the gold set stabilises. The knobs are the dial; the LLM-judge carries the editorial verdict.
 
 ### 4.3 LLM-judge (`judge.md`, editorial soundness)
 
@@ -222,14 +234,15 @@ Given `(article, data, ProposalSet, gold)`, an experienced data-journalism edito
 ```jsonc
 {
   "rightPlace": 0.0,        // are the anchors near where the visual actually serves the narrative?
-  "rightKind": 0.0,        // does each suggested family fit the claim it carries?
+  "rightKind": 0.0,        // would a visual genuinely serve this claim (vs. it being better left as prose)?
   "rightDose": 0.0,        // not over/under-proposing — the strongest claims chosen, the noise left alone
   "dataFit": 0.0,          // does each data subset genuinely back its claim?
   "rationale": "string"
 }
 ```
 
-- `rightPlace` / `rightKind` map to "right place? right kind?".
+- `rightPlace` / `rightKind` map to "right place? worth a visual at all?" — `rightKind` judges whether the
+  claim *deserves* a visual, not which chart (the prior cut owns that).
 - `rightDose` is the over/under-proposing judgment the case's `min/maxProposals` can only coarsely gate —
   the editor judges whether *these specific* claims were the right ones to lift.
 - `dataFit` lets the judge catch a subset that validates (passes the deterministic gate) but doesn't actually
@@ -246,13 +259,17 @@ not the cases.**
 
 ### 4.5 Honest limits of the eval
 
-- "Right opportunities" is irreducibly **judgment-heavy**. The gold standard encodes *one* expert reading;
-  another good editor might mark a different (valid) set. We mitigate with keyword-not-exact matching, a
-  lenient precision threshold, and giving the LLM-judge final say on extras — but the corpus is a *yardstick*,
-  not ground truth. This must be stated in the baseline report.
-- Recall/precision against a hand-marked set rewards conformity to the marker. Small corpus = high variance.
-  Treat the first baseline as directional, re-validate on cases ② was **not** written to pass (same caveat
-  the prior cut flagged honestly).
+- "Right opportunities" is irreducibly **judgment-heavy**. We author the gold marks ourselves, so the harness
+  is **self-referential** — we set the yardstick and grade ② against it. We accept this explicitly. Mitigation:
+  (1) the marks are **derived from documented best-practice** (the KB references), not personal taste, so the
+  yardstick is defensible and reproducible, not idiosyncratic; (2) the harness is a **relative-improvement
+  instrument** — it tells us whether a change to `suggest-article` made ② *better against a fixed bar*, not
+  whether ② is *absolutely* right; (3) keyword-not-exact matching, lenient thresholds, and the LLM-judge's
+  final say on defensible extras. The corpus is a *yardstick*, not ground truth. This must be stated in the
+  baseline report.
+- Recall/precision against our authored marks rewards conformity to those marks. Small corpus = high variance.
+  Treat the first baseline as directional; grow and diversify the generic corpus, and re-validate on cases ②
+  was **not** written to pass (same caveat the prior cut flagged honestly).
 - The deterministic gate is strong on *data validity/provenance* (real reuse of `validateChartSpec`) and
   *count/no-chart* (mechanical), and weak on *opportunity correctness* (delegated to keywords + judge). We
   claim only what code can actually prove.
@@ -265,13 +282,14 @@ Vertical-slice discipline, mirroring slice-1. The smallest thing that proves the
 
 1. `skills/suggest-article/SKILL.md` — the ANALYSE + PROPOSITION runtime procedure (read article → extract
    claims → bind data → emit `VisualProposal[]` with guardrails), in the 8-section skill-autonome canon.
-   Grounds on the existing KB (`knowledge/references/chart-selection.md` for the family vocabulary —
-   **reuse, don't invent a second family list**).
-2. **One short real Annemasse article + its data** (2–3 paragraphs, 1–2 CSV tables) → ② proposes **1–3**
-   visual opportunities → each accepted proposal's `(data, intent)` runs the **unchanged** `suggest-chart` →
-   `dw-chart` produces a real chart. **One end-to-end proof** (`e2e-proof.md`), like the prior cut's live e2e.
-3. `eval/` — `scoreProposalSet` (pure, `bun:test`) + `family-types`-style reuse of the prior `FAMILY_TYPES`
-   (import it, don't fork it) + **≥4 cases** (incl. one with a no-chart claim like the mayor quote, and one
+   Grounds on the existing KB (`knowledge/references/chart-selection.md` + `design-conformance.md`) for *which
+   claims warrant a visual* — **not** for picking a chart type (the prior cut owns that).
+2. **One short generic small-newsroom sample article + its data** (we author it — typical local story, 2–3
+   paragraphs, 1–2 CSV tables; NOT a real Annemasse article) → ② proposes **1–3** visual opportunities → each
+   accepted proposal's `(data, intent)` runs the **unchanged** `suggest-chart` → `dw-chart` produces a real
+   chart. **One end-to-end proof** (`e2e-proof.md`), like the prior cut's live e2e.
+3. `eval/` — `scoreProposalSet` (pure, `bun:test`, reusing `validateChartSpec` for the data-shape probe) +
+   **≥4 authored generic cases** (incl. one with a no-chart claim like the declined-comment quote, and one
    multi-table article) + `judge.md` + `run.md` + a `baseline-report.md` from one run.
 
 **Scope OUT (deferred, explicitly):**
@@ -281,15 +299,16 @@ Vertical-slice discipline, mirroring slice-1. The smallest thing that proves the
 - **Multi-article / scale** — one article, a handful of cases. No corpus-at-scale, no cross-article dedup.
 - **The explicit two-pass `ClaimSet` artefact (approach c)** — only if the first baseline shows a *recall*
   problem distinct from judgment.
-- **Maps / video proposals** — `family` is chart-only for now (the prior cut only produces charts). Map/video
+- **Maps / video proposals** — proposals are chart-only for now (the prior cut only produces charts). Map/video
   opportunities are out until those producer skills exist.
 - **Layout / insertion** — `anchor` is advisory; no positioning in the article body.
 
 **Success criteria:**
 
 1. `suggest-article/SKILL.md` exists with the ANALYSE+PROPOSITION procedure; an agent following it turns one
-   real article+data into a valid `ProposalSet`.
-2. `scoreProposalSet` is pure and unit-tested; reuses `validateChartSpec` and the prior `FAMILY_TYPES`.
+   authored generic sample article+data into a valid `ProposalSet`.
+2. `scoreProposalSet` is pure and unit-tested; reuses `validateChartSpec` for the data-shape probe (no chart-
+   type / family logic — that stays in the prior cut).
 3. ≥4 cases (incl. a no-chart claim + a multi-table article); `judge.md` with the four-axis schema.
 4. One live e2e: an accepted proposal → `suggest-chart` → `dw-chart` → a real produced chart (`e2e-proof.md`).
 5. One baseline run → `baseline-report.md` (deterministic pass rate + recall/precision + judge means), with
@@ -297,40 +316,49 @@ Vertical-slice discipline, mirroring slice-1. The smallest thing that proves the
 6. The prior cut's 8/8 eval and the 32 dw-chart tests stay green (this cut is purely additive upstream).
 7. No tiers; credited; English; no Claude/Anthropic mention in artefacts.
 
-## 6. Open design questions — need the human's sign-off
+## 6. Resolved decisions (folded into the design) + remaining open questions
 
-1. **Gold-standard ownership.** The eval's value rests on expert-marked opportunities. **Who marks them**
-   (Yvan/Rinny on real copy?) and **when**? Without a real editorial gold set, the baseline is ②-grading-②
-   again — the exact caveat we flagged last cut. *This is the biggest dependency.*
-2. **Input boundary — does ② receive data already matched to the article, or must it match data↔claims?**
-   The spec assumes ② binds claims to the supplied tables/columns itself. If matching is out of scope (the
-   journalist pre-pairs each claim with its data), the task and the `dataFit`/`provenanceOk` checks shrink a
-   lot. Which is the real workflow?
-3. **One proposal at a time, or a batch the journalist triages?** I assumed a `ProposalSet` reviewed at once
-   (better for "right dose"). An alternative is one-opportunity-at-a-time conversational flow. Affects the UX
-   and whether `min/maxProposals`/`rightDose` even apply.
-4. **Recall threshold `τr` = 1.0 on a tiny corpus** is harsh (one missed mark fails the case). Acceptable as
-   a strict yardstick, or start lower? And **`τp` for precision** — how much latitude for defensible extras?
-5. **`anchor` granularity** — paragraph index + verbatim quote. Enough for the journalist to place the visual,
-   or do they want sentence-level / no anchor at all (just an unordered list of opportunities)?
-6. **Does `family` belong in the proposal at all,** or should ② stay purely "here's a claim + its data" and
-   let the prior cut decide everything chart-shaped? Including `family` gives editorial framing but risks
-   pre-empting the prior cut. (Recommendation: keep it advisory; flagging because it's a real boundary call.)
-7. **When does over-proposing become the right call?** A rich article might legitimately deserve 5 visuals.
-   `maxProposals` is a guardrail against noise, but the cap is editorial. What's the default ceiling?
+### Resolved (this review)
+
+- **R1 — Gold-standard ownership: WE author it, on generic samples.** Atelier targets *all* small newsrooms;
+  the grant's Annemasse pilot is a deliverable, **not** a design or validation dependency. We author both the
+  sample articles and their gold marks ourselves, on **generic small-newsroom stories** (not Annemasse). Marks
+  are **grounded in documented journalism best-practice** (the KB references), not personal taste. The
+  self-referential nature (we mark, ② is judged vs our marks) is **explicitly accepted**; mitigation is in §4.5
+  — best-practice-derived marks + the harness as a **relative-improvement instrument**, not absolute truth.
+- **R2 — ② binds data↔claim itself** (not pre-paired). This matching is ②'s core value; `provenanceOk` keeps
+  it honest. Folded into §2.2/§2.3.
+- **R3 — No `family` / no chart type in the proposal.** Proposals carry `claim + data + intent` only; the prior
+  cut decides everything chart-shaped. Removed from the proposal shape (§2.3) and the deterministic gate (§4.2).
+- **R4 — Batch triage.** ② emits a `ProposalSet` the journalist reviews at once (better for "right dose").
+- **R5 — Lenient thresholds first, tighten as the corpus grows** (`τr = 0.7`, `τp = 0.5` to start; §4.2).
+- **R6 — `anchor` = `paragraphIndex` + verbatim `quote`, advisory** (the journalist places the visual; §2.3).
+- **R7 — Soft ceiling on proposal count: the LLM-judge penalises over-proposing (`rightDose`)**, not a hard cap.
+  `min/maxProposals` stay only as coarse deterministic guardrails.
+
+### Still open (not blocking the first cut)
+
+1. **CADRAGE coupling (later cut).** This cut hands `intent` straight to the prior cut with no refinement loop.
+   When CADRAGE lands, does it sit between this cut and the prior cut (refine each proposal's intent before
+   production), and does that change the proposal shape? Deferred, but the seam should be kept clean for it.
+2. **Promotion to the explicit two-pass `ClaimSet` (approach c)** — only if the first baseline shows ② has a
+   *recall* problem (misses claims) distinct from a *judgment* problem (finds them, chooses badly). Decide
+   after reading the baseline, not before.
 
 ## 7. Self-review
 
 - **Placeholders:** none — shapes are concrete, thresholds named as knobs with starting values, deferred
   items listed explicitly.
 - **Contradictions:** checked against the architecture (vetoable PROPOSITION, no hard gate, validation on the
-  produced visual, ② = host agent, no backend, no tiers) and the prior cut (reuses `validateChartSpec`,
-  `FAMILY_TYPES`, `chart-selection.md`, the agent-orchestrated runner, the `scoreSpec`+judge split, the
-  change-the-skill-not-the-cases loop). No conflicts found.
-- **Scope:** first cut is one article + ≥4 eval cases + one live e2e — proves the new loop without building
-  CADRAGE, scale, maps/video, or layout. Consistent with slice-1 discipline.
-- **Honesty:** the eval's soft spot (judgment-heavy "right opportunities", gold-standard ownership, ②-grading-②
-  risk) is stated in §4.5 and raised as the #1 open question, not hidden.
+  produced visual, ② = host agent, no backend, no tiers) and the prior cut (reuses `validateChartSpec` for the
+  data-shape probe, the agent-orchestrated runner, the `scoreSpec`+judge split, the change-the-skill-not-the-
+  cases loop). The proposal deliberately carries **no** chart family/type — type-selection stays solely in the
+  prior cut, so the two cuts don't overlap. No conflicts found.
+- **Scope:** first cut is one authored generic sample article + ≥4 eval cases + one live e2e — proves the new
+  loop without building CADRAGE, scale, maps/video, or layout. Consistent with slice-1 discipline. No
+  Annemasse/pilot coupling in the design or the corpus.
+- **Honesty:** the eval is **self-referential** (we author the marks); this is accepted explicitly in §4.5 with
+  its mitigation (best-practice-grounded marks + relative-improvement instrument), not hidden.
 
 ## 8. Out of scope (this spec)
 
