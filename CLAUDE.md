@@ -113,3 +113,11 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - **Collision label de série ↔ annotation** : sur un d3-lines, l'annotation de fin (« 31 days ») chevauche le label direct de la série (« wait_days »). Lié au fix annotation ci-dessus (placement/align). Trouvé via vérif-rendu sur `clinic-waits`.
 - **Unité non explicitée** : données en milliers/millions affichées brutes (« 1.8 » pour 1.8M, « 26 » pour 26k). Piste : ② devrait mettre l'unité dans `intro` (« en millions ») ou un suffixe de format. Trouvé sur `school-budget`/`town-growth`.
 - **Note qualité ②** : titres parfois avec coquille (« this years » sans apostrophe) — artefact de génération, à surveiller via le LLM-juge, pas un fix code.
+
+## Cut map (Datawrapper) — MERGÉ (choropleth)
+- **MERGÉ dans `main`** : `skills/map-dw/` — choropleth DW, **réutilise le client `dw-chart/datawrapper.ts`** (pas réécrit) via le seam `MapSpec → spec-to-map-metadata → produceMap`. 26 tests. e2e live conservé : https://datawrapper.dwcdn.net/vZRmO/1/
+- **Binding** : `visualize.basemap` + `visualize["map-key-attr"]` (clé de jointure du basemap) + `axes.keys`(colonne région)/`axes.values`(valeur). 4497 basemaps via `GET /v3/basemaps` ; clés via `GET /v3/basemaps/{id}` → `meta.keys[].value`.
+- **Couleur** : `visualize.colorscale = {mode, interpolation, colors:[{color,position}]}` — **JAMAIS de champ `stops` string** (ça rendait tout noir). Light→#0072B2.
+- **Règle basemap-fit** (trouvée au rendu, comme transpose) : le basemap doit **épouser l'étendue des données** (UE→`europe-sovereign-states`, US→`us-states`…), pas `world-2019` pour une histoire régionale. `validateMapSpec` ne l'attrape pas — **seul le rendu**.
+- **Différé** : symbol map + locator map (bindings différents). Le natif geo-prep (MapTiler/Cesium, Tom) = cut lourd séparé plus tard.
+- **Suite totale `main` : 72 tests** (32 dw-chart + 8 suggest-chart + 6 suggest-article + 26 map-dw).
