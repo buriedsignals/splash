@@ -27,7 +27,7 @@ produces. It never invents data; if no chart serves the story, it says so.
 
 ## Guardrails (the code enforces these — propose within them)
 
-- **Type:** pick from the 24 supported types (single-series, multi-series, or two-value per the data shape).
+- **Type:** pick from the 22 supported types (single-series, multi-series, or two-value per the data shape).
 - **Sort:** for ranking intents (bars/columns where order matters), set `"sort": "desc"` — the producer sorts the CSV.
 - **Colours:** single-series → at most 2 Okabe-Ito colours (default `#0072B2`); multi-series → one Okabe-Ito colour per series in `seriesColors`, at most 8.
 - **Pie/donut:** at most 5 slices — if more, group into "Other" or choose bars.
