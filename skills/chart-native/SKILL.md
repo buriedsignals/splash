@@ -89,7 +89,7 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 | Hold on the full chart at the end | `HOLD_OUT` (0.12) | `remotion/src/LineReveal.tsx` |
 | Easing curve | `Easing.inOut(Easing.cubic)` | `remotion/src/LineReveal.tsx` |
 | Line colour | `COLORS.line` (`#0072B2`) | `src/tokens.ts` |
-| When the direct label fades in | `0.85` threshold | `LineChart.tsx` `interpolateLabel` |
+| Staged-reveal timing (chrome / line / label) | `chromeOpacity` (p/0.2), `lineProgress` (0.12→0.92), `labelOpacity` (0.9→1) | `LineChart.tsx` |
 | Chart size (video/static) | `width`/`height` (840×480) | `Root.tsx` + snapshot scripts |
 | When the interactive reveal plays | `ANIMATE_ON` (`"scroll"` \| `"load"` \| `"none"`) | `src/mount.tsx` |
 | Interactive reveal duration | `durationMs` (1200) | `src/InteractiveLineChart.tsx` |
@@ -107,5 +107,5 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 - `scripts/snap-responsive.mjs` — proof harness: screenshots the interactive build at 360/768/1100px (responsive) + an early frame (reveal from 0).
 - `assets/sample-data/series.json` — runnable sample (generic small-newsroom time series).
 - `tests/{chart-geometry,reveal-contract}.test.ts` — `bun:test` (geometry + the 3-format determinism contract).
-- `output-proof/` — the real artifacts: `static.png`, `interactive.html` + `interactive-hover.png`, `responsive-{360,768,1100}.png` (re-layout proof) + `reveal-early.png` (animates from 0), `line-reveal.mp4` + 4 extracted frames + the validated still.
+- `output-proof/` — the real artifacts: `static.png`, `interactive.html` + `interactive-hover.png`, `responsive-{360,768,1100}.png` (re-layout proof) + `reveal-1-chrome.png` / `reveal-2-line.png` (whole chart builds from 0: chrome fades in, then the line draws), `line-reveal.mp4` + 4 extracted frames + the validated still.
 - `references/architecture.md` — reveal math + Remotion frame-determinism discipline.

@@ -29,20 +29,21 @@ for (const w of [360, 768, 1100]) {
   await page.close();
 }
 
-// (2) intro reveal: capture an EARLY frame (line barely drawn) to prove it
-// starts at 0, then the settled frame.
-{
+// (2) intro reveal: the WHOLE chart builds from nothing — chrome (axes/grid/
+// labels) fades in first, then the line draws. Capture two stages to prove it.
+for (const [ms, name] of [
+  [360, "reveal-1-chrome.png"], // axes/grid fading in, line not started
+  [680, "reveal-2-line.png"], // chrome in, line drawing
+]) {
   const page = await browser.newPage({
     viewport: { width: 900, height: 560 },
     deviceScaleFactor: 2,
   });
   await page.goto(url);
-  await page.waitForSelector(".series-line");
-  await page.waitForTimeout(220); // ~early in the 1200ms eased reveal
-  await page.locator("#root > div").screenshot({
-    path: join(outDir, "reveal-early.png"),
-  });
-  console.log("reveal-early.png");
+  await page.waitForSelector("svg");
+  await page.waitForTimeout(ms);
+  await page.locator("#root > div").screenshot({ path: join(outDir, name) });
+  console.log(name);
   await page.close();
 }
 

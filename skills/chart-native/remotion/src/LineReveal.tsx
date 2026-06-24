@@ -9,7 +9,7 @@ const config = sample as unknown as ChartConfig;
 
 // reveal occupies the middle of the timeline; a short hold at each end so the
 // first/last frames are readable stills.
-const HOLD_IN = 0.08; // fraction of duration before the line starts
+const HOLD_IN = 0.03; // brief blank hold before the chart builds from nothing
 const HOLD_OUT = 0.12; // fraction held on the full chart at the end
 
 export const LineReveal: React.FC = () => {

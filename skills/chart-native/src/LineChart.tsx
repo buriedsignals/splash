@@ -80,13 +80,22 @@ export function LineChart({
 
   const [hover, setHover] = useState<number | null>(null);
 
+  // Staged reveal, all pure functions of the master `progress` so EVERY format
+  // (interactive + video) builds the whole chart from nothing:
+  //   chrome (axes/grid/labels) fades in → the line draws → the label fades in.
+  const chromeOpacity = clamp01(p / 0.2); // 0 → 0.2
+  const lineProgress = clamp01((p - 0.12) / 0.8); // 0.12 → 0.92
+  const labelOpacity = clamp01((p - 0.9) / 0.1); // 0.9 → 1
+
   const svg = (
     <ChartSvg
       layout={layout}
       padding={padding}
       width={width}
       height={height}
-      p={p}
+      lineProgress={lineProgress}
+      chromeOpacity={chromeOpacity}
+      labelOpacity={labelOpacity}
       config={config}
       interactive={interactive}
       hover={hover}
@@ -219,7 +228,9 @@ function ChartSvg({
   padding,
   width,
   height,
-  p,
+  lineProgress,
+  chromeOpacity,
+  labelOpacity,
   config,
   interactive,
   hover,
@@ -229,14 +240,17 @@ function ChartSvg({
   padding: { top: number; right: number; bottom: number; left: number };
   width: number;
   height: number;
-  p: number;
+  lineProgress: number;
+  chromeOpacity: number;
+  labelOpacity: number;
   config: ChartConfig;
   interactive: boolean;
   hover: number | null;
   setHover: (i: number | null) => void;
 }) {
-  const revealed = revealLine(layout, p);
-  const head = revealHead(layout, p);
+  const lp = lineProgress;
+  const revealed = revealLine(layout, lp);
+  const head = revealHead(layout, lp);
   const lastPoint = layout.points[layout.points.length - 1];
 
   return (
@@ -249,48 +263,51 @@ function ChartSvg({
     >
       <title>{config.title}</title>
       <g transform={`translate(${padding.left},${padding.top})`}>
-        {layout.yTicks.map((t, i) => (
-          <g key={`y${i}`}>
-            <line
-              x1={0}
-              x2={layout.innerWidth}
-              y1={t.y}
-              y2={t.y}
-              stroke={COLORS.grid}
-              strokeWidth={1}
-            />
+        {/* chrome: axes, grid, tick labels, baseline — fade in first */}
+        <g opacity={chromeOpacity}>
+          {layout.yTicks.map((t, i) => (
+            <g key={`y${i}`}>
+              <line
+                x1={0}
+                x2={layout.innerWidth}
+                y1={t.y}
+                y2={t.y}
+                stroke={COLORS.grid}
+                strokeWidth={1}
+              />
+              <text
+                x={-10}
+                y={t.y}
+                dy="0.32em"
+                textAnchor="end"
+                fontSize={TYPE.axis}
+                fill={COLORS.muted}
+              >
+                {t.label}
+              </text>
+            </g>
+          ))}
+          {layout.xTicks.map((t, i) => (
             <text
-              x={-10}
-              y={t.y}
-              dy="0.32em"
-              textAnchor="end"
+              key={`x${i}`}
+              x={t.x}
+              y={layout.innerHeight + 22}
+              textAnchor="middle"
               fontSize={TYPE.axis}
               fill={COLORS.muted}
             >
               {t.label}
             </text>
-          </g>
-        ))}
-        {layout.xTicks.map((t, i) => (
-          <text
-            key={`x${i}`}
-            x={t.x}
-            y={layout.innerHeight + 22}
-            textAnchor="middle"
-            fontSize={TYPE.axis}
-            fill={COLORS.muted}
-          >
-            {t.label}
-          </text>
-        ))}
-        <line
-          x1={0}
-          x2={layout.innerWidth}
-          y1={layout.innerHeight}
-          y2={layout.innerHeight}
-          stroke={COLORS.axis}
-          strokeWidth={1}
-        />
+          ))}
+          <line
+            x1={0}
+            x2={layout.innerWidth}
+            y1={layout.innerHeight}
+            y2={layout.innerHeight}
+            stroke={COLORS.axis}
+            strokeWidth={1}
+          />
+        </g>
 
         {revealed && (
           <path
@@ -304,7 +321,7 @@ function ChartSvg({
           />
         )}
 
-        {p > 0 && p < 1 && (
+        {lp > 0 && lp < 1 && (
           <>
             <circle
               cx={head.x}
@@ -324,7 +341,7 @@ function ChartSvg({
           </>
         )}
 
-        <g opacity={interpolateLabel(p)}>
+        <g opacity={labelOpacity}>
           <circle cx={lastPoint.x} cy={lastPoint.y} r={4} fill={COLORS.line} />
           <text
             x={lastPoint.x + 10}
@@ -375,10 +392,4 @@ function ChartSvg({
       </g>
     </svg>
   );
-}
-
-// the direct label fades in over the last 15% of the reveal
-function interpolateLabel(p: number): number {
-  if (p < 0.85) return 0;
-  return clamp01((p - 0.85) / 0.15);
 }
