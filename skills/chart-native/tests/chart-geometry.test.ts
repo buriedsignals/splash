@@ -251,3 +251,16 @@ describe("stagger (deterministic per-element sub-window)", () => {
     expect(stagger(0, 3, 5, 0.02, 0.03, 0.22)).toBe(0);
   });
 });
+
+describe("x-tick labels never repeat a year (wide layouts)", () => {
+  const wide: Dims = {
+    width: 1600,
+    height: 480,
+    padding: { top: 16, right: 140, bottom: 52, left: 56 },
+  };
+  it("a high tick count yields unique year labels", () => {
+    const layout = computeChartLayout(data, wide, 14); // wide-screen tick count
+    const labels = layout.xTicks.map((t) => t.label);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+});

@@ -121,10 +121,15 @@ export function computeChartLayout(
   }
   const totalLength = cumLength[cumLength.length - 1];
 
-  const xTicks = (xScale.ticks(xTickCount) as (number | Date)[]).map((t) => ({
-    x: (xScale as (v: number | Date) => number)(t),
-    label: isTime ? fmtYear(t as Date) : String(t),
-  }));
+  // On wide layouts a high tick count makes scaleTime emit sub-year ticks; with
+  // a %Y label that renders the same year several times. Drop consecutive ticks
+  // that carry the same label so each year appears once.
+  const xTicks = (xScale.ticks(xTickCount) as (number | Date)[])
+    .map((t) => ({
+      x: (xScale as (v: number | Date) => number)(t),
+      label: isTime ? fmtYear(t as Date) : String(t),
+    }))
+    .filter((t, i, a) => i === 0 || t.label !== a[i - 1].label);
   const yTicks = yScale
     .ticks(5)
     .map((t) => ({ y: yScale(t), label: formatNumber(t) }));

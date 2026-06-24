@@ -14,7 +14,7 @@ const url = pathToFileURL(join(root, "dist/interactive/index.html")).href;
 const browser = await chromium.launch();
 
 // (1) responsive: three viewport widths, each screenshot after the reveal settles
-for (const w of [360, 768, 1100]) {
+for (const w of [360, 768, 1100, 1600]) {
   const page = await browser.newPage({
     viewport: { width: w, height: 560 },
     deviceScaleFactor: 2,
