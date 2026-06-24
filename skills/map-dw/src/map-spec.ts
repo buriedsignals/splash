@@ -46,6 +46,7 @@ export interface SymbolMapSpec {
   lonColumn: string; // data column with longitudes → axes.lon
   sizeColumn: string; // data column driving symbol SIZE → axes.area
   colorColumn?: string; // data column driving symbol COLOUR → axes.values (defaults to sizeColumn)
+  labelColumn?: string; // data column shown as the tooltip title (e.g. place name); defaults to sizeColumn
   data: string; // CSV text
   title: string;
   intro?: string;
@@ -219,6 +220,8 @@ export function validateMapSpec(
     requireColumn(s, "sizeColumn", columns, errors);
     if (s.colorColumn !== undefined)
       requireColumn(s, "colorColumn", columns, errors);
+    if (s.labelColumn !== undefined)
+      requireColumn(s, "labelColumn", columns, errors);
     validateColorScale(s.colorScale, errors);
     warnLabelTitle(s, columns, warnings);
   } else {

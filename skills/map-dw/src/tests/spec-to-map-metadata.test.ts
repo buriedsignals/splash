@@ -113,6 +113,31 @@ describe("specToMapMetadata — symbol", () => {
     expect(cs.colors).toEqual(DEFAULT_BLUE);
     expect("stops" in cs).toBe(false);
   });
+
+  it("enables a hover tooltip templated on the SIZE and label columns (mustache {{ col }})", () => {
+    const t = specToMapMetadata(symbol).metadata.visualize.tooltip as Record<
+      string,
+      unknown
+    >;
+    expect(t).toBeDefined();
+    expect(t.enabled).toBe(true);
+    // title = the place label column (lat is not it; default labelColumn falls back to lat? no —
+    // the symbol case has no label column, so title templates the SIZE column by default).
+    expect(typeof t.title).toBe("string");
+    expect(typeof t.body).toBe("string");
+    // columns are referenced as DW mustache tokens, and declared in `fields`.
+    expect(t.title as string).toContain("{{");
+    expect(t.body as string).toContain("{{ population }}");
+    expect(t.fields).toEqual({ population: "population" });
+  });
+
+  it("templates the tooltip title on an explicit labelColumn when given", () => {
+    const t = specToMapMetadata({ ...symbol, labelColumn: "city" }).metadata
+      .visualize.tooltip as Record<string, unknown>;
+    expect(t.title).toBe("{{ city }}");
+    expect(t.body).toBe("{{ population }}");
+    expect(t.fields).toEqual({ city: "city", population: "population" });
+  });
 });
 
 const locator: LocatorMapSpec = {
@@ -178,5 +203,13 @@ describe("specToMapMetadata — locator", () => {
       unknown
     >;
     expect(d["aria-description"]).toBe("Annemasse, Geneva, Chamonix");
+  });
+
+  it("enables the per-marker hover tooltip so the title shows on hover", () => {
+    const markers = specToMapMetadata(locator).metadata.visualize
+      .markers as Array<Record<string, unknown>>;
+    for (const m of markers) {
+      expect(m.tooltip).toEqual({ enabled: true });
+    }
   });
 });

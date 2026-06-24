@@ -78,9 +78,20 @@ function choroplethMetadata(spec: ChoroplethMapSpec): MapPatch {
 // drives COLOUR. The colour scale uses the same `colorscale` block as choropleth (and the
 // same "no `stops` string" rule). `map-type-set:true` keeps DW from re-defaulting the type.
 // Verified via real exported PNGs.
+//
+// NOTE (load-bearing, symbol tooltip): symbol maps reference DATA COLUMNS, NOT %REGION% (that
+// is choropleth-only). The hover tooltip uses DW mustache tokens `{{ column }}` in `title`/`body`,
+// and EACH referenced column MUST be declared in `tooltip.fields` ({ token: column }) or the
+// token renders blank. Title = the place label (labelColumn, else the size column); body = the
+// size column. Symbols are drawn on a CANVAS (no <circle> in the DOM) — hover is by pixel
+// position. Verified LIVE in a browser: hovering Paris showed a "{{ city }} / {{ population }}"
+// tooltip box (screenshot, not just metadata). See output-proof/.
 function symbolMetadata(spec: SymbolMapSpec): MapPatch {
   const colors = spec.colorScale ?? DEFAULT_BLUE;
   const colorCol = spec.colorColumn ?? spec.sizeColumn;
+  const labelCol = spec.labelColumn ?? spec.sizeColumn;
+  const fields: Record<string, string> = { [spec.sizeColumn]: spec.sizeColumn };
+  if (labelCol !== spec.sizeColumn) fields[labelCol] = labelCol;
   return {
     title: spec.title,
     type: "d3-maps-symbols",
@@ -98,6 +109,12 @@ function symbolMetadata(spec: SymbolMapSpec): MapPatch {
           mode: "continuous",
           interpolation: "equidistant",
           colors,
+        },
+        tooltip: {
+          enabled: true,
+          title: `{{ ${labelCol} }}`,
+          body: `{{ ${spec.sizeColumn} }}`,
+          fields,
         },
       },
       describe: describeBlock(spec),
@@ -150,7 +167,10 @@ function locatorMetadata(spec: LocatorMapSpec): MapPatch {
     icon: CIRCLE_ICON,
     text: { color: "#333333", fontSize: 14, halo: "#ffffff" },
     visible: true,
-    tooltip: { enabled: false },
+    // Enable the hover tooltip so the marker `title` shows on hover. Verified LIVE: with
+    // `enabled:false` no tooltip appeared; with `enabled:true` hovering a pin spawns a
+    // `tooltip-text-wrapper` element with the title (zero before hover, one after). See output-proof/.
+    tooltip: { enabled: true },
   }));
 
   const framed = spec.view ?? fitView(spec.markers);
