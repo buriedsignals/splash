@@ -69,7 +69,9 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - Architecture révisée et à jour (spec-parapluie, sans tiers, Mycroft).
 - Grille type × format migrée ici → `docs/atelier/visual-element-grid.md`.
 - Spec ① KB écrite (`docs/superpowers/specs/2026-06-23-knowledge-base-design.md`) — la cible complète.
-- **PROCHAIN** : **tranche verticale Annemasse** — définir le(s) visuel(s) que l'enquête veut, puis construire end-to-end le slice minimal (KB juste-ce-qu'il-faut + ② minimal + 1 skill + export) pour valider la boucle. La KB complète se construit ensuite, à rebours.
+- **Tranche 1 (dw-chart) + Tranche 1.1 (22 types + garde-fous) : LIVRÉES + MERGÉES dans `main`.** 32 tests vraie API. Le moteur chart est complet et conforme.
+- **Spec ② suggester runtime écrit** (`docs/superpowers/specs/2026-06-23-suggester-runtime-design.md`) : ② = l'agent-hôte ; 1er cut `données+intention → ChartSpec` ; **harness d'éval** (scoreSpec déterministe + LLM-juge) = l'instrument du risque-produit. Design approuvé.
+- **PROCHAIN** : `writing-plans` sur le spec ② → exécution (le code = scoreSpec + family-types + cas + judge.md + la procédure runtime dans suggest-chart). Recommandé en **session fraîche** (cette session est très longue). Cuts suivants : `article → où/quel` ; puis maps ; puis vidéo.
 
 ## Conventions
 
