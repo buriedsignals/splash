@@ -94,3 +94,10 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 
 ## Cut ② lecture d'article — SPEC MERGÉ (design only)
 `docs/superpowers/specs/2026-06-23-suggester-article-reading-design.md`. Approche : ② lit `article+données` → `ProposalSet` de propositions vetoables (`claim + data + intent`, sans family) → chaque proposition acceptée alimente le runtime `data+intention→ChartSpec` déjà construit. ② **lie data↔claim lui-même**. Éval = `scoreProposalSet` (dataValid via validateChartSpec + provenanceOk + count + recall/precision lenients) + LLM-juge (rightPlace/rightDose/dataFit). **PROCHAIN : plan + build de la 1re tranche.**
+
+## État (cut lecture-d'article MERGÉ)
+- **MERGÉ dans `main`** : ② article-reading 1re tranche. `skills/suggest-article/` : SKILL.md (`article+données → ProposalSet`, ② lie data↔claim, propositions claim+data+intent vetoables sans family) + éval `scoreProposalSet` (dataValid + provenanceOk + recall/precision lenients, **6 tests**) + 4 cas génériques + judge + runner + baseline (auto-noté, instrument relatif) + e2e-proof.
+- **Suite totale `main` : 46 tests** (6 suggest-article + 8 suggest-chart eval + 32 dw-chart vraie API). Vérifiés à la main.
+- **Lien article→chart re-prouvé indépendamment** (cas festival-recap, chart réel produit puis supprimé) — pas seulement le rapport de l'agent.
+- **Caveat assumé** : baseline auto-référentiel (on écrit cas+gold, ② et juge = agents). Instrument d'amélioration relative. Prochain renfort = diversifier le corpus sur des cas non écrits-pour-réussir.
+- **Prochains cuts** : ② → CADRAGE (questionnaire d'intention) ou directement le skill **map** (geo-prep commun + renderers) ; puis vidéo Remotion.
