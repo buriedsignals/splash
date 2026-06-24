@@ -12,17 +12,17 @@ const valid = {
   altInsight: "Sweden has the highest value (70); France the lowest (10)",
 };
 
-describe("validateMapSpec", () => {
+describe("validateMapSpec — choropleth", () => {
   it("passes a complete choropleth spec", () => {
     const r = validateMapSpec(valid);
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.warnings).toEqual([]);
   });
 
-  it("rejects a non-choropleth mapType (deferred types)", () => {
-    const r = validateMapSpec({ ...valid, mapType: "symbols" });
+  it("rejects an unknown mapType", () => {
+    const r = validateMapSpec({ ...valid, mapType: "heatmap" });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors.join()).toMatch(/choropleth/);
+    if (!r.ok) expect(r.errors.join()).toMatch(/choropleth.*symbol.*locator/);
   });
 
   it("requires basemap, mapKeyAttr, title, altInsight", () => {
@@ -90,5 +90,121 @@ describe("validateMapSpec", () => {
     const r = validateMapSpec({ ...valid, title: "value" });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.warnings.join()).toMatch(/label/);
+  });
+});
+
+const validSymbol = {
+  mapType: "symbol",
+  basemap: "france-metropolitan-departments",
+  latColumn: "lat",
+  lonColumn: "lon",
+  sizeColumn: "population",
+  data: "city,lat,lon,population\nParis,48.85,2.35,2100\nLyon,45.76,4.83,520",
+  title: "Population concentrates in Paris and Lyon",
+  altInsight: "Paris (2.1M) dwarfs Lyon (0.52M) among these French cities",
+};
+
+describe("validateMapSpec — symbol", () => {
+  it("passes a complete symbol spec", () => {
+    const r = validateMapSpec(validSymbol);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings).toEqual([]);
+  });
+
+  it("requires lat/lon/size columns and they must be real data columns", () => {
+    for (const f of ["latColumn", "lonColumn", "sizeColumn"]) {
+      const missing = validateMapSpec({ ...validSymbol, [f]: "" });
+      expect(missing.ok).toBe(false);
+      const wrong = validateMapSpec({ ...validSymbol, [f]: "nope" });
+      expect(wrong.ok).toBe(false);
+      if (!wrong.ok) expect(wrong.errors.join()).toMatch(new RegExp(f));
+    }
+  });
+
+  it("fails when an optional colorColumn is not a data column", () => {
+    const r = validateMapSpec({ ...validSymbol, colorColumn: "ghost" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/colorColumn/);
+  });
+
+  it("requires basemap and altInsight", () => {
+    for (const f of ["basemap", "altInsight"]) {
+      const r = validateMapSpec({ ...validSymbol, [f]: "" });
+      expect(r.ok).toBe(false);
+    }
+  });
+
+  it("validates colorScale stops like choropleth", () => {
+    const r = validateMapSpec({
+      ...validSymbol,
+      colorScale: [{ color: "notahex", position: 0 }],
+    });
+    expect(r.ok).toBe(false);
+  });
+});
+
+const validLocator = {
+  mapType: "locator",
+  title: "Three sites along the Arve valley",
+  altInsight: "Annemasse, Geneva and Chamonix marked along the Arve",
+  markers: [
+    { lng: 6.2347, lat: 46.1939, label: "Annemasse" },
+    { lng: 6.1432, lat: 46.2044, label: "Geneva" },
+    { lng: 6.8694, lat: 45.9237, label: "Chamonix" },
+  ],
+};
+
+describe("validateMapSpec — locator", () => {
+  it("passes a complete locator spec", () => {
+    const r = validateMapSpec(validLocator);
+    expect(r.ok).toBe(true);
+  });
+
+  it("requires a non-empty markers array", () => {
+    const empty = validateMapSpec({ ...validLocator, markers: [] });
+    expect(empty.ok).toBe(false);
+    if (!empty.ok) expect(empty.errors.join()).toMatch(/markers/);
+    const missing = validateMapSpec({ ...validLocator, markers: undefined });
+    expect(missing.ok).toBe(false);
+  });
+
+  it("fails on out-of-range coordinates", () => {
+    const badLng = validateMapSpec({
+      ...validLocator,
+      markers: [{ lng: 999, lat: 46, label: "x" }],
+    });
+    expect(badLng.ok).toBe(false);
+    if (!badLng.ok) expect(badLng.errors.join()).toMatch(/lng/);
+    const badLat = validateMapSpec({
+      ...validLocator,
+      markers: [{ lng: 6, lat: 200, label: "x" }],
+    });
+    expect(badLat.ok).toBe(false);
+    if (!badLat.ok) expect(badLat.errors.join()).toMatch(/lat/);
+  });
+
+  it("requires a label on every marker", () => {
+    const r = validateMapSpec({
+      ...validLocator,
+      markers: [{ lng: 6, lat: 46, label: "" }],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/label/);
+  });
+
+  it("fails on a malformed marker colour", () => {
+    const r = validateMapSpec({
+      ...validLocator,
+      markers: [{ lng: 6, lat: 46, label: "x", color: "red" }],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/color/);
+  });
+
+  it("requires title and altInsight", () => {
+    for (const f of ["title", "altInsight"]) {
+      const r = validateMapSpec({ ...validLocator, [f]: "" });
+      expect(r.ok).toBe(false);
+    }
   });
 });

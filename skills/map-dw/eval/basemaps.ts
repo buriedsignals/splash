@@ -7,4 +7,6 @@ export const KNOWN_BASEMAPS = new Set<string>([
   "europe-sovereign-states",
   "us-states",
   "us-counties-2023",
+  // Symbol-map backdrops (verified live to exist + expose join keys).
+  "france-metropolitan-departments",
 ]);
