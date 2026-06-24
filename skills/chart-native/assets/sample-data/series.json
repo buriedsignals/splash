@@ -1,0 +1,17 @@
+{
+  "title": "Library visits climbed back above pre-closure levels in 2024",
+  "source": { "name": "Riverton city open data", "url": "https://data.riverton.gov/libraries" },
+  "unit": "monthly visits",
+  "xField": "date",
+  "yField": "value",
+  "xType": "time",
+  "directLabel": "Central branch",
+  "points": [
+    { "date": "2019-01-01", "value": 8200 },
+    { "date": "2020-01-01", "value": 9100 },
+    { "date": "2021-01-01", "value": 3400 },
+    { "date": "2022-01-01", "value": 6900 },
+    { "date": "2023-01-01", "value": 8800 },
+    { "date": "2024-01-01", "value": 10400 }
+  ]
+}

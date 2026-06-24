@@ -1,0 +1,34 @@
+// Design tokens — Okabe-Ito colourblind-safe set (design-conformance.md).
+// #0072B2 is the default single-series colour. ≤2 colours.
+
+export const OKABE_ITO = {
+  blue: "#0072B2",
+  orange: "#E69F00",
+  green: "#009E73",
+  vermillion: "#D55E00",
+  purple: "#CC79A7",
+  skyblue: "#56B4E9",
+  yellow: "#F0E442",
+  black: "#000000",
+} as const;
+
+export const COLORS = {
+  line: OKABE_ITO.blue,
+  head: "#FFFFFF",
+  headGlow: OKABE_ITO.blue,
+  ink: "#1A1A1A", // WCAG ≥ 4.5:1 on white
+  muted: "#6B6B6B",
+  grid: "#E6E6E6",
+  axis: "#CFCFCF",
+  bg: "#FFFFFF",
+} as const;
+
+export const FONT =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
+export const TYPE = {
+  title: 22,
+  axis: 13,
+  label: 14,
+  source: 12,
+} as const;
