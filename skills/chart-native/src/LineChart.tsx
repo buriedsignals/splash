@@ -258,8 +258,14 @@ function ChartSvg({
   // baseline draws left→right first; gridlines wipe in, staggered top→bottom.
   const baseW = innerWidth * easeOutCubic(p / 0.18);
   const nY = layout.yTicks.length;
-  // x-axis labels pop in (fade + rise) as the line's draw-head sweeps past them.
-  const xLabelReveal = (tickX: number) => clamp01((head.x - tickX + 16) / 28);
+  // x-axis labels pop in (fade + rise) as the line's draw-head sweeps PAST them
+  // — the ramp starts at 0 only once the head crosses the tick, so the first
+  // label (which sits under the head before the line starts) is hidden, not
+  // pre-visible. A short tail guarantees every label is full by the end (the
+  // last tick coincides with the head's final position, so the sweep alone
+  // would leave it at 0).
+  const xLabelReveal = (tickX: number) =>
+    Math.max(clamp01((head.x - tickX) / 28), clamp01((p - 0.9) / 0.05));
   // direct label slides in from the point just after the line completes.
   const labelOpacity = clamp01((p - 0.92) / 0.08);
 
