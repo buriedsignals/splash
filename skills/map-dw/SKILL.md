@@ -50,6 +50,8 @@ and NEVER a `stops` string. (Also: SVG/PDF export is paid → the owned fallback
 3. **Drive** the API: create → setData (CSV) → patch → publish → export PNG.
 4. **Return** the embed iframe + the owned PNG path.
 
+**Basemap must fit the data's geographic extent.** EU countries → `europe-sovereign-states`; US states → `us-states`; one country's regions → that country's basemap; only use `world-2019` for genuinely global data. A regional story on the world basemap is a *valid* spec but a *poor* map — a tiny coloured cluster lost in empty grey. Pick the smallest basemap that contains all the data's regions. (Caught only by looking at the render, never by `validateMapSpec`.)
+
 ## Quick start
 
 1. Build a `MapSpec` (see `eval/cases/eu-renewables.json`). Pick a basemap from `GET /v3/basemaps`

@@ -3,15 +3,17 @@
 Produced via `produceMap` (which reuses the dw-chart `datawrapper.ts` client) from the generic
 `eval/cases/eu-renewables.json` case. **Left published for human review — do not delete.**
 
-- **publicUrl:** https://datawrapper.dwcdn.net/L2Uko/1/
-- **chartId:** `L2Uko`
+- **publicUrl:** https://datawrapper.dwcdn.net/vZRmO/1/
+- **chartId:** `vZRmO`
 - **PNG:** `eu-renewables.png` (this folder) — exported from the live chart.
 
 ## What the exported PNG shows (the real gate — looked at, not just asserted)
 
+- **Basemap `europe-sovereign-states`** (fixed from `world-2019`): the 6 EU countries FILL the frame
+  instead of being a tiny cluster lost on a world map (basemap-fit rule, now in SKILL.md).
 - All 6 countries coloured by value: Sweden 66 (darkest), Germany 46, Spain 42, Italy 36,
   France 25 (light), Poland 16 (lightest). **Data is bound** via `axes.keys=code` →
-  `map-key-attr=DW_STATE_CODE` (ISO-3).
+  `map-key-attr=ISO_3_SOV` (the europe basemap's ISO-3 join key).
 - A proper **light→`#0072B2` blue sequential gradient** on regions and legend (16→66).
   **NOT black** — the bug the spike resolved.
 - Insight title, Eurostat source, and `aria-description` (alt = the insight) all present.

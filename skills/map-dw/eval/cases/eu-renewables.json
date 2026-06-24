@@ -2,8 +2,8 @@
   "id": "eu-renewables",
   "spec": {
     "mapType": "choropleth",
-    "basemap": "world-2019",
-    "mapKeyAttr": "DW_STATE_CODE",
+    "basemap": "europe-sovereign-states",
+    "mapKeyAttr": "ISO_3_SOV",
     "regionKey": "code",
     "valueColumn": "share",
     "data": "code,share\nFRA,25\nDEU,46\nESP,42\nITA,36\nPOL,16\nSWE,66",
@@ -11,5 +11,5 @@
     "altInsight": "Renewable electricity share ranges from 16% in Poland to 66% in Sweden across six EU countries",
     "source": { "name": "Eurostat" }
   },
-  "expect": { "basemap": "world-2019", "maxWarnings": 0 }
+  "expect": { "basemap": "europe-sovereign-states", "maxWarnings": 0 }
 }
