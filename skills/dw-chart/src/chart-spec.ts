@@ -11,6 +11,8 @@ export const OKABE_ITO = [
   "#000000",
 ] as const;
 
+// DW lists `waterfall` and `dual-axis` in /v3/visualizations but the create API rejects them
+// (400 Invalid visualization type) — excluded. 22 chart types actually producible.
 export const CHART_TYPES = [
   // single-series: >=1 label + >=1 value
   "column-chart",
@@ -21,7 +23,6 @@ export const CHART_TYPES = [
   "d3-donuts",
   "election-donut-chart",
   "d3-dot-plot",
-  "waterfall",
   "tables",
   // multi-series: >=1 label + >=2 value
   "grouped-column-chart",
@@ -35,7 +36,6 @@ export const CHART_TYPES = [
   "d3-multiple-donuts",
   // two-value: >=2 value columns
   "d3-scatter-plot",
-  "dual-axis",
   "d3-range-plot",
   "d3-arrow-plot",
   "d3-bars-bullet",

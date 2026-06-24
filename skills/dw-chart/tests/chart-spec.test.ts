@@ -57,7 +57,7 @@ describe("validateChartSpec", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors.join()).toMatch(/transpose/);
   });
-  it("accepts all 24 chart types", () => {
+  it("accepts all 22 supported chart types", () => {
     const { CHART_TYPES } = require("../src/chart-spec");
     for (const t of CHART_TYPES) {
       const data = "a,b,c\n1,2,3"; // 3 cols satisfies single + multi minimums
