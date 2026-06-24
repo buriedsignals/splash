@@ -25,6 +25,16 @@ produces. It never invents data; if no chart serves the story, it says so.
 4. Guardrails: **≤2 colours**; default single series to `#0072B2`; if the data is too complex for a clean
    chart, return `{ "decision": "no-chart", "reason": "..." }` instead of forcing one.
 
+## Guardrails (the code enforces these — propose within them)
+
+- **Type:** pick from the 22 supported types (single-series, multi-series, or two-value per the data shape).
+- **Sort:** for ranking intents (bars/columns where order matters), set `"sort": "desc"` — the producer sorts the CSV.
+- **Colours:** single-series → at most 2 Okabe-Ito colours (default `#0072B2`); multi-series → one Okabe-Ito colour per series in `seriesColors`, at most 8.
+- **Pie/donut:** at most 5 slices — if more, group into "Other" or choose bars.
+- **Annotations:** add a `text-annotation` for the key outlier or turning point ("annotations explain WHY").
+- **Title:** state the insight, not a label or a year range (the validator warns otherwise).
+- **Multi-series orientation:** when the CSV is `xCategory, seriesA, seriesB, …` and the x-category should be the axis, set `"transpose": true`.
+
 ## Self-check
 
 The emitted spec MUST pass `validateChartSpec` (run it via the dw-chart skill). Title and altInsight must

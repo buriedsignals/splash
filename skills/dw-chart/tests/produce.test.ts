@@ -14,6 +14,7 @@ const spec = JSON.parse(
 ) as ChartSpec;
 let id = "";
 let msId = "";
+let annId = "";
 
 describe("produceChart (real API)", () => {
   it("produces a published chart, an embed, and an owned PNG with conformance applied", async () => {
@@ -62,9 +63,32 @@ describe("produceChart (real API)", () => {
     );
     rmSync(out, { force: true });
   }, 60000);
+
+  it("produces a chart with a text annotation that lands on the live chart", async () => {
+    const annSpec = {
+      type: "d3-lines",
+      title: "Unemployment peaked in 2021",
+      data: "year,value\n2018,5.1\n2021,5.6\n2023,3.7",
+      baseColor: "#0072B2",
+      altInsight: "It peaked at 5.6% in 2021",
+      annotations: [{ text: "Peak", x: "2021", y: 5.6 }],
+    };
+    const out = join(tmpdir(), "atelier-annot.png");
+    const res = await produceChart(annSpec as any, out);
+    annId = res.chartId;
+    const r = await fetch(`https://api.datawrapper.de/v3/charts/${annId}`, {
+      headers: { Authorization: `Bearer ${process.env.DATAWRAPPER_API_TOKEN}` },
+    });
+    const chart = await r.json();
+    const notes = chart.metadata.visualize["text-annotations"];
+    expect(Array.isArray(notes)).toBe(true);
+    expect(notes[0].text).toBe("Peak");
+    rmSync(out, { force: true });
+  }, 60000);
 });
 
 afterAll(async () => {
   if (id) await deleteChart(id);
   if (msId) await deleteChart(msId);
+  if (annId) await deleteChart(annId);
 });

@@ -1,5 +1,6 @@
 import { validateChartSpec, type ChartSpec } from "./chart-spec";
 import { specToMetadata } from "./spec-to-metadata";
+import { sortCsv } from "./csv";
 import {
   createChart,
   setData,
@@ -24,7 +25,8 @@ export async function produceChart(
 
   const patch = specToMetadata(spec);
   const id = await createChart(spec.title, spec.type);
-  await setData(id, spec.data);
+  const csv = spec.sort ? sortCsv(spec.data, spec.sort) : spec.data;
+  await setData(id, csv);
   await patchChart(id, { type: patch.type, metadata: patch.metadata });
   const publicUrl = await publishChart(id);
   await exportPng(id, pngPath);

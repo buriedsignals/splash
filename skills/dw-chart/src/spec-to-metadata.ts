@@ -17,13 +17,23 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
     "source-url": spec.source?.url ?? "",
     "aria-description": spec.altInsight,
   };
-  if (spec.numberFormat) describe["number-format"] = spec.numberFormat;
+  describe["number-format"] = spec.numberFormat ?? "0,0.[00]";
 
   const visualize: Record<string, unknown> = {};
   if (spec.baseColor) visualize["base-color"] = spec.baseColor;
   if (spec.valueLabels !== undefined)
     visualize["value-labels"] = { show: spec.valueLabels };
   if (spec.seriesColors) visualize["custom-colors"] = spec.seriesColors;
+  if (spec.annotations && spec.annotations.length) {
+    visualize["text-annotations"] = spec.annotations.map((a) => ({
+      text: a.text,
+      x: a.x !== undefined ? String(a.x) : "",
+      y: a.y !== undefined ? String(a.y) : "",
+      bold: true,
+      color: "#333333",
+      align: "bl",
+    }));
+  }
 
   const patch: DwPatch = {
     title: spec.title,
