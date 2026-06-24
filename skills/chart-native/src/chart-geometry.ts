@@ -54,7 +54,11 @@ function trimZero(n: number): string {
   return Number.isInteger(r) ? String(r) : r.toFixed(1);
 }
 
-export function computeChartLayout(data: ChartData, dims: Dims): Layout {
+export function computeChartLayout(
+  data: ChartData,
+  dims: Dims,
+  xTickCount = 6,
+): Layout {
   if (!data.points.length) {
     throw new Error("computeChartLayout: data.points is empty");
   }
@@ -117,7 +121,7 @@ export function computeChartLayout(data: ChartData, dims: Dims): Layout {
   }
   const totalLength = cumLength[cumLength.length - 1];
 
-  const xTicks = (xScale.ticks(6) as (number | Date)[]).map((t) => ({
+  const xTicks = (xScale.ticks(xTickCount) as (number | Date)[]).map((t) => ({
     x: (xScale as (v: number | Date) => number)(t),
     label: isTime ? fmtYear(t as Date) : String(t),
   }));
@@ -211,6 +215,16 @@ export function revealHead(layout: Layout, progress: number): ScreenPoint {
 
 export function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
+/**
+ * Disney ease-in/out (cubic) — the SAME curve the Remotion video uses
+ * (`Easing.inOut(Easing.cubic)`), expressed as pure math so the interactive
+ * rAF driver and the video share one easing. No DOM, no clock.
+ */
+export function easeInOutCubic(t: number): number {
+  const p = clamp01(t);
+  return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
 }
 
 function round(n: number): number {

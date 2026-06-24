@@ -16,6 +16,7 @@ const page = await browser.newPage({
 });
 await page.goto(pathToFileURL(join(root, "dist/interactive/index.html")).href);
 await page.waitForSelector(".series-line");
+await page.waitForTimeout(1700); // let the intro reveal settle before hovering
 
 // hover the 3rd data point's invisible hit target (the COVID dip), then assert
 // the tooltip actually rendered before screenshotting.

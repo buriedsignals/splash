@@ -201,3 +201,22 @@ describe("clamp01", () => {
     expect(clamp01(1.5)).toBe(1);
   });
 });
+
+import { easeInOutCubic } from "../src/chart-geometry";
+
+describe("easeInOutCubic (shared by the interactive reveal and the video)", () => {
+  it("pins the endpoints exactly", () => {
+    expect(easeInOutCubic(0)).toBe(0);
+    expect(easeInOutCubic(1)).toBe(1);
+  });
+  it("is symmetric about the midpoint (0.5 -> 0.5)", () => {
+    expect(easeInOutCubic(0.5)).toBeCloseTo(0.5, 10);
+  });
+  it("clamps out-of-range input", () => {
+    expect(easeInOutCubic(-1)).toBe(0);
+    expect(easeInOutCubic(2)).toBe(1);
+  });
+  it("eases in: small t moves slower than linear", () => {
+    expect(easeInOutCubic(0.2)).toBeLessThan(0.2);
+  });
+});

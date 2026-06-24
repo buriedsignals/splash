@@ -4,7 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Chart</title>
-    <style>html,body{margin:0;padding:24px;background:#f4f4f4;display:flex;justify-content:center}</style>
+    <style>
+      html,body{margin:0;padding:24px;background:#f4f4f4}
+      /* #root fills the width so the responsive chart can measure its container.
+         The static build mounts a fixed-size chart, centered by margin auto. */
+      #root{width:100%;box-sizing:border-box}
+      #root > div{margin:0 auto}
+    </style>
   </head>
   <body>
     <div id="root"></div>
