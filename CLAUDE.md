@@ -107,3 +107,6 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - Root cause = trou KB : `chart-selection.md` + le guardrail transpose de `suggest-chart/SKILL.md` étaient ambigus sur « tendance multi-séries dans le temps ».
 - **Fix** (mergé) : `d3-lines` multi-colonnes SANS transpose pour les tendances temporelles ; transpose réservé aux stacked/grouped catégoriels. Re-vérifié via les skills → chart de tendance correct.
 - **Leçon clé** : le gate déterministe (`validateChartSpec`/`scoreSpec`) NE PEUT PAS attraper « spec valide mais sémantiquement faux pour la donnée ». Seul l'œil / le LLM-juge sur le rendu l'attrape. → toujours re-vérifier via les vrais skills + le rendu, pas à la main.
+
+## Backlog — petits fixes connus
+- **Annotation parfois coupée (rognée)** : sur certains charts, le `text-annotation` est tronqué hors-cadre (vu sur `town-growth` : « France peak » coupé en bas-droite). Cause probable : `align:"bl"` par défaut + position (`x`,`y`) près d'un bord, sans clamp dans la zone visible. Piste : dans `skills/dw-chart/src/spec-to-metadata.ts` (mapping `text-annotations`), choisir l'`align` selon la position (éviter de pousser le texte hors-cadre près des bords) et/ou ajouter un offset. Petit fix, non bloquant. À éprouver visuellement via les skills.
