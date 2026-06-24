@@ -1,0 +1,6 @@
+{
+  "id": "income-life",
+  "data": "income,life_expectancy\n12000,68\n18000,71\n26000,74\n34000,78\n45000,81\n60000,83",
+  "intent": "Is there a relationship between income and life expectancy?",
+  "expect": { "family": "correlation", "maxWarnings": 0 }
+}

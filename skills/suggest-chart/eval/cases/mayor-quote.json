@@ -1,0 +1,6 @@
+{
+  "id": "mayor-quote",
+  "data": "note\nThe mayor declined to comment on the budget overrun.",
+  "intent": "Visualise the mayor's refusal to comment.",
+  "expect": { "family": "none" }
+}

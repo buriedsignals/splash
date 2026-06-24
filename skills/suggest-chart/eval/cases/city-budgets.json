@@ -1,0 +1,6 @@
+{
+  "id": "city-budgets",
+  "data": "department,budget\nEducation,42\nRoads,31\nHealth,28\nCulture,12\nSecurity,9",
+  "intent": "Which departments get the biggest share of the city budget?",
+  "expect": { "family": "magnitude", "maxWarnings": 0 }
+}

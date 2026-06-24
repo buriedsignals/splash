@@ -1,0 +1,6 @@
+{
+  "id": "unemployment-trend",
+  "data": "year,value\n2018,5.1\n2019,4.8\n2020,6.2\n2021,5.4\n2022,4.3\n2023,3.7",
+  "intent": "How did the unemployment rate change from 2018 to 2023?",
+  "expect": { "family": "change-over-time", "maxWarnings": 0 }
+}
