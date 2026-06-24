@@ -15,6 +15,25 @@ produces. It never invents data; if no chart serves the story, it says so.
 
 - Data (CSV or a profile of it) + a one-line **intent** ("show the unemployment trend 2018-2023").
 
+## Runtime procedure
+
+② is the host agent. Execute these steps in order — do not skip the self-check.
+
+1. **Profile** the data: list columns, infer each type (numeric / categorical / temporal), cardinality,
+   and the row count. This fixes the data shape (single-series, multi-series, or two-value).
+2. **Choose** the type via `knowledge/references/chart-selection.md`: map intent → family → the *simplest*
+   type that serves it. When in doubt, bars/columns on a common baseline.
+3. **Fill** the `ChartSpec`, applying `knowledge/references/design-conformance.md` and the guardrails below:
+   `title` = the insight (sentence case, never a label or a year range); `sort:"desc"` for a ranking;
+   `seriesColors` (Okabe-Ito, one per series) when multi-series; `transpose:true` when the CSV is
+   `xCategory, seriesA, seriesB…` and the x-category must be the axis; one `annotation` for the key
+   outlier or turning point; `numberFormat` to strip noise; `altInsight` = the insight (WCAG).
+4. **Self-check**: the spec MUST pass `validateChartSpec` (via dw-chart). Read the returned `warnings` and
+   fix them — do not ignore them. A `title looks like a label` warning means rewrite the title as the insight.
+5. **Produce**: call `produceChart(spec, pngPath)` → an embed + an owned PNG fallback.
+6. **Or `no-chart`**: if no visual serves the data and intent (data too thin, or the intent is not a
+   visualisation question), emit `{ "decision": "no-chart", "reason": "..." }` instead of forcing a chart.
+
 ## How it decides
 
 1. Read `knowledge/references/chart-selection.md` → map **intent → DW type** (intent first, simplest type that serves it).

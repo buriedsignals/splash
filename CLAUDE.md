@@ -71,7 +71,8 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - Spec ① KB écrite (`docs/superpowers/specs/2026-06-23-knowledge-base-design.md`) — la cible complète.
 - **Tranche 1 (dw-chart) + Tranche 1.1 (22 types + garde-fous) : LIVRÉES + MERGÉES dans `main`.** 32 tests vraie API. Le moteur chart est complet et conforme.
 - **Spec ② suggester runtime écrit** (`docs/superpowers/specs/2026-06-23-suggester-runtime-design.md`) : ② = l'agent-hôte ; 1er cut `données+intention → ChartSpec` ; **harness d'éval** (scoreSpec déterministe + LLM-juge) = l'instrument du risque-produit. Design approuvé.
-- **PROCHAIN** : `writing-plans` sur le spec ② → exécution (le code = scoreSpec + family-types + cas + judge.md + la procédure runtime dans suggest-chart). Recommandé en **session fraîche** (cette session est très longue). Cuts suivants : `article → où/quel` ; puis maps ; puis vidéo.
+- **② suggester runtime + eval harness (1er cut) : LIVRÉ** sur branche `feat/suggester-runtime` (à reviewer, pas mergé). `suggest-chart/SKILL.md` a la procédure runtime (6 étapes + no-chart) ; `skills/suggest-chart/eval/` = `family-types.ts` (FAMILY_TYPES) + `score.ts` (scoreSpec) purs (8 tests bun:test) + 8 cas (dont 1 no-chart) + `judge.md` + `run.md`. **Baseline éval : pass 8/8, mean titleIsInsight 0.93, mean choiceSound 0.96** (`eval/baseline-report.md`) — au-dessus du seuil, pas d'itération nécessaire. Choix : eval sous `suggest-chart/` (mesure ②, pas le producteur). Les 32 tests dw-chart restent verts.
+- **PROCHAIN** : cuts suivants ② — `article → où/quel` ; puis maps ; puis vidéo.
 
 ## Conventions
 

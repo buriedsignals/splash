@@ -1,0 +1,6 @@
+{
+  "id": "cross-border-workers",
+  "data": "year,France,Switzerland\n2015,18,22\n2017,21,25\n2019,26,29\n2021,30,33\n2023,35,38",
+  "intent": "How did cross-border worker numbers grow on the French and Swiss sides since 2015?",
+  "expect": { "family": "change-over-time", "maxWarnings": 0 }
+}

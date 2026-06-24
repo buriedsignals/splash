@@ -1,0 +1,6 @@
+{
+  "id": "energy-mix",
+  "data": "source,share\nHydro,46\nNuclear,29\nSolar,14\nWind,11",
+  "intent": "What makes up the region's electricity supply?",
+  "expect": { "family": "part-to-whole", "maxWarnings": 0 }
+}
