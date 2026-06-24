@@ -1,0 +1,19 @@
+{
+  "id": "clinic-waits",
+  "article": "## The wait gets longer\n\nThe average wait for a first appointment at the regional clinic has climbed every year since 2019, from 11 days to 31 days in 2024.\n\nManagers blame a shortage of specialists; the regional health board says it is recruiting.",
+  "data": {
+    "waits.csv": "year,wait_days\n2019,11\n2020,14\n2021,19\n2022,24\n2023,28\n2024,31"
+  },
+  "expect": {
+    "opportunities": [
+      {
+        "claimMatches": ["wait", "2019"],
+        "dataTable": "waits.csv",
+        "dataColumns": ["year", "wait_days"]
+      }
+    ],
+    "minProposals": 1,
+    "maxProposals": 1,
+    "noChartClaims": ["recruiting"]
+  }
+}
