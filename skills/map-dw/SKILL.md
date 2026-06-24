@@ -74,6 +74,9 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
 `europe-sovereign-states`; US states → `us-states`; French points → a France basemap; only use
 `world-2019` for genuinely global data. A regional story on the world basemap is a *valid* spec but a
 *poor* map — a tiny cluster lost in empty grey. Pick the smallest basemap that contains all the data.
+For continental-US data prefer **`us-states-continental`** (not `us-states`): some basemap ids pass
+`validateMapSpec` but **500 on publish** (`us-states` does) — if a publish 500s, switch to the safe
+variant (`-continental`, or another id of the same extent).
 (Caught only by looking at the render, never by `validateMapSpec`.)
 
 ## Quick start
