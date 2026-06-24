@@ -134,3 +134,12 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - **MERGÉ** : symbol + locator ont maintenant un hover tooltip. Symbol = `visualize.tooltip {enabled, title:"{{col}}", body:"{{col}}", fields:{...}}` — **chaque `{{token}}` DOIT être déclaré dans `tooltip.fields` sinon vide** (≠ choropleth qui utilise `%REGION_NAME%`). Locator = `tooltip:{enabled:true}` par marqueur (le title s'affiche).
 - **LEÇON (4e du genre) : un PNG statique ne peut pas montrer un hover.** On avait validé les maps au rendu statique → angle mort sur l'interactif. Trouvé par Rémy en ouvrant les charts live. → Pour tout output **interactif**, vérifier le **comportement live au navigateur (Playwright hover + screenshot)**, pas juste le rendu ou les métadonnées.
 - Vérifié live : symbol https://datawrapper.dwcdn.net/Ud7sZ/1/ · locator https://datawrapper.dwcdn.net/YqI3y/1/ · captures hover dans `output-proof/` + Desktop.
+
+## Module unifié chart-native — MERGÉ (un composant → 3 formats) ★ jalon archi
+- **MERGÉ** : `skills/chart-native/` — **UN composant React+D3, piloté par `frame`** → **static + interactif + vidéo**. La vision « un module web → tous les formats » est prouvée.
+- **D3 = maths** (`chart-geometry.ts` pur, framework-free, porté du pilote chart-annotated, + `revealLine(layout, progress)` déterministe). **React = DOM** (car **Remotion = React only, PAS Svelte**). 3 dérivations : static (Vite build + Playwright snapshot), interactif (`vite-plugin-singlefile` → 1 HTML + tooltip), vidéo (Remotion composition `frame→Easing.inOut(cubic)→progress→le même composant`).
+- **Discipline Tom appliquée** : animation = fonction PURE de `frame` (pas d'horloge/random), valider 1 still avant le mp4, `--gl=angle`. Test-contrat `reveal-contract` : static(p=1) ≡ frame finale, repro par frame, pas de NaN sur 180 frames.
+- **Vérifié à l'œil sur les 3 sorties** (static PNG, hover interactif live, 4 frames vidéo extraites du mp4). Best-practices conformes (Okabe-Ito, titre-insight, label direct, nombres abrégés, source, alt).
+- **DW reste le fallback no-code rapide** (statique + interactif léger). chart-native = le chemin riche unifié.
+- **Différé** : généraliser le patron (cœur pur → 1 composant → 3 renderers) aux autres types de charts (line seul pour l'instant) ; puis les maps web (MapLibre → 3 formats).
+- Remotion : ~174 packages (node_modules gitignored), render via npx/node (la seule exception non-Bun acceptée).
