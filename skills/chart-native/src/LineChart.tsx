@@ -164,7 +164,19 @@ export function LineChart({
             padding: `4px ${padding.left}px 8px`,
           }}
         >
-          Source: {config.source.name}
+          Source:{" "}
+          {config.source.url ? (
+            <a
+              href={config.source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: COLORS.muted }}
+            >
+              {config.source.name}
+            </a>
+          ) : (
+            config.source.name
+          )}
         </div>
       </div>
     );
@@ -403,8 +415,13 @@ function ChartSvg({
               r={14}
               fill="transparent"
               style={{ cursor: "pointer" }}
+              tabIndex={0}
+              role="img"
+              aria-label={`${pt.rawX}: ${formatNumber(pt.rawY)} ${config.unit}`}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
+              onFocus={() => setHover(i)}
+              onBlur={() => setHover(null)}
             />
           ))}
         {interactive && hover !== null && (

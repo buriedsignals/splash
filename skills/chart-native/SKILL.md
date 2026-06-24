@@ -46,7 +46,12 @@ local http server for the screenshot because module scripts get `crossorigin` an
 
 Design conformance (`knowledge/references/design-conformance.md`) is baked into the component: insight
 title (sentence case), Okabe-Ito `#0072B2` single colour, direct label (no legend), abbreviated numbers
-(`10.4k`), source cited, `aria-label` = the insight.
+(`10.4k`), source cited (name + url, linked in the interactive build), `aria-label` = the insight. It is
+**enforced**, not just hand-baked: `src/conformance.ts` (`checkConformance`) is the native equivalent of
+dw-chart's `validateChartSpec` — `tests/conformance.test.ts` runs it on the shipped config + tokens
+(Okabe-Ito membership, real WCAG contrast ≥ 4.5:1, insight-shaped title, source name+url, direct label).
+Every new native chart must pass it. Interactive a11y: data points are keyboard-focusable
+(`tabindex`, `role`, per-point `aria-label`) and show the tooltip on focus, not just hover.
 
 ## How it works (the shape)
 
