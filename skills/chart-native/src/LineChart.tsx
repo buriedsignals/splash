@@ -18,6 +18,7 @@ import {
   revealHead,
   formatNumber,
   clamp01,
+  easeInOutCubic,
   easeOutCubic,
   stagger,
   type ChartData,
@@ -83,9 +84,11 @@ export function LineChart({
   const [hover, setHover] = useState<number | null>(null);
 
   // The motion build is staged inside ChartSvg as pure functions of the master
-  // `progress` (p): axes wipe in → line draws (head sweeps the x-labels in) →
-  // direct label slides in. Line drawing starts at p=0.28 so the axes land first.
-  const lineProgress = clamp01((p - 0.28) / 0.55); // 0.28 → 0.83
+  // `progress` (p, LINEAR time): axes wipe in → line draws (head sweeps the
+  // x-labels in) → direct label slides in. The line has its OWN ease-in-out over
+  // a wide window [0.30, 0.95] so it draws slowly and smoothly (soft start/stop),
+  // independent of the other phases — the master is linear, each phase eases itself.
+  const lineProgress = easeInOutCubic((p - 0.3) / 0.65); // window 0.30 → 0.95
 
   const svg = (
     <ChartSvg
@@ -257,8 +260,8 @@ function ChartSvg({
   const nY = layout.yTicks.length;
   // x-axis labels pop in (fade + rise) as the line's draw-head sweeps past them.
   const xLabelReveal = (tickX: number) => clamp01((head.x - tickX + 16) / 28);
-  // direct label slides in from the point as the line completes.
-  const labelOpacity = clamp01((p - 0.85) / 0.15);
+  // direct label slides in from the point just after the line completes.
+  const labelOpacity = clamp01((p - 0.92) / 0.08);
 
   return (
     <svg

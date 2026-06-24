@@ -84,12 +84,12 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| Slower / faster reveal | `durationInFrames` (180 = 6 s @30fps) | `remotion/src/Root.tsx` |
-| Hold before the line starts | `HOLD_IN` (0.08) | `remotion/src/LineReveal.tsx` |
-| Hold on the full chart at the end | `HOLD_OUT` (0.12) | `remotion/src/LineReveal.tsx` |
-| Easing curve | `Easing.inOut(Easing.cubic)` | `remotion/src/LineReveal.tsx` |
+| Slower / faster reveal (video) | `durationInFrames` (240 = 8 s @30fps) | `remotion/src/Root.tsx` |
+| Slower / faster reveal (interactive) | `durationMs` (2000) | `src/InteractiveLineChart.tsx` |
+| Blank hold before the build / hold on the complete chart at the end | `HOLD_IN` (0.02) / `HOLD_OUT` (0.1) | `remotion/src/LineReveal.tsx` |
+| Master timeline | LINEAR (each phase eases itself in `LineChart`) | `LineReveal.tsx` + `InteractiveLineChart.tsx` |
 | Line colour | `COLORS.line` (`#0072B2`) | `src/tokens.ts` |
-| Motion-build timing (axes wipe / line / label) | `stagger(...)` gridlines, `baseW` (p/0.18), `lineProgress` (0.28→0.83), x-labels swept by `head.x`, `labelOpacity` (0.85→1) | `LineChart.tsx` + `chart-geometry.ts` (`stagger`, `easeOutCubic`) |
+| Motion-build timing (axes wipe / line / label) | `stagger(...)` gridlines, `baseW` (p/0.18), line `easeInOutCubic` over [0.30, 0.95], x-labels swept by `head.x`, `labelOpacity` (0.92→1) | `LineChart.tsx` + `chart-geometry.ts` (`stagger`, `ease*`) |
 | Chart size (video/static) | `width`/`height` (840×480) | `Root.tsx` + snapshot scripts |
 | When the interactive reveal plays | `ANIMATE_ON` (`"scroll"` \| `"load"` \| `"none"`) | `src/mount.tsx` |
 | Interactive reveal duration | `durationMs` (1200) | `src/InteractiveLineChart.tsx` |

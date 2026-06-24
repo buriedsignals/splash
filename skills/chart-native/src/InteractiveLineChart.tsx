@@ -8,7 +8,7 @@
 // as the video (easeInOutCubic) so the motion feels identical across formats.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { LineChart, type ChartConfig } from "./LineChart";
-import { easeInOutCubic, clamp01 } from "./chart-geometry";
+import { clamp01 } from "./chart-geometry";
 
 /** When the intro reveal plays. A per-format knob (the journalist picks). */
 export type AnimateOn = "load" | "scroll" | "none";
@@ -37,7 +37,7 @@ function prefersReducedMotion(): boolean {
 export function InteractiveLineChart({
   config,
   animateOn = "scroll",
-  durationMs = 1200,
+  durationMs = 2000,
   height = 480,
   minWidth = 280,
 }: InteractiveLineChartProps) {
@@ -66,8 +66,9 @@ export function InteractiveLineChart({
     started.current = true;
     const start = performance.now();
     const tick = (now: number) => {
+      // LINEAR master time; each phase (axes/line/label) eases itself in LineChart.
       const t = clamp01((now - start) / durationMs);
-      setProgress(easeInOutCubic(t));
+      setProgress(t);
       if (t < 1) raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
