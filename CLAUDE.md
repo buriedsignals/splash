@@ -88,3 +88,9 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - ② : procédure runtime dans `suggest-chart/SKILL.md` ; éval `skills/suggest-chart/eval/` (scoreSpec pur + family-types + 8 cas + judge.md). Baseline auto-noté : 8/8 gate, 0.93/0.96 éditorial. **Lien ②→dw-chart prouvé live** (`eval/e2e-proof.md`, chart publié réel).
 - **Caveat honnête** : baseline auto-noté (② = juge), à re-valider sur des cas non écrits-pour-réussir.
 - **Prochains cuts** : ② `article → où/quel` (lecture d'article) ; puis le skill **map** (couche geo-prep commune + renderers static/interactif/vidéo) ; puis vidéo. Le seam `Spec→mapper→client→produce` est le template.
+
+## Cadrage 2026-06-23 — ON CONÇOIT POUR TOUTE PETITE NEWSROOM (pas Annemasse)
+**Décision Rémy, prioritaire :** Atelier se construit pour **toutes les petites rédactions, génériquement**. Annemasse = le livrable-pilote de la bourse, PAS une contrainte de design ni une dépendance de validation. **Ne PAS attendre de retours de Heidi/Annemasse.** Les corpus d'éval (ex. gold-standard du cut lecture-d'article) sont **rédigés par nous, sur des articles-types génériques, ancrés dans les best-practices (la KB)** — assumé auto-référentiel, mitigé par le grounding best-practice ; le harness est un instrument d'amélioration *relative*, pas de vérité absolue.
+
+## Cut ② lecture d'article — SPEC MERGÉ (design only)
+`docs/superpowers/specs/2026-06-23-suggester-article-reading-design.md`. Approche : ② lit `article+données` → `ProposalSet` de propositions vetoables (`claim + data + intent`, sans family) → chaque proposition acceptée alimente le runtime `data+intention→ChartSpec` déjà construit. ② **lie data↔claim lui-même**. Éval = `scoreProposalSet` (dataValid via validateChartSpec + provenanceOk + count + recall/precision lenients) + LLM-juge (rightPlace/rightDose/dataFit). **PROCHAIN : plan + build de la 1re tranche.**
