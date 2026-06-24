@@ -201,3 +201,66 @@ describe("clamp01", () => {
     expect(clamp01(1.5)).toBe(1);
   });
 });
+
+import { easeInOutCubic } from "../src/chart-geometry";
+
+describe("easeInOutCubic (shared by the interactive reveal and the video)", () => {
+  it("pins the endpoints exactly", () => {
+    expect(easeInOutCubic(0)).toBe(0);
+    expect(easeInOutCubic(1)).toBe(1);
+  });
+  it("is symmetric about the midpoint (0.5 -> 0.5)", () => {
+    expect(easeInOutCubic(0.5)).toBeCloseTo(0.5, 10);
+  });
+  it("clamps out-of-range input", () => {
+    expect(easeInOutCubic(-1)).toBe(0);
+    expect(easeInOutCubic(2)).toBe(1);
+  });
+  it("eases in: small t moves slower than linear", () => {
+    expect(easeInOutCubic(0.2)).toBeLessThan(0.2);
+  });
+});
+
+import { easeOutCubic, stagger } from "../src/chart-geometry";
+
+describe("easeOutCubic (chrome wipe-in easing)", () => {
+  it("pins endpoints and decelerates (fast start)", () => {
+    expect(easeOutCubic(0)).toBe(0);
+    expect(easeOutCubic(1)).toBe(1);
+    expect(easeOutCubic(0.2)).toBeGreaterThan(0.2); // ahead of linear early
+  });
+  it("clamps out-of-range", () => {
+    expect(easeOutCubic(-1)).toBe(0);
+    expect(easeOutCubic(5)).toBe(1);
+  });
+});
+
+describe("stagger (deterministic per-element sub-window)", () => {
+  it("element 0 leads, later elements lag at the same p", () => {
+    const p = 0.1;
+    expect(stagger(p, 0, 5, 0.02, 0.03, 0.22)).toBeGreaterThan(
+      stagger(p, 4, 5, 0.02, 0.03, 0.22),
+    );
+  });
+  it("every element reaches 1 by full progress", () => {
+    for (let i = 0; i < 5; i++) {
+      expect(stagger(1, i, 5, 0.02, 0.03, 0.22)).toBe(1);
+    }
+  });
+  it("nothing has started before its begin time", () => {
+    expect(stagger(0, 3, 5, 0.02, 0.03, 0.22)).toBe(0);
+  });
+});
+
+describe("x-tick labels never repeat a year (wide layouts)", () => {
+  const wide: Dims = {
+    width: 1600,
+    height: 480,
+    padding: { top: 16, right: 140, bottom: 52, left: 56 },
+  };
+  it("a high tick count yields unique year labels", () => {
+    const layout = computeChartLayout(data, wide, 14); // wide-screen tick count
+    const labels = layout.xTicks.map((t) => t.label);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+});

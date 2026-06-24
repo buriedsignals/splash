@@ -12,8 +12,8 @@ const mp4Out = process.argv[3] ?? "/tmp/native-line-reveal.mp4";
 const run = (args) =>
   execFileSync("npx", args, { stdio: "inherit", cwd: join(here, "..") });
 
-console.log("1/2 validating a still frame (frame 90) before the mp4…");
-run(["remotion", "still", remotion, "LineReveal", stillOut, "--frame=90", "--gl=angle"]);
+console.log("1/2 validating a still frame (frame 140) before the mp4…");
+run(["remotion", "still", remotion, "LineReveal", stillOut, "--frame=140", "--gl=angle"]);
 
 console.log("2/2 rendering the mp4…");
 run(["remotion", "render", remotion, "LineReveal", mp4Out,

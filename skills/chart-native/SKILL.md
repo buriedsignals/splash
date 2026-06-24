@@ -41,12 +41,17 @@ local http server for the screenshot because module scripts get `crossorigin` an
 | Geometry | **D3 in `src/chart-geometry.ts`** — framework-free | Scales/points/reveal are pure math, unit-tested with `bun:test`, reused by every format. No React coupling. |
 | Render | **React `src/LineChart.tsx`** (one component) | Remotion is React-only (Svelte does not work with Remotion). `progress` prop is the single animation input. |
 | Static | **Vite build + Playwright** (`scripts/snap-static.mjs`) | Render at progress=1, screenshot the chart node → PNG. |
-| Interactive | **Vite + `vite-plugin-singlefile`** (`INTERACTIVE=1`) | One embeddable HTML file with a hover tooltip; verified by driving the browser, not a static PNG. |
+| Interactive | **Vite + `vite-plugin-singlefile`** (`INTERACTIVE=1`) | One embeddable HTML file. Wrapped in `InteractiveLineChart` (browser-only): responsive re-layout (ResizeObserver) + an intro reveal (rAF, same easing as the video) + hover tooltip. Verified by driving the browser at several widths, not a static PNG. |
 | Video | **Remotion** (`remotion/`) wrapping the SAME component | `useCurrentFrame` → eased `progress` → `LineChart`. `npx remotion render --gl=angle`. |
 
 Design conformance (`knowledge/references/design-conformance.md`) is baked into the component: insight
 title (sentence case), Okabe-Ito `#0072B2` single colour, direct label (no legend), abbreviated numbers
-(`10.4k`), source cited, `aria-label` = the insight.
+(`10.4k`), source cited (name + url, linked in the interactive build), `aria-label` = the insight. It is
+**enforced**, not just hand-baked: `src/conformance.ts` (`checkConformance`) is the native equivalent of
+dw-chart's `validateChartSpec` — `tests/conformance.test.ts` runs it on the shipped config + tokens
+(Okabe-Ito membership, real WCAG contrast ≥ 4.5:1, insight-shaped title, source name+url, direct label).
+Every new native chart must pass it. Interactive a11y: data points are keyboard-focusable
+(`tabindex`, `role`, per-point `aria-label`) and show the tooltip on focus, not just hover.
 
 ## How it works (the shape)
 
@@ -84,23 +89,28 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| Slower / faster reveal | `durationInFrames` (180 = 6 s @30fps) | `remotion/src/Root.tsx` |
-| Hold before the line starts | `HOLD_IN` (0.08) | `remotion/src/LineReveal.tsx` |
-| Hold on the full chart at the end | `HOLD_OUT` (0.12) | `remotion/src/LineReveal.tsx` |
-| Easing curve | `Easing.inOut(Easing.cubic)` | `remotion/src/LineReveal.tsx` |
+| Slower / faster reveal (video) | `durationInFrames` (240 = 8 s @30fps) | `remotion/src/Root.tsx` |
+| Slower / faster reveal (interactive) | `durationMs` (2000) | `src/InteractiveLineChart.tsx` |
+| Blank hold before the build / hold on the complete chart at the end | `HOLD_IN` (0.02) / `HOLD_OUT` (0.1) | `remotion/src/LineReveal.tsx` |
+| Master timeline | LINEAR (each phase eases itself in `LineChart`) | `LineReveal.tsx` + `InteractiveLineChart.tsx` |
 | Line colour | `COLORS.line` (`#0072B2`) | `src/tokens.ts` |
-| When the direct label fades in | `0.85` threshold | `LineChart.tsx` `interpolateLabel` |
-| Chart size | `width`/`height` (840×480) | `Root.tsx` + snapshot scripts |
+| Motion-build timing (axes wipe / line / label) | `stagger(...)` gridlines, `baseW` (p/0.18), line `easeInOutCubic` over [0.30, 0.95], x-labels swept by `head.x`, `labelOpacity` (0.92→1) | `LineChart.tsx` + `chart-geometry.ts` (`stagger`, `ease*`) |
+| Chart size (video/static) | `width`/`height` (840×480) | `Root.tsx` + snapshot scripts |
+| When the interactive reveal plays | `ANIMATE_ON` (`"scroll"` \| `"load"` \| `"none"`) | `src/mount.tsx` |
+| Interactive reveal duration | `durationMs` (1200) | `src/InteractiveLineChart.tsx` |
+| Interactive chart height / min width | `height` (480) / `minWidth` (280) | `src/InteractiveLineChart.tsx` |
 
 ## Files
 
 - `src/chart-geometry.ts` — the framework-free geometry core (scales, path, deterministic reveal). Unit-tested.
-- `src/LineChart.tsx` — THE one React component, frame-driven by `progress`.
+- `src/LineChart.tsx` — THE one React component, frame-driven by `progress`. `responsive` prop switches between the fixed absolute layout (video/static) and a flow layout with width-aware ticks (interactive); geometry is identical.
+- `src/InteractiveLineChart.tsx` — browser-only wrapper: ResizeObserver re-layout + rAF intro reveal (`animateOn`, respects `prefers-reduced-motion`). The ONLY place a wall-clock lives; never imported by the video.
 - `src/tokens.ts` — Okabe-Ito palette + type scale.
 - `src/mount.tsx` — browser entry for the static + interactive builds.
 - `remotion/src/{Root,LineReveal}.tsx` + `remotion/index.ts` — the Remotion composition (video).
 - `scripts/{build-all,snap-static,snap-interactive,render-video}.mjs` — the three renderers.
+- `scripts/snap-responsive.mjs` — proof harness: screenshots the interactive build at 360/768/1100px (responsive) + an early frame (reveal from 0).
 - `assets/sample-data/series.json` — runnable sample (generic small-newsroom time series).
 - `tests/{chart-geometry,reveal-contract}.test.ts` — `bun:test` (geometry + the 3-format determinism contract).
-- `output-proof/` — the real artifacts: `static.png`, `interactive.html` + `interactive-hover.png`, `line-reveal.mp4` + 4 extracted frames + the validated still.
+- `output-proof/` — the real artifacts: `static.png`, `interactive.html` + `interactive-hover.png`, `responsive-{360,768,1100}.png` (re-layout proof) + `reveal-1-chrome.png` / `reveal-2-line.png` (motion build: gridlines wipe in staggered, the line draws and sweeps the x-labels in), `line-reveal.mp4` + 4 extracted frames + the validated still.
 - `references/architecture.md` — reveal math + Remotion frame-determinism discipline.

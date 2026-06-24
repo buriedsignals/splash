@@ -54,7 +54,11 @@ function trimZero(n: number): string {
   return Number.isInteger(r) ? String(r) : r.toFixed(1);
 }
 
-export function computeChartLayout(data: ChartData, dims: Dims): Layout {
+export function computeChartLayout(
+  data: ChartData,
+  dims: Dims,
+  xTickCount = 6,
+): Layout {
   if (!data.points.length) {
     throw new Error("computeChartLayout: data.points is empty");
   }
@@ -117,10 +121,15 @@ export function computeChartLayout(data: ChartData, dims: Dims): Layout {
   }
   const totalLength = cumLength[cumLength.length - 1];
 
-  const xTicks = (xScale.ticks(6) as (number | Date)[]).map((t) => ({
-    x: (xScale as (v: number | Date) => number)(t),
-    label: isTime ? fmtYear(t as Date) : String(t),
-  }));
+  // On wide layouts a high tick count makes scaleTime emit sub-year ticks; with
+  // a %Y label that renders the same year several times. Drop consecutive ticks
+  // that carry the same label so each year appears once.
+  const xTicks = (xScale.ticks(xTickCount) as (number | Date)[])
+    .map((t) => ({
+      x: (xScale as (v: number | Date) => number)(t),
+      label: isTime ? fmtYear(t as Date) : String(t),
+    }))
+    .filter((t, i, a) => i === 0 || t.label !== a[i - 1].label);
   const yTicks = yScale
     .ticks(5)
     .map((t) => ({ y: yScale(t), label: formatNumber(t) }));
@@ -211,6 +220,39 @@ export function revealHead(layout: Layout, progress: number): ScreenPoint {
 
 export function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
+/**
+ * Disney ease-in/out (cubic) — the SAME curve the Remotion video uses
+ * (`Easing.inOut(Easing.cubic)`), expressed as pure math so the interactive
+ * rAF driver and the video share one easing. No DOM, no clock.
+ */
+export function easeInOutCubic(t: number): number {
+  const p = clamp01(t);
+  return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+}
+
+/** Decelerating ease (fast start, soft landing) — for the chrome wipe-ins. */
+export function easeOutCubic(t: number): number {
+  const p = clamp01(t);
+  return 1 - Math.pow(1 - p, 3);
+}
+
+/**
+ * A staggered sub-window of the master progress. Element `i` of `count` starts
+ * at `i*stagger` and runs for `span`; returns its local eased 0→1. Pure — lets
+ * the motion build stagger gridlines/labels deterministically (video-safe).
+ */
+export function stagger(
+  p: number,
+  i: number,
+  count: number,
+  start: number,
+  stagger: number,
+  span: number,
+): number {
+  const begin = start + i * stagger;
+  return easeOutCubic((p - begin) / span);
 }
 
 function round(n: number): number {
