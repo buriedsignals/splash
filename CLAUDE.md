@@ -110,3 +110,6 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 
 ## Backlog — petits fixes connus
 - **Annotation parfois coupée (rognée)** : sur certains charts, le `text-annotation` est tronqué hors-cadre (vu sur `town-growth` : « France peak » coupé en bas-droite). Cause probable : `align:"bl"` par défaut + position (`x`,`y`) près d'un bord, sans clamp dans la zone visible. Piste : dans `skills/dw-chart/src/spec-to-metadata.ts` (mapping `text-annotations`), choisir l'`align` selon la position (éviter de pousser le texte hors-cadre près des bords) et/ou ajouter un offset. Petit fix, non bloquant. À éprouver visuellement via les skills.
+- **Collision label de série ↔ annotation** : sur un d3-lines, l'annotation de fin (« 31 days ») chevauche le label direct de la série (« wait_days »). Lié au fix annotation ci-dessus (placement/align). Trouvé via vérif-rendu sur `clinic-waits`.
+- **Unité non explicitée** : données en milliers/millions affichées brutes (« 1.8 » pour 1.8M, « 26 » pour 26k). Piste : ② devrait mettre l'unité dans `intro` (« en millions ») ou un suffixe de format. Trouvé sur `school-budget`/`town-growth`.
+- **Note qualité ②** : titres parfois avec coquille (« this years » sans apostrophe) — artefact de génération, à surveiller via le LLM-juge, pas un fix code.
