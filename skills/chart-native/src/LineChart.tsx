@@ -18,6 +18,8 @@ import {
   revealHead,
   formatNumber,
   clamp01,
+  easeOutCubic,
+  stagger,
   type ChartData,
   type Dims,
   type Layout,
@@ -80,12 +82,10 @@ export function LineChart({
 
   const [hover, setHover] = useState<number | null>(null);
 
-  // Staged reveal, all pure functions of the master `progress` so EVERY format
-  // (interactive + video) builds the whole chart from nothing:
-  //   chrome (axes/grid/labels) fades in → the line draws → the label fades in.
-  const chromeOpacity = clamp01(p / 0.2); // 0 → 0.2
-  const lineProgress = clamp01((p - 0.12) / 0.8); // 0.12 → 0.92
-  const labelOpacity = clamp01((p - 0.9) / 0.1); // 0.9 → 1
+  // The motion build is staged inside ChartSvg as pure functions of the master
+  // `progress` (p): axes wipe in → line draws (head sweeps the x-labels in) →
+  // direct label slides in. Line drawing starts at p=0.28 so the axes land first.
+  const lineProgress = clamp01((p - 0.28) / 0.55); // 0.28 → 0.83
 
   const svg = (
     <ChartSvg
@@ -93,9 +93,8 @@ export function LineChart({
       padding={padding}
       width={width}
       height={height}
+      p={p}
       lineProgress={lineProgress}
-      chromeOpacity={chromeOpacity}
-      labelOpacity={labelOpacity}
       config={config}
       interactive={interactive}
       hover={hover}
@@ -228,9 +227,8 @@ function ChartSvg({
   padding,
   width,
   height,
+  p,
   lineProgress,
-  chromeOpacity,
-  labelOpacity,
   config,
   interactive,
   hover,
@@ -240,9 +238,8 @@ function ChartSvg({
   padding: { top: number; right: number; bottom: number; left: number };
   width: number;
   height: number;
+  p: number;
   lineProgress: number;
-  chromeOpacity: number;
-  labelOpacity: number;
   config: ChartConfig;
   interactive: boolean;
   hover: number | null;
@@ -252,6 +249,16 @@ function ChartSvg({
   const revealed = revealLine(layout, lp);
   const head = revealHead(layout, lp);
   const lastPoint = layout.points[layout.points.length - 1];
+  const { innerWidth, innerHeight } = layout;
+
+  // --- motion build (all pure functions of the master progress `p`) ---
+  // baseline draws left→right first; gridlines wipe in, staggered top→bottom.
+  const baseW = innerWidth * easeOutCubic(p / 0.18);
+  const nY = layout.yTicks.length;
+  // x-axis labels pop in (fade + rise) as the line's draw-head sweeps past them.
+  const xLabelReveal = (tickX: number) => clamp01((head.x - tickX + 16) / 28);
+  // direct label slides in from the point as the line completes.
+  const labelOpacity = clamp01((p - 0.85) / 0.15);
 
   return (
     <svg
@@ -263,13 +270,15 @@ function ChartSvg({
     >
       <title>{config.title}</title>
       <g transform={`translate(${padding.left},${padding.top})`}>
-        {/* chrome: axes, grid, tick labels, baseline — fade in first */}
-        <g opacity={chromeOpacity}>
-          {layout.yTicks.map((t, i) => (
+        {/* gridlines: horizontal wipe from the left, staggered bottom→top */}
+        {layout.yTicks.map((t, i) => {
+          const w = stagger(p, nY - 1 - i, nY, 0.02, 0.03, 0.22);
+          const lo = stagger(p, nY - 1 - i, nY, 0.06, 0.03, 0.16);
+          return (
             <g key={`y${i}`}>
               <line
                 x1={0}
-                x2={layout.innerWidth}
+                x2={innerWidth * w}
                 y1={t.y}
                 y2={t.y}
                 stroke={COLORS.grid}
@@ -282,32 +291,41 @@ function ChartSvg({
                 textAnchor="end"
                 fontSize={TYPE.axis}
                 fill={COLORS.muted}
+                opacity={lo}
+                transform={`translate(${-(1 - lo) * 8},0)`}
               >
                 {t.label}
               </text>
             </g>
-          ))}
-          {layout.xTicks.map((t, i) => (
+          );
+        })}
+        {/* x labels: fade + rise, triggered by the sweeping draw-head */}
+        {layout.xTicks.map((t, i) => {
+          const o = xLabelReveal(t.x);
+          return (
             <text
               key={`x${i}`}
               x={t.x}
-              y={layout.innerHeight + 22}
+              y={innerHeight + 22}
               textAnchor="middle"
               fontSize={TYPE.axis}
               fill={COLORS.muted}
+              opacity={o}
+              transform={`translate(0,${(1 - o) * 8})`}
             >
               {t.label}
             </text>
-          ))}
-          <line
-            x1={0}
-            x2={layout.innerWidth}
-            y1={layout.innerHeight}
-            y2={layout.innerHeight}
-            stroke={COLORS.axis}
-            strokeWidth={1}
-          />
-        </g>
+          );
+        })}
+        {/* baseline draws left→right, first */}
+        <line
+          x1={0}
+          x2={baseW}
+          y1={innerHeight}
+          y2={innerHeight}
+          stroke={COLORS.axis}
+          strokeWidth={1}
+        />
 
         {revealed && (
           <path
@@ -341,7 +359,10 @@ function ChartSvg({
           </>
         )}
 
-        <g opacity={labelOpacity}>
+        <g
+          opacity={labelOpacity}
+          transform={`translate(${(1 - labelOpacity) * -12},0)`}
+        >
           <circle cx={lastPoint.x} cy={lastPoint.y} r={4} fill={COLORS.line} />
           <text
             x={lastPoint.x + 10}

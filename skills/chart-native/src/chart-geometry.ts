@@ -227,6 +227,29 @@ export function easeInOutCubic(t: number): number {
   return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
 }
 
+/** Decelerating ease (fast start, soft landing) — for the chrome wipe-ins. */
+export function easeOutCubic(t: number): number {
+  const p = clamp01(t);
+  return 1 - Math.pow(1 - p, 3);
+}
+
+/**
+ * A staggered sub-window of the master progress. Element `i` of `count` starts
+ * at `i*stagger` and runs for `span`; returns its local eased 0→1. Pure — lets
+ * the motion build stagger gridlines/labels deterministically (video-safe).
+ */
+export function stagger(
+  p: number,
+  i: number,
+  count: number,
+  start: number,
+  stagger: number,
+  span: number,
+): number {
+  const begin = start + i * stagger;
+  return easeOutCubic((p - begin) / span);
+}
+
 function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
