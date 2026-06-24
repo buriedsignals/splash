@@ -25,9 +25,10 @@ produces. It never invents data; if no chart serves the story, it says so.
    type that serves it. When in doubt, bars/columns on a common baseline.
 3. **Fill** the `ChartSpec`, applying `knowledge/references/design-conformance.md` and the guardrails below:
    `title` = the insight (sentence case, never a label or a year range); `sort:"desc"` for a ranking;
-   `seriesColors` (Okabe-Ito, one per series) when multi-series; `transpose:true` when the CSV is
-   `xCategory, seriesA, seriesB…` and the x-category must be the axis; one `annotation` for the key
-   outlier or turning point; `numberFormat` to strip noise; `altInsight` = the insight (WCAG).
+   `seriesColors` (Okabe-Ito, one per series) when multi-series; `transpose:true` ONLY for a
+   stacked/grouped **categorical** chart where the x-category must be the axis — **never for a line/time
+   trend** (a multi-series time trend is `d3-lines` with several value columns and NO transpose); one
+   `annotation` for the key outlier or turning point; `numberFormat` to strip noise; `altInsight` = the insight (WCAG).
 4. **Self-check**: the spec MUST pass `validateChartSpec` (via dw-chart). Read the returned `warnings` and
    fix them — do not ignore them. A `title looks like a label` warning means rewrite the title as the insight.
 5. **Produce**: call `produceChart(spec, pngPath)` → an embed + an owned PNG fallback.
@@ -52,7 +53,7 @@ produces. It never invents data; if no chart serves the story, it says so.
 - **Pie/donut:** at most 5 slices — if more, group into "Other" or choose bars.
 - **Annotations:** add a `text-annotation` for the key outlier or turning point ("annotations explain WHY").
 - **Title:** state the insight, not a label or a year range (the validator warns otherwise).
-- **Multi-series orientation:** when the CSV is `xCategory, seriesA, seriesB, …` and the x-category should be the axis, set `"transpose": true`.
+- **Multi-series orientation:** `transpose:true` is ONLY for stacked/grouped **categorical** charts (e.g. stacked `year, Coal, Gas, Renewables`) where the x-category, not the series, belongs on the axis. **Never transpose a line/time chart** — a multi-series time trend (`year, France, Switzerland`) is `d3-lines` with one line per column and NO transpose. `multiple-lines`/`multiple-columns` = deliberate small multiples (one panel per series), not a single trend.
 
 ## Self-check
 
