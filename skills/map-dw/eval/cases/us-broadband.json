@@ -1,0 +1,19 @@
+{
+  "id": "us-broadband",
+  "spec": {
+    "mapType": "choropleth",
+    "basemap": "us-states",
+    "mapKeyAttr": "STATE",
+    "regionKey": "state",
+    "valueColumn": "pct",
+    "data": "state,pct\nCA,94\nTX,88\nMS,76\nNY,93\nWV,79\nWA,95",
+    "title": "Broadband access lags in Mississippi and West Virginia",
+    "altInsight": "Household broadband access ranges from 76% in Mississippi to 95% in Washington",
+    "source": { "name": "FCC" },
+    "colorScale": [
+      { "color": "#deebf7", "position": 0 },
+      { "color": "#0072B2", "position": 1 }
+    ]
+  },
+  "expect": { "basemap": "us-states", "maxWarnings": 0 }
+}
