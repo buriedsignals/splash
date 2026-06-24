@@ -121,3 +121,11 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - **Règle basemap-fit** (trouvée au rendu, comme transpose) : le basemap doit **épouser l'étendue des données** (UE→`europe-sovereign-states`, US→`us-states`…), pas `world-2019` pour une histoire régionale. `validateMapSpec` ne l'attrape pas — **seul le rendu**.
 - **Différé** : symbol map + locator map (bindings différents). Le natif geo-prep (MapTiler/Cesium, Tom) = cut lourd séparé plus tard.
 - **Suite totale `main` : 72 tests** (32 dw-chart + 8 suggest-chart + 6 suggest-article + 26 map-dw).
+
+## Map DW — symbol + locator MERGÉS (famille DW complète)
+- **MERGÉ dans `main`** : `map-dw` couvre maintenant **choropleth + symbol + locator** (MapSpec = union discriminée). 54 tests map-dw, **100 au total**.
+- **Symbol map** (`d3-maps-symbols`) — par coordonnées, PAS region-join : `axes.lat`/`axes.lon` + **`axes.area` = colonne taille** (le champ qui manquait) + `axes.values` = couleur. (Mon spike échouait car j'utilisais le binding choropleth.)
+- **Locator map** (`locator-map`) — marqueurs dans `visualize.markers` (`{type:"point", coordinates:[lng,lat], title, markerColor, icon}`), pas de data table ; le mapper calcule `view.center`+`view.zoom` (`fit:false`) sinon ça cadre le monde entier (bug attrapé au rendu seulement).
+- **Footgun basemap** : `us-states` valide mais **500 à la publication** → préférer `us-states-continental`. Noté dans SKILL.md.
+- **Vérifié via le vrai skill + rendu** sur des cas neufs (France symbol, Arve locator, US-tech symbol). e2e live : symbol https://datawrapper.dwcdn.net/39yaG/1/ · locator https://datawrapper.dwcdn.net/Jb5NP/1/
+- **Toute la famille map DW (light) est faite.** Reste différé : le natif geo-prep (MapTiler/Cesium — scrolly/3D/explorable, le chemin de Tom).
