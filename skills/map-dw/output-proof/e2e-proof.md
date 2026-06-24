@@ -86,6 +86,34 @@ Produced via `produceMap` from the generic `eval/cases/arve-sites.json` case.
 
 ---
 
+# Live e2e proof — hover tooltips (symbol + locator)
+
+Choropleth already had a working tooltip (`%REGION_NAME%` / `%REGION_VALUE%`). Symbol set NO
+tooltip and locator markers had `tooltip:{enabled:false}`, so neither showed anything on hover.
+Both are now fixed and **verified LIVE in a real browser (Playwright hover + screenshot)** — a
+static PNG cannot show a tooltip, which is exactly why the gap was missed before.
+
+**Symbol** (`d3-maps-symbols`) — produced via the real `produceMap`. publicUrl:
+https://datawrapper.dwcdn.net/Ud7sZ/1/ · screenshot: `tooltip-symbol.png` (this folder).
+- Resolved config (in `metadata.visualize.tooltip`):
+  `{ enabled:true, title:"{{ city }}", body:"{{ population }}", fields:{ city:"city", population:"population" } }`.
+- Symbol maps reference **DATA COLUMNS via DW mustache `{{ column }}`** — NOT `%REGION%` (that is
+  choropleth-only). Each token MUST be declared in `tooltip.fields` ({ token: column }) or it renders
+  blank. `title` = `labelColumn` (place name), else the size column; `body` = the size column.
+- Symbols draw on a **CANVAS** (no `<circle>` in the DOM), so the browser check hovers by pixel
+  position over the canvas. Hovering Paris showed a tooltip box reading **"Paris / 2100"** — captured
+  in `tooltip-symbol.png`.
+
+**Locator** (`locator-map`) — produced via the real `produceMap`. publicUrl:
+https://datawrapper.dwcdn.net/YqI3y/1/ · screenshot: `tooltip-locator.png` (this folder).
+- Resolved config: each marker now carries `tooltip:{ enabled:true }` (was `{enabled:false}`). The
+  marker `title` shows on hover.
+- Markers are `maplibregl-marker` DOM elements. The browser check proved causation: **zero**
+  `[class*=tooltip]` elements existed BEFORE hover; hovering the Annemasse pin spawned exactly one
+  `tooltip-text-wrapper` element reading **"Annemasse"** — captured in `tooltip-locator.png`.
+
+The deliverable was the SCREENSHOT showing the hover tooltip, not the metadata being present.
+
 ## Caveat
 
 The eval corpus is self-authored and grounded in best-practice — a relative-improvement instrument,
