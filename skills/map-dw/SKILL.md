@@ -55,7 +55,7 @@ and NEVER a `stops` string. (Also: SVG/PDF export is paid → the owned fallback
 ## Quick start
 
 1. Build a `MapSpec` (see `eval/cases/eu-renewables.json`). Pick a basemap from `GET /v3/basemaps`
-   and its join key from `GET /v3/basemaps/{id}` → `meta.keys[].value` (the `map-key-attr`).
+   and its join key from `GET /v3/basemaps/{id}` → `meta.keys[].value (some basemaps expose it at top-level `keys[].value`)` (the `map-key-attr`).
 2. `set -a; source /atelier/.env; set +a` (token).
 3. `produceMap(spec, 'out.png')`.
 
