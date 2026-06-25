@@ -233,34 +233,52 @@ function ScatterSvg({
           ? [outlier]
           : [];
 
-  // Collision-aware placement: take candidates by priority (highest value first),
-  // place each beside its dot (flipped left near the right edge), and SKIP any
-  // label whose box would overlap an already-placed one or leave the plot. Fewer
-  // readable labels beat all-overlapping ones — and it degrades gracefully on
-  // narrow embeds. (Box width is estimated from text length; no DOM measure.)
-  const charW = TYPE.axis * 0.58;
-  const lh = 16;
-  const boxes: { x0: number; x1: number; y0: number; y1: number }[] = [];
+  // Collision-aware placement. Obstacles start as EVERY dot (a label must not sit
+  // on a neighbouring bubble), plus each label already placed. Take candidates by
+  // priority (highest value first); try the right of the dot, then the left; if
+  // neither box is clear and in-bounds, SKIP the label. Fewer readable labels
+  // beat overlapping ones; degrades gracefully (dense clusters keep only the
+  // well-separated). Box sizes are estimated (no DOM measure).
+  type Box = { x0: number; x1: number; y0: number; y1: number };
+  const charW = TYPE.axis * 0.6;
+  const lh = 18; // label box height (text + breathing room)
+  const padX = 3;
+  const overlaps = (a: Box, b: Box) =>
+    a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
+  const obstacles: Box[] = points.map((pt) => ({
+    x0: pt.x - pt.r,
+    x1: pt.x + pt.r,
+    y0: pt.y - pt.r,
+    y1: pt.y + pt.r,
+  }));
   const placedLabels: { idx: number; x: number; anchor: "start" | "end" }[] =
     [];
   for (const idx of [...candidates].sort(
     (a, b) => points[b].rawY - points[a].rawY,
   )) {
     const pt = points[idx];
-    const w = (pt.label?.length ?? 0) * charW;
-    const flip = pt.x + pt.r + 6 + w > innerWidth;
-    const x = flip ? pt.x - pt.r - 6 : pt.x + pt.r + 6;
-    const x0 = flip ? x - w : x;
-    const x1 = flip ? x : x + w;
-    const y0 = pt.y - lh / 2;
-    const y1 = pt.y + lh / 2;
-    if (x0 < 0 || x1 > innerWidth || y0 < 0 || y1 > innerHeight) continue;
-    const hit = boxes.some(
-      (b) => x0 < b.x1 && x1 > b.x0 && y0 < b.y1 && y1 > b.y0,
-    );
-    if (hit) continue;
-    boxes.push({ x0, x1, y0, y1 });
-    placedLabels.push({ idx, x, anchor: flip ? "end" : "start" });
+    const w = (pt.label?.length ?? 0) * charW + padX * 2;
+    let chosen: { x: number; anchor: "start" | "end"; box: Box } | null = null;
+    for (const flip of [false, true]) {
+      const x = flip ? pt.x - pt.r - 6 : pt.x + pt.r + 6;
+      const x0 = flip ? x - w : x;
+      const x1 = flip ? x : x + w;
+      const box: Box = { x0, x1, y0: pt.y - lh / 2, y1: pt.y + lh / 2 };
+      if (
+        box.x0 < 0 ||
+        box.x1 > innerWidth ||
+        box.y0 < 0 ||
+        box.y1 > innerHeight
+      )
+        continue;
+      if (obstacles.some((o) => overlaps(box, o))) continue;
+      chosen = { x, anchor: flip ? "end" : "start", box };
+      break;
+    }
+    if (chosen) {
+      obstacles.push(chosen.box);
+      placedLabels.push({ idx, x: chosen.x, anchor: chosen.anchor });
+    }
   }
 
   return (
