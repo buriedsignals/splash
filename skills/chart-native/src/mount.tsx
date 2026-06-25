@@ -9,9 +9,12 @@ import { BarChart, type BarConfig } from "./BarChart";
 import { InteractiveBarChart } from "./InteractiveBarChart";
 import { ScatterChart, type ScatterConfig } from "./ScatterChart";
 import { InteractiveScatterChart } from "./InteractiveScatterChart";
+import { PieChart, type PieConfig } from "./PieChart";
+import { InteractivePieChart } from "./InteractivePieChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
+import pieSample from "../assets/sample-data/pie.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -23,7 +26,16 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "scatter") {
+if (chart === "pie") {
+  const config = pieSample as unknown as PieConfig;
+  root.render(
+    interactive ? (
+      <InteractivePieChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <PieChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "scatter") {
   const config = scatterSample as unknown as ScatterConfig;
   root.render(
     interactive ? (

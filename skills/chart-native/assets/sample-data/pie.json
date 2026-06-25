@@ -1,0 +1,17 @@
+{
+  "title": "The city covers nearly three-fifths of the library's funding",
+  "source": {
+    "name": "Riverton city open data",
+    "url": "https://data.riverton.gov/libraries"
+  },
+  "unit": "annual funding",
+  "labelField": "source",
+  "valueField": "amount",
+  "donut": true,
+  "rows": [
+    { "source": "City grant", "amount": 1160000 },
+    { "source": "State grant", "amount": 360000 },
+    { "source": "Donations", "amount": 280000 },
+    { "source": "Fees", "amount": 200000 }
+  ]
+}

@@ -169,3 +169,29 @@ export function checkScatterConformance(
   if (!input.yLabel?.trim()) v.push("missing y-axis label (what y means)");
   return v;
 }
+
+/**
+ * L2 — PIE / DONUT: global rules + the part-to-whole musts — at most 5 slices
+ * (beyond that angles blur → use bars), and every slice colour in the Okabe-Ito
+ * set (the global ≤2-colour rule relaxes to "few CVD-safe hues" for pies).
+ */
+export function checkPieConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    sliceCount: number;
+    sliceColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: { data: input.sliceColors[0] ?? "#0072B2", text: textColors.text, bg: textColors.bg },
+  });
+  if (input.sliceCount > 5)
+    v.push(`pie has ${input.sliceCount} slices (> 5) — group into "Other" or use bars`);
+  for (const c of input.sliceColors)
+    if (!isOkabeIto(c)) v.push(`slice colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
