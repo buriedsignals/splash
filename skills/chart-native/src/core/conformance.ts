@@ -242,3 +242,43 @@ export function checkStackedBarConformance(
       v.push(`series colour ${c} is not in the Okabe-Ito set`);
   return v;
 }
+
+/**
+ * L2 — SLOPE: global rules + the slope musts. POSITION encoding → it does NOT
+ * inherit the bar baseline-0 rule (a zoomed y-range is correct). Adds: both
+ * period captions present, the accent (editorial) colour in the Okabe-Ito set,
+ * and the ≤2-colour rule — a neutral CONTEXT line + ONE accent (slope.md rule 4).
+ * The neutral context is scaffolding (like the axis), exempt from palette
+ * membership but still counted toward the ≤2-colour cap.
+ */
+export function checkSlopeConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    leftPeriod?: string;
+    rightPeriod?: string;
+    accentColor: string;
+    lineColors: string[]; // every distinct line colour (context + accent)
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.accentColor,
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.leftPeriod?.trim()) v.push("missing left period caption");
+  if (!input.rightPeriod?.trim()) v.push("missing right period caption");
+  if (!isOkabeIto(input.accentColor))
+    v.push(`accent colour ${input.accentColor} is not in the Okabe-Ito set`);
+  const distinct = new Set(input.lineColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 2)
+    v.push(
+      `slope uses ${distinct.size} line colours (> 2) — keep a neutral context + one accent`,
+    );
+  return v;
+}

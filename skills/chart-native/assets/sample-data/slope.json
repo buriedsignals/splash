@@ -1,0 +1,21 @@
+{
+  "title": "Unemployment fell in every district except Easton",
+  "unit": "% unemployed, working-age",
+  "labelField": "district",
+  "leftField": "y2019",
+  "rightField": "y2024",
+  "leftPeriod": "2019",
+  "rightPeriod": "2024",
+  "highlightLabel": "Easton",
+  "source": {
+    "name": "Riverton labour market survey",
+    "url": "https://example.org/riverton-labour"
+  },
+  "rows": [
+    { "district": "Southbank", "y2019": 9.0, "y2024": 5.5 },
+    { "district": "Northgate", "y2019": 8.1, "y2024": 5.2 },
+    { "district": "Westhill", "y2019": 7.4, "y2024": 4.8 },
+    { "district": "Riverside", "y2019": 6.9, "y2024": 4.1 },
+    { "district": "Easton", "y2019": 5.2, "y2024": 6.3 }
+  ]
+}
