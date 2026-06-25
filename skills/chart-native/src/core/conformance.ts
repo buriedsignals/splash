@@ -322,3 +322,39 @@ export function checkSlopeConformance(
     );
   return v;
 }
+
+/**
+ * L2 — DUMBBELL / range plot: global rules + the dumbbell musts. POSITION
+ * encoding → does NOT inherit the bar baseline-0 rule (a zoomed range is
+ * correct). Adds: both series labels present (the legend key), and the two dot
+ * colours both in the Okabe-Ito set with ≤2 distinct hues (the neutral connector
+ * is scaffolding, exempt from palette membership).
+ */
+export function checkDumbbellConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    leftLabel?: string;
+    rightLabel?: string;
+    dotColors: string[]; // the two endpoint colours
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.dotColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.leftLabel?.trim()) v.push("missing left series label");
+  if (!input.rightLabel?.trim()) v.push("missing right series label");
+  const distinct = new Set(input.dotColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 2)
+    v.push(`dumbbell uses ${distinct.size} dot colours (> 2)`);
+  for (const c of input.dotColors)
+    if (!isOkabeIto(c)) v.push(`dot colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}

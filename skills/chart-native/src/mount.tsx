@@ -17,6 +17,8 @@ import { SlopeChart, type SlopeConfig } from "./SlopeChart";
 import { InteractiveSlopeChart } from "./InteractiveSlopeChart";
 import { GroupedBarChart, type GroupedConfig } from "./GroupedBarChart";
 import { InteractiveGroupedBarChart } from "./InteractiveGroupedBarChart";
+import { DumbbellChart, type DumbbellConfig } from "./DumbbellChart";
+import { InteractiveDumbbellChart } from "./InteractiveDumbbellChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -24,6 +26,7 @@ import pieSample from "../assets/sample-data/pie.json";
 import stackedSample from "../assets/sample-data/stacked.json";
 import slopeSample from "../assets/sample-data/slope.json";
 import groupedSample from "../assets/sample-data/grouped.json";
+import dumbbellSample from "../assets/sample-data/dumbbell.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -35,7 +38,16 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "grouped") {
+if (chart === "dumbbell") {
+  const config = dumbbellSample as unknown as DumbbellConfig;
+  root.render(
+    interactive ? (
+      <InteractiveDumbbellChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <DumbbellChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "grouped") {
   const config = groupedSample as unknown as GroupedConfig;
   root.render(
     interactive ? (

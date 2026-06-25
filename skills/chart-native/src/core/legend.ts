@@ -23,10 +23,13 @@ export function layoutLegend(
   yTop: number,
   charW: number,
   rowH: number,
+  // scales the chip + gaps to match a scaled (square/portrait) rendering; the
+  // caller already scales charW/rowH. Default 1 keeps unscaled callers unchanged.
+  scale = 1,
 ): { items: LegendItem[]; rows: number } {
-  const chip = 13;
-  const gapAfterChip = 6;
-  const gapBetween = 18;
+  const chip = 13 * scale;
+  const gapAfterChip = 6 * scale;
+  const gapBetween = 18 * scale;
   const items: LegendItem[] = [];
   let x = x0;
   let row = 0;
