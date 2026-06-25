@@ -27,6 +27,9 @@ export interface ScatterConfig {
   labelField?: string;
   xLabel: string; // axis title — what x means
   yLabel: string; // axis title — what y means
+  /** which dots get a text label. "auto" (default) = all when ≤12 named points,
+   *  else just the outlier. "all" | "outliers" | "none" force it. */
+  labelPoints?: "auto" | "all" | "outliers" | "none";
   rows: Record<string, string | number>[];
 }
 
@@ -211,12 +214,24 @@ function ScatterSvg({
   const popP = (i: number) => stagger(p, xRank[i], n, 0.18, 0.5 / n, 0.4);
   // a mild bloom: overshoot mid-pop, settle to 1
   const bloom = (s: number) => s * (1 + 0.16 * Math.sin(clamp01(s) * Math.PI));
-  // the headline outlier = the max-y point; its label fades in last
+  const labelOpacity = clamp01((p - 0.85) / 0.15);
+
+  // Which points to label. With few named points (≤12) a static can't rely on
+  // hover, so label them ALL (scatter.md "label the few that matter" → here the
+  // few IS all). With many, label only the headline outlier to avoid clutter.
+  const strategy = config.labelPoints ?? "auto";
   const outlier = points.reduce(
     (mi, pt, i, a) => (pt.rawY > a[mi].rawY ? i : mi),
     0,
   );
-  const labelOpacity = clamp01((p - 0.85) / 0.15);
+  const labeled: number[] =
+    strategy === "none"
+      ? []
+      : strategy === "all" || (strategy === "auto" && n <= 12)
+        ? points.map((pt, i) => (pt.label ? i : -1)).filter((i) => i >= 0)
+        : points[outlier]?.label
+          ? [outlier]
+          : [];
 
   return (
     <svg
@@ -331,27 +346,27 @@ function ScatterSvg({
           );
         })}
 
-        {/* the outlier label, fades in last — flips to the left of the dot when
+        {/* point labels (fade in last) — each flips to the left of its dot when
             it would overflow the right edge (narrow embeds) */}
-        {points[outlier]?.label &&
-          (() => {
-            const pt = points[outlier];
-            const flip = pt.x + pt.r + 70 > innerWidth;
-            return (
-              <text
-                x={flip ? pt.x - pt.r - 6 : pt.x + pt.r + 6}
-                y={pt.y}
-                dy="0.32em"
-                textAnchor={flip ? "end" : "start"}
-                fontSize={TYPE.axis}
-                fontWeight={600}
-                fill={COLORS.line}
-                opacity={labelOpacity}
-              >
-                {pt.label}
-              </text>
-            );
-          })()}
+        {labeled.map((idx) => {
+          const pt = points[idx];
+          const flip = pt.x + pt.r + 70 > innerWidth;
+          return (
+            <text
+              key={`lbl${idx}`}
+              x={flip ? pt.x - pt.r - 6 : pt.x + pt.r + 6}
+              y={pt.y}
+              dy="0.32em"
+              textAnchor={flip ? "end" : "start"}
+              fontSize={TYPE.axis}
+              fontWeight={600}
+              fill={COLORS.line}
+              opacity={labelOpacity}
+            >
+              {pt.label}
+            </text>
+          );
+        })}
       </g>
     </svg>
   );
