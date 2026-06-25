@@ -19,6 +19,7 @@ import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
+import { placeLabels } from "./core/labels";
 
 export interface ScatterConfig {
   title: string; // the insight (sentence case)
@@ -191,118 +192,31 @@ function ScatterSvg({
           ? [outlier]
           : [];
 
-  // Collision-aware placement. Obstacles start as EVERY dot (a label must not sit
-  // on a neighbouring bubble), plus each placed label. For each candidate (by
-  // priority = highest value first) try four positions around its dot —
-  // right, left, above, below — and take the first that is clear and in-bounds;
-  // if none is, SKIP it. Readable-but-fewer beats overlapping. (Boxes estimated.)
-  type Box = { x0: number; x1: number; y0: number; y1: number };
-  const charW = ts.axis * 0.6;
-  const lh = 18 * sc;
-  const padX = 3;
-  const overlaps = (a: Box, b: Box) =>
-    a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
-  const obstacles: Box[] = points.map((pt) => ({
-    x0: pt.x - pt.r,
-    x1: pt.x + pt.r,
-    y0: pt.y - pt.r,
-    y1: pt.y + pt.r,
-  }));
-  type Leader = { x1: number; y1: number; x2: number; y2: number };
-  type Pos = {
-    x: number;
-    y: number;
-    anchor: "start" | "middle" | "end";
-    box: Box;
-    leader?: Leader;
-  };
-  const placedLabels: {
-    idx: number;
-    x: number;
-    y: number;
-    anchor: "start" | "middle" | "end";
-    leader?: Leader;
-  }[] = [];
-  // build the candidate positions for one point: the 4 ADJACENT spots first
-  // (no connector), then OFFSET spots with a short leader line into the empty
-  // space above/below the cloud (best practice for dense clusters).
-  let curW = 0;
-  const positionsFor = (pt: ScatterPoint): Pos[] => {
-    const ww = curW;
-    const adj = (
-      x: number,
-      y: number,
-      anchor: "start" | "middle" | "end",
-      x0: number,
-    ): Pos => ({
-      x,
-      y,
-      anchor,
-      box: { x0, x1: x0 + ww, y0: y - lh / 2, y1: y + lh / 2 },
-    });
-    const off = (
-      x: number,
-      y: number,
-      anchor: "start" | "middle" | "end",
-      x0: number,
-      leader: Leader,
-    ): Pos => ({
-      x,
-      y,
-      anchor,
-      box: { x0, x1: x0 + ww, y0: y - lh / 2, y1: y + lh / 2 },
-      leader,
-    });
-    const r = pt.r;
-    return [
-      // adjacent (no leader)
-      adj(pt.x + r + 6, pt.y, "start", pt.x + r + 6),
-      adj(pt.x - r - 6, pt.y, "end", pt.x - r - 6 - ww),
-      adj(pt.x, pt.y - r - 12, "middle", pt.x - ww / 2),
-      adj(pt.x, pt.y + r + 12, "middle", pt.x - ww / 2),
-      // offset with a SHORT vertical leader into the empty space just above /
-      // below the cloud. Kept short on purpose: if neither fits, skip rather
-      // than draw an over-long connector reaching the axis.
-      off(pt.x, pt.y - r - 28, "middle", pt.x - ww / 2, {
-        x1: pt.x,
-        y1: pt.y - r,
-        x2: pt.x,
-        y2: pt.y - r - 28 + lh / 2,
-      }),
-      off(pt.x, pt.y + r + 28, "middle", pt.x - ww / 2, {
-        x1: pt.x,
-        y1: pt.y + r,
-        x2: pt.x,
-        y2: pt.y + r + 28 - lh / 2,
-      }),
-    ];
-  };
-  for (const idx of [...candidates].sort(
-    (a, b) => points[b].rawY - points[a].rawY,
-  )) {
-    const pt = points[idx];
-    curW = (pt.label?.length ?? 0) * charW + padX * 2;
-    // Labels stay strictly INSIDE the plot — never in the padding (axis text
-    // lives there). First clear, in-bounds position wins; if none, SKIP.
-    const chosen = positionsFor(pt).find(
-      (pos) =>
-        pos.box.x0 >= 0 &&
-        pos.box.x1 <= innerWidth &&
-        pos.box.y0 >= 0 &&
-        pos.box.y1 <= innerHeight &&
-        !obstacles.some((o) => overlaps(pos.box, o)),
-    );
-    if (chosen) {
-      obstacles.push(chosen.box);
-      placedLabels.push({
-        idx,
-        x: chosen.x,
-        y: chosen.y,
-        anchor: chosen.anchor,
-        leader: chosen.leader,
-      });
-    }
-  }
+  // Label placement is a GLOBAL concern → core/labels.placeLabels guarantees the
+  // invariant (in-bounds, no overlap with a bubble or another label). Scatter
+  // only supplies the TYPE-SPECIFIC inputs: which points to label, the marks to
+  // avoid (every bubble), and the plot bounds.
+  const placedLabels = placeLabels(
+    candidates.map((idx) => ({
+      id: idx,
+      text: points[idx].label ?? "",
+      ax: points[idx].x,
+      ay: points[idx].y,
+      r: points[idx].r,
+      priority: points[idx].rawY,
+    })),
+    points.map((pt) => ({
+      x0: pt.x - pt.r,
+      x1: pt.x + pt.r,
+      y0: pt.y - pt.r,
+      y1: pt.y + pt.r,
+    })),
+    {
+      bounds: { x0: 0, x1: innerWidth, y0: 0, y1: innerHeight },
+      charW: ts.axis * 0.6,
+      lh: 18 * sc,
+    },
+  );
 
   return (
     <svg
@@ -419,8 +333,8 @@ function ScatterSvg({
 
         {/* point labels (fade in last) — collision-placed; offset labels in a
             dense cluster get a thin LEADER LINE back to their dot */}
-        {placedLabels.map(({ idx, x, y, anchor, leader }) => (
-          <g key={`lbl${idx}`} opacity={labelOpacity}>
+        {placedLabels.map(({ id, x, y, anchor, leader }) => (
+          <g key={`lbl${id}`} opacity={labelOpacity}>
             {leader && (
               <line
                 x1={leader.x1}
@@ -441,7 +355,7 @@ function ScatterSvg({
               fontWeight={600}
               fill={COLORS.line}
             >
-              {points[idx].label}
+              {points[Number(id)].label}
             </text>
           </g>
         ))}
