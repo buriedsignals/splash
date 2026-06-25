@@ -70,9 +70,14 @@ export function LineChart({
   // Fixed layout reserves 64px at the top for the in-box title; responsive
   // moves the title OUT of the SVG (into normal flow). On a square/portrait
   // video canvas, resolveFrame scales the type/margins and centres the plot.
+  // Right gutter is SIZED to the direct label so it can never overflow the
+  // chart — the label is drawn at the line's end + a gap, inside this margin.
+  // (resolveFrame scales both the gutter and the label by the same factor, so
+  // the fit holds at any aspect/scale. The label is the widest of the two lines.)
+  const labelGutter = 10 + config.directLabel.length * TYPE.label * 0.66 + 16;
   const basePad = {
     top: responsive ? 16 : 64,
-    right: 140,
+    right: Math.max(140, labelGutter),
     bottom: 52,
     left: 56,
   };
@@ -318,7 +323,7 @@ function ChartSvg({
         >
           <circle cx={lastPoint.x} cy={lastPoint.y} r={4} fill={COLORS.line} />
           <text
-            x={lastPoint.x + 10}
+            x={lastPoint.x + 10 * sc}
             y={lastPoint.y}
             dy="0.32em"
             fontSize={ts.label}
@@ -328,8 +333,8 @@ function ChartSvg({
             {config.directLabel}
           </text>
           <text
-            x={lastPoint.x + 10}
-            y={lastPoint.y + 16}
+            x={lastPoint.x + 10 * sc}
+            y={lastPoint.y + 16 * sc}
             dy="0.32em"
             fontSize={ts.axis}
             fill={COLORS.muted}
