@@ -230,7 +230,7 @@ function StackedAreaSvg({
                 className="stacked-area-band"
                 d={b.path}
                 fill={AREA_COLORS[b.seriesIndex % AREA_COLORS.length]}
-                opacity={dim ? 0.55 : 1}
+                opacity={dim ? 0.45 : 0.82}
                 tabIndex={interactive ? 0 : undefined}
                 role={interactive ? "img" : undefined}
                 aria-label={
@@ -259,6 +259,22 @@ function StackedAreaSvg({
               stroke="#fff"
               strokeWidth={1.5 * sc}
               strokeLinejoin="round"
+            />
+          ))}
+        </g>
+
+        {/* y gridlines redrawn OVER the (now semi-transparent) bands as faint
+            white lines, so the value reference stays readable through the fills */}
+        <g opacity={chrome * 0.45}>
+          {layout.valueTicks.map((t, i) => (
+            <line
+              key={`og${i}`}
+              x1={0}
+              x2={innerWidth}
+              y1={t.pos}
+              y2={t.pos}
+              stroke="#fff"
+              strokeWidth={1}
             />
           ))}
         </g>
