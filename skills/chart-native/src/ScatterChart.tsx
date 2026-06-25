@@ -324,14 +324,13 @@ function ScatterSvg({
         },
       },
     ];
-    // Labels may run into the side padding (it's free for an edge point), but
-    // not above the plot (title / y-axis title live there) nor below (x-axis).
-    const xMin = -padding.left + 2;
-    const xMax = innerWidth + padding.right - 2;
+    // Labels stay strictly INSIDE the plot — never in the padding, where the
+    // axis tick labels + axis titles live (overlapping them was the bug). A
+    // point too close to an edge to fit a label inside is simply skipped.
     const chosen = positions.find(
       (pos) =>
-        pos.box.x0 >= xMin &&
-        pos.box.x1 <= xMax &&
+        pos.box.x0 >= 0 &&
+        pos.box.x1 <= innerWidth &&
         pos.box.y0 >= 0 &&
         pos.box.y1 <= innerHeight &&
         !obstacles.some((o) => overlaps(pos.box, o)),
