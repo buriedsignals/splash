@@ -145,6 +145,38 @@ export function checkBarConformance(
 }
 
 /**
+ * L2 — HISTOGRAM: global rules + the distribution musts. Inherits the bar
+ * baseline-0 rule (the count axis includes 0) and adds: enough bins to show a
+ * shape (≥ 3) and not so many it is noise (≤ 50). The "bars touch" rule is a
+ * structural property of the geometry, not a colour rule.
+ */
+export function checkHistogramConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    countDomain: [number, number];
+    binCount: number;
+  },
+  colors: ConformanceColors,
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors,
+  });
+  const [lo] = input.countDomain;
+  if (lo !== 0)
+    v.push(`histogram count axis must start at 0 — starts at ${lo}`);
+  if (input.binCount < 3)
+    v.push(
+      `histogram has ${input.binCount} bins (< 3) — too few to show a shape`,
+    );
+  if (input.binCount > 50)
+    v.push(`histogram has ${input.binCount} bins (> 50) — widen the bins`);
+  return v;
+}
+
+/**
  * L2 — SCATTER: global rules + the scatter-specific must — BOTH axes carry a
  * title (the reader must know what x and y mean; a scatter with bare numbers is
  * meaningless). Bubble area-scaling is enforced in scatter-geometry (scaleSqrt),

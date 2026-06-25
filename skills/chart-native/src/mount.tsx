@@ -23,6 +23,8 @@ import { StackedAreaChart, type StackedAreaConfig } from "./StackedAreaChart";
 import { InteractiveStackedAreaChart } from "./InteractiveStackedAreaChart";
 import { HeatmapChart, type HeatmapConfig } from "./HeatmapChart";
 import { InteractiveHeatmapChart } from "./InteractiveHeatmapChart";
+import { HistogramChart, type HistogramConfig } from "./HistogramChart";
+import { InteractiveHistogramChart } from "./InteractiveHistogramChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -33,6 +35,7 @@ import groupedSample from "../assets/sample-data/grouped.json";
 import dumbbellSample from "../assets/sample-data/dumbbell.json";
 import stackedAreaSample from "../assets/sample-data/stacked-area.json";
 import heatmapSample from "../assets/sample-data/heatmap.json";
+import histogramSample from "../assets/sample-data/histogram.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -44,7 +47,16 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "heatmap") {
+if (chart === "histogram") {
+  const config = histogramSample as unknown as HistogramConfig;
+  root.render(
+    interactive ? (
+      <InteractiveHistogramChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <HistogramChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "heatmap") {
   const config = heatmapSample as unknown as HeatmapConfig;
   root.render(
     interactive ? (
