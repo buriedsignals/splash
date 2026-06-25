@@ -27,7 +27,8 @@ import {
   easeOutCubic,
   stagger,
 } from "./core/math";
-import { COLORS, FONT, TYPE } from "./core/tokens";
+import { COLORS, TYPE } from "./core/tokens";
+import { ChartFrame } from "./core/ChartFrame";
 
 export interface ChartConfig {
   title: string; // = the insight (sentence case)
@@ -134,107 +135,18 @@ export function LineChart({
       </div>
     ) : null;
 
-  // ---- Responsive: flow layout (header / chart / source stacked) ----
-  if (responsive) {
-    return (
-      <div style={{ width, background: COLORS.bg, fontFamily: FONT }}>
-        <div style={{ padding: `4px ${padding.left}px 0` }}>
-          <div
-            style={{
-              fontSize: TYPE.title,
-              fontWeight: 700,
-              color: COLORS.ink,
-              lineHeight: 1.2,
-            }}
-          >
-            {config.title}
-          </div>
-          <div
-            style={{ fontSize: TYPE.axis, color: COLORS.muted, marginTop: 4 }}
-          >
-            {config.unit}
-          </div>
-        </div>
-        <div style={{ position: "relative", width, height }}>
-          {svg}
-          {tooltip}
-        </div>
-        <div
-          style={{
-            fontSize: TYPE.source,
-            color: COLORS.muted,
-            padding: `4px ${padding.left}px 8px`,
-          }}
-        >
-          Source:{" "}
-          {config.source.url ? (
-            <a
-              href={config.source.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: COLORS.muted }}
-            >
-              {config.source.name}
-            </a>
-          ) : (
-            config.source.name
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ---- Fixed: the original absolute layout (video + static) ----
   return (
-    <div
-      style={{
-        width,
-        height,
-        background: COLORS.bg,
-        fontFamily: FONT,
-        position: "relative",
-        boxSizing: "border-box",
-      }}
+    <ChartFrame
+      title={config.title}
+      subtitle={config.unit}
+      source={config.source}
+      width={width}
+      height={height}
+      responsive={responsive}
+      tooltip={tooltip}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: 18,
-          left: padding.left,
-          right: 24,
-          fontSize: TYPE.title,
-          fontWeight: 700,
-          color: COLORS.ink,
-          lineHeight: 1.2,
-        }}
-      >
-        {config.title}
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 18 + TYPE.title * 1.4,
-          left: padding.left,
-          fontSize: TYPE.axis,
-          color: COLORS.muted,
-        }}
-      >
-        {config.unit}
-      </div>
       {svg}
-      {tooltip}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 12,
-          left: padding.left,
-          fontSize: TYPE.source,
-          color: COLORS.muted,
-        }}
-      >
-        Source: {config.source.name}
-      </div>
-    </div>
+    </ChartFrame>
   );
 }
 
