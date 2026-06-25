@@ -1,9 +1,17 @@
 ---
 name: chart-native
-description: Use when you need a native (non-Datawrapper) line chart that ships as ALL THREE formats from ONE component — a static PNG, a self-contained interactive HTML (hover tooltip), and a Remotion mp4 line-reveal. The premium path for change-over-time stories that want a motion build or rich interactivity. Keywords line chart, time series, trend, reveal, animation, remotion, video, interactive, tooltip, d3, react, native chart.
+description: Use when you need a native (non-Datawrapper) chart that ships as ALL THREE formats from ONE component — a static PNG, a self-contained interactive HTML (hover + keyboard focus, responsive), and a Remotion mp4 motion build. The native chart engine; currently a LINE chart (change over time) and a BAR/column chart (magnitude & ranking). The premium path for stories that want a motion build or rich interactivity. Keywords line chart, bar chart, column, ranking, magnitude, time series, trend, reveal, animation, remotion, video, interactive, tooltip, responsive, d3, react, native chart.
 ---
 
-# Chart Native — one component, three formats
+# Chart Native — the native chart engine (one component per type → three formats)
+
+> **Types so far:** `line` (change over time, `LineChart.tsx`) and `bar` (magnitude & ranking,
+> `BarChart.tsx`). Each is one React+D3 component driven by a single `progress`, yielding static +
+> interactive + video. They share the pure helpers (easings, `stagger`, `formatNumber`) and the
+> conformance guard; the per-type knowledge is in `knowledge/references/chart/types/{line,bar}.md`
+> and the per-format discipline in `knowledge/references/formats/{video,interactive}.md`. Build a
+> specific chart by setting `CHART=line|bar` (web) or the `LineReveal`/`BarReveal` composition (video).
+> The shared plumbing is ripe to extract into a `core/` once a third type lands.
 
 ## Overview
 

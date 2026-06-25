@@ -8,8 +8,12 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
+const chart = process.env.CHART ?? "line";
 const outDir = process.argv[2] ?? "/tmp";
-const url = pathToFileURL(join(root, "dist/interactive/index.html")).href;
+const distInteractive =
+  chart === "line" ? "dist/interactive" : `dist/${chart}/interactive`;
+const marker = chart === "bar" ? ".bar" : ".series-line";
+const url = pathToFileURL(join(root, distInteractive, "index.html")).href;
 
 const browser = await chromium.launch();
 
@@ -20,8 +24,8 @@ for (const w of [360, 768, 1100, 1600]) {
     deviceScaleFactor: 2,
   });
   await page.goto(url);
-  await page.waitForSelector(".series-line");
-  await page.waitForTimeout(1700); // let the reveal finish
+  await page.waitForSelector(marker);
+  await page.waitForTimeout(2100); // let the reveal finish
   await page.locator("#root > div").screenshot({
     path: join(outDir, `responsive-${w}.png`),
   });
