@@ -143,3 +143,29 @@ export function checkBarConformance(
     );
   return v;
 }
+
+/**
+ * L2 — SCATTER: global rules + the scatter-specific must — BOTH axes carry a
+ * title (the reader must know what x and y mean; a scatter with bare numbers is
+ * meaningless). Bubble area-scaling is enforced in scatter-geometry (scaleSqrt),
+ * not here. Note: scatter does NOT inherit the bar baseline-0 rule (position
+ * encoding tolerates a non-zero axis).
+ */
+export function checkScatterConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    xLabel?: string;
+    yLabel?: string;
+  },
+  colors: ConformanceColors,
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors,
+  });
+  if (!input.xLabel?.trim()) v.push("missing x-axis label (what x means)");
+  if (!input.yLabel?.trim()) v.push("missing y-axis label (what y means)");
+  return v;
+}

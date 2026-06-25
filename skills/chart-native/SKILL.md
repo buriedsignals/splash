@@ -5,12 +5,13 @@ description: Use when you need a native (non-Datawrapper) chart that ships as AL
 
 # Chart Native — the native chart engine (one component per type → three formats)
 
-> **Types so far:** `line` (change over time, `LineChart.tsx`) and `bar` (magnitude & ranking,
-> `BarChart.tsx`). Each is one React+D3 component driven by a single `progress`, yielding static +
-> interactive + video. They share the pure helpers (easings, `stagger`, `formatNumber`) and the
-> conformance guard; the per-type knowledge is in `knowledge/references/chart/types/{line,bar}.md`
-> and the per-format discipline in `knowledge/references/formats/{video,interactive}.md`. Build a
-> specific chart by setting `CHART=line|bar` (web) or the `LineReveal`/`BarReveal` composition (video).
+> **Types so far:** `line` (change over time, `LineChart.tsx`), `bar` (magnitude & ranking,
+> `BarChart.tsx`) and `scatter`/bubble (correlation, `ScatterChart.tsx`). Each is one React+D3
+> component driven by a single `progress`, yielding static + interactive + video. They share the pure
+> helpers (easings, `stagger`, `formatNumber`) and the conformance guard; the per-type knowledge is in
+> `knowledge/references/chart/types/{line,bar,scatter}.md` and the per-format discipline in
+> `knowledge/references/formats/{video,interactive}.md`. Build a specific chart by setting
+> `CHART=line|bar|scatter` (web) or the `LineReveal`/`BarReveal`/`ScatterReveal` composition (video).
 >
 > **Shared layer** — `src/core/`: `math.ts` (formatNumber, clamp01, easings, stagger — decouples the
 > geometry files), `tokens.ts` (Okabe-Ito + type scale), `conformance.ts` (the global L0 guard + WCAG

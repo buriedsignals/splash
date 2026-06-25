@@ -7,8 +7,11 @@ import { LineChart, type ChartConfig } from "./LineChart";
 import { InteractiveLineChart, type AnimateOn } from "./InteractiveLineChart";
 import { BarChart, type BarConfig } from "./BarChart";
 import { InteractiveBarChart } from "./InteractiveBarChart";
+import { ScatterChart, type ScatterConfig } from "./ScatterChart";
+import { InteractiveScatterChart } from "./InteractiveScatterChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
+import scatterSample from "../assets/sample-data/scatter.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -20,7 +23,16 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "bar") {
+if (chart === "scatter") {
+  const config = scatterSample as unknown as ScatterConfig;
+  root.render(
+    interactive ? (
+      <InteractiveScatterChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <ScatterChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "bar") {
   const config = barSample as unknown as BarConfig;
   root.render(
     interactive ? (

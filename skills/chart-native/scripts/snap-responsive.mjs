@@ -12,7 +12,8 @@ const chart = process.env.CHART ?? "line";
 const outDir = process.argv[2] ?? "/tmp";
 const distInteractive =
   chart === "line" ? "dist/interactive" : `dist/${chart}/interactive`;
-const marker = chart === "bar" ? ".bar" : ".series-line";
+const marker =
+  chart === "bar" ? ".bar" : chart === "scatter" ? ".scatter-dot" : ".series-line";
 const url = pathToFileURL(join(root, distInteractive, "index.html")).href;
 
 const browser = await chromium.launch();
