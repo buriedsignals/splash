@@ -9,8 +9,6 @@
 import type { ReactNode } from "react";
 import { COLORS, FONT, TYPE } from "./tokens";
 
-const PAD = 24; // header / source left-right inset
-
 export interface ChartFrameProps {
   title: string;
   subtitle?: string;
@@ -22,6 +20,8 @@ export interface ChartFrameProps {
   children: ReactNode;
   /** optional HTML tooltip overlay (interactive) */
   tooltip?: ReactNode;
+  /** typography/margin scale for non-landscape canvases (default 1) */
+  scale?: number;
 }
 
 export function ChartFrame({
@@ -33,14 +33,20 @@ export function ChartFrame({
   responsive,
   children,
   tooltip,
+  scale = 1,
 }: ChartFrameProps) {
+  const PAD = 24 * scale; // header / source left-right inset
+  const titleSize = TYPE.title * scale;
+  const axisSize = TYPE.axis * scale;
+  const sourceSize = TYPE.source * scale;
+  const topPad = 18 * scale;
   if (responsive) {
     return (
       <div style={{ width, background: COLORS.bg, fontFamily: FONT }}>
         <div style={{ padding: `4px ${PAD}px 0` }}>
           <div
             style={{
-              fontSize: TYPE.title,
+              fontSize: titleSize,
               fontWeight: 700,
               color: COLORS.ink,
               lineHeight: 1.2,
@@ -50,7 +56,7 @@ export function ChartFrame({
           </div>
           {subtitle && (
             <div
-              style={{ fontSize: TYPE.axis, color: COLORS.muted, marginTop: 4 }}
+              style={{ fontSize: axisSize, color: COLORS.muted, marginTop: 4 }}
             >
               {subtitle}
             </div>
@@ -62,7 +68,7 @@ export function ChartFrame({
         </div>
         <div
           style={{
-            fontSize: TYPE.source,
+            fontSize: sourceSize,
             color: COLORS.muted,
             padding: `4px ${PAD}px 8px`,
           }}
@@ -96,41 +102,35 @@ export function ChartFrame({
         boxSizing: "border-box",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: 18,
-          left: PAD,
-          right: PAD,
-          fontSize: TYPE.title,
-          fontWeight: 700,
-          color: COLORS.ink,
-          lineHeight: 1.2,
-        }}
-      >
-        {title}
-      </div>
-      {subtitle && (
+      {/* title + subtitle in ONE flow block so a multi-line title never overlaps
+          the subtitle (the plot sits below via padding.top / centred band) */}
+      <div style={{ position: "absolute", top: topPad, left: PAD, right: PAD }}>
         <div
           style={{
-            position: "absolute",
-            top: 18 + TYPE.title * 1.4,
-            left: PAD,
-            fontSize: TYPE.axis,
-            color: COLORS.muted,
+            fontSize: titleSize,
+            fontWeight: 700,
+            color: COLORS.ink,
+            lineHeight: 1.2,
           }}
         >
-          {subtitle}
+          {title}
         </div>
-      )}
+        {subtitle && (
+          <div
+            style={{ fontSize: axisSize, color: COLORS.muted, marginTop: 4 }}
+          >
+            {subtitle}
+          </div>
+        )}
+      </div>
       {children}
       {tooltip}
       <div
         style={{
           position: "absolute",
-          bottom: 12,
+          bottom: 12 * scale,
           left: PAD,
-          fontSize: TYPE.source,
+          fontSize: sourceSize,
           color: COLORS.muted,
         }}
       >

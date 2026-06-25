@@ -29,6 +29,7 @@ import {
 } from "./core/math";
 import { COLORS, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import { resolveFrame } from "./core/format";
 
 export interface ChartConfig {
   title: string; // = the insight (sentence case)
@@ -51,6 +52,8 @@ export interface LineChartProps {
   /** flow layout (title above plot) + width-aware ticks, for the web embed.
    *  false (default) keeps the fixed absolute layout used by video + static. */
   responsive?: boolean;
+  /** typography/margin scale for non-landscape video canvases (default 1). */
+  scale?: number;
 }
 
 export function LineChart({
@@ -60,17 +63,25 @@ export function LineChart({
   height = 480,
   interactive = false,
   responsive = false,
+  scale = 1,
 }: LineChartProps) {
   const p = clamp01(progress);
 
   // Fixed layout reserves 64px at the top for the in-box title; responsive
-  // moves the title OUT of the SVG (into normal flow) so only a small gap stays.
-  const padding = {
+  // moves the title OUT of the SVG (into normal flow). On a square/portrait
+  // video canvas, resolveFrame scales the type/margins and centres the plot.
+  const basePad = {
     top: responsive ? 16 : 64,
     right: 140,
     bottom: 52,
     left: 56,
   };
+  const frame = responsive
+    ? { scale: 1, pad: basePad, type: TYPE }
+    : resolveFrame(width, height, basePad, scale);
+  const padding = frame.pad;
+  const ts = frame.type;
+  const sc = frame.scale;
   const dims: Dims = { width, height, padding };
   const data: ChartData = {
     xField: config.xField,
@@ -105,6 +116,8 @@ export function LineChart({
       interactive={interactive}
       hover={hover}
       setHover={setHover}
+      ts={ts}
+      sc={sc}
     />
   );
 
@@ -144,6 +157,7 @@ export function LineChart({
       height={height}
       responsive={responsive}
       tooltip={tooltip}
+      scale={sc}
     >
       {svg}
     </ChartFrame>
@@ -162,6 +176,8 @@ function ChartSvg({
   interactive,
   hover,
   setHover,
+  ts,
+  sc,
 }: {
   layout: Layout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -173,6 +189,8 @@ function ChartSvg({
   interactive: boolean;
   hover: number | null;
   setHover: (i: number | null) => void;
+  ts: { title: number; axis: number; label: number; source: number };
+  sc: number;
 }) {
   const lp = lineProgress;
   const revealed = revealLine(layout, lp);
@@ -220,11 +238,11 @@ function ChartSvg({
                 strokeWidth={1}
               />
               <text
-                x={-10}
+                x={-10 * sc}
                 y={t.y}
                 dy="0.32em"
                 textAnchor="end"
-                fontSize={TYPE.axis}
+                fontSize={ts.axis}
                 fill={COLORS.muted}
                 opacity={lo}
                 transform={`translate(${-(1 - lo) * 8},0)`}
@@ -241,9 +259,9 @@ function ChartSvg({
             <text
               key={`x${i}`}
               x={t.x}
-              y={innerHeight + 22}
+              y={innerHeight + 22 * sc}
               textAnchor="middle"
-              fontSize={TYPE.axis}
+              fontSize={ts.axis}
               fill={COLORS.muted}
               opacity={o}
               transform={`translate(0,${(1 - o) * 8})`}
@@ -268,7 +286,7 @@ function ChartSvg({
             d={revealed}
             fill="none"
             stroke={COLORS.line}
-            strokeWidth={3}
+            strokeWidth={3 * sc}
             strokeLinejoin="round"
             strokeLinecap="round"
           />
@@ -303,7 +321,7 @@ function ChartSvg({
             x={lastPoint.x + 10}
             y={lastPoint.y}
             dy="0.32em"
-            fontSize={TYPE.label}
+            fontSize={ts.label}
             fontWeight={600}
             fill={COLORS.line}
           >
@@ -313,7 +331,7 @@ function ChartSvg({
             x={lastPoint.x + 10}
             y={lastPoint.y + 16}
             dy="0.32em"
-            fontSize={TYPE.axis}
+            fontSize={ts.axis}
             fill={COLORS.muted}
           >
             {formatNumber(lastPoint.rawY)}
