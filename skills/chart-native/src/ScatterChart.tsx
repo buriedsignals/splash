@@ -224,7 +224,7 @@ function ScatterSvg({
     (mi, pt, i, a) => (pt.rawY > a[mi].rawY ? i : mi),
     0,
   );
-  const labeled: number[] =
+  const candidates: number[] =
     strategy === "none"
       ? []
       : strategy === "all" || (strategy === "auto" && n <= 12)
@@ -232,6 +232,36 @@ function ScatterSvg({
         : points[outlier]?.label
           ? [outlier]
           : [];
+
+  // Collision-aware placement: take candidates by priority (highest value first),
+  // place each beside its dot (flipped left near the right edge), and SKIP any
+  // label whose box would overlap an already-placed one or leave the plot. Fewer
+  // readable labels beat all-overlapping ones — and it degrades gracefully on
+  // narrow embeds. (Box width is estimated from text length; no DOM measure.)
+  const charW = TYPE.axis * 0.58;
+  const lh = 16;
+  const boxes: { x0: number; x1: number; y0: number; y1: number }[] = [];
+  const placedLabels: { idx: number; x: number; anchor: "start" | "end" }[] =
+    [];
+  for (const idx of [...candidates].sort(
+    (a, b) => points[b].rawY - points[a].rawY,
+  )) {
+    const pt = points[idx];
+    const w = (pt.label?.length ?? 0) * charW;
+    const flip = pt.x + pt.r + 6 + w > innerWidth;
+    const x = flip ? pt.x - pt.r - 6 : pt.x + pt.r + 6;
+    const x0 = flip ? x - w : x;
+    const x1 = flip ? x : x + w;
+    const y0 = pt.y - lh / 2;
+    const y1 = pt.y + lh / 2;
+    if (x0 < 0 || x1 > innerWidth || y0 < 0 || y1 > innerHeight) continue;
+    const hit = boxes.some(
+      (b) => x0 < b.x1 && x1 > b.x0 && y0 < b.y1 && y1 > b.y0,
+    );
+    if (hit) continue;
+    boxes.push({ x0, x1, y0, y1 });
+    placedLabels.push({ idx, x, anchor: flip ? "end" : "start" });
+  }
 
   return (
     <svg
@@ -346,18 +376,17 @@ function ScatterSvg({
           );
         })}
 
-        {/* point labels (fade in last) — each flips to the left of its dot when
-            it would overflow the right edge (narrow embeds) */}
-        {labeled.map((idx) => {
+        {/* point labels (fade in last) — collision-placed: only non-overlapping,
+            in-bounds labels are drawn (priority = highest value first) */}
+        {placedLabels.map(({ idx, x, anchor }) => {
           const pt = points[idx];
-          const flip = pt.x + pt.r + 70 > innerWidth;
           return (
             <text
               key={`lbl${idx}`}
-              x={flip ? pt.x - pt.r - 6 : pt.x + pt.r + 6}
+              x={x}
               y={pt.y}
               dy="0.32em"
-              textAnchor={flip ? "end" : "start"}
+              textAnchor={anchor}
               fontSize={TYPE.axis}
               fontWeight={600}
               fill={COLORS.line}
