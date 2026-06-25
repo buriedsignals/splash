@@ -187,11 +187,58 @@ export function checkPieConformance(
   const v = checkGlobalConformance({
     title: input.title,
     source: input.source,
-    colors: { data: input.sliceColors[0] ?? "#0072B2", text: textColors.text, bg: textColors.bg },
+    colors: {
+      data: input.sliceColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
   });
   if (input.sliceCount > 5)
-    v.push(`pie has ${input.sliceCount} slices (> 5) — group into "Other" or use bars`);
+    v.push(
+      `pie has ${input.sliceCount} slices (> 5) — group into "Other" or use bars`,
+    );
   for (const c of input.sliceColors)
     if (!isOkabeIto(c)) v.push(`slice colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
+ * L2 — STACKED BAR: global rules + the stacked musts. Inherits the bar
+ * baseline-0 rule (valueDomain must include 0, from computeStackedLayout) and
+ * adds: ≤ 5 series (beyond that the stack is a ribbon → group "Other"), and
+ * every series colour in the Okabe-Ito set (categorical CVD-safe palette, like
+ * pie — the ≤2-colour rule relaxes to "few CVD-safe hues" for a stack).
+ */
+export function checkStackedBarConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    valueDomain: [number, number];
+    seriesCount: number;
+    seriesColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.seriesColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  const [lo, hi] = input.valueDomain;
+  if (!(lo <= 0 && hi >= 0))
+    v.push(
+      `stacked value axis must include 0 (baseline rule) — domain is [${lo}, ${hi}]`,
+    );
+  if (input.seriesCount > 5)
+    v.push(
+      `stack has ${input.seriesCount} series (> 5) — group into "Other" or use small multiples`,
+    );
+  for (const c of input.seriesColors)
+    if (!isOkabeIto(c))
+      v.push(`series colour ${c} is not in the Okabe-Ito set`);
   return v;
 }
