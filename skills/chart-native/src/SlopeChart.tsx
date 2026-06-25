@@ -297,6 +297,9 @@ function SlopeSvg({
             const focused = interactive && hover === l.index;
             const dim = interactive && hover !== null && !focused;
             const labelOp = clamp01((lp - 0.6) / 0.4);
+            // left endpoint + label appear FROM NOTHING as the line starts (the
+            // reveal grammar: left point shows first, then the line extends).
+            const leftOp = clamp01(lp / 0.18);
             const ly = leftYs.get(l.index) ?? l.y1;
             const ry = rightYs.get(l.index) ?? l.y2;
             return (
@@ -324,25 +327,28 @@ function SlopeSvg({
                   y2={end.y}
                   stroke={color}
                   strokeWidth={(hi ? 3 : 2) * sc}
+                  opacity={leftOp}
                 />
-                {/* left endpoint + "name value" */}
-                <circle
-                  cx={l.x1}
-                  cy={l.y1}
-                  r={(hi ? 4 : 3) * sc}
-                  fill={color}
-                />
-                <text
-                  x={l.x1 - 10 * sc}
-                  y={ly}
-                  dy="0.32em"
-                  textAnchor="end"
-                  fontSize={ts.axis}
-                  fontWeight={hi ? 700 : 400}
-                  fill={hi ? ACCENT : COLORS.ink}
-                >
-                  {l.rawLabel} {fmt(l.leftVal)}
-                </text>
+                {/* left endpoint + "name value" — fades in from nothing */}
+                <g opacity={leftOp}>
+                  <circle
+                    cx={l.x1}
+                    cy={l.y1}
+                    r={(hi ? 4 : 3) * sc}
+                    fill={color}
+                  />
+                  <text
+                    x={l.x1 - 10 * sc}
+                    y={ly}
+                    dy="0.32em"
+                    textAnchor="end"
+                    fontSize={ts.axis}
+                    fontWeight={hi ? 700 : 400}
+                    fill={hi ? ACCENT : COLORS.ink}
+                  >
+                    {l.rawLabel} {fmt(l.leftVal)}
+                  </text>
+                </g>
                 {/* right endpoint (appears as the line lands) + value */}
                 <g opacity={labelOp}>
                   <circle
