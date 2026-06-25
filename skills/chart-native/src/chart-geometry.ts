@@ -6,6 +6,7 @@
 import { scaleLinear, scaleTime } from "d3-scale";
 import { extent } from "d3-array";
 import { timeParse, timeFormat } from "d3-time-format";
+import { formatNumber, clamp01 } from "./core/math";
 
 export interface ChartData {
   xField: string;
@@ -40,19 +41,6 @@ export interface Layout {
 
 const parseDate = timeParse("%Y-%m-%d");
 const fmtYear = timeFormat("%Y");
-
-/** Abbreviate a number the FT/Okabe-Ito way: 12831 -> "12.8k", 1_800_000 -> "1.8M". */
-export function formatNumber(n: number): string {
-  const abs = Math.abs(n);
-  if (abs >= 1_000_000) return `${trimZero(n / 1_000_000)}M`;
-  if (abs >= 1_000) return `${trimZero(n / 1_000)}k`;
-  return trimZero(n);
-}
-function trimZero(n: number): string {
-  // one decimal, no trailing ".0"
-  const r = Math.round(n * 10) / 10;
-  return Number.isInteger(r) ? String(r) : r.toFixed(1);
-}
 
 export function computeChartLayout(
   data: ChartData,
@@ -216,43 +204,6 @@ export function revealHead(layout: Layout, progress: number): ScreenPoint {
     }
   }
   return points[points.length - 1];
-}
-
-export function clamp01(v: number): number {
-  return v < 0 ? 0 : v > 1 ? 1 : v;
-}
-
-/**
- * Disney ease-in/out (cubic) — the SAME curve the Remotion video uses
- * (`Easing.inOut(Easing.cubic)`), expressed as pure math so the interactive
- * rAF driver and the video share one easing. No DOM, no clock.
- */
-export function easeInOutCubic(t: number): number {
-  const p = clamp01(t);
-  return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-}
-
-/** Decelerating ease (fast start, soft landing) — for the chrome wipe-ins. */
-export function easeOutCubic(t: number): number {
-  const p = clamp01(t);
-  return 1 - Math.pow(1 - p, 3);
-}
-
-/**
- * A staggered sub-window of the master progress. Element `i` of `count` starts
- * at `i*stagger` and runs for `span`; returns its local eased 0→1. Pure — lets
- * the motion build stagger gridlines/labels deterministically (video-safe).
- */
-export function stagger(
-  p: number,
-  i: number,
-  count: number,
-  start: number,
-  stagger: number,
-  span: number,
-): number {
-  const begin = start + i * stagger;
-  return easeOutCubic((p - begin) / span);
 }
 
 function round(n: number): number {

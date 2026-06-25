@@ -1,11 +1,11 @@
 import { describe, it, expect } from "bun:test";
-import { checkBarConformance } from "../src/conformance";
+import { checkBarConformance } from "../src/core/conformance";
 import {
   computeBarLayout,
   type BarData,
   type BarDims,
 } from "../src/bar-geometry";
-import { COLORS } from "../src/tokens";
+import { COLORS } from "../src/core/tokens";
 import sample from "../assets/sample-data/bars.json";
 
 const colors = {

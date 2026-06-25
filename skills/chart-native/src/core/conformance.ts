@@ -4,7 +4,7 @@
 //
 // Source: knowledge/references/design-conformance.md (Okabe-Ito, WCAG, FT).
 
-import type { ChartConfig } from "./LineChart";
+import type { ChartConfig } from "../LineChart";
 
 export const OKABE_ITO_SET = new Set([
   "#0072B2",

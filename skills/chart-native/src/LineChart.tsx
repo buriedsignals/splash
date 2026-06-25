@@ -16,16 +16,18 @@ import {
   computeChartLayout,
   revealLine,
   revealHead,
+  type ChartData,
+  type Dims,
+  type Layout,
+} from "./chart-geometry";
+import {
   formatNumber,
   clamp01,
   easeInOutCubic,
   easeOutCubic,
   stagger,
-  type ChartData,
-  type Dims,
-  type Layout,
-} from "./chart-geometry";
-import { COLORS, FONT, TYPE } from "./tokens";
+} from "./core/math";
+import { COLORS, FONT, TYPE } from "./core/tokens";
 
 export interface ChartConfig {
   title: string; // = the insight (sentence case)

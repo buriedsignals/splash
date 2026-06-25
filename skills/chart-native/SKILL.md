@@ -11,7 +11,12 @@ description: Use when you need a native (non-Datawrapper) chart that ships as AL
 > conformance guard; the per-type knowledge is in `knowledge/references/chart/types/{line,bar}.md`
 > and the per-format discipline in `knowledge/references/formats/{video,interactive}.md`. Build a
 > specific chart by setting `CHART=line|bar` (web) or the `LineReveal`/`BarReveal` composition (video).
-> The shared plumbing is ripe to extract into a `core/` once a third type lands.
+>
+> **Shared layer** — `src/core/`: `math.ts` (formatNumber, clamp01, easings, stagger — decouples the
+> geometry files), `tokens.ts` (Okabe-Ito + type scale), `conformance.ts` (the global L0 guard + WCAG
+> math; per-type checks compose on top), `InteractiveChart.tsx` (the one ResizeObserver + rAF +
+> reduced-motion wrapper, `render(width, progress)` — line/bar are thin bindings over it). A new type
+> = its geometry + component + a conformance rule; everything else is inherited from `core/`.
 
 ## Overview
 
