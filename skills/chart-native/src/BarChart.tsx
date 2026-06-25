@@ -22,6 +22,7 @@ import {
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import { resolveFrame } from "./core/format";
 
 export interface BarConfig {
   title: string; // = the insight (sentence case)
@@ -43,6 +44,8 @@ export interface BarChartProps {
   height?: number;
   interactive?: boolean;
   responsive?: boolean;
+  /** typography/margin scale for non-landscape video canvases (default 1). */
+  scale?: number;
 }
 
 function paddingFor(orientation: Orientation, responsive: boolean) {
@@ -59,9 +62,16 @@ export function BarChart({
   height = 460,
   interactive = false,
   responsive = false,
+  scale = 1,
 }: BarChartProps) {
   const p = clamp01(progress);
-  const padding = paddingFor(config.orientation, responsive);
+  const basePad = paddingFor(config.orientation, responsive);
+  const frame = responsive
+    ? { scale: 1, pad: basePad, type: TYPE }
+    : resolveFrame(width, height, basePad, scale);
+  const padding = frame.pad;
+  const ts = frame.type;
+  const sc = frame.scale;
   const dims: BarDims = { width, height, padding };
   const data: BarData = {
     catField: config.catField,
@@ -86,6 +96,8 @@ export function BarChart({
       interactive={interactive}
       hover={hover}
       setHover={setHover}
+      ts={ts}
+      sc={sc}
     />
   );
 
@@ -108,6 +120,7 @@ export function BarChart({
       height={height}
       responsive={responsive}
       tooltip={tooltip}
+      scale={sc}
     >
       {svg}
     </ChartFrame>
@@ -129,6 +142,8 @@ function BarSvg({
   interactive,
   hover,
   setHover,
+  ts,
+  sc,
 }: {
   layout: BarLayout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -139,6 +154,8 @@ function BarSvg({
   interactive: boolean;
   hover: number | null;
   setHover: (i: number | null) => void;
+  ts: { title: number; axis: number; label: number; source: number };
+  sc: number;
 }) {
   const { innerWidth, innerHeight, orientation, bars } = layout;
   const horizontal = orientation === "horizontal";
@@ -191,11 +208,11 @@ function BarSvg({
             horizontal ? null : (
               <text
                 key={`vt${i}`}
-                x={-10}
+                x={-10 * sc}
                 y={t.pos}
                 dy="0.32em"
                 textAnchor="end"
-                fontSize={TYPE.axis}
+                fontSize={ts.axis}
                 fill={COLORS.muted}
               >
                 {t.label}
@@ -213,24 +230,24 @@ function BarSvg({
           const catOp = clamp01(grown * 1.6);
           // category label position (always at the bar's band centre)
           const cat = horizontal
-            ? { x: -10, y: b.y + b.h / 2, anchor: "end" as const, dy: "0.32em" }
+            ? { x: -10 * sc, y: b.y + b.h / 2, anchor: "end" as const, dy: "0.32em" }
             : {
                 x: b.x + b.w / 2,
-                y: innerHeight + 20,
+                y: innerHeight + 20 * sc,
                 anchor: "middle" as const,
                 dy: "0",
               };
           // value label at the END of the bar
           const val = horizontal
             ? {
-                x: b.x + b.w + 6,
+                x: b.x + b.w + 6 * sc,
                 y: b.y + b.h / 2,
                 anchor: "start" as const,
                 dy: "0.32em",
               }
             : {
                 x: b.x + b.w / 2,
-                y: b.y - 6,
+                y: b.y - 6 * sc,
                 anchor: "middle" as const,
                 dy: "0",
               };
@@ -263,7 +280,7 @@ function BarSvg({
                 y={cat.y}
                 dy={cat.dy}
                 textAnchor={cat.anchor}
-                fontSize={TYPE.axis}
+                fontSize={ts.axis}
                 fill={COLORS.ink}
                 opacity={catOp}
               >
@@ -274,7 +291,7 @@ function BarSvg({
                 y={val.y}
                 dy={val.dy}
                 textAnchor={val.anchor}
-                fontSize={TYPE.axis}
+                fontSize={ts.axis}
                 fontWeight={600}
                 fill={fill}
                 opacity={labelOp}

@@ -13,7 +13,7 @@ const config = sample as unknown as ChartConfig;
 const HOLD_IN = 0.02; // brief blank hold before the chart builds from nothing
 const HOLD_OUT = 0.1; // fraction held on the complete chart at the end
 
-export const LineReveal: React.FC = () => {
+export const LineReveal: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1); // 0..1, deterministic
@@ -30,6 +30,7 @@ export const LineReveal: React.FC = () => {
         progress={progress}
         width={width}
         height={height}
+        scale={scale}
       />
     </div>
   );

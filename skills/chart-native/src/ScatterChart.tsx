@@ -18,6 +18,7 @@ import {
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import { resolveFrame } from "./core/format";
 
 export interface ScatterConfig {
   title: string; // the insight (sentence case)
@@ -44,6 +45,8 @@ export interface ScatterChartProps {
   height?: number;
   interactive?: boolean;
   responsive?: boolean;
+  /** typography/margin scale for non-landscape video canvases (default 1). */
+  scale?: number;
 }
 
 const PADDING = (responsive: boolean) => ({
@@ -60,9 +63,16 @@ export function ScatterChart({
   height = 480,
   interactive = false,
   responsive = false,
+  scale = 1,
 }: ScatterChartProps) {
   const p = clamp01(progress);
-  const padding = PADDING(responsive);
+  const basePad = PADDING(responsive);
+  const frame = responsive
+    ? { scale: 1, pad: basePad, type: TYPE }
+    : resolveFrame(width, height, basePad, scale);
+  const padding = frame.pad;
+  const ts = frame.type;
+  const sc = frame.scale;
   const dims: ScatterDims = { width, height, padding };
   const data: ScatterData = {
     xField: config.xField,
@@ -71,7 +81,11 @@ export function ScatterChart({
     labelField: config.labelField,
     rows: config.rows,
   };
-  const layout = computeScatterLayout(data, dims);
+  const layout = computeScatterLayout(data, dims, {
+    minR: 5 * sc,
+    maxR: 22 * sc,
+    dotR: 6 * sc,
+  });
   const [hover, setHover] = useState<number | null>(null);
 
   const svg = (
@@ -85,6 +99,8 @@ export function ScatterChart({
       interactive={interactive}
       hover={hover}
       setHover={setHover}
+      ts={ts}
+      sc={sc}
     />
   );
 
@@ -106,6 +122,7 @@ export function ScatterChart({
       height={height}
       responsive={responsive}
       tooltip={tooltip}
+      scale={sc}
     >
       {svg}
     </ChartFrame>
@@ -122,6 +139,8 @@ function ScatterSvg({
   interactive,
   hover,
   setHover,
+  ts,
+  sc,
 }: {
   layout: ScatterLayout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -132,6 +151,8 @@ function ScatterSvg({
   interactive: boolean;
   hover: number | null;
   setHover: (i: number | null) => void;
+  ts: { title: number; axis: number; label: number; source: number };
+  sc: number;
 }) {
   const { innerWidth, innerHeight, points } = layout;
   const n = points.length;
@@ -176,8 +197,8 @@ function ScatterSvg({
   // right, left, above, below — and take the first that is clear and in-bounds;
   // if none is, SKIP it. Readable-but-fewer beats overlapping. (Boxes estimated.)
   type Box = { x0: number; x1: number; y0: number; y1: number };
-  const charW = TYPE.axis * 0.6;
-  const lh = 18;
+  const charW = ts.axis * 0.6;
+  const lh = 18 * sc;
   const padX = 3;
   const overlaps = (a: Box, b: Box) =>
     a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
@@ -310,7 +331,7 @@ function ScatterSvg({
                 y={t.pos}
                 dy="0.32em"
                 textAnchor="end"
-                fontSize={TYPE.axis}
+                fontSize={ts.axis}
                 fill={COLORS.muted}
               >
                 {t.label}
@@ -323,7 +344,7 @@ function ScatterSvg({
               x={t.pos}
               y={innerHeight + 20}
               textAnchor="middle"
-              fontSize={TYPE.axis}
+              fontSize={ts.axis}
               fill={COLORS.muted}
             >
               {t.label}
@@ -334,7 +355,7 @@ function ScatterSvg({
             x={innerWidth / 2}
             y={innerHeight + 44}
             textAnchor="middle"
-            fontSize={TYPE.axis}
+            fontSize={ts.axis}
             fontWeight={600}
             fill={COLORS.muted}
           >
@@ -344,7 +365,7 @@ function ScatterSvg({
             x={-10}
             y={-6}
             textAnchor="start"
-            fontSize={TYPE.axis}
+            fontSize={ts.axis}
             fontWeight={600}
             fill={COLORS.muted}
           >
@@ -416,7 +437,7 @@ function ScatterSvg({
               y={y}
               dy="0.32em"
               textAnchor={anchor}
-              fontSize={TYPE.axis}
+              fontSize={ts.axis}
               fontWeight={600}
               fill={COLORS.line}
             >
