@@ -250,6 +250,17 @@ function StackedAreaSvg({
               />
             );
           })}
+          {/* thin white separator on each band's top edge → distinct layers */}
+          {bands.map((b) => (
+            <path
+              key={`sep${b.seriesIndex}`}
+              d={b.topLine}
+              fill="none"
+              stroke="#fff"
+              strokeWidth={1.5 * sc}
+              strokeLinejoin="round"
+            />
+          ))}
         </g>
 
         {/* x (year) axis labels */}

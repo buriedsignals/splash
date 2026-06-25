@@ -6,7 +6,7 @@
 // paths here are the full, static shapes — frame-deterministic for video.
 
 import { scaleLinear } from "d3-scale";
-import { area } from "d3-shape";
+import { area, line } from "d3-shape";
 import { formatNumber } from "./core/math";
 
 export interface StackedAreaData {
@@ -26,6 +26,9 @@ export interface AreaBand {
   seriesKey: string;
   /** full filled-area SVG path (static; the reveal clips it left→right) */
   path: string;
+  /** the band's TOP edge as a polyline path — drawn as a thin separator stroke
+   *  so adjacent opaque bands read as distinct layers, not one solid mass */
+  topLine: string;
   /** screen y of the band's mid-point at the LAST x (for the right-edge label) */
   labelY: number;
   /** the band's value at the last x */
@@ -86,6 +89,9 @@ export function computeStackedAreaLayout(
     .x((d) => d.x)
     .y0((d) => d.y0)
     .y1((d) => d.y1);
+  const lineGen = line<{ x: number; y1: number }>()
+    .x((d) => d.x)
+    .y((d) => d.y1);
 
   const bands: AreaBand[] = data.seriesFields.map((key, si) => {
     const pts = parsed.map((d) => {
@@ -104,6 +110,7 @@ export function computeStackedAreaLayout(
       seriesIndex: si,
       seriesKey: key,
       path: areaGen(pts) ?? "",
+      topLine: lineGen(pts) ?? "",
       labelY: (last.y0 + last.y1) / 2,
       lastValue: parsed[parsed.length - 1].values[si],
     };
