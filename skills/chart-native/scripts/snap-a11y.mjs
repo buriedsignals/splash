@@ -12,7 +12,7 @@ const distInteractive =
 const markSel =
   chart === "bar" || chart === "stacked" || chart === "grouped"
     ? 'rect[role="img"][tabindex="0"]'
-    : chart === "pie"
+    : chart === "pie" || chart === "stacked-area"
       ? 'path[role="img"][tabindex="0"]'
       : chart === "slope" || chart === "dumbbell"
         ? 'g[role="img"][tabindex="0"]'

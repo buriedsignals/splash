@@ -19,6 +19,8 @@ import { GroupedBarChart, type GroupedConfig } from "./GroupedBarChart";
 import { InteractiveGroupedBarChart } from "./InteractiveGroupedBarChart";
 import { DumbbellChart, type DumbbellConfig } from "./DumbbellChart";
 import { InteractiveDumbbellChart } from "./InteractiveDumbbellChart";
+import { StackedAreaChart, type StackedAreaConfig } from "./StackedAreaChart";
+import { InteractiveStackedAreaChart } from "./InteractiveStackedAreaChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -27,6 +29,7 @@ import stackedSample from "../assets/sample-data/stacked.json";
 import slopeSample from "../assets/sample-data/slope.json";
 import groupedSample from "../assets/sample-data/grouped.json";
 import dumbbellSample from "../assets/sample-data/dumbbell.json";
+import stackedAreaSample from "../assets/sample-data/stacked-area.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -38,7 +41,16 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "dumbbell") {
+if (chart === "stacked-area") {
+  const config = stackedAreaSample as unknown as StackedAreaConfig;
+  root.render(
+    interactive ? (
+      <InteractiveStackedAreaChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <StackedAreaChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "dumbbell") {
   const config = dumbbellSample as unknown as DumbbellConfig;
   root.render(
     interactive ? (

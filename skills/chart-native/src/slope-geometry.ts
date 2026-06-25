@@ -121,29 +121,6 @@ export function extendLine(
   };
 }
 
-/**
- * De-collide labels that share an x edge: given the desired y of each label
- * (sorted input order preserved via index), nudge them apart by at least
- * `minGap` while staying inside [0, innerHeight]. A simple one-pass push used at
- * both the left and right gutters. Returns y per input index.
- */
-export function spreadLabels(
-  ys: { index: number; y: number }[],
-  minGap: number,
-  maxY: number,
-): Map<number, number> {
-  const sorted = [...ys].sort((a, b) => a.y - b.y);
-  let prev = -Infinity;
-  for (const it of sorted) {
-    let y = it.y;
-    if (y - prev < minGap) y = prev + minGap;
-    it.y = y;
-    prev = y;
-  }
-  // if we pushed past the bottom, shift the whole stack up
-  const overflow = sorted.length ? sorted[sorted.length - 1].y - maxY : 0;
-  if (overflow > 0) for (const it of sorted) it.y -= overflow;
-  const out = new Map<number, number>();
-  for (const it of sorted) out.set(it.index, it.y);
-  return out;
-}
+// spreadLabels (vertical de-collision) moved to core/labels — a global label
+// mechanism now shared by the slope and the stacked area.
+export { spreadLabels } from "./core/labels";

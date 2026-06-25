@@ -244,6 +244,44 @@ export function checkStackedBarConformance(
 }
 
 /**
+ * L2 — STACKED AREA: identical contract to the stacked bar (the continuous
+ * sibling) — global rules + baseline-0 (valueDomain includes 0) + ≤ 5 series +
+ * every band colour in the Okabe-Ito set.
+ */
+export function checkStackedAreaConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    valueDomain: [number, number];
+    seriesCount: number;
+    seriesColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.seriesColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  const [lo, hi] = input.valueDomain;
+  if (!(lo <= 0 && hi >= 0))
+    v.push(
+      `stacked-area value axis must include 0 (baseline rule) — domain is [${lo}, ${hi}]`,
+    );
+  if (input.seriesCount > 5)
+    v.push(
+      `stacked area has ${input.seriesCount} series (> 5) — group into "Other"`,
+    );
+  for (const c of input.seriesColors)
+    if (!isOkabeIto(c)) v.push(`band colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — GROUPED BAR: global rules + the grouped musts. Inherits the bar
  * baseline-0 rule (valueDomain must include 0) and adds: ≤ 3 series (beyond that
  * the groups become a picket fence → small multiples), and every series colour

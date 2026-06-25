@@ -58,6 +58,32 @@ export function overlaps(a: Box, b: Box): boolean {
   return a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
 }
 
+/**
+ * 1-D vertical de-collision for labels that share an x edge (slope endpoints,
+ * stacked-area band labels at the right edge): nudge them apart by at least
+ * `minGap`, then shift the whole stack up if it ran past `maxY`. Returns y per
+ * input index. A global label mechanism (used by ≥2 types) — lives here, once.
+ */
+export function spreadLabels(
+  ys: { index: number; y: number }[],
+  minGap: number,
+  maxY: number,
+): Map<number, number> {
+  const sorted = [...ys].sort((a, b) => a.y - b.y);
+  let prev = -Infinity;
+  for (const it of sorted) {
+    let y = it.y;
+    if (y - prev < minGap) y = prev + minGap;
+    it.y = y;
+    prev = y;
+  }
+  const overflow = sorted.length ? sorted[sorted.length - 1].y - maxY : 0;
+  if (overflow > 0) for (const it of sorted) it.y -= overflow;
+  const out = new Map<number, number>();
+  for (const it of sorted) out.set(it.index, it.y);
+  return out;
+}
+
 export function withinBounds(b: Box, bounds: Box): boolean {
   return (
     b.x0 >= bounds.x0 &&

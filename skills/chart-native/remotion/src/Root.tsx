@@ -7,6 +7,7 @@ import { StackedBarReveal } from "./StackedBarReveal";
 import { SlopeReveal } from "./SlopeReveal";
 import { GroupedBarReveal } from "./GroupedBarReveal";
 import { DumbbellReveal } from "./DumbbellReveal";
+import { StackedAreaReveal } from "./StackedAreaReveal";
 
 // 8 s @ 30fps = 240 frames. Duration is the speed knob — longer = slower,
 // smoother build (more frames per pixel of motion).
@@ -215,6 +216,32 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="DumbbellPortrait"
         component={DumbbellReveal}
+        defaultProps={{ scale: 1.7 }}
+        durationInFrames={240}
+        fps={30}
+        width={1080}
+        height={1350}
+      />
+      <Composition
+        id="StackedAreaReveal"
+        component={StackedAreaReveal}
+        durationInFrames={240}
+        fps={30}
+        width={840}
+        height={480}
+      />
+      <Composition
+        id="StackedAreaSquare"
+        component={StackedAreaReveal}
+        defaultProps={{ scale: 1.7 }}
+        durationInFrames={240}
+        fps={30}
+        width={1080}
+        height={1080}
+      />
+      <Composition
+        id="StackedAreaPortrait"
+        component={StackedAreaReveal}
         defaultProps={{ scale: 1.7 }}
         durationInFrames={240}
         fps={30}
