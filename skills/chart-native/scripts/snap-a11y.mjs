@@ -10,7 +10,7 @@ const distInteractive =
   chart === "line" ? "dist/interactive" : `dist/${chart}/interactive`;
 // the focusable data-mark element differs per chart type
 const markSel =
-  chart === "bar" || chart === "stacked"
+  chart === "bar" || chart === "stacked" || chart === "grouped"
     ? 'rect[role="img"][tabindex="0"]'
     : chart === "pie"
       ? 'path[role="img"][tabindex="0"]'

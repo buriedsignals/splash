@@ -244,6 +244,46 @@ export function checkStackedBarConformance(
 }
 
 /**
+ * L2 — GROUPED BAR: global rules + the grouped musts. Inherits the bar
+ * baseline-0 rule (valueDomain must include 0) and adds: ≤ 3 series (beyond that
+ * the groups become a picket fence → small multiples), and every series colour
+ * in the Okabe-Ito set (categorical CVD-safe palette).
+ */
+export function checkGroupedBarConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    valueDomain: [number, number];
+    seriesCount: number;
+    seriesColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.seriesColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  const [lo, hi] = input.valueDomain;
+  if (!(lo <= 0 && hi >= 0))
+    v.push(
+      `grouped value axis must include 0 (baseline rule) — domain is [${lo}, ${hi}]`,
+    );
+  if (input.seriesCount > 3)
+    v.push(
+      `grouped chart has ${input.seriesCount} series (> 3) — use small multiples`,
+    );
+  for (const c of input.seriesColors)
+    if (!isOkabeIto(c))
+      v.push(`series colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — SLOPE: global rules + the slope musts. POSITION encoding → it does NOT
  * inherit the bar baseline-0 rule (a zoomed y-range is correct). Adds: both
  * period captions present, the accent (editorial) colour in the Okabe-Ito set,

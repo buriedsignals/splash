@@ -1,0 +1,48 @@
+// core/legend — the shared chip legend used by every multi-series type (stacked
+// bar, grouped bar). A legend is the documented exception to the global "direct
+// labels over a legend" rule (stacked-bar.md / grouped-bar.md rule 4): when bars
+// can't each carry a label, ONE legend in series order is the key.
+//
+// This is a GLOBAL mechanism (recipe step 5): wrap a list of coloured series to
+// fit a width, reading left→right then wrapping. The caller reserves padding for
+// `rows` and renders `items` (chip + label) wherever it places the legend.
+// `charW` and `rowH` are already scaled by the caller.
+
+export interface LegendItem {
+  x: number;
+  y: number;
+  color: string;
+  text: string;
+}
+
+export function layoutLegend(
+  series: string[],
+  colors: string[],
+  availWidth: number,
+  x0: number,
+  yTop: number,
+  charW: number,
+  rowH: number,
+): { items: LegendItem[]; rows: number } {
+  const chip = 13;
+  const gapAfterChip = 6;
+  const gapBetween = 18;
+  const items: LegendItem[] = [];
+  let x = x0;
+  let row = 0;
+  for (let i = 0; i < series.length; i++) {
+    const w = chip + gapAfterChip + series[i].length * charW;
+    if (x > x0 && x + w > x0 + availWidth) {
+      row++;
+      x = x0;
+    }
+    items.push({
+      x,
+      y: yTop + row * rowH,
+      color: colors[i % colors.length],
+      text: series[i],
+    });
+    x += w + gapBetween;
+  }
+  return { items, rows: row + 1 };
+}

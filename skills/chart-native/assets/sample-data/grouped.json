@@ -1,0 +1,16 @@
+{
+  "title": "Rural broadband still trails towns after three years of upgrades",
+  "unit": "median download, Mbps",
+  "catField": "area",
+  "seriesFields": ["2019", "2022", "2024"],
+  "source": {
+    "name": "Riverton connectivity audit",
+    "url": "https://example.org/riverton-broadband"
+  },
+  "rows": [
+    { "area": "Urban", "2019": 80, "2022": 140, "2024": 220 },
+    { "area": "Suburban", "2019": 55, "2022": 95, "2024": 160 },
+    { "area": "Town", "2019": 30, "2022": 60, "2024": 110 },
+    { "area": "Rural", "2019": 12, "2022": 22, "2024": 38 }
+  ]
+}

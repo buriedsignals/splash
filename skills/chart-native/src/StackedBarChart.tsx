@@ -23,6 +23,7 @@ import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
+import { layoutLegend } from "./core/legend";
 
 export interface StackedConfig {
   title: string; // = the insight (sentence case)
@@ -51,47 +52,6 @@ const SERIES_COLORS = [
   OKABE_ITO.green,
   OKABE_ITO.purple,
 ];
-
-interface LegendItem {
-  x: number;
-  y: number;
-  color: string;
-  text: string;
-}
-
-// Wrap the series legend to fit `availWidth`, starting at (x0, yTop), reading
-// left→right then wrapping. Returns laid-out items + the row count (→ caller
-// reserves the matching bottom padding). `charW`/`rowH` are already scaled.
-function layoutLegend(
-  series: string[],
-  availWidth: number,
-  x0: number,
-  yTop: number,
-  charW: number,
-  rowH: number,
-): { items: LegendItem[]; rows: number } {
-  const chip = 13;
-  const gapAfterChip = 6;
-  const gapBetween = 18;
-  const items: LegendItem[] = [];
-  let x = x0;
-  let row = 0;
-  for (let i = 0; i < series.length; i++) {
-    const w = chip + gapAfterChip + series[i].length * charW;
-    if (x > x0 && x + w > x0 + availWidth) {
-      row++;
-      x = x0;
-    }
-    items.push({
-      x,
-      y: yTop + row * rowH,
-      color: SERIES_COLORS[i % SERIES_COLORS.length],
-      text: series[i],
-    });
-    x += w + gapBetween;
-  }
-  return { items, rows: row + 1 };
-}
 
 export function StackedBarChart({
   config,
@@ -125,6 +85,7 @@ export function StackedBarChart({
   const availLegendW = width - (leftAxis + sideRight) * s;
   const { rows: legendRows } = layoutLegend(
     config.seriesFields,
+    SERIES_COLORS,
     availLegendW,
     0,
     0,
@@ -238,6 +199,7 @@ function StackedSvg({
   const legendTop = innerHeight + 40 * sc;
   const legend = layoutLegend(
     config.seriesFields,
+    SERIES_COLORS,
     innerWidth,
     0,
     legendTop,
