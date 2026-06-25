@@ -7,8 +7,8 @@ import {
   contrastRatio,
   isOkabeIto,
   relativeLuminance,
-} from "../src/conformance";
-import { COLORS } from "../src/tokens";
+} from "../src/core/conformance";
+import { COLORS } from "../src/core/tokens";
 import type { ChartConfig } from "../src/LineChart";
 import sample from "../assets/sample-data/series.json";
 

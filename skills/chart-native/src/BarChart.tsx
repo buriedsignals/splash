@@ -19,8 +19,8 @@ import {
   type Sort,
   type BarLayout,
 } from "./bar-geometry";
-import { formatNumber, clamp01, easeOutCubic, stagger } from "./chart-geometry";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./tokens";
+import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
+import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 
 export interface BarConfig {
   title: string; // = the insight (sentence case)

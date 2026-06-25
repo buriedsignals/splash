@@ -6,7 +6,7 @@
 // pure function of a per-bar progress, computed in the component.
 
 import { scaleBand, scaleLinear } from "d3-scale";
-import { formatNumber } from "./chart-geometry";
+import { formatNumber } from "./core/math";
 
 export type Orientation = "vertical" | "horizontal";
 export type Sort = "desc" | "asc" | "none";

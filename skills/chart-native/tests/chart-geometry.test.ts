@@ -4,11 +4,10 @@ import {
   linePath,
   revealLine,
   revealHead,
-  formatNumber,
-  clamp01,
   type ChartData,
   type Dims,
 } from "../src/chart-geometry";
+import { formatNumber, clamp01 } from "../src/core/math";
 
 const dims: Dims = {
   width: 800,
@@ -202,7 +201,7 @@ describe("clamp01", () => {
   });
 });
 
-import { easeInOutCubic } from "../src/chart-geometry";
+import { easeInOutCubic } from "../src/core/math";
 
 describe("easeInOutCubic (shared by the interactive reveal and the video)", () => {
   it("pins the endpoints exactly", () => {
@@ -221,7 +220,7 @@ describe("easeInOutCubic (shared by the interactive reveal and the video)", () =
   });
 });
 
-import { easeOutCubic, stagger } from "../src/chart-geometry";
+import { easeOutCubic, stagger } from "../src/core/math";
 
 describe("easeOutCubic (chrome wipe-in easing)", () => {
   it("pins endpoints and decelerates (fast start)", () => {
