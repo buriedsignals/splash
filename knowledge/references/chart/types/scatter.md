@@ -31,7 +31,12 @@ to show the **relationship/correlation** between them. An optional third variabl
    line is optional and, if shown, must be honest (linear fit only when linear; never extrapolate
    beyond the data).
 4. **Label the few that matter, not all.** Annotate the outliers / the subject of the story; labelling
-   every dot is clutter. (Inherits the global "direct labels" principle, applied selectively.)
+   every dot is clutter and, in a static (no hover), labels collide into an unreadable pile. The
+   producer takes an explicit `annotate` list (the journalist/② names the story points); with none,
+   it labels just the headline outlier. Placement is collision-aware (tries right/left/above/below
+   each dot, treats every bubble as an obstacle, and SKIPS any label it cannot place cleanly — fewer
+   readable labels beat overlapping ones). The full set is reachable on hover/focus in the interactive
+   build. (Inherits the global "direct labels" principle, applied selectively.)
 5. **Bubble size = AREA, never radius.** Map the third value to circle *area* (`r ∝ √value`); mapping
    to radius exaggerates large values ~quadratically — a classic lie. (data-to-viz: "bubble".)
 

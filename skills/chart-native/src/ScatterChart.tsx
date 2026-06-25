@@ -27,9 +27,12 @@ export interface ScatterConfig {
   labelField?: string;
   xLabel: string; // axis title — what x means
   yLabel: string; // axis title — what y means
-  /** which dots get a text label. "auto" (default) = all when ≤12 named points,
-   *  else just the outlier. "all" | "outliers" | "none" force it. */
-  labelPoints?: "auto" | "all" | "outliers" | "none";
+  /** the story points to label (by their label value) — the journalist/② names
+   *  the few that matter (scatter.md). When set, ONLY these are labelled. */
+  annotate?: string[];
+  /** fallback when `annotate` is absent: "default" = just the headline outlier
+   *  (recommended), "all" = every named point, "none" = no labels. */
+  labelPoints?: "default" | "all" | "none";
   rows: Record<string, string | number>[];
 }
 
@@ -216,32 +219,36 @@ function ScatterSvg({
   const bloom = (s: number) => s * (1 + 0.16 * Math.sin(clamp01(s) * Math.PI));
   const labelOpacity = clamp01((p - 0.85) / 0.15);
 
-  // Which points to label. With few named points (≤12) a static can't rely on
-  // hover, so label them ALL (scatter.md "label the few that matter" → here the
-  // few IS all). With many, label only the headline outlier to avoid clutter.
-  const strategy = config.labelPoints ?? "auto";
+  // WHICH points to label (scatter.md "label the few that matter, not all"):
+  //  - config.annotate (the journalist/② names the story points) → those;
+  //  - labelPoints "all"/"none" → escape hatches;
+  //  - default → just the headline outlier (the max-y point). Never all.
+  const strategy = config.labelPoints ?? "default";
   const outlier = points.reduce(
     (mi, pt, i, a) => (pt.rawY > a[mi].rawY ? i : mi),
     0,
   );
-  const candidates: number[] =
-    strategy === "none"
+  const annotateSet = config.annotate ? new Set(config.annotate) : null;
+  const candidates: number[] = annotateSet
+    ? points
+        .map((pt, i) => (pt.label && annotateSet.has(pt.label) ? i : -1))
+        .filter((i) => i >= 0)
+    : strategy === "none"
       ? []
-      : strategy === "all" || (strategy === "auto" && n <= 12)
+      : strategy === "all"
         ? points.map((pt, i) => (pt.label ? i : -1)).filter((i) => i >= 0)
         : points[outlier]?.label
           ? [outlier]
           : [];
 
   // Collision-aware placement. Obstacles start as EVERY dot (a label must not sit
-  // on a neighbouring bubble), plus each label already placed. Take candidates by
-  // priority (highest value first); try the right of the dot, then the left; if
-  // neither box is clear and in-bounds, SKIP the label. Fewer readable labels
-  // beat overlapping ones; degrades gracefully (dense clusters keep only the
-  // well-separated). Box sizes are estimated (no DOM measure).
+  // on a neighbouring bubble), plus each placed label. For each candidate (by
+  // priority = highest value first) try four positions around its dot —
+  // right, left, above, below — and take the first that is clear and in-bounds;
+  // if none is, SKIP it. Readable-but-fewer beats overlapping. (Boxes estimated.)
   type Box = { x0: number; x1: number; y0: number; y1: number };
   const charW = TYPE.axis * 0.6;
-  const lh = 18; // label box height (text + breathing room)
+  const lh = 18;
   const padX = 3;
   const overlaps = (a: Box, b: Box) =>
     a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
@@ -251,33 +258,92 @@ function ScatterSvg({
     y0: pt.y - pt.r,
     y1: pt.y + pt.r,
   }));
-  const placedLabels: { idx: number; x: number; anchor: "start" | "end" }[] =
-    [];
+  const placedLabels: {
+    idx: number;
+    x: number;
+    y: number;
+    anchor: "start" | "middle" | "end";
+  }[] = [];
   for (const idx of [...candidates].sort(
     (a, b) => points[b].rawY - points[a].rawY,
   )) {
     const pt = points[idx];
     const w = (pt.label?.length ?? 0) * charW + padX * 2;
-    let chosen: { x: number; anchor: "start" | "end"; box: Box } | null = null;
-    for (const flip of [false, true]) {
-      const x = flip ? pt.x - pt.r - 6 : pt.x + pt.r + 6;
-      const x0 = flip ? x - w : x;
-      const x1 = flip ? x : x + w;
-      const box: Box = { x0, x1, y0: pt.y - lh / 2, y1: pt.y + lh / 2 };
-      if (
-        box.x0 < 0 ||
-        box.x1 > innerWidth ||
-        box.y0 < 0 ||
-        box.y1 > innerHeight
-      )
-        continue;
-      if (obstacles.some((o) => overlaps(box, o))) continue;
-      chosen = { x, anchor: flip ? "end" : "start", box };
-      break;
-    }
+    const positions: {
+      x: number;
+      y: number;
+      anchor: "start" | "middle" | "end";
+      box: Box;
+    }[] = [
+      // right
+      {
+        x: pt.x + pt.r + 6,
+        y: pt.y,
+        anchor: "start",
+        box: {
+          x0: pt.x + pt.r + 6,
+          x1: pt.x + pt.r + 6 + w,
+          y0: pt.y - lh / 2,
+          y1: pt.y + lh / 2,
+        },
+      },
+      // left
+      {
+        x: pt.x - pt.r - 6,
+        y: pt.y,
+        anchor: "end",
+        box: {
+          x0: pt.x - pt.r - 6 - w,
+          x1: pt.x - pt.r - 6,
+          y0: pt.y - lh / 2,
+          y1: pt.y + lh / 2,
+        },
+      },
+      // above
+      {
+        x: pt.x,
+        y: pt.y - pt.r - 12,
+        anchor: "middle",
+        box: {
+          x0: pt.x - w / 2,
+          x1: pt.x + w / 2,
+          y0: pt.y - pt.r - 12 - lh / 2,
+          y1: pt.y - pt.r - 12 + lh / 2,
+        },
+      },
+      // below
+      {
+        x: pt.x,
+        y: pt.y + pt.r + 12,
+        anchor: "middle",
+        box: {
+          x0: pt.x - w / 2,
+          x1: pt.x + w / 2,
+          y0: pt.y + pt.r + 12 - lh / 2,
+          y1: pt.y + pt.r + 12 + lh / 2,
+        },
+      },
+    ];
+    // Labels may run into the side padding (it's free for an edge point), but
+    // not above the plot (title / y-axis title live there) nor below (x-axis).
+    const xMin = -padding.left + 2;
+    const xMax = innerWidth + padding.right - 2;
+    const chosen = positions.find(
+      (pos) =>
+        pos.box.x0 >= xMin &&
+        pos.box.x1 <= xMax &&
+        pos.box.y0 >= 0 &&
+        pos.box.y1 <= innerHeight &&
+        !obstacles.some((o) => overlaps(pos.box, o)),
+    );
     if (chosen) {
       obstacles.push(chosen.box);
-      placedLabels.push({ idx, x: chosen.x, anchor: chosen.anchor });
+      placedLabels.push({
+        idx,
+        x: chosen.x,
+        y: chosen.y,
+        anchor: chosen.anchor,
+      });
     }
   }
 
@@ -396,24 +462,21 @@ function ScatterSvg({
 
         {/* point labels (fade in last) — collision-placed: only non-overlapping,
             in-bounds labels are drawn (priority = highest value first) */}
-        {placedLabels.map(({ idx, x, anchor }) => {
-          const pt = points[idx];
-          return (
-            <text
-              key={`lbl${idx}`}
-              x={x}
-              y={pt.y}
-              dy="0.32em"
-              textAnchor={anchor}
-              fontSize={TYPE.axis}
-              fontWeight={600}
-              fill={COLORS.line}
-              opacity={labelOpacity}
-            >
-              {pt.label}
-            </text>
-          );
-        })}
+        {placedLabels.map(({ idx, x, y, anchor }) => (
+          <text
+            key={`lbl${idx}`}
+            x={x}
+            y={y}
+            dy="0.32em"
+            textAnchor={anchor}
+            fontSize={TYPE.axis}
+            fontWeight={600}
+            fill={COLORS.line}
+            opacity={labelOpacity}
+          >
+            {points[idx].label}
+          </text>
+        ))}
       </g>
     </svg>
   );
