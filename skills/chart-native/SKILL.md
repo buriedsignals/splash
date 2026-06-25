@@ -16,8 +16,33 @@ description: Use when you need a native (non-Datawrapper) chart that ships as AL
 > **Shared layer** — `src/core/`: `math.ts` (formatNumber, clamp01, easings, stagger — decouples the
 > geometry files), `tokens.ts` (Okabe-Ito + type scale), `conformance.ts` (the global L0 guard + WCAG
 > math; per-type checks compose on top), `InteractiveChart.tsx` (the one ResizeObserver + rAF +
-> reduced-motion wrapper, `render(width, progress)` — line/bar are thin bindings over it). A new type
-> = its geometry + component + a conformance rule; everything else is inherited from `core/`.
+> reduced-motion wrapper, `render(width, progress)` — line/bar are thin bindings over it),
+> `ChartFrame.tsx` (the title/subtitle/source shell), `format.ts` (`resolveFrame` — scales
+> type/margins + centres the plot for square/portrait video), `labels.ts` (`placeLabels` — the
+> collision-aware, in-bounds label placement, shared by every type).
+
+## The recipe — adding a chart type (always these steps)
+
+For each new FT type, in order:
+1. **KB first** — write/extend `knowledge/references/chart/types/<type>.md` (sourced: FT vocab +
+   data-to-viz) and reuse the format disciplines in `formats/`.
+2. **Pure geometry** — `<type>-geometry.ts` + unit tests.
+3. **Component** — `<Type>Chart.tsx` driven by one `progress`; wrap the SVG in `ChartFrame`; thread
+   `scale` via `resolveFrame`; an `Interactive<Type>Chart` thin binding over `InteractiveChart`.
+4. **Conformance rule** — a `check<Type>Conformance` composing on `checkGlobalConformance`.
+5. **Classify global vs type-specific (do this EVERY time, in addition to the rest).** For each
+   concern ask: *is this an invariant true for all charts, or specific to this type?*
+   - **Global invariant** (label in-bounds, no overlap, contrast, palette, title=insight, source) →
+     **reuse** the shared mechanism (`placeLabels`, `conformance`, `ChartFrame`, `resolveFrame`) and
+     **enforce** it with a test (e.g. `tests/labels.test.ts`). Never re-solve a global invariant
+     inside one component.
+   - **Type-specific** (the geometry, the motion gesture, *where* labels naturally go, type data
+     rules) → lives in the type module.
+   If you find yourself re-coding a global invariant per type (as the label-overflow guard was), stop
+   and lift it into `core/` + a guard.
+6. **Verify at the render** — static + interactive (≥3 widths + keyboard focus) + video (landscape +
+   square + portrait). Looking is the gate; the eye missed scatter label overflow three times — the
+   guard (#5) is why it can't happen silently again.
 
 ## Overview
 
