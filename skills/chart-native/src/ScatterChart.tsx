@@ -16,7 +16,8 @@ import {
   type ScatterLayout,
 } from "./scatter-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE } from "./core/tokens";
+import { COLORS, TYPE } from "./core/tokens";
+import { ChartFrame } from "./core/ChartFrame";
 
 export interface ScatterConfig {
   title: string; // the insight (sentence case)
@@ -97,89 +98,17 @@ export function ScatterChart({
       />
     ) : null;
 
-  if (responsive) {
-    return (
-      <div style={{ width, background: COLORS.bg, fontFamily: FONT }}>
-        <div style={{ padding: "4px 24px 0" }}>
-          <div
-            style={{
-              fontSize: TYPE.title,
-              fontWeight: 700,
-              color: COLORS.ink,
-              lineHeight: 1.2,
-            }}
-          >
-            {config.title}
-          </div>
-        </div>
-        <div style={{ position: "relative", width, height }}>
-          {svg}
-          {tooltip}
-        </div>
-        <div
-          style={{
-            fontSize: TYPE.source,
-            color: COLORS.muted,
-            padding: "4px 24px 8px",
-          }}
-        >
-          Source:{" "}
-          {config.source.url ? (
-            <a
-              href={config.source.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: COLORS.muted }}
-            >
-              {config.source.name}
-            </a>
-          ) : (
-            config.source.name
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div
-      style={{
-        width,
-        height,
-        background: COLORS.bg,
-        fontFamily: FONT,
-        position: "relative",
-        boxSizing: "border-box",
-      }}
+    <ChartFrame
+      title={config.title}
+      source={config.source}
+      width={width}
+      height={height}
+      responsive={responsive}
+      tooltip={tooltip}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: 18,
-          left: 24,
-          right: 24,
-          fontSize: TYPE.title,
-          fontWeight: 700,
-          color: COLORS.ink,
-          lineHeight: 1.2,
-        }}
-      >
-        {config.title}
-      </div>
       {svg}
-      {tooltip}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 12,
-          left: 24,
-          fontSize: TYPE.source,
-          color: COLORS.muted,
-        }}
-      >
-        Source: {config.source.name}
-      </div>
-    </div>
+    </ChartFrame>
   );
 }
 
