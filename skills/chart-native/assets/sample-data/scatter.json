@@ -10,7 +10,7 @@
   "labelField": "branch",
   "xLabel": "weekly opening hours",
   "yLabel": "monthly visits",
-  "annotate": ["Central", "Northgate"],
+  "annotate": ["Central", "Northgate", "Hilltop"],
   "rows": [
     { "branch": "Central", "hours": 72, "visits": 10400, "staff": 14 },
     { "branch": "Fairview", "hours": 65, "visits": 6800, "staff": 10 },
