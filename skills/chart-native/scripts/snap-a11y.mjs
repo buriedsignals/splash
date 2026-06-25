@@ -5,15 +5,23 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
+const chart = process.env.CHART ?? "line";
+const distInteractive =
+  chart === "line" ? "dist/interactive" : `dist/${chart}/interactive`;
+// the focusable data-mark element differs per chart type
+const markSel =
+  chart === "bar"
+    ? 'rect[role="img"][tabindex="0"]'
+    : 'circle[role="img"][tabindex="0"]';
 const out = process.argv[2] ?? "/tmp/native-a11y.png";
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 900, height: 560 }, deviceScaleFactor: 2 });
-await page.goto(pathToFileURL(join(root, "dist/interactive/index.html")).href);
+await page.goto(pathToFileURL(join(root, distInteractive, "index.html")).href);
 await page.waitForSelector("svg");
 await page.waitForTimeout(2100); // let the reveal settle
 
-// 1) keyboard focus a data point -> tooltip appears (no mouse)
-const pts = page.locator('circle[role="img"][tabindex="0"]');
+// 1) keyboard focus a data mark -> tooltip appears (no mouse)
+const pts = page.locator(markSel);
 const n = await pts.count();
 const before = await page.locator(".tooltip").count();
 await pts.nth(2).focus();

@@ -60,38 +60,37 @@ export interface ConformanceColors {
  * list of violations (empty = conformant). The component bakes these in; this
  * is the guard that proves it for every chart we ship.
  */
-export function checkConformance(
-  config: ChartConfig,
-  colors: ConformanceColors,
-): string[] {
+/**
+ * L0 — GLOBAL dataviz rules that hold for EVERY chart type (and map): insight
+ * title, Okabe-Ito data colour, source name+url, WCAG text contrast. The
+ * type-specific guards below compose on top (global ++ type), mirroring the
+ * layered knowledge tree.
+ */
+export function checkGlobalConformance(input: {
+  title: string;
+  source: { name?: string; url?: string };
+  colors: ConformanceColors;
+}): string[] {
   const v: string[] = [];
+  const { colors } = input;
 
-  // 1. Title = the insight (not a bare label or year range, not ALL CAPS).
-  const title = config.title?.trim() ?? "";
+  // 1. Title = the insight (not a bare year range, not ALL CAPS).
+  const title = input.title?.trim() ?? "";
   if (title.length < 12) v.push(`title too short to be an insight: "${title}"`);
   if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
     v.push(`title is a year range, not an insight: "${title}"`);
   if (title.length > 0 && title === title.toUpperCase())
     v.push("title is ALL CAPS (use sentence case)");
-  if (title && config.directLabel && title === config.directLabel)
-    v.push("title must be the insight, not the series label");
 
   // 2. Data colour ∈ Okabe-Ito.
   if (!isOkabeIto(colors.data))
     v.push(`data colour ${colors.data} is not in the Okabe-Ito set`);
 
-  // 3. Direct label present (we label over a legend).
-  if (!config.directLabel?.trim()) v.push("missing direct label");
-
   // 5. Source cited: name + url.
-  if (!config.source?.name?.trim()) v.push("missing source name");
-  if (!config.source?.url?.trim()) v.push("missing source url");
+  if (!input.source?.name?.trim()) v.push("missing source name");
+  if (!input.source?.url?.trim()) v.push("missing source url");
 
-  // 6. Alt = the insight → the component uses config.title as aria-label, so a
-  //    present, insight-shaped title (checked above) is the alt. Nothing extra.
-
-  // 7. Contrast ≥ 4.5:1 for every text colour (incl. the data colour, which is
-  //    also the direct-label text). Decorative gridlines are exempt.
+  // 7. Contrast ≥ 4.5:1 for every text colour. Decorative gridlines are exempt.
   for (const t of colors.text) {
     const r = contrastRatio(t, colors.bg);
     if (r < 4.5)
@@ -99,6 +98,48 @@ export function checkConformance(
         `text colour ${t} contrast ${r.toFixed(2)}:1 on ${colors.bg} < 4.5:1`,
       );
   }
+  return v;
+}
 
+/** L2 — LINE: global rules + a single direct label over a legend. */
+export function checkConformance(
+  config: ChartConfig,
+  colors: ConformanceColors,
+): string[] {
+  const v = checkGlobalConformance({
+    title: config.title,
+    source: config.source,
+    colors,
+  });
+  // direct label present, and not just the insight title repeated
+  if (!config.directLabel?.trim()) v.push("missing direct label");
+  if (config.title && config.directLabel && config.title === config.directLabel)
+    v.push("title must be the insight, not the series label");
+  return v;
+}
+
+/**
+ * L2 — BAR: global rules + the bar-specific non-negotiable — the value axis MUST
+ * include 0 (bars encode length; a truncated baseline lies). `valueDomain` comes
+ * straight from `computeBarLayout`.
+ */
+export function checkBarConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    valueDomain: [number, number];
+  },
+  colors: ConformanceColors,
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors,
+  });
+  const [lo, hi] = input.valueDomain;
+  if (!(lo <= 0 && hi >= 0))
+    v.push(
+      `bar value axis must include 0 (baseline rule) — domain is [${lo}, ${hi}]`,
+    );
   return v;
 }

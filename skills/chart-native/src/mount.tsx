@@ -1,28 +1,41 @@
-// Browser entry shared by the static and interactive builds. The build sets
-// __INTERACTIVE__ via Vite define:
-//  - static      : the fixed-size LineChart at progress=1 (final frame) → PNG.
-//  - interactive : the responsive wrapper (ResizeObserver re-layout + intro
-//                  reveal), so it fills its container and animates 0→1.
+// Browser entry shared by the static and interactive builds, for either chart.
+//  - __CHART__   : "line" | "bar"  (Vite define)
+//  - __INTERACTIVE__ : static (fixed, progress=1) vs interactive (responsive +
+//    intro reveal). Per-format reveal trigger via ANIMATE_ON.
 import { createRoot } from "react-dom/client";
 import { LineChart, type ChartConfig } from "./LineChart";
 import { InteractiveLineChart, type AnimateOn } from "./InteractiveLineChart";
-import sample from "../assets/sample-data/series.json";
+import { BarChart, type BarConfig } from "./BarChart";
+import { InteractiveBarChart } from "./InteractiveBarChart";
+import lineSample from "../assets/sample-data/series.json";
+import barSample from "../assets/sample-data/bars.json";
 
 declare const __INTERACTIVE__: boolean;
+declare const __CHART__: string;
 const interactive =
   typeof __INTERACTIVE__ !== "undefined" ? __INTERACTIVE__ : false;
+const chart = typeof __CHART__ !== "undefined" ? __CHART__ : "line";
 
-// Per-format knob: when the reveal plays in the interactive embed.
-// "scroll" = on first viewport entry (article use); "load" = on open; "none" = off.
 const ANIMATE_ON: AnimateOn = "scroll";
-
-const config = sample as unknown as ChartConfig;
 const el = document.getElementById("root")!;
+const root = createRoot(el);
 
-createRoot(el).render(
-  interactive ? (
-    <InteractiveLineChart config={config} animateOn={ANIMATE_ON} />
-  ) : (
-    <LineChart config={config} progress={1} width={840} height={480} />
-  ),
-);
+if (chart === "bar") {
+  const config = barSample as unknown as BarConfig;
+  root.render(
+    interactive ? (
+      <InteractiveBarChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <BarChart config={config} progress={1} width={840} height={460} />
+    ),
+  );
+} else {
+  const config = lineSample as unknown as ChartConfig;
+  root.render(
+    interactive ? (
+      <InteractiveLineChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <LineChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+}

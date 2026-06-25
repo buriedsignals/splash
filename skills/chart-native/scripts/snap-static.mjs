@@ -7,7 +7,9 @@ import { readFile } from "node:fs/promises";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
-const dist = join(root, "dist/static");
+const chart = process.env.CHART ?? "line";
+const dist = join(root, chart === "line" ? "dist/static" : `dist/${chart}/static`);
+const marker = chart === "bar" ? ".bar" : ".series-line";
 const out = process.argv[2] ?? "/tmp/native-static.png";
 
 // module scripts get crossorigin -> blocked over file://. Serve over http.
@@ -33,7 +35,7 @@ const page = await browser.newPage({
   deviceScaleFactor: 2,
 });
 await page.goto(`http://localhost:${port}/`);
-await page.waitForSelector(".series-line");
+await page.waitForSelector(marker);
 await page.locator("#root > div").screenshot({ path: out });
 await browser.close();
 server.close();

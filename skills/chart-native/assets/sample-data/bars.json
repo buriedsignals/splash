@@ -1,0 +1,19 @@
+{
+  "title": "The Central branch draws more visitors than the next three combined",
+  "source": {
+    "name": "Riverton city open data",
+    "url": "https://data.riverton.gov/libraries"
+  },
+  "unit": "monthly visits",
+  "catField": "branch",
+  "valField": "visits",
+  "orientation": "horizontal",
+  "sort": "desc",
+  "rows": [
+    { "branch": "Central", "visits": 10400 },
+    { "branch": "Riverside", "visits": 4200 },
+    { "branch": "Hilltop", "visits": 3100 },
+    { "branch": "Eastgate", "visits": 2600 },
+    { "branch": "Westpark", "visits": 1800 }
+  ]
+}

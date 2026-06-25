@@ -8,15 +8,16 @@ const here = dirname(fileURLToPath(import.meta.url));
 const remotion = join(here, "..", "remotion", "index.ts");
 const stillOut = process.argv[2] ?? "/tmp/native-still.png";
 const mp4Out = process.argv[3] ?? "/tmp/native-line-reveal.mp4";
+const comp = process.env.COMP ?? "LineReveal"; // LineReveal | BarReveal
 
 const run = (args) =>
   execFileSync("npx", args, { stdio: "inherit", cwd: join(here, "..") });
 
-console.log("1/2 validating a still frame (frame 140) before the mp4…");
-run(["remotion", "still", remotion, "LineReveal", stillOut, "--frame=140", "--gl=angle"]);
+console.log(`1/2 validating a still frame (frame 140) of ${comp} before the mp4…`);
+run(["remotion", "still", remotion, comp, stillOut, "--frame=140", "--gl=angle"]);
 
 console.log("2/2 rendering the mp4…");
-run(["remotion", "render", remotion, "LineReveal", mp4Out,
+run(["remotion", "render", remotion, comp, mp4Out,
   "--gl=angle", "--concurrency=1", "--timeout=120000"]);
 
 console.log("Wrote", stillOut, "and", mp4Out);
