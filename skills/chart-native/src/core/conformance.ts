@@ -396,3 +396,44 @@ export function checkDumbbellConformance(
     if (!isOkabeIto(c)) v.push(`dot colour ${c} is not in the Okabe-Ito set`);
   return v;
 }
+
+/**
+ * L2 — HEATMAP: colour is the quantitative channel, so this is the ONE type that
+ * does NOT use the Okabe-Ito categorical palette. It requires a SEQUENTIAL ramp
+ * whose luminance is monotonic (single-hue ColorBrewer / viridis) — that is what
+ * makes it CVD-safe and greyscale-readable (heatmap.md rule 1). Plus: a range
+ * (min < max) for the colourbar. The per-cell label contrast is handled in the
+ * component (white-on-dark / ink-on-light), not here.
+ */
+export function checkHeatmapConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    rampStops: string[];
+    valueDomain: [number, number];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    // the global "data ∈ Okabe-Ito" check is for CATEGORICAL types; the heatmap's
+    // colour is a sequential ramp, validated below by monotonic luminance. Pass a
+    // representative Okabe-Ito blue so the (here-irrelevant) categorical check
+    // passes; title/source/contrast still apply.
+    colors: { data: "#0072B2", text: textColors.text, bg: textColors.bg },
+  });
+  if (input.rampStops.length < 3)
+    v.push("heatmap ramp needs ≥ 3 stops for a readable sequential scale");
+  const lums = input.rampStops.map(relativeLuminance);
+  for (let i = 1; i < lums.length; i++)
+    if (lums[i] >= lums[i - 1]) {
+      v.push(
+        "heatmap ramp luminance is not monotonic — use a sequential CVD-safe ramp (single-hue / viridis)",
+      );
+      break;
+    }
+  const [lo, hi] = input.valueDomain;
+  if (!(hi > lo)) v.push(`heatmap value range is empty — [${lo}, ${hi}]`);
+  return v;
+}
