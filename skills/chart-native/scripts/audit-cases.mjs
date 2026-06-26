@@ -32,6 +32,7 @@ const FILE = {
   streamgraph: "streamgraph.json",
   gantt: "gantt.json",
   fan: "fan.json",
+  calendar: "calendar.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -112,6 +113,13 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  calendar: (s) => {
+    // a short ~10-week window (fewer columns → bigger cells) to stress the grid
+    // centring and the colourbar at low column counts.
+    const short = clone(s);
+    short.days = s.days.slice(60, 130);
+    return [["short-window", short]];
   },
   fan: (s) => {
     // 1000× the values (wide y-axis labels) to stress the left gutter + ticks.

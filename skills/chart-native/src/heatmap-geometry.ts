@@ -48,7 +48,7 @@ export interface HeatmapLayout {
 
 // ColorBrewer single-hue "Blues" (light → dark), luminance strictly decreasing.
 // Light end trimmed so the lowest cells stay visible on a white background.
-const BLUES = [
+export const BLUES = [
   "#deebf7",
   "#c6dbef",
   "#9ecae1",

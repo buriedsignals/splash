@@ -634,6 +634,50 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — CALENDAR HEATMAP: like the matrix heatmap, colour is the quantitative
+ * channel — so it must be a SEQUENTIAL ramp with monotonic luminance (single-hue,
+ * CVD-safe), NOT the categorical Okabe-Ito palette. Adds: a labelled value unit,
+ * a value range (min < max), and ≥ 14 days (a calendar needs a span to read).
+ */
+export function checkCalendarConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    unit?: string;
+    rampStops: string[];
+    valueDomain: [number, number];
+    dayCount: number;
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    // colour is a sequential ramp (validated below), not categorical; pass a
+    // representative Okabe-Ito blue so the categorical check is a no-op here.
+    colors: { data: "#0072B2", text: textColors.text, bg: textColors.bg },
+  });
+  if (!input.unit?.trim()) v.push("missing value unit");
+  if (input.rampStops.length < 3)
+    v.push("calendar ramp needs ≥ 3 stops for a readable sequential scale");
+  const lums = input.rampStops.map(relativeLuminance);
+  for (let i = 1; i < lums.length; i++)
+    if (lums[i] >= lums[i - 1]) {
+      v.push(
+        "calendar ramp luminance is not monotonic — use a sequential CVD-safe ramp",
+      );
+      break;
+    }
+  const [lo, hi] = input.valueDomain;
+  if (!(hi > lo)) v.push(`calendar value range is empty — [${lo}, ${hi}]`);
+  if (input.dayCount < 14)
+    v.push(
+      `calendar has ${input.dayCount} days (< 14) — too short to read as a calendar`,
+    );
+  return v;
+}
+
+/**
  * L2 — FAN CHART: global rules + the uncertainty musts. The fan is one hue (tints
  * by level), so the global data-colour check applies to that hue. Adds: ≥ 2
  * confidence levels, a labelled value axis, and — the structural guarantee — every

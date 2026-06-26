@@ -71,6 +71,8 @@ import { GanttChart, type GanttConfig } from "./GanttChart";
 import { InteractiveGanttChart } from "./InteractiveGanttChart";
 import { FanChart, type FanConfig } from "./FanChart";
 import { InteractiveFanChart } from "./InteractiveFanChart";
+import { CalendarChart, type CalendarConfig } from "./CalendarChart";
+import { InteractiveCalendarChart } from "./InteractiveCalendarChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -99,6 +101,7 @@ import sankeySample from "../assets/sample-data/sankey.json";
 import streamgraphSample from "../assets/sample-data/streamgraph.json";
 import ganttSample from "../assets/sample-data/gantt.json";
 import fanSample from "../assets/sample-data/fan.json";
+import calendarSample from "../assets/sample-data/calendar.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -142,6 +145,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   streamgraph: StreamgraphChart,
   gantt: GanttChart,
   fan: FanChart,
+  calendar: CalendarChart,
 };
 
 if (chart === "audit") {
@@ -170,6 +174,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "calendar") {
+  const config = calendarSample as unknown as CalendarConfig;
+  root.render(
+    interactive ? (
+      <InteractiveCalendarChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <CalendarChart config={config} progress={1} width={840} height={420} />
+    ),
+  );
 } else if (chart === "fan") {
   const config = fanSample as unknown as FanConfig;
   root.render(
