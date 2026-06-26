@@ -87,6 +87,8 @@ import { ParallelChart, type ParallelConfig } from "./ParallelChart";
 import { InteractiveParallelChart } from "./InteractiveParallelChart";
 import { DotStripChart, type DotStripConfig } from "./DotStripChart";
 import { InteractiveDotStripChart } from "./InteractiveDotStripChart";
+import { ViolinChart, type ViolinConfig } from "./ViolinChart";
+import { InteractiveViolinChart } from "./InteractiveViolinChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -123,6 +125,7 @@ import chordSample from "../assets/sample-data/chord.json";
 import sunburstSample from "../assets/sample-data/sunburst.json";
 import parallelSample from "../assets/sample-data/parallel.json";
 import dotStripSample from "../assets/sample-data/dot-strip.json";
+import violinSample from "../assets/sample-data/violin.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -174,6 +177,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   sunburst: SunburstChart,
   parallel: ParallelChart,
   "dot-strip": DotStripChart,
+  violin: ViolinChart,
 };
 
 if (chart === "audit") {
@@ -218,6 +222,15 @@ if (chart === "audit") {
       <InteractiveDotStripChart config={config} animateOn={ANIMATE_ON} />
     ) : (
       <DotStripChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "violin") {
+  const config = violinSample as unknown as ViolinConfig;
+  root.render(
+    interactive ? (
+      <InteractiveViolinChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <ViolinChart config={config} progress={1} width={840} height={480} />
     ),
   );
 } else if (chart === "sunburst") {

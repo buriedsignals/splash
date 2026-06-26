@@ -666,6 +666,38 @@ export function checkDotStripConformance(
 }
 
 /**
+ * L2 — VIOLIN: global rules + the distribution musts. POSITION encoding → NOT a
+ * baseline-0 type. One data colour (in the Okabe-Ito set) for the silhouette, a
+ * median marker must be present (the eye needs a reference), and every category
+ * needs ≥ 2 observations or a kernel-density estimate is meaningless.
+ */
+export function checkViolinConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    fillColor: string;
+    hasMedianMarker: boolean;
+    categoryCounts: number[]; // observations per category
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.fillColor,
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.hasMedianMarker)
+    v.push("violin needs a median marker for reference");
+  if (input.categoryCounts.some((c) => c < 2))
+    v.push("a category has fewer than 2 observations (density undefined)");
+  return v;
+}
+
+/**
  * L2 — CANDLESTICK / OHLC: global rules + the market musts. POSITION/range
  * encoding → not a baseline-0 type. Adds: valid OHLC every period (high ≥
  * max(open,close), low ≤ min(open,close)), a labelled price axis, and exactly two

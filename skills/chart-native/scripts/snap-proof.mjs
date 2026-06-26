@@ -1,6 +1,7 @@
-// One-off proof snap for the dot strip: static PNG (progress=1) + interactive
-// PNG (focus a strip → tooltip). Serves the static build over http (module
-// scripts are blocked over file://); loads the single-file interactive directly.
+// Generic proof snap for a chart type (CHART env): static PNG (progress=1) +
+// interactive PNG (focus the first data element → tooltip). Serves the static
+// build over http (module scripts are blocked over file://); loads the
+// single-file interactive directly. Writes into output-proof/<chart>/.
 import { chromium } from "playwright";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -9,11 +10,12 @@ import { readFile, mkdir } from "node:fs/promises";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
-const outDir = join(root, "output-proof", "dot-strip");
+const chart = process.env.CHART ?? "dot-strip";
+const outDir = join(root, "output-proof", chart);
 await mkdir(outDir, { recursive: true });
 
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
-const staticDist = join(root, "dist/dot-strip/static");
+const staticDist = join(root, `dist/${chart}/static`);
 const server = createServer(async (req, res) => {
   const path = req.url === "/" ? "/index.html" : req.url.split("?")[0];
   try {
@@ -34,19 +36,19 @@ const browser = await chromium.launch();
 // 1) STATIC — progress=1 page, screenshot the card
 const sp = await browser.newPage({ viewport: { width: 900, height: 560 }, deviceScaleFactor: 2 });
 await sp.goto(`http://localhost:${port}/`);
-await sp.waitForTimeout(800);
+await sp.waitForTimeout(900);
 await sp.locator("#root > div").screenshot({ path: join(outDir, "static.png") });
 console.log("wrote static.png");
 await sp.close();
 
-// 2) INTERACTIVE — focus a strip's hit group → tooltip, screenshot full page
+// 2) INTERACTIVE — focus the first focusable data element → tooltip
 const ip = await browser.newPage({ viewport: { width: 900, height: 560 }, deviceScaleFactor: 2 });
-await ip.goto(pathToFileURL(join(root, "dist/dot-strip/interactive/index.html")).href);
+await ip.goto(pathToFileURL(join(root, `dist/${chart}/interactive/index.html`)).href);
 await ip.waitForSelector("[tabindex]");
 await ip.waitForTimeout(1700); // let the reveal settle
-const hits = ip.locator("g[tabindex]");
+const hits = ip.locator("[tabindex]");
 const n = await hits.count();
-if (n === 0) throw new Error("no focusable strip groups found");
+if (n === 0) throw new Error("no focusable data element found");
 await hits.nth(0).focus();
 await ip.waitForSelector(".tooltip", { timeout: 3000 });
 const tip = await ip.locator(".tooltip").textContent();

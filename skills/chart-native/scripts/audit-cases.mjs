@@ -40,6 +40,7 @@ const FILE = {
   sunburst: "sunburst.json",
   parallel: "parallel.json",
   "dot-strip": "dot-strip.json",
+  violin: "violin.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -137,6 +138,20 @@ const STRESS = {
         [s.valueField]: (40 + (k % 7) * 5) * 100,
       });
     return [["long+dense", stress]];
+  },
+  violin: (s) => {
+    // long category labels + a 5th, near-degenerate (almost-equal) group + big
+    // values, to stress the gutter, the KDE on tiny spread, and the value axis.
+    const stress = clone(s);
+    stress.categories = stress.categories.map((c) => ({
+      label: `${c.label} electoral ward`,
+      values: c.values.map((v) => v * 10),
+    }));
+    stress.categories.push({
+      label: "Harbourside conservation area",
+      values: [5000, 5000, 5010, 5010, 5020, 5020, 5030],
+    });
+    return [["long+degenerate", stress]];
   },
   parallel: (s) => {
     // long axis labels + a 7th axis (tighter spacing) to stress label crowding.
