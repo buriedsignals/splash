@@ -78,4 +78,30 @@ describe("growWaterfallBar — grows from the start level", () => {
     expect(g0.h).toBeCloseTo(0, 5);
     expect(g1.h).toBeCloseTo(Math.abs(grants.startY - grants.endY), 5);
   });
+
+  it("enforces a minimum drawn height for a TINY non-zero step", () => {
+    // a +1 step on a ~2000-tall domain is < 1px; minBarPx must floor it.
+    const tiny: WaterfallData = {
+      rows: [
+        { label: "Open", value: 2000, total: true },
+        { label: "Tiny", value: 1 },
+        { label: "Close", value: 2001, total: true },
+      ],
+    };
+    const l = computeWaterfallLayout(tiny, dims);
+    const step = l.bars[1];
+    expect(Math.abs(step.endY - step.startY)).toBeLessThan(3); // truly sub-pixel-ish
+    expect(growWaterfallBar(step, 1, 3).h).toBeCloseTo(3, 5); // floored to 3px
+  });
+
+  it("a TRUE zero step stays zero (no phantom bar)", () => {
+    const z: WaterfallData = {
+      rows: [
+        { label: "Open", value: 1000, total: true },
+        { label: "Zero", value: 0 },
+      ],
+    };
+    const l = computeWaterfallLayout(z, dims);
+    expect(growWaterfallBar(l.bars[1], 1, 3).h).toBeCloseTo(0, 5);
+  });
 });

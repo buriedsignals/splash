@@ -227,7 +227,7 @@ function WaterfallSvg({
 
         {/* floating bars + category + signed value labels */}
         {bars.map((b, i) => {
-          const g = growWaterfallBar(b, barP(i));
+          const g = growWaterfallBar(b, barP(i), 2.5 * sc);
           const fill = barColor(b);
           const grown = barP(i);
           const labelOp = clamp01((grown - 0.6) / 0.4);
@@ -235,6 +235,11 @@ function WaterfallSvg({
           const focused = interactive && hover === i;
           const dim = interactive && hover !== null && !focused;
           const topY = Math.min(b.startY, b.endY);
+          // a vertical in-bar label only fits if the bar is taller than the label;
+          // otherwise fall back to OUTSIDE-above (works for tiny steps too).
+          const fullH = Math.abs(b.startY - b.endY);
+          const valLabelW = labelOf(b).length * ts.axis * 0.9 * 0.6;
+          const labelInside = narrow && fullH > valLabelW + 8 * sc;
           return (
             <g key={`bar${i}`} opacity={dim ? 0.55 : 1}>
               <rect
@@ -258,9 +263,9 @@ function WaterfallSvg({
                 onFocus={interactive ? () => setHover(i) : undefined}
                 onBlur={interactive ? () => setHover(null) : undefined}
               />
-              {/* signed value label — above the bar when wide, else VERTICAL
-                  inside the bar (white) so narrow bars don't collide */}
-              {narrow ? (
+              {/* signed value label — VERTICAL inside the bar only when narrow AND
+                  the bar is tall enough; otherwise above it (handles tiny steps) */}
+              {labelInside ? (
                 <text
                   transform={`rotate(-90 ${b.x + b.w / 2} ${Math.max(b.startY, b.endY) - 6 * sc})`}
                   x={b.x + b.w / 2}

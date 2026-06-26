@@ -137,15 +137,23 @@ export function computeWaterfallLayout(
 
 /**
  * Grow a waterfall bar from its START level toward its END at `progress`. The
- * start edge is fixed; the other edge moves. Pure function → reproducible frames.
+ * start edge is fixed; the other edge moves. `minBarPx` enforces a minimum DRAWN
+ * height for a non-zero step, so a tiny delta (e.g. +2 on a 0–2000 scale) never
+ * collapses to a sub-pixel sliver and vanishes — best practice for waterfalls.
+ * The connectors still anchor to the TRUE level, so the visual nudge is ≤ minBarPx.
+ * Pure function → reproducible frames.
  */
 export function growWaterfallBar(
   bar: WaterfallBar,
   progress: number,
+  minBarPx = 0,
 ): { x: number; y: number; w: number; h: number } {
   const p = progress < 0 ? 0 : progress > 1 ? 1 : progress;
-  const curEndY = bar.startY + (bar.endY - bar.startY) * p;
-  const y = Math.min(bar.startY, curEndY);
-  const h = Math.abs(bar.startY - curEndY);
-  return { x: bar.x, y, w: bar.w, h };
+  const fullH = Math.abs(bar.endY - bar.startY);
+  const dir = bar.endY >= bar.startY ? 1 : -1; // down (larger y) vs up
+  // a non-zero step draws at least minBarPx; a true zero step stays zero.
+  const drawFull = fullH > 0 && fullH < minBarPx ? minBarPx : fullH;
+  const curH = drawFull * p;
+  const y = dir > 0 ? bar.startY : bar.startY - curH;
+  return { x: bar.x, y, w: bar.w, h: curH };
 }
