@@ -73,6 +73,8 @@ import { FanChart, type FanConfig } from "./FanChart";
 import { InteractiveFanChart } from "./InteractiveFanChart";
 import { CalendarChart, type CalendarConfig } from "./CalendarChart";
 import { InteractiveCalendarChart } from "./InteractiveCalendarChart";
+import { WaffleChart, type WaffleConfig } from "./WaffleChart";
+import { InteractiveWaffleChart } from "./InteractiveWaffleChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -102,6 +104,7 @@ import streamgraphSample from "../assets/sample-data/streamgraph.json";
 import ganttSample from "../assets/sample-data/gantt.json";
 import fanSample from "../assets/sample-data/fan.json";
 import calendarSample from "../assets/sample-data/calendar.json";
+import waffleSample from "../assets/sample-data/waffle.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -146,6 +149,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   gantt: GanttChart,
   fan: FanChart,
   calendar: CalendarChart,
+  waffle: WaffleChart,
 };
 
 if (chart === "audit") {
@@ -174,6 +178,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "waffle") {
+  const config = waffleSample as unknown as WaffleConfig;
+  root.render(
+    interactive ? (
+      <InteractiveWaffleChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <WaffleChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "calendar") {
   const config = calendarSample as unknown as CalendarConfig;
   root.render(

@@ -33,6 +33,7 @@ const FILE = {
   gantt: "gantt.json",
   fan: "fan.json",
   calendar: "calendar.json",
+  waffle: "waffle.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -113,6 +114,19 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  waffle: (s) => {
+    // 6 categories with long labels (stress the legend wrap) + a 1% sliver.
+    const long = clone(s);
+    long.items = [
+      { label: "Car or van (single occupancy)", value: 49 },
+      { label: "Bus & coach services", value: 18 },
+      { label: "Cycling", value: 12 },
+      { label: "Walking", value: 11 },
+      { label: "Train & tram", value: 7 },
+      { label: "Work from home", value: 3 },
+    ];
+    return [["6-long", long]];
   },
   calendar: (s) => {
     // a short ~10-week window (fewer columns → bigger cells) to stress the grid

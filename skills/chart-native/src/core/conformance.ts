@@ -634,6 +634,43 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — WAFFLE / square-pie: global rules + the countable part-to-whole musts.
+ * Cells must sum to the whole, so ≤ 6 categories (more fragments the grid), each
+ * an Okabe-Ito hue, and a stated unit. The cell-count total is guaranteed by the
+ * largest-remainder allocation in the geometry; here we check the palette + cap.
+ */
+export function checkWaffleConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    unit?: string;
+    categoryCount: number;
+    categoryColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.categoryColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.unit?.trim())
+    v.push("missing unit (state what one square represents)");
+  if (input.categoryCount > 6)
+    v.push(
+      `waffle has ${input.categoryCount} categories (> 6) — group the tail into "Other"`,
+    );
+  for (const c of input.categoryColors)
+    if (!isOkabeIto(c))
+      v.push(`category colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — CALENDAR HEATMAP: like the matrix heatmap, colour is the quantitative
  * channel — so it must be a SEQUENTIAL ramp with monotonic luminance (single-hue,
  * CVD-safe), NOT the categorical Okabe-Ito palette. Adds: a labelled value unit,

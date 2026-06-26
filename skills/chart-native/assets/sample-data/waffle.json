@@ -1,0 +1,15 @@
+{
+  "title": "Half of Riverton still commutes by car",
+  "unit": "share of commuters (each square = 1%)",
+  "source": {
+    "name": "Riverton travel-to-work survey",
+    "url": "https://example.org/riverton-commute"
+  },
+  "items": [
+    { "label": "Car", "value": 52 },
+    { "label": "Bus", "value": 18 },
+    { "label": "Bike", "value": 12 },
+    { "label": "Walk", "value": 11 },
+    { "label": "Train", "value": 7 }
+  ]
+}
