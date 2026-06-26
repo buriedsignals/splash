@@ -22,6 +22,7 @@ const FILE = {
   bullet: "bullet.json",
   "connected-scatter": "connected-scatter.json",
   marimekko: "marimekko.json",
+  radar: "radar.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -102,6 +103,17 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  radar: (s) => {
+    // long axis labels + a 3rd series + an axis that hits a near-horizontal
+    // spoke (the widest side-label case), to stress the rim gutter.
+    const long = clone(s);
+    long.axes = long.axes.map((a) => `${a} & wellbeing index`);
+    long.series = [
+      ...long.series,
+      { label: "Parkview", values: long.axes.map((_, i) => (i % 2 ? 9 : 3)) },
+    ];
+    return [["long+3series", long]];
   },
 };
 

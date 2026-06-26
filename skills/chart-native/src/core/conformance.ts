@@ -634,6 +634,46 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — RADAR / spider: global rules + the polar musts. Every axis shares ONE
+ * radial scale from the centre = 0 (a documented common max > 0), there are ≥ 3
+ * axes (a polygon needs three points) and ≤ 3 series (more becomes mush —
+ * radar.md), each series colour in the Okabe-Ito set. POSITION-on-a-shared-scale
+ * encoding, so it does NOT inherit the bar baseline-0 *axis* rule — the centre=0
+ * is the radial origin, checked here as max > 0.
+ */
+export function checkRadarConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    max: number;
+    axisCount: number;
+    seriesCount: number;
+    seriesColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.seriesColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!(input.max > 0))
+    v.push(`radar needs a documented common max > 0 — got ${input.max}`);
+  if (input.axisCount < 3)
+    v.push(`radar has ${input.axisCount} axes (< 3) — a polygon needs ≥ 3`);
+  if (input.seriesCount > 3)
+    v.push(`radar has ${input.seriesCount} series (> 3) — the polygons blur`);
+  for (const c of input.seriesColors)
+    if (!isOkabeIto(c))
+      v.push(`series colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — HEATMAP: colour is the quantitative channel, so this is the ONE type that
  * does NOT use the Okabe-Ito categorical palette. It requires a SEQUENTIAL ramp
  * whose luminance is monotonic (single-hue ColorBrewer / viridis) — that is what

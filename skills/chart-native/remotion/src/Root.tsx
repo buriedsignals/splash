@@ -17,6 +17,7 @@ import { PopulationPyramidReveal } from "./PopulationPyramidReveal";
 import { BulletReveal } from "./BulletReveal";
 import { ConnectedScatterReveal } from "./ConnectedScatterReveal";
 import { MarimekkoReveal } from "./MarimekkoReveal";
+import { RadarReveal } from "./RadarReveal";
 
 // 8 s @ 30fps = 240 frames. Duration is the speed knob — longer = slower,
 // smoother build (more frames per pixel of motion).
@@ -485,6 +486,32 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="MarimekkoPortrait"
         component={MarimekkoReveal}
+        defaultProps={{ scale: 1.7 }}
+        durationInFrames={240}
+        fps={30}
+        width={1080}
+        height={1350}
+      />
+      <Composition
+        id="RadarReveal"
+        component={RadarReveal}
+        durationInFrames={240}
+        fps={30}
+        width={840}
+        height={480}
+      />
+      <Composition
+        id="RadarSquare"
+        component={RadarReveal}
+        defaultProps={{ scale: 1.7 }}
+        durationInFrames={240}
+        fps={30}
+        width={1080}
+        height={1080}
+      />
+      <Composition
+        id="RadarPortrait"
+        component={RadarReveal}
         defaultProps={{ scale: 1.7 }}
         durationInFrames={240}
         fps={30}

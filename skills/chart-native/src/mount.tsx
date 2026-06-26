@@ -48,6 +48,8 @@ import {
 import { InteractiveConnectedScatterChart } from "./InteractiveConnectedScatterChart";
 import { MarimekkoChart, type MarimekkoConfig } from "./MarimekkoChart";
 import { InteractiveMarimekkoChart } from "./InteractiveMarimekkoChart";
+import { RadarChart, type RadarConfig } from "./RadarChart";
+import { InteractiveRadarChart } from "./InteractiveRadarChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -66,6 +68,7 @@ import pyramidSample from "../assets/sample-data/population-pyramid.json";
 import bulletSample from "../assets/sample-data/bullet.json";
 import connectedScatterSample from "../assets/sample-data/connected-scatter.json";
 import marimekkoSample from "../assets/sample-data/marimekko.json";
+import radarSample from "../assets/sample-data/radar.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -99,6 +102,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   bullet: BulletChart,
   "connected-scatter": ConnectedScatterChart,
   marimekko: MarimekkoChart,
+  radar: RadarChart,
 };
 
 if (chart === "audit") {
@@ -125,6 +129,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "radar") {
+  const config = radarSample as unknown as RadarConfig;
+  root.render(
+    interactive ? (
+      <InteractiveRadarChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <RadarChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "marimekko") {
   const config = marimekkoSample as unknown as MarimekkoConfig;
   root.render(

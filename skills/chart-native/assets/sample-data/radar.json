@@ -1,0 +1,21 @@
+{
+  "title": "Riverside leads on culture and transport; Hillcrest on green space and affordability",
+  "unit": "liveability score, 0–10 (resident survey)",
+  "max": 10,
+  "axes": [
+    "Transport",
+    "Green space",
+    "Safety",
+    "Schools",
+    "Affordability",
+    "Culture"
+  ],
+  "source": {
+    "name": "Riverton city liveability survey",
+    "url": "https://example.org/riverton-liveability"
+  },
+  "series": [
+    { "label": "Riverside", "values": [8, 5, 7, 7, 4, 9] },
+    { "label": "Hillcrest", "values": [5, 9, 6, 6, 8, 5] }
+  ]
+}
