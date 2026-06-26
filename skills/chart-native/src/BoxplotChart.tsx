@@ -273,19 +273,47 @@ function BoxplotSvg({
                   stroke={COLORS.ink}
                   strokeWidth={2.5 * sc}
                 />
-                {/* individual outliers */}
-                {g.outliers.map((o, oi) => (
-                  <circle
-                    key={`o${oi}`}
-                    cx={o.x}
-                    cy={r.y}
-                    r={3 * sc}
-                    fill="#fff"
-                    stroke={BOX}
-                    strokeWidth={1.5 * sc}
-                    opacity={outlierOp}
-                  />
-                ))}
+                {/* individual outliers — plotted as their own dots, and (when
+                    there are few) LABELLED with their value so a lone dot reads
+                    as a data point, not a glitch. Best practice: label the few
+                    that matter; rely on hover when many. The label sits on the
+                    side with room so it never overflows the card. */}
+                {g.outliers.map((o, oi) => {
+                  const labelOutlier = r.outliers.length <= 3;
+                  const dotR = 3 * sc;
+                  const near = o.x > innerWidth - 30 * sc;
+                  return (
+                    <g key={`o${oi}`}>
+                      <circle
+                        cx={o.x}
+                        cy={r.y}
+                        r={dotR}
+                        fill="#fff"
+                        stroke={BOX}
+                        strokeWidth={1.5 * sc}
+                        opacity={outlierOp}
+                      />
+                      {labelOutlier && (
+                        <text
+                          x={o.x + (near ? -(dotR + 5 * sc) : dotR + 5 * sc)}
+                          y={r.y}
+                          dy="0.32em"
+                          textAnchor={near ? "end" : "start"}
+                          fontSize={ts.source}
+                          fontWeight={600}
+                          fill={COLORS.ink}
+                          paintOrder="stroke"
+                          stroke="#fff"
+                          strokeWidth={3 * sc}
+                          strokeLinejoin="round"
+                          opacity={outlierOp}
+                        >
+                          {fmt(o.value)}
+                        </text>
+                      )}
+                    </g>
+                  );
+                })}
               </g>
 
               {/* interactive hit-target over the whole row band */}
@@ -359,7 +387,11 @@ function Tooltip({
       <div style={{ opacity: 0.7, fontSize: 11 }}>
         range {fmt(s.whiskerLo)}–{fmt(s.whiskerHi)}
         {s.outliers.length
-          ? ` · ${s.outliers.length} outlier${s.outliers.length > 1 ? "s" : ""}`
+          ? s.outliers.length <= 3
+            ? ` · outlier${s.outliers.length > 1 ? "s" : ""} ${s.outliers
+                .map(fmt)
+                .join(", ")}`
+            : ` · ${s.outliers.length} outliers`
           : ""}
       </div>
     </div>

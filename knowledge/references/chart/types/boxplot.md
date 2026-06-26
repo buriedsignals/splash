@@ -23,7 +23,12 @@ skew, and which points are unusual"**. The box is the middle 50% (the IQR); the 
 1. **Always draw the median line** inside the box — it is the headline statistic.
 2. **Define the whiskers and state the rule.** Default: Tukey — whiskers reach the furthest point
    within 1.5·IQR of the quartiles; everything beyond is an **outlier dot**. → `checkBoxplotConformance`.
-3. **Plot outliers individually** (don't let a whisker run to a lone extreme — that hides the gap).
+3. **Plot outliers individually** (don't let a whisker run to a lone extreme — that hides the gap),
+   with a symbol distinct from the box. **Label the few that matter** — when a category has only a
+   handful of outliers (≤ ~3), write each value next to its dot so a lone point reads as data, not a
+   glitch; when there are many, drop the labels and rely on hover/focus to show the value (avoid
+   clutter). Place the label on the side with room so it never overflows. (FT / data-to-viz / Tableau /
+   Atlassian consensus: outliers individually marked, sparingly labelled, value-on-hover in interactives.)
 4. **POSITION encoding** → the value axis need NOT start at 0 (a zoomed range is correct); but always
    **label the axis with its unit**. (Unlike a bar, length here is not the encoding.)
 5. **One hue for the boxes** (Okabe-Ito); the median + axis are ink. Colour a second series only to
