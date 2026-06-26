@@ -51,7 +51,9 @@ For each new FT type, in order:
    - When a label sits in a fixed gutter/band, use `core/text` `truncate()` so it can never overflow.
    - When labels crowd at narrow widths, thin/stagger/rotate them (see heatmap, marimekko, pyramid).
    - Reveal grammar: nothing is drawn at progress 0; marks fade in from nothing and land at the right
-     moment (the head/dots appear and disappear with the draw, not before or after).
+     moment (the head/dots appear and disappear with the draw, not before or after). The audit
+     ENFORCES this — it rasterises the plot at progress 0 (honouring clip/opacity/size) and requires
+     it to be ~blank.
 
 ## Overview
 

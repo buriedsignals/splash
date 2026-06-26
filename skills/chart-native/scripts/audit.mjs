@@ -31,6 +31,10 @@ const VIEWPORTS = [
 
 const cases = buildCases(sample); // [{ type, label, config }]
 
+// reveal invariant: at progress 0 at most this fraction of the plot may be drawn
+// (≈ 0 — a few antialiased pixels are tolerated, a visible mark is not).
+const REVEAL_INK_MAX = 0.006;
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ deviceScaleFactor: 1 });
 await page.goto(url);
@@ -85,6 +89,48 @@ const collect = async (type, config, vp) => {
   );
 };
 
+// reveal invariant: render at progress 0 and count the VISIBLE (non-white) pixels
+// in the plot. Rasterising the live SVG honours clipPath/opacity/size uniformly —
+// so a clip-based wipe and an opacity fade are both judged by what actually shows.
+// Responsive mode so the svg is the plot only (title/subtitle are flow-above it).
+const revealVisible = (type, config) =>
+  page.evaluate(
+    async ([type, config]) => {
+      window.renderAudit(type, config, 760, 480, true, 1, 0);
+      await new Promise((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(r)),
+      );
+      const svg = document.querySelector("#root svg");
+      if (!svg) return -1;
+      const rect = svg.getBoundingClientRect();
+      const xml = new XMLSerializer().serializeToString(svg);
+      const url =
+        "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
+      const img = new Image();
+      await new Promise((res, rej) => {
+        img.onload = res;
+        img.onerror = rej;
+        img.src = url;
+      });
+      const W = Math.max(1, Math.ceil(rect.width));
+      const H = Math.max(1, Math.ceil(rect.height));
+      const cv = document.createElement("canvas");
+      cv.width = W;
+      cv.height = H;
+      const ctx = cv.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, W, H);
+      ctx.drawImage(img, 0, 0, W, H);
+      const data = ctx.getImageData(0, 0, W, H).data;
+      let nonWhite = 0;
+      for (let i = 0; i < data.length; i += 4)
+        if (data[i + 3] > 12 && (data[i] < 244 || data[i + 1] < 244 || data[i + 2] < 244))
+          nonWhite++;
+      return nonWhite / (W * H); // fraction of the plot that is "inked"
+    },
+    [type, config],
+  );
+
 // significant overlap: meaningful intersection (not just touching corners /
 // rotated-bbox grazing).
 function overlapArea(a, b) {
@@ -132,6 +178,18 @@ for (const c of cases) {
       violations += problems.length;
       const tag = `${c.label}/${vp.name}`;
       (failsByType[c.type] ??= []).push(`${tag}: ${problems.slice(0, 3).join("; ")}`);
+    }
+  }
+
+  // reveal invariant — once per type (sample), data-independent: the plot is
+  // ~blank at progress 0 (marks appear from nothing).
+  if (c.label === "sample") {
+    const frac = await revealVisible(c.type, c.config);
+    if (frac > REVEAL_INK_MAX) {
+      violations++;
+      (failsByType[c.type] ??= []).push(
+        `reveal: ${(frac * 100).toFixed(1)}% of the plot is drawn at progress 0 (should be ~0)`,
+      );
     }
   }
 }
