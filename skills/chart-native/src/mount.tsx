@@ -46,6 +46,8 @@ import {
   type ConnectedScatterConfig,
 } from "./ConnectedScatterChart";
 import { InteractiveConnectedScatterChart } from "./InteractiveConnectedScatterChart";
+import { MarimekkoChart, type MarimekkoConfig } from "./MarimekkoChart";
+import { InteractiveMarimekkoChart } from "./InteractiveMarimekkoChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -63,6 +65,7 @@ import lollipopSample from "../assets/sample-data/lollipop.json";
 import pyramidSample from "../assets/sample-data/population-pyramid.json";
 import bulletSample from "../assets/sample-data/bullet.json";
 import connectedScatterSample from "../assets/sample-data/connected-scatter.json";
+import marimekkoSample from "../assets/sample-data/marimekko.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -74,7 +77,16 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "connected-scatter") {
+if (chart === "marimekko") {
+  const config = marimekkoSample as unknown as MarimekkoConfig;
+  root.render(
+    interactive ? (
+      <InteractiveMarimekkoChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <MarimekkoChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "connected-scatter") {
   const config = connectedScatterSample as unknown as ConnectedScatterConfig;
   root.render(
     interactive ? (

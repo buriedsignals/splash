@@ -304,6 +304,45 @@ export function checkHistogramConformance(
 }
 
 /**
+ * L2 — MARIMEKKO: global rules + the 2-D part-to-whole musts. Each column's
+ * segments must sum to the full height (a real within-share), and there are ≤ 5
+ * series, each Okabe-Ito (categorical, like the stacked bar). Column widths summing
+ * to the whole is guaranteed by the geometry (normalised weights).
+ */
+export function checkMarimekkoConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    seriesCount: number;
+    seriesColors: string[];
+    /** each column's series values, to check they form a real composition */
+    columns: number[][];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.seriesColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (input.seriesCount > 5)
+    v.push(
+      `marimekko has ${input.seriesCount} series (> 5) — group into "Other"`,
+    );
+  for (const c of input.seriesColors)
+    if (!isOkabeIto(c))
+      v.push(`series colour ${c} is not in the Okabe-Ito set`);
+  for (const col of input.columns)
+    if (col.some((x) => x < 0) || col.reduce((s, x) => s + x, 0) <= 0)
+      v.push("a marimekko column has no positive composition");
+  return v;
+}
+
+/**
  * L2 — BULLET: global rules + the accountability musts. The measure grows from
  * zero (baseline-0, by construction). Adds: the measure colour(s) in the Okabe-Ito
  * set with ≤ 2 hues (e.g. hit/miss), and a target on every row (the whole point).

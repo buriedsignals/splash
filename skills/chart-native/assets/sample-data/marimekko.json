@@ -1,0 +1,14 @@
+{
+  "title": "Online shoppers buy clothes and gadgets; delivery is mostly groceries",
+  "unit": "share of Riverton retail spend (column width = channel size)",
+  "seriesFields": ["Groceries", "Clothing", "Electronics", "Other"],
+  "source": {
+    "name": "Riverton retail panel",
+    "url": "https://example.org/riverton-retail"
+  },
+  "columns": [
+    { "label": "In-store", "weight": 50, "values": [45, 25, 15, 15] },
+    { "label": "Online", "weight": 32, "values": [20, 35, 30, 15] },
+    { "label": "Delivery", "weight": 18, "values": [60, 10, 5, 25] }
+  ]
+}
