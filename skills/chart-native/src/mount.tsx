@@ -56,6 +56,8 @@ import { BumpChart, type BumpConfig } from "./BumpChart";
 import { InteractiveBumpChart } from "./InteractiveBumpChart";
 import { BeeswarmChart, type BeeswarmConfig } from "./BeeswarmChart";
 import { InteractiveBeeswarmChart } from "./InteractiveBeeswarmChart";
+import { TreemapChart, type TreemapConfig } from "./TreemapChart";
+import { InteractiveTreemapChart } from "./InteractiveTreemapChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -78,6 +80,7 @@ import radarSample from "../assets/sample-data/radar.json";
 import boxplotSample from "../assets/sample-data/boxplot.json";
 import bumpSample from "../assets/sample-data/bump.json";
 import beeswarmSample from "../assets/sample-data/beeswarm.json";
+import treemapSample from "../assets/sample-data/treemap.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -115,6 +118,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   boxplot: BoxplotChart,
   bump: BumpChart,
   beeswarm: BeeswarmChart,
+  treemap: TreemapChart,
 };
 
 if (chart === "audit") {
@@ -143,6 +147,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "treemap") {
+  const config = treemapSample as unknown as TreemapConfig;
+  root.render(
+    interactive ? (
+      <InteractiveTreemapChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <TreemapChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "beeswarm") {
   const config = beeswarmSample as unknown as BeeswarmConfig;
   root.render(

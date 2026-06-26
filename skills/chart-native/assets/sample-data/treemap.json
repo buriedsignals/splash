@@ -1,0 +1,23 @@
+{
+  "title": "Adult social care and schools take nearly half of Riverton's £2.4bn budget",
+  "unit": "£m of the 2025 city budget",
+  "source": {
+    "name": "Riverton city budget 2025",
+    "url": "https://example.org/riverton-budget"
+  },
+  "categories": ["People", "Place", "Corporate"],
+  "items": [
+    { "label": "Adult social care", "value": 600, "category": "People" },
+    { "label": "Schools", "value": 460, "category": "People" },
+    { "label": "Public health", "value": 110, "category": "People" },
+    { "label": "Housing", "value": 280, "category": "Place" },
+    { "label": "Transport", "value": 280, "category": "Place" },
+    { "label": "Environment & waste", "value": 190, "category": "Place" },
+    { "label": "Parks & leisure", "value": 95, "category": "Place" },
+    { "label": "Corporate services", "value": 150, "category": "Corporate" },
+    { "label": "Debt servicing", "value": 130, "category": "Corporate" },
+    { "label": "IT & digital", "value": 75, "category": "Corporate" },
+    { "label": "Libraries & culture", "value": 60, "category": "Corporate" },
+    { "label": "Emergency planning", "value": 20, "category": "Corporate" }
+  ]
+}

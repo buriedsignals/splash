@@ -26,6 +26,7 @@ const FILE = {
   boxplot: "boxplot.json",
   bump: "bump.json",
   beeswarm: "beeswarm.json",
+  treemap: "treemap.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -106,6 +107,22 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  treemap: (s) => {
+    // long labels + extra tiny items + one dominant cell — stress the in-cell
+    // label truncation and the tiny-cell "no label" threshold.
+    const long = clone(s);
+    long.items = long.items.map((it) => ({
+      ...it,
+      label: `${it.label} & associated services`,
+    }));
+    long.items[0].value = 1800; // one cell dominates
+    long.items.push(
+      { label: "Coroner & registration", value: 8, category: "Corporate" },
+      { label: "Trading standards", value: 6, category: "Corporate" },
+      { label: "Allotments", value: 3, category: "Place" },
+    );
+    return [["long+tiny", long]];
   },
   beeswarm: (s) => {
     // a dense swarm (3× the points, clustered) to stress the dodge + the

@@ -634,6 +634,41 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — TREEMAP: global rules + the space-filling musts. Area encodes value, so
+ * every value must be > 0 (area can't be negative) and the grouping colours are
+ * Okabe-Ito with ≤ 5 hues (more groups blur). A treemap is not a baseline-0 type
+ * (area, not length). The faithful tiling is guaranteed by the geometry.
+ */
+export function checkTreemapConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    values: number[];
+    groupColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.groupColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.values.length) v.push("treemap needs at least one item");
+  if (input.values.some((x) => !(x > 0)))
+    v.push("treemap values must all be > 0 (area can't be negative)");
+  const distinct = new Set(input.groupColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 5)
+    v.push(`treemap uses ${distinct.size} group colours (> 5)`);
+  for (const c of input.groupColors)
+    if (!isOkabeIto(c)) v.push(`group colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — BEESWARM / strip plot: global rules + the "show your data" musts. POSITION
  * encoding (value on x; the dodge axis is decorative) → no baseline-0 rule. Adds:
  * a labelled value axis (the unit), at least one point, and — when coloured by
