@@ -634,6 +634,54 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — DIVERGING STACKED / Likert: global rules + the survey musts. A centred
+ * composition → not a baseline-0 *length* type (the centre is 0, by construction).
+ * Adds: ≥ 2 ordered responses, ≤ 7 (more is unreadable), each item's responses
+ * summing to ~100% (a real composition), and the sentiment colours in the
+ * Okabe-Ito set (the neutral grey is scaffolding, exempt — pass it as null/omit).
+ */
+export function checkDivergingStackedConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    responseCount: number;
+    /** each item's response percentages, to verify they form a composition */
+    rows: number[][];
+    sentimentColors: string[]; // the non-neutral response colours
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.sentimentColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (input.responseCount < 2)
+    v.push(
+      `diverging stacked needs ≥ 2 responses — got ${input.responseCount}`,
+    );
+  if (input.responseCount > 7)
+    v.push(
+      `diverging stacked has ${input.responseCount} responses (> 7) — group them`,
+    );
+  for (const row of input.rows) {
+    const sum = row.reduce((s, x) => s + x, 0);
+    if (Math.abs(sum - 100) > 1.5)
+      v.push(
+        `a row sums to ${sum.toFixed(1)}% (responses must compose to ~100%)`,
+      );
+  }
+  for (const c of input.sentimentColors)
+    if (!isOkabeIto(c))
+      v.push(`sentiment colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — TREEMAP: global rules + the space-filling musts. Area encodes value, so
  * every value must be > 0 (area can't be negative) and the grouping colours are
  * Okabe-Ito with ≤ 5 hues (more groups blur). A treemap is not a baseline-0 type

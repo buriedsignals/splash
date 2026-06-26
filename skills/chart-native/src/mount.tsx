@@ -58,6 +58,11 @@ import { BeeswarmChart, type BeeswarmConfig } from "./BeeswarmChart";
 import { InteractiveBeeswarmChart } from "./InteractiveBeeswarmChart";
 import { TreemapChart, type TreemapConfig } from "./TreemapChart";
 import { InteractiveTreemapChart } from "./InteractiveTreemapChart";
+import {
+  DivergingStackedChart,
+  type DivergingStackedConfig,
+} from "./DivergingStackedChart";
+import { InteractiveDivergingStackedChart } from "./InteractiveDivergingStackedChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -81,6 +86,7 @@ import boxplotSample from "../assets/sample-data/boxplot.json";
 import bumpSample from "../assets/sample-data/bump.json";
 import beeswarmSample from "../assets/sample-data/beeswarm.json";
 import treemapSample from "../assets/sample-data/treemap.json";
+import divergingStackedSample from "../assets/sample-data/diverging-stacked.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -119,6 +125,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   bump: BumpChart,
   beeswarm: BeeswarmChart,
   treemap: TreemapChart,
+  "diverging-stacked": DivergingStackedChart,
 };
 
 if (chart === "audit") {
@@ -147,6 +154,23 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "diverging-stacked") {
+  const config = divergingStackedSample as unknown as DivergingStackedConfig;
+  root.render(
+    interactive ? (
+      <InteractiveDivergingStackedChart
+        config={config}
+        animateOn={ANIMATE_ON}
+      />
+    ) : (
+      <DivergingStackedChart
+        config={config}
+        progress={1}
+        width={840}
+        height={480}
+      />
+    ),
+  );
 } else if (chart === "treemap") {
   const config = treemapSample as unknown as TreemapConfig;
   root.render(

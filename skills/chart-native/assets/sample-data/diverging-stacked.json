@@ -1,0 +1,18 @@
+{
+  "title": "Riverton residents praise parks and schools but sour on roads and buses",
+  "unit": "share of residents rating each service (2025 survey)",
+  "source": {
+    "name": "Riverton resident satisfaction survey",
+    "url": "https://example.org/riverton-satisfaction"
+  },
+  "responses": ["Very poor", "Poor", "Neutral", "Good", "Very good"],
+  "neutralIndex": 2,
+  "items": [
+    { "label": "Parks & green space", "values": [3, 7, 15, 45, 30] },
+    { "label": "Schools", "values": [4, 9, 17, 42, 28] },
+    { "label": "Bin collection", "values": [6, 12, 20, 40, 22] },
+    { "label": "Policing", "values": [10, 18, 28, 30, 14] },
+    { "label": "Buses", "values": [16, 26, 24, 24, 10] },
+    { "label": "Roads & pavements", "values": [22, 30, 20, 20, 8] }
+  ]
+}

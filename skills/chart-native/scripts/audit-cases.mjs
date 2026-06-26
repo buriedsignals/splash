@@ -27,6 +27,7 @@ const FILE = {
   bump: "bump.json",
   beeswarm: "beeswarm.json",
   treemap: "treemap.json",
+  "diverging-stacked": "diverging-stacked.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -107,6 +108,20 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  "diverging-stacked": (s) => {
+    // long item labels (stress the gutter) + a heavily-negative row (the whole
+    // bar pushed left, the percent axis must stretch that way).
+    const long = clone(s);
+    long.items = long.items.map((it) => ({
+      ...it,
+      label: `${it.label} in the borough`,
+    }));
+    long.items.push({
+      label: "Street cleaning services overall",
+      values: [40, 35, 12, 9, 4],
+    });
+    return [["long+neg", long]];
   },
   treemap: (s) => {
     // long labels + extra tiny items + one dominant cell — stress the in-cell
