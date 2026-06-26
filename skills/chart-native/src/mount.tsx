@@ -25,6 +25,11 @@ import { HeatmapChart, type HeatmapConfig } from "./HeatmapChart";
 import { InteractiveHeatmapChart } from "./InteractiveHeatmapChart";
 import { HistogramChart, type HistogramConfig } from "./HistogramChart";
 import { InteractiveHistogramChart } from "./InteractiveHistogramChart";
+import {
+  DivergingBarChart,
+  type DivergingBarConfig,
+} from "./DivergingBarChart";
+import { InteractiveDivergingBarChart } from "./InteractiveDivergingBarChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -36,6 +41,7 @@ import dumbbellSample from "../assets/sample-data/dumbbell.json";
 import stackedAreaSample from "../assets/sample-data/stacked-area.json";
 import heatmapSample from "../assets/sample-data/heatmap.json";
 import histogramSample from "../assets/sample-data/histogram.json";
+import divergingSample from "../assets/sample-data/diverging-bar.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -47,7 +53,21 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "histogram") {
+if (chart === "diverging") {
+  const config = divergingSample as unknown as DivergingBarConfig;
+  root.render(
+    interactive ? (
+      <InteractiveDivergingBarChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <DivergingBarChart
+        config={config}
+        progress={1}
+        width={840}
+        height={480}
+      />
+    ),
+  );
+} else if (chart === "histogram") {
   const config = histogramSample as unknown as HistogramConfig;
   root.render(
     interactive ? (

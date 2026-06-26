@@ -10,7 +10,7 @@ const root = join(here, "..");
 const chart = process.env.CHART ?? "line";
 const dist = join(root, chart === "line" ? "dist/static" : `dist/${chart}/static`);
 const marker =
-  chart === "bar" ? ".bar" : chart === "scatter" ? ".scatter-dot" : chart === "pie" ? ".pie-slice" : chart === "stacked" ? ".stack-seg" : chart === "slope" ? ".slope-line" : chart === "grouped" ? ".grouped-bar" : chart === "dumbbell" ? ".dumbbell-dot" : chart === "stacked-area" ? ".stacked-area-band" : chart === "heatmap" ? ".heat-cell" : chart === "histogram" ? ".hist-bar" : ".series-line";
+  chart === "bar" ? ".bar" : chart === "scatter" ? ".scatter-dot" : chart === "pie" ? ".pie-slice" : chart === "stacked" ? ".stack-seg" : chart === "slope" ? ".slope-line" : chart === "grouped" ? ".grouped-bar" : chart === "dumbbell" ? ".dumbbell-dot" : chart === "stacked-area" ? ".stacked-area-band" : chart === "heatmap" ? ".heat-cell" : chart === "histogram" ? ".hist-bar" : chart === "diverging" ? ".diverging-bar" : ".series-line";
 const out = process.argv[2] ?? "/tmp/native-static.png";
 
 // module scripts get crossorigin -> blocked over file://. Serve over http.

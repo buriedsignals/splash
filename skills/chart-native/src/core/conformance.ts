@@ -145,6 +145,43 @@ export function checkBarConformance(
 }
 
 /**
+ * L2 — DIVERGING BAR: global rules + the deviation musts. Inherits the bar
+ * baseline-0 rule and adds: the value domain must actually SPAN zero (negative
+ * AND positive — else it is a plain bar drawn awkwardly), and the two sign
+ * colours are both Okabe-Ito with ≤ 2 distinct hues.
+ */
+export function checkDivergingBarConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    valueDomain: [number, number];
+    signColors: string[]; // [positive, negative]
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.signColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  const [lo, hi] = input.valueDomain;
+  if (!(lo < 0 && hi > 0))
+    v.push(
+      `diverging bar domain must span zero (negative AND positive) — [${lo}, ${hi}]`,
+    );
+  const distinct = new Set(input.signColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 2)
+    v.push(`diverging bar uses ${distinct.size} sign colours (> 2)`);
+  for (const c of input.signColors)
+    if (!isOkabeIto(c)) v.push(`sign colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — HISTOGRAM: global rules + the distribution musts. Inherits the bar
  * baseline-0 rule (the count axis includes 0) and adds: enough bins to show a
  * shape (≥ 3) and not so many it is noise (≤ 50). The "bars touch" rule is a
