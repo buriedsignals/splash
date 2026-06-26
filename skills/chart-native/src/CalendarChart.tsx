@@ -59,12 +59,12 @@ export function CalendarChart({
   const basePad = {
     top: (responsive ? 16 : 50 + titleLines * 27) + 16, // + month labels band
     right: 18,
-    bottom: 44, // colourbar legend
+    bottom: 60, // colourbar legend (below the full-height grid) + source clearance
     left: 36, // weekday labels
   };
   const frame = responsive
     ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale, 0.34);
+    : resolveFrame(width, height, basePad, scale, 0.42);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -137,7 +137,8 @@ function CalendarSvg({
     cells,
     monthLabels,
     weekdayLabels,
-    cellSize,
+    cellW,
+    cellH,
     gridX,
     gridY,
     nCols,
@@ -150,9 +151,9 @@ function CalendarSvg({
   const wipeCol = nCols * easeOutCubic(clamp01((p - 0.05) / 0.85));
 
   // colourbar geometry (bottom-left)
-  const barY = gridY + 7 * cellSize + 22 * sc;
+  const barY = gridY + 7 * cellH + 9 * sc;
   const barX = gridX;
-  const barW = Math.min(180 * sc, nCols * cellSize * 0.5);
+  const barW = Math.min(180 * sc, nCols * cellW * 0.5);
   const barH = 9 * sc;
   const stops = 24;
 
@@ -182,7 +183,7 @@ function CalendarSvg({
         ))}
         {/* when cells are tiny (a year on a phone), only Mon/Sun fit without
             colliding; show all four weekday labels once there's room. */}
-        {(cellSize >= 9 * sc
+        {(cellH >= 13 * sc
           ? weekdayLabels
           : weekdayLabels.filter((w) => w.label === "Mon" || w.label === "Sun")
         ).map((w, i) => (
@@ -212,8 +213,8 @@ function CalendarSvg({
             key={`c${c.order}`}
             x={c.x}
             y={c.y}
-            width={c.size}
-            height={c.size}
+            width={c.w}
+            height={c.h}
             rx={1.5 * sc}
             fill={c.color}
             stroke={focused ? COLORS.ink : "none"}
@@ -290,7 +291,7 @@ function Tooltip({
 }) {
   const c = layout.cells.find((x) => x.order === hover);
   if (!c) return null;
-  const left = c.x + c.size / 2;
+  const left = c.x + c.w / 2;
   const top = c.y - 6;
   const d = new Date(Date.parse(c.date));
   const label = d.toLocaleDateString("en-GB", {

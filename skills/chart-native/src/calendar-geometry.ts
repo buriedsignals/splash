@@ -30,7 +30,8 @@ export interface CalendarCell {
   order: number; // chronological order (for the staggered reveal)
   x: number;
   y: number;
-  size: number;
+  w: number;
+  h: number;
   color: string;
 }
 
@@ -38,7 +39,8 @@ export interface CalendarLayout {
   cells: CalendarCell[];
   monthLabels: { label: string; x: number }[];
   weekdayLabels: { label: string; y: number }[];
-  cellSize: number;
+  cellW: number;
+  cellH: number;
   gridX: number;
   gridY: number;
   nCols: number;
@@ -100,13 +102,15 @@ export function computeCalendarLayout(
   const colOf = (ms: number) => Math.floor((ms - startMs) / (7 * DAY));
   const nCols = colOf(parsed[parsed.length - 1].ms) + 1;
 
-  // square cells sized to fit both the column count and the 7 rows; centre the grid.
-  const cellSize = Math.max(1, Math.min(innerWidth / nCols, innerHeight / 7));
-  const gridW = cellSize * nCols;
-  const gridH = cellSize * 7;
-  const gridX = padding.left + (innerWidth - gridW) / 2;
-  const gridY = padding.top + (innerHeight - gridH) / 2;
-  const gap = Math.max(1, cellSize * 0.08);
+  // RECTANGULAR cells that fill the plot area: a year is width-bound (53 weeks),
+  // so square cells would leave a thin band — instead the cell HEIGHT fills the
+  // 7 rows so the grid uses the available height. The grid is flush top-left.
+  const cellW = Math.max(1, innerWidth / nCols);
+  const cellH = Math.max(1, innerHeight / 7);
+  const gridX = padding.left;
+  const gridY = padding.top;
+  const gapX = Math.max(1, cellW * 0.08);
+  const gapY = Math.max(1, cellH * 0.08);
 
   const cells: CalendarCell[] = parsed.map((p, i) => {
     const col = colOf(p.ms);
@@ -117,9 +121,10 @@ export function computeCalendarLayout(
       col,
       row,
       order: i,
-      x: gridX + col * cellSize,
-      y: gridY + row * cellSize,
-      size: cellSize - gap,
+      x: gridX + col * cellW,
+      y: gridY + row * cellH,
+      w: cellW - gapX,
+      h: cellH - gapY,
       color: ramp((p.value - lo) / span),
     };
   });
@@ -133,24 +138,25 @@ export function computeCalendarLayout(
     if (m !== lastMonth) {
       monthLabels.push({
         label: MONTHS[m],
-        x: gridX + colOf(p.ms) * cellSize,
+        x: gridX + colOf(p.ms) * cellW,
       });
       lastMonth = m;
     }
   }
 
   const weekdayLabels = [
-    { label: "Mon", y: gridY + 0.5 * cellSize },
-    { label: "Wed", y: gridY + 2.5 * cellSize },
-    { label: "Fri", y: gridY + 4.5 * cellSize },
-    { label: "Sun", y: gridY + 6.5 * cellSize },
+    { label: "Mon", y: gridY + 0.5 * cellH },
+    { label: "Wed", y: gridY + 2.5 * cellH },
+    { label: "Fri", y: gridY + 4.5 * cellH },
+    { label: "Sun", y: gridY + 6.5 * cellH },
   ];
 
   return {
     cells,
     monthLabels,
     weekdayLabels,
-    cellSize,
+    cellW,
+    cellH,
     gridX,
     gridY,
     nCols,

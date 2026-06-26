@@ -52,8 +52,8 @@ describe("computeCalendarLayout", () => {
     for (const c of l.cells) {
       expect(c.x).toBeGreaterThanOrEqual(-0.5);
       expect(c.y).toBeGreaterThanOrEqual(-0.5);
-      expect(c.x + c.size).toBeLessThanOrEqual(dims.width + 0.5);
-      expect(c.y + c.size).toBeLessThanOrEqual(dims.height + 0.5);
+      expect(c.x + c.w).toBeLessThanOrEqual(dims.width + 0.5);
+      expect(c.y + c.h).toBeLessThanOrEqual(dims.height + 0.5);
     }
   });
 
