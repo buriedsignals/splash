@@ -304,6 +304,44 @@ export function checkHistogramConformance(
 }
 
 /**
+ * L2 — BULLET: global rules + the accountability musts. The measure grows from
+ * zero (baseline-0, by construction). Adds: the measure colour(s) in the Okabe-Ito
+ * set with ≤ 2 hues (e.g. hit/miss), and a target on every row (the whole point).
+ * The qualitative bands are neutral context (greys), exempt from the palette like
+ * gridlines.
+ */
+export function checkBulletConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    measureColors: string[];
+    rows: { target?: number }[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.measureColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (
+    input.rows.some((r) => r.target == null || Number.isNaN(Number(r.target)))
+  )
+    v.push("every bullet row needs a target (the chart measures against it)");
+  const distinct = new Set(input.measureColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 2)
+    v.push(`bullet uses ${distinct.size} measure colours (> 2)`);
+  for (const c of input.measureColors)
+    if (!isOkabeIto(c))
+      v.push(`measure colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — SCATTER: global rules + the scatter-specific must — BOTH axes carry a
  * title (the reader must know what x and y mean; a scatter with bare numbers is
  * meaningless). Bubble area-scaling is enforced in scatter-geometry (scaleSqrt),

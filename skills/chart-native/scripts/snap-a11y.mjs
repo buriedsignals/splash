@@ -14,7 +14,7 @@ const markSel =
     ? 'rect[role="img"][tabindex="0"]'
     : chart === "pie" || chart === "stacked-area"
       ? 'path[role="img"][tabindex="0"]'
-      : chart === "slope" || chart === "dumbbell"
+      : chart === "slope" || chart === "dumbbell" || chart === "bullet"
         ? 'g[role="img"][tabindex="0"]'
         : chart === "lollipop" ? 'g[role="img"][tabindex="0"]' : 'circle[role="img"][tabindex="0"]';
 const out = process.argv[2] ?? "/tmp/native-a11y.png";
