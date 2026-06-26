@@ -634,6 +634,43 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — STREAMGRAPH: global rules + the free-baseline musts. Thickness encodes
+ * value, but there is NO value axis (the baseline wiggles), so this is not a
+ * baseline-0 type. Adds: ≤ 7 series (more is mush), every band colour in the
+ * Okabe-Ito set, and ≥ 2 time steps. Bands must be labelled directly (the reader
+ * can't read absolute heights) — enforced in the component, noted here.
+ */
+export function checkStreamgraphConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    seriesCount: number;
+    seriesColors: string[];
+    stepCount: number;
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.seriesColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (input.seriesCount > 7)
+    v.push(
+      `streamgraph has ${input.seriesCount} series (> 7) — group the long tail`,
+    );
+  if (input.stepCount < 2)
+    v.push(`streamgraph needs ≥ 2 time steps — got ${input.stepCount}`);
+  for (const c of input.seriesColors)
+    if (!isOkabeIto(c)) v.push(`band colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — SANKEY / flow: global rules + the flow musts. Thickness encodes value, so
  * every link value must be > 0, there must be ≥ 2 columns, and every node carries
  * a label. Source-coloured ribbons use the Okabe-Ito set with ≤ 6 hues (neutral

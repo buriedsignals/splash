@@ -29,6 +29,7 @@ const FILE = {
   treemap: "treemap.json",
   "diverging-stacked": "diverging-stacked.json",
   sankey: "sankey.json",
+  streamgraph: "streamgraph.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -109,6 +110,14 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  streamgraph: (s) => {
+    // a 7th series + a spikier final step, to stress the wiggle baseline and the
+    // in-band label threshold (thin bands must drop their label, not overflow).
+    const more = clone(s);
+    more.seriesFields = [...more.seriesFields, "Newsletters"];
+    more.rows = more.rows.map((r, i) => ({ ...r, Newsletters: 1 + i * 2 }));
+    return [["7-series", more]];
   },
   sankey: (s) => {
     // long node labels (stress the gutters) + an extra small source (tighter

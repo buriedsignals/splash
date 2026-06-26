@@ -24,6 +24,7 @@ import { BeeswarmReveal } from "./BeeswarmReveal";
 import { TreemapReveal } from "./TreemapReveal";
 import { DivergingStackedReveal } from "./DivergingStackedReveal";
 import { SankeyReveal } from "./SankeyReveal";
+import { StreamgraphReveal } from "./StreamgraphReveal";
 
 // 8 s @ 30fps = 240 frames. Duration is the speed knob — longer = slower,
 // smoother build (more frames per pixel of motion).
@@ -674,6 +675,32 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="SankeyPortrait"
         component={SankeyReveal}
+        defaultProps={{ scale: 1.7 }}
+        durationInFrames={240}
+        fps={30}
+        width={1080}
+        height={1350}
+      />
+      <Composition
+        id="StreamgraphReveal"
+        component={StreamgraphReveal}
+        durationInFrames={240}
+        fps={30}
+        width={840}
+        height={480}
+      />
+      <Composition
+        id="StreamgraphSquare"
+        component={StreamgraphReveal}
+        defaultProps={{ scale: 1.7 }}
+        durationInFrames={240}
+        fps={30}
+        width={1080}
+        height={1080}
+      />
+      <Composition
+        id="StreamgraphPortrait"
+        component={StreamgraphReveal}
         defaultProps={{ scale: 1.7 }}
         durationInFrames={240}
         fps={30}
