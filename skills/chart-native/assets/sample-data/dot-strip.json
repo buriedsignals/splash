@@ -1,0 +1,39 @@
+{
+  "title": "Some schools spread their pupils far wider than others",
+  "unit": "pupil exam score, %",
+  "categoryField": "school",
+  "valueField": "score",
+  "summaryLabel": "School mean",
+  "source": {
+    "name": "Riverton schools attainment return",
+    "url": "https://example.org/riverton-attainment"
+  },
+  "rows": [
+    { "school": "Eastgate", "score": 31 },
+    { "school": "Eastgate", "score": 42 },
+    { "school": "Eastgate", "score": 48 },
+    { "school": "Eastgate", "score": 55 },
+    { "school": "Eastgate", "score": 67 },
+    { "school": "Eastgate", "score": 78 },
+    { "school": "Eastgate", "score": 92 },
+    { "school": "Northgate", "score": 58 },
+    { "school": "Northgate", "score": 62 },
+    { "school": "Northgate", "score": 64 },
+    { "school": "Northgate", "score": 66 },
+    { "school": "Northgate", "score": 69 },
+    { "school": "Northgate", "score": 71 },
+    { "school": "Northgate", "score": 74 },
+    { "school": "Southfield", "score": 44 },
+    { "school": "Southfield", "score": 49 },
+    { "school": "Southfield", "score": 53 },
+    { "school": "Southfield", "score": 57 },
+    { "school": "Southfield", "score": 61 },
+    { "school": "Southfield", "score": 70 },
+    { "school": "Westview", "score": 38 },
+    { "school": "Westview", "score": 46 },
+    { "school": "Westview", "score": 52 },
+    { "school": "Westview", "score": 59 },
+    { "school": "Westview", "score": 63 },
+    { "school": "Westview", "score": 81 }
+  ]
+}

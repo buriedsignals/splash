@@ -634,6 +634,38 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — DOT STRIP: global rules + the strip musts. POSITION encoding → NOT a
+ * baseline-0 type. The dots all share ONE data colour (in the Okabe-Ito set), a
+ * summary marker (mean) must be present so the eye gets a reference, and every
+ * category must hold at least one observation (an empty strip is a data error).
+ */
+export function checkDotStripConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    dotColor: string;
+    hasSummaryMarker: boolean;
+    categoryCounts: number[]; // observations per category
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.dotColor,
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.hasSummaryMarker)
+    v.push("dot strip needs a summary marker (e.g. the category mean)");
+  if (input.categoryCounts.some((c) => c < 1))
+    v.push("a category has no observations (empty strip)");
+  return v;
+}
+
+/**
  * L2 — CANDLESTICK / OHLC: global rules + the market musts. POSITION/range
  * encoding → not a baseline-0 type. Adds: valid OHLC every period (high ≥
  * max(open,close), low ≤ min(open,close)), a labelled price axis, and exactly two

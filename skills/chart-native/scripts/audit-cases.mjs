@@ -39,6 +39,7 @@ const FILE = {
   chord: "chord.json",
   sunburst: "sunburst.json",
   parallel: "parallel.json",
+  "dot-strip": "dot-strip.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -119,6 +120,23 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  "dot-strip": (s) => {
+    // long category labels + a 6th, very dense category (30 obs, many coincident
+    // values) + big values, to stress the left gutter, the overlap jitter and the
+    // value-axis tick width.
+    const stress = clone(s);
+    stress.rows = stress.rows.map((r) => ({
+      ...r,
+      [s.categoryField]: `${r[s.categoryField]} community college`,
+      [s.valueField]: r[s.valueField] * 100,
+    }));
+    for (let k = 0; k < 30; k++)
+      stress.rows.push({
+        [s.categoryField]: "Harbourside community college",
+        [s.valueField]: (40 + (k % 7) * 5) * 100,
+      });
+    return [["long+dense", stress]];
   },
   parallel: (s) => {
     // long axis labels + a 7th axis (tighter spacing) to stress label crowding.
