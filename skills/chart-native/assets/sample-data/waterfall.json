@@ -1,0 +1,16 @@
+{
+  "title": "Salaries and upkeep swallowed the council's new income",
+  "unit": "running balance (£000s)",
+  "source": {
+    "name": "Riverton council accounts",
+    "url": "https://example.org/riverton-budget"
+  },
+  "rows": [
+    { "label": "Opening", "value": 1200, "total": true },
+    { "label": "Grants", "value": 600 },
+    { "label": "Fees", "value": 200 },
+    { "label": "Salaries", "value": -900 },
+    { "label": "Upkeep", "value": -350 },
+    { "label": "Closing", "value": 750, "total": true }
+  ]
+}

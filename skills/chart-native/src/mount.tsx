@@ -30,6 +30,8 @@ import {
   type DivergingBarConfig,
 } from "./DivergingBarChart";
 import { InteractiveDivergingBarChart } from "./InteractiveDivergingBarChart";
+import { WaterfallChart, type WaterfallConfig } from "./WaterfallChart";
+import { InteractiveWaterfallChart } from "./InteractiveWaterfallChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -42,6 +44,7 @@ import stackedAreaSample from "../assets/sample-data/stacked-area.json";
 import heatmapSample from "../assets/sample-data/heatmap.json";
 import histogramSample from "../assets/sample-data/histogram.json";
 import divergingSample from "../assets/sample-data/diverging-bar.json";
+import waterfallSample from "../assets/sample-data/waterfall.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -53,7 +56,16 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "diverging") {
+if (chart === "waterfall") {
+  const config = waterfallSample as unknown as WaterfallConfig;
+  root.render(
+    interactive ? (
+      <InteractiveWaterfallChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <WaterfallChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "diverging") {
   const config = divergingSample as unknown as DivergingBarConfig;
   root.render(
     interactive ? (

@@ -182,6 +182,62 @@ export function checkDivergingBarConformance(
 }
 
 /**
+ * L2 — WATERFALL: global rules + the flow musts. Inherits baseline-0 (the running
+ * level starts from 0) and adds: an EXACT bridge (closing total = opening total +
+ * every signed step), and three role colours (increase / decrease / total), all
+ * Okabe-Ito, ≤ 3 distinct hues.
+ */
+export function checkWaterfallConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    countDomain: [number, number];
+    /** the rows in order, to verify the cumulative arithmetic */
+    rows: { value: number; total?: boolean }[];
+    roleColors: string[]; // [increase, decrease, total]
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.roleColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (input.countDomain[0] !== 0)
+    v.push(
+      `waterfall count axis must start at 0 — starts at ${input.countDomain[0]}`,
+    );
+
+  // verify the bridge: replay the running total; every total after the first
+  // (the opening) must equal the running level reached by the steps before it.
+  let running = 0;
+  let seenTotal = false;
+  for (const r of input.rows) {
+    if (r.total) {
+      if (seenTotal && r.value !== running)
+        v.push(
+          `waterfall total ${r.value} does not match the running level ${running}`,
+        );
+      running = r.value;
+      seenTotal = true;
+    } else {
+      running += r.value;
+    }
+  }
+
+  const distinct = new Set(input.roleColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 3)
+    v.push(`waterfall uses ${distinct.size} role colours (> 3)`);
+  for (const c of input.roleColors)
+    if (!isOkabeIto(c)) v.push(`role colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — HISTOGRAM: global rules + the distribution musts. Inherits the bar
  * baseline-0 rule (the count axis includes 0) and adds: enough bins to show a
  * shape (≥ 3) and not so many it is noise (≤ 50). The "bars touch" rule is a
