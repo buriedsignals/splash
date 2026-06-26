@@ -106,7 +106,15 @@ export function RadarChart({
   };
   const layout = computeRadarLayout(data, { width, height, padding });
 
-  const [hover, setHover] = useState<number | null>(null);
+  // Two independent interactions (radar.md): hovering a VERTEX shows that
+  // point's value (the expected radar gesture); hovering a LEGEND item just
+  // brings a series forward (dims the others). The active series — for dimming —
+  // is whichever a vertex hover or a legend hover names.
+  const [hoverPt, setHoverPt] = useState<{ si: number; vi: number } | null>(
+    null,
+  );
+  const [focusSeries, setFocusSeries] = useState<number | null>(null);
+  const activeSeries = hoverPt ? hoverPt.si : focusSeries;
 
   const svg = (
     <RadarSvg
@@ -116,16 +124,17 @@ export function RadarChart({
       p={p}
       config={config}
       interactive={interactive}
-      hover={hover}
-      setHover={setHover}
+      activeSeries={activeSeries}
+      setHoverPt={setHoverPt}
+      setFocusSeries={setFocusSeries}
       ts={ts}
       sc={sc}
     />
   );
 
   const tooltip =
-    interactive && hover !== null ? (
-      <Tooltip layout={layout} hover={hover} config={config} />
+    interactive && hoverPt !== null ? (
+      <Tooltip layout={layout} hoverPt={hoverPt} config={config} />
     ) : null;
 
   return (
@@ -151,8 +160,9 @@ function RadarSvg({
   p,
   config,
   interactive,
-  hover,
-  setHover,
+  activeSeries,
+  setHoverPt,
+  setFocusSeries,
   ts,
   sc,
 }: {
@@ -162,8 +172,9 @@ function RadarSvg({
   p: number;
   config: RadarConfig;
   interactive: boolean;
-  hover: number | null;
-  setHover: (i: number | null) => void;
+  activeSeries: number | null;
+  setHoverPt: (h: { si: number; vi: number } | null) => void;
+  setFocusSeries: (i: number | null) => void;
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
@@ -304,8 +315,8 @@ function RadarSvg({
           const sp = clamp01(seriesP(si));
           const pts = growRadar(ser, sp);
           const color = RADAR_COLORS[si % RADAR_COLORS.length];
-          const focused = interactive && hover === si;
-          const dim = interactive && hover !== null && !focused;
+          const focused = interactive && activeSeries === si;
+          const dim = interactive && activeSeries !== null && !focused;
           const d = pts.map((v) => `${v.x},${v.y}`).join(" ");
           return (
             <g key={`s${si}`} opacity={dim ? 0.3 : 1}>
@@ -332,6 +343,31 @@ function RadarSvg({
             </g>
           );
         })}
+
+        {/* interactive vertex hit-targets — a generous transparent disc over each
+            vertex so a small dot is easy to hover/focus; shows that point's value */}
+        {interactive &&
+          series.map((ser, si) => {
+            const sp = clamp01(seriesP(si));
+            if (sp < 0.99) return null; // only once landed (no hover mid-reveal)
+            return ser.vertices.map((v, vi) => (
+              <circle
+                key={`hit${si}-${vi}`}
+                cx={v.x}
+                cy={v.y}
+                r={13 * sc}
+                fill="transparent"
+                tabIndex={0}
+                role="img"
+                aria-label={`${config.series[si].label}, ${config.axes[vi]}: ${v.value} of ${max}`}
+                style={{ cursor: "pointer", outline: "none" }}
+                onMouseEnter={() => setHoverPt({ si, vi })}
+                onMouseLeave={() => setHoverPt(null)}
+                onFocus={() => setHoverPt({ si, vi })}
+                onBlur={() => setHoverPt(null)}
+              />
+            ));
+          })}
       </g>
 
       {/* legend — chip + series name, centred below the circle (fixed/responsive
@@ -345,8 +381,8 @@ function RadarSvg({
         charW={charW}
         chrome={chrome}
         interactive={interactive}
-        hover={hover}
-        setHover={setHover}
+        activeSeries={activeSeries}
+        setFocusSeries={setFocusSeries}
       />
     </svg>
   );
@@ -361,8 +397,8 @@ function Legend({
   charW,
   chrome,
   interactive,
-  hover,
-  setHover,
+  activeSeries,
+  setFocusSeries,
 }: {
   series: string[];
   cx: number;
@@ -372,8 +408,8 @@ function Legend({
   charW: number;
   chrome: number;
   interactive: boolean;
-  hover: number | null;
-  setHover: (i: number | null) => void;
+  activeSeries: number | null;
+  setFocusSeries: (i: number | null) => void;
 }) {
   const chip = 13 * sc;
   const gapAfterChip = 6 * sc;
@@ -387,7 +423,7 @@ function Legend({
     <g opacity={chrome}>
       {series.map((label, i) => {
         const color = RADAR_COLORS[i % RADAR_COLORS.length];
-        const dim = interactive && hover !== null && hover !== i;
+        const dim = interactive && activeSeries !== null && activeSeries !== i;
         const itemX = x;
         x += widths[i] + gapBetween;
         return (
@@ -395,8 +431,8 @@ function Legend({
             key={`lg${i}`}
             opacity={dim ? 0.4 : 1}
             style={interactive ? { cursor: "pointer" } : undefined}
-            onMouseEnter={interactive ? () => setHover(i) : undefined}
-            onMouseLeave={interactive ? () => setHover(null) : undefined}
+            onMouseEnter={interactive ? () => setFocusSeries(i) : undefined}
+            onMouseLeave={interactive ? () => setFocusSeries(null) : undefined}
           >
             <rect
               x={itemX}
@@ -425,21 +461,21 @@ function Legend({
 
 function Tooltip({
   layout,
-  hover,
+  hoverPt,
   config,
 }: {
   layout: RadarLayout;
-  hover: number;
+  hoverPt: { si: number; vi: number };
   config: RadarConfig;
 }) {
-  const ser = layout.series[hover];
+  const ser = layout.series[hoverPt.si];
   if (!ser) return null;
-  // anchor the tooltip at the series' strongest axis (its outermost vertex).
-  let best = ser.vertices[0];
-  for (const v of ser.vertices) if (v.value > best.value) best = v;
-  const left = layout.cx + best.x;
-  const top = layout.cy + best.y;
-  const color = RADAR_COLORS[hover % RADAR_COLORS.length];
+  // anchor the tooltip ON the hovered vertex — it shows that one point's value.
+  const vertex = ser.vertices[hoverPt.vi];
+  const axis = layout.axes[hoverPt.vi];
+  const left = layout.cx + vertex.x;
+  const top = layout.cy + vertex.y;
+  const color = RADAR_COLORS[hoverPt.si % RADAR_COLORS.length];
   return (
     <div
       className="tooltip"
@@ -452,18 +488,20 @@ function Tooltip({
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,
-        fontSize: 13,
         whiteSpace: "nowrap",
         pointerEvents: "none",
         fontFamily: FONT,
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong style={{ color }}>{config.series[hover].label}</strong>
-      <div style={{ opacity: 0.85, fontSize: 11 }}>
-        {layout.axes
-          .map((a, i) => `${a.label} ${ser.vertices[i].value}`)
-          .join(" · ")}
+      <strong style={{ color, fontSize: 13 }}>
+        {config.series[hoverPt.si].label}
+      </strong>
+      <div style={{ fontSize: 12, marginTop: 1 }}>
+        {axis.label}{" "}
+        <strong>
+          {vertex.value} / {layout.max}
+        </strong>
       </div>
     </div>
   );
