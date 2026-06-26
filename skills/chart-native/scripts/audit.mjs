@@ -32,8 +32,11 @@ const VIEWPORTS = [
 const cases = buildCases(sample); // [{ type, label, config }]
 
 // reveal invariant: at progress 0 at most this fraction of the plot may be drawn
-// (≈ 0 — a few antialiased pixels are tolerated, a visible mark is not).
-const REVEAL_INK_MAX = 0.006;
+// (≈ 0 — a few antialiased pixels are tolerated, a visible mark is not). Kept
+// tight on purpose: a handful of stray marks (e.g. round-linecap "foot dots" on
+// degenerate arcs, or a dot mark whose radius doesn't start at 0) must trip it,
+// not slip under a loose budget.
+const REVEAL_INK_MAX = 0.0012;
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ deviceScaleFactor: 1 });

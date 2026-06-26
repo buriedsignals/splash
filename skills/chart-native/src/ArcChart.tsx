@@ -248,7 +248,9 @@ function ArcSvg({
                   d={arcPath(l, baseY, reveal)}
                   stroke={cross ? COLORS.ink : COLORS.muted}
                   strokeWidth={l.width * sc}
-                  strokeLinecap="round"
+                  // butt cap: a zero-length arc at progress 0 draws NOTHING (a
+                  // round cap would paint a foot-dot — the reveal-from-nothing bug)
+                  strokeLinecap="butt"
                   opacity={
                     (dim ? 0.12 : cross ? 0.55 : 0.28) * (touched ? 1.6 : 1)
                   }
