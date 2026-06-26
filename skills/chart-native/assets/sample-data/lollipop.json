@@ -1,0 +1,20 @@
+{
+  "title": "Library loans per resident vary three-fold across Riverton's branches",
+  "unit": "loans per resident, 2024",
+  "catField": "branch",
+  "valField": "loans",
+  "highlightLabel": "Riverside",
+  "source": {
+    "name": "Riverton library service",
+    "url": "https://example.org/riverton-libraries"
+  },
+  "rows": [
+    { "branch": "Riverside", "loans": 14.2 },
+    { "branch": "Northgate", "loans": 11.8 },
+    { "branch": "Old Town", "loans": 10.5 },
+    { "branch": "Westhill", "loans": 9.1 },
+    { "branch": "Harbour", "loans": 7.3 },
+    { "branch": "Eastgate", "loans": 6.0 },
+    { "branch": "Fields", "loans": 4.4 }
+  ]
+}
