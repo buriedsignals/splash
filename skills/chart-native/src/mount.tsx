@@ -41,6 +41,11 @@ import {
 import { InteractivePopulationPyramidChart } from "./InteractivePopulationPyramidChart";
 import { BulletChart, type BulletConfig } from "./BulletChart";
 import { InteractiveBulletChart } from "./InteractiveBulletChart";
+import {
+  ConnectedScatterChart,
+  type ConnectedScatterConfig,
+} from "./ConnectedScatterChart";
+import { InteractiveConnectedScatterChart } from "./InteractiveConnectedScatterChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -57,6 +62,7 @@ import waterfallSample from "../assets/sample-data/waterfall.json";
 import lollipopSample from "../assets/sample-data/lollipop.json";
 import pyramidSample from "../assets/sample-data/population-pyramid.json";
 import bulletSample from "../assets/sample-data/bullet.json";
+import connectedScatterSample from "../assets/sample-data/connected-scatter.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -68,7 +74,24 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "bullet") {
+if (chart === "connected-scatter") {
+  const config = connectedScatterSample as unknown as ConnectedScatterConfig;
+  root.render(
+    interactive ? (
+      <InteractiveConnectedScatterChart
+        config={config}
+        animateOn={ANIMATE_ON}
+      />
+    ) : (
+      <ConnectedScatterChart
+        config={config}
+        progress={1}
+        width={840}
+        height={480}
+      />
+    ),
+  );
+} else if (chart === "bullet") {
   const config = bulletSample as unknown as BulletConfig;
   root.render(
     interactive ? (
