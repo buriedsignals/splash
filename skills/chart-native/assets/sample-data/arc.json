@@ -1,0 +1,29 @@
+{
+  "title": "The centre brokers most of Riverton's cross-party bills",
+  "unit": "jointly sponsored bills, 2025 session",
+  "source": {
+    "name": "Riverton council legislative record",
+    "url": "https://example.org/riverton-legislative-record"
+  },
+  "nodes": [
+    { "id": "green", "label": "Green Alliance", "group": "Left bloc" },
+    { "id": "workers", "label": "Workers' Party", "group": "Left bloc" },
+    { "id": "socdem", "label": "Social Democrats", "group": "Centre" },
+    { "id": "liberals", "label": "Liberals", "group": "Centre" },
+    { "id": "reform", "label": "Reform Union", "group": "Right bloc" },
+    { "id": "cons", "label": "Conservatives", "group": "Right bloc" },
+    { "id": "heritage", "label": "Heritage Party", "group": "Right bloc" }
+  ],
+  "links": [
+    { "source": "green", "target": "workers", "value": 14 },
+    { "source": "workers", "target": "socdem", "value": 9 },
+    { "source": "socdem", "target": "liberals", "value": 18 },
+    { "source": "liberals", "target": "reform", "value": 8 },
+    { "source": "reform", "target": "cons", "value": 12 },
+    { "source": "cons", "target": "heritage", "value": 10 },
+    { "source": "green", "target": "socdem", "value": 6 },
+    { "source": "socdem", "target": "cons", "value": 11 },
+    { "source": "liberals", "target": "heritage", "value": 4 },
+    { "source": "workers", "target": "liberals", "value": 5 }
+  ]
+}

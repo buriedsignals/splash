@@ -698,6 +698,44 @@ export function checkViolinConformance(
 }
 
 /**
+ * L2 — ARC DIAGRAM: global rules + the network musts. Up to one Okabe-Ito colour
+ * per node group (≤ 8, CVD-safe), link weight encoded by stroke width (so the
+ * arcs are comparable), and every link must reference real nodes (a dangling edge
+ * is a data error). The arc-height cap is enforced in geometry, not here.
+ */
+export function checkArcConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    groupColors: string[]; // one colour per node group
+    encodesWeightByWidth: boolean;
+    danglingLinks: number; // links referencing a missing node
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.groupColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (input.groupColors.length > 8)
+    v.push(
+      `arc uses ${input.groupColors.length} group colours (> 8 Okabe-Ito)`,
+    );
+  for (const c of input.groupColors)
+    if (!isOkabeIto(c)) v.push(`group colour ${c} is not in the Okabe-Ito set`);
+  if (!input.encodesWeightByWidth)
+    v.push("arc link weight must be encoded by stroke width");
+  if (input.danglingLinks > 0)
+    v.push(`${input.danglingLinks} link(s) reference a missing node`);
+  return v;
+}
+
+/**
  * L2 — CANDLESTICK / OHLC: global rules + the market musts. POSITION/range
  * encoding → not a baseline-0 type. Adds: valid OHLC every period (high ≥
  * max(open,close), low ≤ min(open,close)), a labelled price axis, and exactly two

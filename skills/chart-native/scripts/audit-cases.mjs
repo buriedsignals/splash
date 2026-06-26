@@ -41,6 +41,7 @@ const FILE = {
   parallel: "parallel.json",
   "dot-strip": "dot-strip.json",
   violin: "violin.json",
+  arc: "arc.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -138,6 +139,25 @@ const STRESS = {
         [s.valueField]: (40 + (k % 7) * 5) * 100,
       });
     return [["long+dense", stress]];
+  },
+  arc: (s) => {
+    // long node labels (force truncation to the node gap) + a 9th node (tighter
+    // spacing) + a heavy full-width cross-bloc link (stress the height cap).
+    const stress = clone(s);
+    stress.nodes = stress.nodes.map((n) => ({
+      ...n,
+      label: `${n.label} parliamentary group`,
+    }));
+    stress.nodes.push({
+      id: "indep",
+      label: "Independent members caucus",
+      group: "Crossbench",
+    });
+    stress.links.push(
+      { source: "green", target: "indep", value: 16 },
+      { source: "green", target: "heritage", value: 7 },
+    );
+    return [["long+wide", stress]];
   },
   violin: (s) => {
     // long category labels + a 5th, near-degenerate (almost-equal) group + big
