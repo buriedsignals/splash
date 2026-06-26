@@ -81,8 +81,10 @@ export function MarimekkoChart({
   const maxColLabelLen = Math.max(
     ...config.columns.map((c) => c.label.length + 5), // " 100%"
   );
-  const rotateColLabels = minColW < maxColLabelLen * TYPE.axis * s * 0.6;
-  const colBand = rotateColLabels ? 52 : 22;
+  // when columns are too narrow for a horizontal label, STAGGER the labels onto
+  // two rows so adjacent (narrow) columns never collide.
+  const staggerColLabels = minColW < maxColLabelLen * TYPE.axis * s * 0.6;
+  const colBand = staggerColLabels ? 42 : 22;
   const basePad = {
     top: (responsive ? 16 : 53 + titleLines * 27) + colBand,
     right: 16,
@@ -117,7 +119,7 @@ export function MarimekkoChart({
       ts={ts}
       sc={sc}
       legendRowUnscaled={legendRowUnscaled}
-      rotateColLabels={rotateColLabels}
+      staggerColLabels={staggerColLabels}
     />
   );
 
@@ -159,7 +161,7 @@ function MarimekkoSvg({
   setHover,
   ts,
   sc,
-  rotateColLabels,
+  staggerColLabels,
 }: {
   layout: MarimekkoLayout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -173,7 +175,7 @@ function MarimekkoSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
   legendRowUnscaled: number;
-  rotateColLabels: boolean;
+  staggerColLabels: boolean;
 }) {
   const { innerWidth, innerHeight, cols, cells } = layout;
   const n = cols.length;
@@ -256,30 +258,26 @@ function MarimekkoSvg({
           );
         })}
 
-        {/* column-share labels along the top — rotated when columns are too
-            narrow to hold a horizontal label */}
+        {/* column-share labels along the top — horizontal; on narrow columns they
+            stagger onto two rows so adjacent labels never collide, and each is
+            clamped inside the plot so the edge columns don't overflow. */}
         {cols.map((c, ci) => {
           const cxm = c.x + c.w / 2;
           const txt = `${c.label} ${Math.round(c.widthShare * 100)}%`;
-          return rotateColLabels ? (
+          const halfW = (txt.length * ts.axis * 0.6) / 2;
+          const xc = staggerColLabels
+            ? Math.max(halfW, Math.min(innerWidth - halfW, cxm))
+            : cxm;
+          const yc = staggerColLabels
+            ? ci % 2 === 0
+              ? -28 * sc
+              : -11 * sc
+            : -9 * sc;
+          return (
             <text
               key={`cl${ci}`}
-              transform={`rotate(-30 ${cxm} ${-10 * sc})`}
-              x={cxm}
-              y={-10 * sc}
-              textAnchor="end"
-              fontSize={ts.axis}
-              fontWeight={700}
-              fill={COLORS.ink}
-              opacity={colP(ci)}
-            >
-              {txt}
-            </text>
-          ) : (
-            <text
-              key={`cl${ci}`}
-              x={cxm}
-              y={-9 * sc}
+              x={xc}
+              y={yc}
               textAnchor="middle"
               fontSize={ts.axis}
               fontWeight={700}
