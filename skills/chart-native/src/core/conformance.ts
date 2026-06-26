@@ -634,6 +634,40 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — BEESWARM / strip plot: global rules + the "show your data" musts. POSITION
+ * encoding (value on x; the dodge axis is decorative) → no baseline-0 rule. Adds:
+ * a labelled value axis (the unit), at least one point, and — when coloured by
+ * category — every category colour in the Okabe-Ito set with ≤ 5 hues (a single
+ * un-categorised swarm uses one Okabe-Ito hue, checked by the global rule).
+ */
+export function checkBeeswarmConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    valueLabel?: string;
+    pointCount: number;
+    categoryColors: string[]; // [] for a single-hue swarm
+  },
+  colors: ConformanceColors,
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors,
+  });
+  if (!input.valueLabel?.trim())
+    v.push("missing value-axis label (the unit — position encoding needs it)");
+  if (input.pointCount < 1) v.push("beeswarm needs at least one point");
+  const distinct = new Set(input.categoryColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 5)
+    v.push(`beeswarm uses ${distinct.size} category colours (> 5)`);
+  for (const c of input.categoryColors)
+    if (!isOkabeIto(c))
+      v.push(`category colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — BUMP: global rules + the ranking-over-time musts. POSITION encoding (rank
  * on a category axis) → no baseline-0 rule. Adds: ≥ 2 periods and ≥ 2 ranks (a
  * race needs steps and contenders), a labelled value/rank meaning, and the accent

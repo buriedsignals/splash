@@ -25,6 +25,7 @@ const FILE = {
   radar: "radar.json",
   boxplot: "boxplot.json",
   bump: "bump.json",
+  beeswarm: "beeswarm.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -105,6 +106,18 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  beeswarm: (s) => {
+    // a dense swarm (3× the points, clustered) to stress the dodge + the
+    // fit-into-band scaling (dots must stay in bounds at every viewport).
+    const dense = clone(s);
+    const extra = [];
+    for (let k = 0; k < s.points.length * 2; k++) {
+      const base = s.points[k % s.points.length];
+      extra.push({ value: base.value + (k % 3), category: base.category });
+    }
+    dense.points = [...s.points, ...extra];
+    return [["dense", dense]];
   },
   bump: (s) => {
     // long item labels (stress the right gutter) + an 8th rank (taller grid).
