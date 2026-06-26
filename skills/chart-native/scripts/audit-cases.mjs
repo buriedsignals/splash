@@ -24,6 +24,7 @@ const FILE = {
   marimekko: "marimekko.json",
   radar: "radar.json",
   boxplot: "boxplot.json",
+  bump: "bump.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -104,6 +105,20 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  bump: (s) => {
+    // long item labels (stress the right gutter) + an 8th rank (taller grid).
+    const long = clone(s);
+    long.items = long.items.map((it) => ({
+      ...it,
+      label: `${it.label} & on-demand services`,
+    }));
+    long.items.push(
+      { label: "Podcasts & audio", ranks: [6, 6, 6, 6] },
+      { label: "Print & magazines", ranks: [7, 7, 7, 7] },
+      { label: "Outdoor & billboards", ranks: [8, 8, 8, 8] },
+    );
+    return [["long+8ranks", long]];
   },
   boxplot: (s) => {
     // long category labels + a near-degenerate (tiny-spread) group + big values

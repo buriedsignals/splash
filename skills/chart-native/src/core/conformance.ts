@@ -634,6 +634,46 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — BUMP: global rules + the ranking-over-time musts. POSITION encoding (rank
+ * on a category axis) → no baseline-0 rule. Adds: ≥ 2 periods and ≥ 2 ranks (a
+ * race needs steps and contenders), a labelled value/rank meaning, and the accent
+ * colours in the Okabe-Ito set with ≤ 3 highlighted lines (more tangles — the
+ * rest are neutral grey context, exempt from palette membership like a gridline).
+ */
+export function checkBumpConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    periodCount: number;
+    maxRank: number;
+    highlightCount: number;
+    accentColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.accentColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (input.periodCount < 2)
+    v.push(`bump needs ≥ 2 periods — got ${input.periodCount}`);
+  if (input.maxRank < 2) v.push(`bump needs ≥ 2 ranks — got ${input.maxRank}`);
+  if (input.highlightCount > 3)
+    v.push(
+      `bump highlights ${input.highlightCount} lines (> 3) — track a few, grey the rest`,
+    );
+  for (const c of input.accentColors)
+    if (!isOkabeIto(c))
+      v.push(`accent colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — BOX PLOT: global rules + the distribution musts. POSITION encoding → it
  * does NOT inherit the bar baseline-0 rule (a zoomed value range is correct), so
  * the guard adds: a labelled value axis (the unit — length is not the encoding

@@ -52,6 +52,8 @@ import { RadarChart, type RadarConfig } from "./RadarChart";
 import { InteractiveRadarChart } from "./InteractiveRadarChart";
 import { BoxplotChart, type BoxplotConfig } from "./BoxplotChart";
 import { InteractiveBoxplotChart } from "./InteractiveBoxplotChart";
+import { BumpChart, type BumpConfig } from "./BumpChart";
+import { InteractiveBumpChart } from "./InteractiveBumpChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -72,6 +74,7 @@ import connectedScatterSample from "../assets/sample-data/connected-scatter.json
 import marimekkoSample from "../assets/sample-data/marimekko.json";
 import radarSample from "../assets/sample-data/radar.json";
 import boxplotSample from "../assets/sample-data/boxplot.json";
+import bumpSample from "../assets/sample-data/bump.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -107,6 +110,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   marimekko: MarimekkoChart,
   radar: RadarChart,
   boxplot: BoxplotChart,
+  bump: BumpChart,
 };
 
 if (chart === "audit") {
@@ -135,6 +139,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "bump") {
+  const config = bumpSample as unknown as BumpConfig;
+  root.render(
+    interactive ? (
+      <InteractiveBumpChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <BumpChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "boxplot") {
   const config = boxplotSample as unknown as BoxplotConfig;
   root.render(
