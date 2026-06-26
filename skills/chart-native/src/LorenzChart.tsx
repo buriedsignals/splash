@@ -21,6 +21,7 @@ import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
 import { truncate } from "./core/text";
+import { layoutLegend } from "./core/legend";
 
 export interface LorenzConfig {
   title: string;
@@ -62,10 +63,23 @@ export function LorenzChart({
   const titleLines = responsive
     ? Math.max(1, Math.ceil(config.title.length / Math.floor(width / 11)))
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
+  // reserve bottom for the x-axis ticks + caption AND the (wrapping) legend rows.
+  const giniLabels = config.series.map((s) => `${s.label} · Gini 0.00`);
+  const LEG_ROW = 20;
+  const legendRows = layoutLegend(
+    giniLabels,
+    giniLabels.map(() => "#000"),
+    width - 70,
+    0,
+    0,
+    TYPE.axis * 0.6,
+    LEG_ROW,
+    1,
+  ).rows;
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 18,
-    bottom: 44, // x axis + label
+    bottom: 64 + legendRows * LEG_ROW, // x ticks + caption + legend rows + source clearance
     left: 52, // y axis + label
   };
   const frame = responsive
@@ -225,7 +239,7 @@ function LorenzSvg({
           ))}
           <text
             x={innerWidth / 2}
-            y={innerHeight + 34 * sc}
+            y={innerHeight + 30 * sc}
             textAnchor="middle"
             fontSize={ts.axis}
             fill={COLORS.muted}
@@ -240,33 +254,35 @@ function LorenzSvg({
           >
             {truncate(config.yLabel, innerHeight, ts.axis)}
           </text>
-          {/* legend in the empty top-left corner (the curves hug the bottom there) */}
-          {series.map((srs, i) => (
-            <g
-              key={`lg${i}`}
-              transform={`translate(${10 * sc},${(14 + i * 20) * sc})`}
-            >
+          {/* legend BELOW the plot (a line swatch + label · Gini per curve) */}
+          {layoutLegend(
+            series.map((srs) => `${srs.label} · Gini ${srs.gini.toFixed(2)}`),
+            series.map((srs) => color(srs.index)),
+            innerWidth,
+            0,
+            innerHeight + 52 * sc,
+            ts.axis * 0.6,
+            20 * sc,
+            sc,
+          ).items.map((it, i) => (
+            <g key={`lg${i}`}>
               <line
-                x1={0}
-                x2={18 * sc}
-                y1={0}
-                y2={0}
-                stroke={color(i)}
+                x1={it.x}
+                x2={it.x + 18 * sc}
+                y1={it.y}
+                y2={it.y}
+                stroke={it.color}
                 strokeWidth={3 * sc}
               />
               <text
-                x={24 * sc}
-                y={0}
+                x={it.x + 24 * sc}
+                y={it.y}
                 dy="0.32em"
                 fontSize={ts.axis}
                 fontWeight={600}
                 fill={COLORS.ink}
               >
-                {truncate(
-                  `${srs.label} · Gini ${srs.gini.toFixed(2)}`,
-                  innerWidth * 0.62,
-                  ts.axis,
-                )}
+                {it.text}
               </text>
             </g>
           ))}
@@ -288,10 +304,12 @@ function LorenzSvg({
             strokeWidth={1.5 * sc}
             strokeDasharray={`${5 * sc} ${4 * sc}`}
           />
+          {/* "line of equality" running ALONG the diagonal, lifted into the empty
+              upper-left triangle so it never collides with the converging curves */}
           <text
-            x={equality.x1 - 4 * sc}
-            y={equality.y1 + 14 * sc}
-            textAnchor="end"
+            transform={`translate(${equality.x0 + (equality.x1 - equality.x0) * 0.34},${equality.y0 + (equality.y1 - equality.y0) * 0.34}) rotate(${(Math.atan2(equality.y1 - equality.y0, equality.x1 - equality.x0) * 180) / Math.PI})`}
+            y={-7 * sc}
+            textAnchor="middle"
             fontSize={ts.source}
             fill={COLORS.muted}
           >
