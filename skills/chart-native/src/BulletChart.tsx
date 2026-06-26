@@ -21,6 +21,7 @@ import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
+import { truncate } from "./core/text";
 
 export interface BulletConfig {
   title: string;
@@ -246,7 +247,7 @@ function BulletSvg({
                 fill={COLORS.ink}
                 opacity={chrome}
               >
-                {r.label}
+                {truncate(r.label, padding.left - 16 * sc, ts.axis)}
               </text>
               <text
                 x={-12 * sc}
@@ -257,7 +258,7 @@ function BulletSvg({
                 fill={COLORS.muted}
                 opacity={chrome}
               >
-                {r.unit}
+                {truncate(r.unit, padding.left - 16 * sc, ts.source)}
               </text>
 
               {/* measure value label at the bar end — white halo so it stays

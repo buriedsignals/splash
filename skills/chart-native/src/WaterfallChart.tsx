@@ -75,7 +75,9 @@ export function WaterfallChart({
   const maxCatLen = Math.max(...config.rows.map((r) => r.label.length));
   const narrowEst = maxCatLen * TYPE.axis * s * 0.6 > estBw;
   const basePad = {
-    top: responsive ? 16 : 53 + titleLines * 27,
+    // +20 headroom (fixed) so a value label above the tallest bar clears the
+    // absolute subtitle.
+    top: responsive ? 16 : 53 + titleLines * 27 + 20,
     right: 18,
     bottom: narrowEst ? 84 : 52, // rotated labels need more room; clear the source
     left: 48, // count axis

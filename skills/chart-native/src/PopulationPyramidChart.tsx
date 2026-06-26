@@ -271,32 +271,41 @@ function PyramidSvg({
           </g>
         ))}
 
-        {/* magnitude axis labels (positive on both sides) */}
+        {/* magnitude axis labels (positive on both sides) — thinned when the
+            ticks are closer than the widest label (big numbers on a narrow plot) */}
         <g opacity={chrome}>
-          {layout.magTicks.map((t, i) =>
-            t.mag === 0 ? null : (
-              <g key={`m${i}`}>
-                <text
-                  x={t.leftPos}
-                  y={innerHeight + 18 * sc}
-                  textAnchor="middle"
-                  fontSize={ts.source}
-                  fill={COLORS.muted}
-                >
-                  {t.mag}
-                </text>
-                <text
-                  x={t.rightPos}
-                  y={innerHeight + 18 * sc}
-                  textAnchor="middle"
-                  fontSize={ts.source}
-                  fill={COLORS.muted}
-                >
-                  {t.mag}
-                </text>
-              </g>
-            ),
-          )}
+          {(() => {
+            const step = layout.half / Math.max(1, layout.magTicks.length - 1);
+            const maxW =
+              Math.max(...layout.magTicks.map((t) => String(t.mag).length)) *
+              ts.source *
+              0.6;
+            const every = step < maxW ? 2 : 1;
+            return layout.magTicks.map((t, i) =>
+              t.mag === 0 || i % every !== 0 ? null : (
+                <g key={`m${i}`}>
+                  <text
+                    x={t.leftPos}
+                    y={innerHeight + 18 * sc}
+                    textAnchor="middle"
+                    fontSize={ts.source}
+                    fill={COLORS.muted}
+                  >
+                    {t.mag}
+                  </text>
+                  <text
+                    x={t.rightPos}
+                    y={innerHeight + 18 * sc}
+                    textAnchor="middle"
+                    fontSize={ts.source}
+                    fill={COLORS.muted}
+                  >
+                    {t.mag}
+                  </text>
+                </g>
+              ),
+            );
+          })()}
         </g>
 
         {/* legend */}

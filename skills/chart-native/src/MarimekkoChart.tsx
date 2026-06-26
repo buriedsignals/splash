@@ -88,7 +88,7 @@ export function MarimekkoChart({
   const basePad = {
     top: (responsive ? 16 : 53 + titleLines * 27) + colBand,
     right: 16,
-    bottom: 60, // legend (≈32 below the plot) + clearance for the source line
+    bottom: 70, // legend (≈32 below the plot) + clearance for the source line
     left: 16,
   };
   const frame = responsive

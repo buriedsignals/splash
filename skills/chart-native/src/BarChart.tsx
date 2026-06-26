@@ -23,6 +23,7 @@ import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
+import { truncate } from "./core/text";
 
 export interface BarConfig {
   title: string; // = the insight (sentence case)
@@ -230,7 +231,12 @@ function BarSvg({
           const catOp = clamp01(grown * 1.6);
           // category label position (always at the bar's band centre)
           const cat = horizontal
-            ? { x: -10 * sc, y: b.y + b.h / 2, anchor: "end" as const, dy: "0.32em" }
+            ? {
+                x: -10 * sc,
+                y: b.y + b.h / 2,
+                anchor: "end" as const,
+                dy: "0.32em",
+              }
             : {
                 x: b.x + b.w / 2,
                 y: innerHeight + 20 * sc,
@@ -284,7 +290,11 @@ function BarSvg({
                 fill={COLORS.ink}
                 opacity={catOp}
               >
-                {String(b.rawCat)}
+                {truncate(
+                  String(b.rawCat),
+                  horizontal ? padding.left - 14 * sc : b.w,
+                  ts.axis,
+                )}
               </text>
               <text
                 x={val.x}

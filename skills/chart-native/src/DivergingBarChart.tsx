@@ -20,6 +20,7 @@ import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
+import { truncate } from "./core/text";
 
 export interface DivergingBarConfig {
   title: string;
@@ -223,7 +224,7 @@ function DivergingSvg({
                 fill={COLORS.ink}
                 opacity={catOp}
               >
-                {b.rawCat}
+                {truncate(b.rawCat, padding.left - 16 * sc, ts.axis)}
               </text>
               {/* signed value label at the outer tip */}
               <text

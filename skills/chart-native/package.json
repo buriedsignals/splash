@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "audit": "CHART=audit INTERACTIVE=1 bunx vite build && bun scripts/audit.mjs"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.482",

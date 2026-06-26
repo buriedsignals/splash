@@ -77,7 +77,55 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "marimekko") {
+// Audit entry: renders ANY chart from an arbitrary config + progress so the
+// layout audit (scripts/audit.mjs) can stress-test collisions across datasets.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AUDIT_REGISTRY: Record<string, any> = {
+  line: LineChart,
+  bar: BarChart,
+  scatter: ScatterChart,
+  pie: PieChart,
+  stacked: StackedBarChart,
+  slope: SlopeChart,
+  grouped: GroupedBarChart,
+  dumbbell: DumbbellChart,
+  "stacked-area": StackedAreaChart,
+  heatmap: HeatmapChart,
+  histogram: HistogramChart,
+  diverging: DivergingBarChart,
+  waterfall: WaterfallChart,
+  lollipop: LollipopChart,
+  pyramid: PopulationPyramidChart,
+  bullet: BulletChart,
+  "connected-scatter": ConnectedScatterChart,
+  marimekko: MarimekkoChart,
+};
+
+if (chart === "audit") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).renderAudit = (
+    type: string,
+    config: unknown,
+    w: number,
+    h: number,
+    responsive: boolean,
+    scaleProp: number,
+    progress: number,
+  ) => {
+    const Comp = AUDIT_REGISTRY[type];
+    if (!Comp) throw new Error(`audit: unknown chart "${type}"`);
+    root.render(
+      <Comp
+        config={config}
+        progress={progress}
+        width={w}
+        height={h}
+        responsive={responsive}
+        scale={scaleProp}
+      />,
+    );
+  };
+} else if (chart === "marimekko") {
   const config = marimekkoSample as unknown as MarimekkoConfig;
   root.render(
     interactive ? (

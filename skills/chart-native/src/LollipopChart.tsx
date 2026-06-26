@@ -21,6 +21,7 @@ import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
+import { truncate } from "./core/text";
 
 export interface LollipopConfig {
   title: string;
@@ -239,7 +240,7 @@ function LollipopSvg({
                 fill={hi ? ACCENT : COLORS.ink}
                 opacity={catOp}
               >
-                {r.rawCat}
+                {truncate(r.rawCat, padding.left - 16 * sc, ts.axis)}
               </text>
               {/* stem */}
               <line

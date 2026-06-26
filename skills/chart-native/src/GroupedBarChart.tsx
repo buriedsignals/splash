@@ -22,6 +22,7 @@ import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
+import { truncate } from "./core/text";
 import { layoutLegend } from "./core/legend";
 
 export interface GroupedConfig {
@@ -266,7 +267,7 @@ function GroupedSvg({
               fill={COLORS.ink}
               opacity={op}
             >
-              {String(c.rawCat)}
+              {truncate(String(c.rawCat), (innerWidth / nCols) * 0.94, ts.axis)}
             </text>
           );
         })}
