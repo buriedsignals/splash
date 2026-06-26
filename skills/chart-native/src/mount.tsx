@@ -79,6 +79,8 @@ import { LorenzChart, type LorenzConfig } from "./LorenzChart";
 import { InteractiveLorenzChart } from "./InteractiveLorenzChart";
 import { CandlestickChart, type CandlestickConfig } from "./CandlestickChart";
 import { InteractiveCandlestickChart } from "./InteractiveCandlestickChart";
+import { ChordChart, type ChordConfig } from "./ChordChart";
+import { InteractiveChordChart } from "./InteractiveChordChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -111,6 +113,7 @@ import calendarSample from "../assets/sample-data/calendar.json";
 import waffleSample from "../assets/sample-data/waffle.json";
 import lorenzSample from "../assets/sample-data/lorenz.json";
 import candlestickSample from "../assets/sample-data/candlestick.json";
+import chordSample from "../assets/sample-data/chord.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -158,6 +161,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   waffle: WaffleChart,
   lorenz: LorenzChart,
   candlestick: CandlestickChart,
+  chord: ChordChart,
 };
 
 if (chart === "audit") {
@@ -186,6 +190,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "chord") {
+  const config = chordSample as unknown as ChordConfig;
+  root.render(
+    interactive ? (
+      <InteractiveChordChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <ChordChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "candlestick") {
   const config = candlestickSample as unknown as CandlestickConfig;
   root.render(

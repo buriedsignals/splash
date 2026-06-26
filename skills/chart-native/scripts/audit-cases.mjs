@@ -36,6 +36,7 @@ const FILE = {
   waffle: "waffle.json",
   lorenz: "lorenz.json",
   candlestick: "candlestick.json",
+  chord: "chord.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -116,6 +117,27 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  chord: (s) => {
+    // longer entity labels + a 6th entity, to stress the label gutter + ribbons.
+    const long = clone(s);
+    long.labels = [
+      "Riverside ward",
+      "Hillcrest ward",
+      "Eastgate ward",
+      "Northbank ward",
+      "Old Town ward",
+      "Harbourside ward",
+    ];
+    long.matrix = [
+      [0, 32, 12, 8, 6, 9],
+      [30, 0, 10, 14, 5, 7],
+      [11, 9, 0, 18, 7, 4],
+      [7, 13, 16, 0, 9, 6],
+      [5, 6, 8, 10, 0, 12],
+      [8, 6, 5, 7, 11, 0],
+    ];
+    return [["6-long", long]];
   },
   candlestick: (s) => {
     // big values (6-digit price axis) + more periods (thinner bodies).

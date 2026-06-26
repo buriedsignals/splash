@@ -929,6 +929,45 @@ export function checkStreamgraphConformance(
 }
 
 /**
+ * L2 — CHORD / flow matrix: global rules + the chord musts. The flow matrix must
+ * be square and non-negative, there are ≤ 8 entities (more knots the ribbons),
+ * each an Okabe-Ito hue, and every arc is labelled (the component draws them).
+ */
+export function checkChordConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    matrix: number[][];
+    labels: string[];
+    entityColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.entityColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  const n = input.labels.length;
+  if (input.matrix.length !== n || input.matrix.some((r) => r.length !== n))
+    v.push("chord matrix must be square (N×N) matching the labels");
+  if (input.matrix.some((r) => r.some((x) => x < 0)))
+    v.push("chord flows must be ≥ 0");
+  if (n > 8)
+    v.push(`chord has ${n} entities (> 8) — the ribbons knot; aggregate`);
+  if (input.labels.some((l) => !l?.trim()))
+    v.push("every chord arc needs a label");
+  for (const c of input.entityColors)
+    if (!isOkabeIto(c))
+      v.push(`entity colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — SANKEY / flow: global rules + the flow musts. Thickness encodes value, so
  * every link value must be > 0, there must be ≥ 2 columns, and every node carries
  * a label. Source-coloured ribbons use the Okabe-Ito set with ≤ 6 hues (neutral
