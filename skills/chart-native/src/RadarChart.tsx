@@ -420,7 +420,7 @@ function Legend({
     widths.reduce((a, w) => a + w, 0) + gapBetween * (series.length - 1);
   let x = cx - total / 2;
   return (
-    <g opacity={chrome}>
+    <g className="chart-legend" opacity={chrome}>
       {series.map((label, i) => {
         const color = RADAR_COLORS[i % RADAR_COLORS.length];
         const dim = interactive && activeSeries !== null && activeSeries !== i;

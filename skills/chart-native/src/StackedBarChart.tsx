@@ -336,7 +336,7 @@ function StackedSvg({
         />
 
         {/* series legend under the plot (fades in with the chrome) */}
-        <g opacity={chrome}>
+        <g className="chart-legend" opacity={chrome}>
           {legend.map((it, i) => (
             <g key={`lg${i}`}>
               <rect

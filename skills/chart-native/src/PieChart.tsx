@@ -282,7 +282,7 @@ function PieSvg({
       ))}
       {/* legend below the donut (responsive layout) — chip + name + % */}
       {legendItems.map((it) => (
-        <g key={`lg${it.index}`} opacity={it.fade}>
+        <g key={`lg${it.index}`} className="chart-legend" opacity={it.fade}>
           <rect
             x={24}
             y={it.y - 11}

@@ -317,7 +317,7 @@ function DumbbellSvg({
         })}
 
         {/* series legend under the plot (fades in with the chrome) */}
-        <g opacity={chrome}>
+        <g className="chart-legend" opacity={chrome}>
           {legend.map((it, i) => (
             <g key={`lg${i}`}>
               <circle cx={it.x + 6 * sc} cy={it.y} r={6 * sc} fill={it.color} />

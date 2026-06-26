@@ -115,6 +115,7 @@ if (chart === "audit") {
     responsive: boolean,
     scaleProp: number,
     progress: number,
+    interactive = false,
   ) => {
     const Comp = AUDIT_REGISTRY[type];
     if (!Comp) throw new Error(`audit: unknown chart "${type}"`);
@@ -126,6 +127,7 @@ if (chart === "audit") {
         height={h}
         responsive={responsive}
         scale={scaleProp}
+        interactive={interactive}
       />,
     );
   };

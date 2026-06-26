@@ -290,7 +290,7 @@ function MarimekkoSvg({
         })}
 
         {/* series legend below the mosaic */}
-        <g opacity={chrome}>
+        <g className="chart-legend" opacity={chrome}>
           {legend.map((it, i) => (
             <g key={`lg${i}`}>
               <rect

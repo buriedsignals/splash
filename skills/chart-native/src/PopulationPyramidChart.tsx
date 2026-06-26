@@ -309,7 +309,7 @@ function PyramidSvg({
         </g>
 
         {/* legend */}
-        <g opacity={chrome}>
+        <g className="chart-legend" opacity={chrome}>
           {legend.map((it, i) => (
             <g key={`lg${i}`}>
               <rect

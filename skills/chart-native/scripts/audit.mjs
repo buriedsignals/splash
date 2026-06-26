@@ -131,6 +131,63 @@ const revealVisible = (type, config) =>
     [type, config],
   );
 
+// interaction invariant: a tooltip anchors on the DATA ELEMENT under focus
+// (every data point is keyboard-focusable, per interactive.md), NOT on the
+// legend. Renders interactive, then: (1) focusing the first data element MUST
+// open a tooltip — proving "point at a value to inspect it" and the keyboard
+// a11y path; (2) hovering the legend MUST NOT open a tooltip — the legend only
+// brings a series forward. Returns the list of problems (empty = conformant).
+const interactionCheck = (type, config) =>
+  page.evaluate(
+    async ([type, config]) => {
+      const raf = () =>
+        new Promise((r) =>
+          requestAnimationFrame(() => requestAnimationFrame(r)),
+        );
+      const problems = [];
+      window.renderAudit(type, config, 760, 480, true, 1, 1, true);
+      await raf();
+      const card = document.querySelector("#root > div");
+      if (!card) return ["interactive render produced no card"];
+
+      // (1) focus the first focusable DATA element → a tooltip must appear.
+      const pt = card.querySelector("[tabindex]");
+      if (!pt) {
+        problems.push(
+          "no keyboard-focusable data element (interactive.md: data points are focusable)",
+        );
+      } else {
+        pt.focus();
+        await raf();
+        if (!document.querySelector(".tooltip"))
+          problems.push(
+            "focusing a data element opened no tooltip (tooltip must anchor on the data point)",
+          );
+        pt.blur();
+        await raf();
+        if (document.querySelector(".tooltip"))
+          problems.push("tooltip lingered after the data element lost focus");
+      }
+
+      // (2) hover the legend (if any) → NO tooltip may open.
+      const legend = card.querySelector(".chart-legend");
+      if (legend) {
+        const target = legend.querySelector("rect, text") || legend;
+        for (const t of ["mouseover", "mouseenter"])
+          target.dispatchEvent(
+            new MouseEvent(t, { bubbles: true, cancelable: true }),
+          );
+        await raf();
+        if (document.querySelector(".tooltip"))
+          problems.push(
+            "hovering the legend opened a tooltip (the legend may only highlight a series)",
+          );
+      }
+      return problems;
+    },
+    [type, config],
+  );
+
 // significant overlap: meaningful intersection (not just touching corners /
 // rotated-bbox grazing).
 function overlapArea(a, b) {
@@ -191,6 +248,11 @@ for (const c of cases) {
         `reveal: ${(frac * 100).toFixed(1)}% of the plot is drawn at progress 0 (should be ~0)`,
       );
     }
+    // interaction invariant — tooltip anchors on the data element, not the legend.
+    for (const problem of await interactionCheck(c.type, c.config)) {
+      violations++;
+      (failsByType[c.type] ??= []).push(`interaction: ${problem}`);
+    }
   }
 }
 
@@ -199,7 +261,9 @@ await browser.close();
 console.log(`\nLayout audit — ${cases.length} datasets × ${VIEWPORTS.length} viewports = ${checks} renders`);
 const types = Object.keys(failsByType);
 if (!types.length) {
-  console.log(`✓ ALL GREEN — no overlaps, nothing out of bounds.`);
+  console.log(
+    `✓ ALL GREEN — no overlaps, nothing out of bounds, blank at progress 0, tooltip anchors on the data element (not the legend).`,
+  );
   process.exit(0);
 }
 for (const t of types) {
