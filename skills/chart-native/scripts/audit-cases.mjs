@@ -34,6 +34,7 @@ const FILE = {
   fan: "fan.json",
   calendar: "calendar.json",
   waffle: "waffle.json",
+  lorenz: "lorenz.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -114,6 +115,24 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  lorenz: (s) => {
+    // a single, very-unequal curve (deep bow) to stress the gap fill + Gini label.
+    const one = clone(s);
+    one.series = [
+      {
+        label: "Wealth (top-heavy)",
+        points: [
+          { x: 0, y: 0 },
+          { x: 0.5, y: 0.05 },
+          { x: 0.8, y: 0.15 },
+          { x: 0.9, y: 0.28 },
+          { x: 0.95, y: 0.45 },
+          { x: 1, y: 1 },
+        ],
+      },
+    ];
+    return [["single-deep", one]];
   },
   waffle: (s) => {
     // 6 categories with long labels (stress the legend wrap) + a 1% sliver.

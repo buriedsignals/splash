@@ -1,0 +1,44 @@
+{
+  "title": "Tax and benefits cut Riverton's income gap by a third",
+  "unit": "cumulative share of income vs households, 2025",
+  "xLabel": "cumulative share of households (poorest → richest)",
+  "yLabel": "cumulative share of income",
+  "source": {
+    "name": "Riverton household income study",
+    "url": "https://example.org/riverton-income"
+  },
+  "series": [
+    {
+      "label": "Market income",
+      "points": [
+        { "x": 0, "y": 0 },
+        { "x": 0.1, "y": 0.02 },
+        { "x": 0.2, "y": 0.05 },
+        { "x": 0.3, "y": 0.09 },
+        { "x": 0.4, "y": 0.14 },
+        { "x": 0.5, "y": 0.2 },
+        { "x": 0.6, "y": 0.28 },
+        { "x": 0.7, "y": 0.38 },
+        { "x": 0.8, "y": 0.51 },
+        { "x": 0.9, "y": 0.68 },
+        { "x": 1, "y": 1 }
+      ]
+    },
+    {
+      "label": "After tax & benefits",
+      "points": [
+        { "x": 0, "y": 0 },
+        { "x": 0.1, "y": 0.04 },
+        { "x": 0.2, "y": 0.09 },
+        { "x": 0.3, "y": 0.15 },
+        { "x": 0.4, "y": 0.22 },
+        { "x": 0.5, "y": 0.3 },
+        { "x": 0.6, "y": 0.39 },
+        { "x": 0.7, "y": 0.5 },
+        { "x": 0.8, "y": 0.62 },
+        { "x": 0.9, "y": 0.78 },
+        { "x": 1, "y": 1 }
+      ]
+    }
+  ]
+}

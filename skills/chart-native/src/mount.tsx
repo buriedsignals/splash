@@ -75,6 +75,8 @@ import { CalendarChart, type CalendarConfig } from "./CalendarChart";
 import { InteractiveCalendarChart } from "./InteractiveCalendarChart";
 import { WaffleChart, type WaffleConfig } from "./WaffleChart";
 import { InteractiveWaffleChart } from "./InteractiveWaffleChart";
+import { LorenzChart, type LorenzConfig } from "./LorenzChart";
+import { InteractiveLorenzChart } from "./InteractiveLorenzChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -105,6 +107,7 @@ import ganttSample from "../assets/sample-data/gantt.json";
 import fanSample from "../assets/sample-data/fan.json";
 import calendarSample from "../assets/sample-data/calendar.json";
 import waffleSample from "../assets/sample-data/waffle.json";
+import lorenzSample from "../assets/sample-data/lorenz.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -150,6 +153,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   fan: FanChart,
   calendar: CalendarChart,
   waffle: WaffleChart,
+  lorenz: LorenzChart,
 };
 
 if (chart === "audit") {
@@ -178,6 +182,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "lorenz") {
+  const config = lorenzSample as unknown as LorenzConfig;
+  root.render(
+    interactive ? (
+      <InteractiveLorenzChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <LorenzChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "waffle") {
   const config = waffleSample as unknown as WaffleConfig;
   root.render(

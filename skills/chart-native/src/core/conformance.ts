@@ -634,6 +634,49 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — LORENZ curve: global rules + the inequality musts. Each curve must run
+ * (0,0)→(1,1) (cumulative shares), the Gini sits in [0,1], there are ≤ 3 curves,
+ * each an Okabe-Ito hue, and BOTH axes are labelled (cumulative shares). The line
+ * of equality + the shaded gap are structural (drawn by the component).
+ */
+export function checkLorenzConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    xLabel?: string;
+    yLabel?: string;
+    series: { endsX: number; endsY: number; gini: number }[];
+    seriesColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.seriesColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.xLabel?.trim())
+    v.push("missing x-axis label (cumulative population share)");
+  if (!input.yLabel?.trim())
+    v.push("missing y-axis label (cumulative value share)");
+  if (input.series.length > 3)
+    v.push(`lorenz has ${input.series.length} curves (> 3) — they tangle`);
+  for (const s of input.series) {
+    if (Math.abs(s.endsX - 1) > 1e-6 || Math.abs(s.endsY - 1) > 1e-6)
+      v.push("a lorenz curve does not end at (1,1)");
+    if (!(s.gini >= 0 && s.gini <= 1))
+      v.push(`a lorenz Gini is out of range: ${s.gini}`);
+  }
+  for (const c of input.seriesColors)
+    if (!isOkabeIto(c)) v.push(`curve colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — WAFFLE / square-pie: global rules + the countable part-to-whole musts.
  * Cells must sum to the whole, so ≤ 6 categories (more fragments the grid), each
  * an Okabe-Ito hue, and a stated unit. The cell-count total is guaranteed by the
