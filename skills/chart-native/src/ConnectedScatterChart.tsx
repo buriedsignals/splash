@@ -258,7 +258,22 @@ function ConnectedScatterSvg({
           strokeLinecap="round"
         />
 
-        {/* dots — pop in as the head passes */}
+        {/* draw-head — sits exactly on the path tip (revealPath head), drawn
+            BEHIND the data dots so a solid dot cleanly covers it at each waypoint.
+            Fades in as the trace starts and out exactly as the line lands, so it
+            appears/disappears at the right moment and never lingers past the end. */}
+        <circle
+          cx={head.x}
+          cy={head.y}
+          r={4 * sc}
+          fill={COLORS.head}
+          stroke={ACCENT}
+          strokeWidth={2 * sc}
+          opacity={clamp01((draw - 0.005) / 0.03) * clamp01((1 - draw) / 0.025)}
+        />
+
+        {/* data dots — pop in as the head reaches each (over the head, so the
+            head turns into the solid dot at every waypoint) */}
         {points.map((pt) => (
           <circle
             key={`d${pt.index}`}
@@ -281,20 +296,6 @@ function ConnectedScatterSvg({
             onBlur={interactive ? () => setHover(null) : undefined}
           />
         ))}
-
-        {/* draw-head — only WHILE tracing (hidden before it starts and once the
-            trajectory lands, so the start shows nothing and the end shows the
-            real last dot, not the head) */}
-        {draw > 0.01 && draw < 0.995 && (
-          <circle
-            cx={head.x}
-            cy={head.y}
-            r={4 * sc}
-            fill={COLORS.head}
-            stroke={ACCENT}
-            strokeWidth={2 * sc}
-          />
-        )}
 
         {/* start + end direction labels — placed INTO the plot (start to the
             right of its dot so it clears the y-axis; end to the left so it clears
