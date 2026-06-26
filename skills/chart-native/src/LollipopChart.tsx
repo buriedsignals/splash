@@ -205,6 +205,9 @@ function LollipopSvg({
           const color = hi ? ACCENT : BASE;
           const labelOp = clamp01((rp - 0.6) / 0.4);
           const catOp = clamp01(rp * 1.4);
+          // the dot pops in as the stem lands — invisible at the start (otherwise
+          // every dot sits visible on the baseline before its row animates).
+          const dotOp = clamp01((rp - 0.5) / 0.35);
           const focused = interactive && hover === r.index;
           const dim = interactive && hover !== null && !focused;
           const dotR = (hi ? 7 : 6) * sc;
@@ -249,13 +252,14 @@ function LollipopSvg({
                 strokeWidth={(hi ? 3 : 2) * sc}
                 opacity={0.55}
               />
-              {/* dot */}
+              {/* dot — pops in at the stem head, invisible until the stem lands */}
               <circle
                 className="lollipop-dot"
                 cx={endX}
                 cy={r.y}
                 r={dotR}
                 fill={color}
+                opacity={dotOp}
               />
               {/* value label at the dot */}
               <text
