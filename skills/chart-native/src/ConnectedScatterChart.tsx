@@ -321,7 +321,7 @@ function ConnectedScatterSvg({
           textAnchor="end"
           fontSize={ts.axis}
           fontWeight={700}
-          fill={ACCENT}
+          fill={COLORS.ink}
           stroke="#fff"
           strokeWidth={3 * sc}
           style={{ paintOrder: "stroke" }}
