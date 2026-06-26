@@ -1,0 +1,34 @@
+{
+  "title": "Wind now feeds more of Riverton's grid than gas",
+  "unit": "share of electricity, 2025 (% of total supply)",
+  "source": {
+    "name": "Riverton grid operator",
+    "url": "https://example.org/riverton-grid"
+  },
+  "rampNodes": ["Wind", "Gas", "Solar", "Nuclear", "Imports"],
+  "nodes": [
+    { "id": "wind", "label": "Wind", "column": 0, "category": "Wind" },
+    { "id": "gas", "label": "Gas", "column": 0, "category": "Gas" },
+    { "id": "solar", "label": "Solar", "column": 0, "category": "Solar" },
+    { "id": "nuclear", "label": "Nuclear", "column": 0, "category": "Nuclear" },
+    { "id": "imports", "label": "Imports", "column": 0, "category": "Imports" },
+    { "id": "grid", "label": "National grid", "column": 1 },
+    { "id": "homes", "label": "Homes", "column": 2 },
+    { "id": "industry", "label": "Industry", "column": 2 },
+    { "id": "services", "label": "Services", "column": 2 },
+    { "id": "transport", "label": "Transport", "column": 2 },
+    { "id": "losses", "label": "Grid losses", "column": 2 }
+  ],
+  "links": [
+    { "source": "wind", "target": "grid", "value": 38 },
+    { "source": "gas", "target": "grid", "value": 30 },
+    { "source": "solar", "target": "grid", "value": 16 },
+    { "source": "nuclear", "target": "grid", "value": 10 },
+    { "source": "imports", "target": "grid", "value": 6 },
+    { "source": "grid", "target": "homes", "value": 40 },
+    { "source": "grid", "target": "industry", "value": 28 },
+    { "source": "grid", "target": "services", "value": 18 },
+    { "source": "grid", "target": "transport", "value": 9 },
+    { "source": "grid", "target": "losses", "value": 5 }
+  ]
+}

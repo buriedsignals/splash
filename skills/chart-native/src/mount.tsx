@@ -63,6 +63,8 @@ import {
   type DivergingStackedConfig,
 } from "./DivergingStackedChart";
 import { InteractiveDivergingStackedChart } from "./InteractiveDivergingStackedChart";
+import { SankeyChart, type SankeyConfig } from "./SankeyChart";
+import { InteractiveSankeyChart } from "./InteractiveSankeyChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -87,6 +89,7 @@ import bumpSample from "../assets/sample-data/bump.json";
 import beeswarmSample from "../assets/sample-data/beeswarm.json";
 import treemapSample from "../assets/sample-data/treemap.json";
 import divergingStackedSample from "../assets/sample-data/diverging-stacked.json";
+import sankeySample from "../assets/sample-data/sankey.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -126,6 +129,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   beeswarm: BeeswarmChart,
   treemap: TreemapChart,
   "diverging-stacked": DivergingStackedChart,
+  sankey: SankeyChart,
 };
 
 if (chart === "audit") {
@@ -154,6 +158,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "sankey") {
+  const config = sankeySample as unknown as SankeyConfig;
+  root.render(
+    interactive ? (
+      <InteractiveSankeyChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <SankeyChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "diverging-stacked") {
   const config = divergingStackedSample as unknown as DivergingStackedConfig;
   root.render(

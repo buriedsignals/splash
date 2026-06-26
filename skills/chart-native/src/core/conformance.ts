@@ -634,6 +634,50 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — SANKEY / flow: global rules + the flow musts. Thickness encodes value, so
+ * every link value must be > 0, there must be ≥ 2 columns, and every node carries
+ * a label. Source-coloured ribbons use the Okabe-Ito set with ≤ 6 hues (neutral
+ * grey ribbons are scaffolding, exempt — omit them). Flow conservation is a data
+ * property checked structurally in the geometry, not here.
+ */
+export function checkSankeyConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    columnCount: number;
+    linkValues: number[];
+    nodeLabels: string[];
+    rampColors: string[]; // the coloured (non-neutral) ribbon/source colours
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.rampColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (input.columnCount < 2)
+    v.push(`sankey needs ≥ 2 columns — got ${input.columnCount}`);
+  if (input.linkValues.some((x) => !(x > 0)))
+    v.push("every sankey link value must be > 0");
+  if (input.nodeLabels.some((l) => !l?.trim()))
+    v.push("every sankey node needs a label");
+  const distinct = new Set(input.rampColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 6)
+    v.push(
+      `sankey uses ${distinct.size} ribbon colours (> 6) — aggregate or go neutral`,
+    );
+  for (const c of input.rampColors)
+    if (!isOkabeIto(c))
+      v.push(`ribbon colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — DIVERGING STACKED / Likert: global rules + the survey musts. A centred
  * composition → not a baseline-0 *length* type (the centre is 0, by construction).
  * Adds: ≥ 2 ordered responses, ≤ 7 (more is unreadable), each item's responses

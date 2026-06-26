@@ -28,6 +28,7 @@ const FILE = {
   beeswarm: "beeswarm.json",
   treemap: "treemap.json",
   "diverging-stacked": "diverging-stacked.json",
+  sankey: "sankey.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -108,6 +109,23 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  sankey: (s) => {
+    // long node labels (stress the gutters) + an extra small source (tighter
+    // stacking + a thin ribbon that must still be visible).
+    const long = clone(s);
+    long.nodes = long.nodes.map((n) => ({ ...n, label: `${n.label} supply` }));
+    long.nodes.push({
+      id: "biomass",
+      label: "Biomass & waste-to-energy",
+      column: 0,
+      category: "Biomass",
+    });
+    long.rampNodes = [...(long.rampNodes ?? []), "Biomass"];
+    long.links.push({ source: "biomass", target: "grid", value: 4 });
+    // rebalance a use so totals still conserve (grid now 104 in / keep out=104)
+    long.links.find((l) => l.target === "homes").value = 44;
+    return [["long+extra", long]];
   },
   "diverging-stacked": (s) => {
     // long item labels (stress the gutter) + a heavily-negative row (the whole
