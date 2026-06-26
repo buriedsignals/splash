@@ -238,6 +238,40 @@ export function checkWaterfallConformance(
 }
 
 /**
+ * L2 — POPULATION PYRAMID: global rules + the back-to-back musts. Both sides grow
+ * from the central zero on the SAME magnitude scale (baseline-0, by construction),
+ * so the guard adds: exactly two group colours, both Okabe-Ito, ≤ 2 distinct hues.
+ */
+export function checkPopulationPyramidConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    leftLabel?: string;
+    rightLabel?: string;
+    groupColors: string[]; // [left, right]
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.groupColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.leftLabel?.trim()) v.push("missing left group label");
+  if (!input.rightLabel?.trim()) v.push("missing right group label");
+  const distinct = new Set(input.groupColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 2)
+    v.push(`pyramid uses ${distinct.size} group colours (> 2)`);
+  for (const c of input.groupColors)
+    if (!isOkabeIto(c)) v.push(`group colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — HISTOGRAM: global rules + the distribution musts. Inherits the bar
  * baseline-0 rule (the count axis includes 0) and adds: enough bins to show a
  * shape (≥ 3) and not so many it is noise (≤ 50). The "bars touch" rule is a

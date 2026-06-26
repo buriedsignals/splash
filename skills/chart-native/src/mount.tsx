@@ -34,6 +34,11 @@ import { WaterfallChart, type WaterfallConfig } from "./WaterfallChart";
 import { InteractiveWaterfallChart } from "./InteractiveWaterfallChart";
 import { LollipopChart, type LollipopConfig } from "./LollipopChart";
 import { InteractiveLollipopChart } from "./InteractiveLollipopChart";
+import {
+  PopulationPyramidChart,
+  type PopulationPyramidConfig,
+} from "./PopulationPyramidChart";
+import { InteractivePopulationPyramidChart } from "./InteractivePopulationPyramidChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -48,6 +53,7 @@ import histogramSample from "../assets/sample-data/histogram.json";
 import divergingSample from "../assets/sample-data/diverging-bar.json";
 import waterfallSample from "../assets/sample-data/waterfall.json";
 import lollipopSample from "../assets/sample-data/lollipop.json";
+import pyramidSample from "../assets/sample-data/population-pyramid.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -59,7 +65,24 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
-if (chart === "lollipop") {
+if (chart === "pyramid") {
+  const config = pyramidSample as unknown as PopulationPyramidConfig;
+  root.render(
+    interactive ? (
+      <InteractivePopulationPyramidChart
+        config={config}
+        animateOn={ANIMATE_ON}
+      />
+    ) : (
+      <PopulationPyramidChart
+        config={config}
+        progress={1}
+        width={840}
+        height={480}
+      />
+    ),
+  );
+} else if (chart === "lollipop") {
   const config = lollipopSample as unknown as LollipopConfig;
   root.render(
     interactive ? (
