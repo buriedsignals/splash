@@ -23,6 +23,7 @@ const FILE = {
   "connected-scatter": "connected-scatter.json",
   marimekko: "marimekko.json",
   radar: "radar.json",
+  boxplot: "boxplot.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -103,6 +104,21 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  boxplot: (s) => {
+    // long category labels + a near-degenerate (tiny-spread) group + big values
+    // with extra outliers, to stress the gutter, the median line, and the domain.
+    const long = clone(s);
+    long.categories = long.categories.map((c) => ({
+      ...c,
+      label: `${c.label} metropolitan travel zone`,
+      values: c.values.map((v) => v * 10),
+    }));
+    long.categories.push({
+      label: "Old town conservation district",
+      values: [400, 401, 402, 402, 403, 404, 900],
+    });
+    return [["long+outliers", long]];
   },
   radar: (s) => {
     // long axis labels + a 3rd series + an axis that hits a near-horizontal

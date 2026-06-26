@@ -1,0 +1,26 @@
+{
+  "title": "Riverside commutes are short and predictable; Eastgate's vary wildly",
+  "valueLabel": "door-to-door commute, minutes (resident travel diary)",
+  "source": {
+    "name": "Riverton city travel survey",
+    "url": "https://example.org/riverton-travel"
+  },
+  "categories": [
+    {
+      "label": "Riverside",
+      "values": [18, 20, 21, 22, 22, 23, 24, 25, 26, 28]
+    },
+    {
+      "label": "Hillcrest",
+      "values": [25, 28, 30, 32, 33, 35, 36, 38, 40, 44]
+    },
+    {
+      "label": "Northbank",
+      "values": [30, 33, 35, 37, 38, 40, 42, 45, 48, 52]
+    },
+    {
+      "label": "Eastgate",
+      "values": [22, 26, 30, 34, 38, 42, 46, 52, 58, 95]
+    }
+  ]
+}

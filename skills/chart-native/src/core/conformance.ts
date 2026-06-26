@@ -634,6 +634,44 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — BOX PLOT: global rules + the distribution musts. POSITION encoding → it
+ * does NOT inherit the bar baseline-0 rule (a zoomed value range is correct), so
+ * the guard adds: a labelled value axis (the unit — length is not the encoding
+ * here), at least one category, and the box hue(s) in the Okabe-Ito set with ≤ 2
+ * distinct hues (one group, or two compared side-by-side). The median line,
+ * Tukey whiskers and individual outliers are structural (boxplot-geometry).
+ */
+export function checkBoxplotConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    valueLabel?: string;
+    categoryCount: number;
+    boxColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.boxColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.valueLabel?.trim())
+    v.push("missing value-axis label (the unit — position encoding needs it)");
+  if (input.categoryCount < 1) v.push("box plot needs at least one category");
+  const distinct = new Set(input.boxColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 2)
+    v.push(`box plot uses ${distinct.size} box colours (> 2)`);
+  for (const c of input.boxColors)
+    if (!isOkabeIto(c)) v.push(`box colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — RADAR / spider: global rules + the polar musts. Every axis shares ONE
  * radial scale from the centre = 0 (a documented common max > 0), there are ≥ 3
  * axes (a polygon needs three points) and ≤ 3 series (more becomes mush —

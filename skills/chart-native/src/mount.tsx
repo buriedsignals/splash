@@ -50,6 +50,8 @@ import { MarimekkoChart, type MarimekkoConfig } from "./MarimekkoChart";
 import { InteractiveMarimekkoChart } from "./InteractiveMarimekkoChart";
 import { RadarChart, type RadarConfig } from "./RadarChart";
 import { InteractiveRadarChart } from "./InteractiveRadarChart";
+import { BoxplotChart, type BoxplotConfig } from "./BoxplotChart";
+import { InteractiveBoxplotChart } from "./InteractiveBoxplotChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -69,6 +71,7 @@ import bulletSample from "../assets/sample-data/bullet.json";
 import connectedScatterSample from "../assets/sample-data/connected-scatter.json";
 import marimekkoSample from "../assets/sample-data/marimekko.json";
 import radarSample from "../assets/sample-data/radar.json";
+import boxplotSample from "../assets/sample-data/boxplot.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -103,6 +106,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   "connected-scatter": ConnectedScatterChart,
   marimekko: MarimekkoChart,
   radar: RadarChart,
+  boxplot: BoxplotChart,
 };
 
 if (chart === "audit") {
@@ -131,6 +135,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "boxplot") {
+  const config = boxplotSample as unknown as BoxplotConfig;
+  root.render(
+    interactive ? (
+      <InteractiveBoxplotChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <BoxplotChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "radar") {
   const config = radarSample as unknown as RadarConfig;
   root.render(
