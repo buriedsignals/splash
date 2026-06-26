@@ -81,6 +81,8 @@ import { CandlestickChart, type CandlestickConfig } from "./CandlestickChart";
 import { InteractiveCandlestickChart } from "./InteractiveCandlestickChart";
 import { ChordChart, type ChordConfig } from "./ChordChart";
 import { InteractiveChordChart } from "./InteractiveChordChart";
+import { SunburstChart, type SunburstConfig } from "./SunburstChart";
+import { InteractiveSunburstChart } from "./InteractiveSunburstChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -114,6 +116,7 @@ import waffleSample from "../assets/sample-data/waffle.json";
 import lorenzSample from "../assets/sample-data/lorenz.json";
 import candlestickSample from "../assets/sample-data/candlestick.json";
 import chordSample from "../assets/sample-data/chord.json";
+import sunburstSample from "../assets/sample-data/sunburst.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -162,6 +165,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   lorenz: LorenzChart,
   candlestick: CandlestickChart,
   chord: ChordChart,
+  sunburst: SunburstChart,
 };
 
 if (chart === "audit") {
@@ -190,6 +194,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "sunburst") {
+  const config = sunburstSample as unknown as SunburstConfig;
+  root.render(
+    interactive ? (
+      <InteractiveSunburstChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <SunburstChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "chord") {
   const config = chordSample as unknown as ChordConfig;
   root.render(

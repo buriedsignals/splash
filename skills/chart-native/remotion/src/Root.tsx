@@ -32,6 +32,7 @@ import { WaffleReveal } from "./WaffleReveal";
 import { LorenzReveal } from "./LorenzReveal";
 import { CandlestickReveal } from "./CandlestickReveal";
 import { ChordReveal } from "./ChordReveal";
+import { SunburstReveal } from "./SunburstReveal";
 
 // 8 s @ 30fps = 240 frames. Duration is the speed knob — longer = slower,
 // smoother build (more frames per pixel of motion).
@@ -890,6 +891,32 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="ChordPortrait"
         component={ChordReveal}
+        defaultProps={{ scale: 1.7 }}
+        durationInFrames={240}
+        fps={30}
+        width={1080}
+        height={1350}
+      />
+      <Composition
+        id="SunburstReveal"
+        component={SunburstReveal}
+        durationInFrames={240}
+        fps={30}
+        width={840}
+        height={480}
+      />
+      <Composition
+        id="SunburstSquare"
+        component={SunburstReveal}
+        defaultProps={{ scale: 1.7 }}
+        durationInFrames={240}
+        fps={30}
+        width={1080}
+        height={1080}
+      />
+      <Composition
+        id="SunburstPortrait"
+        component={SunburstReveal}
         defaultProps={{ scale: 1.7 }}
         durationInFrames={240}
         fps={30}

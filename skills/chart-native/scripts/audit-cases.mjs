@@ -37,6 +37,7 @@ const FILE = {
   lorenz: "lorenz.json",
   candlestick: "candlestick.json",
   chord: "chord.json",
+  sunburst: "sunburst.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -117,6 +118,19 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  sunburst: (s) => {
+    // a 3rd level (sub-items) on one branch → outer-ring slivers + label threshold.
+    const deep = clone(s);
+    deep.root.children[0].children[0] = {
+      label: "Adult social care",
+      children: [
+        { label: "Residential", value: 340 },
+        { label: "Home care", value: 180 },
+        { label: "Assessment", value: 80 },
+      ],
+    };
+    return [["3-levels", deep]];
   },
   chord: (s) => {
     // longer entity labels + a 6th entity, to stress the label gutter + ribbons.

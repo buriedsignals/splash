@@ -1060,6 +1060,44 @@ export function checkDivergingStackedConformance(
 }
 
 /**
+ * L2 — SUNBURST: global rules + the radial-hierarchy musts. Angle encodes value,
+ * so every leaf value is > 0 and a parent equals the sum of its children (the
+ * geometry rolls this up, checked here as all-positive). Branches are coloured
+ * with the Okabe-Ito set (≤ 7 top-level branches; deeper rings lighten the hue).
+ */
+export function checkSunburstConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    leafValues: number[];
+    branchCount: number;
+    branchColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.branchColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.leafValues.length) v.push("sunburst needs at least one leaf");
+  if (input.leafValues.some((x) => !(x > 0)))
+    v.push("sunburst leaf values must all be > 0 (angle can't be negative)");
+  if (input.branchCount > 7)
+    v.push(
+      `sunburst has ${input.branchCount} top-level branches (> 7) — group the tail`,
+    );
+  for (const c of input.branchColors)
+    if (!isOkabeIto(c))
+      v.push(`branch colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — TREEMAP: global rules + the space-filling musts. Area encodes value, so
  * every value must be > 0 (area can't be negative) and the grouping colours are
  * Okabe-Ito with ≤ 5 hues (more groups blur). A treemap is not a baseline-0 type

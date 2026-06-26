@@ -1,0 +1,40 @@
+{
+  "title": "Adult social care alone is a quarter of Riverton's £2.4bn budget",
+  "unit": "£m of the 2025 city budget",
+  "source": {
+    "name": "Riverton city budget 2025",
+    "url": "https://example.org/riverton-budget"
+  },
+  "root": {
+    "label": "£2.4bn",
+    "children": [
+      {
+        "label": "People",
+        "children": [
+          { "label": "Adult social care", "value": 600 },
+          { "label": "Schools", "value": 460 },
+          { "label": "Public health", "value": 110 }
+        ]
+      },
+      {
+        "label": "Place",
+        "children": [
+          { "label": "Housing", "value": 280 },
+          { "label": "Transport", "value": 280 },
+          { "label": "Environment", "value": 190 },
+          { "label": "Parks", "value": 95 }
+        ]
+      },
+      {
+        "label": "Corporate",
+        "children": [
+          { "label": "Corporate services", "value": 150 },
+          { "label": "Debt servicing", "value": 130 },
+          { "label": "IT & digital", "value": 75 },
+          { "label": "Libraries", "value": 60 },
+          { "label": "Emergency planning", "value": 20 }
+        ]
+      }
+    ]
+  }
+}
