@@ -38,6 +38,7 @@ const FILE = {
   candlestick: "candlestick.json",
   chord: "chord.json",
   sunburst: "sunburst.json",
+  parallel: "parallel.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -118,6 +119,24 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  parallel: (s) => {
+    // long axis labels + a 7th axis (tighter spacing) to stress label crowding.
+    const long = clone(s);
+    long.dimensions = long.dimensions.map((d) => ({
+      ...d,
+      label: `${d.label} score`,
+    }));
+    long.dimensions.push(
+      { key: "behaviour", label: "Behaviour score" },
+      { key: "wellbeing", label: "Wellbeing score" },
+    );
+    long.items = long.items.map((it, i) => ({
+      ...it,
+      behaviour: 50 + ((i * 13) % 45),
+      wellbeing: 40 + ((i * 17) % 55),
+    }));
+    return [["long+7axes", long]];
   },
   sunburst: (s) => {
     // a 3rd level (sub-items) on one branch → outer-ring slivers + label threshold.

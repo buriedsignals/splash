@@ -83,6 +83,8 @@ import { ChordChart, type ChordConfig } from "./ChordChart";
 import { InteractiveChordChart } from "./InteractiveChordChart";
 import { SunburstChart, type SunburstConfig } from "./SunburstChart";
 import { InteractiveSunburstChart } from "./InteractiveSunburstChart";
+import { ParallelChart, type ParallelConfig } from "./ParallelChart";
+import { InteractiveParallelChart } from "./InteractiveParallelChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -117,6 +119,7 @@ import lorenzSample from "../assets/sample-data/lorenz.json";
 import candlestickSample from "../assets/sample-data/candlestick.json";
 import chordSample from "../assets/sample-data/chord.json";
 import sunburstSample from "../assets/sample-data/sunburst.json";
+import parallelSample from "../assets/sample-data/parallel.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -166,6 +169,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   candlestick: CandlestickChart,
   chord: ChordChart,
   sunburst: SunburstChart,
+  parallel: ParallelChart,
 };
 
 if (chart === "audit") {
@@ -194,6 +198,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "parallel") {
+  const config = parallelSample as unknown as ParallelConfig;
+  root.render(
+    interactive ? (
+      <InteractiveParallelChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <ParallelChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "sunburst") {
   const config = sunburstSample as unknown as SunburstConfig;
   root.render(

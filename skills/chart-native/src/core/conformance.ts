@@ -1245,6 +1245,47 @@ export function checkBoxplotConformance(
 }
 
 /**
+ * L2 — PARALLEL COORDINATES: global rules + the multivariate musts. POSITION
+ * encoding per axis → no baseline-0 rule. Adds: ≥ 3 dimensions (axes), every axis
+ * labelled, ≤ 3 highlighted lines (more is a hairball), and the accent colours in
+ * the Okabe-Ito set (the greyed context is exempt, like a gridline).
+ */
+export function checkParallelConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    dimensionLabels: string[];
+    highlightCount: number;
+    accentColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.accentColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (input.dimensionLabels.length < 3)
+    v.push(
+      `parallel coordinates need ≥ 3 axes — got ${input.dimensionLabels.length}`,
+    );
+  if (input.dimensionLabels.some((l) => !l?.trim()))
+    v.push("every parallel axis needs a label");
+  if (input.highlightCount > 3)
+    v.push(
+      `parallel plot highlights ${input.highlightCount} lines (> 3) — grey more of them`,
+    );
+  for (const c of input.accentColors)
+    if (!isOkabeIto(c))
+      v.push(`accent colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — RADAR / spider: global rules + the polar musts. Every axis shares ONE
  * radial scale from the centre = 0 (a documented common max > 0), there are ≥ 3
  * axes (a polygon needs three points) and ≤ 3 series (more becomes mush —
