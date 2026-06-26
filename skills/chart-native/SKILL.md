@@ -40,9 +40,18 @@ For each new FT type, in order:
      rules) → lives in the type module.
    If you find yourself re-coding a global invariant per type (as the label-overflow guard was), stop
    and lift it into `core/` + a guard.
-6. **Verify at the render** — static + interactive (≥3 widths + keyboard focus) + video (landscape +
-   square + portrait). Looking is the gate; the eye missed scatter label overflow three times — the
-   guard (#5) is why it can't happen silently again.
+6. **Pass the layout audit, then look** — the AUTOMATED gate comes first: add the type to
+   `scripts/audit-cases.mjs` (its sample + ≥1 stress dataset: long labels, big/tiny/equal values,
+   many/few categories) and run `bun run audit`. It renders every type × dataset × 6 viewports in a
+   real browser and asserts NO two text labels overlap and ALL stay in bounds — so correctness is
+   proven for arbitrary newsroom data, not just the sample your eye happened to check. The audit MUST
+   be green. Looking at static/interactive/video is the second gate (motion/reveal/colour), not the
+   first. The eye missed real collisions on three shipped samples (histogram, waterfall, marimekko)
+   that the audit caught — never rely on the eye alone again.
+   - When a label sits in a fixed gutter/band, use `core/text` `truncate()` so it can never overflow.
+   - When labels crowd at narrow widths, thin/stagger/rotate them (see heatmap, marimekko, pyramid).
+   - Reveal grammar: nothing is drawn at progress 0; marks fade in from nothing and land at the right
+     moment (the head/dots appear and disappear with the draw, not before or after).
 
 ## Overview
 
