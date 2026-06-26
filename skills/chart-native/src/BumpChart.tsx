@@ -244,9 +244,8 @@ function BumpSvg({
               (interactive && hover !== null && !focused) ||
               (!ln.highlighted && hover === null);
             const w = (ln.highlighted ? 3 : 1.5) * sc;
-            const headX =
-              ln.points[0].x +
-              (ln.points[ln.points.length - 1].x - ln.points[0].x) * drawProg;
+            const xMin = ln.points[0].x;
+            const xSpan = ln.points[ln.points.length - 1].x - xMin || 1;
             return (
               <g
                 key={`ln${ln.index}`}
@@ -260,9 +259,15 @@ function BumpSvg({
                   strokeLinejoin="round"
                   strokeLinecap="round"
                 />
-                {/* a dot per period — pops as the sweep passes it */}
+                {/* a dot per period — invisible until the line-draw starts, then
+                    each pops just as the sweep reaches it (the last dot lands full
+                    at the end). Nothing is drawn while drawProg is 0. */}
                 {ln.points.map((pt, pi) => {
-                  const op = clamp01((headX - pt.x) / (8 * sc) + 0.2);
+                  const frac = (pt.x - xMin) / xSpan;
+                  const op =
+                    drawProg <= 0
+                      ? 0
+                      : clamp01((drawProg - frac + 0.08) / 0.06);
                   return (
                     <circle
                       key={`d${pi}`}
