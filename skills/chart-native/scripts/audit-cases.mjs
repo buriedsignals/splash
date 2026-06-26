@@ -35,6 +35,7 @@ const FILE = {
   calendar: "calendar.json",
   waffle: "waffle.json",
   lorenz: "lorenz.json",
+  candlestick: "candlestick.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -115,6 +116,19 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  candlestick: (s) => {
+    // big values (6-digit price axis) + more periods (thinner bodies).
+    const big = clone(s);
+    big.periods = s.periods.concat(s.periods).map((c, i) => ({
+      ...c,
+      date: `P${i + 1}`,
+      open: c.open * 100,
+      high: c.high * 100,
+      low: c.low * 100,
+      close: c.close * 100,
+    }));
+    return [["big+many", big]];
   },
   lorenz: (s) => {
     // a single, very-unequal curve (deep bow) to stress the gap fill + Gini label.

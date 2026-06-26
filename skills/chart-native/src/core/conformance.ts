@@ -634,6 +634,52 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — CANDLESTICK / OHLC: global rules + the market musts. POSITION/range
+ * encoding → not a baseline-0 type. Adds: valid OHLC every period (high ≥
+ * max(open,close), low ≤ min(open,close)), a labelled price axis, and exactly two
+ * direction colours (up/down) both in the Okabe-Ito set (CVD-safe, not bare
+ * red/green).
+ */
+export function checkCandlestickConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    priceLabel?: string;
+    ohlc: { open: number; high: number; low: number; close: number }[];
+    directionColors: string[]; // [up, down]
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.directionColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.priceLabel?.trim()) v.push("missing price-axis label");
+  for (const c of input.ohlc)
+    if (
+      c.high < Math.max(c.open, c.close) ||
+      c.low > Math.min(c.open, c.close)
+    ) {
+      v.push("a period has invalid OHLC (high < body or low > body)");
+      break;
+    }
+  const distinct = new Set(input.directionColors.map((c) => c.toUpperCase()));
+  if (distinct.size !== 2)
+    v.push(
+      `candlestick needs exactly 2 direction colours — got ${distinct.size}`,
+    );
+  for (const c of input.directionColors)
+    if (!isOkabeIto(c))
+      v.push(`direction colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — LORENZ curve: global rules + the inequality musts. Each curve must run
  * (0,0)→(1,1) (cumulative shares), the Gini sits in [0,1], there are ≤ 3 curves,
  * each an Okabe-Ito hue, and BOTH axes are labelled (cumulative shares). The line
