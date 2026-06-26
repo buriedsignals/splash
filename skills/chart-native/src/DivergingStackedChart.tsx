@@ -22,7 +22,7 @@ import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { relativeLuminance } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
-import { layoutLegend } from "./core/legend";
+import { layoutLegend, legendRowCount } from "./core/legend";
 import { truncate } from "./core/text";
 
 export interface DivergingStackedConfig {
@@ -74,17 +74,12 @@ export function DivergingStackedChart({
   // reserve bottom for the percent ticks AND however many rows the response
   // legend wraps to at this width (long Likert labels wrap on a phone).
   const LEG_ROW = 20;
-  const estInnerW = width - 130 - 20;
-  const legendRows = layoutLegend(
+  const legendRows = legendRowCount(
     config.responses,
-    config.responses.map(() => "#000"),
-    estInnerW,
-    0,
-    0,
+    width - 130 - 20,
     TYPE.source * 0.6,
     LEG_ROW,
-    1,
-  ).rows;
+  );
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 20,

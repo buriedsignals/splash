@@ -20,7 +20,7 @@ import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
-import { layoutLegend } from "./core/legend";
+import { layoutLegend, legendRowCount } from "./core/legend";
 
 export interface WaffleConfig {
   title: string;
@@ -71,16 +71,12 @@ export function WaffleChart({
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
   // reserve bottom for however many rows the value legend wraps to at this width.
   const LEG_ROW = 22;
-  const legendRows = layoutLegend(
+  const legendRows = legendRowCount(
     config.items.map((it) => `${it.label} ${fmt(it.value)}`),
-    config.items.map(() => "#000"),
     width - 36,
-    0,
-    0,
     TYPE.axis * 0.6,
     LEG_ROW,
-    1,
-  ).rows;
+  );
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 18,

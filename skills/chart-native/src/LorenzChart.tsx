@@ -21,7 +21,7 @@ import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
 import { truncate } from "./core/text";
-import { layoutLegend } from "./core/legend";
+import { layoutLegend, legendRowCount } from "./core/legend";
 
 export interface LorenzConfig {
   title: string;
@@ -66,16 +66,12 @@ export function LorenzChart({
   // reserve bottom for the x-axis ticks + caption AND the (wrapping) legend rows.
   const giniLabels = config.series.map((s) => `${s.label} · Gini 0.00`);
   const LEG_ROW = 20;
-  const legendRows = layoutLegend(
+  const legendRows = legendRowCount(
     giniLabels,
-    giniLabels.map(() => "#000"),
     width - 70,
-    0,
-    0,
     TYPE.axis * 0.6,
     LEG_ROW,
-    1,
-  ).rows;
+  );
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 18,

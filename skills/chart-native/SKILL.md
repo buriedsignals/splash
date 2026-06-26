@@ -51,6 +51,9 @@ For each new FT type, in order:
    that the audit caught — never rely on the eye alone again.
    - When a label sits in a fixed gutter/band, use `core/text` `truncate()` so it can never overflow.
    - When labels crowd at narrow widths, thin/stagger/rotate them (see heatmap, marimekko, pyramid).
+   - A legend BELOW the plot wraps on a phone — reserve its bottom band by row count with
+     `core/legend` `legendRowCount(labels, availWidth, charW, rowH)` BEFORE fixing padding, and keep
+     the band clear of the source line. (Shared mechanism — don't re-derive it per type.)
    - Reveal grammar: nothing is drawn at progress 0; marks fade in from nothing and land at the right
      moment (the head/dots appear and disappear with the draw, not before or after). The audit
      ENFORCES this — it rasterises the plot at progress 0 (honouring clip/opacity/size) and requires

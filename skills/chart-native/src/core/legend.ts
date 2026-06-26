@@ -49,3 +49,27 @@ export function layoutLegend(
   }
   return { items, rows: row + 1 };
 }
+
+/**
+ * How many rows a below-plot legend wraps to at `availWidth` — call this BEFORE
+ * fixing the padding so the bottom band reserves the right height (the legend
+ * wraps on a narrow phone). The recurring "reserve bottom by legend rows" step,
+ * lifted into one place so every type computes it the same way (recipe step 5).
+ */
+export function legendRowCount(
+  labels: string[],
+  availWidth: number,
+  charW: number,
+  rowH: number,
+): number {
+  return layoutLegend(
+    labels,
+    labels.map(() => "#000"),
+    availWidth,
+    0,
+    0,
+    charW,
+    rowH,
+    1,
+  ).rows;
+}

@@ -21,7 +21,7 @@ import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame } from "./core/format";
-import { layoutLegend } from "./core/legend";
+import { layoutLegend, legendRowCount } from "./core/legend";
 import { truncate } from "./core/text";
 
 export interface GanttConfig {
@@ -74,16 +74,7 @@ export function GanttChart({
   const cats = config.categories ?? [];
   const LEG_ROW = 20;
   const legendRows = cats.length
-    ? layoutLegend(
-        cats,
-        cats.map(() => "#000"),
-        width - 150 - 20,
-        0,
-        0,
-        TYPE.source * 0.6,
-        LEG_ROW,
-        1,
-      ).rows
+    ? legendRowCount(cats, width - 150 - 20, TYPE.source * 0.6, LEG_ROW)
     : 0;
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
