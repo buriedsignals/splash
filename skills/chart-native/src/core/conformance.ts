@@ -634,6 +634,44 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — GANTT / timeline: global rules + the time-span musts. Bar length encodes
+ * DURATION on a to-scale time axis (not a quantity), so this is not a baseline-0
+ * type. Adds: every span has end ≥ start, a captioned time axis, ≥ 1 item, and
+ * group colours in the Okabe-Ito set (≤ 6). The to-scale axis is structural.
+ */
+export function checkGanttConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    spans: { startMs: number; endMs: number }[];
+    timeLabel?: string;
+    groupColors: string[];
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.groupColors[0] ?? "#0072B2",
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.spans.length) v.push("gantt needs at least one item");
+  if (input.spans.some((s) => s.endMs < s.startMs))
+    v.push("every gantt span must have end ≥ start");
+  if (!input.timeLabel?.trim())
+    v.push("missing time-axis caption (length is duration, not magnitude)");
+  const distinct = new Set(input.groupColors.map((c) => c.toUpperCase()));
+  if (distinct.size > 6)
+    v.push(`gantt uses ${distinct.size} group colours (> 6)`);
+  for (const c of input.groupColors)
+    if (!isOkabeIto(c)) v.push(`group colour ${c} is not in the Okabe-Ito set`);
+  return v;
+}
+
+/**
  * L2 — STREAMGRAPH: global rules + the free-baseline musts. Thickness encodes
  * value, but there is NO value axis (the baseline wiggles), so this is not a
  * baseline-0 type. Adds: ≤ 7 series (more is mush), every band colour in the

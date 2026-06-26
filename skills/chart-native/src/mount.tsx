@@ -67,6 +67,8 @@ import { SankeyChart, type SankeyConfig } from "./SankeyChart";
 import { InteractiveSankeyChart } from "./InteractiveSankeyChart";
 import { StreamgraphChart, type StreamgraphConfig } from "./StreamgraphChart";
 import { InteractiveStreamgraphChart } from "./InteractiveStreamgraphChart";
+import { GanttChart, type GanttConfig } from "./GanttChart";
+import { InteractiveGanttChart } from "./InteractiveGanttChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -93,6 +95,7 @@ import treemapSample from "../assets/sample-data/treemap.json";
 import divergingStackedSample from "../assets/sample-data/diverging-stacked.json";
 import sankeySample from "../assets/sample-data/sankey.json";
 import streamgraphSample from "../assets/sample-data/streamgraph.json";
+import ganttSample from "../assets/sample-data/gantt.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -134,6 +137,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   "diverging-stacked": DivergingStackedChart,
   sankey: SankeyChart,
   streamgraph: StreamgraphChart,
+  gantt: GanttChart,
 };
 
 if (chart === "audit") {
@@ -162,6 +166,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "gantt") {
+  const config = ganttSample as unknown as GanttConfig;
+  root.render(
+    interactive ? (
+      <InteractiveGanttChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <GanttChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "streamgraph") {
   const config = streamgraphSample as unknown as StreamgraphConfig;
   root.render(

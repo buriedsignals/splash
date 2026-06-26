@@ -30,6 +30,7 @@ const FILE = {
   "diverging-stacked": "diverging-stacked.json",
   sankey: "sankey.json",
   streamgraph: "streamgraph.json",
+  gantt: "gantt.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -110,6 +111,22 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  gantt: (s) => {
+    // long row labels + a very short span (must still render a visible bar) +
+    // an extra row (tighter band).
+    const long = clone(s);
+    long.items = long.items.map((it) => ({
+      ...it,
+      label: `${it.label} (programme workstream)`,
+    }));
+    long.items.push({
+      label: "Final inspection sign-off",
+      start: "2028-02",
+      end: "2028-03",
+      category: "Handover",
+    });
+    return [["long+short", long]];
   },
   streamgraph: (s) => {
     // a 7th series + a spikier final step, to stress the wiggle baseline and the
