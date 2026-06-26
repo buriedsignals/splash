@@ -1,0 +1,92 @@
+{
+  "title": "Riverton's debt is on track to top £300m by 2030 — but the range is wide",
+  "unit": "city debt, £m (solid = actual, dashed = projection, shaded = 50/80/95% range)",
+  "xField": "year",
+  "levels": [50, 80, 95],
+  "source": {
+    "name": "Riverton finance office projections",
+    "url": "https://example.org/riverton-debt"
+  },
+  "rows": [
+    { "year": 2015, "actual": 120 },
+    { "year": 2016, "actual": 130 },
+    { "year": 2017, "actual": 138 },
+    { "year": 2018, "actual": 150 },
+    { "year": 2019, "actual": 162 },
+    { "year": 2020, "actual": 170 },
+    { "year": 2021, "actual": 178 },
+    { "year": 2022, "actual": 190 },
+    { "year": 2023, "actual": 200 },
+    {
+      "year": 2024,
+      "actual": 210,
+      "central": 210,
+      "lo50": 210,
+      "hi50": 210,
+      "lo80": 210,
+      "hi80": 210,
+      "lo95": 210,
+      "hi95": 210
+    },
+    {
+      "year": 2025,
+      "central": 224,
+      "lo50": 218,
+      "hi50": 230,
+      "lo80": 213,
+      "hi80": 235,
+      "lo95": 208,
+      "hi95": 240
+    },
+    {
+      "year": 2026,
+      "central": 240,
+      "lo50": 230,
+      "hi50": 250,
+      "lo80": 222,
+      "hi80": 258,
+      "lo95": 214,
+      "hi95": 266
+    },
+    {
+      "year": 2027,
+      "central": 258,
+      "lo50": 244,
+      "hi50": 272,
+      "lo80": 232,
+      "hi80": 284,
+      "lo95": 220,
+      "hi95": 296
+    },
+    {
+      "year": 2028,
+      "central": 278,
+      "lo50": 260,
+      "hi50": 296,
+      "lo80": 244,
+      "hi80": 312,
+      "lo95": 226,
+      "hi95": 330
+    },
+    {
+      "year": 2029,
+      "central": 298,
+      "lo50": 276,
+      "hi50": 320,
+      "lo80": 256,
+      "hi80": 340,
+      "lo95": 232,
+      "hi95": 364
+    },
+    {
+      "year": 2030,
+      "central": 320,
+      "lo50": 292,
+      "hi50": 348,
+      "lo80": 268,
+      "hi80": 372,
+      "lo95": 240,
+      "hi95": 400
+    }
+  ]
+}

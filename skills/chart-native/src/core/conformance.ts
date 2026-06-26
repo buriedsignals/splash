@@ -634,6 +634,56 @@ export function checkDumbbellConformance(
 }
 
 /**
+ * L2 — FAN CHART: global rules + the uncertainty musts. The fan is one hue (tints
+ * by level), so the global data-colour check applies to that hue. Adds: ≥ 2
+ * confidence levels, a labelled value axis, and — the structural guarantee — every
+ * forecast step must NEST (hi ≥ central ≥ lo) and the OUTER band must contain the
+ * inner at each step. `forecast` is the per-step [lo..hi] per level for checking.
+ */
+export function checkFanConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    valueLabel?: string;
+    levels: number[];
+    /** per forecast step: { central, bands: { level → [lo, hi] } } */
+    forecast: { central: number; bands: Record<number, [number, number]> }[];
+    hue: string;
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: { data: input.hue, text: textColors.text, bg: textColors.bg },
+  });
+  if (input.levels.length < 2)
+    v.push(
+      `fan chart needs ≥ 2 confidence levels — got ${input.levels.length}`,
+    );
+  if (!input.valueLabel?.trim()) v.push("missing value-axis label");
+  const asc = [...input.levels].sort((a, b) => a - b);
+  for (const step of input.forecast) {
+    for (const lv of asc) {
+      const b = step.bands[lv];
+      if (!b) continue;
+      if (!(b[1] >= step.central && step.central >= b[0]))
+        v.push(`a band does not bracket the central estimate (level ${lv})`);
+    }
+    // outer ⊇ inner: walk levels widest→narrowest
+    for (let i = asc.length - 1; i > 0; i--) {
+      const outer = step.bands[asc[i]];
+      const inner = step.bands[asc[i - 1]];
+      if (outer && inner && !(outer[0] <= inner[0] && outer[1] >= inner[1])) {
+        v.push(`the ${asc[i]}% band does not contain the ${asc[i - 1]}% band`);
+        break;
+      }
+    }
+  }
+  return v;
+}
+
+/**
  * L2 — GANTT / timeline: global rules + the time-span musts. Bar length encodes
  * DURATION on a to-scale time axis (not a quantity), so this is not a baseline-0
  * type. Adds: every span has end ≥ start, a captioned time axis, ≥ 1 item, and

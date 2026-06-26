@@ -69,6 +69,8 @@ import { StreamgraphChart, type StreamgraphConfig } from "./StreamgraphChart";
 import { InteractiveStreamgraphChart } from "./InteractiveStreamgraphChart";
 import { GanttChart, type GanttConfig } from "./GanttChart";
 import { InteractiveGanttChart } from "./InteractiveGanttChart";
+import { FanChart, type FanConfig } from "./FanChart";
+import { InteractiveFanChart } from "./InteractiveFanChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -96,6 +98,7 @@ import divergingStackedSample from "../assets/sample-data/diverging-stacked.json
 import sankeySample from "../assets/sample-data/sankey.json";
 import streamgraphSample from "../assets/sample-data/streamgraph.json";
 import ganttSample from "../assets/sample-data/gantt.json";
+import fanSample from "../assets/sample-data/fan.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -138,6 +141,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   sankey: SankeyChart,
   streamgraph: StreamgraphChart,
   gantt: GanttChart,
+  fan: FanChart,
 };
 
 if (chart === "audit") {
@@ -166,6 +170,15 @@ if (chart === "audit") {
       />,
     );
   };
+} else if (chart === "fan") {
+  const config = fanSample as unknown as FanConfig;
+  root.render(
+    interactive ? (
+      <InteractiveFanChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <FanChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
 } else if (chart === "gantt") {
   const config = ganttSample as unknown as GanttConfig;
   root.render(

@@ -31,6 +31,7 @@ const FILE = {
   sankey: "sankey.json",
   streamgraph: "streamgraph.json",
   gantt: "gantt.json",
+  fan: "fan.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -111,6 +112,16 @@ const STRESS = {
     const big = clone(s);
     big.rows = big.rows.map((r) => ({ ...r, [s.xField]: r[s.xField] * 10 }));
     return [["big-x", big]];
+  },
+  fan: (s) => {
+    // 1000× the values (wide y-axis labels) to stress the left gutter + ticks.
+    const big = clone(s);
+    big.rows = big.rows.map((r) => {
+      const o = { ...r };
+      for (const k of Object.keys(o)) if (k !== s.xField) o[k] = o[k] * 1000;
+      return o;
+    });
+    return [["big-values", big]];
   },
   gantt: (s) => {
     // long row labels + a very short span (must still render a visible bar) +
