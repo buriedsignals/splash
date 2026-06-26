@@ -101,7 +101,10 @@ title (sentence case), Okabe-Ito `#0072B2` single colour, direct label (no legen
 dw-chart's `validateChartSpec` — `tests/conformance.test.ts` runs it on the shipped config + tokens
 (Okabe-Ito membership, real WCAG contrast ≥ 4.5:1, insight-shaped title, source name+url, direct label).
 Every new native chart must pass it. Interactive a11y: data points are keyboard-focusable
-(`tabindex`, `role`, per-point `aria-label`) and show the tooltip on focus, not just hover.
+(`tabindex`, `role`, per-point `aria-label`) and show the tooltip on focus, not just hover. The
+tooltip anchors on the DATA ELEMENT under cursor/focus (bar, dot, slice, cell, vertex) and shows
+THAT element's value; a LEGEND hover only brings a series forward (dims the others) — it never opens
+a tooltip. See `knowledge/references/formats/interactive.md`.
 
 ## How it works (the shape)
 

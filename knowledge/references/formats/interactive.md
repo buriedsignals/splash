@@ -35,6 +35,12 @@ as one self-contained artifact the newsroom can drop into a CMS.
   order.
 - Tooltips are progressive enhancement: the chart is fully readable with **no** interaction (direct
   labels + the insight title carry the story); hover/focus only *adds* per-point precision.
+- **A tooltip anchors on the DATA ELEMENT under the cursor/focus** — the bar, dot, slice, cell, or
+  vertex — and shows THAT element's value. The hit-target is the element (or an invisible disc over a
+  small one), never the legend. A **legend** hover is a *different* interaction: it brings one series
+  forward (dims the others) — it never opens a tooltip and never stands in for per-element inspection.
+  (A legend that lists every value in one box is a layout crutch, not interactivity.) This holds for
+  every type: a reader inspects a value by pointing AT it.
 
 ## Motion (WCAG 2.3.3 — respect `prefers-reduced-motion`)
 
