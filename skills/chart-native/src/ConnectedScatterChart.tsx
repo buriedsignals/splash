@@ -164,8 +164,14 @@ function ConnectedScatterSvg({
   const { path, head } = revealPath(layout, draw);
   const first = points[0];
   const last = points[points.length - 1];
-  const dotOp = (pt: { cum: number }) =>
-    clamp01((draw - pt.cum / totalLen) * 16);
+  // a dot is full once the head reaches it (fades in over the 0.06 of draw just
+  // before, so the LAST dot — frac=1 — is fully visible at draw=1). The FIRST dot
+  // (frac=0) is special-cased to pop a touch AFTER the start, not at draw=0, so
+  // nothing shows before the trace begins.
+  const dotOp = (pt: { index: number; cum: number }) =>
+    pt.index === 0
+      ? clamp01((draw - 0.04) / 0.05)
+      : clamp01((draw - pt.cum / totalLen) / 0.06 + 1);
   const endLabelOp = clamp01((draw - 0.92) / 0.08);
   const startLabelOp = clamp01((draw - 0.04) / 0.06);
 
@@ -276,8 +282,10 @@ function ConnectedScatterSvg({
           />
         ))}
 
-        {/* draw-head while tracing */}
-        {p < 0.999 && (
+        {/* draw-head — only WHILE tracing (hidden before it starts and once the
+            trajectory lands, so the start shows nothing and the end shows the
+            real last dot, not the head) */}
+        {draw > 0.01 && draw < 0.995 && (
           <circle
             cx={head.x}
             cy={head.y}
