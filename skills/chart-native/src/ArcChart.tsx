@@ -15,6 +15,7 @@ import { useState } from "react";
 import {
   computeArcLayout,
   arcPath,
+  NODE_R_MAX,
   type ArcData,
   type ArcLayout,
 } from "./arc-geometry";
@@ -94,8 +95,9 @@ export function ArcChart({
   const basePad = {
     top: responsive ? 16 : 50 + titleLines * 27,
     right: 22,
-    // node-label row (~20) + legend rows + source clearance
-    bottom: 20 + legendRows * LEG_ROW + 30,
+    // legend rows + source clearance (node labels live INSIDE the plot, in the
+    // baseline inset reserved below — see baselineInset)
+    bottom: legendRows * LEG_ROW + 40,
     left: 22,
   };
   const frame = responsive
@@ -105,8 +107,18 @@ export function ArcChart({
   const ts = frame.type;
   const sc = frame.scale;
 
+  // a node label sits `labelClear` below the baseline; the baseline is raised by
+  // `baselineInset` so even the LARGEST dot (NODE_R_MAX) can't overlap its label,
+  // for any data or scale (correct by construction, not by audit luck).
+  const labelClear = NODE_R_MAX * sc + ts.source * 0.85 + 4 * sc;
+  const baselineInset = labelClear + ts.source * 0.35;
+
   const data: ArcData = { nodes: config.nodes, links: config.links };
-  const layout = computeArcLayout(data, { width, height, padding });
+  const layout = computeArcLayout(
+    data,
+    { width, height, padding },
+    { baselineInset },
+  );
 
   const [hover, setHover] = useState<number | null>(null);
 
@@ -125,6 +137,7 @@ export function ArcChart({
       setHover={setHover}
       ts={ts}
       sc={sc}
+      labelClear={labelClear}
     />
   );
 
@@ -168,6 +181,7 @@ function ArcSvg({
   setHover,
   ts,
   sc,
+  labelClear,
 }: {
   layout: ArcLayout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -182,6 +196,7 @@ function ArcSvg({
   setHover: (i: number | null) => void;
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
+  labelClear: number; // px below the baseline for the node label baseline
 }) {
   const { innerWidth, innerHeight, baseY, nodes, links } = layout;
   const chrome = easeOutCubic(p / 0.18);
@@ -195,7 +210,7 @@ function ArcSvg({
     minGap = Math.min(minGap, nodes[i].x - nodes[i - 1].x);
   const labelBudget = minGap * 0.94;
 
-  const legendTop = innerHeight + 30 * sc;
+  const legendTop = innerHeight + 20 * sc;
   const legend = layoutLegend(
     groups,
     groups.map((g) => colorOf(g)),
@@ -299,7 +314,7 @@ function ArcSvg({
                 />
                 <text
                   x={n.x}
-                  y={baseY + 15 * sc}
+                  y={baseY + labelClear}
                   textAnchor="middle"
                   fontSize={ts.source}
                   fontWeight={600}

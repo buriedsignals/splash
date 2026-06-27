@@ -65,7 +65,12 @@ export interface ArcLayout {
 export interface ArcOptions {
   minStroke?: number;
   maxStroke?: number;
+  // px reserved BELOW the baseline for node labels, so the baseline sits high
+  // enough that a label can never be overlapped by its own (largest) node dot.
+  baselineInset?: number;
 }
+
+export const NODE_R_MAX = 9; // top of the node-radius range (used for spacing)
 
 export function computeArcLayout(
   data: ArcData,
@@ -79,7 +84,7 @@ export function computeArcLayout(
   if (innerWidth <= 0 || innerHeight <= 0)
     throw new Error("computeArcLayout: padding exceeds dimensions");
 
-  const { minStroke = 1.5, maxStroke = 12 } = options;
+  const { minStroke = 1.5, maxStroke = 12, baselineInset = 0 } = options;
 
   const index = new Map(data.nodes.map((n, i) => [n.id, i]));
   for (const l of data.links) {
@@ -99,15 +104,18 @@ export function computeArcLayout(
   }
   const maxDegree = Math.max(1, ...degree.values());
 
-  // baseline sits low; labels live below it, arcs rise above it.
-  const baseY = innerHeight - 1;
-  const maxArcHeight = innerHeight - 2;
+  // baseline sits above the reserved label band; labels live below it (within
+  // the inset), arcs rise above it.
+  const baseY = innerHeight - baselineInset - 1;
+  const maxArcHeight = baseY - 2;
+  if (maxArcHeight <= 0)
+    throw new Error("computeArcLayout: baselineInset leaves no room for arcs");
 
   const px = scalePoint<string>()
     .domain(data.nodes.map((n) => n.id))
     .range([0, innerWidth])
     .padding(0.5);
-  const rNode = scaleSqrt().domain([0, maxDegree]).range([3, 9]);
+  const rNode = scaleSqrt().domain([0, maxDegree]).range([3, NODE_R_MAX]);
 
   const maxValue = Math.max(1, ...data.links.map((l) => l.value));
   const stroke = scaleLinear()

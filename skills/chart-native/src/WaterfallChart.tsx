@@ -79,7 +79,7 @@ export function WaterfallChart({
     // absolute subtitle.
     top: responsive ? 16 : 53 + titleLines * 27 + 20,
     right: 18,
-    bottom: narrowEst ? 84 : 52, // rotated labels need more room; clear the source
+    bottom: narrowEst ? 98 : 72, // rotated labels need more room; clear the source
     left: 48, // count axis
   };
   const frame = responsive

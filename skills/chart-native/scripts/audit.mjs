@@ -26,6 +26,7 @@ const VIEWPORTS = [
   { w: 760, h: 480, responsive: true, scale: 1, name: "rsp-760" },
   { w: 1100, h: 480, responsive: true, scale: 1, name: "rsp-1100" },
   { w: 840, h: 480, responsive: false, scale: 1, name: "fixed-840" },
+  { w: 1080, h: 1080, responsive: false, scale: 1.7, name: "square" },
   { w: 1080, h: 1350, responsive: false, scale: 1.7, name: "portrait" },
 ];
 
