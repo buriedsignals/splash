@@ -1,6 +1,6 @@
 ---
 name: suggest-chart
-description: Use to decide which chart (if any) serves an article's intent and emit a ChartSpec for dw-chart. Reads the data profile + the editorial intent, grounded on the KB references. Keywords suggest, choose chart, intent, dataviz, orchestration.
+description: Use to decide which chart (if any) serves an article's intent and emit a spec for a producer — a ChartSpec for dw-chart (default, static embed) or a NativeSpec for chart-native (when the intent wants motion/video or rich interactivity). Reads the data profile + the editorial intent, grounded on the KB references. Keywords suggest, choose chart, intent, dataviz, orchestration, producer, datawrapper, chart-native, video, interactive.
 ---
 
 # suggest-chart — decide the chart, emit a ChartSpec
@@ -45,6 +45,23 @@ produces. It never invents data; if no chart serves the story, it says so.
 4. Guardrails: **≤2 colours**; default single series to `#0072B2`; if the data is too complex for a clean
    chart, return `{ "decision": "no-chart", "reason": "..." }` instead of forcing one.
 
+## Producer — Datawrapper (default) vs chart-native
+
+Before emitting the spec, decide the **producer**. The default is `dw-chart` (a static, embeddable
+Datawrapper chart). Choose `chart-native` ONLY when the intent explicitly wants **motion** (a video /
+animated reveal — landscape/square/portrait mp4) OR **rich interactivity** (keyboard focus, per-point
+tooltips beyond DW's hover). A plain static chart stays `dw-chart`.
+
+- **dw-chart (default):** emit the `ChartSpec` as above → hand to `dw-chart`.
+- **chart-native:** emit a `NativeSpec` instead:
+  `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
+  directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie**
+  (`spec-to-config.ts`); for any other type the native producer exits with `FALLBACK_TO_DW` and you route
+  to `dw-chart` instead. Produce with
+  `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
+  → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
+  `scatter`, `pie`); `highlight` is the category to accent; `directLabel` is the line's series label.
+
 ## Guardrails (the code enforces these — propose within them)
 
 - **Type:** pick from the 22 supported types (single-series, multi-series, or two-value per the data shape).
@@ -62,4 +79,5 @@ state the **insight**, not the column names.
 
 ## Output
 
-A single `ChartSpec` JSON (or a `no-chart` decision). Hand it to `dw-chart`.
+One of: a `ChartSpec` JSON for `dw-chart` (the default static path); a `NativeSpec` JSON for
+`chart-native` (when motion/interactivity is the ask — see Producer above); or a `no-chart` decision.

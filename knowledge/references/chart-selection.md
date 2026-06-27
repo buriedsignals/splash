@@ -23,3 +23,12 @@ Caveats (data-to-viz): pie only with few slices and clear differences; area hide
 - `multiple-lines` / `multiple-columns` / `d3-multiple-*` = deliberate **small multiples** (one panel per series), only when you actually want separate panels — not for a single trend chart.
 
 When in doubt → bars/columns on a common baseline (top of the perception hierarchy).
+
+## Producer — static (Datawrapper) vs native (motion/interactive)
+
+Type choice is independent of the **producer**. Default to `dw-chart` (a static, embeddable Datawrapper
+chart). Switch to **`chart-native`** ONLY when the intent explicitly wants **motion** (a video / animated
+reveal, mp4 in landscape/square/portrait) OR **rich interactivity** (keyboard focus, per-point tooltips
+beyond DW hover). chart-native covers 41 FT-vocabulary types; the article→CSV mapper currently produces
+**bar/column, line, scatter, pie** natively — any other type falls back to `dw-chart`. A plain static
+chart with no motion/interaction need always stays `dw-chart`.
