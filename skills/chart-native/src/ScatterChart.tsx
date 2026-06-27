@@ -3,7 +3,7 @@
 // motion build that is a pure function of progress. responsive=false keeps the
 // fixed absolute layout (video + static); responsive=true is the flow layout.
 //
-// Motion (knowledge/references/chart/types/scatter.md + formats/video.md):
+// Motion (per formats/video.md):
 //   chrome (both axes + gridlines) wipes in → dots POP IN in place (scale 0→1,
 //   slight bloom), staggered left→right → the outlier label fades in last.
 //   Dots never fly in — position is the encoding.

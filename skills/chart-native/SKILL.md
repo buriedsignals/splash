@@ -1,17 +1,26 @@
 ---
 name: chart-native
-description: Use when you need a native (non-Datawrapper) chart that ships as ALL THREE formats from ONE component — a static PNG, a self-contained interactive HTML (hover + keyboard focus, responsive), and a Remotion mp4 motion build. The native chart engine; currently a LINE chart (change over time) and a BAR/column chart (magnitude & ranking). The premium path for stories that want a motion build or rich interactivity. Keywords line chart, bar chart, column, ranking, magnitude, time series, trend, reveal, animation, remotion, video, interactive, tooltip, responsive, d3, react, native chart.
+description: Use when you need a native (non-Datawrapper) chart that ships ALL THREE formats from ONE React+D3 component — a static PNG, a self-contained interactive HTML (hover + keyboard focus, responsive), and a Remotion mp4 motion build. The native chart engine — 41 chart types covering the FT Visual Vocabulary. The premium path for stories that want a motion build or rich interactivity. Keywords line, bar, column, grouped/stacked bar, scatter, bubble, pie, area, slope, dumbbell, lollipop, bullet, radar, marimekko, waterfall, histogram, boxplot, beeswarm, dot strip, violin, population pyramid, diverging bar, heatmap, parallel coordinates, treemap, sunburst, waffle, lorenz, candlestick, sankey, chord, arc diagram, streamgraph, gantt, calendar, bump, fan, radial bar, line+column combo, pictogram, isotype, ranking, magnitude, distribution, part-to-whole, flow, time series, trend, reveal, animation, remotion, video, interactive, tooltip, responsive, d3, react, native chart.
 ---
 
 # Chart Native — the native chart engine (one component per type → three formats)
 
-> **Types so far:** `line` (change over time, `LineChart.tsx`), `bar` (magnitude & ranking,
-> `BarChart.tsx`) and `scatter`/bubble (correlation, `ScatterChart.tsx`). Each is one React+D3
-> component driven by a single `progress`, yielding static + interactive + video. They share the pure
-> helpers (easings, `stagger`, `formatNumber`) and the conformance guard; the per-type knowledge is in
-> `knowledge/references/chart/types/{line,bar,scatter}.md` and the per-format discipline in
+> **41 types** (one React+D3 component each, `<Type>Chart.tsx`, driven by a single `progress` → static
+> + interactive + video), grouped by FT Visual Vocabulary family:
+> - **Change over time** — line, slope, fan, candlestick, streamgraph, connected-scatter, combo (line+column)
+> - **Magnitude / ranking** — bar, grouped-bar, lollipop, bullet, dumbbell, radar, marimekko, radial-bar, pictogram
+> - **Part-to-whole** — pie, stacked-bar, stacked-area, waffle, treemap, sunburst, waterfall
+> - **Distribution** — histogram, boxplot, beeswarm, dot-strip, violin, population-pyramid
+> - **Deviation** — diverging-bar, diverging-stacked
+> - **Correlation / multivariate** — scatter (+bubble), parallel, heatmap
+> - **Inequality** — lorenz · **Flow / relationship** — sankey, chord, arc · **Time** — gantt, calendar, bump
+>
+> Every type shares the pure helpers (easings, `stagger`, `formatNumber`) and the conformance guard; the
+> per-type knowledge lives in the component/geometry header comment + its `check<Type>Conformance` rule
+> (there is no separate `knowledge/references/chart/types/` directory). The per-format discipline is in
 > `knowledge/references/formats/{video,interactive}.md`. Build a specific chart by setting
-> `CHART=line|bar|scatter` (web) or the `LineReveal`/`BarReveal`/`ScatterReveal` composition (video).
+> `CHART=<type>` (web, e.g. `CHART=violin`) or the `<Type>Reveal` composition (video, e.g. `ViolinReveal`).
+> The full type registry is `AUDIT_REGISTRY` in `src/mount.tsx` and the `FILE` map in `scripts/audit-cases.mjs`.
 >
 > **Shared layer** — `src/core/`: `math.ts` (formatNumber, clamp01, easings, stagger — decouples the
 > geometry files), `tokens.ts` (Okabe-Ito + type scale), `conformance.ts` (the global L0 guard + WCAG
@@ -24,8 +33,10 @@ description: Use when you need a native (non-Datawrapper) chart that ships as AL
 ## The recipe — adding a chart type (always these steps)
 
 For each new FT type, in order:
-1. **KB first** — write/extend `knowledge/references/chart/types/<type>.md` (sourced: FT vocab +
-   data-to-viz) and reuse the format disciplines in `formats/`.
+1. **KB first** — capture the type's knowledge (sourced: FT vocab + data-to-viz) as the header comment
+   of `<type>-geometry.ts` + the encoding rule it enforces: what the type is for, its non-negotiable
+   (e.g. bar/column → baseline-0; scatter/dumbbell → position, not length; pictogram → equal icons), and
+   the reveal gesture. Reuse the format disciplines in `formats/{video,interactive}.md`.
 2. **Pure geometry** — `<type>-geometry.ts` + unit tests.
 3. **Component** — `<Type>Chart.tsx` driven by one `progress`; wrap the SVG in `ChartFrame`; thread
    `scale` via `resolveFrame`; an `Interactive<Type>Chart` thin binding over `InteractiveChart`.
@@ -42,13 +53,16 @@ For each new FT type, in order:
    and lift it into `core/` + a guard.
 6. **Pass the layout audit, then look** — the AUTOMATED gate comes first: add the type to
    `scripts/audit-cases.mjs` (its sample + ≥1 stress dataset: long labels, big/tiny/equal values,
-   many/few categories) and run `bun run audit`. It renders every type × dataset × 6 viewports in a
+   many/few categories) and run `bun run audit`. It renders every type × dataset × 7 viewports
+   (responsive 340/520/760/1100, fixed-840, and the square + portrait VIDEO aspects at scale 1.7) in a
    real browser and asserts NO two text labels overlap and ALL stay in bounds, nothing is drawn at
-   progress 0, AND the interaction convention holds (focusing a data element opens a tooltip; the
-   legend never does) — so correctness is proven for arbitrary newsroom data, not just the sample
-   your eye happened to check. The audit MUST be green. Looking at static/interactive/video is the second gate (motion/reveal/colour), not the
-   first. The eye missed real collisions on three shipped samples (histogram, waterfall, marimekko)
-   that the audit caught — never rely on the eye alone again.
+   progress 0 (≤0.12% ink — a stray foot-dot or a mark whose size doesn't start at 0 trips it), AND the
+   interaction convention holds (focusing a data element opens a tooltip; the legend never does) — so
+   correctness is proven for arbitrary newsroom data AND for the video formats, not just the sample your
+   eye happened to check. The audit MUST be green. Looking at static/interactive/video is the second
+   gate (motion/reveal/colour), not the first. The eye missed real collisions on several shipped samples
+   (histogram, waterfall, marimekko, and the arc/waterfall square-aspect collisions) that the audit
+   caught — never rely on the eye alone again.
    - When a label sits in a fixed gutter/band, use `core/text` `truncate()` so it can never overflow.
    - When labels crowd at narrow widths, thin/stagger/rotate them (see heatmap, marimekko, pyramid).
    - A legend BELOW the plot wraps on a phone — reserve its bottom band by row count with
@@ -61,21 +75,22 @@ For each new FT type, in order:
 
 ## Overview
 
-**D3 does the math; React renders the DOM; a single `progress` value drives the animation.** One
-framework-free geometry core (`chart-geometry.ts`) computes scales, points and a deterministic
-line-reveal. One React component (`LineChart.tsx`) renders that geometry, parameterised only by a
-`progress` (0→1) prop. From that one component three formats derive: a **static** PNG (render at
-progress=1, screenshot), a self-contained **interactive** HTML (hover tooltip), and a **video** mp4
-(a Remotion composition drives `progress` per frame — the line draws on, Disney-eased). Proven on a
-generic small-newsroom time series; all three artifacts in `output-proof/`.
+**D3 does the math; React renders the DOM; a single `progress` value drives the animation.** Every
+type is one framework-free geometry core (`<type>-geometry.ts`) computing scales/points + a
+deterministic reveal, and one React component (`<Type>Chart.tsx`) parameterised only by a `progress`
+(0→1) prop. From that one component three formats derive: a **static** PNG (render at progress=1,
+screenshot), a self-contained **interactive** HTML (hover + keyboard focus), and a **video** mp4 (a
+Remotion composition drives `progress` per frame, Disney-eased). The `line` type below is the worked
+exemplar; the other 40 follow the identical pattern (geometry + component + Interactive binding +
+Reveal + conformance check). Per-type artifacts are in `output-proof/<type>/`.
 
 This is the native premium path. Datawrapper (`dw-chart`) stays the no-code fallback — do not touch it.
 
 ## When to use
 
-- A change-over-time line chart where the story wants a **motion reveal** (video) or **rich hover**, not just a static image.
+- Any of the 41 FT-vocabulary chart types where the story wants a **motion reveal** (video) or **rich hover/keyboard** interactivity, not just a static image.
 - You want one owned artifact per format (PNG / HTML / mp4) the newsroom keeps — no SaaS dependency.
-- **Not** for: standard static charts with no motion/interaction need (→ `dw-chart`); maps (→ `map-dw`); part-to-whole, scatter, bars (this is a line chart only — extend the same pattern for others).
+- **Not** for: standard static charts with no motion/interaction need (→ `dw-chart`); maps (→ `map-dw`). A type the engine doesn't have yet → add it with the recipe above.
 
 ## The one gotcha that will waste your day (read first)
 

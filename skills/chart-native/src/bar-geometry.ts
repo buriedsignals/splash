@@ -1,8 +1,8 @@
 // Pure geometry core for bar/column charts — framework-free (D3 = math only).
 // Sibling of chart-geometry.ts (line). Reuses the shared pure helpers from it
 // (formatNumber, clamp01); the bar-specific part is the band+linear projection
-// with a value axis that ALWAYS includes 0 (bars encode length → baseline 0,
-// per knowledge/references/chart/types/bar.md). Growth from the baseline is a
+// with a value axis that ALWAYS includes 0 (bars encode length → baseline 0;
+// the non-negotiable enforced by checkBarConformance). Growth from the baseline is a
 // pure function of a per-bar progress, computed in the component.
 
 import { scaleBand, scaleLinear } from "d3-scale";

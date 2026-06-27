@@ -1,7 +1,7 @@
 // Pure geometry core for scatter / bubble charts — framework-free (D3 = math).
 // Third cartesian type (after line + bar): two LINEAR axes, neither forced to 0
-// (scatter encodes position, not length — knowledge/references/chart/types/
-// scatter.md). Optional bubble size mapped to AREA via scaleSqrt (r ∝ √value),
+// (scatter encodes position, not length — the opposite of the bar's baseline-0).
+// Optional bubble size mapped to AREA via scaleSqrt (r ∝ √value),
 // never radius. Reuses the shared pure helpers from core/math.
 
 import { scaleLinear, scaleSqrt } from "d3-scale";

@@ -4,7 +4,7 @@
 // responsive=false keeps a fixed absolute layout (video + static, deterministic);
 // responsive=true uses a flow layout for the interactive embed.
 //
-// Motion (knowledge/references/chart/types/bar.md + formats/video.md):
+// Motion (per formats/video.md):
 //   chrome (value axis + gridlines) wipes in → each bar GROWS from the zero
 //   baseline, staggered in reading order → the value label fades/slides as its
 //   bar lands. A bar never grows from the middle/top — always from 0.
