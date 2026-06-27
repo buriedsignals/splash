@@ -30,7 +30,7 @@ const PREFIX = {
   stacked: "StackedBar", slope: "Slope", grouped: "GroupedBar",
   dumbbell: "Dumbbell", "stacked-area": "StackedArea", heatmap: "Heatmap",
   histogram: "Histogram", diverging: "DivergingBar", waterfall: "Waterfall",
-  lollipop: "Lollipop", pyramid: "PopulationPyramid", bullet: "Bullet",
+  lollipop: "Lollipop", pyramid: "Pyramid", bullet: "Bullet",
   "connected-scatter": "ConnectedScatter", marimekko: "Marimekko", radar: "Radar",
   boxplot: "Boxplot", bump: "Bump", beeswarm: "Beeswarm", treemap: "Treemap",
   "diverging-stacked": "DivergingStacked", sankey: "Sankey",
