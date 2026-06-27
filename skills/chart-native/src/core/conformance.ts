@@ -771,6 +771,45 @@ export function checkRadialBarConformance(
 }
 
 /**
+ * L2 — LINE + COLUMN COMBO (dual axis): global rules + the dual-axis musts. A
+ * second axis can mislead, so the honesty rules are non-negotiable: the COLUMN
+ * (left) axis must include 0 (length encoding), BOTH axes must be labelled (so the
+ * reader knows which series reads against which), and the two series carry two
+ * distinct Okabe-Ito colours — each matching its own axis.
+ */
+export function checkComboConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    columnColor: string;
+    lineColor: string;
+    columnAxisIncludesZero: boolean;
+    leftAxisLabel?: string;
+    rightAxisLabel?: string;
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.columnColor,
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!input.columnAxisIncludesZero)
+    v.push("column (left) axis must include 0 (length encoding)");
+  if (!input.leftAxisLabel?.trim()) v.push("missing left-axis label");
+  if (!input.rightAxisLabel?.trim()) v.push("missing right-axis label");
+  if (!isOkabeIto(input.lineColor))
+    v.push(`line colour ${input.lineColor} is not in the Okabe-Ito set`);
+  if (input.columnColor.toUpperCase() === input.lineColor.toUpperCase())
+    v.push("the two series must use distinct colours (one per axis)");
+  return v;
+}
+
+/**
  * L2 — CANDLESTICK / OHLC: global rules + the market musts. POSITION/range
  * encoding → not a baseline-0 type. Adds: valid OHLC every period (high ≥
  * max(open,close), low ≤ min(open,close)), a labelled price axis, and exactly two

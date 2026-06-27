@@ -43,6 +43,7 @@ const FILE = {
   violin: "violin.json",
   arc: "arc.json",
   "radial-bar": "radial-bar.json",
+  combo: "combo.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -140,6 +141,17 @@ const STRESS = {
         [s.valueField]: (40 + (k % 7) * 5) * 100,
       });
     return [["long+dense", stress]];
+  },
+  combo: (s) => {
+    // long category labels (force rotation) + much bigger column values (wider
+    // left-axis labels), to stress the gutters, rotation and the two axes.
+    const big = clone(s);
+    big.rows = big.rows.map((r) => ({
+      ...r,
+      [s.categoryField]: `${r[s.categoryField]} 2025`,
+      [s.columnField]: r[s.columnField] * 1000,
+    }));
+    return [["long+big", big]];
   },
   "radial-bar": (s) => {
     // 12 month labels (longer than "08") + one dominant spike (extreme ratio),

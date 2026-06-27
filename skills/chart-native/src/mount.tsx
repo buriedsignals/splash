@@ -93,6 +93,8 @@ import { ArcChart, type ArcConfig } from "./ArcChart";
 import { InteractiveArcChart } from "./InteractiveArcChart";
 import { RadialBarChart, type RadialBarConfig } from "./RadialBarChart";
 import { InteractiveRadialBarChart } from "./InteractiveRadialBarChart";
+import { ComboChart, type ComboConfig } from "./ComboChart";
+import { InteractiveComboChart } from "./InteractiveComboChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -132,6 +134,7 @@ import dotStripSample from "../assets/sample-data/dot-strip.json";
 import violinSample from "../assets/sample-data/violin.json";
 import arcSample from "../assets/sample-data/arc.json";
 import radialBarSample from "../assets/sample-data/radial-bar.json";
+import comboSample from "../assets/sample-data/combo.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -186,6 +189,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   violin: ViolinChart,
   arc: ArcChart,
   "radial-bar": RadialBarChart,
+  combo: ComboChart,
 };
 
 if (chart === "audit") {
@@ -257,6 +261,15 @@ if (chart === "audit") {
       <InteractiveRadialBarChart config={config} animateOn={ANIMATE_ON} />
     ) : (
       <RadialBarChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "combo") {
+  const config = comboSample as unknown as ComboConfig;
+  root.render(
+    interactive ? (
+      <InteractiveComboChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <ComboChart config={config} progress={1} width={840} height={480} />
     ),
   );
 } else if (chart === "sunburst") {

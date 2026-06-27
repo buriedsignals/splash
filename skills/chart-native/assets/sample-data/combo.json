@@ -1,0 +1,29 @@
+{
+  "title": "Sales climbed all year, but the margin kept slipping",
+  "unit": "monthly units sold vs gross margin",
+  "categoryField": "month",
+  "columnField": "units",
+  "lineField": "margin",
+  "leftAxisLabel": "Units sold",
+  "rightAxisLabel": "Gross margin, %",
+  "columnSeriesLabel": "Units sold",
+  "lineSeriesLabel": "Gross margin",
+  "source": {
+    "name": "Northwind retail management accounts",
+    "url": "https://example.org/northwind-accounts"
+  },
+  "rows": [
+    { "month": "Jan", "units": 1850, "margin": 31.4 },
+    { "month": "Feb", "units": 2020, "margin": 30.8 },
+    { "month": "Mar", "units": 2310, "margin": 29.6 },
+    { "month": "Apr", "units": 2480, "margin": 28.9 },
+    { "month": "May", "units": 2670, "margin": 27.5 },
+    { "month": "Jun", "units": 2910, "margin": 26.8 },
+    { "month": "Jul", "units": 3180, "margin": 25.1 },
+    { "month": "Aug", "units": 3260, "margin": 24.6 },
+    { "month": "Sep", "units": 3490, "margin": 23.2 },
+    { "month": "Oct", "units": 3720, "margin": 22.4 },
+    { "month": "Nov", "units": 3980, "margin": 21.0 },
+    { "month": "Dec", "units": 4310, "margin": 19.7 }
+  ]
+}
