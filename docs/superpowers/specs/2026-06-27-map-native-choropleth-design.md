@@ -84,10 +84,34 @@ A MapTiler API key in `/atelier/.env` as `REMOTION_MAPTILER_KEY` (and a client k
 | Stress: world + a dominant outlier | bins hold; basemap fits; labels/legend in bounds (audit) |
 | Conformance | non-CVD scale, missing legend, empty bounds → flagged |
 
-## Out of scope (slice 1)
+## Map-type roadmap (engine-first — built like the 41 charts)
 
-- Other map types (symbol, flow/route, dot-density, grid-heatmap, cartogram) — future slices on the same foundation.
-- 3D terrain flyover — that's Cesium (`cesium-flyover`), a separate engine.
+`map-native` is ONE engine, exactly as `chart-native` is one engine for 41 types. The choropleth is the
+worked exemplar (the "line" of maps); every other type plugs into the **same foundation** (the
+map-explainer harness + a per-type pure geo-core + the conformance guard + the audit + `produce`) and is
+added **one at a time via the recipe**, not redesigned. The roadmap (source: the FT "MAP" group in
+`docs/atelier/visual-element-grid.md`, S/I/V = which formats fit):
+
+| Map type | Engine | S | I | V | Tom reference |
+| --- | --- | --- | --- | --- | --- |
+| **Choropleth** | MapTiler 2D | ✓ | ✓ | ✓ | geojsonPreset — **slice 1** |
+| Proportional symbol | MapTiler 2D | ✓ | ✓ | ◻ | convert-map markers |
+| Flow / route | MapTiler 2D | ◻ | ◻ | ✓ | map-explainer (river/route) |
+| Explainer beat (region sequence) | MapTiler 2D | — | — | ✓ | **map-explainer (proven)** |
+| Dot density | MapTiler 2D | ✓ | ✓ | ◻ | |
+| Hex / grid (spatial bins) | MapTiler 2D / deck.gl | ◻ | ✓ | ◻ | CARTO analysis (H3) |
+| Cartogram (grid / scaled) | precompute + 2D | ✓ | ◻ | ◻ | square-grid-maps-of-the-usa |
+| Contour / isoline | MapTiler 2D | ◻ | ◻ | — | |
+| Locator / markers | MapTiler 2D | ✓ | ✓ | — | map-dw locator (native port) |
+| 3D terrain flyover | **Cesium** (separate) | — | — | ✓ | cesium-flyover |
+
+The first nine ride the one `map-native` engine; only the **3D flyover is a separate engine (Cesium)**.
+The engine `SKILL.md` carries the recipe + this catalogue, the way `chart-native`'s does for 41 types.
+
+## Out of scope (slice 1 — built later on the same engine)
+
+- The other eight MapTiler map types above — future slices, same foundation, one at a time.
+- 3D terrain flyover — Cesium (`cesium-flyover`), a separate engine, not `map-native`.
 - The viznews Svelte `Explore.svelte` interactive device — a parallel product path; `map-native` is the React/Remotion atelier engine. (We borrow Tom's geojsonPreset *idea*, not his Svelte component.)
 - Scrolly/waypoints narration — a downstream archetype, not a map type.
 - Reader-supplied arbitrary GeoJSON — slice 1 ships the standard presets; custom GeoJSON is a later option.
