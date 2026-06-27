@@ -5,6 +5,8 @@ import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
 const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 import { computeChoropleth, type ChoroplethData } from "./choropleth-geo";
 
+if (!import.meta.env.VITE_MAPTILER_KEY)
+  throw new Error("VITE_MAPTILER_KEY missing");
 maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 export interface ChoroplethConfig extends ChoroplethData {
@@ -23,6 +25,7 @@ const NO_DATA_COLOR = "#e0e0e0";
 
 export const ChoroplethMap: React.FC<Props> = ({
   config,
+  progress = 1,
   interactive = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -196,6 +199,14 @@ export const ChoroplethMap: React.FC<Props> = ({
       startedRef.current = false;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Drive fill-opacity from progress (0→1 reveal)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!map.getLayer("choropleth-fill")) return;
+    map.setPaintProperty("choropleth-fill", "fill-opacity", progress);
+  }, [progress]);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>

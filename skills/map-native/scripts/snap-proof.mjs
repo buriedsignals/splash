@@ -38,25 +38,24 @@ await page.waitForFunction(
 );
 console.log("choropleth-fill layer ready");
 
-// Wait for map to reach idle state
+// Wait for map to reach idle state (synchronous boolean poll — Promise return is always truthy)
 await page.waitForFunction(
   () => {
-    return new Promise((resolve) => {
-      const m = window.__map__;
-      if (!m) return resolve(false);
-      if (!m.isMoving() && !m.isZooming() && !m.isRotating()) {
-        resolve(true);
-      } else {
-        m.once("idle", () => resolve(true));
-      }
-    });
+    const m = window.__map__;
+    return (
+      m &&
+      m.loaded &&
+      m.loaded() &&
+      m.areTilesLoaded &&
+      m.areTilesLoaded()
+    );
   },
   { timeout: 30_000 },
 );
 console.log("map idle");
 
-// Additional settle for tile rendering
-await page.waitForTimeout(2000);
+// Short settle for paint to flush
+await page.waitForTimeout(300);
 
 console.log("scanning for filled regions to trigger popup");
 
@@ -132,7 +131,21 @@ if (!popupText) {
   process.exit(1);
 }
 
-console.log(`popup at ${JSON.stringify(hitPoint)}: "${popupText.trim()}"`);
+const trimmed = popupText.trim();
+console.log(`popup at ${JSON.stringify(hitPoint)}: "${trimmed}"`);
+
+// Assert popup contains both a digit (value) and a word (region name)
+if (!/\d/.test(trimmed)) {
+  console.error(`popup has no value (digit): "${trimmed}"`);
+  await browser.close();
+  process.exit(1);
+}
+if (!/[A-Za-z]/.test(trimmed)) {
+  console.error(`popup has no region name: "${trimmed}"`);
+  await browser.close();
+  process.exit(1);
+}
+console.log("popup value assertion passed");
 
 // Ensure popup is still visible for the screenshot
 if (hitPoint) {

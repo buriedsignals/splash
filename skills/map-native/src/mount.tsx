@@ -19,6 +19,6 @@ if (!root) throw new Error("no #root element");
 
 createRoot(root).render(
   <div style={{ width: "100vw", height: "100vh" }}>
-    <ChoroplethMap config={config} interactive={interactive} />
+    <ChoroplethMap config={config} progress={1} interactive={interactive} />
   </div>,
 );
