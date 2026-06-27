@@ -5,12 +5,12 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { SankeyChart, type SankeyConfig } from "../../src/SankeyChart";
 import sample from "../../assets/sample-data/sankey.json";
 
-const config = sample as unknown as SankeyConfig;
+const sampleConfig = sample as unknown as SankeyConfig;
 
 const HOLD_IN = 0.02;
 const HOLD_OUT = 0.12;
 
-export const SankeyReveal: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
+export const SankeyReveal: React.FC<{ scale?: number; config?: SankeyConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);

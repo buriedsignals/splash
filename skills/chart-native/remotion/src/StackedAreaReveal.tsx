@@ -8,14 +8,12 @@ import {
 } from "../../src/StackedAreaChart";
 import sample from "../../assets/sample-data/stacked-area.json";
 
-const config = sample as unknown as StackedAreaConfig;
+const sampleConfig = sample as unknown as StackedAreaConfig;
 
 const HOLD_IN = 0.02;
 const HOLD_OUT = 0.1;
 
-export const StackedAreaReveal: React.FC<{ scale?: number }> = ({
-  scale = 1,
-}) => {
+export const StackedAreaReveal: React.FC<{ scale?: number; config?: StackedAreaConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);

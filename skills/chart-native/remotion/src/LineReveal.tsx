@@ -5,7 +5,7 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { LineChart, type ChartConfig } from "../../src/LineChart";
 import sample from "../../assets/sample-data/series.json";
 
-const config = sample as unknown as ChartConfig;
+const sampleConfig = sample as unknown as ChartConfig;
 
 // The master timeline is LINEAR — each phase (axes wipe / line draw / label)
 // eases itself inside LineChart, so the line gets its own smooth ease-in-out
@@ -13,7 +13,7 @@ const config = sample as unknown as ChartConfig;
 const HOLD_IN = 0.02; // brief blank hold before the chart builds from nothing
 const HOLD_OUT = 0.1; // fraction held on the complete chart at the end
 
-export const LineReveal: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
+export const LineReveal: React.FC<{ scale?: number; config?: ChartConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1); // 0..1, deterministic

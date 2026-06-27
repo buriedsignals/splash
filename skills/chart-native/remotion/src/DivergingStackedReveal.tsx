@@ -8,14 +8,12 @@ import {
 } from "../../src/DivergingStackedChart";
 import sample from "../../assets/sample-data/diverging-stacked.json";
 
-const config = sample as unknown as DivergingStackedConfig;
+const sampleConfig = sample as unknown as DivergingStackedConfig;
 
 const HOLD_IN = 0.02;
 const HOLD_OUT = 0.12;
 
-export const DivergingStackedReveal: React.FC<{ scale?: number }> = ({
-  scale = 1,
-}) => {
+export const DivergingStackedReveal: React.FC<{ scale?: number; config?: DivergingStackedConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);

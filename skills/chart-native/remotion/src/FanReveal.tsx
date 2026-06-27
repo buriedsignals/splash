@@ -5,12 +5,12 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { FanChart, type FanConfig } from "../../src/FanChart";
 import sample from "../../assets/sample-data/fan.json";
 
-const config = sample as unknown as FanConfig;
+const sampleConfig = sample as unknown as FanConfig;
 
 const HOLD_IN = 0.02;
 const HOLD_OUT = 0.12;
 
-export const FanReveal: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
+export const FanReveal: React.FC<{ scale?: number; config?: FanConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);

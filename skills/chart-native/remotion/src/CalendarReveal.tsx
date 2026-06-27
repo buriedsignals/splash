@@ -5,12 +5,12 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { CalendarChart, type CalendarConfig } from "../../src/CalendarChart";
 import sample from "../../assets/sample-data/calendar.json";
 
-const config = sample as unknown as CalendarConfig;
+const sampleConfig = sample as unknown as CalendarConfig;
 
 const HOLD_IN = 0.02;
 const HOLD_OUT = 0.12;
 
-export const CalendarReveal: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
+export const CalendarReveal: React.FC<{ scale?: number; config?: CalendarConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);

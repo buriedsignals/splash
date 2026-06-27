@@ -5,14 +5,12 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { StackedBarChart, type StackedConfig } from "../../src/StackedBarChart";
 import sample from "../../assets/sample-data/stacked.json";
 
-const config = sample as unknown as StackedConfig;
+const sampleConfig = sample as unknown as StackedConfig;
 
 const HOLD_IN = 0.02;
 const HOLD_OUT = 0.1;
 
-export const StackedBarReveal: React.FC<{ scale?: number }> = ({
-  scale = 1,
-}) => {
+export const StackedBarReveal: React.FC<{ scale?: number; config?: StackedConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);

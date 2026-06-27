@@ -5,12 +5,12 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { ScatterChart, type ScatterConfig } from "../../src/ScatterChart";
 import sample from "../../assets/sample-data/scatter.json";
 
-const config = sample as unknown as ScatterConfig;
+const sampleConfig = sample as unknown as ScatterConfig;
 
 const HOLD_IN = 0.02;
 const HOLD_OUT = 0.1;
 
-export const ScatterReveal: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
+export const ScatterReveal: React.FC<{ scale?: number; config?: ScatterConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);

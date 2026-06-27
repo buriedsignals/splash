@@ -141,9 +141,13 @@ import pictogramSample from "../assets/sample-data/pictogram.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare const __CONFIG__: any;
 const interactive =
   typeof __INTERACTIVE__ !== "undefined" ? __INTERACTIVE__ : false;
 const chart = typeof __CHART__ !== "undefined" ? __CHART__ : "line";
+// injected arbitrary config (produce() path) — null when rendering the sample
+const injectedConfig = typeof __CONFIG__ !== "undefined" ? __CONFIG__ : null;
 
 const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
@@ -196,7 +200,65 @@ const AUDIT_REGISTRY: Record<string, any> = {
   pictogram: PictogramChart,
 };
 
-if (chart === "audit") {
+// type → Interactive binding, for the produce() injection path (mirrors AUDIT_REGISTRY)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const INTERACTIVE_REGISTRY: Record<string, any> = {
+  line: InteractiveLineChart,
+  bar: InteractiveBarChart,
+  scatter: InteractiveScatterChart,
+  pie: InteractivePieChart,
+  stacked: InteractiveStackedBarChart,
+  slope: InteractiveSlopeChart,
+  grouped: InteractiveGroupedBarChart,
+  dumbbell: InteractiveDumbbellChart,
+  "stacked-area": InteractiveStackedAreaChart,
+  heatmap: InteractiveHeatmapChart,
+  histogram: InteractiveHistogramChart,
+  diverging: InteractiveDivergingBarChart,
+  waterfall: InteractiveWaterfallChart,
+  lollipop: InteractiveLollipopChart,
+  pyramid: InteractivePopulationPyramidChart,
+  bullet: InteractiveBulletChart,
+  "connected-scatter": InteractiveConnectedScatterChart,
+  marimekko: InteractiveMarimekkoChart,
+  radar: InteractiveRadarChart,
+  boxplot: InteractiveBoxplotChart,
+  bump: InteractiveBumpChart,
+  beeswarm: InteractiveBeeswarmChart,
+  treemap: InteractiveTreemapChart,
+  "diverging-stacked": InteractiveDivergingStackedChart,
+  sankey: InteractiveSankeyChart,
+  streamgraph: InteractiveStreamgraphChart,
+  gantt: InteractiveGanttChart,
+  fan: InteractiveFanChart,
+  calendar: InteractiveCalendarChart,
+  waffle: InteractiveWaffleChart,
+  lorenz: InteractiveLorenzChart,
+  candlestick: InteractiveCandlestickChart,
+  chord: InteractiveChordChart,
+  sunburst: InteractiveSunburstChart,
+  parallel: InteractiveParallelChart,
+  "dot-strip": InteractiveDotStripChart,
+  violin: InteractiveViolinChart,
+  arc: InteractiveArcChart,
+  "radial-bar": InteractiveRadialBarChart,
+  combo: InteractiveComboChart,
+  pictogram: InteractivePictogramChart,
+};
+
+if (injectedConfig && chart !== "audit") {
+  // produce() path: render the injected config for ANY type via the registries
+  const Comp = AUDIT_REGISTRY[chart];
+  const Inter = INTERACTIVE_REGISTRY[chart];
+  if (!Comp) throw new Error(`mount: unknown chart "${chart}"`);
+  root.render(
+    interactive && Inter ? (
+      <Inter config={injectedConfig} animateOn={ANIMATE_ON} />
+    ) : (
+      <Comp config={injectedConfig} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "audit") {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).renderAudit = (
     type: string,

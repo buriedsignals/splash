@@ -5,12 +5,12 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { BarChart, type BarConfig } from "../../src/BarChart";
 import sample from "../../assets/sample-data/bars.json";
 
-const config = sample as unknown as BarConfig;
+const sampleConfig = sample as unknown as BarConfig;
 
 const HOLD_IN = 0.02; // brief blank before the bars build
 const HOLD_OUT = 0.1; // hold on the complete chart at the end
 
-export const BarReveal: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
+export const BarReveal: React.FC<{ scale?: number; config?: BarConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);

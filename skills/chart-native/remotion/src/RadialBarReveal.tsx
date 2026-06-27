@@ -5,14 +5,12 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { RadialBarChart, type RadialBarConfig } from "../../src/RadialBarChart";
 import sample from "../../assets/sample-data/radial-bar.json";
 
-const config = sample as unknown as RadialBarConfig;
+const sampleConfig = sample as unknown as RadialBarConfig;
 
 const HOLD_IN = 0.02;
 const HOLD_OUT = 0.12;
 
-export const RadialBarReveal: React.FC<{ scale?: number }> = ({
-  scale = 1,
-}) => {
+export const RadialBarReveal: React.FC<{ scale?: number; config?: RadialBarConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);

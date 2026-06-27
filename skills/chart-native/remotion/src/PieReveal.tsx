@@ -4,12 +4,12 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { PieChart, type PieConfig } from "../../src/PieChart";
 import sample from "../../assets/sample-data/pie.json";
 
-const config = sample as unknown as PieConfig;
+const sampleConfig = sample as unknown as PieConfig;
 
 const HOLD_IN = 0.02;
 const HOLD_OUT = 0.1;
 
-export const PieReveal: React.FC<{ scale?: number }> = ({ scale = 1 }) => {
+export const PieReveal: React.FC<{ scale?: number; config?: PieConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);

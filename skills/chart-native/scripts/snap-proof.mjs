@@ -11,7 +11,8 @@ import { readFile, mkdir } from "node:fs/promises";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const chart = process.env.CHART ?? "dot-strip";
-const outDir = join(root, "output-proof", chart);
+// OUTDIR overrides the default proof folder (the produce() path writes elsewhere)
+const outDir = process.env.OUTDIR ?? join(root, "output-proof", chart);
 await mkdir(outDir, { recursive: true });
 
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };

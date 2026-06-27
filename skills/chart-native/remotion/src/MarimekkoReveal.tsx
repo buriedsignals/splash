@@ -5,14 +5,12 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { MarimekkoChart, type MarimekkoConfig } from "../../src/MarimekkoChart";
 import sample from "../../assets/sample-data/marimekko.json";
 
-const config = sample as unknown as MarimekkoConfig;
+const sampleConfig = sample as unknown as MarimekkoConfig;
 
 const HOLD_IN = 0.02;
 const HOLD_OUT = 0.1;
 
-export const MarimekkoReveal: React.FC<{ scale?: number }> = ({
-  scale = 1,
-}) => {
+export const MarimekkoReveal: React.FC<{ scale?: number; config?: MarimekkoConfig }> = ({ scale = 1, config = sampleConfig }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / (durationInFrames - 1);
