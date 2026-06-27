@@ -810,6 +810,39 @@ export function checkComboConformance(
 }
 
 /**
+ * L2 — PICTOGRAM / isotype: global rules + the count musts. Magnitude is a COUNT
+ * of equal icons, so: a positive unit-per-icon MUST be stated (an undeclared unit
+ * makes the count undecodable), one Okabe-Ito data colour, and the implicit
+ * baseline is 0 (no icons = 0 — icons never shrink to encode value, that is the
+ * equal-size rule the component bakes in).
+ */
+export function checkPictogramConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    iconColor: string;
+    unitPerIcon: number;
+    unitStated: boolean; // is "each icon = N" shown to the reader?
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.iconColor,
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (!(input.unitPerIcon > 0))
+    v.push("pictogram needs a positive unit-per-icon");
+  if (!input.unitStated)
+    v.push("the unit (each icon = N) must be stated for the count to be read");
+  return v;
+}
+
+/**
  * L2 — CANDLESTICK / OHLC: global rules + the market musts. POSITION/range
  * encoding → not a baseline-0 type. Adds: valid OHLC every period (high ≥
  * max(open,close), low ≤ min(open,close)), a labelled price axis, and exactly two

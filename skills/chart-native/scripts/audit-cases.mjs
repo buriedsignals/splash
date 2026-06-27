@@ -44,6 +44,7 @@ const FILE = {
   arc: "arc.json",
   "radial-bar": "radial-bar.json",
   combo: "combo.json",
+  pictogram: "pictogram.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -140,6 +141,19 @@ const STRESS = {
         [s.categoryField]: "Harbourside community college",
         [s.valueField]: (40 + (k % 7) * 5) * 100,
       });
+    return [["long+dense", stress]];
+  },
+  pictogram: (s) => {
+    // long category labels + a high-count row (many small icons → tiny icon size)
+    // + a near-whole value (small remainder), to stress the gutter, icon fit, and
+    // the partial-icon clip.
+    const stress = clone(s);
+    stress.rows = stress.rows.map((r) => ({
+      ...r,
+      [s.categoryField]: `${r[s.categoryField]} metropolitan district`,
+    }));
+    stress.rows[0][s.valueField] = 234000; // 23.4 icons → tiny icons
+    stress.rows[1][s.valueField] = 50500; // 5.05 → sliver remainder
     return [["long+dense", stress]];
   },
   combo: (s) => {
