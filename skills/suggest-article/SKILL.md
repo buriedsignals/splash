@@ -28,6 +28,35 @@ proposal's `data` MUST come from a cited source table (the eval's `provenanceOk`
 (2) **over-proposing** — not every number earns a chart. Propose the strongest 1–3 claims, leave the
 rest as prose, and record what you left out (and why) in `notes`.
 
+## Provenance tiers (table, prose, none)
+
+A claim's data can come from one of three sources. Bind to the strongest available:
+
+- **`table`** (default) — a cited newsroom CSV. Every column must exist in that
+  table. Fully automatic downstream. `provenance` omitted or `"table"`.
+- **`prose`** — figures the article *explicitly states* in its text, with no CSV.
+  Allowed ONLY as strict transcription (see rule below). Sets `provenance: "prose"`
+  and `needsConfirmation: true`, and reconstructs the table into `data`.
+- **none** — vague/approximate ("around a fifth"), a single scalar ("50%"), or any
+  inferred value. NOT a proposal — stays prose.
+
+### The prose extraction rule (transcription, never inference)
+
+Emit a `prose` proposal ONLY if ALL hold:
+- **≥2 literal numeric values** appear verbatim in the text (e.g. `12%`, `19%`);
+- each value is **attached to an explicit dimension label** in the same clause
+  (a year, period, or category: `2019`, `2024`);
+- **no inferred / approximated / ranged value** ("around a fifth", "a marked shift",
+  "10–15%") — those stay prose;
+- a **single scalar** ("50%") does not qualify (a claim needs ≥1 comparison).
+
+NEVER interpolate between values, invent a third point, or guess an unstated number.
+The reconstructed `data` CSV's columns come from the dimension label and the measured
+quantity named in the claim, e.g. `year,cycling_share\n2019,12\n2024,19`.
+
+A `prose` proposal also carries `proseEvidence`: for each value, the verbatim text
+snippet it was read from (shown at the confirmation gate; proves transcription).
+
 ## Architecture
 
 `article + data → [ANALYSE: extract claims + bind data] → [PROPOSITION: pick the few that earn a visual]
@@ -82,6 +111,12 @@ Output one `ProposalSet`:
   "notes": "The mayor's declined comment carries no data and is left as prose."
 }
 ```
+
+**Confirmation gate (prose only).** A `prose` proposal sets `needsConfirmation: true`.
+The caller MUST present the reconstructed table to the journalist and obtain an
+explicit OK BEFORE running suggest-chart or producing anything — e.g. "I read from
+your article: 2019 → 12%, 2024 → 19%. Chart it?". `table` proposals do not set
+`needsConfirmation` and proceed automatically.
 
 ## Quick start
 
