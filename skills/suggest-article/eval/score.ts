@@ -7,6 +7,9 @@ export interface VisualProposal {
   intent: string;
   data: string; // CSV subset
   dataSource: { table: string; columns: string[] };
+  provenance?: "table" | "prose"; // default "table"; "prose" = figures stated in the article
+  needsConfirmation?: boolean; // prose proposals MUST set true (gate before producing)
+  proseEvidence?: Record<string, string>; // prose only: value -> the verbatim text snippet it came from
   confidence: "high" | "medium" | "low";
   rationale: string;
 }
@@ -42,6 +45,25 @@ export interface ProposalScore {
 
 const DEFAULT_TAU = { r: 0.7, p: 0.5 };
 
+// numeric tokens present in the article text, normalised (commas stripped).
+// "19% ... 12% in 2019" -> {"19","12","2019"}. Tolerant of %, spaces, thousands commas.
+function articleNumbers(text: string): Set<string> {
+  const tokens = text.match(/\d[\d,]*(?:\.\d+)?/g) ?? [];
+  return new Set(tokens.map((t) => t.replace(/,/g, "")));
+}
+
+// every numeric cell in the CSV's data rows (header skipped), normalised.
+function dataNumbers(csv: string): string[] {
+  if (typeof csv !== "string") return [];
+  const out: string[] = [];
+  for (const line of csv.trim().split("\n").slice(1))
+    for (const cell of line.split(",")) {
+      const t = cell.trim();
+      if (t !== "" && Number.isFinite(Number(t))) out.push(t.replace(/,/g, ""));
+    }
+  return out;
+}
+
 // A gold opportunity is matched by a proposal iff same source table AND every
 // keyword appears (case-insensitive substring) in the proposal's claim+quote.
 function matches(p: VisualProposal, o: Opportunity): boolean {
@@ -54,6 +76,7 @@ export function scoreProposalSet(
   set: unknown,
   expect: CaseExpect,
   sourceTables: Record<string, string>,
+  articleText: string = "",
   tau: { r: number; p: number } = DEFAULT_TAU,
 ): ProposalScore {
   const notes: string[] = [];
@@ -95,6 +118,26 @@ export function scoreProposalSet(
   // provenanceOk — proposal columns ⊆ cited source table columns (no invented data).
   let provenanceOk = true;
   for (const p of proposals) {
+    if ((p.provenance ?? "table") === "prose") {
+      // transcription only: every value must be a number stated in the article,
+      // and the proposal must flag the confirmation gate.
+      if (p.needsConfirmation !== true) {
+        provenanceOk = false;
+        notes.push(
+          `provenance(prose): "${p.claim}" must set needsConfirmation: true`,
+        );
+      }
+      const present = articleNumbers(articleText);
+      for (const num of dataNumbers(p.data)) {
+        if (!present.has(num)) {
+          provenanceOk = false;
+          notes.push(
+            `provenance(prose): value "${num}" is not stated in the article text`,
+          );
+        }
+      }
+      continue;
+    }
     const tableCsv = sourceTables[p.dataSource.table];
     if (!tableCsv) {
       provenanceOk = false;
