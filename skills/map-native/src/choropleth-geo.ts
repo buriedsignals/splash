@@ -1,0 +1,83 @@
+import { bbox } from "@turf/turf";
+import { BLUES, DIVERGING } from "./theme/scale";
+
+export interface ChoroplethData {
+  regionKey: string;
+  valueField: string;
+  rows: Record<string, string | number>[];
+}
+export interface ChoroplethOptions {
+  bins?: number;
+  scaleType?: "sequential" | "diverging";
+  midpoint?: number;
+}
+export interface ChoroplethLayout {
+  joined: { key: string; value: number | null }[];
+  bins: { min: number; max: number; color: string }[];
+  bounds: [number, number, number, number];
+  noData: string[];
+  unmatched: string[];
+  scaleType: "sequential" | "diverging";
+}
+
+export function computeChoropleth(
+  data: ChoroplethData,
+  features: GeoJSON.FeatureCollection,
+  joinKey: string,
+  options: ChoroplethOptions = {},
+): ChoroplethLayout {
+  const nBins = options.bins ?? 5;
+  const scaleType = options.scaleType ?? "sequential";
+  const ramp = scaleType === "diverging" ? DIVERGING : BLUES;
+
+  const byKey = new Map<string, number>();
+  for (const r of data.rows) {
+    const v = Number(r[data.valueField]);
+    if (Number.isNaN(v))
+      throw new Error(`invalid choropleth value: ${r[data.valueField]}`);
+    byKey.set(String(r[data.regionKey]), v);
+  }
+  const featureKeys = new Set(
+    features.features.map((f) => String(f.properties?.[joinKey])),
+  );
+  const unmatched = [...byKey.keys()].filter((k) => !featureKeys.has(k));
+
+  const joined = features.features.map((f) => {
+    const key = String(f.properties?.[joinKey]);
+    const value = byKey.has(key) ? byKey.get(key)! : null;
+    return { key, value };
+  });
+  const noData = joined.filter((j) => j.value === null).map((j) => j.key);
+
+  const values = joined
+    .map((j) => j.value)
+    .filter((v): v is number => v !== null);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const bins = Array.from({ length: nBins }, (_, i) => {
+    const lo = min + (span * i) / nBins;
+    const hi = min + (span * (i + 1)) / nBins;
+    return {
+      min: lo,
+      max: hi,
+      color: ramp[Math.round((i / (nBins - 1)) * (ramp.length - 1))],
+    };
+  });
+
+  // bbox of regions that HAVE data → basemap-fit to the story extent
+  const withData = {
+    type: "FeatureCollection",
+    features: features.features.filter((f) =>
+      byKey.has(String(f.properties?.[joinKey])),
+    ),
+  } as GeoJSON.FeatureCollection;
+  const bounds = bbox(withData.features.length ? withData : features) as [
+    number,
+    number,
+    number,
+    number,
+  ];
+
+  return { joined, bins, bounds, noData, unmatched, scaleType };
+}
