@@ -736,6 +736,41 @@ export function checkArcConformance(
 }
 
 /**
+ * L2 — RADIAL BAR / column: global rules + the radial musts. Radial LENGTH
+ * encodes magnitude, so the scale MUST start at 0 on the baseline circle (a
+ * non-zero radial baseline lies, exactly like a truncated cartesian bar). One
+ * Okabe-Ito data colour, and a radial value axis (tick rings) must be present so
+ * the reader can decode the lengths.
+ */
+export function checkRadialBarConformance(
+  input: {
+    title: string;
+    source: { name?: string; url?: string };
+    dataColor: string;
+    radialBaseline: number; // the value at the inner circle — MUST be 0
+    tickCount: number; // number of radial value rings
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalConformance({
+    title: input.title,
+    source: input.source,
+    colors: {
+      data: input.dataColor,
+      text: textColors.text,
+      bg: textColors.bg,
+    },
+  });
+  if (input.radialBaseline !== 0)
+    v.push(
+      `radial baseline is ${input.radialBaseline}, not 0 (length encoding requires a 0 baseline)`,
+    );
+  if (input.tickCount < 1)
+    v.push("radial bar needs a value axis (at least one tick ring)");
+  return v;
+}
+
+/**
  * L2 — CANDLESTICK / OHLC: global rules + the market musts. POSITION/range
  * encoding → not a baseline-0 type. Adds: valid OHLC every period (high ≥
  * max(open,close), low ≤ min(open,close)), a labelled price axis, and exactly two

@@ -42,6 +42,7 @@ const FILE = {
   "dot-strip": "dot-strip.json",
   violin: "violin.json",
   arc: "arc.json",
+  "radial-bar": "radial-bar.json",
 };
 
 const LONG = "Manufacturing & logistics sector";
@@ -139,6 +140,26 @@ const STRESS = {
         [s.valueField]: (40 + (k % 7) * 5) * 100,
       });
     return [["long+dense", stress]];
+  },
+  "radial-bar": (s) => {
+    // 12 month labels (longer than "08") + one dominant spike (extreme ratio),
+    // to stress the rim label cadence and the radial scale on a skewed max.
+    const months = clone(s);
+    months.rows = [
+      { hour: "Jan", trips: 40 },
+      { hour: "Feb", trips: 55 },
+      { hour: "Mar", trips: 90 },
+      { hour: "Apr", trips: 140 },
+      { hour: "May", trips: 210 },
+      { hour: "Jun", trips: 320 },
+      { hour: "Jul", trips: 980 },
+      { hour: "Aug", trips: 300 },
+      { hour: "Sep", trips: 180 },
+      { hour: "Oct", trips: 110 },
+      { hour: "Nov", trips: 60 },
+      { hour: "Dec", trips: 35 },
+    ];
+    return [["months+spike", months]];
   },
   arc: (s) => {
     // long node labels (force truncation to the node gap) + a 9th node (tighter

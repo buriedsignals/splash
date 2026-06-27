@@ -91,6 +91,8 @@ import { ViolinChart, type ViolinConfig } from "./ViolinChart";
 import { InteractiveViolinChart } from "./InteractiveViolinChart";
 import { ArcChart, type ArcConfig } from "./ArcChart";
 import { InteractiveArcChart } from "./InteractiveArcChart";
+import { RadialBarChart, type RadialBarConfig } from "./RadialBarChart";
+import { InteractiveRadialBarChart } from "./InteractiveRadialBarChart";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -129,6 +131,7 @@ import parallelSample from "../assets/sample-data/parallel.json";
 import dotStripSample from "../assets/sample-data/dot-strip.json";
 import violinSample from "../assets/sample-data/violin.json";
 import arcSample from "../assets/sample-data/arc.json";
+import radialBarSample from "../assets/sample-data/radial-bar.json";
 
 declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
@@ -182,6 +185,7 @@ const AUDIT_REGISTRY: Record<string, any> = {
   "dot-strip": DotStripChart,
   violin: ViolinChart,
   arc: ArcChart,
+  "radial-bar": RadialBarChart,
 };
 
 if (chart === "audit") {
@@ -244,6 +248,15 @@ if (chart === "audit") {
       <InteractiveArcChart config={config} animateOn={ANIMATE_ON} />
     ) : (
       <ArcChart config={config} progress={1} width={840} height={480} />
+    ),
+  );
+} else if (chart === "radial-bar") {
+  const config = radialBarSample as unknown as RadialBarConfig;
+  root.render(
+    interactive ? (
+      <InteractiveRadialBarChart config={config} animateOn={ANIMATE_ON} />
+    ) : (
+      <RadialBarChart config={config} progress={1} width={840} height={480} />
     ),
   );
 } else if (chart === "sunburst") {
