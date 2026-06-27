@@ -11,7 +11,7 @@ For each `cases/<id>.json`:
 1. **Act as ②.** Read `../SKILL.md` (the runtime procedure) + `knowledge/references/chart-selection.md`
    + `design-conformance.md` for *which claims warrant a visual*. Given the case `article` + `data`,
    emit one `ProposalSet` JSON. Do NOT peek at `expect`; ② must not know the answer.
-2. **Score deterministically.** Call `scoreProposalSet(emittedSet, case.expect, case.data)` →
+2. **Score deterministically.** Call `scoreProposalSet(emittedSet, case.expect, case.data, case.article)` →
    `{ countOk, dataValid, provenanceOk, noChartRespected, recall, precision, pass, notes }`. `case.data`
    is the named-CSV source set used for the provenance check.
 3. **Act as the judge.** Apply `judge.md` to `(article, data, emittedSet, case.expect.opportunities)` →

@@ -32,3 +32,10 @@ reveal, mp4 in landscape/square/portrait) OR **rich interactivity** (keyboard fo
 beyond DW hover). chart-native covers 41 FT-vocabulary types; the article→CSV mapper currently produces
 **bar/column, line, scatter, pie** natively — any other type falls back to `dw-chart`. A plain static
 chart with no motion/interaction need always stays `dw-chart`.
+
+## Two-point comparisons (a value then vs now)
+
+A claim that compares exactly two values (e.g. "12% in 2019 → 19% in 2024") is a
+**slope**, a **dumbbell**, or **paired columns** — never a continuous line (two
+points do not make a trend). This is common for prose-extracted figures, where the
+article states a before and an after.
