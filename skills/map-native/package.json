@@ -1,0 +1,25 @@
+{
+  "name": "map-native",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@maptiler/sdk": "3.6.0",
+    "@turf/turf": "7.2.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "remotion": "4.0.482",
+    "@remotion/cli": "4.0.482",
+    "@remotion/google-fonts": "4.0.482"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.17",
+    "typescript": "6.0.3",
+    "vite": "8.1.0",
+    "@vitejs/plugin-react": "6.0.3",
+    "vite-plugin-singlefile": "2.3.3",
+    "playwright": "1.61.1"
+  }
+}
