@@ -20,6 +20,8 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
   describe["number-format"] = spec.numberFormat ?? "0,0.[00]";
 
   const visualize: Record<string, unknown> = {};
+  // bar/column value labels honour `value-label-format`, NOT describe.number-format
+  if (spec.numberFormat) visualize["value-label-format"] = spec.numberFormat;
   if (spec.baseColor) visualize["base-color"] = spec.baseColor;
   if (spec.valueLabels !== undefined)
     visualize["value-labels"] = { show: spec.valueLabels };

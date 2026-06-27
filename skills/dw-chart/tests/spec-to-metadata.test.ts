@@ -36,6 +36,15 @@ describe("specToMetadata", () => {
     expect(p.metadata.visualize["base-color"]).toBe("#0072B2");
     expect(p.metadata.visualize["value-labels"]).toEqual({ show: true });
   });
+  it("routes numberFormat to value-label-format (bar labels ignore describe.number-format)", () => {
+    const p = specToMetadata({ ...spec, numberFormat: "0.[0]%" });
+    expect(p.metadata.visualize["value-label-format"]).toBe("0.[0]%");
+  });
+  it("omits value-label-format when no numberFormat is given", () => {
+    const { numberFormat, ...noFmt } = spec;
+    const p = specToMetadata(noFmt);
+    expect(p.metadata.visualize["value-label-format"]).toBeUndefined();
+  });
   it("omits optional fields when absent", () => {
     const p = specToMetadata({
       type: "column-chart",
