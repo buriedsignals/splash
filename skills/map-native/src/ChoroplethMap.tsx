@@ -136,8 +136,10 @@ export const ChoroplethMap: React.FC<Props> = ({
         duration: 0,
       });
 
-      // Expose map instance for snap-proof idle detection
+      // Expose map instance and data bounds for audit + snap-proof
       (window as unknown as Record<string, unknown>)["__map__"] = map;
+      (window as unknown as Record<string, unknown>)["__layout_bounds__"] =
+        layout.bounds;
 
       // Legend
       if (legendRef.current) {

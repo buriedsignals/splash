@@ -9,7 +9,7 @@
 // Outputs:
 //   { static, interactive, landscape, square, portrait }
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -61,53 +61,57 @@ if (formats === "all") {
   // Write props file for Remotion (expects { config: <choropleth config> })
   const config = JSON.parse(readFileSync(configPath, "utf8"));
   const tmpDir = mkdtempSync(join(tmpdir(), "map-native-props-"));
-  const propsPath = join(tmpDir, "props.json");
-  writeFileSync(propsPath, JSON.stringify({ config }));
+  try {
+    const propsPath = join(tmpDir, "props.json");
+    writeFileSync(propsPath, JSON.stringify({ config }));
 
-  const remotionEntry = join(root, "remotion", "src", "index.ts");
+    const remotionEntry = join(root, "remotion", "src", "index.ts");
 
-  for (const [comp, name] of [
-    ["ChoroplethReveal", "landscape"],
-    ["ChoroplethSquare", "square"],
-    ["ChoroplethPortrait", "portrait"],
-  ]) {
-    const stillOut = join(outDir, `video-${name}-still.png`);
-    const mp4Out = join(outDir, `${name}.mp4`);
+    for (const [comp, name] of [
+      ["ChoroplethReveal", "landscape"],
+      ["ChoroplethSquare", "square"],
+      ["ChoroplethPortrait", "portrait"],
+    ]) {
+      const stillOut = join(outDir, `video-${name}-still.png`);
+      const mp4Out = join(outDir, `${name}.mp4`);
 
-    console.log(`[produce map] rendering ${name} (${comp}) — still…`);
-    run(
-      "npx",
-      [
-        "remotion",
-        "still",
-        remotionEntry,
-        comp,
-        stillOut,
-        "--frame=140",
-        "--gl=angle",
-        `--props=${propsPath}`,
-      ],
-      { COMP: comp },
-    );
+      console.log(`[produce map] rendering ${name} (${comp}) — still…`);
+      run(
+        "bunx",
+        [
+          "remotion",
+          "still",
+          remotionEntry,
+          comp,
+          stillOut,
+          "--frame=140",
+          "--gl=angle",
+          `--props=${propsPath}`,
+        ],
+        { COMP: comp },
+      );
 
-    console.log(`[produce map] rendering ${name} (${comp}) — mp4…`);
-    run(
-      "npx",
-      [
-        "remotion",
-        "render",
-        remotionEntry,
-        comp,
-        mp4Out,
-        "--gl=angle",
-        "--concurrency=1",
-        "--timeout=120000",
-        `--props=${propsPath}`,
-      ],
-      { COMP: comp },
-    );
+      console.log(`[produce map] rendering ${name} (${comp}) — mp4…`);
+      run(
+        "bunx",
+        [
+          "remotion",
+          "render",
+          remotionEntry,
+          comp,
+          mp4Out,
+          "--gl=angle",
+          "--concurrency=1",
+          "--timeout=120000",
+          `--props=${propsPath}`,
+        ],
+        { COMP: comp },
+      );
 
-    result[name] = mp4Out;
+      result[name] = mp4Out;
+    }
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
   }
 }
 

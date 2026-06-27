@@ -4,9 +4,9 @@
 //   1. The title, legend, and source text boxes are inside the card (no overflow).
 //   2. No two visible text boxes overlap significantly.
 //   3. The rendered map bounds fit the DATA extent — not the whole world.
-//      For a Europe-only dataset the rendered bounds must not span the globe
-//      (we compare window.__map__.getBounds() to the layout.bounds exposed by
-//      computeChoropleth, expanded by the 24px fitBounds padding tolerance).
+//      Uses map.project() to measure what fraction of the canvas the data bbox
+//      occupies. Fails if the data spans < 50% of both canvas dimensions
+//      (catches a correctly-centered but zoomed-out map).
 //
 // Run: cd skills/map-native && bun run audit
 import { chromium } from "playwright";
@@ -37,18 +37,11 @@ const VIEWPORTS = [
   { w: 1080, h: 1350, name: "portrait" },
 ];
 
-// The basemap-fit check asserts that the MAP CENTER lies within (or very near)
-// the DATA EXTENT. This is the correct invariant: fitBounds may render a large
-// visible area on wide viewports (the globe wraps at low zoom levels), but the
-// center of the map must remain inside the data story region.
-//
-// `getBounds()` is NOT used here because on wide viewports the visible canvas
-// legitimately spans most of the globe even when fitBounds correctly positions
-// the center on Europe. The center is the reliable proxy for "fit worked".
-
-// Tolerance in degrees around the data extent for the center check.
-// Generous to allow viewport aspect ratio effects on the centroid.
-const CENTER_TOLERANCE_DEG = 20;
+// Basemap-fit check: project the data extent corners to screen pixels via
+// map.project() and assert max(fracW, fracH) >= MIN_DATA_FILL_FRACTION.
+// This PASSES a correct fitBounds (which fills the binding dimension) and FAILS
+// a too-zoomed-out map where data spans only a tiny fraction of the canvas.
+const MIN_DATA_FILL_FRACTION = 0.5;
 
 const cases = buildCases(sample);
 
@@ -66,7 +59,6 @@ function overlapArea(a, b) {
 }
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ deviceScaleFactor: 1 });
 
 let violations = 0;
 let checks = 0;
@@ -77,18 +69,17 @@ for (const c of cases) {
     checks++;
     const caseKey = `${c.label}/${vp.name}`;
 
-    // Inject config via the page URL's __CONFIG__ hash is not available — instead
-    // we expose the config via window.__AUDIT_CONFIG__ before the page loads.
-    // Strategy: navigate fresh each time so the React tree remounts with the
-    // new config. We inject via page.addInitScript to set window.__CONFIG__
-    // before the bundle reads it.
+    // Fix 3: create a fresh page per iteration so addInitScript never accumulates.
+    // Each page gets exactly one addInitScript call with the correct config.
+    const page = await browser.newPage({ deviceScaleFactor: 1 });
     await page.setViewportSize({ width: vp.w, height: vp.h });
     await page.addInitScript((cfg) => {
       window.__CONFIG__ = cfg;
     }, c.config);
     await page.goto(htmlUrl, { waitUntil: "domcontentloaded" });
 
-    // Wait for map idle
+    // Wait for map idle — poll until loaded() && areTilesLoaded() are both true.
+    // We wait AFTER fitBounds settles so the projection check sees the final state.
     const mapIdle = await page
       .waitForFunction(
         () => {
@@ -104,13 +95,15 @@ for (const c of cases) {
       console.log(`  ✗ ${caseKey}: map did not reach idle (timeout)`);
       violations++;
       (failsByCase[c.label] ??= []).push(`${vp.name}: map idle timeout`);
+      await page.close();
       continue;
     }
 
     // Short settle for paint to flush
     await page.waitForTimeout(200);
 
-    // Collect text boxes + map bounds in one evaluate call
+    // Collect text boxes + map fit state in one evaluate call.
+    // layout.bounds [w,s,e,n] is exposed on window.__layout_bounds__ by the component.
     const res = await page.evaluate(() => {
       const card = document.querySelector("#root > div");
       if (!card) return { error: "no card" };
@@ -152,30 +145,48 @@ for (const c of cases) {
         });
       });
 
-      // Map center + zoom for basemap-fit check.
-      // We DON'T use getBounds() because on wide viewports the visible area
-      // legitimately spans a large fraction of the globe even when fitBounds
-      // correctly centers on the data extent. Instead we assert:
-      //   (a) the map center falls within the data extent ± tolerance, and
-      //   (b) the zoom is above a minimum threshold.
-      let mapState = null;
+      // Basemap-fit check via map.project().
+      // The component exposes layout.bounds as window.__layout_bounds__ = [w,s,e,n].
+      // Project SW and NE corners to canvas pixels, measure what fraction of the
+      // canvas the data bbox spans. Assert max(fracW, fracH) >= 0.5.
+      let mapFit = null;
       const m = window.__map__;
-      if (m) {
-        const center = m.getCenter();
-        mapState = { lng: center.lng, lat: center.lat, zoom: m.getZoom() };
+      const dataBounds = window.__layout_bounds__;
+      if (m && dataBounds) {
+        const [w, s, e, n] = dataBounds;
+        const canvas = m.getCanvas();
+        const canvasW = canvas.width / (window.devicePixelRatio || 1);
+        const canvasH = canvas.height / (window.devicePixelRatio || 1);
+        // SW corner = [west, south], NE corner = [east, north]
+        const sw = m.project([w, s]);
+        const ne = m.project([e, n]);
+        const bboxW = Math.abs(ne.x - sw.x);
+        const bboxH = Math.abs(sw.y - ne.y);
+        const fracW = bboxW / canvasW;
+        const fracH = bboxH / canvasH;
+        // Center pixel of projected bbox
+        const centerX = (sw.x + ne.x) / 2;
+        const centerY = (sw.y + ne.y) / 2;
+        const centerOnScreen =
+          centerX >= 0 && centerX <= canvasW && centerY >= 0 && centerY <= canvasH;
+        mapFit = { fracW, fracH, centerOnScreen, canvasW, canvasH, bboxW, bboxH };
+      } else if (m && !dataBounds) {
+        // bounds not yet exposed — map mounted but fitBounds not yet called
+        mapFit = { notReady: true };
       }
 
-      return { cardW: cb.width, cardH: cb.height, boxes, mapState };
+      return { cardW: cb.width, cardH: cb.height, boxes, mapFit };
     });
 
     if (!res || res.error) {
       console.log(`  ✗ ${caseKey}: ${res?.error || "render failed"}`);
       violations++;
       (failsByCase[c.label] ??= []).push(`${vp.name}: render error`);
+      await page.close();
       continue;
     }
 
-    const { boxes, cardW, cardH, mapState } = res;
+    const { boxes, cardW, cardH, mapFit } = res;
     const problems = [];
 
     // 1. Overlap check
@@ -205,37 +216,25 @@ for (const c of cases) {
       }
     }
 
-    // 3. Map basemap-fit check: assert that fitBounds constrained the view to
-    //    the data extent. We check two invariants:
-    //
-    //    (a) Zoom: the zoom must be above MIN_ZOOM_FOR_DATA_FIT. A silently-
-    //        failing fitBounds (e.g. null bounds) renders at the initial zoom
-    //        of 3, but a dataset with zero valid features would leave zoom at
-    //        the default low level.
-    //
-    //    (b) Center: the map center must fall within the config's data rows'
-    //        approximate geographic center ± CENTER_TOLERANCE_DEG. For a
-    //        Europe-only dataset, the center must not be near the Pacific.
-    //        We derive the expected center from the config rows using the
-    //        known country centroids embedded in the test cases.
-    if (mapState) {
-      // For the Europe-centric configs in audit-cases.mjs, the map center
-      // should be within Europe's rough bbox: lng [-30,50], lat [30,75].
-      // We use a generous tolerance (CENTER_TOLERANCE_DEG=20) so this doesn't
-      // trip on edge-heavy datasets that shift the centroid.
-      const europeWest = -30 - CENTER_TOLERANCE_DEG;
-      const europeEast = 50 + CENTER_TOLERANCE_DEG;
-      const europeSouth = 30 - CENTER_TOLERANCE_DEG;
-      const europeNorth = 75 + CENTER_TOLERANCE_DEG;
-      if (
-        mapState.lng < europeWest ||
-        mapState.lng > europeEast ||
-        mapState.lat < europeSouth ||
-        mapState.lat > europeNorth
-      ) {
-        problems.push(
-          `map center [${mapState.lng.toFixed(1)}, ${mapState.lat.toFixed(1)}] is outside Europe±${CENTER_TOLERANCE_DEG}° — fitBounds did not constrain to data extent`,
-        );
+    // 3. Basemap-fit check using map.project() pixel projection.
+    //    Assert the projected data bbox fills ≥50% of at least one canvas dimension
+    //    AND the bbox center pixel is on-screen.
+    //    This catches: zoomed-out maps (data spans tiny fraction), wrong-region maps.
+    if (mapFit) {
+      if (mapFit.notReady) {
+        // layout.bounds not yet exposed — bounds evaluation skipped (not a violation)
+      } else {
+        const maxFrac = Math.max(mapFit.fracW, mapFit.fracH);
+        if (maxFrac < MIN_DATA_FILL_FRACTION) {
+          problems.push(
+            `basemap-fit: data bbox spans only ${(mapFit.fracW * 100).toFixed(0)}%×${(mapFit.fracH * 100).toFixed(0)}% of canvas — fitBounds did not zoom to data extent (need ≥${MIN_DATA_FILL_FRACTION * 100}% on one dim)`,
+          );
+        }
+        if (!mapFit.centerOnScreen) {
+          problems.push(
+            `basemap-fit: projected data bbox center is off-screen — fitBounds centered on wrong region`,
+          );
+        }
       }
     } else {
       problems.push("window.__map__ not available — map did not mount");
@@ -249,6 +248,8 @@ for (const c of cases) {
       for (const p of problems.slice(0, 3))
         console.log(`  ✗ ${caseKey}: ${p}`);
     }
+
+    await page.close();
   }
 }
 
