@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "audit": "bun scripts/audit.mjs"
   },
   "dependencies": {
     "@maptiler/sdk": "3.6.0",
