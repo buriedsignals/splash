@@ -52,18 +52,53 @@ export function computeChoropleth(
   const values = joined
     .map((j) => j.value)
     .filter((v): v is number => v !== null);
+
+  if (values.length === 0) {
+    throw new Error("choropleth: no region matched the data — nothing to map");
+  }
+
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const span = max - min || 1;
-  const bins = Array.from({ length: nBins }, (_, i) => {
-    const lo = min + (span * i) / nBins;
-    const hi = min + (span * (i + 1)) / nBins;
-    return {
-      min: lo,
-      max: hi,
-      color: ramp[Math.round((i / (nBins - 1)) * (ramp.length - 1))],
-    };
-  });
+
+  let bins: { min: number; max: number; color: string }[];
+
+  if (scaleType === "diverging") {
+    const mid = options.midpoint ?? (min + max) / 2;
+    const maxDev = Math.max(...values.map((v) => Math.abs(v - mid))) || 1;
+    const binMin = mid - maxDev;
+    const binMax = mid + maxDev;
+    const binSpan = binMax - binMin || 1;
+
+    bins = Array.from({ length: nBins }, (_, i) => {
+      const lo = binMin + (binSpan * i) / nBins;
+      const hi = binMin + (binSpan * (i + 1)) / nBins;
+      const colorIdx =
+        nBins === 1
+          ? Math.round((ramp.length - 1) / 2)
+          : Math.round((i / (nBins - 1)) * (ramp.length - 1));
+      return {
+        min: lo,
+        max: hi,
+        color: ramp[colorIdx],
+      };
+    });
+  } else {
+    // sequential scale
+    const span = max - min || 1;
+    bins = Array.from({ length: nBins }, (_, i) => {
+      const lo = min + (span * i) / nBins;
+      const hi = min + (span * (i + 1)) / nBins;
+      const colorIdx =
+        nBins === 1
+          ? Math.round((ramp.length - 1) / 2)
+          : Math.round((i / (nBins - 1)) * (ramp.length - 1));
+      return {
+        min: lo,
+        max: hi,
+        color: ramp[colorIdx],
+      };
+    });
+  }
 
   // bbox of regions that HAVE data → basemap-fit to the story extent
   const withData = {

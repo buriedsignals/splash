@@ -113,4 +113,30 @@ describe("computeChoropleth", () => {
       ),
     ).toThrow(/invalid/);
   });
+  it("centers diverging scale on midpoint with neutral color in middle bin", () => {
+    const l = computeChoropleth(data, features, "iso_a3", {
+      scaleType: "diverging",
+      midpoint: 44,
+      bins: 5,
+    });
+    expect(l.bins).toHaveLength(5);
+    const middleBin = l.bins[2]; // middle bin at index 2 in array of 5
+    expect(middleBin.color).toBe("#f7f7f7"); // neutral DIVERGING[2]
+  });
+  it("handles single bin without NaN color index", () => {
+    const l = computeChoropleth(data, features, "iso_a3", { bins: 1 });
+    expect(l.bins).toHaveLength(1);
+    expect(l.bins[0].color).toBeDefined();
+    expect(typeof l.bins[0].color).toBe("string");
+    expect(l.bins[0].color).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+  it("throws when no CSV rows match any feature", () => {
+    expect(() =>
+      computeChoropleth(
+        { ...data, rows: [{ code: "ZZZ", share: 99 }] },
+        features,
+        "iso_a3",
+      ),
+    ).toThrow(/no region matched/);
+  });
 });
