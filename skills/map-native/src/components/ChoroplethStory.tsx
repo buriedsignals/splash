@@ -1,6 +1,6 @@
 // ChoroplethStory — narrated Remotion video composition.
-// Builds a beat-driven story (establish → reveal x N → takeaway) from deriveMapStory,
-// drives the map camera deterministically per frame, and renders callout + caption overlays.
+// Builds a beat-driven story (title → establish → reveal x N → takeaway) from deriveMapStory,
+// drives the map camera deterministically per frame, and renders title card + callout + caption overlays.
 // Harness pattern: delayRender → jumpTo → setData (beat change only) → setPaintProperty → idle → continueRender.
 
 import React, { useEffect, useRef, useState } from "react";
@@ -70,6 +70,58 @@ const CaptionCard: React.FC<{ text: string; reveal: number }> = ({
           textAlign: "center",
           letterSpacing: "0.01em",
           textShadow: "0 1px 8px rgba(0,0,0,0.7)",
+        }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+};
+
+// Title card — full-screen overlay shown only during the title beat (beatIndex 0).
+// Map is blank behind it (fillReveal 0). Fades in at start, fades out near end of beat.
+const TitleCard: React.FC<{ text: string; phase: Phase; frame: number }> = ({
+  text,
+  phase,
+  frame,
+}) => {
+  const holdStart = phase.startFrame + phase.moveFrames;
+  const holdEnd = holdStart + phase.holdFrames;
+  // Fade in over first 0.3s of hold, fade out over last 0.5s.
+  const fadeInEnd = holdStart + Math.round(phase.holdFrames * 0.15);
+  const fadeOutStart = holdEnd - Math.round(phase.holdFrames * 0.25);
+
+  const opacity = interpolate(
+    frame,
+    [holdStart, fadeInEnd, fadeOutStart, holdEnd],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(10,10,10,0.88)",
+        opacity,
+        pointerEvents: "none",
+      }}
+    >
+      <p
+        style={{
+          margin: 0,
+          color: "#F5F2ED",
+          fontSize: 48,
+          fontWeight: 700,
+          lineHeight: 1.25,
+          textAlign: "center",
+          maxWidth: "70%",
+          letterSpacing: "-0.01em",
+          textShadow: "0 2px 16px rgba(0,0,0,0.8)",
         }}
       >
         {text}
@@ -215,8 +267,9 @@ export const ChoroplethStory: React.FC<{
             };
           });
 
-          // Build timeline phases.
-          const { phases } = buildTimeline(beats.length, fps);
+          // Build timeline phases — keyed by beat kind for per-kind hold durations.
+          const kinds = beats.map((b) => b.kind);
+          const { phases } = buildTimeline(kinds, fps);
 
           // Precompute mainland centroids for callout projection.
           const centroidByKey = new Map<string, [number, number]>();
@@ -433,9 +486,18 @@ export const ChoroplethStory: React.FC<{
           />
         )}
 
-      {/* Caption lower-third */}
+      {/* Caption lower-third — only shown when beat has non-empty copy */}
       {overlay && beat?.copy && overlay.captionReveal > 0 && (
         <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />
+      )}
+
+      {/* Title card — shown only during the title beat (beatIndex 0), map blank behind */}
+      {mapState && overlay?.beatIndex === 0 && mapState.beats[0].copy && (
+        <TitleCard
+          text={mapState.beats[0].copy}
+          phase={mapState.phases[0]}
+          frame={frame}
+        />
       )}
     </AbsoluteFill>
   );

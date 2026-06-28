@@ -44,36 +44,44 @@ const meta = {
 };
 
 describe("deriveMapStory", () => {
-  it("returns establish → reveal(max) → reveal(min) → takeaway", () => {
+  it("returns title → establish → reveal(max) → reveal(min) → takeaway", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", meta);
     expect(beats.map((b) => b.kind)).toEqual([
+      "title",
       "establish",
       "reveal",
       "reveal",
       "takeaway",
     ]);
-    expect(beats[1].highlight).toEqual(["NOR"]); // max
-    expect(beats[2].highlight).toEqual(["POL"]); // min
+    expect(beats[2].highlight).toEqual(["NOR"]); // max (was beats[1])
+    expect(beats[3].highlight).toEqual(["POL"]); // min (was beats[2])
   });
-  it("establish uses the full data bounds and the title; no dim, no callout", () => {
+  it("title beat uses meta.title as copy; establish beat has empty copy", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
-    const [establish] = deriveMapStory(layout, features, "iso_a3", meta);
+    const beats = deriveMapStory(layout, features, "iso_a3", meta);
+    const [title, establish] = beats;
+    expect(title.kind).toBe("title");
+    expect(title.copy).toBe(meta.title);
+    expect(title.camera).toEqual(layout.bounds);
+    expect(title.dim).toBe(false);
+    expect(title.callout).toBeNull();
+    expect(establish.kind).toBe("establish");
+    expect(establish.copy).toBe("");
     expect(establish.camera).toEqual(layout.bounds);
-    expect(establish.copy).toBe(meta.title);
     expect(establish.dim).toBe(false);
     expect(establish.callout).toBeNull();
   });
-  it("reveal beats carry a name — value callout and dim the rest", () => {
+  it("first reveal (beats[2]) carries a name — value callout and dims the rest", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", meta);
-    expect(beats[1].callout).toEqual({
+    expect(beats[2].callout).toEqual({
       region: "NOR",
       name: "Norway",
       text: "Norway — 99%",
     });
-    expect(beats[1].dim).toBe(true);
-    expect(beats[1].copy).toBe("Norway — 99%");
+    expect(beats[2].dim).toBe(true);
+    expect(beats[2].copy).toBe("Norway — 99%");
   });
   it("takeaway returns to full bounds with the insight copy", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
@@ -86,10 +94,16 @@ describe("deriveMapStory", () => {
   it("consecutive beats have distinct cameras (the camera moves)", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", meta);
-    for (let i = 1; i < beats.length; i++)
-      expect(beats[i].camera).not.toEqual(beats[i - 1].camera);
+    // title and establish share layout.bounds — that's expected, the reveal beats differ.
+    // Assert ≥2 distinct cameras across all beats.
+    const cameras = new Set(beats.map((b) => JSON.stringify(b.camera)));
+    expect(cameras.size).toBeGreaterThanOrEqual(2);
+    // Reveal beats must differ from establish.
+    for (let i = 2; i < beats.length - 1; i++) {
+      expect(beats[i].camera).not.toEqual(layout.bounds);
+    }
   });
-  it("emits a single reveal when only one region has data", () => {
+  it("emits title → establish → reveal → takeaway when only one region has data", () => {
     const one: ChoroplethData = {
       regionKey: "code",
       valueField: "share",
@@ -98,6 +112,7 @@ describe("deriveMapStory", () => {
     const layout = computeChoropleth(one, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", meta);
     expect(beats.map((b) => b.kind)).toEqual([
+      "title",
       "establish",
       "reveal",
       "takeaway",
@@ -115,6 +130,6 @@ describe("deriveMapStory", () => {
     };
     const layout = computeChoropleth(tie, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", meta);
-    expect(beats[1].highlight).toEqual(["NOR"]); // first by key among the tied maxima
+    expect(beats[2].highlight).toEqual(["NOR"]); // first by key among the tied maxima (was beats[1])
   });
 });

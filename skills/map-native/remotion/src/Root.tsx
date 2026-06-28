@@ -33,7 +33,10 @@ const sampleBeats = deriveMapStory(sampleLayout, world as any, "iso_a3", {
   insight: (sampleConfig as any).insight ?? sampleConfig.title,
   unit: (sampleConfig as any).valueUnit ?? "",
 });
-const STORY_FRAMES = buildTimeline(sampleBeats.length, 30).totalFrames;
+const STORY_FRAMES = buildTimeline(
+  sampleBeats.map((b) => b.kind),
+  30,
+).totalFrames;
 
 const choroplethDefaultProps = { config: sampleConfig };
 

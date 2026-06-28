@@ -14,31 +14,34 @@ export function easeInOutCubic(t: number): number {
 }
 
 export function buildTimeline(
-  beatCount: number,
+  kinds: string[],
   fps: number,
   opts: {
+    titleHold?: number;
     establishHold?: number;
     revealHold?: number;
     takeawayHold?: number;
     move?: number;
   } = {},
 ): { phases: Phase[]; totalFrames: number } {
-  const establishHold = Math.round((opts.establishHold ?? 2.5) * fps);
+  const titleHold = Math.round((opts.titleHold ?? 2.5) * fps);
+  const establishHold = Math.round((opts.establishHold ?? 2) * fps);
   const revealHold = Math.round((opts.revealHold ?? 3) * fps);
   const takeawayHold = Math.round((opts.takeawayHold ?? 3) * fps);
   const move = Math.round((opts.move ?? 1.2) * fps);
 
+  const holdForKind = (kind: string): number => {
+    if (kind === "title") return titleHold;
+    if (kind === "establish") return establishHold;
+    if (kind === "takeaway") return takeawayHold;
+    return revealHold; // "reveal" and any future kinds
+  };
+
   const phases: Phase[] = [];
   let cursor = 0;
-  for (let i = 0; i < beatCount; i++) {
-    const isFirst = i === 0;
-    const isLast = i === beatCount - 1;
-    const moveFrames = isFirst ? 0 : move;
-    const holdFrames = isFirst
-      ? establishHold
-      : isLast
-        ? takeawayHold
-        : revealHold;
+  for (let i = 0; i < kinds.length; i++) {
+    const moveFrames = i === 0 ? 0 : move;
+    const holdFrames = holdForKind(kinds[i]);
     phases.push({ beatIndex: i, startFrame: cursor, holdFrames, moveFrames });
     cursor += moveFrames + holdFrames;
   }
@@ -61,15 +64,35 @@ export function cameraForFrame(
   const i = p.beatIndex;
   const moveEnd = p.startFrame + p.moveFrames;
 
-  // fillReveal: 0 -> 1 across beat 0's hold (the blank-to-visible reveal), 1 after.
-  const establish = phases[0];
-  const fillReveal =
-    frame <= establish.startFrame
-      ? 0
-      : Math.min(
-          1,
-          (frame - establish.startFrame) / Math.max(1, establish.holdFrames),
-        );
+  // fillReveal:
+  //   0 during entire title beat (beatIndex 0)
+  //   ramp 0→1 across establish beat's hold (beatIndex 1)
+  //   1 afterwards
+  const titlePhase = phases[0];
+  const titleEnd = titlePhase.startFrame + titlePhase.holdFrames;
+
+  let fillReveal: number;
+  if (frame < titleEnd) {
+    // Still in title beat — map is not visible.
+    fillReveal = 0;
+  } else {
+    // Establish beat starts at titleEnd (move + hold).
+    // The establish phase is phases[1] when kinds[0] === "title".
+    const establishPhase = phases.length > 1 ? phases[1] : phases[0];
+    const establishHoldStart =
+      establishPhase.startFrame + establishPhase.moveFrames;
+    const establishHoldEnd = establishHoldStart + establishPhase.holdFrames;
+    if (frame <= establishHoldStart) {
+      fillReveal = 0;
+    } else if (frame >= establishHoldEnd) {
+      fillReveal = 1;
+    } else {
+      fillReveal = Math.min(
+        1,
+        (frame - establishHoldStart) / Math.max(1, establishPhase.holdFrames),
+      );
+    }
+  }
 
   if (p.moveFrames > 0 && frame < moveEnd) {
     const t = easeInOutCubic((frame - p.startFrame) / p.moveFrames);

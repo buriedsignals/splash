@@ -2,7 +2,7 @@ import type { ChoroplethLayout } from "./choropleth-geo";
 import { regionBounds } from "./choropleth-geo";
 
 export interface Beat {
-  kind: "establish" | "reveal" | "takeaway";
+  kind: "title" | "establish" | "reveal" | "takeaway";
   camera: [number, number, number, number]; // [w,s,e,n] mainland-framed bbox
   highlight: string[];
   dim: boolean;
@@ -55,13 +55,23 @@ export function deriveMapStory(
     `${nameOf(key)} — ${fmt(value)}`;
 
   const beats: Beat[] = [];
+  // Title card — shown before the map is visible (fillReveal 0).
+  beats.push({
+    kind: "title",
+    camera: layout.bounds,
+    highlight: [],
+    dim: false,
+    callout: null,
+    copy: meta.title,
+  });
+  // Establish — map fades in; no caption copy so the title card has space to exit.
   beats.push({
     kind: "establish",
     camera: layout.bounds,
     highlight: [],
     dim: false,
     callout: null,
-    copy: meta.title,
+    copy: "",
   });
 
   const revealKeys =
