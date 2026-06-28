@@ -82,7 +82,7 @@ export function deriveMapStory(
     kind: "takeaway",
     camera: layout.bounds,
     highlight: [],
-    dim: true,
+    dim: false,
     callout: null,
     copy: meta.insight,
   });

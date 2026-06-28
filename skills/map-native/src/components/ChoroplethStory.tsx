@@ -98,8 +98,7 @@ function enrichWorld(
             )
           : -1;
       const isHighlight = beat.highlight.includes(key) ? 1 : 0;
-      const isDimmed =
-        beat.dim && !beat.highlight.includes(key) && j.value !== null ? 1 : 0;
+      const isDimmed = beat.dim && !beat.highlight.includes(key) ? 1 : 0;
       return {
         ...f,
         properties: {
