@@ -21,7 +21,44 @@ interface Props {
   interactive?: boolean;
 }
 
-const NO_DATA_COLOR = "#e0e0e0";
+// Exported so tests can assert colour distinctness
+export const NO_DATA_COLOR = "#b9b9b9";
+export const WATER_COLOR = "#cfe3f1";
+
+/** Minimal IControl that resets the map to the initial data bounds. */
+function makeResetControl(
+  dataBounds: [number, number, number, number],
+): maptilersdk.IControl {
+  let _map: maptilersdk.Map | null = null;
+  let _btn: HTMLButtonElement | null = null;
+
+  return {
+    onAdd(map: maptilersdk.Map): HTMLElement {
+      _map = map;
+      const container = document.createElement("div");
+      container.className = "maplibregl-ctrl maplibregl-ctrl-group";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.setAttribute("aria-label", "Reset map view");
+      btn.textContent = "⌂";
+      btn.style.cssText =
+        "width:29px;height:29px;font-size:16px;cursor:pointer;background:#fff;border:none;border-radius:4px;display:flex;align-items:center;justify-content:center;line-height:1;";
+      btn.addEventListener("click", () => {
+        _map?.fitBounds(dataBounds, { padding: 48, duration: 600 });
+      });
+      _btn = btn;
+
+      container.appendChild(btn);
+      return container;
+    },
+    onRemove(): void {
+      _btn?.remove();
+      _btn = null;
+      _map = null;
+    },
+  };
+}
 
 export const ChoroplethMap: React.FC<Props> = ({
   config,
@@ -44,7 +81,8 @@ export const ChoroplethMap: React.FC<Props> = ({
       center: [10, 50] as [number, number],
       zoom: 3,
       interactive,
-      attributionControl: false,
+      // Re-enable compact attribution (licensing must be visible)
+      attributionControl: true,
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
@@ -59,6 +97,28 @@ export const ChoroplethMap: React.FC<Props> = ({
       for (const layer of layers) {
         if (layer.type === "symbol") {
           map.removeLayer(layer.id);
+        }
+        // Paint water/ocean/sea layers with a distinct blue tint
+        if (
+          /water|ocean|sea/i.test(layer.id) ||
+          ("source-layer" in layer &&
+            /water|ocean|sea/i.test(
+              (layer as { "source-layer"?: string })["source-layer"] ?? "",
+            ))
+        ) {
+          if (layer.type === "fill") {
+            try {
+              map.setPaintProperty(layer.id, "fill-color", WATER_COLOR);
+            } catch {
+              // layer may not support this paint property
+            }
+          } else if (layer.type === "background") {
+            try {
+              map.setPaintProperty(layer.id, "background-color", WATER_COLOR);
+            } catch {
+              // not all background layers are water
+            }
+          }
         }
       }
 
@@ -153,6 +213,19 @@ export const ChoroplethMap: React.FC<Props> = ({
           [sw.lng - mx, sw.lat - my],
           [ne.lng + mx, ne.lat + my],
         ] as maptilersdk.LngLatBoundsLike);
+
+        // Zoom limits: reader can't zoom out past story framing; tile cap at 14
+        map.setMinZoom(map.getZoom() - 0.5);
+        map.setMaxZoom(14);
+
+        // Navigation controls — zoom +/− (no compass needed for a flat choropleth)
+        map.addControl(
+          new maptilersdk.NavigationControl({ showCompass: false }),
+          "top-right",
+        );
+
+        // Reset control — returns to the initial story-framing fitBounds
+        map.addControl(makeResetControl(dataBounds), "top-right");
       }
 
       // Expose map instance and data bounds for audit + snap-proof
@@ -185,7 +258,7 @@ export const ChoroplethMap: React.FC<Props> = ({
         `;
       }
 
-      // Hover popup
+      // Hover popup — only for regions WITH data (project decision: suppress no-data hover)
       if (interactive) {
         const popup = new maptilersdk.Popup({
           closeButton: false,
@@ -194,16 +267,21 @@ export const ChoroplethMap: React.FC<Props> = ({
         popupRef.current = popup;
 
         map.on("mousemove", "choropleth-fill", (e) => {
-          map.getCanvas().style.cursor = "pointer";
           const f = e.features?.[0];
           if (!f) return;
+
+          // Suppress hover on no-data regions — pointer stays default, no popup
+          if (f.properties?.__hasData !== true) {
+            map.getCanvas().style.cursor = "";
+            popup.remove();
+            return;
+          }
+
+          map.getCanvas().style.cursor = "pointer";
           const name = f.properties?.name ?? f.properties?.iso_a3 ?? "—";
           const value = f.properties?.__value;
           const unit = config.unit ?? "";
-          const html =
-            value !== null && value !== undefined
-              ? `<strong>${name}</strong><br>${value}${unit ? " " + unit : ""}`
-              : `<strong>${name}</strong><br>No data`;
+          const html = `<strong>${name}</strong><br>${value}${unit ? " " + unit : ""}`;
           popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
         });
 
@@ -229,17 +307,28 @@ export const ChoroplethMap: React.FC<Props> = ({
     map.setPaintProperty("choropleth-fill", "fill-opacity", progress);
   }, [progress]);
 
+  const ariaLabel = config.title
+    ? `Interactive map: ${config.title}`
+    : "Interactive choropleth map";
+
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div
+      style={{ position: "relative", width: "100%", height: "100%" }}
+      role="region"
+      aria-label={ariaLabel}
+    >
       <style>{`
         .maplibregl-ctrl-bottom-left,
-        .maplibregl-ctrl-bottom-right,
-        .maplibregl-ctrl-attrib,
         .maptiler-logo { display: none !important; }
         .maplibregl-popup-content {
           font: 13px/1.4 sans-serif;
           padding: 8px 10px;
           border-radius: 4px;
+        }
+        /* Visible focus ring on the reset control button */
+        .maplibregl-ctrl button:focus-visible {
+          outline: 2px solid #0055cc;
+          outline-offset: 2px;
         }
       `}</style>
 
