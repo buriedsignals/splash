@@ -6,7 +6,7 @@ import { BLUES, DIVERGING } from "./theme/scale";
 // (NOR→Svalbard, FRA→French Guiana/Réunion, ESP→Canaries); a naive bbox over the
 // whole MultiPolygon stretches to the world. Framing to the mainland ring keeps
 // the data zone tight without cropping the country's main coastline.
-function mainlandFeature(f: GeoJSON.Feature): GeoJSON.Feature {
+export function mainlandFeature(f: GeoJSON.Feature): GeoJSON.Feature {
   const g = f.geometry;
   if (g.type !== "MultiPolygon") return f;
   let best: number[][][] | null = null;
@@ -24,6 +24,13 @@ function mainlandFeature(f: GeoJSON.Feature): GeoJSON.Feature {
     properties: f.properties,
     geometry: { type: "Polygon", coordinates: best },
   };
+}
+
+// Mainland bbox of a single region — slice-1b's largest-polygon framing, per region.
+export function regionBounds(
+  f: GeoJSON.Feature,
+): [number, number, number, number] {
+  return bbox(mainlandFeature(f)) as [number, number, number, number];
 }
 
 export interface ChoroplethData {
