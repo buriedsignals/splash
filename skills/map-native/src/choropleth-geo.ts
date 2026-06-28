@@ -1,5 +1,30 @@
-import { bbox } from "@turf/turf";
+import { bbox, area, polygon } from "@turf/turf";
 import { BLUES, DIVERGING } from "./theme/scale";
+
+// Reduce a feature to its largest-area polygon — the "mainland". Natural Earth
+// admin-0 features are MultiPolygons that bundle far-flung overseas territories
+// (NOR→Svalbard, FRA→French Guiana/Réunion, ESP→Canaries); a naive bbox over the
+// whole MultiPolygon stretches to the world. Framing to the mainland ring keeps
+// the data zone tight without cropping the country's main coastline.
+function mainlandFeature(f: GeoJSON.Feature): GeoJSON.Feature {
+  const g = f.geometry;
+  if (g.type !== "MultiPolygon") return f;
+  let best: number[][][] | null = null;
+  let bestArea = -1;
+  for (const rings of g.coordinates) {
+    const a = area(polygon(rings));
+    if (a > bestArea) {
+      bestArea = a;
+      best = rings;
+    }
+  }
+  if (!best) return f;
+  return {
+    type: "Feature",
+    properties: f.properties,
+    geometry: { type: "Polygon", coordinates: best },
+  };
+}
 
 export interface ChoroplethData {
   regionKey: string;
@@ -107,12 +132,12 @@ export function computeChoropleth(
       byKey.has(String(f.properties?.[joinKey])),
     ),
   } as GeoJSON.FeatureCollection;
-  const bounds = bbox(withData.features.length ? withData : features) as [
-    number,
-    number,
-    number,
-    number,
-  ];
+  const fitSource = withData.features.length ? withData : features;
+  const mainland = {
+    type: "FeatureCollection",
+    features: fitSource.features.map(mainlandFeature),
+  } as GeoJSON.FeatureCollection;
+  const bounds = bbox(mainland) as [number, number, number, number];
 
   return { joined, bins, bounds, noData, unmatched, scaleType };
 }

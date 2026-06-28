@@ -131,10 +131,29 @@ export const ChoroplethMap: React.FC<Props> = ({
         },
       });
 
-      map.fitBounds(layout.bounds as [number, number, number, number], {
-        padding: 24,
+      const dataBounds = layout.bounds as [number, number, number, number];
+      map.fitBounds(dataBounds, {
+        padding: 48,
         duration: 0,
       });
+
+      // Constrain panning to the data zone so an interactive reader stays on the
+      // subject and cannot wander back out to the whole world. Base maxBounds on
+      // the FITTED view (which includes the letterbox), not the raw data bbox —
+      // otherwise the min-zoom maxBounds implies crops the binding dimension.
+      // Interactive only: static has no panning, and the video uses camera moves
+      // that maxBounds would fight.
+      if (interactive) {
+        const fitted = map.getBounds();
+        const sw = fitted.getSouthWest();
+        const ne = fitted.getNorthEast();
+        const mx = (ne.lng - sw.lng) * 0.25 || 1;
+        const my = (ne.lat - sw.lat) * 0.25 || 1;
+        map.setMaxBounds([
+          [sw.lng - mx, sw.lat - my],
+          [ne.lng + mx, ne.lat + my],
+        ] as maptilersdk.LngLatBoundsLike);
+      }
 
       // Expose map instance and data bounds for audit + snap-proof
       (window as unknown as Record<string, unknown>)["__map__"] = map;

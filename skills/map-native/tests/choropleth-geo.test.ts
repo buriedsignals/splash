@@ -97,6 +97,54 @@ describe("computeChoropleth", () => {
     expect(l.bounds[2]).toBeGreaterThan(l.bounds[0]);
     expect(l.bounds[3]).toBeGreaterThan(l.bounds[1]);
   });
+  it("frames the mainland, excluding far-flung overseas territories", () => {
+    // FRA as a MultiPolygon: metropolitan mainland + a tiny distant territory
+    // (like French Guiana / Réunion in Natural Earth admin-0). The bounds must
+    // frame the mainland cluster, NOT stretch to the territory (the whole-world bug).
+    const withTerritory = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { iso_a3: "FRA" },
+          geometry: {
+            type: "MultiPolygon",
+            coordinates: [
+              [
+                [
+                  [2, 48],
+                  [4, 48],
+                  [4, 50],
+                  [2, 50],
+                  [2, 48],
+                ],
+              ],
+              // far-flung speck near the equator/Atlantic — must be ignored
+              [
+                [
+                  [-53, 4],
+                  [-52.9, 4],
+                  [-52.9, 4.1],
+                  [-53, 4.1],
+                  [-53, 4],
+                ],
+              ],
+            ],
+          },
+        },
+      ],
+    } as any;
+    const oneRow: ChoroplethData = {
+      regionKey: "code",
+      valueField: "share",
+      rows: [{ code: "FRA", share: 25 }],
+    };
+    const l = computeChoropleth(oneRow, withTerritory, "iso_a3");
+    // West edge must be the mainland (~2°E), not the -53°W territory
+    expect(l.bounds[0]).toBeGreaterThan(-10);
+    // South edge must be the mainland (~48°N), not the 4°N territory
+    expect(l.bounds[1]).toBeGreaterThan(40);
+  });
   it("uses a diverging scale around the midpoint when asked", () => {
     const l = computeChoropleth(data, features, "iso_a3", {
       scaleType: "diverging",

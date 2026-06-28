@@ -41,7 +41,7 @@ const VIEWPORTS = [
 // map.project() and assert max(fracW, fracH) >= MIN_DATA_FILL_FRACTION.
 // This PASSES a correct fitBounds (which fills the binding dimension) and FAILS
 // a too-zoomed-out map where data spans only a tiny fraction of the canvas.
-const MIN_DATA_FILL_FRACTION = 0.5;
+const MIN_DATA_FILL_FRACTION = 0.7;
 
 const cases = buildCases(sample);
 

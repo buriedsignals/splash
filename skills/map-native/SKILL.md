@@ -62,10 +62,20 @@ and does not reinvent it.
 → single-file HTML with pan/zoom/hover). The MapTiler SDK key is injected as
 `VITE_MAPTILER_KEY` (web) and `REMOTION_MAPTILER_KEY` (Remotion). Both are gitignored.
 
-**Basemap-fit rule** — every map type calls `fitBounds` to the DATA extent (not the world default).
-The pure core computes the bbox of the joined/matched features; the audit verifies it via
-`map.project()` (projecting SW/NE corners to canvas pixels and asserting ≥ 50% fill on the binding
-dimension). This is the known `map-dw` footgun — it is enforced here, not left to the operator.
+**Basemap-fit rule** — every map type calls `fitBounds` to the DATA extent (not the world default),
+and the frame must hug the data **zone**, not stretch to far-flung territory:
+
+- **Mainland framing.** Compute the bbox from each region's **largest-area polygon**, not the raw
+  MultiPolygon. Natural Earth admin-0 features bundle overseas territories (NOR→Svalbard,
+  FRA→French Guiana/Réunion, ESP→Canaries) that silently stretch the bbox to the whole world — the
+  exact "why is it showing the planet" bug. The pure core does this (`mainlandFeature` in
+  `choropleth-geo.ts`); the audit asserts ≥ **70%** fill on the binding dimension via `map.project()`.
+- **maxBounds.** After `fitBounds`, set `map.setMaxBounds(dataBounds + ~35% margin)` so the reader
+  stays on the subject and cannot pan back out to the whole world.
+- **Breathing room.** `fitBounds` padding ≈ 48px so edge regions (the story's south, here Spain/Italy)
+  are not clipped against the frame.
+
+This is the known `map-dw` footgun — enforced here (core + audit), not left to the operator.
 
 ## The recipe — adding a map type (always these steps)
 
