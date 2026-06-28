@@ -126,7 +126,8 @@ the animation.** Every type is one framework-free geo core (`<type>-geo.ts`) com
 + a deterministic reveal, and one React component (`<Type>Map.tsx`) parameterised only by a `progress`
 (0→1) prop. From that one component three formats derive: a **static** PNG (render at progress=1,
 screenshot), a self-contained **interactive** HTML (pan/zoom/hover/legend), and a **video** mp4 (a
-Remotion composition drives `progress` per frame through Tom's harness). The `choropleth` type below
+Remotion composition through Tom's harness). The video is NOT a single `progress` fade — narrated types
+drive it from a `mapStory` of beats (see "Narrative video grammar" above). The `choropleth` type below
 is the worked exemplar; the other types follow the identical pattern. Per-type artifacts are in
 `output-proof/<type>/`.
 
@@ -151,6 +152,37 @@ and **`--concurrency=1`** (a second Remotion worker racing on the same map insta
 and **validate ONE still frame before the full mp4** (a half-reveal still catches framing/easing bugs
 the tests can't). The static and interactive web builds need `VITE_MAPTILER_KEY` in `.env`; the
 Remotion build needs `REMOTION_MAPTILER_KEY` — both free-tier keys, gitignored.
+
+One more Remotion footgun: the component fetches the basemap geo via `staticFile("geo/world.geojson")`
+at render time, so the file MUST live under the Remotion **public dir**. `remotion.config.ts` sets the
+project root to the package dir, so it also calls `Config.setPublicDir("remotion/public")` — without
+that, `staticFile` 404s and the map renders blank (a silent failure: the still "succeeds" but is empty).
+
+## Narrative video grammar — the `mapStory` (for narrated types)
+
+A reveal that just fades every region in at once "tells no story". Narrated map types instead derive an
+ordered **`mapStory`** — a list of **beats** (map states) — from the data, and BOTH the video and (later)
+the interactive scrolly play through the same beats. This is the difference between motion and a story.
+
+- **Pure spine** — `src/map-story.ts` `deriveMapStory(layout, features, joinKey, meta) → Beat[]`
+  (framework-free, unit-tested). A `Beat` = `{ kind, camera:[w,s,e,n], highlight[], dim, callout, copy }`.
+  The choropleth grammar: **establish** (full extent, title) → **reveal max** (fly to the top region's
+  mainland frame, pop it, dim the rest, callout `Name — value`) → **reveal min** (same, lowest) →
+  **takeaway** (pull back to the full extent at FULL opacity, the insight as the caption). Ties break by
+  ascending region key (deterministic — the Remotion path forbids `Date`/`random`).
+- **Camera** — each beat's camera is a mainland-framed bbox (slice-1b's largest-polygon rule, per
+  region, so a country's overseas territory never blows up its beat frame). The component precomputes
+  `cameraForBounds` per beat, then interpolates center/zoom between beats with an ease; per frame it sets
+  the camera with `map.jumpTo` (NEVER async `flyTo` — that desyncs from Remotion frames).
+- **Emphasis** — per-feature `__highlight`/`__dimmed` flags (updated via `setData` only on beat change)
+  drive a `fillReveal`-scaled fill-opacity expression: highlighted = full, dimmed = 0.25, base = 0.85,
+  all × the reveal (frame 0 → blank). `dim:false` on the takeaway so the final picture reads at full strength.
+- **Words** — an on-map `CountryLabel` shows the region NAME; a lower-third caption carries `beat.copy`
+  (`Name — value` for reveals, the insight for the takeaway). The value uses a SHORT `valueUnit` (e.g.
+  `%`), never the long legend label. Without words on screen, motion alone still reads as "ça raconte rien".
+- **Gate** — `scripts/audit-story.mjs` (`bun run audit:story`) is render-free and deterministic: it asserts
+  the beats open on establish, close on takeaway, every reveal has a highlight + callout text, consecutive
+  beats have DISTINCT cameras (the camera actually moves), and every beat has copy. Green before the eye.
 
 ## Architecture
 
