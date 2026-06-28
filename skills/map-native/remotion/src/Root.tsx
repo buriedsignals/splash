@@ -6,11 +6,11 @@
 //   ChoroplethPortrait — Choropleth reveal portrait 1080×1350
 //
 // Render HarnessCheck to prove the harness:
-//   npx remotion render remotion/src/index.ts HarnessCheck out/harness-check.mp4 --gl=angle --concurrency=1 --timeout=120000
+//   bunx remotion render remotion/src/index.ts HarnessCheck out/harness-check.mp4 --gl=angle --concurrency=1 --timeout=120000
 //
 // Render choropleth videos:
 //   for C in ChoroplethReveal ChoroplethSquare ChoroplethPortrait; do
-//     npx remotion render remotion/src/index.ts $C output-proof/choropleth/$C.mp4 --gl=angle --concurrency=1 --timeout=120000
+//     bunx remotion render remotion/src/index.ts $C output-proof/choropleth/$C.mp4 --gl=angle --concurrency=1 --timeout=120000
 //   done
 
 import React from "react";

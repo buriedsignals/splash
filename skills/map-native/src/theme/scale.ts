@@ -8,10 +8,3 @@ export const DIVERGING = [
   "#92c5de",
   "#2166ac",
 ];
-export function rampColor(t: number, ramp: string[]): string {
-  const i = Math.max(
-    0,
-    Math.min(ramp.length - 1, Math.round(t * (ramp.length - 1))),
-  );
-  return ramp[i];
-}

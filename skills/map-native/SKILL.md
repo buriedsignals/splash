@@ -1,6 +1,6 @@
 ---
 name: map-native
-description: Use when you need a native (non-Datawrapper) map that ships ALL THREE formats from ONE React+MapTiler component — a static PNG, a self-contained interactive HTML (pan/zoom/hover/legend, responsive), and a Remotion mp4 motion build. The native map engine — 9 MapTiler 2D types covering the FT "MAP" group + Cesium 3D flyover as a separate engine. The premium path for stories that want a motion reveal or rich interactivity on a map. Keywords choropleth, proportional symbol, flow route, explainer beat, dot density, hex grid, spatial bins, cartogram, contour isoline, locator markers, 3D terrain flyover, MapTiler, Remotion, Cesium, geojson, choropletth, sequential scale, diverging scale, CVD-safe, basemap-fit, fitBounds, region shading, data join, ISO-A3, world, fr-departments, fr-regions, us-states, legend, no-data, static PNG, interactive HTML, video mp4, animation, reveal, progress, react, native map.
+description: Use when you need a native (non-Datawrapper) map that ships ALL THREE formats from ONE React+MapTiler component — a static PNG, a self-contained interactive HTML (pan/zoom/hover/legend, responsive), and a Remotion mp4 motion build. The native map engine — 9 MapTiler 2D types covering the FT "MAP" group + Cesium 3D flyover as a separate engine. The premium path for stories that want a motion reveal or rich interactivity on a map. Keywords choropleth, proportional symbol, flow route, explainer beat, dot density, hex grid, spatial bins, cartogram, contour isoline, locator markers, 3D terrain flyover, MapTiler, Remotion, Cesium, geojson, choropleth, sequential scale, diverging scale, CVD-safe, basemap-fit, fitBounds, region shading, data join, ISO-A3, world, fr-departments, fr-regions, us-states, legend, no-data, static PNG, interactive HTML, video mp4, animation, reveal, progress, react, native map.
 ---
 
 # Map Native — the native map engine (one component per type → three formats)
@@ -53,7 +53,7 @@ and does not reinvent it.
    This is the **`delayRender → setData/setPaintProperty → map.once('idle', continueRender)`**
    cycle. Without `triggerRepaint()` the SDK may not repaint if nothing changed in the viewport.
 
-4. **Render flags** — `npx remotion render --gl=angle --concurrency=1 --timeout=120000`.
+4. **Render flags** — `bunx remotion render --gl=angle --concurrency=1 --timeout=120000`.
    `--gl=angle` is mandatory for MapTiler WebGL under Remotion (headless Chrome). `--concurrency=1`
    prevents two Remotion workers racing on the same map instance.
 
@@ -150,7 +150,7 @@ Remotion build needs `REMOTION_MAPTILER_KEY` — both free-tier keys, gitignored
 | Render | **React `src/<Type>Map.tsx`** + **MapTiler SDK** | Remotion is React-only. `progress` prop is the single animation input. |
 | Static | **Vite build + Playwright** (`scripts/snap-static.mjs`) | Render at progress=1, wait for `map.once('idle')`, screenshot → PNG. |
 | Interactive | **Vite + `vite-plugin-singlefile`** (`INTERACTIVE=1`) | One embeddable HTML file with pan/zoom + hover popup + legend. Verified live in the browser (hover + popup), not just a static PNG. |
-| Video | **Remotion** (`remotion/`) wrapping the SAME component | `useCurrentFrame` → eased `progress` → `<Type>Map`. `npx remotion render --gl=angle --concurrency=1`. |
+| Video | **Remotion** (`remotion/`) wrapping the SAME component | `useCurrentFrame` → eased `progress` → `<Type>Map`. `bunx remotion render --gl=angle --concurrency=1`. |
 
 Conformance is enforced, not hand-baked: `src/conformance.ts` (`checkChoroplethConformance`)
 is the map-native equivalent of chart-native's `checkConformance` — it runs the global L0 guard
@@ -201,9 +201,9 @@ bun install
 bun run audit                                                   # layout + basemap-fit gate
 bun scripts/snap-static.mjs                                     # static PNG
 bun scripts/snap-proof.mjs                                      # interactive hover proof
-npx remotion still remotion/src/index.ts ChoroplethReveal \
+bunx remotion still remotion/src/index.ts ChoroplethReveal \
   output-proof/choropleth/still.png --frame=140 --gl=angle      # validate one frame first
-npx remotion render remotion/src/index.ts ChoroplethReveal \
+bunx remotion render remotion/src/index.ts ChoroplethReveal \
   output-proof/choropleth/landscape.mp4 --gl=angle --concurrency=1 --timeout=120000
 ```
 
@@ -276,7 +276,7 @@ Vite define (web builds) and `--props` (Remotion), so nothing touches the commit
   `checkChoroplethConformance` (CVD-safe scale, legend, basemap-fit possible, source, insight title).
 - `src/components/HarnessCheck.tsx` — minimal MapTiler-in-Remotion smoke test; the canonical
   reference implementation of Tom's per-frame `delayRender → setPaintProperty → idle → continueRender`
-  gate. Run `npx remotion render … HarnessCheck --gl=angle` to prove the harness on a new machine.
+  gate. Run `bunx remotion render … HarnessCheck --gl=angle` to prove the harness on a new machine.
 - `src/theme/scale.ts` — `BLUES` (sequential monotonic-luminance) and `DIVERGING` (CVD-safe pair).
 - `remotion/src/Root.tsx` — Remotion root: `MapExplainer`, `HarnessCheck`, `ChoroplethReveal`,
   `ChoroplethSquare`, `ChoroplethPortrait`.
