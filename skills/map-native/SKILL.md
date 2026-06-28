@@ -96,7 +96,14 @@ For each new map type, in order:
    init-once ref guard, `on('load')` to add sources/layers + `fitBounds`, per-frame
    `delayRender → setPaintProperty/setData → map.once('idle', continueRender) → triggerRepaint`.
    The `interactive` prop switches hover popup on/off. Same component renders static, interactive,
-   and video — no forks.
+   and video — no forks. **Apply the grounded interactive rules** in
+   `references/interactive-map-best-practices.md` — they are non-negotiable defaults every map type
+   inherits: water blue / land light / no-data grey as three distinct layers (`theme/colors.ts`);
+   hover/tooltip ONLY on regions with data (no hover on no-data — project decision); `NavigationControl`
+   + a reset control top-right with `aria-label`s; visible attribution; `maxBounds` (+~20%) plus
+   `minZoom`/`maxZoom`; a container `aria-label`. The video adds: an opaque title card BEFORE the map,
+   on-map value annotations (not subtitles), stable colours (no dimming), no title repeat at the end —
+   all in the narrative-grammar section above.
 
 4. **Conformance rule** — `check<Type>Conformance` in `src/conformance.ts`, composing on the global
    L0 guard (insight title ≥ 12 chars + not a year range, source name + url, WCAG text contrast
@@ -166,23 +173,33 @@ the interactive scrolly play through the same beats. This is the difference betw
 
 - **Pure spine** — `src/map-story.ts` `deriveMapStory(layout, features, joinKey, meta) → Beat[]`
   (framework-free, unit-tested). A `Beat` = `{ kind, camera:[w,s,e,n], highlight[], dim, callout, copy }`.
-  The choropleth grammar: **establish** (full extent, title) → **reveal max** (fly to the top region's
-  mainland frame, pop it, dim the rest, callout `Name — value`) → **reveal min** (same, lowest) →
-  **takeaway** (pull back to the full extent at FULL opacity, the insight as the caption). Ties break by
-  ascending region key (deterministic — the Remotion path forbids `Date`/`random`).
+  The choropleth grammar: **title** (opaque title card, map hidden — the title shows BEFORE the map, never
+  over it) → **establish** (map fades in clean, no caption) → **reveal max** (fly to the top region's
+  mainland frame, pop it, callout `Name`/`value`) → **reveal min** (same, lowest) → **takeaway** (pull
+  back to the full extent at FULL opacity; caption ONLY if the insight differs from the title — the title
+  must not reappear at the end). Ties break by ascending region key (deterministic — Remotion forbids
+  `Date`/`random`).
 - **Camera** — each beat's camera is a mainland-framed bbox (slice-1b's largest-polygon rule, per
   region, so a country's overseas territory never blows up its beat frame). The component precomputes
   `cameraForBounds` per beat, then interpolates center/zoom between beats with an ease; per frame it sets
   the camera with `map.jumpTo` (NEVER async `flyTo` — that desyncs from Remotion frames).
-- **Emphasis** — per-feature `__highlight`/`__dimmed` flags (updated via `setData` only on beat change)
-  drive a `fillReveal`-scaled fill-opacity expression: highlighted = full, dimmed = 0.25, base = 0.85,
-  all × the reveal (frame 0 → blank). `dim:false` on the takeaway so the final picture reads at full strength.
-- **Words** — an on-map `CountryLabel` shows the region NAME; a lower-third caption carries `beat.copy`
-  (`Name — value` for reveals, the insight for the takeaway). The value uses a SHORT `valueUnit` (e.g.
-  `%`), never the long legend label. Without words on screen, motion alone still reads as "ça raconte rien".
+- **Emphasis WITHOUT changing colours** — region fill stays at a constant `fillReveal`-scaled opacity on
+  EVERY beat (only the establish fade-in moves it 0→1); do NOT dim other regions (a region must keep the
+  same colour through the whole video — dimming reads as "the colours aren't consistent"). The revealed
+  region pops via the zoom + a `__highlight`-keyed **stroke layer** (a thicker dark outline), not by
+  fading its neighbours.
+- **Consistent basemap colours** — water blue + no-data grey come from `src/theme/colors.ts`
+  (`WATER_COLOR`/`NO_DATA_COLOR`), the SAME constants the interactive uses, so the two formats match.
+  (Import colours from `theme/colors`, NEVER from `ChoroplethMap` — that drags a Vite `?raw` import into
+  the Remotion/webpack bundle and crashes the render.)
+- **Words integrated on the map** — the data value is an on-map annotation anchored to the region
+  (`CountryLabel` = NAME + large value, e.g. `NORWAY` / `99%`), NOT a lower-third subtitle. The value uses
+  a SHORT `valueUnit` (e.g. `%`), never the long legend label. The lower-third caption is reserved for the
+  takeaway insight (when distinct from the title).
 - **Gate** — `scripts/audit-story.mjs` (`bun run audit:story`) is render-free and deterministic: it asserts
-  the beats open on establish, close on takeaway, every reveal has a highlight + callout text, consecutive
-  beats have DISTINCT cameras (the camera actually moves), and every beat has copy. Green before the eye.
+  the beats open on the title, close on takeaway, every reveal has a highlight + callout text, ≥2 distinct
+  cameras (the camera moves), and copy on the title + reveal beats. Green before the eye — but ALWAYS
+  validate a still mid-reveal AND the title/takeaway frames, since the audit can't see colour/annotation.
 
 ## Architecture
 
