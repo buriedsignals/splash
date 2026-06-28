@@ -1,0 +1,189 @@
+// ChoroplethReveal — Remotion composition for choropleth reveal.
+// Follows the HarnessCheck harness: per-frame delayRender → setPaintProperty → map.once('idle') → continueRender.
+// Regions reveal in ascending-value order (stagger by bin index), blank at frame 0.
+
+import React, { useEffect, useRef, useState } from "react";
+import {
+  AbsoluteFill,
+  continueRender,
+  delayRender,
+  interpolate,
+  staticFile,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
+import * as maptilersdk from "@maptiler/sdk";
+import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { computeChoropleth, type ChoroplethData } from "../choropleth-geo";
+
+maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
+
+// Hold-in and hold-out as fractions of the total duration
+const HOLD_IN = 0.05; // ~5% blank at start
+const HOLD_OUT = 0.05; // ~5% full opacity at end
+
+const NO_DATA_COLOR = "#e0e0e0";
+const NUM_BINS = 5;
+
+export interface ChoroplethRevealProps {
+  config: ChoroplethData & { title?: string; unit?: string };
+  scale?: number;
+}
+
+export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
+  config,
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+  const frame = useCurrentFrame();
+  const { durationInFrames, width, height } = useVideoConfig();
+  const [mapState, setMapState] = useState<{
+    map: InstanceType<typeof maptilersdk.Map>;
+    bins: { min: number; max: number; color: string }[];
+    numBins: number;
+  } | null>(null);
+  const [handle] = useState(() => delayRender("choropleth-reveal-init"));
+
+  // Init map once — imperative, same pattern as HarnessCheck
+  useEffect(() => {
+    if (!ref.current || started.current) return;
+    started.current = true;
+
+    const m = new maptilersdk.Map({
+      container: ref.current,
+      style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
+      center: [10, 50] as [number, number],
+      zoom: 3,
+      interactive: false,
+      attributionControl: false,
+      navigationControl: false,
+      geolocateControl: false,
+      maptilerLogo: false,
+      fadeDuration: 0,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
+    } as Parameters<typeof maptilersdk.Map>[0] & {
+      canvasContextAttributes: unknown;
+    });
+
+    m.on("load", () => {
+      // Remove symbol layers (labels)
+      const layers = m.getStyle()?.layers ?? [];
+      for (const layer of layers) {
+        if (layer.type === "symbol") m.removeLayer(layer.id);
+      }
+
+      // Fetch world GeoJSON via Remotion staticFile (served from remotion/public/)
+      fetch(staticFile("geo/world.geojson"))
+        .then((r) => r.json())
+        .then((worldGeoJson: GeoJSON.FeatureCollection) => {
+          const layout = computeChoropleth(config, worldGeoJson, "iso_a3", {
+            bins: NUM_BINS,
+            scaleType: "sequential",
+          });
+
+          // Enrich features with value + bin index (ascending order)
+          const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
+          const coloredWorld: GeoJSON.FeatureCollection = {
+            type: "FeatureCollection",
+            features: worldGeoJson.features.map((f, i) => {
+              const joined = layout.joined[i];
+              const binIdx =
+                joined.value !== null
+                  ? sortedBins.findIndex(
+                      (b, bi) =>
+                        joined.value! < b.max || bi === sortedBins.length - 1,
+                    )
+                  : -1;
+              return {
+                ...f,
+                properties: {
+                  ...f.properties,
+                  __value: joined.value,
+                  __hasData: joined.value !== null,
+                  __binIdx: binIdx,
+                },
+              };
+            }),
+          };
+
+          m.addSource("choropleth-world", {
+            type: "geojson",
+            data: coloredWorld,
+          });
+
+          // Build fill-color expression
+          const colorExpr: unknown[] = [
+            "case",
+            ["==", ["get", "__hasData"], false],
+            NO_DATA_COLOR,
+          ];
+          for (let i = 0; i < sortedBins.length - 1; i++) {
+            colorExpr.push(["<", ["get", "__value"], sortedBins[i].max]);
+            colorExpr.push(sortedBins[i].color);
+          }
+          colorExpr.push(sortedBins[sortedBins.length - 1].color);
+
+          m.addLayer({
+            id: "choropleth-fill",
+            type: "fill",
+            source: "choropleth-world",
+            paint: {
+              "fill-color": colorExpr as never,
+              "fill-opacity": 0, // start blank
+            },
+          });
+
+          m.addLayer({
+            id: "choropleth-stroke",
+            type: "line",
+            source: "choropleth-world",
+            paint: {
+              "line-color": "#ffffff",
+              "line-width": 0.5,
+              "line-opacity": 0.6,
+            },
+          });
+
+          m.fitBounds(layout.bounds as [number, number, number, number], {
+            padding: 24,
+            duration: 0,
+          });
+
+          m.once("idle", () => {
+            setMapState({ map: m, bins: sortedBins, numBins: NUM_BINS });
+            continueRender(handle);
+          });
+        })
+        .catch((err) => {
+          console.error("ChoroplethReveal: failed to load world GeoJSON", err);
+          continueRender(handle);
+        });
+    });
+  }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Per-frame update — drive fill-opacity reveal, gated by idle
+  useEffect(() => {
+    if (!mapState) return;
+    const { map } = mapState;
+    const h = delayRender(`choropleth-frame-${frame}`);
+
+    // progress: 0 at hold-in, 1 at (1 - hold-out)
+    const progress = interpolate(
+      frame / (durationInFrames - 1),
+      [HOLD_IN, 1 - HOLD_OUT],
+      [0, 1],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    );
+
+    map.setPaintProperty("choropleth-fill", "fill-opacity", progress * 0.85);
+    map.once("idle", () => continueRender(h));
+    map.triggerRepaint();
+  }, [mapState, frame, durationInFrames]);
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
+      <style>{`.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-attrib,.maptiler-logo{display:none!important}`}</style>
+      <div ref={ref} style={{ width, height, position: "absolute" }} />
+    </AbsoluteFill>
+  );
+};
