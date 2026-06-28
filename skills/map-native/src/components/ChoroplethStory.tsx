@@ -21,6 +21,7 @@ import {
   mainlandFeature,
   type ChoroplethData,
 } from "../choropleth-geo";
+import { NO_DATA_COLOR, WATER_COLOR } from "../ChoroplethMap";
 import { deriveMapStory, type Beat } from "../map-story";
 import {
   buildTimeline,
@@ -32,7 +33,6 @@ import { CountryLabel } from "./CountryLabel";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
-const NO_DATA_COLOR = "#e0e0e0";
 const NUM_BINS = 5;
 
 // Caption lower-third card — semi-opaque, WCAG-contrasted.
@@ -106,7 +106,7 @@ const TitleCard: React.FC<{ text: string; phase: Phase; frame: number }> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(10,10,10,0.88)",
+        background: "#1c1c1c",
         opacity,
         pointerEvents: "none",
       }}
@@ -130,7 +130,7 @@ const TitleCard: React.FC<{ text: string; phase: Phase; frame: number }> = ({
   );
 };
 
-// Enriched GeoJSON world — adds __highlight, __dimmed, __value, __hasData, __binIdx.
+// Enriched GeoJSON world — adds __highlight, __value, __hasData, __binIdx.
 function enrichWorld(
   worldGeoJson: GeoJSON.FeatureCollection,
   joined: { key: string; value: number | null }[],
@@ -150,7 +150,6 @@ function enrichWorld(
             )
           : -1;
       const isHighlight = beat.highlight.includes(key) ? 1 : 0;
-      const isDimmed = beat.dim && !beat.highlight.includes(key) ? 1 : 0;
       return {
         ...f,
         properties: {
@@ -159,7 +158,6 @@ function enrichWorld(
           __hasData: j.value !== null,
           __binIdx: binIdx,
           __highlight: isHighlight,
-          __dimmed: isDimmed,
         },
       };
     }),
@@ -200,6 +198,7 @@ export const ChoroplethStory: React.FC<{
     calloutPt: { x: number; y: number } | null;
     calloutReveal: number;
     calloutText: string;
+    calloutValue: string;
     calloutColor: string;
     captionReveal: number;
   } | null>(null);
@@ -233,6 +232,25 @@ export const ChoroplethStory: React.FC<{
       const layers = m.getStyle()?.layers ?? [];
       for (const layer of layers) {
         if (layer.type === "symbol") m.removeLayer(layer.id);
+      }
+
+      // Apply consistent water colour matching the interactive map.
+      for (const layer of m.getStyle()?.layers ?? []) {
+        const sid = layer["source-layer"] as string | undefined;
+        if (
+          /water|ocean|sea/i.test(layer.id) ||
+          (sid && /water|ocean|sea/i.test(sid))
+        ) {
+          try {
+            if (layer.type === "fill") {
+              m.setPaintProperty(layer.id, "fill-color", WATER_COLOR);
+            } else if (layer.type === "background") {
+              m.setPaintProperty(layer.id, "background-color", WATER_COLOR);
+            }
+          } catch {
+            // Layer may not support the property — skip.
+          }
+        }
       }
 
       fetch(staticFile("geo/world.geojson"))
@@ -333,6 +351,23 @@ export const ChoroplethStory: React.FC<{
             },
           });
 
+          // Highlight stroke — data-driven width means no per-frame setPaintProperty needed.
+          m.addLayer({
+            id: "choropleth-highlight-stroke",
+            type: "line",
+            source: "choropleth-world",
+            paint: {
+              "line-width": [
+                "case",
+                ["==", ["get", "__highlight"], 1],
+                2.5,
+                0,
+              ] as never,
+              "line-color": "#1a1a1a",
+              "line-opacity": 0.9,
+            },
+          });
+
           // Position to beat 0 (global establish view).
           m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
 
@@ -397,16 +432,8 @@ export const ChoroplethStory: React.FC<{
       );
     }
 
-    // Rebuild fill-opacity expression each frame with current fillReveal scalar.
-    const expr = [
-      "case",
-      ["==", ["get", "__highlight"], 1],
-      1.0 * fillReveal,
-      ["==", ["get", "__dimmed"], 1],
-      0.25 * fillReveal,
-      0.85 * fillReveal,
-    ];
-    map.setPaintProperty("choropleth-fill", "fill-opacity", expr);
+    // Stable fill-opacity — no dimming, consistent across all features.
+    map.setPaintProperty("choropleth-fill", "fill-opacity", fillReveal * 0.9);
 
     // Compute overlay state while we still have access to map.project.
     const beat = beats[beatIndex];
@@ -455,6 +482,7 @@ export const ChoroplethStory: React.FC<{
       calloutPt,
       calloutReveal,
       calloutText: beat.callout?.text ?? "",
+      calloutValue: beat.callout?.value ?? "",
       calloutColor,
       captionReveal,
     });
@@ -483,13 +511,15 @@ export const ChoroplethStory: React.FC<{
             reveal={overlay.calloutReveal}
             x={overlay.calloutPt.x}
             y={overlay.calloutPt.y}
+            value={overlay.calloutValue}
           />
         )}
 
-      {/* Caption lower-third — only for non-title beats with copy (the title beat
-          uses the full TitleCard, so the lower-third must not duplicate it) */}
+      {/* Caption lower-third — only for takeaway beats (reveal beats show value via CountryLabel;
+          title beat uses the full TitleCard) */}
       {overlay &&
         beat?.kind !== "title" &&
+        beat?.kind !== "reveal" &&
         beat?.copy &&
         overlay.captionReveal > 0 && (
           <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />

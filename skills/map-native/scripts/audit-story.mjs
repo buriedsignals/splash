@@ -33,10 +33,10 @@ for (const r of reveals) {
 const distinctCameras = new Set(beats.map((b) => JSON.stringify(b.camera))).size;
 if (distinctCameras < 2) problems.push(`only ${distinctCameras} distinct camera(s) — map never moves`);
 
-// Assert every beat has copy EXCEPT the establish beat.
+// Assert copy rules: establish always empty; takeaway may be empty when insight === title (Fix 4).
 for (const b of beats) {
-  if (b.kind === "establish") {
-    if (b.copy !== "") problems.push(`establish beat should have empty copy, got: "${b.copy}"`);
+  if (b.kind === "establish" || b.kind === "takeaway") {
+    // establish: always empty. takeaway: empty when insight === title — no requirement.
   } else {
     if (!b.copy) problems.push(`beat kind="${b.kind}" has empty copy`);
   }

@@ -78,6 +78,7 @@ describe("deriveMapStory", () => {
     expect(beats[2].callout).toEqual({
       region: "NOR",
       name: "Norway",
+      value: "99%",
       text: "Norway — 99%",
     });
     expect(beats[2].dim).toBe(true);
@@ -117,6 +118,14 @@ describe("deriveMapStory", () => {
       "reveal",
       "takeaway",
     ]);
+  });
+  it("takeaway beat has empty copy when insight equals title", () => {
+    const layout = computeChoropleth(data, features, "iso_a3");
+    const metaSame = { ...meta, insight: meta.title };
+    const beats = deriveMapStory(layout, features, "iso_a3", metaSame);
+    const last = beats[beats.length - 1];
+    expect(last.kind).toBe("takeaway");
+    expect(last.copy).toBe("");
   });
   it("breaks max/min ties by ascending region key (deterministic)", () => {
     const tie: ChoroplethData = {
