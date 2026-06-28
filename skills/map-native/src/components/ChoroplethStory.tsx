@@ -486,10 +486,14 @@ export const ChoroplethStory: React.FC<{
           />
         )}
 
-      {/* Caption lower-third — only shown when beat has non-empty copy */}
-      {overlay && beat?.copy && overlay.captionReveal > 0 && (
-        <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />
-      )}
+      {/* Caption lower-third — only for non-title beats with copy (the title beat
+          uses the full TitleCard, so the lower-third must not duplicate it) */}
+      {overlay &&
+        beat?.kind !== "title" &&
+        beat?.copy &&
+        overlay.captionReveal > 0 && (
+          <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />
+        )}
 
       {/* Title card — shown only during the title beat (beatIndex 0), map blank behind */}
       {mapState && overlay?.beatIndex === 0 && mapState.beats[0].copy && (
