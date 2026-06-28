@@ -11,7 +11,8 @@ maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 export interface ChoroplethConfig extends ChoroplethData {
   title?: string;
-  unit?: string;
+  unit?: string; // the long legend label, e.g. "share of electricity… (%)"
+  valueUnit?: string; // the SHORT value suffix for tooltips, e.g. "%"
   source?: { name: string; url: string };
 }
 
@@ -280,8 +281,8 @@ export const ChoroplethMap: React.FC<Props> = ({
           map.getCanvas().style.cursor = "pointer";
           const name = f.properties?.name ?? f.properties?.iso_a3 ?? "—";
           const value = f.properties?.__value;
-          const unit = config.unit ?? "";
-          const html = `<strong>${name}</strong><br>${value}${unit ? " " + unit : ""}`;
+          const valueUnit = config.valueUnit ?? "";
+          const html = `<strong>${name} — ${value}${valueUnit}</strong>`;
           popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
         });
 
