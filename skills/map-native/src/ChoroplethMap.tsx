@@ -23,8 +23,8 @@ interface Props {
 }
 
 // Exported so tests can assert colour distinctness
-export const NO_DATA_COLOR = "#b9b9b9";
-export const WATER_COLOR = "#cfe3f1";
+export { NO_DATA_COLOR, WATER_COLOR } from "./theme/colors";
+import { NO_DATA_COLOR, WATER_COLOR } from "./theme/colors";
 
 /** Minimal IControl that resets the map to the initial data bounds. */
 function makeResetControl(

@@ -21,7 +21,7 @@ import {
   mainlandFeature,
   type ChoroplethData,
 } from "../choropleth-geo";
-import { NO_DATA_COLOR, WATER_COLOR } from "../ChoroplethMap";
+import { NO_DATA_COLOR, WATER_COLOR } from "../theme/colors";
 import { deriveMapStory, type Beat } from "../map-story";
 import {
   buildTimeline,
