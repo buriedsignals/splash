@@ -31,7 +31,7 @@ const sampleLayout = computeChoropleth(sampleConfig, world as any, "iso_a3", {
 const sampleBeats = deriveMapStory(sampleLayout, world as any, "iso_a3", {
   title: sampleConfig.title,
   insight: (sampleConfig as any).insight ?? sampleConfig.title,
-  unit: sampleConfig.unit,
+  unit: (sampleConfig as any).valueUnit ?? "",
 });
 const STORY_FRAMES = buildTimeline(sampleBeats.length, 30).totalFrames;
 

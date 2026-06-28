@@ -6,7 +6,7 @@ export interface Beat {
   camera: [number, number, number, number]; // [w,s,e,n] mainland-framed bbox
   highlight: string[];
   dim: boolean;
-  callout: { region: string; text: string } | null;
+  callout: { region: string; name: string; text: string } | null;
   copy: string;
 }
 
@@ -73,7 +73,11 @@ export function deriveMapStory(
       camera: cameraOf(key),
       highlight: [key],
       dim: true,
-      callout: { region: key, text: calloutText(key, value) },
+      callout: {
+        region: key,
+        name: nameOf(key),
+        text: calloutText(key, value),
+      },
       copy: calloutText(key, value),
     });
   }

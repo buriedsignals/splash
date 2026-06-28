@@ -129,6 +129,7 @@ export const ChoroplethStory: React.FC<{
   config: ChoroplethData & {
     title?: string;
     unit?: string;
+    valueUnit?: string;
     insight?: string;
     source?: { name: string; url: string };
   };
@@ -197,7 +198,7 @@ export const ChoroplethStory: React.FC<{
           const meta = {
             title: config.title ?? "",
             insight: config.insight ?? config.title ?? "",
-            unit: config.unit ?? "",
+            unit: config.valueUnit ?? "",
           };
           const beats = deriveMapStory(layout, worldGeoJson, "iso_a3", meta);
 
@@ -424,7 +425,7 @@ export const ChoroplethStory: React.FC<{
         overlay.calloutPt &&
         overlay.calloutReveal > 0 && (
           <CountryLabel
-            name={overlay.calloutText}
+            name={beat.callout.name}
             color={overlay.calloutColor}
             reveal={overlay.calloutReveal}
             x={overlay.calloutPt.x}

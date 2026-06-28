@@ -67,7 +67,11 @@ describe("deriveMapStory", () => {
   it("reveal beats carry a name — value callout and dim the rest", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", meta);
-    expect(beats[1].callout).toEqual({ region: "NOR", text: "Norway — 99%" });
+    expect(beats[1].callout).toEqual({
+      region: "NOR",
+      name: "Norway",
+      text: "Norway — 99%",
+    });
     expect(beats[1].dim).toBe(true);
     expect(beats[1].copy).toBe("Norway — 99%");
   });
