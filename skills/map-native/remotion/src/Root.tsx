@@ -22,9 +22,7 @@ import { computeChoropleth } from "../../src/choropleth-geo";
 import { deriveMapStory } from "../../src/map-story";
 import { buildTimeline } from "../../src/story-timeline";
 import sampleConfig from "../../assets/sample-data/choropleth.json";
-import worldJson from "../../assets/geo/world.json";
-
-const world = worldJson as unknown as GeoJSON.FeatureCollection;
+import world from "../../assets/geo/world.geojson";
 
 const sampleLayout = computeChoropleth(sampleConfig, world as any, "iso_a3", {
   bins: 5,
