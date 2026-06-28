@@ -12,7 +12,8 @@ export const CountryLabel: React.FC<{
   reveal: number;
   x: number;
   y: number;
-}> = ({ name, color, reveal, x, y }) => {
+  value?: string;
+}> = ({ name, color, reveal, x, y, value }) => {
   const e = interpolate(reveal, [0, 1], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -67,6 +68,21 @@ export const CountryLabel: React.FC<{
         >
           {name}
         </div>
+        {value && (
+          <div
+            style={{
+              fontFamily,
+              fontWeight: 700,
+              fontSize: 40,
+              color: "#F5F2ED",
+              textShadow: "0 2px 18px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7)",
+              marginTop: 6,
+              letterSpacing: "0.02em",
+            }}
+          >
+            {value}
+          </div>
+        )}
       </div>
     </div>
   );

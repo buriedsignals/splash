@@ -53,4 +53,16 @@ describe("checkChoroplethConformance", () => {
       ),
     ).toBe(true);
   });
+  it("flags a map with fewer than 3 story beats", () => {
+    expect(
+      checkChoroplethConformance({ ...ok, storyBeats: 2 }, text).some((m) =>
+        /story/i.test(m),
+      ),
+    ).toBe(true);
+  });
+  it("passes when a story has at least 3 beats", () => {
+    expect(checkChoroplethConformance({ ...ok, storyBeats: 4 }, text)).toEqual(
+      [],
+    );
+  });
 });

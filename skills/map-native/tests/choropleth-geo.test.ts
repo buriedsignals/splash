@@ -1,5 +1,9 @@
 import { describe, it, expect } from "bun:test";
-import { computeChoropleth, type ChoroplethData } from "../src/choropleth-geo";
+import {
+  computeChoropleth,
+  type ChoroplethData,
+  regionBounds,
+} from "../src/choropleth-geo";
 
 const features = {
   type: "FeatureCollection",
@@ -186,5 +190,40 @@ describe("computeChoropleth", () => {
         "iso_a3",
       ),
     ).toThrow(/no region matched/);
+  });
+});
+
+describe("regionBounds", () => {
+  it("frames a region by its mainland polygon, ignoring far-flung territory", () => {
+    const fra = {
+      type: "Feature",
+      properties: { iso_a3: "FRA" },
+      geometry: {
+        type: "MultiPolygon",
+        coordinates: [
+          [
+            [
+              [2, 48],
+              [4, 48],
+              [4, 50],
+              [2, 50],
+              [2, 48],
+            ],
+          ],
+          [
+            [
+              [-53, 4],
+              [-52.9, 4],
+              [-52.9, 4.1],
+              [-53, 4.1],
+              [-53, 4],
+            ],
+          ],
+        ],
+      },
+    } as any;
+    const b = regionBounds(fra);
+    expect(b[0]).toBeGreaterThan(-10); // west = mainland ~2°E, not -53°W
+    expect(b[1]).toBeGreaterThan(40); // south = mainland ~48°N, not 4°N
   });
 });

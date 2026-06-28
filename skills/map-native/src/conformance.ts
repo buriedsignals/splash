@@ -28,6 +28,7 @@ export function checkChoroplethConformance(
     regionsWithData: number;
     regionsTotal: number;
     boundsNonEmpty: boolean;
+    storyBeats?: number;
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -52,5 +53,9 @@ export function checkChoroplethConformance(
   if (input.regionsWithData < 1) v.push("no region has data");
   if (input.scaleColors.length < 3)
     v.push("scale has too few steps to read as a CVD-safe ramp");
+  if (input.storyBeats !== undefined && input.storyBeats < 3)
+    v.push(
+      `story: only ${input.storyBeats} beats — a narrated map needs at least establish + reveal + takeaway (3)`,
+    );
   return v;
 }

@@ -1,6 +1,7 @@
 {
   "title": "Renewables power most of Europe's north, far less of its south",
   "unit": "share of electricity from renewables, 2024 (%)",
+  "valueUnit": "%",
   "basemap": "world",
   "regionKey": "code",
   "valueField": "share",
