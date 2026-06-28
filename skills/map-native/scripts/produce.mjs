@@ -68,9 +68,9 @@ if (formats === "all") {
     const remotionEntry = join(root, "remotion", "src", "index.ts");
 
     for (const [comp, name] of [
-      ["ChoroplethReveal", "landscape"],
-      ["ChoroplethSquare", "square"],
-      ["ChoroplethPortrait", "portrait"],
+      ["ChoroplethStory", "landscape"],
+      ["ChoroplethStorySquare", "square"],
+      ["ChoroplethStoryPortrait", "portrait"],
     ]) {
       const stillOut = join(outDir, `video-${name}-still.png`);
       const mp4Out = join(outDir, `${name}.mp4`);
