@@ -14,7 +14,7 @@ const world = JSON.parse(readFileSync(join(root, "assets/geo/world.geojson"), "u
 
 const layout = computeChoropleth(config, world, "iso_a3", { bins: 5, scaleType: "sequential" });
 const beats = deriveMapStory(layout, world, "iso_a3", {
-  title: config.title, insight: config.insight ?? config.title, unit: config.unit,
+  title: config.title, insight: config.insight ?? config.title, unit: config.valueUnit ?? "",
 });
 
 const problems = [];

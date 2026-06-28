@@ -18,7 +18,7 @@ description: Use when you need a native (non-Datawrapper) map that ships ALL THR
 > Every type shares the MapTiler+Remotion harness (Tom's per-frame `delayRender`/`idle` gate), the
 > conformance guard, the basemap-fit rule, and the `produce` pipeline; the per-type knowledge lives
 > in the component/geo-core header comment + its `check<Type>Conformance` rule. Build a specific
-> map by setting `COMP=<type>` (web) or the `<Type>Reveal` composition (video, e.g. `ChoroplethReveal`).
+> map by setting `COMP=<type>` (web) or the `<Type>Story` composition (video, e.g. `ChoroplethStory`).
 > The choropleth is the worked exemplar (the "line" of maps); every other type follows the identical
 > pattern. The full type registry is in `remotion/src/Root.tsx` and `scripts/audit-cases.mjs`.
 >
@@ -219,20 +219,22 @@ a CVD-safe sequential or diverging colour scale, and a `fitBounds` to the data e
 audit's basemap-fit check. Strips symbol/label clutter from the basemap. Hover popup on mousemove.
 No-data regions rendered in neutral `#e0e0e0` + named in the legend.
 
-**Remotion compositions**: `ChoroplethReveal` (1280×720 landscape), `ChoroplethSquare` (1080×1080),
-`ChoroplethPortrait` (1080×1350) — all 6 s at 30 fps (180 frames).
+**Remotion compositions**: `ChoroplethStory` (1280×720 landscape), `ChoroplethStorySquare`
+(1080×1080), `ChoroplethStoryPortrait` (1080×1350) — duration derived from the `mapStory` beats via
+`buildTimeline` (~15 s / 453 frames at 30 fps for the 4-beat sample), not a fixed length.
 
 ## How it works (the shape)
 
 1. **Geo core** — `computeChoropleth(data, features, joinKey, options)` → `ChoroplethLayout`.
    Framework-free. Pure, deterministic, unit-tested.
-2. **Component** — `ChoroplethMap` builds the SDK map, joins the data, renders bins and legend.
-   At any `progress` value, `fill-opacity` = `progress` — the regions fade in as the video plays.
+2. **Component** — `ChoroplethMap` builds the SDK map (static + interactive), joins the data, renders
+   bins and legend; its `progress` prop fades `fill-opacity` for the static/interactive builds. The
+   VIDEO is a separate component, `ChoroplethStory`, driven by the `mapStory` beats (not a single fade).
 3. **Static** — Vite build (`dist/static/`) → `scripts/snap-static.mjs` waits for idle, screenshots.
 4. **Interactive** — `INTERACTIVE=1` Vite build (single file, `vite-plugin-singlefile`) →
    `scripts/snap-proof.mjs` loads it, hovers a region, asserts the popup, screenshots.
-5. **Video** — `remotion/src/Root.tsx` registers `ChoroplethReveal/Square/Portrait`; `produce.mjs`
-   renders a still (`--frame=140`) first, then the full mp4 (`--gl=angle --concurrency=1`).
+5. **Video** — `remotion/src/Root.tsx` registers `ChoroplethStory/StorySquare/StoryPortrait`;
+   `produce.mjs` renders a still first, then the full mp4 (`--gl=angle --concurrency=1`).
 
 ## Quick start
 
@@ -243,9 +245,9 @@ bun install
 bun run audit                                                   # layout + basemap-fit gate
 bun scripts/snap-static.mjs                                     # static PNG
 bun scripts/snap-proof.mjs                                      # interactive hover proof
-bunx remotion still remotion/src/index.ts ChoroplethReveal \
-  output-proof/choropleth/still.png --frame=140 --gl=angle      # validate one frame first
-bunx remotion render remotion/src/index.ts ChoroplethReveal \
+bunx remotion still remotion/src/index.ts ChoroplethStory \
+  output-proof/choropleth/still.png --frame=150 --gl=angle      # validate one frame first
+bunx remotion render remotion/src/index.ts ChoroplethStory \
   output-proof/choropleth/landscape.mp4 --gl=angle --concurrency=1 --timeout=120000
 ```
 
@@ -300,14 +302,15 @@ Vite define (web builds) and `--props` (Remotion), so nothing touches the commit
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| Slower / faster reveal (video) | `durationInFrames` (180 = 6 s @ 30 fps) | `remotion/src/Root.tsx` |
-| Reveal easing | `interpolate(frame, [0, dur-1], [0, 1], {easing})` | `ChoroplethReveal.tsx` |
+| Beat hold / move durations (video) | `buildTimeline` opts (`establishHold`/`revealHold`/`takeawayHold`/`move`, seconds) | `src/story-timeline.ts` |
+| Camera-move easing (video) | `easeInOutCubic` | `src/story-timeline.ts` |
+| Value unit in callouts | `valueUnit` (e.g. `%`; the long `unit` stays the legend label) | choropleth config JSON |
 | Number of colour bins | `bins` (default 5) | choropleth config JSON |
 | Sequential vs diverging scale | `scaleType: "sequential" | "diverging"` | choropleth config JSON |
 | Diverging midpoint | `midpoint` (default: (min+max)/2) | choropleth config JSON |
 | Basemap style | `MapStyle.DATAVIZ.LIGHT` | `ChoroplethMap.tsx` |
-| Viewport padding on fitBounds | `padding: 24` | `ChoroplethMap.tsx` |
-| Min data fill fraction (audit) | `MIN_DATA_FILL_FRACTION` (0.5) | `scripts/audit.mjs` |
+| Viewport padding on fitBounds | `padding: 48` | `ChoroplethMap.tsx` / `ChoroplethStory.tsx` |
+| Min data fill fraction (audit) | `MIN_DATA_FILL_FRACTION` (0.7) | `scripts/audit.mjs` |
 
 ## Files
 
@@ -320,10 +323,20 @@ Vite define (web builds) and `--props` (Remotion), so nothing touches the commit
   reference implementation of Tom's per-frame `delayRender → setPaintProperty → idle → continueRender`
   gate. Run `bunx remotion render … HarnessCheck --gl=angle` to prove the harness on a new machine.
 - `src/theme/scale.ts` — `BLUES` (sequential monotonic-luminance) and `DIVERGING` (CVD-safe pair).
-- `remotion/src/Root.tsx` — Remotion root: `MapExplainer`, `HarnessCheck`, `ChoroplethReveal`,
-  `ChoroplethSquare`, `ChoroplethPortrait`.
+- `src/map-story.ts` — pure `deriveMapStory(layout, features, joinKey, meta) → Beat[]`: the shared
+  narrative spine (establish/reveal-max/reveal-min/takeaway). Framework-free, unit-tested.
+- `src/story-timeline.ts` — pure frame→beat math + eased camera interpolation (`buildTimeline`,
+  `cameraForFrame`, `easeInOutCubic`). Unit-tested.
+- `src/components/ChoroplethStory.tsx` — the narrated VIDEO component: consumes the beats + timeline,
+  per-frame `jumpTo` camera, data-driven dim/emphasis, `CountryLabel` callouts + a beat caption.
+- `remotion/src/Root.tsx` — Remotion root: `MapExplainer`, `HarnessCheck`, `ChoroplethStory`,
+  `ChoroplethStorySquare`, `ChoroplethStoryPortrait`.
+- `remotion.config.ts` — `setPublicDir("remotion/public")` (so `staticFile` resolves) + `.geojson`
+  JSON webpack loader.
 - `scripts/audit.mjs` — layout + basemap-fit audit (real browser × 7 viewports; `map.project()`
-  pixel-projects the data bbox to assert ≥ 50% fill on the binding canvas dimension).
+  pixel-projects the data bbox to assert ≥ 70% fill on the binding canvas dimension).
+- `scripts/audit-story.mjs` — render-free narrative gate (`bun run audit:story`): beats open establish,
+  close takeaway, reveals carry highlight + callout text, consecutive cameras differ, every beat has copy.
 - `scripts/audit-cases.mjs` — sample + stress cases registry for the audit.
 - `scripts/snap-static.mjs` — Playwright: waits for `map.once('idle')`, screenshots static build.
 - `scripts/snap-proof.mjs` — Playwright: loads interactive build, hovers a region, screenshots popup.
@@ -331,5 +344,6 @@ Vite define (web builds) and `--props` (Remotion), so nothing touches the commit
 - `scripts/prep-geo.mjs` — build-time geo prep (Tom's pattern: bakes the GeoJSON the component needs).
 - `assets/geo/world.geojson` — Natural Earth admin-0 boundaries (simplified).
 - `assets/sample-data/choropleth.json` — runnable sample (EU renewable energy share by country).
-- `tests/` — `bun:test` suites: geo core (join/bins/bounds/no-data) + conformance guard.
+- `tests/` — `bun:test` suites: geo core (join/bins/bounds/no-data), conformance guard, the `mapStory`
+  spine (`map-story.test.ts`), and the story timeline (`story-timeline.test.ts`).
 - `output-proof/choropleth/` — real artifacts: `static.png`, `interactive.png`, 3 × mp4 + stills.
