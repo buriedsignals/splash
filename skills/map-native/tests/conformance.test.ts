@@ -91,6 +91,7 @@ const okSymbol = {
   pointsWithData: 3,
   boundsNonEmpty: true,
   strokeContrast: 4,
+  labeled: true,
 };
 
 describe("checkSymbolConformance", () => {
@@ -141,6 +142,13 @@ describe("checkSymbolConformance", () => {
         { ...okSymbol, title: "2020   –   2024" },
         symText,
       ).some((m) => /year range/.test(m)),
+    ).toBe(true);
+  });
+  it("flags unlabeled symbols (values undecodable without hover)", () => {
+    expect(
+      checkSymbolConformance({ ...okSymbol, labeled: false }, symText).some(
+        (m) => /label/i.test(m),
+      ),
     ).toBe(true);
   });
 });

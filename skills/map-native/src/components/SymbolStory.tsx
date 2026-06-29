@@ -17,6 +17,7 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
+import { symbolLabels } from "../symbol-labels";
 import type { SymbolConfig } from "../SymbolMap";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
@@ -66,13 +67,19 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     });
     mapRef.current = map;
     map.on("load", () => {
+      const labels = symbolLabels(geo.symbols);
       map.addSource("symbols", {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: geo.symbols.map((s) => ({
+          features: geo.symbols.map((s, i) => ({
             type: "Feature",
-            properties: { radius: s.radius },
+            properties: {
+              radius: s.radius,
+              labelText: labels[i]?.name
+                ? `${labels[i].name}\n${labels[i].valueText}`
+                : (labels[i]?.valueText ?? ""),
+            },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
           })),
         },
@@ -89,6 +96,29 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           "circle-stroke-width": 1.5,
         },
       });
+      // Direct label layer — fades in with the reveal via text-opacity driven by progress.
+      map.addLayer({
+        id: "symbol-labels",
+        type: "symbol",
+        source: "symbols",
+        layout: {
+          "text-field": ["get", "labelText"],
+          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+          "text-size": 11,
+          "text-anchor": "top",
+          "text-offset": [0, 0.6],
+          "text-allow-overlap": false,
+          "text-optional": true,
+          "text-line-height": 1.3,
+          "text-max-width": 8,
+        },
+        paint: {
+          "text-color": "#1a1a1a",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.6,
+          "text-opacity": 0,
+        },
+      });
       map.fitBounds(geo.bounds, { padding: 64, duration: 0 });
       map.once("idle", () => {
         setMapReady(true);
@@ -97,7 +127,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Per frame: grow radii by progress. Only runs once mapReady is true.
+  // Per frame: grow radii + fade labels by progress. Only runs once mapReady is true.
   useEffect(() => {
     const map = mapRef.current;
     if (
@@ -113,6 +143,9 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
       ["get", "radius"],
       progress,
     ]);
+    if (map.getLayer("symbol-labels")) {
+      map.setPaintProperty("symbol-labels", "text-opacity", progress);
+    }
     map.once("idle", () => continueRender(h));
     map.triggerRepaint();
   }, [mapReady, frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps

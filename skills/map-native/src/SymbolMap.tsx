@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry, type SymbolData } from "./symbol-geo";
+import { symbolLabels } from "./symbol-labels";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -65,17 +66,26 @@ export const SymbolMap: React.FC<Props> = ({
       // Expose map instance for the snap-proof harness (mirrors ChoroplethMap.tsx:234)
       (window as unknown as Record<string, unknown>)["__map__"] = map;
 
-      // One GeoJSON source: a point per symbol, carrying its target radius.
+      // Build label data alongside geometry.
+      const labels = symbolLabels(geo.symbols);
+
+      // One GeoJSON source: a point per symbol, carrying its target radius + label data.
       map.addSource("symbols", {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: geo.symbols.map((s) => ({
+          features: geo.symbols.map((s, i) => ({
             type: "Feature",
             properties: {
               value: s.value,
               label: s.label ?? "",
               radius: s.radius,
+              labelName: labels[i]?.name ?? "",
+              labelValue: labels[i]?.valueText ?? "",
+              // Two-line text: "City\nValue" when name is present, else just the value.
+              labelText: labels[i]?.name
+                ? `${labels[i].name}\n${labels[i].valueText}`
+                : (labels[i]?.valueText ?? ""),
             },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
           })),
@@ -92,6 +102,32 @@ export const SymbolMap: React.FC<Props> = ({
           "circle-opacity": 0.75,
           "circle-stroke-color": SYMBOL_STROKE,
           "circle-stroke-width": 1.5,
+        },
+      });
+
+      // Direct label layer — city name + value on/near each symbol.
+      // text-offset is in ems; we lift labels clear of the circle using a fixed offset
+      // (circles are in px, text-offset in ems — a moderate positive y offset places
+      // the label below the circle where there is typically more basemap room).
+      map.addLayer({
+        id: "symbol-labels",
+        type: "symbol",
+        source: "symbols",
+        layout: {
+          "text-field": ["get", "labelText"],
+          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+          "text-size": 11,
+          "text-anchor": "top",
+          "text-offset": [0, 0.6],
+          "text-allow-overlap": false,
+          "text-optional": true,
+          "text-line-height": 1.3,
+          "text-max-width": 8,
+        },
+        paint: {
+          "text-color": "#1a1a1a",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.6,
         },
       });
 
@@ -140,6 +176,14 @@ export const SymbolMap: React.FC<Props> = ({
       ["get", "radius"],
       progress,
     ]);
+    map.triggerRepaint();
+  }, [progress]);
+
+  // Sync label opacity with progress so labels fade in as circles grow.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded() || !map.getLayer("symbol-labels")) return;
+    map.setPaintProperty("symbol-labels", "text-opacity", progress);
     map.triggerRepaint();
   }, [progress]);
 

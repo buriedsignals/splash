@@ -91,6 +91,34 @@ bun scripts/produce.mjs assets/sample-data/symbol.json /tmp/system-test/symbol-m
 | `/tmp/system-test/symbol-map/video-portrait-still.png` | 380 KB |
 | `/tmp/system-test/symbol-map/portrait.mp4` | 431 KB |
 
+## Fix notes (2026-06-29) — direct labels added
+
+**Feature**: Direct name+value labels on every symbol (`symbol-labels` GL layer) added to `SymbolMap.tsx` and `SymbolStory.tsx`. Labels render in all 3 formats (static, interactive, video). In the video, `text-opacity` fades from 0 → 1 in sync with `circle-radius` progress.
+
+**What was READ in static.png (re-rendered 2026-06-29 with labels)**:
+- London 296 — two-line label, white halo, readable inside/near the large circle
+- Paris 181 — two-line label, white halo, readable
+- Madrid 124 — label below the mid-size circle, white halo
+- Berlin 88 — label below circle, white halo, clear
+- Rome 67 — label below small circle, white halo, readable
+- Amsterdam 52 — label below smallest circle, white halo, readable
+
+**Video landscape still**: London 296, Paris 181, Amsterdam 52, Berlin 88, Madrid 124, Rome 67 all visible with white halos. Title unclipped. Attribution present bottom-right.
+
+**Video portrait still**: All 6 labels visible. Title shows on two lines. Attribution present.
+
+**Conformance**: `checkSymbolConformance` now enforces `labeled: boolean`; `labeled: false` emits `"symbols are not directly labeled — values are undecodable without hover"`.
+
+## Output files (re-rendered 2026-06-29 with labels)
+
+| File | Size |
+|---|---|
+| `/tmp/system-test/symbol-map/static.png` | 434 KB |
+| `/tmp/system-test/symbol-map/video-landscape-still.png` | (rendered as part of all) |
+| `/tmp/system-test/symbol-map/landscape.mp4` | 369 KB |
+| `/tmp/system-test/symbol-map/square.mp4` | 416 KB |
+| `/tmp/system-test/symbol-map/portrait.mp4` | 431 KB |
+
 ## Test suite
 
-`bun test` after fix: **72 pass, 0 fail**.
+`bun test` after direct-label feature: **82 pass, 0 fail**.

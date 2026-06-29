@@ -80,6 +80,7 @@ export function checkSymbolConformance(
     pointsWithData: number;
     boundsNonEmpty: boolean;
     strokeContrast: number;
+    labeled: boolean;
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -119,6 +120,10 @@ export function checkSymbolConformance(
   if (input.strokeContrast < 2)
     v.push(
       `symbol stroke contrast ${input.strokeContrast.toFixed(2)} too faint to separate symbols from the basemap`,
+    );
+  if (!input.labeled)
+    v.push(
+      "symbols are not directly labeled — values are undecodable without hover",
     );
   return v;
 }
