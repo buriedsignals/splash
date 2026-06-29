@@ -82,7 +82,7 @@ FT Visual Vocabulary — every chart needs a headline, standfirst, and source.)
 
 ## Known v1 limits
 
-- **No geocoding.** Coordinates must be supplied in the config (`lat` / `lng` per point). Place-name
+- **No geocoding.** Coordinates must be supplied in the config (`lon` / `lat` per point). Place-name
   resolution is out of scope in v1.
 - **No de-overlap / dodge.** Dense clusters of small values will still overlap. The descending sort
   + halo mitigates reading loss but does not reposition symbols.
