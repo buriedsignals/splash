@@ -126,6 +126,10 @@ For each new map type, in order:
    missed basemap-fit failures on several `map-dw` stories that `map.project()` catches — never
    rely on the eye alone again.
 
+## Module furniture
+
+Every map module carries three pieces of furniture — **insight title**, **description** (subtitle elaborating the insight), and **source** — each appearing exactly once. Overlays use `min()`/`clamp()`/`vw` units so they stay readable from 390 px mobile up to 1280 px desktop without breakpoints. The video title card inherits `title` and `description` from the shared config (same JSON drives all three formats). The interactive scrolly inherits the same values via the shared config. See `docs/atelier/embeddable-module-best-practices.md` for the full responsive overlay contract.
+
 ## Overview
 
 **MapTiler SDK does the geo rendering; React drives the component; a single `progress` value drives
