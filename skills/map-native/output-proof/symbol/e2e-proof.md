@@ -44,11 +44,11 @@ bun scripts/produce.mjs assets/sample-data/symbol.json /tmp/system-test/symbol-m
 | `/tmp/system-test/symbol-map/static.png` | 411 KB |
 | `/tmp/system-test/symbol-map/interactive.png` | 399 KB |
 | `/tmp/system-test/symbol-map/video-landscape-still.png` | 207 KB |
-| `/tmp/system-test/symbol-map/landscape.mp4` | 351 KB |
+| `/tmp/system-test/symbol-map/landscape.mp4` | 355 KB |
 | `/tmp/system-test/symbol-map/video-square-still.png` | 332 KB |
-| `/tmp/system-test/symbol-map/square.mp4` | 387 KB |
+| `/tmp/system-test/symbol-map/square.mp4` | 405 KB |
 | `/tmp/system-test/symbol-map/video-portrait-still.png` | 380 KB |
-| `/tmp/system-test/symbol-map/portrait.mp4` | 419 KB |
+| `/tmp/system-test/symbol-map/portrait.mp4` | 421 KB |
 
 ## Per-format assessment (what was actually observed)
 
@@ -67,6 +67,14 @@ bun scripts/produce.mjs assets/sample-data/symbol.json /tmp/system-test/symbol-m
 **video-portrait-still.png (frame 140/149)** — 1080×1350 composition; map fills the portrait frame; title shows on two lines without clipping; circles correctly placed.
 
 **portrait.mp4 (419 KB, 150 frames)** — File confirmed non-trivial; render completed without error.
+
+## Fix notes (2026-06-29)
+
+**Attribution restored**: `attributionControl: true` set on the Map constructor; the `<style>` tag injecting `.maplibregl-ctrl-attrib { display:none!important }` removed. "© MapTiler © OpenStreetMap contributors" is now visible in the bottom-right corner of the re-rendered landscape still (confirmed visually).
+
+**Per-frame guard reverted**: Removed `mapReady` React state and its `setMapReady(true)` call inside `map.once("idle")`. The per-frame effect now uses the same proven guard as ChoroplethStory: `if (!map || !map.isStyleLoaded() || !map.getLayer("symbol-circles")) return;`. Dependency array is `[frame, progress]`.
+
+**Deferred (v2)**: The symbol video has no size legend or value labels — relative circle ordering reads correctly and the title carries the editorial claim. A v2 end-frame would add a small legend with representative radii and value labels per city.
 
 ## Test suite
 

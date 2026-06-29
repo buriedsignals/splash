@@ -31,8 +31,6 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const startedRef = useRef(false);
-  // mapReady gates the per-frame effect so it only fires after init completes.
-  const [mapReady, setMapReady] = useState(false);
   const [handle] = useState(() => delayRender("symbol-init"));
 
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
@@ -57,7 +55,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
       ],
       zoom: 3,
       interactive: false,
-      attributionControl: false,
+      attributionControl: true,
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
@@ -91,22 +89,15 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
       });
       map.fitBounds(geo.bounds, { padding: 64, duration: 0 });
       map.once("idle", () => {
-        setMapReady(true);
         continueRender(handle);
       });
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Per frame: grow radii by progress. Only runs once mapReady is true.
+  // Per frame: grow radii by progress.
   useEffect(() => {
     const map = mapRef.current;
-    if (
-      !mapReady ||
-      !map ||
-      !map.isStyleLoaded() ||
-      !map.getLayer("symbol-circles")
-    )
-      return;
+    if (!map || !map.isStyleLoaded() || !map.getLayer("symbol-circles")) return;
     const h = delayRender(`symbol-frame-${frame}`);
     map.setPaintProperty("symbol-circles", "circle-radius", [
       "*",
@@ -115,13 +106,10 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     ]);
     map.once("idle", () => continueRender(h));
     map.triggerRepaint();
-  }, [mapReady, frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
-      {/* Hide MapTiler navigation controls (interactive=false, but controls may still mount) */}
-      <style>{`.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-attrib,.maptiler-logo{display:none!important}`}</style>
-
       {/* Map fills the full composition frame — mirrors ChoroplethStory */}
       <div ref={containerRef} style={{ width, height, position: "absolute" }} />
 
