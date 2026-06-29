@@ -17,6 +17,22 @@ This is the second interactive format alongside map-native's free-explore intera
 **video** comes from the SAME `mapStory` via map-native — so one storyboard yields both motion (video)
 and scroll (this engine): one story, two outputs.
 
+## Embeddable module — self-contained, data-tied, never article text
+
+A scrolly is a **module embedded into a newsroom's article** to support it — NOT the article itself, and
+NOT a transform of the whole article. So (grounded in `docs/atelier/embeddable-module-best-practices.md`):
+
+- **Captions are data-tied and self-contained** — derived from the data + the insight, NEVER pulled from
+  the article (verbatim excerpts duplicate the prose and bloat the module; embeds also circulate out of
+  context and must stand alone). Reveal captions add the rank that matters
+  ("Norway — 99%, the highest of the 8 shown" / "Poland — 21%, the lowest"), generated from the
+  `mapStory` max→min order in `mapStoryToChapters`; the journalist edits them downstream.
+- **Each furniture element appears once**: the **insight title** in a persistent header, the
+  **description** (what/when/where) as the intro step caption, the **source** in the footer. The on-map
+  text label is dropped — the map is visual feedback (zoom + highlight), the captions carry the words.
+- **Short**: 3–6 steps for an embedded scrolly. `checkScrollyConformance` requires title + description +
+  source (a module must stand alone when shared out of context).
+
 ## The step model — `chapters[]` (generalizable)
 
 `src/chapters.ts` (pure, unit-tested) defines the storyboard:
