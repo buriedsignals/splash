@@ -21,9 +21,10 @@ produces. It never invents data; if no chart serves the story, it says so.
 
 1. **Profile** the data: list columns, infer each type (numeric / categorical / temporal), cardinality,
    and the row count. This fixes the data shape (single-series, multi-series, or two-value).
-2. **Choose** the type via `knowledge/references/chart-selection.md`: map intent → family → the *simplest*
+2. **Choose** the type via the shared KB `<repo-root>/knowledge/references/chart-selection.md` (the `①`
+   layer at the atelier repo root — NOT under this skill): map intent → family → the *simplest*
    type that serves it. When in doubt, bars/columns on a common baseline.
-3. **Fill** the `ChartSpec`, applying `knowledge/references/design-conformance.md` and the guardrails below:
+3. **Fill** the `ChartSpec`, applying `<repo-root>/knowledge/references/design-conformance.md` (shared KB, repo root) and the guardrails below:
    `title` = the insight (sentence case, never a label or a year range); `sort:"desc"` for a ranking;
    `seriesColors` (Okabe-Ito, one per series) when multi-series; `transpose:true` ONLY for a
    stacked/grouped **categorical** chart where the x-category must be the axis — **never for a line/time
@@ -37,8 +38,8 @@ produces. It never invents data; if no chart serves the story, it says so.
 
 ## How it decides
 
-1. Read `knowledge/references/chart-selection.md` → map **intent → DW type** (intent first, simplest type that serves it).
-2. Read `knowledge/references/design-conformance.md` → fill the conformance fields.
+1. Read the shared KB `<repo-root>/knowledge/references/chart-selection.md` (at the atelier repo root, not under this skill) → map **intent → DW type** (intent first, simplest type that serves it).
+2. Read `<repo-root>/knowledge/references/design-conformance.md` (shared KB, repo root) → fill the conformance fields.
 3. Emit a **ChartSpec** (the exact shape `dw-chart/src/chart-spec.ts` validates):
    `{ type, title (the insight, sentence case), intro?, data (CSV), baseColor (Okabe-Ito, default #0072B2),
    valueLabels?, numberFormat?, source?, altInsight (WCAG: the insight, not the structure) }`.

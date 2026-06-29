@@ -52,6 +52,27 @@ describe("validateChartSpec", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors.join()).toMatch(/Okabe-Ito/);
   });
+  it("warns when an annotation x does not match a data row label", () => {
+    const r = validateChartSpec({
+      ...base,
+      type: "d3-bars",
+      data: "region,sales\nChina,8.1\nEurope,3.2",
+      annotations: [{ text: "outlier", x: "Chyna", y: 8.1 }],
+    });
+    expect(r.ok).toBe(true);
+    expect(
+      r.ok && r.warnings.some((w) => /annotation x .*does not match/i.test(w)),
+    ).toBe(true);
+  });
+  it("does not warn when an annotation x matches a data row label", () => {
+    const r = validateChartSpec({
+      ...base,
+      type: "d3-bars",
+      data: "region,sales\nChina,8.1\nEurope,3.2",
+      annotations: [{ text: "outlier", x: "China", y: 8.1 }],
+    });
+    expect(r.ok && r.warnings.some((w) => /annotation x/i.test(w))).toBe(false);
+  });
   it("rejects a non-boolean transpose", () => {
     const r = validateChartSpec({ ...base, transpose: "yes" });
     expect(r.ok).toBe(false);

@@ -115,6 +115,8 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - **Collision label de série ↔ annotation** : sur un d3-lines, l'annotation de fin (« 31 days ») chevauche le label direct de la série (« wait_days »). Lié au fix annotation ci-dessus (placement/align). Trouvé via vérif-rendu sur `clinic-waits`.
 - **Unité non explicitée** : données en milliers/millions affichées brutes (« 1.8 » pour 1.8M, « 26 » pour 26k). Piste : ② devrait mettre l'unité dans `intro` (« en millions ») ou un suffixe de format. Trouvé sur `school-budget`/`town-growth`.
 - **Note qualité ②** : titres parfois avec coquille (« this years » sans apostrophe) — artefact de génération, à surveiller via le LLM-juge, pas un fix code.
+- **Gate de confirmation prose = contrat social, pas mécanique** : le SKILL.md exige de montrer la table reconstruite + OK humain avant `suggest-chart`, mais rien ne l'impose dans le code. Un vrai déploiement doit l'imposer côté UI/orchestration. Trouvé via test-système end-to-end (article VE).
+- **② ne produit qu'UN visuel, les propositions secondaires tombent silencieusement** : sur l'article VE, la 2ᵉ histoire (tendance 2020→2023) a été abandonnée. Le SKILL.md autorise jusqu'à 3 propositions ; surfacer/produire les autres si le journaliste les accepte. Design, pas quick fix.
 
 ## Cut map (Datawrapper) — MERGÉ (choropleth)
 - **MERGÉ dans `main`** : `skills/map-dw/` — choropleth DW, **réutilise le client `dw-chart/datawrapper.ts`** (pas réécrit) via le seam `MapSpec → spec-to-map-metadata → produceMap`. 26 tests. e2e live conservé : https://datawrapper.dwcdn.net/vZRmO/1/

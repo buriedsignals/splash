@@ -77,8 +77,9 @@ here — opportunity-finding (here) and chart-choice (`suggest-chart`) stay clea
    **actual** rows/columns into a self-contained CSV subset. Record `dataSource.table` and the columns
    used. Every column MUST exist in that table — never fabricate a series. If no table backs a claim,
    the claim is **not** a visual proposal.
-4. **PROPOSITION — choose the few.** Read `knowledge/references/chart-selection.md` and
-   `design-conformance.md` for *which claims warrant a visual* (a magnitude, a trend, a ranking, a
+4. **PROPOSITION — choose the few.** Read the shared KB (at the atelier repo root, NOT under this skill)
+   `<repo-root>/knowledge/references/chart-selection.md` and `<repo-root>/knowledge/references/design-conformance.md`
+   for *which claims warrant a visual* (a magnitude, a trend, a ranking, a
    part-to-whole, a correlation — claims with a comparison or a shape). Keep the **strongest 1–3**;
    a claim that reads fine as a single number or a sentence does not earn a chart.
 5. **Write the intent.** For each kept claim, write a one-line editorial question the visual answers

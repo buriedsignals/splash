@@ -147,6 +147,31 @@ export function validateChartSpec(
         "title looks like a label, not an insight — state what the data shows",
       );
   }
+  // An annotation's `x` should reference an actual data row label, else
+  // Datawrapper silently misplaces (or drops) it.
+  if (
+    Array.isArray(s.annotations) &&
+    typeof s.data === "string" &&
+    s.data.includes(",")
+  ) {
+    const lines = (s.data as string).trim().split("\n");
+    const labels = new Set(
+      lines
+        .slice(1)
+        .map((l) => l.split(",")[0]?.trim())
+        .filter(Boolean),
+    );
+    for (const a of s.annotations as { x?: string | number }[]) {
+      if (
+        typeof a?.x === "string" &&
+        labels.size > 0 &&
+        !labels.has(a.x.trim())
+      )
+        warnings.push(
+          `annotation x "${a.x}" does not match any data row label — it may be misplaced`,
+        );
+    }
+  }
   return errors.length
     ? { ok: false, errors }
     : { ok: true, spec: s as unknown as ChartSpec, warnings };
