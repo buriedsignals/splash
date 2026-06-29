@@ -76,6 +76,7 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 
 ## Conventions
 
+- **★ Boucle feedback → système (principe de travail, toujours en tête).** Chaque retour utilisateur sert à améliorer le **SYSTÈME** pour produire de meilleurs éléments visuels à l'avenir — pas seulement à corriger l'exemple courant. Donc à chaque retour : (1) le corriger sur l'exemple ET vérifier **au rendu** ; (2) le **graver au niveau système** — code partagé des moteurs (core/conformance/audit), `SKILL.md`, et la référence best-practices concernée (`docs/atelier/*`, `skills/*/references/*`) — pour que **tous les futurs types/modules en héritent** ; (3) si le retour révèle une règle générale (best practice), la **vérifier groundée** (sources réelles) avant de l'inscrire. Un fix qui ne touche que l'exemple est incomplet.
 - Code, commentaires, identifiants, commits, branches : **anglais** (standard non-négociable).
 - **Pas de mention Claude/Anthropic** dans les artefacts publiés (commits, PRs, docs).
 - Runtime **Bun**. Tests `bun:test`, TDD.
