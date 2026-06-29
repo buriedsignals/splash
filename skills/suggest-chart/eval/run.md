@@ -9,10 +9,14 @@ improvements to `suggest-chart/SKILL.md`.
 For each `cases/<id>.json`:
 
 1. **Act as ②.** Read `../SKILL.md` (the runtime procedure) + `knowledge/references/chart-selection.md`
-   + `design-conformance.md`. Given the case `data` + `intent`, emit one `ChartSpec` JSON — or a
-   `{ "decision": "no-chart", "reason": "..." }`. Do not peek at `expect`; ② must not know the answer.
+   + `design-conformance.md` + `<repo-root>/knowledge/references/formats/format-selection.md` (the
+   format ladder + Gate 5). Given the case `data` + `intent`, emit one `ChartSpec` JSON — or, if the
+   story is spatial (normalized rate, legible geographic units, pattern IS the geography), a `MapSpec`
+   with `producer: "map-dw"` — or a `{ "decision": "no-chart", "reason": "..." }`. Do not peek at
+   `expect`; ② must not know the answer.
 2. **Score deterministically.** Call `scoreSpec(emittedSpec, case.expect)` → `{ validates, familyMatch,
-   guardrailsOk, pass, notes }`.
+   guardrailsOk, pass, notes }`. `scoreSpec` now accepts `expect.element` (`"chart"` | `"map"`) and
+   validates a map spec via `validateMapSpec` when `element` is `"map"`.
 3. **Act as the judge.** Apply `judge.md` to `(data, intent, emittedSpec)` → `{ titleIsInsight,
    choiceSound, rationale }`.
 4. **Record** the case row: id, emitted type (or `no-chart`), `pass`, `titleIsInsight`, `choiceSound`,
