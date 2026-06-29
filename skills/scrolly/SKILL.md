@@ -1,0 +1,106 @@
+---
+name: scrolly
+description: Use to build a SCROLL-DRIVEN interactive (scrollytelling) where the reader scrolls and a sticky graphic advances through narrative steps. A thin ORCHESTRATOR engine — it owns the scroll scaffold, the chapters[] storyboard, and the step dispatcher; it imports the visual renderers from the other engines (map-native now; chart-native next). v1 drives the MAP visual, reusing map-native's mapStory. Keywords scrollytelling, scrolly, scroll, sticky graphic, waypoints, flyTo, chapters, steps, IntersectionObserver, scrollama, map scrolly, narrative, interactive, newsroom, prose, storyboard.
+---
+
+# scrolly — the scrollytelling orchestrator
+
+## What it is
+
+A **scroll-driven** interactive: a sticky graphic (a map, later a chart) stays pinned while prose
+**steps** scroll past; as each step crosses the viewport, the graphic advances (the map flies to that
+beat). The engine is an **orchestrator** — it knows about *scrolling*, not *drawing*. It owns the scroll
+scaffold + the `chapters[]` storyboard + the `onStepEnter` dispatcher, and **imports** the visual
+renderers from the other engines. It never re-implements a map or a chart.
+
+This is the second interactive format alongside map-native's free-explore interactive. The narrative
+**video** comes from the SAME `mapStory` via map-native — so one storyboard yields both motion (video)
+and scroll (this engine): one story, two outputs.
+
+## The step model — `chapters[]` (generalizable)
+
+`src/chapters.ts` (pure, unit-tested) defines the storyboard:
+
+```ts
+ScrollyStep = { id; visual:"map"|"chart"|"image"; action:"flyTo"|"drawTo"|"crossfade"; ref; prose; align? }
+ScrollyStory = { title; source?; visual; steps: ScrollyStep[] }
+```
+
+v1 implements `visual:"map"` only, but the schema already carries `chart`/`image` so they plug in as new
+dispatcher cases, not a rewrite. `mapStoryToChapters(beats, meta) → ScrollyStory` turns a map-native
+`mapStory` into one scroll step per beat (`ref` = beat index, `prose` = the beat copy, falling back to
+the title when a beat is caption-less).
+
+## Architecture
+
+```
+ScrollyStory (chapters[])            ── src/chapters.ts (pure, bun:test)
+   ▼
+Scrolly.tsx  (scaffold)
+   ├── sticky graphic  (CSS position:sticky; top:0; height:100vh)   ── the visual
+   │      └── ScrollyMap.tsx  (v1 map renderer, driven by currentStep)
+   └── prose steps  (one .step block per chapter; margin-top:-100vh pulls them up over the graphic)
+          └── IntersectionObserver(rootMargin -50% 0 -50% 0) → setCurrentStep(index)
+                 └── dispatcher: switch(step.visual) — v1 case "map" → map.flyTo(beat camera) + highlight
+```
+
+- **Stickiness is pure CSS** (`position: sticky`). The negative margin goes on the **prose column**
+  (`margin-top: -100vh`), NOT the graphic — putting it on the graphic collapses the document height so
+  the page can't scroll and the observer never fires. (This was the one real bug; the smoke now asserts
+  the document is scrollable.)
+- **Step changes come from an `IntersectionObserver`**, never scroll-position math (no jank).
+- **`ScrollyMap`** builds the choropleth from map-native's pure pieces (`computeChoropleth`,
+  `deriveMapStory`, `theme/colors`) and is driven by a `currentStep` prop: on change it `flyTo`s the
+  step's beat camera and applies the beat's highlight stroke + the on-map name/value annotation — the
+  SAME visual language as the video. Live browser → real animated `flyTo` (with `prefers-reduced-motion`
+  → `jumpTo`), not the frame-deterministic `jumpTo` the video needs.
+
+## Inherited interactive best-practices (from `map-native/references/interactive-map-best-practices.md`)
+
+- Water blue / land light / no-data grey via the shared `theme/colors` — the scrolly matches the
+  interactive and the video.
+- Hover only on regions WITH data (no no-data hover). The map keeps its event system but disables the
+  navigation handlers (`dragPan`/`scrollZoom`/etc. `false`) — the SCROLL drives the camera, so manual
+  pan/zoom would fight the narrative; there is no `NavigationControl`.
+- `prefers-reduced-motion` → `jumpTo`; the scroll never steals focus to the map (disorients keyboard
+  users mid-scroll); the prose steps ARE the screen-reader narrative; source/credit always visible.
+
+## Reused from map-native (relative import, never copied)
+
+`computeChoropleth` + `ChoroplethLayout`, `deriveMapStory` + `Beat`, `theme/colors`, the BLUES/DIVERGING
+scales, `assets/geo/world.geojson`, and the on-map annotation visual language. (The `CountryLabel` is
+re-implemented inline because map-native's is Remotion-coupled; a shared remotion-free label is a future
+refactor.)
+
+## Build / run
+
+```bash
+cd skills/scrolly
+bun install
+bun test                                                    # chapters + conformance
+bun run audit:scrolly                                       # render-free narrative gate
+# produce the single-file scrollable HTML (key from .env):
+set -a && . ../../.env && set +a
+bun scripts/produce.mjs assets/sample-data/scrolly.json output-proof   # → output-proof/scrolly.html
+bun run smoke                                               # real-browser: scrollable + camera moves on scroll
+```
+
+## Files
+
+- `src/chapters.ts` — pure `chapters[]` model + `mapStoryToChapters`. Unit-tested.
+- `src/ScrollyMap.tsx` — v1 map renderer, driven by `currentStep` (flyTo + highlight + annotation + data-only hover).
+- `src/Scrolly.tsx` — the scaffold: sticky graphic + prose steps + IntersectionObserver dispatcher.
+- `src/mount.tsx` — reads the baked `__CONFIG__`, renders `<Scrolly>`.
+- `src/conformance.ts` — `checkScrollyConformance` (≥3 steps, prose on every step, map refs in beat range).
+- `scripts/produce.mjs` — build the single-file `scrolly.html`.
+- `scripts/audit-scrolly.mjs` — render-free gate (`bun run audit:scrolly`).
+- `scripts/smoke.mjs` — real-browser scroll smoke (scrollable + camera moves; compares a reveal step,
+  since the title and takeaway beats share a full-extent camera).
+- `assets/sample-data/scrolly.json` — runnable sample (EU renewables, same shape as map-native).
+- `output-proof/scrolly.html` — the produced single-file artifact.
+
+## Roadmap (same engine)
+
+`chart` steps (bind chart-native's draw-to-`progress`) and `image` crossfades are new dispatcher cases
+on the same `chapters[]` model. Reader-authored prose / `/viznews-revise` editing, graphic swaps
+mid-piece, and a scrolly-specific video export (the video already comes from map-native) are later.
