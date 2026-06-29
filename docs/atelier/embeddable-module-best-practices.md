@@ -41,6 +41,27 @@ graphic already shows.
 - **Captions beside the sticky graphic**, not over it (read + see simultaneously, no competition).
 - **One insight per step** (Flourish), not every finding at once.
 
+## Responsive / mobile — every module must adapt (concrete recipe)
+
+A module is read on phones as often as desktop, so responsiveness is non-negotiable. The pattern that
+works WITHOUT a build-time CSS/media-query setup (these are single-file embeds with inline styles):
+
+- **Use `min()` / `clamp()` / `vw` in inline styles** — they are valid CSS values and need no media
+  queries: `maxWidth: "min(360px, 100%)"`, `fontSize: "clamp(14px, 3.6vw, 16px)"`,
+  `maxWidth: "min(420px, calc(100vw - 40px))"` for a fixed overlay (header/legend/source).
+- **Guaranteed side gutters** — put horizontal padding on the text's CONTAINER
+  (`padding: "0 24px"; boxSizing: "border-box"`), don't rely on `maxWidth` alone, or the text hugs the
+  screen edges on mobile. Give cards generous internal padding too (≈ 1.6rem horizontal).
+- **Fixed overlays cap their width** (`min(Npx, calc(100vw - gutter))`) so they never overflow a narrow
+  screen; keep a ≥ 20px gutter each side.
+- **The graphic fills its container** — never `height: 100%` without a defined parent height.
+- **Touch** — the map keeps its event system but disables the navigation handlers
+  (`dragPan`/`scrollZoom`/… `false`) so the page still scrolls under a finger; test interactions at
+  ~375–390px.
+- **`prefers-reduced-motion`** → replace `flyTo` with `jumpTo`, suppress eased transitions (vestibular
+  safety, WCAG 2.3.3).
+- **Always test BOTH** a ~390px mobile viewport and desktop before shipping a module.
+
 ## On-graphic value labels — selective, not exhaustive
 
 - A value label on a mark is good module furniture **when it serves the story beat** (the outlier, the
@@ -64,6 +85,8 @@ graphic shared out of context is unverifiable/mis-attributable.
   conformance.
 - Scrolly: 3–6 steps, data-tied 1–2 sentence captions beside the graphic, one insight per step.
 - Value: stated in the caption OR a selective on-graphic label — not both (avoid the doublon).
+- **Responsive by default** — every module adapts to mobile via the recipe above (gutters, `min()`/
+  `clamp()`/`vw`, capped overlays, touch, reduced-motion); test ~390px AND desktop. Not optional.
 
 ## Sources
 
