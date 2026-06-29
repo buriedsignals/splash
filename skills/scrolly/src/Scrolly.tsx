@@ -97,13 +97,16 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
     width: "100%",
     // Stack behind the prose column (z-index 0) so prose cards sit above.
     zIndex: 0,
-    // Negative margin pulls subsequent prose steps up over the graphic.
-    marginBottom: `-${story.steps.length * 90}vh`,
   };
 
   const proseColumnStyle: React.CSSProperties = {
     position: "relative",
     zIndex: 1,
+    // Pull the prose column UP over the sticky graphic (which occupies the
+    // first 100vh). The steps then provide the scroll height while the graphic
+    // stays pinned. Putting the negative margin here (not on the graphic) is
+    // what keeps the document tall enough to actually scroll.
+    marginTop: "-100vh",
     // Pointer events off on the column so the map stays hoverable; each
     // prose card re-enables them.
     pointerEvents: "none",
