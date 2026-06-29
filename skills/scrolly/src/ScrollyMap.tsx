@@ -181,7 +181,16 @@ export const ScrollyMap: React.FC<{
       style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
       center: [10, 20] as [number, number],
       zoom: 2,
-      interactive: false, // scroll drives the camera — no manual pan/zoom
+      // Keep the event system alive so hover listeners fire, but disable all
+      // navigation handlers so the reader cannot manually pan/zoom/rotate.
+      interactive: true,
+      dragPan: false,
+      scrollZoom: false,
+      doubleClickZoom: false,
+      touchZoomRotate: false,
+      dragRotate: false,
+      boxZoom: false,
+      keyboard: false,
       attributionControl: true,
       navigationControl: false,
       geolocateControl: false,
