@@ -1,5 +1,6 @@
-// Static snapshot for the choropleth (non-interactive build).
+// Static snapshot for the map (non-interactive build).
 // Serves dist/static over a local HTTP server, waits for idle, screenshots.
+// Layer-aware: handles both choropleth-fill and symbol-circles.
 import { chromium } from "playwright";
 import { createServer } from "node:http";
 import { readFileSync, statSync } from "node:fs";
@@ -62,15 +63,19 @@ await page.goto(baseUrl);
 await page.waitForSelector(".maplibregl-canvas", { timeout: 30_000 });
 console.log("canvas ready");
 
-// Wait until the choropleth-fill layer exists (exposed via window.__map__)
+// Wait until either choropleth-fill or symbol-circles layer exists
 await page.waitForFunction(
   () => {
     const m = window.__map__;
-    return m && m.getLayer && m.getLayer("choropleth-fill");
+    return (
+      m &&
+      m.getLayer &&
+      (m.getLayer("choropleth-fill") || m.getLayer("symbol-circles"))
+    );
   },
   { timeout: 30_000 },
 );
-console.log("choropleth-fill layer ready");
+console.log("map layer ready");
 
 // Wait for map to reach idle state
 await page.waitForFunction(

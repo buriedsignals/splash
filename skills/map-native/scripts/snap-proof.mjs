@@ -1,7 +1,7 @@
-// Proof snap for the choropleth interactive build.
+// Proof snap for the interactive build.
 // Loads dist/interactive/index.html, waits for the map layer to exist and be idle,
-// moves the mouse over filled regions, asserts a popup appears with the value,
-// and screenshots to output-proof/choropleth/interactive.png.
+// dispatches on layer type (choropleth-fill vs symbol-circles), triggers a hover
+// popup, and screenshots to OUTDIR/interactive.png.
 import { chromium } from "playwright";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -28,17 +28,28 @@ await page.goto(fileUrl);
 await page.waitForSelector(".maplibregl-canvas", { timeout: 30_000 });
 console.log("canvas ready");
 
-// Wait until the choropleth-fill layer exists (exposed via window.__map__)
+// Wait until either choropleth-fill or symbol-circles layer exists
 await page.waitForFunction(
   () => {
     const m = window.__map__;
-    return m && m.getLayer && m.getLayer("choropleth-fill");
+    return (
+      m &&
+      m.getLayer &&
+      (m.getLayer("choropleth-fill") || m.getLayer("symbol-circles"))
+    );
   },
   { timeout: 30_000 },
 );
-console.log("choropleth-fill layer ready");
 
-// Wait for map to reach idle state (synchronous boolean poll — Promise return is always truthy)
+// Detect which layer type we have
+const layerType = await page.evaluate(() => {
+  const m = window.__map__;
+  if (m.getLayer("symbol-circles")) return "symbol";
+  return "choropleth";
+});
+console.log(`layer type: ${layerType}`);
+
+// Wait for map to reach idle state
 await page.waitForFunction(
   () => {
     const m = window.__map__;
@@ -57,69 +68,119 @@ console.log("map idle");
 // Short settle for paint to flush
 await page.waitForTimeout(300);
 
-console.log("scanning for filled regions to trigger popup");
-
 const viewport = page.viewportSize();
-const cx = viewport.width / 2;
-const cy = viewport.height / 2;
-
-// Query the map from JS to find screen coordinates of known data regions
-const regionScreenCoords = await page.evaluate(() => {
-  const m = window.__map__;
-  if (!m) return [];
-  // Try known country centroids (NOR, SWE, DEU, FRA, ESP, GBR, ITA, POL)
-  const centroids = [
-    { name: "NOR", lng: 15, lat: 65 },
-    { name: "SWE", lng: 18, lat: 60 },
-    { name: "DEU", lng: 10, lat: 51 },
-    { name: "FRA", lng: 2, lat: 46 },
-    { name: "GBR", lng: -2, lat: 54 },
-    { name: "ESP", lng: -4, lat: 40 },
-    { name: "ITA", lng: 12, lat: 43 },
-    { name: "POL", lng: 20, lat: 52 },
-  ];
-  return centroids.map(({ name, lng, lat }) => {
-    const pt = m.project([lng, lat]);
-    return { name, x: Math.round(pt.x), y: Math.round(pt.y) };
-  });
-});
-
-console.log("candidate screen coords:", JSON.stringify(regionScreenCoords));
 
 let popupText = null;
 let hitPoint = null;
 
-// Try the known region centroids first
-for (const { name, x, y } of regionScreenCoords) {
-  if (x < 0 || y < 0 || x > viewport.width || y > viewport.height) continue;
-  await page.mouse.move(x, y);
-  await page.waitForTimeout(200);
+if (layerType === "symbol") {
+  console.log("symbol mode: finding largest circle by radius property");
 
-  const popup = page.locator(".maplibregl-popup");
-  const count = await popup.count();
-  if (count > 0) {
-    popupText = await popup.textContent();
-    hitPoint = { name, x, y };
-    break;
-  }
-}
+  // Query rendered features from symbol-circles, pick the one with the largest radius
+  const largestFeatureCoords = await page.evaluate(() => {
+    const m = window.__map__;
+    const features = m.queryRenderedFeatures({ layers: ["symbol-circles"] });
+    if (!features || features.length === 0) return null;
+    // Sort by radius desc, pick the largest
+    features.sort(
+      (a, b) => (b.properties?.radius ?? 0) - (a.properties?.radius ?? 0),
+    );
+    const f = features[0];
+    const coords = f.geometry.coordinates;
+    const pt = m.project(coords);
+    return { x: Math.round(pt.x), y: Math.round(pt.y), label: f.properties?.label };
+  });
 
-// Fallback: grid scan
-if (!popupText) {
-  console.log("centroid scan missed — grid scanning");
-  for (let x = 80; x <= viewport.width - 80; x += 20) {
-    for (let y = 80; y <= viewport.height - 80; y += 20) {
-      await page.mouse.move(x, y);
-      await page.waitForTimeout(60);
-      const popup = page.locator(".maplibregl-popup");
-      const count = await popup.count();
-      if (count > 0) {
-        popupText = await popup.textContent();
-        hitPoint = { x, y };
-        break;
-      }
+  if (largestFeatureCoords) {
+    console.log(
+      `largest circle: "${largestFeatureCoords.label}" at screen (${largestFeatureCoords.x}, ${largestFeatureCoords.y})`,
+    );
+    const { x, y } = largestFeatureCoords;
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(400);
+
+    const popup = page.locator(".maplibregl-popup");
+    const count = await popup.count();
+    if (count > 0) {
+      popupText = await popup.textContent();
+      hitPoint = { x, y };
     }
-    if (popupText) break;
+  }
+
+  // Fallback: grid scan if the projected point missed
+  if (!popupText) {
+    console.log("projected point missed — grid scanning for symbol popup");
+    for (let x = 80; x <= viewport.width - 80; x += 15) {
+      for (let y = 80; y <= viewport.height - 80; y += 15) {
+        await page.mouse.move(x, y);
+        await page.waitForTimeout(50);
+        const popup = page.locator(".maplibregl-popup");
+        const count = await popup.count();
+        if (count > 0) {
+          popupText = await popup.textContent();
+          hitPoint = { x, y };
+          break;
+        }
+      }
+      if (popupText) break;
+    }
+  }
+} else {
+  // Choropleth path — unchanged
+  console.log("scanning for filled regions to trigger popup");
+
+  const regionScreenCoords = await page.evaluate(() => {
+    const m = window.__map__;
+    if (!m) return [];
+    const centroids = [
+      { name: "NOR", lng: 15, lat: 65 },
+      { name: "SWE", lng: 18, lat: 60 },
+      { name: "DEU", lng: 10, lat: 51 },
+      { name: "FRA", lng: 2, lat: 46 },
+      { name: "GBR", lng: -2, lat: 54 },
+      { name: "ESP", lng: -4, lat: 40 },
+      { name: "ITA", lng: 12, lat: 43 },
+      { name: "POL", lng: 20, lat: 52 },
+    ];
+    return centroids.map(({ name, lng, lat }) => {
+      const pt = m.project([lng, lat]);
+      return { name, x: Math.round(pt.x), y: Math.round(pt.y) };
+    });
+  });
+
+  console.log("candidate screen coords:", JSON.stringify(regionScreenCoords));
+
+  for (const { name, x, y } of regionScreenCoords) {
+    if (x < 0 || y < 0 || x > viewport.width || y > viewport.height) continue;
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(200);
+
+    const popup = page.locator(".maplibregl-popup");
+    const count = await popup.count();
+    if (count > 0) {
+      popupText = await popup.textContent();
+      hitPoint = { name, x, y };
+      break;
+    }
+  }
+
+  // Fallback: grid scan
+  if (!popupText) {
+    console.log("centroid scan missed — grid scanning");
+    for (let x = 80; x <= viewport.width - 80; x += 20) {
+      for (let y = 80; y <= viewport.height - 80; y += 20) {
+        await page.mouse.move(x, y);
+        await page.waitForTimeout(60);
+        const popup = page.locator(".maplibregl-popup");
+        const count = await popup.count();
+        if (count > 0) {
+          popupText = await popup.textContent();
+          hitPoint = { x, y };
+          break;
+        }
+      }
+      if (popupText) break;
+    }
   }
 }
 
@@ -134,7 +195,7 @@ if (!popupText) {
 const trimmed = popupText.trim();
 console.log(`popup at ${JSON.stringify(hitPoint)}: "${trimmed}"`);
 
-// Assert popup contains both a digit (value) and a word (region name)
+// Assert popup contains both a digit (value) and a word (region/city name)
 if (!/\d/.test(trimmed)) {
   console.error(`popup has no value (digit): "${trimmed}"`);
   await browser.close();

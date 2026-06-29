@@ -1,15 +1,16 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { ChoroplethMap, type ChoroplethConfig } from "./ChoroplethMap";
-import sampleConfig from "../assets/sample-data/choropleth.json";
+import { SymbolMap, type SymbolConfig } from "./SymbolMap";
+import sampleChoropleth from "../assets/sample-data/choropleth.json";
 
-declare const __CONFIG__: ChoroplethConfig | null;
+declare const __CONFIG__: (ChoroplethConfig | SymbolConfig) | null;
 declare const __INTERACTIVE__: boolean;
 
-const config: ChoroplethConfig =
+const config: ChoroplethConfig | SymbolConfig =
   typeof __CONFIG__ !== "undefined" && __CONFIG__ !== null
     ? __CONFIG__
-    : (sampleConfig as ChoroplethConfig);
+    : (sampleChoropleth as ChoroplethConfig);
 
 const interactive =
   typeof __INTERACTIVE__ !== "undefined" ? __INTERACTIVE__ : true;
@@ -17,8 +18,22 @@ const interactive =
 const root = document.getElementById("root");
 if (!root) throw new Error("no #root element");
 
+const isSymbol = (config as { type?: string }).type === "symbol";
+
 createRoot(root).render(
   <div style={{ width: "100vw", height: "100vh" }}>
-    <ChoroplethMap config={config} progress={1} interactive={interactive} />
+    {isSymbol ? (
+      <SymbolMap
+        config={config as SymbolConfig}
+        progress={1}
+        interactive={interactive}
+      />
+    ) : (
+      <ChoroplethMap
+        config={config as ChoroplethConfig}
+        progress={1}
+        interactive={interactive}
+      />
+    )}
   </div>,
 );

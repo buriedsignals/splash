@@ -1,0 +1,16 @@
+{
+  "type": "symbol",
+  "points": [
+    { "lon": 2.3522, "lat": 48.8566, "value": 181, "label": "Paris" },
+    { "lon": -0.1276, "lat": 51.5072, "value": 296, "label": "London" },
+    { "lon": 13.405, "lat": 52.52, "value": 88, "label": "Berlin" },
+    { "lon": -3.7038, "lat": 40.4168, "value": 124, "label": "Madrid" },
+    { "lon": 12.4964, "lat": 41.9028, "value": 67, "label": "Rome" },
+    { "lon": 4.9041, "lat": 52.3676, "value": 52, "label": "Amsterdam" }
+  ],
+  "basemap": "world",
+  "title": "London leads Europe's tech-funding map, Paris close behind",
+  "description": "Venture funding raised by startups headquartered in each city, 2024",
+  "valueUnit": "$bn",
+  "source": { "name": "Dealroom 2025", "url": "https://example.org/dealroom" }
+}
