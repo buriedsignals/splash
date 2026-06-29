@@ -108,14 +108,14 @@ describe("checkSymbolConformance", () => {
   it("flags a missing legend", () => {
     expect(
       checkSymbolConformance({ ...okSymbol, hasLegend: false }, symText).some(
-        (m) => /legend/.test(m),
+        (m) => /needs a legend/.test(m),
       ),
     ).toBe(true);
   });
   it("flags fewer than two legend stops", () => {
     expect(
       checkSymbolConformance({ ...okSymbol, legendStops: 1 }, symText).some(
-        (m) => /legend/.test(m),
+        (m) => /reference circle/.test(m),
       ),
     ).toBe(true);
   });
@@ -137,9 +137,10 @@ describe("checkSymbolConformance", () => {
   });
   it("flags a year-range title", () => {
     expect(
-      checkSymbolConformance({ ...okSymbol, title: "2024" }, symText).some(
-        (m) => /title/.test(m),
-      ),
+      checkSymbolConformance(
+        { ...okSymbol, title: "2020   –   2024" },
+        symText,
+      ).some((m) => /year range/.test(m)),
     ).toBe(true);
   });
 });
