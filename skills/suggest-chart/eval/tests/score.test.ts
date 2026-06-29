@@ -175,3 +175,38 @@ describe("scoreSpec — native map", () => {
     ).toBe(true);
   });
 });
+
+describe("scoreSpec — scrolly", () => {
+  const scrolly = {
+    producer: "scrolly",
+    regionKey: "code",
+    valueField: "share",
+    rows: [
+      { code: "NOR", share: 99 },
+      { code: "POL", share: 21 },
+    ],
+    basemap: "world",
+    title: "Renewables form a clear north–south gradient across Europe",
+    description: "Share of electricity from renewables, by country, 2024",
+    valueUnit: "%",
+    source: { name: "Ember", url: "https://example.org" },
+  };
+  it("passes a valid scrolly config when producer scrolly is expected", () => {
+    const r = scoreSpec(scrolly, {
+      family: "geographic",
+      element: "map",
+      producer: "scrolly",
+    });
+    expect(r.pass).toBe(true);
+  });
+  it("fails when scrolly is expected but a map-native config was emitted", () => {
+    const native = { ...scrolly, producer: "map-native" };
+    const r = scoreSpec(native, {
+      family: "geographic",
+      element: "map",
+      producer: "scrolly",
+    });
+    expect(r.pass).toBe(false);
+    expect(r.notes.some((n) => /producer/i.test(n))).toBe(true);
+  });
+});
