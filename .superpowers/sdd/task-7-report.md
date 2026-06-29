@@ -78,3 +78,29 @@ bun test v1.3.5
  24 expect() calls
 Ran 16 tests across 2 files. [106.00ms]
 ```
+
+---
+
+# Task 7 addendum — short value unit for callouts; on-map label shows country name
+
+**Status:** DONE
+**Commit:** 77854b2
+**Branch:** feat/map-native-narrative-video
+
+## Files changed
+
+- `assets/sample-data/choropleth.json` — added `"valueUnit": "%"` (kept `unit` for legend)
+- `src/map-story.ts` — extended `Beat.callout` type to include `name: string`; reveal beat construction sets `name: nameOf(key)`
+- `tests/map-story.test.ts` — updated callout `.toEqual` to include `name: "Norway"`
+- `src/components/ChoroplethStory.tsx` — added `valueUnit?: string` to config type; meta now uses `config.valueUnit ?? ""`; `CountryLabel` receives `beat.callout.name` instead of `overlay.calloutText`
+- `remotion/src/Root.tsx` — `deriveMapStory` call uses `(sampleConfig as any).valueUnit ?? ""` instead of `sampleConfig.unit`
+
+## Verification
+
+1. `bun test tests/map-story.test.ts` — 7/7 pass
+2. `bun run audit:story` — GREEN (4 beats, 2 reveals, cameras move, callouts present)
+3. `bunx tsc --noEmit | grep -iE "ChoroplethStory|map-story|Root.tsx"` — no new type errors
+
+## Concerns
+
+None.

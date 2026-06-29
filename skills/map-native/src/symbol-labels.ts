@@ -4,15 +4,11 @@
 // hints; this module decides the text and the inside-vs-beside choice deterministically.
 import type { PlacedSymbol } from "./symbol-geo";
 
-// Minimum radius (px) for the value text to sit legibly INSIDE the circle.
-export const LABEL_INSIDE_MIN_RADIUS = 14;
-
 export interface SymbolLabel {
   lon: number;
   lat: number;
   name: string; // city label, "" when the symbol has none
   valueText: string; // formatted value, no unit (the unit lives in the legend)
-  placement: "inside" | "beside"; // value INSIDE the circle, or BESIDE a small one
   radius: number; // the symbol radius, for the component's offset math
 }
 
@@ -36,7 +32,6 @@ export function symbolLabels(symbols: PlacedSymbol[]): SymbolLabel[] {
     lat: s.lat,
     name: s.label ?? "",
     valueText: formatLabelValue(s.value),
-    placement: s.radius >= LABEL_INSIDE_MIN_RADIUS ? "inside" : "beside",
     radius: s.radius,
   }));
 }

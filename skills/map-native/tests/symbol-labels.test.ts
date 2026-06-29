@@ -1,9 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import {
-  symbolLabels,
-  formatLabelValue,
-  LABEL_INSIDE_MIN_RADIUS,
-} from "../src/symbol-labels";
+import { symbolLabels, formatLabelValue } from "../src/symbol-labels";
 import type { PlacedSymbol } from "../src/symbol-geo";
 
 const sym = (over: Partial<PlacedSymbol>): PlacedSymbol => ({
@@ -45,17 +41,9 @@ describe("symbolLabels", () => {
     expect(labels[0].lon).toBe(-0.1);
     expect(labels[0].radius).toBe(40);
   });
-  it("places the value INSIDE a large enough circle, BESIDE a small one", () => {
-    expect(labels[0].placement).toBe("inside"); // radius 40 >= threshold
-    expect(labels[1].placement).toBe("beside"); // radius 8 < threshold
-  });
   it("uses an empty name when the symbol has no label", () => {
     const [l] = symbolLabels([sym({ label: undefined })]);
     expect(l.name).toBe("");
-  });
-  it("placement boundary is LABEL_INSIDE_MIN_RADIUS (inclusive)", () => {
-    const [l] = symbolLabels([sym({ radius: LABEL_INSIDE_MIN_RADIUS })]);
-    expect(l.placement).toBe("inside");
   });
   it("is deterministic", () => {
     expect(symbolLabels(symbols)).toEqual(labels);
