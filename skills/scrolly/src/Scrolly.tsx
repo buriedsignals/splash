@@ -133,14 +133,16 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
     background: "rgba(255,255,255,0.92)",
     backdropFilter: "blur(4px)",
     borderRadius: 8,
-    padding: "1.25rem 1.5rem",
-    maxWidth: 360,
+    padding: "1.1rem 1.3rem",
+    // Responsive width: never wider than the viewport minus a gutter (mobile),
+    // capped at 360px (desktop). min()/clamp()/vw work in inline React styles.
+    maxWidth: "min(360px, 86vw)",
     boxShadow: "0 2px 16px rgba(0,0,0,0.12)",
     // WCAG-contrasting text on the semi-opaque white card.
     color: "#111111",
     fontFamily: "sans-serif",
-    fontSize: 16,
-    lineHeight: 1.55,
+    fontSize: "clamp(14px, 3.6vw, 16px)",
+    lineHeight: 1.5,
   };
 
   const alignCard = (
@@ -159,7 +161,8 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
     top: 14,
     left: 16,
     zIndex: 50,
-    maxWidth: 420,
+    // Never overflow a narrow screen: cap at 420px, shrink to the viewport gutter.
+    maxWidth: "min(420px, calc(100vw - 32px))",
     background: "rgba(255,255,255,0.9)",
     backdropFilter: "blur(4px)",
     borderRadius: 8,
@@ -187,7 +190,15 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
       {/* Persistent figure title — the insight, always visible (self-contained module) */}
       {story.title && (
         <div style={headerStyle}>
-          <div style={{ font: "700 15px/1.3 sans-serif", color: "#111" }}>
+          <div
+            style={{
+              fontFamily: "sans-serif",
+              fontWeight: 700,
+              fontSize: "clamp(13px, 3.8vw, 15px)",
+              lineHeight: 1.3,
+              color: "#111",
+            }}
+          >
             {story.title}
           </div>
         </div>
