@@ -1,0 +1,6 @@
+{
+  "id": "region-unemployment-ranking",
+  "data": "region,rate\nAndalusia,19\nMadrid,10\nCatalonia,11\nBasque Country,8",
+  "intent": "Which Spanish region has the highest unemployment?",
+  "expect": { "family": "ranking", "element": "chart", "maxWarnings": 0 }
+}
