@@ -5,10 +5,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import { centroid } from "@turf/turf";
 import {
   computeChoropleth,
-  mainlandFeature,
   type ChoroplethData,
 } from "../../map-native/src/choropleth-geo";
 import { deriveMapStory, type Beat } from "../../map-native/src/map-story";
@@ -48,82 +46,9 @@ interface MapState {
   map: InstanceType<typeof maptilersdk.Map>;
   beats: Beat[];
   sortedBins: { min: number; max: number; color: string }[];
-  centroidByKey: Map<string, [number, number]>;
   joined: { key: string; value: number | null }[];
   cameras: (CameraPoint | null)[];
 }
-
-// ---------------------------------------------------------------------------
-// Inline CountryLabel — scrolly variant (no remotion dependency).
-// Replicates the visual design of map-native's CountryLabel using plain CSS
-// transitions instead of remotion's interpolate/Easing.
-// ---------------------------------------------------------------------------
-const CountryLabel: React.FC<{
-  name: string;
-  color: string;
-  reveal: number; // 0 hidden, 1 visible
-  x: number;
-  y: number;
-  value?: string;
-}> = ({ name, color, reveal, x, y, value }) => (
-  <div
-    style={{
-      position: "absolute",
-      left: x,
-      top: y,
-      transform: `translate(-50%, -50%) translateY(${(1 - reveal) * 16}px)`,
-      pointerEvents: "none",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      opacity: reveal,
-      transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
-    }}
-  >
-    <div
-      style={{
-        width: 64,
-        height: 3,
-        borderRadius: 2,
-        background: color,
-        transform: `scaleX(${reveal})`,
-        boxShadow: `0 0 10px ${color}`,
-        transition: "transform 0.4s ease-out",
-      }}
-    />
-    <div
-      style={{
-        fontFamily: "sans-serif",
-        fontWeight: 600,
-        fontSize: 22,
-        letterSpacing: "0.18em",
-        textTransform: "uppercase",
-        color: "#F5F2ED",
-        textShadow: "0 2px 18px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7)",
-        marginTop: 10,
-        paddingLeft: "0.18em",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {name}
-    </div>
-    {value && (
-      <div
-        style={{
-          fontFamily: "sans-serif",
-          fontWeight: 700,
-          fontSize: 26,
-          color: "#F5F2ED",
-          textShadow: "0 2px 18px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7)",
-          marginTop: 4,
-          letterSpacing: "0.02em",
-        }}
-      >
-        {value}
-      </div>
-    )}
-  </div>
-);
 
 // ---------------------------------------------------------------------------
 // Enriched GeoJSON — adds __highlight, __value, __hasData per beat.
@@ -164,10 +89,6 @@ export const ScrollyMap: React.FC<{
   const startedRef = useRef(false);
   const popupRef = useRef<maptilersdk.Popup | null>(null);
   const [mapState, setMapState] = useState<MapState | null>(null);
-  // Projected callout position (updated on map "move" events during flyTo).
-  const [calloutPt, setCalloutPt] = useState<{ x: number; y: number } | null>(
-    null,
-  );
 
   // ---------------------------------------------------------------------------
   // Init map ONCE — ref guard prevents double-init in React Strict Mode.
@@ -254,21 +175,6 @@ export const ScrollyMap: React.FC<{
           zoom: result.zoom,
         };
       });
-
-      // Precompute mainland centroids for callout projection.
-      const centroidByKey = new Map<string, [number, number]>();
-      for (const f of world.features) {
-        const key = String(f.properties?.["iso_a3"]);
-        try {
-          const c = centroid(mainlandFeature(f));
-          centroidByKey.set(key, [
-            c.geometry.coordinates[0],
-            c.geometry.coordinates[1],
-          ]);
-        } catch {
-          // Skip features where centroid fails (e.g., null geometry).
-        }
-      }
 
       // Build fill-color expression (data-driven, static — never changes).
       const colorExpr: unknown[] = [
@@ -374,7 +280,6 @@ export const ScrollyMap: React.FC<{
         map,
         beats,
         sortedBins,
-        centroidByKey,
         joined: layout.joined,
         cameras,
       });
@@ -392,7 +297,7 @@ export const ScrollyMap: React.FC<{
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!mapState) return;
-    const { map, beats, joined, cameras, centroidByKey } = mapState;
+    const { map, beats, joined, cameras } = mapState;
 
     const step = Math.max(0, Math.min(currentStep, beats.length - 1));
     const beat = beats[step];
@@ -421,58 +326,7 @@ export const ScrollyMap: React.FC<{
         });
       }
     }
-
-    // Project the callout for this beat and track it during flyTo.
-    const updateCallout = () => {
-      if (!beat.callout || beat.kind === "title") {
-        setCalloutPt(null);
-        return;
-      }
-      const lngLat = centroidByKey.get(beat.callout.region);
-      if (!lngLat) {
-        setCalloutPt(null);
-        return;
-      }
-      const pt = map.project(lngLat as [number, number]);
-      setCalloutPt({ x: pt.x, y: pt.y });
-    };
-
-    // Update once immediately, then track during camera animation.
-    updateCallout();
-    map.on("move", updateCallout);
-
-    // Cleanup — remove the listener on next step change.
-    return () => {
-      map.off("move", updateCallout);
-    };
   }, [currentStep, mapState]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ---------------------------------------------------------------------------
-  // Resolve the active beat for overlay rendering.
-  // ---------------------------------------------------------------------------
-  const beat = mapState
-    ? mapState.beats[
-        Math.max(0, Math.min(currentStep, mapState.beats.length - 1))
-      ]
-    : null;
-
-  // Resolve callout color from the highlighted bin.
-  const calloutColor = (() => {
-    if (!mapState || !beat?.highlight.length) return "#ffffff";
-    const { joined, sortedBins } = mapState;
-    const hKey = beat.highlight[0];
-    const hJoined = joined.find((j) => j.key === hKey);
-    if (hJoined?.value === null || hJoined?.value === undefined)
-      return "#ffffff";
-    const binIdx = sortedBins.findIndex(
-      (b, bi) =>
-        (hJoined.value as number) < b.max || bi === sortedBins.length - 1,
-    );
-    return binIdx >= 0 ? sortedBins[binIdx].color : "#ffffff";
-  })();
-
-  const showCallout =
-    beat?.kind !== "title" && beat?.callout != null && calloutPt != null;
 
   return (
     <div
@@ -491,18 +345,6 @@ export const ScrollyMap: React.FC<{
       `}</style>
 
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
-
-      {/* Callout overlay — projected to screen coordinates, tracks during flyTo */}
-      {showCallout && beat?.callout && calloutPt && (
-        <CountryLabel
-          name={beat.callout.name}
-          color={calloutColor}
-          reveal={1}
-          x={calloutPt.x}
-          y={calloutPt.y}
-          value={beat.callout.value}
-        />
-      )}
     </div>
   );
 };
