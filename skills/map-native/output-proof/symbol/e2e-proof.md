@@ -68,14 +68,29 @@ bun scripts/produce.mjs assets/sample-data/symbol.json /tmp/system-test/symbol-m
 
 **portrait.mp4 (419 KB, 150 frames)** — File confirmed non-trivial; render completed without error.
 
-## Fix notes (2026-06-29)
+## Fix notes (2026-06-29) — regression fix
 
-**Attribution restored**: `attributionControl: true` set on the Map constructor; the `<style>` tag injecting `.maplibregl-ctrl-attrib { display:none!important }` removed. "© MapTiler © OpenStreetMap contributors" is now visible in the bottom-right corner of the re-rendered landscape still (confirmed visually).
+**Regression (commit e61eb20)**: The attribution fix commit accidentally removed the `mapReady` React state gate. In Remotion's per-frame render each frame is its own render pass, so the per-frame effect runs once at `mapReady=false`, hits the guard, returns early, and never re-runs for that fixed frame — `circle-radius` stays 0 and no circles appear.
 
-**Per-frame guard reverted**: Removed `mapReady` React state and its `setMapReady(true)` call inside `map.once("idle")`. The per-frame effect now uses the same proven guard as ChoroplethStory: `if (!map || !map.isStyleLoaded() || !map.getLayer("symbol-circles")) return;`. Dependency array is `[frame, progress]`.
+**Fix applied**: Restored the `mapReady` state declaration, `setMapReady(true)` call inside `map.once("idle")`, and `mapReady` in the per-frame effect's guard and deps array — exactly as in commit `fbd6592`. The `mapReady` gate is REQUIRED for the Remotion per-frame reveal to work correctly.
 
-**Deferred (v2)**: The symbol video has no size legend or value labels — relative circle ordering reads correctly and the title carries the editorial claim. A v2 end-frame would add a small legend with representative radii and value labels per city.
+**Attribution also correct**: `attributionControl: true` on the Map constructor, no `<style>` tag hiding attribution. "© MapTiler © OpenStreetMap contributors" visible bottom-right in all video stills.
+
+**Visually confirmed** (re-rendered 2026-06-29): landscape still shows 6 proportional blue circles over western Europe (London largest) AND attribution bottom-right. Portrait still (re-rendered separately after transient timeout) also shows circles + attribution + title unclipped.
+
+## Output files (re-rendered 2026-06-29)
+
+| File | Size |
+|---|---|
+| `/tmp/system-test/symbol-map/static.png` | 421 KB |
+| `/tmp/system-test/symbol-map/interactive.png` | 408 KB |
+| `/tmp/system-test/symbol-map/video-landscape-still.png` | 217 KB |
+| `/tmp/system-test/symbol-map/landscape.mp4` | 363 KB |
+| `/tmp/system-test/symbol-map/video-square-still.png` | 346 KB |
+| `/tmp/system-test/symbol-map/square.mp4` | 415 KB |
+| `/tmp/system-test/symbol-map/video-portrait-still.png` | 380 KB |
+| `/tmp/system-test/symbol-map/portrait.mp4` | 431 KB |
 
 ## Test suite
 
-`bun test` after all changes: **72 pass, 0 fail**.
+`bun test` after fix: **72 pass, 0 fail**.

@@ -31,6 +31,8 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const startedRef = useRef(false);
+  // mapReady gates the per-frame effect so it only fires after init completes.
+  const [mapReady, setMapReady] = useState(false);
   const [handle] = useState(() => delayRender("symbol-init"));
 
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
@@ -89,15 +91,22 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
       });
       map.fitBounds(geo.bounds, { padding: 64, duration: 0 });
       map.once("idle", () => {
+        setMapReady(true);
         continueRender(handle);
       });
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Per frame: grow radii by progress.
+  // Per frame: grow radii by progress. Only runs once mapReady is true.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded() || !map.getLayer("symbol-circles")) return;
+    if (
+      !mapReady ||
+      !map ||
+      !map.isStyleLoaded() ||
+      !map.getLayer("symbol-circles")
+    )
+      return;
     const h = delayRender(`symbol-frame-${frame}`);
     map.setPaintProperty("symbol-circles", "circle-radius", [
       "*",
@@ -106,7 +115,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     ]);
     map.once("idle", () => continueRender(h));
     map.triggerRepaint();
-  }, [frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapReady, frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
