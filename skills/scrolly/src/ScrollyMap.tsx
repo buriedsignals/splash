@@ -31,6 +31,7 @@ const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
 export interface ScrollyMapConfig extends ChoroplethData {
   title?: string;
+  description?: string;
   unit?: string;
   valueUnit?: string;
   insight?: string;

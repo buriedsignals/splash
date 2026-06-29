@@ -36,9 +36,14 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
       insight: config.insight ?? config.title ?? "",
       unit: config.valueUnit ?? "",
     });
+    const regionsWithData = layout.joined.filter(
+      (j) => j.value !== null,
+    ).length;
     return mapStoryToChapters(beats, {
       title: config.title ?? "",
+      description: config.description ?? config.unit,
       source: config.source,
+      regionsWithData,
     });
   }, [config]);
 
@@ -147,6 +152,22 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
     return { marginLeft: "2rem" };
   };
 
+  // Persistent module header — the insight title (the figure's standalone headline).
+  // Shown once here; never repeated as a step caption.
+  const headerStyle: React.CSSProperties = {
+    position: "fixed",
+    top: 14,
+    left: 16,
+    zIndex: 50,
+    maxWidth: 420,
+    background: "rgba(255,255,255,0.9)",
+    backdropFilter: "blur(4px)",
+    borderRadius: 8,
+    padding: "10px 14px",
+    boxShadow: "0 2px 12px rgba(0,0,0,0.12)",
+    pointerEvents: "none",
+  };
+
   const creditStyle: React.CSSProperties = {
     position: "fixed",
     bottom: 12,
@@ -163,6 +184,15 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
 
   return (
     <>
+      {/* Persistent figure title — the insight, always visible (self-contained module) */}
+      {story.title && (
+        <div style={headerStyle}>
+          <div style={{ font: "700 15px/1.3 sans-serif", color: "#111" }}>
+            {story.title}
+          </div>
+        </div>
+      )}
+
       {/* ------------------------------------------------------------------ */}
       {/* Scroll container                                                    */}
       {/* ------------------------------------------------------------------ */}

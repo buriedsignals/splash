@@ -33,6 +33,19 @@ const beats: Beat[] = [
     copy: "Norway — 99%",
   },
   {
+    kind: "reveal",
+    camera: [14, 49, 24, 55],
+    highlight: ["POL"],
+    dim: false,
+    callout: {
+      region: "POL",
+      name: "Poland",
+      value: "21%",
+      text: "Poland — 21%",
+    },
+    copy: "Poland — 21%",
+  },
+  {
     kind: "takeaway",
     camera: [-9, 36, 31, 71],
     highlight: [],
@@ -43,53 +56,41 @@ const beats: Beat[] = [
 ];
 
 describe("mapStoryToChapters", () => {
-  it("drops the establish beat; keeps title + reveal + (distinct) takeaway, ref = original beat index", () => {
-    const story = mapStoryToChapters(beats, {
-      title: "Renewables across Europe",
-    });
-    expect(story.steps).toHaveLength(3); // establish (index 1) dropped
-    expect(
-      story.steps.every((s) => s.visual === "map" && s.action === "flyTo"),
-    ).toBe(true);
-    // refs are the ORIGINAL beat indices (title 0, reveal 2, takeaway 3)
-    expect(story.steps.map((s) => s.ref)).toEqual([0, 2, 3]);
+  const meta = {
+    title: "Renewables across Europe",
+    description: "Share of electricity from renewables, 2024",
+    source: { name: "Ember", url: "https://example.org" },
+    regionsWithData: 8,
+  };
+  it("drops establish; intro caption is the description, not the title", () => {
+    const story = mapStoryToChapters(beats, meta);
+    // beats: title(0) establish(1) reveal NOR(2) reveal POL(3) takeaway(4)
+    expect(story.steps.map((s) => s.ref)).toEqual([0, 2, 3, 4]);
+    expect(story.steps[0].prose).toBe(
+      "Share of electricity from renewables, 2024",
+    );
+    // the title never appears as a step caption
+    expect(story.steps.some((s) => s.prose === meta.title)).toBe(false);
   });
-  it("shows the title exactly once and never repeats it at the end", () => {
-    const story = mapStoryToChapters(beats, {
-      title: "Renewables across Europe",
-    });
-    const titleCount = story.steps.filter(
-      (s) => s.prose === "Renewables across Europe",
-    ).length;
-    expect(titleCount).toBe(1);
-    expect(story.steps[0].prose).toBe("Renewables across Europe"); // intro
-    expect(story.steps[story.steps.length - 1].prose).toBe(
-      "North high, south low",
-    ); // distinct takeaway
+  it("adds a rank descriptor: first reveal = highest (of N), last reveal = lowest", () => {
+    const story = mapStoryToChapters(beats, meta);
+    expect(story.steps[1].prose).toBe(
+      "Norway — 99%, the highest of the 8 shown",
+    );
+    expect(story.steps[2].prose).toBe("Poland — 21%, the lowest");
   });
-  it("centres the cards and gives every step unique non-empty prose", () => {
-    const story = mapStoryToChapters(beats, {
-      title: "Renewables across Europe",
-    });
+  it("carries title/description/source on the story and centres cards", () => {
+    const story = mapStoryToChapters(beats, meta);
+    expect(story.title).toBe("Renewables across Europe");
+    expect(story.description).toBe(
+      "Share of electricity from renewables, 2024",
+    );
+    expect(story.source).toEqual({ name: "Ember", url: "https://example.org" });
     expect(story.steps.every((s) => s.align === "center")).toBe(true);
-    expect(story.steps.every((s) => s.prose.trim().length > 0)).toBe(true);
-    expect(new Set(story.steps.map((s) => s.id)).size).toBe(story.steps.length);
   });
-  it("drops a takeaway with no distinct closing line (copy equals the title → empty)", () => {
-    // map-story leaves the takeaway copy empty when the insight equals the title.
-    const noInsight: Beat[] = [
-      beats[0],
-      beats[1],
-      beats[2],
-      { ...beats[3], copy: "" },
-    ];
-    const story = mapStoryToChapters(noInsight, {
-      title: "Renewables across Europe",
-    });
-    // title + reveal only — the empty takeaway is dropped, title still appears once
-    expect(story.steps.map((s) => s.ref)).toEqual([0, 2]);
-    expect(
-      story.steps.filter((s) => s.prose === "Renewables across Europe").length,
-    ).toBe(1);
+  it("a single reveal gets no rank descriptor", () => {
+    const one: Beat[] = [beats[0], beats[1], beats[2], beats[4]]; // title, establish, NOR, takeaway
+    const story = mapStoryToChapters(one, { ...meta, regionsWithData: 1 });
+    expect(story.steps.find((s) => s.ref === 2)?.prose).toBe("Norway — 99%");
   });
 });

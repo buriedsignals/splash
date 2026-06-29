@@ -4,6 +4,8 @@ import type { ScrollyStory } from "../src/chapters";
 
 const ok: ScrollyStory = {
   title: "Renewables across Europe",
+  description: "Share of electricity from renewables, 2024",
+  source: { name: "Ember", url: "https://example.org" },
   visual: "map",
   steps: [
     { id: "a", visual: "map", action: "flyTo", ref: 0, prose: "Intro" },
@@ -58,5 +60,13 @@ describe("checkScrollyConformance", () => {
     expect(
       checkScrollyConformance(bad, 4).some((v) => /ref|range/i.test(v)),
     ).toBe(true);
+  });
+  it("flags a missing description (a module must state what/when/where)", () => {
+    const r = checkScrollyConformance({ ...ok, description: undefined }, 3);
+    expect(r.some((v) => /description/i.test(v))).toBe(true);
+  });
+  it("flags a missing source (an embedded module must carry its own source)", () => {
+    const r = checkScrollyConformance({ ...ok, source: undefined }, 3);
+    expect(r.some((v) => /source/i.test(v))).toBe(true);
   });
 });
