@@ -1,6 +1,54 @@
 import { describe, it, expect } from "bun:test";
 import { scoreSpec } from "../score";
 
+const validMap = {
+  producer: "map-dw",
+  mapType: "choropleth",
+  basemap: "world",
+  mapKeyAttr: "ISO_A3",
+  regionKey: "code",
+  valueColumn: "share",
+  title: "Renewables form a clear north–south gradient across Europe",
+  altInsight: "Norway leads at 99%, France at 27%",
+  source: { name: "Ember", url: "https://example.org" },
+  data: "code,share\nNOR,99\nFRA,27",
+};
+
+describe("scoreSpec — map routing", () => {
+  it("passes a valid map when a map is expected", () => {
+    const r = scoreSpec(validMap, { family: "geographic", element: "map" });
+    expect(r.pass).toBe(true);
+  });
+  it("fails when a map is expected but a chart was emitted (under-routing)", () => {
+    const chart = {
+      type: "d3-bars",
+      title: "x",
+      data: "code,share\nNOR,99",
+      altInsight: "x",
+    };
+    const r = scoreSpec(chart, { family: "geographic", element: "map" });
+    expect(r.pass).toBe(false);
+    expect(r.notes.some((n) => /map/i.test(n))).toBe(true);
+  });
+  it("fails when a chart is expected but a map was emitted (Gate 5: ranking should stay bars)", () => {
+    const r = scoreSpec(validMap, { family: "ranking", element: "chart" });
+    expect(r.pass).toBe(false);
+    expect(r.notes.some((n) => /map|gate 5/i.test(n))).toBe(true);
+  });
+  it("defaults element to chart (existing behaviour unchanged)", () => {
+    const chart = {
+      type: "d3-bars",
+      title: "Departments by budget share",
+      data: "department,budget\nEducation,42\nRoads,31\nHealth,28",
+      altInsight: "Education gets the largest share",
+      baseColor: "#0072B2",
+      sort: "desc",
+    };
+    const r = scoreSpec(chart, { family: "ranking" }); // no element → chart
+    expect(r.validates).toBe(true);
+  });
+});
+
 const validLine = {
   type: "d3-lines",
   title: "Unemployment fell to a five-year low",

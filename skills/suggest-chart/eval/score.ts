@@ -1,4 +1,5 @@
 import { validateChartSpec } from "../../dw-chart/src/chart-spec";
+import { validateMapSpec } from "../../map-dw/src/map-spec";
 import { FAMILY_TYPES } from "./family-types";
 
 export interface Score {
@@ -12,6 +13,7 @@ export interface Score {
 export interface Expectation {
   family: string;
   maxWarnings?: number;
+  element?: "chart" | "map";
 }
 
 // Deterministic gate for a ②-emitted spec. The no-chart case (expect.family === "none")
@@ -31,6 +33,43 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
       familyMatch: isNoChart,
       guardrailsOk: isNoChart,
       pass: isNoChart,
+      notes,
+    };
+  }
+
+  const producer = (spec as Record<string, unknown> | null)?.["producer"];
+  const isMap =
+    producer === "map-dw" ||
+    (!!spec && typeof spec === "object" && "basemap" in (spec as object));
+  const wantMap = expect.element === "map";
+
+  if (wantMap !== isMap) {
+    notes.push(
+      wantMap
+        ? "expected a map, got a chart — the spatial pattern is the story (Gate 5)"
+        : "expected a chart, got a map — ranking/magnitude should stay bars (Gate 5)",
+    );
+    return {
+      validates: false,
+      familyMatch: false,
+      guardrailsOk: false,
+      pass: false,
+      notes,
+    };
+  }
+
+  if (isMap) {
+    const v = validateMapSpec(spec);
+    if (!v.ok) notes.push(...v.errors);
+    const warns = v.ok ? v.warnings.length : Infinity;
+    const guardrailsOk = warns <= (expect.maxWarnings ?? 0);
+    if (!guardrailsOk)
+      notes.push(`map: ${warns} warnings > ${expect.maxWarnings ?? 0}`);
+    return {
+      validates: v.ok,
+      familyMatch: true, // a map is its own element; family is geographic by construction
+      guardrailsOk,
+      pass: v.ok && guardrailsOk,
       notes,
     };
   }
