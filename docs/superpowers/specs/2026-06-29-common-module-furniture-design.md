@@ -13,17 +13,28 @@ title (the finding), a description (what/when/where + units), and a visible link
 once — and is responsive (the `min()/clamp()/vw` recipe). Engines stay **independent** (no shared
 conformance module — consistent with how they're built today); the reference is the single source of truth.
 
-## Survey — where each engine stands
+## Taxonomy first (do not mislevel scrolly)
 
-| Element | chart-native | map-native | dw-chart | scrolly |
-| --- | --- | --- | --- | --- |
-| insight title | ✓ | ✓ | ✓ | ✓ |
-| description | ✓ (ChartFrame `subtitle` ← `unit`) | ✗ | ✓ (`intro`) | ✓ |
-| source | ✓ | ✓ | ✓ | ✓ |
-| responsive | ✓ (ChartFrame `responsive`) | ✗ (fixed 320px overlay) | ✓ (DW embed) | ✓ |
+The **engines** are `chart-native` and `map-native` (+ `dw-chart` for the static/Datawrapper path). Each
+engine produces three **formats**: **static** (image), **interactive** (web), **video**. The interactive
+format has two **sub-formats**: *free-explore* (pan/zoom/hover) and **scrolly** (scroll-driven).
+`skills/scrolly` is only the shared **mechanism** (an orchestrator that drives an engine's renderer); the
+format "interactive-scrolly" belongs to the host engine, and its furniture is **inherited from the engine**
+(the scrolly already reuses map-native's choropleth config). So furniture is defined **per engine**, and
+the scrolly is NOT a fourth peer — it inherits whatever its host engine carries.
 
-So: **chart-native, dw-chart, scrolly already conform.** The work is **map-native**: add the description
-furniture and make its overlays responsive.
+## Survey — where each engine stands (furniture is per-engine)
+
+| Element | chart-native | map-native | dw-chart |
+| --- | --- | --- | --- |
+| insight title | ✓ | ✓ | ✓ |
+| description | ✓ (ChartFrame `subtitle` ← `unit`) | ✗ | ✓ (`intro`) |
+| source | ✓ | ✓ | ✓ |
+| responsive | ✓ (ChartFrame `responsive`) | ✗ (fixed 320px overlay) | ✓ (DW embed) |
+
+So: **chart-native and dw-chart already conform.** The work is **map-native**: add the description
+furniture and make its overlays responsive. **The scrolly inherits this automatically** — it reuses
+map-native's choropleth config, so once `ChoroplethConfig` carries `description`, the scrolly shows it too.
 
 ## The work — map-native
 
@@ -69,6 +80,9 @@ description + source, each once, responsive overlays.
   A dedicated `description` field for charts is a future codemod, not this pass — documented, not silent.
 - **dw-chart:** `intro` (= description) + title + source already validated by `validateChartSpec`. Confirm
   the validator at least warns when `intro` is absent (a Minor add if missing); no structural change.
+- **scrolly (interactive sub-format, not an engine):** inherits map-native's furniture via the shared
+  choropleth config — no separate work. Once map-native carries `description`, the scrolly renders it
+  (the persistent header = title, the intro caption = description, the footer = source: already wired).
 
 ## Out of scope
 

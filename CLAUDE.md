@@ -17,6 +17,7 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 
 - **Couche commune** : **① KB → ② Suggesteur → ③ Design (skills)**.
 - **Workflow par article** : `INPUT → ANALYSE → CADRAGE → PROPOSITION (vetoable, pas de gate) → PRODUCTION → EXPORT (fichier possédé)`. Validation sur le **visuel produit**, jamais sur un plan abstrait.
+- **Taxonomie moteurs/formats (à ne pas confondre)** : les **moteurs** sont `chart-native` et `map-native` (+ `dw-chart` pour le statique Datawrapper). Chaque moteur produit 3 **formats** : **statique** (image) · **interactif** (web) · **vidéo**. L'**interactif** a 2 **sous-formats** : *explore-libre* (pan/zoom/hover) et **scrolly** (scroll). `skills/scrolly` n'est que le **mécanisme** partagé (orchestrateur qui pilote le renderer d'un moteur) — PAS un moteur pair ; le format « interactif-scrolly » appartient au moteur hôte et **hérite** de sa furniture (titre/description/source). La furniture se définit **par moteur**.
 - Détail complet → la spec-parapluie.
 
 ## Ce qu'on produit (workflow / orchestration / skills)
