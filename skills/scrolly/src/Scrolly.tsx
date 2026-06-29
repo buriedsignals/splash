@@ -126,6 +126,9 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
     minHeight: "90vh",
     display: "flex",
     alignItems: "center",
+    // Horizontal gutters so the card never hugs the screen edges (mobile).
+    padding: "0 24px",
+    boxSizing: "border-box",
   };
 
   const cardBase: React.CSSProperties = {
@@ -133,10 +136,10 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
     background: "rgba(255,255,255,0.92)",
     backdropFilter: "blur(4px)",
     borderRadius: 8,
-    padding: "1.1rem 1.3rem",
-    // Responsive width: never wider than the viewport minus a gutter (mobile),
-    // capped at 360px (desktop). min()/clamp()/vw work in inline React styles.
-    maxWidth: "min(360px, 86vw)",
+    // Generous internal padding so the text breathes on the sides.
+    padding: "1.15rem 1.6rem",
+    // Capped at 360px (desktop); on mobile the step gutters (above) bound it.
+    maxWidth: 360,
     boxShadow: "0 2px 16px rgba(0,0,0,0.12)",
     // WCAG-contrasting text on the semi-opaque white card.
     color: "#111111",
@@ -158,15 +161,15 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
   // Shown once here; never repeated as a step caption.
   const headerStyle: React.CSSProperties = {
     position: "fixed",
-    top: 14,
-    left: 16,
+    top: 16,
+    left: 20,
     zIndex: 50,
-    // Never overflow a narrow screen: cap at 420px, shrink to the viewport gutter.
-    maxWidth: "min(420px, calc(100vw - 32px))",
+    // Never overflow a narrow screen: cap at 420px, keep a 20px gutter each side.
+    maxWidth: "min(420px, calc(100vw - 40px))",
     background: "rgba(255,255,255,0.9)",
     backdropFilter: "blur(4px)",
     borderRadius: 8,
-    padding: "10px 14px",
+    padding: "11px 16px",
     boxShadow: "0 2px 12px rgba(0,0,0,0.12)",
     pointerEvents: "none",
   };
