@@ -113,3 +113,65 @@ describe("scoreSpec", () => {
     expect(r.notes.join()).toMatch(/no-chart/);
   });
 });
+
+const nativeMap = {
+  producer: "map-native",
+  regionKey: "code",
+  valueField: "share",
+  rows: [
+    { code: "NOR", share: 99 },
+    { code: "POL", share: 21 },
+  ],
+  basemap: "world",
+  title: "Renewables form a clear north–south gradient across Europe",
+  description: "Share of electricity from renewables, by country, 2024",
+  valueUnit: "%",
+  source: { name: "Ember", url: "https://example.org" },
+};
+
+describe("scoreSpec — native map", () => {
+  it("passes a valid map-native config when producer map-native is expected", () => {
+    const r = scoreSpec(nativeMap, {
+      family: "geographic",
+      element: "map",
+      producer: "map-native",
+    });
+    expect(r.pass).toBe(true);
+  });
+  it("fails when producer map-native is expected but a map-dw spec was emitted", () => {
+    const mapDw = {
+      producer: "map-dw",
+      mapType: "choropleth",
+      basemap: "world",
+      mapKeyAttr: "ISO_A3",
+      regionKey: "code",
+      valueColumn: "share",
+      data: "code,share\nNOR,99",
+      title: "Renewables form a clear north–south gradient across Europe",
+      altInsight: "north high, south low",
+    };
+    const r = scoreSpec(mapDw, {
+      family: "geographic",
+      element: "map",
+      producer: "map-native",
+    });
+    expect(r.pass).toBe(false);
+    expect(r.notes.some((n) => /producer/i.test(n))).toBe(true);
+  });
+  it("still accepts a map-dw spec when producer is unset (element-level only)", () => {
+    const mapDw = {
+      producer: "map-dw",
+      mapType: "choropleth",
+      basemap: "world",
+      mapKeyAttr: "ISO_A3",
+      regionKey: "code",
+      valueColumn: "share",
+      data: "code,share\nNOR,99",
+      title: "Renewables form a clear north–south gradient across Europe",
+      altInsight: "north high, south low",
+    };
+    expect(
+      scoreSpec(mapDw, { family: "geographic", element: "map" }).validates,
+    ).toBe(true);
+  });
+});

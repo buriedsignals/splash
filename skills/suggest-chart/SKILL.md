@@ -1,6 +1,6 @@
 ---
 name: suggest-chart
-description: Use to decide which visual ELEMENT (chart or map) + FORMAT + producer serves an article's intent, and emit the right spec. Routes to dw-chart (static chart, default), chart-native (motion/interactivity), or map-dw (static choropleth map). Reads the data profile + the editorial intent, grounded on the KB references. Keywords suggest, choose chart, map, choropleth, geographic, map-dw, format selection, intent, dataviz, orchestration, producer, datawrapper, chart-native, video, interactive.
+description: Use to decide which visual ELEMENT (chart or map) + FORMAT + producer serves an article's intent, and emit the right spec. Routes to dw-chart (static chart, default), chart-native (motion/interactivity), map-dw (static choropleth map), or map-native (interactive/video choropleth map). Reads the data profile + the editorial intent, grounded on the KB references. Keywords suggest, choose chart, map, choropleth, geographic, map-dw, map-native, format selection, intent, dataviz, orchestration, producer, datawrapper, chart-native, video, interactive.
 ---
 
 # suggest-chart — decide the visual element, format, and producer
@@ -42,10 +42,10 @@ Producers: **dw-chart** (static Datawrapper chart — default), **chart-native**
 
 4. **Format (Gates 1–4):** read `<repo-root>/knowledge/references/formats/format-selection.md` (Gates 1–4).
    Static is the default (most readers do not interact). Escalate to interactive / scrolly / video ONLY on
-   the named conditions. **Slice 1 produces the static path**: for maps that is `map-dw`; for charts that
-   is `dw-chart` (or `chart-native` for motion/interactivity — see Producer section).
-   If the format judgment recommends a richer format (native map, scrolly), record that recommendation in
-   the decision output as a follow-up for later slices — slice 1 still produces the static path.
+   the named conditions. For **maps**: static → `map-dw`; interactive (Gate 2: exploration hook) or video
+   (Gate 4: motion/social) → `map-native`. For **charts**: static → `dw-chart`; motion/rich interactivity
+   → `chart-native` (see Producer section). Scrolly (article → chapters) is slice 2 — record that
+   recommendation in the decision output but do not produce it here.
 
 5. **Choose chart family** (chart path only): use the shared KB
    `<repo-root>/knowledge/references/chart-selection.md` — map intent → family → the *simplest* type that
@@ -72,9 +72,9 @@ Producers: **dw-chart** (static Datawrapper chart — default), **chart-native**
 4. Guardrails: **≤2 colours**; default single series to `#0072B2`; if the data is too complex for a clean
    chart, return `{ "decision": "no-chart", "reason": "..." }` instead of forcing one.
 
-## Producer — dw-chart (default) vs chart-native vs map-dw
+## Producer — dw-chart (default) vs chart-native vs map-dw vs map-native
 
-Before emitting the spec, decide the **producer**. The producer set is `{dw-chart, chart-native, map-dw}`.
+Before emitting the spec, decide the **producer**. The producer set is `{dw-chart, chart-native, map-dw, map-native}`.
 
 ### dw-chart (static chart — default)
 
@@ -95,10 +95,11 @@ to `dw-chart` instead. Produce with
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
 `scatter`, `pie`); `highlight` is the category to accent; `directLabel` is the line's series label.
 
-### map-dw (static choropleth map)
+### map-dw (static choropleth map) — default map path
 
-Used when Gate 5 routes to a map (see Runtime procedure). Emits a **`MapSpec`** with `producer: "map-dw"`
-as the discriminator (the eval gate uses this field to identify the path).
+Used when Gate 5 routes to a map AND the format ladder (Gates 1–4) yields **static** (the default).
+Emits a **`MapSpec`** with `producer: "map-dw"` as the discriminator (the eval gate uses this field to
+identify the path).
 
 #### Emitted MapSpec fields (exact — validated by `validateMapSpec` in `map-dw/src/map-spec.ts`)
 
@@ -143,6 +144,53 @@ output (cite the basemap-fallback rule).
 produceMap` seam. The Datawrapper token comes from `/atelier/.env` (`DATAWRAPPER_API_TOKEN`) — it is
 **never logged**.
 
+### map-native (interactive / video choropleth map)
+
+Used when Gate 5 routes to a map AND the format ladder (Gates 1–4) escalates to **interactive** (Gate 2:
+exploration hook, "find your area", per-region hover at scale) or **video** (Gate 4: temporal/spatial
+diffusion that motion clarifies, or social/vertical distribution). The static path always remains
+`map-dw`; escalation to `map-native` requires an explicit format trigger.
+
+**ISO-A3 requirement:** `map-native` joins on `world.geojson`'s ISO-A3 codes. Region identifiers MUST be
+ISO-A3 (e.g. `NOR`, `DEU`, `FRA`). If the region codes in the data cannot be matched to ISO-A3 — fall
+back to `map-dw` or a sorted bar chart (`d3-bars`, `sort:"desc"`) and state why in the decision output.
+
+**Emitted config (exact — validated by `validateChoroplethConfig` in `map-native/src/validate-config.ts`):**
+
+```json
+{
+  "producer": "map-native",
+  "regionKey": "<data column holding ISO-A3 codes>",
+  "valueField": "<data column holding the normalised rate>",
+  "rows": [{ "<regionKey>": "<ISO-A3>", "<valueField>": <number> }, "…"],
+  "basemap": "world",
+  "title": "<the spatial insight — sentence case, never a label>",
+  "description": "<what / when / where context>",
+  "unit": "<long legend label, e.g. 'Share of renewables (%)'>",
+  "valueUnit": "<short callout unit, e.g. '%'>",
+  "source": { "name": "<honest source>", "url": "<URL>" }
+}
+```
+
+Field notes:
+- `producer`: MUST be `"map-native"` — the routing discriminator.
+- `regionKey` / `valueField`: the data column names. `rows` is an **array of objects** (not CSV string).
+- `basemap`: `"world"` for world ISO-A3 preset (slice 1b; other presets are later scope).
+- `title`: the spatial finding as a sentence — NOT a label or year range (validator enforces ≥12 chars).
+- `description`: the what/when/where — required (furniture standard; a missing value is a warning).
+- `source.name` + `source.url`: required (furniture standard; missing is a warning).
+- `unit` / `valueUnit`: optional but fill them when the data has a clear unit.
+
+**Self-check:** after filling the config, run `validateChoroplethConfig` (from
+`skills/map-native/src/validate-config.ts`). Fix all errors; address warnings (description + source).
+
+**Produce:** write the config to a temp JSON, then run from the `skills/map-native/` directory:
+`bun scripts/produce.mjs <config.json> <outDir> [all|static]`
+→ static PNG + interactive HTML + 3 mp4s (landscape, square, portrait). The MapTiler key comes from
+`/atelier/.env` (`MAPTILER_API_KEY`) — it is **never logged**.
+
+**Scrolly** (article → chapters → `map-native` per chapter) is slice 2 — do not wire it here.
+
 ## Guardrails (the code enforces these — propose within them)
 
 - **Type:** pick from the 22 supported types (single-series, multi-series, or two-value per the data shape).
@@ -159,16 +207,21 @@ produceMap` seam. The Datawrapper token comes from `/atelier/.env` (`DATAWRAPPER
 
 - **Chart path:** the emitted spec MUST pass `validateChartSpec` (run it via the dw-chart skill). Title
   and altInsight must state the **insight**, not the column names.
-- **Map path:** the emitted `MapSpec` MUST pass `validateMapSpec` (run it via `map-dw/src/map-spec.ts`).
-  Read all returned `warnings` and fix them. A `title looks like a label` warning means rewrite `title`
-  as the spatial insight. `altInsight` must be non-empty and match the insight.
-- In both cases: the decision output MUST cite which gate(s) drove the routing (Gate 5 for geographic
-  routing; format gates for format escalation).
+- **Map path — static (`map-dw`):** the emitted `MapSpec` MUST pass `validateMapSpec` (run it via
+  `map-dw/src/map-spec.ts`). Read all returned `warnings` and fix them. A `title looks like a label`
+  warning means rewrite `title` as the spatial insight. `altInsight` must be non-empty and match the insight.
+- **Map path — interactive/video (`map-native`):** the emitted config MUST pass `validateChoroplethConfig`
+  (run it via `map-native/src/validate-config.ts`). Fix all errors. Address warnings (description +
+  source.url are required by the furniture standard).
+- In all cases: the decision output MUST cite which gate(s) drove the routing (Gate 5 for geographic
+  routing; format gates for format escalation; ISO-A3 fallback rule if applicable).
 
 ## Output
 
 One of:
 - a `ChartSpec` JSON for `dw-chart` (the default static chart path);
-- a `NativeSpec` JSON for `chart-native` (when motion/interactivity is the ask);
-- a `MapSpec` JSON with `producer: "map-dw"` (when Gate 5 routes to a choropleth map);
+- a `NativeSpec` JSON for `chart-native` (when motion/interactivity is the ask for a chart);
+- a `MapSpec` JSON with `producer: "map-dw"` (when Gate 5 routes to a map and format is static);
+- a `ChoroplethConfig` JSON with `producer: "map-native"` (when Gate 5 routes to a map and format is
+  interactive or video — ISO-A3 codes required, else fall back to `map-dw` or bars);
 - or a `no-chart` decision with a reason.

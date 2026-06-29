@@ -1,5 +1,6 @@
 import { validateChartSpec } from "../../dw-chart/src/chart-spec";
 import { validateMapSpec } from "../../map-dw/src/map-spec";
+import { validateChoroplethConfig } from "../../map-native/src/validate-config";
 import { FAMILY_TYPES } from "./family-types";
 
 export interface Score {
@@ -14,6 +15,7 @@ export interface Expectation {
   family: string;
   maxWarnings?: number;
   element?: "chart" | "map";
+  producer?: "dw-chart" | "chart-native" | "map-dw" | "map-native";
 }
 
 // Deterministic gate for a ②-emitted spec. The no-chart case (expect.family === "none")
@@ -38,9 +40,9 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
   }
 
   const producer = (spec as Record<string, unknown> | null)?.["producer"];
-  const isMap =
-    producer === "map-dw" ||
-    (!!spec && typeof spec === "object" && "basemap" in (spec as object));
+  // Both map producers always emit `producer` — discriminate on it explicitly
+  // (a stray `basemap` field on a chart spec must not be misclassified as a map).
+  const isMap = producer === "map-dw" || producer === "map-native";
   const wantMap = expect.element === "map";
 
   if (wantMap !== isMap) {
@@ -59,7 +61,20 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
   }
 
   if (isMap) {
-    const v = validateMapSpec(spec);
+    if (expect.producer && producer !== expect.producer) {
+      notes.push(
+        `expected producer "${expect.producer}", got "${producer ?? "(none)"}"`,
+      );
+      return {
+        validates: false,
+        familyMatch: false,
+        guardrailsOk: false,
+        pass: false,
+        notes,
+      };
+    }
+    const isNative = producer === "map-native";
+    const v = isNative ? validateChoroplethConfig(spec) : validateMapSpec(spec);
     if (!v.ok) notes.push(...v.errors);
     const warns = v.ok ? v.warnings.length : Infinity;
     const guardrailsOk = warns <= (expect.maxWarnings ?? 0);
