@@ -17,7 +17,13 @@ const layout = computeChoropleth(config, world, "iso_a3", { bins: 5, scaleType: 
 const beats = deriveMapStory(layout, world, "iso_a3", {
   title: config.title, insight: config.insight ?? config.title, unit: config.valueUnit ?? "",
 });
-const story = mapStoryToChapters(beats, { title: config.title, source: config.source });
+const regionsWithData = layout.joined.filter((j) => j.value !== null).length;
+const story = mapStoryToChapters(beats, {
+  title: config.title,
+  description: config.description ?? config.unit,
+  source: config.source,
+  regionsWithData,
+});
 const problems = checkScrollyConformance(story, beats.length);
 if (problems.length) {
   console.error("✗ scrolly audit FAILED:\n  " + problems.join("\n  "));

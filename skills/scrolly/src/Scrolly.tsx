@@ -36,9 +36,14 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
       insight: config.insight ?? config.title ?? "",
       unit: config.valueUnit ?? "",
     });
+    const regionsWithData = layout.joined.filter(
+      (j) => j.value !== null,
+    ).length;
     return mapStoryToChapters(beats, {
       title: config.title ?? "",
+      description: config.description ?? config.unit,
       source: config.source,
+      regionsWithData,
     });
   }, [config]);
 
