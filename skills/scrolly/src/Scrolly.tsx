@@ -1,0 +1,211 @@
+// Scrolly — sticky-graphic scrollytelling scaffold.
+// Layout: one sticky map behind scrolling prose steps. An IntersectionObserver
+// (NOT scroll-position math) drives `currentStep`, which ScrollyMap consumes.
+//
+// Dispatcher generality: v1 has a single `visual:"map"` track. To add
+// `chart` or `image`, introduce a switch(story.visual) around the sticky
+// graphic slot — the step model (ScrollyStep.visual) already carries the
+// per-step visual kind.
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { computeChoropleth } from "../../map-native/src/choropleth-geo";
+import { deriveMapStory } from "../../map-native/src/map-story";
+import { mapStoryToChapters } from "./chapters";
+import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
+
+import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
+const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
+
+// ---------------------------------------------------------------------------
+// Scrolly
+// ---------------------------------------------------------------------------
+
+export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
+  // -------------------------------------------------------------------------
+  // Build the story once at mount — deterministic from config.
+  // ScrollyMap ALSO runs the same pipeline internally (self-contained on
+  // config + currentStep). Both agree because they share the same config.
+  // -------------------------------------------------------------------------
+  const story = useMemo(() => {
+    const layout = computeChoropleth(config, world, "iso_a3", {
+      bins: 5,
+      scaleType: "sequential",
+    });
+    const beats = deriveMapStory(layout, world, "iso_a3", {
+      title: config.title ?? "",
+      insight: config.insight ?? config.title ?? "",
+      unit: config.valueUnit ?? "",
+    });
+    return mapStoryToChapters(beats, {
+      title: config.title ?? "",
+      source: config.source,
+    });
+  }, [config]);
+
+  // -------------------------------------------------------------------------
+  // Step state — starts at 0, updated by IntersectionObserver.
+  // -------------------------------------------------------------------------
+  const [currentStep, setCurrentStep] = useState(0);
+
+  // -------------------------------------------------------------------------
+  // Ref array for prose step DOM nodes — one slot per step.
+  // -------------------------------------------------------------------------
+  const stepRefs = useRef<(HTMLElement | null)[]>([]);
+
+  // -------------------------------------------------------------------------
+  // IntersectionObserver — fires when a step crosses the viewport midpoint.
+  // rootMargin "-50% 0px -50% 0px" shrinks the intersection zone to a
+  // horizontal band at the exact vertical centre of the viewport.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    stepRefs.current = stepRefs.current.slice(0, story.steps.length);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const idx = Number(
+            (entry.target as HTMLElement).dataset["stepIndex"],
+          );
+          if (!Number.isNaN(idx)) setCurrentStep(idx);
+        }
+      },
+      { rootMargin: "-50% 0px -50% 0px", threshold: 0 },
+    );
+
+    for (const el of stepRefs.current) {
+      if (el) observer.observe(el);
+    }
+
+    return () => observer.disconnect();
+  }, [story.steps.length]);
+
+  // -------------------------------------------------------------------------
+  // Styles (inline — no CSS file dependency).
+  // -------------------------------------------------------------------------
+  const wrapperStyle: React.CSSProperties = {
+    position: "relative",
+    // The wrapper must be tall enough for all steps so the sticky graphic
+    // stays pinned from the first step to the last.
+    minHeight: "100vh",
+  };
+
+  const stickyGraphicStyle: React.CSSProperties = {
+    position: "sticky",
+    top: 0,
+    height: "100vh",
+    width: "100%",
+    // Stack behind the prose column (z-index 0) so prose cards sit above.
+    zIndex: 0,
+    // Negative margin pulls subsequent prose steps up over the graphic.
+    marginBottom: `-${story.steps.length * 90}vh`,
+  };
+
+  const proseColumnStyle: React.CSSProperties = {
+    position: "relative",
+    zIndex: 1,
+    // Pointer events off on the column so the map stays hoverable; each
+    // prose card re-enables them.
+    pointerEvents: "none",
+  };
+
+  const stepBlockStyle: React.CSSProperties = {
+    minHeight: "90vh",
+    display: "flex",
+    alignItems: "center",
+  };
+
+  const cardBase: React.CSSProperties = {
+    pointerEvents: "auto",
+    background: "rgba(255,255,255,0.92)",
+    backdropFilter: "blur(4px)",
+    borderRadius: 8,
+    padding: "1.25rem 1.5rem",
+    maxWidth: 360,
+    boxShadow: "0 2px 16px rgba(0,0,0,0.12)",
+    // WCAG-contrasting text on the semi-opaque white card.
+    color: "#111111",
+    fontFamily: "sans-serif",
+    fontSize: 16,
+    lineHeight: 1.55,
+  };
+
+  const alignCard = (
+    align: "left" | "right" | "center" | undefined,
+  ): React.CSSProperties => {
+    if (align === "right") return { marginLeft: "auto", marginRight: "2rem" };
+    if (align === "center") return { margin: "0 auto" };
+    // default left
+    return { marginLeft: "2rem" };
+  };
+
+  const creditStyle: React.CSSProperties = {
+    position: "fixed",
+    bottom: 12,
+    right: 16,
+    zIndex: 100,
+    fontFamily: "sans-serif",
+    fontSize: 11,
+    color: "rgba(0,0,0,0.55)",
+    background: "rgba(255,255,255,0.7)",
+    borderRadius: 4,
+    padding: "2px 6px",
+    pointerEvents: "auto",
+  };
+
+  return (
+    <>
+      {/* ------------------------------------------------------------------ */}
+      {/* Scroll container                                                    */}
+      {/* ------------------------------------------------------------------ */}
+      <div style={wrapperStyle}>
+        {/* Sticky graphic — the map stays pinned while prose steps scroll above */}
+        <div style={stickyGraphicStyle}>
+          {/* v1: visual="map". Future: switch(story.visual) to swap graphic. */}
+          <ScrollyMap config={config} currentStep={currentStep} />
+        </div>
+
+        {/* Prose column — scrolls normally over the sticky graphic */}
+        <div style={proseColumnStyle}>
+          {story.steps.map((step, i) => (
+            <div
+              key={step.id}
+              className="step"
+              data-step-index={i}
+              ref={(el) => {
+                stepRefs.current[i] = el;
+              }}
+              style={stepBlockStyle}
+            >
+              <div
+                style={{
+                  ...cardBase,
+                  ...alignCard(step.align),
+                }}
+              >
+                {step.prose}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Source / credit line — always visible, pinned bottom-right          */}
+      {/* ------------------------------------------------------------------ */}
+      {config.source && (
+        <div style={creditStyle}>
+          Source:{" "}
+          <a
+            href={config.source.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "inherit" }}
+          >
+            {config.source.name}
+          </a>
+        </div>
+      )}
+    </>
+  );
+};
