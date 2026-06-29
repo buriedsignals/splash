@@ -49,3 +49,64 @@ describe("validateChoroplethConfig", () => {
     expect(r2.ok && r2.warnings.some((w) => /source/i.test(w))).toBe(true);
   });
 });
+
+import { validateSymbolConfig } from "../src/validate-config";
+
+const okSymbol = {
+  type: "symbol",
+  points: [
+    { lon: 2.35, lat: 48.85, value: 100, label: "Paris" },
+    { lon: -3.7, lat: 40.4, value: 400, label: "Madrid" },
+  ],
+  basemap: "world",
+  title: "Madrid dwarfs Paris on this measure",
+  description: "Value by city, 2024",
+  valueUnit: "k",
+  source: { name: "Source 2025", url: "https://example.org/x" },
+};
+
+describe("validateSymbolConfig", () => {
+  it("accepts a well-formed symbol config with no warnings", () => {
+    const r = validateSymbolConfig(okSymbol);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings).toEqual([]);
+  });
+  it("rejects an out-of-range longitude", () => {
+    const r = validateSymbolConfig({
+      ...okSymbol,
+      points: [{ lon: 200, lat: 40, value: 1 }],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some((e) => /lon/.test(e))).toBe(true);
+  });
+  it("rejects a non-numeric or negative value", () => {
+    const bad = validateSymbolConfig({
+      ...okSymbol,
+      points: [{ lon: 2, lat: 48, value: -5 }],
+    });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.some((e) => /value/.test(e))).toBe(true);
+  });
+  it("rejects an empty points array", () => {
+    const r = validateSymbolConfig({ ...okSymbol, points: [] });
+    expect(r.ok).toBe(false);
+  });
+  it("rejects a title that is just a year range", () => {
+    const r = validateSymbolConfig({ ...okSymbol, title: "2024" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.some((e) => /title/.test(e))).toBe(true);
+  });
+  it("warns on missing description and source", () => {
+    const r = validateSymbolConfig({
+      type: "symbol",
+      points: [{ lon: 2, lat: 48, value: 1 }],
+      basemap: "world",
+      title: "A perfectly long insight title here",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.warnings.some((w) => /description/.test(w))).toBe(true);
+      expect(r.warnings.some((w) => /source/.test(w))).toBe(true);
+    }
+  });
+});
