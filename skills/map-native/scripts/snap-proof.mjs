@@ -9,7 +9,7 @@ import { mkdir } from "node:fs/promises";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
-const outDir = process.env.OUTDIR ?? join(root, "output-proof", "choropleth");
+const outDir = process.env.OUTDIR ?? join(root, "output-proof", "default");
 await mkdir(outDir, { recursive: true });
 
 const htmlPath = join(root, "dist", "interactive", "index.html");
