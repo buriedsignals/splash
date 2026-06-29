@@ -12,7 +12,8 @@ intent**, it decides the right visual element (chart or map), format (static / i
 and producer, then emits the matching spec. It never invents data; if no visual serves the story, it says so.
 
 Producers: **dw-chart** (static Datawrapper chart — default), **chart-native** (motion or rich interactivity),
-**map-dw** (static choropleth map via Datawrapper).
+**map-dw** (static choropleth map via Datawrapper), **map-native** (interactive / video choropleth map),
+**scrolly** (scroll-driven guided narrative — geographic, Gate 3).
 
 ## Inputs
 
@@ -42,10 +43,20 @@ Producers: **dw-chart** (static Datawrapper chart — default), **chart-native**
 
 4. **Format (Gates 1–4):** read `<repo-root>/knowledge/references/formats/format-selection.md` (Gates 1–4).
    Static is the default (most readers do not interact). Escalate to interactive / scrolly / video ONLY on
-   the named conditions. For **maps**: static → `map-dw`; interactive (Gate 2: exploration hook) or video
-   (Gate 4: motion/social) → `map-native`. For **charts**: static → `dw-chart`; motion/rich interactivity
-   → `chart-native` (see Producer section). Scrolly (article → chapters) is slice 2 — record that
-   recommendation in the decision output but do not produce it here.
+   the named conditions.
+
+   **Map format ladder** (applied after Gate 5 routes to a map):
+   - **Static (Gate 1 — default):** → `map-dw`.
+   - **Interactive (Gate 2:** exploration hook — "find your country", per-region hover at scale, web-only)
+     or **Video (Gate 4:** temporal/spatial diffusion, social/vertical distribution) → `map-native`.
+   - **Scrolly (Gate 3:** the story is **irreducibly sequential** — the author paces a guided north→south /
+     step-by-step walk through the data, a single map evolves across 4+ discrete states, the piece is
+     long-form and NOT breaking news, and resources exist for the added production): → `scrolly`. See the
+     `scrolly` producer section below for emission, self-check, and produce call. A geographic story that
+     does NOT meet all four Gate 3 conditions stays `map-dw` (static) or `map-native` (interactive/video).
+
+   **Chart format ladder:** static → `dw-chart`; motion/rich interactivity → `chart-native` (see Producer
+   section).
 
 5. **Choose chart family** (chart path only): use the shared KB
    `<repo-root>/knowledge/references/chart-selection.md` — map intent → family → the *simplest* type that
@@ -189,7 +200,41 @@ Field notes:
 → static PNG + interactive HTML + 3 mp4s (landscape, square, portrait). The MapTiler key comes from
 `/atelier/.env` (`MAPTILER_API_KEY`) — it is **never logged**.
 
-**Scrolly** (article → chapters → `map-native` per chapter) is slice 2 — do not wire it here.
+### scrolly (scroll-driven geographic guided narrative — Gate 3)
+
+Used when Gate 5 routes to a map AND the format ladder (Gate 3) fires: the story is **irreducibly
+sequential** (north→south / step-by-step walk the author paces), a single map evolves across 4+ states,
+the piece is long-form (not breaking news), and resources exist. The scrolly v1 engine is map-based
+(chart scrolly is a future slice).
+
+**ISO-A3 requirement** (same as `map-native`): region identifiers MUST be ISO-A3 codes. If the data
+cannot be matched to ISO-A3 → fall back to `map-dw` or a sorted bar chart and state why.
+
+**Emitted config:** the scrolly engine reuses the choropleth config `map-native` uses — emit
+`producer:"scrolly"` + the same ChoroplethConfig fields:
+
+```json
+{
+  "producer": "scrolly",
+  "regionKey": "<data column holding ISO-A3 codes>",
+  "valueField": "<data column holding the normalised rate>",
+  "rows": [{ "<regionKey>": "<ISO-A3>", "<valueField>": <number> }, "…"],
+  "basemap": "world",
+  "title": "<the spatial insight — sentence case, ≥12 chars, not a label or year range>",
+  "description": "<what / when / where context>",
+  "unit": "<long legend label, e.g. 'Share of renewables (%)'>",
+  "valueUnit": "<short callout unit, e.g. '%'>",
+  "source": { "name": "<honest source>", "url": "<URL>" }
+}
+```
+
+**Self-check:** run `validateChoroplethConfig` (from `skills/map-native/src/validate-config.ts`) on the
+emitted config. Fix all errors; address warnings (description + source are required by the furniture
+standard). The scrolly config IS a choropleth config — the same validator applies.
+
+**Produce:** write the config to a temp JSON, then run from the `skills/scrolly/` directory:
+`bun scripts/produce.mjs <config.json> <outDir>` → produces a single-file `scrolly.html`.
+The MapTiler key comes from `/atelier/.env` (`MAPTILER_API_KEY`) — it is **never logged**.
 
 ## Guardrails (the code enforces these — propose within them)
 
@@ -213,6 +258,9 @@ Field notes:
 - **Map path — interactive/video (`map-native`):** the emitted config MUST pass `validateChoroplethConfig`
   (run it via `map-native/src/validate-config.ts`). Fix all errors. Address warnings (description +
   source.url are required by the furniture standard).
+- **Map path — scrolly (`scrolly`):** the emitted config MUST pass `validateChoroplethConfig` (same
+  validator as `map-native` — the scrolly config is a choropleth config). Fix all errors; address all
+  warnings. Cite Gate 3 as the format trigger in the decision output.
 - In all cases: the decision output MUST cite which gate(s) drove the routing (Gate 5 for geographic
   routing; format gates for format escalation; ISO-A3 fallback rule if applicable).
 
@@ -224,4 +272,7 @@ One of:
 - a `MapSpec` JSON with `producer: "map-dw"` (when Gate 5 routes to a map and format is static);
 - a `ChoroplethConfig` JSON with `producer: "map-native"` (when Gate 5 routes to a map and format is
   interactive or video — ISO-A3 codes required, else fall back to `map-dw` or bars);
+- a `ChoroplethConfig` JSON with `producer: "scrolly"` (when Gate 5 routes to a map and Gate 3 fires:
+  the story is an irreducibly sequential guided narrative — ISO-A3 codes required, validated via
+  `validateChoroplethConfig`, produced via `bun skills/scrolly/scripts/produce.mjs`);
 - or a `no-chart` decision with a reason.

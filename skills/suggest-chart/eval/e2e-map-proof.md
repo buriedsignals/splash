@@ -150,3 +150,73 @@ Produced artifacts:
 - **Video stills:** `video-landscape-still.png`, `video-square-still.png`, `video-portrait-still.png`
 
 The interactive proof snap confirms popup interaction works: hovering NOR triggered the Sweden popup (adjacent country at those screen coords), popup value assertion passed. All 5 output files produced without error.
+
+---
+
+## Scrolly (Gate 3) — slice 2
+
+Closing the ②→scrolly routing path with a real produced scrolly HTML.
+
+Case: `eu-renewables-scrolly`. A geographic guided narrative — "walk readers north-to-south through
+Europe's renewables divide, one country at a time" — fires Gate 3 (irreducibly sequential, author-paced,
+long-form). Gate 5 applies: spatial pattern + normalized rate + legible countries → map family. Gate 3
+escalates: sequential narrative, single map evolving across states → `scrolly` (not static/native).
+ISO-A3 codes confirmed (`NOR`, `SWE`, etc.) — no fallback needed.
+
+### Article / intent
+
+> "Walk readers north-to-south through Europe's renewables divide, one country at a time, building to the takeaway"
+
+### ChoroplethConfig emitted (`producer: "scrolly"`)
+
+```json
+{
+  "producer": "scrolly",
+  "regionKey": "code",
+  "valueField": "share",
+  "rows": [
+    { "code": "NOR", "share": 99 },
+    { "code": "SWE", "share": 68 },
+    { "code": "DEU", "share": 59 },
+    { "code": "GBR", "share": 48 },
+    { "code": "FRA", "share": 27 },
+    { "code": "ESP", "share": 44 },
+    { "code": "ITA", "share": 41 },
+    { "code": "POL", "share": 21 }
+  ],
+  "basemap": "world",
+  "title": "Europe's renewables divide: Norway leads, Poland lags — a north-to-south story",
+  "description": "Share of electricity generated from renewables, by European country, 2024 (%)",
+  "unit": "Share of renewables (%)",
+  "valueUnit": "%",
+  "source": {
+    "name": "Ember, Global Electricity Review 2025",
+    "url": "https://ember-climate.org/insights/research/global-electricity-review-2025/"
+  }
+}
+```
+
+The scrolly config is a ChoroplethConfig with `producer:"scrolly"` as the discriminator. The scrolly
+engine reuses the same config shape as `map-native`.
+
+### Validation
+
+`validateChoroplethConfig` (from `skills/map-native/src/validate-config.ts`) run on the emitted config:
+
+```json
+{ "ok": true, "warnings": [] }
+```
+
+0 errors, 0 warnings — regionKey/valueField present, rows non-empty with ISO-A3 codes and numeric values,
+basemap set, title is an insight (≥12 chars, not a year range), description and source (name + url) present.
+
+### Live production
+
+`bun scripts/produce.mjs <config.json> /tmp/system-test/scrolly-routed` (from `skills/scrolly/`).
+
+Produced artifact:
+
+- **Scrolly HTML:** `/tmp/system-test/scrolly-routed/scrolly.html` (5,512 kB single-file build, gzip 1,491 kB)
+
+The Vite build inlined all JS and CSS into a single self-contained HTML file. `PRODUCE_RESULT` confirmed
+the output path.
