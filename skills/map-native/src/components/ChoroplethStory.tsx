@@ -80,11 +80,12 @@ const CaptionCard: React.FC<{ text: string; reveal: number }> = ({
 
 // Title card — full-screen overlay shown only during the title beat (beatIndex 0).
 // Map is blank behind it (fillReveal 0). Fades in at start, fades out near end of beat.
-const TitleCard: React.FC<{ text: string; phase: Phase; frame: number }> = ({
-  text,
-  phase,
-  frame,
-}) => {
+const TitleCard: React.FC<{
+  text: string;
+  description?: string;
+  phase: Phase;
+  frame: number;
+}> = ({ text, description, phase, frame }) => {
   const holdStart = phase.startFrame + phase.moveFrames;
   const holdEnd = holdStart + phase.holdFrames;
   // Fade in over first 0.3s of hold, fade out over last 0.5s.
@@ -111,21 +112,35 @@ const TitleCard: React.FC<{ text: string; phase: Phase; frame: number }> = ({
         pointerEvents: "none",
       }}
     >
-      <p
-        style={{
-          margin: 0,
-          color: "#F5F2ED",
-          fontSize: 48,
-          fontWeight: 700,
-          lineHeight: 1.25,
-          textAlign: "center",
-          maxWidth: "70%",
-          letterSpacing: "-0.01em",
-          textShadow: "0 2px 16px rgba(0,0,0,0.8)",
-        }}
-      >
-        {text}
-      </p>
+      <div style={{ maxWidth: "70%", textAlign: "center" }}>
+        <p
+          style={{
+            margin: 0,
+            color: "#F5F2ED",
+            fontSize: 48,
+            fontWeight: 700,
+            lineHeight: 1.25,
+            letterSpacing: "-0.01em",
+            textShadow: "0 2px 16px rgba(0,0,0,0.8)",
+          }}
+        >
+          {text}
+        </p>
+        {description && (
+          <p
+            style={{
+              margin: "18px 0 0",
+              color: "#C9C4BB",
+              fontSize: 24,
+              fontWeight: 400,
+              lineHeight: 1.3,
+              textShadow: "0 2px 12px rgba(0,0,0,0.7)",
+            }}
+          >
+            {description}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
@@ -178,6 +193,7 @@ interface MapStory {
 export const ChoroplethStory: React.FC<{
   config: ChoroplethData & {
     title?: string;
+    description?: string;
     unit?: string;
     valueUnit?: string;
     insight?: string;
@@ -529,6 +545,7 @@ export const ChoroplethStory: React.FC<{
       {mapState && overlay?.beatIndex === 0 && mapState.beats[0].copy && (
         <TitleCard
           text={mapState.beats[0].copy}
+          description={config.description}
           phase={mapState.phases[0]}
           frame={frame}
         />

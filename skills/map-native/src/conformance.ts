@@ -21,6 +21,7 @@ export function contrastRatio(a: string, b: string): number {
 export function checkChoroplethConformance(
   input: {
     title: string;
+    description?: string;
     source: { name?: string; url?: string };
     scaleColors: string[];
     scaleType: "sequential" | "diverging";
@@ -37,6 +38,8 @@ export function checkChoroplethConformance(
   if (title.length < 12) v.push(`title too short to be an insight: "${title}"`);
   if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
     v.push(`title is a year range, not an insight: "${title}"`);
+  if (!input.description?.trim())
+    v.push("missing description — a module must state what/when/where");
   if (!input.source?.name?.trim()) v.push("missing source name");
   if (!input.source?.url?.trim()) v.push("missing source url");
   for (const t of textColors.text) {
