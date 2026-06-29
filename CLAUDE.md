@@ -161,6 +161,16 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - **Différé / prochains pas** : palier cartésien-axes (gridlines/ticks partagés = prochain L1) · 4e type FT (area, lollipop…) · maps web (MapLibre → 3 formats) · CADRAGE.
 - **Vidéo multi-format — FAIT** : `core/format.ts` (`resolveFrame`) scale la typo/marges par `scale` et centre le plot à un ratio sain ; `scale` câblé dans les 3 composants + ChartFrame. Compositions Remotion paysage (840×480) + **carré 1080×1080** + **portrait 4:5 1080×1350** pour les 3 types (LineSquare/LinePortrait, Bar*, Scatter*). Paysage prouvé inchangé (le centrage ne se déclenche pas quand availH < idealH). Vérifié au rendu (portrait line/bar/scatter lisibles, titre 2 lignes sans chevauchement, bulles/texte scalés). 9:16 (1080×1920) rendable aussi via une compo si besoin.
 
+## suggest-visual routing — COMPLET (4 formats routés depuis un article) ★ jalon
+- **MERGÉ dans `main`** (`c1c6189`, 2026-06-29) : le routeur `suggest-chart`/`suggest-visual` choisit maintenant l'**élément** (chart vs map, Gate 5) + le **format** (statique / interactif / vidéo / scrolly) + un discriminant `producer`. Les 4 formats sont routés et prouvés live e2e :
+  - **chart** → `dw-chart` (statique) / `chart-native` (interactif/vidéo) — ranking EV → barres.
+  - **map statique** → `map-dw` (MapSpec) — gradient EU renouvelables → choropleth `2C3f2`.
+  - **map native** → `map-native` (ChoroplethConfig, interactif Gate 2 / vidéo Gate 4) — "trouve ton pays" → carte explorable + 3 mp4.
+  - **scrolly** → `scrolly` (réutilise ChoroplethConfig + `validateChoroplethConfig`, Gate 3 narratif séquentiel) — "nord→sud, un pays à la fois" → `scrolly.html` 5.5 MB vérifié à l'œil (establish full map → flyTo Norway "99%, the highest of the 8 shown").
+- **Gate grounded, pas un knob** : la décision élément/format est le **jugement de l'IA**, ancré dans `knowledge/references/formats/format-selection.md` (Gate 0→5). Jamais une question à l'utilisateur. `scoreSpec` (`eval/score.ts`) est le gate déterministe : `isMap = producer ∈ {map-dw,map-native,scrolly}`, mismatch `expect.producer` → fail, `map-native|scrolly` → `validateChoroplethConfig`, `map-dw` → `validateMapSpec`.
+- **scrolly v1 = map-based** ; le scrolly chart (histoire non-géo en scroll) est différé jusqu'à ce que chart-native se branche sur l'orchestrateur scrolly.
+- **Prochaine phase (décidée Rémy)** : couvrir **tous les types de map MapTiler** dans `map-native` (proportional symbol, flow/route, dot-density, hex/grid, cartogram, contour, locator) un par un via la recette — comme les 41 types de chart-native.
+
 ## Backlog (suggest-visual map routing — deferred from slice-1 review)
 - **`producer` discriminator is convention-only (TS-invisible)** : la SKILL.md fait émettre `producer:"map-dw"` et `score.ts` le lit, mais `ChoroplethMapSpec` n'a pas ce champ → un spec typé le perdrait à la compilation. Fix futur : ajouter `producer?:"map-dw"` au type (ou une union discriminée au niveau `MapSpec`). Marche au runtime (champs extra non rejetés).
 - **Cas eval manquants** : "absolute counts (not rates) → bar" et "régions géo mais aucun basemap ne matche → bar fallback" (le cas `regions-no-basemap` teste 'pas de structure géo', pas 'géo sans basemap'). À ajouter pour couvrir Gate 5 à 100%.
