@@ -47,6 +47,11 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
   // -------------------------------------------------------------------------
   const [currentStep, setCurrentStep] = useState(0);
 
+  // The active step's BEAT ref — what ScrollyMap flies to. Steps are not 1:1 with
+  // beats (establish / empty-takeaway are dropped), so resolve through the chapter.
+  const stepRef = story.steps[currentStep]?.ref;
+  const currentBeatRef = typeof stepRef === "number" ? stepRef : 0;
+
   // -------------------------------------------------------------------------
   // Ref array for prose step DOM nodes — one slot per step.
   // -------------------------------------------------------------------------
@@ -165,7 +170,10 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
         {/* Sticky graphic — the map stays pinned while prose steps scroll above */}
         <div style={stickyGraphicStyle}>
           {/* v1: visual="map". Future: switch(story.visual) to swap graphic. */}
-          <ScrollyMap config={config} currentStep={currentStep} />
+          {/* Pass the active step's BEAT ref (not the step index) — steps no longer
+              map 1:1 to beats (the establish/empty-takeaway beats are dropped from
+              the scroll), so ScrollyMap must fly to story.steps[currentStep].ref. */}
+          <ScrollyMap config={config} currentStep={currentBeatRef} />
         </div>
 
         {/* Prose column — scrolls normally over the sticky graphic */}

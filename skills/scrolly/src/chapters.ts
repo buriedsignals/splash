@@ -19,20 +19,31 @@ export interface ScrollyStory {
   steps: ScrollyStep[];
 }
 
-// v1: one scroll step per map beat. Prose = the beat's copy, falling back to the
-// story title when a beat carries no words (the establish beat is intentionally
-// caption-less in the video — but a scroll step always needs text beside the map).
+// v1: one scroll step per MEANINGFUL map beat. The title shows exactly once, so:
+//  - the `establish` beat is dropped (it's the video's fade-in over the same full
+//    extent the title beat already frames — in scroll it would just repeat the title),
+//  - a `takeaway` beat with no distinct closing line (its copy equals the title, so
+//    map-story left it empty) is dropped too, rather than falling back to the title
+//    and making it reappear at the end.
+// Each remaining beat keeps its ORIGINAL index as `ref` (ScrollyMap indexes the full
+// beats array). Cards are centred by default.
 export function mapStoryToChapters(
   beats: Beat[],
   meta: { title: string; source?: { name: string; url: string } },
 ): ScrollyStory {
-  const steps: ScrollyStep[] = beats.map((b, i) => ({
-    id: `step-${i}-${b.kind}`,
-    visual: "map",
-    action: "flyTo",
-    ref: i,
-    prose: b.copy && b.copy.trim() ? b.copy : meta.title,
-    align: "left",
-  }));
+  const steps: ScrollyStep[] = [];
+  beats.forEach((b, i) => {
+    if (b.kind === "establish") return;
+    const hasCopy = !!(b.copy && b.copy.trim());
+    if (b.kind === "takeaway" && !hasCopy) return;
+    steps.push({
+      id: `step-${i}-${b.kind}`,
+      visual: "map",
+      action: "flyTo",
+      ref: i,
+      prose: hasCopy ? b.copy : meta.title,
+      align: "center",
+    });
+  });
   return { title: meta.title, source: meta.source, visual: "map", steps };
 }
