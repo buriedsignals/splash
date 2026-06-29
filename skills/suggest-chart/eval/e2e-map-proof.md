@@ -26,15 +26,26 @@ sovereign states — all three conditions for map routing are satisfied. ② emi
 ```json
 {
   "producer": "map-dw",
-  "family": "geographic",
+  "mapType": "choropleth",
   "basemap": "europe-sovereign-states",
-  "joinKey": "ISO_3_SOV",
+  "mapKeyAttr": "ISO_3_SOV",
+  "regionKey": "code",
   "valueColumn": "share",
-  "title": "Renewables reach near-total coverage in the north, trail off sharply southward",
-  "colorScheme": "sequential-green",
-  "caption": "Share of renewables in electricity production, %. Source: Ember, 2024."
+  "data": "code,share\nNOR,99\nSWE,68\nFIN,51\nDEU,59\nGBR,48\nFRA,27\nESP,44\nITA,41\nPOL,21\nGRC,38\nPRT,61\nNLD,40",
+  "title": "Renewables form a clear north–south gradient across Europe",
+  "intro": "Share of electricity from renewables, 2024 (%)",
+  "colorScale": [
+    { "color": "#f7fbff", "position": 0 },
+    { "color": "#08519c", "position": 1 }
+  ],
+  "source": { "name": "Ember, Global Electricity Review 2025" },
+  "altInsight": "Renewables supply nearly all of Norway and Sweden's electricity but only a fifth to a half across southern Europe"
 }
 ```
+
+(These are the real `ChoroplethMapSpec` fields — `mapType`, `mapKeyAttr`, `regionKey`, `valueColumn`,
+`data`, `colorScale` as `{color,position}[]`, `altInsight` — the exact shape `validateMapSpec` checks;
+`producer:"map-dw"` is the routing discriminator the eval gate reads.)
 
 Join key `ISO_3_SOV` = ISO-A3 codes; the `code` column in the CSV is a direct bind — no
 intermediate lookup required.
