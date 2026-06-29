@@ -1,5 +1,8 @@
 import { describe, it, expect } from "bun:test";
-import { checkChoroplethConformance } from "../src/conformance";
+import {
+  checkChoroplethConformance,
+  checkSymbolConformance,
+} from "../src/conformance";
 
 const text = { text: ["#1A1A1A", "#6B6B6B"], bg: "#FFFFFF" };
 const ok = {
@@ -72,5 +75,71 @@ describe("checkChoroplethConformance", () => {
       text,
     );
     expect(r.some((v) => /description/i.test(v))).toBe(true);
+  });
+});
+
+const symText = { text: ["#1A1A1A", "#6B6B6B"], bg: "#FFFFFF" };
+const okSymbol = {
+  title: "Madrid dwarfs Paris and Berlin on this measure",
+  description: "Value by city, 2024",
+  source: { name: "Source 2025", url: "https://example.org/x" },
+  sizingMode: "area" as const,
+  hasLegend: true,
+  legendStops: 3,
+  maxRadiusPx: 40,
+  viewportMinPx: 720,
+  pointsWithData: 3,
+  boundsNonEmpty: true,
+  strokeContrast: 4,
+};
+
+describe("checkSymbolConformance", () => {
+  it("passes a conformant symbol map", () => {
+    expect(checkSymbolConformance(okSymbol, symText)).toEqual([]);
+  });
+  it("flags radius-proportional sizing", () => {
+    expect(
+      checkSymbolConformance(
+        { ...okSymbol, sizingMode: "radius" },
+        symText,
+      ).some((m) => /area-proportional/.test(m)),
+    ).toBe(true);
+  });
+  it("flags a missing legend", () => {
+    expect(
+      checkSymbolConformance({ ...okSymbol, hasLegend: false }, symText).some(
+        (m) => /legend/.test(m),
+      ),
+    ).toBe(true);
+  });
+  it("flags fewer than two legend stops", () => {
+    expect(
+      checkSymbolConformance({ ...okSymbol, legendStops: 1 }, symText).some(
+        (m) => /legend/.test(m),
+      ),
+    ).toBe(true);
+  });
+  it("flags a symbol that swallows the map", () => {
+    expect(
+      checkSymbolConformance(
+        { ...okSymbol, maxRadiusPx: 300, viewportMinPx: 720 },
+        symText,
+      ).some((m) => /too large|swallows|viewport/.test(m)),
+    ).toBe(true);
+  });
+  it("flags a faint stroke (symbol not separable from basemap)", () => {
+    expect(
+      checkSymbolConformance(
+        { ...okSymbol, strokeContrast: 1.2 },
+        symText,
+      ).some((m) => /stroke/.test(m)),
+    ).toBe(true);
+  });
+  it("flags a year-range title", () => {
+    expect(
+      checkSymbolConformance({ ...okSymbol, title: "2024" }, symText).some(
+        (m) => /title/.test(m),
+      ),
+    ).toBe(true);
   });
 });
