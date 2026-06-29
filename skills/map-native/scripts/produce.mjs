@@ -67,11 +67,19 @@ if (formats === "all") {
 
     const remotionEntry = join(root, "remotion", "src", "index.ts");
 
-    for (const [comp, name] of [
-      ["ChoroplethStory", "landscape"],
-      ["ChoroplethStorySquare", "square"],
-      ["ChoroplethStoryPortrait", "portrait"],
-    ]) {
+    const storyComps =
+      config.type === "symbol"
+        ? [
+            ["SymbolStory", "landscape"],
+            ["SymbolStorySquare", "square"],
+            ["SymbolStoryPortrait", "portrait"],
+          ]
+        : [
+            ["ChoroplethStory", "landscape"],
+            ["ChoroplethStorySquare", "square"],
+            ["ChoroplethStoryPortrait", "portrait"],
+          ];
+    for (const [comp, name] of storyComps) {
       const stillOut = join(outDir, `video-${name}-still.png`);
       const mp4Out = join(outDir, `${name}.mp4`);
 

@@ -4,6 +4,9 @@
 //   ChoroplethStory       — Choropleth story landscape 1280×720
 //   ChoroplethStorySquare — Choropleth story square 1080×1080
 //   ChoroplethStoryPortrait — Choropleth story portrait 1080×1350
+//   SymbolStory           — Symbol map story landscape 1280×720
+//   SymbolStorySquare     — Symbol map story square 1080×1080
+//   SymbolStoryPortrait   — Symbol map story portrait 1080×1350
 //
 // Render HarnessCheck to prove the harness:
 //   bunx remotion render remotion/src/index.ts HarnessCheck out/harness-check.mp4 --gl=angle --concurrency=1 --timeout=120000
@@ -18,10 +21,12 @@ import { Composition } from "remotion";
 import { RiverReveal } from "../../src/components/RiverReveal";
 import { HarnessCheck } from "../../src/components/HarnessCheck";
 import { ChoroplethStory } from "../../src/components/ChoroplethStory";
+import { SymbolStory } from "../../src/components/SymbolStory";
 import { computeChoropleth } from "../../src/choropleth-geo";
 import { deriveMapStory } from "../../src/map-story";
 import { buildTimeline } from "../../src/story-timeline";
 import sampleConfig from "../../assets/sample-data/choropleth.json";
+import sampleSymbol from "../../assets/sample-data/symbol.json";
 import world from "../../assets/geo/world.geojson";
 
 const sampleLayout = computeChoropleth(sampleConfig, world as any, "iso_a3", {
@@ -39,6 +44,9 @@ const STORY_FRAMES = buildTimeline(
 ).totalFrames;
 
 const choroplethDefaultProps = { config: sampleConfig };
+
+const symbolDefaultProps = { config: sampleSymbol };
+const SYMBOL_FRAMES = 5 * 30;
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -84,6 +92,33 @@ export const RemotionRoot: React.FC = () => (
       width={1080}
       height={1350}
       defaultProps={choroplethDefaultProps}
+    />
+    <Composition
+      id="SymbolStory"
+      component={SymbolStory}
+      durationInFrames={SYMBOL_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={symbolDefaultProps}
+    />
+    <Composition
+      id="SymbolStorySquare"
+      component={SymbolStory}
+      durationInFrames={SYMBOL_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={symbolDefaultProps}
+    />
+    <Composition
+      id="SymbolStoryPortrait"
+      component={SymbolStory}
+      durationInFrames={SYMBOL_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={symbolDefaultProps}
     />
   </>
 );
