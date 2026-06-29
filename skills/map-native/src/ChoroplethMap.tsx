@@ -344,13 +344,35 @@ export const ChoroplethMap: React.FC<Props> = ({
             background: "rgba(255,255,255,0.92)",
             padding: "8px 12px",
             borderRadius: 6,
-            maxWidth: 320,
+            // Responsive: never overflow a phone screen.
+            maxWidth: "min(320px, calc(100vw - 32px))",
             boxShadow: "0 1px 6px rgba(0,0,0,.12)",
           }}
         >
-          <div style={{ font: "600 13px/1.3 sans-serif", color: "#1a1a1a" }}>
+          <div
+            style={{
+              fontFamily: "sans-serif",
+              fontWeight: 600,
+              fontSize: "clamp(13px, 3.6vw, 14px)",
+              lineHeight: 1.3,
+              color: "#1a1a1a",
+            }}
+          >
             {config.title}
           </div>
+          {config.description && (
+            <div
+              style={{
+                fontFamily: "sans-serif",
+                fontSize: "clamp(11px, 3vw, 12px)",
+                lineHeight: 1.35,
+                color: "#555",
+                marginTop: 3,
+              }}
+            >
+              {config.description}
+            </div>
+          )}
         </div>
       )}
 
@@ -368,6 +390,7 @@ export const ChoroplethMap: React.FC<Props> = ({
           borderRadius: 6,
           boxShadow: "0 1px 6px rgba(0,0,0,.12)",
           minWidth: 120,
+          maxWidth: "min(160px, 42vw)",
         }}
       />
 
