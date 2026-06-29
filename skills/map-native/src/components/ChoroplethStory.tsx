@@ -178,6 +178,7 @@ interface MapStory {
 export const ChoroplethStory: React.FC<{
   config: ChoroplethData & {
     title?: string;
+    description?: string;
     unit?: string;
     valueUnit?: string;
     insight?: string;

@@ -4,6 +4,7 @@ import { checkChoroplethConformance } from "../src/conformance";
 const text = { text: ["#1A1A1A", "#6B6B6B"], bg: "#FFFFFF" };
 const ok = {
   title: "Renewables power most of Europe's north, less of its south",
+  description: "Share of electricity from renewables, by country, 2024",
   source: { name: "Ember 2025", url: "https://ourworldindata.org/x" },
   scaleColors: ["#deebf7", "#9ecae1", "#4292c6", "#2171b5", "#084594"],
   scaleType: "sequential" as const,
@@ -64,5 +65,12 @@ describe("checkChoroplethConformance", () => {
     expect(checkChoroplethConformance({ ...ok, storyBeats: 4 }, text)).toEqual(
       [],
     );
+  });
+  it("flags a missing description (a module must state what/when/where)", () => {
+    const r = checkChoroplethConformance(
+      { ...ok, description: undefined },
+      text,
+    );
+    expect(r.some((v) => /description/i.test(v))).toBe(true);
   });
 });

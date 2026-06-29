@@ -11,6 +11,7 @@ maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 export interface ChoroplethConfig extends ChoroplethData {
   title?: string;
+  description?: string;
   unit?: string; // the long legend label, e.g. "share of electricity… (%)"
   valueUnit?: string; // the SHORT value suffix for tooltips, e.g. "%"
   source?: { name: string; url: string };
