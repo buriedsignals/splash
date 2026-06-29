@@ -143,7 +143,7 @@ basemap set, title is an insight (≥12 chars, not a year range), description an
 Produced artifacts:
 
 - **Static PNG:** `/tmp/system-test/native-map/static.png` (469 kB)
-- **Interactive HTML proof PNG:** `/tmp/system-test/native-map/interactive.png` (444 kB) — popup triggered on NOR, assertion passed
+- **Interactive HTML proof PNG:** `/tmp/system-test/native-map/interactive.png` (444 kB) — popup triggered at the NOR hover coords (the adjacent SWE polygon was hit there), value assertion passed
 - **Landscape mp4:** `/tmp/system-test/native-map/landscape.mp4` (3.5 MB)
 - **Square mp4:** `/tmp/system-test/native-map/square.mp4` (4.4 MB)
 - **Portrait mp4:** `/tmp/system-test/native-map/portrait.mp4` (5.0 MB)

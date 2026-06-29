@@ -40,9 +40,9 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
   }
 
   const producer = (spec as Record<string, unknown> | null)?.["producer"];
-  const isMap =
-    producer === "map-dw" ||
-    (!!spec && typeof spec === "object" && "basemap" in (spec as object));
+  // Both map producers always emit `producer` — discriminate on it explicitly
+  // (a stray `basemap` field on a chart spec must not be misclassified as a map).
+  const isMap = producer === "map-dw" || producer === "map-native";
   const wantMap = expect.element === "map";
 
   if (wantMap !== isMap) {
