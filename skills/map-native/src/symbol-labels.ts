@@ -35,3 +35,15 @@ export function symbolLabels(symbols: PlacedSymbol[]): SymbolLabel[] {
     radius: s.radius,
   }));
 }
+
+// Radial offset (in ems) that places a label just OUTSIDE a circle of `radius` px,
+// for MapLibre `text-radial-offset` (which is in ems). `text-radial-offset` needs a
+// distance from the point centre; the circle edge is `radius` px out, plus a small
+// `gap` of clearance, divided by the label's `textSize` to convert px → ems.
+export function labelRadialOffset(
+  radius: number,
+  textSize: number,
+  gap = 6,
+): number {
+  return (radius + gap) / textSize;
+}

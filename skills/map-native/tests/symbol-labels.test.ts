@@ -1,5 +1,9 @@
 import { describe, it, expect } from "bun:test";
-import { symbolLabels, formatLabelValue } from "../src/symbol-labels";
+import {
+  symbolLabels,
+  formatLabelValue,
+  labelRadialOffset,
+} from "../src/symbol-labels";
 import type { PlacedSymbol } from "../src/symbol-geo";
 
 const sym = (over: Partial<PlacedSymbol>): PlacedSymbol => ({
@@ -47,5 +51,20 @@ describe("symbolLabels", () => {
   });
   it("is deterministic", () => {
     expect(symbolLabels(symbols)).toEqual(labels);
+  });
+});
+
+describe("labelRadialOffset", () => {
+  it("returns (radius + gap) / textSize in ems", () => {
+    expect(labelRadialOffset(40, 13, 6)).toBeCloseTo((40 + 6) / 13, 6);
+  });
+  it("defaults the gap to 6px", () => {
+    expect(labelRadialOffset(20, 10)).toBeCloseTo((20 + 6) / 10, 6);
+  });
+  it("grows with radius (a bigger circle pushes its label further out)", () => {
+    expect(labelRadialOffset(40, 13)).toBeGreaterThan(labelRadialOffset(8, 13));
+  });
+  it("is deterministic", () => {
+    expect(labelRadialOffset(30, 12)).toBe(labelRadialOffset(30, 12));
   });
 });
