@@ -176,7 +176,7 @@ export const ScrollySymbolMap: React.FC<{
       const cameras: (CameraPoint | null)[] = beats.map((b) => {
         const result = map.cameraForBounds(
           b.camera as maptilersdk.LngLatBoundsLike,
-          { padding: 48 },
+          { padding: 64 },
         );
         if (!result) return null;
         return {
@@ -243,11 +243,6 @@ export const ScrollySymbolMap: React.FC<{
       <style>{`
         .maplibregl-ctrl-bottom-left,
         .maptiler-logo { display: none !important; }
-        .maplibregl-popup-content {
-          font: 13px/1.4 sans-serif;
-          padding: 8px 10px;
-          border-radius: 4px;
-        }
       `}</style>
 
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
