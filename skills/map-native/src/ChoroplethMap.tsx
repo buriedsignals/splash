@@ -4,6 +4,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
 const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 import { computeChoropleth, type ChoroplethData } from "./choropleth-geo";
+import { makeResetControl } from "./controls";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -26,41 +27,6 @@ interface Props {
 // Exported so tests can assert colour distinctness
 export { NO_DATA_COLOR, WATER_COLOR } from "./theme/colors";
 import { NO_DATA_COLOR, WATER_COLOR } from "./theme/colors";
-
-/** Minimal IControl that resets the map to the initial data bounds. */
-function makeResetControl(
-  dataBounds: [number, number, number, number],
-): maptilersdk.IControl {
-  let _map: maptilersdk.Map | null = null;
-  let _btn: HTMLButtonElement | null = null;
-
-  return {
-    onAdd(map: maptilersdk.Map): HTMLElement {
-      _map = map;
-      const container = document.createElement("div");
-      container.className = "maplibregl-ctrl maplibregl-ctrl-group";
-
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.setAttribute("aria-label", "Reset map view");
-      btn.textContent = "⌂";
-      btn.style.cssText =
-        "width:29px;height:29px;font-size:16px;cursor:pointer;background:#fff;border:none;border-radius:4px;display:flex;align-items:center;justify-content:center;line-height:1;";
-      btn.addEventListener("click", () => {
-        _map?.fitBounds(dataBounds, { padding: 48, duration: 600 });
-      });
-      _btn = btn;
-
-      container.appendChild(btn);
-      return container;
-    },
-    onRemove(): void {
-      _btn?.remove();
-      _btn = null;
-      _map = null;
-    },
-  };
-}
 
 export const ChoroplethMap: React.FC<Props> = ({
   config,
