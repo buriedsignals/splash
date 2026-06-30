@@ -56,9 +56,7 @@ for (const w of [360, 768, 1100, 1600]) {
       scrollOk:
         document.documentElement.scrollWidth <= window.innerWidth + 1,
       titleOk: inView('[data-testid="map-title"]'),
-      sourceOk: !!document.querySelector(
-        '[data-testid="map-source"] a[href], [data-testid="map-source"]',
-      ),
+      sourceOk: inView('[data-testid="map-source"]'),
       legendOk: inView('[data-testid="map-legend"]'),
     };
   });
