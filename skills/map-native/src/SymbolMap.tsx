@@ -243,7 +243,12 @@ export const SymbolMap: React.FC<Props> = ({
       `}</style>
 
       {/* Map canvas — stable DOM node; the map is mounted into this div */}
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+      <div
+        ref={containerRef}
+        role="region"
+        aria-label={config.title ?? "map"}
+        style={{ width: "100%", height: "100%" }}
+      />
 
       {/* Legend — bottom-right so it does not collide with MapFrame's bottom-left source */}
       <div
