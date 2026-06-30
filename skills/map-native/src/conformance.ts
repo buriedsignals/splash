@@ -188,6 +188,7 @@ export function checkMapFraming(input: {
   description?: string;
   hasSource: boolean;
   titleLines?: number;
+  legendHeight?: number;
 }): string[] {
   const v: string[] = [];
   const titleLines = input.titleLines ?? 2;
@@ -206,5 +207,9 @@ export function checkMapFraming(input: {
   if (frame.pad.bottom <= 0) v.push("no source band reserved");
   if (!input.hasSource)
     v.push("source band empty — every format must cite the source");
+  if (input.legendHeight && frame.pad.bottom < input.legendHeight)
+    v.push(
+      "legend overruns the reserved bottom band — data would sit under the legend",
+    );
   return v;
 }

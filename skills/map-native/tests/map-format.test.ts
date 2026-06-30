@@ -45,4 +45,10 @@ describe("resolveMapFrame", () => {
   it("is deterministic", () => {
     expect(resolveMapFrame(1080, 1350)).toEqual(resolveMapFrame(1080, 1350));
   });
+  it("reserves the supplied legend height in the bottom pad", () => {
+    const small = resolveMapFrame(1280, 720, { legendHeight: 0 });
+    const big = resolveMapFrame(1280, 720, { legendHeight: 160 });
+    expect(big.pad.bottom).toBeGreaterThanOrEqual(160);
+    expect(big.pad.bottom).toBeGreaterThan(small.pad.bottom);
+  });
 });

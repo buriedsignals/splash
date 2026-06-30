@@ -29,7 +29,7 @@ export function MapFrame({
   frame,
   children,
 }: MapFrameProps) {
-  const m = Math.round(12 * frame.scale);
+  const m = Math.round(Math.max(12, 16) * frame.scale);
   const pillStyle = responsive
     ? {
         background: FRAME_COLORS.pill,
@@ -52,6 +52,7 @@ export function MapFrame({
           left: m,
           zIndex: 10,
           maxWidth: width - 2 * m,
+          boxSizing: "border-box",
           pointerEvents: "none",
           ...pillStyle,
         }}

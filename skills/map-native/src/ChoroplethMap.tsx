@@ -275,10 +275,14 @@ export const ChoroplethMap: React.FC<Props> = ({
     ? `Interactive map: ${config.title}`
     : "Interactive choropleth map";
 
+  // Conservative estimate: 5 bins × 18 px/row + 36 px header/no-data row = 126 px.
+  // Keeps the legend visually clear of the data area without measuring the DOM.
+  const CHOROPLETH_LEGEND_HEIGHT = 5 * 18 + 36;
   const frame = resolveMapFrame(containerSize.w, containerSize.h, {
     titleLines: 2,
     hasDescription: !!config.description,
     labelOverhang: 24,
+    legendHeight: CHOROPLETH_LEGEND_HEIGHT,
   });
   frameRef.current = frame;
 

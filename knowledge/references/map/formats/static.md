@@ -17,8 +17,11 @@ The only acceptable non-cartographic element is the **licensing attribution** (�
 ## Furniture placement
 
 Title, source line, and legend must sit inside a **safe gutter** — a minimum inset from
-every edge (recommended: 12–16 px at 1×). Nothing should be flush to the border.
+every edge (≥ 16 px at 1×, scaled by canvas size). Nothing should be flush to the border.
+The title pill keeps at least `G = 16 × scale` px from the left, right, and top edges;
+`maxWidth` is set to `width − 2G` so a wrapped title never reaches the frame boundary.
 At the export resolution, every text element must remain legible without zoom.
+Source: FT Visual Vocabulary (layout hierarchy).
 
 ## Why controls are forbidden
 

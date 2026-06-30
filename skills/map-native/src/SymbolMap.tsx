@@ -227,6 +227,7 @@ export const SymbolMap: React.FC<Props> = ({
     titleLines: 2,
     hasDescription: !!config.description,
     labelOverhang: 80,
+    legendHeight: (geo.legend[0]?.radius ?? 0) * 2 + 28,
   });
   frameRef.current = frame;
 

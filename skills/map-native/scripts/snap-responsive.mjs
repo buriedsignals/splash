@@ -30,6 +30,7 @@ for (const w of [360, 768, 1100, 1600]) {
         (m.getLayer("choropleth-fill") || m.getLayer("symbol-circles"))
       );
     },
+    undefined,
     { timeout: 60_000 },
   );
   await page.waitForTimeout(2500); // let tiles + reveal settle
@@ -40,6 +41,7 @@ for (const w of [360, 768, 1100, 1600]) {
     .screenshot({ path: join(outDir, `responsive-${w}.png`) });
 
   const checks = await page.evaluate(() => {
+    const G = 14; // minimum gutter from frame edges (px, at device pixels)
     const inView = (sel) => {
       const el = document.querySelector(sel);
       if (!el) return false;
@@ -53,10 +55,17 @@ for (const w of [360, 768, 1100, 1600]) {
         r.bottom <= window.innerHeight + 1
       );
     };
+    const titleGutterOk = (() => {
+      const el = document.querySelector('[data-testid="map-title"]');
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      return r.left >= G && r.right <= window.innerWidth - G;
+    })();
     return {
       scrollOk:
         document.documentElement.scrollWidth <= window.innerWidth + 1,
       titleOk: inView('[data-testid="map-title"]'),
+      titleGutterOk,
       sourceOk: inView('[data-testid="map-source"]'),
       legendOk: inView('[data-testid="map-legend"]'),
     };

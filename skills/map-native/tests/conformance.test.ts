@@ -253,6 +253,17 @@ describe("checkMapFraming", () => {
       }).some((m) => /source band empty/.test(m)),
     ).toBe(true);
   });
+  it("flags a legend taller than the reserved bottom band", () => {
+    expect(
+      checkMapFraming({
+        width: 1280,
+        height: 720,
+        title: "Renewables power most of Europe's north, by country",
+        hasSource: true,
+        legendHeight: 400,
+      }).some((m) => /legend/.test(m)),
+    ).toBe(true);
+  });
 });
 
 describe("checkSymbolConformance — label carries the unit", () => {

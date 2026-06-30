@@ -29,10 +29,14 @@ A produced map MUST satisfy all eight rules below across static / interactive / 
    respected in the colour spec passed to `checkChoroplethConformance`.
 
 7. **Framing / safe-area** — the title lives in a reserved top band (never overlaid on map data);
-   the source lives in a reserved bottom band; nothing overruns the canvas. Band heights and
-   font sizes are format-aware. Source: FT Visual Vocabulary (layout). Guaranteed by
-   `MapFrame` / `resolveMapFrame`; asserted at build time by `checkMapFraming` and the
-   `snap-responsive` harness.
+   the legend occupies a RESERVED band sized to its rendered height — no data feature renders
+   under the title or the legend; furniture keeps a safe gutter from the frame edges; nothing
+   overruns the canvas. Band heights and font sizes are format-aware. `resolveMapFrame` accepts
+   a `legendHeight` param and sets `pad.bottom = max(sourceBand, legendHeight + margin)` so the
+   data extent is always clear of the legend. Source: FT Visual Vocabulary (layout),
+   Datawrapper Academy. Guaranteed by `MapFrame` / `resolveMapFrame`; asserted at build time
+   by `checkMapFraming` (including `legendHeight` overrun check) and the `snap-responsive`
+   harness (title gutter assertion).
 
 8. **Direct labels** — proportional-symbol maps carry name + value labels on each symbol (not
    hover-only). A directly-labelled value states its unit — "296$bn" not "296". Source:
