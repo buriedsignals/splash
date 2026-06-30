@@ -29,14 +29,23 @@ Every fix below names the layer its best-practice line lands in.
 
 ## The seven fixes (each = code + conformance + KB layer + harness)
 
-### 1. Static maps show NO map controls
-- **Bug:** `skills/map-native/src/mount.tsx` defaults `interactive` to `true` when `__INTERACTIVE__`
-  is undefined; the STATIC build sets no `INTERACTIVE` env, so it renders interactive → the
-  NavigationControl + reset control appear in static output.
-- **Code:** flip the default — static is non-interactive. `const interactive = typeof __INTERACTIVE__ !== "undefined" ? __INTERACTIVE__ : false;` (the interactive build explicitly defines `__INTERACTIVE__ = true`). Confirm `vite.config` defines `__INTERACTIVE__` from `process.env.INTERACTIVE === "1"` for both builds; if it only defines it under INTERACTIVE, the `?? false` default now correctly yields a control-free static map.
-- **Conformance:** n/a structural (controls are render chrome, not a config rule) — covered by the harness assertion.
-- **KB:** **format** `map/formats/static.md` — "a static map carries no interactive chrome (no zoom/nav/reset controls); it is an image."
-- **Harness:** `snap-static.mjs` asserts `document.querySelectorAll(".maplibregl-ctrl button").length === 0`.
+### 1. Static maps show NO map controls (guard + build isolation)
+- **Diagnosis (corrected):** the static build itself is already control-free — `vite.config` defines
+  `__INTERACTIVE__ = (process.env.INTERACTIVE === "1")` for BOTH builds, so the static build's
+  `__INTERACTIVE__` is `false` → `mount` sets `interactive:false` → no nav/reset controls; a fresh
+  static build's DOM has `.maplibregl-ctrl button` count `0` (only the legally-required attribution).
+  The controls the user saw in a "static" render came from the **shared-`dist/` contamination class
+  of bug** (concurrent/overlapping `produce` runs whose Vite builds write the same fixed `dist/static`
+  and `dist/interactive` paths, so a static snapshot can capture the wrong build). The fix is therefore
+  a **guard** + **build-output isolation**, not a `mount` change.
+- **Code (isolation):** `scripts/produce.mjs` builds into a per-run-unique output directory instead of
+  the fixed `dist/static`/`dist/interactive`, and the snap scripts serve from that directory (passed via
+  an env var, falling back to the current `dist/...` paths for standalone use). Two `produce` runs (even
+  concurrent, even different configs/types) can then never contaminate each other's static/interactive
+  snapshots. `vite.config` reads the build-output dir from env (e.g. `BUILD_OUT`).
+- **Conformance:** n/a structural — covered by the harness assertion.
+- **KB:** **format** `map/formats/static.md` — "a static map carries no interactive chrome (no zoom/nav/reset controls); it is an image. Only the licensing attribution is shown."
+- **Harness (guard):** `snap-static.mjs` asserts `document.querySelectorAll(".maplibregl-ctrl button").length === 0` and exits non-zero otherwise — so a controls-in-static render can never ship (produce fails loudly), whatever the cause.
 
 ### 2. Data is never covered by the title or the legend (static + video)
 - **Code:** `resolveMapFrame` becomes legend-aware: add `legendHeight?: number` to its opts; `pad.bottom = max(sourceBand, legendHeight + MARGIN×scale) + …`. Each component measures/knows its legend box height and passes it (symbol: the nested-circle SVG height; choropleth: the bins legend height). The data extent is then framed above the legend band (and below the title band) by the existing `fitBounds(pad)`.
@@ -76,8 +85,8 @@ Every fix below names the layer its best-practice line lands in.
 
 ## Files touched
 
-- Code: `src/mount.tsx` (1), `src/core/map-format.ts` `resolveMapFrame` (2), `src/core/MapFrame.tsx` (4), `src/SymbolMap.tsx` (3,5,6,7), `src/components/SymbolStory.tsx` (3), `src/ChoroplethMap.tsx` (6,7), `src/conformance.ts` (2,3).
-- Harness: `scripts/snap-static.mjs` (1,5), `scripts/snap-responsive.mjs` (4,7), `scripts/snap-a11y.mjs` (5,6).
+- Code: `scripts/produce.mjs` + `vite.config.ts` + the snap scripts' serve-dir resolution (1, build isolation), `src/core/map-format.ts` `resolveMapFrame` (2), `src/core/MapFrame.tsx` (4), `src/SymbolMap.tsx` (3,5,6,7), `src/components/SymbolStory.tsx` (3), `src/ChoroplethMap.tsx` (6,7), `src/conformance.ts` (2,3).
+- Harness: `scripts/snap-static.mjs` (1 guard, 5), `scripts/snap-responsive.mjs` (4,7), `scripts/snap-a11y.mjs` (5,6).
 - KB (NEW format layer): `knowledge/references/map/formats/{static.md, interactive.md, video.md}`.
 - KB (update): `knowledge/references/map/design-conformance.md` (2,3,4), `knowledge/references/map/types/proportional-symbol.md` (3).
 
@@ -88,7 +97,7 @@ Every fix below names the layer its best-practice line lands in.
 
 ## Task decomposition
 
-1. **Static no-controls (1)** + `map/formats/static.md` + `snap-static` control assertion.
+1. **Static no-controls (1)** — `snap-static` 0-controls guard (fails produce on any leak) + isolate `produce` build output per run (unique dir via `BUILD_OUT`; vite + snap scripts read it; no cross-run contamination) + `map/formats/static.md`.
 2. **Label unit (3) + interactive tooltip-XOR-labels (5)** in `SymbolMap`/`SymbolStory` + conformance unit rule + `interactive.md` + `proportional-symbol.md`/`design-conformance.md` updates + `snap-static`/`snap-a11y` assertions.
 3. **Safe-area legend-aware (2) + title gutter (4)** in `resolveMapFrame`/`MapFrame` + `checkMapFraming` legend rule + `design-conformance.md` + `static.md` + `snap-responsive` gutter assertion; eyeball legend-not-over-data.
 4. **Interactive nav: maxBounds+minZoom (6) + ResizeObserver re-fit (7)** in both components + `interactive.md` + `snap-a11y`/`snap-responsive` assertions.
