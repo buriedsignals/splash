@@ -13,7 +13,7 @@ const root = join(here, "..");
 const outDir = process.env.OUTDIR ?? join(root, "output-proof", "choropleth");
 await mkdir(outDir, { recursive: true });
 
-const staticDir = join(root, "dist", "static");
+const staticDir = process.env.SERVE_DIR ?? join(root, "dist", "static");
 
 // Serve static files from dist/static
 const MIME = {
@@ -99,6 +99,20 @@ await page.waitForTimeout(500);
 const outPath = join(outDir, "static.png");
 await page.screenshot({ path: outPath, fullPage: false });
 console.log("wrote", outPath);
+
+// Guard: a static map must have NO interactive controls
+const ctrlButtons = await page.evaluate(
+  () => document.querySelectorAll(".maplibregl-ctrl button").length,
+);
+if (ctrlButtons > 0) {
+  console.error(
+    `STATIC FAILURE: ${ctrlButtons} interactive control button(s) in a static map`,
+  );
+  await browser.close();
+  server.close();
+  process.exit(1);
+}
+console.log("static: no interactive controls");
 
 await browser.close();
 server.close();

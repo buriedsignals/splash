@@ -12,7 +12,8 @@ const root = join(here, "..");
 const outDir = process.env.OUTDIR ?? join(root, "output-proof", "default");
 await mkdir(outDir, { recursive: true });
 
-const htmlPath = join(root, "dist", "interactive", "index.html");
+const interactiveDir = process.env.SERVE_DIR ?? join(root, "dist", "interactive");
+const htmlPath = join(interactiveDir, "index.html");
 const fileUrl = pathToFileURL(htmlPath).href;
 
 const browser = await chromium.launch();

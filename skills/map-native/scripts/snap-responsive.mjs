@@ -8,7 +8,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const outDir = process.env.OUTDIR ?? process.argv[2] ?? "/tmp";
-const url = pathToFileURL(join(root, "dist", "interactive", "index.html")).href;
+const interactiveDir = process.env.SERVE_DIR ?? join(root, "dist", "interactive");
+const url = pathToFileURL(join(interactiveDir, "index.html")).href;
 
 const browser = await chromium.launch();
 const failures = [];

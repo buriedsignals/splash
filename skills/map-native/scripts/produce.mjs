@@ -11,7 +11,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
@@ -29,6 +29,11 @@ if (!configPath || !outDir) {
 
 mkdirSync(outDir, { recursive: true });
 
+// Per-run build dirs: isolate so concurrent runs never contaminate each other
+const tag = basename(outDir).replace(/[^a-z0-9_-]/gi, "") || "run";
+const staticDir = join(root, "dist", `static-${tag}`);
+const interactiveDir = join(root, "dist", `interactive-${tag}`);
+
 const env = { ...process.env, CONFIG: configPath };
 const run = (cmd, args, extraEnv = {}) =>
   execFileSync(cmd, args, {
@@ -37,25 +42,25 @@ const run = (cmd, args, extraEnv = {}) =>
     env: { ...env, ...extraEnv },
   });
 
-// 1. Web builds (config baked in via the Vite define)
-console.log(`[produce map] building static…`);
-run("bunx", ["vite", "build"]);
+// 1. Web builds (config baked in via the Vite define) — each into its own dir
+console.log(`[produce map] building static… → ${staticDir}`);
+run("bunx", ["vite", "build"], { BUILD_OUT: staticDir });
 
-console.log(`[produce map] building interactive…`);
-run("bunx", ["vite", "build"], { INTERACTIVE: "1" });
+console.log(`[produce map] building interactive… → ${interactiveDir}`);
+run("bunx", ["vite", "build"], { INTERACTIVE: "1", BUILD_OUT: interactiveDir });
 
-// 2. Snap static + interactive into outDir
+// 2. Snap static + interactive into outDir — tell each script which build dir to use
 console.log(`[produce map] snapping static…`);
-run("bun", ["scripts/snap-static.mjs"], { OUTDIR: outDir });
+run("bun", ["scripts/snap-static.mjs"], { OUTDIR: outDir, SERVE_DIR: staticDir });
 
 console.log(`[produce map] snapping interactive (proof)…`);
-run("bun", ["scripts/snap-proof.mjs"], { OUTDIR: outDir });
+run("bun", ["scripts/snap-proof.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
 console.log(`[produce map] snapping responsive…`);
-run("bun", ["scripts/snap-responsive.mjs"], { OUTDIR: outDir });
+run("bun", ["scripts/snap-responsive.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
 console.log(`[produce map] snapping a11y…`);
-run("bun", ["scripts/snap-a11y.mjs"], { OUTDIR: outDir });
+run("bun", ["scripts/snap-a11y.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
 const result = {
   static: join(outDir, "static.png"),

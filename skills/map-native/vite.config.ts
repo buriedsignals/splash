@@ -6,7 +6,8 @@ import { readFileSync } from "node:fs";
 // INTERACTIVE=1 → single-file embeddable HTML with hover popup.
 // CONFIG=path   → inject an arbitrary config JSON baked as __CONFIG__.
 const interactive = process.env.INTERACTIVE === "1";
-const outDir = interactive ? "dist/interactive" : "dist/static";
+const outDir =
+  process.env.BUILD_OUT ?? (interactive ? "dist/interactive" : "dist/static");
 const injectedConfig = process.env.CONFIG
   ? JSON.parse(readFileSync(process.env.CONFIG, "utf8"))
   : null;
