@@ -29,7 +29,7 @@ export function MapFrame({
   frame,
   children,
 }: MapFrameProps) {
-  const m = Math.round(Math.max(12, 16) * frame.scale);
+  const m = Math.round(16 * frame.scale); // furniture gutter: 16px at 1× scale
   const pillStyle = responsive
     ? {
         background: FRAME_COLORS.pill,
