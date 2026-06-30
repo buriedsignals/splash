@@ -399,6 +399,9 @@ export const ChoroplethMap: React.FC<Props> = ({
           outline: 2px solid #0055cc;
           outline-offset: 2px;
         }
+        /* Interactive controls must render above the furniture overlays (z-index 10).
+           In static/video the top-right control area is empty — this rule is inert. */
+        .maplibregl-ctrl-top-right { z-index: 20 !important; }
       `}</style>
 
       {/* Map canvas — stable DOM node; the map is mounted into this div */}

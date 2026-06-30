@@ -160,10 +160,25 @@ const boundedNavOk = await page.evaluate(async () => {
   return inBounds && zoomOk;
 });
 
+// Controls not occluded: pick the zoom-in button and assert it is the topmost element
+// at its centre point — not the title pill or any other furniture overlay.
+const controlsNotOccluded = await page.evaluate(() => {
+  const btn = document.querySelector(".maplibregl-ctrl-top-right .maplibregl-ctrl button");
+  if (!btn) return false; // no controls present — assertion does not apply
+  const rect = btn.getBoundingClientRect();
+  const cx = Math.round(rect.left + rect.width / 2);
+  const cy = Math.round(rect.top + rect.height / 2);
+  const topEl = document.elementFromPoint(cx, cy);
+  if (!topEl) return false;
+  // Pass if the topmost element IS the button or a descendant of .maplibregl-ctrl
+  const ctrl = topEl.closest(".maplibregl-ctrl");
+  return ctrl !== null;
+});
+
 await page.locator("#root > div").first().screenshot({ path: join(outDir, "a11y.png") });
 await browser.close();
 
-const result = { ...a11y, tooltipOk, boundedNavOk };
+const result = { ...a11y, tooltipOk, boundedNavOk, controlsNotOccluded };
 console.log(JSON.stringify(result, null, 2));
 
 const failures = [];
@@ -174,6 +189,7 @@ if (result.controlButtons < 2) failures.push("missing zoom/reset control buttons
 if (!result.allButtons) failures.push("a control is not a <button> (not keyboard-reachable)");
 if (!result.tooltipOk) failures.push("no popup appeared on hovering a feature");
 if (!result.boundedNavOk) failures.push("bounded nav: centre escaped maxBounds or zoom < minZoom after panBy+zoomTo");
+if (result.controlsNotOccluded === false) failures.push("controls occluded: title pill or other furniture rendered above the zoom/reset controls");
 if (failures.length) {
   console.error("A11Y FAILURES:\n" + failures.join("\n"));
   process.exit(1);

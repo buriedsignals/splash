@@ -59,3 +59,13 @@ resets minZoom to 0, fits, and re-pins minZoom to the new fit zoom. The recenter
 
 Sources: NN/g (responsive design — content must adapt to viewport changes);
 Datawrapper Academy (embedded maps must refit on resize to avoid cropped or off-centre data).
+
+## Control visibility
+
+Interactive map controls (zoom / reset) render ABOVE the furniture overlays — never occluded by
+the title or legend. The `.maplibregl-ctrl-top-right` container is raised to `z-index: 20`,
+above the furniture pill (`z-index: 10`). In static/video builds no controls are added to the
+top-right area, so this rule is inert and does not change their appearance.
+
+Source: NN/g (control visibility / affordance — interactive controls must always be discoverable
+and reachable; occlusion by decorative overlays breaks the core exploration affordance).
