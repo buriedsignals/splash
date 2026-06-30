@@ -1,10 +1,12 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
 const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 import { computeChoropleth, type ChoroplethData } from "./choropleth-geo";
 import { makeResetControl } from "./controls";
+import { resolveMapFrame } from "./core/map-format";
+import { MapFrame } from "./core/MapFrame";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -33,15 +35,34 @@ export const ChoroplethMap: React.FC<Props> = ({
   progress = 1,
   interactive = false,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null); // measures the root container
+  const containerRef = useRef<HTMLDivElement>(null); // the MapTiler host
   const legendRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const popupRef = useRef<maptilersdk.Popup | null>(null);
   const startedRef = useRef(false);
 
+  // Measured px size — initialised from window dims, refined from DOM in useEffect.
+  const [containerSize, setContainerSize] = useState<{ w: number; h: number }>(
+    () => ({ w: window.innerWidth, h: window.innerHeight }),
+  );
+
+  // Measure the root element size before map init.
+  useEffect(() => {
+    if (!outerRef.current) return;
+    const { clientWidth: w, clientHeight: h } = outerRef.current;
+    if (w > 0 && h > 0) setContainerSize({ w, h });
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
+
+    const frame = resolveMapFrame(containerSize.w, containerSize.h, {
+      titleLines: 2,
+      hasDescription: !!config.description,
+      labelOverhang: 24,
+    });
 
     const map = new maptilersdk.Map({
       container: containerRef.current,
@@ -49,7 +70,6 @@ export const ChoroplethMap: React.FC<Props> = ({
       center: [10, 50] as [number, number],
       zoom: 3,
       interactive,
-      // Re-enable compact attribution (licensing must be visible)
       attributionControl: true,
       navigationControl: false,
       geolocateControl: false,
@@ -66,7 +86,6 @@ export const ChoroplethMap: React.FC<Props> = ({
         if (layer.type === "symbol") {
           map.removeLayer(layer.id);
         }
-        // Paint water/ocean/sea layers with a distinct blue tint
         if (
           /water|ocean|sea/i.test(layer.id) ||
           ("source-layer" in layer &&
@@ -78,13 +97,13 @@ export const ChoroplethMap: React.FC<Props> = ({
             try {
               map.setPaintProperty(layer.id, "fill-color", WATER_COLOR);
             } catch {
-              // layer may not support this paint property
+              /* layer may not support this paint property */
             }
           } else if (layer.type === "background") {
             try {
               map.setPaintProperty(layer.id, "background-color", WATER_COLOR);
             } catch {
-              // not all background layers are water
+              /* not all background layers are water */
             }
           }
         }
@@ -97,9 +116,6 @@ export const ChoroplethMap: React.FC<Props> = ({
         scaleType: "sequential",
       });
 
-      // Build a value→color lookup from bins
-      // Build a fill-color expression using match on rounded values per region
-      // We'll attach the computed value as a feature property via a data join
       const coloredWorld: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
         features: world.features.map((f, i) => {
@@ -120,22 +136,17 @@ export const ChoroplethMap: React.FC<Props> = ({
         data: coloredWorld,
       });
 
-      // Build a step expression: ["step", ["get", "__value"], noDataColor, t1, c1, t2, c2, ...]
-      // But step requires numeric input and fails on null — use case instead
       const colorExpr: unknown[] = [
         "case",
         ["==", ["get", "__hasData"], false],
         NO_DATA_COLOR,
       ];
 
-      // For each bin, add condition: value < bin.max → color
-      // sorted ascending, first match wins
       const sorted = [...layout.bins].sort((a, b) => a.min - b.min);
       for (let i = 0; i < sorted.length - 1; i++) {
         colorExpr.push(["<", ["get", "__value"], sorted[i].max]);
         colorExpr.push(sorted[i].color);
       }
-      // fallback = last bin color
       colorExpr.push(sorted[sorted.length - 1].color);
 
       map.addLayer({
@@ -161,16 +172,10 @@ export const ChoroplethMap: React.FC<Props> = ({
 
       const dataBounds = layout.bounds as [number, number, number, number];
       map.fitBounds(dataBounds, {
-        padding: 48,
+        padding: frame.pad,
         duration: 0,
       });
 
-      // Constrain panning to the data zone so an interactive reader stays on the
-      // subject and cannot wander back out to the whole world. Base maxBounds on
-      // the FITTED view (which includes the letterbox), not the raw data bbox —
-      // otherwise the min-zoom maxBounds implies crops the binding dimension.
-      // Interactive only: static has no panning, and the video uses camera moves
-      // that maxBounds would fight.
       if (interactive) {
         const fitted = map.getBounds();
         const sw = fitted.getSouthWest();
@@ -182,17 +187,14 @@ export const ChoroplethMap: React.FC<Props> = ({
           [ne.lng + mx, ne.lat + my],
         ] as maptilersdk.LngLatBoundsLike);
 
-        // Zoom limits: reader can't zoom out past story framing; tile cap at 14
         map.setMinZoom(map.getZoom() - 0.5);
         map.setMaxZoom(14);
 
-        // Navigation controls — zoom +/− (no compass needed for a flat choropleth)
         map.addControl(
           new maptilersdk.NavigationControl({ showCompass: false }),
           "top-right",
         );
 
-        // Reset control — returns to the initial story-framing fitBounds
         map.addControl(makeResetControl(dataBounds), "top-right");
       }
 
@@ -201,7 +203,7 @@ export const ChoroplethMap: React.FC<Props> = ({
       (window as unknown as Record<string, unknown>)["__layout_bounds__"] =
         layout.bounds;
 
-      // Legend
+      // Legend — bottom-right to avoid MapFrame's bottom-left source band
       if (legendRef.current) {
         const bins = layout.bins;
         const unit = config.unit ?? "";
@@ -226,7 +228,7 @@ export const ChoroplethMap: React.FC<Props> = ({
         `;
       }
 
-      // Hover popup — only for regions WITH data (project decision: suppress no-data hover)
+      // Hover popup — only for regions WITH data
       if (interactive) {
         const popup = new maptilersdk.Popup({
           closeButton: false,
@@ -238,7 +240,6 @@ export const ChoroplethMap: React.FC<Props> = ({
           const f = e.features?.[0];
           if (!f) return;
 
-          // Suppress hover on no-data regions — pointer stays default, no popup
           if (f.properties?.__hasData !== true) {
             map.getCanvas().style.cursor = "";
             popup.remove();
@@ -279,12 +280,16 @@ export const ChoroplethMap: React.FC<Props> = ({
     ? `Interactive map: ${config.title}`
     : "Interactive choropleth map";
 
-  return (
-    <div
-      style={{ position: "relative", width: "100%", height: "100%" }}
-      role="region"
-      aria-label={ariaLabel}
-    >
+  const frame = resolveMapFrame(containerSize.w, containerSize.h, {
+    titleLines: 2,
+    hasDescription: !!config.description,
+    labelOverhang: 24,
+  });
+
+  // Inner content: the map canvas + legend. Stable JSX shape — containerRef never
+  // changes DOM position regardless of config or containerSize updates.
+  const inner = (
+    <>
       <style>{`
         .maplibregl-ctrl-bottom-left,
         .maptiler-logo { display: none !important; }
@@ -293,63 +298,27 @@ export const ChoroplethMap: React.FC<Props> = ({
           padding: 8px 10px;
           border-radius: 4px;
         }
-        /* Visible focus ring on the reset control button */
         .maplibregl-ctrl button:focus-visible {
           outline: 2px solid #0055cc;
           outline-offset: 2px;
         }
       `}</style>
 
-      {config.title && (
-        <div
-          style={{
-            position: "absolute",
-            top: 12,
-            left: 12,
-            zIndex: 10,
-            background: "rgba(255,255,255,0.92)",
-            padding: "8px 12px",
-            borderRadius: 6,
-            // Responsive: never overflow a phone screen.
-            maxWidth: "min(320px, calc(100vw - 32px))",
-            boxShadow: "0 1px 6px rgba(0,0,0,.12)",
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "sans-serif",
-              fontWeight: 600,
-              fontSize: "clamp(13px, 3.6vw, 14px)",
-              lineHeight: 1.3,
-              color: "#1a1a1a",
-            }}
-          >
-            {config.title}
-          </div>
-          {config.description && (
-            <div
-              style={{
-                fontFamily: "sans-serif",
-                fontSize: "clamp(11px, 3vw, 12px)",
-                lineHeight: 1.35,
-                color: "#555",
-                marginTop: 3,
-              }}
-            >
-              {config.description}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Map canvas — stable DOM node; the map is mounted into this div */}
+      <div
+        ref={containerRef}
+        role="region"
+        aria-label={ariaLabel}
+        style={{ width: "100%", height: "100%" }}
+      />
 
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
-
+      {/* Legend — bottom-right so it does not collide with MapFrame's bottom-left source */}
       <div
         ref={legendRef}
         style={{
           position: "absolute",
           bottom: 16,
-          left: 12,
+          right: 12,
           zIndex: 10,
           background: "rgba(255,255,255,0.92)",
           padding: "10px 12px",
@@ -359,24 +328,36 @@ export const ChoroplethMap: React.FC<Props> = ({
           maxWidth: "min(160px, 42vw)",
         }}
       />
+    </>
+  );
 
-      {config.source && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 6,
-            right: 8,
-            zIndex: 10,
-            font: "10px/1 sans-serif",
-            color: "#888",
-          }}
+  if (config.title && config.source) {
+    return (
+      <div
+        ref={outerRef}
+        style={{ position: "relative", width: "100%", height: "100%" }}
+      >
+        <MapFrame
+          title={config.title}
+          description={config.description}
+          source={config.source}
+          width={containerSize.w}
+          height={containerSize.h}
+          responsive
+          frame={frame}
         >
-          Source:{" "}
-          <a href={config.source.url} style={{ color: "#888" }}>
-            {config.source.name}
-          </a>
-        </div>
-      )}
+          {inner}
+        </MapFrame>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={outerRef}
+      style={{ position: "relative", width: "100%", height: "100%" }}
+    >
+      {inner}
     </div>
   );
 };

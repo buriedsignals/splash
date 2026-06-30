@@ -1,9 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry, type SymbolData } from "./symbol-geo";
 import { symbolLabels, labelRadialOffset } from "./symbol-labels";
 import { makeResetControl } from "./controls";
+import { resolveMapFrame } from "./core/map-format";
+import { MapFrame } from "./core/MapFrame";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -34,17 +36,38 @@ export const SymbolMap: React.FC<Props> = ({
   progress = 1,
   interactive = false,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null); // measures the root container
+  const containerRef = useRef<HTMLDivElement>(null); // the MapTiler host
   const legendRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const startedRef = useRef(false);
 
+  // Measured px size of the viewport container — set once on mount from the DOM.
+  // Using a ref-initialised approach: useState initialiser reads window dims as
+  // a fallback; the actual outerRef measurement happens in the useEffect below.
+  const [containerSize, setContainerSize] = useState<{ w: number; h: number }>(
+    () => ({ w: window.innerWidth, h: window.innerHeight }),
+  );
+
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
 
-  // Init once.
+  // Measure the root element size before map init.
+  useEffect(() => {
+    if (!outerRef.current) return;
+    const { clientWidth: w, clientHeight: h } = outerRef.current;
+    if (w > 0 && h > 0) setContainerSize({ w, h });
+  }, []);
+
+  // Init map once.
   useEffect(() => {
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
+
+    const frame = resolveMapFrame(containerSize.w, containerSize.h, {
+      titleLines: 2,
+      hasDescription: !!config.description,
+      labelOverhang: 80,
+    });
 
     const map = new maptilersdk.Map({
       container: containerRef.current,
@@ -65,13 +88,12 @@ export const SymbolMap: React.FC<Props> = ({
     mapRef.current = map;
 
     map.on("load", () => {
-      // Expose map instance for the snap-proof harness (mirrors ChoroplethMap.tsx:234)
+      // Expose map instance for the snap-proof harness
       (window as unknown as Record<string, unknown>)["__map__"] = map;
 
       // Build label data alongside geometry.
       const labels = symbolLabels(geo.symbols);
 
-      // One GeoJSON source: a point per symbol, carrying its target radius + label data.
       map.addSource("symbols", {
         type: "geojson",
         data: {
@@ -82,7 +104,6 @@ export const SymbolMap: React.FC<Props> = ({
               value: s.value,
               label: s.label ?? "",
               radius: s.radius,
-              // Two-line text: "City\nValue" when name is present, else just the value.
               labelText: labels[i]?.name
                 ? `${labels[i].name}\n${labels[i].valueText}`
                 : (labels[i]?.valueText ?? ""),
@@ -92,7 +113,7 @@ export const SymbolMap: React.FC<Props> = ({
           })),
         },
       });
-      // Circle layer; radius driven by the feature's `radius` × progress (set per frame).
+
       map.addLayer({
         id: "symbol-circles",
         type: "circle",
@@ -106,10 +127,6 @@ export const SymbolMap: React.FC<Props> = ({
         },
       });
 
-      // Direct label layer — city name + value beside each symbol (not on top).
-      // text-variable-anchor + text-radial-offset: the renderer picks the first free
-      // side (left/right/top/bottom), auto-flipping near edges for collision avoidance.
-      // radial-offset is per-feature so larger circles push their label further out.
       map.addLayer({
         id: "symbol-labels",
         type: "symbol",
@@ -133,7 +150,7 @@ export const SymbolMap: React.FC<Props> = ({
         },
       });
 
-      map.fitBounds(geo.bounds, { padding: 64, duration: 0 });
+      map.fitBounds(geo.bounds, { padding: frame.pad, duration: 0 });
 
       if (interactive) {
         map.addControl(new maptilersdk.NavigationControl({}), "top-right");
@@ -206,8 +223,16 @@ export const SymbolMap: React.FC<Props> = ({
     el.innerHTML = `<svg width="${max * 2 + 70}" height="${h}">${rows}</svg>`;
   }
 
-  return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+  const frame = resolveMapFrame(containerSize.w, containerSize.h, {
+    titleLines: 2,
+    hasDescription: !!config.description,
+    labelOverhang: 80,
+  });
+
+  // Inner content: the map canvas + legend. This subtree is STABLE — always the
+  // same JSX shape so containerRef never moves in the DOM. MapFrame wraps it.
+  const inner = (
+    <>
       <style>{`
         .maplibregl-ctrl-bottom-left,
         .maptiler-logo { display: none !important; }
@@ -218,49 +243,10 @@ export const SymbolMap: React.FC<Props> = ({
         }
       `}</style>
 
-      {config.title && (
-        <div
-          style={{
-            position: "absolute",
-            top: 12,
-            left: 12,
-            zIndex: 10,
-            background: "rgba(255,255,255,0.92)",
-            padding: "8px 12px",
-            borderRadius: 6,
-            maxWidth: "min(320px, calc(100vw - 32px))",
-            boxShadow: "0 1px 6px rgba(0,0,0,.12)",
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "sans-serif",
-              fontWeight: 600,
-              fontSize: "clamp(13px, 3.6vw, 14px)",
-              lineHeight: 1.3,
-              color: "#1a1a1a",
-            }}
-          >
-            {config.title}
-          </div>
-          {config.description && (
-            <div
-              style={{
-                fontFamily: "sans-serif",
-                fontSize: "clamp(11px, 3vw, 12px)",
-                lineHeight: 1.35,
-                color: "#555",
-                marginTop: 3,
-              }}
-            >
-              {config.description}
-            </div>
-          )}
-        </div>
-      )}
-
+      {/* Map canvas — stable DOM node; the map is mounted into this div */}
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
 
+      {/* Legend — bottom-right so it does not collide with MapFrame's bottom-left source */}
       <div
         ref={legendRef}
         style={{
@@ -274,24 +260,40 @@ export const SymbolMap: React.FC<Props> = ({
           boxShadow: "0 1px 6px rgba(0,0,0,.12)",
         }}
       />
+    </>
+  );
 
-      {config.source && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 6,
-            left: 8,
-            zIndex: 10,
-            font: "10px/1 sans-serif",
-            color: "#888",
-          }}
+  // If title + source are present, render via MapFrame (furniture shell).
+  // MapFrame's outer div is position:relative — we make it fill the parent
+  // with width/height from the measured container size.
+  if (config.title && config.source) {
+    return (
+      <div
+        ref={outerRef}
+        style={{ position: "relative", width: "100%", height: "100%" }}
+      >
+        <MapFrame
+          title={config.title}
+          description={config.description}
+          source={config.source}
+          width={containerSize.w}
+          height={containerSize.h}
+          responsive
+          frame={frame}
         >
-          Source:{" "}
-          <a href={config.source.url} style={{ color: "#888" }}>
-            {config.source.name}
-          </a>
-        </div>
-      )}
+          {inner}
+        </MapFrame>
+      </div>
+    );
+  }
+
+  // Fallback: no title/source — plain wrapper.
+  return (
+    <div
+      ref={outerRef}
+      style={{ position: "relative", width: "100%", height: "100%" }}
+    >
+      {inner}
     </div>
   );
 };
