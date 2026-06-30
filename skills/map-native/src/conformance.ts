@@ -213,6 +213,10 @@ export function checkMapFraming(input: {
       );
   }
   if (frame.pad.top <= 0) v.push("no title band reserved");
+  if (input.titleHeightPx && frame.pad.top < input.titleHeightPx)
+    v.push(
+      "title overruns the reserved top band — data would sit under the title",
+    );
   if (frame.pad.bottom <= 0) v.push("no source band reserved");
   if (input.hasSource === false)
     v.push("source band empty — every format must cite the source");

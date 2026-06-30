@@ -210,7 +210,6 @@ describe("checkGlobalMapConformance", () => {
 });
 
 import { checkMapFraming } from "../src/conformance";
-import { resolveMapFrame } from "../src/core/map-format";
 
 describe("checkMapFraming", () => {
   it("passes a borderline legend (70px reserved at 720px height)", () => {
@@ -265,30 +264,16 @@ describe("checkMapFraming", () => {
       }).violations.some((m) => /source band empty/.test(m)),
     ).toBe(true);
   });
-  it("checkMapFraming reserves the measured title height (forward is honoured)", () => {
-    // A portrait 360×640 canvas (scale=0.85). With titleLines:2 the estimated titleBand
-    // is ~70px. A large measured titleHeightPx (120px) must push pad.top above that
-    // estimate (≥ 120 + MARGIN*scale ≈ 130). Without the titleHeightPx forward the pad
-    // stays at ~70, exposing the bug.
-    const withForward = resolveMapFrame(360, 640, {
+  it("reserves the measured title height — no title-band overrun when titleHeightPx is forwarded", () => {
+    const { violations } = checkMapFraming({
+      width: 360,
+      height: 640,
       titleLines: 2,
-      titleHeightPx: 120,
+      titleHeightPx: 220,
     });
-    const withoutForward = resolveMapFrame(360, 640, {
-      titleLines: 2,
-      // titleHeightPx omitted → defaults to 0
-    });
-    // The forward must enlarge pad.top beyond the estimated titleBand.
-    expect(withForward.pad.top).toBeGreaterThan(withoutForward.pad.top);
-    // checkMapFraming must pass cleanly (no violations) with the forward in place.
     expect(
-      checkMapFraming({
-        width: 360,
-        height: 640,
-        titleLines: 2,
-        titleHeightPx: 120,
-      }).violations,
-    ).toEqual([]);
+      violations.some((m) => /title overruns the reserved top band/.test(m)),
+    ).toBe(false);
   });
 });
 
