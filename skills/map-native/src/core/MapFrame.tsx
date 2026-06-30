@@ -34,6 +34,8 @@ export function MapFrame({
   const titleRef = useRef<HTMLDivElement>(null);
   const [, setMeasuredHeight] = useState(0);
 
+  // `onTitleHeight` MUST be a stable callback (callers wrap it in useCallback) — otherwise
+  // the ResizeObserver would disconnect and reconnect on every render.
   useLayoutEffect(() => {
     const node = titleRef.current;
     if (!node) return;
@@ -55,6 +57,7 @@ export function MapFrame({
     ro.observe(node);
     return () => ro.disconnect();
   }, [onTitleHeight]);
+
   const m = Math.round(16 * frame.scale); // furniture gutter: 16px at 1× scale
   const pillStyle = responsive
     ? {
