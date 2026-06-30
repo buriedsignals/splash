@@ -206,3 +206,17 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - **MERGÉ dans `main`** (`d8eb8eb`, 2026-06-30) : le moteur `skills/scrolly` n'est plus choroplèthe-only. `map-native/src/symbol-story.ts` `deriveSymbolStory(points, meta)` produit la **même forme `Beat`** que `deriveMapStory` (camera=bbox ; title→establish→reveal chaque ville tri valeur-desc→takeaway) → `mapStoryToChapters` réutilisé tel quel. `scrolly/src/ScrollySymbolMap.tsx` rend cercles+labels (réutilise `symbolGeometry`/`symbolLabels`), caméra qui vole ville par ville au scroll (mirror `ScrollyMap`). `Scrolly.tsx` dispatch sur `config.type`, **back-compat choroplèthe** vérifié. Vérifié au rendu : establish 6 villes → vol vers Madrid « 124$bn ». Padding caméra 64 pour que le plus gros cercle ne clip pas.
 - **Matrice type×format symbol désormais complète** : static · interactif nav-libre · vidéo L/C/P · **scrolly** ✅.
 - **Différé** : tour-caméra vidéo symbol (réutiliser deriveSymbolStory), highlight/dim ville focus, routage suggest-visual du symbol scrolly, scrolly des futurs types (flow…).
+
+## map-native — qualité de rendu (Group A, 7 fixes) MERGÉ + couche KB format créée
+- **MERGÉ dans `main`** (`aefc003`, 2026-06-30). 7 retours Rémy traités, chacun = **code + conformité/harnais + KB à la bonne couche + vérif rendu sur les 2 types** :
+  1. static sans controls : isolation des builds `produce` par run (`dist/<kind>-<tag>` via `BUILD_OUT`, snaps lisent `SERVE_DIR`) + garde `snap-static` (0 control nav) → la prod échoue si un static montre un control. *(le vrai bug était la contamination `dist/` partagé, pas le défaut mount)*
+  2. donnée jamais sous titre/légende : `resolveMapFrame` réserve la vraie `legendHeight` dans `pad.bottom` + règle `checkMapFraming`.
+  3. unité dans les labels valués (`labelText += valueUnit`) + règle `checkSymbolConformance` `labelHasUnit`.
+  4. gutter titre static (`MapFrame` 16px×scale) + assertion `snap-responsive`.
+  5. interactif tooltip XOR labels (couche `symbol-labels` seulement si `!interactive`).
+  6. interactif nav bornée : `maxBounds` (bbox +15%) + `minZoom`(zoom de fit).
+  7. interactif responsive : `ResizeObserver` → `map.resize()` + re-`fitBounds` (carte recentrée, zoom adapté).
+  + **fix pré-existant** : `clampBounds` (lat ±85° mercator-safe) → le choroplèthe **charge enfin à 360px** (crash `Invalid LngLat` éliminé).
+- **★ Couche KB par-format map créée** : `knowledge/references/map/formats/{static,interactive,video}.md` (miroir des charts ; manquait depuis slice 4). Le KB map a maintenant les 3 couches : global + par-type + par-format. `video.md` alimente le Group B.
+- **Principe gravé (mémoire `feedback_system_improvement_loop` mise à jour)** : tout retour = 4 livrables couplés (code + conformité + KB **à la bonne couche** global/type/format + harnais), écrit/distribué au bon endroit, comme les charts.
+- **RESTE — Group B** : vidéo storytellée (système de modes caméra `reveal-simple | guided-tour | …` choisi par l'IA selon l'article ; réutilise `deriveMapStory`/`deriveSymbolStory` ; intègre l'aesthetic `map-explainer` de Tom — tracé qui se dessine + régions/villes en séquence) **+ scrolly sortable en vidéo**. Spec à écrire.
