@@ -287,7 +287,7 @@ S/I/V = which formats fit (Static / Interactive / Video):
 | Map type | Engine | S | I | V | Tom reference |
 | --- | --- | --- | --- | --- | --- |
 | **Choropleth** | MapTiler 2D | ✓ | ✓ | ✓ | geojsonPreset — **slice 1 (built)** |
-| Proportional symbol | MapTiler 2D | ✓ | ✓ | ◻ | convert-map markers |
+| Proportional symbol | MapTiler 2D | ✓ | ✓ | ✓ | convert-map markers |
 | Flow / route | MapTiler 2D | ◻ | ◻ | ✓ | map-explainer (river/route) |
 | Explainer beat (region sequence) | MapTiler 2D | — | — | ✓ | **map-explainer (proven)** |
 | Dot density | MapTiler 2D | ✓ | ✓ | ◻ | |
@@ -312,12 +312,20 @@ Slice 1 ships only `world`. The others are added by dropping their simplified Ge
 `assets/geo/` and declaring their join key — no engine change. Every preset credits its source
 (per data-to-viz norms).
 
-## Produce — three formats from one config
+## Produce — format selector from one config
 
-`produce.mjs <config.json> <outDir>` → five outputs: `static.png`, `interactive.png` (hover proof),
-`landscape.mp4`, `square.mp4`, `portrait.mp4`. The config is injected via the `__CONFIG__`
-Vite define (web builds) and `--props` (Remotion), so nothing touches the committed sample. Pass
-`formats=static` to skip the video render.
+`produce.mjs <config.json> <outDir> <format>` where `format ∈ { static | reveal | story | all }`
+(defaults to `all`). The static + interactive proofs (`static.png`, `interactive.png`) are always
+emitted; the `format` arg gates the VIDEO render:
+- `reveal` → simple-reveal videos (fixed camera, data animates in) — `reveal-{landscape,square,portrait}.mp4`
+- `story` → storytelling camera-tour videos — `story-{landscape,square,portrait}.mp4`
+- `all` → both reveal + story.
+
+Output JSON is nested by sub-format:
+`{ static, interactive, reveal?: {landscape,square,portrait}, story?: {landscape,square,portrait} }`
+(sub-keys present only for the formats produced). The config is injected via the `__CONFIG__` Vite
+define (web builds) and `--props` (Remotion), so nothing touches the committed sample. Simple-reveal
+best practices live in `knowledge/references/map/formats/video-reveal.md`.
 
 ## Tuning knobs
 
