@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   checkChoroplethConformance,
   checkSymbolConformance,
+  checkGlobalMapConformance,
 } from "../src/conformance";
 
 const text = { text: ["#1A1A1A", "#6B6B6B"], bg: "#FFFFFF" };
@@ -148,6 +149,61 @@ describe("checkSymbolConformance", () => {
     expect(
       checkSymbolConformance({ ...okSymbol, labeled: false }, symText).some(
         (m) => /label/i.test(m),
+      ),
+    ).toBe(true);
+  });
+});
+
+const gText = { text: ["#1A1A1A", "#5f5f5f"], bg: "#FFFFFF" };
+const gOk = {
+  title: "Renewables power most of Europe's north",
+  description: "Share of electricity from renewables, 2024",
+  source: { name: "Ember 2025", url: "https://example.org/x" },
+};
+
+describe("checkGlobalMapConformance", () => {
+  it("passes a conformant header", () => {
+    expect(checkGlobalMapConformance(gOk, gText)).toEqual([]);
+  });
+  it("flags a too-short title", () => {
+    expect(
+      checkGlobalMapConformance({ ...gOk, title: "Too short" }, gText).some(
+        (m) => /too short/.test(m),
+      ),
+    ).toBe(true);
+  });
+  it("flags a year-range title", () => {
+    expect(
+      checkGlobalMapConformance(
+        { ...gOk, title: "2020   –   2024" },
+        gText,
+      ).some((m) => /year range/.test(m)),
+    ).toBe(true);
+  });
+  it("flags an ALL CAPS title", () => {
+    expect(
+      checkGlobalMapConformance(
+        { ...gOk, title: "RENEWABLES POWER EUROPE'S NORTH" },
+        gText,
+      ).some((m) => /ALL CAPS/.test(m)),
+    ).toBe(true);
+  });
+  it("flags a missing description", () => {
+    expect(
+      checkGlobalMapConformance({ ...gOk, description: "" }, gText).some((m) =>
+        /description/.test(m),
+      ),
+    ).toBe(true);
+  });
+  it("flags a missing source name and url", () => {
+    const r = checkGlobalMapConformance({ ...gOk, source: {} }, gText);
+    expect(r.some((m) => /source name/.test(m))).toBe(true);
+    expect(r.some((m) => /source url/.test(m))).toBe(true);
+  });
+  it("flags low-contrast text", () => {
+    expect(
+      checkGlobalMapConformance(gOk, { text: ["#DDDDDD"], bg: "#FFFFFF" }).some(
+        (m) => /contrast/.test(m),
       ),
     ).toBe(true);
   });

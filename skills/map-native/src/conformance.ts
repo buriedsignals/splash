@@ -18,6 +18,37 @@ export function contrastRatio(a: string, b: string): number {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
+// Shared L0 — the header rules every map type + format must satisfy (mirrors chart-native's
+// checkGlobalConformance). Both per-type guards call this first, then add their own rules.
+export function checkGlobalMapConformance(
+  input: {
+    title: string;
+    description?: string;
+    source: { name?: string; url?: string };
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v: string[] = [];
+  const title = input.title?.trim() ?? "";
+  if (title.length < 12) v.push(`title too short to be an insight: "${title}"`);
+  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
+    v.push(`title is a year range, not an insight: "${title}"`);
+  if (/[A-Za-z]/.test(title) && title === title.toUpperCase())
+    v.push(`title is ALL CAPS — write it as a sentence: "${title}"`);
+  if (!input.description?.trim())
+    v.push("missing description — a module must state what/when/where");
+  if (!input.source?.name?.trim()) v.push("missing source name");
+  if (!input.source?.url?.trim()) v.push("missing source url");
+  for (const t of textColors.text) {
+    const r = contrastRatio(t, textColors.bg);
+    if (r < 4.5)
+      v.push(
+        `text colour ${t} contrast ${r.toFixed(2)}:1 on ${textColors.bg} < 4.5:1`,
+      );
+  }
+  return v;
+}
+
 export function checkChoroplethConformance(
   input: {
     title: string;
@@ -33,22 +64,14 @@ export function checkChoroplethConformance(
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
-  const v: string[] = [];
-  const title = input.title?.trim() ?? "";
-  if (title.length < 12) v.push(`title too short to be an insight: "${title}"`);
-  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
-    v.push(`title is a year range, not an insight: "${title}"`);
-  if (!input.description?.trim())
-    v.push("missing description — a module must state what/when/where");
-  if (!input.source?.name?.trim()) v.push("missing source name");
-  if (!input.source?.url?.trim()) v.push("missing source url");
-  for (const t of textColors.text) {
-    const r = contrastRatio(t, textColors.bg);
-    if (r < 4.5)
-      v.push(
-        `text colour ${t} contrast ${r.toFixed(2)}:1 on ${textColors.bg} < 4.5:1`,
-      );
-  }
+  const v = checkGlobalMapConformance(
+    {
+      title: input.title,
+      description: input.description,
+      source: input.source,
+    },
+    textColors,
+  );
   if (!input.hasLegend)
     v.push("choropleth needs a legend (the map is undecodable without it)");
   if (!input.boundsNonEmpty)
@@ -84,22 +107,14 @@ export function checkSymbolConformance(
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
-  const v: string[] = [];
-  const title = input.title?.trim() ?? "";
-  if (title.length < 12) v.push(`title too short to be an insight: "${title}"`);
-  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
-    v.push(`title is a year range, not an insight: "${title}"`);
-  if (!input.description?.trim())
-    v.push("missing description — a module must state what/when/where");
-  if (!input.source?.name?.trim()) v.push("missing source name");
-  if (!input.source?.url?.trim()) v.push("missing source url");
-  for (const t of textColors.text) {
-    const r = contrastRatio(t, textColors.bg);
-    if (r < 4.5)
-      v.push(
-        `text colour ${t} contrast ${r.toFixed(2)}:1 on ${textColors.bg} < 4.5:1`,
-      );
-  }
+  const v = checkGlobalMapConformance(
+    {
+      title: input.title,
+      description: input.description,
+      source: input.source,
+    },
+    textColors,
+  );
   if (input.sizingMode !== "area")
     v.push(
       "symbols must be area-proportional (r ∝ √value), not radius-proportional",
