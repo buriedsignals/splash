@@ -111,14 +111,23 @@ export const ChoroplethMap: React.FC<Props> = ({
           const pad = 0.15;
           const dx = (de - dw) * pad,
             dy = (dn - ds) * pad;
-          const sw: [number, number] = [
+          const rawSw: [number, number] = [
             Math.min(dw - dx, viewBounds.getWest()),
             Math.min(ds - dy, viewBounds.getSouth()),
           ];
-          const ne: [number, number] = [
+          const rawNe: [number, number] = [
             Math.max(de + dx, viewBounds.getEast()),
             Math.max(dn + dy, viewBounds.getNorth()),
           ];
+          // Clamp latitudes to ±85° (Mercator-safe) before passing to setMaxBounds.
+          const [cw, cs, ce, cn] = clampBounds([
+            rawSw[0],
+            rawSw[1],
+            rawNe[0],
+            rawNe[1],
+          ]);
+          const sw: [number, number] = [cw, cs];
+          const ne: [number, number] = [ce, cn];
           m.setMaxBounds([sw, ne]);
         });
       }

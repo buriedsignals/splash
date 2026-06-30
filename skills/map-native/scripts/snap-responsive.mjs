@@ -94,15 +94,16 @@ for (const w of [360, 768, 1100, 1600]) {
         Math.abs(c.lat - bboxCentLat) <= tol
       );
     })();
-    // Within-safe-area check: the data extent (as a geographic bbox) must be fully
-    // visible — i.e., the map's visible bounds must contain the data bounds. This
-    // detects the bug we're fixing: at narrow widths minZoom was locked to the build
-    // size, causing the map to be too zoomed in and crop the data extent.
+    // Data-extent-visible check: the data bbox must be fully contained in the
+    // viewport — detects the minZoom-lock crop regression (narrow widths zoomed in,
+    // data cropped). Guards THAT specific bug; furniture overlap (data under title/
+    // legend) is covered by the measured-title-height fix + visual snapshot eyeball,
+    // per the spec's out-of-scope decision.
     // Uses getBounds() (the current viewport) vs the data bbox.
     // For choropleth, uses __layout_bounds__; for symbol, queries source features.
     // Tolerance: allow the map bounds to be tighter than the data bbox by up to 5° —
     // this handles floating-point rounding in fitBounds without masking real crops.
-    const withinSafeAreaOk = (() => {
+    const dataExtentVisibleOk = (() => {
       const m = window.__map__;
       if (!m) return true; // no map yet — skip
       const lb = window.__layout_bounds__;
@@ -145,7 +146,7 @@ for (const w of [360, 768, 1100, 1600]) {
       sourceOk: inView('[data-testid="map-source"]'),
       legendOk: inView('[data-testid="map-legend"]'),
       centreOk,
-      withinSafeAreaOk,
+      dataExtentVisibleOk,
     };
   });
 

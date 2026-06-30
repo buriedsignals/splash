@@ -37,8 +37,11 @@ ratios it letterboxes (extra margin on the long axis), it NEVER crops the data. 
 
 `fitToData()` is called on load AND on every resize. It calls `map.setMinZoom(0)` before
 `fitBounds` so a stale higher minZoom cannot prevent the new fit at a smaller container, then
-re-pins `setMinZoom` to the freshly-computed fit zoom inside `map.once("idle")`. This ensures
+calls `fitBounds` to centre the full data extent with the computed frame padding. This ensures
 the full extent is always visible at any container width, including extreme narrow ratios (360 px).
+The `setMinZoom` re-pin (locking the zoom floor to the freshly-computed fit zoom) is an
+**interactive-only** behaviour, guarded by `if (interactive)` in the code; static maps never
+re-pin minZoom after the fit.
 
 ## Sources (by name)
 
