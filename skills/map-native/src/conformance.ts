@@ -1,3 +1,5 @@
+import { resolveMapFrame } from "./core/map-format";
+
 function channel(c: number): number {
   const s = c / 255;
   return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
@@ -140,5 +142,41 @@ export function checkSymbolConformance(
     v.push(
       "symbols are not directly labeled — values are undecodable without hover",
     );
+  return v;
+}
+
+// Average glyph width in ems (conservative) and the frame left/right inset, used to estimate
+// whether a title fits its band at the scaled size.
+const CHAR_W = 0.55;
+const FRAME_INSET = 12;
+
+// Format-aware framing/legibility check. Uses resolveMapFrame (slice 1) to assert the frame is
+// adequate for THIS canvas: the title fits the width at its scaled size, the title/source bands
+// are reserved, and a source is present (the rule that catches a video with no attribution).
+export function checkMapFraming(input: {
+  width: number;
+  height: number;
+  title: string;
+  description?: string;
+  hasSource: boolean;
+  titleLines?: number;
+}): string[] {
+  const v: string[] = [];
+  const titleLines = input.titleLines ?? 2;
+  const frame = resolveMapFrame(input.width, input.height, {
+    titleLines,
+    hasDescription: !!input.description?.trim(),
+  });
+  const title = input.title?.trim() ?? "";
+  const titlePx = title.length * frame.type.title * CHAR_W;
+  const capacity = (input.width - 2 * FRAME_INSET) * titleLines;
+  if (titlePx > capacity)
+    v.push(
+      `title too long for the ${input.width}×${input.height} frame — it overruns the title band`,
+    );
+  if (frame.pad.top <= 0) v.push("no title band reserved");
+  if (frame.pad.bottom <= 0) v.push("no source band reserved");
+  if (!input.hasSource)
+    v.push("source band empty — every format must cite the source");
   return v;
 }

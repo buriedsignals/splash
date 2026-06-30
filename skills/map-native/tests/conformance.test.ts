@@ -208,3 +208,49 @@ describe("checkGlobalMapConformance", () => {
     ).toBe(true);
   });
 });
+
+import { checkMapFraming } from "../src/conformance";
+
+describe("checkMapFraming", () => {
+  it("passes a normal landscape title with a source", () => {
+    expect(
+      checkMapFraming({
+        width: 1280,
+        height: 720,
+        title: "Renewables power Europe's north",
+        description: "Share, 2024",
+        hasSource: true,
+      }),
+    ).toEqual([]);
+  });
+  it("passes a short title on portrait with a source", () => {
+    expect(
+      checkMapFraming({
+        width: 1080,
+        height: 1350,
+        title: "Europe's renewables divide",
+        hasSource: true,
+      }),
+    ).toEqual([]);
+  });
+  it("flags a title too long for a portrait frame", () => {
+    expect(
+      checkMapFraming({
+        width: 1080,
+        height: 1350,
+        title: "T".repeat(160),
+        hasSource: true,
+      }).some((m) => /too long/.test(m)),
+    ).toBe(true);
+  });
+  it("flags a missing source (the video gap)", () => {
+    expect(
+      checkMapFraming({
+        width: 1280,
+        height: 720,
+        title: "Renewables power Europe's north",
+        hasSource: false,
+      }).some((m) => /source band empty/.test(m)),
+    ).toBe(true);
+  });
+});
