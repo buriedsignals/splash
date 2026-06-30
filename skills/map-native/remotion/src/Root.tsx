@@ -7,6 +7,9 @@
 //   SymbolStory           — Symbol map story landscape 1280×720
 //   SymbolStorySquare     — Symbol map story square 1080×1080
 //   SymbolStoryPortrait   — Symbol map story portrait 1080×1350
+//   SymbolReveal          — Symbol simple-reveal landscape 1280×720
+//   SymbolRevealSquare    — Symbol simple-reveal square 1080×1080
+//   SymbolRevealPortrait  — Symbol simple-reveal portrait 1080×1350
 //
 // Render HarnessCheck to prove the harness:
 //   bunx remotion render remotion/src/index.ts HarnessCheck out/harness-check.mp4 --gl=angle --concurrency=1 --timeout=120000
@@ -22,6 +25,8 @@ import { RiverReveal } from "../../src/components/RiverReveal";
 import { HarnessCheck } from "../../src/components/HarnessCheck";
 import { ChoroplethStory } from "../../src/components/ChoroplethStory";
 import { SymbolStory } from "../../src/components/SymbolStory";
+import { SymbolReveal } from "../../src/components/SymbolReveal";
+import { REVEAL_FRAMES } from "../../src/reveal";
 import { computeChoropleth } from "../../src/choropleth-geo";
 import { deriveMapStory } from "../../src/map-story";
 import { buildTimeline } from "../../src/story-timeline";
@@ -115,6 +120,33 @@ export const RemotionRoot: React.FC = () => (
       id="SymbolStoryPortrait"
       component={SymbolStory}
       durationInFrames={SYMBOL_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={symbolDefaultProps}
+    />
+    <Composition
+      id="SymbolReveal"
+      component={SymbolReveal}
+      durationInFrames={REVEAL_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={symbolDefaultProps}
+    />
+    <Composition
+      id="SymbolRevealSquare"
+      component={SymbolReveal}
+      durationInFrames={REVEAL_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={symbolDefaultProps}
+    />
+    <Composition
+      id="SymbolRevealPortrait"
+      component={SymbolReveal}
+      durationInFrames={REVEAL_FRAMES}
       fps={30}
       width={1080}
       height={1350}
