@@ -45,6 +45,7 @@ export function MapFrame({
       {children}
       {/* Title band (top-left) */}
       <div
+        data-testid="map-title"
         style={{
           position: "absolute",
           top: m,
@@ -79,6 +80,7 @@ export function MapFrame({
       </div>
       {/* Source band (bottom-left) — ALWAYS rendered, incl. video */}
       <div
+        data-testid="map-source"
         style={{
           position: "absolute",
           bottom: m,

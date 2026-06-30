@@ -248,6 +248,7 @@ export const SymbolMap: React.FC<Props> = ({
       {/* Legend — bottom-right so it does not collide with MapFrame's bottom-left source */}
       <div
         ref={legendRef}
+        data-testid="map-legend"
         style={{
           position: "absolute",
           bottom: 16,

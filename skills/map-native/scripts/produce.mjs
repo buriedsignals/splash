@@ -51,6 +51,9 @@ run("bun", ["scripts/snap-static.mjs"], { OUTDIR: outDir });
 console.log(`[produce map] snapping interactive (proof)…`);
 run("bun", ["scripts/snap-proof.mjs"], { OUTDIR: outDir });
 
+console.log(`[produce map] snapping responsive…`);
+run("bun", ["scripts/snap-responsive.mjs"], { OUTDIR: outDir });
+
 const result = {
   static: join(outDir, "static.png"),
   interactive: join(outDir, "interactive.png"),
