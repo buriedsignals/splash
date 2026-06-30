@@ -5,7 +5,7 @@
 import { interpolate, Easing } from "remotion";
 
 export const REVEAL_FRAMES = 240; // 8s @ 30fps
-export const REVEAL_HOLD = 0.05; // ~5% blank-in / full-out
+export const REVEAL_HOLD = 0.1; // ~10% blank-in / full-out (≥24 frames @ 240f — video.md floor)
 export const MAX_FILL_OPACITY = 0.85;
 
 export function easedRevealProgress(

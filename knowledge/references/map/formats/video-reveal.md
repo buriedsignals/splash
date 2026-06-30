@@ -31,15 +31,16 @@ Ship it to the storytelling pipeline instead.
 
 ## Blank-data start / settle-at-end
 
-**Frame 0 carries zero data ink. The last ~5% of frames hold the full data state.**
+**Frame 0 carries zero data ink. The last ~10% of frames hold the full data state.**
 
 Timing reference: 8 s / 240 frames at 30 fps.
 
 ```
-Frames  0 – 11   (~5 %)  blank-in hold — basemap visible, data layer opacity 0
-Frames 12 – 228  (~90 %)  single easeInOutCubic ramp (Disney ease-in/ease-out principle;
-                           Chang & Ungar 1993 in-out cubic) drives all data properties
-Frames 229 – 239 (~5 %)  full-data hold — final frame equals the static render's data state
+Frames   0 –  24  (~10 %)  blank-in hold — basemap visible, data layer opacity 0
+Frames  25 – 215  (~80 %)  single easeInOutCubic ramp (Disney ease-in/ease-out principle;
+                            Chang & Ungar 1993 in-out cubic) drives all data properties
+Frames 216 – 239  (~10 %)  full-data hold — final frame equals the static render's data state
+                            (meets video.md § Ending hold floor of 24 frames / ≈0.8 s)
 ```
 
 The blank-in hold prevents a jarring first frame in feeds where the poster is frame 0.
@@ -75,11 +76,11 @@ Animate `fill-opacity` from `0` to `~0.85`.
 
 `0.85` preserves basemap legibility underneath the fill layer; 1.0 occludes roads and labels.
 The opacity is a pure function of the frame: `opacity = ease(t) * 0.85` where `t` is the
-normalised ramp progress (0 at frame 12, 1 at frame 228).
+normalised ramp progress (0 at frame 25, 1 at frame 215).
 
 Do not animate `fill-color` — stable hue from frame 0 ensures the reader never sees the
-choropleth "shift colour" as it fades in (FT Visual Vocabulary — sequential and diverging
-scales must be perceptually stable across the full data range).
+choropleth "shift colour" as it fades in (consistent with FT Visual Vocabulary's guidance on
+sequential and diverging scales).
 
 ### Proportional symbol
 
@@ -107,6 +108,15 @@ suppressed entirely — fade-in of an invisible-anchor label creates visual nois
   for the simple-reveal sub-format
 - **Chart-native reveal-contract** (this toolkit) — last frame equals the static render's
   data state
+
+## Enforcement
+
+- `tests/reveal.test.ts` — eased-progress determinism, monotonic non-decrease, midpoint ≈ 0.5
+  (guards the cubic in-out shape across all 240 frames).
+- `checkRevealConformance` in `src/conformance.ts` — asserts fixed-camera plan, valid clamped
+  bounds, title + source furniture present (added SP1 Task 5).
+- Render gate `produce.mjs … reveal` — reads frame 0 / mid / final stills: blank-data start,
+  full data at end equal to the static render.
 
 ---
 
