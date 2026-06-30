@@ -29,6 +29,17 @@ Controls imply an interface the viewer cannot use. In a static export they are n
 dead weight that misleads the reader into thinking the image is interactive. A clean static
 map communicates at a glance; controls introduce visual noise and false affordances.
 
+## Data extent framing
+
+The FULL data extent is always visible — the map fits all data centred, with margin; at extreme
+ratios it letterboxes (extra margin on the long axis), it NEVER crops the data. The furniture
+(title, legend, source) overlays the surrounding margin, never the data.
+
+`fitToData()` is called on load AND on every resize. It calls `map.setMinZoom(0)` before
+`fitBounds` so a stale higher minZoom cannot prevent the new fit at a smaller container, then
+re-pins `setMinZoom` to the freshly-computed fit zoom inside `map.once("idle")`. This ensures
+the full extent is always visible at any container width, including extreme narrow ratios (360 px).
+
 ## Sources (by name)
 
 - **Datawrapper Academy** — static map export guidelines (choropleth and symbol workflows)

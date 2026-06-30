@@ -74,6 +74,55 @@ export const SymbolMap: React.FC<Props> = ({
       Math.min(MERCATOR_MAX_LAT, b[3]),
     ];
 
+    // Opts passed to resolveMapFrame — same values used at init and every resize.
+    const FRAME_OPTS = {
+      titleLines: 2,
+      hasDescription: !!config.description,
+      labelOverhang: 80,
+      legendHeight: (geo.legend[0]?.radius ?? 0) * 2 + 28,
+    };
+    const DATA_BOUNDS = clampBounds(geo.bounds);
+
+    // Fit the data to the CURRENT container size, then pin minZoom to that fit zoom so the
+    // full extent is always visible (never cropped) and bounded for free-pan. Called on load
+    // AND on every resize, so minZoom always matches the current size (no build-time lock).
+    function fitToData() {
+      const m = mapRef.current;
+      const el = containerRef.current;
+      if (!m || !el) return;
+      const frame = resolveMapFrame(
+        el.clientWidth,
+        el.clientHeight,
+        FRAME_OPTS,
+      );
+      // Reset constraints first so previously-pinned values can't block the new fit.
+      m.setMinZoom(0);
+      m.setMaxBounds(null); // clear stale maxBounds so fitBounds can pan freely
+      m.fitBounds(DATA_BOUNDS, { padding: frame.pad, duration: 0 });
+      if (interactive) {
+        m.once("idle", () => {
+          m.setMinZoom(m.getZoom()); // current-size fit zoom — recomputed every fit
+          // maxBounds: envelope the data with at least the current viewport extent so
+          // setMaxBounds never forces a zoom-in beyond the fit zoom. The user can still
+          // not pan outside this envelope, which covers the whole data story.
+          const viewBounds = m.getBounds();
+          const [dw, ds, de, dn] = DATA_BOUNDS;
+          const pad = 0.15;
+          const dx = (de - dw) * pad,
+            dy = (dn - ds) * pad;
+          const sw: [number, number] = [
+            Math.min(dw - dx, viewBounds.getWest()),
+            Math.min(ds - dy, viewBounds.getSouth()),
+          ];
+          const ne: [number, number] = [
+            Math.max(de + dx, viewBounds.getEast()),
+            Math.max(dn + dy, viewBounds.getNorth()),
+          ];
+          m.setMaxBounds([sw, ne]);
+        });
+      }
+    }
+
     const map = new maptilersdk.Map({
       container: containerRef.current,
       style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
@@ -157,28 +206,9 @@ export const SymbolMap: React.FC<Props> = ({
         });
       }
 
-      map.fitBounds(clampBounds(geo.bounds), {
-        padding: frameRef.current?.pad ?? 40,
-        duration: 0,
-      });
+      fitToData();
 
       if (interactive) {
-        map.once("idle", () => {
-          const pad = 0.15;
-          const [w, s, e, n] = geo.bounds;
-          const dx = (e - w) * pad,
-            dy = (n - s) * pad;
-          map.setMaxBounds(
-            clampBounds([
-              w - dx,
-              s - dy,
-              e + dx,
-              n + dy,
-            ]) as unknown as maptilersdk.LngLatBoundsLike,
-          );
-          map.setMinZoom(map.getZoom());
-        });
-
         map.addControl(new maptilersdk.NavigationControl({}), "top-right");
         map.addControl(makeResetControl(clampBounds(geo.bounds)), "top-right");
         const popup = new maptilersdk.Popup({ closeButton: false });
@@ -206,21 +236,12 @@ export const SymbolMap: React.FC<Props> = ({
     });
 
     // ResizeObserver: re-fit on container resize so data stays centred.
+    // Uses fitToData() so minZoom is recomputed for the new size (no build-time lock).
     const ro = new ResizeObserver(() => {
       const m = mapRef.current;
       if (!m) return;
       m.resize();
-      const f = resolveMapFrame(
-        containerRef.current!.clientWidth,
-        containerRef.current!.clientHeight,
-        {
-          titleLines: 2,
-          hasDescription: !!config.description,
-          labelOverhang: 80,
-          legendHeight: (geo.legend[0]?.radius ?? 0) * 2 + 28,
-        },
-      );
-      m.fitBounds(clampBounds(geo.bounds), { padding: f.pad, duration: 0 });
+      fitToData();
     });
     if (containerRef.current) ro.observe(containerRef.current);
 

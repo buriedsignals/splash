@@ -35,15 +35,27 @@ story extent but cannot escape it.
 Sources: NN/g (constrained navigation prevents disorientation in task-focused interfaces);
 Datawrapper Academy (interactive maps should constrain the reader to the data extent).
 
+## Data extent framing
+
+The FULL data extent is always visible — the map fits all data centred, with margin; at extreme
+ratios it letterboxes (extra margin on the long axis), it NEVER crops the data. The furniture
+(title, legend, source) overlays the surrounding margin, never the data.
+
+`minZoom` is the current-size fit zoom (recomputed on every resize) so the reader can never
+lose the full extent. `fitToData()` calls `map.setMinZoom(0)` before `fitBounds` to clear any
+stale pinned zoom, then re-pins `setMinZoom` to the new fit zoom in `map.once("idle")`.
+
+Sources: Datawrapper Academy (interactive maps best practices); NN/g (constrained navigation).
+
 ## Responsive recentering
 
 **On container resize the map recentres and re-fits; the data is always centred and the zoom
 adapts to the new frame.**
 
 A `ResizeObserver` on the map container calls `map.resize()` (updates the GL canvas to the new
-pixel dimensions), then recomputes the frame padding from the new size and calls `fitBounds` with
-`duration: 0` so the recentering is instant and invisible. The observer is disconnected in the
-cleanup function to avoid leaks.
+pixel dimensions), then calls `fitToData()` which recomputes the frame padding from the new size,
+resets minZoom to 0, fits, and re-pins minZoom to the new fit zoom. The recentering is instant
+(`duration: 0`) and invisible. The observer is disconnected in the cleanup function to avoid leaks.
 
 Sources: NN/g (responsive design — content must adapt to viewport changes);
 Datawrapper Academy (embedded maps must refit on resize to avoid cropped or off-centre data).

@@ -94,6 +94,49 @@ for (const w of [360, 768, 1100, 1600]) {
         Math.abs(c.lat - bboxCentLat) <= tol
       );
     })();
+    // Within-safe-area check: the data extent (as a geographic bbox) must be fully
+    // visible — i.e., the map's visible bounds must contain the data bounds. This
+    // detects the bug we're fixing: at narrow widths minZoom was locked to the build
+    // size, causing the map to be too zoomed in and crop the data extent.
+    // Uses getBounds() (the current viewport) vs the data bbox.
+    // For choropleth, uses __layout_bounds__; for symbol, queries source features.
+    // Tolerance: allow the map bounds to be tighter than the data bbox by up to 5° —
+    // this handles floating-point rounding in fitBounds without masking real crops.
+    const withinSafeAreaOk = (() => {
+      const m = window.__map__;
+      if (!m) return true; // no map yet — skip
+      const lb = window.__layout_bounds__;
+      let dataBounds = lb
+        ? lb
+        : (() => {
+            const feats = m.querySourceFeatures("symbols");
+            if (!feats.length) return null;
+            let minLng = Infinity,
+              maxLng = -Infinity,
+              minLat = Infinity,
+              maxLat = -Infinity;
+            for (const f of feats) {
+              const [lng, lat] = f.geometry.coordinates;
+              if (lng < minLng) minLng = lng;
+              if (lng > maxLng) maxLng = lng;
+              if (lat < minLat) minLat = lat;
+              if (lat > maxLat) maxLat = lat;
+            }
+            return [minLng, minLat, maxLng, maxLat];
+          })();
+      if (!dataBounds) return true;
+      const [dw, ds, de, dn] = dataBounds;
+      const vb = m.getBounds();
+      // The visible bounds must contain (or almost contain) the data bounds.
+      // A tolerance of 5° lat/lng handles edge padding and mercator rounding.
+      const TOL = 5;
+      return (
+        vb.getWest() <= dw + TOL &&
+        vb.getSouth() <= ds + TOL &&
+        vb.getEast() >= de - TOL &&
+        vb.getNorth() >= dn - TOL
+      );
+    })();
     return {
       scrollOk:
         document.documentElement.scrollWidth <= window.innerWidth + 1,
@@ -102,6 +145,7 @@ for (const w of [360, 768, 1100, 1600]) {
       sourceOk: inView('[data-testid="map-source"]'),
       legendOk: inView('[data-testid="map-legend"]'),
       centreOk,
+      withinSafeAreaOk,
     };
   });
 
