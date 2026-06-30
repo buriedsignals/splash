@@ -30,6 +30,8 @@ import {
   type Phase,
 } from "../story-timeline";
 import { CountryLabel } from "./CountryLabel";
+import { resolveMapFrame } from "../core/map-format";
+import { MapFrame } from "../core/MapFrame";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -204,6 +206,11 @@ export const ChoroplethStory: React.FC<{
   const started = useRef(false);
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
+  const mapFrame = resolveMapFrame(width, height, {
+    titleLines: 2,
+    hasDescription: !!config.description,
+    labelOverhang: 24,
+  });
   const [mapState, setMapState] = useState<MapStory | null>(null);
   const [handle] = useState(() => delayRender("choropleth-story-init"));
 
@@ -289,10 +296,11 @@ export const ChoroplethStory: React.FC<{
           const beats = deriveMapStory(layout, worldGeoJson, "iso_a3", meta);
 
           // Precompute camera solutions — cameraForBounds → {center, zoom}.
+          // Use mapFrame.pad so the data stays out of the title/source bands.
           const solutions: CameraSolution[] = beats.map((b) => {
             const result = m.cameraForBounds(
               b.camera as maptilersdk.LngLatBoundsLike,
-              { padding: 48 },
+              { padding: mapFrame.pad },
             );
             if (!result) return { center: [10, 20], zoom: 2 };
             return {
@@ -511,10 +519,19 @@ export const ChoroplethStory: React.FC<{
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
-      {/* Hide MapTiler controls */}
-      <style>{`.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-attrib,.maptiler-logo{display:none!important}`}</style>
-
-      <div ref={ref} style={{ width, height, position: "absolute" }} />
+      {/* MapFrame: shared furniture shell — title band (top) + source band (bottom, always).
+          The map div is the child; data is kept out of the bands via mapFrame.pad → cameraForBounds. */}
+      <MapFrame
+        title={config.title ?? ""}
+        description={config.description}
+        source={config.source ?? { name: "" }}
+        width={width}
+        height={height}
+        responsive={false}
+        frame={mapFrame}
+      >
+        <div ref={ref} style={{ width, height, position: "absolute" }} />
+      </MapFrame>
 
       {/* Callout overlay — projected to screen coords */}
       {overlay &&
@@ -541,7 +558,8 @@ export const ChoroplethStory: React.FC<{
           <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />
         )}
 
-      {/* Title card — shown only during the title beat (beatIndex 0), map blank behind */}
+      {/* Title card — shown only during the title beat (beatIndex 0), map blank behind.
+          Fades out before map becomes visible; MapFrame title + source remain throughout. */}
       {mapState && overlay?.beatIndex === 0 && mapState.beats[0].copy && (
         <TitleCard
           text={mapState.beats[0].copy}

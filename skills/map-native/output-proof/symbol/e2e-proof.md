@@ -174,3 +174,91 @@ bun scripts/produce.mjs assets/sample-data/symbol.json /tmp/system-test/symbol-m
 ## Test suite
 
 `bun test` after beside-placement: **84 pass, 0 fail**.
+
+## Task 3 — MapFrame wired to all 4 components (2026-06-29)
+
+**What changed**: `SymbolStory.tsx` and `ChoroplethStory.tsx` now import `resolveMapFrame` + `MapFrame` from `../core/`. Both video components compute `frame = resolveMapFrame(width, height, { titleLines: 2, hasDescription: ..., labelOverhang: 80|24 })` and wrap the map `<div>` in `<MapFrame responsive={false} frame={frame}>`. The `fitBounds`/`cameraForBounds` padding is now `frame.pad` (not a uniform 64/48 px integer) — data stays outside the title and source bands by construction. The hand-rolled title `<div>` in SymbolStory (top:40, left:48, fontSize:30) was removed; ChoroplethStory's TitleCard beat overlay remains (it fades to transparent before the map becomes visible; MapFrame title + source are always present underneath).
+
+**MapFrame now wraps all 4 components**: SymbolMap.tsx (web static), SymbolMapInteractive.tsx (web interactive), SymbolStory.tsx (video), ChoroplethStory.tsx (video).
+
+**Source previously absent in video**: Before this task, neither SymbolStory nor ChoroplethStory had any source attribution. MapFrame's bottom band adds "Source: Dealroom 2025" and "Source: Ember Global Electricity Review 2025, via Our World in Data" unconditionally in all video compositions.
+
+### What was SAW in the 6 video stills (all rendered 2026-06-29)
+
+**symbol / video-landscape-still.png (1280×720, frame 140)**
+- Basemap renders: light-grey land, blue sea, western-Europe view — NOT blank.
+- All 6 proportional blue circles visible (London largest, Amsterdam smallest) with beside-placed labels (London 296, Paris 181, etc.).
+- Title "London leads Europe's tech-funding map, Paris close behind" in MapFrame top band, styled with text-shadow (not a frosted pill — responsive:false).
+- Description "Venture funding raised by startups headquartered in each city, 2024" on a second line below title.
+- **Source "Source: Dealroom 2025" visible bottom-left** — key new addition.
+- MapTiler attribution "© MapTiler © OpenStreetMap contributors" bottom-right.
+- Nothing clips off frame; circles and labels clear of title band.
+
+**symbol / video-square-still.png (1080×1080, frame 140)**
+- Basemap renders; all 6 circles + labels visible.
+- Title wraps cleanly on two lines (larger scale text vs. landscape — scale ≈ 1.5).
+- Description visible below title.
+- **Source "Source: Dealroom 2025" visible bottom-left.**
+- MapTiler attribution bottom-right.
+- Nothing off-frame.
+
+**symbol / video-portrait-still.png (1080×1350, frame 140)**
+- Basemap renders; all 6 circles + labels visible (18 px label text, larger than landscape 13 px).
+- Title + description in top band, comfortably fits two lines.
+- **Source "Source: Dealroom 2025" visible bottom-left.**
+- MapTiler attribution bottom-right.
+- Nothing off-frame.
+
+**choropleth / video-landscape-still.png (1280×720, frame 140)**
+- Basemap renders: light basemap with choropleth fill over Europe — NOT blank. Norway darkest blue (99 %), Sweden medium blue (68 %), Germany medium (59 %), UK light-medium (48 %), Spain/Italy lighter (44/41 %), France light (27 %), Poland lightest (21 %).
+- Title "Renewables power most of Europe's north, far less of its south" in MapFrame top band.
+- Description "Share of electricity from renewables, by country, 2024" below title.
+- **Source "Source: Ember Global Electricity Review 2025, via Our World in Data" visible bottom-left** — key new addition, previously absent in video.
+- MapTiler attribution bottom-right.
+- Nothing clips; choropleth regions clear of title band.
+
+**choropleth / video-square-still.png (1080×1080, frame 140)**
+- Basemap renders; choropleth regions visible with correct color gradient.
+- Title + description in top band — larger text scale (scale ≈ 1.5), legible.
+- **Source "Source: Ember Global Electricity Review 2025, via Our World in Data" visible bottom-left.**
+- MapTiler attribution bottom-right.
+- Nothing off-frame.
+
+**choropleth / video-portrait-still.png (1080×1350, frame 140)**
+- Basemap renders; choropleth fill visible across European countries.
+- Title + description top band, scaled appropriately for portrait.
+- **Source "Source: Ember Global Electricity Review 2025, via Our World in Data" visible bottom-left.**
+- MapTiler attribution bottom-right.
+- Nothing off-frame.
+
+### Output files (Task 3 — 2026-06-29)
+
+**Symbol map**
+
+| File | Size |
+|---|---|
+| `/tmp/system-test/symbol-map/video-landscape-still.png` | 230 KB |
+| `/tmp/system-test/symbol-map/landscape.mp4` | 380 KB |
+| `/tmp/system-test/symbol-map/video-square-still.png` | 390 KB |
+| `/tmp/system-test/symbol-map/square.mp4` | 457 KB |
+| `/tmp/system-test/symbol-map/video-portrait-still.png` | 440 KB |
+| `/tmp/system-test/symbol-map/portrait.mp4` | 475 KB |
+
+Note: landscape mp4 rendered in `produce.mjs all`; square and portrait rendered individually after `produce.mjs` exited early on the square mp4 (known flaky Chromium-under-CPU-pressure issue).
+
+**Choropleth map**
+
+| File | Size |
+|---|---|
+| `/tmp/system-test/choropleth-map/video-landscape-still.png` | 233 KB |
+| `/tmp/system-test/choropleth-map/landscape.mp4` | 3.6 MB |
+| `/tmp/system-test/choropleth-map/video-square-still.png` | 294 KB |
+| `/tmp/system-test/choropleth-map/square.mp4` | 4.5 MB |
+| `/tmp/system-test/choropleth-map/video-portrait-still.png` | 327 KB |
+| `/tmp/system-test/choropleth-map/portrait.mp4` | 5.0 MB |
+
+All 6 mp4s confirmed non-trivial. Choropleth mp4s are larger than symbol because the beat-driven camera timeline is longer (549 frames vs 150).
+
+### Test suite
+
+`bun test` after Task 3: **93 pass, 0 fail**.

@@ -19,6 +19,8 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
 import { symbolLabels, labelRadialOffset } from "../symbol-labels";
 import type { SymbolConfig } from "../SymbolMap";
+import { resolveMapFrame } from "../core/map-format";
+import { MapFrame } from "../core/MapFrame";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -37,6 +39,11 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
   const [handle] = useState(() => delayRender("symbol-init"));
 
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
+  const mapFrame = resolveMapFrame(width, height, {
+    titleLines: 2,
+    hasDescription: !!config.description,
+    labelOverhang: 80,
+  });
 
   // Ratio-scaled label size: square/portrait are ≤1080 wide → larger text for legibility.
   const labelTextSize = width <= 1080 ? 18 : 13;
@@ -124,7 +131,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           "text-opacity": 0,
         },
       });
-      map.fitBounds(geo.bounds, { padding: 64, duration: 0 });
+      map.fitBounds(geo.bounds, { padding: mapFrame.pad, duration: 0 });
       map.once("idle", () => {
         setMapReady(true);
         continueRender(handle);
@@ -157,24 +164,21 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
-      {/* Map fills the full composition frame — mirrors ChoroplethStory */}
-      <div ref={containerRef} style={{ width, height, position: "absolute" }} />
-
-      {/* Title overlay */}
-      <div
-        style={{
-          position: "absolute",
-          top: 40,
-          left: 48,
-          maxWidth: "70%",
-          fontSize: 30,
-          fontWeight: 700,
-          color: "#1A1A1A",
-          textShadow: "0 1px 6px rgba(255,255,255,0.9)",
-        }}
+      <MapFrame
+        title={config.title ?? ""}
+        description={config.description}
+        source={config.source ?? { name: "" }}
+        width={width}
+        height={height}
+        responsive={false}
+        frame={mapFrame}
       >
-        {config.title}
-      </div>
+        {/* Map fills the full composition frame */}
+        <div
+          ref={containerRef}
+          style={{ width, height, position: "absolute" }}
+        />
+      </MapFrame>
     </AbsoluteFill>
   );
 };
