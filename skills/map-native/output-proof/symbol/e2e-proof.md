@@ -122,3 +122,55 @@ bun scripts/produce.mjs assets/sample-data/symbol.json /tmp/system-test/symbol-m
 ## Test suite
 
 `bun test` after direct-label feature: **82 pass, 0 fail**.
+
+## Fix notes (2026-06-29) — beside-placement + ratio-scaled labels in video
+
+**Feature**: `SymbolStory.tsx` now uses variable-anchor + radial-offset label placement (same as the web build `SymbolMap.tsx`), and scales the label text size by aspect ratio: landscape (1280 px wide) → 13 px, square/portrait (1080 px wide) → 18 px for legibility.
+
+**What changed in `SymbolStory.tsx`**:
+- Import `labelRadialOffset` alongside `symbolLabels`.
+- Derive `const labelTextSize = width <= 1080 ? 18 : 13` from `useVideoConfig()`.
+- Each feature's GeoJSON properties now include `labelOffset: labelRadialOffset(s.radius, labelTextSize)`.
+- `symbol-labels` layer layout replaced: `text-variable-anchor: ["left","right","top","bottom"]`, `text-radial-offset: ["get","labelOffset"]`, `text-justify: "auto"`, `text-size: labelTextSize`. Removed conflicting `text-anchor`/`text-offset`.
+- Per-frame `text-opacity` reveal, `mapReady` gate, `attributionControl`, and init-once guard left untouched.
+
+**What was READ in video-landscape-still.png (1280×720, labelTextSize=13)**:
+- Labels sit clearly BESIDE their circles, not on top — variable-anchor resolved correctly.
+- London 296 — label to the right of the large blue circle.
+- Paris 181 — label to the right of the Paris circle (France interior).
+- Berlin 88 — label to the right of the Berlin circle (top-right).
+- Madrid 124 — label to the right of the Madrid circle (bottom-left).
+- Rome 67 — label beside the Rome circle (Italy).
+- Amsterdam 52 — visible beside the small Netherlands circle.
+- Title "London leads Europe's tech-funding map, Paris close behind" unclipped top-left.
+- "© MapTiler © OpenStreetMap contributors" attribution present bottom-right.
+
+**What was READ in video-square-still.png (1080×1080, labelTextSize=18)**:
+- Labels beside the circles (not on top), larger text than landscape.
+- London 296, Paris 181, Berlin 88, Madrid 124, Rome 67 all readable.
+- Title wraps across two lines, no clipping.
+- Attribution present bottom-right.
+
+**What was READ in video-portrait-still.png (1080×1350, labelTextSize=18)**:
+- Labels beside the circles, legibly sized at 18 px — the portrait fix is confirmed working.
+- Amsterdam 52 visible top-centre beside the small circle.
+- London 296, Paris 181, Madrid 124, Rome 67, Berlin 88 all legible.
+- Title wraps across two lines, no clipping.
+- "© MapTiler © OpenStreetMap contributors" attribution present bottom-right.
+
+**Note on square/portrait mp4 render**: The first `produce.mjs all` run timed out on the square mp4 (flaky Puppeteer Chromium map init under CPU pressure from sequential renders). Stills and mp4s were completed by rendering them individually after the landscape completed. Portrait mp4 also required one retry. All 3 mp4s confirmed rendered.
+
+## Output files (re-rendered 2026-06-29 — beside-placement + ratio-scaled labels)
+
+| File | Size |
+|---|---|
+| `/tmp/system-test/symbol-map/video-landscape-still.png` | 224 KB |
+| `/tmp/system-test/symbol-map/landscape.mp4` | 379 KB |
+| `/tmp/system-test/symbol-map/video-square-still.png` | 356 KB |
+| `/tmp/system-test/symbol-map/square.mp4` | 453 KB |
+| `/tmp/system-test/symbol-map/video-portrait-still.png` | 404 KB |
+| `/tmp/system-test/symbol-map/portrait.mp4` | 470 KB |
+
+## Test suite
+
+`bun test` after beside-placement: **84 pass, 0 fail**.

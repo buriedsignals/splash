@@ -17,7 +17,7 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
-import { symbolLabels } from "../symbol-labels";
+import { symbolLabels, labelRadialOffset } from "../symbol-labels";
 import type { SymbolConfig } from "../SymbolMap";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
@@ -37,6 +37,9 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
   const [handle] = useState(() => delayRender("symbol-init"));
 
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
+
+  // Ratio-scaled label size: square/portrait are ≤1080 wide → larger text for legibility.
+  const labelTextSize = width <= 1080 ? 18 : 13;
 
   // Eased reveal 0 → 1 across the clip.
   const progress = interpolate(frame, [0, durationInFrames - 1], [0, 1], {
@@ -79,6 +82,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
               labelText: labels[i]?.name
                 ? `${labels[i].name}\n${labels[i].valueText}`
                 : (labels[i]?.valueText ?? ""),
+              labelOffset: labelRadialOffset(s.radius, labelTextSize),
             },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
           })),
@@ -104,9 +108,10 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         layout: {
           "text-field": ["get", "labelText"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-          "text-size": 11,
-          "text-anchor": "top",
-          "text-offset": [0, 0.6],
+          "text-size": labelTextSize,
+          "text-variable-anchor": ["left", "right", "top", "bottom"],
+          "text-radial-offset": ["get", "labelOffset"],
+          "text-justify": "auto",
           "text-allow-overlap": false,
           "text-optional": true,
           "text-line-height": 1.3,
