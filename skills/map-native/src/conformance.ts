@@ -63,6 +63,7 @@ export function checkChoroplethConformance(
     regionsTotal: number;
     boundsNonEmpty: boolean;
     storyBeats?: number;
+    format?: { width: number; height: number };
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -85,6 +86,16 @@ export function checkChoroplethConformance(
     v.push(
       `story: only ${input.storyBeats} beats — a narrated map needs at least establish + reveal + takeaway (3)`,
     );
+  if (input.format)
+    v.push(
+      ...checkMapFraming({
+        width: input.format.width,
+        height: input.format.height,
+        title: input.title,
+        description: input.description,
+        hasSource: !!input.source?.name?.trim(),
+      }),
+    );
   return v;
 }
 
@@ -106,6 +117,7 @@ export function checkSymbolConformance(
     boundsNonEmpty: boolean;
     strokeContrast: number;
     labeled: boolean;
+    format?: { width: number; height: number };
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -141,6 +153,16 @@ export function checkSymbolConformance(
   if (!input.labeled)
     v.push(
       "symbols are not directly labeled — values are undecodable without hover",
+    );
+  if (input.format)
+    v.push(
+      ...checkMapFraming({
+        width: input.format.width,
+        height: input.format.height,
+        title: input.title,
+        description: input.description,
+        hasSource: !!input.source?.name?.trim(),
+      }),
     );
   return v;
 }

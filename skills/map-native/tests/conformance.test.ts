@@ -254,3 +254,39 @@ describe("checkMapFraming", () => {
     ).toBe(true);
   });
 });
+
+describe("per-type guards — optional format hook", () => {
+  const text = { text: ["#1A1A1A"], bg: "#FFFFFF" };
+  const choro = {
+    title: "Renewables power most of Europe's north",
+    description: "Share of electricity from renewables, 2024",
+    source: { name: "Ember 2025", url: "https://example.org/x" },
+    scaleColors: ["#deebf7", "#9ecae1", "#4292c6", "#2171b5", "#084594"],
+    scaleType: "sequential" as const,
+    hasLegend: true,
+    regionsWithData: 24,
+    regionsTotal: 27,
+    boundsNonEmpty: true,
+  };
+  it("with no format, behaviour is unchanged (conformant → [])", () => {
+    expect(checkChoroplethConformance(choro, text)).toEqual([]);
+  });
+  it("with a format + an over-long title, the framing violation appears", () => {
+    const r = checkChoroplethConformance(
+      {
+        ...choro,
+        title: "T".repeat(160),
+        format: { width: 1080, height: 1350 },
+      },
+      text,
+    );
+    expect(r.some((m) => /too long/.test(m))).toBe(true);
+  });
+  it("with a conformant format, no framing violation is added", () => {
+    const r = checkChoroplethConformance(
+      { ...choro, format: { width: 1280, height: 720 } },
+      text,
+    );
+    expect(r).toEqual([]);
+  });
+});
