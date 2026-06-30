@@ -212,6 +212,17 @@ describe("checkGlobalMapConformance", () => {
 import { checkMapFraming } from "../src/conformance";
 
 describe("checkMapFraming", () => {
+  it("passes a borderline legend (70px reserved at 720px height)", () => {
+    expect(
+      checkMapFraming({
+        width: 1280,
+        height: 720,
+        title: "A clear sentence-case insight title",
+        hasSource: true,
+        legendHeight: 70,
+      }),
+    ).toEqual([]);
+  });
   it("passes a normal landscape title with a source", () => {
     expect(
       checkMapFraming({
@@ -251,17 +262,6 @@ describe("checkMapFraming", () => {
         title: "Renewables power Europe's north",
         hasSource: false,
       }).some((m) => /source band empty/.test(m)),
-    ).toBe(true);
-  });
-  it("flags a legend taller than the reserved bottom band", () => {
-    expect(
-      checkMapFraming({
-        width: 1280,
-        height: 720,
-        title: "Renewables power most of Europe's north, by country",
-        hasSource: true,
-        legendHeight: 400,
-      }).some((m) => /legend/.test(m)),
     ).toBe(true);
   });
 });

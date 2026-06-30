@@ -26,6 +26,9 @@ interface Props {
   interactive?: boolean;
 }
 
+// Number of bins used for choropleth color scale
+const NUM_BINS = 5;
+
 // Exported so tests can assert colour distinctness
 export { NO_DATA_COLOR, WATER_COLOR } from "./theme/colors";
 import { NO_DATA_COLOR, WATER_COLOR } from "./theme/colors";
@@ -107,7 +110,7 @@ export const ChoroplethMap: React.FC<Props> = ({
       const world = worldGeoJson as GeoJSON.FeatureCollection;
 
       const layout = computeChoropleth(config, world, "iso_a3", {
-        bins: 5,
+        bins: NUM_BINS,
         scaleType: "sequential",
       });
 
@@ -275,9 +278,9 @@ export const ChoroplethMap: React.FC<Props> = ({
     ? `Interactive map: ${config.title}`
     : "Interactive choropleth map";
 
-  // Conservative estimate: 5 bins × 18 px/row + 36 px header/no-data row = 126 px.
-  // Keeps the legend visually clear of the data area without measuring the DOM.
-  const CHOROPLETH_LEGEND_HEIGHT = 5 * 18 + 36;
+  // Legend height: each bin row is 18 px, plus 36 px for header/no-data row.
+  // Derived from NUM_BINS to match the actual bin count used in computeChoropleth.
+  const CHOROPLETH_LEGEND_HEIGHT = NUM_BINS * 18 + 36;
   const frame = resolveMapFrame(containerSize.w, containerSize.h, {
     titleLines: 2,
     hasDescription: !!config.description,

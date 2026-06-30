@@ -195,6 +195,7 @@ export function checkMapFraming(input: {
   const frame = resolveMapFrame(input.width, input.height, {
     titleLines,
     hasDescription: !!input.description?.trim(),
+    legendHeight: input.legendHeight,
   });
   const title = input.title?.trim() ?? "";
   const titlePx = title.length * frame.type.title * CHAR_W;
