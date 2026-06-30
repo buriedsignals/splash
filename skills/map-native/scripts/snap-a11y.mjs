@@ -41,7 +41,7 @@ await page.waitForTimeout(2000);
 
 const a11y = await page.evaluate(() => {
   const region = document.querySelector('[role="region"]');
-  const link = document.querySelector('[data-testid="map-source"] a[href], a[href]');
+  const link = document.querySelector('[data-testid="map-source"] a[href]');
   const ctrlButtons = [...document.querySelectorAll(".maplibregl-ctrl button")];
   return {
     regionRole: !!region,
