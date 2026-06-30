@@ -1,13 +1,16 @@
 // produce(configPath, outDir): the map-native producer — build + render the
-// native outputs from an ARBITRARY choropleth config. Injects the config via
-// CONFIG= (Vite define for web, Remotion --props for video), so nothing
-// touches the committed sample. Returns the output paths as JSON on stdout.
+// native outputs from an ARBITRARY config. Injects the config via CONFIG=
+// (Vite define for web, Remotion --props for video), so nothing touches the
+// committed sample. Returns the output paths as JSON on stdout.
 //
-//   bun scripts/produce.mjs <config.json> <outDir> [formats]
-//   formats: "all" (default — static + interactive + 3 videos) | "static" (no video)
+//   bun scripts/produce.mjs <config.json> <outDir> <static|reveal|story|all>
+//   static — web build + 4 snaps only (no video)
+//   reveal — web build + 4 snaps + reveal videos (landscape/square/portrait)
+//   story  — web build + 4 snaps + story videos (landscape/square/portrait)
+//   all    — web build + 4 snaps + reveal + story videos
 //
 // Outputs:
-//   { static, interactive, landscape, square, portrait }
+//   { static, interactive, reveal?: {landscape,square,portrait}, story?: {landscape,square,portrait} }
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
@@ -20,10 +23,11 @@ const root = join(here, "..");
 
 const configPath = process.argv[2];
 const outDir = process.argv[3];
-const formats = process.argv[4] ?? process.env.FORMATS ?? "all";
+const format = process.argv[4] ?? process.env.FORMATS ?? "all";
+const VALID = new Set(["static", "reveal", "story", "all"]);
 
-if (!configPath || !outDir) {
-  console.error("usage: produce.mjs <config.json> <outDir> [all|static]");
+if (!configPath || !outDir || !VALID.has(format)) {
+  console.error("usage: produce.mjs <config.json> <outDir> <static|reveal|story|all>");
   process.exit(1);
 }
 
@@ -67,67 +71,47 @@ const result = {
   interactive: join(outDir, "interactive.png"),
 };
 
-// 3. Videos (config injected via Remotion --props)
-if (formats === "all") {
-  // Write props file for Remotion (expects { config: <choropleth config> })
+const isSymbol = JSON.parse(readFileSync(configPath, "utf8")).type === "symbol";
+
+// comps[kind] = [[compId, sizeName], ...] for the config's type
+const VIDEO_COMPS = {
+  reveal: isSymbol
+    ? [["SymbolReveal", "landscape"], ["SymbolRevealSquare", "square"], ["SymbolRevealPortrait", "portrait"]]
+    : [["ChoroplethReveal", "landscape"], ["ChoroplethRevealSquare", "square"], ["ChoroplethRevealPortrait", "portrait"]],
+  story: isSymbol
+    ? [["SymbolStory", "landscape"], ["SymbolStorySquare", "square"], ["SymbolStoryPortrait", "portrait"]]
+    : [["ChoroplethStory", "landscape"], ["ChoroplethStorySquare", "square"], ["ChoroplethStoryPortrait", "portrait"]],
+};
+
+// Still mid-frame per kind (reveal is 240 frames; story uses its existing 140).
+const STILL_FRAME = { reveal: 120, story: 140 };
+
+function renderVideoSet(kind, propsPath, remotionEntry) {
+  const out = {};
+  for (const [comp, name] of VIDEO_COMPS[kind]) {
+    const stillOut = join(outDir, `${kind}-${name}-still.png`);
+    const mp4Out = join(outDir, `${kind}-${name}.mp4`);
+    console.log(`[produce map] ${kind} ${name} (${comp}) — still…`);
+    run("bunx", ["remotion", "still", remotionEntry, comp, stillOut,
+      `--frame=${STILL_FRAME[kind]}`, "--gl=angle", `--props=${propsPath}`], { COMP: comp });
+    console.log(`[produce map] ${kind} ${name} (${comp}) — mp4…`);
+    run("bunx", ["remotion", "render", remotionEntry, comp, mp4Out,
+      "--gl=angle", "--concurrency=1", "--timeout=120000", `--props=${propsPath}`], { COMP: comp });
+    out[name] = mp4Out;
+  }
+  return out;
+}
+
+const kinds = format === "all" ? ["reveal", "story"] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : [];
+if (kinds.length) {
   const config = JSON.parse(readFileSync(configPath, "utf8"));
   const tmpDir = mkdtempSync(join(tmpdir(), "map-native-props-"));
   try {
     const propsPath = join(tmpDir, "props.json");
     writeFileSync(propsPath, JSON.stringify({ config }));
-
     const remotionEntry = join(root, "remotion", "src", "index.ts");
-
-    const storyComps =
-      config.type === "symbol"
-        ? [
-            ["SymbolStory", "landscape"],
-            ["SymbolStorySquare", "square"],
-            ["SymbolStoryPortrait", "portrait"],
-          ]
-        : [
-            ["ChoroplethStory", "landscape"],
-            ["ChoroplethStorySquare", "square"],
-            ["ChoroplethStoryPortrait", "portrait"],
-          ];
-    for (const [comp, name] of storyComps) {
-      const stillOut = join(outDir, `video-${name}-still.png`);
-      const mp4Out = join(outDir, `${name}.mp4`);
-
-      console.log(`[produce map] rendering ${name} (${comp}) — still…`);
-      run(
-        "bunx",
-        [
-          "remotion",
-          "still",
-          remotionEntry,
-          comp,
-          stillOut,
-          "--frame=140",
-          "--gl=angle",
-          `--props=${propsPath}`,
-        ],
-        { COMP: comp },
-      );
-
-      console.log(`[produce map] rendering ${name} (${comp}) — mp4…`);
-      run(
-        "bunx",
-        [
-          "remotion",
-          "render",
-          remotionEntry,
-          comp,
-          mp4Out,
-          "--gl=angle",
-          "--concurrency=1",
-          "--timeout=120000",
-          `--props=${propsPath}`,
-        ],
-        { COMP: comp },
-      );
-
-      result[name] = mp4Out;
+    for (const kind of kinds) {
+      result[kind] = renderVideoSet(kind, propsPath, remotionEntry);
     }
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });
