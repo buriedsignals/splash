@@ -2,13 +2,15 @@ import React, { useEffect, useRef } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry, type SymbolData } from "./symbol-geo";
-import { symbolLabels } from "./symbol-labels";
+import { symbolLabels, labelRadialOffset } from "./symbol-labels";
+import { makeResetControl } from "./controls";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
 maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 const SYMBOL_FILL = "#2171b5"; // single hue — size is the encoding
+const LABEL_TEXT_SIZE = 13;
 const SYMBOL_STROKE = "#ffffff"; // white halo separates symbols from the basemap
 const MAX_RADIUS_PX = 40;
 
@@ -86,6 +88,7 @@ export const SymbolMap: React.FC<Props> = ({
               labelText: labels[i]?.name
                 ? `${labels[i].name}\n${labels[i].valueText}`
                 : (labels[i]?.valueText ?? ""),
+              labelOffset: labelRadialOffset(s.radius, LABEL_TEXT_SIZE),
             },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
           })),
@@ -105,10 +108,10 @@ export const SymbolMap: React.FC<Props> = ({
         },
       });
 
-      // Direct label layer — city name + value on/near each symbol.
-      // text-offset is in ems; we lift labels clear of the circle using a fixed offset
-      // (circles are in px, text-offset in ems — a moderate positive y offset places
-      // the label below the circle where there is typically more basemap room).
+      // Direct label layer — city name + value beside each symbol (not on top).
+      // text-variable-anchor + text-radial-offset: the renderer picks the first free
+      // side (left/right/top/bottom), auto-flipping near edges for collision avoidance.
+      // radial-offset is per-feature so larger circles push their label further out.
       map.addLayer({
         id: "symbol-labels",
         type: "symbol",
@@ -116,9 +119,10 @@ export const SymbolMap: React.FC<Props> = ({
         layout: {
           "text-field": ["get", "labelText"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-          "text-size": 11,
-          "text-anchor": "top",
-          "text-offset": [0, 0.6],
+          "text-size": LABEL_TEXT_SIZE,
+          "text-variable-anchor": ["left", "right", "top", "bottom"],
+          "text-radial-offset": ["get", "labelOffset"],
+          "text-justify": "auto",
           "text-allow-overlap": false,
           "text-optional": true,
           "text-line-height": 1.3,
@@ -135,6 +139,7 @@ export const SymbolMap: React.FC<Props> = ({
 
       if (interactive) {
         map.addControl(new maptilersdk.NavigationControl({}), "top-right");
+        map.addControl(makeResetControl(geo.bounds), "top-right");
         const popup = new maptilersdk.Popup({ closeButton: false });
         map.on("mouseenter", "symbol-circles", (e) => {
           map.getCanvas().style.cursor = "pointer";
