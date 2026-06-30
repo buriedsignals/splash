@@ -24,10 +24,11 @@ describe("easedRevealProgress", () => {
       prev = p;
     }
   });
-  it("is a pure function of frame (same frame → same value)", () => {
-    expect(easedRevealProgress(120, REVEAL_FRAMES)).toBe(
-      easedRevealProgress(120, REVEAL_FRAMES),
-    );
+  it("eases to ~0.5 at the clip midpoint (symmetric cubic in-out)", () => {
+    // The eased ramp over the [holdIn, 1-holdOut] window is symmetric cubic
+    // in-out, so the middle frame sits at ~0.5 — guards the easing shape, not
+    // just monotonicity.
+    expect(easedRevealProgress(120, REVEAL_FRAMES)).toBeCloseTo(0.5, 1);
   });
 });
 
