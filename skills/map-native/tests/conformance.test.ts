@@ -313,6 +313,42 @@ describe("checkSymbolConformance — label carries the unit", () => {
   });
 });
 
+import { checkRevealConformance } from "../src/conformance";
+
+describe("checkRevealConformance", () => {
+  const ok = {
+    bounds: [-10, 35, 30, 60] as [number, number, number, number],
+    title: "Renewables power Europe's north",
+    source: { name: "Ember", url: "https://ember-energy.org" },
+    hasFurniture: true,
+  };
+  it("passes a well-formed fixed-camera reveal", () => {
+    expect(checkRevealConformance(ok).violations).toEqual([]);
+  });
+  it("flags degenerate bounds (west ≥ east)", () => {
+    expect(
+      checkRevealConformance({
+        ...ok,
+        bounds: [30, 35, 30, 60],
+      }).violations.some((m) => /degenerate|bounds/i.test(m)),
+    ).toBe(true);
+  });
+  it("flags missing furniture", () => {
+    expect(
+      checkRevealConformance({ ...ok, hasFurniture: false }).violations.some(
+        (m) => /furniture/i.test(m),
+      ),
+    ).toBe(true);
+  });
+  it("flags a missing source", () => {
+    expect(
+      checkRevealConformance({ ...ok, source: { name: "" } }).violations.some(
+        (m) => /source/i.test(m),
+      ),
+    ).toBe(true);
+  });
+});
+
 describe("per-type guards — optional format hook", () => {
   const text = { text: ["#1A1A1A"], bg: "#FFFFFF" };
   const choro = {
