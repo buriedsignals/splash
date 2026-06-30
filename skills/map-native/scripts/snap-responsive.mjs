@@ -61,6 +61,39 @@ for (const w of [360, 768, 1100, 1600]) {
       const r = el.getBoundingClientRect();
       return r.left >= G && r.right <= window.innerWidth - G;
     })();
+    // Centre-check: map centre ≈ data bbox centre (within ±20% of bbox extent).
+    // Verifies the ResizeObserver re-fit keeps data centred across widths.
+    const centreOk = (() => {
+      const m = window.__map__;
+      if (!m) return false;
+      // Prefer layout.bounds (choropleth) else infer from symbol layer features.
+      const lb = window.__layout_bounds__;
+      let bounds = lb
+        ? lb
+        : (() => {
+            const feats = m.querySourceFeatures("symbols");
+            if (!feats.length) return null;
+            let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+            for (const f of feats) {
+              const [lng, lat] = f.geometry.coordinates;
+              if (lng < minLng) minLng = lng;
+              if (lng > maxLng) maxLng = lng;
+              if (lat < minLat) minLat = lat;
+              if (lat > maxLat) maxLat = lat;
+            }
+            return [minLng, minLat, maxLng, maxLat];
+          })();
+      if (!bounds) return true; // no source to verify against — pass
+      const [w, s, e, n] = bounds;
+      const bboxCentLng = (w + e) / 2;
+      const bboxCentLat = (s + n) / 2;
+      const tol = Math.max((e - w) * 0.20, (n - s) * 0.20, 5);
+      const c = m.getCenter();
+      return (
+        Math.abs(c.lng - bboxCentLng) <= tol &&
+        Math.abs(c.lat - bboxCentLat) <= tol
+      );
+    })();
     return {
       scrollOk:
         document.documentElement.scrollWidth <= window.innerWidth + 1,
@@ -68,6 +101,7 @@ for (const w of [360, 768, 1100, 1600]) {
       titleGutterOk,
       sourceOk: inView('[data-testid="map-source"]'),
       legendOk: inView('[data-testid="map-legend"]'),
+      centreOk,
     };
   });
 

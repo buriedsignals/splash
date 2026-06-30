@@ -23,10 +23,27 @@ Rule: **tooltip XOR labels** — choose one disclosure channel per data point:
 Implementation in `SymbolMap.tsx`: the `symbol-labels` layer is added only when `interactive` is
 `false`. The hover popup already renders `name + value + unit`; no baked label is needed.
 
-## What this file does NOT yet cover (reserved for later tasks)
+## Bounded free-explore
 
-- Bounded free-explore: the map must snap back to its initial bounds when the reader pans/zooms
-  too far (prevents the reader getting lost). Implemented by the reset control; best-practice
-  rationale TBD in Task 4.
-- Responsive recentering: on viewport resize the map must refit to its data bounds so no symbols
-  are clipped. Rationale TBD in Task 4.
+**maxBounds + minZoom keep the reader inside the data's story extent — no panning into empty
+ocean, no zooming out past the story.**
+
+On `map.once("idle")` after the initial `fitBounds`, compute a 15 % margin around the data bbox
+and call `setMaxBounds` + `setMinZoom(map.getZoom())`. The reader can freely explore within the
+story extent but cannot escape it.
+
+Sources: NN/g (constrained navigation prevents disorientation in task-focused interfaces);
+Datawrapper Academy (interactive maps should constrain the reader to the data extent).
+
+## Responsive recentering
+
+**On container resize the map recentres and re-fits; the data is always centred and the zoom
+adapts to the new frame.**
+
+A `ResizeObserver` on the map container calls `map.resize()` (updates the GL canvas to the new
+pixel dimensions), then recomputes the frame padding from the new size and calls `fitBounds` with
+`duration: 0` so the recentering is instant and invisible. The observer is disconnected in the
+cleanup function to avoid leaks.
+
+Sources: NN/g (responsive design — content must adapt to viewport changes);
+Datawrapper Academy (embedded maps must refit on resize to avoid cropped or off-centre data).

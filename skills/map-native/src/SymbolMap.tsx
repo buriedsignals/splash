@@ -64,6 +64,16 @@ export const SymbolMap: React.FC<Props> = ({
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
 
+    const MERCATOR_MAX_LAT = 85;
+    const clampBounds = (
+      b: [number, number, number, number],
+    ): [number, number, number, number] => [
+      b[0],
+      Math.max(-MERCATOR_MAX_LAT, b[1]),
+      b[2],
+      Math.min(MERCATOR_MAX_LAT, b[3]),
+    ];
+
     const map = new maptilersdk.Map({
       container: containerRef.current,
       style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
@@ -147,14 +157,30 @@ export const SymbolMap: React.FC<Props> = ({
         });
       }
 
-      map.fitBounds(geo.bounds, {
+      map.fitBounds(clampBounds(geo.bounds), {
         padding: frameRef.current?.pad ?? 40,
         duration: 0,
       });
 
       if (interactive) {
+        map.once("idle", () => {
+          const pad = 0.15;
+          const [w, s, e, n] = geo.bounds;
+          const dx = (e - w) * pad,
+            dy = (n - s) * pad;
+          map.setMaxBounds(
+            clampBounds([
+              w - dx,
+              s - dy,
+              e + dx,
+              n + dy,
+            ]) as unknown as maptilersdk.LngLatBoundsLike,
+          );
+          map.setMinZoom(map.getZoom());
+        });
+
         map.addControl(new maptilersdk.NavigationControl({}), "top-right");
-        map.addControl(makeResetControl(geo.bounds), "top-right");
+        map.addControl(makeResetControl(clampBounds(geo.bounds)), "top-right");
         const popup = new maptilersdk.Popup({ closeButton: false });
         map.on("mouseenter", "symbol-circles", (e) => {
           map.getCanvas().style.cursor = "pointer";
@@ -179,7 +205,27 @@ export const SymbolMap: React.FC<Props> = ({
       renderLegend();
     });
 
+    // ResizeObserver: re-fit on container resize so data stays centred.
+    const ro = new ResizeObserver(() => {
+      const m = mapRef.current;
+      if (!m) return;
+      m.resize();
+      const f = resolveMapFrame(
+        containerRef.current!.clientWidth,
+        containerRef.current!.clientHeight,
+        {
+          titleLines: 2,
+          hasDescription: !!config.description,
+          labelOverhang: 80,
+          legendHeight: (geo.legend[0]?.radius ?? 0) * 2 + 28,
+        },
+      );
+      m.fitBounds(clampBounds(geo.bounds), { padding: f.pad, duration: 0 });
+    });
+    if (containerRef.current) ro.observe(containerRef.current);
+
     return () => {
+      ro.disconnect();
       map.remove();
       mapRef.current = null;
       startedRef.current = false;

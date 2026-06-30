@@ -132,10 +132,38 @@ try {
   tooltipOk = false;
 }
 
+// Bounded nav: attempt a large pan + extreme zoom-out, then assert centre + zoom constraints.
+const boundedNavOk = await page.evaluate(async () => {
+  const m = window.__map__;
+  if (!m) return false;
+  // Large pan — should be clamped by maxBounds
+  await new Promise((resolve) => {
+    m.once("moveend", resolve);
+    m.panBy([5000, 5000], { duration: 0 });
+  });
+  // Extreme zoom-out — should be clamped by minZoom
+  await new Promise((resolve) => {
+    m.once("idle", resolve);
+    m.zoomTo(0, { duration: 0 });
+  });
+  const maxBounds = m.getMaxBounds();
+  const centre = m.getCenter();
+  const zoom = m.getZoom();
+  const minZoom = m.getMinZoom();
+  if (!maxBounds) return false; // maxBounds never set → feature not enabled
+  const inBounds =
+    centre.lng >= maxBounds.getWest() &&
+    centre.lng <= maxBounds.getEast() &&
+    centre.lat >= maxBounds.getSouth() &&
+    centre.lat <= maxBounds.getNorth();
+  const zoomOk = zoom >= minZoom - 0.01; // tiny float tolerance
+  return inBounds && zoomOk;
+});
+
 await page.locator("#root > div").first().screenshot({ path: join(outDir, "a11y.png") });
 await browser.close();
 
-const result = { ...a11y, tooltipOk };
+const result = { ...a11y, tooltipOk, boundedNavOk };
 console.log(JSON.stringify(result, null, 2));
 
 const failures = [];
@@ -145,6 +173,7 @@ if (!result.sourceHref.trim()) failures.push("source link missing href");
 if (result.controlButtons < 2) failures.push("missing zoom/reset control buttons");
 if (!result.allButtons) failures.push("a control is not a <button> (not keyboard-reachable)");
 if (!result.tooltipOk) failures.push("no popup appeared on hovering a feature");
+if (!result.boundedNavOk) failures.push("bounded nav: centre escaped maxBounds or zoom < minZoom after panBy+zoomTo");
 if (failures.length) {
   console.error("A11Y FAILURES:\n" + failures.join("\n"));
   process.exit(1);

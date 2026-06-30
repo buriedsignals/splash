@@ -45,6 +45,7 @@ export const ChoroplethMap: React.FC<Props> = ({
   const popupRef = useRef<maptilersdk.Popup | null>(null);
   const startedRef = useRef(false);
   const frameRef = useRef<ReturnType<typeof resolveMapFrame> | null>(null);
+  const boundsRef = useRef<[number, number, number, number] | null>(null);
 
   // Measured px size — initialised from window dims, refined from DOM in useEffect.
   const [containerSize, setContainerSize] = useState<{ w: number; h: number }>(
@@ -61,6 +62,16 @@ export const ChoroplethMap: React.FC<Props> = ({
   useEffect(() => {
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
+
+    const MERCATOR_MAX_LAT = 85;
+    const clampBounds = (
+      b: [number, number, number, number],
+    ): [number, number, number, number] => [
+      b[0],
+      Math.max(-MERCATOR_MAX_LAT, b[1]),
+      b[2],
+      Math.min(MERCATOR_MAX_LAT, b[3]),
+    ];
 
     const map = new maptilersdk.Map({
       container: containerRef.current,
@@ -168,24 +179,32 @@ export const ChoroplethMap: React.FC<Props> = ({
         },
       });
 
-      const dataBounds = layout.bounds as [number, number, number, number];
+      const dataBounds = clampBounds(
+        layout.bounds as [number, number, number, number],
+      );
+      boundsRef.current = dataBounds;
       map.fitBounds(dataBounds, {
         padding: frameRef.current?.pad ?? 40,
         duration: 0,
       });
 
       if (interactive) {
-        const fitted = map.getBounds();
-        const sw = fitted.getSouthWest();
-        const ne = fitted.getNorthEast();
-        const mx = (ne.lng - sw.lng) * 0.25 || 1;
-        const my = (ne.lat - sw.lat) * 0.25 || 1;
-        map.setMaxBounds([
-          [sw.lng - mx, sw.lat - my],
-          [ne.lng + mx, ne.lat + my],
-        ] as maptilersdk.LngLatBoundsLike);
+        map.once("idle", () => {
+          const pad = 0.15;
+          const [w, s, e, n] = dataBounds;
+          const dx = (e - w) * pad,
+            dy = (n - s) * pad;
+          map.setMaxBounds(
+            clampBounds([
+              w - dx,
+              s - dy,
+              e + dx,
+              n + dy,
+            ]) as unknown as maptilersdk.LngLatBoundsLike,
+          );
+          map.setMinZoom(map.getZoom());
+        });
 
-        map.setMinZoom(map.getZoom() - 0.5);
         map.setMaxZoom(14);
 
         map.addControl(
@@ -259,7 +278,28 @@ export const ChoroplethMap: React.FC<Props> = ({
       }
     });
 
+    // ResizeObserver: re-fit on container resize so data stays centred.
+    const ro = new ResizeObserver(() => {
+      const m = mapRef.current;
+      const bounds = boundsRef.current;
+      if (!m || !bounds) return;
+      m.resize();
+      const f = resolveMapFrame(
+        containerRef.current!.clientWidth,
+        containerRef.current!.clientHeight,
+        {
+          titleLines: 2,
+          hasDescription: !!config.description,
+          labelOverhang: 24,
+          legendHeight: NUM_BINS * 18 + 36,
+        },
+      );
+      m.fitBounds(bounds, { padding: f.pad, duration: 0 });
+    });
+    if (containerRef.current) ro.observe(containerRef.current);
+
     return () => {
+      ro.disconnect();
       mapRef.current?.remove();
       mapRef.current = null;
       startedRef.current = false;
