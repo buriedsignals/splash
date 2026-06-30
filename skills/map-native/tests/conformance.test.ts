@@ -3,6 +3,8 @@ import {
   checkChoroplethConformance,
   checkSymbolConformance,
   checkGlobalMapConformance,
+  checkMapFraming,
+  checkRevealConformance,
 } from "../src/conformance";
 
 const text = { text: ["#1A1A1A", "#6B6B6B"], bg: "#FFFFFF" };
@@ -209,8 +211,6 @@ describe("checkGlobalMapConformance", () => {
   });
 });
 
-import { checkMapFraming } from "../src/conformance";
-
 describe("checkMapFraming", () => {
   it("passes a borderline legend (70px reserved at 720px height)", () => {
     expect(
@@ -313,8 +313,6 @@ describe("checkSymbolConformance — label carries the unit", () => {
   });
 });
 
-import { checkRevealConformance } from "../src/conformance";
-
 describe("checkRevealConformance", () => {
   const ok = {
     bounds: [-10, 35, 30, 60] as [number, number, number, number],
@@ -345,6 +343,14 @@ describe("checkRevealConformance", () => {
       checkRevealConformance({ ...ok, source: { name: "" } }).violations.some(
         (m) => /source/i.test(m),
       ),
+    ).toBe(true);
+  });
+  it("flags latitudes outside ±85 (Mercator-unsafe)", () => {
+    expect(
+      checkRevealConformance({
+        ...ok,
+        bounds: [-10, -90, 30, 90],
+      }).violations.some((m) => /±85|Mercator|latitude/i.test(m)),
     ).toBe(true);
   });
 });

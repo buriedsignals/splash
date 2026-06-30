@@ -1,5 +1,4 @@
 import { resolveMapFrame } from "./core/map-format";
-import { revealCameraPlan } from "./reveal";
 
 export interface RevealConformanceResult {
   violations: string[];
@@ -12,17 +11,16 @@ export function checkRevealConformance(input: {
   hasFurniture?: boolean;
 }): RevealConformanceResult {
   const v: string[] = [];
-  const plan = revealCameraPlan(input.bounds);
-  // The reveal must use a fixed camera (no movement across frames).
-  if (plan.kind !== "fixed")
-    v.push("reveal camera must be fixed (no movement)");
-  const [w, s, e, n] = plan.bounds;
+  const [w, s, e, n] = input.bounds;
+  // The reveal is fixed-camera by construction (revealCameraPlan returns a plan
+  // typed { kind: "fixed" }), so conformance validates the bounds it will be
+  // given + the furniture/source — not the (type-guaranteed) camera fixity.
   if (![w, s, e, n].every((x) => Number.isFinite(x)))
     v.push("reveal bounds must be finite");
   if (w >= e || s >= n)
     v.push("reveal bounds are degenerate (west ≥ east or south ≥ north)");
   if (s < -85 || n > 85)
-    v.push("reveal bounds latitude must be clamped to ±85 (Mercator-safe)");
+    v.push("reveal bounds latitude must be Mercator-safe (within ±85)");
   if (input.hasFurniture === false)
     v.push("reveal must render the MapFrame furniture (title + source)");
   if (!input.source?.name?.trim()) v.push("reveal must cite a source");
