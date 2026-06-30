@@ -41,6 +41,7 @@ export const SymbolMap: React.FC<Props> = ({
   const legendRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const startedRef = useRef(false);
+  const frameRef = useRef<ReturnType<typeof resolveMapFrame> | null>(null);
 
   // Measured px size of the viewport container — set once on mount from the DOM.
   // Using a ref-initialised approach: useState initialiser reads window dims as
@@ -62,12 +63,6 @@ export const SymbolMap: React.FC<Props> = ({
   useEffect(() => {
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
-
-    const frame = resolveMapFrame(containerSize.w, containerSize.h, {
-      titleLines: 2,
-      hasDescription: !!config.description,
-      labelOverhang: 80,
-    });
 
     const map = new maptilersdk.Map({
       container: containerRef.current,
@@ -150,7 +145,10 @@ export const SymbolMap: React.FC<Props> = ({
         },
       });
 
-      map.fitBounds(geo.bounds, { padding: frame.pad, duration: 0 });
+      map.fitBounds(geo.bounds, {
+        padding: frameRef.current?.pad ?? 40,
+        duration: 0,
+      });
 
       if (interactive) {
         map.addControl(new maptilersdk.NavigationControl({}), "top-right");
@@ -228,6 +226,7 @@ export const SymbolMap: React.FC<Props> = ({
     hasDescription: !!config.description,
     labelOverhang: 80,
   });
+  frameRef.current = frame;
 
   // Inner content: the map canvas + legend. This subtree is STABLE — always the
   // same JSX shape so containerRef never moves in the DOM. MapFrame wraps it.
@@ -263,37 +262,22 @@ export const SymbolMap: React.FC<Props> = ({
     </>
   );
 
-  // If title + source are present, render via MapFrame (furniture shell).
-  // MapFrame's outer div is position:relative — we make it fill the parent
-  // with width/height from the measured container size.
-  if (config.title && config.source) {
-    return (
-      <div
-        ref={outerRef}
-        style={{ position: "relative", width: "100%", height: "100%" }}
-      >
-        <MapFrame
-          title={config.title}
-          description={config.description}
-          source={config.source}
-          width={containerSize.w}
-          height={containerSize.h}
-          responsive
-          frame={frame}
-        >
-          {inner}
-        </MapFrame>
-      </div>
-    );
-  }
-
-  // Fallback: no title/source — plain wrapper.
   return (
     <div
       ref={outerRef}
       style={{ position: "relative", width: "100%", height: "100%" }}
     >
-      {inner}
+      <MapFrame
+        title={config.title ?? ""}
+        description={config.description}
+        source={config.source ?? { name: "" }}
+        width={containerSize.w}
+        height={containerSize.h}
+        responsive
+        frame={frame}
+      >
+        {inner}
+      </MapFrame>
     </div>
   );
 };

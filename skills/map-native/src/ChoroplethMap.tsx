@@ -41,6 +41,7 @@ export const ChoroplethMap: React.FC<Props> = ({
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const popupRef = useRef<maptilersdk.Popup | null>(null);
   const startedRef = useRef(false);
+  const frameRef = useRef<ReturnType<typeof resolveMapFrame> | null>(null);
 
   // Measured px size — initialised from window dims, refined from DOM in useEffect.
   const [containerSize, setContainerSize] = useState<{ w: number; h: number }>(
@@ -57,12 +58,6 @@ export const ChoroplethMap: React.FC<Props> = ({
   useEffect(() => {
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
-
-    const frame = resolveMapFrame(containerSize.w, containerSize.h, {
-      titleLines: 2,
-      hasDescription: !!config.description,
-      labelOverhang: 24,
-    });
 
     const map = new maptilersdk.Map({
       container: containerRef.current,
@@ -172,7 +167,7 @@ export const ChoroplethMap: React.FC<Props> = ({
 
       const dataBounds = layout.bounds as [number, number, number, number];
       map.fitBounds(dataBounds, {
-        padding: frame.pad,
+        padding: frameRef.current?.pad ?? 40,
         duration: 0,
       });
 
@@ -285,6 +280,7 @@ export const ChoroplethMap: React.FC<Props> = ({
     hasDescription: !!config.description,
     labelOverhang: 24,
   });
+  frameRef.current = frame;
 
   // Inner content: the map canvas + legend. Stable JSX shape — containerRef never
   // changes DOM position regardless of config or containerSize updates.
@@ -331,33 +327,22 @@ export const ChoroplethMap: React.FC<Props> = ({
     </>
   );
 
-  if (config.title && config.source) {
-    return (
-      <div
-        ref={outerRef}
-        style={{ position: "relative", width: "100%", height: "100%" }}
-      >
-        <MapFrame
-          title={config.title}
-          description={config.description}
-          source={config.source}
-          width={containerSize.w}
-          height={containerSize.h}
-          responsive
-          frame={frame}
-        >
-          {inner}
-        </MapFrame>
-      </div>
-    );
-  }
-
   return (
     <div
       ref={outerRef}
       style={{ position: "relative", width: "100%", height: "100%" }}
     >
-      {inner}
+      <MapFrame
+        title={config.title ?? ""}
+        description={config.description}
+        source={config.source ?? { name: "" }}
+        width={containerSize.w}
+        height={containerSize.h}
+        responsive
+        frame={frame}
+      >
+        {inner}
+      </MapFrame>
     </div>
   );
 };
