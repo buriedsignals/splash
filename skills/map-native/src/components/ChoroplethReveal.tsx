@@ -7,7 +7,6 @@ import {
   AbsoluteFill,
   continueRender,
   delayRender,
-  interpolate,
   staticFile,
   useCurrentFrame,
   useVideoConfig,
@@ -15,19 +14,21 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { computeChoropleth, type ChoroplethData } from "../choropleth-geo";
+import {
+  easedRevealProgress,
+  revealFillOpacity,
+  revealCameraPlan,
+} from "../reveal";
+import { resolveMapFrame } from "../core/map-format";
+import { MapFrame } from "../core/MapFrame";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
-
-// Hold-in and hold-out as fractions of the total duration
-const HOLD_IN = 0.05; // ~5% blank at start
-const HOLD_OUT = 0.05; // ~5% full opacity at end
 
 const NO_DATA_COLOR = "#e0e0e0";
 const NUM_BINS = 5;
 
 export interface ChoroplethRevealProps {
   config: ChoroplethData & { title?: string; unit?: string };
-  scale?: number;
 }
 
 export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
@@ -37,6 +38,10 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
   const started = useRef(false);
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
+  const mapFrame = resolveMapFrame(width, height, {
+    titleLines: 2,
+    hasDescription: !!(config as any).description,
+  });
   const [mapState, setMapState] = useState<{
     map: InstanceType<typeof maptilersdk.Map>;
     bins: { min: number; max: number; color: string }[];
@@ -144,10 +149,10 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
             },
           });
 
-          m.fitBounds(layout.bounds as [number, number, number, number], {
-            padding: 24,
-            duration: 0,
-          });
+          const plan = revealCameraPlan(
+            layout.bounds as [number, number, number, number],
+          );
+          m.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
 
           m.once("idle", () => {
             setMapState({ map: m, bins: sortedBins, numBins: NUM_BINS });
@@ -167,15 +172,12 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
     const { map } = mapState;
     const h = delayRender(`choropleth-frame-${frame}`);
 
-    // progress: 0 at hold-in, 1 at (1 - hold-out)
-    const progress = interpolate(
-      frame / (durationInFrames - 1),
-      [HOLD_IN, 1 - HOLD_OUT],
-      [0, 1],
-      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    const progress = easedRevealProgress(frame, durationInFrames);
+    map.setPaintProperty(
+      "choropleth-fill",
+      "fill-opacity",
+      revealFillOpacity(progress),
     );
-
-    map.setPaintProperty("choropleth-fill", "fill-opacity", progress * 0.85);
     map.once("idle", () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame, durationInFrames]);
@@ -183,7 +185,17 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
   return (
     <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
       <style>{`.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-attrib,.maptiler-logo{display:none!important}`}</style>
-      <div ref={ref} style={{ width, height, position: "absolute" }} />
+      <MapFrame
+        title={(config as any).title ?? ""}
+        description={(config as any).description}
+        source={(config as any).source ?? { name: "" }}
+        width={width}
+        height={height}
+        responsive={false}
+        frame={mapFrame}
+      >
+        <div ref={ref} style={{ width, height, position: "absolute" }} />
+      </MapFrame>
     </AbsoluteFill>
   );
 };

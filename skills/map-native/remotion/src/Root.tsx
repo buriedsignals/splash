@@ -10,6 +10,9 @@
 //   SymbolReveal          — Symbol simple-reveal landscape 1280×720
 //   SymbolRevealSquare    — Symbol simple-reveal square 1080×1080
 //   SymbolRevealPortrait  — Symbol simple-reveal portrait 1080×1350
+//   ChoroplethReveal        — Choropleth simple-reveal landscape 1280×720
+//   ChoroplethRevealSquare  — Choropleth simple-reveal square 1080×1080
+//   ChoroplethRevealPortrait — Choropleth simple-reveal portrait 1080×1350
 //
 // Render HarnessCheck to prove the harness:
 //   bunx remotion render remotion/src/index.ts HarnessCheck out/harness-check.mp4 --gl=angle --concurrency=1 --timeout=120000
@@ -26,6 +29,7 @@ import { HarnessCheck } from "../../src/components/HarnessCheck";
 import { ChoroplethStory } from "../../src/components/ChoroplethStory";
 import { SymbolStory } from "../../src/components/SymbolStory";
 import { SymbolReveal } from "../../src/components/SymbolReveal";
+import { ChoroplethReveal } from "../../src/components/ChoroplethReveal";
 import { REVEAL_FRAMES } from "../../src/reveal";
 import { computeChoropleth } from "../../src/choropleth-geo";
 import { deriveMapStory } from "../../src/map-story";
@@ -151,6 +155,33 @@ export const RemotionRoot: React.FC = () => (
       width={1080}
       height={1350}
       defaultProps={symbolDefaultProps}
+    />
+    <Composition
+      id="ChoroplethReveal"
+      component={ChoroplethReveal}
+      durationInFrames={REVEAL_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={choroplethDefaultProps}
+    />
+    <Composition
+      id="ChoroplethRevealSquare"
+      component={ChoroplethReveal}
+      durationInFrames={REVEAL_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={choroplethDefaultProps}
+    />
+    <Composition
+      id="ChoroplethRevealPortrait"
+      component={ChoroplethReveal}
+      durationInFrames={REVEAL_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={choroplethDefaultProps}
     />
   </>
 );
