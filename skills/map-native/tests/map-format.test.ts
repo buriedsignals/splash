@@ -1,0 +1,48 @@
+import { describe, it, expect } from "bun:test";
+import { resolveMapFrame } from "../src/core/map-format";
+import { FRAME_TYPE } from "../src/theme/map-tokens";
+
+describe("resolveMapFrame", () => {
+  it("scale = 1.0 when the smaller side is the 720 reference", () => {
+    expect(resolveMapFrame(1280, 720).scale).toBeCloseTo(1, 6);
+  });
+  it("scales UP on a portrait canvas (bigger text), capped at 1.6", () => {
+    expect(resolveMapFrame(1080, 1350).scale).toBeCloseTo(1.5, 6); // 1080/720
+    expect(resolveMapFrame(4000, 4000).scale).toBe(1.6); // capped
+  });
+  it("floors the scale at 0.85 on tiny canvases", () => {
+    expect(resolveMapFrame(360, 640).scale).toBe(0.85);
+  });
+  it("scales the type sizes by scale", () => {
+    const f = resolveMapFrame(1080, 1350); // scale 1.5
+    expect(f.type.title).toBe(Math.round(FRAME_TYPE.title * 1.5));
+    expect(f.type.source).toBe(Math.round(FRAME_TYPE.source * 1.5));
+  });
+  it("reserves a top band at least as tall as the title lines", () => {
+    const f = resolveMapFrame(1280, 720, { titleLines: 2 });
+    expect(f.pad.top).toBeGreaterThanOrEqual(2 * f.type.title * 1.3);
+  });
+  it("a description makes the top band taller", () => {
+    const withDesc = resolveMapFrame(1280, 720, {
+      titleLines: 2,
+      hasDescription: true,
+    });
+    const without = resolveMapFrame(1280, 720, {
+      titleLines: 2,
+      hasDescription: false,
+    });
+    expect(withDesc.pad.top).toBeGreaterThan(without.pad.top);
+  });
+  it("reserves a bottom band for the source line", () => {
+    const f = resolveMapFrame(1280, 720);
+    expect(f.pad.bottom).toBeGreaterThanOrEqual(f.type.source);
+  });
+  it("side insets clear the label overhang", () => {
+    const f = resolveMapFrame(1280, 720, { labelOverhang: 80 });
+    expect(f.pad.left).toBeGreaterThanOrEqual(Math.round(80 * f.scale));
+    expect(f.pad.right).toBe(f.pad.left);
+  });
+  it("is deterministic", () => {
+    expect(resolveMapFrame(1080, 1350)).toEqual(resolveMapFrame(1080, 1350));
+  });
+});
