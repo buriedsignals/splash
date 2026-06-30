@@ -17,7 +17,7 @@ const page = await browser.newPage({
   deviceScaleFactor: 2,
 });
 await page.goto(url);
-await page.waitForSelector(".maplibregl-canvas", { timeout: 30_000 });
+await page.waitForSelector(".maplibregl-canvas", { timeout: 60_000 });
 await page.waitForFunction(
   () => {
     const m = window.__map__;
@@ -27,7 +27,7 @@ await page.waitForFunction(
       (m.getLayer("choropleth-fill") || m.getLayer("symbol-circles"))
     );
   },
-  { timeout: 30_000 },
+  { timeout: 60_000 },
 );
 // Wait for map idle
 await page.waitForFunction(
@@ -35,7 +35,7 @@ await page.waitForFunction(
     const m = window.__map__;
     return m && m.loaded && m.loaded() && m.areTilesLoaded && m.areTilesLoaded();
   },
-  { timeout: 30_000 },
+  { timeout: 60_000 },
 );
 await page.waitForTimeout(2000);
 

@@ -25,7 +25,7 @@ console.log("loading:", fileUrl);
 await page.goto(fileUrl);
 
 // Wait for the map canvas to appear
-await page.waitForSelector(".maplibregl-canvas", { timeout: 30_000 });
+await page.waitForSelector(".maplibregl-canvas", { timeout: 60_000 });
 console.log("canvas ready");
 
 // Wait until either choropleth-fill or symbol-circles layer exists
@@ -38,7 +38,7 @@ await page.waitForFunction(
       (m.getLayer("choropleth-fill") || m.getLayer("symbol-circles"))
     );
   },
-  { timeout: 30_000 },
+  { timeout: 60_000 },
 );
 
 // Detect which layer type we have
@@ -61,7 +61,7 @@ await page.waitForFunction(
       m.areTilesLoaded()
     );
   },
-  { timeout: 30_000 },
+  { timeout: 60_000 },
 );
 console.log("map idle");
 

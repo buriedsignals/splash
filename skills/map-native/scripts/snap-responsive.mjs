@@ -19,7 +19,7 @@ for (const w of [360, 768, 1100, 1600]) {
     deviceScaleFactor: 2,
   });
   await page.goto(url);
-  await page.waitForSelector(".maplibregl-canvas", { timeout: 30_000 });
+  await page.waitForSelector(".maplibregl-canvas", { timeout: 60_000 });
   await page.waitForFunction(
     () => {
       const m = window.__map__;
@@ -29,7 +29,7 @@ for (const w of [360, 768, 1100, 1600]) {
         (m.getLayer("choropleth-fill") || m.getLayer("symbol-circles"))
       );
     },
-    { timeout: 30_000 },
+    { timeout: 60_000 },
   );
   await page.waitForTimeout(2500); // let tiles + reveal settle
 
