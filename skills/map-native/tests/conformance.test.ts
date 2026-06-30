@@ -255,6 +255,42 @@ describe("checkMapFraming", () => {
   });
 });
 
+describe("checkSymbolConformance — label carries the unit", () => {
+  const text = { text: ["#1A1A1A"], bg: "#FFFFFF" };
+  const base = {
+    title: "Funding by city, sentence-case insight here",
+    description: "by city, 2024",
+    source: { name: "Dealroom 2025", url: "https://example.org/x" },
+    sizingMode: "area" as const,
+    hasLegend: true,
+    legendStops: 3,
+    maxRadiusPx: 40,
+    viewportMinPx: 720,
+    pointsWithData: 6,
+    boundsNonEmpty: true,
+    strokeContrast: 4,
+    labeled: true,
+  };
+  it("flags a labelled value with a unit set but missing from the label", () => {
+    const r = checkSymbolConformance(
+      { ...base, valueUnit: "$bn", labelHasUnit: false },
+      text,
+    );
+    expect(r.some((m) => /label.*unit/i.test(m))).toBe(true);
+  });
+  it("passes when the label carries the unit", () => {
+    const r = checkSymbolConformance(
+      { ...base, valueUnit: "$bn", labelHasUnit: true },
+      text,
+    );
+    expect(r).toEqual([]);
+  });
+  it("does not require a unit when none is set", () => {
+    const r = checkSymbolConformance({ ...base, labelHasUnit: false }, text);
+    expect(r).toEqual([]);
+  });
+});
+
 describe("per-type guards — optional format hook", () => {
   const text = { text: ["#1A1A1A"], bg: "#FFFFFF" };
   const choro = {

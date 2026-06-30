@@ -35,8 +35,9 @@ A produced map MUST satisfy all eight rules below across static / interactive / 
    `snap-responsive` harness.
 
 8. **Direct labels** — proportional-symbol maps carry name + value labels on each symbol (not
-   hover-only). Source: data-to-viz (symbol map). Enforced by `checkSymbolConformance` (`labeled`
-   field).
+   hover-only). A directly-labelled value states its unit — "296$bn" not "296". Source:
+   data-to-viz (symbol map). Enforced by `checkSymbolConformance` (`labeled` and `labelHasUnit`
+   fields).
 
 ---
 

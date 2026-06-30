@@ -100,8 +100,8 @@ export const SymbolMap: React.FC<Props> = ({
               label: s.label ?? "",
               radius: s.radius,
               labelText: labels[i]?.name
-                ? `${labels[i].name}\n${labels[i].valueText}`
-                : (labels[i]?.valueText ?? ""),
+                ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
+                : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
               labelOffset: labelRadialOffset(s.radius, LABEL_TEXT_SIZE),
             },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
@@ -122,28 +122,30 @@ export const SymbolMap: React.FC<Props> = ({
         },
       });
 
-      map.addLayer({
-        id: "symbol-labels",
-        type: "symbol",
-        source: "symbols",
-        layout: {
-          "text-field": ["get", "labelText"],
-          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-          "text-size": LABEL_TEXT_SIZE,
-          "text-variable-anchor": ["left", "right", "top", "bottom"],
-          "text-radial-offset": ["get", "labelOffset"],
-          "text-justify": "auto",
-          "text-allow-overlap": false,
-          "text-optional": true,
-          "text-line-height": 1.3,
-          "text-max-width": 8,
-        },
-        paint: {
-          "text-color": "#1a1a1a",
-          "text-halo-color": "#ffffff",
-          "text-halo-width": 1.6,
-        },
-      });
+      if (!interactive) {
+        map.addLayer({
+          id: "symbol-labels",
+          type: "symbol",
+          source: "symbols",
+          layout: {
+            "text-field": ["get", "labelText"],
+            "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+            "text-size": LABEL_TEXT_SIZE,
+            "text-variable-anchor": ["left", "right", "top", "bottom"],
+            "text-radial-offset": ["get", "labelOffset"],
+            "text-justify": "auto",
+            "text-allow-overlap": false,
+            "text-optional": true,
+            "text-line-height": 1.3,
+            "text-max-width": 8,
+          },
+          paint: {
+            "text-color": "#1a1a1a",
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 1.6,
+          },
+        });
+      }
 
       map.fitBounds(geo.bounds, {
         padding: frameRef.current?.pad ?? 40,

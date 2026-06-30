@@ -117,6 +117,8 @@ export function checkSymbolConformance(
     boundsNonEmpty: boolean;
     strokeContrast: number;
     labeled: boolean;
+    valueUnit?: string;
+    labelHasUnit?: boolean;
     format?: { width: number; height: number };
   },
   textColors: { text: string[]; bg: string },
@@ -153,6 +155,10 @@ export function checkSymbolConformance(
   if (!input.labeled)
     v.push(
       "symbols are not directly labeled — values are undecodable without hover",
+    );
+  if (input.valueUnit && input.valueUnit.trim() && input.labelHasUnit === false)
+    v.push(
+      `labelled value omits its unit "${input.valueUnit}" — a directly-labelled value must state its unit`,
     );
   if (input.format)
     v.push(

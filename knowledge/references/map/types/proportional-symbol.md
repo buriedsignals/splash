@@ -70,16 +70,19 @@ Visual Vocabulary, SPATIAL group — symbol maps require a bounded scale.)
 `checkSymbolConformance` enforces: `maxRadiusPx` must be ≤ `viewportMinPx × 0.25`
 (`SYMBOL_MAX_VIEWPORT_FRACTION = 0.25`). Beyond this the largest symbol swallows the map.
 
-### 6. Direct labeling — name + value on every symbol
+### 6. Direct labeling — name + value + unit on every symbol
 
-Each symbol must carry its place name and value as a direct label so the data is legible **without hover**. A size legend gives the scale; it does not substitute for values. (Source: FT Visual Vocabulary — every data point should be readable; NYT direct-labeling practice; data-to-viz bubble map — "add labels for key points".)
+Each symbol must carry its place name, value, **and unit** as a direct label so the data is legible **without hover**. A size legend gives the scale; it does not substitute for values. A value without its unit is ambiguous — "296" could be millions, billions, or an index. (Source: FT Visual Vocabulary — every data point should be readable; NYT direct-labeling practice; data-to-viz bubble map — "add labels for key points".)
 
-Implementation: a MapLibre GL `symbol`-type layer renders a two-line "City\nValue" label (or just the value when the symbol has no name) positioned just below each circle. A white text halo (`text-halo-color #ffffff`, `text-halo-width ~1.6`) ensures legibility over basemap linework in all lighting. `text-allow-overlap: false` + `text-optional: true` give free anti-collision: labels for densely-packed small symbols are auto-hidden rather than piled on top of each other.
+Implementation: a MapLibre GL `symbol`-type layer renders a two-line "City\nValue$unit" label (or just the "Value$unit" when the symbol has no name) positioned just below each circle. A white text halo (`text-halo-color #ffffff`, `text-halo-width ~1.6`) ensures legibility over basemap linework in all lighting. `text-allow-overlap: false` + `text-optional: true` give free anti-collision: labels for densely-packed small symbols are auto-hidden rather than piled on top of each other.
 
 For maps with many tightly-clustered points, label all symbols and let the GL anti-collision engine suppress overlapping labels — only editorially-annotated callouts should override suppression. The dense-map case (> ~30 points in a tight bounding box) is a deferred limit where manual annotation or a zoom interaction replaces batch labeling.
 
-`checkSymbolConformance` enforces: `labeled` must be `true`; when `false` the violation is
-`"symbols are not directly labeled — values are undecodable without hover"`.
+`checkSymbolConformance` enforces:
+- `labeled` must be `true`; when `false` the violation is `"symbols are not directly labeled — values are undecodable without hover"`.
+- When `valueUnit` is set, `labelHasUnit` must be `true`; when `false` the violation is `"labelled value omits its unit … — a directly-labelled value must state its unit"`.
+
+In **interactive** mode the `symbol-labels` layer is omitted entirely; the hover popup delivers name + value + unit instead (tooltip XOR labels — see `knowledge/references/map/formats/interactive.md`).
 
 ### 7. Furniture: title as insight, description, source
 

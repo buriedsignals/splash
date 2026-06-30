@@ -87,8 +87,8 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
             properties: {
               radius: s.radius,
               labelText: labels[i]?.name
-                ? `${labels[i].name}\n${labels[i].valueText}`
-                : (labels[i]?.valueText ?? ""),
+                ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
+                : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
               labelOffset: labelRadialOffset(s.radius, labelTextSize),
             },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
