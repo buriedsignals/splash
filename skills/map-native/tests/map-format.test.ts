@@ -51,4 +51,18 @@ describe("resolveMapFrame", () => {
     expect(big.pad.bottom).toBeGreaterThanOrEqual(160);
     expect(big.pad.bottom).toBeGreaterThan(small.pad.bottom);
   });
+  it("uses a supplied measured title height for the top band when larger than the estimate", () => {
+    const est = resolveMapFrame(1280, 720, { titleLines: 2 });
+    const tall = resolveMapFrame(1280, 720, {
+      titleLines: 2,
+      titleHeightPx: 220,
+    });
+    expect(tall.pad.top).toBeGreaterThanOrEqual(220);
+    expect(tall.pad.top).toBeGreaterThan(est.pad.top);
+  });
+  it("keeps the estimate when no measured height is supplied", () => {
+    const a = resolveMapFrame(1280, 720, { titleLines: 2 });
+    const b = resolveMapFrame(1280, 720, { titleLines: 2, titleHeightPx: 0 });
+    expect(b.pad.top).toBe(a.pad.top);
+  });
 });

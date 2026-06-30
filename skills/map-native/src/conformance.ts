@@ -94,7 +94,7 @@ export function checkChoroplethConformance(
         title: input.title,
         description: input.description,
         hasSource: !!input.source?.name?.trim(),
-      }),
+      }).violations,
     );
   return v;
 }
@@ -168,7 +168,7 @@ export function checkSymbolConformance(
         title: input.title,
         description: input.description,
         hasSource: !!input.source?.name?.trim(),
-      }),
+      }).violations,
     );
   return v;
 }
@@ -181,36 +181,44 @@ const FRAME_INSET = 12;
 // Format-aware framing/legibility check. Uses resolveMapFrame (slice 1) to assert the frame is
 // adequate for THIS canvas: the title fits the width at its scaled size, the title/source bands
 // are reserved, and a source is present (the rule that catches a video with no attribution).
+export interface MapFramingResult {
+  violations: string[];
+}
+
 export function checkMapFraming(input: {
   width: number;
   height: number;
-  title: string;
+  title?: string;
   description?: string;
-  hasSource: boolean;
+  hasSource?: boolean;
   titleLines?: number;
   legendHeight?: number;
-}): string[] {
+  titleHeightPx?: number;
+}): MapFramingResult {
   const v: string[] = [];
   const titleLines = input.titleLines ?? 2;
   const frame = resolveMapFrame(input.width, input.height, {
     titleLines,
     hasDescription: !!input.description?.trim(),
     legendHeight: input.legendHeight,
+    titleHeightPx: input.titleHeightPx,
   });
   const title = input.title?.trim() ?? "";
-  const titlePx = title.length * frame.type.title * CHAR_W;
-  const capacity = (input.width - 2 * FRAME_INSET) * titleLines;
-  if (titlePx > capacity)
-    v.push(
-      `title too long for the ${input.width}×${input.height} frame — it overruns the title band`,
-    );
+  if (title) {
+    const titlePx = title.length * frame.type.title * CHAR_W;
+    const capacity = (input.width - 2 * FRAME_INSET) * titleLines;
+    if (titlePx > capacity)
+      v.push(
+        `title too long for the ${input.width}×${input.height} frame — it overruns the title band`,
+      );
+  }
   if (frame.pad.top <= 0) v.push("no title band reserved");
   if (frame.pad.bottom <= 0) v.push("no source band reserved");
-  if (!input.hasSource)
+  if (input.hasSource === false)
     v.push("source band empty — every format must cite the source");
   if (input.legendHeight && frame.pad.bottom < input.legendHeight)
     v.push(
       "legend overruns the reserved bottom band — data would sit under the legend",
     );
-  return v;
+  return { violations: v };
 }

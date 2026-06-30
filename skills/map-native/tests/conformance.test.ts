@@ -220,7 +220,7 @@ describe("checkMapFraming", () => {
         title: "A clear sentence-case insight title",
         hasSource: true,
         legendHeight: 70,
-      }),
+      }).violations,
     ).toEqual([]);
   });
   it("passes a normal landscape title with a source", () => {
@@ -231,7 +231,7 @@ describe("checkMapFraming", () => {
         title: "Renewables power Europe's north",
         description: "Share, 2024",
         hasSource: true,
-      }),
+      }).violations,
     ).toEqual([]);
   });
   it("passes a short title on portrait with a source", () => {
@@ -241,7 +241,7 @@ describe("checkMapFraming", () => {
         height: 1350,
         title: "Europe's renewables divide",
         hasSource: true,
-      }),
+      }).violations,
     ).toEqual([]);
   });
   it("flags a title too long for a portrait frame", () => {
@@ -251,7 +251,7 @@ describe("checkMapFraming", () => {
         height: 1350,
         title: "T".repeat(160),
         hasSource: true,
-      }).some((m) => /too long/.test(m)),
+      }).violations.some((m) => /too long/.test(m)),
     ).toBe(true);
   });
   it("flags a missing source (the video gap)", () => {
@@ -261,8 +261,19 @@ describe("checkMapFraming", () => {
         height: 720,
         title: "Renewables power Europe's north",
         hasSource: false,
-      }).some((m) => /source band empty/.test(m)),
+      }).violations.some((m) => /source band empty/.test(m)),
     ).toBe(true);
+  });
+  it("flags framing where the measured title height is not reserved by pad.top", () => {
+    const ok = checkMapFraming({
+      width: 360,
+      height: 640,
+      titleLines: 2,
+      titleHeightPx: 90,
+    });
+    expect(
+      ok.violations.find((v) => v.id === "title-band-covers-data"),
+    ).toBeUndefined();
   });
 });
 

@@ -4,7 +4,7 @@
 // The data is kept out of these bands by the consumer passing resolveMapFrame().pad to
 // fitBounds. Web mode (responsive) puts a frosted pill behind the text; video mode uses
 // a text-shadow.
-import type { ReactNode } from "react";
+import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { FRAME_COLORS, FRAME_FONT } from "../theme/map-tokens";
 import type { ResolvedMapFrame } from "./map-format";
 
@@ -17,6 +17,7 @@ export interface MapFrameProps {
   responsive: boolean;
   frame: ResolvedMapFrame;
   children: ReactNode; // the map container <div>
+  onTitleHeight?: (px: number) => void;
 }
 
 export function MapFrame({
@@ -28,7 +29,32 @@ export function MapFrame({
   responsive,
   frame,
   children,
+  onTitleHeight,
 }: MapFrameProps) {
+  const titleRef = useRef<HTMLDivElement>(null);
+  const [, setMeasuredHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const node = titleRef.current;
+    if (!node) return;
+
+    const notify = (px: number) => {
+      setMeasuredHeight((prev) => {
+        if (px === prev) return prev;
+        onTitleHeight?.(px);
+        return px;
+      });
+    };
+
+    // Measure immediately on layout.
+    notify(node.offsetHeight);
+
+    const ro = new ResizeObserver(() => {
+      notify(node.offsetHeight);
+    });
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, [onTitleHeight]);
   const m = Math.round(16 * frame.scale); // furniture gutter: 16px at 1× scale
   const pillStyle = responsive
     ? {
@@ -45,6 +71,7 @@ export function MapFrame({
       {children}
       {/* Title band (top-left) */}
       <div
+        ref={titleRef}
         data-testid="map-title"
         style={{
           position: "absolute",

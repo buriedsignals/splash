@@ -35,12 +35,14 @@ export function resolveMapFrame(
     hasDescription?: boolean;
     labelOverhang?: number;
     legendHeight?: number;
+    titleHeightPx?: number;
   } = {},
 ): ResolvedMapFrame {
   const titleLines = opts.titleLines ?? 2;
   const hasDescription = opts.hasDescription ?? false;
   const labelOverhang = opts.labelOverhang ?? 64;
   const legendHeight = opts.legendHeight ?? 0;
+  const titleHeightPx = opts.titleHeightPx ?? 0;
 
   const scale = clamp(Math.min(width, height) / REF, 0.85, 1.6);
   const type = {
@@ -53,6 +55,7 @@ export function resolveMapFrame(
     titleLines * type.title * LINE_HEIGHT +
     (hasDescription ? type.description * LINE_HEIGHT : 0) +
     2 * MARGIN * scale;
+  const topBand = Math.max(titleBand, titleHeightPx + MARGIN * scale);
   const sourceBand =
     type.source * LINE_HEIGHT + LEGEND_ROOM * scale + MARGIN * scale;
   const bottomBand = Math.max(
@@ -64,7 +67,7 @@ export function resolveMapFrame(
   return {
     scale,
     pad: {
-      top: Math.round(titleBand),
+      top: Math.round(topBand),
       bottom: Math.round(bottomBand),
       left: Math.round(side),
       right: Math.round(side),

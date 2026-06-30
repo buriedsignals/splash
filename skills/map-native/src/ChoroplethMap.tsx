@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
@@ -46,11 +46,16 @@ export const ChoroplethMap: React.FC<Props> = ({
   const startedRef = useRef(false);
   const frameRef = useRef<ReturnType<typeof resolveMapFrame> | null>(null);
   const boundsRef = useRef<[number, number, number, number] | null>(null);
+  // Holds the latest measured title height so fitToData can read it without stale closure.
+  const titleHeightPxRef = useRef(0);
+  // Stable ref to fitToData so the title-height callback can trigger a re-fit.
+  const fitToDataRef = useRef<(() => void) | null>(null);
 
   // Measured px size — initialised from window dims, refined from DOM in useEffect.
   const [containerSize, setContainerSize] = useState<{ w: number; h: number }>(
     () => ({ w: window.innerWidth, h: window.innerHeight }),
   );
+  const [titleHeightPx, setTitleHeightPx] = useState(0);
 
   // Measure the root element size before map init.
   useEffect(() => {
@@ -74,11 +79,16 @@ export const ChoroplethMap: React.FC<Props> = ({
     ];
 
     // Opts passed to resolveMapFrame — same values used at init and every resize.
+    // titleHeightPx is read from ref so it reflects the latest measured value without
+    // recreating this closure (avoids stale capture).
     const FRAME_OPTS = {
       titleLines: 2,
       hasDescription: !!config.description,
       labelOverhang: 24,
       legendHeight: NUM_BINS * 18 + 36,
+      get titleHeightPx() {
+        return titleHeightPxRef.current;
+      },
     };
 
     // Fit the data to the CURRENT container size, then pin minZoom to that fit zoom so the
@@ -132,6 +142,8 @@ export const ChoroplethMap: React.FC<Props> = ({
         });
       }
     }
+    // Expose so the title-height callback can trigger a re-fit without re-creating the closure.
+    fitToDataRef.current = fitToData;
 
     const map = new maptilersdk.Map({
       container: containerRef.current,
@@ -345,6 +357,16 @@ export const ChoroplethMap: React.FC<Props> = ({
     map.setPaintProperty("choropleth-fill", "fill-opacity", progress);
   }, [progress]);
 
+  // When the measured title height changes, update the ref and re-fit so the map
+  // re-computes its top band using the real (wrapped) title height.
+  // Guard: only update on a real change to avoid an infinite measure → re-fit loop.
+  const handleTitleHeight = useCallback((px: number) => {
+    if (px === titleHeightPxRef.current) return;
+    titleHeightPxRef.current = px;
+    setTitleHeightPx(px);
+    fitToDataRef.current?.();
+  }, []);
+
   const ariaLabel = config.title
     ? `Interactive map: ${config.title}`
     : "Interactive choropleth map";
@@ -357,6 +379,7 @@ export const ChoroplethMap: React.FC<Props> = ({
     hasDescription: !!config.description,
     labelOverhang: 24,
     legendHeight: CHOROPLETH_LEGEND_HEIGHT,
+    titleHeightPx,
   });
   frameRef.current = frame;
 
@@ -419,6 +442,7 @@ export const ChoroplethMap: React.FC<Props> = ({
         height={containerSize.h}
         responsive
         frame={frame}
+        onTitleHeight={handleTitleHeight}
       >
         {inner}
       </MapFrame>

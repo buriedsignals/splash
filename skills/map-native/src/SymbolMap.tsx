@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry, type SymbolData } from "./symbol-geo";
@@ -42,6 +42,11 @@ export const SymbolMap: React.FC<Props> = ({
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const startedRef = useRef(false);
   const frameRef = useRef<ReturnType<typeof resolveMapFrame> | null>(null);
+  // Holds the latest measured title height so fitToData (inside the init effect) can
+  // read it via ref without recreating the effect closure.
+  const titleHeightPxRef = useRef(0);
+  // Stable ref to the fitToData function so the title-height effect can trigger re-fit.
+  const fitToDataRef = useRef<(() => void) | null>(null);
 
   // Measured px size of the viewport container — set once on mount from the DOM.
   // Using a ref-initialised approach: useState initialiser reads window dims as
@@ -49,6 +54,7 @@ export const SymbolMap: React.FC<Props> = ({
   const [containerSize, setContainerSize] = useState<{ w: number; h: number }>(
     () => ({ w: window.innerWidth, h: window.innerHeight }),
   );
+  const [titleHeightPx, setTitleHeightPx] = useState(0);
 
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
 
@@ -75,11 +81,16 @@ export const SymbolMap: React.FC<Props> = ({
     ];
 
     // Opts passed to resolveMapFrame — same values used at init and every resize.
+    // titleHeightPx is read from ref so it reflects the latest measured value without
+    // recreating this closure (avoids stale capture).
     const FRAME_OPTS = {
       titleLines: 2,
       hasDescription: !!config.description,
       labelOverhang: 80,
       legendHeight: (geo.legend[0]?.radius ?? 0) * 2 + 28,
+      get titleHeightPx() {
+        return titleHeightPxRef.current;
+      },
     };
     const DATA_BOUNDS = clampBounds(geo.bounds);
 
@@ -131,6 +142,8 @@ export const SymbolMap: React.FC<Props> = ({
         });
       }
     }
+    // Expose so the title-height effect can trigger a re-fit without re-creating this closure.
+    fitToDataRef.current = fitToData;
 
     const map = new maptilersdk.Map({
       container: containerRef.current,
@@ -283,6 +296,16 @@ export const SymbolMap: React.FC<Props> = ({
     map.triggerRepaint();
   }, [progress]);
 
+  // When the measured title height changes, update the ref and re-fit so the map
+  // re-computes its top band using the real (wrapped) title height.
+  // Guard: only update on a real change to avoid an infinite measure → re-fit loop.
+  const handleTitleHeight = useCallback((px: number) => {
+    if (px === titleHeightPxRef.current) return;
+    titleHeightPxRef.current = px;
+    setTitleHeightPx(px);
+    fitToDataRef.current?.();
+  }, []);
+
   // Nested-circle legend (largest stop outermost), drawn as inline SVG.
   function renderLegend() {
     const el = legendRef.current;
@@ -304,6 +327,7 @@ export const SymbolMap: React.FC<Props> = ({
     hasDescription: !!config.description,
     labelOverhang: 80,
     legendHeight: (geo.legend[0]?.radius ?? 0) * 2 + 28,
+    titleHeightPx,
   });
   frameRef.current = frame;
 
@@ -360,6 +384,7 @@ export const SymbolMap: React.FC<Props> = ({
         height={containerSize.h}
         responsive
         frame={frame}
+        onTitleHeight={handleTitleHeight}
       >
         {inner}
       </MapFrame>
