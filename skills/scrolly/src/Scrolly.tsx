@@ -10,8 +10,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { computeChoropleth } from "../../map-native/src/choropleth-geo";
 import { deriveMapStory } from "../../map-native/src/map-story";
+import { deriveSymbolStory } from "../../map-native/src/symbol-story";
 import { mapStoryToChapters } from "./chapters";
 import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
+import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
 
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
@@ -20,13 +22,28 @@ const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 // Scrolly
 // ---------------------------------------------------------------------------
 
-export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
+export const Scrolly: React.FC<{
+  config: ScrollyMapConfig | ScrollySymbolConfig;
+}> = ({ config }) => {
   // -------------------------------------------------------------------------
   // Build the story once at mount — deterministic from config.
-  // ScrollyMap ALSO runs the same pipeline internally (self-contained on
-  // config + currentStep). Both agree because they share the same config.
+  // Dispatches on config.type === "symbol" for symbol path, else choropleth.
   // -------------------------------------------------------------------------
   const story = useMemo(() => {
+    if (config.type === "symbol") {
+      const beats = deriveSymbolStory(config.points, {
+        title: config.title ?? "",
+        insight: config.insight ?? config.title,
+        unit: config.valueUnit ?? "",
+      });
+      return mapStoryToChapters(beats, {
+        title: config.title ?? "",
+        description: config.description,
+        source: config.source,
+        regionsWithData: config.points.length,
+      });
+    }
+
     const layout = computeChoropleth(config, world, "iso_a3", {
       bins: 5,
       scaleType: "sequential",
@@ -213,11 +230,21 @@ export const Scrolly: React.FC<{ config: ScrollyMapConfig }> = ({ config }) => {
       <div style={wrapperStyle}>
         {/* Sticky graphic — the map stays pinned while prose steps scroll above */}
         <div style={stickyGraphicStyle}>
-          {/* v1: visual="map". Future: switch(story.visual) to swap graphic. */}
+          {/* Dispatch on config.type: symbol → ScrollySymbolMap, else choropleth → ScrollyMap. */}
           {/* Pass the active step's BEAT ref (not the step index) — steps no longer
               map 1:1 to beats (the establish/empty-takeaway beats are dropped from
-              the scroll), so ScrollyMap must fly to story.steps[currentStep].ref. */}
-          <ScrollyMap config={config} currentStep={currentBeatRef} />
+              the scroll), so the map must fly to story.steps[currentStep].ref. */}
+          {config.type === "symbol" ? (
+            <ScrollySymbolMap
+              config={config as ScrollySymbolConfig}
+              currentStep={currentBeatRef}
+            />
+          ) : (
+            <ScrollyMap
+              config={config as ScrollyMapConfig}
+              currentStep={currentBeatRef}
+            />
+          )}
         </div>
 
         {/* Prose column — scrolls normally over the sticky graphic */}
