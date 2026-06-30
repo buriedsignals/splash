@@ -82,8 +82,6 @@ export const SymbolMap: React.FC<Props> = ({
               value: s.value,
               label: s.label ?? "",
               radius: s.radius,
-              labelName: labels[i]?.name ?? "",
-              labelValue: labels[i]?.valueText ?? "",
               // Two-line text: "City\nValue" when name is present, else just the value.
               labelText: labels[i]?.name
                 ? `${labels[i].name}\n${labels[i].valueText}`
