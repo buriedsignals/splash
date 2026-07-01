@@ -1,5 +1,11 @@
 import { describe, it, expect } from "bun:test";
-import { computeRoute, resolveMapStyle, MAP_STYLES } from "../src/route-geo";
+import {
+  computeRoute,
+  computeRouteReveal,
+  routeRevealFrames,
+  resolveMapStyle,
+  MAP_STYLES,
+} from "../src/route-geo";
 
 // three unit squares side by side along +lon: A [0,0]-[1,1], B [1,0]-[2,1], C [2,0]-[3,1]
 const poly = (k: string, x0: number): GeoJSON.Feature => ({
@@ -67,5 +73,31 @@ describe("resolveMapStyle", () => {
     expect(MAP_STYLES).toContain("dataviz-dark");
     expect(resolveMapStyle("dataviz-dark")).toBeTruthy();
     expect(resolveMapStyle(undefined)).toBe(resolveMapStyle("dataviz-light")); // default
+  });
+});
+
+describe("computeRouteReveal", () => {
+  const layout = computeRouteReveal(config, boundaries);
+  it("gives each crossed territory a stop in [0,1], ascending along the route", () => {
+    const stops = layout.territories.map((t) => t.stop);
+    for (const s of stops) {
+      expect(s).toBeGreaterThanOrEqual(0);
+      expect(s).toBeLessThanOrEqual(1);
+    }
+    // AAA (route starts inside) triggers before BBB (entered mid-route)
+    expect(stops[0]).toBeLessThan(stops[1]);
+  });
+  it("gives each territory a non-empty border", () => {
+    for (const t of layout.territories) {
+      expect(Array.isArray(t.border)).toBe(true);
+      expect(t.border.length).toBeGreaterThan(0);
+      expect(t.border[0].length).toBeGreaterThan(1); // a segment has ≥2 coords
+    }
+  });
+  it("routeRevealFrames grows with territory count and is bounded", () => {
+    expect(routeRevealFrames(3, 30)).toBeGreaterThan(routeRevealFrames(1, 30));
+    expect(routeRevealFrames(50, 30)).toBeLessThanOrEqual(
+      routeRevealFrames(60, 30) + 1,
+    ); // clamped
   });
 });
