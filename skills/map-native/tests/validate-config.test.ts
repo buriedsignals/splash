@@ -48,6 +48,15 @@ describe("validateChoroplethConfig", () => {
     const r2 = validateChoroplethConfig({ ...ok, source: undefined });
     expect(r2.ok && r2.warnings.some((w) => /source/i.test(w))).toBe(true);
   });
+  it("accepts a known cameraMode and rejects an unknown one", () => {
+    expect(
+      validateChoroplethConfig({ ...ok, cameraMode: "guided-tour" }).ok,
+    ).toBe(true);
+    const bad = validateChoroplethConfig({ ...ok, cameraMode: "guidedtour" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok)
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+  });
 });
 
 import { validateSymbolConfig } from "../src/validate-config";
@@ -95,6 +104,15 @@ describe("validateSymbolConfig", () => {
     const r = validateSymbolConfig({ ...okSymbol, title: "2024" });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors.some((e) => /title/.test(e))).toBe(true);
+  });
+  it("accepts a known cameraMode and rejects an unknown one", () => {
+    expect(
+      validateSymbolConfig({ ...okSymbol, cameraMode: "route-reveal" }).ok,
+    ).toBe(true);
+    const bad = validateSymbolConfig({ ...okSymbol, cameraMode: "orbit" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok)
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
   });
   it("warns on missing description and source", () => {
     const r = validateSymbolConfig({

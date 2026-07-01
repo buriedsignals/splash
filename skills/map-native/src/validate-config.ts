@@ -1,4 +1,5 @@
 import type { ChoroplethData } from "./choropleth-geo";
+import { CAMERA_MODES, type CameraMode } from "./camera-mode";
 
 export type ChoroplethConfigShape = ChoroplethData & {
   basemap: string;
@@ -7,7 +8,21 @@ export type ChoroplethConfigShape = ChoroplethData & {
   unit?: string;
   valueUnit?: string;
   source?: { name?: string; url?: string };
+  cameraMode?: CameraMode;
 };
+
+// If a config declares a camera mode, it must be one the engine knows. (route-reveal
+// is a valid mode that is not yet implemented — produce throws at render for it — but
+// a typo'd mode is caught here, before render.)
+function cameraModeError(s: Record<string, unknown>): string | null {
+  if (s.cameraMode === undefined) return null;
+  if (
+    typeof s.cameraMode !== "string" ||
+    !(CAMERA_MODES as readonly string[]).includes(s.cameraMode)
+  )
+    return `cameraMode must be one of: ${CAMERA_MODES.join(", ")}`;
+  return null;
+}
 
 // Framework-free structural validation of the raw map-native config the suggester
 // emits (pre-render — no MapTiler / geojson needed). Errors block; warnings flag the
@@ -28,6 +43,8 @@ export function validateChoroplethConfig(
   if (!valueField) errors.push("valueField must be a non-empty string");
   if (typeof s.basemap !== "string" || !s.basemap.trim())
     errors.push("basemap must be a non-empty string");
+  const cmErr = cameraModeError(s);
+  if (cmErr) errors.push(cmErr);
 
   const rows = s.rows;
   if (!Array.isArray(rows) || rows.length === 0) {
@@ -81,6 +98,8 @@ export type SymbolConfigShape = {
   description?: string;
   valueUnit?: string;
   source?: { name?: string; url?: string };
+  cameraMode?: CameraMode;
+  maxReveals?: number;
 };
 
 // Framework-free structural validation of a symbol-map config (pre-render — no
@@ -97,6 +116,8 @@ export function validateSymbolConfig(
 
   if (typeof s.basemap !== "string" || !s.basemap.trim())
     errors.push("basemap must be a non-empty string");
+  const cmErr = cameraModeError(s);
+  if (cmErr) errors.push(cmErr);
 
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)
