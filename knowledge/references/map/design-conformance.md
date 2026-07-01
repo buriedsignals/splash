@@ -23,10 +23,15 @@ A produced map MUST satisfy all eight rules below across static / interactive / 
    A choropleth needs ≥ 3 scale steps; a symbol map needs ≥ 2 reference circles. Source:
    data-to-viz (map section). Enforced by `checkChoroplethConformance` / `checkSymbolConformance`.
 
-6. **No-data colour distinct** — regions or points with missing data must use a neutral grey
-   that sits outside the data ramp, so absence is never mistaken for a low value. Source:
-   Datawrapper Academy (choropleth best practices). Not emitted as a violation flag — must be
-   respected in the colour spec passed to `checkChoroplethConformance`.
+6. **No-data colour distinct — from the ramp AND from water** — regions or points with missing
+   data must use a neutral grey (`NO_DATA_COLOR`) that sits outside the data ramp, so absence is
+   never mistaken for a low value. The ocean/water must render in the cartographic water tint
+   (`WATER_COLOR`, a blue — water is never grey) so it is clearly distinct from no-data land; the
+   two must never share a colour. Every format recolours the basemap water (the interactive map,
+   the storytelling video, AND the simple-reveal video all set `WATER_COLOR` on the water layers).
+   Source: Datawrapper Academy (choropleth best practices), cartographic convention (water is
+   blue). Both colours live in `src/theme/colors.ts`; respected in the colour spec passed to
+   `checkChoroplethConformance`.
 
 7. **Framing / safe-area** — the title lives in a reserved top band (never overlaid on map data);
    the legend occupies a RESERVED band sized to its rendered height — no data feature renders
