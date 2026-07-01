@@ -3,6 +3,9 @@
 > Cross-cutting video discipline (frame-determinism, `--gl=angle`, 3 ratios, furniture-per-ratio)
 > lives in `video.md`. This doc covers ONLY what is specific to the simple-reveal sub-format.
 
+> For the title-scene rule (every map video opens with a full-screen title card, no furniture
+> over it) see `video.md` § Title scene.
+
 ## What a simple reveal is
 
 A simple reveal is a **fixed-framing video**: the camera locks on the full data extent from

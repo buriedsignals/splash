@@ -42,6 +42,24 @@ consolidates the story (EIPR: resolution).
 
 Source: FT Visual Vocabulary (layout hierarchy — furniture rules apply equally to video frames).
 
+## Title scene (cross-cutting — applies to every map video)
+
+**Every map video opens with a full-screen title-card scene from frame 0.**
+
+The title card is a dedicated scene: full-screen, no map visible, no furniture. A short
+crossfade (~0.4 s, `CROSSFADE_FRAMES` in the toolkit) joins the title scene to the map scene.
+`resolveScene` (`src/video-scene.ts`) returns complementary `titleOpacity` and
+`furnitureOpacity` values — when the title card is fading out, the furniture fades in, and
+vice versa. The two opacities are never both 1 simultaneously.
+
+`MapFrame` furniture (title overlay + source line) belongs to the **map scene**, not the title
+scene. Do not render furniture over the title card.
+
+Sources: the toolkit's `MapFrame` convention; Amini et al. 2015 (the establish beat / titled
+opening of a data video — the "event" in the EIPR arc is introduced before data appears);
+broadcast lower-third convention (a title card and running lower-third furniture are distinct
+scenes, never composited simultaneously).
+
 ## Reveal vs storytelling camera — editorial choice
 
 **The choice between a simple reveal and a storytelling camera tour is editorial.**

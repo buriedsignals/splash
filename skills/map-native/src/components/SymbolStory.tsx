@@ -15,7 +15,6 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
-import { symbolLabels, labelRadialOffset } from "../symbol-labels";
 import { deriveSymbolStory } from "../symbol-story";
 import {
   buildTimeline,
@@ -55,9 +54,6 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     hasDescription: !!config.description,
     labelOverhang: 80,
   });
-
-  // Ratio-scaled label size: square/portrait are ≤1080 wide → larger text for legibility.
-  const labelTextSize = width <= 1080 ? 18 : 13;
 
   const [mapState, setMapState] = useState<SymbolMapState | null>(null);
   const [handle] = useState(() => delayRender("symbol-story-init"));
@@ -100,21 +96,15 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     });
 
     m.on("load", () => {
-      const labels = symbolLabels(geo.symbols);
-
       m.addSource("symbols", {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: geo.symbols.map((s, i) => ({
+          features: geo.symbols.map((s) => ({
             type: "Feature",
             properties: {
               radius: s.radius,
               label: s.label ?? "",
-              labelText: labels[i]?.name
-                ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
-                : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
-              labelOffset: labelRadialOffset(s.radius, labelTextSize),
             },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
           })),
@@ -131,30 +121,6 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           "circle-opacity": 0.75,
           "circle-stroke-color": SYMBOL_STROKE,
           "circle-stroke-width": 1.5,
-        },
-      });
-
-      m.addLayer({
-        id: "symbol-labels",
-        type: "symbol",
-        source: "symbols",
-        layout: {
-          "text-field": ["get", "labelText"],
-          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-          "text-size": labelTextSize,
-          "text-variable-anchor": ["left", "right", "top", "bottom"],
-          "text-radial-offset": ["get", "labelOffset"],
-          "text-justify": "auto",
-          "text-allow-overlap": false,
-          "text-optional": true,
-          "text-line-height": 1.3,
-          "text-max-width": 8,
-        },
-        paint: {
-          "text-color": "#1a1a1a",
-          "text-halo-color": "#ffffff",
-          "text-halo-width": 1.6,
-          "text-opacity": 0,
         },
       });
 
@@ -229,10 +195,6 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         fillReveal,
       ]);
     }
-    if (map.getLayer("symbol-labels")) {
-      map.setPaintProperty("symbol-labels", "text-opacity", fillReveal);
-    }
-
     // Compute overlay state while we have access to map.project.
     const beat = beats[beatIndex];
     const phase = phases[beatIndex];

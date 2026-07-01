@@ -70,6 +70,24 @@ The 3 s hold is the minimum for a reader to parse the callout (name + value + un
 locate the feature on the map. (Amini et al. 2015 — the hold is the "progress" beat;
 short holds lose the narrative thread.)
 
+## Callout-XOR-labels
+
+**A guided tour shows a feature's name + value as a callout OR as a baked label — never both.**
+
+When the camera visits a feature, the `CountryLabel` callout appears centred on the feature;
+no baked map label (e.g. a `symbol-labels` MapLibre/MapTiler layer) should be visible for that
+feature at the same time. The callout IS the label for the reveal beat.
+
+The inverse rule applies to the simple-reveal format (`video-reveal.md`): a simple reveal has
+no callouts, so baked labels are its primary data encoding. The proportional symbol reveal
+animates `symbol-labels` `text-opacity` on the same ramp as the circles.
+
+Consistent with SP1's interactive tooltip-XOR-labels rule: a tooltip (or callout) and a
+persistent label encoding the same datum are redundant and compete for the reader's attention.
+
+> For the title-scene rule (every map video opens with a full-screen title card, no furniture
+> over it) see `video.md` § Title scene.
+
 ## Callouts
 
 **Callouts are anchored ON the feature, not offset to a corner of the frame.**
