@@ -126,13 +126,16 @@ export function computeRoute(
     })
     .sort((a, b) => a.order - b.order);
 
-  // bounds = route bbox, latitude-clamped to ±85
-  const routeBbox = turf.bbox(line);
+  // bounds = route ∪ crossed-territories bbox, latitude-clamped to ±85. The territories are
+  // unioned in so the frame includes each crossed polygon's extent (and its label anchor),
+  // not just the thin route line.
+  const extent = turf.featureCollection([line, ...withStop.map((w) => w.f)]);
+  const bb = turf.bbox(extent);
   const bounds: [number, number, number, number] = [
-    routeBbox[0],
-    clampLat(routeBbox[1]),
-    routeBbox[2],
-    clampLat(routeBbox[3]),
+    bb[0],
+    clampLat(bb[1]),
+    bb[2],
+    clampLat(bb[3]),
   ];
 
   return { route: config.route, territories, bounds };

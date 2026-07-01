@@ -52,6 +52,13 @@ describe("computeRoute", () => {
     expect(s).toBeGreaterThanOrEqual(-85);
     expect(n).toBeLessThanOrEqual(85);
   });
+  it("bounds union the crossed territories, not just the route line", () => {
+    // The route sits at lat 0.5; cells AAA/BBB extend lat 0→1. Route-only bounds
+    // would be a zero-height bbox at 0.5 — the territory extent must widen it.
+    const [, s, , n] = layout.bounds;
+    expect(s).toBeLessThanOrEqual(0); // AAA/BBB bottom edge
+    expect(n).toBeGreaterThanOrEqual(1); // AAA/BBB top edge
+  });
 });
 
 describe("resolveMapStyle", () => {
