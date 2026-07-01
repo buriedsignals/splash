@@ -1,8 +1,7 @@
-// SymbolStory — Remotion video composition for the proportional symbol map.
-// Single-shot eased reveal: circle radii grow 0 → target over the clip duration.
-// Harness mirrors ChoroplethStory exactly:
-//   delayRender at mount → on load add source/layer + fitBounds → map.once('idle', continueRender)
-//   per-frame: delayRender → setPaintProperty → map.once('idle', continueRender) → triggerRepaint
+// SymbolStory — beat-driven guided camera tour for the proportional symbol map.
+// Mirrors ChoroplethStory exactly in structure:
+//   delayRender → on load add source/layers + build beats + jumpTo beat 0 → idle → continueRender
+//   per-frame: delayRender → jumpTo → setPaintProperty → project callout → overlay state → idle → continueRender
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -10,7 +9,6 @@ import {
   continueRender,
   delayRender,
   interpolate,
-  Easing,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -18,7 +16,17 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
 import { symbolLabels, labelRadialOffset } from "../symbol-labels";
+import { deriveSymbolStory } from "../symbol-story";
+import {
+  buildTimeline,
+  cameraForFrame,
+  type CameraSolution,
+  type Phase,
+} from "../story-timeline";
+import type { Beat } from "../map-story";
 import type { SymbolConfig } from "../SymbolMap";
+import { CountryLabel } from "./CountryLabel";
+import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 
@@ -28,17 +36,19 @@ const SYMBOL_FILL = "#2171b5";
 const SYMBOL_STROKE = "#ffffff";
 const MAX_RADIUS_PX = 40;
 
-export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
-  const frame = useCurrentFrame();
-  const { durationInFrames, width, height } = useVideoConfig();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<maptilersdk.Map | null>(null);
-  const startedRef = useRef(false);
-  // mapReady gates the per-frame effect so it only fires after init completes.
-  const [mapReady, setMapReady] = useState(false);
-  const [handle] = useState(() => delayRender("symbol-init"));
+interface SymbolMapState {
+  map: InstanceType<typeof maptilersdk.Map>;
+  beats: Beat[];
+  phases: Phase[];
+  solutions: CameraSolution[];
+  cityByKey: Map<string, [number, number]>;
+}
 
-  const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
+export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+  const frame = useCurrentFrame();
+  const { fps, width, height } = useVideoConfig();
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
     hasDescription: !!config.description,
@@ -48,37 +58,50 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
   // Ratio-scaled label size: square/portrait are ≤1080 wide → larger text for legibility.
   const labelTextSize = width <= 1080 ? 18 : 13;
 
-  // Eased reveal 0 → 1 across the clip.
-  const progress = interpolate(frame, [0, durationInFrames - 1], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.inOut(Easing.cubic),
-  });
+  const [mapState, setMapState] = useState<SymbolMapState | null>(null);
+  const [handle] = useState(() => delayRender("symbol-story-init"));
+
+  // Per-frame overlay state: projected callout position, reveals.
+  const [overlay, setOverlay] = useState<{
+    beatIndex: number;
+    fillReveal: number;
+    calloutPt: { x: number; y: number } | null;
+    calloutReveal: number;
+    calloutValue: string;
+    calloutColor: string;
+    captionReveal: number;
+  } | null>(null);
+
+  // Ref to avoid redundant setData calls.
+  const lastBeatIndex = useRef<number>(-1);
 
   // Init map once.
   useEffect(() => {
-    if (!containerRef.current || startedRef.current) return;
-    startedRef.current = true;
-    const map = new maptilersdk.Map({
-      container: containerRef.current,
+    if (!ref.current || started.current) return;
+    started.current = true;
+
+    const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
+
+    const m = new maptilersdk.Map({
+      container: ref.current,
       style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
-      center: [
-        (geo.bounds[0] + geo.bounds[2]) / 2,
-        (geo.bounds[1] + geo.bounds[3]) / 2,
-      ],
-      zoom: 3,
+      center: [10, 20] as [number, number],
+      zoom: 2,
       interactive: false,
-      attributionControl: true,
+      attributionControl: false,
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
-      canvasContextAttributes: { preserveDrawingBuffer: true },
       fadeDuration: 0,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
+    } as Parameters<typeof maptilersdk.Map>[0] & {
+      canvasContextAttributes: unknown;
     });
-    mapRef.current = map;
-    map.on("load", () => {
+
+    m.on("load", () => {
       const labels = symbolLabels(geo.symbols);
-      map.addSource("symbols", {
+
+      m.addSource("symbols", {
         type: "geojson",
         data: {
           type: "FeatureCollection",
@@ -86,6 +109,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
             type: "Feature",
             properties: {
               radius: s.radius,
+              label: s.label ?? "",
               labelText: labels[i]?.name
                 ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
                 : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
@@ -95,7 +119,8 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           })),
         },
       });
-      map.addLayer({
+
+      m.addLayer({
         id: "symbol-circles",
         type: "circle",
         source: "symbols",
@@ -107,8 +132,8 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           "circle-stroke-width": 1.5,
         },
       });
-      // Direct label layer — fades in with the reveal via text-opacity driven by progress.
-      map.addLayer({
+
+      m.addLayer({
         id: "symbol-labels",
         type: "symbol",
         source: "symbols",
@@ -131,39 +156,131 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           "text-opacity": 0,
         },
       });
-      map.fitBounds(geo.bounds, { padding: mapFrame.pad, duration: 0 });
-      map.once("idle", () => {
-        setMapReady(true);
+
+      // Build beats and timeline.
+      const meta = {
+        title: config.title ?? "",
+        insight:
+          ((config as Record<string, unknown>).insight as string) ??
+          config.title ??
+          "",
+        unit: config.valueUnit ?? "",
+      };
+      const beats = deriveSymbolStory(config.points, meta, {
+        maxReveals: config.maxReveals,
+      });
+
+      // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox, padded.
+      const solutions: CameraSolution[] = beats.map((b) => {
+        const result = m.cameraForBounds(
+          b.camera as maptilersdk.LngLatBoundsLike,
+          {
+            padding: mapFrame.pad,
+          },
+        );
+        if (!result) return { center: [10, 20], zoom: 2 };
+        return {
+          center: [result.center.lng, result.center.lat],
+          zoom: result.zoom,
+        };
+      });
+
+      const kinds = beats.map((b) => b.kind);
+      const { phases } = buildTimeline(kinds, fps);
+
+      // City lookup for callout projection: label → [lon, lat].
+      const cityByKey = new Map<string, [number, number]>();
+      for (const p of config.points) {
+        if (p.label) cityByKey.set(p.label, [p.lon, p.lat]);
+      }
+
+      m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
+
+      m.once("idle", () => {
+        setMapState({ map: m, beats, phases, solutions, cityByKey });
         continueRender(handle);
       });
     });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Per frame: grow radii + fade labels by progress. Only runs once mapReady is true.
+  // Per-frame update — deterministic, driven entirely by `frame`.
   useEffect(() => {
-    const map = mapRef.current;
-    if (
-      !mapReady ||
-      !map ||
-      !map.isStyleLoaded() ||
-      !map.getLayer("symbol-circles")
-    )
-      return;
-    const h = delayRender(`symbol-frame-${frame}`);
-    map.setPaintProperty("symbol-circles", "circle-radius", [
-      "*",
-      ["get", "radius"],
-      progress,
-    ]);
-    if (map.getLayer("symbol-labels")) {
-      map.setPaintProperty("symbol-labels", "text-opacity", progress);
+    if (!mapState) return;
+    const { map, beats, phases, solutions, cityByKey } = mapState;
+
+    const h = delayRender(`symbol-story-frame-${frame}`);
+
+    const { camera, beatIndex, fillReveal } = cameraForFrame(
+      frame,
+      phases,
+      solutions,
+    );
+
+    // Deterministic jump — never flyTo.
+    map.jumpTo({ center: camera.center, zoom: camera.zoom });
+
+    // Circles ESTABLISH during establish beat (radius 0→target via fillReveal),
+    // then stay full for the rest of the tour. No dimming of non-highlighted symbols.
+    if (map.getLayer("symbol-circles")) {
+      map.setPaintProperty("symbol-circles", "circle-radius", [
+        "*",
+        ["get", "radius"],
+        fillReveal,
+      ]);
     }
+    if (map.getLayer("symbol-labels")) {
+      map.setPaintProperty("symbol-labels", "text-opacity", fillReveal);
+    }
+
+    // Compute overlay state while we have access to map.project.
+    const beat = beats[beatIndex];
+    const phase = phases[beatIndex];
+
+    // Callout reveal: ease over first ~0.5s of the beat's hold.
+    const holdStart = phase.startFrame + phase.moveFrames;
+    const halfSecFrames = Math.max(1, Math.round(fps * 0.5));
+    const calloutReveal = interpolate(
+      frame,
+      [holdStart, holdStart + halfSecFrames],
+      [0, 1],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    );
+
+    // Caption reveal: same easing.
+    const captionReveal = calloutReveal;
+
+    // Callout projection: highlighted city's lon/lat → screen coords.
+    let calloutPt: { x: number; y: number } | null = null;
+    if (beat.callout) {
+      const lngLat = cityByKey.get(beat.callout.region);
+      if (lngLat) {
+        const pt = map.project(lngLat as [number, number]);
+        calloutPt = { x: pt.x, y: pt.y };
+      }
+    }
+
+    // Update beat index ref (no source data to swap for symbol maps — layers are static).
+    lastBeatIndex.current = beatIndex;
+
+    setOverlay({
+      beatIndex,
+      fillReveal,
+      calloutPt,
+      calloutReveal,
+      calloutValue: beat.callout?.value ?? "",
+      calloutColor: SYMBOL_FILL,
+      captionReveal,
+    });
+
     map.once("idle", () => continueRender(h));
     map.triggerRepaint();
-  }, [mapReady, frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const beat = mapState && overlay ? mapState.beats[overlay.beatIndex] : null;
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
+      {/* MapFrame: shared furniture shell — title band (top) + source band (bottom). */}
       <MapFrame
         title={config.title ?? ""}
         description={config.description}
@@ -173,12 +290,42 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         responsive={false}
         frame={mapFrame}
       >
-        {/* Map fills the full composition frame */}
-        <div
-          ref={containerRef}
-          style={{ width, height, position: "absolute" }}
-        />
+        <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>
+
+      {/* Callout overlay — projected to screen coords, uses CountryLabel for city name + value */}
+      {overlay &&
+        beat?.callout &&
+        overlay.calloutPt &&
+        overlay.calloutReveal > 0 && (
+          <CountryLabel
+            name={beat.callout.name}
+            color={overlay.calloutColor}
+            reveal={overlay.calloutReveal}
+            x={overlay.calloutPt.x}
+            y={overlay.calloutPt.y}
+            value={overlay.calloutValue}
+          />
+        )}
+
+      {/* Caption lower-third — for takeaway beats */}
+      {overlay &&
+        beat?.kind !== "title" &&
+        beat?.kind !== "reveal" &&
+        beat?.copy &&
+        overlay.captionReveal > 0 && (
+          <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />
+        )}
+
+      {/* Title card — shown only during title beat (beatIndex 0), map blank behind. */}
+      {mapState && overlay?.beatIndex === 0 && mapState.beats[0].copy && (
+        <TitleCard
+          text={mapState.beats[0].copy}
+          description={config.description}
+          phase={mapState.phases[0]}
+          frame={frame}
+        />
+      )}
     </AbsoluteFill>
   );
 };

@@ -33,6 +33,7 @@ import { ChoroplethReveal } from "../../src/components/ChoroplethReveal";
 import { REVEAL_FRAMES } from "../../src/reveal";
 import { computeChoropleth } from "../../src/choropleth-geo";
 import { deriveMapStory } from "../../src/map-story";
+import { deriveSymbolStory } from "../../src/symbol-story";
 import { buildTimeline } from "../../src/story-timeline";
 import sampleConfig from "../../assets/sample-data/choropleth.json";
 import sampleSymbol from "../../assets/sample-data/symbol.json";
@@ -55,7 +56,18 @@ const STORY_FRAMES = buildTimeline(
 const choroplethDefaultProps = { config: sampleConfig };
 
 const symbolDefaultProps = { config: sampleSymbol };
-const SYMBOL_FRAMES = 5 * 30;
+const sampleSymbolBeats = deriveSymbolStory(sampleSymbol.points, {
+  title: sampleSymbol.title ?? "",
+  insight:
+    ((sampleSymbol as Record<string, unknown>).insight as string) ??
+    sampleSymbol.title ??
+    "",
+  unit: sampleSymbol.valueUnit ?? "",
+});
+const SYMBOL_FRAMES = buildTimeline(
+  sampleSymbolBeats.map((b) => b.kind),
+  30,
+).totalFrames;
 
 export const RemotionRoot: React.FC = () => (
   <>

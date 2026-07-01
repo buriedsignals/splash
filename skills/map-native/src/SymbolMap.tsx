@@ -23,6 +23,7 @@ export interface SymbolConfig extends SymbolData {
   description?: string;
   valueUnit?: string;
   source?: { name: string; url: string };
+  maxReveals?: number;
 }
 
 interface Props {
