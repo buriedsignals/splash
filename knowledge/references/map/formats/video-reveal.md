@@ -63,7 +63,9 @@ editorial narrative; use the storytelling format for that.
   scaled by canvas size; see `video.md` § Furniture — baked and ratio-aware).
 - Source line: mandatory, always cited. (Datawrapper Academy — always attribute the data source
   on published maps, including video exports.)
-- NO title card (no animated intro slide).
+- Title card: the reveal opens on the same full-screen title-card scene as every map video
+  (see `video.md` § Title scene). This furniture list describes the MAP scene only — during the
+  title scene the furniture is hidden.
 - NO lower-third (no subtitle band appearing mid-clip).
 - NO callout annotations, NO region highlights, NO route labels.
 
