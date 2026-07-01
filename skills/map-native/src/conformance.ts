@@ -1,4 +1,5 @@
 import { resolveMapFrame } from "./core/map-format";
+import { MAP_STYLES } from "./route-geo";
 
 export interface RevealConformanceResult {
   violations: string[];
@@ -198,6 +199,27 @@ export function checkSymbolConformance(
       }).violations,
     );
   return v;
+}
+
+export function checkRouteConformance(input: {
+  routePoints: number;
+  territoryColors: string[];
+  mapStyle?: string;
+  title?: string;
+  source?: { name?: string; url?: string };
+}): { violations: string[] } {
+  const v: string[] = [];
+  if (input.routePoints < 2) v.push("route must have at least 2 points");
+  if (input.territoryColors.length < 1) v.push("route crosses no territories");
+  if (new Set(input.territoryColors).size !== input.territoryColors.length)
+    v.push("territory colours must be distinct");
+  if (
+    input.mapStyle &&
+    !(MAP_STYLES as readonly string[]).includes(input.mapStyle)
+  )
+    v.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  if (!input.source?.name?.trim()) v.push("route must cite a source");
+  return { violations: v };
 }
 
 // Average glyph width in ems (conservative) and the frame left/right inset, used to estimate

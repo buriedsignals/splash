@@ -5,6 +5,7 @@ import {
   checkGlobalMapConformance,
   checkMapFraming,
   checkRevealConformance,
+  checkRouteConformance,
 } from "../src/conformance";
 
 const text = { text: ["#1A1A1A", "#6B6B6B"], bg: "#FFFFFF" };
@@ -351,6 +352,55 @@ describe("checkRevealConformance", () => {
         ...ok,
         bounds: [-10, -90, 30, 90],
       }).violations.some((m) => /±85|Mercator|latitude/i.test(m)),
+    ).toBe(true);
+  });
+});
+
+describe("checkRouteConformance", () => {
+  const ok = {
+    routePoints: 12,
+    territoryColors: ["#1b9e77", "#d95f02", "#7570b3"],
+    mapStyle: "dataviz-dark",
+    title: "The river that crosses three lands",
+    source: { name: "Natural Earth", url: "https://naturalearthdata.com" },
+  };
+  it("passes a well-formed route", () => {
+    expect(checkRouteConformance(ok).violations).toEqual([]);
+  });
+  it("flags a degenerate route (< 2 points)", () => {
+    expect(
+      checkRouteConformance({ ...ok, routePoints: 1 }).violations.some((m) =>
+        /route/i.test(m),
+      ),
+    ).toBe(true);
+  });
+  it("flags no territories", () => {
+    expect(
+      checkRouteConformance({ ...ok, territoryColors: [] }).violations.some(
+        (m) => /territ/i.test(m),
+      ),
+    ).toBe(true);
+  });
+  it("flags duplicate territory colours", () => {
+    expect(
+      checkRouteConformance({
+        ...ok,
+        territoryColors: ["#111111", "#111111"],
+      }).violations.some((m) => /colour|distinct/i.test(m)),
+    ).toBe(true);
+  });
+  it("flags an unknown mapStyle", () => {
+    expect(
+      checkRouteConformance({ ...ok, mapStyle: "midnight" }).violations.some(
+        (m) => /mapStyle/i.test(m),
+      ),
+    ).toBe(true);
+  });
+  it("flags a missing source", () => {
+    expect(
+      checkRouteConformance({ ...ok, source: { name: "" } }).violations.some(
+        (m) => /source/i.test(m),
+      ),
     ).toBe(true);
   });
 });
