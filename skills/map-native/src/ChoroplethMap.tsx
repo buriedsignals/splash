@@ -85,7 +85,7 @@ export const ChoroplethMap: React.FC<Props> = ({
       titleLines: 2,
       hasDescription: !!config.description,
       labelOverhang: 24,
-      legendHeight: NUM_BINS * 18 + 36,
+      legendHeight: NUM_BINS * 18 + 18,
       get titleHeightPx() {
         return titleHeightPxRef.current;
       },
@@ -215,7 +215,16 @@ export const ChoroplethMap: React.FC<Props> = ({
         source: "choropleth-world",
         paint: {
           "fill-color": colorExpr as never,
-          "fill-opacity": 0.85,
+          // No-data regions are NOT painted (opacity 0) — they show the default
+          // basemap, like the ocean and the symbol map. Only data-bearing
+          // regions are painted; the reveal effect drives their opacity, this
+          // base value is their resting opacity (used by the static export).
+          "fill-opacity": [
+            "case",
+            ["==", ["get", "__hasData"], false],
+            0,
+            0.85,
+          ] as never,
         },
       });
 
@@ -270,10 +279,6 @@ export const ChoroplethMap: React.FC<Props> = ({
           `,
             )
             .join("")}
-          <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
-            <span style="display:inline-block;width:14px;height:14px;background:${NO_DATA_COLOR};border-radius:2px;flex-shrink:0;border:1px solid #ccc"></span>
-            <span style="font:11px/1 sans-serif;color:#555">No data</span>
-          </div>
         `;
       }
 
@@ -333,7 +338,13 @@ export const ChoroplethMap: React.FC<Props> = ({
     const map = mapRef.current;
     if (!map) return;
     if (!map.getLayer("choropleth-fill")) return;
-    map.setPaintProperty("choropleth-fill", "fill-opacity", progress);
+    // Only data-bearing regions reveal; no-data stays unpainted (default basemap).
+    map.setPaintProperty("choropleth-fill", "fill-opacity", [
+      "case",
+      ["==", ["get", "__hasData"], false],
+      0,
+      progress,
+    ] as never);
   }, [progress]);
 
   // When the measured title height changes, update the ref and re-fit so the map
@@ -350,9 +361,9 @@ export const ChoroplethMap: React.FC<Props> = ({
     ? `Interactive map: ${config.title}`
     : "Interactive choropleth map";
 
-  // Legend height: each bin row is 18 px, plus 36 px for header/no-data row.
+  // Legend height: each bin row is 18 px, plus 18 px for the header row.
   // Derived from NUM_BINS to match the actual bin count used in computeChoropleth.
-  const CHOROPLETH_LEGEND_HEIGHT = NUM_BINS * 18 + 36;
+  const CHOROPLETH_LEGEND_HEIGHT = NUM_BINS * 18 + 18;
   const frame = resolveMapFrame(containerSize.w, containerSize.h, {
     titleLines: 2,
     hasDescription: !!config.description,
