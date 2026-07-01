@@ -40,6 +40,8 @@ export interface RouteConfig {
   basemap?: string;
   mapStyle?: string;
   title?: string;
+  description?: string;
+  source?: { name: string; url?: string };
   palette?: string[];
   territories?: Array<{
     key: string;
