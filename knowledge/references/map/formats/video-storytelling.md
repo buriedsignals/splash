@@ -35,7 +35,7 @@ Beat sequence:
 |------|-------------|------------|
 | Title card | — | blank |
 | Establish | Fits the full data extent | Data fades in (no callout) |
-| Reveal ×N | Flies to each feature's extent | Feature callout appears |
+| Reveal ×N | Jumps to each feature's extent | Feature callout appears |
 | Takeaway | Returns to full data extent | All features visible, callout cleared |
 
 The ordering within the reveal beats is an editorial choice made by the AI: one hero feature
@@ -107,7 +107,7 @@ The title card is the only furniture addition over the simple-reveal format.
 
 ## Sources (by name)
 
-- **Amini et al. 2015** — data video grammar; EIPR beat arc (establish/climax/resolution);
+- **Amini et al. 2015** — data video grammar; the data-video beat arc (event / intent / progress / resolution);
   hold duration as the "progress" beat; closing summary beat
 - **FT Visual Vocabulary** — hierarchy (primary point before evidence); annotation economy;
   stable frame of reference; magnitude/distribution framing

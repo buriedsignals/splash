@@ -14,7 +14,7 @@ Default: `"guided-tour"`.
 
 The camera locks on the full data extent. Data animates in place. One beat.
 
-**Dispatch value:** `"simple"` (the reveal format; `cameraMode` is absent or `"simple"`).
+**Dispatch value:** none — the simple-reveal format does NOT set `cameraMode` at all (the field is absent). `"simple"` is a conceptual mode name, NOT a valid `cameraMode` value. The only valid `cameraMode` values are `"guided-tour"` and `"route-reveal"`.
 
 **Choose when:** the story is "here is the distribution / here is the magnitude" — the whole
 map tells the story at a glance, and no individual places need calling out. (FT Visual
@@ -62,7 +62,9 @@ supporting context.)
 
 **Status: ships in SP3. Documented here as the design target; not yet implemented.** The
 `"route-reveal"` value is reserved in `src/camera-mode.ts` but the render harness for this
-mode does not exist yet. Using it before SP3 will fall back to `"guided-tour"`.
+mode does not exist yet. Setting `cameraMode: "route-reveal"` before SP3 ships makes
+`produce.mjs` THROW an explicit "not implemented (SP3)" error at render — there is NO
+fallback. Do NOT use it until SP3 ships.
 
 ---
 
