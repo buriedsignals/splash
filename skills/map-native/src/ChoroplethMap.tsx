@@ -4,6 +4,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
 const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 import { computeChoropleth, type ChoroplethData } from "./choropleth-geo";
+import type { CameraMode } from "./camera-mode";
 import { makeResetControl } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
@@ -18,6 +19,7 @@ export interface ChoroplethConfig extends ChoroplethData {
   unit?: string; // the long legend label, e.g. "share of electricity… (%)"
   valueUnit?: string; // the SHORT value suffix for tooltips, e.g. "%"
   source?: { name: string; url: string };
+  cameraMode?: CameraMode;
 }
 
 interface Props {

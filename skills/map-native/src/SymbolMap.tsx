@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry, type SymbolData } from "./symbol-geo";
+import type { CameraMode } from "./camera-mode";
 import { symbolLabels, labelRadialOffset } from "./symbol-labels";
 import { makeResetControl } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
@@ -24,6 +25,7 @@ export interface SymbolConfig extends SymbolData {
   valueUnit?: string;
   source?: { name: string; url: string };
   maxReveals?: number;
+  cameraMode?: CameraMode;
 }
 
 interface Props {

@@ -71,24 +71,33 @@ const result = {
   interactive: join(outDir, "interactive.png"),
 };
 
-const isSymbol = JSON.parse(readFileSync(configPath, "utf8")).type === "symbol";
+const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
+const isSymbol = parsedConfig.type === "symbol";
+
+// Returns the composition set for the story kind, dispatched on cameraMode.
+// guided-tour is implemented (SP2). route-reveal is SP3 — explicit extension point.
+function storyComps(isSymbolMap, cameraMode) {
+  if (cameraMode === "guided-tour") {
+    return isSymbolMap
+      ? [["SymbolStory", "landscape"], ["SymbolStorySquare", "square"], ["SymbolStoryPortrait", "portrait"]]
+      : [["ChoroplethStory", "landscape"], ["ChoroplethStorySquare", "square"], ["ChoroplethStoryPortrait", "portrait"]];
+  }
+  throw new Error(`camera mode '${cameraMode}' is not implemented yet (route-reveal ships in SP3)`);
+}
 
 // comps[kind] = [[compId, sizeName], ...] for the config's type
 const VIDEO_COMPS = {
   reveal: isSymbol
     ? [["SymbolReveal", "landscape"], ["SymbolRevealSquare", "square"], ["SymbolRevealPortrait", "portrait"]]
     : [["ChoroplethReveal", "landscape"], ["ChoroplethRevealSquare", "square"], ["ChoroplethRevealPortrait", "portrait"]],
-  story: isSymbol
-    ? [["SymbolStory", "landscape"], ["SymbolStorySquare", "square"], ["SymbolStoryPortrait", "portrait"]]
-    : [["ChoroplethStory", "landscape"], ["ChoroplethStorySquare", "square"], ["ChoroplethStoryPortrait", "portrait"]],
 };
 
 // Still mid-frame per kind (reveal is 240 frames; story uses its existing 140).
 const STILL_FRAME = { reveal: 120, story: 140 };
 
-function renderVideoSet(kind, propsPath, remotionEntry) {
+function renderVideoSet(kind, propsPath, remotionEntry, comps) {
   const out = {};
-  for (const [comp, name] of VIDEO_COMPS[kind]) {
+  for (const [comp, name] of comps) {
     const stillOut = join(outDir, `${kind}-${name}-still.png`);
     const mp4Out = join(outDir, `${kind}-${name}.mp4`);
     console.log(`[produce map] ${kind} ${name} (${comp}) — still…`);
@@ -104,14 +113,18 @@ function renderVideoSet(kind, propsPath, remotionEntry) {
 
 const kinds = format === "all" ? ["reveal", "story"] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : [];
 if (kinds.length) {
-  const config = JSON.parse(readFileSync(configPath, "utf8"));
+  const config = parsedConfig;
+  const cameraMode = config.cameraMode ?? "guided-tour";
   const tmpDir = mkdtempSync(join(tmpdir(), "map-native-props-"));
   try {
     const propsPath = join(tmpDir, "props.json");
     writeFileSync(propsPath, JSON.stringify({ config }));
     const remotionEntry = join(root, "remotion", "src", "index.ts");
     for (const kind of kinds) {
-      result[kind] = renderVideoSet(kind, propsPath, remotionEntry);
+      const comps = kind === "story"
+        ? storyComps(isSymbol, cameraMode)   // dispatches on cameraMode; throws for unimplemented modes
+        : VIDEO_COMPS[kind];
+      result[kind] = renderVideoSet(kind, propsPath, remotionEntry, comps);
     }
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });
