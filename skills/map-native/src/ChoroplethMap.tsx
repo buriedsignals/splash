@@ -30,8 +30,8 @@ interface Props {
 const NUM_BINS = 5;
 
 // Exported so tests can assert colour distinctness
-export { NO_DATA_COLOR, WATER_COLOR } from "./theme/colors";
-import { NO_DATA_COLOR, WATER_COLOR } from "./theme/colors";
+export { NO_DATA_COLOR } from "./theme/colors";
+import { NO_DATA_COLOR } from "./theme/colors";
 
 export const ChoroplethMap: React.FC<Props> = ({
   config,
@@ -166,27 +166,6 @@ export const ChoroplethMap: React.FC<Props> = ({
       for (const layer of layers) {
         if (layer.type === "symbol") {
           map.removeLayer(layer.id);
-        }
-        if (
-          /water|ocean|sea/i.test(layer.id) ||
-          ("source-layer" in layer &&
-            /water|ocean|sea/i.test(
-              (layer as { "source-layer"?: string })["source-layer"] ?? "",
-            ))
-        ) {
-          if (layer.type === "fill") {
-            try {
-              map.setPaintProperty(layer.id, "fill-color", WATER_COLOR);
-            } catch {
-              /* layer may not support this paint property */
-            }
-          } else if (layer.type === "background") {
-            try {
-              map.setPaintProperty(layer.id, "background-color", WATER_COLOR);
-            } catch {
-              /* not all background layers are water */
-            }
-          }
         }
       }
 

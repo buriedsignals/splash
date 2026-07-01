@@ -21,7 +21,7 @@ import {
   mainlandFeature,
   type ChoroplethData,
 } from "../choropleth-geo";
-import { NO_DATA_COLOR, WATER_COLOR } from "../theme/colors";
+import { NO_DATA_COLOR } from "../theme/colors";
 import { deriveMapStory, type Beat } from "../map-story";
 import {
   buildTimeline,
@@ -257,25 +257,6 @@ export const ChoroplethStory: React.FC<{
         if (layer.type === "symbol") m.removeLayer(layer.id);
       }
 
-      // Apply consistent water colour matching the interactive map.
-      for (const layer of m.getStyle()?.layers ?? []) {
-        const sid = layer["source-layer"] as string | undefined;
-        if (
-          /water|ocean|sea/i.test(layer.id) ||
-          (sid && /water|ocean|sea/i.test(sid))
-        ) {
-          try {
-            if (layer.type === "fill") {
-              m.setPaintProperty(layer.id, "fill-color", WATER_COLOR);
-            } else if (layer.type === "background") {
-              m.setPaintProperty(layer.id, "background-color", WATER_COLOR);
-            }
-          } catch {
-            // Layer may not support the property — skip.
-          }
-        }
-      }
-
       fetch(staticFile("geo/world.geojson"))
         .then((r) => r.json())
         .then((worldGeoJson: GeoJSON.FeatureCollection) => {
@@ -456,8 +437,14 @@ export const ChoroplethStory: React.FC<{
       );
     }
 
-    // Stable fill-opacity — no dimming, consistent across all features.
-    map.setPaintProperty("choropleth-fill", "fill-opacity", fillReveal * 0.9);
+    // Only data-bearing regions are painted. No-data regions stay unpainted
+    // (opacity 0) → default MapTiler basemap, like the ocean and the symbol map.
+    map.setPaintProperty("choropleth-fill", "fill-opacity", [
+      "case",
+      ["==", ["get", "__hasData"], false],
+      0, // no-data: unpainted → default basemap
+      fillReveal * 0.9, // data: driven by the beat reveal
+    ] as never);
 
     // Compute overlay state while we still have access to map.project.
     const beat = beats[beatIndex];

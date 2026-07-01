@@ -18,11 +18,10 @@ import {
   easedRevealProgress,
   revealFillOpacity,
   revealCameraPlan,
-  MAX_FILL_OPACITY,
 } from "../reveal";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
-import { NO_DATA_COLOR, WATER_COLOR } from "../theme/colors";
+import { NO_DATA_COLOR } from "../theme/colors";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -76,28 +75,6 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
       const layers = m.getStyle()?.layers ?? [];
       for (const layer of layers) {
         if (layer.type === "symbol") m.removeLayer(layer.id);
-      }
-
-      // Recolour the basemap water to WATER_COLOR (a blue tint) so the ocean is
-      // clearly distinct from the grey no-data land — matches ChoroplethStory /
-      // the interactive map. Without this the DATAVIZ.LIGHT water is grey, the
-      // same colour as no-data regions, and the two become indistinguishable.
-      for (const layer of m.getStyle()?.layers ?? []) {
-        const sid = layer["source-layer"] as string | undefined;
-        if (
-          /water|ocean|sea/i.test(layer.id) ||
-          (sid && /water|ocean|sea/i.test(sid))
-        ) {
-          try {
-            if (layer.type === "fill") {
-              m.setPaintProperty(layer.id, "fill-color", WATER_COLOR);
-            } else if (layer.type === "background") {
-              m.setPaintProperty(layer.id, "background-color", WATER_COLOR);
-            }
-          } catch {
-            // Layer may not support the property — skip.
-          }
-        }
       }
 
       // Fetch world GeoJSON via Remotion staticFile (served from remotion/public/)
@@ -196,15 +173,14 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
     const h = delayRender(`choropleth-frame-${frame}`);
 
     const progress = easedRevealProgress(frame, durationInFrames);
-    // Only data-bearing regions animate. No-data regions are stable geographic
-    // CONTEXT (like the ocean): they hold a constant opacity so the backdrop
-    // never shifts colour during the reveal. Ramping every feature's opacity
-    // made the whole no-data landmass darken frame-by-frame, which read as the
-    // ocean/backdrop changing colour.
+    // Only data-bearing regions are painted and animated. No-data regions are
+    // NOT painted (opacity 0) — they show the default MapTiler basemap, exactly
+    // like the ocean and like the symbol map's basemap. Nothing but the data
+    // countries carries colour, and only they animate.
     map.setPaintProperty("choropleth-fill", "fill-opacity", [
       "case",
       ["==", ["get", "__hasData"], false],
-      MAX_FILL_OPACITY, // no-data: constant, no ramp
+      0, // no-data: unpainted → default basemap
       revealFillOpacity(progress), // data: ramps 0 → 0.85
     ] as never);
     map.once("idle", () => continueRender(h));

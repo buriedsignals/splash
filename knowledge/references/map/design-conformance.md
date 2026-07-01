@@ -23,15 +23,16 @@ A produced map MUST satisfy all eight rules below across static / interactive / 
    A choropleth needs ≥ 3 scale steps; a symbol map needs ≥ 2 reference circles. Source:
    data-to-viz (map section). Enforced by `checkChoroplethConformance` / `checkSymbolConformance`.
 
-6. **No-data colour distinct — from the ramp AND from water** — regions or points with missing
-   data must use a neutral grey (`NO_DATA_COLOR`) that sits outside the data ramp, so absence is
-   never mistaken for a low value. The ocean/water must render in the cartographic water tint
-   (`WATER_COLOR`, a blue — water is never grey) so it is clearly distinct from no-data land; the
-   two must never share a colour. Every format recolours the basemap water (the interactive map,
-   the storytelling video, AND the simple-reveal video all set `WATER_COLOR` on the water layers).
-   Source: Datawrapper Academy (choropleth best practices), cartographic convention (water is
-   blue). Both colours live in `src/theme/colors.ts`; respected in the colour spec passed to
-   `checkChoroplethConformance`.
+6. **Default basemap; only data is painted** — the basemap keeps its DEFAULT MapTiler rendering
+   across all formats (no custom water colour). **Only data-bearing regions carry a choropleth
+   fill; no-data regions are NOT painted — they show the default basemap, exactly like the ocean
+   and like the symbol map's basemap.** In the motion/video formats only the data regions change
+   colour (no-data and ocean stay constant). This keeps the map clean and never lets a no-data
+   overlay be mistaken for a low value. (The interactive/static web format MAY still key a "no
+   data" swatch in its legend — `NO_DATA_COLOR` in `src/theme/colors.ts` — where a legend explains
+   it; the video formats carry no legend, so no-data is simply unpainted.) Source: Datawrapper
+   Academy (choropleth best practices — absence must never read as a value); cartographic
+   convention (let the basemap be the basemap).
 
 7. **Framing / safe-area** — the title lives in a reserved top band (never overlaid on map data);
    the legend occupies a RESERVED band sized to its rendered height — no data feature renders
