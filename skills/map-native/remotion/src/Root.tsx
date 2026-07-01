@@ -13,6 +13,9 @@
 //   ChoroplethReveal        — Choropleth simple-reveal landscape 1280×720
 //   ChoroplethRevealSquare  — Choropleth simple-reveal square 1080×1080
 //   ChoroplethRevealPortrait — Choropleth simple-reveal portrait 1080×1350
+//   RouteReveal           — Route draw-on landscape 1280×720
+//   RouteRevealSquare     — Route draw-on square 1080×1080
+//   RouteRevealPortrait   — Route draw-on portrait 1080×1350
 //
 // Render HarnessCheck to prove the harness:
 //   bunx remotion render remotion/src/index.ts HarnessCheck out/harness-check.mp4 --gl=angle --concurrency=1 --timeout=120000
@@ -30,14 +33,17 @@ import { ChoroplethStory } from "../../src/components/ChoroplethStory";
 import { SymbolStory } from "../../src/components/SymbolStory";
 import { SymbolReveal } from "../../src/components/SymbolReveal";
 import { ChoroplethReveal } from "../../src/components/ChoroplethReveal";
+import { RouteReveal } from "../../src/components/RouteReveal";
 import { REVEAL_FRAMES } from "../../src/reveal";
 import { TITLE_SCENE_FRAMES } from "../../src/video-scene";
 import { computeChoropleth } from "../../src/choropleth-geo";
+import { computeRouteReveal, routeRevealFrames } from "../../src/route-geo";
 import { deriveMapStory } from "../../src/map-story";
 import { deriveSymbolStory } from "../../src/symbol-story";
 import { buildTimeline } from "../../src/story-timeline";
 import sampleConfig from "../../assets/sample-data/choropleth.json";
 import sampleSymbol from "../../assets/sample-data/symbol.json";
+import sampleRoute from "../../assets/sample-data/route.json";
 import world from "../../assets/geo/world.geojson";
 
 const sampleLayout = computeChoropleth(sampleConfig, world as any, "iso_a3", {
@@ -57,6 +63,12 @@ const STORY_FRAMES = buildTimeline(
 const choroplethDefaultProps = { config: sampleConfig };
 
 const symbolDefaultProps = { config: sampleSymbol };
+
+const ROUTE_REVEAL_FRAMES = routeRevealFrames(
+  computeRouteReveal(sampleRoute as any, world as any).territories.length,
+  30,
+);
+const routeDefaultProps = { config: sampleRoute };
 const sampleSymbolBeats = deriveSymbolStory(sampleSymbol.points, {
   title: sampleSymbol.title ?? "",
   insight:
@@ -195,6 +207,33 @@ export const RemotionRoot: React.FC = () => (
       width={1080}
       height={1350}
       defaultProps={choroplethDefaultProps}
+    />
+    <Composition
+      id="RouteReveal"
+      component={RouteReveal}
+      durationInFrames={ROUTE_REVEAL_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={routeDefaultProps as any}
+    />
+    <Composition
+      id="RouteRevealSquare"
+      component={RouteReveal}
+      durationInFrames={ROUTE_REVEAL_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={routeDefaultProps as any}
+    />
+    <Composition
+      id="RouteRevealPortrait"
+      component={RouteReveal}
+      durationInFrames={ROUTE_REVEAL_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={routeDefaultProps as any}
     />
   </>
 );
