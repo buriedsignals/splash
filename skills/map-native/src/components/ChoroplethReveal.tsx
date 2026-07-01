@@ -19,6 +19,8 @@ import {
   revealFillOpacity,
   revealCameraPlan,
 } from "../reveal";
+import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
+import { TitleCard } from "./StoryCards";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { NO_DATA_COLOR } from "../theme/colors";
@@ -166,13 +168,19 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
     });
   }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Scene: title card fades out, furniture fades in over the crossfade window.
+  const scene = resolveScene(frame, { titleSceneEndFrame: TITLE_SCENE_FRAMES });
+
   // Per-frame update — drive fill-opacity reveal, gated by idle
   useEffect(() => {
     if (!mapState) return;
     const { map } = mapState;
     const h = delayRender(`choropleth-frame-${frame}`);
 
-    const progress = easedRevealProgress(frame, durationInFrames);
+    const progress = easedRevealProgress(
+      frame - TITLE_SCENE_FRAMES,
+      durationInFrames - TITLE_SCENE_FRAMES,
+    );
     // Only data-bearing regions are painted and animated. No-data regions are
     // NOT painted (opacity 0) — they show the default MapTiler basemap, exactly
     // like the ocean and like the symbol map's basemap. Nothing but the data
@@ -198,9 +206,17 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
         height={height}
         responsive={false}
         frame={mapFrame}
+        furnitureOpacity={scene.furnitureOpacity}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>
+      {scene.titleOpacity > 0 && (config as any).title && (
+        <TitleCard
+          text={(config as any).title}
+          description={(config as any).description}
+          opacity={scene.titleOpacity}
+        />
+      )}
     </AbsoluteFill>
   );
 };

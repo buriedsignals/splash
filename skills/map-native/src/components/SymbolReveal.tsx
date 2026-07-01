@@ -23,6 +23,8 @@ import type { SymbolConfig } from "../SymbolMap";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { easedRevealProgress, revealCameraPlan } from "../reveal";
+import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
+import { TitleCard } from "./StoryCards";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -52,8 +54,14 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
   // Ratio-scaled label size: square/portrait are ≤1080 wide → larger text for legibility.
   const labelTextSize = width <= 1080 ? 18 : 13;
 
-  // Eased reveal 0 → 1 with blank holds at both ends.
-  const progress = easedRevealProgress(frame, durationInFrames);
+  // Eased reveal 0 → 1 with blank holds at both ends. Shifted to start after the title scene.
+  const progress = easedRevealProgress(
+    frame - TITLE_SCENE_FRAMES,
+    durationInFrames - TITLE_SCENE_FRAMES,
+  );
+
+  // Scene: title card fades out, furniture fades in over the crossfade window.
+  const scene = resolveScene(frame, { titleSceneEndFrame: TITLE_SCENE_FRAMES });
 
   // Fixed camera plan — latitude-clamped Mercator-safe bounds.
   const plan = revealCameraPlan(geo.bounds);
@@ -175,6 +183,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
         height={height}
         responsive={false}
         frame={mapFrame}
+        furnitureOpacity={scene.furnitureOpacity}
       >
         {/* Map fills the full composition frame */}
         <div
@@ -182,6 +191,13 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
           style={{ width, height, position: "absolute" }}
         />
       </MapFrame>
+      {scene.titleOpacity > 0 && config.title && (
+        <TitleCard
+          text={config.title}
+          description={config.description}
+          opacity={scene.titleOpacity}
+        />
+      )}
     </AbsoluteFill>
   );
 };

@@ -31,6 +31,7 @@ import { SymbolStory } from "../../src/components/SymbolStory";
 import { SymbolReveal } from "../../src/components/SymbolReveal";
 import { ChoroplethReveal } from "../../src/components/ChoroplethReveal";
 import { REVEAL_FRAMES } from "../../src/reveal";
+import { TITLE_SCENE_FRAMES } from "../../src/video-scene";
 import { computeChoropleth } from "../../src/choropleth-geo";
 import { deriveMapStory } from "../../src/map-story";
 import { deriveSymbolStory } from "../../src/symbol-story";
@@ -144,7 +145,7 @@ export const RemotionRoot: React.FC = () => (
     <Composition
       id="SymbolReveal"
       component={SymbolReveal}
-      durationInFrames={REVEAL_FRAMES}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1280}
       height={720}
@@ -153,7 +154,7 @@ export const RemotionRoot: React.FC = () => (
     <Composition
       id="SymbolRevealSquare"
       component={SymbolReveal}
-      durationInFrames={REVEAL_FRAMES}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1080}
       height={1080}
@@ -162,7 +163,7 @@ export const RemotionRoot: React.FC = () => (
     <Composition
       id="SymbolRevealPortrait"
       component={SymbolReveal}
-      durationInFrames={REVEAL_FRAMES}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1080}
       height={1350}
@@ -171,7 +172,7 @@ export const RemotionRoot: React.FC = () => (
     <Composition
       id="ChoroplethReveal"
       component={ChoroplethReveal}
-      durationInFrames={REVEAL_FRAMES}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1280}
       height={720}
@@ -180,7 +181,7 @@ export const RemotionRoot: React.FC = () => (
     <Composition
       id="ChoroplethRevealSquare"
       component={ChoroplethReveal}
-      durationInFrames={REVEAL_FRAMES}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1080}
       height={1080}
@@ -189,7 +190,7 @@ export const RemotionRoot: React.FC = () => (
     <Composition
       id="ChoroplethRevealPortrait"
       component={ChoroplethReveal}
-      durationInFrames={REVEAL_FRAMES}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1080}
       height={1350}
