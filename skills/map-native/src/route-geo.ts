@@ -15,7 +15,8 @@ export function resolveMapStyle(token?: string): MapStyleToken {
 }
 
 // ---------------------------------------------------------------------------
-// CVD-safe qualitative palette (Okabe-Ito 8-colour)
+// CVD-safe qualitative palette (Okabe-Ito, 7 hues — black is dropped so a fill is
+// never invisible on a dataviz-dark basemap).
 // ---------------------------------------------------------------------------
 
 const QUALITATIVE: string[] = [
@@ -26,7 +27,6 @@ const QUALITATIVE: string[] = [
   "#0072B2", // blue
   "#D55E00", // vermillion
   "#CC79A7", // reddish purple
-  "#000000", // black
 ];
 
 // ---------------------------------------------------------------------------
