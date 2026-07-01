@@ -49,6 +49,15 @@ A produced map MUST satisfy all eight rules below across static / interactive / 
    data-to-viz (symbol map). Enforced by `checkSymbolConformance` (`labeled` and `labelHasUnit`
    fields).
 
+9. **Furniture and controls follow the basemap theme** — the title pill, source line, and
+   interactive controls (zoom +/−, reset) MUST match the basemap theme: dark furniture and
+   controls on a dark basemap (`mapStyle: dataviz-dark`), light on a light basemap. A white pill
+   on a dark basemap is a conformance failure. Furniture text meets WCAG ≥ 4.5:1 against its
+   themed pill in both modes (`FRAME_COLORS` light: ink 17.40:1, muted 6.39:1; `FRAME_COLORS_DARK`
+   dark: ink 16.12:1, muted 10.19:1). Sources: WCAG 2.1 §1.4.3; the toolkit's `mapStyle`
+   capability (`resolveMapStyle` in `src/route-geo.ts`). Implemented via `MapFrame` `dark` prop
+   + dark-control CSS injection in `RouteMap`.
+
 ---
 
 Enforcing code:

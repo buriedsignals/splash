@@ -3,6 +3,7 @@ import * as maptilersdk from "@maptiler/sdk";
 /** Minimal IControl that resets the map to the initial data bounds. */
 export function makeResetControl(
   dataBounds: [number, number, number, number],
+  options: { dark?: boolean } = {},
 ): maptilersdk.IControl {
   let _map: maptilersdk.Map | null = null;
   let _btn: HTMLButtonElement | null = null;
@@ -17,8 +18,9 @@ export function makeResetControl(
       btn.type = "button";
       btn.setAttribute("aria-label", "Reset map view");
       btn.textContent = "⌂";
-      btn.style.cssText =
-        "width:29px;height:29px;font-size:16px;cursor:pointer;background:#fff;border:none;border-radius:4px;display:flex;align-items:center;justify-content:center;line-height:1;";
+      const bg = options.dark ? "rgba(28,28,31,0.92)" : "#fff";
+      const color = options.dark ? "#f4f4f5" : "#333";
+      btn.style.cssText = `width:29px;height:29px;font-size:16px;cursor:pointer;background:${bg};color:${color};border:none;border-radius:4px;display:flex;align-items:center;justify-content:center;line-height:1;`;
       btn.addEventListener("click", () => {
         _map?.fitBounds(dataBounds, { padding: 48, duration: 600 });
       });

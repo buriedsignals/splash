@@ -111,14 +111,13 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
 
     // Map style: resolve the token and map to a MapTiler style (kept here to stay framework-free in route-geo)
     const styleToken = resolveMapStyle(config.mapStyle);
-    const mapStyle =
-      styleToken === "dataviz-dark"
-        ? maptilersdk.MapStyle.DATAVIZ.DARK
-        : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+    const isDark = styleToken === "dataviz-dark";
+    const mapStyle = isDark
+      ? maptilersdk.MapStyle.DATAVIZ.DARK
+      : maptilersdk.MapStyle.DATAVIZ.LIGHT;
 
     // Route stroke colour depends on base style
-    const routeStrokeColor =
-      styleToken === "dataviz-dark" ? "#E8F7FF" : "#1A3A5C";
+    const routeStrokeColor = isDark ? "#E8F7FF" : "#1A3A5C";
 
     const map = new maptilersdk.Map({
       container: containerRef.current,
@@ -276,7 +275,10 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
           new maptilersdk.NavigationControl({ showCompass: false }),
           "top-right",
         );
-        map.addControl(makeResetControl(dataBounds), "top-right");
+        map.addControl(
+          makeResetControl(dataBounds, { dark: isDark }),
+          "top-right",
+        );
 
         // Hover tooltip: territory name
         const popup = new maptilersdk.Popup({
@@ -336,12 +338,21 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
     ? `Interactive map: ${config.title}`
     : "Interactive route map";
 
+  // Derive dark theme at render time (mirrors the useEffect resolution, kept in sync).
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+
   const frame = resolveMapFrame(containerSize.w, containerSize.h, {
     titleLines: 2,
     hasDescription: !!config.description,
     labelOverhang: 24,
     titleHeightPx,
   });
+
+  const DARK_CTRL_CSS = `
+    .maplibregl-ctrl-group { background: rgba(28,28,31,0.92) !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.14) !important; }
+    .maplibregl-ctrl-group button + button { border-top: 1px solid rgba(255,255,255,0.14) !important; }
+    .maplibregl-ctrl button .maplibregl-ctrl-icon { filter: invert(1) brightness(1.1) !important; }
+  `;
 
   const inner = (
     <>
@@ -358,6 +369,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
           outline-offset: 2px;
         }
         .maplibregl-ctrl-top-right { z-index: 20 !important; }
+        ${dark ? DARK_CTRL_CSS : ""}
       `}</style>
 
       <div
@@ -383,6 +395,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         responsive
         frame={frame}
         onTitleHeight={handleTitleHeight}
+        dark={dark}
       >
         {inner}
       </MapFrame>

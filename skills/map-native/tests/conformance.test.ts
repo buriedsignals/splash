@@ -440,3 +440,43 @@ describe("per-type guards — optional format hook", () => {
     expect(r).toEqual([]);
   });
 });
+
+// FRAME_COLORS / FRAME_COLORS_DARK WCAG contrast assertions
+import { relativeLuminance, contrastRatio } from "../src/conformance";
+import { FRAME_COLORS, FRAME_COLORS_DARK } from "../src/theme/map-tokens";
+
+describe("FRAME_COLORS light — WCAG contrast ≥ 4.5:1", () => {
+  // pill is translucent; for contrast purposes we use its opaque solid equivalent (#ffffff)
+  const pillSolid = "#ffffff";
+
+  it("should satisfy ink-on-pill ≥ 4.5:1 (light theme)", () => {
+    const ratio = contrastRatio(FRAME_COLORS.ink, pillSolid);
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("should satisfy muted-on-pill ≥ 4.5:1 (light theme)", () => {
+    const ratio = contrastRatio(FRAME_COLORS.muted, pillSolid);
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("FRAME_COLORS_DARK — WCAG contrast ≥ 4.5:1", () => {
+  // pill is rgba(24,24,27,0.82); opaque solid for contrast check: #18181b
+  const pillSolid = "#18181b";
+
+  it("should satisfy ink-on-pill ≥ 4.5:1 (dark theme)", () => {
+    const ratio = contrastRatio(FRAME_COLORS_DARK.ink, pillSolid);
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("should satisfy muted-on-pill ≥ 4.5:1 (dark theme)", () => {
+    const ratio = contrastRatio(FRAME_COLORS_DARK.muted, pillSolid);
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("FRAME_COLORS_DARK.ink luminance should be higher than pill (light text on dark)", () => {
+    expect(relativeLuminance(FRAME_COLORS_DARK.ink)).toBeGreaterThan(
+      relativeLuminance(pillSolid),
+    );
+  });
+});

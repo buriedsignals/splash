@@ -5,7 +5,11 @@
 // fitBounds. Web mode (responsive) puts a frosted pill behind the text; video mode uses
 // a text-shadow.
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
-import { FRAME_COLORS, FRAME_FONT } from "../theme/map-tokens";
+import {
+  FRAME_COLORS,
+  FRAME_COLORS_DARK,
+  FRAME_FONT,
+} from "../theme/map-tokens";
 import type { ResolvedMapFrame } from "./map-format";
 
 export interface MapFrameProps {
@@ -19,6 +23,8 @@ export interface MapFrameProps {
   children: ReactNode; // the map container <div>
   onTitleHeight?: (px: number) => void;
   furnitureOpacity?: number;
+  /** Follow the basemap theme: dark pill + light ink when true. Defaults false (light). */
+  dark?: boolean;
 }
 
 export function MapFrame({
@@ -32,6 +38,7 @@ export function MapFrame({
   children,
   onTitleHeight,
   furnitureOpacity = 1,
+  dark = false,
 }: MapFrameProps) {
   const titleRef = useRef<HTMLDivElement>(null);
   const [, setMeasuredHeight] = useState(0);
@@ -60,14 +67,19 @@ export function MapFrame({
     return () => ro.disconnect();
   }, [onTitleHeight]);
 
+  const colors = dark ? FRAME_COLORS_DARK : FRAME_COLORS;
   const m = Math.round(16 * frame.scale); // furniture gutter: 16px at 1× scale
   const pillStyle = responsive
     ? {
-        background: FRAME_COLORS.pill,
+        background: colors.pill,
         borderRadius: 6,
         padding: `${Math.round(6 * frame.scale)}px ${Math.round(10 * frame.scale)}px`,
       }
-    : { textShadow: "0 1px 6px rgba(255,255,255,0.9)" };
+    : {
+        textShadow: dark
+          ? "0 1px 6px rgba(0,0,0,0.9)"
+          : "0 1px 6px rgba(255,255,255,0.9)",
+      };
 
   return (
     <div
@@ -94,7 +106,7 @@ export function MapFrame({
           style={{
             fontSize: frame.type.title,
             fontWeight: 700,
-            color: FRAME_COLORS.ink,
+            color: colors.ink,
             lineHeight: 1.2,
           }}
         >
@@ -104,7 +116,7 @@ export function MapFrame({
           <div
             style={{
               fontSize: frame.type.description,
-              color: FRAME_COLORS.muted,
+              color: colors.muted,
               marginTop: 2,
             }}
           >
@@ -122,10 +134,14 @@ export function MapFrame({
           zIndex: 10,
           opacity: furnitureOpacity,
           fontSize: frame.type.source,
-          color: FRAME_COLORS.muted,
+          color: colors.muted,
           ...(responsive
             ? {}
-            : { textShadow: "0 1px 4px rgba(255,255,255,0.9)" }),
+            : {
+                textShadow: dark
+                  ? "0 1px 4px rgba(0,0,0,0.9)"
+                  : "0 1px 4px rgba(255,255,255,0.9)",
+              }),
         }}
       >
         Source:{" "}
@@ -134,7 +150,7 @@ export function MapFrame({
             href={source.url}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: FRAME_COLORS.muted }}
+            style={{ color: colors.muted }}
           >
             {source.name}
           </a>

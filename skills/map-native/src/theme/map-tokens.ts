@@ -10,3 +10,10 @@ export const FRAME_COLORS = {
   ink: "#1a1a1a", // title text
   muted: "#5f5f5f", // description / source text
 } as const;
+
+// Dark-basemap variant — ink (#f4f4f5) on pill (#18181b) = 16.12:1, muted (#c4c4c8) = 10.19:1 (WCAG ≥4.5:1)
+export const FRAME_COLORS_DARK = {
+  pill: "rgba(24,24,27,0.82)", // dark translucent pill over dark basemap
+  ink: "#f4f4f5", // near-white title text
+  muted: "#c4c4c8", // subdued light text for description / source
+} as const;
