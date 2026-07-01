@@ -17,7 +17,7 @@ not the camera.)
 
 Do NOT use a simple reveal when the story requires walking the reader from place to place,
 calling out individual regions, or following a route. Those are storytelling treatments —
-see SP2/SP3.
+see `video-storytelling.md` and `../camera-modes.md`.
 
 ## Zero camera movement — the defining rule
 
@@ -64,7 +64,7 @@ editorial narrative; use the storytelling format for that.
 - NO lower-third (no subtitle band appearing mid-clip).
 - NO callout annotations, NO region highlights, NO route labels.
 
-Those elements belong to storytelling treatments (SP2/SP3), not to a distribution-read clip.
+Those elements belong to storytelling treatments (`video-storytelling.md`), not to a distribution-read clip.
 (MapFrame convention: the MapFrame shell provides title + source as the complete furniture
 contract for the simple-reveal sub-format.)
 
@@ -128,5 +128,6 @@ suppressed entirely — fade-in of an invisible-anchor label creates visual nois
 
 ---
 
-For camera-driven explainers (tours, callouts, Tom's route-reveal), see the storytelling
-format (SP2/SP3).
+For camera-driven explainers (tours, callouts), see `video-storytelling.md` (the guided-tour
+format). For the full camera-mode taxonomy — including the forthcoming `route-reveal` mode
+(Tom's route/line progressive-draw aesthetic, ships SP3) — see `../camera-modes.md`.
