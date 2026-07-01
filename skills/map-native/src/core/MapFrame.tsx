@@ -18,6 +18,7 @@ export interface MapFrameProps {
   frame: ResolvedMapFrame;
   children: ReactNode; // the map container <div>
   onTitleHeight?: (px: number) => void;
+  furnitureOpacity?: number;
 }
 
 export function MapFrame({
@@ -30,6 +31,7 @@ export function MapFrame({
   frame,
   children,
   onTitleHeight,
+  furnitureOpacity = 1,
 }: MapFrameProps) {
   const titleRef = useRef<HTMLDivElement>(null);
   const [, setMeasuredHeight] = useState(0);
@@ -84,6 +86,7 @@ export function MapFrame({
           maxWidth: width - 2 * m,
           boxSizing: "border-box",
           pointerEvents: "none",
+          opacity: furnitureOpacity,
           ...pillStyle,
         }}
       >
@@ -117,6 +120,7 @@ export function MapFrame({
           bottom: m,
           left: m,
           zIndex: 10,
+          opacity: furnitureOpacity,
           fontSize: frame.type.source,
           color: FRAME_COLORS.muted,
           ...(responsive

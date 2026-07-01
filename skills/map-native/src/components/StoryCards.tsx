@@ -3,7 +3,6 @@
 
 import React from "react";
 import { interpolate } from "remotion";
-import type { Phase } from "../story-timeline";
 
 // Caption lower-third card — semi-opaque, WCAG-contrasted.
 export const CaptionCard: React.FC<{ text: string; reveal: number }> = ({
@@ -48,32 +47,20 @@ export const CaptionCard: React.FC<{ text: string; reveal: number }> = ({
   );
 };
 
-// Title card — full-screen overlay shown only during the title beat (beatIndex 0).
-// Map is blank behind it (fillReveal 0). Fades in at start, fades out near end of beat.
+// Title card — full-screen scene-1 overlay. Opacity is supplied by the caller
+// (via resolveScene): 1 from frame 0 through the title hold, fading out only at the
+// crossfade to the map scene.
 export const TitleCard: React.FC<{
   text: string;
   description?: string;
-  phase: Phase;
-  frame: number;
-}> = ({ text, description, phase, frame }) => {
-  const holdStart = phase.startFrame + phase.moveFrames;
-  const holdEnd = holdStart + phase.holdFrames;
-  // Fade in over first 0.3s of hold, fade out over last 0.5s.
-  const fadeInEnd = holdStart + Math.round(phase.holdFrames * 0.15);
-  const fadeOutStart = holdEnd - Math.round(phase.holdFrames * 0.25);
-
-  const opacity = interpolate(
-    frame,
-    [holdStart, fadeInEnd, fadeOutStart, holdEnd],
-    [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
+  opacity: number;
+}> = ({ text, description, opacity }) => {
   return (
     <div
       style={{
         position: "absolute",
         inset: 0,
+        zIndex: 20, // above the MapFrame furniture (zIndex 10) — title scene sits on top during the crossfade
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
