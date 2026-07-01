@@ -1,9 +1,12 @@
 # Route Map — per-type best practice
 
-> Sources (by name, matching the sibling map KB docs — no URLs): data-to-viz (connection map) ·
-> Financial Times Visual Vocabulary (SPATIAL group, "flow / connection") ·
-> Datawrapper Academy (locator / route maps) · Natural Earth (boundary presets) ·
-> Turf.js (booleanIntersects / lineIntersect) · Okabe & Ito 2008 ("Color Universal Design").
+> Sources: data-to-viz.com (connection map) — https://www.data-to-viz.com/graph/connection.html ·
+> Financial Times Visual Vocabulary (SPATIAL group, "flow / connection") —
+> https://github.com/Financial-Times/chart-doctor/tree/main/visual-vocabulary ·
+> Datawrapper Academy (locator / route maps) — https://academy.datawrapper.de/ ·
+> Natural Earth (boundary presets) — https://www.naturalearthdata.com ·
+> Turf.js docs (booleanIntersects / lineIntersect) — https://turfjs.org/docs ·
+> Okabe & Ito 2008 ("Color Universal Design").
 
 A route map encodes a **linear geographic feature** — a river, road, pipeline, migration corridor,
 border segment, or supply chain — as a polyline, and simultaneously shows the **territories it
