@@ -18,6 +18,7 @@ import {
   easedRevealProgress,
   revealFillOpacity,
   revealCameraPlan,
+  MAX_FILL_OPACITY,
 } from "../reveal";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
@@ -173,11 +174,17 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
     const h = delayRender(`choropleth-frame-${frame}`);
 
     const progress = easedRevealProgress(frame, durationInFrames);
-    map.setPaintProperty(
-      "choropleth-fill",
-      "fill-opacity",
-      revealFillOpacity(progress),
-    );
+    // Only data-bearing regions animate. No-data regions are stable geographic
+    // CONTEXT (like the ocean): they hold a constant opacity so the backdrop
+    // never shifts colour during the reveal. Ramping every feature's opacity
+    // made the whole no-data landmass darken frame-by-frame, which read as the
+    // ocean/backdrop changing colour.
+    map.setPaintProperty("choropleth-fill", "fill-opacity", [
+      "case",
+      ["==", ["get", "__hasData"], false],
+      MAX_FILL_OPACITY, // no-data: constant, no ramp
+      revealFillOpacity(progress), // data: ramps 0 → 0.85
+    ] as never);
     map.once("idle", () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame, durationInFrames]);

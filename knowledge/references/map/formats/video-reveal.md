@@ -72,11 +72,19 @@ contract for the simple-reveal sub-format.)
 
 ### Choropleth
 
-Animate `fill-opacity` from `0` to `~0.85`.
+Animate `fill-opacity` from `0` to `~0.85` **for data-bearing regions only**.
 
 `0.85` preserves basemap legibility underneath the fill layer; 1.0 occludes roads and labels.
 The opacity is a pure function of the frame: `opacity = ease(t) * 0.85` where `t` is the
 normalised ramp progress (0 at frame 25, 1 at frame 215).
+
+Only data regions animate. **No-data regions are stable geographic CONTEXT — like the ocean —
+and hold a constant opacity from frame 0; they must NOT ramp with the reveal.** Ramping every
+feature's opacity makes the entire no-data landmass darken frame-by-frame, which reads as the
+ocean/backdrop changing colour (a distraction the reader mistakes for a rendering fault). Drive
+opacity with a per-feature expression: `["case", ["==", ["get","__hasData"], false], 0.85,
+ease(t) * 0.85]`. (FT Visual Vocabulary — a stable frame of reference; the data, not the
+context, carries the reveal.)
 
 Do not animate `fill-color` — stable hue from frame 0 ensures the reader never sees the
 choropleth "shift colour" as it fades in (consistent with FT Visual Vocabulary's guidance on
