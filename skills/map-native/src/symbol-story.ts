@@ -15,9 +15,12 @@ export interface SymbolStoryMeta {
 // Half-width (degrees) of the city framing box → a tight, legible city zoom.
 const CITY_DELTA = 1.5;
 
+export const DEFAULT_MAX_REVEALS = 5;
+
 export function deriveSymbolStory(
   points: SymbolPoint[],
   meta: SymbolStoryMeta,
+  opts: { maxReveals?: number } = {},
 ): Beat[] {
   const unit = meta.unit ?? "";
   const fmt = (v: number) => `${Math.round(v)}${unit}`;
@@ -50,7 +53,11 @@ export function deriveSymbolStory(
   });
 
   const sorted = [...points].sort((a, b) => b.value - a.value);
-  for (const p of sorted) {
+  const cap = Math.max(
+    1,
+    Math.min(opts.maxReveals ?? DEFAULT_MAX_REVEALS, sorted.length),
+  );
+  for (const p of sorted.slice(0, cap)) {
     const name = p.label ?? "";
     const value = fmt(p.value);
     const text = `${name} — ${value}`;
