@@ -15,16 +15,21 @@ primary question is "what path does this take, and which places does it cross?"
 
 ## When to use
 
-- **Use** for: a linear geographic story — following a river from source to sea, tracing a trade
-  route, mapping a migration corridor, showing which countries a pipeline crosses. The route is the
-  protagonist; territories are supporting context. (Source: FT Visual Vocabulary, "flow /
-  connection"; data-to-viz connection map.)
+- **Use** for: a linear geographic story — following ANY path-like linear feature across space:
+  a river source-to-sea, a road trip / itinerary, a trade route, a migration corridor, a pipeline,
+  a flight path, a disputed border. The type is NOT river-specific (the Yarlung sample is just
+  sample data) — the input is any `LineString`, and the "territories" are whatever boundary
+  polygons that line crosses. The route is the protagonist; territories are supporting context.
+  (Source: FT Visual Vocabulary, "flow / connection"; data-to-viz connection map.)
 - **Not** for: regional magnitudes (rates, shares, densities) → use a **choropleth**, where the
   region boundary is the encoding unit and colour encodes the rate.
 - **Not** for: quantities at discrete locations (counts, magnitudes at named places) → use a
   **proportional symbol** map, where symbol area encodes the value.
 - **Not** for: a static list of locations with no directional or sequential relationship → use a
   simple locator or symbol map.
+- **Not** for: contours / isolines (closed iso-value lines — temperature, elevation, pressure) → a
+  route is an A→B path, not an iso-line. Contour/isoline maps are a distinct type (FT Visual
+  Vocabulary, SPATIAL group), NOT this one.
 
 The distinction is editorial: a route map tells a story *along* something. If the spatial narrative
 is "how much / how different across areas," use a choropleth. If it is "how large at these places,"
@@ -138,8 +143,18 @@ not a bare year range; `description` non-empty; `source.name` and `source.url` n
   route (e.g. river discharge) would require a variable-width or graduated line — deferred.
 - **Single route per module.** Multiple simultaneous routes (e.g. comparing two supply chains)
   are not supported in v1.
+- **Single `LineString` — no branching / network.** The route is one continuous line; a branching
+  river delta, a road network, or a `MultiLineString` is not handled (would need multi-segment
+  support). A future capability.
+- **No directional / magnitude-oriented flow.** The line has no arrowhead or orientation, and its
+  width does not encode a volume; a true oriented flow map (A→B arrow, width = flux) is a future
+  capability, not part of v1.
+- **A path within a single territory degrades to a bare line.** With no *crossed* territories to
+  colour or label, the "territories along the route" narrative disappears — use a plain locator/
+  symbol map for a within-one-area path.
 - **Territory data limited to boundary preset.** Only attributes available in the chosen Natural
-  Earth preset (name, ISO code) are surfaced. Joining additional data to territories is deferred.
+  Earth preset (name, ISO code) are surfaced; arbitrary custom polygons (parks, non-administrative
+  zones) and joining extra data to territories are deferred.
 
 ## Video format (SP3b — not yet shipped)
 
