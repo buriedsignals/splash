@@ -37,12 +37,18 @@ for (const w of [360, 768, 1100, 1600]) {
   );
   await page.waitForTimeout(2500); // let tiles + reveal settle
 
+  // Detect map type before entering evaluate — route has no legend panel
+  const isRoute = await page.evaluate(() => {
+    const m = window.__map__;
+    return !!(m && m.getLayer && m.getLayer("route-fill"));
+  });
+
   await page
     .locator("#root > div")
     .first()
     .screenshot({ path: join(outDir, `responsive-${w}.png`) });
 
-  const checks = await page.evaluate(() => {
+  const checks = await page.evaluate((isRouteMap) => {
     const G = 14; // minimum gutter from frame edges (px, at device pixels)
     const inView = (sel) => {
       const el = document.querySelector(sel);
@@ -146,12 +152,15 @@ for (const w of [360, 768, 1100, 1600]) {
       titleOk: inView('[data-testid="map-title"]'),
       titleGutterOk,
       sourceOk: inView('[data-testid="map-source"]'),
-      // legendOk: only checked when the map type has a legend (choropleth); route/symbol have none
-      legendOk: !document.querySelector('[data-testid="map-legend"]') || inView('[data-testid="map-legend"]'),
+      // legendOk: route has no legend panel — treat absent as pass.
+      // choropleth/symbol MUST have a visible legend (absent = failure).
+      legendOk: isRouteMap
+        ? (!document.querySelector('[data-testid="map-legend"]') || inView('[data-testid="map-legend"]'))
+        : inView('[data-testid="map-legend"]'),
       centreOk,
       dataExtentVisibleOk,
     };
-  });
+  }, isRoute);
 
   console.log(JSON.stringify({ w, ...checks }));
   for (const [k, ok] of Object.entries(checks))

@@ -63,12 +63,60 @@ let tooltipOk = false;
 try {
   const layerType = await page.evaluate(() => {
     const m = window.__map__;
-    return m.getLayer("symbol-circles") ? "symbol" : "choropleth";
+    if (m.getLayer("symbol-circles")) return "symbol";
+    if (m.getLayer("route-fill")) return "route";
+    return "choropleth";
   });
 
   const viewport = page.viewportSize();
 
-  if (layerType === "symbol") {
+  if (layerType === "route") {
+    // Route: query rendered route-fill features and project a centroid to trigger the tooltip
+    const routeCoords = await page.evaluate(() => {
+      const m = window.__map__;
+      if (!m) return [];
+      const features = m.queryRenderedFeatures({ layers: ["route-fill"] });
+      if (!features || features.length === 0) return [];
+      return features.slice(0, 5).map((f) => {
+        if (f.geometry && f.geometry.type === "Polygon") {
+          const coords = f.geometry.coordinates[0];
+          const lng = coords.reduce((s, c) => s + c[0], 0) / coords.length;
+          const lat = coords.reduce((s, c) => s + c[1], 0) / coords.length;
+          const p = m.project([lng, lat]);
+          return { x: Math.round(p.x), y: Math.round(p.y) };
+        }
+        const center = m.getCenter();
+        const pt = m.project([center.lng, center.lat]);
+        return { x: Math.round(pt.x), y: Math.round(pt.y) };
+      });
+    });
+
+    for (const { x, y } of routeCoords) {
+      if (x < 0 || y < 0 || x > viewport.width || y > viewport.height) continue;
+      await page.mouse.move(x, y);
+      await page.waitForTimeout(200);
+      const popup = page.locator(".maplibregl-popup");
+      if (await popup.count() > 0) {
+        tooltipOk = true;
+        break;
+      }
+    }
+
+    // Fallback: grid scan
+    if (!tooltipOk) {
+      outer: for (let x = 80; x <= viewport.width - 80; x += 20) {
+        for (let y = 80; y <= viewport.height - 80; y += 20) {
+          await page.mouse.move(x, y);
+          await page.waitForTimeout(60);
+          const popup = page.locator(".maplibregl-popup");
+          if (await popup.count() > 0) {
+            tooltipOk = true;
+            break outer;
+          }
+        }
+      }
+    }
+  } else if (layerType === "symbol") {
     const pt = await page.evaluate(() => {
       const m = window.__map__;
       const feats = m.queryRenderedFeatures({ layers: ["symbol-circles"] });
