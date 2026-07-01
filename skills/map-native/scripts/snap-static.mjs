@@ -63,14 +63,16 @@ await page.goto(baseUrl);
 await page.waitForSelector(".maplibregl-canvas", { timeout: 60_000 });
 console.log("canvas ready");
 
-// Wait until either choropleth-fill or symbol-circles layer exists
+// Wait until a known data layer exists (choropleth, symbol, or route)
 await page.waitForFunction(
   () => {
     const m = window.__map__;
     return (
       m &&
       m.getLayer &&
-      (m.getLayer("choropleth-fill") || m.getLayer("symbol-circles"))
+      (m.getLayer("choropleth-fill") ||
+        m.getLayer("symbol-circles") ||
+        m.getLayer("route-fill"))
     );
   },
   { timeout: 60_000 },

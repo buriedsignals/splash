@@ -73,6 +73,7 @@ const result = {
 
 const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
 const isSymbol = parsedConfig.type === "symbol";
+const isRoute = parsedConfig.type === "route";
 
 // Returns the composition set for the story kind, dispatched on cameraMode.
 // guided-tour is implemented (SP2). route-reveal is SP3 — explicit extension point.
@@ -113,6 +114,9 @@ function renderVideoSet(kind, propsPath, remotionEntry, comps) {
 
 const kinds = format === "all" ? ["reveal", "story"] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : [];
 if (kinds.length) {
+  if (isRoute) {
+    throw new Error("route video (route-reveal) ships in SP3b — not implemented yet");
+  }
   const config = parsedConfig;
   const cameraMode = config.cameraMode ?? "guided-tour";
   const tmpDir = mkdtempSync(join(tmpdir(), "map-native-props-"));

@@ -27,7 +27,9 @@ for (const w of [360, 768, 1100, 1600]) {
       return (
         m &&
         m.getLayer &&
-        (m.getLayer("choropleth-fill") || m.getLayer("symbol-circles"))
+        (m.getLayer("choropleth-fill") ||
+          m.getLayer("symbol-circles") ||
+          m.getLayer("route-fill"))
       );
     },
     undefined,
@@ -144,7 +146,8 @@ for (const w of [360, 768, 1100, 1600]) {
       titleOk: inView('[data-testid="map-title"]'),
       titleGutterOk,
       sourceOk: inView('[data-testid="map-source"]'),
-      legendOk: inView('[data-testid="map-legend"]'),
+      // legendOk: only checked when the map type has a legend (choropleth); route/symbol have none
+      legendOk: !document.querySelector('[data-testid="map-legend"]') || inView('[data-testid="map-legend"]'),
       centreOk,
       dataExtentVisibleOk,
     };

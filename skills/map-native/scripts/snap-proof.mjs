@@ -29,14 +29,16 @@ await page.goto(fileUrl);
 await page.waitForSelector(".maplibregl-canvas", { timeout: 60_000 });
 console.log("canvas ready");
 
-// Wait until either choropleth-fill or symbol-circles layer exists
+// Wait until a known data layer exists (choropleth, symbol, or route)
 await page.waitForFunction(
   () => {
     const m = window.__map__;
     return (
       m &&
       m.getLayer &&
-      (m.getLayer("choropleth-fill") || m.getLayer("symbol-circles"))
+      (m.getLayer("choropleth-fill") ||
+        m.getLayer("symbol-circles") ||
+        m.getLayer("route-fill"))
     );
   },
   { timeout: 60_000 },
@@ -46,6 +48,7 @@ await page.waitForFunction(
 const layerType = await page.evaluate(() => {
   const m = window.__map__;
   if (m.getLayer("symbol-circles")) return "symbol";
+  if (m.getLayer("route-fill")) return "route";
   return "choropleth";
 });
 console.log(`layer type: ${layerType}`);
@@ -74,7 +77,61 @@ const viewport = page.viewportSize();
 let popupText = null;
 let hitPoint = null;
 
-if (layerType === "symbol") {
+if (layerType === "route") {
+  console.log("route mode: scanning territory fills for popup");
+
+  const routeScreenCoords = await page.evaluate(() => {
+    const m = window.__map__;
+    if (!m) return [];
+    const features = m.queryRenderedFeatures({ layers: ["route-fill"] });
+    if (!features || features.length === 0) return [];
+    return features.slice(0, 5).map((f) => {
+      const bounds = m.getBounds();
+      const center = m.getCenter();
+      const pt = m.project([center.lng, center.lat]);
+      // Use geometry centroid if available
+      if (f.geometry && f.geometry.type === "Polygon") {
+        const coords = f.geometry.coordinates[0];
+        const lng = coords.reduce((s, c) => s + c[0], 0) / coords.length;
+        const lat = coords.reduce((s, c) => s + c[1], 0) / coords.length;
+        const p = m.project([lng, lat]);
+        return { x: Math.round(p.x), y: Math.round(p.y) };
+      }
+      return { x: Math.round(pt.x), y: Math.round(pt.y) };
+    });
+  });
+
+  for (const { x, y } of routeScreenCoords) {
+    const vp = page.viewportSize();
+    if (x < 0 || y < 0 || x > vp.width || y > vp.height) continue;
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(200);
+    const popup = page.locator(".maplibregl-popup");
+    if ((await popup.count()) > 0) {
+      popupText = await popup.textContent();
+      hitPoint = { x, y };
+      break;
+    }
+  }
+
+  // Fallback: grid scan
+  if (!popupText) {
+    console.log("route centroid scan missed — grid scanning");
+    for (let x = 80; x <= viewport.width - 80; x += 20) {
+      for (let y = 80; y <= viewport.height - 80; y += 20) {
+        await page.mouse.move(x, y);
+        await page.waitForTimeout(50);
+        const popup = page.locator(".maplibregl-popup");
+        if ((await popup.count()) > 0) {
+          popupText = await popup.textContent();
+          hitPoint = { x, y };
+          break;
+        }
+      }
+      if (popupText) break;
+    }
+  }
+} else if (layerType === "symbol") {
   console.log("symbol mode: finding largest circle by radius property");
 
   // Query rendered features from symbol-circles, pick the one with the largest radius
@@ -196,14 +253,14 @@ if (!popupText) {
 const trimmed = popupText.trim();
 console.log(`popup at ${JSON.stringify(hitPoint)}: "${trimmed}"`);
 
-// Assert popup contains both a digit (value) and a word (region/city name)
-if (!/\d/.test(trimmed)) {
-  console.error(`popup has no value (digit): "${trimmed}"`);
+// Assert popup has a word (region/city name). For choropleth/symbol also assert a digit value.
+if (!/[A-Za-z]/.test(trimmed)) {
+  console.error(`popup has no region name: "${trimmed}"`);
   await browser.close();
   process.exit(1);
 }
-if (!/[A-Za-z]/.test(trimmed)) {
-  console.error(`popup has no region name: "${trimmed}"`);
+if (layerType !== "route" && !/\d/.test(trimmed)) {
+  console.error(`popup has no value (digit): "${trimmed}"`);
   await browser.close();
   process.exit(1);
 }

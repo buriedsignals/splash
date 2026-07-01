@@ -25,7 +25,9 @@ await page.waitForFunction(
     return (
       m &&
       m.getLayer &&
-      (m.getLayer("choropleth-fill") || m.getLayer("symbol-circles"))
+      (m.getLayer("choropleth-fill") ||
+        m.getLayer("symbol-circles") ||
+        m.getLayer("route-fill"))
     );
   },
   { timeout: 60_000 },
