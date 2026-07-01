@@ -1,5 +1,6 @@
 import type { ChoroplethData } from "./choropleth-geo";
 import { CAMERA_MODES, type CameraMode } from "./camera-mode";
+import { MAP_STYLES } from "./route-geo";
 
 export type ChoroplethConfigShape = ChoroplethData & {
   basemap: string;
@@ -162,4 +163,75 @@ export function validateSymbolConfig(
 
   if (errors.length) return { ok: false, errors };
   return { ok: true, spec: s as SymbolConfigShape, warnings };
+}
+
+export type RouteConfigShape = {
+  type: "route";
+  route: [number, number][];
+  basemap: string;
+  mapStyle?: string;
+  title: string;
+  description?: string;
+  source?: { name?: string; url?: string };
+};
+
+// Framework-free structural validation of a route-map config (pre-render — no
+// MapTiler / geojson needed). Errors block; warnings flag the furniture standard.
+// Mirrors validateSymbolConfig for the polyline case.
+export function validateRouteConfig(
+  spec: unknown,
+):
+  | { ok: true; spec: RouteConfigShape; warnings: string[] }
+  | { ok: false; errors: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const s = (spec ?? {}) as Record<string, unknown>;
+
+  if (typeof s.basemap !== "string" || !s.basemap.trim())
+    errors.push("basemap must be a non-empty string");
+
+  if (s.mapStyle !== undefined) {
+    if (!(MAP_STYLES as readonly string[]).includes(s.mapStyle as string))
+      errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  }
+
+  const route = s.route;
+  if (!Array.isArray(route) || route.length < 2) {
+    errors.push("route must be an array of at least 2 [lon, lat] pairs");
+  } else {
+    for (let i = 0; i < route.length; i++) {
+      const p = route[i] as unknown;
+      if (!Array.isArray(p) || p.length < 2) {
+        errors.push(`route[${i}] must be a [lon, lat] pair`);
+        continue;
+      }
+      const [lon, lat] = p as [unknown, unknown];
+      if (
+        typeof lon !== "number" ||
+        Number.isNaN(lon) ||
+        lon < -180 ||
+        lon > 180
+      )
+        errors.push(`route[${i}] lon must be a number in [-180, 180]`);
+      if (typeof lat !== "number" || Number.isNaN(lat) || lat < -90 || lat > 90)
+        errors.push(`route[${i}] lat must be a number in [-90, 90]`);
+    }
+  }
+
+  const title = typeof s.title === "string" ? s.title.trim() : "";
+  if (title.length < 12)
+    errors.push(`title too short to be an insight: "${title}"`);
+  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
+    errors.push(`title is a year range, not an insight: "${title}"`);
+
+  if (!(typeof s.description === "string" && s.description.trim()))
+    warnings.push("missing description — a module must state what/when/where");
+  const source = (s.source ?? {}) as Record<string, unknown>;
+  if (!(typeof source.name === "string" && source.name.trim()))
+    warnings.push("missing source name");
+  if (!(typeof source.url === "string" && source.url.trim()))
+    warnings.push("missing source url");
+
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, spec: s as RouteConfigShape, warnings };
 }

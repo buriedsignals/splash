@@ -1,5 +1,8 @@
 import { describe, it, expect } from "bun:test";
-import { validateChoroplethConfig } from "../src/validate-config";
+import {
+  validateChoroplethConfig,
+  validateRouteConfig,
+} from "../src/validate-config";
 
 const ok = {
   regionKey: "code",
@@ -126,5 +129,51 @@ describe("validateSymbolConfig", () => {
       expect(r.warnings.some((w) => /description/.test(w))).toBe(true);
       expect(r.warnings.some((w) => /source/.test(w))).toBe(true);
     }
+  });
+});
+
+const okRoute = {
+  type: "route",
+  route: [
+    [89.6, 27.7],
+    [90.2, 24.0],
+    [90.4, 23.7],
+  ],
+  basemap: "world",
+  mapStyle: "dataviz-dark",
+  title: "The river that crosses three lands",
+  description: "Its course, 2024",
+  source: { name: "Source 2025", url: "https://example.org/x" },
+};
+
+describe("validateRouteConfig", () => {
+  it("accepts a well-formed route config", () => {
+    expect(validateRouteConfig(okRoute).ok).toBe(true);
+  });
+  it("rejects a route with fewer than 2 points or an out-of-range coord", () => {
+    expect(validateRouteConfig({ ...okRoute, route: [[1, 1]] }).ok).toBe(false);
+    expect(
+      validateRouteConfig({
+        ...okRoute,
+        route: [
+          [200, 1],
+          [2, 2],
+        ],
+      }).ok,
+    ).toBe(false);
+  });
+  it("rejects an empty basemap (boundary preset)", () => {
+    expect(validateRouteConfig({ ...okRoute, basemap: "" }).ok).toBe(false);
+  });
+  it("accepts a known mapStyle and rejects an unknown one", () => {
+    expect(
+      validateRouteConfig({ ...okRoute, mapStyle: "dataviz-light" }).ok,
+    ).toBe(true);
+    const bad = validateRouteConfig({ ...okRoute, mapStyle: "midnight" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.some((e) => /mapStyle/.test(e))).toBe(true);
+  });
+  it("rejects a title that is not an insight", () => {
+    expect(validateRouteConfig({ ...okRoute, title: "Map" }).ok).toBe(false);
   });
 });
