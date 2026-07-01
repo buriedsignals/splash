@@ -33,6 +33,7 @@ import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
+import { resolveScene } from "../video-scene";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -395,6 +396,14 @@ export const ChoroplethStory: React.FC<{
 
   const beat = mapState && overlay ? mapState.beats[overlay.beatIndex] : null;
 
+  const p0 = mapState?.phases[0];
+  const titleSceneEndFrame = p0
+    ? p0.startFrame + p0.moveFrames + p0.holdFrames
+    : 0;
+  const scene = mapState
+    ? resolveScene(frame, { titleSceneEndFrame })
+    : { titleOpacity: 1, furnitureOpacity: 0 };
+
   return (
     <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
       {/* MapFrame: shared furniture shell — title band (top) + source band (bottom, always).
@@ -407,6 +416,7 @@ export const ChoroplethStory: React.FC<{
         height={height}
         responsive={false}
         frame={mapFrame}
+        furnitureOpacity={scene.furnitureOpacity}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>
@@ -436,14 +446,12 @@ export const ChoroplethStory: React.FC<{
           <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />
         )}
 
-      {/* Title card — shown only during the title beat (beatIndex 0), map blank behind.
-          Fades out before map becomes visible; MapFrame title + source remain throughout. */}
-      {mapState && overlay?.beatIndex === 0 && mapState.beats[0].copy && (
+      {/* Title card — shown from frame 0, fades out as map scene begins. */}
+      {scene.titleOpacity > 0 && mapState && mapState.beats[0].copy && (
         <TitleCard
           text={mapState.beats[0].copy}
           description={config.description}
-          phase={mapState.phases[0]}
-          frame={frame}
+          opacity={scene.titleOpacity}
         />
       )}
     </AbsoluteFill>
