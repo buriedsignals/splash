@@ -13,7 +13,7 @@ import { chromium } from "playwright";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFileSync } from "node:fs";
-import { buildCases, buildLocatorCases } from "./audit-cases.mjs";
+import { buildCases, buildLocatorCases, buildDotDensityCases } from "./audit-cases.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -32,6 +32,13 @@ const sample = choroplethSample;
 const locatorSample = JSON.parse(
   readFileSync(
     join(root, "assets", "sample-data", "locator-many.json"),
+    "utf8",
+  ),
+);
+
+const dotDensitySample = JSON.parse(
+  readFileSync(
+    join(root, "assets", "sample-data", "dot-density-multi.json"),
     "utf8",
   ),
 );
@@ -55,6 +62,7 @@ const MIN_DATA_FILL_FRACTION = 0.7;
 const cases = [
   ...buildCases(sample),
   ...buildLocatorCases(locatorSample),
+  ...buildDotDensityCases(dotDensitySample),
 ];
 
 // significant overlap: meaningful intersection (not just touching corners).
