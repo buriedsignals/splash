@@ -405,7 +405,7 @@ export const ChoroplethScrolly: React.FC<{
 
       {mapState &&
         mapState.story.steps.map((s, i) =>
-          i === 0 ? null : (
+          mapState.beats[s.ref as number].kind !== "reveal" ? null : (
             <ScrollyPanel
               key={s.id}
               width={width}
