@@ -24,10 +24,10 @@ const root = join(here, "..");
 const configPath = process.argv[2];
 const outDir = process.argv[3];
 const format = process.argv[4] ?? process.env.FORMATS ?? "all";
-const VALID = new Set(["static", "reveal", "story", "all"]);
+const VALID = new Set(["static", "reveal", "story", "scrolly", "all"]);
 
 if (!configPath || !outDir || !VALID.has(format)) {
-  console.error("usage: produce.mjs <config.json> <outDir> <static|reveal|story|all>");
+  console.error("usage: produce.mjs <config.json> <outDir> <static|reveal|story|scrolly|all>");
   process.exit(1);
 }
 
@@ -97,8 +97,14 @@ const VIDEO_COMPS = {
     : [["ChoroplethReveal", "landscape"], ["ChoroplethRevealSquare", "square"], ["ChoroplethRevealPortrait", "portrait"]],
 };
 
+const SCROLLY_COMPS = [
+  ["MapScrolly", "landscape"],
+  ["MapScrollySquare", "square"],
+  ["MapScrollyPortrait", "portrait"],
+];
+
 // Still mid-frame per kind (reveal is 240 frames; story uses its existing 140).
-const STILL_FRAME = { reveal: 120, story: 140 };
+const STILL_FRAME = { reveal: 120, story: 140, scrolly: 140 };
 
 function renderVideoSet(kind, propsPath, remotionEntry, comps) {
   const out = {};
@@ -119,8 +125,12 @@ function renderVideoSet(kind, propsPath, remotionEntry, comps) {
 // Route has no simple-reveal; its only video is route-reveal (story-kind).
 // For route: all/reveal/story → ["story"]; static → []. Non-route branch unchanged.
 const kinds = isRoute
-  ? (format === "static" ? [] : ["story"])
-  : (format === "all" ? ["reveal", "story"] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : []);
+  ? (format === "static" ? [] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["story", "scrolly"] : ["story"])
+  : (format === "all" ? ["reveal", "story", "scrolly"]
+     : format === "reveal" ? ["reveal"]
+     : format === "story" ? ["story"]
+     : format === "scrolly" ? ["scrolly"]
+     : []);
 if (kinds.length) {
   const config = parsedConfig;
   const cameraMode = config.cameraMode ?? (isRoute ? "route-reveal" : "guided-tour");
@@ -132,7 +142,9 @@ if (kinds.length) {
     for (const kind of kinds) {
       const comps = kind === "story"
         ? storyComps(config, cameraMode)   // dispatches on cameraMode
-        : VIDEO_COMPS[kind];
+        : kind === "scrolly"
+          ? SCROLLY_COMPS
+          : VIDEO_COMPS[kind];
       result[kind] = renderVideoSet(kind, propsPath, remotionEntry, comps);
     }
   } finally {

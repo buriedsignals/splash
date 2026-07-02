@@ -32,6 +32,8 @@ import { SymbolStory } from "../../src/components/SymbolStory";
 import { SymbolReveal } from "../../src/components/SymbolReveal";
 import { ChoroplethReveal } from "../../src/components/ChoroplethReveal";
 import { RouteReveal } from "../../src/components/RouteReveal";
+import { MapScrolly } from "../../src/components/MapScrolly";
+import { scrollyFrames, scrollyStepCount } from "../../src/route-story";
 import { REVEAL_FRAMES } from "../../src/reveal";
 import { TITLE_SCENE_FRAMES } from "../../src/video-scene";
 import { computeChoropleth } from "../../src/choropleth-geo";
@@ -59,6 +61,13 @@ const STORY_FRAMES = buildTimeline(
 ).totalFrames;
 
 const choroplethDefaultProps = { config: sampleConfig };
+
+const scrollyMeta = ({ props }: { props: { config: any } }) => ({
+  durationInFrames: scrollyFrames(
+    scrollyStepCount(props.config, world as any),
+    30,
+  ),
+});
 
 const symbolDefaultProps = { config: sampleSymbol };
 
@@ -197,6 +206,33 @@ export const RemotionRoot: React.FC = () => (
       width={1080}
       height={1350}
       defaultProps={choroplethDefaultProps}
+    />
+    <Composition
+      id="MapScrolly"
+      component={MapScrolly}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={choroplethDefaultProps}
+      calculateMetadata={scrollyMeta}
+    />
+    <Composition
+      id="MapScrollySquare"
+      component={MapScrolly}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={choroplethDefaultProps}
+      calculateMetadata={scrollyMeta}
+    />
+    <Composition
+      id="MapScrollyPortrait"
+      component={MapScrolly}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={choroplethDefaultProps}
+      calculateMetadata={scrollyMeta}
     />
     <Composition
       id="RouteReveal"
