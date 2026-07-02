@@ -91,6 +91,38 @@ export function buildDotDensityCases(sample) {
 }
 
 // ---------------------------------------------------------------------------
+// Hex-grid cases
+// ---------------------------------------------------------------------------
+
+export function buildHexGridCases(sample) {
+  const cases = [];
+
+  // 1. Sample — the committed hex-grid-count.json (road-traffic incidents across Britain)
+  cases.push({ label: "hex-grid-sample", config: sample });
+
+  // 2. Stress: square bins — exercises the squareGrid path and verifies the legend
+  //    still renders with the correct aggregate label and BLUES scale.
+  const squareBins = clone(sample);
+  squareBins.title = "Road-traffic incident clusters — square-bin variant";
+  squareBins.description =
+    "Same dataset as the sample, rendered with square spatial bins instead of hexagons.";
+  squareBins.binShape = "square";
+  cases.push({ label: "hex-grid-square-bins", config: squareBins });
+
+  // 3. Stress: sparse cluster — only the London points (lat < 52), to verify the
+  //    basemap fits a small geographic extent and the auto cell-size does not produce
+  //    a grid with zero populated cells.
+  const londonOnly = clone(sample);
+  londonOnly.title = "London road-traffic incident density — sparse cluster";
+  londonOnly.description =
+    "Only Greater London incidents — tests basemap-fit on a small geographic extent.";
+  londonOnly.points = sample.points.filter((p) => p.lat < 52 && p.lon > -1.1);
+  cases.push({ label: "hex-grid-sparse-cluster", config: londonOnly });
+
+  return cases;
+}
+
+// ---------------------------------------------------------------------------
 // Locator cases
 // ---------------------------------------------------------------------------
 
