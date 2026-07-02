@@ -40,6 +40,7 @@ await page.waitForFunction(
         m.getLayer("dot-density-dots") ||
         m.getLayer("symbol-circles") ||
         m.getLayer("locator-glyphs") ||
+        m.getLayer("hex-grid-cells") ||
         m.getLayer("route-fill"))
     );
   },
@@ -51,6 +52,7 @@ await page.waitForFunction(
 const layerType = await page.evaluate(() => {
   const m = window.__map__;
   if (m.getLayer("dot-density-dots")) return "dot-density";
+  if (m.getLayer("hex-grid-cells")) return "hex-grid";
   if (m.getLayer("symbol-circles") || m.getLayer("locator-glyphs"))
     return "symbol";
   if (m.getLayer("route-fill")) return "route";
@@ -181,6 +183,59 @@ if (layerType === "route") {
 
   if (!popupText) {
     console.log("centroid scan missed — grid scanning for region popup");
+    for (let x = 80; x <= viewport.width - 80; x += 20) {
+      for (let y = 80; y <= viewport.height - 80; y += 20) {
+        await page.mouse.move(x, y);
+        await page.waitForTimeout(50);
+        const popup = page.locator(".maplibregl-popup");
+        if ((await popup.count()) > 0) {
+          popupText = await popup.textContent();
+          hitPoint = { x, y };
+          break;
+        }
+      }
+      if (popupText) break;
+    }
+  }
+} else if (layerType === "hex-grid") {
+  console.log("hex-grid mode: scanning cell fills for popup");
+
+  const cellScreenCoords = await page.evaluate(() => {
+    const m = window.__map__;
+    if (!m) return [];
+    const features = m.queryRenderedFeatures({ layers: ["hex-grid-cells"] });
+    if (!features || features.length === 0) return [];
+    return features.slice(0, 12).map((f) => {
+      const g = f.geometry;
+      let ring = null;
+      if (g && g.type === "Polygon") ring = g.coordinates[0];
+      else if (g && g.type === "MultiPolygon") ring = g.coordinates[0][0];
+      if (!ring) {
+        const c = m.getCenter();
+        const p = m.project([c.lng, c.lat]);
+        return { x: Math.round(p.x), y: Math.round(p.y) };
+      }
+      const lng = ring.reduce((s, c) => s + c[0], 0) / ring.length;
+      const lat = ring.reduce((s, c) => s + c[1], 0) / ring.length;
+      const p = m.project([lng, lat]);
+      return { x: Math.round(p.x), y: Math.round(p.y) };
+    });
+  });
+
+  for (const { x, y } of cellScreenCoords) {
+    if (x < 0 || y < 0 || x > viewport.width || y > viewport.height) continue;
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(200);
+    const popup = page.locator(".maplibregl-popup");
+    if ((await popup.count()) > 0) {
+      popupText = await popup.textContent();
+      hitPoint = { x, y };
+      break;
+    }
+  }
+
+  if (!popupText) {
+    console.log("centroid scan missed — grid scanning for hex-grid popup");
     for (let x = 80; x <= viewport.width - 80; x += 20) {
       for (let y = 80; y <= viewport.height - 80; y += 20) {
         await page.mouse.move(x, y);

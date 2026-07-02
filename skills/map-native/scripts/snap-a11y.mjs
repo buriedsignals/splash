@@ -29,6 +29,7 @@ await page.waitForFunction(
         m.getLayer("dot-density-dots") ||
         m.getLayer("symbol-circles") ||
         m.getLayer("locator-glyphs") ||
+        m.getLayer("hex-grid-cells") ||
         m.getLayer("route-fill"))
     );
   },
