@@ -126,6 +126,8 @@ The tooltip is tied to the `hex-grid-cells` layer id.
 
 - **All six formats ship in Slices A + B.** Static and interactive shipped in Slice A.
   Video formats (reveal, story/storytelling, scrolly) and interactive scrolly shipped in Slice B.
+  Interactive scrolly is implemented by `ScrollyHexMap` (`skills/scrolly/src/ScrollyHexMap.tsx`);
+  `skills/scrolly/src/Scrolly.tsx` dispatches on `config.type === "hex-grid"` to render it.
   The storytelling story structure follows the guided-tour arc: **title → establish → reveal the
   HIGHEST cells (top-N by aggregate, descending) → takeaway**. Camera stays framed on the data
   zone throughout: on reveal beats, the camera expands the cell bounding box to cover ≥ 50% of
@@ -150,7 +152,8 @@ the top-N beat sequence and camera extents for reveal and storytelling builds), 
 `mapStyle` selection). Video components: `HexGridReveal` / `HexGridRevealSquare` /
 `HexGridRevealPortrait` (simple reveal), `HexGridStory` / `HexGridStorySquare` /
 `HexGridStoryPortrait` (storytelling), and `MapScrolly` / `MapScrollySquare` /
-`MapScrollyPortrait` (scrolly video + interactive scrolly, shared with other types). All configs
+`MapScrollyPortrait` (scrolly video), and `ScrollyHexMap` (interactive scrolly, dispatched by
+`Scrolly.tsx` on `config.type === "hex-grid"`). All configs
 are guarded at render time by `checkHexGridConformance` in
 `skills/map-native/src/conformance.ts`.
 

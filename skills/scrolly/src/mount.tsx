@@ -28,6 +28,10 @@ const config:
     ? __CONFIG__
     : (sampleConfig as ScrollyMapConfig);
 
+// Expose config type for the smoke harness — lets it assert the correct layer id
+// without guessing from the HTML.
+(window as any).__config_type__ = config.type;
+
 const root = document.getElementById("root");
 if (!root) throw new Error("no #root element");
 

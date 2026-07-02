@@ -184,7 +184,7 @@ and not a bare year range; `description` non-empty; `source.name` and `source.ur
 | Video reveal | ✓ | Uniform dots fade in on fixed camera + title scene |
 | Video storytelling | ✓ | Guided-tour camera to densest regions; dots dimmed (~0.25) except highlighted region; caption + category legend (multivariate) |
 | Video scrolly | ✓ | Scroll captured as MP4; overview + takeaway visual-only; reveals carry the panel; dim-emphasis synced to the panel |
-| Interactive scrolly | ✓ | Shared `deriveDotDensityStory` → `mapStoryToChapters` contract (no map-native change needed) |
+| Interactive scrolly | ✓ | `ScrollyDotDensityMap` (`skills/scrolly/src/ScrollyDotDensityMap.tsx`); `Scrolly.tsx` dispatches on `config.type === "dot-density"` |
 
 **Slice A** (merged) shipped static + interactive. **Slice B** (this branch) shipped video reveal +
 video storytelling + video scrolly + interactive scrolly.

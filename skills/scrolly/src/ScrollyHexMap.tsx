@@ -11,7 +11,6 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { computeHexGrid } from "../../map-native/src/hex-grid-geo";
 import { deriveHexGridStory } from "../../map-native/src/hex-grid-story";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
-import { mapStoryToChapters } from "./chapters";
 import type { Beat } from "../../map-native/src/map-story";
 
 // ---------------------------------------------------------------------------

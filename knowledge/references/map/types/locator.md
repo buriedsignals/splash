@@ -128,8 +128,8 @@ Locator now ships all six formats:
 
 The static + interactive builds use `LocatorMap.tsx`. The video compositions (`LocatorReveal*`,
 `LocatorStory*`, `MapScrolly*`) follow the same harness pattern as `ChoroplethStory` /
-`SymbolStory`. Interactive scrolly is driven by the shared `deriveLocatorStory` →
-`mapStoryToChapters` contract consumed by the sibling scrolly skill.
+`SymbolStory`. Interactive scrolly is implemented by `ScrollyLocatorMap` (`skills/scrolly/src/ScrollyLocatorMap.tsx`);
+`skills/scrolly/src/Scrolly.tsx` dispatches on `config.type === "locator"` to render it.
 
 ### Story regimes
 
