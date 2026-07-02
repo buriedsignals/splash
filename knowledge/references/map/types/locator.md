@@ -91,8 +91,9 @@ so it can be unit-tested without a map instance — see `tests/locator-labels.te
 When many markers cluster in a small geographic area, individual markers and labels pile up at low
 zoom levels. Clustering collapses nearby markers into a count bubble that expands as the reader
 zooms in. This is an **interactive-only** feature: static output cannot respond to zoom, so
-clustering is disabled in static and video builds. In interactive mode clustering is enabled by
-default for dense maps (> ~30 markers in the data extent) and can be toggled via config.
+clustering is disabled in static and video builds. In interactive mode it is enabled for every
+build (a no-op when markers are sparse, since nothing overlaps to collapse). The label declutter
+(rule 4) is the deterministic layer that handles overlap in static and video output.
 
 ### 6. Map style is AI-selected
 
