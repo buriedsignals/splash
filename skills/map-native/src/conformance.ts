@@ -1,5 +1,6 @@
 import { resolveMapFrame } from "./core/map-format";
 import { MAP_STYLES } from "./route-geo";
+import type { ScrollyStory } from "../../scrolly/src/chapters";
 
 export interface RevealConformanceResult {
   violations: string[];
@@ -219,6 +220,42 @@ export function checkRouteConformance(input: {
   )
     v.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
   if (!input.source?.name?.trim()) v.push("route must cite a source");
+  return { violations: v };
+}
+
+// Scrolly-video contract: validated on the DERIVED ScrollyStory (post mapStoryToChapters /
+// routeStoryToChapters), not the raw config — steps are always derived. territoryCount, when
+// given, range-checks drawTo refs (route).
+export function checkScrollyConformance(input: {
+  story: ScrollyStory;
+  territoryCount?: number;
+}): { violations: string[] } {
+  const v: string[] = [];
+  const { story, territoryCount } = input;
+
+  if (story.steps.length < 2)
+    v.push("scrolly needs at least 2 steps (intro + one content step)");
+
+  const title = story.title?.trim() ?? "";
+  if (title.length < 12) v.push(`title too short to be an insight: "${title}"`);
+  if (!story.source?.name?.trim()) v.push("scrolly must cite a source");
+
+  for (const s of story.steps) {
+    if (!s.prose?.trim()) v.push(`step ${s.id} has empty prose`);
+    if (s.action !== "flyTo" && s.action !== "drawTo")
+      v.push(`step ${s.id} has unknown action "${s.action}"`);
+    if (typeof s.ref === "number") {
+      if (s.ref < 0) v.push(`step ${s.id} ref ${s.ref} out of range`);
+      if (
+        s.action === "drawTo" &&
+        territoryCount !== undefined &&
+        s.ref >= territoryCount
+      )
+        v.push(
+          `step ${s.id} drawTo ref ${s.ref} out of range (${territoryCount})`,
+        );
+    }
+  }
   return { violations: v };
 }
 

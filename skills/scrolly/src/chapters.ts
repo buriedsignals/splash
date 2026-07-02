@@ -20,10 +20,12 @@ export interface ScrollyStory {
   steps: ScrollyStep[];
 }
 
-// v1: one scroll step per MEANINGFUL map beat, written as a self-contained,
-// data-tied caption (NEVER article text). The title lives in the module header,
-// so it is never a step caption; the intro step carries the description; reveal
-// steps add a rank descriptor (deriveMapStory orders reveals max → min).
+// v2: one scroll step per map beat, written as a self-contained, data-tied caption
+// (NEVER article text). Sequence: [title] → [OVERVIEW (establish)] → [reveals] →
+// [TAKEAWAY (always)]. The title lives in the module header, so it is never a step
+// caption; the title step and OVERVIEW step both carry the description (so the viewer
+// first sees ALL the data); reveal steps add a rank descriptor (deriveMapStory orders
+// reveals max → min); the TAKEAWAY closes on all the data.
 export function mapStoryToChapters(
   beats: Beat[],
   meta: {
@@ -43,13 +45,13 @@ export function mapStoryToChapters(
 
   const steps: ScrollyStep[] = [];
   beats.forEach((b, i) => {
-    if (b.kind === "establish") return;
     const hasCopy = !!(b.copy && b.copy.trim());
-    if (b.kind === "takeaway" && !hasCopy) return;
 
     let prose: string;
     if (b.kind === "title") {
       prose = desc; // intro caption = the figure's description
+    } else if (b.kind === "establish") {
+      prose = desc; // OVERVIEW caption = the figure's description (see all the data)
     } else if (b.kind === "reveal" && b.callout) {
       let descriptor = "";
       if (revealIdx.length > 1) {

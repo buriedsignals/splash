@@ -314,15 +314,18 @@ Slice 1 ships only `world`. The others are added by dropping their simplified Ge
 
 ## Produce — format selector from one config
 
-`produce.mjs <config.json> <outDir> <format>` where `format ∈ { static | reveal | story | all }`
+`produce.mjs <config.json> <outDir> <format>` where `format ∈ { static | reveal | story | scrolly | all }`
 (defaults to `all`). The static + interactive proofs (`static.png`, `interactive.png`) are always
 emitted; the `format` arg gates the VIDEO render:
 - `reveal` → simple-reveal videos (fixed camera, data animates in) — `reveal-{landscape,square,portrait}.mp4`
 - `story` → storytelling camera-tour videos — `story-{landscape,square,portrait}.mp4`
-- `all` → both reveal + story.
+- `scrolly` → scrolly-as-video (interactive scrolly captured as MP4, step-paced prose panel + pinned map) —
+  `scrolly-{landscape,square,portrait}.mp4`. Covers all 3 types (choropleth, symbol, route). Route gains
+  `scrolly` alongside `story` (route has no simple-reveal). See `knowledge/references/map/formats/video-scrolly.md`.
+- `all` → reveal + story + scrolly.
 
 Output JSON is nested by sub-format:
-`{ static, interactive, reveal?: {landscape,square,portrait}, story?: {landscape,square,portrait} }`
+`{ static, interactive, reveal?: {landscape,square,portrait}, story?: {landscape,square,portrait}, scrolly?: {landscape,square,portrait} }`
 (sub-keys present only for the formats produced). The config is injected via the `__CONFIG__` Vite
 define (web builds) and `--props` (Remotion), so nothing touches the committed sample. Simple-reveal
 best practices live in `knowledge/references/map/formats/video-reveal.md`.
