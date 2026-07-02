@@ -10,13 +10,19 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { computeChoropleth } from "../../map-native/src/choropleth-geo";
 import { computeHexGrid } from "../../map-native/src/hex-grid-geo";
+import { computeDotDensity } from "../../map-native/src/dot-density-geo";
 import { deriveMapStory } from "../../map-native/src/map-story";
 import { deriveHexGridStory } from "../../map-native/src/hex-grid-story";
 import { deriveSymbolStory } from "../../map-native/src/symbol-story";
+import { deriveDotDensityStory } from "../../map-native/src/dot-density-story";
 import { mapStoryToChapters } from "./chapters";
 import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
 import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
 import { ScrollyHexMap, type ScrollyHexConfig } from "./ScrollyHexMap";
+import {
+  ScrollyDotDensityMap,
+  type ScrollyDotDensityConfig,
+} from "./ScrollyDotDensityMap";
 
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
@@ -26,7 +32,11 @@ const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 // ---------------------------------------------------------------------------
 
 export const Scrolly: React.FC<{
-  config: ScrollyMapConfig | ScrollySymbolConfig | ScrollyHexConfig;
+  config:
+    | ScrollyMapConfig
+    | ScrollySymbolConfig
+    | ScrollyHexConfig
+    | ScrollyDotDensityConfig;
 }> = ({ config }) => {
   // -------------------------------------------------------------------------
   // Build the story once at mount — deterministic from config.
@@ -58,6 +68,28 @@ export const Scrolly: React.FC<{
         description: config.description,
         source: config.source,
         regionsWithData: layout.cells.length,
+      });
+    }
+
+    if (config.type === "dot-density") {
+      const layout = computeDotDensity(config, world, "iso_a3");
+      const beats = deriveDotDensityStory(layout, {
+        title: config.title ?? "",
+        description: config.description,
+        insight:
+          ((config as unknown as Record<string, unknown>).insight as
+            string | undefined) ??
+          config.title ??
+          "",
+        unit:
+          ((config as unknown as Record<string, unknown>).valueUnit as
+            string | undefined) ?? "",
+      });
+      return mapStoryToChapters(beats, {
+        title: config.title ?? "",
+        description: config.description,
+        source: config.source,
+        regionsWithData: layout.regions.length,
       });
     }
 
@@ -260,6 +292,11 @@ export const Scrolly: React.FC<{
           ) : config.type === "hex-grid" ? (
             <ScrollyHexMap
               config={config as ScrollyHexConfig}
+              currentStep={currentBeatRef}
+            />
+          ) : config.type === "dot-density" ? (
+            <ScrollyDotDensityMap
+              config={config as ScrollyDotDensityConfig}
               currentStep={currentBeatRef}
             />
           ) : (
