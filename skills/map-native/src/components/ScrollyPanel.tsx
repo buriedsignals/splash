@@ -75,13 +75,23 @@ export const ScrollyPanel: React.FC<{
   const bg = dark ? "rgba(18,18,20,0.82)" : "rgba(255,255,255,0.92)";
   const ink = dark ? "#f4f4f5" : "#1a1a1a";
   const narrow = p.side === "bottom";
+  // The box hugs its text (fit-content) up to p.width as a max, so a short caption never sits in
+  // an oversized band. Anchor per side so the box stays put as it shrinks: left edge for "left",
+  // right edge for "right", horizontally centred for "center"/"bottom".
+  const anchor: React.CSSProperties =
+    p.side === "left"
+      ? { left: p.x }
+      : p.side === "right"
+        ? { right: width - (p.x + p.width) }
+        : { left: "50%", transform: "translateX(-50%)" };
   return (
     <div
       style={{
         position: "absolute",
-        left: p.x,
         top: p.y,
-        width: p.width,
+        ...anchor,
+        width: "fit-content",
+        maxWidth: p.width,
         background: bg,
         backdropFilter: "blur(6px)",
         borderRadius: 12,
