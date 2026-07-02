@@ -27,6 +27,7 @@ await page.waitForFunction(
       m.getLayer &&
       (m.getLayer("choropleth-fill") ||
         m.getLayer("symbol-circles") ||
+        m.getLayer("locator-glyphs") ||
         m.getLayer("route-fill"))
     );
   },
@@ -63,10 +64,16 @@ let tooltipOk = false;
 try {
   const layerType = await page.evaluate(() => {
     const m = window.__map__;
-    if (m.getLayer("symbol-circles")) return "symbol";
+    if (m.getLayer("symbol-circles") || m.getLayer("locator-glyphs"))
+      return "symbol";
     if (m.getLayer("route-fill")) return "route";
     return "choropleth";
   });
+  const glyphLayer = await page.evaluate(() =>
+    window.__map__.getLayer("locator-glyphs")
+      ? "locator-glyphs"
+      : "symbol-circles",
+  );
 
   const viewport = page.viewportSize();
 
@@ -117,16 +124,16 @@ try {
       }
     }
   } else if (layerType === "symbol") {
-    const pt = await page.evaluate(() => {
+    const pt = await page.evaluate((layer) => {
       const m = window.__map__;
-      const feats = m.queryRenderedFeatures({ layers: ["symbol-circles"] });
+      const feats = m.queryRenderedFeatures({ layers: [layer] });
       if (!feats.length) return null;
       // Pick the feature with the largest radius for best hit probability
       feats.sort((a, b) => (b.properties?.radius ?? 0) - (a.properties?.radius ?? 0));
       const f = feats[0];
       const p = m.project(f.geometry.coordinates);
       return { x: Math.round(p.x), y: Math.round(p.y) };
-    });
+    }, glyphLayer);
     if (pt) {
       await page.mouse.move(pt.x, pt.y);
       await page.waitForSelector(".maplibregl-popup", { timeout: 4000 });

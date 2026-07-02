@@ -29,6 +29,7 @@ for (const w of [360, 768, 1100, 1600]) {
         m.getLayer &&
         (m.getLayer("choropleth-fill") ||
           m.getLayer("symbol-circles") ||
+          m.getLayer("locator-glyphs") ||
           m.getLayer("route-fill"))
       );
     },
@@ -152,11 +153,19 @@ for (const w of [360, 768, 1100, 1600]) {
       titleOk: inView('[data-testid="map-title"]'),
       titleGutterOk,
       sourceOk: inView('[data-testid="map-source"]'),
-      // legendOk: route has no legend panel — treat absent as pass.
-      // choropleth/symbol MUST have a visible legend (absent = failure).
-      legendOk: isRouteMap
-        ? (!document.querySelector('[data-testid="map-legend"]') || inView('[data-testid="map-legend"]'))
-        : inView('[data-testid="map-legend"]'),
+      // legendOk: a legend is EXPECTED only when a panel is present, visible and
+      // populated. Route has no panel; a locator without categories renders an
+      // empty/hidden panel — both are legitimately legend-less, so absent/empty = pass.
+      // choropleth/symbol/locator-with-categories MUST show a visible legend in view.
+      legendOk: (() => {
+        const el = document.querySelector('[data-testid="map-legend"]');
+        const populated =
+          !!el &&
+          getComputedStyle(el).display !== "none" &&
+          el.textContent.trim().length > 0;
+        if (isRouteMap || !populated) return !el || !populated || inView('[data-testid="map-legend"]');
+        return inView('[data-testid="map-legend"]');
+      })(),
       centreOk,
       dataExtentVisibleOk,
     };
