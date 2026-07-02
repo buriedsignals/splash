@@ -86,7 +86,7 @@ before rendering. The conformance guard rejects a build where no populated cells
 
 ### 4. Basemap style: dark / light, AI-selected
 
-The `mapStyle` config key (`"dark"` or `"light"`) controls the MapTiler basemap. The AI selects
+The `mapStyle` config key (`"dataviz-light"` or `"dataviz-dark"`) controls the MapTiler basemap. The AI selects
 the style best suited to the editorial context — dark basemaps make the BLUES ramp pop on
 density stories; light basemaps suit editorial explainers. Both are CVD-safe with the BLUES scale.
 
