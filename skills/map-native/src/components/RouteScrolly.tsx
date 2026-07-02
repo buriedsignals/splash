@@ -64,6 +64,10 @@ const ELECTRIC_LIGHT = {
 } as const;
 
 const FILL_OPACITY = 0.55;
+// Overview establishing shot: every crossed territory is faintly tinted + outlined so the
+// viewer sees the territories the route passes through, before any route is drawn. Each
+// territory then ramps from this faint tint up to FILL_OPACITY on the step that reveals it.
+const OVERVIEW_FILL_OPACITY = 0.2;
 
 // ---------------------------------------------------------------------------
 // Darken a hex colour toward black by a factor in [0,1]
@@ -150,13 +154,14 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // ---------------------------------------------------------------------------
-// Per-step MOVE-phase pacing for territory border/fill (fractions of the move phase).
-// Border/fill ramp across the same move window the panel slides in over (#3), so the
-// river, the territory reveal and its text panel all pin together at move end.
+// Per-step MOVE-phase pacing for a territory's fill bloom (fraction of the move phase).
+// The fill ramps (from the faint overview tint up to full) across the same move window the
+// panel slides in over (#3), so the river, the territory reveal and its text panel all pin
+// together at move end. Borders are already drawn from the overview, so there is no separate
+// border draw-on pace here.
 // ---------------------------------------------------------------------------
 
-const BORDER_MOVE_FRAC = 0.6; // border finishes drawing at 60% of the move
-const FILL_MOVE_FRAC = 0.95; // fill blooms in by 95% of the move (just before pin)
+const FILL_MOVE_FRAC = 0.95; // fill reaches full by 95% of the move (just before pin)
 
 // ---------------------------------------------------------------------------
 // Init model — captured once, threaded to the per-frame effect
@@ -538,10 +543,38 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       const d = DRAW[terr.key];
       const revealStep = kk + 2;
 
-      if (active < revealStep) {
-        // Not yet revealed (title, overview, or an earlier territory's step).
+      if (active === 0) {
+        // Title scene: nothing tinted yet.
         (map.getSource(`trail-${terr.key}`) as any)?.setData(EMPTY_FEATURE);
         map.setPaintProperty(`fill-${terr.key}`, "fill-opacity", 0);
+        continue;
+      }
+
+      if (active === 1) {
+        // Overview establishing shot: every crossed territory is faintly tinted + fully
+        // outlined (route stays undrawn). This is the "see all the territories" beat.
+        (map.getSource(`trail-${terr.key}`) as any)?.setData(
+          sliceBorder(d, 0, d.total),
+        );
+        map.setPaintProperty(
+          `fill-${terr.key}`,
+          "fill-opacity",
+          OVERVIEW_FILL_OPACITY,
+        );
+        continue;
+      }
+
+      if (active < revealStep) {
+        // Not yet reached this territory's reveal step: hold the faint overview tint + outline
+        // (so the ramp to full on its reveal step starts from the tint, never a pop from 0).
+        (map.getSource(`trail-${terr.key}`) as any)?.setData(
+          sliceBorder(d, 0, d.total),
+        );
+        map.setPaintProperty(
+          `fill-${terr.key}`,
+          "fill-opacity",
+          OVERVIEW_FILL_OPACITY,
+        );
         continue;
       }
 
@@ -554,28 +587,22 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         continue;
       }
 
-      // active === revealStep: animate over this step's MOVE phase, in lockstep with the panel.
+      // active === revealStep: ramp from the faint overview tint up to full over this step's
+      // MOVE phase, in lockstep with the panel. The border is already fully drawn from the
+      // overview, so there is no border draw-on here — only the fill bloom from tint → full.
       const moveT = clamp01(
         phase.moveFrames > 0
           ? (frame - phase.startFrame) / phase.moveFrames
           : 1,
       );
-
-      // Border draws on over the first BORDER_MOVE_FRAC of the move window.
-      const bp = easeInOutCubic(clamp01(moveT / BORDER_MOVE_FRAC));
       (map.getSource(`trail-${terr.key}`) as any)?.setData(
-        bp <= 0 ? EMPTY_FEATURE : sliceBorder(d, 0, d.total * bp),
+        sliceBorder(d, 0, d.total),
       );
-
-      // Fill blooms in after the border, up to FILL_MOVE_FRAC.
-      const fp = clamp01(
-        (moveT - BORDER_MOVE_FRAC) / (FILL_MOVE_FRAC - BORDER_MOVE_FRAC),
-      );
-      const fo = fp * FILL_OPACITY;
+      const fp = easeInOutCubic(clamp01(moveT / FILL_MOVE_FRAC));
       map.setPaintProperty(
         `fill-${terr.key}`,
         "fill-opacity",
-        fp <= 0 ? 0 : fo,
+        lerp(OVERVIEW_FILL_OPACITY, FILL_OPACITY, fp),
       );
     }
 
@@ -600,9 +627,11 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>
 
-      {/* Scrolly prose panels — one per content step (i ≥ 1) */}
+      {/* Scrolly prose panels — one per content step (i ≥ 2). The overview step (i === 1) is
+          suppressed: its establishing shot needs no caption (it would duplicate the MapFrame
+          furniture subtitle). Panels run on the draw steps (territory notes) + the takeaway. */}
       {story.steps.map((s, i) =>
-        i === 0 ? null : (
+        i === 0 || i === 1 ? null : (
           <ScrollyPanel
             key={s.id}
             width={width}
