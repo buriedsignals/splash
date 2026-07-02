@@ -206,7 +206,7 @@ will surface a conformance error.
 This type is implemented by `skills/map-native/src/dot-density-geo.ts` (scatter computation,
 auto dotValue, seeded allocation, per-region/category `RegionDotSpec[]`) and
 `skills/map-native/src/DotDensityMap.tsx` (static + interactive render, hover on region polygon,
-univariate / multivariate legend), with validation in `skills/map-native/src/validation.ts`
+univariate / multivariate legend), with validation in `skills/map-native/src/validate-config.ts`
 (`validateDotDensityConfig` / `DotDensityConfigShape`) and conformance in
 `skills/map-native/src/conformance.ts` (`checkDotDensityConformance`). All configs are guarded at
 render time by `checkDotDensityConformance`.
