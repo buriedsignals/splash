@@ -84,8 +84,11 @@ function storyComps(config, cameraMode) {
   const isSymbolMap = config.type === "symbol";
   const isLocatorMap = config.type === "locator";
   const isDotDensityMap = config.type === "dot-density";
+  const isHexGridMap = config.type === "hex-grid";
   if (cameraMode === "guided-tour") {
-    return isDotDensityMap
+    return isHexGridMap
+      ? [["HexGridStory", "landscape"], ["HexGridStorySquare", "square"], ["HexGridStoryPortrait", "portrait"]]
+      : isDotDensityMap
       ? [["DotDensityStory", "landscape"], ["DotDensityStorySquare", "square"], ["DotDensityStoryPortrait", "portrait"]]
       : isLocatorMap
       ? [["LocatorStory", "landscape"], ["LocatorStorySquare", "square"], ["LocatorStoryPortrait", "portrait"]]
@@ -101,7 +104,9 @@ function storyComps(config, cameraMode) {
 
 // comps[kind] = [[compId, sizeName], ...] for the config's type
 const VIDEO_COMPS = {
-  reveal: isDotDensity
+  reveal: isHexGrid
+    ? [["HexGridReveal", "landscape"], ["HexGridRevealSquare", "square"], ["HexGridRevealPortrait", "portrait"]]
+    : isDotDensity
     ? [["DotDensityReveal", "landscape"], ["DotDensityRevealSquare", "square"], ["DotDensityRevealPortrait", "portrait"]]
     : isLocator
     ? [["LocatorReveal", "landscape"], ["LocatorRevealSquare", "square"], ["LocatorRevealPortrait", "portrait"]]
@@ -138,7 +143,7 @@ function renderVideoSet(kind, propsPath, remotionEntry, comps) {
 // Route has no simple-reveal; its only video is route-reveal (story-kind).
 // For route: all/reveal/story → ["story"]; static → []. Non-route branch unchanged.
 const kinds = isHexGrid
-  ? []
+  ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
   : isDotDensity
   ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
   : isLocator

@@ -36,8 +36,12 @@ import { LocatorReveal } from "../../src/components/LocatorReveal";
 import { LocatorStory } from "../../src/components/LocatorStory";
 import { DotDensityReveal } from "../../src/components/DotDensityReveal";
 import { DotDensityStory } from "../../src/components/DotDensityStory";
+import { HexGridReveal } from "../../src/components/HexGridReveal";
+import { HexGridStory } from "../../src/components/HexGridStory";
 import { computeDotDensity } from "../../src/dot-density-geo";
 import { deriveDotDensityStory } from "../../src/dot-density-story";
+import { computeHexGrid } from "../../src/hex-grid-geo";
+import { deriveHexGridStory } from "../../src/hex-grid-story";
 import { MapScrolly } from "../../src/components/MapScrolly";
 import { scrollyFrames, scrollyStepCount } from "../../src/route-story";
 import { REVEAL_FRAMES } from "../../src/reveal";
@@ -53,6 +57,7 @@ import sampleSymbol from "../../assets/sample-data/symbol.json";
 import sampleRoute from "../../assets/sample-data/route.json";
 import sampleLocator from "../../assets/sample-data/locator-many.json";
 import sampleDotDensity from "../../assets/sample-data/dot-density-multi.json";
+import sampleHexGrid from "../../assets/sample-data/hex-grid-count.json";
 import world from "../../assets/geo/world.geojson";
 
 const sampleLayout = computeChoropleth(sampleConfig, world as any, "iso_a3", {
@@ -123,6 +128,17 @@ const DOT_DENSITY_STORY_FRAMES = buildTimeline(
   30,
 ).totalFrames;
 const dotDensityDefaultProps = { config: sampleDotDensity };
+
+const sampleHGLayout = computeHexGrid(sampleHexGrid as any);
+const sampleHGBeats = deriveHexGridStory(sampleHGLayout, {
+  title: sampleHexGrid.title ?? "",
+  insight: (sampleHexGrid as any).insight ?? sampleHexGrid.title ?? "",
+});
+const HEX_GRID_STORY_FRAMES = buildTimeline(
+  sampleHGBeats.map((b) => b.kind),
+  30,
+).totalFrames;
+const hexGridDefaultProps = { config: sampleHexGrid };
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -403,6 +419,60 @@ export const RemotionRoot: React.FC = () => (
       width={1080}
       height={1350}
       defaultProps={dotDensityDefaultProps as any}
+    />
+    <Composition
+      id="HexGridReveal"
+      component={HexGridReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={hexGridDefaultProps as any}
+    />
+    <Composition
+      id="HexGridRevealSquare"
+      component={HexGridReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={hexGridDefaultProps as any}
+    />
+    <Composition
+      id="HexGridRevealPortrait"
+      component={HexGridReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={hexGridDefaultProps as any}
+    />
+    <Composition
+      id="HexGridStory"
+      component={HexGridStory}
+      durationInFrames={HEX_GRID_STORY_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={hexGridDefaultProps as any}
+    />
+    <Composition
+      id="HexGridStorySquare"
+      component={HexGridStory}
+      durationInFrames={HEX_GRID_STORY_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={hexGridDefaultProps as any}
+    />
+    <Composition
+      id="HexGridStoryPortrait"
+      component={HexGridStory}
+      durationInFrames={HEX_GRID_STORY_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={hexGridDefaultProps as any}
     />
   </>
 );
