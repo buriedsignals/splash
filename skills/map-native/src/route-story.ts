@@ -1,9 +1,11 @@
 import type { RouteRevealLayout } from "./route-geo";
 import { computeRouteReveal } from "./route-geo";
 import { computeChoropleth } from "./choropleth-geo";
+import { computeDotDensity } from "./dot-density-geo";
 import { deriveLocatorStory } from "./locator-story";
 import { deriveMapStory } from "./map-story";
 import { deriveSymbolStory } from "./symbol-story";
+import { deriveDotDensityStory } from "./dot-density-story";
 import { buildTimeline } from "./story-timeline";
 import { mapStoryToChapters } from "../../scrolly/src/chapters";
 import type { ScrollyStory, ScrollyStep } from "../../scrolly/src/chapters";
@@ -112,6 +114,21 @@ export function scrollyStepCount(
       description: config.description,
       source: config.source,
       regionsWithData: config.markers.length,
+    }).steps.length;
+  }
+  if (config.type === "dot-density") {
+    const layout = computeDotDensity(config, world, "iso_a3");
+    const beats = deriveDotDensityStory(layout, {
+      title: config.title ?? "",
+      description: config.description,
+      insight: config.insight ?? config.title ?? "",
+      unit: config.valueUnit ?? "",
+    });
+    return mapStoryToChapters(beats, {
+      title: config.title ?? "",
+      description: config.description,
+      source: config.source,
+      regionsWithData: layout.regions.length,
     }).steps.length;
   }
   if (config.type === "symbol") {
