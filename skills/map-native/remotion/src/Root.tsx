@@ -34,6 +34,10 @@ import { ChoroplethReveal } from "../../src/components/ChoroplethReveal";
 import { RouteReveal } from "../../src/components/RouteReveal";
 import { LocatorReveal } from "../../src/components/LocatorReveal";
 import { LocatorStory } from "../../src/components/LocatorStory";
+import { DotDensityReveal } from "../../src/components/DotDensityReveal";
+import { DotDensityStory } from "../../src/components/DotDensityStory";
+import { computeDotDensity } from "../../src/dot-density-geo";
+import { deriveDotDensityStory } from "../../src/dot-density-story";
 import { MapScrolly } from "../../src/components/MapScrolly";
 import { scrollyFrames, scrollyStepCount } from "../../src/route-story";
 import { REVEAL_FRAMES } from "../../src/reveal";
@@ -48,6 +52,7 @@ import sampleConfig from "../../assets/sample-data/choropleth.json";
 import sampleSymbol from "../../assets/sample-data/symbol.json";
 import sampleRoute from "../../assets/sample-data/route.json";
 import sampleLocator from "../../assets/sample-data/locator-many.json";
+import sampleDotDensity from "../../assets/sample-data/dot-density-multi.json";
 import world from "../../assets/geo/world.geojson";
 
 const sampleLayout = computeChoropleth(sampleConfig, world as any, "iso_a3", {
@@ -102,6 +107,22 @@ const LOCATOR_STORY_FRAMES = buildTimeline(
   30,
 ).totalFrames;
 const locatorDefaultProps = { config: sampleLocator };
+
+const sampleDDLayout = computeDotDensity(
+  sampleDotDensity as any,
+  world as any,
+  "iso_a3",
+);
+const sampleDDBeats = deriveDotDensityStory(sampleDDLayout, {
+  title: sampleDotDensity.title ?? "",
+  insight: (sampleDotDensity as any).insight ?? sampleDotDensity.title ?? "",
+  unit: (sampleDotDensity as any).valueUnit ?? "",
+});
+const DOT_DENSITY_STORY_FRAMES = buildTimeline(
+  sampleDDBeats.map((b) => b.kind),
+  30,
+).totalFrames;
+const dotDensityDefaultProps = { config: sampleDotDensity };
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -328,6 +349,60 @@ export const RemotionRoot: React.FC = () => (
       width={1080}
       height={1350}
       defaultProps={locatorDefaultProps as any}
+    />
+    <Composition
+      id="DotDensityReveal"
+      component={DotDensityReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={dotDensityDefaultProps as any}
+    />
+    <Composition
+      id="DotDensityRevealSquare"
+      component={DotDensityReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={dotDensityDefaultProps as any}
+    />
+    <Composition
+      id="DotDensityRevealPortrait"
+      component={DotDensityReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={dotDensityDefaultProps as any}
+    />
+    <Composition
+      id="DotDensityStory"
+      component={DotDensityStory}
+      durationInFrames={DOT_DENSITY_STORY_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={dotDensityDefaultProps as any}
+    />
+    <Composition
+      id="DotDensityStorySquare"
+      component={DotDensityStory}
+      durationInFrames={DOT_DENSITY_STORY_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={dotDensityDefaultProps as any}
+    />
+    <Composition
+      id="DotDensityStoryPortrait"
+      component={DotDensityStory}
+      durationInFrames={DOT_DENSITY_STORY_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={dotDensityDefaultProps as any}
     />
   </>
 );
