@@ -138,25 +138,25 @@ export function computeCartogram(
       taken.add(`${best.row},${best.col}`);
       assign.push({ key: r.key, value: r.value, row: best.row, col: best.col });
     }
-    // Render uniform squares in a synthetic space anchored at the equator so all cells share the
-    // same latitude band — guaranteeing identical geodesic area regardless of row. Column/row
-    // spacing is 1 degree; size is 0.8 degrees. The equator anchor (y=0) makes turf.area() equal
-    // for all squares to well within toFixed(3) precision.
-    const cellDeg = 1; // 1-degree grid spacing
-    const size = cellDeg * 0.8;
+    // Render uniform squares geographically over the data bbox. Each cell's center is placed at
+    // its assigned (row,col) position within the real lon/lat extent, so the grid sits over the
+    // actual geography on the basemap. Every cell is the same degree-size (sizeDeg × sizeDeg).
+    const cellW = lonSpan / Math.max(cols - 1, 1);
+    const cellH = latSpan / Math.max(rows - 1, 1);
+    const sizeDeg = Math.min(cellW, cellH) * 0.8;
     // Re-key to feature order for stable output.
     assign.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
     cells = assign.map((a) => {
-      const x = (a.col - (cols - 1) / 2) * cellDeg;
-      const y = ((rows - 1) / 2 - a.row) * cellDeg;
-      const half = size / 2;
+      const cx = minLon + a.col * cellW;
+      const cy = maxLat - a.row * cellH;
+      const half = sizeDeg / 2;
       const feature = polygon([
         [
-          [x - half, y - half],
-          [x + half, y - half],
-          [x + half, y + half],
-          [x - half, y + half],
-          [x - half, y - half],
+          [cx - half, cy - half],
+          [cx + half, cy - half],
+          [cx + half, cy + half],
+          [cx - half, cy + half],
+          [cx - half, cy - half],
         ],
       ]);
       const { binIdx, color } = colorFor(a.value);

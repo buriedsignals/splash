@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { computeCartogram } from "../src/cartogram-geo";
-import { area } from "@turf/turf";
+import { area, bbox } from "@turf/turf";
 
 // Four unit-square regions in a 2x2 arrangement, keyed A..D.
 const sq = (id: string, x: number, y: number): GeoJSON.Feature => ({
@@ -61,13 +61,18 @@ describe("computeCartogram — grid", () => {
   );
   it("emits one uniform square per region with no two on the same cell", () => {
     expect(layout.cells.length).toBe(4);
-    const centers = layout.cells.map((c) =>
-      JSON.stringify(area(c.feature).toFixed(6)),
-    );
-    // all cells same area (uniform)
-    const areas = layout.cells.map((c) => Number(area(c.feature).toFixed(3)));
-    expect(new Set(areas).size).toBe(1);
-    // no two cells share the same centroid position
+    // all cells have identical width and height in degrees (uniform degree-size)
+    const widths = layout.cells.map((c) => {
+      const [w, , e] = bbox(c.feature);
+      return Number((e - w).toFixed(9));
+    });
+    const heights = layout.cells.map((c) => {
+      const [, s, , n] = bbox(c.feature);
+      return Number((n - s).toFixed(9));
+    });
+    expect(new Set(widths).size).toBe(1);
+    expect(new Set(heights).size).toBe(1);
+    // no two cells share the same position
     const pos = layout.cells.map((c) => JSON.stringify(c.feature.geometry));
     expect(new Set(pos).size).toBe(4);
   });
