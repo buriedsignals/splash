@@ -156,13 +156,48 @@ not a bare year range; `description` non-empty; `source.name` and `source.url` n
   Earth preset (name, ISO code) are surfaced; arbitrary custom polygons (parks, non-administrative
   zones) and joining extra data to territories are deferred.
 
-## Video format (SP3b — not yet shipped)
+## Video format (shipped SP3b)
 
-The video format for the route type (a route-reveal animation — the line draws itself progressively
-while territories highlight as the path crosses each boundary) is **not yet implemented** and is
-scheduled for SP3b. Requesting `kind: "story"` with a `route` config will throw a stub error
-referencing SP3b. See `knowledge/references/map/camera-modes.md` for the full camera-mode option
-space that will apply to the video format.
+The video format for the route type is the **route-reveal** animation — `kind: "story"` with
+a `route` config renders `RouteReveal` in three output sizes: landscape (16:9), square (1:1),
+and portrait (9:16).
+
+**Choreography.** The video opens with a full-screen title-card scene (no map furniture — title
+only, consistent with the shared title-scene rule in `video.md`). After the title card, the route
+line draws itself on from origin to terminus, led by an electric-glow head. As the line crosses
+each territory boundary, that territory animates in over three sequential phases:
+
+1. **Border draw** — the territory's outline strokes on.
+2. **Fill bloom** — the territory fill expands with an overshoot ease (Disney overshoot principle
+   — the fill slightly exceeds its target opacity before settling, giving the animation tactile weight).
+3. **Label rise** — the territory label translates upward into its final position.
+
+The camera holds a gentle push-in throughout the line draw, framing the full route extent with a
+small margin — enough movement to give the viewer a sense of geographic scale without obscuring
+the draw. (Tom Vaillant's `map-explainer` discipline — the route-draw is the primary narrative
+device; the camera supports rather than competes with it.)
+
+**mapStyle-adaptive colours.** The electric head colour is chosen to maintain contrast on the
+selected basemap:
+
+| `mapStyle` | Electric head colour |
+|---|---|
+| `dataviz-dark` | Icy blue (high-luminance cyan, reads against the dark tile) |
+| `dataviz-light` | Deep blue (lower-luminance indigo, reads against the light tile) |
+
+Territory fills use the Okabe-Ito qualitative palette (same as the static and interactive
+formats). The AI selects `mapStyle` per the article's editorial register; the route-reveal
+animation recolours automatically.
+
+**Beat arc.** The route-reveal structure maps to Amini et al. 2015's EIPR arc: the title card
+is the event beat; the line draw is the progress phase; each territory reveal is a micro-beat
+within progress; the completed route with all territories filled and labelled is the resolution.
+
+**Three sizes.** All three ratios frame the route geometry to fill the viewport without cropping.
+The push-in camera and the label anchors are computed per-size so labels remain legible across
+all three.
+
+For the full camera-mode taxonomy see `knowledge/references/map/camera-modes.md` § `route-reveal`.
 
 ## Implementation pointer
 

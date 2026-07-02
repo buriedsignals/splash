@@ -148,5 +148,23 @@ The title card is the only furniture addition over the simple-reveal format.
 
 ---
 
-The camera movement in this format is the `guided-tour` mode. For the full camera-mode
-taxonomy (including `simple` and the forthcoming `route-reveal`), see `../camera-modes.md`.
+## route-reveal — the third storytelling mode
+
+`route-reveal` is a sibling storytelling mode: instead of a camera flying between geographic
+beats, a **linear feature draws itself on** while territories animate in along the path. Use it
+when the story is "follow this route" rather than "let me take you to these places" — a river
+source-to-sea, a migration corridor, a supply chain. The draw-on replaces the guided tour's
+beat-by-beat camera flight; the result is a single, continuous motion that is the argument.
+
+Like the guided-tour format, route-reveal opens with a title-card scene and is produced in
+three sizes (landscape, square, portrait). Unlike it, there are no named `Beat[]` reveals and
+no callouts — the territory labels animate in as the line crosses each boundary, which is the
+reveal. (FT Visual Vocabulary — for a linear geographic story, the path is the primary encoding;
+individual territory names are supporting context surfaced in sequence, not the main argument.)
+
+For the full choreography (electric head, 3-phase territory animate-in, mapStyle-adaptive
+colours, push-in camera), see `../camera-modes.md` § `route-reveal` and
+`../types/route.md` § "Video format (shipped SP3b)".
+
+The camera movement in the guided-tour format described above is the `guided-tour` mode.
+For the full camera-mode taxonomy (`simple`, `guided-tour`, `route-reveal`), see `../camera-modes.md`.

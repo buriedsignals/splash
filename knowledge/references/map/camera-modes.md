@@ -60,11 +60,19 @@ are encountered in sequence, not because of their individual values. (FT Visual 
 for linear geographic stories, the path is the primary encoding; territory fills are
 supporting context.)
 
-**Status: ships in SP3. Documented here as the design target; not yet implemented.** The
-`"route-reveal"` value is reserved in `src/camera-mode.ts` but the render harness for this
-mode does not exist yet. Setting `cameraMode: "route-reveal"` before SP3 ships makes
-`produce.mjs` THROW an explicit "not implemented (SP3)" error at render — there is NO
-fallback. Do NOT use it until SP3 ships.
+**Status: IMPLEMENTED (shipped SP3b).** The route opens with a title-card scene (no map
+furniture, title full-screen). The route line then draws itself on from start to finish,
+led by an electric-glow head — icy-blue on `dataviz-dark`, deep-blue on `dataviz-light`.
+As the line passes each territory boundary, that territory animates in over three phases:
+the border draws (stroke), the fill blooms with an overshoot ease (Disney overshoot
+principle), and the territory label rises into position. The camera holds a gentle push-in
+throughout, framing the route's full extent with a small margin. The animation choreography
+follows Amini et al. 2015's establish/progress/resolution arc: the line draw is the
+progress phase; each territory reveal is a resolution micro-beat; the completed route with
+all territories filled is the final state. This mode is the default video format for
+`route` configs — `kind: "story"` with a `route` config renders `RouteReveal` in three
+sizes (landscape 16:9, square 1:1, portrait 9:16). (Source: Tom Vaillant's `map-explainer`
+skill — progressive draw as the primary narrative device for linear features.)
 
 ---
 
@@ -94,9 +102,11 @@ and lets the reader orient before the takeaway.
 
 - **FT Visual Vocabulary** — editorial framing; magnitude/distribution as at-a-glance
   encodings; linear geographic story treatment
-- **Amini et al. 2015** — EIPR beat arc; establish/progress/resolution as a guided-tour
-  structure
+- **Amini et al. 2015** — EIPR beat arc; establish/progress/resolution as the beat arc
+  underlying both guided-tour and route-reveal choreography
 - **Tom Vaillant's `map-explainer` skill** — route-reveal / progressive draw aesthetic;
-  frame-determinism discipline
+  frame-determinism discipline; electric-head signature
+- **Disney twelve basic principles of animation** — overshoot ease used in the territory
+  fill-bloom phase of route-reveal
 - **`src/camera-mode.ts`** (this toolkit) — `CameraMode` type, `CAMERA_MODES` constant,
   `DEFAULT_CAMERA_MODE = "guided-tour"`; the dispatch field is `cameraMode` on the config
