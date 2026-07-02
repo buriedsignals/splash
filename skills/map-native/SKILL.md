@@ -294,7 +294,7 @@ S/I/V = which formats fit (Static / Interactive / Video):
 | Hex / grid (spatial bins) | MapTiler 2D / deck.gl | ◻ | ✓ | ◻ | CARTO analysis (H3) |
 | Cartogram (grid / scaled) | precompute + 2D | ✓ | ◻ | ◻ | square-grid-maps-of-the-usa |
 | Contour / isoline | MapTiler 2D | ◻ | ◻ | — | |
-| Locator / markers | MapTiler 2D | ✓ | ✓ | — | map-dw locator (native port) |
+| Locator / markers | MapTiler 2D | ✓ | ✓ | ✓ | map-dw locator (native port) — **Slice A (built): static + interactive; video = Slice B** |
 | **3D terrain flyover** | **Cesium (separate engine)** | — | — | ✓ | cesium-flyover |
 
 The first nine ride the one `map-native` engine. The 3D flyover is a separate engine (`cesium-flyover`).
