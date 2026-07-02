@@ -57,4 +57,17 @@ describe("deriveLocatorStory", () => {
     );
     expect(beats.filter((b) => b.kind === "reveal").length).toBe(1);
   });
+
+  it("gives a single-marker category a non-degenerate camera (no over-zoom)", () => {
+    // "cultural" has one marker (C); its camera bbox must not collapse to zero extent.
+    const beats = deriveLocatorStory(many, {
+      title: "Landmark sites across Europe",
+    });
+    const cultural = beats
+      .filter((b) => b.kind === "reveal")
+      .find((r) => r.copy.includes("cultural"))!;
+    const [w, s, e, n] = cultural.camera;
+    expect(e - w).toBeGreaterThan(0);
+    expect(n - s).toBeGreaterThan(0);
+  });
 });

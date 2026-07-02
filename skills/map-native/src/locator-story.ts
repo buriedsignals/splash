@@ -25,6 +25,17 @@ function bboxOf(ms: LocatorMarker[]): [number, number, number, number] {
   ];
 }
 
+// Guarantee a minimum extent so a single-marker (or all-coincident) category does not collapse
+// to a zero-area bbox — which would over-zoom the camera. Mirrors the per-place ±CITY_DELTA box.
+function padBbox(
+  b: [number, number, number, number],
+): [number, number, number, number] {
+  const [w, s, e, n] = b;
+  const padW = e - w < CITY_DELTA * 2 ? (CITY_DELTA * 2 - (e - w)) / 2 : 0;
+  const padH = n - s < CITY_DELTA * 2 ? (CITY_DELTA * 2 - (n - s)) / 2 : 0;
+  return [w - padW, s - padH, e + padW, n + padH];
+}
+
 export function deriveLocatorStory(
   markers: LocatorMarker[],
   meta: LocatorStoryMeta,
@@ -67,7 +78,7 @@ export function deriveLocatorStory(
       const text = `${cat} — ${count} ${count === 1 ? "site" : "sites"}`;
       beats.push({
         kind: "reveal",
-        camera: bboxOf(inCat),
+        camera: padBbox(bboxOf(inCat)),
         highlight: inCat.map((m) => m.label),
         dim: true,
         callout: { region: cat, name: cat, value: `${count}`, text },
