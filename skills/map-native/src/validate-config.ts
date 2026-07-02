@@ -318,3 +318,81 @@ export function validateLocatorConfig(
   if (errors.length) return { ok: false, errors };
   return { ok: true, spec: s as LocatorConfigShape, warnings };
 }
+
+export type DotDensityConfigShape = {
+  type: "dot-density";
+  regionKey: string;
+  boundaries: string;
+  rows: Record<string, string | number>[];
+  valueField?: string;
+  categories?: { field: string; label: string; color?: string }[];
+  dotValue?: number;
+  basemap: string;
+  mapStyle?: string;
+  title: string;
+  description?: string;
+  source?: { name?: string; url?: string };
+};
+
+export function validateDotDensityConfig(
+  spec: unknown,
+):
+  | { ok: true; spec: DotDensityConfigShape; warnings: string[] }
+  | { ok: false; errors: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const s = (spec ?? {}) as Record<string, unknown>;
+
+  if (typeof s.regionKey !== "string" || !s.regionKey.trim())
+    errors.push("regionKey must be a non-empty string");
+  if (typeof s.basemap !== "string" || !s.basemap.trim())
+    errors.push("basemap must be a non-empty string");
+  if (
+    s.mapStyle !== undefined &&
+    !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
+  )
+    errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+
+  const hasCats =
+    Array.isArray(s.categories) && (s.categories as unknown[]).length > 0;
+  const hasValue =
+    typeof s.valueField === "string" && s.valueField.trim().length > 0;
+  if (!hasCats && !hasValue)
+    errors.push(
+      "dot-density needs either valueField (univariate) or categories (multivariate)",
+    );
+  if (hasCats) {
+    for (let i = 0; i < (s.categories as unknown[]).length; i++) {
+      const c = (s.categories as Record<string, unknown>[])[i];
+      if (!c || typeof c.field !== "string" || !c.field.trim())
+        errors.push(`categories[${i}].field must be a non-empty string`);
+      if (typeof c.label !== "string" || !c.label.trim())
+        errors.push(`categories[${i}].label must be a non-empty string`);
+    }
+  }
+  if (
+    s.dotValue !== undefined &&
+    (typeof s.dotValue !== "number" || !(s.dotValue > 0))
+  )
+    errors.push("dotValue must be a positive number");
+
+  if (!Array.isArray(s.rows) || s.rows.length === 0)
+    errors.push("rows must be a non-empty array");
+
+  const title = typeof s.title === "string" ? s.title.trim() : "";
+  if (title.length < 12)
+    errors.push(`title too short to be an insight: "${title}"`);
+  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
+    errors.push(`title is a year range, not an insight: "${title}"`);
+
+  if (!(typeof s.description === "string" && s.description.trim()))
+    warnings.push("missing description — a module must state what/when/where");
+  const source = (s.source ?? {}) as Record<string, unknown>;
+  if (!(typeof source.name === "string" && source.name.trim()))
+    warnings.push("missing source name");
+  if (!(typeof source.url === "string" && source.url.trim()))
+    warnings.push("missing source url");
+
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, spec: s as DotDensityConfigShape, warnings };
+}
