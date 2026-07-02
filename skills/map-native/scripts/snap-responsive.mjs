@@ -28,6 +28,7 @@ for (const w of [360, 768, 1100, 1600]) {
         m &&
         m.getLayer &&
         (m.getLayer("choropleth-fill") ||
+          m.getLayer("dot-density-dots") ||
           m.getLayer("symbol-circles") ||
           m.getLayer("locator-glyphs") ||
           m.getLayer("route-fill"))

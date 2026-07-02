@@ -1,0 +1,30 @@
+{
+  "type": "dot-density",
+  "basemap": "world",
+  "boundaries": "world",
+  "regionKey": "iso_a3",
+  "valueField": "population",
+  "title": "Where the world's people live, one dot at a time",
+  "description": "Estimated population by country, 2023. Each dot represents a fixed number of people, so denser clusters mark the most populous nations.",
+  "source": {
+    "name": "UN World Population Prospects",
+    "url": "https://population.un.org/wpp/"
+  },
+  "rows": [
+    { "iso_a3": "CHN", "population": 1425000000 },
+    { "iso_a3": "IND", "population": 1428000000 },
+    { "iso_a3": "USA", "population": 340000000 },
+    { "iso_a3": "IDN", "population": 277000000 },
+    { "iso_a3": "BRA", "population": 216000000 },
+    { "iso_a3": "NGA", "population": 224000000 },
+    { "iso_a3": "RUS", "population": 144000000 },
+    { "iso_a3": "MEX", "population": 128000000 },
+    { "iso_a3": "JPN", "population": 123000000 },
+    { "iso_a3": "ETH", "population": 127000000 },
+    { "iso_a3": "EGY", "population": 113000000 },
+    { "iso_a3": "DEU", "population": 84000000 },
+    { "iso_a3": "FRA", "population": 68000000 },
+    { "iso_a3": "GBR", "population": 68000000 },
+    { "iso_a3": "ZAF", "population": 60000000 }
+  ]
+}

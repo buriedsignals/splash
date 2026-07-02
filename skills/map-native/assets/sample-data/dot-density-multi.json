@@ -1,0 +1,29 @@
+{
+  "type": "dot-density",
+  "basemap": "world",
+  "boundaries": "world",
+  "regionKey": "iso_a3",
+  "mapStyle": "dataviz-dark",
+  "categories": [
+    { "field": "coal", "label": "Coal" },
+    { "field": "gas", "label": "Natural gas" },
+    { "field": "renewables", "label": "Renewables" }
+  ],
+  "title": "The uneven energy mix of the world's big emitters",
+  "description": "Electricity generation by source in 2023, in terawatt-hours. Each dot is a fixed amount of energy; the colour blend inside each country shows how it keeps the lights on.",
+  "source": {
+    "name": "Ember Electricity Review",
+    "url": "https://ember-climate.org/"
+  },
+  "rows": [
+    { "iso_a3": "CHN", "coal": 5470, "gas": 288, "renewables": 3020 },
+    { "iso_a3": "USA", "coal": 675, "gas": 1800, "renewables": 900 },
+    { "iso_a3": "IND", "coal": 1420, "gas": 65, "renewables": 380 },
+    { "iso_a3": "RUS", "coal": 180, "gas": 490, "renewables": 220 },
+    { "iso_a3": "JPN", "coal": 300, "gas": 320, "renewables": 250 },
+    { "iso_a3": "DEU", "coal": 130, "gas": 60, "renewables": 270 },
+    { "iso_a3": "BRA", "coal": 25, "gas": 55, "renewables": 560 },
+    { "iso_a3": "ZAF", "coal": 200, "gas": 5, "renewables": 30 },
+    { "iso_a3": "AUS", "coal": 130, "gas": 55, "renewables": 90 }
+  ]
+}
