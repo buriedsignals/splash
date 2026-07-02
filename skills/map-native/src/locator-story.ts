@@ -1,0 +1,107 @@
+// Beat derivation for locator videos — the sibling of deriveSymbolStory. Two regimes:
+// few-annotated (a beat per PLACE, camera on a tight box, caption = the marker note) and
+// categorized (a beat per CATEGORY, camera on that category's markers, caption = category + count).
+// title → establish (all markers) → reveals → takeaway. Same Beat shape as choropleth/symbol.
+import type { Beat } from "./map-story";
+import type { LocatorMarker } from "./locator-geo";
+
+export interface LocatorStoryMeta {
+  title: string;
+  description?: string;
+  insight?: string;
+}
+
+const CITY_DELTA = 1.5; // half-width (deg) of a tight place-framing box
+const DEFAULT_MAX_REVEALS = 5;
+
+function bboxOf(ms: LocatorMarker[]): [number, number, number, number] {
+  const lons = ms.map((m) => m.lon);
+  const lats = ms.map((m) => m.lat);
+  return [
+    Math.min(...lons),
+    Math.min(...lats),
+    Math.max(...lons),
+    Math.max(...lats),
+  ];
+}
+
+export function deriveLocatorStory(
+  markers: LocatorMarker[],
+  meta: LocatorStoryMeta,
+  opts: { maxReveals?: number } = {},
+): Beat[] {
+  const cap = Math.max(1, opts.maxReveals ?? DEFAULT_MAX_REVEALS);
+  const allBounds = bboxOf(markers);
+
+  const beats: Beat[] = [];
+  beats.push({
+    kind: "title",
+    camera: allBounds,
+    highlight: [],
+    dim: false,
+    callout: null,
+    copy: meta.title,
+  });
+  beats.push({
+    kind: "establish",
+    camera: allBounds,
+    highlight: [],
+    dim: false,
+    callout: null,
+    copy: "",
+  });
+
+  const categories = [
+    ...new Set(
+      markers
+        .map((m) => m.category)
+        .filter((c): c is string => !!c && c.trim().length > 0),
+    ),
+  ].sort();
+
+  if (categories.length > 0) {
+    // Categorized regime: a beat per category (capped).
+    for (const cat of categories.slice(0, cap)) {
+      const inCat = markers.filter((m) => m.category === cat);
+      const count = inCat.length;
+      const text = `${cat} — ${count} ${count === 1 ? "site" : "sites"}`;
+      beats.push({
+        kind: "reveal",
+        camera: bboxOf(inCat),
+        highlight: inCat.map((m) => m.label),
+        dim: true,
+        callout: { region: cat, name: cat, value: `${count}`, text },
+        copy: text,
+      });
+    }
+  } else {
+    // Few-annotated regime: a beat per place (capped), caption = note ?? label.
+    for (const m of markers.slice(0, cap)) {
+      const copy = m.note?.trim() ? m.note : m.label;
+      beats.push({
+        kind: "reveal",
+        camera: [
+          m.lon - CITY_DELTA,
+          m.lat - CITY_DELTA,
+          m.lon + CITY_DELTA,
+          m.lat + CITY_DELTA,
+        ],
+        highlight: [m.label],
+        dim: true,
+        callout: { region: m.label, name: m.label, value: "", text: copy },
+        copy,
+      });
+    }
+  }
+
+  beats.push({
+    kind: "takeaway",
+    camera: allBounds,
+    highlight: [],
+    dim: false,
+    callout: null,
+    copy: meta.insight && meta.insight !== meta.title ? meta.insight : "",
+  });
+
+  return beats;
+}
