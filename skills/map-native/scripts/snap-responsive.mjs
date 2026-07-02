@@ -38,10 +38,15 @@ for (const w of [360, 768, 1100, 1600]) {
   );
   await page.waitForTimeout(2500); // let tiles + reveal settle
 
-  // Detect map type before entering evaluate — route has no legend panel
+  // Detect map type before entering evaluate — route has no legend panel; a locator
+  // without categories legitimately renders no legend. Both make the legend optional.
   const isRoute = await page.evaluate(() => {
     const m = window.__map__;
     return !!(m && m.getLayer && m.getLayer("route-fill"));
+  });
+  const isLocator = await page.evaluate(() => {
+    const m = window.__map__;
+    return !!(m && m.getLayer && m.getLayer("locator-glyphs"));
   });
 
   await page
@@ -49,7 +54,7 @@ for (const w of [360, 768, 1100, 1600]) {
     .first()
     .screenshot({ path: join(outDir, `responsive-${w}.png`) });
 
-  const checks = await page.evaluate((isRouteMap) => {
+  const checks = await page.evaluate(([isRouteMap, isLocatorMap]) => {
     const G = 14; // minimum gutter from frame edges (px, at device pixels)
     const inView = (sel) => {
       const el = document.querySelector(sel);
@@ -153,23 +158,25 @@ for (const w of [360, 768, 1100, 1600]) {
       titleOk: inView('[data-testid="map-title"]'),
       titleGutterOk,
       sourceOk: inView('[data-testid="map-source"]'),
-      // legendOk: a legend is EXPECTED only when a panel is present, visible and
-      // populated. Route has no panel; a locator without categories renders an
-      // empty/hidden panel — both are legitimately legend-less, so absent/empty = pass.
-      // choropleth/symbol/locator-with-categories MUST show a visible legend in view.
+      // legendOk: choropleth/symbol MUST show a populated legend in view (strict).
+      // Route has no legend panel, and a locator without categories renders an
+      // empty/hidden panel — for those two the legend is OPTIONAL: absent/empty passes,
+      // but if a panel IS populated (e.g. a locator WITH categories) it must be in view.
       legendOk: (() => {
         const el = document.querySelector('[data-testid="map-legend"]');
         const populated =
           !!el &&
           getComputedStyle(el).display !== "none" &&
           el.textContent.trim().length > 0;
-        if (isRouteMap || !populated) return !el || !populated || inView('[data-testid="map-legend"]');
-        return inView('[data-testid="map-legend"]');
+        const legendOptional = isRouteMap || isLocatorMap;
+        if (legendOptional)
+          return !populated || inView('[data-testid="map-legend"]');
+        return populated && inView('[data-testid="map-legend"]');
       })(),
       centreOk,
       dataExtentVisibleOk,
     };
-  }, isRoute);
+  }, [isRoute, isLocator]);
 
   console.log(JSON.stringify({ w, ...checks }));
   for (const [k, ok] of Object.entries(checks))
