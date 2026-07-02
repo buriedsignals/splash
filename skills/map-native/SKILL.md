@@ -358,8 +358,8 @@ best practices live in `knowledge/references/map/formats/video-reveal.md`.
   `cameraForFrame`, `easeInOutCubic`). Unit-tested.
 - `src/components/ChoroplethStory.tsx` — the narrated VIDEO component: consumes the beats + timeline,
   per-frame `jumpTo` camera, data-driven dim/emphasis, `CountryLabel` callouts + a beat caption.
-- `remotion/src/Root.tsx` — Remotion root: `MapExplainer`, `HarnessCheck`, `ChoroplethStory`,
-  `ChoroplethStorySquare`, `ChoroplethStoryPortrait`.
+- `remotion/src/Root.tsx` — Remotion root: the reveal/story/route-reveal compositions across the
+  map types (`{Choropleth,Symbol}Reveal*`, `{Choropleth,Symbol}Story*`, `RouteReveal*`) + `HarnessCheck`.
 - `remotion.config.ts` — `setPublicDir("remotion/public")` (so `staticFile` resolves) + `.geojson`
   JSON webpack loader.
 - `scripts/audit.mjs` — layout + basemap-fit audit (real browser × 7 viewports; `map.project()`

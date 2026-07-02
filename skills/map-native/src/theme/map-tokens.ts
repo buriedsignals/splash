@@ -1,7 +1,7 @@
 // Single source of truth for map FURNITURE typography + colours (title / description /
 // source). Mirrors chart-native's core/tokens.ts. Base px sizes are multiplied by the
-// per-format `scale` from resolveMapFrame. Distinct from theme/tokens.ts (the Water-Wars
-// video motion brand) — this is the generic frame token set.
+// per-format `scale` from resolveMapFrame. The generic frame token set (distinct from
+// theme/colors.ts, which holds the no-data colour).
 export const FRAME_TYPE = { title: 22, description: 14, source: 12 } as const;
 export const FRAME_FONT =
   'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
