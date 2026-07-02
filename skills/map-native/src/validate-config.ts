@@ -1,6 +1,7 @@
 import type { ChoroplethData } from "./choropleth-geo";
 import { CAMERA_MODES, type CameraMode } from "./camera-mode";
 import { MAP_STYLES } from "./route-geo";
+import type { LocatorMarker } from "./locator-geo";
 
 export type ChoroplethConfigShape = ChoroplethData & {
   basemap: string;
@@ -234,4 +235,86 @@ export function validateRouteConfig(
 
   if (errors.length) return { ok: false, errors };
   return { ok: true, spec: s as RouteConfigShape, warnings };
+}
+
+export type LocatorConfigShape = {
+  type: "locator";
+  markers: LocatorMarker[];
+  basemap: string;
+  markerStyle?: string;
+  mapStyle?: string;
+  title: string;
+  description?: string;
+  source?: { name?: string; url?: string };
+};
+
+export function validateLocatorConfig(
+  spec: unknown,
+):
+  | { ok: true; spec: LocatorConfigShape; warnings: string[] }
+  | { ok: false; errors: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const s = (spec ?? {}) as Record<string, unknown>;
+
+  if (typeof s.basemap !== "string" || !s.basemap.trim())
+    errors.push("basemap must be a non-empty string");
+
+  if (
+    s.mapStyle !== undefined &&
+    !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
+  )
+    errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+
+  if (
+    s.markerStyle !== undefined &&
+    !["dot", "pin", "icon"].includes(s.markerStyle as string)
+  )
+    errors.push("markerStyle must be one of: dot, pin, icon");
+
+  const markers = s.markers;
+  if (!Array.isArray(markers) || markers.length === 0) {
+    errors.push("markers must be a non-empty array");
+  } else {
+    for (let i = 0; i < markers.length; i++) {
+      const m = markers[i] as Record<string, unknown> | null;
+      if (!m || typeof m !== "object") {
+        errors.push(`marker ${i} is not an object`);
+        continue;
+      }
+      if (
+        typeof m.lon !== "number" ||
+        Number.isNaN(m.lon) ||
+        m.lon < -180 ||
+        m.lon > 180
+      )
+        errors.push(`marker ${i} lon must be a number in [-180, 180]`);
+      if (
+        typeof m.lat !== "number" ||
+        Number.isNaN(m.lat) ||
+        m.lat < -90 ||
+        m.lat > 90
+      )
+        errors.push(`marker ${i} lat must be a number in [-90, 90]`);
+      if (typeof m.label !== "string" || !m.label.trim())
+        errors.push(`marker ${i} label must be a non-empty string`);
+    }
+  }
+
+  const title = typeof s.title === "string" ? s.title.trim() : "";
+  if (title.length < 12)
+    errors.push(`title too short to be an insight: "${title}"`);
+  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
+    errors.push(`title is a year range, not an insight: "${title}"`);
+
+  if (!(typeof s.description === "string" && s.description.trim()))
+    warnings.push("missing description — a module must state what/when/where");
+  const source = (s.source ?? {}) as Record<string, unknown>;
+  if (!(typeof source.name === "string" && source.name.trim()))
+    warnings.push("missing source name");
+  if (!(typeof source.url === "string" && source.url.trim()))
+    warnings.push("missing source url");
+
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, spec: s as LocatorConfigShape, warnings };
 }

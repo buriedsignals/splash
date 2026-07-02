@@ -72,6 +72,7 @@ await page.waitForFunction(
       m.getLayer &&
       (m.getLayer("choropleth-fill") ||
         m.getLayer("symbol-circles") ||
+        m.getLayer("locator-glyphs") ||
         m.getLayer("route-fill"))
     );
   },

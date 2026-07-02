@@ -1,8 +1,13 @@
-// Datasets the layout audit renders. `buildCases(sample)` returns
-// [{ label, config }] — one entry per config variant. Beyond the
-// shipped sample, two stress cases prove the layout holds for
-// adversarial data: a world-wide spread with one dominant outlier,
-// and a config that includes no-data regions.
+// Datasets the layout audit renders.
+//
+// `buildCases(sample)` — choropleth cases. Returns [{ label, config }], one
+// entry per config variant. Beyond the shipped sample, two stress cases prove
+// the layout holds for adversarial data: a world-wide spread with one dominant
+// outlier, and a config that includes no-data regions.
+//
+// `buildLocatorCases(sample)` — locator cases. Returns [{ label, config }]
+// using the locator-many sample as base. Two stress cases exercise dense
+// category labelling and a no-category single-style map.
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
@@ -47,6 +52,40 @@ export function buildCases(sample) {
     { code: "ESP", share: 44 },
   ];
   cases.push({ label: "no-data-regions", config: noDataStress });
+
+  return cases;
+}
+
+// ---------------------------------------------------------------------------
+// Locator cases
+// ---------------------------------------------------------------------------
+
+export function buildLocatorCases(sample) {
+  const cases = [];
+
+  // 1. Sample — the committed locator-many.json (40 European landmark sites, 4 categories)
+  cases.push({ label: "locator-sample", config: sample });
+
+  // 2. Stress: dot style with no categories — exercises the no-legend path and
+  //    verifies the basemap fits to the data extent without a category legend panel.
+  const noCategory = clone(sample);
+  noCategory.title = "European landmark sites — uncategorised dot map";
+  noCategory.description =
+    "Same 40 sites without category encoding — no colour legend, plain dots.";
+  noCategory.markerStyle = "dot";
+  noCategory.markers = sample.markers.map(({ category: _cat, ...rest }) => rest);
+  cases.push({ label: "locator-no-categories", config: noCategory });
+
+  // 3. Stress: pin style with a reduced high-priority-only set (6 sites) — verifies the
+  //    basemap fits a sparse set and labels do not collide at low density.
+  const sparse = clone(sample);
+  sparse.title = "Six landmark sites — sparse pin map";
+  sparse.description = "Only the highest-priority sites across Europe.";
+  sparse.markerStyle = "pin";
+  sparse.markers = sample.markers
+    .filter((m) => (m.priority ?? 0) >= 3)
+    .slice(0, 6);
+  cases.push({ label: "locator-sparse-pins", config: sparse });
 
   return cases;
 }

@@ -38,19 +38,26 @@ await page.waitForFunction(
       m.getLayer &&
       (m.getLayer("choropleth-fill") ||
         m.getLayer("symbol-circles") ||
+        m.getLayer("locator-glyphs") ||
         m.getLayer("route-fill"))
     );
   },
   { timeout: 60_000 },
 );
 
-// Detect which layer type we have
+// Detect which layer type we have. Locator uses the same point-hover path as symbol
+// (its glyph layer id is locator-glyphs, not symbol-circles), so it maps to "symbol".
 const layerType = await page.evaluate(() => {
   const m = window.__map__;
-  if (m.getLayer("symbol-circles")) return "symbol";
+  if (m.getLayer("symbol-circles") || m.getLayer("locator-glyphs"))
+    return "symbol";
   if (m.getLayer("route-fill")) return "route";
   return "choropleth";
 });
+const glyphLayer = await page.evaluate(() =>
+  window.__map__.getLayer("locator-glyphs") ? "locator-glyphs" : "symbol-circles",
+);
+const isLocator = glyphLayer === "locator-glyphs";
 console.log(`layer type: ${layerType}`);
 
 // Wait for map to reach idle state
@@ -135,9 +142,9 @@ if (layerType === "route") {
   console.log("symbol mode: finding largest circle by radius property");
 
   // Query rendered features from symbol-circles, pick the one with the largest radius
-  const largestFeatureCoords = await page.evaluate(() => {
+  const largestFeatureCoords = await page.evaluate((layer) => {
     const m = window.__map__;
-    const features = m.queryRenderedFeatures({ layers: ["symbol-circles"] });
+    const features = m.queryRenderedFeatures({ layers: [layer] });
     if (!features || features.length === 0) return null;
     // Sort by radius desc, pick the largest
     features.sort(
@@ -147,7 +154,7 @@ if (layerType === "route") {
     const coords = f.geometry.coordinates;
     const pt = m.project(coords);
     return { x: Math.round(pt.x), y: Math.round(pt.y), label: f.properties?.label };
-  });
+  }, glyphLayer);
 
   if (largestFeatureCoords) {
     console.log(
@@ -259,7 +266,9 @@ if (!/[A-Za-z]/.test(trimmed)) {
   await browser.close();
   process.exit(1);
 }
-if (layerType !== "route" && !/\d/.test(trimmed)) {
+// Locator markers encode place/category/note — not a numeric value — so the digit
+// assertion applies only to choropleth/symbol (which always carry a value).
+if (layerType !== "route" && !isLocator && !/\d/.test(trimmed)) {
   console.error(`popup has no value (digit): "${trimmed}"`);
   await browser.close();
   process.exit(1);

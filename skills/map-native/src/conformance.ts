@@ -312,3 +312,42 @@ export function checkMapFraming(input: {
     );
   return { violations: v };
 }
+
+export function checkLocatorConformance(
+  input: {
+    title: string;
+    description?: string;
+    source: { name?: string; url?: string };
+    markerCount: number;
+    labeledCount: number;
+    hasCategories: boolean;
+    hasLegend: boolean;
+    boundsNonEmpty: boolean;
+    mapStyle?: string;
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalMapConformance(
+    {
+      title: input.title,
+      description: input.description,
+      source: input.source,
+    },
+    textColors,
+  );
+  if (input.markerCount < 1) v.push("no markers to place");
+  if (input.labeledCount < input.markerCount)
+    v.push(
+      "markers are not all directly labeled — a locator's places must be named, not hover-only",
+    );
+  if (input.hasCategories && !input.hasLegend)
+    v.push("categories present but no legend — the colour code is undecodable");
+  if (!input.boundsNonEmpty)
+    v.push("empty marker bounds — basemap-fit impossible");
+  if (
+    input.mapStyle &&
+    !(MAP_STYLES as readonly string[]).includes(input.mapStyle)
+  )
+    v.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  return v;
+}

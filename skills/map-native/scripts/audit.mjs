@@ -1,4 +1,4 @@
-// Layout audit for the choropleth interactive build. For each config × viewport
+// Layout audit for the map-native interactive builds. For each config × viewport
 // it renders the real component in a browser (via the interactive dist build),
 // waits for the MapTiler map to reach idle, then asserts:
 //   1. The title, legend, and source text boxes are inside the card (no overflow).
@@ -13,16 +13,25 @@ import { chromium } from "playwright";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFileSync } from "node:fs";
-import { buildCases } from "./audit-cases.mjs";
+import { buildCases, buildLocatorCases } from "./audit-cases.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const htmlUrl = pathToFileURL(join(root, "dist", "interactive", "index.html"))
   .href;
 
-const sample = JSON.parse(
+const choroplethSample = JSON.parse(
   readFileSync(
     join(root, "assets", "sample-data", "choropleth.json"),
+    "utf8",
+  ),
+);
+// Keep the legacy `sample` alias so no existing reference breaks.
+const sample = choroplethSample;
+
+const locatorSample = JSON.parse(
+  readFileSync(
+    join(root, "assets", "sample-data", "locator-many.json"),
     "utf8",
   ),
 );
@@ -43,7 +52,10 @@ const VIEWPORTS = [
 // a too-zoomed-out map where data spans only a tiny fraction of the canvas.
 const MIN_DATA_FILL_FRACTION = 0.7;
 
-const cases = buildCases(sample);
+const cases = [
+  ...buildCases(sample),
+  ...buildLocatorCases(locatorSample),
+];
 
 // significant overlap: meaningful intersection (not just touching corners).
 function overlapArea(a, b) {

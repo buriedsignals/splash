@@ -1,0 +1,293 @@
+{
+  "type": "locator",
+  "basemap": "world",
+  "markerStyle": "dot",
+  "mapStyle": "dataviz-dark",
+  "title": "Forty landmark sites across the European map",
+  "description": "A dense locator of cultural, natural, modern and port sites, coloured by category.",
+  "source": {
+    "name": "Editorial compilation",
+    "url": "https://example.org/europe-sites"
+  },
+  "markers": [
+    {
+      "lon": 12.4922,
+      "lat": 41.8902,
+      "label": "Colosseum",
+      "category": "Cultural",
+      "priority": 3
+    },
+    {
+      "lon": 23.7257,
+      "lat": 37.9715,
+      "label": "Acropolis of Athens",
+      "category": "Cultural",
+      "priority": 3
+    },
+    {
+      "lon": -3.5881,
+      "lat": 37.1761,
+      "label": "Alhambra",
+      "category": "Cultural",
+      "priority": 2
+    },
+    {
+      "lon": 2.1744,
+      "lat": 41.4036,
+      "label": "Sagrada Família",
+      "category": "Cultural",
+      "priority": 2
+    },
+    {
+      "lon": -0.0759,
+      "lat": 51.5081,
+      "label": "Tower of London",
+      "category": "Cultural",
+      "priority": 3
+    },
+    {
+      "lon": 13.3777,
+      "lat": 52.5163,
+      "label": "Brandenburg Gate",
+      "category": "Cultural",
+      "priority": 2
+    },
+    {
+      "lon": 14.4114,
+      "lat": 50.0865,
+      "label": "Charles Bridge",
+      "category": "Cultural",
+      "priority": 1
+    },
+    {
+      "lon": 12.4534,
+      "lat": 41.9022,
+      "label": "St. Peter's Basilica",
+      "category": "Cultural",
+      "priority": 3
+    },
+    {
+      "lon": 4.0347,
+      "lat": 49.2536,
+      "label": "Notre-Dame de Reims",
+      "category": "Cultural",
+      "priority": 1
+    },
+    {
+      "lon": 10.7498,
+      "lat": 47.5576,
+      "label": "Neuschwanstein Castle",
+      "category": "Cultural",
+      "priority": 2
+    },
+    {
+      "lon": 15.6167,
+      "lat": 44.8654,
+      "label": "Plitvice Lakes",
+      "category": "Natural",
+      "priority": 2
+    },
+    {
+      "lon": -6.5115,
+      "lat": 55.2408,
+      "label": "Giant's Causeway",
+      "category": "Natural",
+      "priority": 2
+    },
+    {
+      "lon": -16.8,
+      "lat": 64.4,
+      "label": "Vatnajökull Glacier",
+      "category": "Natural",
+      "priority": 3
+    },
+    {
+      "lon": 6.1,
+      "lat": 62.1,
+      "label": "Norwegian Fjords",
+      "category": "Natural",
+      "priority": 3
+    },
+    {
+      "lon": 11.85,
+      "lat": 46.41,
+      "label": "Dolomites",
+      "category": "Natural",
+      "priority": 2
+    },
+    {
+      "lon": -9.4269,
+      "lat": 52.9715,
+      "label": "Cliffs of Moher",
+      "category": "Natural",
+      "priority": 1
+    },
+    {
+      "lon": 14.0937,
+      "lat": 46.3625,
+      "label": "Lake Bled",
+      "category": "Natural",
+      "priority": 1
+    },
+    {
+      "lon": 18.7712,
+      "lat": 42.4247,
+      "label": "Bay of Kotor",
+      "category": "Natural",
+      "priority": 1
+    },
+    {
+      "lon": 21.6303,
+      "lat": 39.7217,
+      "label": "Meteora",
+      "category": "Natural",
+      "priority": 2
+    },
+    {
+      "lon": 14.05,
+      "lat": 50.92,
+      "label": "Saxon Switzerland",
+      "category": "Natural",
+      "priority": 1
+    },
+    {
+      "lon": 10.7534,
+      "lat": 59.9075,
+      "label": "Sydney-style Opera (Oslo)",
+      "category": "Modern",
+      "priority": 1
+    },
+    {
+      "lon": -2.934,
+      "lat": 43.2687,
+      "label": "Guggenheim Bilbao",
+      "category": "Modern",
+      "priority": 2
+    },
+    {
+      "lon": 9.9841,
+      "lat": 53.5413,
+      "label": "Elbphilharmonie",
+      "category": "Modern",
+      "priority": 2
+    },
+    {
+      "lon": 4.3415,
+      "lat": 50.8949,
+      "label": "Atomium",
+      "category": "Modern",
+      "priority": 1
+    },
+    {
+      "lon": -0.0865,
+      "lat": 51.5045,
+      "label": "The Shard",
+      "category": "Modern",
+      "priority": 2
+    },
+    {
+      "lon": 12.9757,
+      "lat": 55.6134,
+      "label": "Turning Torso",
+      "category": "Modern",
+      "priority": 1
+    },
+    {
+      "lon": 3.0225,
+      "lat": 44.0787,
+      "label": "Millau Viaduct",
+      "category": "Modern",
+      "priority": 2
+    },
+    {
+      "lon": 12.8386,
+      "lat": 55.5716,
+      "label": "Øresund Bridge",
+      "category": "Modern",
+      "priority": 1
+    },
+    {
+      "lon": 4.4906,
+      "lat": 51.92,
+      "label": "Rotterdam Cube Houses",
+      "category": "Modern",
+      "priority": 1
+    },
+    {
+      "lon": 14.51,
+      "lat": 46.053,
+      "label": "Ljubljana Dragon Bridge",
+      "category": "Modern"
+    },
+    {
+      "lon": 23.642,
+      "lat": 37.942,
+      "label": "Port of Piraeus",
+      "category": "Ports",
+      "priority": 1
+    },
+    {
+      "lon": 4.4,
+      "lat": 51.95,
+      "label": "Port of Rotterdam",
+      "category": "Ports",
+      "priority": 3
+    },
+    {
+      "lon": 9.97,
+      "lat": 53.54,
+      "label": "Port of Hamburg",
+      "category": "Ports",
+      "priority": 2
+    },
+    {
+      "lon": 8.926,
+      "lat": 44.407,
+      "label": "Port of Genoa",
+      "category": "Ports",
+      "priority": 2
+    },
+    {
+      "lon": 5.36,
+      "lat": 43.34,
+      "label": "Port of Marseille",
+      "category": "Ports",
+      "priority": 2
+    },
+    {
+      "lon": 18.66,
+      "lat": 54.39,
+      "label": "Port of Gdańsk",
+      "category": "Ports",
+      "priority": 1
+    },
+    {
+      "lon": 5.32,
+      "lat": 60.39,
+      "label": "Port of Bergen",
+      "category": "Ports",
+      "priority": 1
+    },
+    {
+      "lon": 14.514,
+      "lat": 35.898,
+      "label": "Port of Valletta",
+      "category": "Ports",
+      "priority": 1
+    },
+    {
+      "lon": 4.33,
+      "lat": 51.26,
+      "label": "Port of Antwerp",
+      "category": "Ports",
+      "priority": 2
+    },
+    {
+      "lon": -9.14,
+      "lat": 38.7,
+      "label": "Port of Lisbon",
+      "category": "Ports",
+      "priority": 2
+    }
+  ]
+}
