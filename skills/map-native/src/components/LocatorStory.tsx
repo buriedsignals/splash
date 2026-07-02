@@ -7,7 +7,7 @@
 //   4. category legend when the config has categories (reuse locatorGeometry.legend)
 // Structure mirrors SymbolStory exactly:
 //   delayRender → on load add source/layers + build beats + jumpTo beat 0 → idle → continueRender
-//   per-frame: delayRender → jumpTo → setPaintProperty → project callout → overlay state → idle → continueRender
+//   per-frame: delayRender → jumpTo → setPaintProperty → caption overlay state → idle → continueRender
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -36,7 +36,6 @@ import {
 } from "../story-timeline";
 import type { Beat } from "../map-story";
 import type { LocatorConfigShape } from "../validate-config";
-import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
@@ -55,7 +54,6 @@ interface LocatorMapState {
   beats: Beat[];
   phases: Phase[];
   solutions: CameraSolution[];
-  cityByKey: Map<string, [number, number]>;
 }
 
 export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
@@ -89,13 +87,9 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
     delayRender("locator-story-init", { timeoutInMilliseconds: 120000 }),
   );
 
-  // Per-frame overlay state: projected callout position, reveals.
+  // Per-frame overlay state: the caption reveal ramp for the active beat.
   const [overlay, setOverlay] = useState<{
     beatIndex: number;
-    calloutPt: { x: number; y: number } | null;
-    calloutReveal: number;
-    calloutValue: string;
-    calloutColor: string;
     captionReveal: number;
   } | null>(null);
 
@@ -231,26 +225,10 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
       const kinds = beats.map((b) => b.kind);
       const { phases } = buildTimeline(kinds, fps);
 
-      // Callout projection lookup: beat.callout.region → [lon, lat].
-      // Few regime: region is a place label. Categorized regime: region is a category
-      // → project the centroid of that category's markers.
-      const cityByKey = new Map<string, [number, number]>();
-      for (const mk of config.markers) {
-        if (mk.label) cityByKey.set(mk.label, [mk.lon, mk.lat]);
-      }
-      for (const cat of geo.categories) {
-        const inCat = geo.markers.filter((mk) => mk.category === cat);
-        if (inCat.length) {
-          const cx = inCat.reduce((s, mk) => s + mk.lon, 0) / inCat.length;
-          const cy = inCat.reduce((s, mk) => s + mk.lat, 0) / inCat.length;
-          cityByKey.set(cat, [cx, cy]);
-        }
-      }
-
       m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
 
       m.once("idle", () => {
-        setMapState({ map: m, beats, phases, solutions, cityByKey });
+        setMapState({ map: m, beats, phases, solutions });
         continueRender(handle);
       });
     });
@@ -259,7 +237,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
   // Per-frame update — deterministic, driven entirely by `frame`.
   useEffect(() => {
     if (!mapState) return;
-    const { map, beats, phases, solutions, cityByKey } = mapState;
+    const { map, beats, phases, solutions } = mapState;
 
     const h = delayRender(`locator-story-frame-${frame}`);
 
@@ -327,43 +305,17 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
       });
     }
 
-    // Callout reveal: ease over first ~0.5s of the beat's hold.
+    // Caption reveal: ease over first ~0.5s of the beat's hold.
     const holdStart = phase.startFrame + phase.moveFrames;
     const halfSecFrames = Math.max(1, Math.round(fps * 0.5));
-    const calloutReveal = interpolate(
+    const captionReveal = interpolate(
       frame,
       [holdStart, holdStart + halfSecFrames],
       [0, 1],
       { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
     );
-    const captionReveal = calloutReveal;
 
-    // Callout projection: highlighted region's lon/lat → screen coords.
-    let calloutPt: { x: number; y: number } | null = null;
-    let calloutColor = geo.markers[0]?.color ?? "#2171b5";
-    if (beat.callout) {
-      const lngLat = cityByKey.get(beat.callout.region);
-      if (lngLat) {
-        const pt = map.project(lngLat as [number, number]);
-        calloutPt = { x: pt.x, y: pt.y };
-      }
-      // Colour the callout by the highlighted marker / category colour.
-      const first = geo.markers.find(
-        (mk) =>
-          mk.label === beat.callout?.region ||
-          mk.category === beat.callout?.region,
-      );
-      if (first) calloutColor = first.color;
-    }
-
-    setOverlay({
-      beatIndex,
-      calloutPt,
-      calloutReveal,
-      calloutValue: beat.callout?.value ?? "",
-      calloutColor,
-      captionReveal,
-    });
+    setOverlay({ beatIndex, captionReveal });
 
     map.once("idle", () => continueRender(h));
     map.triggerRepaint();
@@ -434,24 +386,10 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         />
       )}
 
-      {/* Callout overlay — projected to screen coords. Only in the FEW-annotated regime, where
-          it names the actual place on the map. In the categorized regime the caption already
-          states "<category> — N sites", and a centroid callout would (a) duplicate that text and
-          (b) point at a meaningless average location — so it is suppressed there. */}
-      {!geo.hasCategories &&
-        overlay &&
-        beat?.callout &&
-        overlay.calloutPt &&
-        overlay.calloutReveal > 0 && (
-          <CountryLabel
-            name={beat.callout.name}
-            color={overlay.calloutColor}
-            reveal={overlay.calloutReveal}
-            x={overlay.calloutPt.x}
-            y={overlay.calloutPt.y}
-            value={overlay.calloutValue}
-          />
-        )}
+      {/* No on-map callout: the markers already carry their own decluttered labels (naming each
+          place), so a projected name callout would duplicate them and can overflow the frame near
+          the edges. The caption below carries the value-add — the marker's note / the category
+          count — which the map does not otherwise show. */}
 
       {/* Caption lower-third — for reveal/takeaway beats with copy */}
       {overlay &&
