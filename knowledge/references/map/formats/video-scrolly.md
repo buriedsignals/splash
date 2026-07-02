@@ -26,6 +26,10 @@ The scrolly video consumes the **exact same `ScrollyStory`** as the interactive 
 
 - **Choropleth + symbol** — story derived via `mapStoryToChapters(layout, features, joinKey, meta)`
 - **Route** — story derived via `routeStoryToChapters(layout, meta)`
+- **Locator** — story derived via `deriveLocatorStory(markers, meta, opts?)` → `mapStoryToChapters`.
+  Two regimes: few-annotated (one beat per PLACE, caption = marker `note`) and categorized (one
+  beat per CATEGORY, caption = `"<category> — N sites"` + rank descriptor). Overview and takeaway
+  steps are visual-only (no panel); reveal steps carry the panel.
 
 Each `ScrollyStep` carries `{ prose, align?, action, ref }` — `prose` is the panel content, and
 `ref` is the beat index (flyTo) or territory index (drawTo) used to drive the map. No separate
@@ -136,6 +140,7 @@ Format coverage by type:
 | Choropleth | ✓ | ✓ | ✓ | ✓ |
 | Symbol | ✓ | ✓ | ✓ | ✓ |
 | Route | ✓ | — | ✓ | ✓ |
+| Locator | ✓ | ✓ | ✓ | ✓ |
 
 `all` includes `scrolly`. Route gains `scrolly` alongside `story` (route has no simple-reveal in
 the narrated sense; its only video formats are `story` and `scrolly`).

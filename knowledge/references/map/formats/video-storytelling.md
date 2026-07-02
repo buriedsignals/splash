@@ -103,6 +103,19 @@ every reveal beat. Dimming creates a "spotlight" effect that implies the other d
 trustworthy — a stable frame reads as more authoritative. (FT Visual Vocabulary — a stable
 frame of reference; the data, not the camera effect, carries meaning.)
 
+## Locator storytelling
+
+Locator storytelling uses `deriveLocatorStory` to produce beats and follows the same
+guided-tour format. Two regimes:
+
+- **Few-annotated:** one beat per PLACE; camera flies to each marker; callout = the marker's
+  `note` (fallback: `label`). Category legend shown when applicable.
+- **Categorized:** one beat per CATEGORY; camera fits the bounding extent of all markers in
+  that category; callout = `"<category> — N sites"`.
+
+Uniform-marker invariant applies: dot/pin size is constant throughout the video regardless of
+regime. No value scaling.
+
 ## Reveal count — AI-controlled
 
 **The AI picks how many reveal beats to include per article. Default: one hero + top features,

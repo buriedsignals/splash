@@ -95,6 +95,13 @@ Do not animate `fill-color` — stable hue from frame 0 ensures the reader never
 choropleth "shift colour" as it fades in (consistent with FT Visual Vocabulary's guidance on
 sequential and diverging scales).
 
+### Locator
+
+Animate dot/pin marker **opacity** from `0` to `1` on the uniform ramp. All markers grow and
+fade in simultaneously at the same rate — no per-marker stagger, no value-based sizing (the
+uniform-marker invariant holds). The camera is fixed on the full data extent from frame 0; no
+panning or zooming. Category legend (when categorized) fades in on the same ramp as the markers.
+
 ### Proportional symbol
 
 Animate circle `radius` from `0` to the target value computed from the data, and label

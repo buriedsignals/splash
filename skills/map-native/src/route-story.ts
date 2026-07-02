@@ -1,6 +1,7 @@
 import type { RouteRevealLayout } from "./route-geo";
 import { computeRouteReveal } from "./route-geo";
 import { computeChoropleth } from "./choropleth-geo";
+import { deriveLocatorStory } from "./locator-story";
 import { deriveMapStory } from "./map-story";
 import { deriveSymbolStory } from "./symbol-story";
 import { buildTimeline } from "./story-timeline";
@@ -99,6 +100,19 @@ export function scrollyStepCount(
 ): number {
   if (config.type === "route") {
     return computeRouteReveal(config, world).territories.length + 3;
+  }
+  if (config.type === "locator") {
+    const beats = deriveLocatorStory(config.markers, {
+      title: config.title ?? "",
+      description: config.description,
+      insight: config.insight ?? config.title ?? "",
+    });
+    return mapStoryToChapters(beats, {
+      title: config.title ?? "",
+      description: config.description,
+      source: config.source,
+      regionsWithData: config.markers.length,
+    }).steps.length;
   }
   if (config.type === "symbol") {
     const beats = deriveSymbolStory(
