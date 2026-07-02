@@ -32,15 +32,37 @@ Each `ScrollyStep` carries `{ prose, align?, action, ref }` — `prose` is the p
 video-only content is authored.
 This is the core contract: one narrative, two expressions (interactive scroll; frame-deterministic MP4).
 
+## Narrative structure — overview at both ends
+
+Every scrolly opens and closes on the **whole dataset** so the reader sees all the data before
+and after the beat-by-beat reveals: `[title] → [OVERVIEW] → [reveal × N] → [TAKEAWAY]`.
+`mapStoryToChapters` keeps the `establish` beat as the opening overview and always keeps the
+`takeaway` beat as the closing overview; `routeStoryToChapters` adds an overview step (before the
+draws) and a takeaway step (after).
+
+On the **video**, the overview + takeaway are shown as **visual establishing/closing shots, not
+text panels** — the map holds the full extent with every region painted / every symbol / all
+crossed territories visible, and the furniture (title + description) carries the words. Choropleth
+and symbol render **no panel** on those two steps; the route **overview tints all crossed
+territories** (route not yet drawn) and the route **takeaway** keeps a data-tied summary panel
+(e.g. "3 territories, 2,755 km"). Text panels otherwise appear only on the per-beat reveal steps.
+
+**Reveal is synced to its panel.** Each reveal step's data emphasis (choropleth highlight, symbol
+emphasis, route territory fill + border + draw) ramps in on the **same frame window** as that
+step's panel slide-in — the data appears exactly when its caption arrives, never offset.
+
 ## Look
 
 A scrolly video has two regions:
 
 | Ratio | Panel position | Panel width |
 |-------|---------------|-------------|
-| Landscape 1280 × 720 | Side column (left or right, per `align`) | fixed column |
-| Square 1080 × 1080 | Bottom card | full width |
-| Portrait 1080 × 1350 | Bottom card | full width |
+| Landscape 1280 × 720 | Side column (left or right, per `align`) | hugs its text (`fit-content`), capped at a max column |
+| Square 1080 × 1080 | Bottom card | hugs its text, capped at a max card |
+| Portrait 1080 × 1350 | Bottom card | hugs its text, capped at a max card |
+
+The panel box **fits its text** (never an oversized band around a short caption), anchored per side
+(left edge for `left`, right edge for `right`, centred otherwise) so it stays put as it resizes.
 
 The **map is pinned** and reacts per step. The **prose panel slides in** (from off-screen on
 the `align` side, or from the bottom for square/portrait), **pins** while the step plays, then
@@ -80,6 +102,12 @@ Vocabulary — annotation economy; the panel carries the argument, the map carri
 
 The `ScrollyStep.ref` field holds the **territory index** for route steps — the draw head
 stops at the segment end for territory `ref`.
+
+**Editorial notes per territory.** A route step's panel text is the territory's `note` when the
+config provides one (`territories[].note`), else the territory label. This lets the journalist
+write a real caption for each crossing ("In Arunachal Pradesh the river becomes the Brahmaputra…")
+while unnamed territories fall back to their label. The on-map country labels stay omitted — the
+panel is the single place the territory is named.
 
 ## Frame-determinism
 
