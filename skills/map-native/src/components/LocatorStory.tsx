@@ -434,8 +434,12 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         />
       )}
 
-      {/* Callout overlay — projected to screen coords */}
-      {overlay &&
+      {/* Callout overlay — projected to screen coords. Only in the FEW-annotated regime, where
+          it names the actual place on the map. In the categorized regime the caption already
+          states "<category> — N sites", and a centroid callout would (a) duplicate that text and
+          (b) point at a meaningless average location — so it is suppressed there. */}
+      {!geo.hasCategories &&
+        overlay &&
         beat?.callout &&
         overlay.calloutPt &&
         overlay.calloutReveal > 0 && (

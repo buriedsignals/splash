@@ -87,16 +87,14 @@ export function deriveLocatorStory(
     }
   } else {
     // Few-annotated regime: a beat per place (capped), caption = note ?? label.
+    // Camera STAYS on the whole concerned zone (all places framed) for every reveal, so the
+    // markers stay visible and separated — a per-place ±CITY_DELTA box would zoom OUT and lose
+    // tightly-clustered places (e.g. sites within one city). The reveal is the highlight + callout.
     for (const m of markers.slice(0, cap)) {
       const copy = m.note?.trim() ? m.note : m.label;
       beats.push({
         kind: "reveal",
-        camera: [
-          m.lon - CITY_DELTA,
-          m.lat - CITY_DELTA,
-          m.lon + CITY_DELTA,
-          m.lat + CITY_DELTA,
-        ],
+        camera: allBounds,
         highlight: [m.label],
         dim: true,
         callout: { region: m.label, name: m.label, value: "", text: copy },

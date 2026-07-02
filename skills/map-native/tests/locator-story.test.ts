@@ -58,6 +58,16 @@ describe("deriveLocatorStory", () => {
     expect(beats.filter((b) => b.kind === "reveal").length).toBe(1);
   });
 
+  it("few-regime: every reveal stays framed on the whole zone (all places bbox), not a tight per-place box", () => {
+    const beats = deriveLocatorStory(few, {
+      title: "Where the ceremony unfolded",
+    });
+    const establish = beats.find((b) => b.kind === "establish")!;
+    for (const r of beats.filter((b) => b.kind === "reveal")) {
+      expect(r.camera).toEqual(establish.camera); // same zone as the establishing shot
+    }
+  });
+
   it("gives a single-marker category a non-degenerate camera (no over-zoom)", () => {
     // "cultural" has one marker (C); its camera bbox must not collapse to zero extent.
     const beats = deriveLocatorStory(many, {
