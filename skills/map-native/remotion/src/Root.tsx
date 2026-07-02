@@ -32,6 +32,8 @@ import { SymbolStory } from "../../src/components/SymbolStory";
 import { SymbolReveal } from "../../src/components/SymbolReveal";
 import { ChoroplethReveal } from "../../src/components/ChoroplethReveal";
 import { RouteReveal } from "../../src/components/RouteReveal";
+import { LocatorReveal } from "../../src/components/LocatorReveal";
+import { LocatorStory } from "../../src/components/LocatorStory";
 import { MapScrolly } from "../../src/components/MapScrolly";
 import { scrollyFrames, scrollyStepCount } from "../../src/route-story";
 import { REVEAL_FRAMES } from "../../src/reveal";
@@ -40,10 +42,12 @@ import { computeChoropleth } from "../../src/choropleth-geo";
 import { computeRouteReveal, routeRevealFrames } from "../../src/route-geo";
 import { deriveMapStory } from "../../src/map-story";
 import { deriveSymbolStory } from "../../src/symbol-story";
+import { deriveLocatorStory } from "../../src/locator-story";
 import { buildTimeline } from "../../src/story-timeline";
 import sampleConfig from "../../assets/sample-data/choropleth.json";
 import sampleSymbol from "../../assets/sample-data/symbol.json";
 import sampleRoute from "../../assets/sample-data/route.json";
+import sampleLocator from "../../assets/sample-data/locator-many.json";
 import world from "../../assets/geo/world.geojson";
 
 const sampleLayout = computeChoropleth(sampleConfig, world as any, "iso_a3", {
@@ -88,6 +92,16 @@ const SYMBOL_FRAMES = buildTimeline(
   sampleSymbolBeats.map((b) => b.kind),
   30,
 ).totalFrames;
+
+const sampleLocatorBeats = deriveLocatorStory(sampleLocator.markers, {
+  title: sampleLocator.title ?? "",
+  insight: (sampleLocator as any).insight ?? sampleLocator.title ?? "",
+});
+const LOCATOR_STORY_FRAMES = buildTimeline(
+  sampleLocatorBeats.map((b) => b.kind),
+  30,
+).totalFrames;
+const locatorDefaultProps = { config: sampleLocator };
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -260,6 +274,60 @@ export const RemotionRoot: React.FC = () => (
       width={1080}
       height={1350}
       defaultProps={routeDefaultProps as any}
+    />
+    <Composition
+      id="LocatorReveal"
+      component={LocatorReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={locatorDefaultProps as any}
+    />
+    <Composition
+      id="LocatorRevealSquare"
+      component={LocatorReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={locatorDefaultProps as any}
+    />
+    <Composition
+      id="LocatorRevealPortrait"
+      component={LocatorReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={locatorDefaultProps as any}
+    />
+    <Composition
+      id="LocatorStory"
+      component={LocatorStory}
+      durationInFrames={LOCATOR_STORY_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={locatorDefaultProps as any}
+    />
+    <Composition
+      id="LocatorStorySquare"
+      component={LocatorStory}
+      durationInFrames={LOCATOR_STORY_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={locatorDefaultProps as any}
+    />
+    <Composition
+      id="LocatorStoryPortrait"
+      component={LocatorStory}
+      durationInFrames={LOCATOR_STORY_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={locatorDefaultProps as any}
     />
   </>
 );

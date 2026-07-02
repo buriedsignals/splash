@@ -80,8 +80,11 @@ const isLocator = parsedConfig.type === "locator";
 // guided-tour: choropleth/symbol fly-through (SP2). route-reveal: draw-on route (SP3b).
 function storyComps(config, cameraMode) {
   const isSymbolMap = config.type === "symbol";
+  const isLocatorMap = config.type === "locator";
   if (cameraMode === "guided-tour") {
-    return isSymbolMap
+    return isLocatorMap
+      ? [["LocatorStory", "landscape"], ["LocatorStorySquare", "square"], ["LocatorStoryPortrait", "portrait"]]
+      : isSymbolMap
       ? [["SymbolStory", "landscape"], ["SymbolStorySquare", "square"], ["SymbolStoryPortrait", "portrait"]]
       : [["ChoroplethStory", "landscape"], ["ChoroplethStorySquare", "square"], ["ChoroplethStoryPortrait", "portrait"]];
   }
@@ -93,7 +96,9 @@ function storyComps(config, cameraMode) {
 
 // comps[kind] = [[compId, sizeName], ...] for the config's type
 const VIDEO_COMPS = {
-  reveal: isSymbol
+  reveal: isLocator
+    ? [["LocatorReveal", "landscape"], ["LocatorRevealSquare", "square"], ["LocatorRevealPortrait", "portrait"]]
+    : isSymbol
     ? [["SymbolReveal", "landscape"], ["SymbolRevealSquare", "square"], ["SymbolRevealPortrait", "portrait"]]
     : [["ChoroplethReveal", "landscape"], ["ChoroplethRevealSquare", "square"], ["ChoroplethRevealPortrait", "portrait"]],
 };
@@ -126,7 +131,7 @@ function renderVideoSet(kind, propsPath, remotionEntry, comps) {
 // Route has no simple-reveal; its only video is route-reveal (story-kind).
 // For route: all/reveal/story → ["story"]; static → []. Non-route branch unchanged.
 const kinds = isLocator
-  ? []                       // Slice A: static + interactive web builds only; video is Slice B
+  ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
   : isRoute
   ? (format === "static" ? [] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["story", "scrolly"] : ["story"])
   : (format === "all" ? ["reveal", "story", "scrolly"]
