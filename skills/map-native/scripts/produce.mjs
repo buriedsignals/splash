@@ -74,6 +74,7 @@ const result = {
 const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
 const isSymbol = parsedConfig.type === "symbol";
 const isRoute = parsedConfig.type === "route";
+const isLocator = parsedConfig.type === "locator";
 
 // Returns the composition set for the story kind, dispatched on cameraMode.
 // guided-tour: choropleth/symbol fly-through (SP2). route-reveal: draw-on route (SP3b).
@@ -124,7 +125,9 @@ function renderVideoSet(kind, propsPath, remotionEntry, comps) {
 
 // Route has no simple-reveal; its only video is route-reveal (story-kind).
 // For route: all/reveal/story → ["story"]; static → []. Non-route branch unchanged.
-const kinds = isRoute
+const kinds = isLocator
+  ? []                       // Slice A: static + interactive web builds only; video is Slice B
+  : isRoute
   ? (format === "static" ? [] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["story", "scrolly"] : ["story"])
   : (format === "all" ? ["reveal", "story", "scrolly"]
      : format === "reveal" ? ["reveal"]

@@ -1,0 +1,43 @@
+{
+  "type": "locator",
+  "basemap": "world",
+  "markerStyle": "pin",
+  "title": "Where the Paris 2024 opening ceremony unfolded",
+  "description": "Five Seine-side sites that anchored the first Olympic opening staged outside a stadium, 26 July 2024.",
+  "source": {
+    "name": "Paris 2024 Organising Committee",
+    "url": "https://olympics.com/en/paris-2024"
+  },
+  "markers": [
+    {
+      "lon": 2.3699,
+      "lat": 48.8503,
+      "label": "Pont d'Austerlitz",
+      "note": "Start line where the 85-boat athletes' parade entered the Seine."
+    },
+    {
+      "lon": 2.3499,
+      "lat": 48.853,
+      "label": "Notre-Dame de Paris",
+      "note": "The flotilla passed the cathedral, still under post-fire restoration."
+    },
+    {
+      "lon": 2.3376,
+      "lat": 48.8606,
+      "label": "Louvre riverfront",
+      "note": "Tableau staged on the quays beside the museum's Right Bank facade."
+    },
+    {
+      "lon": 2.313,
+      "lat": 48.8606,
+      "label": "Pont Alexandre III",
+      "note": "Protocol hub where flags were raised and the parade concluded."
+    },
+    {
+      "lon": 2.2895,
+      "lat": 48.8584,
+      "label": "Eiffel Tower / Trocadéro",
+      "note": "Finale site where the Olympic flame was lit before a global broadcast."
+    }
+  ]
+}
