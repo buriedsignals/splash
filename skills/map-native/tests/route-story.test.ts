@@ -1,5 +1,9 @@
 import { describe, it, expect } from "bun:test";
-import { routeStoryToChapters, scrollyFrames } from "../src/route-story";
+import {
+  routeStoryToChapters,
+  scrollyFrames,
+  scrollyStepCount,
+} from "../src/route-story";
 import { computeRouteReveal } from "../src/route-geo";
 import world from "../assets/geo/world.geojson" assert { type: "json" };
 
@@ -60,5 +64,35 @@ describe("scrollyFrames", () => {
   });
   it("includes the title scene (≥ one title hold)", () => {
     expect(scrollyFrames(2, 30)).toBeGreaterThanOrEqual(75);
+  });
+});
+
+describe("scrollyStepCount — symbol honors maxReveals", () => {
+  const points = [
+    { lon: 2.35, lat: 48.85, value: 10, label: "Paris" },
+    { lon: 13.4, lat: 52.5, value: 9, label: "Berlin" },
+    { lon: -0.13, lat: 51.51, value: 8, label: "London" },
+    { lon: 12.5, lat: 41.9, value: 7, label: "Rome" },
+    { lon: -3.7, lat: 40.4, value: 6, label: "Madrid" },
+    { lon: 4.9, lat: 52.37, value: 5, label: "Amsterdam" },
+  ];
+
+  const baseConfig = {
+    type: "symbol" as const,
+    basemap: "dataviz",
+    title: "Top cities",
+    valueUnit: "",
+  };
+
+  it("fewer maxReveals yields fewer steps than more maxReveals", () => {
+    const stepsWithFew = scrollyStepCount(
+      { ...baseConfig, points, maxReveals: 2 },
+      world as any,
+    );
+    const stepsWithMany = scrollyStepCount(
+      { ...baseConfig, points, maxReveals: 6 },
+      world as any,
+    );
+    expect(stepsWithFew).toBeLessThan(stepsWithMany);
   });
 });

@@ -4,7 +4,6 @@ import { computeChoropleth } from "./choropleth-geo";
 import { deriveMapStory } from "./map-story";
 import { deriveSymbolStory } from "./symbol-story";
 import { buildTimeline } from "./story-timeline";
-import { TITLE_SCENE_FRAMES } from "./video-scene";
 import { mapStoryToChapters } from "../../scrolly/src/chapters";
 import type { ScrollyStory, ScrollyStep } from "../../scrolly/src/chapters";
 
@@ -49,7 +48,7 @@ export function routeStoryToChapters(
 }
 
 // Total frames for a scrolly video: step 0 is the full-screen title scene (buildTimeline's
-// "title" hold defaults to 2.5s = TITLE_SCENE_FRAMES @30fps), each later step is a "reveal"
+// "title" hold = 75 frames @30fps), each later step is a "reveal"
 // (move + hold). Reusing buildTimeline keeps scrolly pacing identical to the storytelling video.
 export function scrollyFrames(stepCount: number, fps: number): number {
   const kinds = Array.from({ length: Math.max(1, stepCount) }, (_, i) =>
@@ -69,11 +68,15 @@ export function scrollyStepCount(
     return computeRouteReveal(config, world).territories.length + 1;
   }
   if (config.type === "symbol") {
-    const beats = deriveSymbolStory(config.points, {
-      title: config.title ?? "",
-      insight: config.insight ?? config.title ?? "",
-      unit: config.valueUnit ?? "",
-    });
+    const beats = deriveSymbolStory(
+      config.points,
+      {
+        title: config.title ?? "",
+        insight: config.insight ?? config.title ?? "",
+        unit: config.valueUnit ?? "",
+      },
+      { maxReveals: config.maxReveals },
+    );
     return mapStoryToChapters(beats, {
       title: config.title ?? "",
       description: config.description,
@@ -97,7 +100,3 @@ export function scrollyStepCount(
     regionsWithData: layout.joined.filter((j) => j.value !== null).length,
   }).steps.length;
 }
-
-// Suppress unused-import warning — TITLE_SCENE_FRAMES documents the frame budget
-// this module aligns with (buildTimeline's "title" hold = TITLE_SCENE_FRAMES @30fps).
-void TITLE_SCENE_FRAMES;

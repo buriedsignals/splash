@@ -74,7 +74,7 @@ export const ScrollyPanel: React.FC<{
   if (p.opacity <= 0) return null;
   const bg = dark ? "rgba(18,18,20,0.82)" : "rgba(255,255,255,0.92)";
   const ink = dark ? "#f4f4f5" : "#1a1a1a";
-  const narrow = width <= 1080;
+  const narrow = p.side === "bottom";
   return (
     <div
       style={{

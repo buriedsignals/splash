@@ -113,9 +113,11 @@ the narrated sense; its only video formats are `story` and `scrolly`).
 
 ## Conformance
 
-`checkScrollyConformance({ story, territoryCount })` validates the derived scrolly story before
-render: every step must have non-empty `title` and `body`; `ref` must be in range; territory
-count (route) must be consistent. Runs inside `produce.mjs` before the Remotion render.
+`checkScrollyConformance({ story, territoryCount })` validates the derived scrolly story as a
+contract gate at authoring time: every step must have non-empty `title` and `body`; `ref` must
+be in range; territory count (route) must be consistent. It is exercised in the test suite — it
+does NOT run inside `produce.mjs` at render time (consistent with all other map-native conformance,
+which is test-only).
 
 ## Sources (by name)
 

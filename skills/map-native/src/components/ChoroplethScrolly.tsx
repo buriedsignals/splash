@@ -49,9 +49,7 @@ export function stepSlide(
   fps: number,
   totalFrames: number,
 ): number {
-  const ENTER = Math.round(0.4 * fps);
   const EXIT = Math.round(0.4 * fps);
-  void ENTER;
   const a = phases[i].startFrame;
   const pin = phases[i].startFrame + phases[i].moveFrames;
   const end = i + 1 < phases.length ? phases[i + 1].startFrame : totalFrames;
