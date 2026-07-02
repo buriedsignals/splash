@@ -109,6 +109,13 @@ fade in simultaneously at the same rate — no per-marker stagger, no value-base
 uniform-marker invariant holds). The camera is fixed on the full data extent from frame 0; no
 panning or zooming. Category legend (when categorized) fades in on the same ramp as the markers.
 
+### Hex-grid
+
+Animate cell `fill-opacity` from `0` to `~0.85` on the uniform ramp — all populated cells fade
+in simultaneously. The camera is fixed on the full data extent from frame 0; no panning or
+zooming. The BLUES legend fades in on the same ramp as the cells. Uniform-cell invariant: cell
+size is constant (magnitude = colour, never size).
+
 ### Proportional symbol
 
 Animate circle `radius` from `0` to the target value computed from the data, and label

@@ -103,6 +103,15 @@ every reveal beat. Dimming creates a "spotlight" effect that implies the other d
 trustworthy — a stable frame reads as more authoritative. (FT Visual Vocabulary — a stable
 frame of reference; the data, not the camera effect, carries meaning.)
 
+## Hex-grid storytelling
+
+Hex-grid storytelling uses `deriveHexGridStory` to produce beats ranked by aggregate value
+(descending — highest cells first, top-N capped). Beat structure: **title → establish (full
+data extent, cells fade in) → reveal × N (camera expands to a bbox covering the highlighted
+cells, covering ≥ 50% of the data extent — never a single zoomed cell; caption = aggregate
+label + value) → takeaway (returns to full extent)**. Uniform-cell invariant: cell size is
+constant throughout — magnitude is colour, never size.
+
 ## Dot-density storytelling
 
 Dot-density storytelling uses `deriveDotDensityStory` to produce beats, ranked by dots/area

@@ -122,10 +122,15 @@ The tooltip is tied to the `hex-grid-cells` layer id.
   objects carry no numeric `value`, the engine falls back to count. This is a data-prep error,
   not an engine fallback to rely on.
 
-## Known v1 limits (Slice A)
+## Known v1 limits (Slice A → Slice B shipped)
 
-- **Static and interactive formats ship in Slice A.** Video formats (reveal, story, scrolly,
-  interactive scrolly) are deferred to Slice B.
+- **All six formats ship in Slices A + B.** Static and interactive shipped in Slice A.
+  Video formats (reveal, story/storytelling, scrolly) and interactive scrolly shipped in Slice B.
+  The storytelling story structure follows the guided-tour arc: **title → establish → reveal the
+  HIGHEST cells (top-N by aggregate, descending) → takeaway**. Camera stays framed on the data
+  zone throughout: on reveal beats, the camera expands the cell bounding box to cover ≥ 50% of
+  the data extent — never a single zoomed-in cell. The uniform-cell invariant holds at all times:
+  magnitude is encoded by colour, never by cell size.
 - **Single value field.** Each point carries at most one numeric `value` field. Multi-field
   aggregation (e.g. sum casualties AND sum property damage in one grid) is not yet supported.
 - **No H3 / deck.gl.** The engine uses `turf.hexGrid` / `turf.squareGrid` over the data extent.
@@ -138,9 +143,15 @@ The tooltip is tied to the `hex-grid-cells` layer id.
 
 This type is implemented by `skills/map-native/src/hex-grid-geo.ts` (grid generation via
 `turf.hexGrid` / `turf.squareGrid`, point collection via `turf.collect`, aggregate computation,
-sequential BLUES bin colouring, empty-cell drop, auto cell-size) and
+sequential BLUES bin colouring, empty-cell drop, auto cell-size),
+`skills/map-native/src/hex-grid-story.ts` (story derivation — `deriveHexGridStory` producing
+the top-N beat sequence and camera extents for reveal and storytelling builds), and
 `skills/map-native/src/HexGridMap.tsx` (static + interactive render, cell hover, legend,
-`mapStyle` selection). All configs are guarded at render time by `checkHexGridConformance` in
+`mapStyle` selection). Video components: `HexGridReveal` / `HexGridRevealSquare` /
+`HexGridRevealPortrait` (simple reveal), `HexGridStory` / `HexGridStorySquare` /
+`HexGridStoryPortrait` (storytelling), and `MapScrolly` / `MapScrollySquare` /
+`MapScrollyPortrait` (scrolly video + interactive scrolly, shared with other types). All configs
+are guarded at render time by `checkHexGridConformance` in
 `skills/map-native/src/conformance.ts`.
 
 ## Credit conventions
