@@ -396,3 +396,96 @@ export function validateDotDensityConfig(
   if (errors.length) return { ok: false, errors };
   return { ok: true, spec: s as DotDensityConfigShape, warnings };
 }
+
+export type HexGridConfigShape = {
+  type: "hex-grid";
+  points: { lon: number; lat: number; value?: number }[];
+  binShape?: "hex" | "square";
+  aggregate?: "count" | "sum" | "mean";
+  cellSizeKm?: number;
+  basemap: string;
+  mapStyle?: string;
+  title: string;
+  description?: string;
+  source?: { name?: string; url?: string };
+};
+
+export function validateHexGridConfig(
+  spec: unknown,
+):
+  | { ok: true; spec: HexGridConfigShape; warnings: string[] }
+  | { ok: false; errors: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const s = (spec ?? {}) as Record<string, unknown>;
+
+  if (typeof s.basemap !== "string" || !s.basemap.trim())
+    errors.push("basemap must be a non-empty string");
+  if (
+    s.mapStyle !== undefined &&
+    !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
+  )
+    errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  if (
+    s.binShape !== undefined &&
+    !["hex", "square"].includes(s.binShape as string)
+  )
+    errors.push("binShape must be one of: hex, square");
+  const aggregate = (s.aggregate ?? "count") as string;
+  if (!["count", "sum", "mean"].includes(aggregate))
+    errors.push("aggregate must be one of: count, sum, mean");
+  if (
+    s.cellSizeKm !== undefined &&
+    (typeof s.cellSizeKm !== "number" || !(s.cellSizeKm > 0))
+  )
+    errors.push("cellSizeKm must be a positive number");
+
+  const points = s.points;
+  if (!Array.isArray(points) || points.length === 0) {
+    errors.push("points must be a non-empty array");
+  } else {
+    const needsValue = aggregate === "sum" || aggregate === "mean";
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i] as Record<string, unknown> | null;
+      if (!p || typeof p !== "object") {
+        errors.push(`point ${i} is not an object`);
+        continue;
+      }
+      if (
+        typeof p.lon !== "number" ||
+        Number.isNaN(p.lon) ||
+        p.lon < -180 ||
+        p.lon > 180
+      )
+        errors.push(`point ${i} lon must be a number in [-180, 180]`);
+      if (
+        typeof p.lat !== "number" ||
+        Number.isNaN(p.lat) ||
+        p.lat < -90 ||
+        p.lat > 90
+      )
+        errors.push(`point ${i} lat must be a number in [-90, 90]`);
+      if (needsValue && (typeof p.value !== "number" || Number.isNaN(p.value)))
+        errors.push(
+          `point ${i} needs a numeric value for aggregate "${aggregate}"`,
+        );
+    }
+  }
+
+  const title = typeof s.title === "string" ? s.title.trim() : "";
+  if (title.length < 12)
+    errors.push(`title too short to be an insight: "${title}"`);
+  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
+    errors.push(`title is a year range, not an insight: "${title}"`);
+
+  if (!(typeof s.description === "string" && s.description.trim()))
+    warnings.push("missing description — a module must state what/when/where");
+  const source = (s.source ?? {}) as Record<string, unknown>;
+  if (!(typeof source.name === "string" && source.name.trim()))
+    warnings.push("missing source name");
+  if (!(typeof source.url === "string" && source.url.trim()))
+    warnings.push("missing source url");
+
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, spec: s as HexGridConfigShape, warnings };
+}

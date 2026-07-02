@@ -394,3 +394,43 @@ export function checkLocatorConformance(
     v.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
   return v;
 }
+
+export function checkHexGridConformance(
+  input: {
+    title: string;
+    description?: string;
+    source: { name?: string; url?: string };
+    hasBinLegend: boolean;
+    hasAggregateLabel: boolean;
+    cellCount: number;
+    boundsNonEmpty: boolean;
+    mapStyle?: string;
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalMapConformance(
+    {
+      title: input.title,
+      description: input.description,
+      source: input.source,
+    },
+    textColors,
+  );
+  if (!input.hasBinLegend)
+    v.push(
+      "hex-grid needs a sequential bin legend — the colour scale is undecodable without it",
+    );
+  if (!input.hasAggregateLabel)
+    v.push(
+      "hex-grid must label its aggregate (points per cell / sum / mean of what)",
+    );
+  if (input.cellCount < 1) v.push("no populated cells to draw");
+  if (!input.boundsNonEmpty)
+    v.push("empty grid bounds — basemap-fit impossible");
+  if (
+    input.mapStyle &&
+    !(MAP_STYLES as readonly string[]).includes(input.mapStyle)
+  )
+    v.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  return v;
+}
