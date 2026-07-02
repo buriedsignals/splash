@@ -7,19 +7,29 @@ import { buildTimeline } from "./story-timeline";
 import { mapStoryToChapters } from "../../scrolly/src/chapters";
 import type { ScrollyStory, ScrollyStep } from "../../scrolly/src/chapters";
 
-// Route → ScrollyStory: an intro step (flyTo, carries the description) followed by one
-// drawTo step per crossed territory (in the layout's already-sorted order). Each drawTo
-// step's `ref` is the territory index; the renderer looks up territory.stop from it. Prose
-// is the territory label (always non-empty — computeRouteReveal defaults label to the key);
-// config.territories[].label lets the curator enrich it upstream.
+// Route → ScrollyStory. Step sequence:
+//   [0] intro       — flyTo, title card scene, carries the description (ref 0)
+//   [1] overview     — flyTo, full route framed, nothing drawn yet, all territories outlined
+//                      (sentinel ref = -1)
+//   [2..N+1] draw×N  — one drawTo per crossed territory (ref = territory index 0..N-1); prose
+//                      is the editorial note if provided, else the territory label
+//   [N+2] takeaway   — flyTo, full route fully drawn, all territories filled, full-extent camera
+//                      (sentinel ref = territories.length)
+// Sentinel refs let the renderer detect the two framing steps: ref === -1 → overview,
+// ref === territories.length → takeaway. drawTo refs stay 0..N-1 so the driver reads
+// territory.stop from them.
 export function routeStoryToChapters(
   layout: RouteRevealLayout,
   meta: {
     title: string;
     description?: string;
     source?: { name: string; url: string };
+    insight?: string;
+    notes?: Record<string, string>;
   },
 ): ScrollyStory {
+  const n = layout.territories.length;
+
   const intro: ScrollyStep = {
     id: "step-0-intro",
     visual: "map",
@@ -29,21 +39,44 @@ export function routeStoryToChapters(
     align: "center",
   };
 
+  const overview: ScrollyStep = {
+    id: "step-1-overview",
+    visual: "map",
+    action: "flyTo",
+    ref: -1,
+    prose: meta.description?.trim() ? meta.description : meta.title,
+    align: "center",
+  };
+
   const drawSteps: ScrollyStep[] = layout.territories.map((t, i) => ({
-    id: `step-${i + 1}-draw`,
+    id: `step-${i + 2}-draw`,
     visual: "map",
     action: "drawTo",
     ref: i,
-    prose: t.label,
+    prose: meta.notes?.[t.key]?.trim()
+      ? (meta.notes[t.key] as string)
+      : t.label,
     align: "center",
   }));
+
+  const takeawayProse = meta.insight?.trim()
+    ? meta.insight
+    : `${n} territories, ${Math.round(layout.totalLengthKm)} km`;
+  const takeaway: ScrollyStep = {
+    id: `step-${n + 2}-takeaway`,
+    visual: "map",
+    action: "flyTo",
+    ref: n,
+    prose: takeawayProse,
+    align: "center",
+  };
 
   return {
     title: meta.title,
     description: meta.description,
     source: meta.source,
     visual: "map",
-    steps: [intro, ...drawSteps],
+    steps: [intro, overview, ...drawSteps, takeaway],
   };
 }
 
@@ -65,7 +98,7 @@ export function scrollyStepCount(
   world: GeoJSON.FeatureCollection,
 ): number {
   if (config.type === "route") {
-    return computeRouteReveal(config, world).territories.length + 1;
+    return computeRouteReveal(config, world).territories.length + 3;
   }
   if (config.type === "symbol") {
     const beats = deriveSymbolStory(

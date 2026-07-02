@@ -150,11 +150,13 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // ---------------------------------------------------------------------------
-// Per-step hold pacing for territory border/fill (fractions of the hold phase)
+// Per-step MOVE-phase pacing for territory border/fill (fractions of the move phase).
+// Border/fill ramp across the same move window the panel slides in over (#3), so the
+// river, the territory reveal and its text panel all pin together at move end.
 // ---------------------------------------------------------------------------
 
-const BORDER_HOLD_FRAC = 0.5; // border finishes drawing at 50% of the hold
-const FILL_HOLD_FRAC = 0.78; // fill blooms in by 78% of the hold
+const BORDER_MOVE_FRAC = 0.6; // border finishes drawing at 60% of the move
+const FILL_MOVE_FRAC = 0.95; // fill blooms in by 95% of the move (just before pin)
 
 // ---------------------------------------------------------------------------
 // Init model — captured once, threaded to the per-frame effect
@@ -208,12 +210,18 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
     DRAW,
   } = useMemo(() => {
     const l: RouteRevealLayout = computeRouteReveal(config, world);
+    const notes: Record<string, string> = {};
+    for (const t of config.territories ?? []) {
+      if (t.note?.trim()) notes[t.key] = t.note;
+    }
     const st = routeStoryToChapters(l, {
       title: config.title ?? "",
       description: config.description,
       source: config.source
         ? { name: config.source.name, url: config.source.url ?? "" }
         : { name: "", url: "" },
+      insight: (config as { insight?: string }).insight,
+      notes,
     });
     const stepKinds = st.steps.map((_, i) => (i === 0 ? "title" : "reveal"));
     const { phases: ph, totalFrames: tf } = buildTimeline(stepKinds, fps);
@@ -305,19 +313,22 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         };
       };
 
-      // exitStop of content step i (1..N): the next territory's entry, or 1.0 if the shown
-      // territory is the last. Mirrors the draw-on driver so the camera follows the DRAWN
-      // extent (through the shown territory), never lagging one territory behind.
-      const exitStopOf = (i: number): number =>
-        i < territories.length ? territories[i].stop : 1.0;
+      // exitStop for territory index k: the next territory's entry, or 1.0 if k is the last.
+      // Mirrors the draw-on driver so the camera follows the DRAWN extent (through territory k),
+      // never lagging one territory behind.
+      const exitStopOfK = (k: number): number =>
+        k + 1 < territories.length ? territories[k + 1].stop : 1.0;
 
-      // Per-step camera solutions:
+      // Per-step camera solutions (step sequence: 0 title, 1 overview, 2..N+1 draws, N+2 takeaway):
       //   step 0 (title/intro): full route bounds.
-      //   step i ≥ 1: bounds of the route drawn THROUGH territory i-1 (up to exitStopOf(i)) ∪ territory i-1.
+      //   step 1 (overview):    full route bounds (nothing drawn yet).
+      //   step i in 2..N+1:     bounds of the route drawn THROUGH territory k=i-2 ∪ territory k.
+      //   step N+2 (takeaway):  full route bounds (all drawn).
       const stepSolutions: CameraSolution[] = story.steps.map((s, i) => {
-        if (i === 0) return solveBounds(layout.bounds);
-        const terr = territories[i - 1];
-        const drawnKm = Math.max(0.001, lineKm * exitStopOf(i));
+        const k = i - 2;
+        if (k < 0 || k >= territories.length) return solveBounds(layout.bounds);
+        const terr = territories[k];
+        const drawnKm = Math.max(0.001, lineKm * exitStopOfK(k));
         const drawn = turf.lineSliceAlong(line, 0, drawnKm);
         const terrFeatures = world.features.filter((f) => {
           const key = String(f.properties?.iso_a3 ?? f.properties?.name ?? "");
@@ -463,28 +474,36 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       bearing: 0,
     });
 
-    // drawTo driver: during content step `active`, draw the route THROUGH the shown territory —
-    // from its entry (entryStop) to the next territory's entry (exitStop), or 1.0 for the last.
-    // Animated continuously across the WHOLE active step (this step's start frame → the next
-    // step's start frame, or totalFrames for the last step). During the title scene / step 0,
-    // reveal = 0 (nothing drawn).
+    // Step sequence: 0 title, 1 overview, 2..N+1 draws (territory k = active-2), N+2 takeaway.
+    // drawTo driver: during a draw step, draw the route THROUGH territory k — from its entry
+    // (entryStop) to the next territory's entry (exitStop), or 1.0 for the last. To keep the
+    // river, border/fill and the panel arriving TOGETHER (#3), the draw ramps across this step's
+    // MOVE phase (the same window the panel slides in over: stepSlide 0→1 across the move), then
+    // holds. On the title (0) and overview (1) steps nothing is drawn (reveal 0). On the takeaway
+    // step (active === last) the full route is drawn (reveal 1).
     const phase = ph[active];
+    const lastStep = ph.length - 1;
+    const k = active - 2;
     let reveal: number;
     let drawing = false;
-    if (active === 0) {
+    if (active <= 1) {
+      // title + overview: nothing drawn.
       reveal = 0;
+    } else if (active === lastStep) {
+      // takeaway: full route drawn.
+      reveal = 1;
     } else {
-      const entryStop = territories[active - 1].stop;
+      const entryStop = territories[k].stop;
       const exitStop =
-        active < territories.length ? territories[active].stop : 1.0;
-      const stepSpan =
-        (active + 1 < ph.length ? ph[active + 1].startFrame : totalFrames) -
-        ph[active].startFrame;
-      const localProgress = clamp01(
-        stepSpan > 0 ? (frame - ph[active].startFrame) / stepSpan : 1,
+        k + 1 < territories.length ? territories[k + 1].stop : 1.0;
+      // Ramp across the MOVE phase (panel-enter window), then hold at exitStop.
+      const moveProgress = clamp01(
+        phase.moveFrames > 0
+          ? (frame - phase.startFrame) / phase.moveFrames
+          : 1,
       );
-      reveal = lerp(entryStop, exitStop, easeInOutCubic(localProgress));
-      drawing = localProgress > 0.002 && localProgress < 0.999;
+      reveal = lerp(entryStop, exitStop, easeInOutCubic(moveProgress));
+      drawing = moveProgress > 0.002 && moveProgress < 0.999;
     }
     const riverDrawnKm = lineKm * reveal;
     (map.getSource("river") as any)?.setData(
@@ -510,21 +529,24 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
     map.setPaintProperty("river-head", "line-opacity", riverHeadFade);
 
     // Per-territory: border draw-on + fill bloom triggered off the step that reveals it.
-    // Territory k is revealed by step k+1; its animation runs over that step's HOLD phase.
-    for (let k = 0; k < territories.length; k++) {
-      const terr = territories[k];
+    // Territory kk is revealed by step kk+2 (0 title, 1 overview, 2 = first territory). To land
+    // the border/fill on the SAME frame window as its panel slide-in (#3), the reveal ramps
+    // across the reveal step's MOVE phase (the panel-enter window), then holds. On the takeaway
+    // step (last), every territory is held at its final filled state.
+    for (let kk = 0; kk < territories.length; kk++) {
+      const terr = territories[kk];
       const d = DRAW[terr.key];
-      const revealStep = k + 1;
+      const revealStep = kk + 2;
 
       if (active < revealStep) {
-        // Not yet revealed.
+        // Not yet revealed (title, overview, or an earlier territory's step).
         (map.getSource(`trail-${terr.key}`) as any)?.setData(EMPTY_FEATURE);
         map.setPaintProperty(`fill-${terr.key}`, "fill-opacity", 0);
         continue;
       }
 
       if (active > revealStep) {
-        // Already fully revealed on an earlier step — hold at final state.
+        // Already fully revealed on an earlier step (incl. the takeaway) — hold at final state.
         (map.getSource(`trail-${terr.key}`) as any)?.setData(
           sliceBorder(d, 0, d.total),
         );
@@ -532,21 +554,22 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         continue;
       }
 
-      // active === revealStep: animate over this step's HOLD phase.
-      const holdStart = phase.startFrame + phase.moveFrames;
-      const holdT = clamp01(
-        phase.holdFrames > 0 ? (frame - holdStart) / phase.holdFrames : 1,
+      // active === revealStep: animate over this step's MOVE phase, in lockstep with the panel.
+      const moveT = clamp01(
+        phase.moveFrames > 0
+          ? (frame - phase.startFrame) / phase.moveFrames
+          : 1,
       );
 
-      // Border draws on over the first BORDER_HOLD_FRAC of the hold.
-      const bp = easeInOutCubic(clamp01(holdT / BORDER_HOLD_FRAC));
+      // Border draws on over the first BORDER_MOVE_FRAC of the move window.
+      const bp = easeInOutCubic(clamp01(moveT / BORDER_MOVE_FRAC));
       (map.getSource(`trail-${terr.key}`) as any)?.setData(
         bp <= 0 ? EMPTY_FEATURE : sliceBorder(d, 0, d.total * bp),
       );
 
-      // Fill blooms in after the border, up to FILL_HOLD_FRAC.
+      // Fill blooms in after the border, up to FILL_MOVE_FRAC.
       const fp = clamp01(
-        (holdT - BORDER_HOLD_FRAC) / (FILL_HOLD_FRAC - BORDER_HOLD_FRAC),
+        (moveT - BORDER_MOVE_FRAC) / (FILL_MOVE_FRAC - BORDER_MOVE_FRAC),
       );
       const fo = fp * FILL_OPACITY;
       map.setPaintProperty(

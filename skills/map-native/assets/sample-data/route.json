@@ -8,6 +8,17 @@
     "name": "Natural Earth",
     "url": "https://www.naturalearthdata.com"
   },
+  "insight": "One river, three countries, 2,755 km from the Tibetan Plateau to the delta.",
+  "territories": [
+    {
+      "key": "IND",
+      "note": "In Arunachal Pradesh the river plunges off the Tibetan Plateau and takes a new name — the Brahmaputra — before spreading across the plains of Assam."
+    },
+    {
+      "key": "BGD",
+      "note": "In Bangladesh it merges with the Ganges and the Meghna to form the world's largest river delta before emptying into the Bay of Bengal."
+    }
+  ],
   "route": [
     [84.144, 29.565],
     [84.171, 29.577],

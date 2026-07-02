@@ -48,6 +48,7 @@ export interface RouteConfig {
     label?: string;
     color?: string;
     order?: number;
+    note?: string;
   }>;
 }
 
