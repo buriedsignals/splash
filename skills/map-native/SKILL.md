@@ -370,7 +370,7 @@ best practices live in `knowledge/references/map/formats/video-reveal.md`.
 - `scripts/snap-static.mjs` — Playwright: waits for `map.once('idle')`, screenshots static build.
 - `scripts/snap-proof.mjs` — Playwright: loads interactive build, hovers a region, screenshots popup.
 - `scripts/produce.mjs` — `produce(configPath, outDir)`: all three formats from an arbitrary config.
-- `scripts/prep-geo.mjs` — build-time geo prep (Tom's pattern: bakes the GeoJSON the component needs).
+- `src/route-geo.ts` — `computeRoute` / `computeRouteReveal`: runtime route geometry (auto-detect crossed territories + stops + borders); superseded the build-time `prep-geo.mjs` bake.
 - `assets/geo/world.geojson` — Natural Earth admin-0 boundaries (simplified).
 - `assets/sample-data/choropleth.json` — runnable sample (EU renewable energy share by country).
 - `tests/` — `bun:test` suites: geo core (join/bins/bounds/no-data), conformance guard, the `mapStory`
