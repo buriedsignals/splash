@@ -5,6 +5,7 @@ import type { ScrollyMapConfig } from "./ScrollyMap";
 import type { ScrollySymbolConfig } from "./ScrollySymbolMap";
 import type { ScrollyHexConfig } from "./ScrollyHexMap";
 import type { ScrollyDotDensityConfig } from "./ScrollyDotDensityMap";
+import type { ScrollyLocatorConfig } from "./ScrollyLocatorMap";
 // Fallback sample: reuse map-native's choropleth config (same shape). The build
 // bakes the real config via the Vite `__CONFIG__` define; this is the dev default.
 import sampleConfig from "../../map-native/assets/sample-data/choropleth.json";
@@ -14,13 +15,15 @@ declare const __CONFIG__:
   | ScrollySymbolConfig
   | ScrollyHexConfig
   | ScrollyDotDensityConfig
+  | ScrollyLocatorConfig
   | null;
 
 const config:
   | ScrollyMapConfig
   | ScrollySymbolConfig
   | ScrollyHexConfig
-  | ScrollyDotDensityConfig =
+  | ScrollyDotDensityConfig
+  | ScrollyLocatorConfig =
   typeof __CONFIG__ !== "undefined" && __CONFIG__ !== null
     ? __CONFIG__
     : (sampleConfig as ScrollyMapConfig);

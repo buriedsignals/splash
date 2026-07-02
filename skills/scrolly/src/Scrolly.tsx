@@ -11,10 +11,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { computeChoropleth } from "../../map-native/src/choropleth-geo";
 import { computeHexGrid } from "../../map-native/src/hex-grid-geo";
 import { computeDotDensity } from "../../map-native/src/dot-density-geo";
+import { locatorGeometry } from "../../map-native/src/locator-geo";
 import { deriveMapStory } from "../../map-native/src/map-story";
 import { deriveHexGridStory } from "../../map-native/src/hex-grid-story";
 import { deriveSymbolStory } from "../../map-native/src/symbol-story";
 import { deriveDotDensityStory } from "../../map-native/src/dot-density-story";
+import { deriveLocatorStory } from "../../map-native/src/locator-story";
 import { mapStoryToChapters } from "./chapters";
 import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
 import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
@@ -23,6 +25,10 @@ import {
   ScrollyDotDensityMap,
   type ScrollyDotDensityConfig,
 } from "./ScrollyDotDensityMap";
+import {
+  ScrollyLocatorMap,
+  type ScrollyLocatorConfig,
+} from "./ScrollyLocatorMap";
 
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
@@ -36,7 +42,8 @@ export const Scrolly: React.FC<{
     | ScrollyMapConfig
     | ScrollySymbolConfig
     | ScrollyHexConfig
-    | ScrollyDotDensityConfig;
+    | ScrollyDotDensityConfig
+    | ScrollyLocatorConfig;
 }> = ({ config }) => {
   // -------------------------------------------------------------------------
   // Build the story once at mount — deterministic from config.
@@ -90,6 +97,28 @@ export const Scrolly: React.FC<{
         description: config.description,
         source: config.source,
         regionsWithData: layout.regions.length,
+      });
+    }
+
+    if (config.type === "locator") {
+      const geo = locatorGeometry({
+        markers: config.markers,
+        markerStyle: config.markerStyle,
+      });
+      const beats = deriveLocatorStory(config.markers, {
+        title: config.title ?? "",
+        description: config.description,
+        insight:
+          ((config as unknown as Record<string, unknown>).insight as
+            string | undefined) ??
+          config.title ??
+          "",
+      });
+      return mapStoryToChapters(beats, {
+        title: config.title ?? "",
+        description: config.description,
+        source: config.source,
+        regionsWithData: geo.markers.length,
       });
     }
 
@@ -297,6 +326,11 @@ export const Scrolly: React.FC<{
           ) : config.type === "dot-density" ? (
             <ScrollyDotDensityMap
               config={config as ScrollyDotDensityConfig}
+              currentStep={currentBeatRef}
+            />
+          ) : config.type === "locator" ? (
+            <ScrollyLocatorMap
+              config={config as ScrollyLocatorConfig}
               currentStep={currentBeatRef}
             />
           ) : (
