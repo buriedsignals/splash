@@ -5,9 +5,11 @@ import { SymbolMap, type SymbolConfig } from "./SymbolMap";
 import { RouteMap, type RouteConfig } from "./RouteMap";
 import { LocatorMap } from "./LocatorMap";
 import { DotDensityMap } from "./DotDensityMap";
+import { HexGridMap } from "./HexGridMap";
 import type {
   LocatorConfigShape,
   DotDensityConfigShape,
+  HexGridConfigShape,
 } from "./validate-config";
 import sampleChoropleth from "../assets/sample-data/choropleth.json";
 
@@ -16,7 +18,8 @@ type AnyConfig =
   | SymbolConfig
   | RouteConfig
   | LocatorConfigShape
-  | DotDensityConfigShape;
+  | DotDensityConfigShape
+  | HexGridConfigShape;
 
 declare const __CONFIG__: AnyConfig | null;
 declare const __INTERACTIVE__: boolean;
@@ -37,10 +40,17 @@ const isSymbol = configType === "symbol";
 const isRoute = configType === "route";
 const isLocator = configType === "locator";
 const isDotDensity = configType === "dot-density";
+const isHexGrid = configType === "hex-grid";
 
 createRoot(root).render(
   <div style={{ width: "100vw", height: "100vh" }}>
-    {isDotDensity ? (
+    {isHexGrid ? (
+      <HexGridMap
+        config={config as HexGridConfigShape}
+        progress={1}
+        interactive={interactive}
+      />
+    ) : isDotDensity ? (
       <DotDensityMap
         config={config as DotDensityConfigShape}
         progress={1}
