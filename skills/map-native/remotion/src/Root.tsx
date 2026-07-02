@@ -1,5 +1,4 @@
 // Remotion root for map-native. Registers:
-//   MapExplainer          — Tom's Yarlung river reveal (requires public/geo/borders.geojson from prep-geo.mjs)
 //   HarnessCheck          — Minimal MapTiler-in-Remotion smoke test (no external geo files needed)
 //   ChoroplethStory       — Choropleth story landscape 1280×720
 //   ChoroplethStorySquare — Choropleth story square 1080×1080
@@ -27,7 +26,6 @@
 
 import React from "react";
 import { Composition } from "remotion";
-import { RiverReveal } from "../../src/components/RiverReveal";
 import { HarnessCheck } from "../../src/components/HarnessCheck";
 import { ChoroplethStory } from "../../src/components/ChoroplethStory";
 import { SymbolStory } from "../../src/components/SymbolStory";
@@ -84,14 +82,6 @@ const SYMBOL_FRAMES = buildTimeline(
 
 export const RemotionRoot: React.FC = () => (
   <>
-    <Composition
-      id="MapExplainer"
-      component={RiverReveal}
-      durationInFrames={12 * 30}
-      fps={30}
-      width={1920}
-      height={1080}
-    />
     <Composition
       id="HarnessCheck"
       component={HarnessCheck}

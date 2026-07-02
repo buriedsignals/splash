@@ -76,14 +76,18 @@ const isSymbol = parsedConfig.type === "symbol";
 const isRoute = parsedConfig.type === "route";
 
 // Returns the composition set for the story kind, dispatched on cameraMode.
-// guided-tour is implemented (SP2). route-reveal is SP3 — explicit extension point.
-function storyComps(isSymbolMap, cameraMode) {
+// guided-tour: choropleth/symbol fly-through (SP2). route-reveal: draw-on route (SP3b).
+function storyComps(config, cameraMode) {
+  const isSymbolMap = config.type === "symbol";
   if (cameraMode === "guided-tour") {
     return isSymbolMap
       ? [["SymbolStory", "landscape"], ["SymbolStorySquare", "square"], ["SymbolStoryPortrait", "portrait"]]
       : [["ChoroplethStory", "landscape"], ["ChoroplethStorySquare", "square"], ["ChoroplethStoryPortrait", "portrait"]];
   }
-  throw new Error(`camera mode '${cameraMode}' is not implemented yet (route-reveal ships in SP3)`);
+  if (cameraMode === "route-reveal") {
+    return [["RouteReveal", "landscape"], ["RouteRevealSquare", "square"], ["RouteRevealPortrait", "portrait"]];
+  }
+  throw new Error(`camera mode '${cameraMode}' is not implemented`);
 }
 
 // comps[kind] = [[compId, sizeName], ...] for the config's type
@@ -112,13 +116,14 @@ function renderVideoSet(kind, propsPath, remotionEntry, comps) {
   return out;
 }
 
-const kinds = format === "all" ? ["reveal", "story"] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : [];
+// Route has no simple-reveal; its only video is route-reveal (story-kind).
+// For route: all/reveal/story → ["story"]; static → []. Non-route branch unchanged.
+const kinds = isRoute
+  ? (format === "static" ? [] : ["story"])
+  : (format === "all" ? ["reveal", "story"] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : []);
 if (kinds.length) {
-  if (isRoute) {
-    throw new Error("route video (route-reveal) ships in SP3b — not implemented yet");
-  }
   const config = parsedConfig;
-  const cameraMode = config.cameraMode ?? "guided-tour";
+  const cameraMode = config.cameraMode ?? (isRoute ? "route-reveal" : "guided-tour");
   const tmpDir = mkdtempSync(join(tmpdir(), "map-native-props-"));
   try {
     const propsPath = join(tmpDir, "props.json");
@@ -126,7 +131,7 @@ if (kinds.length) {
     const remotionEntry = join(root, "remotion", "src", "index.ts");
     for (const kind of kinds) {
       const comps = kind === "story"
-        ? storyComps(isSymbol, cameraMode)   // dispatches on cameraMode; throws for unimplemented modes
+        ? storyComps(config, cameraMode)   // dispatches on cameraMode
         : VIDEO_COMPS[kind];
       result[kind] = renderVideoSet(kind, propsPath, remotionEntry, comps);
     }
