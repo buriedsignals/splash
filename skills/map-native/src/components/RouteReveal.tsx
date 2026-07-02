@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AbsoluteFill,
   Easing,
@@ -181,18 +181,25 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
     ? maptilersdk.MapStyle.DATAVIZ.DARK
     : maptilersdk.MapStyle.DATAVIZ.LIGHT;
 
-  // Derive layout from config (computed once; stable because config is stable per composition)
   const world = worldGeoJsonImport as unknown as GeoJSON.FeatureCollection;
-  const layout: RouteRevealLayout = computeRouteReveal(config, world);
-  const line = turf.lineString(config.route);
-  const lineKm = layout.totalLengthKm;
-  const territories = layout.territories;
-  const RIVER_END = riverEnd(territories.length);
 
-  // Pre-build draw structures for each territory
-  const DRAW: Record<string, DrawEntry> = Object.fromEntries(
-    territories.map((t) => [t.key, buildDraw(t)]),
-  );
+  // Derive layout + draw structures from config ONCE (heavy turf geometry). Memoised on
+  // config, which is stable per composition — so this does NOT re-run every frame / on
+  // every state update (that made offline renders far slower than necessary).
+  const { layout, line, lineKm, territories, RIVER_END, DRAW } = useMemo(() => {
+    const l: RouteRevealLayout = computeRouteReveal(config, world);
+    const terr = l.territories;
+    return {
+      layout: l,
+      line: turf.lineString(config.route),
+      lineKm: l.totalLengthKm,
+      territories: terr,
+      RIVER_END: riverEnd(terr.length),
+      DRAW: Object.fromEntries(
+        terr.map((t) => [t.key, buildDraw(t)]),
+      ) as Record<string, DrawEntry>,
+    };
+  }, [config]);
 
   // Trigger time for each territory (seconds into the clip)
   const trigger = (t: RouteRevealTerritory) =>
