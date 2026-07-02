@@ -175,24 +175,46 @@ and not a bare year range; `description` non-empty; `source.name` and `source.ur
 - **Hover on dots** — individual dots are too small for reliable pointer interaction. Target the
   region polygon.
 
-## Format support — Slice A
+## Format support — all six formats shipped
 
-| Format | Slice A | Notes |
+| Format | Status | Notes |
 | --- | --- | --- |
 | Static PNG | ✓ | Via `produce.mjs … static` |
 | Interactive HTML | ✓ | Pan/zoom/hover on region polygon |
-| Video (reveal / story / scrolly) | — | Planned for Slice B |
-| Interactive scrolly | — | Planned for Slice B |
+| Video reveal | ✓ | Uniform dots fade in on fixed camera + title scene |
+| Video storytelling | ✓ | Guided-tour camera to densest regions; dots dimmed (~0.25) except highlighted region; caption + category legend (multivariate) |
+| Video scrolly | ✓ | Scroll captured as MP4; overview + takeaway visual-only; reveals carry the panel; dim-emphasis synced to the panel |
+| Interactive scrolly | ✓ | Shared `deriveDotDensityStory` → `mapStoryToChapters` contract (no map-native change needed) |
 
-**Slice B** will add `deriveDotDensityStory` (beat generation) and video reveal / scrolly formats,
-following the same recipe as the choropleth story. Until Slice B lands, passing `format=reveal`,
-`format=story`, or `format=scrolly` to `produce.mjs` with a dot-density config is unsupported and
-will surface a conformance error.
+**Slice A** (merged) shipped static + interactive. **Slice B** (this branch) shipped video reveal +
+video storytelling + video scrolly + interactive scrolly.
 
-## Known v1 limits
+## Densest-region story structure (`deriveDotDensityStory`)
 
-- **Video deferred to Slice B.** Dot-density does not yet ship `DotDensityStory.tsx` or beat
-  generation. Static + interactive are the supported formats in Slice A.
+`deriveDotDensityStory(layout, meta, opts?)` produces the canonical beat sequence for storytelling
+and scrolly formats:
+
+```
+title → establish (all dots) → reveal × N (densest regions) → takeaway
+```
+
+Beat ordering: regions are ranked by **dots/area** (dot count divided by polygon area in km²),
+capped at a configurable maximum reveal count. This surfaces geographic concentration — a small,
+dot-dense region scores higher than a large region with the same dot count.
+
+Each reveal beat carries:
+- `caption` = region name + formatted value (e.g. "Germany — 12 400 TWh")
+- Multivariate: `", mostly <dominant category>"` appended for the region's **plurality** category —
+  the group with the largest dot count (no fixed threshold), e.g. "Germany — 12 400 TWh, mostly Coal".
+
+Camera: flies to each dense region's bounding extent and dims all other dots to ~0.25 opacity
+during the hold. Returns to full-extent view on the takeaway beat.
+
+**Uniform-dot invariant in video:** dot radius is fixed at 2 px for all video formats; dots are
+never value-scaled. `mapStyle` is AI-selected (`dataviz-dark` / `dataviz-light`) per context.
+
+## Known limits
+
 - **`dotValue` cap is not user-configurable.** The maximum-dot guard threshold is hardcoded; it is
   not yet a config knob.
 - **Scatter rejects at concave polygons.** Rejection sampling converges slowly on very concave or

@@ -82,8 +82,11 @@ const isDotDensity = parsedConfig.type === "dot-density";
 function storyComps(config, cameraMode) {
   const isSymbolMap = config.type === "symbol";
   const isLocatorMap = config.type === "locator";
+  const isDotDensityMap = config.type === "dot-density";
   if (cameraMode === "guided-tour") {
-    return isLocatorMap
+    return isDotDensityMap
+      ? [["DotDensityStory", "landscape"], ["DotDensityStorySquare", "square"], ["DotDensityStoryPortrait", "portrait"]]
+      : isLocatorMap
       ? [["LocatorStory", "landscape"], ["LocatorStorySquare", "square"], ["LocatorStoryPortrait", "portrait"]]
       : isSymbolMap
       ? [["SymbolStory", "landscape"], ["SymbolStorySquare", "square"], ["SymbolStoryPortrait", "portrait"]]
@@ -97,7 +100,9 @@ function storyComps(config, cameraMode) {
 
 // comps[kind] = [[compId, sizeName], ...] for the config's type
 const VIDEO_COMPS = {
-  reveal: isLocator
+  reveal: isDotDensity
+    ? [["DotDensityReveal", "landscape"], ["DotDensityRevealSquare", "square"], ["DotDensityRevealPortrait", "portrait"]]
+    : isLocator
     ? [["LocatorReveal", "landscape"], ["LocatorRevealSquare", "square"], ["LocatorRevealPortrait", "portrait"]]
     : isSymbol
     ? [["SymbolReveal", "landscape"], ["SymbolRevealSquare", "square"], ["SymbolRevealPortrait", "portrait"]]
@@ -132,7 +137,7 @@ function renderVideoSet(kind, propsPath, remotionEntry, comps) {
 // Route has no simple-reveal; its only video is route-reveal (story-kind).
 // For route: all/reveal/story → ["story"]; static → []. Non-route branch unchanged.
 const kinds = isDotDensity
-  ? [] // Slice A: static + interactive only, no video kinds
+  ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
   : isLocator
   ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
   : isRoute

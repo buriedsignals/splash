@@ -103,6 +103,14 @@ every reveal beat. Dimming creates a "spotlight" effect that implies the other d
 trustworthy — a stable frame reads as more authoritative. (FT Visual Vocabulary — a stable
 frame of reference; the data, not the camera effect, carries meaning.)
 
+## Dot-density storytelling
+
+Dot-density storytelling uses `deriveDotDensityStory` to produce beats, ranked by dots/area
+(densest regions first, capped). Camera flies to each dense region's bounding extent; all dots
+outside the active region dim to ~0.25 opacity during the hold. Caption = region name + value
+(+ ", mostly <dominant category>" in multivariate mode). Category legend shown when multivariate.
+Uniform-dot invariant: dot radius is fixed at 2 px, never value-scaled.
+
 ## Locator storytelling
 
 Locator storytelling uses `deriveLocatorStory` to produce beats and follows the same
