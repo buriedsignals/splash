@@ -25,7 +25,6 @@ import type {
   RouteRevealLayout,
 } from "../route-geo";
 import { computeRouteReveal, resolveMapStyle } from "../route-geo";
-import { CountryLabel } from "./CountryLabel";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
 import { TitleCard } from "./StoryCards";
 import { ScrollyPanel } from "./ScrollyPanel";
@@ -148,14 +147,14 @@ function clampBounds(
 }
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // ---------------------------------------------------------------------------
-// Per-step hold pacing for territory border/fill/label (fractions of the hold phase)
+// Per-step hold pacing for territory border/fill (fractions of the hold phase)
 // ---------------------------------------------------------------------------
 
 const BORDER_HOLD_FRAC = 0.5; // border finishes drawing at 50% of the hold
 const FILL_HOLD_FRAC = 0.78; // fill blooms in by 78% of the hold
-const LABEL_HOLD_FRAC = 0.95; // label fully risen by 95% of the hold
 
 // ---------------------------------------------------------------------------
 // Init model — captured once, threaded to the per-frame effect
@@ -178,9 +177,6 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const [model, setModel] = useState<RouteScrollyModel | null>(null);
-  const [labels, setLabels] = useState<
-    Record<string, { x: number; y: number; reveal: number }>
-  >({});
   // Generous timeout: the init builds a per-territory layer set + turf geometry, so at
   // square/portrait aspects it can exceed Remotion's default 30s delayRender timeout.
   const [handle] = useState(() =>
@@ -309,13 +305,19 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         };
       };
 
+      // exitStop of content step i (1..N): the next territory's entry, or 1.0 if the shown
+      // territory is the last. Mirrors the draw-on driver so the camera follows the DRAWN
+      // extent (through the shown territory), never lagging one territory behind.
+      const exitStopOf = (i: number): number =>
+        i < territories.length ? territories[i].stop : 1.0;
+
       // Per-step camera solutions:
       //   step 0 (title/intro): full route bounds.
-      //   step i ≥ 1: bounds of the route drawn through territory i-1's stop ∪ territory i-1.
+      //   step i ≥ 1: bounds of the route drawn THROUGH territory i-1 (up to exitStopOf(i)) ∪ territory i-1.
       const stepSolutions: CameraSolution[] = story.steps.map((s, i) => {
         if (i === 0) return solveBounds(layout.bounds);
         const terr = territories[i - 1];
-        const drawnKm = Math.max(0.001, lineKm * terr.stop);
+        const drawnKm = Math.max(0.001, lineKm * exitStopOf(i));
         const drawn = turf.lineSliceAlong(line, 0, drawnKm);
         const terrFeatures = world.features.filter((f) => {
           const key = String(f.properties?.iso_a3 ?? f.properties?.name ?? "");
@@ -461,16 +463,29 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       bearing: 0,
     });
 
-    // drawTo driver: draw the route up to the ACTIVE step's territory stop, animated across
-    // that step's move phase (prevStop → targetStop, easeInOutCubic).
-    const targetStop = active === 0 ? 0 : territories[active - 1].stop;
-    const prevStop = active <= 1 ? 0 : territories[active - 2].stop;
+    // drawTo driver: during content step `active`, draw the route THROUGH the shown territory —
+    // from its entry (entryStop) to the next territory's entry (exitStop), or 1.0 for the last.
+    // Animated continuously across the WHOLE active step (this step's start frame → the next
+    // step's start frame, or totalFrames for the last step). During the title scene / step 0,
+    // reveal = 0 (nothing drawn).
     const phase = ph[active];
-    const moveT =
-      phase.moveFrames > 0
-        ? clamp01((frame - phase.startFrame) / phase.moveFrames)
-        : 1;
-    const reveal = prevStop + (targetStop - prevStop) * easeInOutCubic(moveT);
+    let reveal: number;
+    let drawing = false;
+    if (active === 0) {
+      reveal = 0;
+    } else {
+      const entryStop = territories[active - 1].stop;
+      const exitStop =
+        active < territories.length ? territories[active].stop : 1.0;
+      const stepSpan =
+        (active + 1 < ph.length ? ph[active + 1].startFrame : totalFrames) -
+        ph[active].startFrame;
+      const localProgress = clamp01(
+        stepSpan > 0 ? (frame - ph[active].startFrame) / stepSpan : 1,
+      );
+      reveal = lerp(entryStop, exitStop, easeInOutCubic(localProgress));
+      drawing = localProgress > 0.002 && localProgress < 0.999;
+    }
     const riverDrawnKm = lineKm * reveal;
     (map.getSource("river") as any)?.setData(
       turf.lineSliceAlong(line, 0, Math.max(0.001, riverDrawnKm)),
@@ -485,10 +500,8 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         Math.max(0.001, riverDrawnKm),
       ),
     );
-    // Head glows only while the route is actively drawing (a content step's move phase).
-    const drawing =
-      active >= 1 && phase.moveFrames > 0 && moveT < 0.999 && reveal > 0.002;
-    const riverHeadFade = drawing ? 1 : 0;
+    // Head glows only while the route is actively drawing across a content step.
+    const riverHeadFade = drawing && reveal > 0.002 ? 1 : 0;
     map.setPaintProperty(
       "river-headglow",
       "line-opacity",
@@ -496,20 +509,17 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
     );
     map.setPaintProperty("river-head", "line-opacity", riverHeadFade);
 
-    // Per-territory: border/fill/label triggered off the step that reveals it.
+    // Per-territory: border draw-on + fill bloom triggered off the step that reveals it.
     // Territory k is revealed by step k+1; its animation runs over that step's HOLD phase.
-    const pos: Record<string, { x: number; y: number; reveal: number }> = {};
     for (let k = 0; k < territories.length; k++) {
       const terr = territories[k];
       const d = DRAW[terr.key];
       const revealStep = k + 1;
-      const p = map.project(terr.anchor as [number, number]);
 
       if (active < revealStep) {
         // Not yet revealed.
         (map.getSource(`trail-${terr.key}`) as any)?.setData(EMPTY_FEATURE);
         map.setPaintProperty(`fill-${terr.key}`, "fill-opacity", 0);
-        pos[terr.key] = { x: p.x, y: p.y, reveal: 0 };
         continue;
       }
 
@@ -519,7 +529,6 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
           sliceBorder(d, 0, d.total),
         );
         map.setPaintProperty(`fill-${terr.key}`, "fill-opacity", FILL_OPACITY);
-        pos[terr.key] = { x: p.x, y: p.y, reveal: 1 };
         continue;
       }
 
@@ -545,15 +554,7 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         "fill-opacity",
         fp <= 0 ? 0 : fo,
       );
-
-      // Label rises in after the fill.
-      const lp = clamp01(
-        (holdT - FILL_HOLD_FRAC) /
-          Math.max(0.001, LABEL_HOLD_FRAC - FILL_HOLD_FRAC),
-      );
-      pos[terr.key] = { x: p.x, y: p.y, reveal: lp };
     }
-    setLabels(pos);
 
     map.once("idle", () => continueRender(h));
     map.triggerRepaint();
@@ -575,22 +576,6 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>
-
-      {/* Country labels — projected from map coordinates, drawn over everything */}
-      <AbsoluteFill style={{ pointerEvents: "none" }}>
-        {territories.map((terr) =>
-          labels[terr.key] ? (
-            <CountryLabel
-              key={terr.key}
-              name={terr.label.toUpperCase()}
-              color={terr.color}
-              reveal={labels[terr.key].reveal}
-              x={labels[terr.key].x}
-              y={labels[terr.key].y}
-            />
-          ) : null,
-        )}
-      </AbsoluteFill>
 
       {/* Scrolly prose panels — one per content step (i ≥ 1) */}
       {story.steps.map((s, i) =>
