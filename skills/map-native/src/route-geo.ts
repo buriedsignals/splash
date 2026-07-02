@@ -20,7 +20,7 @@ export function resolveMapStyle(token?: string): MapStyleToken {
 // never invisible on a dataviz-dark basemap).
 // ---------------------------------------------------------------------------
 
-const QUALITATIVE: string[] = [
+export const QUALITATIVE: string[] = [
   "#E69F00", // orange
   "#56B4E9", // sky blue
   "#009E73", // bluish green
