@@ -1,3 +1,620 @@
-import React from "react";
-import { AbsoluteFill } from "remotion";
-export const RouteScrolly: React.FC<{ config: any }> = () => <AbsoluteFill />;
+// RouteScrolly — scrolly-as-video route composition (drawTo).
+// Ports RouteReveal's map init, electric line layers, per-territory fill/trail layers, and
+// camera-from-bounds; replaces the single continuous draw sweep with a per-STEP target: the
+// route line draws up to the ACTIVE step's territory `stop`, animated across that step's move
+// phase, and each territory's border/fill/label is triggered off the step that reveals it.
+// Renders a pinned ScrollyPanel per content step plus the title scene, instead of the continuous
+// clock overlays.
+// Harness pattern: delayRender → jumpTo/setData → map.once("idle") → continueRender.
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AbsoluteFill,
+  continueRender,
+  delayRender,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
+import * as maptilersdk from "@maptiler/sdk";
+import "@maptiler/sdk/dist/maptiler-sdk.css";
+import * as turf from "@turf/turf";
+import worldGeoJsonImport from "../../assets/geo/world.geojson";
+import type {
+  RouteConfig,
+  RouteRevealTerritory,
+  RouteRevealLayout,
+} from "../route-geo";
+import { computeRouteReveal, resolveMapStyle } from "../route-geo";
+import { CountryLabel } from "./CountryLabel";
+import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
+import { TitleCard } from "./StoryCards";
+import { ScrollyPanel } from "./ScrollyPanel";
+import { MapFrame } from "../core/MapFrame";
+import { resolveMapFrame } from "../core/map-format";
+import { routeStoryToChapters, scrollyFrames } from "../route-story";
+import {
+  buildTimeline,
+  cameraForFrame,
+  easeInOutCubic,
+  type CameraSolution,
+  type Phase,
+} from "../story-timeline";
+import { stepSlide } from "./ChoroplethScrolly";
+import type { ScrollyStory } from "../../../scrolly/src/chapters";
+
+maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
+
+// ---------------------------------------------------------------------------
+// Electric colour sets — mapStyle-adaptive
+// ---------------------------------------------------------------------------
+
+const ELECTRIC_DARK = {
+  line: "#E8F7FF",
+  glow: "#49C6FF",
+  head: "#FFFFFF",
+  headGlow: "#BEE9FF",
+  bg: "#0e0f12",
+} as const;
+
+const ELECTRIC_LIGHT = {
+  line: "#1A3A5C",
+  glow: "#4A90D9",
+  head: "#0B2A45",
+  headGlow: "#8FC3F0",
+  bg: "#f4f4f5",
+} as const;
+
+const FILL_OPACITY = 0.55;
+
+// ---------------------------------------------------------------------------
+// Darken a hex colour toward black by a factor in [0,1]
+// ---------------------------------------------------------------------------
+
+function darkenHex(hex: string, amount: number): string {
+  const c = hex.replace("#", "");
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  const mix = (v: number) => Math.round(v * (1 - amount));
+  return `#${mix(r).toString(16).padStart(2, "0")}${mix(g).toString(16).padStart(2, "0")}${mix(b).toString(16).padStart(2, "0")}`;
+}
+
+// ---------------------------------------------------------------------------
+// sliceBorder — reveal the portion of a multi-segment border between fromKm and toKm.
+// ---------------------------------------------------------------------------
+
+interface DrawEntry {
+  segLines: ReturnType<typeof turf.lineString>[];
+  segLen: number[];
+  cum: number[];
+  total: number;
+}
+
+const EMPTY_FEATURE = {
+  type: "Feature" as const,
+  properties: {},
+  geometry: {
+    type: "MultiLineString" as const,
+    coordinates: [] as number[][][],
+  },
+};
+
+function buildDraw(territory: RouteRevealTerritory): DrawEntry {
+  const segLines = territory.border.map((s) => turf.lineString(s));
+  const segLen = segLines.map((l) => turf.length(l));
+  const cum: number[] = [];
+  let acc = 0;
+  for (const L of segLen) {
+    cum.push(acc);
+    acc += L;
+  }
+  return { segLines, segLen, cum, total: acc };
+}
+
+function sliceBorder(d: DrawEntry, fromKm: number, toKm: number) {
+  const out: number[][][] = [];
+  for (let i = 0; i < d.segLines.length; i++) {
+    const start = d.cum[i];
+    const end = start + d.segLen[i];
+    const a = Math.max(fromKm, start);
+    const b = Math.min(toKm, end);
+    if (b - a <= 0.0008) continue;
+    out.push(
+      turf.lineSliceAlong(d.segLines[i], a - start, b - start).geometry
+        .coordinates,
+    );
+  }
+  return {
+    type: "Feature" as const,
+    properties: {},
+    geometry: { type: "MultiLineString" as const, coordinates: out },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Mercator-safe bounds clamp
+// ---------------------------------------------------------------------------
+
+const MERCATOR_MAX_LAT = 85;
+function clampBounds(
+  b: [number, number, number, number],
+): [number, number, number, number] {
+  return [
+    b[0],
+    Math.max(-MERCATOR_MAX_LAT, b[1]),
+    b[2],
+    Math.min(MERCATOR_MAX_LAT, b[3]),
+  ];
+}
+
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+// ---------------------------------------------------------------------------
+// Per-step hold pacing for territory border/fill/label (fractions of the hold phase)
+// ---------------------------------------------------------------------------
+
+const BORDER_HOLD_FRAC = 0.5; // border finishes drawing at 50% of the hold
+const FILL_HOLD_FRAC = 0.78; // fill blooms in by 78% of the hold
+const LABEL_HOLD_FRAC = 0.95; // label fully risen by 95% of the hold
+
+// ---------------------------------------------------------------------------
+// Init model — captured once, threaded to the per-frame effect
+// ---------------------------------------------------------------------------
+
+interface RouteScrollyModel {
+  map: InstanceType<typeof maptilersdk.Map>;
+  story: ScrollyStory;
+  phases: Phase[];
+  stepSolutions: CameraSolution[];
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+  const frame = useCurrentFrame();
+  const { fps, width, height } = useVideoConfig();
+  const [model, setModel] = useState<RouteScrollyModel | null>(null);
+  const [labels, setLabels] = useState<
+    Record<string, { x: number; y: number; reveal: number }>
+  >({});
+  // Generous timeout: the init builds a per-territory layer set + turf geometry, so at
+  // square/portrait aspects it can exceed Remotion's default 30s delayRender timeout.
+  const [handle] = useState(() =>
+    delayRender("route-scrolly-init", { timeoutInMilliseconds: 120000 }),
+  );
+
+  // Canvas scale: ≤1080-wide → larger labels + line widths (square / portrait formats)
+  const isNarrow = width <= 1080;
+
+  // Map-style adaptive colours
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const ELECTRIC = dark ? ELECTRIC_DARK : ELECTRIC_LIGHT;
+  const mapStyle = dark
+    ? maptilersdk.MapStyle.DATAVIZ.DARK
+    : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+
+  const world = worldGeoJsonImport as unknown as GeoJSON.FeatureCollection;
+
+  // Derive layout + draw structures from config ONCE (heavy turf geometry). Memoised on
+  // config, which is stable per composition — so this does NOT re-run every frame.
+  const {
+    layout,
+    story,
+    phases,
+    totalFrames,
+    line,
+    lineKm,
+    territories,
+    DRAW,
+  } = useMemo(() => {
+    const l: RouteRevealLayout = computeRouteReveal(config, world);
+    const st = routeStoryToChapters(l, {
+      title: config.title ?? "",
+      description: config.description,
+      source: config.source
+        ? { name: config.source.name, url: config.source.url ?? "" }
+        : { name: "", url: "" },
+    });
+    const stepKinds = st.steps.map((_, i) => (i === 0 ? "title" : "reveal"));
+    const { phases: ph, totalFrames: tf } = buildTimeline(stepKinds, fps);
+    return {
+      layout: l,
+      story: st,
+      phases: ph,
+      totalFrames: tf,
+      line: turf.lineString(config.route),
+      lineKm: l.totalLengthKm,
+      territories: l.territories,
+      DRAW: Object.fromEntries(
+        l.territories.map((t) => [t.key, buildDraw(t)]),
+      ) as Record<string, DrawEntry>,
+    };
+  }, [config, fps]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Line width scales for narrow canvases
+  const lw = (base: number) => (isNarrow ? base * 1.2 : base);
+
+  // MapFrame furniture
+  const mapFrame = resolveMapFrame(width, height, {
+    titleLines: 2,
+    hasDescription: !!config.description,
+    labelOverhang: 80,
+  });
+
+  // Scene model
+  const scene = resolveScene(frame, { titleSceneEndFrame: TITLE_SCENE_FRAMES });
+
+  // -------------------------------------------------------------------------
+  // Init — runs once to set up the map, sources, layers, and per-step camera solutions
+  // -------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!ref.current || started.current) return;
+    started.current = true;
+
+    const m = new maptilersdk.Map({
+      container: ref.current,
+      style: mapStyle,
+      center: [
+        (layout.bounds[0] + layout.bounds[2]) / 2,
+        (layout.bounds[1] + layout.bounds[3]) / 2,
+      ],
+      zoom: 4,
+      pitch: 0,
+      bearing: 0,
+      interactive: false,
+      attributionControl: false,
+      navigationControl: false,
+      geolocateControl: false,
+      maptilerLogo: false,
+      fadeDuration: 0,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
+    } as Parameters<typeof maptilersdk.Map>[0]);
+
+    m.on("load", () => {
+      // Strip basemap labels and inner admin borders (keep country + disputed borders)
+      for (const l of (m.getStyle().layers ?? []) as {
+        id: string;
+        type: string;
+      }[]) {
+        if (l.type === "symbol" || /other border/i.test(l.id))
+          m.removeLayer(l.id);
+      }
+
+      // Camera solution helper — fit bounds with the MapFrame pad.
+      const solveBounds = (
+        b: [number, number, number, number],
+      ): CameraSolution => {
+        const clamped = clampBounds(b);
+        const camera = m.cameraForBounds(
+          [
+            [clamped[0], clamped[1]],
+            [clamped[2], clamped[3]],
+          ],
+          { padding: mapFrame.pad },
+        );
+        if (!camera) {
+          return {
+            center: [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2],
+            zoom: 4,
+          };
+        }
+        return {
+          center: [camera.center.lng, camera.center.lat],
+          zoom: camera.zoom ?? 4,
+        };
+      };
+
+      // Per-step camera solutions:
+      //   step 0 (title/intro): full route bounds.
+      //   step i ≥ 1: bounds of the route drawn through territory i-1's stop ∪ territory i-1.
+      const stepSolutions: CameraSolution[] = story.steps.map((s, i) => {
+        if (i === 0) return solveBounds(layout.bounds);
+        const terr = territories[i - 1];
+        const drawnKm = Math.max(0.001, lineKm * terr.stop);
+        const drawn = turf.lineSliceAlong(line, 0, drawnKm);
+        const terrFeatures = world.features.filter((f) => {
+          const key = String(f.properties?.iso_a3 ?? f.properties?.name ?? "");
+          return key === terr.key;
+        });
+        const extent = turf.featureCollection([
+          drawn as GeoJSON.Feature,
+          ...(terrFeatures as GeoJSON.Feature[]),
+        ]);
+        const bb = turf.bbox(extent);
+        return solveBounds([bb[0], bb[1], bb[2], bb[3]]);
+      });
+
+      // Position to step 0's camera.
+      m.jumpTo({
+        center: stepSolutions[0].center,
+        zoom: stepSolutions[0].zoom,
+        pitch: 0,
+        bearing: 0,
+      });
+
+      // Fill layer for each territory
+      for (const terr of territories) {
+        m.addSource(`fill-src-${terr.key}`, {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: world.features.filter((f) => {
+              const key = String(
+                f.properties?.iso_a3 ?? f.properties?.name ?? "",
+              );
+              return key === terr.key;
+            }),
+          },
+        });
+        m.addLayer({
+          id: `fill-${terr.key}`,
+          type: "fill",
+          source: `fill-src-${terr.key}`,
+          paint: { "fill-color": terr.color, "fill-opacity": 0 },
+        });
+      }
+
+      // Border trail layer for each territory
+      for (const terr of territories) {
+        const trailColor = darkenHex(terr.color, 0.45);
+        m.addSource(`trail-${terr.key}`, {
+          type: "geojson",
+          data: EMPTY_FEATURE,
+        });
+        m.addLayer({
+          id: `trail-${terr.key}`,
+          type: "line",
+          source: `trail-${terr.key}`,
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": trailColor,
+            "line-width": lw(2),
+            "line-opacity": 0.95,
+          },
+        });
+      }
+
+      // Electric route line sources
+      const seed = turf.lineSliceAlong(
+        line,
+        0,
+        Math.max(0.001, lineKm * 0.001),
+      );
+      m.addSource("river", { type: "geojson", data: seed });
+      m.addSource("river-head", { type: "geojson", data: seed });
+
+      // Multi-layer electric effect: glow → core line → headglow → head
+      m.addLayer({
+        id: "river-glow",
+        type: "line",
+        source: "river",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ELECTRIC.glow,
+          "line-width": lw(11),
+          "line-opacity": 0.32,
+          "line-blur": 6,
+        },
+      });
+      m.addLayer({
+        id: "river-line",
+        type: "line",
+        source: "river",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": ELECTRIC.line, "line-width": lw(3) },
+      });
+      m.addLayer({
+        id: "river-headglow",
+        type: "line",
+        source: "river-head",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ELECTRIC.headGlow,
+          "line-width": lw(16),
+          "line-opacity": 0,
+          "line-blur": 9,
+        },
+      });
+      m.addLayer({
+        id: "river-head",
+        type: "line",
+        source: "river-head",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ELECTRIC.head,
+          "line-width": lw(4.5),
+          "line-opacity": 0,
+        },
+      });
+
+      m.once("idle", () => {
+        setModel({ map: m, story, phases, stepSolutions });
+        continueRender(handle);
+      });
+    });
+  }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // -------------------------------------------------------------------------
+  // Per-frame: update draw-on (per active step), fills, labels, and camera
+  // -------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!model) return;
+    const { map, phases: ph, stepSolutions } = model;
+    const h = delayRender(`route-scrolly-frame-${frame}`);
+
+    // Camera on the STEP timeline.
+    const { camera, beatIndex: active } = cameraForFrame(
+      frame,
+      ph,
+      stepSolutions,
+    );
+    map.jumpTo({
+      center: camera.center,
+      zoom: camera.zoom,
+      pitch: 0,
+      bearing: 0,
+    });
+
+    // drawTo driver: draw the route up to the ACTIVE step's territory stop, animated across
+    // that step's move phase (prevStop → targetStop, easeInOutCubic).
+    const targetStop = active === 0 ? 0 : territories[active - 1].stop;
+    const prevStop = active <= 1 ? 0 : territories[active - 2].stop;
+    const phase = ph[active];
+    const moveT =
+      phase.moveFrames > 0
+        ? clamp01((frame - phase.startFrame) / phase.moveFrames)
+        : 1;
+    const reveal = prevStop + (targetStop - prevStop) * easeInOutCubic(moveT);
+    const riverDrawnKm = lineKm * reveal;
+    (map.getSource("river") as any)?.setData(
+      turf.lineSliceAlong(line, 0, Math.max(0.001, riverDrawnKm)),
+    );
+
+    // Electric leading head — visible while the route is actively drawing.
+    const riverHeadKm = lineKm * 0.03;
+    (map.getSource("river-head") as any)?.setData(
+      turf.lineSliceAlong(
+        line,
+        Math.max(0, riverDrawnKm - riverHeadKm),
+        Math.max(0.001, riverDrawnKm),
+      ),
+    );
+    // Head glows only while the route is actively drawing (a content step's move phase).
+    const drawing =
+      active >= 1 && phase.moveFrames > 0 && moveT < 0.999 && reveal > 0.002;
+    const riverHeadFade = drawing ? 1 : 0;
+    map.setPaintProperty(
+      "river-headglow",
+      "line-opacity",
+      0.85 * riverHeadFade,
+    );
+    map.setPaintProperty("river-head", "line-opacity", riverHeadFade);
+
+    // Per-territory: border/fill/label triggered off the step that reveals it.
+    // Territory k is revealed by step k+1; its animation runs over that step's HOLD phase.
+    const pos: Record<string, { x: number; y: number; reveal: number }> = {};
+    for (let k = 0; k < territories.length; k++) {
+      const terr = territories[k];
+      const d = DRAW[terr.key];
+      const revealStep = k + 1;
+      const p = map.project(terr.anchor as [number, number]);
+
+      if (active < revealStep) {
+        // Not yet revealed.
+        (map.getSource(`trail-${terr.key}`) as any)?.setData(EMPTY_FEATURE);
+        map.setPaintProperty(`fill-${terr.key}`, "fill-opacity", 0);
+        pos[terr.key] = { x: p.x, y: p.y, reveal: 0 };
+        continue;
+      }
+
+      if (active > revealStep) {
+        // Already fully revealed on an earlier step — hold at final state.
+        (map.getSource(`trail-${terr.key}`) as any)?.setData(
+          sliceBorder(d, 0, d.total),
+        );
+        map.setPaintProperty(`fill-${terr.key}`, "fill-opacity", FILL_OPACITY);
+        pos[terr.key] = { x: p.x, y: p.y, reveal: 1 };
+        continue;
+      }
+
+      // active === revealStep: animate over this step's HOLD phase.
+      const holdStart = phase.startFrame + phase.moveFrames;
+      const holdT = clamp01(
+        phase.holdFrames > 0 ? (frame - holdStart) / phase.holdFrames : 1,
+      );
+
+      // Border draws on over the first BORDER_HOLD_FRAC of the hold.
+      const bp = easeInOutCubic(clamp01(holdT / BORDER_HOLD_FRAC));
+      (map.getSource(`trail-${terr.key}`) as any)?.setData(
+        bp <= 0 ? EMPTY_FEATURE : sliceBorder(d, 0, d.total * bp),
+      );
+
+      // Fill blooms in after the border, up to FILL_HOLD_FRAC.
+      const fp = clamp01(
+        (holdT - BORDER_HOLD_FRAC) / (FILL_HOLD_FRAC - BORDER_HOLD_FRAC),
+      );
+      const fo = fp * FILL_OPACITY;
+      map.setPaintProperty(
+        `fill-${terr.key}`,
+        "fill-opacity",
+        fp <= 0 ? 0 : fo,
+      );
+
+      // Label rises in after the fill.
+      const lp = clamp01(
+        (holdT - FILL_HOLD_FRAC) /
+          Math.max(0.001, LABEL_HOLD_FRAC - FILL_HOLD_FRAC),
+      );
+      pos[terr.key] = { x: p.x, y: p.y, reveal: lp };
+    }
+    setLabels(pos);
+
+    map.once("idle", () => continueRender(h));
+    map.triggerRepaint();
+  }, [model, frame]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: ELECTRIC.bg }}>
+      <style>{`.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-attrib,.maptiler-logo{display:none!important}`}</style>
+      <MapFrame
+        title={config.title ?? ""}
+        description={config.description}
+        source={config.source ?? { name: "" }}
+        width={width}
+        height={height}
+        responsive={false}
+        frame={mapFrame}
+        furnitureOpacity={scene.furnitureOpacity}
+        dark={dark}
+      >
+        <div ref={ref} style={{ width, height, position: "absolute" }} />
+      </MapFrame>
+
+      {/* Country labels — projected from map coordinates, drawn over everything */}
+      <AbsoluteFill style={{ pointerEvents: "none" }}>
+        {territories.map((terr) =>
+          labels[terr.key] ? (
+            <CountryLabel
+              key={terr.key}
+              name={terr.label.toUpperCase()}
+              color={terr.color}
+              reveal={labels[terr.key].reveal}
+              x={labels[terr.key].x}
+              y={labels[terr.key].y}
+            />
+          ) : null,
+        )}
+      </AbsoluteFill>
+
+      {/* Scrolly prose panels — one per content step (i ≥ 1) */}
+      {story.steps.map((s, i) =>
+        i === 0 ? null : (
+          <ScrollyPanel
+            key={s.id}
+            width={width}
+            height={height}
+            align={s.align}
+            slide={stepSlide(frame, phases, i, fps, totalFrames)}
+            prose={s.prose}
+            dark={dark}
+          />
+        ),
+      )}
+
+      {/* Title card — full-screen scene-1 overlay, fades out at the crossfade */}
+      {scene.titleOpacity > 0 && config.title && (
+        <TitleCard
+          text={config.title}
+          description={config.description}
+          opacity={scene.titleOpacity}
+        />
+      )}
+    </AbsoluteFill>
+  );
+};
