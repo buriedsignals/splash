@@ -95,6 +95,13 @@ Do not animate `fill-color` — stable hue from frame 0 ensures the reader never
 choropleth "shift colour" as it fades in (consistent with FT Visual Vocabulary's guidance on
 sequential and diverging scales).
 
+### Dot density
+
+Animate dot **opacity** from `0` to `1` on the uniform ramp — all dots fade in simultaneously
+at the same rate. The camera is fixed on the full data extent from frame 0; no panning or
+zooming. Dot radius is fixed at 2 px (uniform-dot invariant; never value-scaled). Category
+legend (multivariate) fades in on the same ramp as the dots.
+
 ### Locator
 
 Animate dot/pin marker **opacity** from `0` to `1` on the uniform ramp. All markers grow and
