@@ -113,20 +113,42 @@ headline, standfirst, and source.)
 `checkLocatorConformance` enforces: `title` ≥ 12 characters and not a bare year range;
 `description` non-empty; `source.name` and `source.url` non-empty.
 
-## Slice A scope — what ships now vs later
+## Format coverage — all six formats shipped
 
-**Slice A (this branch)** ships:
-- Static PNG (`progress=1` render, screenshot).
-- Interactive HTML (pan/zoom/hover popup, clustering on dense maps, category legend).
+Locator now ships all six formats:
 
-**Slice B (a following slice)** will add:
-- Video formats (landscape, square, portrait mp4 via `LocatorStory` compositions) — requires
-  `deriveLocatorStory` to define the narrative beats (zoom to cluster → expand → pan between
-  categories or priority groups). These are NOT yet implemented; do not claim video works on this type.
-- Interactive scrolly (step-paced prose + pinned locator map).
+| Format | Status |
+|--------|--------|
+| Static PNG | ✓ shipped (Slice A) |
+| Interactive HTML | ✓ shipped (Slice A) |
+| Video reveal | ✓ shipped (Slice B) |
+| Video storytelling | ✓ shipped (Slice B) |
+| Video scrolly | ✓ shipped (Slice B) |
+| Interactive scrolly | ✓ shipped (Slice B) |
 
-The static + interactive builds share `LocatorMap.tsx`; the video will add a `LocatorStory.tsx`
-composition following the same harness pattern as `ChoroplethStory` / `SymbolStory`.
+The static + interactive builds use `LocatorMap.tsx`. The video compositions (`LocatorReveal*`,
+`LocatorStory*`, `MapScrolly*`) follow the same harness pattern as `ChoroplethStory` /
+`SymbolStory`. Interactive scrolly is driven by the shared `deriveLocatorStory` →
+`mapStoryToChapters` contract consumed by the sibling scrolly skill.
+
+### Story regimes
+
+`deriveLocatorStory(markers, meta, opts?)` produces a `Beat[]` under two regimes depending on
+whether the markers carry `category` fields:
+
+- **Few-annotated (no categories):** one beat per PLACE. The beat caption is the marker's `note`
+  field (falls back to the `label` when no note is supplied). The camera flies to each marker in
+  priority order. This regime suits named-site explainers where every location has a distinct
+  editorial annotation.
+
+- **Categorized (categories present):** one beat per CATEGORY. The beat caption is
+  `"<category> — N sites"`, enriched by `mapStoryToChapters` with a rank descriptor in scrolly
+  (e.g. "largest group", "2nd group"). The camera fits the bounding extent of all markers in that
+  category. This regime suits thematic locator maps where the argument is about groups, not
+  individual places.
+
+Regime detection is based on whether any marker carries a non-empty `category` field. The
+uniform-marker invariant holds in video: markers are never value-scaled regardless of regime.
 
 ## Known v1 limits
 
@@ -137,7 +159,6 @@ composition following the same harness pattern as `ChoroplethStory` / `SymbolSto
 - **Icon glyphs are default-pin fallback.** In `markerStyle: "icon"` mode, uncategorized markers
   (no `category` field) fall back to the default pin glyph — no custom glyph per marker in v1.
 - **Clustering is interactive only.** Static and video builds always render every marker individually.
-- **Video not yet implemented.** See Slice B above.
 
 ## Marker data model
 
