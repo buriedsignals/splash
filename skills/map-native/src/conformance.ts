@@ -1,6 +1,8 @@
 import { resolveMapFrame } from "./core/map-format";
 import { MAP_STYLES } from "./route-geo";
 import type { ScrollyStory } from "../../scrolly/src/chapters";
+import { computeCartogram } from "./cartogram-geo";
+import { bbox } from "@turf/turf";
 
 export interface RevealConformanceResult {
   violations: string[];
@@ -432,5 +434,96 @@ export function checkHexGridConformance(
     !(MAP_STYLES as readonly string[]).includes(input.mapStyle)
   )
     v.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  return v;
+}
+
+export function checkCartogramConformance(
+  input: {
+    title: string;
+    description?: string;
+    source: { name?: string; url?: string };
+    values: { id: string; value: number }[];
+    variant?: "scaled" | "grid";
+    valueLabel?: string;
+    mapStyle?: string;
+    features: GeoJSON.FeatureCollection;
+    bins?: number;
+    scaleType?: "sequential" | "diverging";
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalMapConformance(
+    {
+      title: input.title,
+      description: input.description,
+      source: input.source,
+    },
+    textColors,
+  );
+
+  // Compute the layout to inspect structural properties.
+  let layout: ReturnType<typeof computeCartogram> | null = null;
+  try {
+    layout = computeCartogram(
+      {
+        variant: input.variant,
+        values: input.values,
+        valueLabel: input.valueLabel,
+        bins: input.bins,
+        scaleType: input.scaleType,
+      },
+      input.features,
+    );
+  } catch {
+    v.push("cartogram: layout computation failed — no region matched the data");
+    return v;
+  }
+
+  if (!layout.valueLabel || !layout.valueLabel.trim())
+    v.push(
+      "cartogram must label its value dimension (valueLabel is empty or missing)",
+    );
+
+  if (layout.bins.length < 1)
+    v.push(
+      "cartogram needs a sequential bin legend — the colour scale is undecodable without it",
+    );
+
+  if (layout.cells.length < 1) v.push("no populated cells to draw");
+
+  const [w, s, e, n] = layout.bounds;
+  if (
+    !Number.isFinite(w) ||
+    !Number.isFinite(e) ||
+    !Number.isFinite(s) ||
+    !Number.isFinite(n) ||
+    w >= e ||
+    s >= n
+  )
+    v.push("empty cartogram bounds — basemap-fit impossible");
+
+  if (
+    input.mapStyle &&
+    !(MAP_STYLES as readonly string[]).includes(input.mapStyle)
+  )
+    v.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+
+  // For grid variant: assert all cells have identical degree-size (bbox width and height).
+  // Geodesic area varies with latitude even for equal squares; degree-size is the correct invariant.
+  if (layout.variant === "grid" && layout.cells.length > 1) {
+    const eps = 1e-9;
+    const [fw, fs0, fe, fn0] = bbox(layout.cells[0].feature);
+    const refW = fe - fw;
+    const refH = fn0 - fs0;
+    const nonUniform = layout.cells.slice(1).some((c) => {
+      const [cw, cs, ce, cn] = bbox(c.feature);
+      return Math.abs(ce - cw - refW) > eps || Math.abs(cn - cs - refH) > eps;
+    });
+    if (nonUniform)
+      v.push(
+        "cartogram grid cells are not uniform in degree-size — all cells must share the same bbox width and height",
+      );
+  }
+
   return v;
 }

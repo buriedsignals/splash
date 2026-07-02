@@ -489,3 +489,86 @@ export function validateHexGridConfig(
   if (errors.length) return { ok: false, errors };
   return { ok: true, spec: s as HexGridConfigShape, warnings };
 }
+
+export type CartogramConfigShape = {
+  type: "cartogram";
+  values: { id: string; value: number }[];
+  variant?: "scaled" | "grid";
+  scaleType?: "sequential" | "diverging";
+  bins?: number;
+  valueLabel?: string;
+  mapStyle?: string;
+  title: string;
+  description?: string;
+  source?: { name?: string; url?: string };
+};
+
+export function validateCartogramConfig(
+  spec: unknown,
+):
+  | { ok: true; spec: CartogramConfigShape; warnings: string[] }
+  | { ok: false; errors: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const s = (spec ?? {}) as Record<string, unknown>;
+
+  if (
+    s.mapStyle !== undefined &&
+    !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
+  )
+    errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+
+  if (
+    s.variant !== undefined &&
+    !["scaled", "grid"].includes(s.variant as string)
+  )
+    errors.push("variant must be one of: scaled, grid");
+
+  if (
+    s.scaleType !== undefined &&
+    !["sequential", "diverging"].includes(s.scaleType as string)
+  )
+    errors.push("scaleType must be one of: sequential, diverging");
+
+  if (s.bins !== undefined) {
+    if (
+      typeof s.bins !== "number" ||
+      !Number.isInteger(s.bins) ||
+      s.bins < 3 ||
+      s.bins > 7
+    )
+      errors.push("bins must be an integer in 3..7");
+  }
+
+  const vals = s.values;
+  if (!Array.isArray(vals) || vals.length === 0) {
+    errors.push("values must be a non-empty array");
+  } else {
+    for (let i = 0; i < vals.length; i++) {
+      const v = vals[i] as Record<string, unknown> | null;
+      if (!v || typeof v !== "object") {
+        errors.push(`value ${i} is not an object`);
+        continue;
+      }
+      if (typeof v.value !== "number" || Number.isNaN(v.value))
+        errors.push(`value ${i} must have a numeric value field`);
+    }
+  }
+
+  const title = typeof s.title === "string" ? s.title.trim() : "";
+  if (title.length < 12)
+    errors.push(`title too short to be an insight: "${title}"`);
+  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
+    errors.push(`title is a year range, not an insight: "${title}"`);
+
+  if (!(typeof s.description === "string" && s.description.trim()))
+    warnings.push("missing description — a module must state what/when/where");
+  const source = (s.source ?? {}) as Record<string, unknown>;
+  if (!(typeof source.name === "string" && source.name.trim()))
+    warnings.push("missing source name");
+  if (!(typeof source.url === "string" && source.url.trim()))
+    warnings.push("missing source url");
+
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, spec: s as CartogramConfigShape, warnings };
+}
