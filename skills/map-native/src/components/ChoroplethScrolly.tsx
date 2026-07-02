@@ -318,6 +318,8 @@ export const ChoroplethScrolly: React.FC<{
 
     const h = delayRender(`choropleth-scrolly-frame-${frame}`);
 
+    const total = scrollyFrames(story.steps.length, fps);
+
     // Delta 2: drive the camera on the STEP timeline.
     const { camera, beatIndex, fillReveal } = cameraForFrame(
       frame,
@@ -347,12 +349,36 @@ export const ChoroplethScrolly: React.FC<{
     }
 
     // Only data-bearing regions are painted. No-data regions stay unpainted.
+    // The base fill for ALL data regions stays painted (so the OVERVIEW/TAKEAWAY
+    // steps show everything).
     map.setPaintProperty("choropleth-fill", "fill-opacity", [
       "case",
       ["==", ["get", "__hasData"], false],
       0,
       fillReveal * 0.9,
     ] as never);
+
+    // Change #3 — sync the reveal's highlight to its panel slide-in.
+    // dataReveal ramps 0→1 across the current step's panel move phase (clamp01 of
+    // stepSlide, which pins at 1 during hold and exceeds 1 on exit). The establish
+    // (OVERVIEW) and takeaway steps carry no highlight (highlight = []), so this only
+    // affects the reveal steps; there the highlight stroke fades in exactly as the
+    // panel slides in, instead of switching on instantly at the beat change.
+    const dataReveal = Math.max(
+      0,
+      Math.min(1, stepSlide(frame, phases, beatIndex, fps, total)),
+    );
+    map.setPaintProperty("choropleth-highlight-stroke", "line-width", [
+      "case",
+      ["==", ["get", "__highlight"], 1],
+      2.5 * dataReveal,
+      0,
+    ] as never);
+    map.setPaintProperty(
+      "choropleth-highlight-stroke",
+      "line-opacity",
+      0.9 * dataReveal,
+    );
 
     map.once("idle", () => continueRender(h));
     map.triggerRepaint();
