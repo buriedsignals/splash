@@ -9,11 +9,14 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { computeChoropleth } from "../../map-native/src/choropleth-geo";
+import { computeHexGrid } from "../../map-native/src/hex-grid-geo";
 import { deriveMapStory } from "../../map-native/src/map-story";
+import { deriveHexGridStory } from "../../map-native/src/hex-grid-story";
 import { deriveSymbolStory } from "../../map-native/src/symbol-story";
 import { mapStoryToChapters } from "./chapters";
 import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
 import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
+import { ScrollyHexMap, type ScrollyHexConfig } from "./ScrollyHexMap";
 
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
@@ -23,7 +26,7 @@ const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 // ---------------------------------------------------------------------------
 
 export const Scrolly: React.FC<{
-  config: ScrollyMapConfig | ScrollySymbolConfig;
+  config: ScrollyMapConfig | ScrollySymbolConfig | ScrollyHexConfig;
 }> = ({ config }) => {
   // -------------------------------------------------------------------------
   // Build the story once at mount — deterministic from config.
@@ -41,6 +44,20 @@ export const Scrolly: React.FC<{
         description: config.description,
         source: config.source,
         regionsWithData: config.points.length,
+      });
+    }
+
+    if (config.type === "hex-grid") {
+      const layout = computeHexGrid(config);
+      const beats = deriveHexGridStory(layout, {
+        title: config.title ?? "",
+        insight: config.insight ?? config.title ?? "",
+      });
+      return mapStoryToChapters(beats, {
+        title: config.title ?? "",
+        description: config.description,
+        source: config.source,
+        regionsWithData: layout.cells.length,
       });
     }
 
@@ -230,13 +247,19 @@ export const Scrolly: React.FC<{
       <div style={wrapperStyle}>
         {/* Sticky graphic — the map stays pinned while prose steps scroll above */}
         <div style={stickyGraphicStyle}>
-          {/* Dispatch on config.type: symbol → ScrollySymbolMap, else choropleth → ScrollyMap. */}
+          {/* Dispatch on config.type: symbol → ScrollySymbolMap, hex-grid → ScrollyHexMap,
+              else choropleth → ScrollyMap. */}
           {/* Pass the active step's BEAT ref (not the step index) — steps no longer
               map 1:1 to beats (the establish/empty-takeaway beats are dropped from
               the scroll), so the map must fly to story.steps[currentStep].ref. */}
           {config.type === "symbol" ? (
             <ScrollySymbolMap
               config={config as ScrollySymbolConfig}
+              currentStep={currentBeatRef}
+            />
+          ) : config.type === "hex-grid" ? (
+            <ScrollyHexMap
+              config={config as ScrollyHexConfig}
               currentStep={currentBeatRef}
             />
           ) : (
