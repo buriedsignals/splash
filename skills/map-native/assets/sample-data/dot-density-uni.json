@@ -1,0 +1,29 @@
+{
+  "type": "dot-density",
+  "basemap": "world",
+  "boundaries": "world",
+  "regionKey": "iso_a3",
+  "valueField": "population",
+  "title": "Where Europe's population is concentrated",
+  "description": "Estimated population by country, 2023. Each dot represents a fixed number of people, so denser clusters mark the most populous nations.",
+  "source": {
+    "name": "Eurostat population statistics",
+    "url": "https://ec.europa.eu/eurostat/"
+  },
+  "rows": [
+    { "iso_a3": "DEU", "population": 84000000 },
+    { "iso_a3": "FRA", "population": 68000000 },
+    { "iso_a3": "GBR", "population": 67000000 },
+    { "iso_a3": "ITA", "population": 59000000 },
+    { "iso_a3": "ESP", "population": 48000000 },
+    { "iso_a3": "POL", "population": 37000000 },
+    { "iso_a3": "NLD", "population": 18000000 },
+    { "iso_a3": "BEL", "population": 12000000 },
+    { "iso_a3": "SWE", "population": 10000000 },
+    { "iso_a3": "AUT", "population": 9000000 },
+    { "iso_a3": "PRT", "population": 10000000 },
+    { "iso_a3": "GRC", "population": 10000000 },
+    { "iso_a3": "NOR", "population": 5500000 },
+    { "iso_a3": "IRL", "population": 5100000 }
+  ]
+}

@@ -313,6 +313,49 @@ export function checkMapFraming(input: {
   return { violations: v };
 }
 
+export function checkDotDensityConformance(
+  input: {
+    title: string;
+    description?: string;
+    source: { name?: string; url?: string };
+    hasCategories: boolean;
+    hasCategoryLegend: boolean;
+    hasDotValueLegend: boolean;
+    boundsNonEmpty: boolean;
+    totalDots: number;
+    capped: boolean;
+    mapStyle?: string;
+  },
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalMapConformance(
+    {
+      title: input.title,
+      description: input.description,
+      source: input.source,
+    },
+    textColors,
+  );
+  if (!input.hasDotValueLegend)
+    v.push(
+      "dot-density needs a '1 dot = N' legend — the count is undecodable without it",
+    );
+  if (input.hasCategories && !input.hasCategoryLegend)
+    v.push(
+      "multivariate dot-density needs a category legend — the colour code is undecodable",
+    );
+  if (!input.boundsNonEmpty)
+    v.push("empty region bounds — basemap-fit impossible");
+  if (input.totalDots < 1)
+    v.push("no dots to place — all regions rounded to zero");
+  if (
+    input.mapStyle &&
+    !(MAP_STYLES as readonly string[]).includes(input.mapStyle)
+  )
+    v.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  return v;
+}
+
 export function checkLocatorConformance(
   input: {
     title: string;

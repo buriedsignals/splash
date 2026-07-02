@@ -57,6 +57,40 @@ export function buildCases(sample) {
 }
 
 // ---------------------------------------------------------------------------
+// Dot-density cases
+// ---------------------------------------------------------------------------
+
+export function buildDotDensityCases(sample) {
+  const cases = [];
+
+  // 1. Sample — the committed dot-density-multi.json (9 European countries, 3 energy categories)
+  cases.push({ label: "dot-density-sample", config: sample });
+
+  // 2. Stress: univariate — drop the categories array to exercise the monochrome / single-field
+  //    path and verify the legend renders "1 dot = N units" without a colour swatch.
+  const univariate = clone(sample);
+  univariate.title =
+    "Total electricity generation per country — univariate dot density";
+  univariate.description =
+    "Aggregate generation (all sources) in 2023. Each dot represents a fixed number of TWh.";
+  delete univariate.categories;
+  univariate.valueField = "coal"; // arbitrary single field for the stress pass
+  cases.push({ label: "dot-density-univariate", config: univariate });
+
+  // 3. Stress: high-value outlier (Germany coal × 10) — auto dotValue must still hit the
+  //    readable target; the cap guard must fire if the total overshoots ~10 000 dots.
+  const outlier = clone(sample);
+  outlier.title =
+    "European power mix — dominant-outlier dotValue stress test";
+  outlier.rows = sample.rows.map((r) =>
+    r.iso_a3 === "DEU" ? { ...r, coal: r.coal * 10 } : r
+  );
+  cases.push({ label: "dot-density-dominant-outlier", config: outlier });
+
+  return cases;
+}
+
+// ---------------------------------------------------------------------------
 // Locator cases
 // ---------------------------------------------------------------------------
 

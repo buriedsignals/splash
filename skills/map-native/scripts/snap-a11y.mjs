@@ -26,6 +26,7 @@ await page.waitForFunction(
       m &&
       m.getLayer &&
       (m.getLayer("choropleth-fill") ||
+        m.getLayer("dot-density-dots") ||
         m.getLayer("symbol-circles") ||
         m.getLayer("locator-glyphs") ||
         m.getLayer("route-fill"))

@@ -290,7 +290,7 @@ S/I/V = which formats fit (Static / Interactive / Video):
 | Proportional symbol | MapTiler 2D | ✓ | ✓ | ✓ | convert-map markers |
 | Flow / route | MapTiler 2D | ◻ | ◻ | ✓ | map-explainer (river/route) |
 | Explainer beat (region sequence) | MapTiler 2D | — | — | ✓ | **map-explainer (proven)** |
-| Dot density | MapTiler 2D | ✓ | ✓ | ◻ | |
+| Dot density | MapTiler 2D | ✓ | ✓ | ◻ | — **Slice A built (static + interactive); Slice B (video reveal + story + scrolly + interactive scrolly) not yet built** |
 | Hex / grid (spatial bins) | MapTiler 2D / deck.gl | ◻ | ✓ | ◻ | CARTO analysis (H3) |
 | Cartogram (grid / scaled) | precompute + 2D | ✓ | ◻ | ◻ | square-grid-maps-of-the-usa |
 | Contour / isoline | MapTiler 2D | ◻ | ◻ | — | |

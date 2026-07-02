@@ -4,11 +4,19 @@ import { ChoroplethMap, type ChoroplethConfig } from "./ChoroplethMap";
 import { SymbolMap, type SymbolConfig } from "./SymbolMap";
 import { RouteMap, type RouteConfig } from "./RouteMap";
 import { LocatorMap } from "./LocatorMap";
-import type { LocatorConfigShape } from "./validate-config";
+import { DotDensityMap } from "./DotDensityMap";
+import type {
+  LocatorConfigShape,
+  DotDensityConfigShape,
+} from "./validate-config";
 import sampleChoropleth from "../assets/sample-data/choropleth.json";
 
 type AnyConfig =
-  ChoroplethConfig | SymbolConfig | RouteConfig | LocatorConfigShape;
+  | ChoroplethConfig
+  | SymbolConfig
+  | RouteConfig
+  | LocatorConfigShape
+  | DotDensityConfigShape;
 
 declare const __CONFIG__: AnyConfig | null;
 declare const __INTERACTIVE__: boolean;
@@ -28,10 +36,17 @@ const configType = (config as { type?: string }).type;
 const isSymbol = configType === "symbol";
 const isRoute = configType === "route";
 const isLocator = configType === "locator";
+const isDotDensity = configType === "dot-density";
 
 createRoot(root).render(
   <div style={{ width: "100vw", height: "100vh" }}>
-    {isLocator ? (
+    {isDotDensity ? (
+      <DotDensityMap
+        config={config as DotDensityConfigShape}
+        progress={1}
+        interactive={interactive}
+      />
+    ) : isLocator ? (
       <LocatorMap
         config={config as LocatorConfigShape}
         interactive={interactive}
