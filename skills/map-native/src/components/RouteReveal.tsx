@@ -164,7 +164,11 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
   const [labels, setLabels] = useState<
     Record<string, { x: number; y: number; reveal: number }>
   >({});
-  const [handle] = useState(() => delayRender("route-reveal-init"));
+  // Generous timeout: the init builds a per-territory layer set + turf geometry, so at
+  // square/portrait aspects it can exceed Remotion's default 30s delayRender timeout.
+  const [handle] = useState(() =>
+    delayRender("route-reveal-init", { timeoutInMilliseconds: 120000 }),
+  );
 
   // Canvas scale: ≤1080-wide → larger labels (square / portrait formats)
   const isNarrow = width <= 1080;
