@@ -6,3 +6,7 @@
 // water (so "no data" land is clearly distinguishable from the ocean), and outside
 // the data colour ramp (so absence is never mistaken for a low value).
 export const NO_DATA_COLOR = "#b9b9b9";
+
+// Water / ocean fill on the dataviz-light basemap. Used to recolour water layers
+// so they match the interactive map treatment.
+export const WATER_COLOR = "#aac9e0";
