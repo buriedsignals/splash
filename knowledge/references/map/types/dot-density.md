@@ -204,8 +204,8 @@ dot-dense region scores higher than a large region with the same dot count.
 
 Each reveal beat carries:
 - `caption` = region name + formatted value (e.g. "Germany — 12 400 TWh")
-- Multivariate: `", mostly <dominant category>"` appended when one category accounts for > 50 % of
-  the region's dots (e.g. "Germany — 12 400 TWh, mostly Coal").
+- Multivariate: `", mostly <dominant category>"` appended for the region's **plurality** category —
+  the group with the largest dot count (no fixed threshold), e.g. "Germany — 12 400 TWh, mostly Coal".
 
 Camera: flies to each dense region's bounding extent and dims all other dots to ~0.25 opacity
 during the hold. Returns to full-extent view on the takeaway beat.
