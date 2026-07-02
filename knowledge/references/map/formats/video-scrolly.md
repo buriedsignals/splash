@@ -27,8 +27,9 @@ The scrolly video consumes the **exact same `ScrollyStory`** as the interactive 
 - **Choropleth + symbol** — story derived via `mapStoryToChapters(layout, features, joinKey, meta)`
 - **Route** — story derived via `routeStoryToChapters(layout, meta)`
 
-Each `ScrollyStep` carries `{ title, body, align?, ref }` — the prose panel content — plus the
-beat index or territory index used to drive the map. No separate video-only content is authored.
+Each `ScrollyStep` carries `{ prose, align?, action, ref }` — `prose` is the panel content, and
+`ref` is the beat index (flyTo) or territory index (drawTo) used to drive the map. No separate
+video-only content is authored.
 This is the core contract: one narrative, two expressions (interactive scroll; frame-deterministic MP4).
 
 ## Look
@@ -114,8 +115,8 @@ the narrated sense; its only video formats are `story` and `scrolly`).
 ## Conformance
 
 `checkScrollyConformance({ story, territoryCount })` validates the derived scrolly story as a
-contract gate at authoring time: every step must have non-empty `title` and `body`; `ref` must
-be in range; territory count (route) must be consistent. It is exercised in the test suite — it
+contract gate at authoring time: every step must have non-empty `prose`; `ref` must
+be in range; the action must be `flyTo`/`drawTo`; territory count (route) must be consistent. It is exercised in the test suite — it
 does NOT run inside `produce.mjs` at render time (consistent with all other map-native conformance,
 which is test-only).
 
