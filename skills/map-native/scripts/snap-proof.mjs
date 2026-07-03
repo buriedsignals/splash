@@ -58,7 +58,7 @@ const layerType = await page.evaluate(() => {
   if (m.getLayer("cartogram-cells")) return "cartogram";
   if (m.getLayer("symbol-circles") || m.getLayer("locator-glyphs"))
     return "symbol";
-  if (m.getLayer("route-fill")) return "route";
+  if (m.getLayer("route-fill") || m.getLayer("route-line")) return "route";
   return "choropleth";
 });
 const glyphLayer = await page.evaluate(() =>

@@ -46,7 +46,11 @@ for (const w of [360, 768, 1100, 1600]) {
   // without categories legitimately renders no legend. Both make the legend optional.
   const isRoute = await page.evaluate(() => {
     const m = window.__map__;
-    return !!(m && m.getLayer && m.getLayer("route-fill"));
+    return !!(
+      m &&
+      m.getLayer &&
+      (m.getLayer("route-fill") || m.getLayer("route-line"))
+    );
   });
   const isLocator = await page.evaluate(() => {
     const m = window.__map__;
