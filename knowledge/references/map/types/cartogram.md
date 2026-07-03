@@ -111,10 +111,16 @@ For `scaled`, the visual area of each region polygon is proportional to its valu
 √(value / maxValue)). Regions with zero value are rendered at a minimum scale of `1e-3` (nearly
 invisible). Overlapping shapes from adjacent dominant regions are expected and intentional.
 
-### 5. Basemap style: dark / light, AI-selected
+### 5. Basemap style: dark / light, AI-selected; grid renders on a neutral background
 
 The `mapStyle` config key (`"dataviz-light"` or `"dataviz-dark"`) controls the MapTiler basemap.
 The AI selects the style best suited to the editorial context.
+
+The **`scaled`** variant renders over the full MapTiler basemap (coastlines, countries, water) so
+that resized shapes stay situated in real geography. The **`grid`** variant renders cells on a flat
+neutral background instead — light → `#f2f3f5`, dark → `#1b1d21` — with all basemap tile layers
+hidden. This is intentional: a tile-grid is an abstract schematic where "equal tiles, colour =
+value" must read without the visual noise of real coastlines or water behind the cells.
 
 `checkCartogramConformance` enforces: `mapStyle` must be one of the declared `MAP_STYLES` values.
 
