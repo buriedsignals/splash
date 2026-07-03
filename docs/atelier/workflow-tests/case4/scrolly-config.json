@@ -46,6 +46,7 @@
   "unit": "Year nationwide same-sex marriage took effect",
   "valueUnit": "",
   "valueKind": "temporal",
+  "palette": "purples",
   "source": {
     "name": "Wikipedia — Timeline of same-sex marriage; Library of Congress Global Legal Monitor",
     "url": "https://en.wikipedia.org/wiki/Timeline_of_same-sex_marriage"
