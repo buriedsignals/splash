@@ -60,21 +60,34 @@ describe("deriveChartStory (line)", () => {
   });
 });
 
-describe("deriveChartStory — x-fraction progress", () => {
-  const xFracSpec = {
+describe("deriveChartStory — path-length progress", () => {
+  // A flat run, a cliff (2010→2011), then a flat run. The reveal head advances by
+  // PATH LENGTH, so the point at the bottom of the cliff sits FURTHER along the drawn
+  // line than its x-fraction — the steep vertical drop adds length that a plain Δx
+  // ignores. Progress must reflect the polyline the LineChart actually draws.
+  const cliffSpec = {
     nativeType: "line",
-    title: "Test x-fraction",
+    title: "Test path-length",
     unit: "",
     source: { name: "test" },
-    data: "year,extent\n2000,5\n2010,9\n2020,1\n2040,3",
+    data: "year,extent\n2000,7\n2010,7\n2011,1\n2020,1",
     directLabel: "extent",
   };
-  it("reveal at year 2010 has progress ≈ (2010-2000)/(2040-2000) = 0.25, not index-fraction", () => {
-    const beats = deriveChartStory(xFracSpec as any);
+  it("reveal at the cliff bottom (2011) has progress > its x-fraction 0.55", () => {
+    const beats = deriveChartStory(cliffSpec as any);
     const reveals = beats.filter((b) => b.kind === "reveal");
-    const beat2010 = reveals.find((b) => b.callout?.name === "2010");
-    expect(beat2010).toBeDefined();
-    expect(beat2010!.progress).toBeCloseTo(0.25, 5);
+    const beat2011 = reveals.find((b) => b.callout?.name === "2011");
+    expect(beat2011).toBeDefined();
+    const xFraction = (2011 - 2000) / (2020 - 2000); // 0.55
+    expect(beat2011!.progress!).toBeGreaterThan(xFraction);
+  });
+  it("progress starts ≈ 0, ends ≈ 1, and strictly increases", () => {
+    const beats = deriveChartStory(cliffSpec as any);
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals[0].progress).toBeCloseTo(0, 5);
+    expect(reveals[reveals.length - 1].progress).toBeCloseTo(1, 5);
+    for (let i = 1; i < reveals.length; i++)
+      expect(reveals[i].progress!).toBeGreaterThan(reveals[i - 1].progress!);
   });
 });
 

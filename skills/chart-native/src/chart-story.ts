@@ -1,5 +1,18 @@
 import { specToNativeConfig, UnsupportedNativeType } from "./spec-to-config";
 import type { NativeSpec } from "./spec-to-config";
+import { computeChartLayout } from "./chart-geometry";
+import type { Dims } from "./chart-geometry";
+
+// Fixed canvas dims that match LineChart's defaults (width=840, height=480) and the
+// minimum right-padding (Math.max(140, labelGutter) where 140 is the floor). Using
+// these fixed values keeps deriveChartStory a pure function without needing a rendered
+// component — the pixel positions produced are proportionally identical to what the
+// chart renders at these defaults, so cumLength fractions are correct.
+const CHART_DIMS: Dims = {
+  width: 840,
+  height: 480,
+  padding: { top: 64, right: 140, bottom: 52, left: 56 },
+};
 
 export interface ChartBeat {
   kind: "title" | "establish" | "reveal" | "takeaway";
@@ -52,11 +65,20 @@ export function deriveChartStory(
   const fmt = (v: number) =>
     `${Math.round(v * 100) / 100}${spec.unit ? " " + spec.unit : ""}`;
 
-  const xs = points.map((p) => Number(p[xField]));
-  const xNumeric = xs.every((v) => Number.isFinite(v));
-  const xMin = Math.min(...xs);
-  const xMax = Math.max(...xs);
-  const xSpan = xMax - xMin || 1;
+  // Compute pixel layout using the same dims LineChart uses by default, then derive
+  // progress from cumulative path length so the draw-head lands exactly on the
+  // captioned point (x-fraction fails on steep segments — the path is longer than Δx).
+  const layout = computeChartLayout(
+    {
+      xField,
+      yField,
+      xType: (config.xType as "time" | "linear") ?? "linear",
+      points,
+    },
+    CHART_DIMS,
+  );
+  const cum = layout.cumLength;
+  const total = layout.totalLength || 1;
 
   const beats: ChartBeat[] = [];
   beats.push({ kind: "title", callout: null, copy: spec.title });
@@ -67,7 +89,7 @@ export function deriveChartStory(
     const text = `${name} — ${value}`;
     beats.push({
       kind: "reveal",
-      progress: xNumeric ? (xs[i] - xMin) / xSpan : n > 1 ? i / (n - 1) : 1,
+      progress: cum[i] / total,
       callout: { name, value, text },
       copy: text,
     });
