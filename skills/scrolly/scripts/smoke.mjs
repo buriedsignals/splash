@@ -24,9 +24,10 @@ const LAYER_FOR_TYPE = {
   "dot-density": "dot-density-dots",
   "locator": "locator-glyphs",
   "symbol": "symbol-circles",
+  "cartogram": "cartogram-cells",
 };
-// Types where choropleth-fill must be ABSENT (point-based types must not fall back).
-const POINT_TYPES = new Set(["hex-grid", "dot-density", "locator"]);
+// Types where choropleth-fill must be ABSENT (point-based / non-choropleth types must not fall back).
+const POINT_TYPES = new Set(["hex-grid", "dot-density", "locator", "cartogram"]);
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1100, height: 800 } });

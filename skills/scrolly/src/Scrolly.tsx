@@ -11,12 +11,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { computeChoropleth } from "../../map-native/src/choropleth-geo";
 import { computeHexGrid } from "../../map-native/src/hex-grid-geo";
 import { computeDotDensity } from "../../map-native/src/dot-density-geo";
+import { computeCartogram } from "../../map-native/src/cartogram-geo";
 import { locatorGeometry } from "../../map-native/src/locator-geo";
 import { deriveMapStory } from "../../map-native/src/map-story";
 import { deriveHexGridStory } from "../../map-native/src/hex-grid-story";
 import { deriveSymbolStory } from "../../map-native/src/symbol-story";
 import { deriveDotDensityStory } from "../../map-native/src/dot-density-story";
 import { deriveLocatorStory } from "../../map-native/src/locator-story";
+import { deriveCartogramStory } from "../../map-native/src/cartogram-story";
 import { mapStoryToChapters } from "./chapters";
 import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
 import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
@@ -29,6 +31,10 @@ import {
   ScrollyLocatorMap,
   type ScrollyLocatorConfig,
 } from "./ScrollyLocatorMap";
+import {
+  ScrollyCartogramMap,
+  type ScrollyCartogramConfig,
+} from "./ScrollyCartogramMap";
 
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
@@ -43,7 +49,8 @@ export const Scrolly: React.FC<{
     | ScrollySymbolConfig
     | ScrollyHexConfig
     | ScrollyDotDensityConfig
-    | ScrollyLocatorConfig;
+    | ScrollyLocatorConfig
+    | ScrollyCartogramConfig;
 }> = ({ config }) => {
   // -------------------------------------------------------------------------
   // Build the story once at mount — deterministic from config.
@@ -119,6 +126,20 @@ export const Scrolly: React.FC<{
         description: config.description,
         source: config.source,
         regionsWithData: geo.markers.length,
+      });
+    }
+
+    if (config.type === "cartogram") {
+      const layout = computeCartogram(config, world);
+      const beats = deriveCartogramStory(layout, {
+        title: config.title ?? "",
+        insight: config.insight ?? config.title ?? "",
+      });
+      return mapStoryToChapters(beats, {
+        title: config.title ?? "",
+        description: config.description,
+        source: config.source,
+        regionsWithData: layout.cells.length,
       });
     }
 
@@ -331,6 +352,11 @@ export const Scrolly: React.FC<{
           ) : config.type === "locator" ? (
             <ScrollyLocatorMap
               config={config as ScrollyLocatorConfig}
+              currentStep={currentBeatRef}
+            />
+          ) : config.type === "cartogram" ? (
+            <ScrollyCartogramMap
+              config={config as ScrollyCartogramConfig}
               currentStep={currentBeatRef}
             />
           ) : (
