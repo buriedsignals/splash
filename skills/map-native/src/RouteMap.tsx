@@ -15,6 +15,20 @@ maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 // Re-export so mount.tsx can import the type from here
 export type { RouteConfig };
 
+// ---------------------------------------------------------------------------
+// Electric colour sets — same as RouteReveal, mapStyle-adaptive
+// ---------------------------------------------------------------------------
+
+const ELECTRIC_DARK = {
+  line: "#E8F7FF",
+  glow: "#49C6FF",
+} as const;
+
+const ELECTRIC_LIGHT = {
+  line: "#1A3A5C",
+  glow: "#4A90D9",
+} as const;
+
 interface Props {
   config: RouteConfig;
   interactive?: boolean;
@@ -23,6 +37,7 @@ interface Props {
 export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
   const outerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const legendRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const popupRef = useRef<maptilersdk.Popup | null>(null);
   const startedRef = useRef(false);
@@ -34,6 +49,8 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
     () => ({ w: window.innerWidth, h: window.innerHeight }),
   );
   const [titleHeightPx, setTitleHeightPx] = useState(0);
+
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
 
   // Measure the root element size before map init.
   useEffect(() => {
@@ -109,15 +126,16 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
     }
     fitToDataRef.current = fitToData;
 
-    // Map style: resolve the token and map to a MapTiler style (kept here to stay framework-free in route-geo)
+    // Map style: resolve token → MapTiler style
     const styleToken = resolveMapStyle(config.mapStyle);
     const isDark = styleToken === "dataviz-dark";
     const mapStyle = isDark
       ? maptilersdk.MapStyle.DATAVIZ.DARK
       : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+    const ELECTRIC = isDark ? ELECTRIC_DARK : ELECTRIC_LIGHT;
 
-    // Route stroke colour depends on base style
-    const routeStrokeColor = isDark ? "#E8F7FF" : "#1A3A5C";
+    // Halo colour for arrows and labels — contrasts with the basemap
+    const labelHalo = isDark ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.85)";
 
     const map = new maptilersdk.Map({
       container: containerRef.current,
@@ -130,12 +148,13 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
       geolocateControl: false,
       maptilerLogo: false,
       fadeDuration: 0,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
     } as Parameters<typeof maptilersdk.Map>[0]);
 
     mapRef.current = map;
 
     map.on("load", () => {
-      // Strip basemap symbol layers + inner admin borders (sub-national dividers)
+      // Strip basemap symbol layers (place labels) + inner admin borders
       const layers = map.getStyle()?.layers ?? [];
       for (const layer of layers) {
         if (layer.type === "symbol" || /other border/i.test(layer.id)) {
@@ -146,13 +165,13 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
       const world = worldGeoJson as GeoJSON.FeatureCollection;
       const layout = computeRoute(config, world);
 
-      // Build a lookup from territory key → colour
+      // Build a lookup from territory key → territory metadata
       const colorByKey: Record<string, string> = {};
       for (const t of layout.territories) {
         colorByKey[t.key] = t.color;
       }
 
-      // Filter world features to those crossed by the route, tag with colour
+      // Filter world features to those crossed by the route, tag with colour + key
       const crossedKeys = new Set(layout.territories.map((t) => t.key));
       const crossedFeatures: GeoJSON.Feature[] = world.features
         .filter((f) => {
@@ -181,17 +200,31 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         data: territoriesGeoJson,
       });
 
+      // Territory fill (lighter than the video, since there's no animation bloom)
       map.addLayer({
         id: "route-fill",
         type: "fill",
         source: "route-territories",
         paint: {
           "fill-color": ["get", "__color"] as never,
-          "fill-opacity": 0.55,
+          "fill-opacity": 0.22,
         },
       });
 
-      // Route LineString source
+      // Territory border line — drawn over the fill, per-territory colour
+      map.addLayer({
+        id: "route-territory-border",
+        type: "line",
+        source: "route-territories",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["get", "__color"] as never,
+          "line-width": 2,
+          "line-opacity": 0.95,
+        },
+      });
+
+      // Route line source (full path, no animation)
       const routeGeoJson: GeoJSON.Feature = {
         type: "Feature",
         properties: {},
@@ -206,22 +239,110 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         data: routeGeoJson,
       });
 
+      // Glow layer: wide, blurred, translucent — electric halo effect
+      map.addLayer({
+        id: "route-line-glow",
+        type: "line",
+        source: "route-line-source",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ELECTRIC.glow,
+          "line-width": 11,
+          "line-opacity": 0.32,
+          "line-blur": 6,
+        },
+      });
+
+      // Core route line
       map.addLayer({
         id: "route-line",
         type: "line",
         source: "route-line-source",
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
+        layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": routeStrokeColor,
+          "line-color": ELECTRIC.line,
           "line-width": 3,
           "line-opacity": 0.95,
         },
       });
 
-      // Labels: symbol layer placing each territory name at its anchor
+      // Direction arrows along the route — sparse ▶ repeating every ~120px
+      map.addLayer({
+        id: "route-arrows",
+        type: "symbol",
+        source: "route-line-source",
+        layout: {
+          "symbol-placement": "line",
+          "symbol-spacing": 120,
+          "text-field": "▶",
+          "text-rotation-alignment": "map",
+          "text-keep-upright": false,
+          "text-size": 12,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true,
+        } as never,
+        paint: {
+          "text-color": ELECTRIC.line,
+          "text-halo-color": labelHalo,
+          "text-halo-width": 1,
+        } as never,
+      });
+
+      // Start marker (hollow ring) at first route point
+      const startPoint: GeoJSON.Feature = {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Point",
+          coordinates: layout.route[0],
+        },
+      };
+      // End marker (filled dot) at last route point
+      const endPoint: GeoJSON.Feature = {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Point",
+          coordinates: layout.route[layout.route.length - 1],
+        },
+      };
+
+      map.addSource("route-start-source", {
+        type: "geojson",
+        data: startPoint,
+      });
+      map.addSource("route-end-source", {
+        type: "geojson",
+        data: endPoint,
+      });
+
+      // Start: hollow ring — transparent fill, white stroke
+      map.addLayer({
+        id: "route-start-marker",
+        type: "circle",
+        source: "route-start-source",
+        paint: {
+          "circle-radius": 6,
+          "circle-color": "transparent",
+          "circle-stroke-color": ELECTRIC.line,
+          "circle-stroke-width": 2.5,
+        },
+      });
+
+      // End: filled dot — solid colour matching the route line
+      map.addLayer({
+        id: "route-end-marker",
+        type: "circle",
+        source: "route-end-source",
+        paint: {
+          "circle-radius": 6,
+          "circle-color": ELECTRIC.line,
+          "circle-stroke-color": isDark ? "#000000" : "#ffffff",
+          "circle-stroke-width": 1.5,
+        },
+      });
+
+      // Territory labels: symbol layer at each territory anchor
       const labelFeatures: GeoJSON.Feature[] = layout.territories.map((t) => ({
         type: "Feature",
         properties: {
@@ -256,8 +377,8 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
           "text-allow-overlap": false,
         } as never,
         paint: {
-          "text-color": "#ffffff",
-          "text-halo-color": "rgba(0,0,0,0.6)",
+          "text-color": isDark ? "#ffffff" : "#1a1a2e",
+          "text-halo-color": labelHalo,
           "text-halo-width": 1.5,
         } as never,
       });
@@ -280,7 +401,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
           "top-right",
         );
 
-        // Hover tooltip: territory name
+        // Hover tooltip: territory name on fill hover
         const popup = new maptilersdk.Popup({
           closeButton: false,
           closeOnClick: false,
@@ -291,7 +412,10 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
           const f = e.features?.[0];
           if (!f) return;
           map.getCanvas().style.cursor = "pointer";
-          const name = f.properties?.name ?? f.properties?.__key ?? "—";
+          // Prefer the human-readable territory label from our computed layout
+          const key = String(f.properties?.__key ?? "");
+          const terr = layout.territories.find((t) => t.key === key);
+          const name = terr?.label ?? f.properties?.name ?? key ?? "—";
           popup
             .setLngLat(e.lngLat)
             .setHTML(`<strong>${name}</strong>`)
@@ -302,6 +426,23 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
           map.getCanvas().style.cursor = "";
           popup.remove();
         });
+      }
+
+      // Territory legend panel — swatch + label per territory (ordered by route traversal)
+      if (legendRef.current) {
+        const ink = isDark ? "#f4f4f5" : "#444";
+        const sub = isDark ? "#c8c8cf" : "#555";
+        const swatches = layout.territories
+          .map(
+            (t) => `
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="display:inline-block;width:14px;height:14px;background:${t.color};border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);flex-shrink:0"></span>
+            <span style="font:11px/1.2 sans-serif;color:${sub}">${t.label}</span>
+          </div>`,
+          )
+          .join("");
+        const header = `<div style="font:600 11px/1.2 sans-serif;color:${ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Territories</div>`;
+        legendRef.current.innerHTML = header + swatches;
       }
 
       // Expose map instance for audit + snap-proof
@@ -338,9 +479,6 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
     ? `Interactive map: ${config.title}`
     : "Interactive route map";
 
-  // Derive dark theme at render time (mirrors the useEffect resolution, kept in sync).
-  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-
   const frame = resolveMapFrame(containerSize.w, containerSize.h, {
     titleLines: 2,
     hasDescription: !!config.description,
@@ -356,6 +494,10 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
     .maplibregl-popup-content strong { color: #ffffff !important; }
     .maplibregl-popup-tip { border-top-color: rgba(28,28,31,0.95) !important; border-bottom-color: rgba(28,28,31,0.95) !important; }
   `;
+
+  // Number of territories: determines legend panel height
+  const numTerritories = config.territories?.length ?? 2;
+  const legendHeight = numTerritories * 20 + 28; // swatch rows + header
 
   const inner = (
     <>
@@ -380,6 +522,25 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         role="region"
         aria-label={ariaLabel}
         style={{ width: "100%", height: "100%" }}
+      />
+
+      {/* Territory legend — swatch + name per territory */}
+      <div
+        ref={legendRef}
+        data-testid="map-legend"
+        style={{
+          position: "absolute",
+          bottom: 16,
+          right: 12,
+          zIndex: 10,
+          background: dark ? "rgba(24,24,27,0.88)" : "rgba(255,255,255,0.92)",
+          padding: "10px 12px",
+          borderRadius: 6,
+          boxShadow: "0 1px 6px rgba(0,0,0,.12)",
+          minWidth: 110,
+          maxWidth: "min(160px, 44vw)",
+          minHeight: legendHeight,
+        }}
       />
     </>
   );

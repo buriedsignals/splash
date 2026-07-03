@@ -31,7 +31,8 @@ await page.waitForFunction(
         m.getLayer("locator-glyphs") ||
         m.getLayer("hex-grid-cells") ||
         m.getLayer("cartogram-cells") ||
-        m.getLayer("route-fill"))
+        m.getLayer("route-fill") ||
+        m.getLayer("route-line"))
     );
   },
   { timeout: 60_000 },

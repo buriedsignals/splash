@@ -33,7 +33,8 @@ for (const w of [360, 768, 1100, 1600]) {
           m.getLayer("locator-glyphs") ||
           m.getLayer("hex-grid-cells") ||
           m.getLayer("cartogram-cells") ||
-          m.getLayer("route-fill"))
+          m.getLayer("route-fill") ||
+          m.getLayer("route-line"))
       );
     },
     undefined,
