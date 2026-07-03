@@ -1,6 +1,20 @@
 import { describe, it, expect } from "bun:test";
-import { resolveMapFrame } from "../src/core/map-format";
+import { resolveMapFrame, maxFittableLngSpan } from "../src/core/map-format";
 import { FRAME_TYPE } from "../src/theme/map-tokens";
+
+describe("maxFittableLngSpan (F8 aspect limit)", () => {
+  it("a 360x640 portrait phone can only show ~202° of longitude", () => {
+    expect(maxFittableLngSpan(360, 640)).toBeCloseTo(202.5, 1);
+  });
+  it("a wide landscape viewport can show the whole world (>360°)", () => {
+    expect(maxFittableLngSpan(1200, 800)).toBeGreaterThan(360);
+  });
+  it("a globe-spanning 247° extent is unfittable on the phone but fine on desktop", () => {
+    const span = 247; // LA (-118) → Busan (129), the ports dataset
+    expect(span).toBeGreaterThan(maxFittableLngSpan(360, 640)); // impossible in portrait
+    expect(span).toBeLessThan(maxFittableLngSpan(1200, 800)); // fits on desktop
+  });
+});
 
 describe("resolveMapFrame", () => {
   it("scale = 1.0 when the smaller side is the 720 reference", () => {

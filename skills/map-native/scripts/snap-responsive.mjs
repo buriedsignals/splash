@@ -150,9 +150,28 @@ for (const w of [360, 768, 1100, 1600]) {
       if (!dataBounds) return true;
       const [dw, ds, de, dn] = dataBounds;
       const vb = m.getBounds();
-      // The visible bounds must contain (or almost contain) the data bounds.
-      // A tolerance of 5° lat/lng handles edge padding and mercator rounding.
-      const TOL = 5;
+      const TOL = 5; // ° tolerance for edge padding + mercator rounding
+      // ASPECT LIMIT (physics, not a bug): in Web Mercator the map cannot zoom out past
+      // the point where the full world HEIGHT fills the viewport, so a tall/narrow
+      // portrait viewport can only ever show ~360·(w/h) degrees of LONGITUDE. A dataset
+      // wider than that is impossible to frame fully at this aspect — demanding it would
+      // fail an unfixable render. In that case require BEST EFFORT instead: the map is
+      // centred on the data (so it shows the middle of the extent, not a cropped edge).
+      const maxFittableLngSpan = 360 * (window.innerWidth / window.innerHeight);
+      const dataLngSpan = de - dw;
+      if (dataLngSpan > maxFittableLngSpan) {
+        const dataCentreLng = (dw + de) / 2;
+        const dataCentreLat = (ds + dn) / 2;
+        const c = m.getCenter();
+        // Centred within a generous tolerance = the best achievable framing.
+        return (
+          Math.abs(c.lng - dataCentreLng) <= dataLngSpan * 0.15 + TOL &&
+          Math.abs(c.lat - dataCentreLat) <= (dn - ds) * 0.5 + TOL
+        );
+      }
+      // The aspect CAN show the full width → the real guard: the visible bounds must
+      // contain (or almost contain) the data bounds. Catches the minZoom-lock crop
+      // regression (a fittable map wrongly zoomed in, cropping the data).
       return (
         vb.getWest() <= dw + TOL &&
         vb.getSouth() <= ds + TOL &&

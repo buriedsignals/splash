@@ -468,10 +468,16 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         legendRef.current.innerHTML = header + swatches;
       }
 
-      // Expose map instance for audit + snap-proof
+      // Expose map instance for audit + snap-proof. IMPORTANT: expose the ROUTE
+      // bounds the map actually frames (dataBounds), NOT layout.bounds — the latter
+      // is the territory-inclusive extent, which for a trans-continental route (huge
+      // countries like Russia) dwarfs the route and would make the responsive
+      // data-extent check demand the whole territory span be visible, contradicting
+      // the deliberate route-focused framing. The "data" a route map must keep in view
+      // IS the route; territories are context that legitimately overflow.
       (window as unknown as Record<string, unknown>)["__map__"] = map;
       (window as unknown as Record<string, unknown>)["__layout_bounds__"] =
-        layout.bounds;
+        dataBounds;
     });
 
     // ResizeObserver: re-fit on container resize

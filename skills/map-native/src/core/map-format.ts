@@ -27,6 +27,18 @@ const REF = 720; // the canvas min-side at which scale === 1
 const clamp = (x: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, x));
 
+// The widest span of LONGITUDE (degrees) a viewport can ever display in Web Mercator.
+// The map cannot zoom out past the point where the full world HEIGHT fills the
+// viewport (below that MapTiler clamps to avoid vertical gaps), so at that floor a
+// viewport of aspect w/h shows ~360·(w/h)° of longitude. A data extent wider than this
+// is PHYSICALLY impossible to frame fully at that aspect (a globe-spanning point set on
+// a narrow portrait phone) — the responsive data-extent guard must tolerate that
+// instead of failing an unfixable render, while still catching a fittable extent that
+// was wrongly cropped. Pure + unit-tested so the threshold can't silently drift.
+export function maxFittableLngSpan(width: number, height: number): number {
+  return 360 * (width / height);
+}
+
 export function resolveMapFrame(
   width: number,
   height: number,
