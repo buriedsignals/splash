@@ -160,14 +160,18 @@ for (const w of [360, 768, 1100, 1600]) {
       const maxFittableLngSpan = 360 * (window.innerWidth / window.innerHeight);
       const dataLngSpan = de - dw;
       if (dataLngSpan > maxFittableLngSpan) {
+        // Horizontally the full width CANNOT be shown at this aspect → best effort is
+        // that the map is CENTRED on the data longitude (shows the middle of the extent,
+        // not a cropped edge). Vertically the height CAN be shown (the map floors at
+        // full-world-height), so the data latitude band must be CONTAINED in view — a
+        // centring test there is wrong (the floored map centres near the equator while
+        // northern-hemisphere data still sits fully in view).
         const dataCentreLng = (dw + de) / 2;
-        const dataCentreLat = (ds + dn) / 2;
         const c = m.getCenter();
-        // Centred within a generous tolerance = the best achievable framing.
-        return (
-          Math.abs(c.lng - dataCentreLng) <= dataLngSpan * 0.15 + TOL &&
-          Math.abs(c.lat - dataCentreLat) <= (dn - ds) * 0.5 + TOL
-        );
+        const lngCentred =
+          Math.abs(c.lng - dataCentreLng) <= dataLngSpan * 0.15 + TOL;
+        const latVisible = vb.getSouth() <= ds + TOL && vb.getNorth() >= dn - TOL;
+        return lngCentred && latVisible;
       }
       // The aspect CAN show the full width → the real guard: the visible bounds must
       // contain (or almost contain) the data bounds. Catches the minZoom-lock crop

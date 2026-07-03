@@ -1,0 +1,25 @@
+{
+  "type": "dot-density",
+  "basemap": "world",
+  "boundaries": "world",
+  "regionKey": "iso_a3",
+  "valueField": "population",
+  "title": "Where Africa's people are: Nigeria and the Nile anchor the continent",
+  "description": "Estimated population by country, 2024. Each dot represents a fixed number of people, so denser clusters mark the most populous nations.",
+  "source": { "name": "UN World Population Prospects, 2024", "url": "https://population.un.org/wpp/" },
+  "rows": [
+    { "iso_a3": "NGA", "population": 223000000 },
+    { "iso_a3": "ETH", "population": 126000000 },
+    { "iso_a3": "EGY", "population": 112000000 },
+    { "iso_a3": "COD", "population": 102000000 },
+    { "iso_a3": "TZA", "population": 67000000 },
+    { "iso_a3": "ZAF", "population": 60000000 },
+    { "iso_a3": "KEN", "population": 55000000 },
+    { "iso_a3": "SDN", "population": 48000000 },
+    { "iso_a3": "DZA", "population": 45000000 },
+    { "iso_a3": "MAR", "population": 37000000 },
+    { "iso_a3": "AGO", "population": 36000000 },
+    { "iso_a3": "GHA", "population": 34000000 },
+    { "iso_a3": "MOZ", "population": 33000000 }
+  ]
+}

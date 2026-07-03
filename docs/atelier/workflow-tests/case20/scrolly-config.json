@@ -1,0 +1,19 @@
+{
+  "title": "Southern Europe swelters through dozens of tropical nights",
+  "description": "Nights above 20°C by country, 2024 — a guided walk from the hottest to the coolest",
+  "unit": "tropical nights (min ≥ 20°C), 2024",
+  "valueUnit": " nights",
+  "basemap": "world",
+  "regionKey": "code",
+  "valueField": "nights",
+  "palette": "amber",
+  "narrativePattern": "magnitude",
+  "source": { "name": "Copernicus / E-OBS climate reanalysis, 2024", "url": "https://climate.copernicus.eu" },
+  "rows": [
+    { "code": "MLT", "nights": 82 }, { "code": "CYP", "nights": 74 }, { "code": "GRC", "nights": 71 },
+    { "code": "ITA", "nights": 58 }, { "code": "ESP", "nights": 55 }, { "code": "PRT", "nights": 41 },
+    { "code": "HRV", "nights": 39 }, { "code": "FRA", "nights": 24 }, { "code": "BGR", "nights": 22 },
+    { "code": "ROU", "nights": 18 }, { "code": "DEU", "nights": 9 }, { "code": "POL", "nights": 7 },
+    { "code": "GBR", "nights": 3 }, { "code": "IRL", "nights": 2 }, { "code": "SWE", "nights": 2 }, { "code": "NOR", "nights": 1 }
+  ]
+}
