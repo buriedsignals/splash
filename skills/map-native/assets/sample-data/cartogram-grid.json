@@ -1,0 +1,35 @@
+{
+  "type": "cartogram",
+  "variant": "grid",
+  "basemap": "world",
+  "joinKey": "iso_a3",
+  "scaleType": "sequential",
+  "valueLabel": "Renewable energy share (%)",
+  "mapStyle": "dataviz-dark",
+  "title": "Europe's renewable electricity share, 2023",
+  "description": "Share of electricity generated from renewable sources (wind, solar, hydro, biomass) across European countries in 2023. Each tile represents one country.",
+  "source": {
+    "name": "Ember Climate — European Electricity Review 2024",
+    "url": "https://ember-climate.org/insights/research/european-electricity-review-2024/"
+  },
+  "values": [
+    { "id": "NOR", "value": 98 },
+    { "id": "AUT", "value": 80 },
+    { "id": "SWE", "value": 75 },
+    { "id": "PRT", "value": 65 },
+    { "id": "DNK", "value": 64 },
+    { "id": "ESP", "value": 50 },
+    { "id": "LVA", "value": 48 },
+    { "id": "FIN", "value": 47 },
+    { "id": "GRC", "value": 40 },
+    { "id": "ITA", "value": 39 },
+    { "id": "DEU", "value": 55 },
+    { "id": "GBR", "value": 42 },
+    { "id": "FRA", "value": 26 },
+    { "id": "POL", "value": 18 },
+    { "id": "HUN", "value": 17 },
+    { "id": "CZE", "value": 15 },
+    { "id": "BEL", "value": 30 },
+    { "id": "NLD", "value": 35 }
+  ]
+}

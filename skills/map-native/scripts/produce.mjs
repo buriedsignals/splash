@@ -77,6 +77,7 @@ const isRoute = parsedConfig.type === "route";
 const isLocator = parsedConfig.type === "locator";
 const isDotDensity = parsedConfig.type === "dot-density";
 const isHexGrid = parsedConfig.type === "hex-grid";
+const isCartogram = parsedConfig.type === "cartogram";
 
 // Returns the composition set for the story kind, dispatched on cameraMode.
 // guided-tour: choropleth/symbol fly-through (SP2). route-reveal: draw-on route (SP3b).
@@ -142,7 +143,10 @@ function renderVideoSet(kind, propsPath, remotionEntry, comps) {
 
 // Route has no simple-reveal; its only video is route-reveal (story-kind).
 // For route: all/reveal/story → ["story"]; static → []. Non-route branch unchanged.
-const kinds = isHexGrid
+// Cartogram: Slice A ships static + interactive only — video kinds are Slice B.
+const kinds = isCartogram
+  ? []
+  : isHexGrid
   ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
   : isDotDensity
   ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
