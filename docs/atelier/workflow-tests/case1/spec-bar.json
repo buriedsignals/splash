@@ -1,0 +1,14 @@
+{
+  "type": "d3-bars",
+  "title": "Hungary leads Europe on solar, drawing 27% of its power from the sun — Czechia trails at 6%",
+  "intro": "Share of electricity generated from solar in 2024, by country",
+  "data": "country,solar_share_2024_pct\nHungary,27.3\nSpain,21.9\nNetherlands,21.1\nGreece,19.8\nLithuania,18.8\nBulgaria,18.2\nGermany,17.9\nPortugal,17.3\nItaly,16.9\nBelgium,15.6\nAustria,14.1\nDenmark,13.4\nPoland,11.3\nRomania,9.8\nCzechia,5.8",
+  "baseColor": "#0072B2",
+  "sort": "desc",
+  "valueLabels": true,
+  "numberFormat": "0.0",
+  "valueFormat": "0.0'%'",
+  "seriesLabels": { "solar_share_2024_pct": "Solar share of electricity (%)" },
+  "source": { "name": "Figures as reported in this article" },
+  "altInsight": "Solar's share of national electricity in 2024 ranges from 27.3% in Hungary — the European leader — down to 5.8% in Czechia, a spread of more than 20 percentage points across 15 countries."
+}
