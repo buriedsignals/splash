@@ -103,6 +103,9 @@ export const CartogramMap: React.FC<Props> = ({
           // causes the SDK to force the center to the maxBounds midpoint at wide
           // viewports, breaking the centreOk responsive check. The a11y script
           // skips the maxBounds check for cartogram and only asserts minZoom.
+          // TODO(slice-b): clamp lon pan by adopting HexGridMap's trick — set a
+          // maxBounds expanded to include the current viewport (Math.min/max vs
+          // getBounds()), which avoids the SDK center-shift while still bounding nav.
           m.setMinZoom(m.getZoom());
         });
       }
