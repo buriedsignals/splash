@@ -135,12 +135,6 @@ export const CartogramMap: React.FC<Props> = ({
     mapRef.current = map;
 
     map.on("load", () => {
-      // Strip symbol / place-label clutter so cells read cleanly.
-      const layers = map.getStyle()?.layers ?? [];
-      for (const layer of layers) {
-        if (layer.type === "symbol") map.removeLayer(layer.id);
-      }
-
       // Compute cartogram layout once from world.geojson.
       const layout = computeCartogram(config, worldGeoJson);
 
@@ -158,6 +152,43 @@ export const CartogramMap: React.FC<Props> = ({
         type: "FeatureCollection",
         features: cellFeatures,
       };
+
+      if (layout.variant === "grid") {
+        // Grid variant: abstract tile-grid — hide all basemap layers so cells
+        // render on a flat neutral canvas. Symbol layers are removed, then every
+        // remaining basemap layer is hidden. A neutral background is set via the
+        // style's "background" layer (present in both DATAVIZ.LIGHT and DARK) or
+        // injected as a new background layer if absent.
+        const neutralBg = dark ? "#1b1d21" : "#f2f3f5";
+        const baseLayers = map.getStyle()?.layers ?? [];
+        for (const layer of baseLayers) {
+          if (layer.type === "symbol") {
+            map.removeLayer(layer.id);
+          } else if (layer.id === "background") {
+            map.setPaintProperty("background", "background-color", neutralBg);
+          } else {
+            map.setLayoutProperty(layer.id, "visibility", "none");
+          }
+        }
+        // If no "background" layer existed, add one at the very bottom.
+        if (!baseLayers.some((l) => l.id === "background")) {
+          map.addLayer(
+            {
+              id: "neutral-background",
+              type: "background",
+              paint: { "background-color": neutralBg },
+            },
+            // Insert before the first existing layer (bottom of stack).
+            baseLayers[0]?.id,
+          );
+        }
+      } else {
+        // Scaled variant: keep the real basemap — only strip symbol/label clutter.
+        const baseLayers = map.getStyle()?.layers ?? [];
+        for (const layer of baseLayers) {
+          if (layer.type === "symbol") map.removeLayer(layer.id);
+        }
+      }
 
       map.addSource("cartogram-cell-src", {
         type: "geojson",
