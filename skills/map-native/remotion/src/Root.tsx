@@ -38,10 +38,14 @@ import { DotDensityReveal } from "../../src/components/DotDensityReveal";
 import { DotDensityStory } from "../../src/components/DotDensityStory";
 import { HexGridReveal } from "../../src/components/HexGridReveal";
 import { HexGridStory } from "../../src/components/HexGridStory";
+import { CartogramReveal } from "../../src/components/CartogramReveal";
+import { CartogramStory } from "../../src/components/CartogramStory";
 import { computeDotDensity } from "../../src/dot-density-geo";
 import { deriveDotDensityStory } from "../../src/dot-density-story";
 import { computeHexGrid } from "../../src/hex-grid-geo";
 import { deriveHexGridStory } from "../../src/hex-grid-story";
+import { computeCartogram } from "../../src/cartogram-geo";
+import { deriveCartogramStory } from "../../src/cartogram-story";
 import { MapScrolly } from "../../src/components/MapScrolly";
 import { scrollyFrames, scrollyStepCount } from "../../src/route-story";
 import { REVEAL_FRAMES } from "../../src/reveal";
@@ -58,6 +62,7 @@ import sampleRoute from "../../assets/sample-data/route.json";
 import sampleLocator from "../../assets/sample-data/locator-many.json";
 import sampleDotDensity from "../../assets/sample-data/dot-density-multi.json";
 import sampleHexGrid from "../../assets/sample-data/hex-grid-count.json";
+import sampleCartogram from "../../assets/sample-data/cartogram-scaled.json";
 import world from "../../assets/geo/world.geojson";
 
 const sampleLayout = computeChoropleth(sampleConfig, world as any, "iso_a3", {
@@ -139,6 +144,18 @@ const HEX_GRID_STORY_FRAMES = buildTimeline(
   30,
 ).totalFrames;
 const hexGridDefaultProps = { config: sampleHexGrid };
+
+const sampleCGLayout = computeCartogram(sampleCartogram as any, world as any);
+const sampleCGBeats = deriveCartogramStory(sampleCGLayout, {
+  title: (sampleCartogram as any).title ?? "",
+  insight:
+    (sampleCartogram as any).insight ?? (sampleCartogram as any).title ?? "",
+});
+const CARTOGRAM_STORY_FRAMES = buildTimeline(
+  sampleCGBeats.map((b) => b.kind),
+  30,
+).totalFrames;
+const cartogramDefaultProps = { config: sampleCartogram };
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -473,6 +490,60 @@ export const RemotionRoot: React.FC = () => (
       width={1080}
       height={1350}
       defaultProps={hexGridDefaultProps as any}
+    />
+    <Composition
+      id="CartogramReveal"
+      component={CartogramReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={cartogramDefaultProps as any}
+    />
+    <Composition
+      id="CartogramRevealSquare"
+      component={CartogramReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={cartogramDefaultProps as any}
+    />
+    <Composition
+      id="CartogramRevealPortrait"
+      component={CartogramReveal}
+      durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={cartogramDefaultProps as any}
+    />
+    <Composition
+      id="CartogramStory"
+      component={CartogramStory}
+      durationInFrames={CARTOGRAM_STORY_FRAMES}
+      fps={30}
+      width={1280}
+      height={720}
+      defaultProps={cartogramDefaultProps as any}
+    />
+    <Composition
+      id="CartogramStorySquare"
+      component={CartogramStory}
+      durationInFrames={CARTOGRAM_STORY_FRAMES}
+      fps={30}
+      width={1080}
+      height={1080}
+      defaultProps={cartogramDefaultProps as any}
+    />
+    <Composition
+      id="CartogramStoryPortrait"
+      component={CartogramStory}
+      durationInFrames={CARTOGRAM_STORY_FRAMES}
+      fps={30}
+      width={1080}
+      height={1350}
+      defaultProps={cartogramDefaultProps as any}
     />
   </>
 );

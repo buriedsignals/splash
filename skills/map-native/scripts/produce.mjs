@@ -86,8 +86,11 @@ function storyComps(config, cameraMode) {
   const isLocatorMap = config.type === "locator";
   const isDotDensityMap = config.type === "dot-density";
   const isHexGridMap = config.type === "hex-grid";
+  const isCartogramMap = config.type === "cartogram";
   if (cameraMode === "guided-tour") {
-    return isHexGridMap
+    return isCartogramMap
+      ? [["CartogramStory", "landscape"], ["CartogramStorySquare", "square"], ["CartogramStoryPortrait", "portrait"]]
+      : isHexGridMap
       ? [["HexGridStory", "landscape"], ["HexGridStorySquare", "square"], ["HexGridStoryPortrait", "portrait"]]
       : isDotDensityMap
       ? [["DotDensityStory", "landscape"], ["DotDensityStorySquare", "square"], ["DotDensityStoryPortrait", "portrait"]]
@@ -105,7 +108,9 @@ function storyComps(config, cameraMode) {
 
 // comps[kind] = [[compId, sizeName], ...] for the config's type
 const VIDEO_COMPS = {
-  reveal: isHexGrid
+  reveal: isCartogram
+    ? [["CartogramReveal", "landscape"], ["CartogramRevealSquare", "square"], ["CartogramRevealPortrait", "portrait"]]
+    : isHexGrid
     ? [["HexGridReveal", "landscape"], ["HexGridRevealSquare", "square"], ["HexGridRevealPortrait", "portrait"]]
     : isDotDensity
     ? [["DotDensityReveal", "landscape"], ["DotDensityRevealSquare", "square"], ["DotDensityRevealPortrait", "portrait"]]
@@ -143,9 +148,9 @@ function renderVideoSet(kind, propsPath, remotionEntry, comps) {
 
 // Route has no simple-reveal; its only video is route-reveal (story-kind).
 // For route: all/reveal/story → ["story"]; static → []. Non-route branch unchanged.
-// Cartogram: Slice A ships static + interactive only — video kinds are Slice B.
+// Cartogram: Slice B adds reveal + story video kinds (scrolly in Task 3).
 const kinds = isCartogram
-  ? []
+  ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
   : isHexGrid
   ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
   : isDotDensity
