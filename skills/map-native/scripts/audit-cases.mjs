@@ -123,6 +123,32 @@ export function buildHexGridCases(sample) {
 }
 
 // ---------------------------------------------------------------------------
+// Cartogram cases
+// ---------------------------------------------------------------------------
+
+export function buildCartogramCases(scaledSample, gridSample) {
+  const cases = [];
+
+  // 1. Sample — the committed cartogram-scaled.json (18 Eurasian emitters, CO₂ Mt)
+  cases.push({ label: "cartogram-scaled-sample", config: scaledSample });
+
+  // 2. Sample — the committed cartogram-grid.json (18 European countries, renewable %)
+  cases.push({ label: "cartogram-grid-sample", config: gridSample });
+
+  // 3. Stress: grid with diverging scale — exercises the diverging bin path and
+  //    verifies the uniform-cell invariant holds with a non-default scaleType.
+  const divergingGrid = clone(gridSample);
+  divergingGrid.title =
+    "European renewable share vs 50% target — diverging grid cartogram";
+  divergingGrid.description =
+    "Same dataset as the grid sample, rendered with a diverging colour scale centred on 50%.";
+  divergingGrid.scaleType = "diverging";
+  cases.push({ label: "cartogram-grid-diverging", config: divergingGrid });
+
+  return cases;
+}
+
+// ---------------------------------------------------------------------------
 // Locator cases
 // ---------------------------------------------------------------------------
 

@@ -292,7 +292,7 @@ S/I/V = which formats fit (Static / Interactive / Video):
 | Explainer beat (region sequence) | MapTiler 2D | — | — | ✓ | **map-explainer (proven)** |
 | Dot density | MapTiler 2D | ✓ | ✓ | ✓ | — **all six formats built (Slice A: static + interactive; Slice B: video reveal + storytelling + scrolly + interactive scrolly)** |
 | Hex / grid (spatial bins) | MapTiler 2D / turf | ✓ | ✓ | ✓ | CARTO analysis (H3) — **all six formats built (Slice A: static + interactive; Slice B: video reveal + storytelling + scrolly + interactive scrolly)** |
-| Cartogram (grid / scaled) | precompute + 2D | ✓ | ◻ | ◻ | square-grid-maps-of-the-usa |
+| Cartogram (grid / scaled) | precompute + 2D | ✓ | ✓ | ◻ | square-grid-maps-of-the-usa — **Slice A: static + interactive shipped (scaled + grid, auto-layout); Slice B: video + interactive scrolly pending** |
 | Contour / isoline | MapTiler 2D | ◻ | ◻ | — | |
 | Locator / markers | MapTiler 2D | ✓ | ✓ | ✓ | map-dw locator (native port) — **all six formats built (Slice A: static + interactive; Slice B: video reveal + storytelling + scrolly + interactive scrolly)** |
 | **3D terrain flyover** | **Cesium (separate engine)** | — | — | ✓ | cesium-flyover |
