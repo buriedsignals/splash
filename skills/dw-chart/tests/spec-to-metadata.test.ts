@@ -137,7 +137,7 @@ describe("specToMetadata", () => {
     expect(ann.y).toBe("442600");
   });
 
-  it("passes annotation align/dx/dy through so near-edge labels can anchor inward", () => {
+  it("keeps the authored horizontal nudge and displaces vertically off the line", () => {
     const p = specToMetadata({
       type: "d3-lines",
       title: "T",
@@ -148,9 +148,12 @@ describe("specToMetadata", () => {
       ],
     } as any);
     const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
-    expect(ann.align).toBe("tr");
-    expect(ann.dx).toBe(-8);
-    expect(ann.dy).toBe(-6);
+    expect(ann.align[1]).toBe("r"); // authored horizontal anchor preserved
+    expect(ann.dx).toBe(-8); // authored horizontal nudge kept
+    // The label is pushed off its data point (into whitespace) by design, so the
+    // magnitude grows beyond the authored -6 and a connector is drawn.
+    expect(Math.abs(ann.dy)).toBeGreaterThan(6);
+    expect(ann.connectorLine.enabled).toBe(true);
   });
 
   it("routes valueFormat to the y-grid axis format (e.g. h:mm:ss)", () => {
