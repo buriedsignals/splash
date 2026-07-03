@@ -3,7 +3,7 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { computeHexGrid } from "./hex-grid-geo";
 import { resolveMapStyle } from "./route-geo";
-import { makeResetControl } from "./controls";
+import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 import type { HexGridConfigShape } from "./validate-config";
@@ -113,10 +113,7 @@ export const HexGridMap: React.FC<Props> = ({
             rawNe[0],
             rawNe[1],
           ]);
-          m.setMaxBounds([
-            [cw, cs],
-            [ce, cn],
-          ]);
+          safeSetMaxBounds(m, [cw, cs], [ce, cn]);
         });
       }
     }

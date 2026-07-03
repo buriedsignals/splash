@@ -64,7 +64,7 @@ point + pre-pandemic baseline). `validateChartSpec` → **valid, 0 warnings**.
 
 - Spec: `docs/atelier/workflow-tests/case2/spec.json`
 - Static PNG: `/tmp/wf-case2/case2-home-prices.png` (1200×800, 102 KB)
-- DW embed / public URL: `https://datawrapper.dwcdn.net/nvq8T/1/` (chart id `nvq8T`)
+- DW embed / public URL: `https://datawrapper.dwcdn.net/3owan/1/` (chart id `3owan`) — data-space labels, responsive-clean at 340/600/1200px
 
 The render shows the full arc: a steady 2014→2020 climb from ~$275K to $322K, a steep
 2020→2022 surge to the $442,600 peak, then a three-year decline to $403,200 by 2026 — visibly

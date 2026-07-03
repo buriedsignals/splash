@@ -1,0 +1,27 @@
+{
+  "type": "cartogram",
+  "variant": "scaled",
+  "basemap": "world",
+  "joinKey": "iso_a3",
+  "scaleType": "sequential",
+  "palette": "oranges",
+  "valueLabel": "military spending ($bn, 2024)",
+  "mapStyle": "dataviz-light",
+  "title": "US military spending dwarfs every other power",
+  "description": "Annual military expenditure by major powers, 2024. Each country's polygon is scaled so its area is proportional to its defence budget — the bigger the shape, the more spent.",
+  "source": { "name": "SIPRI Military Expenditure Database, 2024", "url": "https://www.sipri.org" },
+  "values": [
+    { "id": "USA", "value": 916 },
+    { "id": "CHN", "value": 296 },
+    { "id": "RUS", "value": 109 },
+    { "id": "IND", "value": 86 },
+    { "id": "GBR", "value": 82 },
+    { "id": "SAU", "value": 76 },
+    { "id": "DEU", "value": 67 },
+    { "id": "UKR", "value": 65 },
+    { "id": "FRA", "value": 61 },
+    { "id": "JPN", "value": 50 },
+    { "id": "KOR", "value": 48 },
+    { "id": "ITA", "value": 36 }
+  ]
+}

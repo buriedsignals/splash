@@ -68,10 +68,16 @@ export function mapStoryToChapters(
         // that deriveMapStory computed from the data (seqIndex/seqTotal/seqYear*).
         descriptor = temporalDescriptor(b);
       } else if (revealIdx.length > 1) {
-        // magnitude / ranking (also the categorical fallback) — ranking language.
-        if (i === maxBeat)
+        // magnitude / ranking — a RANK-aware descriptor for EVERY reveal, not just the
+        // extremes (deriveMapStory tags each magnitude beat with rank + rankRole, F11):
+        // the leader reads "the highest of the N shown", the tail "the lowest", and the
+        // middle leaders their ordinal ("the second", "the third") — so the walk explains
+        // the distribution instead of jumping max→min. Falls back to the old max/min
+        // labelling if a beat lacks rank tags (older stories).
+        if (b.rankRole === "tail" || i === minBeat) descriptor = "the lowest";
+        else if (b.rank === 1 || i === maxBeat)
           descriptor = `the highest of the ${meta.regionsWithData} shown`;
-        else if (i === minBeat) descriptor = "the lowest";
+        else if (b.rank !== undefined) descriptor = `the ${ordinal(b.rank)}`;
       }
       prose = `${b.callout.name} — ${b.callout.value}${descriptor ? ", " + descriptor : ""}`;
     } else {

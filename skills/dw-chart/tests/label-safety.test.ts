@@ -59,10 +59,11 @@ describe("label safety — single-series direct labelling", () => {
   });
 });
 
-// ── Annotations clamped inward, deterministically ────────────────────────────
-describe("label safety — annotation placement", () => {
-  it("anchors a right-edge annotation inward (right-align + negative dx)", () => {
-    // 2026 is the last x → xFrac 1.0; y at the bottom → near bottom edge.
+// ── Annotations placed in DATA space (responsive-safe), never in absolute px ──
+describe("label safety — annotation placement (data-space)", () => {
+  it("emits zero pixel offsets and anchors at the data point (x,y)", () => {
+    // Absolute dx/dy are the responsive bug: they clear the curve at one export width
+    // and clip/collide at every other. The label must ride its data coordinates.
     const p = specToMetadata({
       type: "d3-lines",
       title: "T",
@@ -71,58 +72,30 @@ describe("label safety — annotation placement", () => {
       annotations: [{ text: "Sawe — first sub-2:00", x: "2026", y: 7170 }],
     } as ChartSpec);
     const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
-    expect(ann.align[1]).toBe("r"); // right-anchored → extends left, inward
-    expect(ann.dx).toBeLessThan(0); // pulled inward from the right edge
+    expect(ann.dx).toBe(0);
+    expect(ann.dy).toBe(0);
+    expect(ann.x).toBe("2026");
+    expect(ann.y).toBe("7170");
     expect(ann.connectorLine.enabled).toBe(true);
   });
 
-  it("anchors a left-edge annotation inward (left-align + positive dx)", () => {
-    const p = specToMetadata({
-      type: "d3-lines",
-      title: "T",
-      data: "year,v\n2003,10\n2018,50\n2026,90",
-      altInsight: "x",
-      annotations: [{ text: "start", x: "2003", y: 10 }],
-    } as ChartSpec);
-    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
-    expect(ann.align[1]).toBe("l");
-    expect(ann.dx).toBeGreaterThan(0);
-  });
-
-  it("overrides a manual near-edge align that would clip (case 3 regression)", () => {
-    // Spec asks for tr/dx:-8 — computed inward placement must still win/augment.
-    const p = specToMetadata({
-      type: "d3-lines",
-      title: "T",
-      data: "year,v\n2003,7495\n2026,7170",
-      altInsight: "x",
-      annotations: [
-        { text: "Sawe", x: "2026", y: 7170, align: "tr", dx: -8, dy: -6 },
-      ],
-    } as ChartSpec);
-    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
-    expect(ann.align[1]).toBe("r");
-    expect(ann.dx).toBeLessThan(-8); // inward pull ADDED to the spec nudge
-  });
-
-  it("re-anchors a peak annotation off the line, dropping the on-line authored nudge", () => {
-    // 2022 is a local peak (up then down). Placement clears the descending arms by
-    // choosing the vertical side + horizontal anchor deterministically; the authored
-    // dx/dy that would sit on the line is dropped, and a connector is drawn.
+  it("places a near-top peak ABOVE the point and extends the axis to make room", () => {
+    // 2022 is a local peak (up then down). The clear quadrant is 'above' (anchor
+    // bottom → "b"); the axis top is extended past the data max so it isn't clipped.
     const p = specToMetadata({
       type: "d3-lines",
       title: "T",
       data: "p,v\n2014,275200\n2020,322600\n2022,442600\n2026,403200",
       altInsight: "x",
-      annotations: [{ text: "Peak", x: "2022", y: 442600, dx: -6, dy: 6 }],
+      annotations: [{ text: "Peak", x: "2022", y: 442600 }],
     } as ChartSpec);
     const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
-    expect(ann.align[0]).toBe("b"); // pushed below the near-top peak
-    expect(ann.dy).toBeGreaterThan(6); // displaced well clear of the line
-    expect(ann.connectorLine.enabled).toBe(true);
+    expect(ann.align[0]).toBe("b"); // text ABOVE the peak, off the descending arms
+    const range = p.metadata.visualize["custom-range-y"] as string[];
+    expect(Number(range[1])).toBeGreaterThan(442600); // headroom above the max
   });
 
-  it("offsets a second annotation on the same point so they cannot overlap", () => {
+  it("keeps two annotations on the same point off the plotted line (align picks a clear side)", () => {
     const p = specToMetadata({
       type: "d3-lines",
       title: "T",
@@ -133,8 +106,13 @@ describe("label safety — annotation placement", () => {
         { text: "two", x: "2026", y: 7170 },
       ],
     } as ChartSpec);
-    const [a, b] = p.metadata.visualize["text-annotations"] as any[];
-    expect(b.dy).not.toBe(a.dy); // stacked apart
+    const anns = p.metadata.visualize["text-annotations"] as any[];
+    // No pixel nudges; both ride the same data point with a curve-clear align.
+    for (const ann of anns) {
+      expect(ann.dx).toBe(0);
+      expect(ann.dy).toBe(0);
+      expect(typeof ann.align).toBe("string");
+    }
   });
 });
 
@@ -176,6 +154,33 @@ describe("label safety — findLabelViolations (guardrail core)", () => {
       { text: "b", x: 121, y: 100, w: 20, h: 14 }, // 1px gap
     ];
     expect(findLabelViolations(box, rects)).toHaveLength(0);
+  });
+
+  it("does NOT flag the SAME tick rendered twice at the same spot (multi-series dedup, F5)", () => {
+    // Datawrapper emits a y-tick as both an SVG <text> and an export-text span at the
+    // same coords on multi-series charts — a duplicate render, not a collision.
+    const rects: TextRect[] = [
+      { text: "20", x: 40, y: 200, w: 24, h: 14 },
+      { text: "20", x: 41, y: 200, w: 24, h: 14 }, // same text, near-coincident
+    ];
+    expect(findLabelViolations(box, rects)).toHaveLength(0);
+  });
+
+  it("STILL flags two DIFFERENT labels that overlap, and same-text labels far apart are fine", () => {
+    // Different text overlapping → real collision.
+    const collide: TextRect[] = [
+      { text: "Cable", x: 500, y: 100, w: 60, h: 16 },
+      { text: "Streaming overtakes cable", x: 480, y: 102, w: 180, h: 16 },
+    ];
+    expect(
+      findLabelViolations(box, collide).some((s) => s.includes("overlap")),
+    ).toBe(true);
+    // Same text at two DIFFERENT y positions (real duplicate-value ticks) don't touch.
+    const apart: TextRect[] = [
+      { text: "20", x: 40, y: 100, w: 24, h: 14 },
+      { text: "20", x: 40, y: 300, w: 24, h: 14 },
+    ];
+    expect(findLabelViolations(box, apart)).toHaveLength(0);
   });
 });
 

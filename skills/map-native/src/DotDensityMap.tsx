@@ -6,7 +6,7 @@ const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 import { computeDotDensity } from "./dot-density-geo";
 import { scatterInPolygon } from "./dot-scatter";
 import { resolveMapStyle } from "./route-geo";
-import { makeResetControl } from "./controls";
+import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 import type { DotDensityConfigShape } from "./validate-config";
@@ -117,10 +117,7 @@ export const DotDensityMap: React.FC<Props> = ({
             rawNe[0],
             rawNe[1],
           ]);
-          m.setMaxBounds([
-            [cw, cs],
-            [ce, cn],
-          ]);
+          safeSetMaxBounds(m, [cw, cs], [ce, cn]);
         });
       }
     }

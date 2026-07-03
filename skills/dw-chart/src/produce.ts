@@ -1,9 +1,5 @@
 import { validateChartSpec, type ChartSpec } from "./chart-spec";
-import {
-  specToMetadata,
-  resolveData,
-  annotationXFrac,
-} from "./spec-to-metadata";
+import { specToMetadata, resolveData } from "./spec-to-metadata";
 import {
   createChart,
   setData,
@@ -11,20 +7,25 @@ import {
   publishChart,
   exportPng,
 } from "./datawrapper";
-import {
-  checkPublishedChart,
-  measureChart,
-  resolveAnchorPlacement,
-  anchorOnSeries,
-  EXPORT_WIDTH,
-  EXPORT_HEIGHT,
-} from "./label-safety";
+import { checkResponsive, EXPORT_WIDTH } from "./label-safety";
 
 export interface ProduceResult {
   chartId: string;
   embed: string;
   pngPath: string;
   publicUrl: string;
+}
+
+// Pull the numeric y-range the metadata pinned (custom-range-y = [min,max] strings)
+// so remediation can widen it. Returns null when the chart has no pinned range.
+function readRange(patch: {
+  metadata: { visualize: Record<string, unknown> };
+}): [number, number] | null {
+  const r = patch.metadata.visualize["custom-range-y"] as string[] | undefined;
+  if (!r || r.length !== 2) return null;
+  const lo = Number(r[0]);
+  const hi = Number(r[1]);
+  return Number.isFinite(lo) && Number.isFinite(hi) ? [lo, hi] : null;
 }
 
 export async function produceChart(
@@ -43,114 +44,44 @@ export async function produceChart(
   await patchChart(id, { type: patch.type, metadata: patch.metadata });
   let publicUrl = await publishChart(id);
 
-  // RENDER-TIME PLACEMENT CORRECTION, measured at the DELIVERED export width.
-  // The spec's fractional placement predicts an off-line position, but DW's real
-  // pixel geometry shifts with subtitle length / axis-label width AND with export
-  // width (annotation dx/dy are absolute px that do NOT scale). So we MEASURE the
-  // render at exactly EXPORT_WIDTH — the width the PNG is exported and delivered at
-  // — and re-place each annotation into the nearest clear whitespace NEXT TO ITS
-  // ANCHOR (never on the series, never overlapping another label, never clipped),
-  // with a short connector. Validated == delivered because both run at this width.
-  const anns = patch.metadata.visualize?.["text-annotations"] as
-    Array<Record<string, unknown>> | undefined;
-  if (!opts.skipLabelSafety && anns && anns.length) {
-    const g = await measureChart(publicUrl, {
-      width: EXPORT_WIDTH,
-      height: EXPORT_HEIGHT,
-    });
-    const annRects = g.rects.filter((r) => r.kind !== "furniture");
-    // Furniture (axis ticks, title, source) is an obstacle for placement too: the
-    // guardrail flags an annotation overlapping ANY text rect, so a label dropped
-    // onto the x-axis tick row is a fail. Feed the ticks in as obstacles so the
-    // placement avoids that band — but only the ticks that sit inside the plot's
-    // vertical span (title/source live outside and never constrain placement).
-    const furniture = g.rects.filter(
-      (r) =>
-        r.kind === "furniture" &&
-        r.y + r.h > g.content.y &&
-        r.y < g.content.y + g.content.h,
-    );
-    // The measured series x-extent: the annotation's data-x fraction maps linearly
-    // onto this span to give the true on-curve ANCHOR x-pixel — independent of any
-    // dx the label carries and of the export width. (Width-independent by design.)
-    let sxMin = Infinity;
-    let sxMax = -Infinity;
-    for (const line of g.series)
-      for (const p of line) {
-        if (p.x < sxMin) sxMin = p.x;
-        if (p.x > sxMax) sxMax = p.x;
-      }
-    // Placed rects (post-shift) so a second annotation is offset off the first.
-    const placed: typeof annRects = [];
-    let corrected = false;
-    for (const [i, ann] of anns.entries()) {
-      const rect = annRects.find((r) => r.text === String(ann.text).trim());
-      if (!rect) continue;
-      // ANCHOR = the point on the curve this annotation describes (DW draws the
-      // connector from there). Map the spec annotation's data-x fraction onto the
-      // measured series x-extent, then read the curve's y at that x.
-      const specAnn = spec.annotations?.[i];
-      const xFrac = Number.isFinite(sxMin)
-        ? annotationXFrac(csv, specAnn?.x)
-        : 0.5;
-      const anchorX = Number.isFinite(sxMin)
-        ? sxMin + xFrac * (sxMax - sxMin)
-        : rect.x + rect.w / 2;
-      const anchor = anchorOnSeries(g.series, anchorX) ?? {
-        x: anchorX,
-        y: rect.y + rect.h / 2,
-      };
-      // Other annotations already placed this pass, plus the not-yet-placed ones at
-      // their current measured spot, so we never shift onto a neighbour.
-      const others = [
-        ...placed,
-        ...annRects.filter((r) => r !== rect && !placed.includes(r)),
-        ...furniture,
+  // RESPONSIVE LABEL-SAFETY. `specToMetadata` places every annotation in DATA space
+  // (anchor at x,y; align picks a curve-clear quadrant; axis headroom gives it
+  // whitespace) — width-invariant by construction, so it is normally clean at all
+  // widths on the first publish. The remediation below is the measured safety net:
+  // if the frac-estimated headroom turns out too small at some width (a real label is
+  // taller than estimated, or DW's mobile layout is shorter), WIDEN the pinned y-range
+  // and re-publish. More range compresses the plotted line, giving every label more
+  // clearance from the curve AND from the frame — one lever that monotonically fixes
+  // both clip and on-line. Bounded; if still failing, the guardrail throws.
+  const hasAnnotations = Array.isArray(
+    patch.metadata.visualize["text-annotations"],
+  );
+  if (!opts.skipLabelSafety && hasAnnotations) {
+    let result = await checkResponsive(publicUrl);
+    let tries = 0;
+    while (!result.ok && tries < 3) {
+      const range = readRange(patch);
+      if (!range) break; // nothing to widen (non-line chart) → fall through to throw
+      const [lo, hi] = range;
+      const step = 0.12 * (hi - lo || 1); // one widening increment
+      patch.metadata.visualize["custom-range-y"] = [
+        String(Math.round(lo - step)),
+        String(Math.round(hi + step)),
       ];
-      const { dx, dy } = resolveAnchorPlacement(
-        rect,
-        anchor,
-        g.series,
-        g.content,
-        others,
-      );
-      if (dx !== 0 || dy !== 0) {
-        ann.dx = (Number(ann.dx) || 0) + dx;
-        ann.dy = (Number(ann.dy) || 0) + dy;
-        corrected = true;
-      }
-      // A connector always points the (now off-anchor) label back to its data point.
-      ann.connectorLine = {
-        enabled: true,
-        type: "straight",
-        arrowHead: "none",
-      };
-      // Record where this label now sits so the next one avoids it.
-      placed.push({ ...rect, x: rect.x + dx, y: rect.y + dy });
-    }
-    if (corrected) {
       await patchChart(id, { type: patch.type, metadata: patch.metadata });
       publicUrl = await publishChart(id);
+      result = await checkResponsive(publicUrl);
+      tries += 1;
     }
+    if (!result.ok)
+      throw new Error(
+        `responsive label-safety guardrail failed for ${publicUrl} ` +
+          `(checked ${result.byWidth.map((b) => `${b.width}px`).join(", ")}):\n  - ` +
+          result.violations.join("\n  - "),
+      );
   }
 
   await exportPng(id, pngPath, EXPORT_WIDTH);
-
-  // GUARDRAIL: a clipped/overlapping label, or a label ON the plotted series line,
-  // is a publishable-blocker. Load the published chart, enumerate every text rect
-  // plus the sampled series polyline, and fail loud if any annotation is clipped by
-  // the content box, intersects another text rect, or sits on the data line. This
-  // is what stops the defect recurring.
-  if (!opts.skipLabelSafety) {
-    const safety = await checkPublishedChart(publicUrl, {
-      width: EXPORT_WIDTH,
-      height: EXPORT_HEIGHT,
-    });
-    if (!safety.ok)
-      throw new Error(
-        `label-safety guardrail failed for ${publicUrl}:\n  - ${safety.violations.join("\n  - ")}`,
-      );
-  }
 
   const embed =
     `<iframe title="${spec.title}" src="${publicUrl}" scrolling="no" frameborder="0" ` +

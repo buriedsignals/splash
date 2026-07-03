@@ -54,7 +54,7 @@ function pointFraction(
   const xFrac =
     idx >= 0 && dom.labels.length > 1 ? idx / (dom.labels.length - 1) : 0.5;
   // yFrac is 0 at the TOP of the plot (high value) → 1 at the bottom, matching the
-  // "near top / near bottom" edge test in inwardPlacement.
+  // quadrant model in placeAnnotation.
   const span = dom.yMax - dom.yMin;
   const yFrac = y !== undefined && span > 0 ? (dom.yMax - y) / span : 0.5;
   return { xFrac, yFrac };
@@ -83,6 +83,144 @@ export function seriesPolyline(
     pts.push({ xFrac, yFrac });
   });
   return pts;
+}
+
+// A label box in fractional plot coords (x,y each 0..1; y=0 is the plot TOP).
+interface FracBox {
+  xL: number;
+  xR: number;
+  top: number; // smaller yFrac (higher on screen)
+  bottom: number; // larger yFrac (lower on screen)
+}
+
+// Does the plotted series pass through the INTERIOR of a fractional box? The anchor
+// data point sits on the line at a CORNER of every candidate box, so corner/edge
+// contact is expected and must NOT count — only a sample strictly inside (by `tol`)
+// means the label body would overlap the curve. Sampled densely along each segment.
+function lineCrossesBox(
+  poly: { xFrac: number; yFrac: number }[],
+  box: FracBox,
+  tol = 0.01,
+): boolean {
+  const xL = box.xL + tol;
+  const xR = box.xR - tol;
+  const top = box.top + tol;
+  const bot = box.bottom - tol;
+  if (xR <= xL || bot <= top) return false;
+  for (let i = 0; i + 1 < poly.length; i++) {
+    const a = poly[i];
+    const b = poly[i + 1];
+    const steps = 24;
+    for (let s = 0; s <= steps; s++) {
+      const x = a.xFrac + ((b.xFrac - a.xFrac) * s) / steps;
+      const y = a.yFrac + ((b.yFrac - a.yFrac) * s) / steps;
+      if (x > xL && x < xR && y > top && y < bot) return true;
+    }
+  }
+  return false;
+}
+
+// DECIDE where an annotation label sits, in a WIDTH-INVARIANT way. With dx=dy=0 the
+// label box is anchored AT the data point and extends into one quadrant (up/down ×
+// left/right/centre). We pick the quadrant whose box is clear of the plotted series
+// (so the label never sits ON the curve) and needs the least axis headroom, then
+// return the DW `align` plus how far the chosen box spills past the top/bottom of the
+// data range (as a fraction of the y-span) — the caller extends the axis by that much
+// so the label has real whitespace to occupy at EVERY render width. Horizontal spill
+// is left to Datawrapper's own annotation clamp (it keeps text on-canvas), so only the
+// vertical axis needs extending. Deterministic: same geometry → same placement.
+export interface Placement {
+  align: string; // DW anchor, e.g. "br"
+  headroomTopFrac: number; // extend y-axis ABOVE data max by this × span (>=0)
+  headroomBottomFrac: number; // extend BELOW data min by this × span (>=0)
+}
+export function placeAnnotation(
+  polys:
+    { xFrac: number; yFrac: number }[] | { xFrac: number; yFrac: number }[][],
+  anchorX: number,
+  anchorY: number,
+  labelSpanFrac = 0.42,
+): Placement {
+  // Accept a single polyline (single-series) OR an array of polylines (multi-series).
+  // On a multi-series chart a label must clear EVERY plotted line, not just its own —
+  // otherwise it sits on a sibling series. Normalise to an array of polylines.
+  const lines: { xFrac: number; yFrac: number }[][] =
+    polys.length > 0 && Array.isArray((polys as unknown[])[0])
+      ? (polys as { xFrac: number; yFrac: number }[][])
+      : [polys as { xFrac: number; yFrac: number }[]];
+  const hFrac = 0.09; // label height as a fraction of plot height (bold, + gap)
+  // Candidate quadrants. vUp = box sits ABOVE the point (DW anchor bottom → "b");
+  // vDown = below (anchor top → "t"). h="r": box extends LEFT (anchor right); h="l":
+  // extends RIGHT; h="c": centred.
+  const verticals = [
+    { up: true, v: "b" },
+    { up: false, v: "t" },
+  ];
+  const horizontals = [
+    { key: "r", from: -labelSpanFrac, to: 0 },
+    { key: "l", from: 0, to: labelSpanFrac },
+    { key: "c", from: -labelSpanFrac / 2, to: labelSpanFrac / 2 },
+  ];
+  let best: {
+    align: string;
+    top: number;
+    bottom: number;
+    cost: number;
+  } | null = null;
+  for (const vert of verticals) {
+    const top = vert.up ? anchorY - hFrac : anchorY;
+    const bottom = vert.up ? anchorY : anchorY + hFrac;
+    for (const hz of horizontals) {
+      const box: FracBox = {
+        xL: anchorX + hz.from,
+        xR: anchorX + hz.to,
+        top,
+        bottom,
+      };
+      if (lines.some((line) => lineCrossesBox(line, box))) continue; // clear EVERY series
+      const headTop = Math.max(0, -box.top); // spills above the plot top
+      const headBot = Math.max(0, box.bottom - 1); // spills below the plot bottom
+      // Horizontal spill is ASYMMETRIC in Datawrapper (measured): it CLAMPS a label
+      // that would run off the LEFT back on-canvas, but lets a label overflow off the
+      // RIGHT (it renders past the frame → a real clip). So a right overflow must
+      // DOMINATE the cost (any on-canvas placement beats it), while a left overflow is
+      // cheap (DW absorbs it; only mildly penalised so we don't bury the label under
+      // the y-axis). Vertical spill (headroom) is NOT a clip — the axis is extended to
+      // absorb it — so it is cheap too. All else equal, prefer the label ABOVE the
+      // curve (reads better) via a small down-bias.
+      const rightOverflow = Math.max(0, box.xR - 1);
+      const leftOverflow = Math.max(0, -box.xL);
+      const cost =
+        rightOverflow * 20 +
+        leftOverflow * 1 +
+        (headTop + headBot) * 3 +
+        (vert.up ? 0 : 0.3);
+      if (!best || cost < best.cost)
+        best = {
+          align: `${vert.v}${hz.key}`,
+          top: box.top,
+          bottom: box.bottom,
+          cost,
+        };
+    }
+  }
+  // Degenerate fallback (every quadrant crosses the line — a label wider than the
+  // local relief): place above, centred, and let the measured remediation + headroom
+  // in produce() resolve it. Never returns a placement that we know sits on the line
+  // when a clear one exists.
+  if (!best) {
+    const top = anchorY - hFrac;
+    return {
+      align: "bc",
+      headroomTopFrac: Math.max(0, -top),
+      headroomBottomFrac: 0,
+    };
+  }
+  return {
+    align: best.align,
+    headroomTopFrac: Math.max(0, -best.top),
+    headroomBottomFrac: Math.max(0, best.bottom - 1),
+  };
 }
 
 // Interpolate the series' yFrac at an arbitrary xFrac (linear between vertices).
@@ -220,44 +358,6 @@ export function clearVerticalSide(
     : { v: "t", dySign: -1, dyFrac: best.dyFrac, horiz: best.hz };
 }
 
-// Deterministically anchor an annotation INWARD so it can neither be clipped by a
-// plot edge nor collide with the last axis tick. `x`/`y` are the point's fractional
-// position in the plot (0..1). Near an edge, we flip the anchor to that side and add
-// an inward nudge; the label then extends away from the edge, into the plot.
-function inwardPlacement(
-  xFrac: number,
-  yFrac: number,
-  preferred?: string,
-): { align: string; dx: number; dy: number } {
-  // preferred is a DW anchor like "tr" (vertical, horizontal). Start from it when
-  // the point is comfortably interior; override the component that faces an edge.
-  const NEAR = 0.12; // within 12% of an edge is "near"
-  const PULL = 10; // px inward nudge
-
-  let v = preferred?.[0] ?? "b"; // t|m|b
-  let h = preferred?.[1] ?? "l"; // l|c|r
-  let dx = 0;
-  let dy = 0;
-
-  if (xFrac > 1 - NEAR) {
-    // near right edge → anchor right so the label extends left (inward)
-    h = "r";
-    dx = -PULL;
-  } else if (xFrac < NEAR) {
-    h = "l";
-    dx = PULL;
-  }
-  if (yFrac < NEAR) {
-    // near top → anchor top so the label extends down (inward)
-    v = "t";
-    dy = PULL;
-  } else if (yFrac > 1 - NEAR) {
-    v = "b";
-    dy = -PULL;
-  }
-  return { align: `${v}${h}`, dx, dy };
-}
-
 // The horizontal position (0..1, left→right) of an annotation's data-x within the
 // plotted row range — the same mapping DW uses to place the connector origin.
 // Exposed so produce() can recover the on-curve ANCHOR x-pixel at the measured
@@ -328,12 +428,24 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
 
   if (spec.annotations && spec.annotations.length) {
     const dom = plotDomain(csv);
-    // Track placed label anchors to offset a second annotation that would land on
-    // the same point (deterministic vertical stacking).
-    const placedByKey = new Map<string, number>();
-    // Plot-area height (px) of a 600px-wide Datawrapper line/area export, used to
-    // convert the fractional off-line displacement into a pixel dy nudge.
-    const PLOT_H_PX = 320;
+    const span = dom.yMax - dom.yMin || 1;
+    // Every VALUE column's polyline (all columns after the label column). A label must
+    // clear EVERY plotted series, not only the one it annotates — on a multi-series
+    // chart the label would otherwise sit on a sibling line (F6). Built once.
+    const header = csv
+      .trim()
+      .split("\n")[0]
+      .split(",")
+      .map((c) => c.trim());
+    const allPolys = header
+      .slice(1)
+      .map((col) => seriesPolyline(csv, dom, col))
+      .filter((p) => p.length >= 2);
+    // Accumulate the axis headroom every annotation needs, as a fraction of the
+    // y-span, so a near-extreme label (a peak at the max) has real whitespace to sit
+    // in — the extension is in DATA space, therefore identical at every render width.
+    let headTopFrac = 0;
+    let headBotFrac = 0;
     visualize["text-annotations"] = spec.annotations.map((a) => {
       // Resolve the series column name AFTER renaming, so an annotation pinned
       // to a machine-named column still finds its (renamed) series.
@@ -350,64 +462,51 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
             ? valueAt(csv, a.x, column)
             : undefined;
 
-      // Deterministically clamp the label inside the plot and off the axis ticks:
-      // derive align + dx/dy from the point's fractional position. The computed
-      // inward placement WINS over the spec near an edge (manual per-chart align/dx
-      // is exactly what let case 3 clip/collide); the spec align only seeds the
-      // interior direction. Any spec dx/dy is added on top of the inward pull.
+      // WIDTH-INVARIANT PLACEMENT. The label is anchored at the DATA point (x,y) with
+      // NO pixel dx/dy — absolute offsets are exactly what broke at responsive widths,
+      // because they clear the curve at one export width but push the label off-canvas
+      // / onto the ticks at every other width. Instead `placeAnnotation` picks the
+      // quadrant (align) whose box clears the plotted series, and reports how much
+      // axis headroom that box needs; both are data-space, so the label stays off the
+      // curve and on-canvas at ALL widths. Datawrapper clamps any horizontal overflow.
       const { xFrac, yFrac } = pointFraction(dom, a.x, y);
-      const placed = inwardPlacement(xFrac, yFrac, a.align);
+      // Clear ALL series (multi-series safe), falling back to the annotated column's
+      // own polyline if the header scan found nothing.
+      const polys =
+        allPolys.length > 0 ? allPolys : [seriesPolyline(csv, dom, column)];
+      const place = placeAnnotation(polys, xFrac, yFrac);
+      headTopFrac = Math.max(headTopFrac, place.headroomTopFrac);
+      headBotFrac = Math.max(headBotFrac, place.headroomBottomFrac);
 
-      // OFF-LINE PLACEMENT (text-vs-data): put the label in the empty whitespace
-      // beside the curve, never ON it. `clearVerticalSide` picks the side
-      // (above/below the anchor) with the most clearance from the local series
-      // geometry and OWNS the vertical entirely — the anchor's vertical component
-      // and the whole dy displacement — so the inward edge-pull (which points
-      // toward the line at a peak/trough) can't drag the text back onto the curve.
-      // It may also flip the horizontal anchor to extend the label over the calmer
-      // side of the curve. This is what the completed guardrail enforces; here we
-      // satisfy it deterministically. The authored dy is intentionally dropped: a
-      // manual vertical nudge is exactly what put earlier labels on the line.
-      const poly = seriesPolyline(csv, dom, column);
-      const h = placed.align[1] as "l" | "c" | "r";
-      const side = clearVerticalSide(poly, xFrac, yFrac, 0.48, h);
-      const align = `${side.v}${side.horiz}`;
-      // HORIZONTAL nudge: the inward edge-clamp always applies; the authored dx is
-      // only kept when the horizontal anchor was NOT flipped (a flip re-references
-      // the offset, so an authored nudge for the old side no longer makes sense).
-      let dx = placed.dx + (side.horiz === h ? (a.dx ?? 0) : 0);
-      // Convert the fractional displacement to pixels using the export plot height
-      // (600px-wide Datawrapper line chart renders a plot area ~320px tall). The
-      // sign is carried by dyFrac (negative = up, into whitespace above the curve).
-      let dy = Math.round(side.dyFrac * PLOT_H_PX);
-
-      // Collision offset: if another annotation already anchored the same point,
-      // push this one further along its clear side so the two texts can't overlap.
-      const key = `${a.x ?? ""}|${align}`;
-      const stacked = placedByKey.get(key) ?? 0;
-      if (stacked > 0) dy += side.dySign * stacked * 18; // one line-height/prior
-      placedByKey.set(key, stacked + 1);
-
-      // Always connect: the text now lives off its data point by design.
-      const nudged = true;
       return {
         text: a.text,
         x: a.x !== undefined ? String(a.x) : "",
         y: y !== undefined ? String(y) : "",
         bold: true,
         color: "#333333",
-        align,
-        dx,
-        dy,
-        // Give a near-edge callout a connector so, once nudged inward, it still
-        // points at its data point.
-        connectorLine: nudged
-          ? { enabled: true, type: "straight", arrowHead: "none" }
-          : { enabled: false },
+        align: place.align,
+        dx: 0,
+        dy: 0,
+        // The text lives off its data point by design → always draw the connector.
+        connectorLine: { enabled: true, type: "straight", arrowHead: "none" },
         showMobile: true,
         showDesktop: true,
       };
     });
+
+    // Extend the numeric axis so the chosen label boxes have whitespace to occupy.
+    // A small base pad (0.06) is always added so a label anchored exactly at the data
+    // extent is never flush against the frame; the per-annotation headroom is added on
+    // top. Both bounds are pinned (deterministic) — DW then renders identical geometry
+    // at every width, which is what makes the guardrail's "validated == delivered"
+    // hold across the whole responsive envelope, not just the export width.
+    const BASE = 0.06;
+    const rangeMax = dom.yMax + (headTopFrac + BASE) * span;
+    const rangeMin = dom.yMin - (headBotFrac + BASE) * span;
+    visualize["custom-range-y"] = [
+      String(Math.round(rangeMin)),
+      String(Math.round(rangeMax)),
+    ];
   }
 
   const patch: DwPatch = {

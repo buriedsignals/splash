@@ -1,6 +1,27 @@
 import { describe, it, expect } from "bun:test";
-import { specToMetadata, resolveData } from "../src/spec-to-metadata";
+import {
+  specToMetadata,
+  resolveData,
+  placeAnnotation,
+} from "../src/spec-to-metadata";
 import type { ChartSpec } from "../src/chart-spec";
+
+// case2 median-home-price series in fractional plot coords (y=0 top=max value).
+// max 442600, min 275200, span 167400. Indices 0..7 over xFrac i/7.
+const CASE2_POLY = [
+  ["2014-Q1", 275200],
+  ["2020-Q1", 322600],
+  ["2021-Q1", 355000],
+  ["2022-Q1", 433100],
+  ["2022-Q4", 442600],
+  ["2023-Q1", 429000],
+  ["2024-Q1", 420800],
+  ["2026-Q1", 403200],
+].map(([, v], i, arr) => ({
+  xFrac: i / (arr.length - 1),
+  yFrac: (442600 - (v as number)) / 167400,
+}));
+const yFracOf = (v: number) => (442600 - v) / 167400;
 
 const spec: ChartSpec = {
   type: "d3-lines",
@@ -13,6 +34,127 @@ const spec: ChartSpec = {
   source: { name: "ONS", url: "https://ons.gov.uk" },
   altInsight: "Unemployment fell from 5.1% in 2018 to 3.7% in 2023",
 };
+
+describe("placeAnnotation (width-invariant, data-space)", () => {
+  it("places a PEAK label above the point and asks for top headroom (never on the curve)", () => {
+    // 2022-Q4 is the max (yFrac 0). Only the 'up' quadrants clear the descending arms.
+    const p = placeAnnotation(CASE2_POLY, 4 / 7, 0);
+    expect(p.align[0]).toBe("b"); // DW anchor bottom => text ABOVE the point
+    expect(p.headroomTopFrac).toBeGreaterThan(0); // needs whitespace above the max
+    expect(p.headroomBottomFrac).toBe(0);
+  });
+
+  it("places the case2 pre-pandemic label so it clears the rising curve (extends over the calmer left side)", () => {
+    // 2020-Q1 (idx1). To the RIGHT the curve rises above the point (would be on-line);
+    // extending LEFT over the lower 2014→2020 segment is clear => anchor right ("_r").
+    const p = placeAnnotation(CASE2_POLY, 1 / 7, yFracOf(322600));
+    expect(p.align[1]).toBe("r");
+  });
+
+  it("never returns a placement whose box sits on the series line", () => {
+    for (const [x, y] of [
+      [1 / 7, yFracOf(322600)],
+      [4 / 7, 0],
+      [2 / 7, yFracOf(355000)],
+    ] as const) {
+      const p = placeAnnotation(CASE2_POLY, x, y);
+      // Reconstruct the chosen box and assert the curve does not cross its interior.
+      const up = p.align[0] === "b";
+      const hFrac = 0.09;
+      const span = 0.42;
+      const from =
+        p.align[1] === "r" ? -span : p.align[1] === "l" ? 0 : -span / 2;
+      const box = {
+        xL: x + from,
+        xR: x + from + span,
+        top: up ? y - hFrac : y,
+        bottom: up ? y : y + hFrac,
+      };
+      const crosses = CASE2_POLY.some((_, i) => {
+        if (i + 1 >= CASE2_POLY.length) return false;
+        const a = CASE2_POLY[i];
+        const b = CASE2_POLY[i + 1];
+        for (let s = 0; s <= 24; s++) {
+          const px = a.xFrac + ((b.xFrac - a.xFrac) * s) / 24;
+          const py = a.yFrac + ((b.yFrac - a.yFrac) * s) / 24;
+          if (
+            px > box.xL + 0.01 &&
+            px < box.xR - 0.01 &&
+            py > box.top + 0.01 &&
+            py < box.bottom - 0.01
+          )
+            return true;
+        }
+        return false;
+      });
+      expect(crosses).toBe(false);
+    }
+  });
+
+  it("clears ALL series on a multi-series chart, not just the annotated one (F6)", () => {
+    // Two lines: A rises, B falls, crossing in the middle. An annotation anchored on A
+    // near the crossing must not be placed onto B either. Passing BOTH polylines, the
+    // chosen box must clear both.
+    const A = [
+      { xFrac: 0, yFrac: 0.6 },
+      { xFrac: 1, yFrac: 0.6 },
+    ]; // annotated line (flat, mid-low)
+    const B = [
+      { xFrac: 0, yFrac: 0.53 },
+      { xFrac: 1, yFrac: 0.53 },
+    ]; // sibling line just ABOVE A (within one label-height) — the obstacle
+    const anchor = { x: 0.5, y: 0.6 }; // a point on A
+    // With A alone the label prefers UP; B sits in the up-box, so seeing BOTH lines it
+    // must go DOWN. This is exactly the multi-series clearance F6 adds.
+    const p = placeAnnotation([A, B], anchor.x, anchor.y);
+    expect(p.align[0]).toBe("t"); // forced DOWN by the sibling line B
+    // Reconstruct the chosen box and assert NEITHER line crosses its interior.
+    const up = p.align[0] === "b";
+    const hFrac = 0.09;
+    const span = 0.42;
+    const from =
+      p.align[1] === "r" ? -span : p.align[1] === "l" ? 0 : -span / 2;
+    const box = {
+      xL: anchor.x + from,
+      xR: anchor.x + from + span,
+      top: up ? anchor.y - hFrac : anchor.y,
+      bottom: up ? anchor.y : anchor.y + hFrac,
+    };
+    const crosses = (line: { xFrac: number; yFrac: number }[]) =>
+      line.some((_, i) => {
+        if (i + 1 >= line.length) return false;
+        const a = line[i];
+        const b = line[i + 1];
+        for (let s = 0; s <= 24; s++) {
+          const px = a.xFrac + ((b.xFrac - a.xFrac) * s) / 24;
+          const py = a.yFrac + ((b.yFrac - a.yFrac) * s) / 24;
+          if (
+            px > box.xL + 0.01 &&
+            px < box.xR - 0.01 &&
+            py > box.top + 0.01 &&
+            py < box.bottom - 0.01
+          )
+            return true;
+        }
+        return false;
+      });
+    expect(crosses(A)).toBe(false);
+    expect(crosses(B)).toBe(false);
+  });
+
+  it("places a TROUGH label below the point and asks for bottom headroom", () => {
+    // A V shape: high, low (trough at idx1), high. Only 'down' clears the arms.
+    const vShape = [
+      { xFrac: 0, yFrac: 0 },
+      { xFrac: 0.5, yFrac: 1 },
+      { xFrac: 1, yFrac: 0 },
+    ];
+    const p = placeAnnotation(vShape, 0.5, 1);
+    expect(p.align[0]).toBe("t"); // DW anchor top => text BELOW the point
+    expect(p.headroomBottomFrac).toBeGreaterThan(0);
+    expect(p.headroomTopFrac).toBe(0);
+  });
+});
 
 describe("specToMetadata", () => {
   it("maps title and type at the top level", () => {
@@ -137,23 +279,48 @@ describe("specToMetadata", () => {
     expect(ann.y).toBe("442600");
   });
 
-  it("keeps the authored horizontal nudge and displaces vertically off the line", () => {
+  it("places annotations in DATA space with zero pixel offsets (responsive-safe)", () => {
     const p = specToMetadata({
       type: "d3-lines",
       title: "T",
-      data: "year,v\n2026,7170",
+      data: "year,v\n2020,5000\n2026,7170",
       altInsight: "x",
-      annotations: [
-        { text: "Sawe", x: "2026", y: 7170, align: "tr", dx: -8, dy: -6 },
-      ],
+      annotations: [{ text: "Sawe", x: "2026", y: 7170, align: "tr" }],
     } as any);
     const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
-    expect(ann.align[1]).toBe("r"); // authored horizontal anchor preserved
-    expect(ann.dx).toBe(-8); // authored horizontal nudge kept
-    // The label is pushed off its data point (into whitespace) by design, so the
-    // magnitude grows beyond the authored -6 and a connector is drawn.
-    expect(Math.abs(ann.dy)).toBeGreaterThan(6);
+    // NO absolute pixel nudges — the whole responsive bug was baking px dx/dy that
+    // clear the curve at one width and clip/collide at every other. Placement is the
+    // data-space anchor (x,y) + a clear-side align + axis headroom instead.
+    expect(ann.dx).toBe(0);
+    expect(ann.dy).toBe(0);
     expect(ann.connectorLine.enabled).toBe(true);
+    expect(typeof ann.align).toBe("string");
+  });
+
+  it("extends the y-axis (custom-range-y) so a peak label has whitespace above it", () => {
+    const p = specToMetadata({
+      type: "d3-lines",
+      title: "T",
+      data: "period,price\n2020-Q1,322600\n2022-Q1,433100\n2022-Q4,442600\n2026-Q1,403200",
+      altInsight: "x",
+      annotations: [{ text: "Peak: $442,600", x: "2022-Q4", y: 442600 }],
+    } as any);
+    const range = p.metadata.visualize["custom-range-y"] as string[];
+    expect(range).toHaveLength(2);
+    // The peak sits at the data max (442600) → the axis top must be extended ABOVE it
+    // so the "above the peak" label lands in real whitespace (not clipped) at any width.
+    expect(Number(range[1])).toBeGreaterThan(442600);
+    expect(Number(range[0])).toBeLessThanOrEqual(322600);
+  });
+
+  it("adds no custom-range-y when there are no annotations", () => {
+    const p = specToMetadata({
+      type: "d3-lines",
+      title: "T",
+      data: "year,v\n2020,5\n2023,7",
+      altInsight: "x",
+    } as any);
+    expect(p.metadata.visualize["custom-range-y"]).toBeUndefined();
   });
 
   it("routes valueFormat to the y-grid axis format (e.g. h:mm:ss)", () => {

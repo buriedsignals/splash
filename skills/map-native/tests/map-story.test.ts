@@ -1,6 +1,11 @@
 import { describe, it, expect } from "bun:test";
 import { computeChoropleth, type ChoroplethData } from "../src/choropleth-geo";
-import { deriveMapStory } from "../src/map-story";
+import {
+  deriveMapStory,
+  magnitudeRevealRows,
+  magnitudeCaption,
+  auditMapStoryReveals,
+} from "../src/map-story";
 
 function feat(iso: string, name: string, x: number, y: number) {
   return {
@@ -43,8 +48,54 @@ const meta = {
   unit: "%",
 };
 
+describe("deriveMapStory — value grammar", () => {
+  const feats = {
+    type: "FeatureCollection",
+    features: [feat("NOR", "Norway", 8, 60), feat("DEU", "Germany", 10, 50)],
+  } as any;
+  it("singularises a plural WORD unit when the value is 1 ('1 nights' → '1 night')", () => {
+    const d: ChoroplethData = {
+      regionKey: "code",
+      valueField: "nights",
+      rows: [
+        { code: "NOR", nights: 1 },
+        { code: "DEU", nights: 40 },
+      ],
+    };
+    const layout = computeChoropleth(d, feats, "iso_a3");
+    const beats = deriveMapStory(layout, feats, "iso_a3", {
+      title: "T",
+      insight: "i",
+      unit: " nights",
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    const one = reveals.find((b) => b.callout?.name === "Norway");
+    expect(one?.callout?.value).toBe("1 night"); // not "1 nights"
+  });
+  it("never touches a SYMBOL unit like ' %' at value 1", () => {
+    const d: ChoroplethData = {
+      regionKey: "code",
+      valueField: "share",
+      rows: [
+        { code: "NOR", share: 1 },
+        { code: "DEU", share: 40 },
+      ],
+    };
+    const layout = computeChoropleth(d, feats, "iso_a3");
+    const beats = deriveMapStory(layout, feats, "iso_a3", {
+      title: "T",
+      insight: "i",
+      unit: " %",
+    });
+    const one = beats
+      .filter((b) => b.kind === "reveal")
+      .find((b) => b.callout?.name === "Norway");
+    expect(one?.callout?.value).toBe("1 %"); // symbol unit unchanged
+  });
+});
+
 describe("deriveMapStory", () => {
-  it("returns title → establish → reveal(max) → reveal(min) → takeaway", () => {
+  it("magnitude: reveals the ranked leaders (not just max & min) — here all 3, high→low", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", meta);
     expect(beats.map((b) => b.kind)).toEqual([
@@ -52,10 +103,14 @@ describe("deriveMapStory", () => {
       "establish",
       "reveal",
       "reveal",
+      "reveal",
       "takeaway",
     ]);
-    expect(beats[2].highlight).toEqual(["NOR"]); // max (was beats[1])
-    expect(beats[3].highlight).toEqual(["POL"]); // min (was beats[2])
+    expect(beats[2].highlight).toEqual(["NOR"]); // rank 1 (99)
+    expect(beats[3].highlight).toEqual(["DEU"]); // rank 2 (59)
+    expect(beats[4].highlight).toEqual(["POL"]); // rank 3 (21)
+    expect(beats[2].rank).toBe(1);
+    expect(beats[3].rank).toBe(2);
   });
   it("title beat uses meta.title as copy; establish beat has empty copy", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
@@ -72,18 +127,83 @@ describe("deriveMapStory", () => {
     expect(establish.dim).toBe(false);
     expect(establish.callout).toBeNull();
   });
-  it("first reveal (beats[2]) carries a name — value callout and dims the rest", () => {
+  it("first magnitude reveal carries a RANK-AWARE caption ('leads'), not a bare name — value", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", meta);
     expect(beats[2].callout).toEqual({
       region: "NOR",
       name: "Norway",
       value: "99%",
-      text: "Norway — 99%",
+      text: "Norway leads — 99%",
     });
     expect(beats[2].dim).toBe(true);
-    expect(beats[2].copy).toBe("Norway — 99%");
+    expect(beats[2].copy).toBe("Norway leads — 99%");
+    expect(beats[3].copy).toBe("Germany — 59%, 2nd"); // rank-aware, adapts to data
   });
+  it("magnitude with MANY regions reveals top-3 leaders + the tail (adapts, F11)", () => {
+    // 6 regions → a distribution two beats can't carry. Expect 4 reveals:
+    // ranks 1/2/3 (leaders) + the long tail (the minimum).
+    const many = {
+      type: "FeatureCollection",
+      features: ["A", "B", "C", "D", "E", "F"].map((k, i) =>
+        feat(k, `Region ${k}`, i, 40 + i),
+      ),
+    } as any;
+    const rich: ChoroplethData = {
+      regionKey: "code",
+      valueField: "share",
+      rows: [
+        { code: "A", share: 90 },
+        { code: "B", share: 80 },
+        { code: "C", share: 70 },
+        { code: "D", share: 40 },
+        { code: "E", share: 20 },
+        { code: "F", share: 5 },
+      ],
+    };
+    const layout = computeChoropleth(rich, many, "iso_a3");
+    const beats = deriveMapStory(layout, many, "iso_a3", meta);
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals.length).toBe(4); // top-3 + tail, not just max & min
+    expect(reveals.map((b) => b.highlight[0])).toEqual(["A", "B", "C", "F"]);
+    expect(reveals[0].copy).toBe("Region A leads — 90%");
+    expect(reveals[3].rankRole).toBe("tail");
+    expect(reveals[3].copy).toContain("long tail");
+    // The guardrail passes on this adapted story…
+    expect(auditMapStoryReveals(beats, 6)).toHaveLength(0);
+  });
+
+  it("guardrail FAILS a magnitude story that collapses to 2 reveals for a rich dataset", () => {
+    // Simulate the pre-fix behaviour: only max & min revealed for 6 regions.
+    const bad = [
+      { kind: "reveal", pattern: "magnitude", rank: 1, copy: "A — 90%" } as any,
+      { kind: "reveal", pattern: "magnitude", rank: 6, copy: "F — 5%" } as any,
+    ];
+    const v = auditMapStoryReveals(bad, 6);
+    expect(v.some((s) => s.includes("must adapt to the data"))).toBe(true);
+  });
+
+  it("magnitudeRevealRows + magnitudeCaption are deterministic and rank-aware", () => {
+    const rows = magnitudeRevealRows([
+      { key: "A", value: 90 },
+      { key: "B", value: 80 },
+      { key: "C", value: 70 },
+      { key: "D", value: 5 },
+    ]);
+    expect(rows.map((r) => r.key)).toEqual(["A", "B", "C", "D"]);
+    expect(rows[0].rankRole).toBe("leader");
+    expect(rows[3].rankRole).toBe("tail");
+    expect(magnitudeCaption("Chile", "22%", 1, 4, "leader")).toBe(
+      "Chile leads — 22%",
+    );
+    expect(magnitudeCaption("Spain", "21%", 2, 4, "leader")).toBe(
+      "Spain — 21%, 2nd",
+    );
+    expect(magnitudeCaption("South Africa", "4%", 16, 4, "tail")).toBe(
+      "The long tail — South Africa, 4%",
+    );
+  });
+
   it("takeaway returns to full bounds with the insight copy", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", meta);
@@ -168,16 +288,17 @@ describe("deriveMapStory", () => {
     expect(reveals[reveals.length - 1].highlight).toEqual(["NOR"]);
   });
 
-  it("magnitude field keeps max→min reveals with pattern 'magnitude'", () => {
+  it("magnitude field reveals ranked leaders high→low with pattern 'magnitude'", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", {
       ...meta,
       valueField: "share",
     });
     const reveals = beats.filter((b) => b.kind === "reveal");
-    expect(reveals[0].highlight).toEqual(["NOR"]); // max
-    expect(reveals[1].highlight).toEqual(["POL"]); // min
+    expect(reveals[0].highlight).toEqual(["NOR"]); // rank 1
+    expect(reveals[reveals.length - 1].highlight).toEqual(["POL"]); // lowest of the 3
     expect(reveals.every((r) => r.pattern === "magnitude")).toBe(true);
+    expect(reveals.every((r) => r.rank !== undefined)).toBe(true); // rank-tagged
   });
 
   it("breaks max/min ties by ascending region key (deterministic)", () => {

@@ -1,0 +1,8 @@
+{
+  "producer": "chart-native",
+  "nativeType": "scatter",
+  "title": "Spending more on health buys longer lives — up to a point",
+  "unit": "life expectancy (years) vs health spending per capita ($)",
+  "source": { "name": "OECD Health Statistics, 2023", "url": "https://www.oecd.org/health" },
+  "data": "country,spend,years\nUnited States,12500,76.4\nSwitzerland,8000,83.9\nNorway,7800,83.2\nGermany,7400,81.2\nNetherlands,6700,82.2\nAustria,6300,81.6\nFrance,6100,83.0\nCanada,5900,82.0\nBelgium,5800,81.9\nUnited Kingdom,5400,81.5\nJapan,4700,84.5\nItaly,4200,83.5\nSpain,4100,84.0\nSouth Korea,3600,83.6\nPoland,2500,78.0\nMexico,1200,75.0"
+}

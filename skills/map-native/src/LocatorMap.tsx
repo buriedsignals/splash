@@ -9,7 +9,7 @@ import {
   type LabelBox,
 } from "./locator-labels";
 import { resolveMapStyle } from "./route-geo";
-import { makeResetControl } from "./controls";
+import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 
@@ -153,10 +153,7 @@ export const LocatorMap: React.FC<Props> = ({
             rawNe[0],
             rawNe[1],
           ]);
-          m.setMaxBounds([
-            [cw, cs],
-            [ce, cn],
-          ]);
+          safeSetMaxBounds(m, [cw, cs], [ce, cn]);
         });
       }
     }

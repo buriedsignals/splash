@@ -43,6 +43,21 @@ function overlapArea(a: TextRect, b: TextRect): number {
   return ix > OVERLAP_TOLERANCE && iy > OVERLAP_TOLERANCE ? ix * iy : 0;
 }
 
+// Two rects are the SAME logical label rendered twice (Datawrapper sometimes emits a
+// tick both as an SVG <text> and as an `export-text` span at the same spot — most
+// visibly on multi-series charts) when they carry identical text and their boxes very
+// nearly coincide. That is a duplicate, NOT a collision, so it must not be flagged as
+// an overlap. Require identical text AND a high intersection-over-union.
+function isDuplicateRender(a: TextRect, b: TextRect): boolean {
+  if (a.text !== b.text) return false;
+  const ix = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+  const iy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  const inter = ix * iy;
+  if (inter <= 0) return false;
+  const union = a.w * a.h + b.w * b.h - inter;
+  return union > 0 && inter / union > 0.6;
+}
+
 // Shrink a rect by `pad` on every side, so a segment that only grazes the very
 // edge (antialiasing slack) is not counted as an intersection.
 function padRect(r: TextRect, pad: number): TextRect {
@@ -133,7 +148,10 @@ export function findLabelViolations(
   }
   for (let i = 0; i < rects.length; i++)
     for (let j = i + 1; j < rects.length; j++)
-      if (overlapArea(rects[i], rects[j]) > 0)
+      if (
+        overlapArea(rects[i], rects[j]) > 0 &&
+        !isDuplicateRender(rects[i], rects[j])
+      )
         violations.push(
           `overlap: "${rects[i].text}" intersects "${rects[j].text}"`,
         );
@@ -530,4 +548,44 @@ export async function checkPublishedChart(
   const g = await measureChart(url, opts);
   const violations = findLabelViolations(g.content, g.rects, g.series);
   return { ok: violations.length === 0, violations, rects: g.rects };
+}
+
+// The representative widths the RESPONSIVE embed is validated at: a phone, a tablet
+// column, and the desktop export width. A Datawrapper embed is `min-width:100%`, so
+// the delivered chart re-renders at every width in this envelope — validating only at
+// the export width (== the PNG) is what let labels clip/collide on mobile while the
+// guardrail passed. Both bounds of the range are checked so "validated == delivered"
+// holds across the whole responsive envelope, not one width.
+export const RESPONSIVE_WIDTHS = [340, 600, EXPORT_WIDTH];
+
+export interface ResponsiveSafetyResult {
+  ok: boolean;
+  violations: string[]; // each prefixed with the width it occurred at
+  byWidth: { width: number; violations: string[] }[];
+}
+
+// Load the published chart at several widths (reusing ONE browser) and fail if any
+// text clips, overlaps, or sits on the series at ANY width. This is the guardrail
+// that observes the real responsive deliverable.
+export async function checkResponsive(
+  url: string,
+  opts: { widths?: number[]; browser?: Browser } = {},
+): Promise<ResponsiveSafetyResult> {
+  const widths = opts.widths ?? RESPONSIVE_WIDTHS;
+  const browser = opts.browser ?? (await chromium.launch());
+  try {
+    const byWidth: { width: number; violations: string[] }[] = [];
+    for (const width of widths) {
+      const height = Math.round((width * EXPORT_HEIGHT) / EXPORT_WIDTH);
+      const g = await measureChart(url, { width, height, browser });
+      const violations = findLabelViolations(g.content, g.rects, g.series).map(
+        (v) => `@${width}px ${v}`,
+      );
+      byWidth.push({ width, violations });
+    }
+    const violations = byWidth.flatMap((b) => b.violations);
+    return { ok: violations.length === 0, violations, byWidth };
+  } finally {
+    if (!opts.browser) await browser.close();
+  }
 }

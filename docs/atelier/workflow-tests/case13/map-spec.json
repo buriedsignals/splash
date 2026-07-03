@@ -1,0 +1,12 @@
+{
+  "mapType": "choropleth",
+  "basemap": "europe-sovereign-states",
+  "mapKeyAttr": "ISO_3_SOV",
+  "regionKey": "code",
+  "valueColumn": "years",
+  "data": "code,years\nESP,84.0\nCHE,84.0\nITA,83.5\nFRA,83.0\nSWE,83.0\nNOR,83.2\nNLD,82.2\nGBR,81.5\nDEU,81.2\nAUT,81.6\nGRC,81.8\nPOL,78.0\nCZE,79.5\nHUN,76.9\nROU,76.4\nBGR,75.1\nLVA,75.7\nLTU,76.5"
+  ,
+  "title": "Life expectancy is highest in the Mediterranean and Alps, lowest in the east",
+  "altInsight": "Life expectancy at birth ranges from about 75 years in Bulgaria and Latvia to 84 in Spain and Switzerland, with a clear west-to-east gradient across Europe.",
+  "source": { "name": "Eurostat / WHO, 2024" }
+}

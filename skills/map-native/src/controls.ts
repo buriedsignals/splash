@@ -1,5 +1,20 @@
 import * as maptilersdk from "@maptiler/sdk";
 
+// Set a free-pan maxBounds envelope, but ONLY when it is a real sub-global box. On a
+// wide/short viewport the map view can WRAP, so getBounds() returns UNWRAPPED longitudes
+// (e.g. east 307.9 = -52 + 360); building a maxBounds from that yields a >360°-wide box
+// which MapLibre mishandles — it pins the map to a zoomed-in wrong-hemisphere corner
+// (observed: zoom 7.6 centred in the Atlantic for a Pacific dataset, F12). A near-global
+// envelope constrains nothing anyway, so in that case leave the map unbounded. Shared by
+// every <Type>Map so no sibling type can reintroduce the bug.
+export function safeSetMaxBounds(
+  map: maptilersdk.Map,
+  sw: [number, number],
+  ne: [number, number],
+): void {
+  if (ne[0] - sw[0] < 355 && ne[1] - sw[1] < 175) map.setMaxBounds([sw, ne]);
+}
+
 /** Minimal IControl that resets the map to the initial data bounds. */
 export function makeResetControl(
   dataBounds: [number, number, number, number],

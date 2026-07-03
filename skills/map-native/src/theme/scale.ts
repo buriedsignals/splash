@@ -73,7 +73,26 @@ export const VETTED_COLORS: Set<string> = new Set(
   Object.values(PALETTES).flatMap((p) => p.ramp.map((c) => c.toLowerCase())),
 );
 
-// A palette request: either a named registry palette, or a custom CVD-safe ramp.
+// Semantic aliases → registry keys. The suggester picks palettes by SUBJECT ("amber"
+// for solar, "red"/"heat" for temperature, "teal" for water), so those human names must
+// resolve instead of throwing. An unknown name that ISN'T an alias still fails — but
+// LOUDLY and early (see resolvePalette's error), never as a silent headless timeout.
+export const PALETTE_ALIASES: Record<string, string> = {
+  amber: "oranges",
+  orange: "oranges",
+  heat: "oranges",
+  red: "oranges",
+  warm: "oranges",
+  blue: "blues",
+  blues: "blues",
+  green: "greens",
+  teal: "greens",
+  purple: "purples",
+  violet: "purples",
+};
+
+// A palette request: either a named registry palette (or semantic alias), or a custom
+// CVD-safe ramp.
 export type PaletteRequest = string | string[];
 
 export interface ResolvedPalette {
@@ -101,8 +120,15 @@ export function resolvePalette(
       );
     return { ramp: request, kind: scaleType, name: "custom" };
   }
-  const entry = PALETTES[request];
-  if (!entry) throw new Error(`unknown palette "${request}"`);
+  const key = PALETTES[request]
+    ? request
+    : PALETTE_ALIASES[request.toLowerCase()];
+  const entry = key ? PALETTES[key] : undefined;
+  if (!entry)
+    throw new Error(
+      `unknown palette "${request}" — valid names: ${Object.keys(PALETTES).join(", ")} ` +
+        `(or a semantic alias: ${Object.keys(PALETTE_ALIASES).join(", ")}, or a custom ≥3-colour ramp)`,
+    );
   if (entry.kind !== scaleType)
     throw new Error(
       `palette "${request}" is ${entry.kind}, but scaleType is ${scaleType}`,

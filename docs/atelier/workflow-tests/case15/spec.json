@@ -1,0 +1,13 @@
+{
+  "producer": "dw-chart",
+  "type": "d3-lines",
+  "title": "Five years on, US offices are still barely half full",
+  "intro": "Average office occupancy as a share of pre-pandemic levels, from large-employer badge-swipe data. Occupancy climbed from 30% in 2021 but plateaued around 58%.",
+  "data": "year,Occupancy\n2021,30\n2022,43\n2023,50\n2024,54\n2025,58",
+  "valueFormat": "0'%'",
+  "numberFormat": "0'%'",
+  "baseColor": "#0072B2",
+  "source": { "name": "Kastle Systems occupancy barometer (illustrative)", "url": "https://www.kastle.com" },
+  "altInsight": "US office occupancy rose from 30% of pre-pandemic levels in 2021 to 58% in 2025, but the gains slowed sharply and offices remain barely more than half full.",
+  "annotations": [ { "text": "Plateau near 58%", "x": "2025", "column": "Occupancy" } ]
+}

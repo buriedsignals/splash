@@ -7,6 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "node:http";
 import { readFile, mkdir } from "node:fs/promises";
+import { chartDistSub } from "../src/build-paths.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -16,7 +17,12 @@ const outDir = process.env.OUTDIR ?? join(root, "output-proof", chart);
 await mkdir(outDir, { recursive: true });
 
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
-const staticDist = join(root, `dist/${chart}/static`);
+// Build-dir path comes from the SHARED helper (build-paths.ts) that vite.config.ts
+// also uses — they cannot drift. Using `dist/<chart>/<sub>` unconditionally here (while
+// vite special-cases `line` to `dist/<sub>`) served a STALE/missing build for line
+// charts, so the injected CONFIG never reached the snap and a default sample rendered.
+const distSub = (sub) => join(root, chartDistSub(chart, sub));
+const staticDist = distSub("static");
 const server = createServer(async (req, res) => {
   const path = req.url === "/" ? "/index.html" : req.url.split("?")[0];
   try {
@@ -44,7 +50,7 @@ await sp.close();
 
 // 2) INTERACTIVE — focus the first focusable data element → tooltip
 const ip = await browser.newPage({ viewport: { width: 900, height: 560 }, deviceScaleFactor: 2 });
-await ip.goto(pathToFileURL(join(root, `dist/${chart}/interactive/index.html`)).href);
+await ip.goto(pathToFileURL(join(distSub("interactive"), "index.html")).href);
 await ip.waitForSelector("[tabindex]");
 await ip.waitForTimeout(1700); // let the reveal settle
 const hits = ip.locator("[tabindex]");
