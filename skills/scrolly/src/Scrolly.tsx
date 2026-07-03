@@ -54,7 +54,8 @@ export const Scrolly: React.FC<{
 }> = ({ config }) => {
   // -------------------------------------------------------------------------
   // Build the story once at mount — deterministic from config.
-  // Dispatches on config.type === "symbol" for symbol path, else choropleth.
+  // Dispatches on type: symbol → hex-grid → dot-density → locator → cartogram,
+  // then falls back to choropleth.
   // -------------------------------------------------------------------------
   const story = useMemo(() => {
     if (config.type === "symbol") {

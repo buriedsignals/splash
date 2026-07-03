@@ -6,7 +6,7 @@
 // fill layer id "cartogram-cells" + outline. applyCartogramBasemap called on load (grid → neutral,
 // scaled → basemap). Per-step __id dim-emphasis via setPaintProperty. Bin legend overlay.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { computeCartogram } from "../../map-native/src/cartogram-geo";
@@ -86,12 +86,19 @@ export const ScrollyCartogramMap: React.FC<{
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const outlineColor = dark ? "#1c1c1f" : "#ffffff";
 
-  // Precompute geometry and beats outside the effect (pure, stable).
-  const layout = computeCartogram(config, worldGeoJson);
-  const beats = deriveCartogramStory(layout, {
-    title: config.title ?? "",
-    insight: config.insight ?? config.title ?? "",
-  });
+  // Memoize geometry and beats — recompute only when config changes.
+  const layout = useMemo(
+    () => computeCartogram(config, worldGeoJson),
+    [config],
+  );
+  const beats = useMemo(
+    () =>
+      deriveCartogramStory(layout, {
+        title: config.title ?? "",
+        insight: config.insight ?? config.title ?? "",
+      }),
+    [layout],
+  );
 
   // ---------------------------------------------------------------------------
   // Init map ONCE — ref guard prevents double-init in React Strict Mode.
