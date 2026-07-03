@@ -57,7 +57,17 @@ export function deriveMapStory(
 ): Beat[] {
   const fmt =
     meta.valueLabel ??
-    ((v: number) => `${Math.round(v)}${meta.unit ? meta.unit : ""}`);
+    ((v: number) => {
+      const n = Math.round(v);
+      // Singularise a plural WORD unit when the value is exactly 1 ("1 nights" → "1
+      // night") — but never touch a symbol unit like " %" or " $". Only strips a
+      // trailing "s" from a purely-alphabetic word, leaving everything else intact.
+      const unit =
+        meta.unit && n === 1
+          ? meta.unit.replace(/^(\s*)([A-Za-z]+)s$/, "$1$2")
+          : (meta.unit ?? "");
+      return `${n}${unit}`;
+    });
 
   // Regions that actually have a value, sorted by ascending key for tie-stability.
   const withData = layout.joined

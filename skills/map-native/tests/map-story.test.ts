@@ -48,6 +48,52 @@ const meta = {
   unit: "%",
 };
 
+describe("deriveMapStory — value grammar", () => {
+  const feats = {
+    type: "FeatureCollection",
+    features: [feat("NOR", "Norway", 8, 60), feat("DEU", "Germany", 10, 50)],
+  } as any;
+  it("singularises a plural WORD unit when the value is 1 ('1 nights' → '1 night')", () => {
+    const d: ChoroplethData = {
+      regionKey: "code",
+      valueField: "nights",
+      rows: [
+        { code: "NOR", nights: 1 },
+        { code: "DEU", nights: 40 },
+      ],
+    };
+    const layout = computeChoropleth(d, feats, "iso_a3");
+    const beats = deriveMapStory(layout, feats, "iso_a3", {
+      title: "T",
+      insight: "i",
+      unit: " nights",
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    const one = reveals.find((b) => b.callout?.name === "Norway");
+    expect(one?.callout?.value).toBe("1 night"); // not "1 nights"
+  });
+  it("never touches a SYMBOL unit like ' %' at value 1", () => {
+    const d: ChoroplethData = {
+      regionKey: "code",
+      valueField: "share",
+      rows: [
+        { code: "NOR", share: 1 },
+        { code: "DEU", share: 40 },
+      ],
+    };
+    const layout = computeChoropleth(d, feats, "iso_a3");
+    const beats = deriveMapStory(layout, feats, "iso_a3", {
+      title: "T",
+      insight: "i",
+      unit: " %",
+    });
+    const one = beats
+      .filter((b) => b.kind === "reveal")
+      .find((b) => b.callout?.name === "Norway");
+    expect(one?.callout?.value).toBe("1 %"); // symbol unit unchanged
+  });
+});
+
 describe("deriveMapStory", () => {
   it("magnitude: reveals the ranked leaders (not just max & min) — here all 3, high→low", () => {
     const layout = computeChoropleth(data, features, "iso_a3");

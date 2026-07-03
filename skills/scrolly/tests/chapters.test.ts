@@ -84,6 +84,70 @@ describe("mapStoryToChapters", () => {
     );
     expect(story.steps[3].prose).toBe("Poland — 21%, the lowest");
   });
+  it("gives EVERY magnitude reveal a rank descriptor, incl. the middle leaders (F11)", () => {
+    const mk = (
+      name: string,
+      value: string,
+      rank: number,
+      rankRole: "leader" | "tail",
+    ): Beat => ({
+      kind: "reveal",
+      camera: [0, 0, 1, 1],
+      highlight: [name],
+      dim: true,
+      callout: { region: name, name, value, text: `${name} — ${value}` },
+      copy: `${name} — ${value}`,
+      pattern: "magnitude",
+      rank,
+      rankRole,
+    });
+    const ranked: Beat[] = [
+      {
+        kind: "title",
+        camera: [0, 0, 1, 1],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "T",
+      },
+      {
+        kind: "establish",
+        camera: [0, 0, 1, 1],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+      mk("Malta", "82 nights", 1, "leader"),
+      mk("Cyprus", "74 nights", 2, "leader"),
+      mk("Greece", "71 nights", 3, "leader"),
+      mk("Norway", "1 night", 16, "tail"),
+      {
+        kind: "takeaway",
+        camera: [0, 0, 1, 1],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+    ];
+    const story = mapStoryToChapters(ranked, { ...meta, regionsWithData: 16 });
+    const proses = story.steps
+      .filter(
+        (s) =>
+          typeof s.ref === "number" &&
+          (s.ref as number) >= 2 &&
+          (s.ref as number) <= 5,
+      )
+      .map((s) => s.prose);
+    expect(proses).toEqual([
+      "Malta — 82 nights, the highest of the 16 shown",
+      "Cyprus — 74 nights, the second",
+      "Greece — 71 nights, the third",
+      "Norway — 1 night, the lowest",
+    ]);
+  });
+
   it("always emits the takeaway (last step) with its copy", () => {
     const story = mapStoryToChapters(beats, meta);
     const last = story.steps[story.steps.length - 1];
