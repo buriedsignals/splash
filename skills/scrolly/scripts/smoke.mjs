@@ -98,11 +98,112 @@ if (expectedLayer === "choropleth-fill") {
     Math.abs(a[1] - b[1]) <= tol &&
     Math.abs(a[2] - b[2]) <= tol;
 
-  // Forbidden colours: every scale bin + the no-data fill.
-  const forbidden = [...probe.binColors, probe.noDataColor].map((c) => ({
-    hex: c,
-    rgb: hexToRgb(c),
-  }));
+  // Resolve any CSS colour string the basemap style uses — hex (#rrggbb),
+  // hsl()/hsla() — to an [r,g,b] triple. The plain DATAVIZ.LIGHT basemap paints
+  // land/water with hsl()/hsla() neutrals, so we must parse those, not only hex.
+  const cssToRgb = (color) => {
+    if (typeof color !== "string") return null;
+    const c = color.trim().toLowerCase();
+    if (/^#[0-9a-f]{6}$/.test(c)) return hexToRgb(c);
+    const hsl = c.match(
+      /^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%/,
+    );
+    if (hsl) {
+      const h = parseFloat(hsl[1]) / 360;
+      const s = parseFloat(hsl[2]) / 100;
+      const l = parseFloat(hsl[3]) / 100;
+      if (s === 0) {
+        const v = Math.round(l * 255);
+        return [v, v, v];
+      }
+      const hue = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      return [
+        Math.round(hue(p, q, h + 1 / 3) * 255),
+        Math.round(hue(p, q, h) * 255),
+        Math.round(hue(p, q, h - 1 / 3) * 255),
+      ];
+    }
+    return null;
+  };
+
+  // BASEMAP REFERENCE — resolve the plain DATAVIZ.LIGHT basemap's own default
+  // land and water fills from the rendered style. The gate compares the sampled
+  // no-data / ocean pixels against THESE references, not against the data-scale
+  // bin colours. That is the precision fix: a light SEQUENTIAL palette (e.g.
+  // ColorBrewer Purples, lightest bin #f2f0f7 ≈ [242,240,247]) is close to the
+  // near-white basemap land [247,247,247], so comparing the no-data pixel to the
+  // bins false-fails a correct render. Comparing to the basemap default instead
+  // PASSES an untinted no-data/ocean pixel and FAILS only a genuine tint (a
+  // re-added #aac9e0 water recolour, or a no-data fill), independent of palette.
+  const basemapRefs = await page.evaluate(() => {
+    const map = window.__map__;
+    const layers = map.getStyle()?.layers ?? [];
+    const resolve = (l) => {
+      try {
+        if (l.type === "fill") return map.getPaintProperty(l.id, "fill-color");
+        if (l.type === "background")
+          return map.getPaintProperty(l.id, "background-color");
+      } catch {
+        return null;
+      }
+      return null;
+    };
+    // Prefer the top-most background/land layer as the land reference and the
+    // top-most water fill as the water reference.
+    let land = null;
+    let water = null;
+    for (const l of layers) {
+      const sid = l["source-layer"] || "";
+      if (water == null && (/water|ocean|sea/i.test(l.id) || /water|ocean|sea/i.test(sid)) && l.type === "fill") {
+        const c = resolve(l);
+        if (typeof c === "string") water = c;
+      }
+      if (land == null && (l.type === "background" || /land|earth|ground/i.test(l.id) || /land|earth/i.test(sid))) {
+        const c = resolve(l);
+        if (typeof c === "string") land = c;
+      }
+    }
+    return { land, water };
+  });
+
+  const landRef = cssToRgb(basemapRefs.land);
+  const waterRef = cssToRgb(basemapRefs.water);
+  if (!landRef) {
+    console.error(
+      `✗ no-data paint gate FAILED: could not resolve a basemap land reference colour (got ${JSON.stringify(basemapRefs.land)}) — cannot verify no-data regions are the untinted default`,
+    );
+    process.exit(1);
+  }
+
+  // Tight tolerance for "pixel == basemap default": the untinted no-data/ocean
+  // pixel is the exact basemap fill (anti-aliasing / compositing aside). A real
+  // data tint differs by far more than this from the neutral basemap.
+  const BASEMAP_TOL = 6;
+
+  // A no-data / ocean pixel is a genuine TINT (defect) when it is NOT the plain
+  // basemap default AND it is not near-greyscale. The DATAVIZ.LIGHT basemap is
+  // built from neutral greys (land hsl(0,0%,97%), water hsl(240,2%,88%)); any
+  // chromatic pixel there means the region was painted a scale/no-data/water
+  // colour. We treat "matches a basemap ref (tight tol)" OR "near-greyscale
+  // neutral in the basemap's light range" as the untinted default.
+  const chroma = (rgb) => Math.max(...rgb) - Math.min(...rgb);
+  const isBasemapDefault = (pixel, refs) => {
+    for (const ref of refs) {
+      if (ref && near(pixel, ref, BASEMAP_TOL)) return true;
+    }
+    // Fallback: a light near-greyscale neutral is still the plain basemap
+    // (covers landcover/landuse variants painted slightly different greys).
+    return chroma(pixel) <= BASEMAP_TOL && Math.min(...pixel) >= 200;
+  };
 
   // Project a lng/lat to CSS-pixel coords on the map canvas, and report whether
   // it is on-screen (so the harness never samples an off-view point).
@@ -151,21 +252,25 @@ if (expectedLayer === "choropleth-fill") {
     );
   };
 
-  const assertNotForbidden = (label, pixel) => {
-    for (const f of forbidden) {
-      if (near(pixel, f.rgb)) {
-        console.error(
-          `✗ no-data paint gate FAILED: ${label} rendered ${JSON.stringify(pixel)} ≈ forbidden ${f.hex} (scale/no-data colour). It must be the default basemap.`,
-        );
-        process.exit(1);
-      }
+  // Assert a sampled pixel IS the plain basemap default (matches a basemap
+  // reference within tight tolerance, or is a light near-greyscale neutral).
+  // FAILS only on a genuine tint — a scale-bin / no-data / water colour painted
+  // where the untinted basemap must show. Compared against the BASEMAP, never
+  // against the data bins, so a light palette cannot false-fail a correct render.
+  const assertIsBasemap = (label, pixel, refs) => {
+    if (!isBasemapDefault(pixel, refs)) {
+      console.error(
+        `✗ no-data paint gate FAILED: ${label} rendered ${JSON.stringify(pixel)} — it differs from the plain basemap default (land ${JSON.stringify(landRef)}${waterRef ? `, water ${JSON.stringify(waterRef)}` : ""}). A no-data region / the sea was painted a scale-bin / no-data / water tint. It must stay the untinted DATAVIZ.LIGHT basemap.`,
+      );
+      process.exit(1);
     }
   };
 
   // (a) no-data LAND — sample up to N on-screen no-data countries (each point is
-  // a turf pointOnFeature, guaranteed on the landmass). Assert none is painted a
-  // forbidden colour. Sampling several (not one) makes the gate robust: a single
-  // point could coincidentally miss, but the defect tints EVERY no-data country.
+  // a turf pointOnFeature, guaranteed on the landmass). Assert each is the plain
+  // basemap land default. Sampling several (not one) makes the gate robust: a
+  // single point could coincidentally miss, but the defect tints EVERY no-data
+  // country, so any tinted sample trips the gate.
   const MAX_ND_SAMPLES = 6;
   let ndSampled = 0;
   let lastNdPixel = null;
@@ -176,9 +281,10 @@ if (expectedLayer === "choropleth-fill") {
     const pixel = await samplePixelAt(pt.x, pt.y);
     lastNdPixel = pixel;
     ndSampled++;
-    assertNotForbidden(
+    assertIsBasemap(
       `no-data country @ [${lng.toFixed(1)},${lat.toFixed(1)}]`,
       pixel,
+      [landRef],
     );
   }
   if (ndSampled === 0) {
@@ -211,10 +317,14 @@ if (expectedLayer === "choropleth-fill") {
     );
     process.exit(1);
   }
-  // Ocean must not be a scale bin / no-data colour…
-  assertNotForbidden(
+  // Ocean must BE the plain basemap water default (matches the water reference,
+  // or the land reference, or a light near-greyscale neutral) — never a scale
+  // bin, no-data, or #aac9e0 water tint. Comparing to the basemap default (not
+  // to the data bins) is the precision fix.
+  assertIsBasemap(
     `ocean @ [${oceanUsed[0].toFixed(1)},${oceanUsed[1].toFixed(1)}]`,
     oceanPixel,
+    [waterRef, landRef],
   );
 
   // …AND must not be the deliberate WATER_COLOR tint (#aac9e0). The sea has to
@@ -286,7 +396,7 @@ if (expectedLayer === "choropleth-fill") {
   }
 
   console.log(
-    `✓ no-data paint gate GREEN — ${ndSampled} no-data country sample(s) (last ${JSON.stringify(lastNdPixel)}) + ocean pixel ${JSON.stringify(oceanPixel)} are NOT any scale/no-data/water-tint colour, AND ${waterPaints.length} water layer paint(s) are the plain basemap default (no #aac9e0 / no colour tint). Colours: ${JSON.stringify(waterPaints.map((w) => w.color))}.`,
+    `✓ no-data paint gate GREEN — ${ndSampled} no-data country sample(s) (last ${JSON.stringify(lastNdPixel)}) + ocean pixel ${JSON.stringify(oceanPixel)} MATCH the plain basemap default (land ${JSON.stringify(landRef)}${waterRef ? `, water ${JSON.stringify(waterRef)}` : ""}, tol ±${BASEMAP_TOL}), NOT any scale/no-data/water tint, AND ${waterPaints.length} water layer paint(s) are the plain basemap default (no #aac9e0 / no colour tint). Colours: ${JSON.stringify(waterPaints.map((w) => w.color))}.`,
   );
 }
 
