@@ -24,8 +24,13 @@ export const ScrollyChart: React.FC<{
   }, [config]);
 
   const beat = mapStepToBeat(beats, currentStep);
-  // establish/takeaway show the whole line; a reveal draws to its progress.
-  const progress = beat.kind === "reveal" ? (beat.progress ?? 1) : 1;
+  // title + establish: empty plot (line draws on); reveal: draws to beat.progress; takeaway: full line.
+  const progress =
+    beat.kind === "reveal"
+      ? (beat.progress ?? 1)
+      : beat.kind === "takeaway"
+        ? 1
+        : 0; // title + establish: empty plot, the line then draws on
 
   return (
     <div

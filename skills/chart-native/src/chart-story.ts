@@ -52,6 +52,12 @@ export function deriveChartStory(
   const fmt = (v: number) =>
     `${Math.round(v * 100) / 100}${spec.unit ? " " + spec.unit : ""}`;
 
+  const xs = points.map((p) => Number(p[xField]));
+  const xNumeric = xs.every((v) => Number.isFinite(v));
+  const xMin = Math.min(...xs);
+  const xMax = Math.max(...xs);
+  const xSpan = xMax - xMin || 1;
+
   const beats: ChartBeat[] = [];
   beats.push({ kind: "title", callout: null, copy: spec.title });
   beats.push({ kind: "establish", callout: null, copy: "" });
@@ -61,7 +67,7 @@ export function deriveChartStory(
     const text = `${name} — ${value}`;
     beats.push({
       kind: "reveal",
-      progress: n > 1 ? i / (n - 1) : 1,
+      progress: xNumeric ? (xs[i] - xMin) / xSpan : n > 1 ? i / (n - 1) : 1,
       callout: { name, value, text },
       copy: text,
     });

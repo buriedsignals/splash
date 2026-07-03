@@ -60,6 +60,24 @@ describe("deriveChartStory (line)", () => {
   });
 });
 
+describe("deriveChartStory — x-fraction progress", () => {
+  const xFracSpec = {
+    nativeType: "line",
+    title: "Test x-fraction",
+    unit: "",
+    source: { name: "test" },
+    data: "year,extent\n2000,5\n2010,9\n2020,1\n2040,3",
+    directLabel: "extent",
+  };
+  it("reveal at year 2010 has progress ≈ (2010-2000)/(2040-2000) = 0.25, not index-fraction", () => {
+    const beats = deriveChartStory(xFracSpec as any);
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    const beat2010 = reveals.find((b) => b.callout?.name === "2010");
+    expect(beat2010).toBeDefined();
+    expect(beat2010!.progress).toBeCloseTo(0.25, 5);
+  });
+});
+
 describe("mapStepToBeat", () => {
   const beats = deriveChartStory(lineSpec as any);
   it("clamps out-of-range steps to the first/last beat", () => {

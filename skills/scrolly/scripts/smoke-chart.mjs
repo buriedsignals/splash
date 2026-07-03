@@ -7,7 +7,8 @@ const p = await b.newPage({ viewport: { width: 1000, height: 800 } });
 const errs = [];
 p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(url, { waitUntil: "networkidle", timeout: 30000 });
-await p.waitForSelector("svg path", { timeout: 15000 });
+// At step 0 (title beat) progress=0 → no line path yet; wait for the SVG frame instead.
+await p.waitForSelector("svg", { timeout: 15000 });
 
 async function lineLenAtScroll(frac) {
   await p.evaluate((f) => window.scrollTo(0, document.body.scrollHeight * f), frac);
