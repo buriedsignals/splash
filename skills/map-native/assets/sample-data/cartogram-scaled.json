@@ -6,15 +6,14 @@
   "scaleType": "sequential",
   "valueLabel": "CO₂ emissions (Mt)",
   "mapStyle": "dataviz-light",
-  "title": "Carbon giants: who emits the most CO₂?",
-  "description": "Annual CO₂ emissions from fossil fuels and industry, 2022. Country polygons are scaled so area is proportional to total emissions.",
+  "title": "Who emits the most? Eurasian carbon footprint in 2022",
+  "description": "Annual CO₂ emissions from fossil fuels and industry across major emitters in Asia and Europe, 2022. Country polygons scaled so area is proportional to total emissions — the bigger the shape, the more CO₂.",
   "source": {
     "name": "Global Carbon Project 2023",
     "url": "https://www.globalcarbonproject.org/carbonbudget/"
   },
   "values": [
     { "id": "CHN", "value": 11397 },
-    { "id": "USA", "value": 5056 },
     { "id": "IND", "value": 2830 },
     { "id": "RUS", "value": 1769 },
     { "id": "JPN", "value": 1066 },
@@ -22,16 +21,15 @@
     { "id": "DEU", "value": 675 },
     { "id": "KOR", "value": 621 },
     { "id": "SAU", "value": 618 },
-    { "id": "CAN", "value": 562 },
-    { "id": "IDN", "value": 544 },
-    { "id": "BRA", "value": 470 },
-    { "id": "ZAF", "value": 432 },
-    { "id": "MEX", "value": 425 },
     { "id": "TUR", "value": 422 },
     { "id": "GBR", "value": 335 },
     { "id": "POL", "value": 296 },
-    { "id": "AUS", "value": 394 },
     { "id": "FRA", "value": 302 },
-    { "id": "ITA", "value": 314 }
+    { "id": "ITA", "value": 314 },
+    { "id": "UKR", "value": 185 },
+    { "id": "PAK", "value": 208 },
+    { "id": "KAZ", "value": 243 },
+    { "id": "UZB", "value": 108 },
+    { "id": "MNG", "value": 55 }
   ]
 }

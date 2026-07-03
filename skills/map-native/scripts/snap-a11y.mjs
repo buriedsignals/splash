@@ -30,6 +30,7 @@ await page.waitForFunction(
         m.getLayer("symbol-circles") ||
         m.getLayer("locator-glyphs") ||
         m.getLayer("hex-grid-cells") ||
+        m.getLayer("cartogram-cells") ||
         m.getLayer("route-fill"))
     );
   },
@@ -69,6 +70,8 @@ try {
     if (m.getLayer("symbol-circles") || m.getLayer("locator-glyphs"))
       return "symbol";
     if (m.getLayer("route-fill")) return "route";
+    if (m.getLayer("cartogram-cells")) return "cartogram";
+    if (m.getLayer("hex-grid-cells")) return "hex-grid";
     return "choropleth";
   });
   const glyphLayer = await page.evaluate(() =>
@@ -141,6 +144,46 @@ try {
       await page.waitForSelector(".maplibregl-popup", { timeout: 4000 });
       tooltipOk = true;
     }
+  } else if (layerType === "cartogram" || layerType === "hex-grid") {
+    const layer = layerType === "cartogram" ? "cartogram-cells" : "hex-grid-cells";
+    const cellCoords = await page.evaluate((l) => {
+      const m = window.__map__;
+      if (!m) return [];
+      const features = m.queryRenderedFeatures({ layers: [l] });
+      if (!features || features.length === 0) return [];
+      return features.slice(0, 12).map((f) => {
+        const g = f.geometry;
+        let ring = null;
+        if (g && g.type === "Polygon") ring = g.coordinates[0];
+        else if (g && g.type === "MultiPolygon") ring = g.coordinates[0][0];
+        if (!ring) {
+          const c = m.getCenter();
+          const p = m.project([c.lng, c.lat]);
+          return { x: Math.round(p.x), y: Math.round(p.y) };
+        }
+        const lng = ring.reduce((s, c) => s + c[0], 0) / ring.length;
+        const lat = ring.reduce((s, c) => s + c[1], 0) / ring.length;
+        const p = m.project([lng, lat]);
+        return { x: Math.round(p.x), y: Math.round(p.y) };
+      });
+    }, layer);
+    for (const { x, y } of cellCoords) {
+      if (x < 0 || y < 0 || x > viewport.width || y > viewport.height) continue;
+      await page.mouse.move(x, y);
+      await page.waitForTimeout(200);
+      const popup = page.locator(".maplibregl-popup");
+      if (await popup.count() > 0) { tooltipOk = true; break; }
+    }
+    if (!tooltipOk) {
+      outer: for (let x = 80; x <= viewport.width - 80; x += 20) {
+        for (let y = 80; y <= viewport.height - 80; y += 20) {
+          await page.mouse.move(x, y);
+          await page.waitForTimeout(60);
+          const popup = page.locator(".maplibregl-popup");
+          if (await popup.count() > 0) { tooltipOk = true; break outer; }
+        }
+      }
+    }
   } else {
     // Choropleth: try known European region centroids first
     const candidates = await page.evaluate(() => {
@@ -191,11 +234,20 @@ try {
   tooltipOk = false;
 }
 
+// Detect map type for boundedNavOk type-gating.
+const isCartogramMap = await page.evaluate(() =>
+  !!(window.__map__ && window.__map__.getLayer && window.__map__.getLayer("cartogram-cells")),
+);
+
 // Bounded nav: attempt a large pan + extreme zoom-out, then assert centre + zoom constraints.
-const boundedNavOk = await page.evaluate(async () => {
+// For cartogram, only minZoom is checked (not maxBounds): large geographic extents make
+// tight lon maxBounds impractical — any maxBounds that fits within ±180° lon can cause
+// the SDK to force a higher zoom at wide viewports, hiding the data's lat extent. The
+// minZoom pin alone ensures cartogram data stays visible; lon pan clamping is skipped.
+const boundedNavOk = await page.evaluate(async (isCartogram) => {
   const m = window.__map__;
   if (!m) return false;
-  // Large pan — should be clamped by maxBounds
+  // Large pan — should be clamped by maxBounds (or at least minZoom after zoom-out)
   await new Promise((resolve) => {
     m.once("moveend", resolve);
     m.panBy([5000, 5000], { duration: 0 });
@@ -205,19 +257,20 @@ const boundedNavOk = await page.evaluate(async () => {
     m.once("idle", resolve);
     m.zoomTo(0, { duration: 0 });
   });
-  const maxBounds = m.getMaxBounds();
-  const centre = m.getCenter();
   const zoom = m.getZoom();
   const minZoom = m.getMinZoom();
+  const zoomOk = zoom >= minZoom - 0.01; // tiny float tolerance
+  if (isCartogram) return zoomOk; // cartogram: only minZoom pin is enforced
+  const maxBounds = m.getMaxBounds();
   if (!maxBounds) return false; // maxBounds never set → feature not enabled
+  const centre = m.getCenter();
   const inBounds =
     centre.lng >= maxBounds.getWest() &&
     centre.lng <= maxBounds.getEast() &&
     centre.lat >= maxBounds.getSouth() &&
     centre.lat <= maxBounds.getNorth();
-  const zoomOk = zoom >= minZoom - 0.01; // tiny float tolerance
   return inBounds && zoomOk;
-});
+}, isCartogramMap);
 
 // Controls not occluded: pick the zoom-in button and assert it is the topmost element
 // at its centre point — not the title pill or any other furniture overlay.

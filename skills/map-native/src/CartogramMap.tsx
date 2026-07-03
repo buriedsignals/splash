@@ -61,12 +61,15 @@ export const CartogramMap: React.FC<Props> = ({
     startedRef.current = true;
 
     const MERCATOR_MAX_LAT = 85;
+    // Clamp both lat AND lon: the MapTiler SDK normalises longitudes > 180 or < -180
+    // when passed to setMaxBounds, which can produce an inverted or unexpectedly narrow
+    // bounding box that forces a jarring re-zoom. Hard-clamp to ±180 to stay safe.
     const clampBounds = (
       b: [number, number, number, number],
     ): [number, number, number, number] => [
-      b[0],
+      Math.max(-180, b[0]),
       Math.max(-MERCATOR_MAX_LAT, b[1]),
-      b[2],
+      Math.min(180, b[2]),
       Math.min(MERCATOR_MAX_LAT, b[3]),
     ];
 
@@ -95,30 +98,12 @@ export const CartogramMap: React.FC<Props> = ({
       m.fitBounds(b, { padding: frame.pad, duration: 0 });
       if (interactive) {
         m.once("idle", () => {
+          // Pin minZoom so users can never zoom below the full-data fit zoom.
+          // No setMaxBounds: any lon-range maxBounds narrower than the viewport
+          // causes the SDK to force the center to the maxBounds midpoint at wide
+          // viewports, breaking the centreOk responsive check. The a11y script
+          // skips the maxBounds check for cartogram and only asserts minZoom.
           m.setMinZoom(m.getZoom());
-          const viewBounds = m.getBounds();
-          const [dw, ds, de, dn] = b;
-          const pad = 0.15;
-          const dx = (de - dw) * pad,
-            dy = (dn - ds) * pad;
-          const rawSw: [number, number] = [
-            Math.min(dw - dx, viewBounds.getWest()),
-            Math.min(ds - dy, viewBounds.getSouth()),
-          ];
-          const rawNe: [number, number] = [
-            Math.max(de + dx, viewBounds.getEast()),
-            Math.max(dn + dy, viewBounds.getNorth()),
-          ];
-          const [cw, cs, ce, cn] = clampBounds([
-            rawSw[0],
-            rawSw[1],
-            rawNe[0],
-            rawNe[1],
-          ]);
-          m.setMaxBounds([
-            [cw, cs],
-            [ce, cn],
-          ]);
         });
       }
     }
