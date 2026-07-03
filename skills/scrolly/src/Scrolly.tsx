@@ -20,6 +20,9 @@ import { deriveDotDensityStory } from "../../map-native/src/dot-density-story";
 import { deriveLocatorStory } from "../../map-native/src/locator-story";
 import { deriveCartogramStory } from "../../map-native/src/cartogram-story";
 import { mapStoryToChapters } from "./chapters";
+import { chartStoryToChapters } from "./chart-chapters";
+import { deriveChartStory } from "../../chart-native/src/chart-story";
+import { ScrollyChart, type ChartScrollyConfig } from "./ScrollyChart";
 import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
 import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
 import { ScrollyHexMap, type ScrollyHexConfig } from "./ScrollyHexMap";
@@ -45,6 +48,7 @@ const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
 export const Scrolly: React.FC<{
   config:
+    | ChartScrollyConfig
     | ScrollyMapConfig
     | ScrollySymbolConfig
     | ScrollyHexConfig
@@ -58,6 +62,20 @@ export const Scrolly: React.FC<{
   // then falls back to choropleth.
   // -------------------------------------------------------------------------
   const story = useMemo(() => {
+    // CHART config (chart-native NativeSpec) — has `nativeType`. Build the chart story
+    // BEFORE the map branches; a chart needs no geojson.
+    if ("nativeType" in config) {
+      const beats = deriveChartStory(
+        config as unknown as import("./ScrollyChart").ChartScrollyConfig,
+        (config as { insight?: string }).insight,
+      );
+      return chartStoryToChapters(beats, {
+        title: (config as { title?: string }).title ?? "",
+        description: (config as { description?: string }).description,
+        source: (config as { source?: { name: string; url: string } }).source,
+      });
+    }
+
     if (config.type === "symbol") {
       const beats = deriveSymbolStory(config.points, {
         title: config.title ?? "",
@@ -342,7 +360,12 @@ export const Scrolly: React.FC<{
           {/* Pass the active step's BEAT ref (not the step index) — steps no longer
               map 1:1 to beats (the establish/empty-takeaway beats are dropped from
               the scroll), so the map must fly to story.steps[currentStep].ref. */}
-          {config.type === "symbol" ? (
+          {"nativeType" in config ? (
+            <ScrollyChart
+              config={config as unknown as ChartScrollyConfig}
+              currentStep={currentBeatRef}
+            />
+          ) : config.type === "symbol" ? (
             <ScrollySymbolMap
               config={config as ScrollySymbolConfig}
               currentStep={currentBeatRef}
