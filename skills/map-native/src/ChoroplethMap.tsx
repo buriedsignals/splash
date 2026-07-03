@@ -4,6 +4,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
 const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 import { computeChoropleth, type ChoroplethData } from "./choropleth-geo";
+import { choroplethFillColor, choroplethFillOpacity } from "./choropleth-paint";
 import type { CameraMode } from "./camera-mode";
 import { makeResetControl } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
@@ -20,6 +21,8 @@ export interface ChoroplethConfig extends ChoroplethData {
   valueUnit?: string; // the SHORT value suffix for tooltips, e.g. "%"
   source?: { name: string; url: string };
   cameraMode?: CameraMode;
+  scaleType?: "sequential" | "diverging";
+  palette?: string | string[];
 }
 
 interface Props {
@@ -33,7 +36,6 @@ const NUM_BINS = 5;
 
 // Exported so tests can assert colour distinctness
 export { NO_DATA_COLOR } from "./theme/colors";
-import { NO_DATA_COLOR } from "./theme/colors";
 
 export const ChoroplethMap: React.FC<Props> = ({
   config,
@@ -175,7 +177,8 @@ export const ChoroplethMap: React.FC<Props> = ({
 
       const layout = computeChoropleth(config, world, "iso_a3", {
         bins: NUM_BINS,
-        scaleType: "sequential",
+        scaleType: config.scaleType ?? "sequential",
+        palette: config.palette,
       });
 
       const coloredWorld: GeoJSON.FeatureCollection = {
@@ -198,35 +201,17 @@ export const ChoroplethMap: React.FC<Props> = ({
         data: coloredWorld,
       });
 
-      const colorExpr: unknown[] = [
-        "case",
-        ["==", ["get", "__hasData"], false],
-        NO_DATA_COLOR,
-      ];
-
-      const sorted = [...layout.bins].sort((a, b) => a.min - b.min);
-      for (let i = 0; i < sorted.length - 1; i++) {
-        colorExpr.push(["<", ["get", "__value"], sorted[i].max]);
-        colorExpr.push(sorted[i].color);
-      }
-      colorExpr.push(sorted[sorted.length - 1].color);
-
       map.addLayer({
         id: "choropleth-fill",
         type: "fill",
         source: "choropleth-world",
         paint: {
-          "fill-color": colorExpr as never,
-          // No-data regions are NOT painted (opacity 0) — they show the default
-          // basemap, like the ocean and the symbol map. Only data-bearing
-          // regions are painted; the reveal effect drives their opacity, this
-          // base value is their resting opacity (used by the static export).
-          "fill-opacity": [
-            "case",
-            ["==", ["get", "__hasData"], false],
-            0,
-            0.85,
-          ] as never,
+          // Shared no-data-aware paint (see choropleth-paint.ts). No-data regions
+          // are NOT painted (opacity 0) — they show the default basemap, like the
+          // ocean and the symbol map. Only data-bearing regions are painted; the
+          // reveal effect drives their opacity, 0.85 is their resting opacity.
+          "fill-color": choroplethFillColor(layout.bins) as never,
+          "fill-opacity": choroplethFillOpacity(0.85) as never,
         },
       });
 

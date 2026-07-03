@@ -64,6 +64,232 @@ if (POINT_TYPES.has(configType)) {
   console.log(`✓ regression gate GREEN — "choropleth-fill" absent for point type "${configType}"`);
 }
 
+// --- No-data / ocean paint gate (choropleth only) ---
+// Guardrail for the recurring defect: no-data regions and the sea must keep the
+// DEFAULT basemap — they must NEVER be painted a data-scale bin colour or the
+// no-data fill colour. Samples the rendered canvas pixel at (a) the centroid of a
+// KNOWN no-data country (one with no row in the config) and (b) an ocean point,
+// then asserts neither matches a scale bin colour or the no-data colour.
+if (expectedLayer === "choropleth-fill") {
+  const probe = await page.evaluate(() => window.__choropleth_probe__ ?? null);
+  if (!probe) {
+    console.error(
+      "✗ no-data paint gate FAILED: __choropleth_probe__ missing — cannot verify no-data/ocean are untinted",
+    );
+    process.exit(1);
+  }
+  if (!probe.noDataCentroids.length) {
+    console.error(
+      "✗ no-data paint gate FAILED: no on-screen no-data country available to sample",
+    );
+    process.exit(1);
+  }
+
+  const hexToRgb = (hex) => {
+    const h = hex.replace("#", "");
+    return [
+      parseInt(h.slice(0, 2), 16),
+      parseInt(h.slice(2, 4), 16),
+      parseInt(h.slice(4, 6), 16),
+    ];
+  };
+  const near = (a, b, tol = 12) =>
+    Math.abs(a[0] - b[0]) <= tol &&
+    Math.abs(a[1] - b[1]) <= tol &&
+    Math.abs(a[2] - b[2]) <= tol;
+
+  // Forbidden colours: every scale bin + the no-data fill.
+  const forbidden = [...probe.binColors, probe.noDataColor].map((c) => ({
+    hex: c,
+    rgb: hexToRgb(c),
+  }));
+
+  // Project a lng/lat to CSS-pixel coords on the map canvas, and report whether
+  // it is on-screen (so the harness never samples an off-view point).
+  const projectPoint = async (lng, lat) =>
+    page.evaluate(
+      ([lng, lat]) => {
+        const map = window.__map__;
+        const rect = map.getCanvas().getBoundingClientRect();
+        const p = map.project([lng, lat]);
+        const onScreen =
+          p.x >= 0 && p.y >= 0 && p.x <= rect.width && p.y <= rect.height;
+        return { x: rect.left + p.x, y: rect.top + p.y, onScreen };
+      },
+      [lng, lat],
+    );
+
+  // Read the rendered pixel at a CSS coordinate. Uses a full-page screenshot
+  // (Chromium composites the WebGL layer, so this is reliable without
+  // preserveDrawingBuffer) decoded via an offscreen canvas — no image deps.
+  const samplePixelAt = async (x, y) => {
+    const shot = await page.screenshot({ type: "png" });
+    const dataUrl = `data:image/png;base64,${shot.toString("base64")}`;
+    return page.evaluate(
+      async ([dataUrl, x, y]) => {
+        const img = new Image();
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = rej;
+          img.src = dataUrl;
+        });
+        const dpr = window.devicePixelRatio || 1;
+        const c = document.createElement("canvas");
+        c.width = img.width;
+        c.height = img.height;
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const d = ctx.getImageData(
+          Math.round(x * dpr),
+          Math.round(y * dpr),
+          1,
+          1,
+        ).data;
+        return [d[0], d[1], d[2]];
+      },
+      [dataUrl, x, y],
+    );
+  };
+
+  const assertNotForbidden = (label, pixel) => {
+    for (const f of forbidden) {
+      if (near(pixel, f.rgb)) {
+        console.error(
+          `✗ no-data paint gate FAILED: ${label} rendered ${JSON.stringify(pixel)} ≈ forbidden ${f.hex} (scale/no-data colour). It must be the default basemap.`,
+        );
+        process.exit(1);
+      }
+    }
+  };
+
+  // (a) no-data LAND — sample up to N on-screen no-data countries (each point is
+  // a turf pointOnFeature, guaranteed on the landmass). Assert none is painted a
+  // forbidden colour. Sampling several (not one) makes the gate robust: a single
+  // point could coincidentally miss, but the defect tints EVERY no-data country.
+  const MAX_ND_SAMPLES = 6;
+  let ndSampled = 0;
+  let lastNdPixel = null;
+  for (const [lng, lat] of probe.noDataCentroids) {
+    if (ndSampled >= MAX_ND_SAMPLES) break;
+    const pt = await projectPoint(lng, lat);
+    if (!pt.onScreen) continue;
+    const pixel = await samplePixelAt(pt.x, pt.y);
+    lastNdPixel = pixel;
+    ndSampled++;
+    assertNotForbidden(
+      `no-data country @ [${lng.toFixed(1)},${lat.toFixed(1)}]`,
+      pixel,
+    );
+  }
+  if (ndSampled === 0) {
+    console.error(
+      "✗ no-data paint gate FAILED: no no-data country point was on-screen to sample",
+    );
+    process.exit(1);
+  }
+
+  // (b) ocean point — try a few reliably-open-water lng/lats; sample the first
+  // that is on-screen for the current camera framing.
+  const OCEAN_CANDIDATES = [
+    [-30, 35], // mid-Atlantic
+    [-140, 0], // mid-Pacific
+    [80, -30], // south Indian Ocean
+    [-25, 0], // equatorial Atlantic
+  ];
+  let oceanPixel = null;
+  let oceanUsed = null;
+  for (const [lng, lat] of OCEAN_CANDIDATES) {
+    const pt = await projectPoint(lng, lat);
+    if (!pt.onScreen) continue;
+    oceanPixel = await samplePixelAt(pt.x, pt.y);
+    oceanUsed = [lng, lat];
+    break;
+  }
+  if (!oceanPixel) {
+    console.error(
+      "✗ no-data paint gate FAILED: no ocean sample point was on-screen to sample",
+    );
+    process.exit(1);
+  }
+  // Ocean must not be a scale bin / no-data colour…
+  assertNotForbidden(
+    `ocean @ [${oceanUsed[0].toFixed(1)},${oceanUsed[1].toFixed(1)}]`,
+    oceanPixel,
+  );
+
+  // …AND must not be the deliberate WATER_COLOR tint (#aac9e0). The sea has to
+  // stay the plain DATAVIZ.LIGHT basemap default — the same untouched basemap
+  // the map-native ChoroplethMap shows. This is the strengthened check: the
+  // previous gate only forbade scale/no-data colours, so a recoloured ocean
+  // (#aac9e0) slipped through. It now FAILS if the ocean is recoloured to any
+  // tint other than the basemap default.
+  const forbiddenWaterTint = probe.forbiddenWaterTint ?? "#aac9e0";
+  if (near(oceanPixel, hexToRgb(forbiddenWaterTint))) {
+    console.error(
+      `✗ no-data paint gate FAILED: ocean @ [${oceanUsed[0].toFixed(1)},${oceanUsed[1].toFixed(1)}] rendered ${JSON.stringify(oceanPixel)} ≈ forbidden water tint ${forbiddenWaterTint}. The sea must be the plain basemap default (no tint), identical to ChoroplethMap.`,
+    );
+    process.exit(1);
+  }
+
+  // …AND — the DECISIVE water gate — inspect the actual water-layer PAINT
+  // properties of the rendered style, not a composited screenshot pixel. Pixel
+  // sampling proved unreliable for the tint (partial-opacity water fills and
+  // camera framing let #aac9e0 slip past a pixel check). The paint property is
+  // deterministic and unambiguous: any water/ocean/sea source-layer fill or
+  // background whose resolved colour equals the forbidden WATER_COLOR (#aac9e0)
+  // — or any explicit non-neutral hex tint — means the sea was recoloured off
+  // the DATAVIZ.LIGHT basemap default. This is the exact regression that let
+  // #aac9e0 pass before; it now FAILS. The plain basemap leaves these as neutral
+  // greys (hsl(240,2%,88%) / hsla(220,1%,76%,1)), which are NOT flagged.
+  const waterPaints = await page.evaluate(() => {
+    const map = window.__map__;
+    const layers = map.getStyle()?.layers ?? [];
+    const out = [];
+    for (const l of layers) {
+      const sid = l["source-layer"];
+      const isWater =
+        /water|ocean|sea/i.test(l.id) || (sid && /water|ocean|sea/i.test(sid));
+      if (!isWater) continue;
+      let color = null;
+      try {
+        if (l.type === "fill") color = map.getPaintProperty(l.id, "fill-color");
+        else if (l.type === "background")
+          color = map.getPaintProperty(l.id, "background-color");
+      } catch {
+        // Layer does not carry the property — nothing to check.
+      }
+      out.push({ id: l.id, type: l.type, color });
+    }
+    return out;
+  });
+  // A colour is a "deliberate tint" if it is a plain hex string (not the
+  // basemap's hsl()/hsla() neutrals) AND it is not near-greyscale. The basemap
+  // defaults are hsl()/hsla() greys; a recolour writes a hex like #aac9e0.
+  const isForbiddenWater = (color) => {
+    if (typeof color !== "string") return false;
+    const c = color.trim().toLowerCase();
+    if (c === forbiddenWaterTint.toLowerCase()) return true; // exact WATER_COLOR
+    if (!/^#[0-9a-f]{6}$/.test(c)) return false; // hsl/hsla basemap default — fine
+    const rgb = hexToRgb(c);
+    const min = Math.min(...rgb);
+    const max = Math.max(...rgb);
+    // Any hex that is not near-greyscale is a deliberate colour tint.
+    return max - min > 12;
+  };
+  for (const wp of waterPaints) {
+    if (isForbiddenWater(wp.color)) {
+      console.error(
+        `✗ no-data paint gate FAILED: water layer "${wp.id}" (${wp.type}) is painted "${wp.color}" — the sea was recoloured off the plain DATAVIZ.LIGHT basemap default (e.g. WATER_COLOR ${forbiddenWaterTint}). Non-data areas including the ocean must stay the default basemap, no tint, identical to ChoroplethMap.`,
+      );
+      process.exit(1);
+    }
+  }
+
+  console.log(
+    `✓ no-data paint gate GREEN — ${ndSampled} no-data country sample(s) (last ${JSON.stringify(lastNdPixel)}) + ocean pixel ${JSON.stringify(oceanPixel)} are NOT any scale/no-data/water-tint colour, AND ${waterPaints.length} water layer paint(s) are the plain basemap default (no #aac9e0 / no colour tint). Colours: ${JSON.stringify(waterPaints.map((w) => w.color))}.`,
+  );
+}
+
 // --- Scrollability gate ---
 const scrollable = await page.evaluate(
   () => document.documentElement.scrollHeight > window.innerHeight + 100,

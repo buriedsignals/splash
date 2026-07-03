@@ -10,7 +10,12 @@ import {
   type ChoroplethData,
 } from "../../map-native/src/choropleth-geo";
 import { deriveMapStory, type Beat } from "../../map-native/src/map-story";
-import { NO_DATA_COLOR, WATER_COLOR } from "../../map-native/src/theme/colors";
+import { NO_DATA_COLOR } from "../../map-native/src/theme/colors";
+import {
+  choroplethFillColor,
+  choroplethFillOpacity,
+} from "../../map-native/src/choropleth-paint";
+import { pointOnFeature } from "@turf/turf";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -36,6 +41,8 @@ export interface ScrollyMapConfig extends ChoroplethData {
   valueUnit?: string;
   insight?: string;
   source?: { name: string; url: string };
+  scaleType?: "sequential" | "diverging";
+  palette?: string | string[];
 }
 
 interface CameraPoint {
@@ -130,29 +137,15 @@ export const ScrollyMap: React.FC<{
         if (layer.type === "symbol") map.removeLayer(layer.id);
       }
 
-      // Recolour water to match the interactive map.
-      for (const layer of map.getStyle()?.layers ?? []) {
-        const sid = layer["source-layer"] as string | undefined;
-        if (
-          /water|ocean|sea/i.test(layer.id) ||
-          (sid && /water|ocean|sea/i.test(sid))
-        ) {
-          try {
-            if (layer.type === "fill") {
-              map.setPaintProperty(layer.id, "fill-color", WATER_COLOR);
-            } else if (layer.type === "background") {
-              map.setPaintProperty(layer.id, "background-color", WATER_COLOR);
-            }
-          } catch {
-            // Layer may not support the property — skip.
-          }
-        }
-      }
+      // Water is left as the plain DATAVIZ.LIGHT basemap default — no tint.
+      // Non-data areas (ocean + no-data land) must stay the default basemap,
+      // identical to map-native's ChoroplethMap. Do NOT recolour water.
 
       // Compute choropleth layout.
       const layout = computeChoropleth(config, world, "iso_a3", {
         bins: 5,
-        scaleType: "sequential",
+        scaleType: config.scaleType ?? "sequential",
+        palette: config.palette,
       });
       const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
 
@@ -177,18 +170,6 @@ export const ScrollyMap: React.FC<{
         };
       });
 
-      // Build fill-color expression (data-driven, static — never changes).
-      const colorExpr: unknown[] = [
-        "case",
-        ["==", ["get", "__hasData"], false],
-        NO_DATA_COLOR,
-      ];
-      for (let i = 0; i < sortedBins.length - 1; i++) {
-        colorExpr.push(["<", ["get", "__value"], sortedBins[i].max]);
-        colorExpr.push(sortedBins[i].color);
-      }
-      colorExpr.push(sortedBins[sortedBins.length - 1].color);
-
       // Add the choropleth source — enriched for beat 0.
       const initialWorld = enrichWorld(world, layout.joined, beats[0]);
       map.addSource("choropleth-world", {
@@ -196,16 +177,55 @@ export const ScrollyMap: React.FC<{
         data: initialWorld,
       });
 
-      // Fill — full opacity (scrolly doesn't animate opacity like the video).
+      // Fill — shared no-data-aware paint (see choropleth-paint.ts). No-data
+      // regions get opacity 0 so the default basemap shows through (identical to
+      // the ocean); only data-bearing regions are painted by the scale. Scrolly
+      // does not animate opacity, so data regions rest at 0.9.
       map.addLayer({
         id: "choropleth-fill",
         type: "fill",
         source: "choropleth-world",
         paint: {
-          "fill-color": colorExpr as never,
-          "fill-opacity": 0.9,
+          "fill-color": choroplethFillColor(layout.bins) as never,
+          "fill-opacity": choroplethFillOpacity(0.9) as never,
         },
       });
+
+      // No-data / ocean probe — consumed by the smoke harness to assert that
+      // no-data land and the sea are NEVER painted a scale/no-data colour (they
+      // must match the default basemap). Deterministic: derived from the same
+      // layout the layer uses. Each centroid is a turf pointOnFeature — a point
+      // GUARANTEED to sit on the country's landmass (never offshore), so the
+      // harness samples real no-data LAND, not adjacent water. Filtered to the
+      // data bounds so the point is on-screen at beat 0.
+      {
+        const [minX, minY, maxX, maxY] = layout.bounds;
+        const withinBounds = (lng: number, lat: number) =>
+          lng >= minX && lng <= maxX && lat >= minY && lat <= maxY;
+        const noDataCentroids: [number, number][] = [];
+        world.features.forEach((f, i) => {
+          if (layout.joined[i].value !== null) return; // has data — skip
+          try {
+            const p = pointOnFeature(f as never);
+            const [lng, lat] = p.geometry.coordinates as [number, number];
+            if (withinBounds(lng, lat)) noDataCentroids.push([lng, lat]);
+          } catch {
+            // Degenerate geometry — skip this feature.
+          }
+        });
+        (window as unknown as Record<string, unknown>)["__choropleth_probe__"] =
+          {
+            binColors: layout.bins.map((b) => b.color),
+            noDataColor: NO_DATA_COLOR,
+            // The deliberate tint that MUST NOT appear on the ocean. The sea has
+            // to stay the plain DATAVIZ.LIGHT basemap default (same as no-data
+            // land and map-native's ChoroplethMap). The smoke gate asserts the
+            // ocean pixel is NOT this tint AND matches the no-data-land pixel
+            // (both are the untouched basemap).
+            forbiddenWaterTint: "#aac9e0",
+            noDataCentroids,
+          };
+      }
 
       // White stroke.
       map.addLayer({
