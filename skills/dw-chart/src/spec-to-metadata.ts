@@ -135,11 +135,19 @@ export interface Placement {
   headroomBottomFrac: number; // extend BELOW data min by this × span (>=0)
 }
 export function placeAnnotation(
-  poly: { xFrac: number; yFrac: number }[],
+  polys:
+    { xFrac: number; yFrac: number }[] | { xFrac: number; yFrac: number }[][],
   anchorX: number,
   anchorY: number,
   labelSpanFrac = 0.42,
 ): Placement {
+  // Accept a single polyline (single-series) OR an array of polylines (multi-series).
+  // On a multi-series chart a label must clear EVERY plotted line, not just its own —
+  // otherwise it sits on a sibling series. Normalise to an array of polylines.
+  const lines: { xFrac: number; yFrac: number }[][] =
+    polys.length > 0 && Array.isArray((polys as unknown[])[0])
+      ? (polys as { xFrac: number; yFrac: number }[][])
+      : [polys as { xFrac: number; yFrac: number }[]];
   const hFrac = 0.09; // label height as a fraction of plot height (bold, + gap)
   // Candidate quadrants. vUp = box sits ABOVE the point (DW anchor bottom → "b");
   // vDown = below (anchor top → "t"). h="r": box extends LEFT (anchor right); h="l":
@@ -169,7 +177,7 @@ export function placeAnnotation(
         top,
         bottom,
       };
-      if (lineCrossesBox(poly, box)) continue; // label would sit on the curve
+      if (lines.some((line) => lineCrossesBox(line, box))) continue; // clear EVERY series
       const headTop = Math.max(0, -box.top); // spills above the plot top
       const headBot = Math.max(0, box.bottom - 1); // spills below the plot bottom
       // Horizontal spill is ASYMMETRIC in Datawrapper (measured): it CLAMPS a label
@@ -421,6 +429,18 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
   if (spec.annotations && spec.annotations.length) {
     const dom = plotDomain(csv);
     const span = dom.yMax - dom.yMin || 1;
+    // Every VALUE column's polyline (all columns after the label column). A label must
+    // clear EVERY plotted series, not only the one it annotates — on a multi-series
+    // chart the label would otherwise sit on a sibling line (F6). Built once.
+    const header = csv
+      .trim()
+      .split("\n")[0]
+      .split(",")
+      .map((c) => c.trim());
+    const allPolys = header
+      .slice(1)
+      .map((col) => seriesPolyline(csv, dom, col))
+      .filter((p) => p.length >= 2);
     // Accumulate the axis headroom every annotation needs, as a fraction of the
     // y-span, so a near-extreme label (a peak at the max) has real whitespace to sit
     // in — the extension is in DATA space, therefore identical at every render width.
@@ -450,8 +470,11 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
       // axis headroom that box needs; both are data-space, so the label stays off the
       // curve and on-canvas at ALL widths. Datawrapper clamps any horizontal overflow.
       const { xFrac, yFrac } = pointFraction(dom, a.x, y);
-      const poly = seriesPolyline(csv, dom, column);
-      const place = placeAnnotation(poly, xFrac, yFrac);
+      // Clear ALL series (multi-series safe), falling back to the annotated column's
+      // own polyline if the header scan found nothing.
+      const polys =
+        allPolys.length > 0 ? allPolys : [seriesPolyline(csv, dom, column)];
+      const place = placeAnnotation(polys, xFrac, yFrac);
       headTopFrac = Math.max(headTopFrac, place.headroomTopFrac);
       headBotFrac = Math.max(headBotFrac, place.headroomBottomFrac);
 

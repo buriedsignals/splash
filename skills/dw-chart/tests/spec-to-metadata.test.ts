@@ -91,6 +91,57 @@ describe("placeAnnotation (width-invariant, data-space)", () => {
     }
   });
 
+  it("clears ALL series on a multi-series chart, not just the annotated one (F6)", () => {
+    // Two lines: A rises, B falls, crossing in the middle. An annotation anchored on A
+    // near the crossing must not be placed onto B either. Passing BOTH polylines, the
+    // chosen box must clear both.
+    const A = [
+      { xFrac: 0, yFrac: 0.6 },
+      { xFrac: 1, yFrac: 0.6 },
+    ]; // annotated line (flat, mid-low)
+    const B = [
+      { xFrac: 0, yFrac: 0.53 },
+      { xFrac: 1, yFrac: 0.53 },
+    ]; // sibling line just ABOVE A (within one label-height) — the obstacle
+    const anchor = { x: 0.5, y: 0.6 }; // a point on A
+    // With A alone the label prefers UP; B sits in the up-box, so seeing BOTH lines it
+    // must go DOWN. This is exactly the multi-series clearance F6 adds.
+    const p = placeAnnotation([A, B], anchor.x, anchor.y);
+    expect(p.align[0]).toBe("t"); // forced DOWN by the sibling line B
+    // Reconstruct the chosen box and assert NEITHER line crosses its interior.
+    const up = p.align[0] === "b";
+    const hFrac = 0.09;
+    const span = 0.42;
+    const from =
+      p.align[1] === "r" ? -span : p.align[1] === "l" ? 0 : -span / 2;
+    const box = {
+      xL: anchor.x + from,
+      xR: anchor.x + from + span,
+      top: up ? anchor.y - hFrac : anchor.y,
+      bottom: up ? anchor.y : anchor.y + hFrac,
+    };
+    const crosses = (line: { xFrac: number; yFrac: number }[]) =>
+      line.some((_, i) => {
+        if (i + 1 >= line.length) return false;
+        const a = line[i];
+        const b = line[i + 1];
+        for (let s = 0; s <= 24; s++) {
+          const px = a.xFrac + ((b.xFrac - a.xFrac) * s) / 24;
+          const py = a.yFrac + ((b.yFrac - a.yFrac) * s) / 24;
+          if (
+            px > box.xL + 0.01 &&
+            px < box.xR - 0.01 &&
+            py > box.top + 0.01 &&
+            py < box.bottom - 0.01
+          )
+            return true;
+        }
+        return false;
+      });
+    expect(crosses(A)).toBe(false);
+    expect(crosses(B)).toBe(false);
+  });
+
   it("places a TROUGH label below the point and asks for bottom headroom", () => {
     // A V shape: high, low (trough at idx1), high. Only 'down' clears the arms.
     const vShape = [
