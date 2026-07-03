@@ -116,6 +116,13 @@ in simultaneously. The camera is fixed on the full data extent from frame 0; no 
 zooming. The BLUES legend fades in on the same ramp as the cells. Uniform-cell invariant: cell
 size is constant (magnitude = colour, never size).
 
+### Cartogram
+
+Animate cell/region `fill-opacity` from `0` to target value on the uniform ramp — all
+cells/scaled shapes fade in simultaneously. Camera is fixed on the full data extent from
+frame 0. `grid` variant renders on a neutral background via `applyCartogramBasemap`;
+`scaled` variant renders over the full MapTiler basemap.
+
 ### Proportional symbol
 
 Animate circle `radius` from `0` to the target value computed from the data, and label

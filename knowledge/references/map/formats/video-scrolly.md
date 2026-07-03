@@ -143,6 +143,7 @@ Format coverage by type:
 | Locator | ✓ | ✓ | ✓ | ✓ |
 | Dot density | ✓ | ✓ | ✓ | ✓ |
 | Hex-grid | ✓ | ✓ | ✓ | ✓ |
+| Cartogram | ✓ | ✓ | ✓ | ✓ |
 
 `all` includes `scrolly`. Route gains `scrolly` alongside `story` (route has no simple-reveal in
 the narrated sense; its only video formats are `story` and `scrolly`).

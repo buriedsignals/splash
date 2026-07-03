@@ -103,6 +103,15 @@ every reveal beat. Dimming creates a "spotlight" effect that implies the other d
 trustworthy — a stable frame reads as more authoritative. (FT Visual Vocabulary — a stable
 frame of reference; the data, not the camera effect, carries meaning.)
 
+## Cartogram storytelling
+
+Cartogram storytelling uses `deriveCartogramStory` to produce beats ranked by descending value
+(highest regions first). Beat structure: **title → establish (full data extent, cells/shapes fade
+in) → reveal ×N (camera stays on the zone bounding the highlighted region — never a fixed
+absolute-per-place box; caption = region name + value + unit) → takeaway (full extent)**. Both
+`scaled` and `grid` variants are supported; the `grid` variant renders on a neutral background
+via `applyCartogramBasemap`. `CartogramStory` component.
+
 ## Hex-grid storytelling
 
 Hex-grid storytelling uses `deriveHexGridStory` to produce beats ranked by aggregate value

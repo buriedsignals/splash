@@ -160,7 +160,7 @@ position tiles. The same code path works for all supported boundary presets.
 - **Omitting the value label** — `valueLabel` is mandatory. A colour legend without a label
   (e.g. showing only colour swatches) is undecodable to the reader.
 
-## Slice A scope note
+## Slice A / B scope note
 
 **Slice A (shipped):** static and interactive builds for both `scaled` and `grid` variants.
 Auto-layout for all supported boundary presets. Hover popup (region id + value). MapTiler
@@ -170,19 +170,43 @@ basemap with AI-selected dark/light style.
 (so users cannot zoom below the full-data extent), but does **not** call `setMaxBounds`. The
 MapTiler SDK shifts the map centre when a lon-range `maxBounds` is narrower than the viewport,
 which breaks responsive centring checks at wide viewports. This is a known Slice-A limitation;
-adding `setMaxBounds` with a viewport-width guard is a Slice B refinement.
+adding `setMaxBounds` with a viewport-width guard is a future refinement.
 
-**Slice B (not yet built):** video formats (reveal, storytelling, scrolly video) and interactive
-scrolly. Interactive scrolly will require a dedicated `ScrollyCartogramMap` component (analogous
-to `ScrollyHexMap` for hex-grid), wired into `Scrolly.tsx` on `config.type === "cartogram"`. Do
-**not** claim video or interactive-scrolly support for Slice A.
+**Slice B (shipped):** video formats (reveal, storytelling, scrolly video) and interactive
+scrolly are all built and verified.
 
-## Implementation pointer
+- **Video reveal** — fixed-camera animation; `CartogramReveal` component. `scaled` animates
+  `fill-opacity` from 0 to target on the uniform ramp; `grid` animates cell opacity similarly.
+  Camera locked on full data extent from frame 0.
+- **Video storytelling** — guided-tour beat structure via `deriveCartogramStory`: title card →
+  establish (full data extent, cells/shapes fade in) → reveal ×N (highest-value regions in
+  descending order, camera stays on zone bounding the highlighted cells — never a fixed
+  absolute-per-place box) → takeaway (returns to full extent). `CartogramStory` component.
+- **Video scrolly** — `CartogramScrolly` component; same `ScrollyStory` as the interactive
+  scrolly; three sizes (landscape 1280×720, square 1080×1080, portrait 1080×1350).
+- **Interactive scrolly** — `ScrollyCartogramMap` component
+  (`skills/scrolly/src/ScrollyCartogramMap.tsx`), dispatched from `Scrolly.tsx` on
+  `config.type === "cartogram"` (NOT the story contract alone).
+
+**Grid-neutral-background rule across ALL formats:** the shared helper
+`applyCartogramBasemap` (`skills/map-native/src/theme/cartogram-basemap.ts`) is called in
+`CartogramMap` and in all four Slice B components. It applies the rule uniformly: `grid` →
+neutral background (light `#f2f3f5`, dark `#1b1d21`), `scaled` → full MapTiler basemap. No
+format bypasses this helper.
+
+## Implementation pointers
 
 - `skills/map-native/src/cartogram-geo.ts` — `computeCartogram` (both `scaled` and `grid`
   variants), `CartogramData`, `CartogramLayout`, `CartogramCell` types.
 - `skills/map-native/src/CartogramMap.tsx` — static + interactive render (`CartogramMap`
   component), `cartogram-cells` layer, hover popup, legend, `mapStyle` selection.
+- `skills/map-native/src/theme/cartogram-basemap.ts` — `applyCartogramBasemap(map, dark, variant)`;
+  shared basemap helper called by all cartogram components across all formats.
+- `skills/map-native/src/cartogram-story.ts` — `deriveCartogramStory(layout, meta, opts?)`,
+  `CartogramStoryMeta`; produces the `Beat[]` for storytelling and scrolly.
+- `CartogramReveal`, `CartogramStory`, `CartogramScrolly` — Slice B video components.
+- `skills/scrolly/src/ScrollyCartogramMap.tsx` — interactive scrolly component; wired in
+  `Scrolly.tsx` via `config.type === "cartogram"` dispatch.
 - `skills/map-native/src/conformance.ts` — `checkCartogramConformance` (valueLabel, bins,
   cell count, bounds, mapStyle, grid uniform-cell invariant).
 - Sample configs: `skills/map-native/assets/sample-data/cartogram-scaled.json` (18 Eurasian
