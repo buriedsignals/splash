@@ -146,7 +146,11 @@ export const Scrolly: React.FC<{
 
     const layout = computeChoropleth(config, world, "iso_a3", {
       bins: 5,
-      scaleType: "sequential",
+      scaleType:
+        ((config as unknown as Record<string, unknown>).scaleType as
+          "sequential" | "diverging" | undefined) ?? "sequential",
+      palette: (config as unknown as Record<string, unknown>).palette as
+        string | string[] | undefined,
     });
     const beats = deriveMapStory(layout, world, "iso_a3", {
       title: config.title ?? "",

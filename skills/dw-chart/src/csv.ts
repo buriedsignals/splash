@@ -23,7 +23,7 @@ export function renameColumns(
 // annotation to an x only, we derive the y from the data.
 export function valueAt(
   csv: string,
-  xLabel: string,
+  xLabel: string | number,
   column?: string,
 ): number | undefined {
   const lines = csv.trim().split("\n");

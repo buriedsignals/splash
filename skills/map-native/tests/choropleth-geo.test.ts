@@ -73,6 +73,17 @@ describe("computeChoropleth", () => {
     const l = computeChoropleth(data, features, "iso_a3");
     expect(l.joined.find((j) => j.key === "DEU")!.value).toBe(58);
   });
+  it("defaults sequential bins to the blue ramp", () => {
+    const l = computeChoropleth(data, features, "iso_a3");
+    expect(l.bins[0].color).toBe("#deebf7");
+  });
+  it("honours a named subject-fit palette instead of blue", () => {
+    const l = computeChoropleth(data, features, "iso_a3", {
+      palette: "oranges",
+    });
+    expect(l.bins.map((b) => b.color)).not.toContain("#deebf7");
+    expect(l.bins[0].color).toBe("#ffffb2");
+  });
   it("marks a region with no data as null and lists it in noData", () => {
     const l = computeChoropleth(
       { ...data, rows: data.rows.slice(0, 2) },

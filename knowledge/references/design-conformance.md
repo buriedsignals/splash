@@ -5,8 +5,16 @@
 A produced chart MUST satisfy:
 
 1. **Title = the insight**, sentence case ("Unemployment is at a five-year low", not "Unemployment 2018-2023").
-2. **Colour**: only the Okabe-Ito colorblind-safe set —
-   `#0072B2 #E69F00 #009E73 #D55E00 #CC79A7 #56B4E9 #F0E442 #000000`. **≤2 colours.** Blue `#0072B2` is the default single-series colour.
+2. **Colour — chosen by subject, not defaulted to blue** (palette-freedom principle: free choice guarded by
+   CVD-safety + contrast). Categorical charts: only the Okabe-Ito colorblind-safe set —
+   `#0072B2 #E69F00 #009E73 #D55E00 #CC79A7 #56B4E9 #F0E442 #000000`, **≤2 colours** — but CHOOSE the hue that
+   fits the subject (energy/solar → amber `#E69F00`, environment → green `#009E73`, heat → vermilion
+   `#D55E00`, water/cold → blue `#0072B2`). Blue is the default ONLY for water/cold subjects; a declared
+   `subject` left on the default blue FAILS the guard. Choropleths: pick `scaleType` from the data semantic
+   (magnitude → sequential; signed-around-a-midpoint → diverging) and a subject-fit `palette` from the
+   `map-native` registry (`blues/greens/oranges/purples`, `rdbu/brbg/puor/orbu`) — every registry ramp is
+   vetted CVD-safe; the conformance guard fails a semantic↔scaleType mismatch, a non-CVD-safe ramp, and a
+   clear subject on the default palette.
 3. **Direct labels** over legends where the chart supports value labels.
 4. **Number formatting**: strip noise, abbreviate (`12.8k`, not `12,831`).
 5. **Source cited**: name + url.

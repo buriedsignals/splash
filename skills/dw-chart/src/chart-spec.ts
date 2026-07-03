@@ -11,6 +11,18 @@ export const OKABE_ITO = [
   "#000000",
 ] as const;
 
+// The library-default single-series colour. When a chart has a clear SUBJECT, the
+// suggester must not leave this default in place — it must CHOOSE a subject-fit
+// Okabe-Ito hue (energy/solar → amber #E69F00, environment → green #009E73, heat →
+// vermilion #D55E00, water → blue #0072B2, etc.). The guardrail enforces this.
+export const DEFAULT_BASE_COLOR = "#0072B2";
+
+// Subjects for which the default blue IS the subject-fit choice (water, cold, sky,
+// finance-neutral). For these the guard does not fire on the default. Everything else
+// with a subject must pick a non-default hue.
+const BLUE_FIT_SUBJECT =
+  /\b(water|sea|ocean|river|rain|flood|cold|winter|ice|snow|sky|marine|hydro)\b/i;
+
 // DW lists `waterfall` and `dual-axis` in /v3/visualizations but the create API rejects them
 // (400 Invalid visualization type) — excluded. 22 chart types actually producible.
 export const CHART_TYPES = [
@@ -64,7 +76,11 @@ export interface ChartSpec {
   title: string; // the insight, sentence case
   intro?: string; // subtitle / insight elaboration
   data: string; // CSV text
-  baseColor?: string; // single-series colour (Okabe-Ito)
+  baseColor?: string; // single-series colour (Okabe-Ito), CHOSEN per subject — not left at the default blue
+  // The chart's subject hint (e.g. "solar", "temperature", "marriage"). When set,
+  // the guardrail requires baseColor to be an explicit subject-fit choice, not the
+  // library default blue — this is what stops every chart rendering the same blue.
+  subject?: string;
   seriesColors?: Record<string, string>; // multi-series: series name → Okabe-Ito hex
   transpose?: boolean; // DW data.transpose (rows↔columns)
   valueLabels?: boolean; // direct labelling
@@ -111,6 +127,19 @@ export function validateChartSpec(
     !(OKABE_ITO as readonly string[]).includes(s.baseColor as string)
   )
     errors.push("baseColor must be an Okabe-Ito colour (colorblind-safe)");
+  // GUARDRAIL: a chart with a declared subject must not fall back to the default
+  // blue — the recurrence of the "everything is blue" defect. Choose a subject-fit
+  // Okabe-Ito hue (or set a non-default baseColor deliberately).
+  if (
+    typeof s.subject === "string" &&
+    s.subject.trim() &&
+    !BLUE_FIT_SUBJECT.test(s.subject) &&
+    (s.baseColor === undefined || s.baseColor === DEFAULT_BASE_COLOR) &&
+    s.seriesColors === undefined
+  )
+    errors.push(
+      `subject "${s.subject}" has no subject-fit baseColor — the default blue ${DEFAULT_BASE_COLOR} must not stand in for a colour chosen for the subject`,
+    );
   if (s.seriesColors !== undefined) {
     if (typeof s.seriesColors !== "object" || s.seriesColors === null) {
       errors.push("seriesColors must be an object");

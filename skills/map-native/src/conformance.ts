@@ -4,6 +4,11 @@ import type { RouteConfig } from "./route-geo";
 import type { ScrollyStory } from "../../scrolly/src/chapters";
 import { computeCartogram } from "./cartogram-geo";
 import { bbox } from "@turf/turf";
+import {
+  isCvdSafeRamp,
+  DEFAULT_SEQUENTIAL,
+  DEFAULT_DIVERGING,
+} from "./theme/scale";
 
 export interface RevealConformanceResult {
   violations: string[];
@@ -83,6 +88,69 @@ export function checkGlobalMapConformance(
   return v;
 }
 
+// Deterministic detection: does this set of values read as DIVERGING — signed around
+// a meaningful midpoint (both a clear negative and a clear positive extreme relative
+// to zero, or values straddling their own centre with real spread on both sides)?
+// Used by the guardrail to catch a diverging distribution painted with a sequential
+// ramp (the inverse of the blue-everything defect: wrong semantic → wrong ramp).
+export function looksDiverging(values: number[]): boolean {
+  if (values.length < 3) return false;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (min >= 0 || max <= 0) return false; // all one sign → magnitude, sequential
+  // Both tails carry real weight relative to the total span.
+  const span = max - min;
+  return -min / span > 0.2 && max / span > 0.2;
+}
+
+// Palette guardrail. Fails when (a) the scaleType contradicts the data semantic —
+// clearly diverging data (signed around a midpoint) rendered sequential, or a
+// diverging ramp used on all-one-sign magnitude data; (b) the ramp is NOT CVD-safe
+// (every colour must be drawn from the vetted registry set); (c) — when a subject is
+// declared — the library DEFAULT palette is used with no explicit palette to justify
+// a subject-fit hue (the exact recurrence of the blue-everything defect). Deterministic.
+export function checkPaletteConformance(input: {
+  scaleType: "sequential" | "diverging";
+  scaleColors: string[];
+  values?: number[];
+  paletteName?: string; // "custom", a registry name, or undefined (default was used)
+  subject?: string; // when set, the map has a clear subject → default is not enough
+}): string[] {
+  const v: string[] = [];
+  // (b) CVD-safety.
+  if (!isCvdSafeRamp(input.scaleColors))
+    v.push(
+      "palette is not CVD-safe — use a registry palette or vetted colours",
+    );
+  // (a) semantic ↔ scaleType match.
+  if (input.values && input.values.length >= 3) {
+    if (looksDiverging(input.values) && input.scaleType !== "diverging")
+      v.push(
+        "data is signed around a midpoint (diverging) but the scale is sequential — use a diverging scaleType + palette",
+      );
+    if (!looksDiverging(input.values) && input.scaleType === "diverging") {
+      const min = Math.min(...input.values);
+      const max = Math.max(...input.values);
+      if (min >= 0 || max <= 0)
+        v.push(
+          "data is all one sign (magnitude) but the scale is diverging — use a sequential scaleType + palette",
+        );
+    }
+  }
+  // (c) default palette used despite a clear subject → force an explicit choice.
+  if (
+    input.subject &&
+    input.subject.trim() &&
+    (input.paletteName === undefined ||
+      input.paletteName === DEFAULT_SEQUENTIAL ||
+      input.paletteName === DEFAULT_DIVERGING)
+  )
+    v.push(
+      `subject "${input.subject}" has no explicit palette — the default ${input.paletteName ?? "library"} palette must not stand in for a subject-fit choice`,
+    );
+  return v;
+}
+
 export function checkChoroplethConformance(
   input: {
     title: string;
@@ -96,6 +164,9 @@ export function checkChoroplethConformance(
     boundsNonEmpty: boolean;
     storyBeats?: number;
     format?: { width: number; height: number };
+    values?: number[];
+    paletteName?: string;
+    subject?: string;
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -114,6 +185,15 @@ export function checkChoroplethConformance(
   if (input.regionsWithData < 1) v.push("no region has data");
   if (input.scaleColors.length < 3)
     v.push("scale has too few steps to read as a CVD-safe ramp");
+  v.push(
+    ...checkPaletteConformance({
+      scaleType: input.scaleType,
+      scaleColors: input.scaleColors,
+      values: input.values,
+      paletteName: input.paletteName,
+      subject: input.subject,
+    }),
+  );
   if (input.storyBeats !== undefined && input.storyBeats < 3)
     v.push(
       `story: only ${input.storyBeats} beats — a narrated map needs at least establish + reveal + takeaway (3)`,

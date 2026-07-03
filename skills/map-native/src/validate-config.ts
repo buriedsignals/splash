@@ -2,6 +2,48 @@ import type { ChoroplethData } from "./choropleth-geo";
 import { CAMERA_MODES, type CameraMode } from "./camera-mode";
 import { MAP_STYLES } from "./route-geo";
 import type { LocatorMarker } from "./locator-geo";
+import { PALETTES, isCvdSafeRamp } from "./theme/scale";
+
+// Shared palette/scaleType validation for any config that carries a colour scale.
+// Errors block: a scaleType must be known, a named palette must exist AND match the
+// scaleType kind, a custom ramp must be CVD-safe (all colours vetted).
+export function paletteErrors(s: Record<string, unknown>): string[] {
+  const errors: string[] = [];
+  const scaleType =
+    s.scaleType === undefined ? "sequential" : (s.scaleType as string);
+  if (
+    s.scaleType !== undefined &&
+    !["sequential", "diverging"].includes(scaleType)
+  )
+    errors.push("scaleType must be one of: sequential, diverging");
+  if (s.palette !== undefined) {
+    if (typeof s.palette === "string") {
+      const entry = PALETTES[s.palette];
+      if (!entry) {
+        errors.push(
+          `palette "${s.palette}" is not in the registry (${Object.keys(PALETTES).join(", ")})`,
+        );
+      } else if (
+        ["sequential", "diverging"].includes(scaleType) &&
+        entry.kind !== scaleType
+      ) {
+        errors.push(
+          `palette "${s.palette}" is ${entry.kind}, but scaleType is ${scaleType}`,
+        );
+      }
+    } else if (Array.isArray(s.palette)) {
+      if (!s.palette.every((c) => typeof c === "string"))
+        errors.push("custom palette must be an array of hex strings");
+      else if (!isCvdSafeRamp(s.palette as string[]))
+        errors.push(
+          "custom palette is not CVD-safe — use a registry palette or vetted colours",
+        );
+    } else {
+      errors.push("palette must be a registry name or a custom ramp array");
+    }
+  }
+  return errors;
+}
 
 export type ChoroplethConfigShape = ChoroplethData & {
   basemap: string;
@@ -11,6 +53,9 @@ export type ChoroplethConfigShape = ChoroplethData & {
   valueUnit?: string;
   source?: { name?: string; url?: string };
   cameraMode?: CameraMode;
+  scaleType?: "sequential" | "diverging";
+  // A named registry palette or a custom CVD-safe ramp (see theme/scale.ts).
+  palette?: string | string[];
 };
 
 // If a config declares a camera mode, it must be one the engine knows. (route-reveal
@@ -47,6 +92,7 @@ export function validateChoroplethConfig(
     errors.push("basemap must be a non-empty string");
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
+  errors.push(...paletteErrors(s));
 
   const rows = s.rows;
   if (!Array.isArray(rows) || rows.length === 0) {
@@ -495,6 +541,7 @@ export type CartogramConfigShape = {
   values: { id: string; value: number }[];
   variant?: "scaled" | "grid";
   scaleType?: "sequential" | "diverging";
+  palette?: string | string[];
   bins?: number;
   valueLabel?: string;
   mapStyle?: string;
@@ -524,11 +571,7 @@ export function validateCartogramConfig(
   )
     errors.push("variant must be one of: scaled, grid");
 
-  if (
-    s.scaleType !== undefined &&
-    !["sequential", "diverging"].includes(s.scaleType as string)
-  )
-    errors.push("scaleType must be one of: sequential, diverging");
+  errors.push(...paletteErrors(s));
 
   if (s.bins !== undefined) {
     if (

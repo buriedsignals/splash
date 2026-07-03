@@ -1,5 +1,5 @@
 import { bbox, area, polygon } from "@turf/turf";
-import { BLUES, DIVERGING } from "./theme/scale";
+import { resolvePalette, type PaletteRequest } from "./theme/scale";
 
 // Reduce a feature to its largest-area polygon — the "mainland". Natural Earth
 // admin-0 features are MultiPolygons that bundle far-flung overseas territories
@@ -42,6 +42,10 @@ export interface ChoroplethOptions {
   bins?: number;
   scaleType?: "sequential" | "diverging";
   midpoint?: number;
+  // A named registry palette (e.g. "oranges", "rdbu") or a custom CVD-safe ramp.
+  // The palette's kind must match scaleType; if absent, the library default for the
+  // scaleType is used (back-compat: sequential → blues, diverging → orbu).
+  palette?: PaletteRequest;
 }
 export interface ChoroplethLayout {
   joined: { key: string; value: number | null }[];
@@ -60,7 +64,7 @@ export function computeChoropleth(
 ): ChoroplethLayout {
   const nBins = options.bins ?? 5;
   const scaleType = options.scaleType ?? "sequential";
-  const ramp = scaleType === "diverging" ? DIVERGING : BLUES;
+  const ramp = resolvePalette(scaleType, options.palette).ramp;
 
   const byKey = new Map<string, number>();
   for (const r of data.rows) {

@@ -45,6 +45,37 @@ describe("validateChoroplethConfig", () => {
       false,
     );
   });
+  it("accepts a valid named palette that matches the scaleType", () => {
+    expect(
+      validateChoroplethConfig({
+        ...ok,
+        scaleType: "sequential",
+        palette: "oranges",
+      }).ok,
+    ).toBe(true);
+  });
+  it("errors on an unknown palette", () => {
+    expect(validateChoroplethConfig({ ...ok, palette: "chartreuse" }).ok).toBe(
+      false,
+    );
+  });
+  it("errors when the palette kind mismatches the scaleType", () => {
+    expect(
+      validateChoroplethConfig({
+        ...ok,
+        scaleType: "sequential",
+        palette: "rdbu",
+      }).ok,
+    ).toBe(false);
+  });
+  it("errors on a custom ramp that is not CVD-safe", () => {
+    expect(
+      validateChoroplethConfig({
+        ...ok,
+        palette: ["#ff0000", "#00ff00", "#0000ff"],
+      }).ok,
+    ).toBe(false);
+  });
   it("warns (furniture) when description or source is missing", () => {
     const r1 = validateChoroplethConfig({ ...ok, description: undefined });
     expect(r1.ok && r1.warnings.some((w) => /description/i.test(w))).toBe(true);

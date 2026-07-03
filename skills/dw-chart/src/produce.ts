@@ -7,6 +7,7 @@ import {
   publishChart,
   exportPng,
 } from "./datawrapper";
+import { checkPublishedChart } from "./label-safety";
 
 export interface ProduceResult {
   chartId: string;
@@ -18,6 +19,7 @@ export interface ProduceResult {
 export async function produceChart(
   spec: ChartSpec,
   pngPath: string,
+  opts: { skipLabelSafety?: boolean } = {},
 ): Promise<ProduceResult> {
   const v = validateChartSpec(spec);
   if (!v.ok) throw new Error(`invalid chart spec: ${v.errors.join("; ")}`);
@@ -30,6 +32,17 @@ export async function produceChart(
   await patchChart(id, { type: patch.type, metadata: patch.metadata });
   const publicUrl = await publishChart(id);
   await exportPng(id, pngPath);
+
+  // GUARDRAIL: a clipped or overlapping label is a publishable-blocker. Load the
+  // published chart, enumerate every text rect, and fail loud if any is clipped by
+  // the content box or intersects another. This is what stops the defect recurring.
+  if (!opts.skipLabelSafety) {
+    const safety = await checkPublishedChart(publicUrl);
+    if (!safety.ok)
+      throw new Error(
+        `label-safety guardrail failed for ${publicUrl}:\n  - ${safety.violations.join("\n  - ")}`,
+      );
+  }
 
   const embed =
     `<iframe title="${spec.title}" src="${publicUrl}" scrolling="no" frameborder="0" ` +

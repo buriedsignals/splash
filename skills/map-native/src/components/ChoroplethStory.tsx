@@ -92,6 +92,8 @@ export const ChoroplethStory: React.FC<{
     valueUnit?: string;
     insight?: string;
     source?: { name: string; url: string };
+    scaleType?: "sequential" | "diverging";
+    palette?: string | string[];
   };
 }> = ({ config }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -155,7 +157,8 @@ export const ChoroplethStory: React.FC<{
           // Compute choropleth layout.
           const layout = computeChoropleth(config, worldGeoJson, "iso_a3", {
             bins: NUM_BINS,
-            scaleType: "sequential",
+            scaleType: config.scaleType ?? "sequential",
+            palette: config.palette,
           });
 
           const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);

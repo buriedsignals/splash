@@ -30,7 +30,12 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 const NUM_BINS = 5;
 
 export interface ChoroplethRevealProps {
-  config: ChoroplethData & { title?: string; unit?: string };
+  config: ChoroplethData & {
+    title?: string;
+    unit?: string;
+    scaleType?: "sequential" | "diverging";
+    palette?: string | string[];
+  };
 }
 
 export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
@@ -85,7 +90,8 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
         .then((worldGeoJson: GeoJSON.FeatureCollection) => {
           const layout = computeChoropleth(config, worldGeoJson, "iso_a3", {
             bins: NUM_BINS,
-            scaleType: "sequential",
+            scaleType: config.scaleType ?? "sequential",
+            palette: config.palette,
           });
 
           // Enrich features with value + bin index (ascending order)

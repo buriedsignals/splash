@@ -85,10 +85,24 @@ Producers: **dw-chart** (static Datawrapper chart — default), **chart-native**
 1. Read the shared KB `<repo-root>/knowledge/references/chart-selection.md` (at the atelier repo root, not under this skill) → map **intent → DW type** (intent first, simplest type that serves it).
 2. Read `<repo-root>/knowledge/references/design-conformance.md` (shared KB, repo root) → fill the conformance fields.
 3. Emit a **ChartSpec** (the exact shape `dw-chart/src/chart-spec.ts` validates):
-   `{ type, title (the insight, sentence case), intro?, data (CSV), baseColor (Okabe-Ito, default #0072B2),
-   valueLabels?, numberFormat?, source?, altInsight (WCAG: the insight, not the structure) }`.
-4. Guardrails: **≤2 colours**; default single series to `#0072B2`; if the data is too complex for a clean
-   chart, return `{ "decision": "no-chart", "reason": "..." }` instead of forcing one.
+   `{ type, title (the insight, sentence case), intro?, data (CSV), subject (the topic hint, e.g. "solar"),
+   baseColor (a subject-fit Okabe-Ito hue — see Colour below), valueLabels?, numberFormat?, source?,
+   altInsight (WCAG: the insight, not the structure) }`.
+4. Guardrails: **≤2 colours**; **CHOOSE `baseColor` by subject — never leave the default blue for a
+   subject that is not water/cold** (the validator FAILS a declared `subject` whose `baseColor` is absent
+   or the default `#0072B2`); if the data is too complex for a clean chart, return
+   `{ "decision": "no-chart", "reason": "..." }` instead of forcing one.
+
+**Colour — choose by subject, free but quality-guarded** (palette-freedom principle: the system CHOOSES a
+colour that FITS the subject, guarded by CVD-safety + contrast — it does NOT default everything to blue).
+Set `subject` to the topic and pick the Okabe-Ito hue whose meaning fits:
+- energy / solar / gold → amber `#E69F00`
+- environment / forest / growth → green `#009E73`
+- heat / temperature / warning / danger → vermilion `#D55E00`
+- water / cold / sky / marine → blue `#0072B2` (the ONE case the default blue is correct)
+- social / culture / politics-neutral → reddish-purple `#CC79A7` or sky `#56B4E9`
+All eight Okabe-Ito hues are CVD-safe, so any choice passes the guard; the point is that the choice must
+FIT the subject, not fall through to blue by default.
 
 ## Producer — dw-chart (default) vs chart-native vs map-dw vs map-native
 
@@ -151,7 +165,23 @@ Field notes:
 - `altInsight`: WCAG accessible alternative — the same insight as `title`.
 - `source`: the honest source the article names (prose-provenance rule). Never fabricated.
 - `colorScale` (optional): an array of `{color: hex, position: 0..1}` stops, ascending. If omitted,
-  `map-dw` applies the default Okabe-Ito blue sequential scale.
+  `map-dw` applies the default blue sequential scale. Choose the stops from a subject-fit ramp per the
+  **Map colour** rule below — do NOT leave every map blue.
+
+**Map colour — scaleType by semantic, palette by subject** (palette-freedom principle: free choice guarded
+by CVD-safety; the conformance guard FAILS a semantic↔scaleType mismatch, a non-CVD-safe ramp, and a clear
+subject left on the library default). Two decisions:
+1. **scaleType from the data semantic** — magnitude (all one sign, a rate/count/year) → `sequential`;
+   an anomaly / signed value around a meaningful midpoint (change, deviation, gain↔loss) → `diverging`;
+   unordered categories → a qualitative scheme (not a ramp).
+2. **`palette` from the subject** — a named registry palette from `map-native/src/theme/scale.ts`:
+   - sequential: water → `blues`; energy/solar/heat → `oranges`; environment/forest → `greens`;
+     culture/politics-neutral magnitude → `purples`
+   - diverging: temperature/anomaly → `rdbu` (red = warm/high); environment deficit↔surplus → `brbg`;
+     neutral signed change → `puor`; legacy orange↔blue → `orbu`
+Emit `scaleType` + `palette` on the map config (native) or subject-fit `colorScale` stops (map-dw). Every
+registry ramp is vetted CVD-safe, so any fitting choice passes; the rule is the choice must FIT — never the
+blue default for a non-water subject.
 - `numberFormat` (optional): format string to strip noise from the value labels.
 
 **Basemap fallback rule:** if no known DW basemap matches the region identifiers in the data → do NOT

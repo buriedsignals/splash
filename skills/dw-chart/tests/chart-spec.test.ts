@@ -13,6 +13,23 @@ describe("validateChartSpec", () => {
     const r = validateChartSpec({ ...base, baseColor: "#0072B2" });
     expect(r.ok).toBe(true);
   });
+  it("fails when a subject is declared but baseColor stays the default blue", () => {
+    const r = validateChartSpec({ ...base, subject: "solar energy" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/subject-fit|default blue/i);
+  });
+  it("passes when a subject gets a subject-fit non-default baseColor", () => {
+    const r = validateChartSpec({
+      ...base,
+      subject: "solar energy",
+      baseColor: "#E69F00",
+    });
+    expect(r.ok).toBe(true);
+  });
+  it("allows the default blue for a water subject (blue IS subject-fit)", () => {
+    const r = validateChartSpec({ ...base, subject: "river water levels" });
+    expect(r.ok).toBe(true);
+  });
   it("rejects a missing insight title", () => {
     const r = validateChartSpec({ ...base, title: "" });
     expect(r.ok).toBe(false);

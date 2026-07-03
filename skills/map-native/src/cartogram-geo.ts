@@ -26,6 +26,7 @@ export interface CartogramData {
   joinKey?: string;
   values: { id: string; value: number }[];
   scaleType?: "sequential" | "diverging";
+  palette?: string | string[];
   bins?: number;
   valueLabel?: string;
 }
@@ -56,7 +57,7 @@ export function computeCartogram(
     },
     features,
     joinKey,
-    { bins: data.bins ?? 5, scaleType },
+    { bins: data.bins ?? 5, scaleType, palette: data.palette },
   );
 
   // Map region key → value (matched only).
