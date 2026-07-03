@@ -11,7 +11,7 @@
 //      Caption = CaptionCard(beat.copy); title scene via resolveScene; sequential/diverging bin legend.
 //   5. NO on-map callout — caption carries the region rank + value + id.
 // Harness:
-//   delayRender → build cells (+__id) + beats + jumpTo beat 0 → idle → continueRender
+//   delayRender → fetch world.geojson → build cells (+__id) + beats + jumpTo beat 0 → idle → continueRender
 //   per-frame: delayRender → jumpTo → setPaintProperty(dim by beat) → caption overlay → idle → continueRender
 
 import React, { useEffect, useRef, useState } from "react";
@@ -20,13 +20,12 @@ import {
   continueRender,
   delayRender,
   interpolate,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import worldGeoJsonRaw from "../../assets/geo/world.geojson?raw";
-const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 import { computeCartogram } from "../cartogram-geo";
 import { deriveCartogramStory } from "../cartogram-story";
 import { applyCartogramBasemap } from "../theme/cartogram-basemap";
@@ -126,96 +125,105 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
     });
 
     m.on("load", () => {
-      // Compute cartogram layout once from world.geojson.
-      const layout = computeCartogram(config, worldGeoJson);
+      // Fetch world GeoJSON via Remotion staticFile (served from remotion/public/).
+      fetch(staticFile("geo/world.geojson"))
+        .then((r) => r.json())
+        .then((worldGeoJson: GeoJSON.FeatureCollection) => {
+          // Compute cartogram layout once.
+          const layout = computeCartogram(config, worldGeoJson);
 
-      // Apply basemap treatment BEFORE adding cells.
-      // grid variant: neutral flat canvas (hides all basemap layers).
-      // scaled variant: keep basemap, strip symbol clutter.
-      applyCartogramBasemap(m, dark, layout.variant);
+          // Apply basemap treatment BEFORE adding cells.
+          // grid variant: neutral flat canvas (hides all basemap layers).
+          // scaled variant: keep basemap, strip symbol clutter.
+          applyCartogramBasemap(m, dark, layout.variant);
 
-      // Build cell GeoJSON. Each feature is tagged with __id (the region id string)
-      // so a reveal beat can dim non-highlighted cells via a data-driven expression.
-      const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
-        type: "Feature",
-        properties: {
-          __color: cell.color,
-          __id: cell.id,
-          __value: cell.value,
-        },
-        geometry: cell.feature.geometry,
-      }));
-      const cellGeoJson: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features: cellFeatures,
-      };
+          // Build cell GeoJSON. Each feature is tagged with __id (the region id string)
+          // so a reveal beat can dim non-highlighted cells via a data-driven expression.
+          const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
+            type: "Feature",
+            properties: {
+              __color: cell.color,
+              __id: cell.id,
+              __value: cell.value,
+            },
+            geometry: cell.feature.geometry,
+          }));
+          const cellGeoJson: GeoJSON.FeatureCollection = {
+            type: "FeatureCollection",
+            features: cellFeatures,
+          };
 
-      m.addSource("cartogram-cell-src", {
-        type: "geojson",
-        data: cellGeoJson,
-      });
+          m.addSource("cartogram-cell-src", {
+            type: "geojson",
+            data: cellGeoJson,
+          });
 
-      // Cell fill — coloured by bin. Opacity starts full (establish beat 0).
-      m.addLayer({
-        id: CELL_LAYER,
-        type: "fill",
-        source: "cartogram-cell-src",
-        paint: {
-          "fill-color": ["get", "__color"] as never,
-          "fill-opacity": FULL_OPACITY,
-        },
-      });
+          // Cell fill — coloured by bin. Opacity starts full (establish beat 0).
+          m.addLayer({
+            id: CELL_LAYER,
+            type: "fill",
+            source: "cartogram-cell-src",
+            paint: {
+              "fill-color": ["get", "__color"] as never,
+              "fill-opacity": FULL_OPACITY,
+            },
+          });
 
-      // Thin outline for legibility.
-      m.addLayer({
-        id: OUTLINE_LAYER,
-        type: "line",
-        source: "cartogram-cell-src",
-        paint: {
-          "line-color": outlineColor,
-          "line-width": 0.6,
-          "line-opacity": 0.5,
-        },
-      });
+          // Thin outline for legibility.
+          m.addLayer({
+            id: OUTLINE_LAYER,
+            type: "line",
+            source: "cartogram-cell-src",
+            paint: {
+              "line-color": outlineColor,
+              "line-width": 0.6,
+              "line-opacity": 0.5,
+            },
+          });
 
-      // Derive beats — title → establish → highest-region reveals → takeaway.
-      const meta = {
-        title: config.title ?? "",
-        description: config.description,
-        insight:
-          ((config as Record<string, unknown>).insight as string) ??
-          config.title ??
-          "",
-      };
-      const beats = deriveCartogramStory(layout, meta);
+          // Derive beats — title → establish → highest-region reveals → takeaway.
+          const meta = {
+            title: config.title ?? "",
+            description: config.description,
+            insight:
+              ((config as Record<string, unknown>).insight as string) ??
+              config.title ??
+              "",
+          };
+          const beats = deriveCartogramStory(layout, meta);
 
-      // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox.
-      const solutions: CameraSolution[] = beats.map((b) => {
-        const result = m.cameraForBounds(
-          b.camera as maptilersdk.LngLatBoundsLike,
-          { padding: mapFrame.pad },
-        );
-        if (!result) return { center: [10, 50], zoom: 4 };
-        return {
-          center: [result.center.lng, result.center.lat],
-          zoom: result.zoom,
-        };
-      });
+          // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox.
+          const solutions: CameraSolution[] = beats.map((b) => {
+            const result = m.cameraForBounds(
+              b.camera as maptilersdk.LngLatBoundsLike,
+              { padding: mapFrame.pad },
+            );
+            if (!result) return { center: [10, 50], zoom: 4 };
+            return {
+              center: [result.center.lng, result.center.lat],
+              zoom: result.zoom,
+            };
+          });
 
-      const kinds = beats.map((b) => b.kind);
-      const { phases } = buildTimeline(kinds, fps);
+          const kinds = beats.map((b) => b.kind);
+          const { phases } = buildTimeline(kinds, fps);
 
-      m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
+          m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
 
-      setLegendState({
-        bins: layout.bins,
-        valueLabel: layout.valueLabel,
-      });
+          setLegendState({
+            bins: layout.bins,
+            valueLabel: layout.valueLabel,
+          });
 
-      m.once("idle", () => {
-        setMapState({ map: m, beats, phases, solutions });
-        continueRender(handle);
-      });
+          m.once("idle", () => {
+            setMapState({ map: m, beats, phases, solutions });
+            continueRender(handle);
+          });
+        })
+        .catch((err) => {
+          console.error("CartogramStory: failed to load world GeoJSON", err);
+          continueRender(handle);
+        });
     });
   }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 

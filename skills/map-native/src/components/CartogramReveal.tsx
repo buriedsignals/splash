@@ -9,7 +9,7 @@
 //   3. Fixed camera revealCameraPlan(layout.bounds); sequential/diverging bin legend + valueLabel;
 //      title scene + MapFrame — like HexGridReveal.
 // Harness:
-//   delayRender at mount → build cells + fitBounds → idle → continueRender
+//   delayRender at mount → fetch world.geojson → build cells + fitBounds → idle → continueRender
 //   per-frame: delayRender → setPaintProperty (fill-opacity by progress) → map.once('idle') → continueRender
 
 import React, { useEffect, useRef, useState } from "react";
@@ -17,13 +17,12 @@ import {
   AbsoluteFill,
   continueRender,
   delayRender,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import worldGeoJsonRaw from "../../assets/geo/world.geojson?raw";
-const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 import { computeCartogram } from "../cartogram-geo";
 import { applyCartogramBasemap } from "../theme/cartogram-basemap";
 import { resolveMapStyle } from "../route-geo";
@@ -109,72 +108,81 @@ export const CartogramReveal: React.FC<{ config: CartogramConfigShape }> = ({
     mapRef.current = map;
 
     map.on("load", () => {
-      // Compute cartogram layout once from world.geojson.
-      const layout = computeCartogram(config, worldGeoJson);
+      // Fetch world GeoJSON via Remotion staticFile (served from remotion/public/).
+      fetch(staticFile("geo/world.geojson"))
+        .then((r) => r.json())
+        .then((worldGeoJson: GeoJSON.FeatureCollection) => {
+          // Compute cartogram layout once.
+          const layout = computeCartogram(config, worldGeoJson);
 
-      // Apply basemap treatment BEFORE adding cells.
-      // grid variant: neutral flat canvas (hides all basemap layers).
-      // scaled variant: keep basemap, strip symbol clutter.
-      applyCartogramBasemap(map, dark, layout.variant);
+          // Apply basemap treatment BEFORE adding cells.
+          // grid variant: neutral flat canvas (hides all basemap layers).
+          // scaled variant: keep basemap, strip symbol clutter.
+          applyCartogramBasemap(map, dark, layout.variant);
 
-      // Build FeatureCollection from cells — each carries display props.
-      const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
-        type: "Feature",
-        properties: {
-          __color: cell.color,
-          __id: cell.id,
-          __value: cell.value,
-        },
-        geometry: cell.feature.geometry,
-      }));
-      const cellGeoJson: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features: cellFeatures,
-      };
+          // Build FeatureCollection from cells — each carries display props.
+          const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
+            type: "Feature",
+            properties: {
+              __color: cell.color,
+              __id: cell.id,
+              __value: cell.value,
+            },
+            geometry: cell.feature.geometry,
+          }));
+          const cellGeoJson: GeoJSON.FeatureCollection = {
+            type: "FeatureCollection",
+            features: cellFeatures,
+          };
 
-      map.addSource("cartogram-cell-src", {
-        type: "geojson",
-        data: cellGeoJson,
-      });
+          map.addSource("cartogram-cell-src", {
+            type: "geojson",
+            data: cellGeoJson,
+          });
 
-      // Cell fill — coloured by bin; opacity starts at 0 (fades in via per-frame effect).
-      map.addLayer({
-        id: CELL_LAYER,
-        type: "fill",
-        source: "cartogram-cell-src",
-        paint: {
-          "fill-color": ["get", "__color"] as never,
-          "fill-opacity": fillOpacity,
-        },
-      });
+          // Cell fill — coloured by bin; opacity starts at 0 (fades in via per-frame effect).
+          map.addLayer({
+            id: CELL_LAYER,
+            type: "fill",
+            source: "cartogram-cell-src",
+            paint: {
+              "fill-color": ["get", "__color"] as never,
+              "fill-opacity": fillOpacity,
+            },
+          });
 
-      // Thin outline for legibility.
-      map.addLayer({
-        id: OUTLINE_LAYER,
-        type: "line",
-        source: "cartogram-cell-src",
-        paint: {
-          "line-color": outlineColor,
-          "line-width": 0.6,
-          "line-opacity": 0.5,
-        },
-      });
+          // Thin outline for legibility.
+          map.addLayer({
+            id: OUTLINE_LAYER,
+            type: "line",
+            source: "cartogram-cell-src",
+            paint: {
+              "line-color": outlineColor,
+              "line-width": 0.6,
+              "line-opacity": 0.5,
+            },
+          });
 
-      // Fixed camera plan — latitude-clamped Mercator-safe bounds.
-      const plan = revealCameraPlan(
-        layout.bounds as [number, number, number, number],
-      );
-      map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
+          // Fixed camera plan — latitude-clamped Mercator-safe bounds.
+          const plan = revealCameraPlan(
+            layout.bounds as [number, number, number, number],
+          );
+          map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
 
-      setLegendState({
-        bins: layout.bins,
-        valueLabel: layout.valueLabel,
-      });
+          setLegendState({
+            bins: layout.bins,
+            valueLabel: layout.valueLabel,
+          });
 
-      map.once("idle", () => {
-        setMapReady(true);
-        continueRender(handle);
-      });
+          map.once("idle", () => {
+            setMapReady(true);
+            continueRender(handle);
+          });
+        })
+        .catch((err) => {
+          console.error("CartogramReveal: failed to load world GeoJSON", err);
+          continueRender(handle);
+        });
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
