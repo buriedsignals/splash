@@ -9,6 +9,28 @@ import {
 } from "../src/theme/scale";
 import { checkPaletteConformance, looksDiverging } from "../src/conformance";
 
+describe("palette semantic aliases (F1 — no silent failure on a subject name)", () => {
+  it("resolves 'amber' (and other semantic names) to the registry ramp", () => {
+    // The suggester picks palettes by subject; a semantic name must NOT throw (which,
+    // inside the headless render, showed up only as a 30–60s snap timeout).
+    expect(resolvePalette("sequential", "amber").ramp).toEqual(
+      PALETTES.oranges.ramp,
+    );
+    expect(resolvePalette("sequential", "heat").ramp).toEqual(
+      PALETTES.oranges.ramp,
+    );
+    expect(resolvePalette("sequential", "teal").ramp).toEqual(
+      PALETTES.greens.ramp,
+    );
+  });
+
+  it("throws a CLEAR, listable error on a truly unknown palette name", () => {
+    expect(() => resolvePalette("sequential", "chartreuse")).toThrow(
+      /unknown palette "chartreuse".*valid names/s,
+    );
+  });
+});
+
 describe("palette registry", () => {
   it("should expose sequential and diverging CVD-safe families beyond blues", () => {
     for (const name of ["blues", "greens", "oranges", "purples"])

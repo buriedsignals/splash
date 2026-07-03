@@ -1,0 +1,30 @@
+{
+  "type": "symbol",
+  "basemap": "world",
+  "title": "The world's busiest container ports cluster on the Pacific rim",
+  "description": "Container throughput, 2024 (million TEU)",
+  "valueUnit": " M TEU",
+  "source": {
+    "name": "Lloyd's List / port authority figures, 2024",
+    "url": "https://lloydslist.com"
+  },
+  "points": [
+    { "lon": 121.8, "lat": 31.2, "value": 49.3, "label": "Shanghai" },
+    { "lon": 103.85, "lat": 1.29, "value": 39.0, "label": "Singapore" },
+    { "lon": 121.9, "lat": 29.87, "value": 35.3, "label": "Ningbo-Zhoushan" },
+    { "lon": 114.06, "lat": 22.55, "value": 30.0, "label": "Shenzhen" },
+    { "lon": 120.32, "lat": 36.09, "value": 28.7, "label": "Qingdao" },
+    { "lon": 113.44, "lat": 23.1, "value": 26.2, "label": "Guangzhou" },
+    { "lon": 129.04, "lat": 35.1, "value": 23.8, "label": "Busan" },
+    { "lon": 117.7, "lat": 38.98, "value": 22.8, "label": "Tianjin" },
+    {
+      "lon": -118.22,
+      "lat": 33.75,
+      "value": 19.0,
+      "label": "Los Angeles / Long Beach"
+    },
+    { "lon": 55.06, "lat": 25.0, "value": 15.5, "label": "Dubai (Jebel Ali)" },
+    { "lon": 101.39, "lat": 3.0, "value": 14.1, "label": "Port Klang" },
+    { "lon": 4.13, "lat": 51.95, "value": 13.8, "label": "Rotterdam" }
+  ]
+}

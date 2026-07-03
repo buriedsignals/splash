@@ -29,6 +29,12 @@ export interface Beat {
   seqYear?: number;
   seqYearFirst?: number;
   seqYearPrev?: number;
+  // For MAGNITUDE reveals: the 1-based rank among the data (1 = the leader) and the
+  // role, so the caption can say "leads" / "2nd" / "the long tail" instead of a bare
+  // "name — value", and so the guardrail can confirm the story adapted to the data
+  // (top leaders + tail) rather than collapsing to just max & min.
+  rank?: number;
+  rankRole?: "leader" | "tail";
 }
 
 export interface MapStoryMeta {
@@ -112,23 +118,32 @@ export function deriveMapStory(
   // Choose the reveal rows per pattern.
   //   temporal  → order by value earliest→latest; reveal the FIRST, one or two
   //               notable middle steps/leaps, and the MOST RECENT (sequence).
-  //   magnitude → reveal the max then the min (ranking) — the pre-fix behaviour.
-  let revealRows: { key: string; value: number }[];
+  //   magnitude → reveal the TOP leaders (the "who leads and by how much" story) plus
+  //               the tail — NOT just max & min. Two beats can't carry a distribution;
+  //               the message must adapt to the data (this was the scrolly-narrative
+  //               defect, now fixed for the video path too).
+  let revealRows: {
+    key: string;
+    value: number;
+    rank?: number;
+    rankRole?: "leader" | "tail";
+  }[];
   if (pattern === "temporal") {
     revealRows = temporalRevealRows(withData);
   } else {
-    revealRows =
-      maxRow.key === minRow.key
-        ? [maxRow]
-        : [
-            { key: maxRow.key, value: maxRow.value },
-            { key: minRow.key, value: minRow.value },
-          ];
+    revealRows = magnitudeRevealRows(withData);
   }
 
   const seqTotal = revealRows.length;
   const firstRevealYear = revealRows[0]?.value;
-  revealRows.forEach(({ key, value }, seqIndex) => {
+  revealRows.forEach(({ key, value, rank, rankRole }, seqIndex) => {
+    // The caption ADAPTS to the pattern: temporal keeps its "name — value" (the
+    // sequence descriptor is added by the scrolly/video layer via seq* fields);
+    // magnitude gets a rank-aware line ("Chile leads — 22%", "the long tail: …").
+    const copy =
+      pattern === "temporal" || rank === undefined
+        ? calloutText(key, value)
+        : magnitudeCaption(nameOf(key), fmt(value), rank, seqTotal, rankRole);
     beats.push({
       kind: "reveal",
       camera: cameraOf(key),
@@ -138,9 +153,9 @@ export function deriveMapStory(
         region: key,
         name: nameOf(key),
         value: fmt(value),
-        text: calloutText(key, value),
+        text: copy,
       },
-      copy: calloutText(key, value),
+      copy,
       pattern,
       ...(pattern === "temporal"
         ? {
@@ -151,7 +166,7 @@ export function deriveMapStory(
             seqYearPrev:
               seqIndex > 0 ? revealRows[seqIndex - 1].value : undefined,
           }
-        : {}),
+        : { rank, rankRole }),
     });
   });
 
@@ -200,4 +215,81 @@ export function temporalRevealRows(
     .sort((a, b) => a.value - b.value || a.key.localeCompare(b.key));
 
   return [first, ...middles, last];
+}
+
+// Magnitude reveal selection. A distribution is a RANKING story — "who leads, by how
+// much, and how long the tail is" — which two beats (max & min) cannot carry. Reveal
+// the TOP leaders (up to 3) plus the tail (the minimum) as contrast, each tagged with
+// its 1-based rank and role so the caption can be rank-aware. Adapts to the data: with
+// ≤3 regions every one is a leader (no separate tail); with more, top-3 + tail.
+// Returns rows in reveal order (leaders high→low, then the tail).
+export function magnitudeRevealRows(
+  withData: { key: string; value: number }[],
+): { key: string; value: number; rank: number; rankRole: "leader" | "tail" }[] {
+  const desc = [...withData].sort(
+    (a, b) => b.value - a.value || a.key.localeCompare(b.key),
+  );
+  const leaders = desc.slice(0, Math.min(3, desc.length)).map((r, i) => ({
+    key: r.key,
+    value: r.value,
+    rank: i + 1,
+    rankRole: "leader" as const,
+  }));
+  // A distinct tail only when there are more regions than the leaders shown.
+  if (desc.length > leaders.length) {
+    const tail = desc[desc.length - 1];
+    leaders.push({
+      key: tail.key,
+      value: tail.value,
+      rank: desc.length,
+      rankRole: "tail" as const,
+    });
+  }
+  return leaders;
+}
+
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+}
+
+// A rank-aware, data-tied caption for a magnitude reveal. Never invents — it states
+// the region, its formatted value, and its factual rank/role in the distribution.
+export function magnitudeCaption(
+  name: string,
+  valueStr: string,
+  rank: number,
+  revealCount: number,
+  role?: "leader" | "tail",
+): string {
+  if (role === "tail") return `The long tail — ${name}, ${valueStr}`;
+  if (rank === 1) return `${name} leads — ${valueStr}`;
+  return `${name} — ${valueStr}, ${ordinal(rank)}`;
+}
+
+// GUARDRAIL. A magnitude story must ADAPT to the data, not collapse to "highest &
+// lowest". Given the derived beats and how many regions actually had data, fail when a
+// non-temporal story of a reasonably rich dataset (≥4 regions) shows fewer than 3
+// reveals, or when its magnitude reveals lack the rank cue that makes the message
+// informative. Deterministic; unit-tested. Mirrors the temporal narrative audit.
+export function auditMapStoryReveals(
+  beats: Beat[],
+  dataRegionCount: number,
+): string[] {
+  const violations: string[] = [];
+  const reveals = beats.filter((b) => b.kind === "reveal");
+  const magReveals = reveals.filter((b) => b.pattern !== "temporal");
+  if (magReveals.length === 0) return violations; // temporal / no reveals — not our rule
+  if (dataRegionCount >= 4 && reveals.length < 3)
+    violations.push(
+      `magnitude story limited to ${reveals.length} reveal(s) for ${dataRegionCount} regions — ` +
+        `must adapt to the data (top leaders + tail), not just highest & lowest`,
+    );
+  for (const b of magReveals)
+    if (b.rank === undefined)
+      violations.push(
+        `magnitude reveal "${b.copy}" carries no rank cue — the message is not adapted to the distribution`,
+      );
+  return violations;
 }

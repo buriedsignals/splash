@@ -4,6 +4,7 @@ import {
   linePath,
   revealLine,
   revealHead,
+  parseFlexibleDate,
   type ChartData,
   type Dims,
 } from "../src/chart-geometry";
@@ -26,6 +27,32 @@ const data: ChartData = {
     { date: "2022-01-01", value: 50 },
   ],
 };
+
+describe("parseFlexibleDate (parser agrees with looksTemporal)", () => {
+  it("parses a bare 4-digit year, a year-month, a full date, and slash variants", () => {
+    // looksTemporal admits all of these → the layout parser must NOT throw on them.
+    for (const s of ["1979", "2024-03", "2024-03-01", "2024/03", "2024/03/01"])
+      expect(parseFlexibleDate(s)).toBeInstanceOf(Date);
+    expect(parseFlexibleDate("not-a-date")).toBeNull();
+  });
+
+  it("lays out a time-series of bare 4-digit years without throwing (F3 regression)", () => {
+    const yearly: ChartData = {
+      xField: "year",
+      yField: "extent",
+      xType: "time",
+      points: [
+        { year: "1979", extent: 7 },
+        { year: "2012", extent: 3.6 },
+        { year: "2025", extent: 4.3 },
+      ],
+    };
+    const layout = computeChartLayout(yearly, dims);
+    expect(layout.points).toHaveLength(3);
+    expect(layout.points[0].x).toBeCloseTo(0, 5);
+    expect(layout.points[2].x).toBeCloseTo(layout.innerWidth, 5);
+  });
+});
 
 describe("computeChartLayout", () => {
   it("should map every data point to the inner plotting box", () => {

@@ -66,7 +66,7 @@ alongside for routing; stripped before `produceChart`, which validates the pure 
 
 - **Static PNG (owned):**
   `docs/atelier/workflow-tests/case3/out/case3-record-progression.png` (1200×800).
-- **Datawrapper embed:** chartId `KbnCF` — `https://datawrapper.dwcdn.net/KbnCF/1/`.
+- **Datawrapper embed:** chartId `439qV` — `https://datawrapper.dwcdn.net/439qV/1/` — data-space labels, responsive-clean at 340/600/1200px.
 
 The render shows a single blue line descending from ~7,495 s (2003) to ~7,170 s (2026), y-axis in
 seconds, x-axis 2003–2026. The steepening after 2014 (Kipchoge era) is visible as the trend's

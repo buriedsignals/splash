@@ -39,7 +39,24 @@ export interface Layout {
   yTicks: { y: number; label: string }[];
 }
 
-const parseDate = timeParse("%Y-%m-%d");
+// Accept every temporal shape that `looksTemporal` (spec-to-config) admits — a bare
+// year "1979", a year-month "2024-03", a full date, and the slash variants — not just
+// "%Y-%m-%d". The classifier and the parser MUST agree, or a spec the classifier calls
+// temporal throws "invalid date" at render (bug: a 4-digit-year line crashed the chart).
+const DATE_PARSERS = [
+  timeParse("%Y-%m-%d"),
+  timeParse("%Y/%m/%d"),
+  timeParse("%Y-%m"),
+  timeParse("%Y/%m"),
+  timeParse("%Y"),
+];
+export function parseFlexibleDate(v: string): Date | null {
+  for (const p of DATE_PARSERS) {
+    const d = p(v);
+    if (d) return d;
+  }
+  return null;
+}
 const fmtYear = timeFormat("%Y");
 
 export function computeChartLayout(
@@ -60,7 +77,7 @@ export function computeChartLayout(
 
   const px = (v: string | number): number | Date => {
     if (isTime) {
-      const d = parseDate(String(v));
+      const d = parseFlexibleDate(String(v));
       if (!d) throw new Error(`invalid date: ${v}`);
       return d;
     }
@@ -80,8 +97,7 @@ export function computeChartLayout(
   });
 
   const xDomain = extent(parsed, (d) => d.px) as
-    | [number, number]
-    | [Date, Date];
+    [number, number] | [Date, Date];
   const yDomain = extent(parsed, (d) => d.rawY) as [number, number];
 
   const xScale = isTime
