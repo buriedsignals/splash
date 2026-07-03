@@ -1,4 +1,4 @@
-import { specToNativeConfig, UnsupportedNativeType } from "./spec-to-config";
+import { specToNativeConfig } from "./spec-to-config";
 import type { NativeSpec } from "./spec-to-config";
 import { computeChartLayout } from "./chart-geometry";
 import type { Dims } from "./chart-geometry";
