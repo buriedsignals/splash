@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { computeHexGrid } from "../src/hex-grid-geo";
-import { BLUES } from "../src/theme/scale";
+import { BLUES, PALETTES } from "../src/theme/scale";
 
 // A tight cluster (many points) + a lone point far away → two populated cell regions.
 const cluster = Array.from({ length: 30 }, (_, i) => ({
@@ -21,9 +21,22 @@ describe("computeHexGrid — count", () => {
     expect(layout.cells.length).toBeGreaterThan(0);
     for (const c of layout.cells) expect(c.count).toBeGreaterThan(0);
   });
-  it("colours cells from the BLUES ramp via sequential bins", () => {
+  it("colours cells from the BLUES ramp via sequential bins (default, no palette)", () => {
     for (const c of layout.cells) expect(BLUES).toContain(c.color);
     expect(layout.bins.length).toBe(5);
+  });
+
+  it("HONOURS a config palette (amber→oranges) instead of always BLUES", () => {
+    const amber = computeHexGrid({
+      points,
+      binShape: "hex",
+      aggregate: "count",
+      palette: "amber", // semantic alias → oranges ramp
+    } as Parameters<typeof computeHexGrid>[0]);
+    for (const c of amber.cells)
+      expect(PALETTES.oranges.ramp).toContain(c.color);
+    // and NOT the default blue ramp
+    for (const c of amber.cells) expect(BLUES).not.toContain(c.color);
   });
   it("count aggregate = number of points in the cell", () => {
     const total = layout.cells.reduce((s, c) => s + c.count, 0);

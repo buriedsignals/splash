@@ -11,7 +11,7 @@ import {
   point as turfPoint,
   featureCollection,
 } from "@turf/turf";
-import { BLUES } from "./theme/scale";
+import { BLUES, resolvePalette } from "./theme/scale";
 
 export interface HexGridData {
   points: { lon: number; lat: number; value?: number }[];
@@ -151,7 +151,16 @@ export function computeHexGrid(data: HexGridData): HexGridLayout {
 
   if (!raw.length) throw new Error("hex-grid: no populated cells");
 
-  // Sequential bins on the aggregate value (BLUES ramp, 5 classes) — mirrors choropleth's sequential scale.
+  // Sequential bins on the aggregate value (5 classes) — mirrors choropleth's sequential
+  // scale AND honours the config's `palette` (semantic aliases resolved), so a subject-fit
+  // ramp (amber for heat/seismicity, greens for environment…) is used instead of always
+  // BLUES. Falls back to BLUES when no palette is set.
+  const ramp = (data as { palette?: string | string[] }).palette
+    ? resolvePalette(
+        "sequential",
+        (data as { palette: string | string[] }).palette,
+      ).ramp
+    : BLUES;
   const values = raw.map((c) => c.value);
   const min = Math.min(...values),
     max = Math.max(...values);
@@ -160,7 +169,7 @@ export function computeHexGrid(data: HexGridData): HexGridLayout {
   const bins = Array.from({ length: nBins }, (_, i) => ({
     min: min + (span * i) / nBins,
     max: min + (span * (i + 1)) / nBins,
-    color: BLUES[Math.round((i / (nBins - 1)) * (BLUES.length - 1))],
+    color: ramp[Math.round((i / (nBins - 1)) * (ramp.length - 1))],
   }));
   const binOf = (v: number) => {
     for (let i = 0; i < nBins - 1; i++) if (v < bins[i].max) return i;

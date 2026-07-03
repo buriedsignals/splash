@@ -4,7 +4,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry, type SymbolData } from "./symbol-geo";
 import type { CameraMode } from "./camera-mode";
 import { symbolLabels, labelRadialOffset } from "./symbol-labels";
-import { makeResetControl } from "./controls";
+import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 
@@ -141,7 +141,7 @@ export const SymbolMap: React.FC<Props> = ({
           ]);
           const sw: [number, number] = [cw, cs];
           const ne: [number, number] = [ce, cn];
-          m.setMaxBounds([sw, ne]);
+          safeSetMaxBounds(m, sw, ne);
         });
       }
     }

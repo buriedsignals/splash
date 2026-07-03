@@ -17,7 +17,7 @@ const GEOJSON_BY_BASEMAP: Record<string, GeoJSON.FeatureCollection> = {
 import { computeChoropleth, type ChoroplethData } from "./choropleth-geo";
 import { choroplethFillColor, choroplethFillOpacity } from "./choropleth-paint";
 import type { CameraMode } from "./camera-mode";
-import { makeResetControl } from "./controls";
+import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 
@@ -153,7 +153,7 @@ export const ChoroplethMap: React.FC<Props> = ({
           ]);
           const sw: [number, number] = [cw, cs];
           const ne: [number, number] = [ce, cn];
-          m.setMaxBounds([sw, ne]);
+          safeSetMaxBounds(m, sw, ne);
         });
       }
     }
