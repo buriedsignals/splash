@@ -13,7 +13,7 @@ import { chromium } from "playwright";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFileSync } from "node:fs";
-import { buildCases, buildLocatorCases, buildDotDensityCases, buildHexGridCases, buildCartogramCases } from "./audit-cases.mjs";
+import { buildCases, buildLocatorCases, buildDotDensityCases, buildHexGridCases, buildCartogramCases, buildRouteCases } from "./audit-cases.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -64,6 +64,13 @@ const cartogramGridSample = JSON.parse(
   ),
 );
 
+const routeSample = JSON.parse(
+  readFileSync(
+    join(root, "assets", "sample-data", "route.json"),
+    "utf8",
+  ),
+);
+
 const VIEWPORTS = [
   { w: 340, h: 480, name: "rsp-340" },
   { w: 520, h: 480, name: "rsp-520" },
@@ -86,6 +93,7 @@ const cases = [
   ...buildDotDensityCases(dotDensitySample),
   ...buildHexGridCases(hexGridSample),
   ...buildCartogramCases(cartogramScaledSample, cartogramGridSample),
+  ...buildRouteCases(routeSample),
 ];
 
 // significant overlap: meaningful intersection (not just touching corners).

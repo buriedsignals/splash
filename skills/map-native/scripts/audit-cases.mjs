@@ -149,6 +149,19 @@ export function buildCartogramCases(scaledSample, gridSample) {
 }
 
 // ---------------------------------------------------------------------------
+// Route cases
+// ---------------------------------------------------------------------------
+
+export function buildRouteCases(sample) {
+  const cases = [];
+
+  // 1. Sample — the committed route.json (Yarlung Tsangpo / Brahmaputra, 3 territories)
+  cases.push({ label: "route-sample", config: sample });
+
+  return cases;
+}
+
+// ---------------------------------------------------------------------------
 // Locator cases
 // ---------------------------------------------------------------------------
 

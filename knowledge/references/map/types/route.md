@@ -137,6 +137,42 @@ not a bare year range; `description` non-empty; `source.name` and `source.url` n
 - **Route with no territory detection** — a bare polyline with no territory fills is a locator
   line, not a route map. Territory detection and labelling are what distinguish the type.
 
+## Static and interactive formats (shipped)
+
+### Static
+
+The static format renders the **complete route on the basemap** as a single image (PNG / embed).
+All geographic layers are composited at once: territory fills + borders, the route line (with an
+electric-glow stroke), start/end markers at the route origin and terminus, directional flow arrows
+placed at regular intervals along the line, direct territory labels, and a territory legend panel.
+
+**Direction convention.** Because a static image cannot animate a draw-on, direction is encoded
+visually:
+
+- A **start marker** (circle or origin symbol) at the route's first coordinate.
+- An **end marker** (arrowhead or terminus symbol) at the route's last coordinate.
+- **Flow arrows** (▶ chevrons) distributed along the route line, always pointing from origin to
+  terminus, so the reader's eye can follow the journey even without animation.
+
+This is the same vocabulary used by the FT Visual Vocabulary for flow / connection maps: an
+oriented line with clearly marked poles and directional cues replaces a draw-on animation in
+static contexts.
+
+### Interactive
+
+The interactive format adds pan-and-zoom navigation to the static layers. Viewport is initialised
+to the **route bounding box** (`clampBounds` — bounded-nav discipline, same as choropleth and
+symbol types). The following capabilities are present:
+
+- **Territory hover tooltip** — hovering a territory fill shows the territory name and any
+  supplementary note from the config (`territories[n].note`).
+- **All static layers retained** — electric route line, territory fills/borders, territory labels,
+  start/end markers, flow arrows, territory legend.
+- Zoom controls and attribution footer always present.
+
+Note: there is **no interactive scrolly** for the route type in v1. The scrolly format is video
+only (see § Video format below). An `InteractiveRouteScrolly` is a future capability.
+
 ## Known v1 limits
 
 - **No data-driven line width.** The route line is a uniform stroke; encoding magnitude along the
@@ -146,15 +182,14 @@ not a bare year range; `description` non-empty; `source.name` and `source.url` n
 - **Single `LineString` — no branching / network.** The route is one continuous line; a branching
   river delta, a road network, or a `MultiLineString` is not handled (would need multi-segment
   support). A future capability.
-- **No directional / magnitude-oriented flow.** The line has no arrowhead or orientation, and its
-  width does not encode a volume; a true oriented flow map (A→B arrow, width = flux) is a future
-  capability, not part of v1.
 - **A path within a single territory degrades to a bare line.** With no *crossed* territories to
   colour or label, the "territories along the route" narrative disappears — use a plain locator/
   symbol map for a within-one-area path.
 - **Territory data limited to boundary preset.** Only attributes available in the chosen Natural
   Earth preset (name, ISO code) are surfaced; arbitrary custom polygons (parks, non-administrative
   zones) and joining extra data to territories are deferred.
+- **No interactive scrolly.** The scrolly format is video-only in v1 (`RouteScrolly`/`RouteReveal`
+  via `kind: "story"`). An interactive scrolly component (`InteractiveRouteScrolly`) is deferred.
 
 ## Video format (shipped SP3b)
 
@@ -201,8 +236,10 @@ For the full camera-mode taxonomy see `knowledge/references/map/camera-modes.md`
 
 ## Implementation pointer
 
-This type is implemented by `skills/map-native/src/route-geo.ts` (turf intersection, territory
-ordering, pole-of-inaccessibility label anchors) and `skills/map-native/src/RouteMap.tsx` (static
-+ interactive render, `mapStyle` token resolution). All configs are validated by
-`validateRouteConfig` and guarded at render time by `checkRouteConformance` in
-`skills/map-native/src/conformance.ts`.
+This type is implemented by `skills/map-native/src/route-geo.ts` (`computeRoute` — turf
+intersection, territory ordering, pole-of-inaccessibility label anchors) and
+`skills/map-native/src/RouteMap.tsx` (static + interactive render, electric line + territory
+fills/borders/labels + start/end markers + flow arrows + hover + territory legend, `mapStyle`
+token resolution). Video components: `RouteReveal` / `RouteScrolly` (via `kind: "story"`).
+All configs are validated by `validateRouteConfig` and `checkRouteConfigConformance`, and guarded
+at render time by `checkRouteConformance` in `skills/map-native/src/conformance.ts`.

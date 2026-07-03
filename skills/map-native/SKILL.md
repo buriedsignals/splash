@@ -288,7 +288,7 @@ S/I/V = which formats fit (Static / Interactive / Video):
 | --- | --- | --- | --- | --- | --- |
 | **Choropleth** | MapTiler 2D | ✓ | ✓ | ✓ | geojsonPreset — **slice 1 (built)** |
 | Proportional symbol | MapTiler 2D | ✓ | ✓ | ✓ | convert-map markers |
-| Flow / route | MapTiler 2D | ◻ | ◻ | ✓ | map-explainer (river/route) |
+| Flow / route | MapTiler 2D | ✓ | ✓ | ✓ | map-explainer (river/route) — **static + interactive (route line + territories + direction) + video (route-reveal / scrolly)** |
 | Explainer beat (region sequence) | MapTiler 2D | — | — | ✓ | **map-explainer (proven)** |
 | Dot density | MapTiler 2D | ✓ | ✓ | ✓ | — **all six formats built (Slice A: static + interactive; Slice B: video reveal + storytelling + scrolly + interactive scrolly)** |
 | Hex / grid (spatial bins) | MapTiler 2D / turf | ✓ | ✓ | ✓ | CARTO analysis (H3) — **all six formats built (Slice A: static + interactive; Slice B: video reveal + storytelling + scrolly + interactive scrolly)** |
