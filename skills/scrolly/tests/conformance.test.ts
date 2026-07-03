@@ -203,4 +203,39 @@ describe("auditTemporalNarrative (guardrail)", () => {
     ]);
     expect(auditTemporalNarrative(story, magnitudeBeats)).toEqual([]);
   });
+
+  it("FAILS when a temporal reveal is a bare connective 'then'", () => {
+    const story = storyFrom([
+      "Netherlands — 2001, the first",
+      "Belgium — 2003, then",
+    ]);
+    const v = auditTemporalNarrative(story, temporalBeats);
+    expect(v.length).toBe(1);
+    expect(v[0]).toContain("uninformative");
+    expect(v[0]).toContain("s3");
+  });
+
+  it("FAILS when a temporal reveal is just region + year (no descriptor)", () => {
+    const story = storyFrom(["Netherlands — 2001", "Thailand — 2025"]);
+    const v = auditTemporalNarrative(story, temporalBeats);
+    expect(v.length).toBe(2);
+    expect(v.every((m) => m.includes("uninformative"))).toBe(true);
+  });
+
+  it("passes an interior reveal that states an ordinal + interval", () => {
+    const story = storyFrom([
+      "Netherlands — 2001, the first",
+      "Argentina — 2010, the third, seven years later",
+    ]);
+    // "third" is an ordinal word → informative.
+    expect(auditTemporalNarrative(story, temporalBeats)).toEqual([]);
+  });
+
+  it("passes a 'most recent, N years after the first' caption", () => {
+    const story = storyFrom([
+      "Netherlands — 2001, the first",
+      "Thailand — 2025, the most recent, 24 years after the first",
+    ]);
+    expect(auditTemporalNarrative(story, temporalBeats)).toEqual([]);
+  });
 });

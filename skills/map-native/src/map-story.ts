@@ -20,6 +20,15 @@ export interface Beat {
   // and the total reveal count — so prose can say "the first" / "the most recent".
   seqIndex?: number;
   seqTotal?: number;
+  // For temporal reveals, extra data-tied facts so the caption can be
+  // informative instead of a bare connective ("then"). All derived from the
+  // data, never invented:
+  //   seqYear        — the numeric year of THIS reveal.
+  //   seqYearFirst   — the numeric year of the FIRST reveal (interval anchor).
+  //   seqYearPrev    — the numeric year of the PREVIOUS reveal (gap anchor).
+  seqYear?: number;
+  seqYearFirst?: number;
+  seqYearPrev?: number;
 }
 
 export interface MapStoryMeta {
@@ -118,6 +127,7 @@ export function deriveMapStory(
   }
 
   const seqTotal = revealRows.length;
+  const firstRevealYear = revealRows[0]?.value;
   revealRows.forEach(({ key, value }, seqIndex) => {
     beats.push({
       kind: "reveal",
@@ -132,7 +142,16 @@ export function deriveMapStory(
       },
       copy: calloutText(key, value),
       pattern,
-      ...(pattern === "temporal" ? { seqIndex, seqTotal } : {}),
+      ...(pattern === "temporal"
+        ? {
+            seqIndex,
+            seqTotal,
+            seqYear: value,
+            seqYearFirst: firstRevealYear,
+            seqYearPrev:
+              seqIndex > 0 ? revealRows[seqIndex - 1].value : undefined,
+          }
+        : {}),
     });
   });
 

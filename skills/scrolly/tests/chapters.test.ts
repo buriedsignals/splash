@@ -155,6 +155,8 @@ const temporalBeats: Beat[] = [
     pattern: "temporal",
     seqIndex: 0,
     seqTotal: 3,
+    seqYear: 2001,
+    seqYearFirst: 2001,
   },
   {
     kind: "reveal",
@@ -171,6 +173,9 @@ const temporalBeats: Beat[] = [
     pattern: "temporal",
     seqIndex: 1,
     seqTotal: 3,
+    seqYear: 2013,
+    seqYearFirst: 2001,
+    seqYearPrev: 2001,
   },
   {
     kind: "reveal",
@@ -187,6 +192,9 @@ const temporalBeats: Beat[] = [
     pattern: "temporal",
     seqIndex: 2,
     seqTotal: 3,
+    seqYear: 2025,
+    seqYearFirst: 2001,
+    seqYearPrev: 2013,
   },
   {
     kind: "takeaway",
@@ -206,15 +214,21 @@ describe("mapStoryToChapters — temporal pattern", () => {
     regionsWithData: 36,
   };
 
-  it("words temporal reveals as a sequence: the first / then / the most recent, never highest/lowest", () => {
+  it("words temporal reveals as an informative sequence (ordinal + interval), never highest/lowest, never a bare 'then'", () => {
     const story = mapStoryToChapters(temporalBeats, meta);
     const reveals = story.steps.filter((s) => s.prose.includes("—"));
     expect(reveals[0].prose).toBe("Netherlands — 2001, the first");
-    expect(reveals[1].prose).toBe("France — 2013, then");
-    expect(reveals[2].prose).toBe("Thailand — 2025, the most recent");
+    // interior: ordinal + interval to the previous reveal (2013 − 2001 = 12).
+    expect(reveals[1].prose).toBe("France — 2013, the second, 12 years later");
+    // last: most recent + span since the first (2025 − 2001 = 24).
+    expect(reveals[2].prose).toBe(
+      "Thailand — 2025, the most recent, 24 years after the first",
+    );
     for (const r of reveals) {
       expect(r.prose.toLowerCase()).not.toContain("highest");
       expect(r.prose.toLowerCase()).not.toContain("lowest");
+      // never a bare connective
+      expect(r.prose).not.toMatch(/,\s*(then|next)\s*$/i);
     }
   });
 });
