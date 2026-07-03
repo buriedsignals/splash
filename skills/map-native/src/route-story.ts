@@ -8,6 +8,8 @@ import { deriveSymbolStory } from "./symbol-story";
 import { deriveDotDensityStory } from "./dot-density-story";
 import { computeHexGrid } from "./hex-grid-geo";
 import { deriveHexGridStory } from "./hex-grid-story";
+import { computeCartogram } from "./cartogram-geo";
+import { deriveCartogramStory } from "./cartogram-story";
 import { buildTimeline } from "./story-timeline";
 import { mapStoryToChapters } from "../../scrolly/src/chapters";
 import type { ScrollyStory, ScrollyStep } from "../../scrolly/src/chapters";
@@ -136,6 +138,20 @@ export function scrollyStepCount(
   if (config.type === "hex-grid") {
     const layout = computeHexGrid(config);
     const beats = deriveHexGridStory(layout, {
+      title: config.title ?? "",
+      description: config.description,
+      insight: config.insight ?? config.title ?? "",
+    });
+    return mapStoryToChapters(beats, {
+      title: config.title ?? "",
+      description: config.description,
+      source: config.source,
+      regionsWithData: layout.cells.length,
+    }).steps.length;
+  }
+  if (config.type === "cartogram") {
+    const layout = computeCartogram(config, world);
+    const beats = deriveCartogramStory(layout, {
       title: config.title ?? "",
       description: config.description,
       insight: config.insight ?? config.title ?? "",

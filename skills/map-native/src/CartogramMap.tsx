@@ -4,6 +4,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
 const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 import { computeCartogram } from "./cartogram-geo";
+import { applyCartogramBasemap } from "./theme/cartogram-basemap";
 import { resolveMapStyle } from "./route-geo";
 import { makeResetControl } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
@@ -153,42 +154,7 @@ export const CartogramMap: React.FC<Props> = ({
         features: cellFeatures,
       };
 
-      if (layout.variant === "grid") {
-        // Grid variant: abstract tile-grid — hide all basemap layers so cells
-        // render on a flat neutral canvas. Symbol layers are removed, then every
-        // remaining basemap layer is hidden. A neutral background is set via the
-        // style's "background" layer (present in both DATAVIZ.LIGHT and DARK) or
-        // injected as a new background layer if absent.
-        const neutralBg = dark ? "#1b1d21" : "#f2f3f5";
-        const baseLayers = map.getStyle()?.layers ?? [];
-        for (const layer of baseLayers) {
-          if (layer.type === "symbol") {
-            map.removeLayer(layer.id);
-          } else if (layer.id === "background") {
-            map.setPaintProperty("background", "background-color", neutralBg);
-          } else {
-            map.setLayoutProperty(layer.id, "visibility", "none");
-          }
-        }
-        // If no "background" layer existed, add one at the very bottom.
-        if (!baseLayers.some((l) => l.id === "background")) {
-          map.addLayer(
-            {
-              id: "neutral-background",
-              type: "background",
-              paint: { "background-color": neutralBg },
-            },
-            // Insert before the first existing layer (bottom of stack).
-            baseLayers[0]?.id,
-          );
-        }
-      } else {
-        // Scaled variant: keep the real basemap — only strip symbol/label clutter.
-        const baseLayers = map.getStyle()?.layers ?? [];
-        for (const layer of baseLayers) {
-          if (layer.type === "symbol") map.removeLayer(layer.id);
-        }
-      }
+      applyCartogramBasemap(map, dark, layout.variant);
 
       map.addSource("cartogram-cell-src", {
         type: "geojson",
