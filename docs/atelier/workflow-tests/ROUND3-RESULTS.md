@@ -38,14 +38,41 @@ correctly rejected the mis-framed wide-extent maps; the fixes are engine-side.
   basemaps. So a US-state or French-department choropleth is NOT producible today. Case 9 was
   repurposed to a country-level (world) choropleth to still exercise the map-video path.
 
-## Running list of unfixed findings across rounds (for triage)
+## Findings — all fixed with guardrails (2026-06-22)
 
-- **F4** (round 2) — chart-native static/interactive snap serves a default build (CONFIG not
-  threaded like map-native's `SERVE_DIR`); video path unaffected.
-- **F6** (round 2) — dw-chart multi-series annotation placement considers only one series.
-- **F8 / F9 / F10** (this round) — wide-extent map fit at mobile; route responsive extent;
-  no sub-national basemaps.
-- **Gap** — chart scrollytelling not wired (scrolly engine is map-only).
+Every finding raised across the three rounds is now fixed at the system layer with a
+guardrail test + render verification, EXCEPT the one capability gap:
+
+- **F1** — palette semantic aliases + clear error (`palette.test.ts`).
+- **F3** — chart-native tolerant year/date parser (`chart-geometry.test.ts`).
+- **F4** — chart-native snap serves the injected build; shared `chartDistSub` path
+  helper so vite.config + snap-proof can't drift (`build-paths.test.ts`). Verified: a
+  produced line chart reflects its spec, not a default sample.
+- **F5** — dw-chart multi-series tick-duplicate dedup (`label-safety.test.ts`).
+- **F6** — dw-chart annotation clears EVERY series (`spec-to-metadata.test.ts`). Verified
+  clean at all widths; a long callout at a tight crossover is still guardrail-rejected
+  by design.
+- **F8** — responsive data-extent gate is aspect-aware (a globe-spanning extent can't be
+  framed in portrait Mercator) — `maxFittableLngSpan` + tests. Ports produce clean.
+- **F9** — RouteMap exposes the route bounds it frames (not the territory-inclusive
+  extent). Route produces clean at all widths.
+- **F10** — sub-national basemaps ship: basemap registry + `us-states.geojson` +
+  config-driven geojson/joinKey selection + fast validation (`basemaps.test.ts`).
+  Verified: a US-state solar choropleth renders clean.
+- **F11** — magnitude map story reveals ranked leaders + tail with rank-aware captions
+  (`map-story.test.ts`). Verified: the case-9 video walks 4 reveals.
+
+### Remaining capability gap (not a defect — unbuilt feature)
+
+- **Chart scrollytelling** is not wired: the `scrolly` engine is map-only ("chart-native
+  next") and `chart-native` ships static/interactive/video but no scrolly. A true *chart*
+  scrolly is not yet producible. Tracked for a future build, not a regression.
+
+### Follow-ups noted while fixing (small, non-blocking)
+
+- us-states support was added to the choropleth static/interactive path; the map
+  video (`ChoroplethStory`) + scrolly still bundle world only — extend `GEOJSON_BY_BASEMAP`
+  to those paths when a sub-national motion/scrolly map is needed.
 
 Fixed with guardrails so far: F1 (palette aliases), F3 (chart-native year parse), F5
 (dw-chart multi-series tick dedup), F11 (below), plus the round-1 responsive-label rewrite.
