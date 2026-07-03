@@ -383,9 +383,32 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         } as never,
       });
 
-      const dataBounds = clampBounds(
-        layout.bounds as [number, number, number, number],
-      );
+      // Frame to the ROUTE (the primary mark) — not the route+territory union.
+      // The territories can dwarf the route (e.g. China vs the Yarlung Tsangpo),
+      // which would shrink the river to a central speck. We fit the route's own
+      // bbox with a modest pad so the line fills most of the frame; territories
+      // still render as context and may extend beyond the frame — that's correct.
+      let rw = Infinity,
+        rs = Infinity,
+        re = -Infinity,
+        rn = -Infinity;
+      for (const [lng, lat] of layout.route) {
+        if (lng < rw) rw = lng;
+        if (lng > re) re = lng;
+        if (lat < rs) rs = lat;
+        if (lat > rn) rn = lat;
+      }
+      // Expand ~15% on each side for a little breathing room around the line.
+      const ROUTE_PAD = 0.15;
+      const spanX = re - rw || 0.01;
+      const spanY = rn - rs || 0.01;
+      const routeBounds: [number, number, number, number] = [
+        rw - spanX * ROUTE_PAD,
+        rs - spanY * ROUTE_PAD,
+        re + spanX * ROUTE_PAD,
+        rn + spanY * ROUTE_PAD,
+      ];
+      const dataBounds = clampBounds(routeBounds);
       boundsRef.current = dataBounds;
       fitToData();
 
