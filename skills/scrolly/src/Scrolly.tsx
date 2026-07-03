@@ -370,26 +370,34 @@ export const Scrolly: React.FC<{
 
         {/* Prose column — scrolls normally over the sticky graphic */}
         <div style={proseColumnStyle}>
-          {story.steps.map((step, i) => (
-            <div
-              key={step.id}
-              className="step"
-              data-step-index={i}
-              ref={(el) => {
-                stepRefs.current[i] = el;
-              }}
-              style={stepBlockStyle}
-            >
+          {story.steps.map((step, i) => {
+            // Collapse a step whose caption is identical to the previous step's.
+            // The title beat and the OVERVIEW (establish) beat both carry the
+            // figure's description, so without this the intro caption renders
+            // twice in a row. Both frame the full extent, so dropping the second
+            // block leaves the camera unchanged — the intro simply shows once.
+            if (i > 0 && step.prose === story.steps[i - 1].prose) return null;
+            return (
               <div
-                style={{
-                  ...cardBase,
-                  ...alignCard(step.align),
+                key={step.id}
+                className="step"
+                data-step-index={i}
+                ref={(el) => {
+                  stepRefs.current[i] = el;
                 }}
+                style={stepBlockStyle}
               >
-                {step.prose}
+                <div
+                  style={{
+                    ...cardBase,
+                    ...alignCard(step.align),
+                  }}
+                >
+                  {step.prose}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
