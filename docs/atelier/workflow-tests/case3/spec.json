@@ -1,0 +1,27 @@
+{
+  "producer": "dw-chart",
+  "type": "d3-lines",
+  "title": "The marathon world record has fallen five and a half minutes since 2003",
+  "intro": "Men's marathon world record, time in seconds — lower is faster. Sabastian Sawe's 1:59:30 in London (2026) is the first sub-two-hour mark in a record-eligible race.",
+  "data": "year,record time (seconds)\n2003,7495\n2007,7466\n2008,7439\n2011,7418\n2013,7403\n2014,7377\n2018,7299\n2022,7269\n2023,7235\n2026,7170",
+  "baseColor": "#0072B2",
+  "valueLabels": false,
+  "numberFormat": "0,0",
+  "valueFormat": "00:00:00",
+  "seriesLabels": { "record time (seconds)": "Record time" },
+  "source": {
+    "name": "World Athletics; Wikipedia — Marathon world record progression",
+    "url": "https://en.wikipedia.org/wiki/Marathon_world_record_progression"
+  },
+  "altInsight": "The men's marathon world record fell from 2:04:55 (7,495 s) in 2003 to 1:59:30 (7,170 s) in 2026, a drop of five minutes and 25 seconds, with the pace of improvement accelerating after 2018.",
+  "annotations": [
+    {
+      "text": "Sawe 1:59:30 — first sub-2:00",
+      "x": "2026",
+      "y": 7170,
+      "align": "tr",
+      "dx": -8,
+      "dy": -6
+    }
+  ]
+}

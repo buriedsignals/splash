@@ -1,0 +1,25 @@
+{
+  "producer": "scrolly",
+  "regionKey": "iso_a3",
+  "valueField": "year",
+  "rows": [
+    {"iso_a3":"NLD","year":2001},{"iso_a3":"BEL","year":2003},{"iso_a3":"ESP","year":2005},
+    {"iso_a3":"CAN","year":2005},{"iso_a3":"ZAF","year":2006},{"iso_a3":"NOR","year":2009},
+    {"iso_a3":"SWE","year":2009},{"iso_a3":"PRT","year":2010},{"iso_a3":"ISL","year":2010},
+    {"iso_a3":"ARG","year":2010},{"iso_a3":"DNK","year":2012},{"iso_a3":"BRA","year":2013},
+    {"iso_a3":"FRA","year":2013},{"iso_a3":"URY","year":2013},{"iso_a3":"NZL","year":2013},
+    {"iso_a3":"LUX","year":2015},{"iso_a3":"IRL","year":2015},{"iso_a3":"USA","year":2015},
+    {"iso_a3":"COL","year":2016},{"iso_a3":"FIN","year":2017},{"iso_a3":"MLT","year":2017},
+    {"iso_a3":"DEU","year":2017},{"iso_a3":"AUS","year":2017},{"iso_a3":"AUT","year":2019},
+    {"iso_a3":"TWN","year":2019},{"iso_a3":"ECU","year":2020},{"iso_a3":"CRI","year":2020},
+    {"iso_a3":"CHE","year":2022},{"iso_a3":"CHL","year":2022},{"iso_a3":"SVN","year":2022},
+    {"iso_a3":"CUB","year":2022},{"iso_a3":"AND","year":2023},{"iso_a3":"EST","year":2024},
+    {"iso_a3":"GRC","year":2024},{"iso_a3":"LIE","year":2025},{"iso_a3":"THA","year":2025}
+  ],
+  "basemap": "world",
+  "title": "Marriage equality spread across the world one country at a time, 2001 to 2025",
+  "description": "The year nationwide same-sex marriage took effect in each of 36 countries, from the Netherlands in 2001 to Thailand in 2025.",
+  "unit": "Year nationwide same-sex marriage took effect",
+  "valueUnit": "",
+  "source": { "name": "Wikipedia — Timeline of same-sex marriage; Library of Congress Global Legal Monitor", "url": "https://en.wikipedia.org/wiki/Timeline_of_same-sex_marriage" }
+}

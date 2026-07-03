@@ -1,0 +1,31 @@
+{
+  "producer": "map-native",
+  "regionKey": "code",
+  "valueField": "share",
+  "basemap": "world",
+  "title": "Solar's share of national electricity swings from 27% in Hungary to 6% in Czechia",
+  "description": "Share of each country's electricity generated from solar power, 15 European countries, 2024.",
+  "unit": "Share of electricity from solar, 2024 (%)",
+  "valueUnit": "%",
+  "source": {
+    "name": "Wikipedia — Solar power by country (compiled from Ember / Our World in Data), 2024",
+    "url": "https://en.wikipedia.org/wiki/Solar_power_by_country"
+  },
+  "rows": [
+    { "code": "HUN", "share": 27.3 },
+    { "code": "ESP", "share": 21.9 },
+    { "code": "NLD", "share": 21.1 },
+    { "code": "GRC", "share": 19.8 },
+    { "code": "LTU", "share": 18.8 },
+    { "code": "BGR", "share": 18.2 },
+    { "code": "DEU", "share": 17.9 },
+    { "code": "PRT", "share": 17.3 },
+    { "code": "ITA", "share": 16.9 },
+    { "code": "BEL", "share": 15.6 },
+    { "code": "AUT", "share": 14.1 },
+    { "code": "DNK", "share": 13.4 },
+    { "code": "POL", "share": 11.3 },
+    { "code": "ROU", "share": 9.8 },
+    { "code": "CZE", "share": 5.8 }
+  ]
+}
