@@ -1,5 +1,6 @@
 import { resolveMapFrame } from "./core/map-format";
-import { MAP_STYLES } from "./route-geo";
+import { MAP_STYLES, computeRoute } from "./route-geo";
+import type { RouteConfig } from "./route-geo";
 import type { ScrollyStory } from "../../scrolly/src/chapters";
 import { computeCartogram } from "./cartogram-geo";
 import { bbox } from "@turf/turf";
@@ -524,6 +525,61 @@ export function checkCartogramConformance(
         "cartogram grid cells are not uniform in degree-size — all cells must share the same bbox width and height",
       );
   }
+
+  return v;
+}
+
+// Higher-level route conformance: calls computeRoute internally (mirrors
+// checkCartogramConformance). Takes the full RouteConfig + world boundaries
+// GeoJSON, calls computeRoute, then asserts structural + L0 furniture rules.
+// Returns string[] of violations (empty = passes).
+export function checkRouteConfigConformance(
+  config: RouteConfig,
+  boundaries: GeoJSON.FeatureCollection,
+  textColors: { text: string[]; bg: string },
+): string[] {
+  const v = checkGlobalMapConformance(
+    {
+      title: config.title ?? "",
+      description: config.description,
+      source: config.source ?? {},
+    },
+    textColors,
+  );
+
+  if (
+    config.mapStyle !== undefined &&
+    !(MAP_STYLES as readonly string[]).includes(config.mapStyle)
+  )
+    v.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+
+  // Require at least 2 route points before calling computeRoute.
+  if (!Array.isArray(config.route) || config.route.length < 2) {
+    v.push("route must have at least 2 [lon, lat] points");
+    return v;
+  }
+
+  // Attempt layout computation — a throw means the geometry is unusable.
+  let bounds: [number, number, number, number];
+  try {
+    const layout = computeRoute(config, boundaries);
+    bounds = layout.bounds;
+  } catch {
+    v.push("route: layout computation failed — check route coordinates");
+    return v;
+  }
+
+  // Bounds must be non-degenerate (non-zero extent in both axes).
+  const [w, s, e, n] = bounds;
+  if (
+    !Number.isFinite(w) ||
+    !Number.isFinite(e) ||
+    !Number.isFinite(s) ||
+    !Number.isFinite(n) ||
+    w >= e ||
+    s >= n
+  )
+    v.push("empty route bounds — basemap-fit impossible");
 
   return v;
 }
