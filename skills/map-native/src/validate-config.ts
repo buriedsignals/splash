@@ -3,6 +3,7 @@ import { CAMERA_MODES, type CameraMode } from "./camera-mode";
 import { MAP_STYLES } from "./route-geo";
 import type { LocatorMarker } from "./locator-geo";
 import { PALETTES, isCvdSafeRamp } from "./theme/scale";
+import { BASEMAP_NAMES } from "./basemaps";
 
 // Shared palette/scaleType validation for any config that carries a colour scale.
 // Errors block: a scaleType must be known, a named palette must exist AND match the
@@ -94,6 +95,10 @@ export function validateChoroplethConfig(
   if (!valueField) errors.push("valueField must be a non-empty string");
   if (typeof s.basemap !== "string" || !s.basemap.trim())
     errors.push("basemap must be a non-empty string");
+  else if (!BASEMAP_NAMES.includes(s.basemap))
+    errors.push(
+      `basemap "${s.basemap}" is not a shipped basemap — valid: ${BASEMAP_NAMES.join(", ")}`,
+    );
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
   errors.push(...paletteErrors(s));

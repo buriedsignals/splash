@@ -2,7 +2,18 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
+import usStatesGeoJsonRaw from "../assets/geo/us-states.geojson?raw";
+import { resolveBasemapMeta } from "./basemaps";
 const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
+const usStatesGeoJson = JSON.parse(
+  usStatesGeoJsonRaw,
+) as GeoJSON.FeatureCollection;
+// Registry name → the actual bundled geojson. Keep in lockstep with `BASEMAPS`
+// (src/basemaps.ts): a name valid there but missing here throws below.
+const GEOJSON_BY_BASEMAP: Record<string, GeoJSON.FeatureCollection> = {
+  world: worldGeoJson,
+  "us-states": usStatesGeoJson,
+};
 import { computeChoropleth, type ChoroplethData } from "./choropleth-geo";
 import { choroplethFillColor, choroplethFillOpacity } from "./choropleth-paint";
 import type { CameraMode } from "./camera-mode";
@@ -173,9 +184,16 @@ export const ChoroplethMap: React.FC<Props> = ({
         }
       }
 
-      const world = worldGeoJson as GeoJSON.FeatureCollection;
+      // Select the basemap geojson + its join key from the registry (config.basemap),
+      // instead of always using world/iso_a3 — this is what lets a US-state (or any
+      // sub-national) choropleth render. Unknown basemap → a loud, listed error.
+      const basemapName = config.basemap ?? "world";
+      const { joinKey } = resolveBasemapMeta(basemapName);
+      const world = GEOJSON_BY_BASEMAP[
+        basemapName
+      ] as GeoJSON.FeatureCollection;
 
-      const layout = computeChoropleth(config, world, "iso_a3", {
+      const layout = computeChoropleth(config, world, joinKey, {
         bins: NUM_BINS,
         scaleType: config.scaleType ?? "sequential",
         palette: config.palette,
