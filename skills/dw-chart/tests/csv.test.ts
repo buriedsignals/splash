@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { dataShape, sortCsv } from "../src/csv";
+import { dataShape, sortCsv, renameColumns, valueAt } from "../src/csv";
 
 describe("dataShape", () => {
   it("counts columns and data rows", () => {
@@ -21,5 +21,28 @@ describe("sortCsv", () => {
       "desc",
     );
     expect(out).toBe("cause,count\nRoad,4200\nFalls,3100\nFire,1800");
+  });
+});
+
+describe("renameColumns", () => {
+  it("renames a machine column header to a human label, keeping the data", () => {
+    const out = renameColumns("period,median_home_price_usd\n2020-Q1,322600", {
+      median_home_price_usd: "Median home price",
+    });
+    expect(out).toBe("period,Median home price\n2020-Q1,322600");
+  });
+  it("leaves columns without a mapping untouched", () => {
+    const out = renameColumns("year,value\n2020,5", { nope: "X" });
+    expect(out).toBe("year,value\n2020,5");
+  });
+});
+
+describe("valueAt", () => {
+  it("returns the numeric value of the first value column at an x label", () => {
+    const csv = "period,price\n2020-Q1,322600\n2022-Q4,442600";
+    expect(valueAt(csv, "2022-Q4")).toBe(442600);
+  });
+  it("returns undefined when the x label is absent", () => {
+    expect(valueAt("year,v\n2020,5", "1999")).toBeUndefined();
   });
 });

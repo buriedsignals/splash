@@ -68,11 +68,24 @@ export interface ChartSpec {
   seriesColors?: Record<string, string>; // multi-series: series name → Okabe-Ito hex
   transpose?: boolean; // DW data.transpose (rows↔columns)
   valueLabels?: boolean; // direct labelling
-  numberFormat?: string; // DW number-format token (e.g. '0,0.[0]')
+  numberFormat?: string; // DW number-format token (e.g. '0,0.[0]') — value labels + tooltips
+  valueFormat?: string; // axis tick format override (y-grid-format), e.g. '$0,0a' or '00:00:00' for h:mm:ss
+  // Human display name per data column (column key → label). Renames the CSV
+  // header before upload so the series direct label / legend / tooltip never
+  // show a raw column name. Publishable-blocker if omitted for machine-named columns.
+  seriesLabels?: Record<string, string>;
   sort?: "asc" | "desc"; // ranking sort: sorts data rows by the last column
   source?: { name: string; url?: string };
   altInsight: string; // WCAG: alt = the insight, not the structure
-  annotations?: { text: string; x?: string | number; y?: number }[];
+  annotations?: {
+    text: string;
+    x?: string | number;
+    y?: number; // data-unit y; if omitted on a line chart it is derived from the data at x
+    column?: string; // which series column to derive y from (defaults to first value column)
+    align?: string; // anchor: tl|tc|tr|ml|mc|mr|bl|bc|br — controls which way the label extends
+    dx?: number; // px nudge (right +); use negative to pull a near-edge label inward
+    dy?: number; // px nudge (down +)
+  }[];
 }
 
 export function validateChartSpec(
@@ -119,6 +132,30 @@ export function validateChartSpec(
   }
   if (s.transpose !== undefined && typeof s.transpose !== "boolean")
     errors.push("transpose must be a boolean");
+  if (s.valueFormat !== undefined && typeof s.valueFormat !== "string")
+    errors.push(
+      "valueFormat must be a string (a Datawrapper number-format token)",
+    );
+  if (s.seriesLabels !== undefined) {
+    if (typeof s.seriesLabels !== "object" || s.seriesLabels === null) {
+      errors.push("seriesLabels must be an object (column key → display name)");
+    } else {
+      const cols =
+        typeof s.data === "string" && s.data.includes(",")
+          ? new Set(dataShape(s.data as string).columns)
+          : new Set<string>();
+      for (const [key, val] of Object.entries(
+        s.seriesLabels as Record<string, unknown>,
+      )) {
+        if (typeof val !== "string" || !val.trim())
+          errors.push(`seriesLabels.${key} must be a non-empty display name`);
+        if (cols.size > 0 && !cols.has(key))
+          warnings.push(
+            `seriesLabels key "${key}" does not match any data column — it will have no effect`,
+          );
+      }
+    }
+  }
   if (typeof s.data === "string" && s.data.includes(",")) {
     const shape = dataShape(s.data as string);
     const min = MULTI_SERIES_TYPES.has(s.type as ChartType) ? 3 : 2;

@@ -53,8 +53,23 @@ Full field mapping + endpoints → `references/api-flow.md`.
 | Chart type | `spec.type` | ChartSpec |
 | Single-series colour | `spec.baseColor` (Okabe-Ito) | ChartSpec |
 | Direct labels on/off | `spec.valueLabels` | ChartSpec |
-| Number format | `spec.numberFormat` | ChartSpec |
+| Number format (value labels + tooltips) | `spec.numberFormat` | ChartSpec |
+| Axis tick format (override) | `spec.valueFormat` | ChartSpec |
+| **Human series names** | `spec.seriesLabels` (column key → label) | ChartSpec |
+| Annotation anchor / nudge | `annotation.align` + `dx`/`dy` | ChartSpec |
 | PNG width | `exportPng(id, path, width)` | `datawrapper.ts` |
+
+## Publishable-blocker rules (learned from render tests)
+
+- **Never ship a raw column name as a series label.** Datawrapper's direct label / legend / tooltip is the CSV column header. Give every machine-named column a human name via `spec.seriesLabels` (e.g. `{"median_home_price_usd": "Median home price"}`) — the header is renamed before upload, fixing all three at once.
+- **A line-chart text-annotation with no numeric `y` is silently DROPPED.** When you pin an annotation to an `x` only, the mapper derives `y` from the data at that x (against the correct, possibly-renamed series column). Always give annotations a resolvable `x` (and optionally `column`).
+- **Anchor a near-edge annotation inward.** Use `align` (`tl|tc|tr|ml|mc|mr|bl|bc|br` — the label extends *away* from the anchor corner) plus a negative `dx` so a rightmost callout is not clipped by the plot edge / axis label. Case 3's "first sub-2:00" uses `align:"tr", dx:-8`.
+
+## Axis formatting notes
+
+- The numeric axis honours `visualize.y-grid-format` (numeral.js token), wired from `spec.valueFormat` (falls back to `spec.numberFormat`).
+- Currency: `"$0,0a"` → `$440K`.
+- **Seconds → h:mm:ss IS supported.** The numeral.js token `"00:00:00"` formats a raw-seconds column as clock time (7170 → `1:59:30`). Use it for durations (marathon/lap times) instead of shipping raw seconds. This is a real capability, not a hack — verified at render.
 
 ## Files
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { specToMetadata } from "../src/spec-to-metadata";
+import { specToMetadata, resolveData } from "../src/spec-to-metadata";
 import type { ChartSpec } from "../src/chart-spec";
 
 const spec: ChartSpec = {
@@ -97,5 +97,81 @@ describe("specToMetadata", () => {
     expect(ann.text).toBe("Peak");
     expect(ann.x).toBe("2021");
     expect(String(ann.y)).toBe("5");
+  });
+
+  it("renames machine column headers to human labels (series direct label)", () => {
+    const csv = resolveData({
+      type: "d3-lines",
+      title: "T",
+      data: "period,median_home_price_usd\n2020-Q1,322600",
+      altInsight: "x",
+      seriesLabels: { median_home_price_usd: "Median home price" },
+    } as any);
+    expect(csv).toBe("period,Median home price\n2020-Q1,322600");
+  });
+
+  it("derives a missing annotation y from the data at x (DW drops y-less annotations)", () => {
+    const p = specToMetadata({
+      type: "d3-lines",
+      title: "T",
+      data: "period,price\n2020-Q1,322600\n2022-Q4,442600",
+      altInsight: "x",
+      annotations: [{ text: "Peak", x: "2022-Q4" }],
+    } as any);
+    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
+    expect(ann.y).toBe("442600");
+  });
+
+  it("derives annotation y against the RENAMED series column", () => {
+    const p = specToMetadata({
+      type: "d3-lines",
+      title: "T",
+      data: "period,median_home_price_usd\n2022-Q4,442600",
+      altInsight: "x",
+      seriesLabels: { median_home_price_usd: "Median home price" },
+      annotations: [
+        { text: "Peak", x: "2022-Q4", column: "median_home_price_usd" },
+      ],
+    } as any);
+    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
+    expect(ann.y).toBe("442600");
+  });
+
+  it("passes annotation align/dx/dy through so near-edge labels can anchor inward", () => {
+    const p = specToMetadata({
+      type: "d3-lines",
+      title: "T",
+      data: "year,v\n2026,7170",
+      altInsight: "x",
+      annotations: [
+        { text: "Sawe", x: "2026", y: 7170, align: "tr", dx: -8, dy: -6 },
+      ],
+    } as any);
+    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
+    expect(ann.align).toBe("tr");
+    expect(ann.dx).toBe(-8);
+    expect(ann.dy).toBe(-6);
+  });
+
+  it("routes valueFormat to the y-grid axis format (e.g. h:mm:ss)", () => {
+    const p = specToMetadata({
+      type: "d3-lines",
+      title: "T",
+      data: "year,v\n2026,7170",
+      altInsight: "x",
+      valueFormat: "00:00:00",
+    } as any);
+    expect(p.metadata.visualize["y-grid-format"]).toBe("00:00:00");
+  });
+
+  it("falls back to numberFormat for the axis when valueFormat is absent", () => {
+    const p = specToMetadata({
+      type: "d3-lines",
+      title: "T",
+      data: "year,v\n2026,7170",
+      altInsight: "x",
+      numberFormat: "$0,0",
+    } as any);
+    expect(p.metadata.visualize["y-grid-format"]).toBe("$0,0");
   });
 });

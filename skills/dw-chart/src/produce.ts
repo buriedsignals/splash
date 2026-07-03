@@ -1,6 +1,5 @@
 import { validateChartSpec, type ChartSpec } from "./chart-spec";
-import { specToMetadata } from "./spec-to-metadata";
-import { sortCsv } from "./csv";
+import { specToMetadata, resolveData } from "./spec-to-metadata";
 import {
   createChart,
   setData,
@@ -25,7 +24,8 @@ export async function produceChart(
 
   const patch = specToMetadata(spec);
   const id = await createChart(spec.title, spec.type);
-  const csv = spec.sort ? sortCsv(spec.data, spec.sort) : spec.data;
+  // Same resolved CSV (renamed headers + sort) that the metadata mapping saw.
+  const csv = resolveData(spec);
   await setData(id, csv);
   await patchChart(id, { type: patch.type, metadata: patch.metadata });
   const publicUrl = await publishChart(id);
