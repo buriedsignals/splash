@@ -57,15 +57,22 @@ by geography), area (poor perception), and colour (low precision) — three of t
 bar uses length on a common baseline — the most accurate. So:
 
 - **Use a MAP only when** the SPATIAL PATTERN is the story (clustering, spread, adjacency, diffusion —
-  *where things sit relative to each other* is the insight), AND the data is normalized (rates, not raw
-  counts — raw counts make a population map), AND the regions are legible (countries/states, not tiny
-  municipal units), OR there is a self-location motive ("find my area").
+  *where things sit relative to each other* is the insight), AND the value is **map-safe** — a normalized
+  rate (%, per-capita, index) **or a per-region categorical/temporal attribute (year an event took effect,
+  class, rank)**; the guard is specifically against **raw absolute counts**, which just redraw the
+  population map — AND the regions are legible (countries/states, not tiny municipal units). A
+  **self-location motive** ("find my own area") can also earn a map, but ONLY when that is the piece's
+  explicit purpose — NOT merely because the data happens to be per-region (nearly all regional data has a
+  weak "find my country" pull; that alone never earns a map).
 - **Use a SORTED BAR CHART instead when** the story is "which region is highest/lowest" (ranking) · no
   clear geographic cluster · subtle adjacent differences (colour can't resolve them; bar length can) ·
-  few regions (≤~15) · absolute counts not rates.
-- **Practical test:** drop the geographic data into a sorted bar chart. If the story is equally/more
-  legible there → use the bar chart. Maps only earn their spatial overhead when the pattern is genuinely
-  lost in bars.
+  few regions (≤~15) · absolute counts not rates. **Prose that frames the finding as a ranking — "X leads,
+  Y lags", "swings from 27% to 6%", a leaders-vs-laggards spread — is a BAR signal, not a licence for a
+  map; the word "map" in a headline does not make the spatial pattern the story.**
+- **Practical test (the TIE-BREAKER):** drop the geographic data into a sorted bar chart. If the story is
+  equally/more legible there → use the bar chart. When a geographic dataset could go either way, DEFAULT
+  to the bar; maps only earn their spatial overhead when the pattern is genuinely lost without the map
+  (a real cluster / spread / diffusion, or a genuine self-location piece).
 
 ## Decision ladder (the suggester applies this)
 
@@ -76,7 +83,8 @@ CLAIM + DATA
   GATE 2  → large + personal-hook + web-only?                    ALL YES → INTERACTIVE (+static fallback)
   GATE 3  → sequential + single-chart 4+ states + long-form + resources?  ALL YES → SCROLLY
   GATE 4  → motion-is-the-encoding OR social/vertical?           YES → VIDEO
-  GATE 5  (geo only) spatial pattern IS the story + normalized + legible regions?  YES → MAP  else → sorted BAR
+  GATE 5  (geo only) spatial pattern IS the story + map-safe value (rate OR categorical/temporal, not raw
+          counts) + legible regions?  YES → MAP.  Ranking finding / could-go-either-way → sorted BAR (tie-breaker)
 ```
 
 Static-first is not conservatism — it is empirically grounded. Every escalation buys a specific capability

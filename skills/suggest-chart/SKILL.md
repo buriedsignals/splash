@@ -33,13 +33,20 @@ Producers: **dw-chart** (static Datawrapper chart — default), **chart-native**
 
 3. **Gate 5 — geographic only** (skip if no geographic structure was detected):
    Read `<repo-root>/knowledge/references/formats/format-selection.md` (Gate 5).
-   Emit a **map** ONLY when ALL three conditions hold:
-   - the **spatial pattern is the story** (the geographic distribution is the finding, not a ranking);
-   - the value is a **normalised rate** (per-capita, %, index — not raw absolute counts);
-   - the **regions are legible** in number and label (not 200+ micro-regions) OR a **self-location motive**
-     applies (the reader needs to find their own region).
-   If ANY condition fails → emit a **sorted bar chart** (`d3-bars`, `sort:"desc"`) — the honest default for
-   "which region is highest". State WHY (cite Gate 5) in the decision output.
+   Emit a **map** ONLY when ALL THREE conditions hold:
+   - the **spatial pattern is the story** (clustering, spread, adjacency, diffusion — NOT a ranking).
+     **Ranking-framing prose — "X leads, Y lags", "swings from 27% to 6%", a leaders-vs-laggards spread —
+     is a BAR signal, not a licence for a map; "map" in the headline does not make the spatial pattern the
+     story.**
+   - the value is **map-safe** — a normalised rate (per-capita, %, index) **OR a per-region
+     categorical/temporal attribute (year an event took effect, class, rank)**; the guard is only against
+     **raw absolute counts** (which redraw the population map).
+   - the **regions are legible** in number and label (not 200+ micro-regions).
+   A **self-location motive** ("find my own region") can ALSO earn a map, but ONLY when that is the piece's
+   explicit purpose — NOT merely because the data is per-region (that weak pull alone never earns a map).
+   If ANY condition fails, OR the case could go either way → emit a **sorted bar chart** (`d3-bars`,
+   `sort:"desc"`) — the honest default for "which region is highest" (drop-into-a-bar tie-breaker). State
+   WHY (cite Gate 5) in the decision output.
 
 4. **Format (Gates 1–4):** read `<repo-root>/knowledge/references/formats/format-selection.md` (Gates 1–4).
    Static is the default (most readers do not interact). Escalate to interactive / scrolly / video ONLY on
