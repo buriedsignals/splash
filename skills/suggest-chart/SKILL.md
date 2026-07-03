@@ -261,9 +261,18 @@ cannot be matched to ISO-A3 → fall back to `map-dw` or a sorted bar chart and 
   "description": "<what / when / where context>",
   "unit": "<long legend label, e.g. 'Share of renewables (%)'>",
   "valueUnit": "<short callout unit, e.g. '%'>",
+  "valueKind": "temporal | magnitude",
   "source": { "name": "<honest source>", "url": "<URL>" }
 }
 ```
+
+**Narrative pattern hint — `valueKind` (set it):** when the value field is a **year / date / ordinal
+step** and the story is a **diffusion / spread over time** (e.g. the year an event took effect per
+country), set `"valueKind": "temporal"`. The scrolly then narrates the SEQUENCE — the first (earliest),
+notable leaps, the most recent — instead of the generic "highest / lowest" ranking template (defect #3:
+a year field framed as "high/low year" instead of the wave). For a rate / count / magnitude, set
+`"valueKind": "magnitude"` (or omit it — magnitude is the default). The narrative must EXPLAIN the data
+for what it is: a temporal field is a spread, not a rank.
 
 **Self-check:** run `validateChoroplethConfig` (from `skills/map-native/src/validate-config.ts`) on the
 emitted config. Fix all errors; address warnings (description + source are required by the furniture

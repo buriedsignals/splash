@@ -1,4 +1,5 @@
 import type { ScrollyStory } from "./chapters";
+import type { Beat } from "../../map-native/src/map-story";
 
 // Render-free conformance for a scrolly story. beatCount = the number of map
 // beats the map steps' refs must index into.
@@ -28,6 +29,35 @@ export function checkScrollyConformance(
           `map step "${s.id}" ref ${s.ref} out of beat range [0,${beatCount})`,
         );
     }
+  }
+  return v;
+}
+
+// GUARDRAIL for defect #3 — the generic min/max template leaking into TEMPORAL
+// data. A temporal/ordinal value field must be told as a SEQUENCE ("the first /
+// then / the most recent"), never as a ranking. This audit FAILS if any map step
+// whose beat is a TEMPORAL reveal carries "highest" or "lowest" in its prose — the
+// exact regression where a year-field story reverts to the max/min template.
+//
+// It cross-references the derived story against the beats (which carry `pattern`):
+// the step's ref indexes into `beats`, so we know each step's originating beat.
+const RANKING_WORD = /\b(highest|lowest)\b/i;
+
+export function auditTemporalNarrative(
+  story: ScrollyStory,
+  beats: Beat[],
+): string[] {
+  const v: string[] = [];
+  for (const s of story.steps) {
+    if (s.visual !== "map" || typeof s.ref !== "number") continue;
+    const beat = beats[s.ref];
+    if (!beat || beat.kind !== "reveal" || beat.pattern !== "temporal")
+      continue;
+    if (RANKING_WORD.test(s.prose))
+      v.push(
+        `temporal reveal step "${s.id}" uses ranking language ("highest"/"lowest") — ` +
+          `a temporal field must read as a sequence, not a rank: "${s.prose}"`,
+      );
   }
   return v;
 }

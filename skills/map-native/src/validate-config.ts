@@ -56,6 +56,10 @@ export type ChoroplethConfigShape = ChoroplethData & {
   scaleType?: "sequential" | "diverging";
   // A named registry palette or a custom CVD-safe ramp (see theme/scale.ts).
   palette?: string | string[];
+  // Narrative pattern hint (② sets it when routing a temporal/diffusion field):
+  // "temporal" → tell the sequence (first → … → most recent), never "highest/
+  // lowest"; "magnitude" → keep the ranking; "categorical" → ranking fallback.
+  valueKind?: "temporal" | "magnitude" | "categorical";
 };
 
 // If a config declares a camera mode, it must be one the engine knows. (route-reveal
@@ -93,6 +97,12 @@ export function validateChoroplethConfig(
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
   errors.push(...paletteErrors(s));
+
+  if (
+    s.valueKind !== undefined &&
+    !["temporal", "magnitude", "categorical"].includes(s.valueKind as string)
+  )
+    errors.push("valueKind must be one of: temporal, magnitude, categorical");
 
   const rows = s.rows;
   if (!Array.isArray(rows) || rows.length === 0) {

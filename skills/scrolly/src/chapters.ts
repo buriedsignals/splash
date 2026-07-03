@@ -24,8 +24,12 @@ export interface ScrollyStory {
 // (NEVER article text). Sequence: [title] → [OVERVIEW (establish)] → [reveals] →
 // [TAKEAWAY (always)]. The title lives in the module header, so it is never a step
 // caption; the title step and OVERVIEW step both carry the description (so the viewer
-// first sees ALL the data); reveal steps add a rank descriptor (deriveMapStory orders
-// reveals max → min); the TAKEAWAY closes on all the data.
+// first sees ALL the data); reveal steps add a PATTERN-AWARE descriptor: a
+// magnitude/ranking field reads "the highest / the lowest" (deriveMapStory
+// orders max → min); a TEMPORAL field reads as a SEQUENCE — "the first / then /
+// the most recent" — never "highest/lowest" (deriveMapStory orders those reveals
+// earliest → latest and tags each beat with seqIndex/seqTotal). The TAKEAWAY
+// closes on all the data.
 export function mapStoryToChapters(
   beats: Beat[],
   meta: {
@@ -54,7 +58,18 @@ export function mapStoryToChapters(
       prose = desc; // OVERVIEW caption = the figure's description (see all the data)
     } else if (b.kind === "reveal" && b.callout) {
       let descriptor = "";
-      if (revealIdx.length > 1) {
+      if (b.pattern === "temporal") {
+        // Sequence language, NEVER "highest/lowest". deriveMapStory orders
+        // temporal reveals earliest→latest and tags each with seqIndex/seqTotal.
+        const idx = b.seqIndex ?? 0;
+        const total = b.seqTotal ?? revealIdx.length;
+        if (total > 1) {
+          if (idx === 0) descriptor = "the first";
+          else if (idx === total - 1) descriptor = "the most recent";
+          else descriptor = "then";
+        }
+      } else if (revealIdx.length > 1) {
+        // magnitude / ranking (also the categorical fallback) — ranking language.
         if (i === maxBeat)
           descriptor = `the highest of the ${meta.regionsWithData} shown`;
         else if (i === minBeat) descriptor = "the lowest";

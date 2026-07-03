@@ -156,6 +156,9 @@ export const Scrolly: React.FC<{
       title: config.title ?? "",
       insight: config.insight ?? config.title ?? "",
       unit: config.valueUnit ?? "",
+      valueField: config.valueField,
+      narrativePattern: (config as unknown as Record<string, unknown>)
+        .valueKind as "temporal" | "magnitude" | "categorical" | undefined,
     });
     const regionsWithData = layout.joined.filter(
       (j) => j.value !== null,

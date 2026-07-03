@@ -2,6 +2,8 @@ import { resolveMapFrame } from "./core/map-format";
 import { MAP_STYLES, computeRoute } from "./route-geo";
 import type { RouteConfig } from "./route-geo";
 import type { ScrollyStory } from "../../scrolly/src/chapters";
+import { auditTemporalNarrative } from "../../scrolly/src/conformance";
+import type { Beat } from "./map-story";
 import { computeCartogram } from "./cartogram-geo";
 import { bbox } from "@turf/turf";
 import {
@@ -312,9 +314,14 @@ export function checkRouteConformance(input: {
 export function checkScrollyConformance(input: {
   story: ScrollyStory;
   territoryCount?: number;
+  // When the derived beats are supplied, the temporal-narrative guardrail runs:
+  // a TEMPORAL reveal must never carry "highest/lowest" ranking prose (defect #3).
+  beats?: Beat[];
 }): { violations: string[] } {
   const v: string[] = [];
-  const { story, territoryCount } = input;
+  const { story, territoryCount, beats } = input;
+
+  if (beats) v.push(...auditTemporalNarrative(story, beats));
 
   if (story.steps.length < 2)
     v.push("scrolly needs at least 2 steps (intro + one content step)");

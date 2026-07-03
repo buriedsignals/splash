@@ -120,3 +120,101 @@ describe("mapStoryToChapters", () => {
     expect(story.steps.find((s) => s.ref === 2)?.prose).toBe("Norway — 99%");
   });
 });
+
+// Temporal beats: reveals are ordered earliest→latest and tagged with
+// pattern/seqIndex/seqTotal by deriveMapStory. The prose must read as a SEQUENCE.
+const temporalBeats: Beat[] = [
+  {
+    kind: "title",
+    camera: [-9, 36, 31, 71],
+    highlight: [],
+    dim: false,
+    callout: null,
+    copy: "Marriage equality spread over time",
+  },
+  {
+    kind: "establish",
+    camera: [-9, 36, 31, 71],
+    highlight: [],
+    dim: false,
+    callout: null,
+    copy: "",
+  },
+  {
+    kind: "reveal",
+    camera: [4, 50, 8, 54],
+    highlight: ["NLD"],
+    dim: true,
+    callout: {
+      region: "NLD",
+      name: "Netherlands",
+      value: "2001",
+      text: "Netherlands — 2001",
+    },
+    copy: "Netherlands — 2001",
+    pattern: "temporal",
+    seqIndex: 0,
+    seqTotal: 3,
+  },
+  {
+    kind: "reveal",
+    camera: [2, 42, 8, 51],
+    highlight: ["FRA"],
+    dim: true,
+    callout: {
+      region: "FRA",
+      name: "France",
+      value: "2013",
+      text: "France — 2013",
+    },
+    copy: "France — 2013",
+    pattern: "temporal",
+    seqIndex: 1,
+    seqTotal: 3,
+  },
+  {
+    kind: "reveal",
+    camera: [97, 5, 106, 20],
+    highlight: ["THA"],
+    dim: true,
+    callout: {
+      region: "THA",
+      name: "Thailand",
+      value: "2025",
+      text: "Thailand — 2025",
+    },
+    copy: "Thailand — 2025",
+    pattern: "temporal",
+    seqIndex: 2,
+    seqTotal: 3,
+  },
+  {
+    kind: "takeaway",
+    camera: [-9, 36, 31, 71],
+    highlight: [],
+    dim: false,
+    callout: null,
+    copy: "A wave from 2001 to 2025",
+  },
+];
+
+describe("mapStoryToChapters — temporal pattern", () => {
+  const meta = {
+    title: "Marriage equality spread over time",
+    description: "The year same-sex marriage took effect in each country",
+    source: { name: "Wikipedia", url: "https://example.org" },
+    regionsWithData: 36,
+  };
+
+  it("words temporal reveals as a sequence: the first / then / the most recent, never highest/lowest", () => {
+    const story = mapStoryToChapters(temporalBeats, meta);
+    const reveals = story.steps.filter((s) => s.prose.includes("—"));
+    expect(reveals[0].prose).toBe("Netherlands — 2001, the first");
+    expect(reveals[1].prose).toBe("France — 2013, then");
+    expect(reveals[2].prose).toBe("Thailand — 2025, the most recent");
+    for (const r of reveals) {
+      expect(r.prose.toLowerCase()).not.toContain("highest");
+      expect(r.prose.toLowerCase()).not.toContain("lowest");
+    }
+  });
+});

@@ -43,6 +43,9 @@ export interface ScrollyMapConfig extends ChoroplethData {
   source?: { name: string; url: string };
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
+  // Narrative pattern hint (② sets it): "temporal" → tell the sequence, never
+  // "highest/lowest"; "magnitude" → keep the ranking; "categorical" → fallback.
+  valueKind?: "temporal" | "magnitude" | "categorical";
 }
 
 interface CameraPoint {
@@ -154,6 +157,8 @@ export const ScrollyMap: React.FC<{
         title: config.title ?? "",
         insight: config.insight ?? config.title ?? "",
         unit: config.valueUnit ?? "",
+        valueField: config.valueField,
+        narrativePattern: config.valueKind,
       };
       const beats = deriveMapStory(layout, world, "iso_a3", meta);
 

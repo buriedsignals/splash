@@ -127,6 +127,59 @@ describe("deriveMapStory", () => {
     expect(last.kind).toBe("takeaway");
     expect(last.copy).toBe("");
   });
+  it("temporal field: orders reveals earliest→latest and tags seqIndex/seqTotal, no highest/lowest", () => {
+    const yearly: ChoroplethData = {
+      regionKey: "code",
+      valueField: "year",
+      rows: [
+        { code: "NOR", year: 2009 },
+        { code: "DEU", year: 2001 }, // earliest
+        { code: "POL", year: 2025 }, // latest
+      ],
+    };
+    const layout = computeChoropleth(yearly, features, "iso_a3");
+    const beats = deriveMapStory(layout, features, "iso_a3", {
+      title: "Marriage equality spread over time",
+      insight: "A wave from 2001 to 2025",
+      unit: "",
+      valueField: "year",
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    // 3 regions ≤ ... first + middles + last; here 3 rows → first, one middle, last.
+    expect(reveals[0].highlight).toEqual(["DEU"]); // 2001 first
+    expect(reveals[reveals.length - 1].highlight).toEqual(["POL"]); // 2025 latest
+    expect(reveals[0].pattern).toBe("temporal");
+    expect(reveals[0].seqIndex).toBe(0);
+    expect(reveals[0].seqTotal).toBe(reveals.length);
+    expect(reveals[reveals.length - 1].seqIndex).toBe(reveals.length - 1);
+  });
+
+  it("explicit narrativePattern:'temporal' hint forces sequence even for a non-year field name", () => {
+    const layout = computeChoropleth(data, features, "iso_a3");
+    const beats = deriveMapStory(layout, features, "iso_a3", {
+      ...meta,
+      valueField: "share",
+      narrativePattern: "temporal",
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals.every((r) => r.pattern === "temporal")).toBe(true);
+    // ordered earliest→latest by value: POL(21) → ... → NOR(99)
+    expect(reveals[0].highlight).toEqual(["POL"]);
+    expect(reveals[reveals.length - 1].highlight).toEqual(["NOR"]);
+  });
+
+  it("magnitude field keeps max→min reveals with pattern 'magnitude'", () => {
+    const layout = computeChoropleth(data, features, "iso_a3");
+    const beats = deriveMapStory(layout, features, "iso_a3", {
+      ...meta,
+      valueField: "share",
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals[0].highlight).toEqual(["NOR"]); // max
+    expect(reveals[1].highlight).toEqual(["POL"]); // min
+    expect(reveals.every((r) => r.pattern === "magnitude")).toBe(true);
+  });
+
   it("breaks max/min ties by ascending region key (deterministic)", () => {
     const tie: ChoroplethData = {
       regionKey: "code",

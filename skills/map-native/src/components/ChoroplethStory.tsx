@@ -94,6 +94,7 @@ export const ChoroplethStory: React.FC<{
     source?: { name: string; url: string };
     scaleType?: "sequential" | "diverging";
     palette?: string | string[];
+    valueKind?: "temporal" | "magnitude" | "categorical";
   };
 }> = ({ config }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -168,6 +169,8 @@ export const ChoroplethStory: React.FC<{
             title: config.title ?? "",
             insight: config.insight ?? config.title ?? "",
             unit: config.valueUnit ?? "",
+            valueField: config.valueField,
+            narrativePattern: config.valueKind,
           };
           const beats = deriveMapStory(layout, worldGeoJson, "iso_a3", meta);
 

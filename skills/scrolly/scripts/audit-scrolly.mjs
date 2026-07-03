@@ -6,16 +6,28 @@ import { fileURLToPath } from "node:url";
 import { computeChoropleth } from "../../map-native/src/choropleth-geo.ts";
 import { deriveMapStory } from "../../map-native/src/map-story.ts";
 import { mapStoryToChapters } from "../src/chapters.ts";
-import { checkScrollyConformance } from "../src/conformance.ts";
+import {
+  checkScrollyConformance,
+  auditTemporalNarrative,
+} from "../src/conformance.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
-const config = JSON.parse(readFileSync(join(root, "assets/sample-data/scrolly.json"), "utf8"));
+// A second config path may be passed (e.g. a workflow-test config) to audit it
+// instead of the built-in sample; defaults to the sample.
+const configPath = process.argv[2]
+  ? process.argv[2]
+  : join(root, "assets/sample-data/scrolly.json");
+const config = JSON.parse(readFileSync(configPath, "utf8"));
 const world = JSON.parse(readFileSync(join(root, "../map-native/assets/geo/world.geojson"), "utf8"));
 
 const layout = computeChoropleth(config, world, "iso_a3", { bins: 5, scaleType: "sequential" });
 const beats = deriveMapStory(layout, world, "iso_a3", {
-  title: config.title, insight: config.insight ?? config.title, unit: config.valueUnit ?? "",
+  title: config.title,
+  insight: config.insight ?? config.title,
+  unit: config.valueUnit ?? "",
+  valueField: config.valueField,
+  narrativePattern: config.valueKind,
 });
 const regionsWithData = layout.joined.filter((j) => j.value !== null).length;
 const story = mapStoryToChapters(beats, {
@@ -24,7 +36,11 @@ const story = mapStoryToChapters(beats, {
   source: config.source,
   regionsWithData,
 });
-const problems = checkScrollyConformance(story, beats.length);
+// Guardrail (defect #3): a temporal field must never revert to "highest/lowest".
+const problems = [
+  ...checkScrollyConformance(story, beats.length),
+  ...auditTemporalNarrative(story, beats),
+];
 if (problems.length) {
   console.error("✗ scrolly audit FAILED:\n  " + problems.join("\n  "));
   process.exit(1);
