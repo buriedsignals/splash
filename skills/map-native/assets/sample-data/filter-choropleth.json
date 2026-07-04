@@ -1,0 +1,35 @@
+{
+  "title": "Renewable electricity share by country",
+  "description": "Share of electricity from renewables, 2024 (%)",
+  "unit": "share of electricity from renewables (%)",
+  "valueUnit": "%",
+  "basemap": "world",
+  "regionKey": "code",
+  "valueField": "share",
+  "source": {
+    "name": "Ember Global Electricity Review 2025",
+    "url": "https://ember-climate.org/insights/research/global-electricity-review-2025/"
+  },
+  "filters": [
+    {
+      "kind": "range",
+      "field": "share",
+      "label": "Min. share (%)",
+      "mode": "atLeast"
+    }
+  ],
+  "rows": [
+    { "code": "NOR", "share": 99 },
+    { "code": "SWE", "share": 68 },
+    { "code": "DEU", "share": 59 },
+    { "code": "FRA", "share": 27 },
+    { "code": "ESP", "share": 44 },
+    { "code": "ITA", "share": 41 },
+    { "code": "POL", "share": 21 },
+    { "code": "GBR", "share": 48 },
+    { "code": "DNK", "share": 88 },
+    { "code": "FIN", "share": 73 },
+    { "code": "AUT", "share": 81 },
+    { "code": "PRT", "share": 62 }
+  ]
+}

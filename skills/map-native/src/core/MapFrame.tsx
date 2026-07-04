@@ -25,6 +25,8 @@ export interface MapFrameProps {
   furnitureOpacity?: number;
   /** Follow the basemap theme: dark pill + light ink when true. Defaults false (light). */
   dark?: boolean;
+  /** Optional node rendered directly below the title/description block, inside the title band. */
+  belowTitle?: ReactNode;
 }
 
 export function MapFrame({
@@ -39,6 +41,7 @@ export function MapFrame({
   onTitleHeight,
   furnitureOpacity = 1,
   dark = false,
+  belowTitle,
 }: MapFrameProps) {
   const titleRef = useRef<HTMLDivElement>(null);
   const [, setMeasuredHeight] = useState(0);
@@ -131,6 +134,7 @@ export function MapFrame({
             {description}
           </div>
         )}
+        {belowTitle && <div style={{ marginTop: 6 }}>{belowTitle}</div>}
       </div>
       {/* Source band (bottom-left) — ALWAYS rendered, incl. video */}
       <div
