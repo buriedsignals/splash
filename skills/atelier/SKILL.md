@@ -76,6 +76,15 @@ Ask which the journalist wants:
   prints an iframe-ready URL. If the fly.io host is not set up yet, offer CODE now + say the embed
   link is pending setup.
 
+  **One-time fly.io host setup** (run once from `skills/atelier/embed-host/`):
+  ```bash
+  flyctl launch --no-deploy          # creates the atelier-embeds app; commit fly.toml
+  flyctl volumes create data --size 1
+  flyctl deploy
+  ```
+  After that, `deploy-embed.mjs` uploads directly via `flyctl ssh sftp shell`. The `ATELIER_EMBED_APP`
+  env var overrides the default app name `atelier-embeds` if needed.
+
 ## Gates
 
 | Gate | Phase | Stop condition | Failure mode if skipped |
