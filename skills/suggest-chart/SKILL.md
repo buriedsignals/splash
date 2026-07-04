@@ -229,6 +229,27 @@ Field notes:
 - `source.name` + `source.url`: required (furniture standard; missing is a warning).
 - `unit` / `valueUnit`: optional but fill them when the data has a clear unit.
 
+**Filters (INTERACTIVE maps only — reader exploration).** When the format is **interactive** (Gate 2
+fired) AND the data shape supports it, add a `filters` array so the reader can explore. Emit a filter
+ONLY when it serves the story's exploration intent — never "all possible filters." **At most 2.** The
+bar derives its values from the data; you name the FIELD, not the values. Two kinds are supported today:
+
+```json
+"filters": [
+  { "kind": "category", "field": "<a categorical column, 2–8 distinct values>", "label": "<optional>" },
+  { "kind": "range",    "field": "<a numeric column>", "mode": "atLeast", "label": "<optional>" }
+]
+```
+- `category` → toggle chips (e.g. hospital type, party). `range` → a value-threshold slider
+  (`mode`: `atLeast` default / `atMost` / `between`).
+- **Do NOT emit `kind:"time"` yet** — the interactive time-scrub re-derivation is not wired for any map
+  type, so a time filter would render a control that does nothing. A temporal story stays a **video /
+  scrolly** (Gate 3/4), not an interactive time slider.
+- Filters are **interactive-only**: the static PNG and the video render the default (all categories,
+  full range) with no filter bar. If the format is static (`map-dw` or a static `map-native`), omit `filters`.
+- `validateChoroplethConfig` rejects a bad filters block (unknown field, category cardinality outside
+  2–8, non-numeric range, >2 filters) — fix any error it reports.
+
 **Self-check:** after filling the config, run `validateChoroplethConfig` (from
 `skills/map-native/src/validate-config.ts`). Fix all errors; address warnings (description + source).
 
