@@ -18,8 +18,8 @@ import {
   deriveFilterOptions,
   filterStateToExpression,
   type FilterState,
+  type MapFilter,
 } from "./core/map-filter";
-import type { MapFilter } from "./core/map-filter";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
