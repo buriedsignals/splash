@@ -331,6 +331,7 @@ insight state the insight, not column names. Confirm `nativeType` ∈ {line, bar
 - **Multi-series orientation:** `transpose:true` is ONLY for stacked/grouped **categorical** charts (e.g. stacked `year, Coal, Gas, Renewables`) where the x-category, not the series, belongs on the axis. **Never transpose a line/time chart** — a multi-series time trend (`year, France, Switzerland`) is `d3-lines` with one line per column and NO transpose. `multiple-lines`/`multiple-columns` = deliberate small multiples (one panel per series), not a single trend.
 - **Two-point comparison (prose-extracted):** a claim with exactly two values (e.g. 2019 vs 2024) renders as a **slope**, **dumbbell**, or **paired columns** — NEVER a continuous line, which would imply a trend from two points.
 - **Honest source label (prose):** when the data is `provenance: "prose"`, the chart's source reads "Figures as reported in this article" (or the source the article itself names) — never a fabricated dataset attribution.
+- **`numberFormat` = a Datawrapper numeral token, NOT printf/Python.** Use `"0.0"` (one decimal), `"0.00"` (two), `"0,0"` (thousands), `"0%"`, `"$0,0"`. NEVER `".1f"` / `".2f"` — a printf token ships silently-wrong value labels (".1f" renders 8.4 as ".40"). The producer auto-corrects the common printf mistakes and `validateChartSpec` warns, but emit the numeral token directly.
 
 ## Self-check
 

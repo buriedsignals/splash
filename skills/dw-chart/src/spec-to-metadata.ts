@@ -1,5 +1,9 @@
 import type { ChartSpec } from "./chart-spec";
-import { MULTI_SERIES_TYPES, type ChartType } from "./chart-spec";
+import {
+  MULTI_SERIES_TYPES,
+  normalizeNumberFormat,
+  type ChartType,
+} from "./chart-spec";
 import { dataShape, renameColumns, sortCsv, valueAt } from "./csv";
 
 // Line/area chart types whose default "direct labelling" puts the series name at
@@ -401,16 +405,24 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
     "source-url": spec.source?.url ?? "",
     "aria-description": spec.altInsight,
   };
-  describe["number-format"] = spec.numberFormat ?? "0,0.[00]";
+  // Normalise the number token so a printf/Python mistake (".1f") becomes a valid
+  // Datawrapper token ("0.0") instead of shipping garbage value labels.
+  const numberFormat = spec.numberFormat
+    ? normalizeNumberFormat(spec.numberFormat)
+    : undefined;
+  const valueFormat = spec.valueFormat
+    ? normalizeNumberFormat(spec.valueFormat)
+    : undefined;
+  describe["number-format"] = numberFormat ?? "0,0.[00]";
 
   const visualize: Record<string, unknown> = {};
   // bar/column value labels honour `value-label-format`, NOT describe.number-format
-  if (spec.numberFormat) visualize["value-label-format"] = spec.numberFormat;
+  if (numberFormat) visualize["value-label-format"] = numberFormat;
   // The numeric axis honours `y-grid-format` (numeral.js token). Prefer an
   // explicit valueFormat (e.g. '$0,0a' currency, or '00:00:00' → h:mm:ss for a
   // seconds axis), else fall back to the number format so the axis and the
   // value labels stay in sync.
-  const axisFormat = spec.valueFormat ?? spec.numberFormat;
+  const axisFormat = valueFormat ?? numberFormat;
   if (axisFormat) visualize["y-grid-format"] = axisFormat;
   if (spec.baseColor) visualize["base-color"] = spec.baseColor;
   if (spec.valueLabels !== undefined)

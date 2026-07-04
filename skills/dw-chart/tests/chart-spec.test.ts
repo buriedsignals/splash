@@ -1,5 +1,54 @@
 import { describe, it, expect } from "bun:test";
-import { validateChartSpec, OKABE_ITO } from "../src/chart-spec";
+import {
+  validateChartSpec,
+  normalizeNumberFormat,
+  OKABE_ITO,
+} from "../src/chart-spec";
+
+describe("normalizeNumberFormat", () => {
+  it("passes a valid Datawrapper token through unchanged", () => {
+    for (const t of ["0.0", "0.00", "0,0", "0%", "$0,0", "0.[00]", "0a"])
+      expect(normalizeNumberFormat(t)).toBe(t);
+  });
+  it("translates printf/Python float tokens (the .1f bug that shipped '.40')", () => {
+    expect(normalizeNumberFormat(".1f")).toBe("0.0");
+    expect(normalizeNumberFormat(".2f")).toBe("0.00");
+    expect(normalizeNumberFormat(".0f")).toBe("0");
+    expect(normalizeNumberFormat(",.2f")).toBe("0,0.00");
+    expect(normalizeNumberFormat("d")).toBe("0");
+  });
+  it("passes valid exotic tokens through (duration, currency-abbrev)", () => {
+    expect(normalizeNumberFormat("00:00:00")).toBe("00:00:00");
+    expect(normalizeNumberFormat("$0,0a")).toBe("$0,0a");
+  });
+  it("throws (fails loud) on a clear printf leftover it cannot map", () => {
+    expect(() => normalizeNumberFormat("%s")).toThrow(/invalid numberFormat/i);
+    expect(() => normalizeNumberFormat(".3e")).toThrow(/invalid numberFormat/i);
+  });
+});
+
+describe("validateChartSpec — numberFormat token", () => {
+  const barBase = {
+    type: "d3-bars",
+    title: "North East rents rose fastest",
+    data: "region,pct\nNorth East,8.4\nLondon,2.8",
+    altInsight: "North East rents rose 8.4% vs London 2.8%",
+  };
+  it("warns (not errors) when a printf token is auto-corrected", () => {
+    const r = validateChartSpec({ ...barBase, numberFormat: ".1f" });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(r.warnings.some((w) => w.includes('normalised to "0.0"'))).toBe(
+        true,
+      );
+  });
+  it("errors on an un-mappable printf leftover number token", () => {
+    const r = validateChartSpec({ ...barBase, numberFormat: "%s" });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.some((e) => /invalid numberFormat/i.test(e))).toBe(true);
+  });
+});
 
 const base = {
   type: "d3-lines",

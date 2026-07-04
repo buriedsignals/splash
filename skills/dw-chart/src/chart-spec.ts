@@ -104,6 +104,43 @@ export interface ChartSpec {
   }[];
 }
 
+// A valid Datawrapper/numeral.js number token (what value-label-format + y-grid-format expect):
+// e.g. "0.0", "0.00", "0,0", "0%", "$0,0", "0.[00]", "0a". NOT a printf/Python token like ".1f".
+const DW_NUMBER_TOKEN = /^[$€£¥]?[0#](?:[0#,])*(?:\.[0#[\]]+)?[%a]?$/;
+
+/**
+ * Normalise a number-format token to a valid Datawrapper (numeral.js) token. Translates the
+ * common printf/Python/C mistakes the ② layer emits (".1f" → "0.0", ".2f" → "0.00",
+ * ",.2f" → "0,0.00", "d" → "0", ".1f%" → "0.0%") — these otherwise ship SILENTLY-WRONG value
+ * labels (".1f" rendered "8.4" as ".40"). Anything already valid — numeral tokens, durations
+ * ("00:00:00"), currency-abbrev ("$0,0a") — passes through untouched. Only a clear but
+ * un-mappable printf leftover ("%s", ".3e") THROWS, so nonsense fails loudly. Pure + unit-tested.
+ */
+export function normalizeNumberFormat(fmt: string): string {
+  const f = fmt.trim();
+  let m: RegExpMatchArray | null;
+  // printf/Python float: [%][,].Nf  (leading % or comma-grouping optional)
+  if ((m = f.match(/^%?(,)?\.(\d+)f$/))) {
+    const grouped = m[1] ? "0,0" : "0";
+    const dec = Number(m[2]);
+    return dec === 0 ? grouped : `${grouped}.${"0".repeat(dec)}`;
+  }
+  // percent with optional N decimals: .Nf% / .N% / %  → "0[.0…]%"
+  if ((m = f.match(/^\.(\d+)f?%$/))) {
+    const dec = Number(m[1]);
+    return dec > 0 ? `0.${"0".repeat(dec)}%` : "0%";
+  }
+  // bare integer conversions: d / i / f / %d
+  if (/^%?[dif]$/.test(f)) return "0";
+  if (DW_NUMBER_TOKEN.test(f)) return f; // already a valid numeral token
+  // a clear printf leftover we cannot map → fail loud rather than ship garbage labels
+  if (/^%\D/.test(f) || /\.\d+[eg]$/.test(f))
+    throw new Error(
+      `invalid numberFormat "${fmt}" — use a Datawrapper number token like "0.0", "0.00", "0,0" or "0%" (not a printf/Python token like ".1f")`,
+    );
+  return f; // unrecognised but not obviously broken (duration, currency, custom) → pass through
+}
+
 export function validateChartSpec(
   input: unknown,
 ):
@@ -165,6 +202,22 @@ export function validateChartSpec(
     errors.push(
       "valueFormat must be a string (a Datawrapper number-format token)",
     );
+  // A bad number token silently ships wrong value labels (".1f" rendered "8.4" as ".40").
+  // Reject the un-mappable; warn when a non-standard token was auto-corrected.
+  for (const field of ["numberFormat", "valueFormat"] as const) {
+    const v = (s as Record<string, unknown>)[field];
+    if (typeof v === "string" && v.trim()) {
+      try {
+        const norm = normalizeNumberFormat(v);
+        if (norm !== v.trim())
+          warnings.push(
+            `${field} "${v}" is not a Datawrapper token — normalised to "${norm}". Emit a numeral token (e.g. "0.0", "0%").`,
+          );
+      } catch (e) {
+        errors.push((e as Error).message);
+      }
+    }
+  }
   if (s.seriesLabels !== undefined) {
     if (typeof s.seriesLabels !== "object" || s.seriesLabels === null) {
       errors.push("seriesLabels must be an object (column key → display name)");
