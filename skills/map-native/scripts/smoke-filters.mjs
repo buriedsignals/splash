@@ -226,12 +226,17 @@ const browser = await chromium.launch();
       if (!m || !m.getLayer("locator-clusters")) return 0;
       return m.queryRenderedFeatures({ layers: ["locator-clusters"] }).length;
     });
-    return { glyphs, clusters, total: glyphs + clusters };
+    const labels = await pg.evaluate(() => {
+      const m = window.__map__;
+      if (!m || !m.getLayer("locator-labels")) return 0;
+      return m.queryRenderedFeatures({ layers: ["locator-labels"] }).length;
+    });
+    return { glyphs, clusters, labels, total: glyphs + clusters };
   }
 
   const beforeCounts = await countLocatorTotal(page);
   console.log(
-    `  count before — glyphs:${beforeCounts.glyphs} clusters:${beforeCounts.clusters} total:${beforeCounts.total}`,
+    `  count before — glyphs:${beforeCounts.glyphs} clusters:${beforeCounts.clusters} labels:${beforeCounts.labels} total:${beforeCounts.total}`,
   );
 
   // Assert clustering IS disabled when a category filter is configured (F-B guardrail).
@@ -258,7 +263,7 @@ const browser = await chromium.launch();
 
     const afterCounts = await countLocatorTotal(page);
     console.log(
-      `  count after  — glyphs:${afterCounts.glyphs} clusters:${afterCounts.clusters} total:${afterCounts.total}`,
+      `  count after  — glyphs:${afterCounts.glyphs} clusters:${afterCounts.clusters} labels:${afterCounts.labels} total:${afterCounts.total}`,
     );
     if (afterCounts.total < beforeCounts.total) {
       console.log(
@@ -269,6 +274,17 @@ const browser = await chromium.launch();
         `${label}: cluster-inclusive count did not drop (${beforeCounts.total} → ${afterCounts.total})`,
       );
       console.error(`  FAIL: cluster-inclusive count did not drop`);
+    }
+    // Labels must drop alongside glyphs — a label with no marker is the F-B residual leak.
+    if (afterCounts.labels < beforeCounts.labels) {
+      console.log(
+        `  label drop: OK (${beforeCounts.labels} → ${afterCounts.labels})`,
+      );
+    } else {
+      failures.push(
+        `${label}: locator-labels count did not drop (${beforeCounts.labels} → ${afterCounts.labels}) — labels survive filtered-out markers`,
+      );
+      console.error(`  FAIL: locator-labels count did not drop`);
     }
   }
 

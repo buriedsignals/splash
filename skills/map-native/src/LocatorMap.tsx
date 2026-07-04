@@ -518,8 +518,20 @@ export const LocatorMap: React.FC<Props> = ({
       : ["all"];
     const filterExpr = filterStateToExpression(filterState, filterOptions);
     // filterExpr is ["all", ...clauses]. Spread its clauses into ["all", base, ...clauses].
-    const combined = ["all", baseFilter, ...(filterExpr.slice(1) as unknown[])];
+    const clauses = filterExpr.slice(1) as unknown[];
+    const combined = ["all", baseFilter, ...clauses];
     map.setFilter(GLYPH_LAYER, combined as never);
+    // The label layer carries its own static filter (base + __showLabel). Re-apply the same
+    // category clauses so labels never survive a marker they belong to being filtered out.
+    if (map.getLayer(LABEL_LAYER)) {
+      const labelFilter = [
+        "all",
+        baseFilter,
+        ["==", ["get", "__showLabel"], true],
+        ...clauses,
+      ];
+      map.setFilter(LABEL_LAYER, labelFilter as never);
+    }
   }, [filterState, filterOptions, interactive, clusteringEnabled]);
 
   const handleTitleHeight = useCallback((px: number) => {
