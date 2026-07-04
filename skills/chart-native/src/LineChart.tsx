@@ -60,6 +60,12 @@ export interface LineChartProps {
    *  drawn head position tracks the scroll exactly; title + source are suppressed (the
    *  host owns them). Default false → the video/static reveal is unchanged. */
   embedded?: boolean;
+  /** embedded only: reveal the line up to this FRACTIONAL data-point index (0 = the
+   *  first point / empty, n-1 = full). LineChart converts it to the exact path-length
+   *  fraction using ITS OWN responsive layout — so the drawn head lands on the point at
+   *  ANY width, and the host never needs to know the pixel geometry. Overrides `progress`
+   *  for the line reveal when set. */
+  revealTo?: number;
 }
 
 export function LineChart({
@@ -71,6 +77,7 @@ export function LineChart({
   responsive = false,
   scale = 1,
   embedded = false,
+  revealTo,
 }: LineChartProps) {
   const p = clamp01(progress);
 
@@ -115,9 +122,28 @@ export function LineChart({
   // a wide window [0.30, 0.95] so it draws slowly and smoothly (soft start/stop),
   // independent of the other phases — the master is linear, each phase eases itself.
   // Video/static: the line eases over a [0.30, 0.95] window (after the axes wipe in).
-  // Embedded (scroll host): the line is a LINEAR function of progress — the drawn head
-  // maps 1:1 to the scroll position, so it lands exactly where the caption says.
-  const lineProgress = embedded ? p : easeInOutCubic((p - 0.3) / 0.65); // window 0.30 → 0.95
+  // Embedded (scroll host): the line is LINEAR in progress. When `revealTo` (a fractional
+  // data-point index) is given, resolve it to the exact path-length fraction using THIS
+  // layout's cumLength — so the head lands on the point at any responsive width, no matter
+  // the host's dims.
+  const revealFraction =
+    revealTo != null
+      ? (() => {
+          const cum = layout.cumLength;
+          const total = layout.totalLength || 1;
+          const last = cum.length - 1;
+          const fi = Math.max(0, Math.min(last, revealTo));
+          const i0 = Math.floor(fi);
+          const len =
+            i0 >= last
+              ? cum[last]
+              : cum[i0] + (cum[i0 + 1] - cum[i0]) * (fi - i0);
+          return len / total;
+        })()
+      : p;
+  const lineProgress = embedded
+    ? revealFraction
+    : easeInOutCubic((p - 0.3) / 0.65); // window 0.30 → 0.95
 
   const svg = (
     <ChartSvg

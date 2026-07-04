@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LineChart } from "../../chart-native/src/LineChart";
 import { specToNativeConfig } from "../../chart-native/src/spec-to-config";
 import { deriveChartStory } from "../../chart-native/src/chart-story";
@@ -10,17 +10,17 @@ export type ChartScrollyConfig = NativeSpec & {
   source?: { name: string; url?: string };
 };
 
-// Map the continuous scroll fraction (0→1 through the pinned region) to the LINE reveal
-// progress, hitting each captioned point exactly when its prose card reaches centre. The
-// visible cards are [intro, reveal₀ … reveal_{K-1}, takeaway] — evenly spaced in scroll —
-// so the checkpoint array is [0, r₀ … r_{K-1}, 1] (r = each reveal's path-length
-// fraction). Linearly interpolate it at scrollProgress·(len-1): the line draws smoothly
-// and reaches reveal J's point (r_J) at that card's scroll position. Pure + testable.
+// Map the continuous scroll fraction (0→1 over the rendered prose cards) to a FRACTIONAL
+// data-point index the line should be drawn up to, hitting each captioned point exactly
+// when its card centres. The visible cards are [intro, reveal₀ … reveal_{K-1}, takeaway] —
+// evenly spaced in scroll — so the checkpoints are the data indices
+// [0, d₀ … d_{K-1}, lastIndex]. Linearly interpolate at scroll·(len-1). LineChart then
+// converts the returned index to the exact path fraction at its OWN responsive width, so
+// the head lands on the point at any size. Pure + testable.
 export function scrollToLineProgress(
   scrollProgress: number,
-  revealProgresses: number[],
+  checkpoints: number[],
 ): number {
-  const checkpoints = [0, ...revealProgresses, 1];
   const s = Math.max(0, Math.min(1, scrollProgress));
   const x = s * (checkpoints.length - 1);
   const i = Math.floor(x);
@@ -33,21 +33,40 @@ export const ScrollyChart: React.FC<{
   config: ChartScrollyConfig;
   scrollProgress: number;
 }> = ({ config, scrollProgress }) => {
-  const { native, revealProgresses } = useMemo(() => {
-    const native = specToNativeConfig(config).config;
+  const { native, checkpoints } = useMemo(() => {
+    const native = specToNativeConfig(config).config as {
+      points: unknown[];
+    } & Record<string, unknown>;
     const beats = deriveChartStory(config, config.insight);
-    const revealProgresses = beats
+    const revealIndices = beats
       .filter((b) => b.kind === "reveal")
-      .map((b) => b.progress ?? 1);
-    return { native, revealProgresses };
+      .map((b) => b.dataIndex ?? 0);
+    const lastIndex = Math.max(0, native.points.length - 1);
+    // [intro=first point] + each reveal's data index + [takeaway=last point]
+    const checkpoints = [0, ...revealIndices, lastIndex];
+    return { native, checkpoints };
   }, [config]);
 
-  // Continuous scrub — the line draws on with the scroll (embedded LineChart: static axes
-  // from the start, linear reveal, no title/source since the scrolly host shows them).
-  const progress = scrollToLineProgress(scrollProgress, revealProgresses);
+  // Responsive: measure the sticky container width (ResizeObserver) and hand it to
+  // LineChart so the chart fills its width and shrinks on mobile — a chart embed must
+  // ALWAYS be responsive. Height keeps a readable aspect, clamped.
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setWidth(Math.max(280, el.clientWidth));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const revealTo = scrollToLineProgress(scrollProgress, checkpoints);
 
   return (
     <div
+      ref={ref}
       style={{
         width: "100%",
         height: "100%",
@@ -57,13 +76,17 @@ export const ScrollyChart: React.FC<{
         background: "#ffffff",
       }}
     >
-      <LineChart
-        config={native as never}
-        progress={progress}
-        responsive
-        embedded
-        interactive={false}
-      />
+      {width != null && (
+        <LineChart
+          config={native as never}
+          width={width}
+          height={Math.round(Math.max(320, Math.min(520, width * 0.62)))}
+          revealTo={revealTo}
+          responsive
+          embedded
+          interactive={false}
+        />
+      )}
     </div>
   );
 };

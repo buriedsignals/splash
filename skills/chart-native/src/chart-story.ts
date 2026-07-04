@@ -19,6 +19,8 @@ export interface ChartBeat {
   progress?: number; // line: 0..1 reveal to this point
   highlightIndex?: number; // bar (Slice B)
   labelKey?: string; // scatter (Slice B)
+  dataIndex?: number; // line reveal: the data-point index (host resolves the exact
+  // path fraction at its OWN responsive width, so the head lands on the point at any size)
   callout: { name: string; value: string; text: string } | null;
   copy: string;
   rank?: number;
@@ -89,7 +91,8 @@ export function deriveChartStory(
     const text = `${name} — ${value}`;
     beats.push({
       kind: "reveal",
-      progress: cum[i] / total,
+      progress: cum[i] / total, // CHART_DIMS fallback; the host prefers dataIndex
+      dataIndex: i, // the point's data index — resolved to a path fraction at render width
       callout: { name, value, text },
       copy: text,
     });
