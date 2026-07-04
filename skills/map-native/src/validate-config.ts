@@ -133,7 +133,9 @@ export function validateChoroplethConfig(
     }
   }
 
-  const rowsForFilters = (s.rows as Record<string, unknown>[]) ?? [];
+  const rowsForFilters = Array.isArray(s.rows)
+    ? (s.rows as Record<string, unknown>[])
+    : [];
   const fr = validateMapFilters(
     s.filters as MapFilter[] | undefined,
     rowsForFilters,
@@ -225,7 +227,9 @@ export function validateSymbolConfig(
     }
   }
 
-  const pointsForFilters = (s.points as Record<string, unknown>[]) ?? [];
+  const pointsForFilters = Array.isArray(s.points)
+    ? (s.points as Record<string, unknown>[])
+    : [];
   const frSymbol = validateMapFilters(
     s.filters as MapFilter[] | undefined,
     pointsForFilters,
@@ -468,7 +472,9 @@ export function validateDotDensityConfig(
   if (!Array.isArray(s.rows) || s.rows.length === 0)
     errors.push("rows must be a non-empty array");
 
-  const ddRowsForFilters = (s.rows as Record<string, unknown>[]) ?? [];
+  const ddRowsForFilters = Array.isArray(s.rows)
+    ? (s.rows as Record<string, unknown>[])
+    : [];
   const frDotDensity = validateMapFilters(
     s.filters as MapFilter[] | undefined,
     ddRowsForFilters,
@@ -569,7 +575,9 @@ export function validateHexGridConfig(
     }
   }
 
-  const hexPointsForFilters = (s.points as Record<string, unknown>[]) ?? [];
+  const hexPointsForFilters = Array.isArray(s.points)
+    ? (s.points as Record<string, unknown>[])
+    : [];
   const frHexGrid = validateMapFilters(
     s.filters as MapFilter[] | undefined,
     hexPointsForFilters,
@@ -657,7 +665,9 @@ export function validateCartogramConfig(
     }
   }
 
-  const cartogramRowsForFilters = (s.values as Record<string, unknown>[]) ?? [];
+  const cartogramRowsForFilters = Array.isArray(s.values)
+    ? (s.values as Record<string, unknown>[])
+    : [];
   const frCartogram = validateMapFilters(
     s.filters as MapFilter[] | undefined,
     cartogramRowsForFilters,
