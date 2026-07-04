@@ -4,6 +4,7 @@ import {
   FRAME_COLORS_DARK,
   FRAME_FONT,
 } from "../theme/map-tokens";
+import { toggleCategory } from "./map-filter";
 import type { FilterOption, FilterState } from "./map-filter";
 
 export interface MapFilterBarProps {
@@ -22,17 +23,22 @@ export function MapFilterBar({
   onHeight,
 }: MapFilterBarProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const onHeightRef = useRef(onHeight);
+  onHeightRef.current = onHeight;
   const colors = dark ? FRAME_COLORS_DARK : FRAME_COLORS;
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || !onHeight) return;
-    const notify = () => onHeight(el.offsetHeight);
+    if (!el) return;
+    const notify = () => {
+      if (onHeightRef.current) onHeightRef.current(el.offsetHeight);
+    };
     notify();
     const ro = new ResizeObserver(notify);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [onHeight]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const set = (field: string, value: unknown) =>
     onChange({ ...state, [field]: value });
@@ -73,12 +79,7 @@ export function MapFilterBar({
                     data-testid="filter-chip"
                     aria-pressed={on}
                     onClick={() => {
-                      const next = on
-                        ? visible.filter((x) => x !== v)
-                        : [...visible, v];
-                      // never empty the map — last visible chip cannot be toggled off
-                      if (next.length === 0) return;
-                      set(o.field, next);
+                      set(o.field, toggleCategory(visible, v));
                     }}
                     style={{
                       cursor: "pointer",
@@ -98,6 +99,46 @@ export function MapFilterBar({
         }
 
         if (o.kind === "range") {
+          if (o.mode === "between") {
+            const [lo, hi] =
+              (state[o.field] as [number, number] | undefined) ??
+              ([o.min, o.max] as [number, number]);
+            return (
+              <div
+                key={o.field}
+                style={{ display: "flex", gap: 6, alignItems: "center" }}
+              >
+                <span style={{ color: colors.muted }}>{o.label}</span>
+                <input
+                  type="range"
+                  min={o.min}
+                  max={o.max}
+                  step={o.step}
+                  value={lo}
+                  data-testid="filter-range-lo"
+                  onChange={(e) => {
+                    const next = Math.min(Number(e.target.value), hi);
+                    set(o.field, [next, hi]);
+                  }}
+                />
+                <span>{lo}</span>
+                <span>–</span>
+                <input
+                  type="range"
+                  min={o.min}
+                  max={o.max}
+                  step={o.step}
+                  value={hi}
+                  data-testid="filter-range-hi"
+                  onChange={(e) => {
+                    const next = Math.max(Number(e.target.value), lo);
+                    set(o.field, [lo, next]);
+                  }}
+                />
+                <span>{hi}</span>
+              </div>
+            );
+          }
           const t =
             (state[o.field] as number | undefined) ??
             (o.mode === "atMost" ? o.max : o.min);
@@ -125,6 +166,7 @@ export function MapFilterBar({
         const sel =
           (state[o.field] as number | undefined) ?? o.steps[o.steps.length - 1];
         const idx = Math.max(0, o.steps.indexOf(sel));
+        const step = o.steps[idx];
         return (
           <label
             key={o.field}
@@ -140,7 +182,7 @@ export function MapFilterBar({
               data-testid="filter-time"
               onChange={(e) => set(o.field, o.steps[Number(e.target.value)])}
             />
-            <span>{sel}</span>
+            <span>{step}</span>
           </label>
         );
       })}

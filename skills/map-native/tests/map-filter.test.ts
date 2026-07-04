@@ -4,6 +4,7 @@ import {
   filterStateToExpression,
   activeTimeStep,
   validateMapFilters,
+  toggleCategory,
   type MapFilter,
 } from "../src/core/map-filter";
 
@@ -103,6 +104,18 @@ describe("validateMapFilters", () => {
     expect(
       validateMapFilters([{ kind: "category", field: "kind" }], one).ok,
     ).toBe(false);
+  });
+});
+
+describe("toggleCategory", () => {
+  it("adds a value when absent", () => {
+    expect(toggleCategory(["city"], "port")).toEqual(["city", "port"]);
+  });
+  it("removes a value when one of two remain", () => {
+    expect(toggleCategory(["city", "port"], "city")).toEqual(["port"]);
+  });
+  it("returns visible unchanged when removing would empty it", () => {
+    expect(toggleCategory(["city"], "city")).toEqual(["city"]);
   });
 });
 

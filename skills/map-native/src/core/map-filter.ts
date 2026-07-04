@@ -131,6 +131,16 @@ export function activeTimeStep(
   return sel != null ? sel : t.steps[t.steps.length - 1]; // default = latest
 }
 
+// Returns the next visible set: adds value if absent, removes if present.
+// Guard: never returns an empty array — if removing would empty it, returns visible unchanged.
+export function toggleCategory(visible: string[], value: string): string[] {
+  if (visible.includes(value)) {
+    const next = visible.filter((x) => x !== value);
+    return next.length === 0 ? visible : next;
+  }
+  return [...visible, value];
+}
+
 export function validateMapFilters(
   filters: MapFilter[] | undefined,
   rows: Record<string, unknown>[],

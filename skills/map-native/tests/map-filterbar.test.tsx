@@ -20,36 +20,6 @@ describe("MapFilterBar", () => {
     expect((html.match(/data-testid="filter-chip"/g) ?? []).length).toBe(2);
   });
 
-  it("chip toggling: removing one visible value emits reduced state", () => {
-    let emitted: unknown = null;
-    // We can't click in SSR, so test the logic directly via the "never empty" rule.
-    // Extract the chip-toggle logic: given visible = ["city","port"], click "city" → ["port"]
-    const visible = ["city", "port"];
-    const clicked = "city";
-    const on = visible.includes(clicked);
-    const next = on
-      ? visible.filter((x) => x !== clicked)
-      : [...visible, clicked];
-    // next has 1 item — allowed (not empty)
-    expect(next).toEqual(["port"]);
-    expect(next.length).toBeGreaterThan(0);
-    emitted = next;
-    expect(emitted).toEqual(["port"]);
-  });
-
-  it("chip toggle never-empty rule: last visible chip cannot be removed", () => {
-    // When only one value is visible, toggling it off produces empty → guard returns unchanged
-    const visible = ["city"];
-    const clicked = "city";
-    const on = visible.includes(clicked);
-    const candidate = on
-      ? visible.filter((x) => x !== clicked)
-      : [...visible, clicked];
-    // Guard: if candidate is empty, fall back to visible (no-op)
-    const next = candidate.length === 0 ? visible : candidate;
-    expect(next).toEqual(["city"]); // unchanged — never empties
-  });
-
   it("renders chips for all category values", () => {
     const multiOpts: FilterOption[] = [
       {
@@ -87,6 +57,30 @@ describe("MapFilterBar", () => {
     expect(html).toContain('data-testid="filter-range"');
   });
 
+  it("renders two thumbs for between range mode", () => {
+    const rangeOpts: FilterOption[] = [
+      {
+        kind: "range",
+        field: "pop",
+        label: "Population",
+        min: 0,
+        max: 100,
+        step: 10,
+        mode: "between",
+      },
+    ];
+    const html = renderToStaticMarkup(
+      <MapFilterBar
+        options={rangeOpts}
+        state={{ pop: [20, 80] }}
+        onChange={() => {}}
+      />,
+    );
+    expect(html).toContain('data-testid="filter-range-lo"');
+    expect(html).toContain('data-testid="filter-range-hi"');
+    expect(html).not.toContain('data-testid="filter-range"');
+  });
+
   it("renders time input for time option", () => {
     const timeOpts: FilterOption[] = [
       { kind: "time", field: "year", label: "Year", steps: [2000, 2010, 2020] },
@@ -111,5 +105,21 @@ describe("MapFilterBar", () => {
     const sel = 9999; // not in steps
     const idx = Math.max(0, steps.indexOf(sel)); // indexOf returns -1 → max(0,-1) = 0
     expect(idx).toBe(0);
+  });
+
+  it("time label shows the step resolved from idx (not the raw stale value)", () => {
+    const timeOpts: FilterOption[] = [
+      { kind: "time", field: "year", label: "Year", steps: [2000, 2010, 2020] },
+    ];
+    // state has an unknown step → resolves to idx 0 → step 2000; label must show 2000, not 9999
+    const html = renderToStaticMarkup(
+      <MapFilterBar
+        options={timeOpts}
+        state={{ year: 9999 }}
+        onChange={() => {}}
+      />,
+    );
+    expect(html).toContain("2000");
+    expect(html).not.toContain("9999");
   });
 });
