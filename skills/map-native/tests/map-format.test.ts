@@ -102,4 +102,12 @@ describe("resolveMapFrame", () => {
     const f = resolveMapFrame(1280, 720, { legendHeight: 120 });
     expect(f.pad.bottom).toBeGreaterThanOrEqual(120 + 28);
   });
+  it("reserves a supplied filterBarHeight in the top band", () => {
+    const without = resolveMapFrame(1280, 720, { titleHeightPx: 120 });
+    const withBar = resolveMapFrame(1280, 720, {
+      titleHeightPx: 120,
+      filterBarHeight: 44,
+    });
+    expect(withBar.pad.top - without.pad.top).toBeGreaterThanOrEqual(44);
+  });
 });

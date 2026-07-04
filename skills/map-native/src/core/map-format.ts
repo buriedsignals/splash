@@ -55,6 +55,7 @@ export function resolveMapFrame(
     labelOverhang?: number;
     legendHeight?: number;
     titleHeightPx?: number;
+    filterBarHeight?: number;
   } = {},
 ): ResolvedMapFrame {
   const titleLines = opts.titleLines ?? 2;
@@ -62,6 +63,7 @@ export function resolveMapFrame(
   const labelOverhang = opts.labelOverhang ?? 64;
   const legendHeight = opts.legendHeight ?? 0;
   const titleHeightPx = opts.titleHeightPx ?? 0;
+  const filterBarHeight = opts.filterBarHeight ?? 0;
 
   const scale = clamp(Math.min(width, height) / REF, 0.85, 1.6);
   const type = {
@@ -82,7 +84,10 @@ export function resolveMapFrame(
   // gutter + banner + a fixed marker clearance so a marker's PIN/LABEL — not just its
   // anchor — clears the furniture.
   const topBand =
-    gutter + Math.max(titleEstimate, titleHeightPx) + MARKER_CLEARANCE;
+    gutter +
+    Math.max(titleEstimate, titleHeightPx) +
+    filterBarHeight +
+    MARKER_CLEARANCE;
   const sourceBand = type.source * LINE_HEIGHT + 2 * MARGIN * scale;
   const bottomBand =
     gutter +
