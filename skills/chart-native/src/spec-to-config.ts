@@ -8,7 +8,8 @@ export interface NativeSpec {
   nativeType: string;
   title: string;
   source: { name: string; url?: string };
-  unit: string;
+  unit: string; // long axis label (e.g. "Share of global CO₂ (%)")
+  valueUnit?: string; // short callout unit for scrolly captions (e.g. "%", "t")
   data: string; // CSV (header + rows)
   sort?: "asc" | "desc";
   orientation?: "horizontal" | "vertical";
@@ -132,6 +133,10 @@ export function specToNativeConfig(spec: NativeSpec): {
           unit: spec.unit,
           xField: xCol,
           yField: yCol,
+          // ScatterConfig requires axis titles; derive them from the CSV headers so the
+          // embedded chart's axes are never blank (the reader must know what x/y mean).
+          xLabel: xCol,
+          yLabel: yCol,
           ...(hasLabel ? { labelField: catCol } : {}),
           rows,
         },

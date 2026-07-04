@@ -1,0 +1,28 @@
+{
+  "producer": "dw-chart",
+  "type": "d3-bars",
+  "title": "North East private rents are rising three times faster than London",
+  "intro": "Annual change in private rent by UK nation and selected English region, November 2025 (Northern Ireland: September 2025). UK average: 4.4%.",
+  "data": "geography,yoy_pct\nNorth East,8.4\nNorthern Ireland,6.4\nWales,6.1\nEngland,4.4\nUK,4.4\nScotland,3.3\nLondon,2.8",
+  "subject": "housing",
+  "baseColor": "#E69F00",
+  "sort": "desc",
+  "numberFormat": ".1f",
+  "valueLabels": true,
+  "altInsight": "North East private rents are rising three times faster than London: 8.4% vs 2.8% year-on-year in November 2025.",
+  "source": {
+    "name": "ONS, Private rent and house prices, UK: December 2025",
+    "url": "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/december2025"
+  },
+  "_routing": {
+    "gate0": "geographic data, but story is a ranking (who leads/lags) — bar family",
+    "gate1": "static — two claims, one chart, cross-channel, core insight annotatable → static wins",
+    "gate2": "not triggered — no personal-data hook, dataset is small (7 rows)",
+    "gate3": "not triggered — not irreducibly sequential, not long-form feature",
+    "gate4": "not triggered — no temporal diffusion, not social/vertical",
+    "gate5": "TRIGGERED (geographic data) — condition assessment: (1) spatial pattern is NOT the story; the story is a ranking ('North East leads, London lags') — Gate 5 BAR signal; (2) value is map-safe (YoY % rate, normalised); (3) no UK-ITL/country basemap exists (system ships world ISO-A3 and us-states only — UK nations/regions have NO supported basemap). TWO independent reasons to fall back to bar: (a) ranking framing, (b) no supported basemap. → sorted bar chart, producer: dw-chart.",
+    "basemap_fallback": "UK nations + English regions cannot be matched to world.geojson ISO-A3 codes (those are sovereign states; England, Wales, Scotland, NI, North East are sub-sovereign UK units). us-states.geojson covers US only. No ITL/NUTS/UK-regions basemap exists in map-native/assets/geo/. Basemap-fallback rule applies: fall back to sorted bar chart, cite reason.",
+    "producer_chosen": "dw-chart",
+    "color_rationale": "Subject is housing/shelter — amber #E69F00 (energy/warmth/shelter signal) preferred over default blue, which is reserved for water/cold subjects. CVD-safe Okabe-Ito."
+  }
+}

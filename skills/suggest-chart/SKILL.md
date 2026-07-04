@@ -229,6 +229,29 @@ Field notes:
 - `source.name` + `source.url`: required (furniture standard; missing is a warning).
 - `unit` / `valueUnit`: optional but fill them when the data has a clear unit.
 
+**Filters (INTERACTIVE maps only — reader exploration).** When the format is **interactive** (Gate 2
+fired) AND the data shape supports it, add a `filters` array so the reader can explore. Emit a filter
+ONLY when it serves the story's exploration intent — never "all possible filters." **At most 2.** The
+bar derives its values from the data; you name the FIELD, not the values. Two kinds are supported today:
+
+```json
+"filters": [
+  { "kind": "category", "field": "<a categorical column, 2–8 distinct values>", "label": "<optional>" },
+  { "kind": "range",    "field": "<a numeric column>", "mode": "atLeast", "label": "<optional>" }
+]
+```
+- `category` → toggle chips (e.g. hospital type, party). `range` → a value-threshold slider
+  (`mode`: `atLeast` default / `atMost` / `between`).
+- **Do NOT emit `kind:"time"` yet** — the interactive time-scrub re-derivation is not wired for any map
+  type, so a time filter would render a control that does nothing. A temporal story stays a **video /
+  scrolly** (Gate 3/4), not an interactive time slider.
+- **Do NOT emit `kind:"category"` for a dot-density map** — category filters are unsupported for
+  dot-density; use a range filter on a numeric field, or drop filters entirely.
+- Filters are **interactive-only**: the static PNG and the video render the default (all categories,
+  full range) with no filter bar. If the format is static (`map-dw` or a static `map-native`), omit `filters`.
+- `validateChoroplethConfig` rejects a bad filters block (unknown field, category cardinality outside
+  2–8, non-numeric range, >2 filters) — fix any error it reports.
+
 **Self-check:** after filling the config, run `validateChoroplethConfig` (from
 `skills/map-native/src/validate-config.ts`). Fix all errors; address warnings (description + source).
 
@@ -241,8 +264,9 @@ Field notes:
 
 Used when Gate 5 routes to a map AND the format ladder (Gate 3) fires: the story is **irreducibly
 sequential** (north→south / step-by-step walk the author paces), a single map evolves across 4+ states,
-the piece is long-form (not breaking news), and resources exist. The scrolly v1 engine is map-based
-(chart scrolly is a future slice).
+the piece is long-form (not breaking news), and resources exist. The scrolly engine has **two tracks**:
+a **map** track (below) and a **chart** track (see *Chart scrolly* below). Both build via the same
+`skills/scrolly/scripts/produce.mjs`; the engine dispatches on whether the config carries `nativeType`.
 
 **ISO-A3 requirement** (same as `map-native`): region identifiers MUST be ISO-A3 codes. If the data
 cannot be matched to ISO-A3 → fall back to `map-dw` or a sorted bar chart and state why.
@@ -282,17 +306,55 @@ standard). The scrolly config IS a choropleth config — the same validator appl
 `bun scripts/produce.mjs <config.json> <outDir>` → produces a single-file `scrolly.html`.
 The MapTiler key comes from `/atelier/.env` (`MAPTILER_API_KEY`) — it is **never logged**.
 
+#### Chart scrolly (line / bar / scatter ONLY)
+
+Used when the format ladder fires for a **non-geographic** story that is irreducibly sequential (the
+author walks the reader through the data point by point) and long-form. The chart track narrates ONE
+native chart as a sticky graphic, adapting to the type: **line** = the curve draws on with scroll (the
+head lands on each captioned point); **bar** = a ranked highlight walk (leaders → the tail); **scatter**
+= an outlier label walk. The scaffold shows the title + source once; the embedded chart suppresses its own.
+
+**HARD CONSTRAINT — supported `nativeType`: `line`, `bar`, `scatter` only.** A `pie` (or any other of the
+41 native types) has no progressive-reveal / ranked-walk narrative and is **rejected** by the engine.
+For those, route to a **static** chart-native (or `dw-chart`) instead — never emit a chart scrolly for them.
+
+**Emitted config:** `producer:"scrolly"` + the chart-native spec fields (`nativeType` is what routes the
+engine to the chart track), plus an `insight` for the closing takeaway:
+
+```json
+{
+  "producer": "scrolly",
+  "nativeType": "line | bar | scatter",
+  "title": "<the insight — sentence case, not a label or year range>",
+  "description": "<what / when context — shown on the intro card>",
+  "insight": "<the closing takeaway line>",
+  "unit": "<LONG axis label, e.g. 'Share of global CO₂ (%)' or 'Births per woman'>",
+  "valueUnit": "<SHORT callout unit for the scroll captions, e.g. '%' or 't' — keep it terse; a long unit is NOT repeated in every caption>",
+  "directLabel": "<line only: the y series column>",
+  "orientation": "horizontal",
+  "source": { "name": "<honest source>", "url": "<URL>" },
+  "data": "col1,col2\\n<CSV rows — line: x,y · bar: category,value · scatter: label,x,y>"
+}
+```
+
+**Self-check:** the emitted spec MUST pass `validateChartSpec` (run it via the dw-chart skill) — title +
+insight state the insight, not column names. Confirm `nativeType` ∈ {line, bar, scatter} before emitting.
+
+**Produce:** same as the map track — `bun scripts/produce.mjs <config.json> <outDir>` from
+`skills/scrolly/`. No MapTiler key needed for a chart config (the map modules load but never render).
+
 ## Guardrails (the code enforces these — propose within them)
 
 - **Type:** pick from the 22 supported types (single-series, multi-series, or two-value per the data shape).
 - **Sort:** for ranking intents (bars/columns where order matters), set `"sort": "desc"` — the producer sorts the CSV.
 - **Colours:** single-series → at most 2 Okabe-Ito colours (default `#0072B2`); multi-series → one Okabe-Ito colour per series in `seriesColors`, at most 8.
 - **Pie/donut:** at most 5 slices — if more, group into "Other" or choose bars.
-- **Annotations:** add a `text-annotation` for the key outlier or turning point ("annotations explain WHY").
+- **Annotations:** add a `text-annotation` for the key outlier or turning point ("annotations explain WHY"). Keep the text TERSE (≈ ≤ 30 chars, e.g. "Crossed 50% urban, c. 2007" — not a full sentence): a long annotation clips or overlaps a value label at 340 px and the responsive label-safety guardrail will REJECT the whole chart. Put the elaboration in the intro, not the annotation.
 - **Title:** state the insight, not a label or a year range (the validator warns otherwise).
 - **Multi-series orientation:** `transpose:true` is ONLY for stacked/grouped **categorical** charts (e.g. stacked `year, Coal, Gas, Renewables`) where the x-category, not the series, belongs on the axis. **Never transpose a line/time chart** — a multi-series time trend (`year, France, Switzerland`) is `d3-lines` with one line per column and NO transpose. `multiple-lines`/`multiple-columns` = deliberate small multiples (one panel per series), not a single trend.
 - **Two-point comparison (prose-extracted):** a claim with exactly two values (e.g. 2019 vs 2024) renders as a **slope**, **dumbbell**, or **paired columns** — NEVER a continuous line, which would imply a trend from two points.
 - **Honest source label (prose):** when the data is `provenance: "prose"`, the chart's source reads "Figures as reported in this article" (or the source the article itself names) — never a fabricated dataset attribution.
+- **`numberFormat` = a Datawrapper numeral token, NOT printf/Python.** Use `"0.0"` (one decimal), `"0.00"` (two), `"0,0"` (thousands), `"0%"`, `"$0,0"`. NEVER `".1f"` / `".2f"` — a printf token ships silently-wrong value labels (".1f" renders 8.4 as ".40"). The producer auto-corrects the common printf mistakes and `validateChartSpec` warns, but emit the numeral token directly.
 
 ## Self-check
 

@@ -5,7 +5,8 @@
   "scripts": {
     "test": "bun test",
     "audit:scrolly": "bun scripts/audit-scrolly.mjs",
-    "smoke": "bun scripts/smoke.mjs"
+    "smoke": "bun scripts/smoke.mjs",
+    "smoke:chart": "bun scripts/smoke-chart.mjs"
   },
   "dependencies": {
     "@maptiler/sdk": "3.6.0",

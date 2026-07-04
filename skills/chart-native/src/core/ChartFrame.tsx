@@ -22,6 +22,11 @@ export interface ChartFrameProps {
   tooltip?: ReactNode;
   /** typography/margin scale for non-landscape canvases (default 1) */
   scale?: number;
+  /** embedded = the chart is a sticky graphic inside a HOST that already shows the
+   *  title (as a header) and the source (as a footer) — a chart-scrolly. Suppress the
+   *  chart's OWN title + source to avoid duplicating the host's, keeping only the unit
+   *  subtitle (axis context the host does not show). Default false (standalone chart). */
+  embedded?: boolean;
 }
 
 export function ChartFrame({
@@ -34,6 +39,7 @@ export function ChartFrame({
   children,
   tooltip,
   scale = 1,
+  embedded = false,
 }: ChartFrameProps) {
   const PAD = 24 * scale; // header / source left-right inset
   const titleSize = TYPE.title * scale;
@@ -43,50 +49,63 @@ export function ChartFrame({
   if (responsive) {
     return (
       <div style={{ width, background: COLORS.bg, fontFamily: FONT }}>
-        <div style={{ padding: `4px ${PAD}px 0` }}>
-          <div
-            style={{
-              fontSize: titleSize,
-              fontWeight: 700,
-              color: COLORS.ink,
-              lineHeight: 1.2,
-            }}
-          >
-            {title}
+        {/* Header: the standalone chart shows title + unit; an EMBEDDED chart shows
+            only the unit (the host scaffold owns the title). */}
+        {(!embedded || subtitle) && (
+          <div style={{ padding: `4px ${PAD}px 0` }}>
+            {!embedded && (
+              <div
+                style={{
+                  fontSize: titleSize,
+                  fontWeight: 700,
+                  color: COLORS.ink,
+                  lineHeight: 1.2,
+                }}
+              >
+                {title}
+              </div>
+            )}
+            {subtitle && (
+              <div
+                style={{
+                  fontSize: axisSize,
+                  color: COLORS.muted,
+                  marginTop: embedded ? 0 : 4,
+                }}
+              >
+                {subtitle}
+              </div>
+            )}
           </div>
-          {subtitle && (
-            <div
-              style={{ fontSize: axisSize, color: COLORS.muted, marginTop: 4 }}
-            >
-              {subtitle}
-            </div>
-          )}
-        </div>
+        )}
         <div style={{ position: "relative", width, height }}>
           {children}
           {tooltip}
         </div>
-        <div
-          style={{
-            fontSize: sourceSize,
-            color: COLORS.muted,
-            padding: `4px ${PAD}px 8px`,
-          }}
-        >
-          Source:{" "}
-          {source.url ? (
-            <a
-              href={source.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: COLORS.muted }}
-            >
-              {source.name}
-            </a>
-          ) : (
-            source.name
-          )}
-        </div>
+        {/* Source footer — suppressed when embedded (the host shows the source). */}
+        {!embedded && (
+          <div
+            style={{
+              fontSize: sourceSize,
+              color: COLORS.muted,
+              padding: `4px ${PAD}px 8px`,
+            }}
+          >
+            Source:{" "}
+            {source.url ? (
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: COLORS.muted }}
+              >
+                {source.name}
+              </a>
+            ) : (
+              source.name
+            )}
+          </div>
+        )}
       </div>
     );
   }

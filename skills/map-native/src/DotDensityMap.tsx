@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
@@ -9,6 +15,12 @@ import { resolveMapStyle } from "./route-geo";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
+import { MapFilterBar } from "./core/MapFilterBar";
+import {
+  deriveFilterOptions,
+  filterStateToExpression,
+  type FilterState,
+} from "./core/map-filter";
 import type { DotDensityConfigShape } from "./validate-config";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
@@ -39,12 +51,27 @@ export const DotDensityMap: React.FC<Props> = ({
   const startedRef = useRef(false);
   const boundsRef = useRef<[number, number, number, number] | null>(null);
   const titleHeightPxRef = useRef(0);
+  const barHeightPxRef = useRef(0);
   const fitToDataRef = useRef<(() => void) | null>(null);
 
   const [containerSize, setContainerSize] = useState<{ w: number; h: number }>(
     () => ({ w: window.innerWidth, h: window.innerHeight }),
   );
   const [titleHeightPx, setTitleHeightPx] = useState(0);
+
+  // Filter controls — only active when interactive and config.filters is set.
+  const filterOptions = useMemo(
+    () =>
+      config.filters
+        ? deriveFilterOptions(
+            config.filters,
+            config.rows as Record<string, unknown>[],
+          )
+        : [],
+    [config],
+  );
+  const [filterState, setFilterState] = useState<FilterState>({});
+  const [barHeightPx, setBarHeightPx] = useState(0);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   // Legend rows: always the "1 dot = N" line; plus one row per category when multivariate.
@@ -79,6 +106,9 @@ export const DotDensityMap: React.FC<Props> = ({
       legendHeight: legendRows * 18 + 18,
       get titleHeightPx() {
         return titleHeightPxRef.current;
+      },
+      get filterBarHeight() {
+        return interactive && filterOptions.length ? barHeightPxRef.current : 0;
       },
     };
 
@@ -164,7 +194,11 @@ export const DotDensityMap: React.FC<Props> = ({
           for (const [lon, lat] of pts) {
             dotFeatures.push({
               type: "Feature",
-              properties: { color: group.color },
+              // category field is written so setFilter can use ["get", "category"].
+              properties: {
+                color: group.color,
+                category: group.category ?? "",
+              },
               geometry: { type: "Point", coordinates: [lon, lat] },
             });
           }
@@ -349,10 +383,29 @@ export const DotDensityMap: React.FC<Props> = ({
     map.triggerRepaint();
   }, [progress]);
 
+  // Apply the filter state to the dot-density-dots layer whenever it changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!interactive || !filterOptions.length || !map) return;
+    if (!map.getLayer(DOT_LAYER)) return;
+    map.setFilter(
+      DOT_LAYER,
+      filterStateToExpression(filterState, filterOptions) as never,
+    );
+  }, [filterState, filterOptions, interactive]);
+
   const handleTitleHeight = useCallback((px: number) => {
     if (px === titleHeightPxRef.current) return;
     titleHeightPxRef.current = px;
     setTitleHeightPx(px);
+    fitToDataRef.current?.();
+  }, []);
+
+  // When the filter bar height changes, update the ref, state and trigger a re-fit.
+  const handleBarHeight = useCallback((px: number) => {
+    if (px === barHeightPxRef.current) return;
+    barHeightPxRef.current = px;
+    setBarHeightPx(px);
     fitToDataRef.current?.();
   }, []);
 
@@ -366,6 +419,7 @@ export const DotDensityMap: React.FC<Props> = ({
     labelOverhang: 24,
     legendHeight: legendRows * 18 + 18,
     titleHeightPx,
+    filterBarHeight: interactive && filterOptions.length ? barHeightPx : 0,
   });
 
   const DARK_CTRL_CSS = `
@@ -436,6 +490,17 @@ export const DotDensityMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        belowTitle={
+          interactive && filterOptions.length ? (
+            <MapFilterBar
+              options={filterOptions}
+              state={filterState}
+              onChange={setFilterState}
+              onHeight={handleBarHeight}
+              dark={dark}
+            />
+          ) : undefined
+        }
       >
         {inner}
       </MapFrame>

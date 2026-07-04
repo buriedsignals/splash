@@ -20,6 +20,9 @@ import { deriveDotDensityStory } from "../../map-native/src/dot-density-story";
 import { deriveLocatorStory } from "../../map-native/src/locator-story";
 import { deriveCartogramStory } from "../../map-native/src/cartogram-story";
 import { mapStoryToChapters } from "./chapters";
+import { chartStoryToChapters } from "./chart-chapters";
+import { deriveChartStory } from "../../chart-native/src/chart-story";
+import { ScrollyChart, type ChartScrollyConfig } from "./ScrollyChart";
 import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
 import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
 import { ScrollyHexMap, type ScrollyHexConfig } from "./ScrollyHexMap";
@@ -39,12 +42,19 @@ import {
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
+// The chart types the scrolly can narrate (deriveChartStory dispatches on these). Any other
+// nativeType (pie, etc.) has no progressive-reveal / ranked-walk narrative — the routing layer
+// (② suggest-chart) must never emit one, and if one slips through we degrade gracefully rather
+// than crash the render (deriveChartStory would otherwise throw inside the story useMemo).
+const CHART_SCROLLY_TYPES = new Set(["line", "bar", "scatter"]);
+
 // ---------------------------------------------------------------------------
 // Scrolly
 // ---------------------------------------------------------------------------
 
 export const Scrolly: React.FC<{
   config:
+    | ChartScrollyConfig
     | ScrollyMapConfig
     | ScrollySymbolConfig
     | ScrollyHexConfig
@@ -58,6 +68,32 @@ export const Scrolly: React.FC<{
   // then falls back to choropleth.
   // -------------------------------------------------------------------------
   const story = useMemo(() => {
+    // CHART config (chart-native NativeSpec) — has `nativeType`. Build the chart story
+    // BEFORE the map branches; a chart needs no geojson.
+    if ("nativeType" in config) {
+      const nativeType = (config as { nativeType: string }).nativeType;
+      // Unsupported chart type → return an empty (but valid) story; the render shows a clear
+      // fallback instead of calling deriveChartStory (which throws for these).
+      if (!CHART_SCROLLY_TYPES.has(nativeType)) {
+        return {
+          title: (config as { title?: string }).title ?? "",
+          description: (config as { description?: string }).description,
+          source: (config as { source?: { name: string; url: string } }).source,
+          visual: "chart",
+          steps: [],
+        } as ReturnType<typeof chartStoryToChapters>;
+      }
+      const beats = deriveChartStory(
+        config as unknown as import("./ScrollyChart").ChartScrollyConfig,
+        (config as { insight?: string }).insight,
+      );
+      return chartStoryToChapters(beats, {
+        title: (config as { title?: string }).title ?? "",
+        description: (config as { description?: string }).description,
+        source: (config as { source?: { name: string; url: string } }).source,
+      });
+    }
+
     if (config.type === "symbol") {
       const beats = deriveSymbolStory(config.points, {
         title: config.title ?? "",
@@ -181,10 +217,96 @@ export const Scrolly: React.FC<{
   const stepRef = story.steps[currentStep]?.ref;
   const currentBeatRef = typeof stepRef === "number" ? stepRef : 0;
 
-  // -------------------------------------------------------------------------
-  // Ref array for prose step DOM nodes — one slot per step.
-  // -------------------------------------------------------------------------
+  // Graceful degradation flag (pure, not a hook) — set when a chart config carries an
+  // unsupported nativeType. The render shows a clear message instead of an empty scaffold.
+  const unsupportedChart =
+    "nativeType" in config &&
+    !CHART_SCROLLY_TYPES.has((config as { nativeType: string }).nativeType)
+      ? (config as { nativeType: string }).nativeType
+      : null;
+
+  // For a LINE chart track: the data index the line head must reach when each RENDERED card
+  // centres. Built here (not in ScrollyChart) because the collapse rule below — which drops a
+  // card whose prose repeats the previous — defines the exact card set that drives
+  // scrollProgress. Aligning the target array 1:1 with those cards makes the head land on the
+  // captioned point as its card centres (title/establish → 0, reveal → its dataIndex, takeaway
+  // → the last index). Without this the head lags the caption by ~one step.
+  const lineCardTargets = useMemo<number[] | undefined>(() => {
+    if (
+      !("nativeType" in config) ||
+      (config as { nativeType: string }).nativeType !== "line"
+    )
+      return undefined;
+    let beats;
+    try {
+      beats = deriveChartStory(
+        config as unknown as import("./ScrollyChart").ChartScrollyConfig,
+        (config as { insight?: string }).insight,
+      );
+    } catch {
+      return undefined;
+    }
+    const lastIndex = Math.max(
+      0,
+      ...beats.filter((b) => b.kind === "reveal").map((b) => b.dataIndex ?? 0),
+    );
+    const targets: number[] = [];
+    story.steps.forEach((s, i) => {
+      if (i > 0 && s.prose === story.steps[i - 1].prose) return; // collapsed — not rendered
+      const beat = typeof s.ref === "number" ? beats[s.ref] : undefined;
+      if (beat?.kind === "reveal") targets.push(beat.dataIndex ?? 0);
+      else if (beat?.kind === "takeaway") targets.push(lastIndex);
+      else targets.push(0); // title / establish
+    });
+    return targets;
+  }, [config, story]);
+
+  // Ref array for prose step DOM nodes — one slot per step. Declared before the effects
+  // that read it (scroll measurement + IntersectionObserver).
   const stepRefs = useRef<(HTMLElement | null)[]>([]);
+
+  // Continuous scroll fraction (0→1) for a chart track — a line draws on smoothly with
+  // scroll instead of jumping between beats. It is measured over the RENDERED prose CARDS
+  // (the same DOM the reader sees centred), NOT a raw wrapper fraction: the line must
+  // reach a captioned point exactly when THAT card reaches the viewport centre, so the
+  // scrub and the caption stay in lock-step. Position = the fractional index of the card
+  // at the viewport centre, normalised across the rendered cards.
+  const [scrollProgress, setScrollProgress] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const cards = stepRefs.current.filter(Boolean) as HTMLElement[];
+      if (cards.length < 2) return;
+      const centerY = window.innerHeight / 2;
+      const centers = cards.map((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top + r.height / 2;
+      });
+      // Fractional index of the card straddling the viewport centre (centres move UP as
+      // you scroll down, so they decrease; find the pair centres[i] <= centerY <= [i+1]).
+      let pos = centerY <= centers[0] ? 0 : cards.length - 1;
+      for (let i = 0; i + 1 < centers.length; i++) {
+        if (centers[i] <= centerY && centerY < centers[i + 1]) {
+          const span = centers[i + 1] - centers[i] || 1;
+          pos = i + (centerY - centers[i]) / span;
+          break;
+        }
+      }
+      setScrollProgress(pos / (cards.length - 1));
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [story.steps.length]);
 
   // -------------------------------------------------------------------------
   // IntersectionObserver — fires when a step crosses the viewport midpoint.
@@ -312,6 +434,39 @@ export const Scrolly: React.FC<{
     pointerEvents: "auto",
   };
 
+  // Defense-in-depth: an unsupported chart type reached the scrolly. Never crash — show a
+  // clear message (the ② routing layer is what should have prevented this).
+  if (unsupportedChart) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          padding: 24,
+          boxSizing: "border-box",
+          fontFamily: "sans-serif",
+          color: "#111",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ maxWidth: 420 }}>
+          {story.title && (
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>
+              {story.title}
+            </div>
+          )}
+          <div style={{ color: "#555", fontSize: 14, lineHeight: 1.5 }}>
+            A &ldquo;{unsupportedChart}&rdquo; chart is not supported in a
+            scrolly (only line, bar and scatter). Render it as a static chart
+            instead.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Persistent figure title — the insight, always visible (self-contained module) */}
@@ -342,7 +497,14 @@ export const Scrolly: React.FC<{
           {/* Pass the active step's BEAT ref (not the step index) — steps no longer
               map 1:1 to beats (the establish/empty-takeaway beats are dropped from
               the scroll), so the map must fly to story.steps[currentStep].ref. */}
-          {config.type === "symbol" ? (
+          {"nativeType" in config ? (
+            <ScrollyChart
+              config={config as unknown as ChartScrollyConfig}
+              scrollProgress={scrollProgress}
+              currentStep={currentBeatRef}
+              lineCardTargets={lineCardTargets}
+            />
+          ) : config.type === "symbol" ? (
             <ScrollySymbolMap
               config={config as ScrollySymbolConfig}
               currentStep={currentBeatRef}

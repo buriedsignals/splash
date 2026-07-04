@@ -25,6 +25,8 @@ export interface MapFrameProps {
   furnitureOpacity?: number;
   /** Follow the basemap theme: dark pill + light ink when true. Defaults false (light). */
   dark?: boolean;
+  /** Optional node rendered directly below the title/description block, inside the title band. */
+  belowTitle?: ReactNode;
 }
 
 export function MapFrame({
@@ -39,6 +41,7 @@ export function MapFrame({
   onTitleHeight,
   furnitureOpacity = 1,
   dark = false,
+  belowTitle,
 }: MapFrameProps) {
   const titleRef = useRef<HTMLDivElement>(null);
   const [, setMeasuredHeight] = useState(0);
@@ -118,11 +121,20 @@ export function MapFrame({
               fontSize: frame.type.description,
               color: colors.muted,
               marginTop: 2,
+              // The map chrome is not a paragraph slot: cap the description at 2 lines so the
+              // banner can never grow tall enough to swallow the map data beneath it (a 6-line
+              // description on mobile buried the epicentre cluster). The full text lives in the
+              // article body. resolveMapFrame reserves at most a 2-line description to match.
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
             {description}
           </div>
         )}
+        {belowTitle && <div style={{ marginTop: 6 }}>{belowTitle}</div>}
       </div>
       {/* Source band (bottom-left) — ALWAYS rendered, incl. video */}
       <div

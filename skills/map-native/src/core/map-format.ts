@@ -23,6 +23,13 @@ const MARGIN = 12;
 const BASE_INSET = 24;
 const LEGEND_ROOM = 28;
 const REF = 720; // the canvas min-side at which scale === 1
+// A point marker's pin + label extends BEYOND its anchor (the pin rises ~24px above the
+// anchor, the label sits ~16px below). fitBounds frames the anchor POINT, so without extra
+// clearance a marker whose anchor is reserved-clear still has its pin/label overlapping the
+// title band (top) or the legend/source band (bottom). Reserve the overhang on both.
+const MARKER_CLEARANCE = 30;
+// The on-map description is clamped to 2 lines (MapFrame) — reserve exactly that.
+const DESC_LINES = 2;
 
 const clamp = (x: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, x));
@@ -48,6 +55,7 @@ export function resolveMapFrame(
     labelOverhang?: number;
     legendHeight?: number;
     titleHeightPx?: number;
+    filterBarHeight?: number;
   } = {},
 ): ResolvedMapFrame {
   const titleLines = opts.titleLines ?? 2;
@@ -55,6 +63,7 @@ export function resolveMapFrame(
   const labelOverhang = opts.labelOverhang ?? 64;
   const legendHeight = opts.legendHeight ?? 0;
   const titleHeightPx = opts.titleHeightPx ?? 0;
+  const filterBarHeight = opts.filterBarHeight ?? 0;
 
   const scale = clamp(Math.min(width, height) / REF, 0.85, 1.6);
   const type = {
@@ -63,17 +72,27 @@ export function resolveMapFrame(
     source: Math.round(FRAME_TYPE.source * scale),
   };
 
-  const titleBand =
+  // MapFrame insets the title pill (top) and the source/legend (bottom) by this gutter.
+  const gutter = 16 * scale;
+  // MARKER_CLEARANCE is a FIXED pixel value (a pin glyph is a fixed size — it must NOT
+  // scale down on a small canvas, or the pin clips into the furniture at mobile widths).
+  const titleEstimate =
     titleLines * type.title * LINE_HEIGHT +
-    (hasDescription ? type.description * LINE_HEIGHT : 0) +
-    2 * MARGIN * scale;
-  const topBand = Math.max(titleBand, titleHeightPx + MARGIN * scale);
-  const sourceBand =
-    type.source * LINE_HEIGHT + LEGEND_ROOM * scale + MARGIN * scale;
-  const bottomBand = Math.max(
-    sourceBand,
-    legendHeight + MARGIN * scale + type.source * LINE_HEIGHT,
-  );
+    (hasDescription ? DESC_LINES * type.description * LINE_HEIGHT : 0) +
+    2 * MARGIN * scale; // pill vertical padding
+  // Prefer the MEASURED banner height (real wrapping), else the estimate. The band spans
+  // gutter + banner + a fixed marker clearance so a marker's PIN/LABEL — not just its
+  // anchor — clears the furniture.
+  const topBand =
+    gutter +
+    Math.max(titleEstimate, titleHeightPx) +
+    filterBarHeight +
+    MARKER_CLEARANCE;
+  const sourceBand = type.source * LINE_HEIGHT + 2 * MARGIN * scale;
+  const bottomBand =
+    gutter +
+    Math.max(sourceBand, legendHeight + LEGEND_ROOM * scale) +
+    MARKER_CLEARANCE;
   const side = Math.max(BASE_INSET, labelOverhang) * scale;
 
   return {

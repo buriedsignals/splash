@@ -183,6 +183,44 @@ for (const w of [360, 768, 1100, 1600]) {
         vb.getNorth() >= dn - TOL
       );
     })();
+    // Furniture-occlusion check: NO labelled point marker may sit under the title band or
+    // the legend (a data point hidden behind furniture — "data must always be visible").
+    // Projects every point feature and tests its pin/label bbox (anchor ± clearance) against
+    // the title + legend rects. Applies to point maps (locator/symbol); choropleth has no
+    // point source and skips. This is the render-level guarantee for the reservation fix.
+    const dataNotUnderFurnitureOk = (() => {
+      const m = window.__map__;
+      if (!m) return true;
+      const pts = [];
+      for (const sid of ["symbols", "locator"]) {
+        try {
+          for (const f of m.querySourceFeatures(sid))
+            if (f.geometry?.type === "Point") pts.push(f.geometry.coordinates);
+        } catch {}
+      }
+      if (!pts.length) return true; // no point data → not applicable (e.g. choropleth)
+      const rectOf = (sel) => {
+        const el = document.querySelector(sel);
+        if (!el || getComputedStyle(el).display === "none") return null;
+        const r = el.getBoundingClientRect();
+        return r.width < 2 || r.height < 2 ? null : r;
+      };
+      const title = rectOf('[data-testid="map-title"]');
+      const legend = rectOf('[data-testid="map-legend"]');
+      const filterbar = rectOf('[data-testid="map-filterbar"]');
+      const C = 30; // marker pin/label clearance (matches MARKER_CLEARANCE)
+      const hit = (p, box) =>
+        box &&
+        p.x >= box.left - 14 &&
+        p.x <= box.right + 14 &&
+        p.y - C <= box.bottom &&
+        p.y + C >= box.top;
+      for (const c of pts) {
+        const p = m.project(c);
+        if (hit(p, title) || hit(p, legend) || hit(p, filterbar)) return false;
+      }
+      return true;
+    })();
     return {
       scrollOk:
         document.documentElement.scrollWidth <= window.innerWidth + 1,
@@ -206,6 +244,7 @@ for (const w of [360, 768, 1100, 1600]) {
       })(),
       centreOk,
       dataExtentVisibleOk,
+      dataNotUnderFurnitureOk,
     };
   }, [isRoute, isLocator]);
 

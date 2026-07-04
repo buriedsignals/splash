@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
@@ -9,6 +15,12 @@ import { resolveMapStyle } from "./route-geo";
 import { makeResetControl } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
+import { MapFilterBar } from "./core/MapFilterBar";
+import {
+  deriveFilterOptions,
+  filterStateToExpression,
+  type FilterState,
+} from "./core/map-filter";
 import type { CartogramConfigShape } from "./validate-config";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
@@ -40,12 +52,27 @@ export const CartogramMap: React.FC<Props> = ({
   const startedRef = useRef(false);
   const boundsRef = useRef<[number, number, number, number] | null>(null);
   const titleHeightPxRef = useRef(0);
+  const barHeightPxRef = useRef(0);
   const fitToDataRef = useRef<(() => void) | null>(null);
 
   const [containerSize, setContainerSize] = useState<{ w: number; h: number }>(
     () => ({ w: window.innerWidth, h: window.innerHeight }),
   );
   const [titleHeightPx, setTitleHeightPx] = useState(0);
+
+  // Filter controls — only active when interactive and config.filters is set.
+  const filterOptions = useMemo(
+    () =>
+      config.filters
+        ? deriveFilterOptions(
+            config.filters,
+            config.values as Record<string, unknown>[],
+          )
+        : [],
+    [config],
+  );
+  const [filterState, setFilterState] = useState<FilterState>({});
+  const [barHeightPx, setBarHeightPx] = useState(0);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const legendHeight = NUM_BINS * 18 + 18;
@@ -81,6 +108,9 @@ export const CartogramMap: React.FC<Props> = ({
       legendHeight,
       get titleHeightPx() {
         return titleHeightPxRef.current;
+      },
+      get filterBarHeight() {
+        return interactive && filterOptions.length ? barHeightPxRef.current : 0;
       },
     };
 
@@ -140,15 +170,25 @@ export const CartogramMap: React.FC<Props> = ({
       const layout = computeCartogram(config, worldGeoJson);
 
       // Build FeatureCollection from cells — each feature carries display props.
-      const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
-        type: "Feature",
-        properties: {
-          __color: cell.color,
-          __id: cell.id,
-          __value: cell.value,
-        },
-        geometry: cell.feature.geometry,
-      }));
+      // Write each filter field onto cell properties so setFilter's ["get", field] works.
+      const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => {
+        const extraProps: Record<string, unknown> = {};
+        for (const f of config.filters ?? []) {
+          if (f.kind !== "category") {
+            extraProps[f.field] = cell.value;
+          }
+        }
+        return {
+          type: "Feature",
+          properties: {
+            __color: cell.color,
+            __id: cell.id,
+            __value: cell.value,
+            ...extraProps,
+          },
+          geometry: cell.feature.geometry,
+        };
+      });
       const cellGeoJson: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
         features: cellFeatures,
@@ -279,10 +319,29 @@ export const CartogramMap: React.FC<Props> = ({
     map.triggerRepaint();
   }, [progress]);
 
+  // Apply the filter state to the cartogram-cells layer whenever it changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!interactive || !filterOptions.length || !map) return;
+    if (!map.getLayer(CELL_LAYER)) return;
+    map.setFilter(
+      CELL_LAYER,
+      filterStateToExpression(filterState, filterOptions) as never,
+    );
+  }, [filterState, filterOptions, interactive]);
+
   const handleTitleHeight = useCallback((px: number) => {
     if (px === titleHeightPxRef.current) return;
     titleHeightPxRef.current = px;
     setTitleHeightPx(px);
+    fitToDataRef.current?.();
+  }, []);
+
+  // When the filter bar height changes, update the ref, state and trigger a re-fit.
+  const handleBarHeight = useCallback((px: number) => {
+    if (px === barHeightPxRef.current) return;
+    barHeightPxRef.current = px;
+    setBarHeightPx(px);
     fitToDataRef.current?.();
   }, []);
 
@@ -296,6 +355,7 @@ export const CartogramMap: React.FC<Props> = ({
     labelOverhang: 24,
     legendHeight,
     titleHeightPx,
+    filterBarHeight: interactive && filterOptions.length ? barHeightPx : 0,
   });
 
   const DARK_CTRL_CSS = `
@@ -366,6 +426,17 @@ export const CartogramMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        belowTitle={
+          interactive && filterOptions.length ? (
+            <MapFilterBar
+              options={filterOptions}
+              state={filterState}
+              onChange={setFilterState}
+              onHeight={handleBarHeight}
+              dark={dark}
+            />
+          ) : undefined
+        }
       >
         {inner}
       </MapFrame>

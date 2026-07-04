@@ -2,6 +2,11 @@ import { describe, it, expect } from "bun:test";
 import {
   validateChoroplethConfig,
   validateRouteConfig,
+  validateSymbolConfig,
+  validateLocatorConfig,
+  validateDotDensityConfig,
+  validateHexGridConfig,
+  validateCartogramConfig,
 } from "../src/validate-config";
 
 const ok = {
@@ -92,8 +97,6 @@ describe("validateChoroplethConfig", () => {
       expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
   });
 });
-
-import { validateSymbolConfig } from "../src/validate-config";
 
 const okSymbol = {
   type: "symbol",
@@ -206,5 +209,204 @@ describe("validateRouteConfig", () => {
   });
   it("rejects a title that is not an insight", () => {
     expect(validateRouteConfig({ ...okRoute, title: "Map" }).ok).toBe(false);
+  });
+});
+
+describe("validateChoroplethConfig — filters block", () => {
+  const base = {
+    regionKey: "iso",
+    valueField: "v",
+    basemap: "world",
+    rows: [
+      { iso: "FRA", v: 5 },
+      { iso: "DEU", v: 9 },
+    ],
+    title: "Renewables form a clear north–south gradient across Europe",
+    source: { name: "s", url: "https://example.org" },
+    description: "desc",
+  };
+  it("rejects an invalid filters block and accepts a valid one", () => {
+    expect(
+      validateChoroplethConfig({
+        ...base,
+        filters: [{ kind: "range", field: "nope" }],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateChoroplethConfig({
+        ...base,
+        filters: [{ kind: "range", field: "v" }],
+      }).ok,
+    ).toBe(true);
+  });
+});
+
+describe("validateSymbolConfig — filters wiring", () => {
+  const base = {
+    type: "symbol",
+    points: [
+      { lon: 2.35, lat: 48.85, value: 100, label: "Paris" },
+      { lon: -3.7, lat: 40.4, value: 400, label: "Madrid" },
+    ],
+    basemap: "world",
+    title: "Madrid dwarfs Paris on this measure",
+    description: "Value by city, 2024",
+    source: { name: "Source 2025", url: "https://example.org/x" },
+  };
+  it("rejects a filter referencing an absent field and accepts one referencing 'value'", () => {
+    expect(
+      validateSymbolConfig({
+        ...base,
+        filters: [{ kind: "range", field: "nope" }],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateSymbolConfig({
+        ...base,
+        filters: [{ kind: "range", field: "value" }],
+      }).ok,
+    ).toBe(true);
+  });
+});
+
+describe("validateLocatorConfig — filters wiring", () => {
+  const base = {
+    type: "locator",
+    markers: [
+      { lon: 6.15, lat: 46.2, label: "Geneva" },
+      { lon: 7.45, lat: 46.95, label: "Bern" },
+    ],
+    basemap: "world",
+    title: "Two Swiss cities anchor the story",
+    description: "Key locations, 2024",
+    source: { name: "Source 2025", url: "https://example.org/x" },
+  };
+  it("rejects a filter referencing an absent field and accepts one referencing 'lon'", () => {
+    expect(
+      validateLocatorConfig({
+        ...base,
+        filters: [{ kind: "range", field: "nope" }],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateLocatorConfig({
+        ...base,
+        filters: [{ kind: "range", field: "lon" }],
+      }).ok,
+    ).toBe(true);
+  });
+});
+
+describe("validateDotDensityConfig — filters wiring", () => {
+  const base = {
+    type: "dot-density",
+    regionKey: "iso",
+    boundaries: "world-countries",
+    rows: [
+      { iso: "FRA", population: 68000000 },
+      { iso: "DEU", population: 84000000 },
+    ],
+    valueField: "population",
+    basemap: "world",
+    title: "Western Europe's population clusters inland",
+    description: "Population distribution, 2024",
+    source: { name: "Source 2025", url: "https://example.org/x" },
+  };
+  it("rejects a filter referencing an absent field and accepts one referencing 'population'", () => {
+    expect(
+      validateDotDensityConfig({
+        ...base,
+        filters: [{ kind: "range", field: "nope" }],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateDotDensityConfig({
+        ...base,
+        filters: [{ kind: "range", field: "population" }],
+      }).ok,
+    ).toBe(true);
+  });
+  it("rejects a category filter for dot-density", () => {
+    const rows = [
+      { iso: "FRA", population: 68000000, region: "west" },
+      { iso: "DEU", population: 84000000, region: "east" },
+      { iso: "ESP", population: 47000000, region: "south" },
+    ];
+    const r = validateDotDensityConfig({
+      ...base,
+      rows,
+      filters: [{ kind: "category", field: "region" }],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(
+        r.errors.some((e) =>
+          e.includes("category filters are not supported for dot-density maps"),
+        ),
+      ).toBe(true);
+  });
+  it("accepts a range filter for dot-density", () => {
+    expect(
+      validateDotDensityConfig({
+        ...base,
+        filters: [{ kind: "range", field: "population" }],
+      }).ok,
+    ).toBe(true);
+  });
+});
+
+describe("validateHexGridConfig — filters wiring", () => {
+  const base = {
+    type: "hex-grid",
+    points: [
+      { lon: 2.35, lat: 48.85, value: 12 },
+      { lon: -3.7, lat: 40.4, value: 7 },
+    ],
+    aggregate: "sum",
+    basemap: "world",
+    title: "Incident density peaks around the capital",
+    description: "Incidents by cell, 2024",
+    source: { name: "Source 2025", url: "https://example.org/x" },
+  };
+  it("rejects a filter referencing an absent field and accepts one referencing 'value'", () => {
+    expect(
+      validateHexGridConfig({
+        ...base,
+        filters: [{ kind: "range", field: "nope" }],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateHexGridConfig({
+        ...base,
+        filters: [{ kind: "range", field: "value" }],
+      }).ok,
+    ).toBe(true);
+  });
+});
+
+describe("validateCartogramConfig — filters wiring", () => {
+  const base = {
+    type: "cartogram",
+    values: [
+      { id: "FRA", value: 68 },
+      { id: "DEU", value: 84 },
+    ],
+    title: "Germany outweighs France in population share",
+    description: "Population by country, 2024",
+    source: { name: "Source 2025", url: "https://example.org/x" },
+  };
+  it("rejects a filter referencing an absent field and accepts one referencing 'value'", () => {
+    expect(
+      validateCartogramConfig({
+        ...base,
+        filters: [{ kind: "range", field: "nope" }],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateCartogramConfig({
+        ...base,
+        filters: [{ kind: "range", field: "value" }],
+      }).ok,
+    ).toBe(true);
   });
 });

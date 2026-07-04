@@ -48,6 +48,8 @@ export interface ScatterChartProps {
   responsive?: boolean;
   /** typography/margin scale for non-landscape video canvases (default 1). */
   scale?: number;
+  /** embedded = sticky graphic in a chart-scrolly host; suppress own title + source. */
+  embedded?: boolean;
 }
 
 const PADDING = (responsive: boolean) => ({
@@ -65,6 +67,7 @@ export function ScatterChart({
   interactive = false,
   responsive = false,
   scale = 1,
+  embedded = false,
 }: ScatterChartProps) {
   const p = clamp01(progress);
   const basePad = PADDING(responsive);
@@ -124,6 +127,7 @@ export function ScatterChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      embedded={embedded}
     >
       {svg}
     </ChartFrame>

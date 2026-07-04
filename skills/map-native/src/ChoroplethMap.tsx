@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
@@ -20,6 +26,14 @@ import type { CameraMode } from "./camera-mode";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
+import { MapFilterBar } from "./core/MapFilterBar";
+import {
+  deriveFilterOptions,
+  filterStateToExpression,
+  activeTimeStep,
+  type FilterState,
+} from "./core/map-filter";
+import type { MapFilter } from "./core/map-filter";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -34,6 +48,7 @@ export interface ChoroplethConfig extends ChoroplethData {
   cameraMode?: CameraMode;
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
+  filters?: MapFilter[];
 }
 
 interface Props {
@@ -63,6 +78,8 @@ export const ChoroplethMap: React.FC<Props> = ({
   const boundsRef = useRef<[number, number, number, number] | null>(null);
   // Holds the latest measured title height so fitToData can read it without stale closure.
   const titleHeightPxRef = useRef(0);
+  // Holds the latest measured filter bar height for the same reason.
+  const barHeightPxRef = useRef(0);
   // Stable ref to fitToData so the title-height callback can trigger a re-fit.
   const fitToDataRef = useRef<(() => void) | null>(null);
 
@@ -71,6 +88,15 @@ export const ChoroplethMap: React.FC<Props> = ({
     () => ({ w: window.innerWidth, h: window.innerHeight }),
   );
   const [titleHeightPx, setTitleHeightPx] = useState(0);
+
+  // Filter controls — only active when interactive and config.filters is set.
+  const filterOptions = useMemo(
+    () =>
+      config.filters ? deriveFilterOptions(config.filters, config.rows) : [],
+    [config],
+  );
+  const [filterState, setFilterState] = useState<FilterState>({});
+  const [barHeightPx, setBarHeightPx] = useState(0);
 
   // Measure the root element size before map init.
   useEffect(() => {
@@ -94,8 +120,8 @@ export const ChoroplethMap: React.FC<Props> = ({
     ];
 
     // Opts passed to resolveMapFrame — same values used at init and every resize.
-    // titleHeightPx is read from ref so it reflects the latest measured value without
-    // recreating this closure (avoids stale capture).
+    // titleHeightPx and filterBarHeight are read from refs so they reflect the latest
+    // measured values without recreating this closure (avoids stale capture).
     const FRAME_OPTS = {
       titleLines: 2,
       hasDescription: !!config.description,
@@ -103,6 +129,9 @@ export const ChoroplethMap: React.FC<Props> = ({
       legendHeight: NUM_BINS * 18 + 18,
       get titleHeightPx() {
         return titleHeightPxRef.current;
+      },
+      get filterBarHeight() {
+        return interactive && filterOptions.length ? barHeightPxRef.current : 0;
       },
     };
 
@@ -209,6 +238,10 @@ export const ChoroplethMap: React.FC<Props> = ({
               ...f.properties,
               __value: joined.value,
               __hasData: joined.value !== null,
+              // Write the valueField onto properties so setFilter can use ["get", valueField].
+              ...(joined.value !== null
+                ? { [config.valueField]: joined.value }
+                : {}),
             },
           };
         }),
@@ -352,6 +385,36 @@ export const ChoroplethMap: React.FC<Props> = ({
     ] as never);
   }, [progress]);
 
+  // Apply the filter state to the choropleth-fill layer whenever it changes.
+  // Time filters are not handled here — this dataset has no time dimension
+  // (activeTimeStep returns null for range-only configs). If a time filter is
+  // present, activeTimeStep(filterState, filterOptions) would return the selected
+  // step; re-deriving choropleth values per time step is left for a future task
+  // when a time-dimensional dataset is available.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!interactive || !filterOptions.length || !map) return;
+    if (!map.getLayer("choropleth-fill")) return;
+    map.setFilter(
+      "choropleth-fill",
+      filterStateToExpression(filterState, filterOptions) as never,
+    );
+    // Stroke layer mirrors the fill filter so strokes also disappear for filtered regions.
+    if (map.getLayer("choropleth-stroke")) {
+      map.setFilter(
+        "choropleth-stroke",
+        filterStateToExpression(filterState, filterOptions) as never,
+      );
+    }
+    // Time filter: if a time dimension is active, expose the selected step via
+    // window.__active_time_step__ for external probes (render-verify / smoke gate).
+    const ts = activeTimeStep(filterState, filterOptions);
+    if (ts !== null) {
+      (window as unknown as Record<string, unknown>)["__active_time_step__"] =
+        ts;
+    }
+  }, [filterState, filterOptions, interactive]);
+
   // When the measured title height changes, update the ref and re-fit so the map
   // re-computes its top band using the real (wrapped) title height.
   // Guard: only update on a real change to avoid an infinite measure → re-fit loop.
@@ -359,6 +422,15 @@ export const ChoroplethMap: React.FC<Props> = ({
     if (px === titleHeightPxRef.current) return;
     titleHeightPxRef.current = px;
     setTitleHeightPx(px);
+    fitToDataRef.current?.();
+  }, []);
+
+  // When the filter bar height changes, update the ref, state (to trigger re-render
+  // of the render-time frame), and trigger a re-fit so the top pad is recalculated.
+  const handleBarHeight = useCallback((px: number) => {
+    if (px === barHeightPxRef.current) return;
+    barHeightPxRef.current = px;
+    setBarHeightPx(px);
     fitToDataRef.current?.();
   }, []);
 
@@ -375,6 +447,7 @@ export const ChoroplethMap: React.FC<Props> = ({
     labelOverhang: 24,
     legendHeight: CHOROPLETH_LEGEND_HEIGHT,
     titleHeightPx,
+    filterBarHeight: interactive && filterOptions.length ? barHeightPx : 0,
   });
   frameRef.current = frame;
 
@@ -441,6 +514,16 @@ export const ChoroplethMap: React.FC<Props> = ({
         responsive
         frame={frame}
         onTitleHeight={handleTitleHeight}
+        belowTitle={
+          interactive && filterOptions.length ? (
+            <MapFilterBar
+              options={filterOptions}
+              state={filterState}
+              onChange={setFilterState}
+              onHeight={handleBarHeight}
+            />
+          ) : undefined
+        }
       >
         {inner}
       </MapFrame>

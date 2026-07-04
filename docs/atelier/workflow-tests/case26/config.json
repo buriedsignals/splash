@@ -1,0 +1,23 @@
+{
+  "producer": "dw-chart",
+  "type": "d3-lines",
+  "title": "More than half the world now lives in cities — a share that keeps climbing",
+  "intro": "Urban population as a share of total world population, 1960–2022. The global urbanisation rate crossed 50% around 2007 and has risen in every decade since records began.",
+  "altInsight": "More than half the world now lives in cities — a share that keeps climbing",
+  "subject": "urbanisation",
+  "baseColor": "#009E73",
+  "data": "year,urban_share_pct\n1960,33.6\n1965,35.2\n1970,36.6\n1975,37.8\n1980,39.4\n1985,41.0\n1990,43.0\n1995,44.8\n2000,46.7\n2005,49.2\n2007,50.0\n2010,51.7\n2015,54.0\n2018,55.3\n2020,56.2\n2022,57.0",
+  "numberFormat": "0.0",
+  "annotations": [
+    {
+      "type": "text-annotation",
+      "x": "2007",
+      "y": 50.0,
+      "text": "Crossed 50% urban, c. 2007"
+    }
+  ],
+  "source": {
+    "name": "World Bank — Urban population (% of total population), indicator SP.URB.TOTL.IN.ZS (World aggregate)",
+    "url": "https://data.worldbank.org/indicator/SP.URB.TOTL.IN.ZS?locations=1W"
+  }
+}

@@ -54,6 +54,18 @@ export interface LineChartProps {
   responsive?: boolean;
   /** typography/margin scale for non-landscape video canvases (default 1). */
   scale?: number;
+  /** embedded = a sticky graphic in a scroll host (chart-scrolly). The AXES render
+   *  statically (fully visible at progress 0, so the frame is there before the line
+   *  draws) and the line reveal is LINEAR in `progress` (no video ease/window), so the
+   *  drawn head position tracks the scroll exactly; title + source are suppressed (the
+   *  host owns them). Default false → the video/static reveal is unchanged. */
+  embedded?: boolean;
+  /** embedded only: reveal the line up to this FRACTIONAL data-point index (0 = the
+   *  first point / empty, n-1 = full). LineChart converts it to the exact path-length
+   *  fraction using ITS OWN responsive layout — so the drawn head lands on the point at
+   *  ANY width, and the host never needs to know the pixel geometry. Overrides `progress`
+   *  for the line reveal when set. */
+  revealTo?: number;
 }
 
 export function LineChart({
@@ -64,6 +76,8 @@ export function LineChart({
   interactive = false,
   responsive = false,
   scale = 1,
+  embedded = false,
+  revealTo,
 }: LineChartProps) {
   const p = clamp01(progress);
 
@@ -107,7 +121,29 @@ export function LineChart({
   // x-labels in) → direct label slides in. The line has its OWN ease-in-out over
   // a wide window [0.30, 0.95] so it draws slowly and smoothly (soft start/stop),
   // independent of the other phases — the master is linear, each phase eases itself.
-  const lineProgress = easeInOutCubic((p - 0.3) / 0.65); // window 0.30 → 0.95
+  // Video/static: the line eases over a [0.30, 0.95] window (after the axes wipe in).
+  // Embedded (scroll host): the line is LINEAR in progress. When `revealTo` (a fractional
+  // data-point index) is given, resolve it to the exact path-length fraction using THIS
+  // layout's cumLength — so the head lands on the point at any responsive width, no matter
+  // the host's dims.
+  const revealFraction =
+    revealTo != null
+      ? (() => {
+          const cum = layout.cumLength;
+          const total = layout.totalLength || 1;
+          const last = cum.length - 1;
+          const fi = Math.max(0, Math.min(last, revealTo));
+          const i0 = Math.floor(fi);
+          const len =
+            i0 >= last
+              ? cum[last]
+              : cum[i0] + (cum[i0 + 1] - cum[i0]) * (fi - i0);
+          return len / total;
+        })()
+      : p;
+  const lineProgress = embedded
+    ? revealFraction
+    : easeInOutCubic((p - 0.3) / 0.65); // window 0.30 → 0.95
 
   const svg = (
     <ChartSvg
@@ -123,6 +159,7 @@ export function LineChart({
       setHover={setHover}
       ts={ts}
       sc={sc}
+      staticAxes={embedded}
     />
   );
 
@@ -163,6 +200,7 @@ export function LineChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      embedded={embedded}
     >
       {svg}
     </ChartFrame>
@@ -183,6 +221,7 @@ function ChartSvg({
   setHover,
   ts,
   sc,
+  staticAxes = false,
 }: {
   layout: Layout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -196,6 +235,9 @@ function ChartSvg({
   setHover: (i: number | null) => void;
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
+  /** render the axes/gridlines/labels at FULL visibility regardless of `p` (embedded
+   *  scroll host: the frame is present before the line draws). Default false = wipe-in. */
+  staticAxes?: boolean;
 }) {
   const lp = lineProgress;
   const revealed = revealLine(layout, lp);
@@ -205,7 +247,7 @@ function ChartSvg({
 
   // --- motion build (all pure functions of the master progress `p`) ---
   // baseline draws left→right first; gridlines wipe in, staggered top→bottom.
-  const baseW = innerWidth * easeOutCubic(p / 0.18);
+  const baseW = staticAxes ? innerWidth : innerWidth * easeOutCubic(p / 0.18);
   const nY = layout.yTicks.length;
   // x-axis labels pop in (fade + rise) as the line's draw-head sweeps PAST them
   // — the ramp starts at 0 only once the head crosses the tick, so the first
@@ -214,7 +256,9 @@ function ChartSvg({
   // last tick coincides with the head's final position, so the sweep alone
   // would leave it at 0).
   const xLabelReveal = (tickX: number) =>
-    Math.max(clamp01((head.x - tickX) / 28), clamp01((p - 0.9) / 0.05));
+    staticAxes
+      ? 1
+      : Math.max(clamp01((head.x - tickX) / 28), clamp01((p - 0.9) / 0.05));
   // direct label slides in from the point just after the line completes.
   const labelOpacity = clamp01((p - 0.92) / 0.08);
 
@@ -230,8 +274,12 @@ function ChartSvg({
       <g transform={`translate(${padding.left},${padding.top})`}>
         {/* gridlines: horizontal wipe from the left, staggered bottom→top */}
         {layout.yTicks.map((t, i) => {
-          const w = stagger(p, nY - 1 - i, nY, 0.02, 0.03, 0.22);
-          const lo = stagger(p, nY - 1 - i, nY, 0.06, 0.03, 0.16);
+          const w = staticAxes
+            ? 1
+            : stagger(p, nY - 1 - i, nY, 0.02, 0.03, 0.22);
+          const lo = staticAxes
+            ? 1
+            : stagger(p, nY - 1 - i, nY, 0.06, 0.03, 0.16);
           return (
             <g key={`y${i}`}>
               <line

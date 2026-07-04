@@ -79,4 +79,35 @@ describe("resolveMapFrame", () => {
     const b = resolveMapFrame(1280, 720, { titleLines: 2, titleHeightPx: 0 });
     expect(b.pad.top).toBe(a.pad.top);
   });
+
+  // "Data must always be visible" — a marker's PIN/LABEL (not just its anchor) must clear the
+  // furniture. The top band = gutter + banner + a FIXED marker clearance (a pin is a fixed px;
+  // it must NOT shrink at mobile scale, the bug that buried the epicentre cluster at 360px).
+  it("reserves a FIXED marker clearance beyond the measured banner at every scale", () => {
+    const GUTTER = (w, h) =>
+      16 * Math.max(0.85, Math.min(1.6, Math.min(w, h) / 720));
+    for (const [w, h] of [
+      [360, 640],
+      [1280, 720],
+    ]) {
+      const f = resolveMapFrame(w, h, {
+        titleHeightPx: 200,
+        hasDescription: true,
+      });
+      const clearanceBeyondBanner = f.pad.top - 200 - GUTTER(w, h);
+      expect(clearanceBeyondBanner).toBeGreaterThanOrEqual(28); // ≥ a pin glyph, unscaled
+    }
+  });
+  it("reserves the legend plus marker clearance in the bottom band", () => {
+    const f = resolveMapFrame(1280, 720, { legendHeight: 120 });
+    expect(f.pad.bottom).toBeGreaterThanOrEqual(120 + 28);
+  });
+  it("reserves a supplied filterBarHeight in the top band", () => {
+    const without = resolveMapFrame(1280, 720, { titleHeightPx: 120 });
+    const withBar = resolveMapFrame(1280, 720, {
+      titleHeightPx: 120,
+      filterBarHeight: 44,
+    });
+    expect(withBar.pad.top - without.pad.top).toBeGreaterThanOrEqual(44);
+  });
 });

@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry, type SymbolData } from "./symbol-geo";
@@ -7,6 +13,13 @@ import { symbolLabels, labelRadialOffset } from "./symbol-labels";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
+import { MapFilterBar } from "./core/MapFilterBar";
+import {
+  deriveFilterOptions,
+  filterStateToExpression,
+  type FilterState,
+  type MapFilter,
+} from "./core/map-filter";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -26,6 +39,7 @@ export interface SymbolConfig extends SymbolData {
   source?: { name: string; url: string };
   maxReveals?: number;
   cameraMode?: CameraMode;
+  filters?: MapFilter[];
 }
 
 interface Props {
@@ -48,6 +62,8 @@ export const SymbolMap: React.FC<Props> = ({
   // Holds the latest measured title height so fitToData (inside the init effect) can
   // read it via ref without recreating the effect closure.
   const titleHeightPxRef = useRef(0);
+  // Holds the latest measured filter bar height for the same reason.
+  const barHeightPxRef = useRef(0);
   // Stable ref to the fitToData function so the title-height effect can trigger re-fit.
   const fitToDataRef = useRef<(() => void) | null>(null);
 
@@ -58,6 +74,20 @@ export const SymbolMap: React.FC<Props> = ({
     () => ({ w: window.innerWidth, h: window.innerHeight }),
   );
   const [titleHeightPx, setTitleHeightPx] = useState(0);
+
+  // Filter controls — only active when interactive and config.filters is set.
+  const filterOptions = useMemo(
+    () =>
+      config.filters
+        ? deriveFilterOptions(
+            config.filters,
+            config.points as Record<string, unknown>[],
+          )
+        : [],
+    [config],
+  );
+  const [filterState, setFilterState] = useState<FilterState>({});
+  const [barHeightPx, setBarHeightPx] = useState(0);
 
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
 
@@ -93,6 +123,9 @@ export const SymbolMap: React.FC<Props> = ({
       legendHeight: (geo.legend[0]?.radius ?? 0) * 2 + 28,
       get titleHeightPx() {
         return titleHeightPxRef.current;
+      },
+      get filterBarHeight() {
+        return interactive && filterOptions.length ? barHeightPxRef.current : 0;
       },
     };
     const DATA_BOUNDS = clampBounds(geo.bounds);
@@ -299,6 +332,17 @@ export const SymbolMap: React.FC<Props> = ({
     map.triggerRepaint();
   }, [progress]);
 
+  // Apply the filter state to the symbol-circles layer whenever it changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!interactive || !filterOptions.length || !map) return;
+    if (!map.getLayer("symbol-circles")) return;
+    map.setFilter(
+      "symbol-circles",
+      filterStateToExpression(filterState, filterOptions) as never,
+    );
+  }, [filterState, filterOptions, interactive]);
+
   // When the measured title height changes, update the ref and re-fit so the map
   // re-computes its top band using the real (wrapped) title height.
   // Guard: only update on a real change to avoid an infinite measure → re-fit loop.
@@ -306,6 +350,14 @@ export const SymbolMap: React.FC<Props> = ({
     if (px === titleHeightPxRef.current) return;
     titleHeightPxRef.current = px;
     setTitleHeightPx(px);
+    fitToDataRef.current?.();
+  }, []);
+
+  // When the filter bar height changes, update the ref, state and trigger a re-fit.
+  const handleBarHeight = useCallback((px: number) => {
+    if (px === barHeightPxRef.current) return;
+    barHeightPxRef.current = px;
+    setBarHeightPx(px);
     fitToDataRef.current?.();
   }, []);
 
@@ -331,6 +383,7 @@ export const SymbolMap: React.FC<Props> = ({
     labelOverhang: 80,
     legendHeight: (geo.legend[0]?.radius ?? 0) * 2 + 28,
     titleHeightPx,
+    filterBarHeight: interactive && filterOptions.length ? barHeightPx : 0,
   });
   frameRef.current = frame;
 
@@ -391,6 +444,16 @@ export const SymbolMap: React.FC<Props> = ({
         responsive
         frame={frame}
         onTitleHeight={handleTitleHeight}
+        belowTitle={
+          interactive && filterOptions.length ? (
+            <MapFilterBar
+              options={filterOptions}
+              state={filterState}
+              onChange={setFilterState}
+              onHeight={handleBarHeight}
+            />
+          ) : undefined
+        }
       >
         {inner}
       </MapFrame>
