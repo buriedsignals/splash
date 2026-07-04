@@ -1,0 +1,126 @@
+{
+  "producer": "map-native",
+  "type": "locator",
+  "markers": [
+    {
+      "lon": 2.875,
+      "lat": 47.51,
+      "label": "Belleville",
+      "category": "operational"
+    },
+    {
+      "lon": -0.693,
+      "lat": 45.256,
+      "label": "Blayais",
+      "category": "operational"
+    },
+    { "lon": 5.271, "lat": 45.8, "label": "Bugey", "category": "operational" },
+    {
+      "lon": 6.218,
+      "lat": 49.416,
+      "label": "Cattenom",
+      "category": "operational"
+    },
+    {
+      "lon": 0.171,
+      "lat": 47.231,
+      "label": "Chinon",
+      "category": "operational"
+    },
+    { "lon": 4.789, "lat": 50.09, "label": "Chooz", "category": "operational" },
+    {
+      "lon": 0.653,
+      "lat": 46.457,
+      "label": "Civaux",
+      "category": "operational"
+    },
+    {
+      "lon": 4.757,
+      "lat": 44.633,
+      "label": "Cruas",
+      "category": "operational"
+    },
+    {
+      "lon": 2.517,
+      "lat": 47.733,
+      "label": "Dampierre",
+      "category": "operational"
+    },
+    {
+      "lon": -1.882,
+      "lat": 49.536,
+      "label": "Flamanville",
+      "category": "operational"
+    },
+    {
+      "lon": 0.845,
+      "lat": 44.107,
+      "label": "Golfech",
+      "category": "operational"
+    },
+    {
+      "lon": 2.136,
+      "lat": 51.015,
+      "label": "Gravelines",
+      "category": "operational"
+    },
+    {
+      "lon": 3.518,
+      "lat": 48.515,
+      "label": "Nogent",
+      "category": "operational"
+    },
+    {
+      "lon": 0.636,
+      "lat": 49.858,
+      "label": "Paluel",
+      "category": "operational"
+    },
+    {
+      "lon": 1.212,
+      "lat": 49.977,
+      "label": "Penly",
+      "category": "operational"
+    },
+    {
+      "lon": 4.754,
+      "lat": 45.404,
+      "label": "Saint-Alban",
+      "category": "operational"
+    },
+    {
+      "lon": 1.578,
+      "lat": 47.72,
+      "label": "Saint-Laurent",
+      "category": "operational"
+    },
+    {
+      "lon": 4.756,
+      "lat": 44.333,
+      "label": "Tricastin",
+      "category": "operational"
+    },
+    {
+      "lon": -3.87,
+      "lat": 48.15,
+      "label": "Brennilis",
+      "category": "shut down"
+    },
+    {
+      "lon": 7.566,
+      "lat": 47.903,
+      "label": "Fessenheim",
+      "category": "shut down"
+    }
+  ],
+  "basemap": "world",
+  "title": "France's nuclear fleet spans every region — two plants have now shut down",
+  "description": "Locations of all French nuclear power stations. Operational plants (18 sites as of 2025) and shut-down or decommissioned plants (Fessenheim closed 2020; Brennilis in decommissioning). Coordinates are approximate well-known site locations.",
+  "source": {
+    "name": "Wikipedia — Nuclear power in France / List of nuclear power stations",
+    "url": "https://en.wikipedia.org/wiki/Nuclear_power_in_France"
+  },
+  "filters": [
+    { "kind": "category", "field": "category", "label": "Plant status" }
+  ]
+}

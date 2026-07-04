@@ -1,0 +1,15 @@
+{
+  "producer": "scrolly",
+  "nativeType": "line",
+  "title": "Earth has warmed more than 1°C above pre-industrial levels",
+  "description": "Global mean surface temperature anomaly relative to the 1850–1900 pre-industrial baseline. Each data point marks a milestone decade, walking through the warming curve from the late 19th century to the hottest year on record.",
+  "insight": "The pace of warming has roughly doubled since 2015 — from 0.19°C to 0.35°C per decade — and 2024 crossed 1.29°C above pre-industrial levels.",
+  "unit": "Temperature anomaly above 1850–1900 baseline (°C)",
+  "valueUnit": "°C",
+  "directLabel": "anomaly_c",
+  "source": {
+    "name": "NOAA / NASA GISS / IPCC AR6 (via Wikipedia: Instrumental temperature record)",
+    "url": "https://en.wikipedia.org/wiki/Instrumental_temperature_record"
+  },
+  "data": "year,anomaly_c\n1900,-0.08\n1950,0.02\n1980,0.27\n2000,0.42\n2016,1.03\n2023,1.19\n2024,1.29"
+}
