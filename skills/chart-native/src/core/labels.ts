@@ -177,6 +177,31 @@ export function placeLabels(
         },
       },
     ];
+
+    // Corner fallback: an anchor at the plot edge defeats all six spots above — the
+    // horizontal ones clip vertically (anchor at the bottom/top edge), the vertical ones
+    // clip horizontally (anchor at the left/right edge). Offer the label to the side with
+    // its y CLAMPED inside bounds and a short leader back to the mark, so any in-bounds
+    // anchor whose label physically fits still gets placed instead of silently dropped.
+    const clampY = Math.max(
+      bounds.y0 + lh / 2,
+      Math.min(bounds.y1 - lh / 2, c.ay),
+    );
+    for (const side of [1, -1] as const) {
+      const start = side === 1;
+      const x = start ? c.ax + r + gap : c.ax - r - gap;
+      const bx = start ? x : x - w;
+      positions.push({
+        x,
+        y: clampY,
+        anchor: start ? "start" : "end",
+        box: box(bx, clampY, w),
+        leader:
+          Math.abs(clampY - c.ay) > 0.5
+            ? { x1: c.ax + side * r, y1: c.ay, x2: x, y2: clampY }
+            : undefined,
+      });
+    }
     const chosen = positions.find(
       (pos) =>
         withinBounds(pos.box, bounds) &&

@@ -96,4 +96,32 @@ describe("placeLabels — the in-bounds + no-overlap invariant ALWAYS holds", ()
     ];
     expect(placeLabels(huge, [], { bounds, charW, lh, padX })).toHaveLength(0);
   });
+
+  it("places a corner anchor whose label fits — the scatter 'Mexico' regression", () => {
+    // A point at a plot corner (e.g. min-x, min-y): the adjacent spots clip vertically
+    // (bottom/top edge) or horizontally (left/right edge). A fitting label must STILL be
+    // placed (via the clamped-horizontal fallback), not silently dropped.
+    for (const corner of [
+      { ax: 3, ay: 397 }, // bottom-left (the Mexico case)
+      { ax: 597, ay: 397 }, // bottom-right
+      { ax: 3, ay: 3 }, // top-left
+      { ax: 597, ay: 3 }, // top-right
+    ]) {
+      const cand: PlaceCandidate[] = [
+        {
+          id: "c",
+          text: "Mexico",
+          ax: corner.ax,
+          ay: corner.ay,
+          r: 6,
+          priority: 1,
+        },
+      ];
+      const placed = placeLabels(cand, [], { bounds, charW, lh, padX });
+      expect(placed).toHaveLength(1);
+      expect(
+        withinBounds(placedBox({ ...placed[0], text: "Mexico" }), bounds),
+      ).toBe(true);
+    }
+  });
 });

@@ -162,10 +162,23 @@ for (const c of CASES) {
     if (corresponded < 2)
       fail(`bar: accent↔caption never corresponded at a settled reveal (${corresponded})`);
   } else if (c.type === "scatter") {
-    // The set of visible labels must CHANGE across reveals (a different outlier named).
-    const sigs = new Set(snaps.map((s) => s.labels.slice().sort().join("|")));
-    if (sigs.size < 2)
-      fail(`scatter: outlier label did not walk — labels never changed across scroll`);
+    // Every entity NAMED in a reveal caption ("<Entity> — x, y") must have its point label
+    // rendered in at least one snapshot where that caption is shown. Catches a captioned-
+    // but-unlabelled outlier (the bottom-left-corner "Mexico" drop) that a mere
+    // labels-change check is false-green on.
+    const captioned = {}; // entity -> was its label ever present while captioned
+    for (const s of snaps) {
+      const m = s.caption && s.caption.match(/^(.+?)\s+—\s/u);
+      if (!m) continue;
+      const e = m[1].trim();
+      captioned[e] = (captioned[e] ?? false) || s.labels.includes(e);
+    }
+    const named = Object.keys(captioned);
+    if (named.length < 2)
+      fail(`scatter: fewer than 2 outliers captioned across scroll (${named.length})`);
+    const missing = named.filter((e) => !captioned[e]);
+    if (missing.length)
+      fail(`scatter: captioned but its point label never rendered — ${missing.join(", ")}`);
   }
   console.log(`chart-scrolly smoke OK: ${c.type}`);
 }
