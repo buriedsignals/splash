@@ -225,6 +225,42 @@ export const Scrolly: React.FC<{
       ? (config as { nativeType: string }).nativeType
       : null;
 
+  // For a LINE chart track: the data index the line head must reach when each RENDERED card
+  // centres. Built here (not in ScrollyChart) because the collapse rule below — which drops a
+  // card whose prose repeats the previous — defines the exact card set that drives
+  // scrollProgress. Aligning the target array 1:1 with those cards makes the head land on the
+  // captioned point as its card centres (title/establish → 0, reveal → its dataIndex, takeaway
+  // → the last index). Without this the head lags the caption by ~one step.
+  const lineCardTargets = useMemo<number[] | undefined>(() => {
+    if (
+      !("nativeType" in config) ||
+      (config as { nativeType: string }).nativeType !== "line"
+    )
+      return undefined;
+    let beats;
+    try {
+      beats = deriveChartStory(
+        config as unknown as import("./ScrollyChart").ChartScrollyConfig,
+        (config as { insight?: string }).insight,
+      );
+    } catch {
+      return undefined;
+    }
+    const lastIndex = Math.max(
+      0,
+      ...beats.filter((b) => b.kind === "reveal").map((b) => b.dataIndex ?? 0),
+    );
+    const targets: number[] = [];
+    story.steps.forEach((s, i) => {
+      if (i > 0 && s.prose === story.steps[i - 1].prose) return; // collapsed — not rendered
+      const beat = typeof s.ref === "number" ? beats[s.ref] : undefined;
+      if (beat?.kind === "reveal") targets.push(beat.dataIndex ?? 0);
+      else if (beat?.kind === "takeaway") targets.push(lastIndex);
+      else targets.push(0); // title / establish
+    });
+    return targets;
+  }, [config, story]);
+
   // Ref array for prose step DOM nodes — one slot per step. Declared before the effects
   // that read it (scroll measurement + IntersectionObserver).
   const stepRefs = useRef<(HTMLElement | null)[]>([]);
@@ -466,6 +502,7 @@ export const Scrolly: React.FC<{
               config={config as unknown as ChartScrollyConfig}
               scrollProgress={scrollProgress}
               currentStep={currentBeatRef}
+              lineCardTargets={lineCardTargets}
             />
           ) : config.type === "symbol" ? (
             <ScrollySymbolMap

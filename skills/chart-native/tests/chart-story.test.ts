@@ -128,6 +128,42 @@ describe("deriveChartStory (bar) — highlightIndex matches the chart's display 
   });
 });
 
+describe("deriveChartStory — caption unit uses valueUnit, never the long axis label", () => {
+  const longUnitBar = {
+    nativeType: "bar",
+    title: "China accounts for nearly a third of global CO₂",
+    unit: "Share of global CO₂ (%)", // long axis label — must NOT appear in captions
+    valueUnit: "%", // short callout unit — this is what captions use
+    source: { name: "X" },
+    data: "country,share\nChina,31\nUnited States,14\nIndia,7\nBrazil,1",
+  };
+  it("uses the short valueUnit ('%' with no space) and omits the long unit", () => {
+    const beats = deriveChartStory(longUnitBar as any);
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals[0].copy).toBe("China leads — 31%");
+    for (const b of beats)
+      expect(b.copy.includes("Share of global CO₂")).toBe(false);
+  });
+  it("falls back to a SHORT unit but omits a long one when valueUnit is absent", () => {
+    const shortU = deriveChartStory({
+      ...longUnitBar,
+      valueUnit: undefined,
+      unit: "t",
+    } as any);
+    expect(shortU.filter((b) => b.kind === "reveal")[0].copy).toBe(
+      "China leads — 31 t",
+    );
+    const longU = deriveChartStory({
+      ...longUnitBar,
+      valueUnit: undefined,
+    } as any);
+    // long unit (has spaces) → omitted entirely; the axis subtitle carries it
+    expect(longU.filter((b) => b.kind === "reveal")[0].copy).toBe(
+      "China leads — 31",
+    );
+  });
+});
+
 describe("deriveChartStory (scatter) — outlier highlight walk", () => {
   const scatterSpec = {
     nativeType: "scatter",

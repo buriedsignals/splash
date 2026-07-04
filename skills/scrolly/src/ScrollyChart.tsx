@@ -33,7 +33,13 @@ export const ScrollyChart: React.FC<{
   config: ChartScrollyConfig;
   scrollProgress: number; // continuous — drives the LINE scrub
   currentStep: number; // discrete active beat — drives BAR/SCATTER highlight
-}> = ({ config, scrollProgress, currentStep }) => {
+  // Per-RENDERED-card reveal targets (data index the line head reaches when card k centres),
+  // built by the host which owns the collapsed-card structure that drives scrollProgress.
+  // When present it replaces the internal per-reveal checkpoints so the head lands on the
+  // captioned point EXACTLY as its card centres (the internal fallback mis-aligns because
+  // card-index space ≠ reveal-index space once title/establish/takeaway cards are counted).
+  lineCardTargets?: number[];
+}> = ({ config, scrollProgress, currentStep, lineCardTargets }) => {
   const { type, native, beats, checkpoints } = useMemo(() => {
     const { type, config: native } = specToNativeConfig(config);
     const beats = deriveChartStory(config, config.insight);
@@ -85,7 +91,12 @@ export const ScrollyChart: React.FC<{
           config={native as never}
           width={width}
           height={height}
-          revealTo={scrollToLineProgress(scrollProgress, checkpoints)}
+          revealTo={scrollToLineProgress(
+            scrollProgress,
+            lineCardTargets && lineCardTargets.length >= 2
+              ? lineCardTargets
+              : checkpoints,
+          )}
           responsive
           embedded
         />

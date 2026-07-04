@@ -8,7 +8,8 @@ export interface NativeSpec {
   nativeType: string;
   title: string;
   source: { name: string; url?: string };
-  unit: string;
+  unit: string; // long axis label (e.g. "Share of global CO₂ (%)")
+  valueUnit?: string; // short callout unit for scrolly captions (e.g. "%", "t")
   data: string; // CSV (header + rows)
   sort?: "asc" | "desc";
   orientation?: "horizontal" | "vertical";

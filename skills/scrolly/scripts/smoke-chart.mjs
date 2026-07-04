@@ -157,9 +157,29 @@ for (const c of CASES) {
   if (errs.length) fail(`${c.type}: page error — ${errs[0]}`);
 
   if (c.type === "line") {
-    const early = snaps[0].lineLen;
-    const late = snaps[snaps.length - 1].lineLen;
-    if (!(late > early + 5)) fail(`line: did not draw further on scroll (early=${early}, late=${late})`);
+    const full = Math.max(...snaps.map((s) => s.lineLen)) || 1;
+    if (!(full > 5)) fail(`line: never drew a line`);
+    // Head must not LAG the centred caption. Order the distinct reveal captions ("<x> — …")
+    // by first appearance; when reveal r of R is centred the head should be ≈ r/(R-1) of the
+    // full length. A head far BEHIND that (the ~one-step lag bug) fails. (Ahead is fine.)
+    const revealCaps = [];
+    for (const s of snaps) {
+      const isReveal = s.caption && /^\s*[-\d.]+\s+—/u.test(s.caption);
+      if (isReveal && !revealCaps.includes(s.caption)) revealCaps.push(s.caption);
+    }
+    if (revealCaps.length >= 2) {
+      const R = revealCaps.length;
+      for (const s of snaps) {
+        const r = revealCaps.indexOf(s.caption);
+        if (r < 0) continue;
+        const expected = r / (R - 1);
+        const frac = s.lineLen / full;
+        if (frac + 0.25 < expected)
+          fail(
+            `line: head lags caption — reveal ${r + 1}/${R} centred but head only ${Math.round(frac * 100)}% drawn (expected ≈${Math.round(expected * 100)}%)`,
+          );
+      }
+    }
   } else if (c.type === "bar") {
     // 1) the accent WALKS (≥2 distinct accented bars across scroll).
     const accents = new Set(snaps.map((s) => s.accentY).filter((y) => y !== null));

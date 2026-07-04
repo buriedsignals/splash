@@ -102,8 +102,19 @@ export function deriveChartStory(
   insight?: string,
 ): ChartBeat[] {
   const { type, config } = specToNativeConfig(spec);
-  const fmt = (v: number) =>
-    `${Math.round(v * 100) / 100}${spec.unit ? " " + spec.unit : ""}`;
+  // Caption unit = the SHORT callout unit, NOT the long axis label. `unit` is the axis
+  // subtitle (e.g. "Share of global CO₂ (%)"); repeating it in every caption is clumsy and
+  // duplicates furniture the chart already shows. Prefer an explicit `valueUnit` ("%", "t");
+  // else fall back to `unit` ONLY when it is already short (≤4 chars, no spaces, e.g. "t"),
+  // otherwise omit it and let the axis carry the meaning. "%" attaches with no space.
+  const vu = (spec as { valueUnit?: string }).valueUnit?.trim();
+  const uu = spec.unit?.trim();
+  const shortUnit = vu || (uu && uu.length <= 4 && !uu.includes(" ") ? uu : "");
+  const fmt = (v: number) => {
+    const n = Math.round(v * 100) / 100;
+    if (!shortUnit) return `${n}`;
+    return shortUnit === "%" ? `${n}%` : `${n} ${shortUnit}`;
+  };
   const beats: ChartBeat[] = [
     { kind: "title", callout: null, copy: spec.title },
     { kind: "establish", callout: null, copy: "" },
