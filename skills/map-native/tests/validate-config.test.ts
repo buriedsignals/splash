@@ -208,3 +208,32 @@ describe("validateRouteConfig", () => {
     expect(validateRouteConfig({ ...okRoute, title: "Map" }).ok).toBe(false);
   });
 });
+
+describe("validateChoroplethConfig — filters block", () => {
+  const base = {
+    regionKey: "iso",
+    valueField: "v",
+    basemap: "world",
+    rows: [
+      { iso: "FRA", v: 5 },
+      { iso: "DEU", v: 9 },
+    ],
+    title: "Renewables form a clear north–south gradient across Europe",
+    source: { name: "s", url: "https://example.org" },
+    description: "desc",
+  };
+  it("rejects an invalid filters block and accepts a valid one", () => {
+    expect(
+      validateChoroplethConfig({
+        ...base,
+        filters: [{ kind: "range", field: "nope" }],
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateChoroplethConfig({
+        ...base,
+        filters: [{ kind: "range", field: "v" }],
+      }).ok,
+    ).toBe(true);
+  });
+});

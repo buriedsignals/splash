@@ -4,6 +4,7 @@ import { MAP_STYLES } from "./route-geo";
 import type { LocatorMarker } from "./locator-geo";
 import { PALETTES, isCvdSafeRamp } from "./theme/scale";
 import { BASEMAP_NAMES } from "./basemaps";
+import { validateMapFilters, type MapFilter } from "./core/map-filter";
 
 // Shared palette/scaleType validation for any config that carries a colour scale.
 // Errors block: a scaleType must be known, a named palette must exist AND match the
@@ -61,6 +62,7 @@ export type ChoroplethConfigShape = ChoroplethData & {
   // "temporal" → tell the sequence (first → … → most recent), never "highest/
   // lowest"; "magnitude" → keep the ranking; "categorical" → ranking fallback.
   valueKind?: "temporal" | "magnitude" | "categorical";
+  filters?: MapFilter[];
 };
 
 // If a config declares a camera mode, it must be one the engine knows. (route-reveal
@@ -131,6 +133,13 @@ export function validateChoroplethConfig(
     }
   }
 
+  const rowsForFilters = (s.rows as Record<string, unknown>[]) ?? [];
+  const fr = validateMapFilters(
+    s.filters as MapFilter[] | undefined,
+    rowsForFilters,
+  );
+  if (!fr.ok) errors.push(...fr.errors);
+
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)
     errors.push(`title too short to be an insight: "${title}"`);
@@ -163,6 +172,7 @@ export type SymbolConfigShape = {
   source?: { name?: string; url?: string };
   cameraMode?: CameraMode;
   maxReveals?: number;
+  filters?: MapFilter[];
 };
 
 // Framework-free structural validation of a symbol-map config (pre-render — no
@@ -214,6 +224,13 @@ export function validateSymbolConfig(
         errors.push(`point ${i} value must be a non-negative number`);
     }
   }
+
+  const pointsForFilters = (s.points as Record<string, unknown>[]) ?? [];
+  const frSymbol = validateMapFilters(
+    s.filters as MapFilter[] | undefined,
+    pointsForFilters,
+  );
+  if (!frSymbol.ok) errors.push(...frSymbol.errors);
 
   if (!(typeof s.description === "string" && s.description.trim()))
     warnings.push("missing description — a module must state what/when/where");
@@ -307,6 +324,7 @@ export type LocatorConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  filters?: MapFilter[];
 };
 
 export function validateLocatorConfig(
@@ -362,6 +380,15 @@ export function validateLocatorConfig(
     }
   }
 
+  const markersForFilters = Array.isArray(s.markers)
+    ? (s.markers as Record<string, unknown>[])
+    : [];
+  const frLocator = validateMapFilters(
+    s.filters as MapFilter[] | undefined,
+    markersForFilters,
+  );
+  if (!frLocator.ok) errors.push(...frLocator.errors);
+
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)
     errors.push(`title too short to be an insight: "${title}"`);
@@ -393,6 +420,7 @@ export type DotDensityConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  filters?: MapFilter[];
 };
 
 export function validateDotDensityConfig(
@@ -440,6 +468,13 @@ export function validateDotDensityConfig(
   if (!Array.isArray(s.rows) || s.rows.length === 0)
     errors.push("rows must be a non-empty array");
 
+  const ddRowsForFilters = (s.rows as Record<string, unknown>[]) ?? [];
+  const frDotDensity = validateMapFilters(
+    s.filters as MapFilter[] | undefined,
+    ddRowsForFilters,
+  );
+  if (!frDotDensity.ok) errors.push(...frDotDensity.errors);
+
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)
     errors.push(`title too short to be an insight: "${title}"`);
@@ -469,6 +504,7 @@ export type HexGridConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  filters?: MapFilter[];
 };
 
 export function validateHexGridConfig(
@@ -533,6 +569,13 @@ export function validateHexGridConfig(
     }
   }
 
+  const hexPointsForFilters = (s.points as Record<string, unknown>[]) ?? [];
+  const frHexGrid = validateMapFilters(
+    s.filters as MapFilter[] | undefined,
+    hexPointsForFilters,
+  );
+  if (!frHexGrid.ok) errors.push(...frHexGrid.errors);
+
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)
     errors.push(`title too short to be an insight: "${title}"`);
@@ -563,6 +606,7 @@ export type CartogramConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  filters?: MapFilter[];
 };
 
 export function validateCartogramConfig(
@@ -612,6 +656,13 @@ export function validateCartogramConfig(
         errors.push(`value ${i} must have a numeric value field`);
     }
   }
+
+  const cartogramRowsForFilters = (s.values as Record<string, unknown>[]) ?? [];
+  const frCartogram = validateMapFilters(
+    s.filters as MapFilter[] | undefined,
+    cartogramRowsForFilters,
+  );
+  if (!frCartogram.ok) errors.push(...frCartogram.errors);
 
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)
