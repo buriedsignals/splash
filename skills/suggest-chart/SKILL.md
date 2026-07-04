@@ -326,7 +326,7 @@ insight state the insight, not column names. Confirm `nativeType` ∈ {line, bar
 - **Sort:** for ranking intents (bars/columns where order matters), set `"sort": "desc"` — the producer sorts the CSV.
 - **Colours:** single-series → at most 2 Okabe-Ito colours (default `#0072B2`); multi-series → one Okabe-Ito colour per series in `seriesColors`, at most 8.
 - **Pie/donut:** at most 5 slices — if more, group into "Other" or choose bars.
-- **Annotations:** add a `text-annotation` for the key outlier or turning point ("annotations explain WHY").
+- **Annotations:** add a `text-annotation` for the key outlier or turning point ("annotations explain WHY"). Keep the text TERSE (≈ ≤ 30 chars, e.g. "Crossed 50% urban, c. 2007" — not a full sentence): a long annotation clips or overlaps a value label at 340 px and the responsive label-safety guardrail will REJECT the whole chart. Put the elaboration in the intro, not the annotation.
 - **Title:** state the insight, not a label or a year range (the validator warns otherwise).
 - **Multi-series orientation:** `transpose:true` is ONLY for stacked/grouped **categorical** charts (e.g. stacked `year, Coal, Gas, Renewables`) where the x-category, not the series, belongs on the axis. **Never transpose a line/time chart** — a multi-series time trend (`year, France, Switzerland`) is `d3-lines` with one line per column and NO transpose. `multiple-lines`/`multiple-columns` = deliberate small multiples (one panel per series), not a single trend.
 - **Two-point comparison (prose-extracted):** a claim with exactly two values (e.g. 2019 vs 2024) renders as a **slope**, **dumbbell**, or **paired columns** — NEVER a continuous line, which would imply a trend from two points.
