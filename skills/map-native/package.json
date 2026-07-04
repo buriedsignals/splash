@@ -5,7 +5,8 @@
   "scripts": {
     "test": "bun test",
     "audit": "bun scripts/audit.mjs",
-    "audit:story": "bun scripts/audit-story.mjs"
+    "audit:story": "bun scripts/audit-story.mjs",
+    "smoke:filters": "bun scripts/smoke-filters.mjs"
   },
   "dependencies": {
     "@maptiler/sdk": "3.6.0",

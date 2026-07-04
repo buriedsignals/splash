@@ -207,6 +207,7 @@ for (const w of [360, 768, 1100, 1600]) {
       };
       const title = rectOf('[data-testid="map-title"]');
       const legend = rectOf('[data-testid="map-legend"]');
+      const filterbar = rectOf('[data-testid="map-filterbar"]');
       const C = 30; // marker pin/label clearance (matches MARKER_CLEARANCE)
       const hit = (p, box) =>
         box &&
@@ -216,7 +217,7 @@ for (const w of [360, 768, 1100, 1600]) {
         p.y + C >= box.top;
       for (const c of pts) {
         const p = m.project(c);
-        if (hit(p, title) || hit(p, legend)) return false;
+        if (hit(p, title) || hit(p, legend) || hit(p, filterbar)) return false;
       }
       return true;
     })();
