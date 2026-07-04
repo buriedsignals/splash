@@ -21,7 +21,7 @@ import {
 } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface FanConfig {
   title: string;
@@ -70,9 +70,7 @@ export function FanChart({
     bottom: 52, // x captions, clear of the source line
     left: 48, // value-axis labels (abbreviated)
   };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale, 0.6);
+  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.6, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

@@ -20,7 +20,7 @@ import { clamp01, easeOutCubic, stagger, formatNumber } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { relativeLuminance } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
 import { truncate } from "./core/text";
 
@@ -78,9 +78,7 @@ export function TreemapChart({
     bottom: 12 + (hasLegend ? 46 : 0), // legend band, clear of the source line
     left: 12,
   };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale, 0.6);
+  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.6, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

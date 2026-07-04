@@ -22,7 +22,7 @@ import { area, curveCatmullRom } from "d3-shape";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate, textWidth } from "./core/text";
 
 export interface ViolinConfig {
@@ -88,9 +88,7 @@ export function ViolinChart({
     bottom: 18 + legendRows * LEG_ROW + 38,
     left: PAD_LEFT, // category labels
   };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale);
+  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

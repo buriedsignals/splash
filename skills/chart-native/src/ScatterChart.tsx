@@ -18,7 +18,7 @@ import {
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { placeLabels } from "./core/labels";
 
 export interface ScatterConfig {
@@ -71,9 +71,7 @@ export function ScatterChart({
 }: ScatterChartProps) {
   const p = clamp01(progress);
   const basePad = PADDING(responsive);
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale);
+  const frame = resolveFrameWithHeader(config.title, undefined, width, height, basePad, scale, undefined, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

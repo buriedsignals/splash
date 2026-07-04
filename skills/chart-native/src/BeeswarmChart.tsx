@@ -19,7 +19,7 @@ import {
 import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
 
 export interface BeeswarmConfig {
@@ -73,9 +73,7 @@ export function BeeswarmChart({
     bottom: 40 + (hasLegend ? 24 : 0), // value ticks + (optional) legend
     left: 24,
   };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale, 0.5);
+  const frame = resolveFrameWithHeader(config.title, config.valueLabel, width, height, basePad, scale, 0.5, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

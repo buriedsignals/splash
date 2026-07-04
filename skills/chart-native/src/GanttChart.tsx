@@ -20,7 +20,7 @@ import {
 import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
 import { truncate } from "./core/text";
 
@@ -82,9 +82,7 @@ export function GanttChart({
     bottom: 32 + (cats.length ? legendRows * LEG_ROW + 20 : 0), // ticks + legend + clearance
     left: 150, // row labels in the gutter
   };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale, 0.62);
+  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.62, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

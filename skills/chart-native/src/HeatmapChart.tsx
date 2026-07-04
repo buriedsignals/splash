@@ -20,7 +20,7 @@ import { clamp01, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE } from "./core/tokens";
 import { relativeLuminance } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface HeatmapConfig {
   title: string;
@@ -70,9 +70,7 @@ export function HeatmapChart({
     bottom: 76, // column labels + colourbar + source clearance
     left: 52, // row labels
   };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale, 0.62);
+  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.62, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

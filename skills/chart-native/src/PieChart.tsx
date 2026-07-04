@@ -18,7 +18,7 @@ import {
 import { formatNumber, clamp01, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { withinBounds, overlaps, type Box } from "./core/labels";
 
 export interface PieConfig {
@@ -70,9 +70,7 @@ export function PieChart({
   const basePad = responsive
     ? { top: 16, right: 24, bottom: legendH + 16, left: 24 }
     : { top: 80, right: 130, bottom: 64, left: 130 };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale);
+  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
