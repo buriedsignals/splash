@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "case": 29,
+    "article": "Our World in Data — Electricity Mix",
+    "articleUrl": "https://ourworldindata.org/electricity-mix",
+    "status": "DATA_REQUIRED",
+    "note": "No literal numeric values in article text — prose extraction rule not met. Config is conditional on journalist sourcing the dataset from https://ourworldindata.org/grapher/electricity-mix (Our World in Data / BP Statistical Review / Ember). Routing and spec are correct once data is supplied."
+  },
+  "proposalSet": {
+    "proposals": [],
+    "notes": "All figures are approximate prose ('more than a third', 'around one-sixth', 'around three-quarters'). No literal numeric value with an attached dimension label appears verbatim in the article text. Prose extraction rule not met. The global electricity mix by source is the correct visual opportunity but requires the underlying dataset. The journalist must supply a CSV with columns [source, share_pct] before this config can be produced."
+  },
+  "conditionalSpec": {
+    "_condition": "Requires CSV: source (categorical, 7-8 rows), share_pct (numeric). Fetch from https://ourworldindata.org/grapher/electricity-mix — filter to latest year, aggregate to global totals.",
+    "producer": "dw-chart",
+    "type": "d3-bars",
+    "title": "Fossil fuels still dominate global electricity, but low-carbon sources are rising",
+    "intro": "Share of global electricity generation by source, latest year. Low-carbon sources — renewables and nuclear — now supply more than a third of electricity worldwide.",
+    "subject": "energy",
+    "baseColor": "#E69F00",
+    "sort": "desc",
+    "data": "PLACEHOLDER — replace with: source,share_pct\\nCoal,<value>\\nGas,<value>\\nHydropower,<value>\\nNuclear,<value>\\nWind,<value>\\nSolar,<value>\\nOil,<value>\\nOther renewables,<value>",
+    "numberFormat": "0.0",
+    "altInsight": "Fossil fuels still dominate global electricity, but low-carbon sources are rising",
+    "source": {
+      "name": "Our World in Data, Electricity Mix (BP Statistical Review / Ember)",
+      "url": "https://ourworldindata.org/electricity-mix"
+    }
+  },
+  "routing": {
+    "gate5_geographic": false,
+    "gate3_scrolly": false,
+    "gate2_interactive": false,
+    "gate4_video": false,
+    "format": "static",
+    "chartFamily": "part-to-whole",
+    "typeChosen": "d3-bars",
+    "pieRejected": true,
+    "pieRejectionReason": "7-8 slices exceeds the ≤5-slice pie guardrail; differences between adjacent slices (e.g. gas vs hydro) are not visually clear in a pie. Bars on a common baseline are the honest default.",
+    "colorRationale": "Subject is energy — amber #E69F00 per palette-freedom rule (energy/solar/gold). Not defaulting to blue."
+  }
+}

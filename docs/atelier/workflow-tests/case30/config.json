@@ -1,0 +1,54 @@
+{
+  "producer": "map-native",
+  "type": "locator",
+  "basemap": "world",
+  "markerStyle": "pin",
+  "title": "A magnitude 7.7 earthquake struck near Mandalay on 28 March 2025",
+  "description": "The earthquake struck at 12:50 MMT on 28 March 2025. Epicentre on the Sagaing Fault, 14 km north-northwest of Sagaing city and 16 km west of Mandalay. Shaking reached MMI X (Extreme) near Naypyidaw. Over 5,400 people killed across Myanmar, Thailand, and neighbouring countries.",
+  "source": {
+    "name": "Wikipedia — 2025 Myanmar earthquake",
+    "url": "https://en.wikipedia.org/wiki/2025_Myanmar_earthquake"
+  },
+  "markers": [
+    {
+      "lon": 95.925,
+      "lat": 22.001,
+      "label": "Epicentre (Mw 7.7)",
+      "category": "epicentre",
+      "note": "Sagaing Fault, depth 10 km. Coordinates from USGS via Wikipedia (exact).",
+      "priority": 1
+    },
+    {
+      "lon": 95.9956,
+      "lat": 21.9588,
+      "label": "Sagaing",
+      "category": "city",
+      "note": "14 km south-southeast of epicentre. ~1,000 deaths; 90 % of structures destroyed. Approximate coordinates.",
+      "priority": 2
+    },
+    {
+      "lon": 96.0785,
+      "lat": 21.9588,
+      "label": "Mandalay",
+      "category": "city",
+      "note": "16 km east of epicentre. 3,325 deaths (Mandalay Region). Approximate coordinates.",
+      "priority": 2
+    },
+    {
+      "lon": 96.1297,
+      "lat": 19.745,
+      "label": "Naypyidaw",
+      "category": "city",
+      "note": "MMI X (Extreme). 665 confirmed deaths; airport control tower collapsed. Approximate coordinates.",
+      "priority": 3
+    },
+    {
+      "lon": 100.5018,
+      "lat": 13.7563,
+      "label": "Bangkok",
+      "category": "city",
+      "note": "102 deaths (State Audit Office construction site collapse). Approximate coordinates.",
+      "priority": 3
+    }
+  ]
+}
