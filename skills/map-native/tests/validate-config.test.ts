@@ -297,6 +297,42 @@ describe("validateLocatorConfig — filters wiring", () => {
   });
 });
 
+describe("basemap registry — unregistered basemap is rejected by all validators", () => {
+  it("rejects basemap 'france' for locator and accepts 'world'", () => {
+    const locatorBase = {
+      type: "locator",
+      markers: [
+        { lon: 6.15, lat: 46.2, label: "Geneva" },
+        { lon: 7.45, lat: 46.95, label: "Bern" },
+      ],
+      title: "Two Swiss cities anchor the story",
+      description: "Key locations, 2024",
+      source: { name: "Source 2025", url: "https://example.org/x" },
+    };
+    const bad = validateLocatorConfig({ ...locatorBase, basemap: "france" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.some((e) => /france/.test(e))).toBe(true);
+    expect(validateLocatorConfig({ ...locatorBase, basemap: "world" }).ok).toBe(
+      true,
+    );
+  });
+  it("rejects basemap 'france' for symbol and accepts 'world'", () => {
+    const symbolBase = {
+      type: "symbol",
+      points: [{ lon: 2.35, lat: 48.85, value: 100, label: "Paris" }],
+      title: "Paris dominates the national ranking",
+      description: "Value by city, 2024",
+      source: { name: "Source 2025", url: "https://example.org/x" },
+    };
+    const bad = validateSymbolConfig({ ...symbolBase, basemap: "france" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.some((e) => /france/.test(e))).toBe(true);
+    expect(validateSymbolConfig({ ...symbolBase, basemap: "world" }).ok).toBe(
+      true,
+    );
+  });
+});
+
 describe("validateDotDensityConfig — filters wiring", () => {
   const base = {
     type: "dot-density",
