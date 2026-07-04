@@ -93,11 +93,19 @@ describe("validateMapFilters", () => {
         [
           { kind: "category", field: "kind" },
           { kind: "range", field: "pop" },
-          { kind: "time", field: "year" },
+          { kind: "range", field: "year" },
         ],
         rows,
       ).ok,
     ).toBe(false); // > 2
+  });
+  it('rejects kind:"time" with the unsupported message', () => {
+    const r = validateMapFilters([{ kind: "time", field: "year" }], rows);
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(
+        r.errors.some((e) => e.includes("time filters are not yet supported")),
+      ).toBe(true);
   });
   it("rejects a category with cardinality outside 2–8", () => {
     const one = [{ name: "A", kind: "x" }];

@@ -245,6 +245,8 @@ bar derives its values from the data; you name the FIELD, not the values. Two ki
 - **Do NOT emit `kind:"time"` yet** — the interactive time-scrub re-derivation is not wired for any map
   type, so a time filter would render a control that does nothing. A temporal story stays a **video /
   scrolly** (Gate 3/4), not an interactive time slider.
+- **Do NOT emit `kind:"category"` for a dot-density map** — category filters are unsupported for
+  dot-density; use a range filter on a numeric field, or drop filters entirely.
 - Filters are **interactive-only**: the static PNG and the video render the default (all categories,
   full range) with no filter bar. If the format is static (`map-dw` or a static `map-native`), omit `filters`.
 - `validateChoroplethConfig` rejects a bad filters block (unknown field, category cardinality outside

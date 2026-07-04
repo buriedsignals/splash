@@ -480,6 +480,12 @@ export function validateDotDensityConfig(
     ddRowsForFilters,
   );
   if (!frDotDensity.ok) errors.push(...frDotDensity.errors);
+  if (Array.isArray(s.filters)) {
+    for (const f of s.filters as MapFilter[]) {
+      if (f.kind === "category")
+        errors.push("category filters are not supported for dot-density maps");
+    }
+  }
 
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)

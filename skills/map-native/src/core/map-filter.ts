@@ -10,6 +10,7 @@ export type MapFilter =
       label?: string;
       mode?: "atLeast" | "atMost" | "between";
     }
+  // Reserved: time filters are validation-gated until interactive time re-derivation is wired.
   | { kind: "time"; field: string; label?: string };
 
 export type FilterOption =
@@ -147,6 +148,14 @@ export function validateMapFilters(
 ): { ok: true } | { ok: false; errors: string[] } {
   const errors: string[] = [];
   if (!filters || filters.length === 0) return { ok: true };
+  // Reject time filters immediately: interactive time re-derivation is not yet implemented.
+  for (const f of filters) {
+    if (f.kind === "time")
+      errors.push(
+        `time filters are not yet supported (no interactive time re-derivation) — a temporal story stays video/scrolly`,
+      );
+  }
+  if (errors.length) return { ok: false, errors };
   if (filters.length > 2) errors.push("at most 2 filters per map");
   const cols = new Set(rows.length ? Object.keys(rows[0]) : []);
   for (const f of filters) {

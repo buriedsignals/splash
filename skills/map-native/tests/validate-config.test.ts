@@ -326,6 +326,33 @@ describe("validateDotDensityConfig — filters wiring", () => {
       }).ok,
     ).toBe(true);
   });
+  it("rejects a category filter for dot-density", () => {
+    const rows = [
+      { iso: "FRA", population: 68000000, region: "west" },
+      { iso: "DEU", population: 84000000, region: "east" },
+      { iso: "ESP", population: 47000000, region: "south" },
+    ];
+    const r = validateDotDensityConfig({
+      ...base,
+      rows,
+      filters: [{ kind: "category", field: "region" }],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(
+        r.errors.some((e) =>
+          e.includes("category filters are not supported for dot-density maps"),
+        ),
+      ).toBe(true);
+  });
+  it("accepts a range filter for dot-density", () => {
+    expect(
+      validateDotDensityConfig({
+        ...base,
+        filters: [{ kind: "range", field: "population" }],
+      }).ok,
+    ).toBe(true);
+  });
 });
 
 describe("validateHexGridConfig — filters wiring", () => {
