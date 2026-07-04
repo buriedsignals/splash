@@ -1,0 +1,13 @@
+{
+  "producer": "chart-native",
+  "nativeType": "scatter",
+  "title": "The US spends far more on health yet lives shorter lives",
+  "description": "Health spending per capita (USD) vs life expectancy (years), 2022",
+  "insight": "More spending does not buy more years.",
+  "unit": "",
+  "source": {
+    "name": "OECD Health Statistics",
+    "url": "https://oecd.org/health"
+  },
+  "data": "country,spend,years\nUnited States,12500,76\nJapan,4700,84\nMexico,1200,75\nGermany,7400,81\nUnited Kingdom,5400,81\nKorea,3600,83"
+}

@@ -1,5 +1,7 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LineChart } from "../../chart-native/src/LineChart";
+import { BarChart } from "../../chart-native/src/BarChart";
+import { ScatterChart } from "../../chart-native/src/ScatterChart";
 import { specToNativeConfig } from "../../chart-native/src/spec-to-config";
 import { deriveChartStory } from "../../chart-native/src/chart-story";
 import type { NativeSpec } from "../../chart-native/src/spec-to-config";
@@ -10,13 +12,11 @@ export type ChartScrollyConfig = NativeSpec & {
   source?: { name: string; url?: string };
 };
 
-// Map the continuous scroll fraction (0→1 over the rendered prose cards) to a FRACTIONAL
-// data-point index the line should be drawn up to, hitting each captioned point exactly
-// when its card centres. The visible cards are [intro, reveal₀ … reveal_{K-1}, takeaway] —
-// evenly spaced in scroll — so the checkpoints are the data indices
-// [0, d₀ … d_{K-1}, lastIndex]. Linearly interpolate at scroll·(len-1). LineChart then
-// converts the returned index to the exact path fraction at its OWN responsive width, so
-// the head lands on the point at any size. Pure + testable.
+// Map the continuous scroll fraction (0→1 over the rendered prose cards) to the value the
+// LINE reveal should be drawn up to — the checkpoints are the reveal data indices
+// [0, d₀ … d_{K-1}, lastIndex], so the head reaches each captioned point when its card
+// centres. LineChart converts the returned index to the exact path fraction at its OWN
+// responsive width. Pure + testable.
 export function scrollToLineProgress(
   scrollProgress: number,
   checkpoints: number[],
@@ -31,25 +31,25 @@ export function scrollToLineProgress(
 
 export const ScrollyChart: React.FC<{
   config: ChartScrollyConfig;
-  scrollProgress: number;
-}> = ({ config, scrollProgress }) => {
-  const { native, checkpoints } = useMemo(() => {
-    const native = specToNativeConfig(config).config as {
-      points: unknown[];
-    } & Record<string, unknown>;
+  scrollProgress: number; // continuous — drives the LINE scrub
+  currentStep: number; // discrete active beat — drives BAR/SCATTER highlight
+}> = ({ config, scrollProgress, currentStep }) => {
+  const { type, native, beats, checkpoints } = useMemo(() => {
+    const { type, config: native } = specToNativeConfig(config);
     const beats = deriveChartStory(config, config.insight);
     const revealIndices = beats
       .filter((b) => b.kind === "reveal")
       .map((b) => b.dataIndex ?? 0);
-    const lastIndex = Math.max(0, native.points.length - 1);
-    // [intro=first point] + each reveal's data index + [takeaway=last point]
+    const lastIndex = Math.max(
+      0,
+      ((native as { points?: unknown[] }).points?.length ?? 1) - 1,
+    );
     const checkpoints = [0, ...revealIndices, lastIndex];
-    return { native, checkpoints };
+    return { type, native, beats, checkpoints };
   }, [config]);
 
-  // Responsive: measure the sticky container width (ResizeObserver) and hand it to
-  // LineChart so the chart fills its width and shrinks on mobile — a chart embed must
-  // ALWAYS be responsive. Height keeps a readable aspect, clamped.
+  // Responsive: a chart embed must ALWAYS fill its width. Measure the container and hand
+  // the width/height to the chart so it shrinks on mobile.
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number | null>(null);
   useLayoutEffect(() => {
@@ -61,8 +61,63 @@ export const ScrollyChart: React.FC<{
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  const height =
+    width != null
+      ? Math.round(Math.max(320, Math.min(520, width * 0.62)))
+      : 480;
 
-  const revealTo = scrollToLineProgress(scrollProgress, checkpoints);
+  const activeBeat =
+    beats[Math.max(0, Math.min(beats.length - 1, currentStep))];
+
+  let chart: React.ReactNode = null;
+  if (width != null) {
+    if (type === "line") {
+      // Continuous scrub — the line draws on with scroll (embedded: static axes, linear
+      // reveal, no title/source since the scrolly host shows them).
+      chart = (
+        <LineChart
+          config={native as never}
+          width={width}
+          height={height}
+          revealTo={scrollToLineProgress(scrollProgress, checkpoints)}
+          responsive
+          embedded
+        />
+      );
+    } else if (type === "bar") {
+      // Ranked HIGHLIGHT walk — all bars visible; the active reveal's bar is accented.
+      const highlightIndex =
+        activeBeat?.kind === "reveal" ? activeBeat.highlightIndex : undefined;
+      chart = (
+        <BarChart
+          config={{ ...(native as object), highlightIndex } as never}
+          progress={1}
+          width={width}
+          height={height}
+          responsive
+          embedded
+        />
+      );
+    } else if (type === "scatter") {
+      // Outlier HIGHLIGHT walk — the active reveal's story point is labelled.
+      const annotate =
+        activeBeat?.kind === "reveal" && activeBeat.labelKey
+          ? [activeBeat.labelKey]
+          : undefined;
+      chart = (
+        <ScatterChart
+          config={
+            { ...(native as object), annotate, labelPoints: "none" } as never
+          }
+          progress={1}
+          width={width}
+          height={height}
+          responsive
+          embedded
+        />
+      );
+    }
+  }
 
   return (
     <div
@@ -76,17 +131,7 @@ export const ScrollyChart: React.FC<{
         background: "#ffffff",
       }}
     >
-      {width != null && (
-        <LineChart
-          config={native as never}
-          width={width}
-          height={Math.round(Math.max(320, Math.min(520, width * 0.62)))}
-          revealTo={revealTo}
-          responsive
-          embedded
-          interactive={false}
-        />
-      )}
+      {chart}
     </div>
   );
 };

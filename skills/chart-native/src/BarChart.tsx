@@ -47,6 +47,8 @@ export interface BarChartProps {
   responsive?: boolean;
   /** typography/margin scale for non-landscape video canvases (default 1). */
   scale?: number;
+  /** embedded = sticky graphic in a chart-scrolly host; suppress own title + source. */
+  embedded?: boolean;
 }
 
 function paddingFor(orientation: Orientation, responsive: boolean) {
@@ -64,6 +66,7 @@ export function BarChart({
   interactive = false,
   responsive = false,
   scale = 1,
+  embedded = false,
 }: BarChartProps) {
   const p = clamp01(progress);
   const basePad = paddingFor(config.orientation, responsive);
@@ -122,6 +125,7 @@ export function BarChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      embedded={embedded}
     >
       {svg}
     </ChartFrame>

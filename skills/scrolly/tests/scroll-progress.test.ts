@@ -22,12 +22,12 @@ describe("scrollToLineProgress (continuous line scrub)", () => {
     }
   });
   it("lands ON a reveal's fraction when its card centres", () => {
-    // checkpoints = [0, 0, 0.35, 0.72, 1, 1] (len 6). card J centres at scroll J/(len-1).
-    // The 0.72 reveal is checkpoint index 3 → scroll 3/5 = 0.6.
-    expect(scrollToLineProgress(0.6, reveals)).toBeCloseTo(0.72, 6);
+    // The arg IS the checkpoint array (len 4). Checkpoint index J centres at scroll
+    // J/(len-1) = J/3. The 0.72 reveal is index 2 → scroll 2/3.
+    expect(scrollToLineProgress(2 / 3, reveals)).toBeCloseTo(0.72, 6);
   });
   it("interpolates linearly between two checkpoints", () => {
-    // halfway between checkpoint 3 (0.72) and 4 (1.0) → scroll (3.5)/5 = 0.7 → 0.86
-    expect(scrollToLineProgress(0.7, reveals)).toBeCloseTo(0.86, 6);
+    // halfway between index 2 (0.72) and index 3 (1.0) → scroll 2.5/3 → 0.86
+    expect(scrollToLineProgress(2.5 / 3, reveals)).toBeCloseTo(0.86, 6);
   });
 });

@@ -407,6 +407,7 @@ export const Scrolly: React.FC<{
             <ScrollyChart
               config={config as unknown as ChartScrollyConfig}
               scrollProgress={scrollProgress}
+              currentStep={currentBeatRef}
             />
           ) : config.type === "symbol" ? (
             <ScrollySymbolMap

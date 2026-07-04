@@ -53,10 +53,55 @@ describe("deriveChartStory (line)", () => {
     expect(reveals[0].callout).not.toBeNull();
     expect(reveals[0].copy).toContain("1979"); // the x-label of the first point
   });
-  it("throws a clear error for a non-line native type (Slice A)", () => {
+  it("throws a clear error for an unsupported native type (e.g. pie)", () => {
     expect(() =>
-      deriveChartStory({ ...lineSpec, nativeType: "bar" } as any),
-    ).toThrow(/chart-scrolly.*line/i);
+      deriveChartStory({ ...lineSpec, nativeType: "pie" } as any),
+    ).toThrow(/chart-scrolly supports line, bar, scatter/i);
+  });
+});
+
+describe("deriveChartStory (bar) — ranked highlight walk", () => {
+  const barSpec = {
+    nativeType: "bar",
+    title: "CO₂ per capita",
+    unit: "t",
+    source: { name: "X" },
+    data: "country,co2\nQatar,35\nUSA,15\nChina,8\nFrance,5\nKenya,1",
+  };
+  const beats = deriveChartStory(barSpec as any, "The gap is vast");
+  it("emits title → establish → reveals → takeaway", () => {
+    expect(beats[0].kind).toBe("title");
+    expect(beats[1].kind).toBe("establish");
+    expect(beats[beats.length - 1].kind).toBe("takeaway");
+  });
+  it("reveals the leaders then the tail, each with a post-sort highlightIndex + rank", () => {
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    // desc: Qatar(35) USA(15) China(8) France(5) Kenya(1) → top-3 + tail(Kenya idx 4)
+    expect(reveals.map((b) => b.highlightIndex)).toEqual([0, 1, 2, 4]);
+    expect(reveals[0].copy).toBe("Qatar leads — 35 t");
+    expect(reveals[1].copy).toBe("USA — 15 t, 2nd");
+    expect(reveals[reveals.length - 1].rankRole).toBe("tail");
+    expect(reveals[reveals.length - 1].copy).toContain("The lowest");
+  });
+});
+
+describe("deriveChartStory (scatter) — outlier highlight walk", () => {
+  const scatterSpec = {
+    nativeType: "scatter",
+    title: "Spend vs longevity",
+    unit: "",
+    source: { name: "X" },
+    data: "country,spend,years\nUSA,12500,76\nJapan,4700,84\nMexico,1200,75\nGermany,7400,81",
+  };
+  const beats = deriveChartStory(scatterSpec as any);
+  it("reveals story points by labelKey (the outliers)", () => {
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals.length).toBeGreaterThanOrEqual(2);
+    for (const b of reveals) expect(typeof b.labelKey).toBe("string");
+    // max spend = USA (the headline outlier), max years = Japan
+    const keys = reveals.map((b) => b.labelKey);
+    expect(keys).toContain("USA");
+    expect(keys).toContain("Japan");
   });
 });
 
