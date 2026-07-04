@@ -102,6 +102,13 @@ export const LocatorMap: React.FC<Props> = ({
   const [filterState, setFilterState] = useState<FilterState>({});
   const [barHeightPx, setBarHeightPx] = useState(0);
 
+  // When the locator source is interactive AND has a category filter, disable clustering.
+  // MapLibre clusters at the SOURCE level before any layer filter — category setFilter only
+  // affects the un-clustered glyph layer, leaving cluster badges visible. Disabling clustering
+  // makes every marker render individually so the glyph filter covers them all.
+  const clusteringEnabled =
+    interactive && !filterOptions.some((o) => o.kind === "category");
+
   const geo = locatorGeometry({
     markers: config.markers,
     markerStyle: config.markerStyle,
@@ -235,13 +242,17 @@ export const LocatorMap: React.FC<Props> = ({
       map.addSource("locator", {
         type: "geojson",
         data: { type: "FeatureCollection", features },
-        // Clustering only for the interactive build; static renders every marker.
-        ...(interactive
+        // Clustering for interactive builds WITHOUT a category filter.
+        // Category filters are applied at the layer level (setFilter on locator-glyphs), but
+        // MapLibre aggregates points at the source level before any layer filter runs — so
+        // cluster badges would survive a category toggle. Disabling clustering when a category
+        // filter is present makes every marker pass through the glyph layer filter correctly.
+        ...(clusteringEnabled
           ? { cluster: true, clusterRadius: 44, clusterMaxZoom: 6 }
           : {}),
       });
 
-      if (interactive) {
+      if (clusteringEnabled) {
         // Cluster bubbles + counts (expand on zoom via click).
         map.addLayer({
           id: "locator-clusters",
@@ -278,7 +289,9 @@ export const LocatorMap: React.FC<Props> = ({
         });
       }
 
-      const glyphFilter: maptilersdk.FilterSpecification = interactive
+      // When clustering is active, only the non-cluster features reach the glyph layer.
+      // When clustering is disabled (category filter present), no guard is needed.
+      const glyphFilter: maptilersdk.FilterSpecification = clusteringEnabled
         ? ["!", ["has", "point_count"]]
         : (["all"] as unknown as maptilersdk.FilterSpecification);
 
@@ -391,30 +404,32 @@ export const LocatorMap: React.FC<Props> = ({
           "top-right",
         );
 
-        // Clicking a cluster zooms into its expansion.
-        map.on("click", "locator-clusters", (e) => {
-          const f = map.queryRenderedFeatures(e.point, {
-            layers: ["locator-clusters"],
-          })[0];
-          const clusterId = f?.properties?.cluster_id;
-          const src = map.getSource("locator") as maptilersdk.GeoJSONSource;
-          if (clusterId == null) return;
-          src.getClusterExpansionZoom(clusterId).then((zoom) => {
-            map.easeTo({
-              center: (f.geometry as GeoJSON.Point).coordinates as [
-                number,
-                number,
-              ],
-              zoom,
+        if (clusteringEnabled) {
+          // Clicking a cluster zooms into its expansion.
+          map.on("click", "locator-clusters", (e) => {
+            const f = map.queryRenderedFeatures(e.point, {
+              layers: ["locator-clusters"],
+            })[0];
+            const clusterId = f?.properties?.cluster_id;
+            const src = map.getSource("locator") as maptilersdk.GeoJSONSource;
+            if (clusterId == null) return;
+            src.getClusterExpansionZoom(clusterId).then((zoom) => {
+              map.easeTo({
+                center: (f.geometry as GeoJSON.Point).coordinates as [
+                  number,
+                  number,
+                ],
+                zoom,
+              });
             });
           });
-        });
-        map.on("mouseenter", "locator-clusters", () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-        map.on("mouseleave", "locator-clusters", () => {
-          map.getCanvas().style.cursor = "";
-        });
+          map.on("mouseenter", "locator-clusters", () => {
+            map.getCanvas().style.cursor = "pointer";
+          });
+          map.on("mouseleave", "locator-clusters", () => {
+            map.getCanvas().style.cursor = "";
+          });
+        }
 
         const popup = new maptilersdk.Popup({
           closeButton: false,
@@ -491,20 +506,21 @@ export const LocatorMap: React.FC<Props> = ({
   }, [progress, usesSymbolLayer]);
 
   // Apply the filter state to the locator-glyphs layer whenever it changes.
-  // The glyph layer already carries a base filter (non-cluster features only in
-  // interactive mode). Compose by wrapping: ["all", <base>, <filter expression>].
+  // When clustering is active the base filter excludes cluster features; when disabled (category
+  // filter present) every feature reaches the glyph layer so no guard is needed.
   useEffect(() => {
     const map = mapRef.current;
     if (!interactive || !filterOptions.length || !map) return;
     if (!map.getLayer(GLYPH_LAYER)) return;
-    const baseFilter: unknown = interactive
+    // clusteringEnabled is false when a category filter is present, so no point_count guard.
+    const baseFilter: unknown = clusteringEnabled
       ? ["!", ["has", "point_count"]]
       : ["all"];
     const filterExpr = filterStateToExpression(filterState, filterOptions);
     // filterExpr is ["all", ...clauses]. Spread its clauses into ["all", base, ...clauses].
     const combined = ["all", baseFilter, ...(filterExpr.slice(1) as unknown[])];
     map.setFilter(GLYPH_LAYER, combined as never);
-  }, [filterState, filterOptions, interactive]);
+  }, [filterState, filterOptions, interactive, clusteringEnabled]);
 
   const handleTitleHeight = useCallback((px: number) => {
     if (px === titleHeightPxRef.current) return;

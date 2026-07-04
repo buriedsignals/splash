@@ -200,6 +200,9 @@ const browser = await chromium.launch();
 }
 
 // ─── Case 2: filter-locator (category filter on locator-glyphs) ──────────────
+// The locator source disables clustering when a category filter is present (F-B fix).
+// The smoke measures the cluster-inclusive total (glyphs + clusters) so that any regression
+// that re-enables clustering while leaving cluster badges unfiltered will be caught.
 {
   const label = "filter-locator";
   console.log(`\n[${label}]`);
@@ -213,8 +216,36 @@ const browser = await chromium.launch();
   await waitForMap(page, "locator-glyphs");
   await page.waitForTimeout(1500);
 
-  const before = await countFeatures(page, "locator-glyphs");
-  console.log(`  count before: ${before}`);
+  // Cluster-inclusive count: glyphs + any cluster badges that may be rendered.
+  // With the F-B fix clustering is disabled so locator-clusters will be 0; the sum is still
+  // measured this way so that a regression (clusters re-enabled but unfiltered) causes failure.
+  async function countLocatorTotal(pg) {
+    const glyphs = await countFeatures(pg, "locator-glyphs");
+    const clusters = await pg.evaluate(() => {
+      const m = window.__map__;
+      if (!m || !m.getLayer("locator-clusters")) return 0;
+      return m.queryRenderedFeatures({ layers: ["locator-clusters"] }).length;
+    });
+    return { glyphs, clusters, total: glyphs + clusters };
+  }
+
+  const beforeCounts = await countLocatorTotal(page);
+  console.log(
+    `  count before — glyphs:${beforeCounts.glyphs} clusters:${beforeCounts.clusters} total:${beforeCounts.total}`,
+  );
+
+  // Assert clustering IS disabled when a category filter is configured (F-B guardrail).
+  const clusterLayerPresent = await page.evaluate(
+    () => !!window.__map__?.getLayer("locator-clusters"),
+  );
+  if (clusterLayerPresent) {
+    failures.push(
+      `${label}: locator-clusters layer is present — clustering must be disabled when a category filter is active (F-B regression)`,
+    );
+    console.error(`  FAIL: locator-clusters layer still present (F-B regression)`);
+  } else {
+    console.log(`  no cluster layer: OK (clustering disabled for category filter)`);
+  }
 
   const chips = await page.$$('[data-testid="filter-chip"]');
   if (chips.length === 0) {
@@ -225,13 +256,19 @@ const browser = await chromium.launch();
     await chips[0].click();
     await page.waitForTimeout(800);
 
-    const after = await countFeatures(page, "locator-glyphs");
-    console.log(`  count after: ${after}`);
-    if (after < before) {
-      console.log(`  count drop: OK (${before} → ${after})`);
+    const afterCounts = await countLocatorTotal(page);
+    console.log(
+      `  count after  — glyphs:${afterCounts.glyphs} clusters:${afterCounts.clusters} total:${afterCounts.total}`,
+    );
+    if (afterCounts.total < beforeCounts.total) {
+      console.log(
+        `  count drop: OK (${beforeCounts.total} → ${afterCounts.total})`,
+      );
     } else {
-      failures.push(`${label}: count did not drop (${before} → ${after})`);
-      console.error(`  FAIL: count did not drop`);
+      failures.push(
+        `${label}: cluster-inclusive count did not drop (${beforeCounts.total} → ${afterCounts.total})`,
+      );
+      console.error(`  FAIL: cluster-inclusive count did not drop`);
     }
   }
 
