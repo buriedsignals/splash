@@ -199,6 +199,49 @@ export const Scrolly: React.FC<{
   const stepRef = story.steps[currentStep]?.ref;
   const currentBeatRef = typeof stepRef === "number" ? stepRef : 0;
 
+  // Continuous scroll fraction (0→1) for a chart track — a line draws on smoothly with
+  // scroll instead of jumping between beats. It is measured over the RENDERED prose CARDS
+  // (the same DOM the reader sees centred), NOT a raw wrapper fraction: the line must
+  // reach a captioned point exactly when THAT card reaches the viewport centre, so the
+  // scrub and the caption stay in lock-step. Position = the fractional index of the card
+  // at the viewport centre, normalised across the rendered cards.
+  const [scrollProgress, setScrollProgress] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const cards = stepRefs.current.filter(Boolean) as HTMLElement[];
+      if (cards.length < 2) return;
+      const centerY = window.innerHeight / 2;
+      const centers = cards.map((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top + r.height / 2;
+      });
+      // Fractional index of the card straddling the viewport centre (centres move UP as
+      // you scroll down, so they decrease; find the pair centres[i] <= centerY <= [i+1]).
+      let pos = centerY <= centers[0] ? 0 : cards.length - 1;
+      for (let i = 0; i + 1 < centers.length; i++) {
+        if (centers[i] <= centerY && centerY < centers[i + 1]) {
+          const span = centers[i + 1] - centers[i] || 1;
+          pos = i + (centerY - centers[i]) / span;
+          break;
+        }
+      }
+      setScrollProgress(pos / (cards.length - 1));
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [story.steps.length]);
+
   // -------------------------------------------------------------------------
   // Ref array for prose step DOM nodes — one slot per step.
   // -------------------------------------------------------------------------
@@ -363,7 +406,7 @@ export const Scrolly: React.FC<{
           {"nativeType" in config ? (
             <ScrollyChart
               config={config as unknown as ChartScrollyConfig}
-              currentStep={currentBeatRef}
+              scrollProgress={scrollProgress}
             />
           ) : config.type === "symbol" ? (
             <ScrollySymbolMap
