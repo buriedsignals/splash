@@ -84,8 +84,6 @@ Producer: `chart-native`
 Produce command (run from repo root):
 
 ```bash
-export VITE_MAPTILER_KEY=$(grep '^VITE_MAPTILER_KEY=' .env | cut -d= -f2-)
-export MAPTILER_API_KEY=$VITE_MAPTILER_KEY
 bun skills/chart-native/scripts/produce-from-spec.mjs \
   docs/atelier/workflow-tests/case33/config.json \
   /tmp/flow-guided \

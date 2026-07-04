@@ -38,7 +38,9 @@ Branch:
 - **DIRECT** (journalist names the visual, e.g. "a scrolly map"): skip PROPOSITION. Go to PRODUCTION,
   passing suggest-chart the (data, intent) PLUS the forced element/format — suggest-chart still emits
   a VALIDATED spec and applies its guardrails (obey the choice, but if it violates a hard guardrail,
-  surface the warning to the journalist rather than shipping a broken visual).
+  surface the warning to the journalist rather than shipping a broken visual). On DIRECT, the branch
+  fires at Q1 — the remaining CADRAGE questions (Q2–Q4) are skipped; intent is inferred from the
+  article + the named visual.
 - **GUIDED**: go to PROPOSITION.
 
 ### 4. PROPOSITION — GATE 2 (guided path only)
@@ -61,7 +63,8 @@ EXPORT. Verify quality, not just that it built.
 
 **Producer commands (from suggest-chart/SKILL.md):**
 - `chart-native`: `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
-- `map-native` / `scrolly`: run from the producer's directory — `bun scripts/produce.mjs <config.json> <outDir> [all|static]`
+- `map-native`: run from `skills/map-native/` — `bun scripts/produce.mjs <config.json> <outDir> [all|static]`
+- `scrolly`: run from `skills/scrolly/` — `bun scripts/produce.mjs <config.json> <outDir>` → produces a single `scrolly.html` (no all|static flag)
 - `dw-chart` / `map-dw`: via their producer entry (Datawrapper API — token from `.env`)
 
 ### 6. EXPORT — GATE 4 (code vs link)
@@ -87,7 +90,7 @@ Ask which the journalist wants:
 
 - Never skip a gate.
 - Never auto-progress from one phase to the next without the journalist's explicit response.
-- Never produce a visual before the PROPOSITION / provenance OK (gates 2 and 2b).
+- Never produce a visual before the PROPOSITION / provenance OK (gates 2 and 2b) on the guided path.
 - Never export before the render OK (gate 3).
 - Never invent data or fabricate a dataset attribution.
 - Never conduct the dialogue in a language other than the journalist's (detect from first message).
