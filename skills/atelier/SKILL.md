@@ -63,7 +63,7 @@ EXPORT. Verify quality, not just that it built.
 
 **Producer commands (from suggest-chart/SKILL.md):**
 - `chart-native`: `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
-- `map-native`: run from `skills/map-native/` — `bun scripts/produce.mjs <config.json> <outDir> [all|static]`
+- `map-native`: run from `skills/map-native/` — `bun scripts/produce.mjs <config.json> <outDir> [static|reveal|story|scrolly|all]`
 - `scrolly`: run from `skills/scrolly/` — `bun scripts/produce.mjs <config.json> <outDir>` → produces a single `scrolly.html` (no all|static flag)
 - `dw-chart` / `map-dw`: via their producer entry (Datawrapper API — token from `.env`)
 
