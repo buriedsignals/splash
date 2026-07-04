@@ -33,6 +33,12 @@ const CASES = [
     sample: "assets/sample-data/scatter-scrolly.json",
     title: "The US spends far more on health yet lives shorter lives",
   },
+  {
+    // Defense-in-depth: an unsupported type must DEGRADE (clear message), never crash.
+    type: "pie",
+    sample: "assets/sample-data/pie-scrolly.json",
+    unsupported: true,
+  },
 ];
 
 const FRACS = [0.12, 0.28, 0.44, 0.6, 0.76];
@@ -53,6 +59,20 @@ for (const c of CASES) {
   const errs = [];
   page.on("pageerror", (e) => errs.push(e.message));
   await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+
+  // Unsupported type → the scrolly must render a clear fallback (no <svg>, no crash).
+  if (c.unsupported) {
+    const bodyText = await page.evaluate(() => document.body.textContent ?? "");
+    const hasSvg = await page.evaluate(() => !!document.querySelector("svg"));
+    await page.close();
+    if (errs.length) fail(`${c.type}: page error on unsupported type — ${errs[0]}`);
+    if (hasSvg) fail(`${c.type}: rendered a chart for an unsupported type (expected fallback)`);
+    if (!/not supported in a scrolly/.test(bodyText))
+      fail(`${c.type}: no graceful fallback message for unsupported type`);
+    console.log(`chart-scrolly smoke OK: ${c.type} (graceful fallback)`);
+    continue;
+  }
+
   await page.waitForSelector("svg", { timeout: 15000 });
 
   // --- Regression: the title must render exactly once (host header only). ---

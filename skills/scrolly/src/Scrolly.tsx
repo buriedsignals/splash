@@ -42,6 +42,12 @@ import {
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
+// The chart types the scrolly can narrate (deriveChartStory dispatches on these). Any other
+// nativeType (pie, etc.) has no progressive-reveal / ranked-walk narrative — the routing layer
+// (② suggest-chart) must never emit one, and if one slips through we degrade gracefully rather
+// than crash the render (deriveChartStory would otherwise throw inside the story useMemo).
+const CHART_SCROLLY_TYPES = new Set(["line", "bar", "scatter"]);
+
 // ---------------------------------------------------------------------------
 // Scrolly
 // ---------------------------------------------------------------------------
@@ -65,6 +71,18 @@ export const Scrolly: React.FC<{
     // CHART config (chart-native NativeSpec) — has `nativeType`. Build the chart story
     // BEFORE the map branches; a chart needs no geojson.
     if ("nativeType" in config) {
+      const nativeType = (config as { nativeType: string }).nativeType;
+      // Unsupported chart type → return an empty (but valid) story; the render shows a clear
+      // fallback instead of calling deriveChartStory (which throws for these).
+      if (!CHART_SCROLLY_TYPES.has(nativeType)) {
+        return {
+          title: (config as { title?: string }).title ?? "",
+          description: (config as { description?: string }).description,
+          source: (config as { source?: { name: string; url: string } }).source,
+          visual: "chart",
+          steps: [],
+        } as ReturnType<typeof chartStoryToChapters>;
+      }
       const beats = deriveChartStory(
         config as unknown as import("./ScrollyChart").ChartScrollyConfig,
         (config as { insight?: string }).insight,
@@ -198,6 +216,14 @@ export const Scrolly: React.FC<{
   // beats (establish / empty-takeaway are dropped), so resolve through the chapter.
   const stepRef = story.steps[currentStep]?.ref;
   const currentBeatRef = typeof stepRef === "number" ? stepRef : 0;
+
+  // Graceful degradation flag (pure, not a hook) — set when a chart config carries an
+  // unsupported nativeType. The render shows a clear message instead of an empty scaffold.
+  const unsupportedChart =
+    "nativeType" in config &&
+    !CHART_SCROLLY_TYPES.has((config as { nativeType: string }).nativeType)
+      ? (config as { nativeType: string }).nativeType
+      : null;
 
   // Ref array for prose step DOM nodes — one slot per step. Declared before the effects
   // that read it (scroll measurement + IntersectionObserver).
@@ -371,6 +397,39 @@ export const Scrolly: React.FC<{
     padding: "2px 6px",
     pointerEvents: "auto",
   };
+
+  // Defense-in-depth: an unsupported chart type reached the scrolly. Never crash — show a
+  // clear message (the ② routing layer is what should have prevented this).
+  if (unsupportedChart) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          padding: 24,
+          boxSizing: "border-box",
+          fontFamily: "sans-serif",
+          color: "#111",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ maxWidth: 420 }}>
+          {story.title && (
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>
+              {story.title}
+            </div>
+          )}
+          <div style={{ color: "#555", fontSize: 14, lineHeight: 1.5 }}>
+            A &ldquo;{unsupportedChart}&rdquo; chart is not supported in a
+            scrolly (only line, bar and scatter). Render it as a static chart
+            instead.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

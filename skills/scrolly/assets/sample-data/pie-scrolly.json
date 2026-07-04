@@ -1,0 +1,13 @@
+{
+  "producer": "scrolly",
+  "nativeType": "pie",
+  "title": "A pie has no scrolly narrative — this must degrade, not crash",
+  "description": "Fixture: an unsupported chart type routed to the scrolly.",
+  "insight": "Route pies to a static chart instead.",
+  "unit": "%",
+  "source": {
+    "name": "Fixture",
+    "url": "https://example.org"
+  },
+  "data": "source,share\nHydro,52\nWind,28\nSolar,20"
+}

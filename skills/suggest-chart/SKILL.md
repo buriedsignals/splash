@@ -241,8 +241,9 @@ Field notes:
 
 Used when Gate 5 routes to a map AND the format ladder (Gate 3) fires: the story is **irreducibly
 sequential** (north→south / step-by-step walk the author paces), a single map evolves across 4+ states,
-the piece is long-form (not breaking news), and resources exist. The scrolly v1 engine is map-based
-(chart scrolly is a future slice).
+the piece is long-form (not breaking news), and resources exist. The scrolly engine has **two tracks**:
+a **map** track (below) and a **chart** track (see *Chart scrolly* below). Both build via the same
+`skills/scrolly/scripts/produce.mjs`; the engine dispatches on whether the config carries `nativeType`.
 
 **ISO-A3 requirement** (same as `map-native`): region identifiers MUST be ISO-A3 codes. If the data
 cannot be matched to ISO-A3 → fall back to `map-dw` or a sorted bar chart and state why.
@@ -281,6 +282,42 @@ standard). The scrolly config IS a choropleth config — the same validator appl
 **Produce:** write the config to a temp JSON, then run from the `skills/scrolly/` directory:
 `bun scripts/produce.mjs <config.json> <outDir>` → produces a single-file `scrolly.html`.
 The MapTiler key comes from `/atelier/.env` (`MAPTILER_API_KEY`) — it is **never logged**.
+
+#### Chart scrolly (line / bar / scatter ONLY)
+
+Used when the format ladder fires for a **non-geographic** story that is irreducibly sequential (the
+author walks the reader through the data point by point) and long-form. The chart track narrates ONE
+native chart as a sticky graphic, adapting to the type: **line** = the curve draws on with scroll (the
+head lands on each captioned point); **bar** = a ranked highlight walk (leaders → the tail); **scatter**
+= an outlier label walk. The scaffold shows the title + source once; the embedded chart suppresses its own.
+
+**HARD CONSTRAINT — supported `nativeType`: `line`, `bar`, `scatter` only.** A `pie` (or any other of the
+41 native types) has no progressive-reveal / ranked-walk narrative and is **rejected** by the engine.
+For those, route to a **static** chart-native (or `dw-chart`) instead — never emit a chart scrolly for them.
+
+**Emitted config:** `producer:"scrolly"` + the chart-native spec fields (`nativeType` is what routes the
+engine to the chart track), plus an `insight` for the closing takeaway:
+
+```json
+{
+  "producer": "scrolly",
+  "nativeType": "line | bar | scatter",
+  "title": "<the insight — sentence case, not a label or year range>",
+  "description": "<what / when context — shown on the intro card>",
+  "insight": "<the closing takeaway line>",
+  "unit": "<axis unit, e.g. 'million km²' or 't'>",
+  "directLabel": "<line only: the y series column>",
+  "orientation": "horizontal",
+  "source": { "name": "<honest source>", "url": "<URL>" },
+  "data": "col1,col2\\n<CSV rows — line: x,y · bar: category,value · scatter: label,x,y>"
+}
+```
+
+**Self-check:** the emitted spec MUST pass `validateChartSpec` (run it via the dw-chart skill) — title +
+insight state the insight, not column names. Confirm `nativeType` ∈ {line, bar, scatter} before emitting.
+
+**Produce:** same as the map track — `bun scripts/produce.mjs <config.json> <outDir>` from
+`skills/scrolly/`. No MapTiler key needed for a chart config (the map modules load but never render).
 
 ## Guardrails (the code enforces these — propose within them)
 
