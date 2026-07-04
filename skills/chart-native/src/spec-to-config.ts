@@ -132,6 +132,10 @@ export function specToNativeConfig(spec: NativeSpec): {
           unit: spec.unit,
           xField: xCol,
           yField: yCol,
+          // ScatterConfig requires axis titles; derive them from the CSV headers so the
+          // embedded chart's axes are never blank (the reader must know what x/y mean).
+          xLabel: xCol,
+          yLabel: yCol,
           ...(hasLabel ? { labelField: catCol } : {}),
           rows,
         },

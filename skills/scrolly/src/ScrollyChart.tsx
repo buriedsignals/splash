@@ -44,7 +44,13 @@ export const ScrollyChart: React.FC<{
       0,
       ((native as { points?: unknown[] }).points?.length ?? 1) - 1,
     );
-    const checkpoints = [0, ...revealIndices, lastIndex];
+    // Dedupe adjacent-equal checkpoints: lineNotableIndices ALWAYS includes the first (0)
+    // and last (lastIndex) reveal, so [0, ...revealIndices, lastIndex] would duplicate both
+    // endpoints — leaving the line empty for the first ~20% of scroll and full for the last
+    // ~20% (dead scroll). Collapsing runs keeps the reveal tight across the whole track.
+    const checkpoints = [0, ...revealIndices, lastIndex].filter(
+      (v, i, a) => i === 0 || v !== a[i - 1],
+    );
     return { type, native, beats, checkpoints };
   }, [config]);
 

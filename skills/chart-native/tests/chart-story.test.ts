@@ -4,6 +4,8 @@ import {
   lineNotableIndices,
   mapStepToBeat,
 } from "../src/chart-story";
+import { computeBarLayout } from "../src/bar-geometry";
+import { specToNativeConfig } from "../src/spec-to-config";
 
 const lineSpec = {
   nativeType: "line",
@@ -82,6 +84,47 @@ describe("deriveChartStory (bar) — ranked highlight walk", () => {
     expect(reveals[1].copy).toBe("USA — 15 t, 2nd");
     expect(reveals[reveals.length - 1].rankRole).toBe("tail");
     expect(reveals[reveals.length - 1].copy).toContain("The lowest");
+  });
+});
+
+describe("deriveChartStory (bar) — highlightIndex matches the chart's display order on ties", () => {
+  // Tie at 10 (Zebra, Apple) with input order NOT alphabetical. A label tie-break in the
+  // story sort (which computeBarLayout does NOT apply) would order Apple before Zebra and
+  // desync the accented bar from its caption. The accent must land on the captioned bar.
+  const tieSpec = {
+    nativeType: "bar",
+    title: "Tie test",
+    unit: "u",
+    source: { name: "X" },
+    data: "name,v\nZebra,10\nApple,10\nCat,3\nDog,1",
+  };
+  it("each reveal's highlightIndex names the bar the chart actually draws there", () => {
+    const beats = deriveChartStory(tieSpec as any);
+    const { config } = specToNativeConfig(tieSpec as any);
+    const layout = computeBarLayout(
+      {
+        catField: config.catField as string,
+        valField: config.valField as string,
+        rows: config.rows as Record<string, string | number>[],
+      },
+      {
+        width: 840,
+        height: 460,
+        padding: { top: 64, right: 64, bottom: 40, left: 124 },
+      },
+      { orientation: "horizontal", sort: "desc" },
+    );
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals.length).toBeGreaterThanOrEqual(2);
+    for (const b of reveals) {
+      // the bar the chart draws at highlightIndex carries the caption's category
+      expect(String(layout.bars[b.highlightIndex!].rawCat)).toBe(
+        b.callout!.name,
+      );
+    }
+    // and the tie preserves input order (Zebra before Apple), NOT alphabetical
+    expect(String(layout.bars[0].rawCat)).toBe("Zebra");
+    expect(reveals[0].copy).toBe("Zebra leads — 10 u");
   });
 });
 

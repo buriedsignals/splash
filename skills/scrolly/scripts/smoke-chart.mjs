@@ -86,21 +86,50 @@ for (const c of CASES) {
         const lineLen = Math.max(0, ...strokePaths.map((pp) => {
           try { return pp.getTotalLength(); } catch { return 0; }
         }));
-        // accent = the fill that appears on exactly ONE rect (the highlighted bar);
-        // record its y so we can prove the accent MOVES between reveals.
+        // accent = the fill that appears on exactly ONE rect (the highlighted bar).
         const rects = [...document.querySelectorAll("svg rect")];
         const byFill = {};
         for (const r of rects) {
           const fl = r.getAttribute("fill");
-          if (fl && fl !== "none") (byFill[fl] ??= []).push(Math.round(+r.getAttribute("y")));
+          if (fl && fl !== "none") (byFill[fl] ??= []).push(r);
         }
+        let accentRect = null;
+        for (const arr of Object.values(byFill)) if (arr.length === 1) accentRect = arr[0];
+        // accentY (does the accent MOVE?) + accentCat (WHICH bar — its category-axis label,
+        // the leftmost svg text vertically overlapping the accented bar's row).
         let accentY = null;
-        for (const ys of Object.values(byFill)) if (ys.length === 1) accentY = ys[0];
-        // scatter/line labels: the visible text tokens (outlier labels walk between reveals).
-        const labels = [...document.querySelectorAll("svg text")]
+        let accentCat = null;
+        if (accentRect) {
+          const rr = accentRect.getBoundingClientRect();
+          accentY = Math.round(rr.top);
+          const cy = rr.top + rr.height / 2;
+          let bestX = Infinity;
+          for (const t of document.querySelectorAll("svg text")) {
+            const tr = t.getBoundingClientRect();
+            if (tr.top <= cy && cy <= tr.bottom && tr.left < bestX) {
+              bestX = tr.left;
+              accentCat = t.textContent?.trim() ?? null;
+            }
+          }
+        }
+        // the visible caption = the .step card straddling the viewport centre.
+        let caption = null;
+        const cyc = window.innerHeight / 2;
+        for (const el of document.querySelectorAll(".step")) {
+          const r = el.getBoundingClientRect();
+          if (r.top <= cyc && cyc <= r.bottom) {
+            caption = el.textContent?.trim() ?? null;
+            break;
+          }
+        }
+        // all category labels (to distinguish "caption names another bar" from "caption is
+        // the intro/takeaway description that names no bar").
+        const cats = [...document.querySelectorAll("svg text")]
           .map((t) => t.textContent?.trim())
           .filter(Boolean);
-        return { lineLen: Math.round(lineLen), accentY, labels };
+        // scatter/line labels: the visible text tokens (outlier labels walk between reveals).
+        const labels = cats;
+        return { lineLen: Math.round(lineLen), accentY, accentCat, caption, cats, labels };
       }),
     );
   }
@@ -112,9 +141,26 @@ for (const c of CASES) {
     const late = snaps[snaps.length - 1].lineLen;
     if (!(late > early + 5)) fail(`line: did not draw further on scroll (early=${early}, late=${late})`);
   } else if (c.type === "bar") {
+    // 1) the accent WALKS (≥2 distinct accented bars across scroll).
     const accents = new Set(snaps.map((s) => s.accentY).filter((y) => y !== null));
     if (accents.size < 2)
       fail(`bar: highlight did not walk — ${accents.size} distinct accented bar(s) across scroll`);
+    // 2) the accent CORRESPONDS to its caption (the desync bug): at a settled reveal the
+    //    caption must name the accented bar's category, and must NOT name a different bar.
+    const reveals = snaps.filter((s) => s.accentCat && s.caption);
+    let corresponded = 0;
+    for (const s of reveals) {
+      if (s.caption.includes(s.accentCat)) {
+        corresponded++;
+      } else if (s.cats.some((cat) => cat !== s.accentCat && s.caption.includes(cat))) {
+        // caption names a DIFFERENT bar than the one accented → accent↔caption desync
+        fail(
+          `bar: accented "${s.accentCat}" but caption names another bar — "${s.caption}"`,
+        );
+      }
+    }
+    if (corresponded < 2)
+      fail(`bar: accent↔caption never corresponded at a settled reveal (${corresponded})`);
   } else if (c.type === "scatter") {
     // The set of visible labels must CHANGE across reveals (a different outlier named).
     const sigs = new Set(snaps.map((s) => s.labels.slice().sort().join("|")));

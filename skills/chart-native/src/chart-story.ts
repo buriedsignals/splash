@@ -51,21 +51,21 @@ export function mapStepToBeat(beats: ChartBeat[], step: number): ChartBeat {
 // The ranked positions to reveal for a MAGNITUDE chart (bar): the top-3 (leaders) plus
 // the tail (the minimum) — a distribution two beats can't carry. Returns, in DISPLAY
 // order (desc by value, the order the bar chart sorts into), each revealed row's sorted
-// index + 1-based rank + role. Deterministic; ties broken by ascending label.
+// index + 1-based rank + role. The sort MUST match computeBarLayout (bar-geometry.ts):
+// value-only, DESC, STABLE — so `sortedIndex` indexes the same bar the chart displays.
+// A label tie-break here would silently desync the accent from the caption on tied values.
 export function barRankedReveals(
   rows: { label: string; value: number }[],
 ): { sortedIndex: number; rank: number; role: "leader" | "tail" }[] {
   const desc = [...rows]
     .map((r, i) => ({ ...r, i }))
-    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+    .sort((a, b) => b.value - a.value);
   const out: { sortedIndex: number; rank: number; role: "leader" | "tail" }[] =
-    desc
-      .slice(0, Math.min(3, desc.length))
-      .map((_, k) => ({
-        sortedIndex: k,
-        rank: k + 1,
-        role: "leader" as const,
-      }));
+    desc.slice(0, Math.min(3, desc.length)).map((_, k) => ({
+      sortedIndex: k,
+      rank: k + 1,
+      role: "leader" as const,
+    }));
   if (desc.length > out.length)
     out.push({ sortedIndex: desc.length - 1, rank: desc.length, role: "tail" });
   return out;
@@ -144,11 +144,11 @@ export function deriveChartStory(
       label: String(r[catField]),
       value: Number(r[valField]),
     }));
-    const total = labelled.length;
+    // Same value-only stable sort as computeBarLayout — this IS the chart's display
+    // order, so `sortedIndex` (== highlightIndex) fetches the row the accented bar shows.
+    const displayOrder = [...labelled].sort((a, b) => b.value - a.value);
     for (const r of barRankedReveals(labelled)) {
-      const row = [...labelled].sort(
-        (a, b) => b.value - a.value || a.label.localeCompare(b.label),
-      )[r.sortedIndex];
+      const row = displayOrder[r.sortedIndex];
       const value = fmt(row.value);
       const copy =
         r.role === "tail"
@@ -165,7 +165,6 @@ export function deriveChartStory(
         copy,
       });
     }
-    void total;
   } else if (type === "scatter") {
     const xField = config.xField as string;
     const yField = config.yField as string;

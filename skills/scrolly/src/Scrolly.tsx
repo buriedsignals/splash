@@ -199,6 +199,10 @@ export const Scrolly: React.FC<{
   const stepRef = story.steps[currentStep]?.ref;
   const currentBeatRef = typeof stepRef === "number" ? stepRef : 0;
 
+  // Ref array for prose step DOM nodes — one slot per step. Declared before the effects
+  // that read it (scroll measurement + IntersectionObserver).
+  const stepRefs = useRef<(HTMLElement | null)[]>([]);
+
   // Continuous scroll fraction (0→1) for a chart track — a line draws on smoothly with
   // scroll instead of jumping between beats. It is measured over the RENDERED prose CARDS
   // (the same DOM the reader sees centred), NOT a raw wrapper fraction: the line must
@@ -241,11 +245,6 @@ export const Scrolly: React.FC<{
       if (raf) cancelAnimationFrame(raf);
     };
   }, [story.steps.length]);
-
-  // -------------------------------------------------------------------------
-  // Ref array for prose step DOM nodes — one slot per step.
-  // -------------------------------------------------------------------------
-  const stepRefs = useRef<(HTMLElement | null)[]>([]);
 
   // -------------------------------------------------------------------------
   // IntersectionObserver — fires when a step crosses the viewport midpoint.
