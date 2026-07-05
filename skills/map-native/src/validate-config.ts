@@ -65,6 +65,16 @@ export type ChoroplethConfigShape = ChoroplethData & {
   filters?: MapFilter[];
 };
 
+// Shared basemap validation — every map type must use a registered basemap.
+function validateBasemap(basemap: unknown, errors: string[]): void {
+  if (typeof basemap !== "string" || !basemap.trim())
+    errors.push("basemap must be a non-empty string");
+  else if (!BASEMAP_NAMES.includes(basemap))
+    errors.push(
+      `basemap "${basemap}" is not a shipped basemap — valid: ${BASEMAP_NAMES.join(", ")}`,
+    );
+}
+
 // If a config declares a camera mode, it must be one the engine knows. (route-reveal
 // is a valid mode that is not yet implemented — produce throws at render for it — but
 // a typo'd mode is caught here, before render.)
@@ -95,12 +105,7 @@ export function validateChoroplethConfig(
     typeof s.valueField === "string" ? s.valueField.trim() : "";
   if (!regionKey) errors.push("regionKey must be a non-empty string");
   if (!valueField) errors.push("valueField must be a non-empty string");
-  if (typeof s.basemap !== "string" || !s.basemap.trim())
-    errors.push("basemap must be a non-empty string");
-  else if (!BASEMAP_NAMES.includes(s.basemap))
-    errors.push(
-      `basemap "${s.basemap}" is not a shipped basemap — valid: ${BASEMAP_NAMES.join(", ")}`,
-    );
+  validateBasemap(s.basemap, errors);
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
   errors.push(...paletteErrors(s));
@@ -189,8 +194,7 @@ export function validateSymbolConfig(
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
 
-  if (typeof s.basemap !== "string" || !s.basemap.trim())
-    errors.push("basemap must be a non-empty string");
+  validateBasemap(s.basemap, errors);
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
 
@@ -270,8 +274,7 @@ export function validateRouteConfig(
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
 
-  if (typeof s.basemap !== "string" || !s.basemap.trim())
-    errors.push("basemap must be a non-empty string");
+  validateBasemap(s.basemap, errors);
 
   if (s.mapStyle !== undefined) {
     if (!(MAP_STYLES as readonly string[]).includes(s.mapStyle as string))
@@ -340,8 +343,7 @@ export function validateLocatorConfig(
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
 
-  if (typeof s.basemap !== "string" || !s.basemap.trim())
-    errors.push("basemap must be a non-empty string");
+  validateBasemap(s.basemap, errors);
 
   if (
     s.mapStyle !== undefined &&
@@ -438,8 +440,7 @@ export function validateDotDensityConfig(
 
   if (typeof s.regionKey !== "string" || !s.regionKey.trim())
     errors.push("regionKey must be a non-empty string");
-  if (typeof s.basemap !== "string" || !s.basemap.trim())
-    errors.push("basemap must be a non-empty string");
+  validateBasemap(s.basemap, errors);
   if (
     s.mapStyle !== undefined &&
     !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
@@ -528,8 +529,7 @@ export function validateHexGridConfig(
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
 
-  if (typeof s.basemap !== "string" || !s.basemap.trim())
-    errors.push("basemap must be a non-empty string");
+  validateBasemap(s.basemap, errors);
   if (
     s.mapStyle !== undefined &&
     !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)

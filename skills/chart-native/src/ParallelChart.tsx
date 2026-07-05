@@ -20,7 +20,7 @@ import { line, curveLinear } from "d3-shape";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
 import { truncate } from "./core/text";
 
@@ -86,9 +86,7 @@ export function ParallelChart({
     bottom: 30 + (config.highlight?.length ? legendRows * LEG_ROW + 24 : 0),
     left: 16,
   };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale, 0.6);
+  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.6, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

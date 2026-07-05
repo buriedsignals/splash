@@ -91,6 +91,42 @@ describe("specToNativeConfig — pie", () => {
   });
 });
 
+describe("specToNativeConfig — baseColor threading", () => {
+  const barSpec: NativeSpec = {
+    ...base,
+    nativeType: "bar",
+    data: "country,share\nBrazil,87.3\nIndia,19.8",
+  };
+  it("threads baseColor into bar config when provided", () => {
+    const { config } = specToNativeConfig({ ...barSpec, baseColor: "#009E73" });
+    expect(config.baseColor).toBe("#009E73");
+  });
+  it("omits baseColor from bar config when absent", () => {
+    const { config } = specToNativeConfig(barSpec);
+    expect(config.baseColor).toBeUndefined();
+  });
+  it("threads baseColor into line config when provided", () => {
+    const spec: NativeSpec = {
+      ...base,
+      nativeType: "line",
+      data: "year,rate\n2018,5.1\n2019,4.8",
+      baseColor: "#009E73",
+    };
+    const { config } = specToNativeConfig(spec);
+    expect(config.baseColor).toBe("#009E73");
+  });
+  it("threads baseColor into scatter config when provided", () => {
+    const spec: NativeSpec = {
+      ...base,
+      nativeType: "scatter",
+      data: "school,spend,score\nNorthgate,5200,72\nEastfield,3100,58",
+      baseColor: "#009E73",
+    };
+    const { config } = specToNativeConfig(spec);
+    expect(config.baseColor).toBe("#009E73");
+  });
+});
+
 describe("specToNativeConfig — unsupported", () => {
   it("throws UnsupportedNativeType for a type the mapper doesn't cover", () => {
     const spec: NativeSpec = {

@@ -15,6 +15,8 @@ export interface NativeSpec {
   orientation?: "horizontal" | "vertical";
   directLabel?: string; // line: the series label
   highlight?: string; // bar: the category to accent
+  /** Okabe-Ito hex for the primary series (e.g. "#009E73"). Absent → component default. */
+  baseColor?: string;
 }
 
 export class UnsupportedNativeType extends Error {
@@ -99,6 +101,7 @@ export function specToNativeConfig(spec: NativeSpec): {
           orientation: spec.orientation ?? "horizontal",
           sort,
           ...(highlightIndex !== undefined ? { highlightIndex } : {}),
+          ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
           rows,
         },
       };
@@ -116,6 +119,7 @@ export function specToNativeConfig(spec: NativeSpec): {
           xField: xCol,
           yField: yCol,
           xType: looksTemporal(rows.map((r) => r[xCol])) ? "time" : "linear",
+          ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
           points: rows,
         },
       };
@@ -138,6 +142,7 @@ export function specToNativeConfig(spec: NativeSpec): {
           xLabel: xCol,
           yLabel: yCol,
           ...(hasLabel ? { labelField: catCol } : {}),
+          ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
           rows,
         },
       };

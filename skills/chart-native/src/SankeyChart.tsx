@@ -20,7 +20,7 @@ import {
 import { clamp01, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate, textWidth } from "./core/text";
 
 export interface SankeyConfig {
@@ -112,9 +112,7 @@ export function SankeyChart({
     bottom: 30, // clear the source line below the bottom node label
     left: leftGutter,
   };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale, 0.62);
+  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.62, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

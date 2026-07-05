@@ -1,0 +1,14 @@
+{
+  "producer": "chart-native",
+  "nativeType": "bar",
+  "title": "South Africa leads with 33% unemployment — most rich economies stay below 7%",
+  "source": {
+    "name": "Wikipedia — List of countries by unemployment rate",
+    "url": "https://en.wikipedia.org/wiki/List_of_countries_by_unemployment_rate"
+  },
+  "unit": "Unemployment rate (%)",
+  "valueUnit": "%",
+  "sort": "desc",
+  "orientation": "horizontal",
+  "data": "country,rate\nSouth Africa,33.2\nAngola,14.5\nAfghanistan,13.3\nAlgeria,11.5\nAlbania,10.3\nColombia,9.7\nSpain,9.93\nBrazil,7.7\nCanada,6.5\nAustria,5.5\nChina,4.6\nAustralia,4.1\nUnited States,4.2\nGermany,3.5\nThailand,0.7\nQatar,0.2"
+}

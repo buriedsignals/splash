@@ -29,7 +29,7 @@ import {
 } from "./core/math";
 import { COLORS, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface ChartConfig {
   title: string; // = the insight (sentence case)
@@ -39,6 +39,8 @@ export interface ChartConfig {
   xField: string;
   yField: string;
   xType: "time" | "linear";
+  /** Okabe-Ito hex for the primary series colour. Absent → COLORS.line default. */
+  baseColor?: string;
   points: Record<string, string | number>[];
 }
 
@@ -95,9 +97,16 @@ export function LineChart({
     bottom: 52,
     left: 56,
   };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -244,6 +253,7 @@ function ChartSvg({
   const head = revealHead(layout, lp);
   const lastPoint = layout.points[layout.points.length - 1];
   const { innerWidth, innerHeight } = layout;
+  const lineColor = config.baseColor ?? COLORS.line;
 
   // --- motion build (all pure functions of the master progress `p`) ---
   // baseline draws left→right first; gridlines wipe in, staggered top→bottom.
@@ -338,7 +348,7 @@ function ChartSvg({
             className="series-line"
             d={revealed}
             fill="none"
-            stroke={COLORS.line}
+            stroke={lineColor}
             strokeWidth={3 * sc}
             strokeLinejoin="round"
             strokeLinecap="round"
@@ -359,7 +369,7 @@ function ChartSvg({
               cy={head.y}
               r={4.5}
               fill={COLORS.head}
-              stroke={COLORS.line}
+              stroke={lineColor}
               strokeWidth={2}
             />
           </>
@@ -369,14 +379,14 @@ function ChartSvg({
           opacity={labelOpacity}
           transform={`translate(${(1 - labelOpacity) * -12},0)`}
         >
-          <circle cx={lastPoint.x} cy={lastPoint.y} r={4} fill={COLORS.line} />
+          <circle cx={lastPoint.x} cy={lastPoint.y} r={4} fill={lineColor} />
           <text
             x={lastPoint.x + 10 * sc}
             y={lastPoint.y}
             dy="0.32em"
             fontSize={ts.label}
             fontWeight={600}
-            fill={COLORS.line}
+            fill={lineColor}
           >
             {config.directLabel}
           </text>
@@ -415,7 +425,7 @@ function ChartSvg({
               cx={layout.points[hover].x}
               cy={layout.points[hover].y}
               r={5}
-              fill={COLORS.line}
+              fill={lineColor}
               stroke="#fff"
               strokeWidth={2}
             />

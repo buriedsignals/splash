@@ -22,7 +22,7 @@ import {
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
 
 export interface BarConfig {
@@ -35,6 +35,8 @@ export interface BarConfig {
   sort?: Sort;
   /** optional accent on ONE key bar (≤2 colours, off by default) */
   highlightIndex?: number;
+  /** Okabe-Ito hex for the primary series colour. Absent → COLORS.line default. */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -70,9 +72,16 @@ export function BarChart({
 }: BarChartProps) {
   const p = clamp01(progress);
   const basePad = paddingFor(config.orientation, responsive);
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -132,8 +141,9 @@ export function BarChart({
   );
 }
 
-function barColor(i: number, highlight?: number): string {
-  if (highlight === undefined) return COLORS.line;
+function barColor(i: number, highlight?: number, baseColor?: string): string {
+  const primary = baseColor ?? COLORS.line;
+  if (highlight === undefined) return primary;
   return i === highlight ? OKABE_ITO.orange : COLORS.muted;
 }
 
@@ -229,7 +239,7 @@ function BarSvg({
         {/* bars + category labels + value labels */}
         {bars.map((b, i) => {
           const g = growBar(b, barP(i), orientation);
-          const fill = barColor(i, config.highlightIndex);
+          const fill = barColor(i, config.highlightIndex, config.baseColor);
           const grown = barP(i);
           const labelOp = clamp01((grown - 0.65) / 0.35);
           const catOp = clamp01(grown * 1.6);

@@ -6,6 +6,10 @@
 //     LINKED source (an embed can be clicked; a PNG can't).
 // Line / bar / scatter all wrap their <svg> in this — the ~60-line shell each
 // used to duplicate now lives here once (the L1 cartesian extraction).
+//
+// Header-height safety: chart components call resolveFrameWithHeader() which
+// pre-computes padding.top ≥ estimated header height so a 2-line title never
+// overlaps the subtitle or the first data row on the first (and only) render.
 import type { ReactNode } from "react";
 import { COLORS, FONT, TYPE } from "./tokens";
 
@@ -122,7 +126,9 @@ export function ChartFrame({
       }}
     >
       {/* title + subtitle in ONE flow block so a multi-line title never overlaps
-          the subtitle (the plot sits below via padding.top / centred band) */}
+          the subtitle (the plot sits below via padding.top / centred band).
+          padding.top in the SVG children is pre-computed by resolveFrameWithHeader
+          to be ≥ this block's height — no ResizeObserver or second render needed. */}
       <div style={{ position: "absolute", top: topPad, left: PAD, right: PAD }}>
         <div
           style={{

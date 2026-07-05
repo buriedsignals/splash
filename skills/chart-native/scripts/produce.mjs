@@ -7,9 +7,10 @@
 //   bun scripts/produce.mjs <type> <config.json> <outDir> [formats]
 //   formats: "all" (default — static + interactive + 3 videos) | "static" (no video)
 import { execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, copyFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { chartDistSub } from "../src/build-paths.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -56,6 +57,13 @@ console.log(`[produce ${type}] building static + interactive…`);
 run("bunx", ["vite", "build"]);
 run("bunx", ["vite", "build"], { INTERACTIVE: "1" });
 
+// 1b. copy self-contained interactive.html into outDir
+const interactiveSrc = join(root, chartDistSub(type, "interactive"), "index.html");
+const interactiveDest = join(outDir, "interactive.html");
+copyFileSync(interactiveSrc, interactiveDest);
+console.log(`[produce ${type}] interactive.html → ${interactiveDest}`);
+run("bun", ["scripts/assert-selfcontained.mjs", interactiveDest]);
+
 // 2. snap static + interactive into outDir
 console.log(`[produce ${type}] snapping static + interactive…`);
 run("bun", ["scripts/snap-proof.mjs"], { OUTDIR: outDir });
@@ -63,6 +71,7 @@ run("bun", ["scripts/snap-proof.mjs"], { OUTDIR: outDir });
 const result = {
   static: join(outDir, "static.png"),
   interactive: join(outDir, "interactive.png"),
+  interactiveHtml: interactiveDest,
 };
 
 // 3. videos (config injected via Remotion --props inside render-video.mjs)

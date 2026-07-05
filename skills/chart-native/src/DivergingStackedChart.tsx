@@ -21,7 +21,7 @@ import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { relativeLuminance } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
-import { resolveFrame } from "./core/format";
+import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
 import { truncate } from "./core/text";
 
@@ -86,9 +86,7 @@ export function DivergingStackedChart({
     bottom: 32 + legendRows * LEG_ROW + 12, // ticks + legend rows + source clearance
     left: 130, // item labels in the gutter
   };
-  const frame = responsive
-    ? { scale: 1, pad: basePad, type: TYPE }
-    : resolveFrame(width, height, basePad, scale, 0.62);
+  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.62, responsive);
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
