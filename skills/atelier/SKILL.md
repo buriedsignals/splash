@@ -31,7 +31,8 @@ carry that forward.
 1. Branch: "Do you already have a visual in mind, or should I guide you?"
 2. Takeaway: "What is the one thing a reader should leave with?" → the insight/angle.
 3. Audience & channel: "Where does this publish — article embed, social, print?" → the format signal
-   (feeds suggest-chart Gates 1–4: static / interactive / video / scrolly).
+   (feeds suggest-chart Gates 1–4: static / interactive / video / scrolly) AND the media aspect for a
+   video/image: social-vertical → portrait (9:16), feed → square (1:1), article/web → landscape (16:9).
 4. Constraint (only if relevant): mobile-first, deadline, house palette.
 
 Branch:
@@ -71,10 +72,13 @@ EXPORT. Verify quality, not just that it built.
 
 Branch on the format the journalist chose at CADRAGE / that `suggest-chart` routed to:
 
-- **VIDEO (mp4):** hand over the produced mp4 file(s) directly (landscape / square / portrait). A video
-  IS the media — no code/embed forms; just give the file(s).
-- **STATIC IMAGE (a static chart / map PNG):** hand over the `static.png` directly. A static image IS
-  the media — just give the file.
+- **VIDEO (mp4):** the producer emits three aspect ratios — **landscape** (`*landscape.mp4`, 16:9, for
+  article/web/YouTube), **square** (`*square.mp4`, 1:1, for a feed post), **portrait** (`*portrait.mp4`,
+  9:16, for Reels/TikTok/Shorts). Confirm which aspect the journalist needs — default it from the CADRAGE
+  channel answer (social/vertical → portrait; feed → square; article/web → landscape) — and hand over
+  that mp4. A video IS the media — no code/embed forms; just give the chosen file.
+- **STATIC IMAGE (a static chart / map PNG):** hand over the `static.png` directly (the aspect the
+  producer rendered). A static image IS the media — just give the file.
 - **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`):** only here do the
   three delivery forms apply — ask which the journalist wants:
   - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs <outDir> <exportDir>`.
