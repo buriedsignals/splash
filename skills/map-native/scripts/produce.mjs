@@ -12,7 +12,7 @@
 // Outputs:
 //   { static, interactive, reveal?: {landscape,square,portrait}, story?: {landscape,square,portrait} }
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync, copyFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -60,6 +60,13 @@ run("bun", ["scripts/snap-static.mjs"], { OUTDIR: outDir, SERVE_DIR: staticDir }
 console.log(`[produce map] snapping interactive (proof)…`);
 run("bun", ["scripts/snap-proof.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
+// Copy self-contained interactive.html into outDir
+const interactiveHtmlSrc = join(interactiveDir, "index.html");
+const interactiveHtmlDest = join(outDir, "interactive.html");
+copyFileSync(interactiveHtmlSrc, interactiveHtmlDest);
+console.log(`[produce map] interactive.html → ${interactiveHtmlDest}`);
+run("bun", ["scripts/assert-selfcontained.mjs", interactiveHtmlDest]);
+
 console.log(`[produce map] snapping responsive…`);
 run("bun", ["scripts/snap-responsive.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
@@ -69,6 +76,7 @@ run("bun", ["scripts/snap-a11y.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDi
 const result = {
   static: join(outDir, "static.png"),
   interactive: join(outDir, "interactive.png"),
+  interactiveHtml: interactiveHtmlDest,
 };
 
 const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
