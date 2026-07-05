@@ -36,6 +36,8 @@ export interface ScatterConfig {
   /** fallback when `annotate` is absent: "default" = just the headline outlier
    *  (recommended), "all" = every named point, "none" = no labels. */
   labelPoints?: "default" | "all" | "none";
+  /** Okabe-Ito hex for the primary dot colour. Absent → COLORS.line default. */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -71,7 +73,16 @@ export function ScatterChart({
 }: ScatterChartProps) {
   const p = clamp01(progress);
   const basePad = PADDING(responsive);
-  const frame = resolveFrameWithHeader(config.title, undefined, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    undefined,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -158,6 +169,7 @@ function ScatterSvg({
   sc: number;
 }) {
   const { innerWidth, innerHeight, points } = layout;
+  const dotColor = config.baseColor ?? COLORS.line;
   const n = points.length;
   const chrome = easeOutCubic(p / 0.18);
   // dots pop in, staggered LEFT→RIGHT along x (the eye reads the spread building
@@ -317,7 +329,7 @@ function ScatterSvg({
               cx={pt.x}
               cy={pt.y}
               r={r}
-              fill={COLORS.line}
+              fill={dotColor}
               fillOpacity={0.72}
               stroke={focused ? "#fff" : "none"}
               strokeWidth={focused ? 2 : 0}
@@ -343,7 +355,7 @@ function ScatterSvg({
                 y1={leader.y1}
                 x2={leader.x2}
                 y2={leader.y2}
-                stroke={COLORS.line}
+                stroke={dotColor}
                 strokeWidth={1}
                 strokeOpacity={0.55}
               />
@@ -355,7 +367,7 @@ function ScatterSvg({
               textAnchor={anchor}
               fontSize={ts.axis}
               fontWeight={600}
-              fill={COLORS.line}
+              fill={dotColor}
             >
               {points[Number(id)].label}
             </text>
