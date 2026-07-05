@@ -1,9 +1,19 @@
-// EXPORT (code path): bundle a producer's artifacts into a hand-over folder with an embed snippet
-// and a README, so a technical journalist can drop the visual into their CMS.
+// EXPORT (code path): bundle a producer's artifacts into a hand-over folder covering the three
+// delivery forms — (1) CODE SOURCE: all the built files, self-host + customise; (2) HTML STATIQUE:
+// a single self-contained static.html (the image inlined, no JS, embeds anywhere); (3) COMPOSANT
+// EMBED: run deploy-embed on interactive.html for a hosted link. Homogeneous across producers now
+// that every interactive producer emits a self-contained interactive.html.
 //   bun export-code.mjs <outDir> <exportDir>
-import { readdirSync, mkdirSync, copyFileSync, writeFileSync } from "node:fs";
+import {
+  readdirSync,
+  readFileSync,
+  mkdirSync,
+  copyFileSync,
+  writeFileSync,
+} from "node:fs";
 import { join, basename, extname } from "node:path";
 
+// The iframe/img/video snippet for a single artifact (used for the interactive/embed forms).
 export function embedSnippet(file) {
   const name = basename(file);
   const ext = extname(file).toLowerCase();
@@ -14,6 +24,12 @@ export function embedSnippet(file) {
   if (ext === ".mp4")
     return `<video src="${name}" controls playsinline style="max-width:100%"></video>`;
   throw new Error(`unsupported artifact extension: ${ext}`);
+}
+
+// A fully self-contained STATIC html: the image inlined as a data URI, no JS, no external refs —
+// the "HTML statique" delivery form (works in any CMS / email / offline).
+export function staticHtml(dataUri, alt = "visual") {
+  return `<!doctype html><meta charset="utf-8"><title>${alt}</title><body style="margin:0"><img src="${dataUri}" alt="${alt}" style="display:block;max-width:100%;height:auto" /></body>`;
 }
 
 if (import.meta.main) {
@@ -30,17 +46,42 @@ if (import.meta.main) {
     console.error(`no exportable artifacts in ${outDir}`);
     process.exit(1);
   }
-  // The primary embeddable artifact: prefer an interactive/scrolly HTML, else the first.
-  const primary =
-    artifacts.find((f) => f.endsWith(".html")) ?? artifacts[0];
   for (const f of artifacts) copyFileSync(join(outDir, f), join(exportDir, f));
+
+  // The interactive (embeddable) artifact — a self-contained .html when present.
+  const interactive = artifacts.find((f) => f.endsWith(".html")) ?? null;
+  // The static image, if any → build a self-contained static.html (image inlined).
+  const png = artifacts.find((f) => /\.(png|jpg)$/i.test(f)) ?? null;
+  let staticFile = null;
+  if (png) {
+    const ext = extname(png).toLowerCase() === ".jpg" ? "jpeg" : "png";
+    const dataUri = `data:image/${ext};base64,${readFileSync(join(outDir, png)).toString("base64")}`;
+    staticFile = "static.html";
+    writeFileSync(join(exportDir, staticFile), staticHtml(dataUri));
+  }
+
+  const forms = [];
+  forms.push(
+    `## 1. Code source (self-host + customise)\nAll files in this folder. Upload them together; embed the ${interactive ? "interactive" : "static"} visual with:\n\n\`\`\`html\n${embedSnippet(interactive ?? png ?? artifacts[0])}\n\`\`\``,
+  );
+  if (staticFile)
+    forms.push(
+      `## 2. HTML statique (one self-contained file, no JS)\n\`${staticFile}\` — the image is inlined; it embeds anywhere with no dependencies:\n\n\`\`\`html\n<iframe src="${staticFile}" style="width:100%;border:0" title="visual"></iframe>\n\`\`\``,
+    );
+  if (interactive)
+    forms.push(
+      `## 3. Composant en lien embed (hosted)\nGet a hosted URL:\n\n\`\`\`sh\nbun skills/atelier/scripts/deploy-embed.mjs <this-folder>/${interactive} <slug>\n\`\`\``,
+    );
   writeFileSync(
     join(exportDir, "EMBED.md"),
-    `# Embed\n\nPaste this where the visual should appear:\n\n\`\`\`html\n${embedSnippet(primary)}\n\`\`\`\n\nAll files in this folder must be uploaded together (the embed references them by relative path).\n`,
+    `# Export — three delivery forms\n\n${forms.join("\n\n")}\n`,
   );
   writeFileSync(
     join(exportDir, "README.txt"),
-    `Atelier export — ${artifacts.length} file(s): ${artifacts.join(", ")}.\nPrimary embed: ${primary}. See EMBED.md.\n`,
+    `Atelier export — files: ${artifacts.join(", ")}${staticFile ? ", " + staticFile : ""}.\ninteractive: ${interactive ?? "none"} · static: ${staticFile ?? "none"}. See EMBED.md for the three delivery forms.\n`,
   );
-  console.log("EXPORT_CODE_RESULT " + JSON.stringify({ exportDir, primary, artifacts }));
+  console.log(
+    "EXPORT_CODE_RESULT " +
+      JSON.stringify({ exportDir, interactive, staticFile, artifacts }),
+  );
 }

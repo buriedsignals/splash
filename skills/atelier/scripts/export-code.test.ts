@@ -1,5 +1,17 @@
 import { describe, it, expect } from "bun:test";
-import { embedSnippet } from "./export-code.mjs";
+import { embedSnippet, staticHtml } from "./export-code.mjs";
+
+describe("staticHtml", () => {
+  it("is a single self-contained document with the image inlined (no external refs)", () => {
+    const html = staticHtml("data:image/png;base64,AAAA", "chart");
+    expect(html).toContain("<!doctype html>");
+    expect(html).toContain('src="data:image/png;base64,AAAA"');
+    expect(html).toContain('alt="chart"');
+    // self-contained: no external asset references
+    expect(html).not.toMatch(/src="\.?\/?assets/);
+    expect(html).not.toContain("<script");
+  });
+});
 
 describe("embedSnippet", () => {
   it("wraps an .html file in a responsive iframe", () => {
