@@ -67,21 +67,25 @@ EXPORT. Verify quality, not just that it built.
 - `scrolly`: run from `skills/scrolly/` — `bun scripts/produce.mjs <config.json> <outDir>` → produces a single `scrolly.html` (no all|static flag)
 - `dw-chart` / `map-dw`: via their producer entry (Datawrapper API — token from `.env`)
 
-### 6. EXPORT — GATE 4 (three delivery forms)
+### 6. EXPORT — GATE 4 (delivery depends on the visual's format)
 
-Every producer now emits a SELF-CONTAINED `interactive.html` into `<outDir>` (plus `static.png`,
-mp4s), so the export is homogeneous. Ask which of the three forms the journalist wants:
+Branch on the format the journalist chose at CADRAGE / that `suggest-chart` routed to:
 
-- **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs <outDir> <exportDir>`.
-  Hands over a folder with all the built files (`interactive.html`, `static.png`, `static.html`) + an
-  `EMBED.md` documenting all three forms. The dev hosts/edits them; embeds the interactive visual with the
-  `<iframe src="interactive.html">` snippet.
-- **HTML statique (one self-contained file, no JS):** the `static.html` produced by `export-code`
-  (the image inlined) — a single dependency-free file that embeds in any CMS/email/offline.
-- **Composant en lien embed (hosted, non-technical):** run
-  `bun skills/atelier/scripts/deploy-embed.mjs <outDir>/interactive.html <slug>` → prints an iframe-ready
-  URL to the hosted interactive component. If the fly.io host is not set up yet, offer the code-source /
-  static-HTML forms now and say the embed link is pending setup.
+- **VIDEO (mp4):** hand over the produced mp4 file(s) directly (landscape / square / portrait). A video
+  IS the media — no code/embed forms; just give the file(s).
+- **STATIC IMAGE (a static chart / map PNG):** hand over the `static.png` directly. A static image IS
+  the media — just give the file.
+- **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`):** only here do the
+  three delivery forms apply — ask which the journalist wants:
+  - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs <outDir> <exportDir>`.
+    Hands over a folder with all the built files (`interactive.html`, `static.png`, `static.html`) + an
+    `EMBED.md`. Embed the interactive visual with the `<iframe src="interactive.html">` snippet.
+  - **HTML statique (one self-contained file, no JS):** the `static.html` produced by `export-code`
+    (the image inlined) — a single dependency-free file that embeds in any CMS/email/offline.
+  - **Composant en lien embed (hosted, non-technical):** run
+    `bun skills/atelier/scripts/deploy-embed.mjs <outDir>/interactive.html <slug>` → an iframe-ready URL to
+    the hosted interactive component. If the fly.io host is not set up yet, offer the code-source /
+    static-HTML forms now and say the embed link is pending setup.
 
   **One-time fly.io host setup** (run once from `skills/atelier/embed-host/`):
   ```bash
@@ -100,7 +104,7 @@ mp4s), so the export is homogeneous. Ask which of the three forms the journalist
 | 2 | PROPOSITION | Journalist accepts / edits / rejects each proposal | Wrong claim visualised |
 | 2b | PROPOSITION | Journalist confirms prose-extracted data table | Fabricated data attribution |
 | 3 | PRODUCTION | Journalist says "ship it" after seeing the real render | Visual quality not verified |
-| 4 | EXPORT | Journalist chooses code source / static HTML / embed link | Wrong delivery format |
+| 4 | EXPORT | Video/static → give the media file directly; interactive/scrolly → journalist chooses code source / static HTML / embed link | Wrong delivery format |
 
 ## Never
 
