@@ -47,17 +47,25 @@ Branch:
 ### 4. PROPOSITION — GATE 2 (guided path only)
 
 Present the `suggest-article` ProposalSet × `suggest-chart` routing as plain-language lines — for each
-opportunity: what it shows, which visual, why. The journalist accepts / edits / rejects each. Only
-accepted proposals continue.
+opportunity: what it shows, which visual, why.
 
-GATE 2b (data provenance): if an accepted proposal's figures are `provenance:"prose"`, show the
-reconstructed table and get an explicit OK before producing. Never fabricate a dataset attribution.
+**GATE 2b (data provenance — prose proposals only):** if a proposal's figures are
+`provenance:"prose"`, show the reconstructed table and get an explicit confirmation that the numbers
+are correct BEFORE the journalist accepts/edits/rejects that proposal. The ordering is: confirm the
+table (2b) first, then accept / edit / reject (2). Never fabricate a dataset attribution.
+
+Only accepted proposals continue.
 
 ### 5. PRODUCTION
 
 For each validated visual, run the chosen producer with the suggest-chart spec (the produce commands
 in suggest-chart/SKILL.md). The producer emits its self-contained artifact(s) and runs its own render
 guardrails. Collect the output paths.
+
+**Before producing:** run the producer's spec validator (`validateChartSpec` for charts;
+`validateChoroplethConfig` / `validateLocatorConfig` / `validateSymbolConfig` for maps) and fix any
+warning — in particular a title that reads as a label rather than the insight — so a weak spec never
+reaches GATE 3.
 
 GATE 3 (render): show the ACTUAL render (open it / a screenshot) and get an explicit "ship it" before
 EXPORT. Verify quality, not just that it built.
@@ -105,8 +113,8 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
 | Gate | Phase | Stop condition | Failure mode if skipped |
 |------|-------|---------------|------------------------|
 | 1 | CADRAGE | Journalist answers the ≤4 questions + branch chosen | Wrong format, misread intent |
+| 2b | PROPOSITION | Journalist confirms prose-extracted data table (fires BEFORE Gate 2 for prose proposals) | Fabricated data attribution |
 | 2 | PROPOSITION | Journalist accepts / edits / rejects each proposal | Wrong claim visualised |
-| 2b | PROPOSITION | Journalist confirms prose-extracted data table | Fabricated data attribution |
 | 3 | PRODUCTION | Journalist says "ship it" after seeing the real render | Visual quality not verified |
 | 4 | EXPORT | Video/static → give the media file directly; interactive/scrolly → journalist chooses code source / static HTML / embed link | Wrong delivery format |
 

@@ -252,6 +252,50 @@ bar derives its values from the data; you name the FIELD, not the values. Two ki
 - `validateChoroplethConfig` rejects a bad filters block (unknown field, category cardinality outside
   2–8, non-numeric range, >2 filters) — fix any error it reports.
 
+### map-native (POINT / LOCATOR or SYMBOL path)
+
+Use when the data is **point data** (coordinates, not region fills) — a set of located events, places,
+or symbols — and Gate 5 still routes to a map (the spatial pattern is the story).
+
+**Config shape — locator (discrete markers):**
+```json
+{
+  "type": "locator",
+  "markers": [
+    { "lon": 2.35, "lat": 48.85, "label": "Paris", "category": "capital" }
+  ],
+  "basemap": "world",
+  "title": "<the spatial insight — sentence case, ≥12 chars>",
+  "source": { "name": "<honest source>", "url": "<URL>" }
+}
+```
+`category` is optional (used for a `kind:"category"` filter). Validate with `validateLocatorConfig`.
+
+**Config shape — symbol (sized / valued points):**
+```json
+{
+  "type": "symbol",
+  "points": [
+    { "lon": 2.35, "lat": 48.85, "value": 1200, "label": "Paris" }
+  ],
+  "basemap": "world",
+  "title": "<the spatial insight — sentence case, ≥12 chars>",
+  "source": { "name": "<honest source>", "url": "<URL>" }
+}
+```
+Validate with `validateSymbolConfig`.
+
+**HARD RULE — basemap for point maps:** only `"world"` and `"us-states"` are registered. For ANY
+sub-national or regional point map (one country, a region, a city cluster), use **`"basemap":"world"`**
+— the map auto-fits to the marker extent, so `world` correctly frames the region. Do NOT invent a
+basemap name such as `"france"`, `"italy"`, or `"europe"` — the point-map validators reject an
+unregistered basemap. A regional choropleth (sub-national fill) is also not currently supported (only
+world ISO-A3 + us-states); if the data is regional fills, fall back to a locator/symbol on `"world"`
+or a sorted bar chart.
+
+**Filters:** an interactive locator/symbol may carry a `filters` block (same syntax as the choropleth
+path — `kind:"category"` on a marker attribute; `kind:"range"` on a numeric value field).
+
 **Self-check:** after filling the config, run `validateChoroplethConfig` (from
 `skills/map-native/src/validate-config.ts`). Fix all errors; address warnings (description + source).
 
