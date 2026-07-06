@@ -114,6 +114,11 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
   directly to their app via `flyctl ssh sftp shell`. There is no shared default app name — each journalist
   hosts on their own account.
 
+  **Auth:** `flyctl` reads credentials from either `flyctl auth login` (interactive, stored in `~/.fly/`)
+  or a `FLY_API_TOKEN` in the environment (create with `flyctl tokens create deploy`). For a headless /
+  automated run, put `FLY_API_TOKEN` (and `ATELIER_EMBED_APP`) in `.env` — Bun loads them into the
+  environment and `flyctl` picks them up. See `.env.example`.
+
 ## Gates
 
 | Gate | Phase | Stop condition | Failure mode if skipped |
