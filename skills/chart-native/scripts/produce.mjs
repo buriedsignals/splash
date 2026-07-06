@@ -56,18 +56,10 @@ if (!X) {
 // informational note and proceed unchecked (a follow-on, not a regression: they
 // were unchecked before this change too).
 //
-// KNOWN pre-existing violations: found while wiring this up, NOT introduced by it
-// (see .superpowers/sdd/conformance-report.md). OKABE_ITO.vermillion (#D55E00) on
-// white is 3.87:1, below the 4.5:1 WCAG minimum — histogram's median label and
-// lollipop's highlighted-row label both render text in this fixed accent. Rather
-// than silently pass (rubber-stamp) OR hard-fail every existing histogram/lollipop
-// render (break the producer over a pre-existing design gap), produce WARNS on
-// exactly this known message and still FAILS HARD on any other violation.
-const KNOWN_PREEXISTING_VIOLATIONS = {
-  histogram: [/^text colour #D55E00 contrast 3\.87:1 on #FFFFFF < 4\.5:1$/],
-  lollipop: [/^text colour #D55E00 contrast 3\.87:1 on #FFFFFF < 4\.5:1$/],
-};
-
+// A conformance violation FAILS the run before building — no rubber-stamp, no silent
+// pass. (The two previously-known pre-existing violations — histogram's median label
+// and lollipop's highlighted-row label in OKABE_ITO vermillion, 3.87:1 < 4.5:1 — are
+// now fixed: those labels render in COLORS.ink; the vermillion stays on the mark.)
 {
   const config = JSON.parse(readFileSync(configPath, "utf8"));
   const result = runProduceConformance(type, config);
@@ -75,27 +67,12 @@ const KNOWN_PREEXISTING_VIOLATIONS = {
     console.log(
       `[produce ${type}] conformance: no produce-time guard wired yet for "${type}" (follow-on) — skipping.`,
     );
+  } else if (result.violations.length > 0) {
+    console.error(`[produce ${type}] CONFORMANCE VIOLATION — refusing to produce:`);
+    for (const v of result.violations) console.error(`  - ${v}`);
+    process.exit(1);
   } else {
-    const known = KNOWN_PREEXISTING_VIOLATIONS[type] ?? [];
-    const unknownViolations = result.violations.filter(
-      (v) => !known.some((re) => re.test(v)),
-    );
-    const knownViolations = result.violations.filter((v) =>
-      known.some((re) => re.test(v)),
-    );
-    if (unknownViolations.length > 0) {
-      console.error(`[produce ${type}] CONFORMANCE VIOLATION — refusing to produce:`);
-      for (const v of unknownViolations) console.error(`  - ${v}`);
-      process.exit(1);
-    }
-    if (knownViolations.length > 0) {
-      console.warn(
-        `[produce ${type}] conformance: KNOWN pre-existing violation (flagged, not blocking — see conformance-report.md):`,
-      );
-      for (const v of knownViolations) console.warn(`  - ${v}`);
-    } else {
-      console.log(`[produce ${type}] conformance: OK (0 violations).`);
-    }
+    console.log(`[produce ${type}] conformance: OK (0 violations).`);
   }
 }
 

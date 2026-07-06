@@ -60,11 +60,11 @@ describe("resolveConformanceColors — scatter", () => {
 });
 
 describe("resolveConformanceColors — histogram", () => {
-  it("is a fixed COLORS.line bar colour (no baseColor field) plus the median vermillion accent in text", () => {
+  it("is a fixed COLORS.line bar colour (no baseColor field); the median label text is WCAG-safe ink, not the vermillion accent", () => {
     const c = resolveConformanceColors("histogram", { baseColor: "#123456" });
     // histogram has no baseColor knob — config.baseColor must NOT leak through
     expect(c.data).toBe(COLORS.line);
-    expect(c.text).toContain(OKABE_ITO.vermillion);
+    expect(c.text).not.toContain(OKABE_ITO.vermillion);
   });
 });
 
@@ -92,11 +92,11 @@ describe("resolveConformanceColors — lollipop", () => {
     expect(c.data).toBe(OKABE_ITO.blue);
     expect(c.text).not.toContain(OKABE_ITO.vermillion);
   });
-  it("includes the vermillion accent in text when highlightLabel is set", () => {
+  it("keeps label text WCAG-safe even when highlightLabel is set (vermillion stays on the mark)", () => {
     const c = resolveConformanceColors("lollipop", {
       highlightLabel: "Riverside",
     });
-    expect(c.text).toContain(OKABE_ITO.vermillion);
+    expect(c.text).not.toContain(OKABE_ITO.vermillion);
   });
 });
 

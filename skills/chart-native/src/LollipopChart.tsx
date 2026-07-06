@@ -73,7 +73,16 @@ export function LollipopChart({
     bottom: 24,
     left: 124, // category labels in the gutter
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -235,7 +244,7 @@ function LollipopSvg({
                 textAnchor="end"
                 fontSize={ts.axis}
                 fontWeight={hi ? 700 : 400}
-                fill={hi ? ACCENT : COLORS.ink}
+                fill={COLORS.ink}
                 opacity={catOp}
               >
                 {truncate(r.rawCat, padding.left - 16 * sc, ts.axis)}
@@ -268,7 +277,7 @@ function LollipopSvg({
                 textAnchor="start"
                 fontSize={ts.axis}
                 fontWeight={700}
-                fill={hi ? ACCENT : COLORS.ink}
+                fill={COLORS.ink}
                 opacity={labelOp}
               >
                 {fmt(r.value)}
