@@ -1,0 +1,132 @@
+// resolveConformanceColors — the SINGLE source of truth for the colours a
+// chart-native component actually PAINTS for a given config, so a produce-time
+// conformance check validates the REAL render, not a stand-in (see conformance.ts's
+// `ConformanceColors` doc-comment). Config is the untyped JSON produce reads from
+// disk; each branch below only reads the handful of fields that affect colour —
+// the component's own TS interface (e.g. LineChart's `ChartConfig`) stays the
+// source of truth for everything else.
+//
+// Scope: the 7 chart-native types whose conformance check takes `ConformanceColors`
+// directly (line, bar, scatter, histogram, beeswarm, connected-scatter, lollipop —
+// see core/conformance.ts). The other ~30 types have a bespoke multi-colour
+// signature (seriesColors, signColors, sliceColors, …) built from a per-component
+// palette-assignment scheme that isn't resolved here yet — see
+// scripts/produce.mjs's dispatch table and conformance-report.md for the deferred
+// follow-on.
+import { COLORS, OKABE_ITO, BEESWARM_CATEGORY_COLORS } from "./tokens";
+import type { ConformanceColors } from "./conformance";
+
+export type ProduceConformanceType =
+  | "line"
+  | "bar"
+  | "scatter"
+  | "histogram"
+  | "beeswarm"
+  | "connected-scatter"
+  | "lollipop";
+
+/** every type this module knows how to resolve, for produce.mjs's dispatch guard */
+export const RESOLVABLE_CONFORMANCE_TYPES: readonly ProduceConformanceType[] = [
+  "line",
+  "bar",
+  "scatter",
+  "histogram",
+  "beeswarm",
+  "connected-scatter",
+  "lollipop",
+];
+
+function readString(v: unknown): string | undefined {
+  return typeof v === "string" && v.trim() ? v : undefined;
+}
+
+function readArray(v: unknown): unknown[] {
+  return Array.isArray(v) ? v : [];
+}
+
+/**
+ * Resolve the {data, text, bg} triple a chart-native component would actually
+ * paint for `config`. `config` is arbitrary JSON (produce's raw input); we only
+ * read the colour-affecting fields, each grounded in the component's own code:
+ */
+export function resolveConformanceColors(
+  type: ProduceConformanceType,
+  config: Record<string, unknown>,
+): ConformanceColors {
+  const bg = COLORS.bg;
+
+  switch (type) {
+    case "line": {
+      // LineChart.tsx: `lineColor = config.baseColor ?? COLORS.line`, drawn as
+      // BOTH the series stroke and the direct-label TEXT (fill={lineColor}).
+      const data = readString(config.baseColor) ?? COLORS.line;
+      return { data, text: [COLORS.ink, COLORS.muted, data], bg };
+    }
+
+    case "bar": {
+      // BarChart.tsx `barColor()`: `baseColor ?? COLORS.line` for every bar, and
+      // the value label's fill is that SAME colour — unless `highlightIndex` is
+      // set, which splits bars orange/muted instead (not modelled here; see
+      // conformance-report.md "known limitations").
+      const data = readString(config.baseColor) ?? COLORS.line;
+      return { data, text: [COLORS.ink, COLORS.muted, data], bg };
+    }
+
+    case "scatter": {
+      // ScatterChart.tsx: `dotColor = config.baseColor ?? COLORS.line`, drawn as
+      // the dots AND any point-label text. Labels render by DEFAULT (the
+      // headline outlier, `labelPoints` unset or "default") or when `annotate`
+      // names points; only `labelPoints:"none"` with no `annotate` suppresses
+      // them. Conservatively include the data colour in `text` unless we can
+      // prove no label renders.
+      const data = readString(config.baseColor) ?? COLORS.line;
+      const noAnnotate = readArray(config.annotate).length === 0;
+      const labelsOff = config.labelPoints === "none" && noAnnotate;
+      const text = labelsOff
+        ? [COLORS.ink, COLORS.muted]
+        : [COLORS.ink, COLORS.muted, data];
+      return { data, text, bg };
+    }
+
+    case "histogram": {
+      // HistogramChart.tsx: bars are a FIXED `COLORS.line` (HistogramConfig has
+      // no baseColor field — config.baseColor must NOT leak through). The median
+      // annotation is a fixed `OKABE_ITO.vermillion` accent, ALWAYS rendered as
+      // the "median N unit" label TEXT.
+      return {
+        data: COLORS.line,
+        text: [COLORS.ink, COLORS.muted, OKABE_ITO.vermillion],
+        bg,
+      };
+    }
+
+    case "beeswarm": {
+      // BeeswarmChart.tsx: dots are `OKABE_ITO.blue` by default, or cycle through
+      // BEESWARM_CATEGORY_COLORS by category index (no config colour override).
+      // The category swatch is a shape, never TEXT (the legend label is always
+      // COLORS.ink) — so no category colour belongs in `text`.
+      return {
+        data: BEESWARM_CATEGORY_COLORS[0],
+        text: [COLORS.ink, COLORS.muted],
+        bg,
+      };
+    }
+
+    case "connected-scatter": {
+      // ConnectedScatterChart.tsx: fixed `ACCENT = OKABE_ITO.blue` for the line +
+      // dots only (no baseColor field) — never rendered as text.
+      return { data: OKABE_ITO.blue, text: [COLORS.ink, COLORS.muted], bg };
+    }
+
+    case "lollipop": {
+      // LollipopChart.tsx: fixed `BASE = OKABE_ITO.blue` for the stem/dot (no
+      // baseColor field). Value-label text is COLORS.ink by default, or the fixed
+      // `ACCENT = OKABE_ITO.vermillion` for the highlighted row (`highlightLabel`).
+      const highlighted = readString(config.highlightLabel) != null;
+      const text = highlighted
+        ? [COLORS.ink, COLORS.muted, OKABE_ITO.vermillion]
+        : [COLORS.ink, COLORS.muted];
+      return { data: OKABE_ITO.blue, text, bg };
+    }
+  }
+}
