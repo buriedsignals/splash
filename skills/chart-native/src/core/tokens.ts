@@ -32,3 +32,14 @@ export const TYPE = {
   label: 14,
   source: 12,
 } as const;
+
+// Beeswarm's per-category dot palette (BeeswarmChart.tsx), extracted here so the
+// produce-time conformance resolver (core/resolve-conformance-colors.ts) can
+// derive the SAME category colours without duplicating the literal array.
+export const BEESWARM_CATEGORY_COLORS = [
+  OKABE_ITO.blue,
+  OKABE_ITO.orange,
+  OKABE_ITO.green,
+  OKABE_ITO.purple,
+  OKABE_ITO.vermillion,
+] as const;

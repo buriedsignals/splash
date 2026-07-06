@@ -17,7 +17,13 @@ import {
   type BeeswarmLayout,
 } from "./beeswarm-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  BEESWARM_CATEGORY_COLORS,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
@@ -40,13 +46,9 @@ export interface BeeswarmChartProps {
   scale?: number;
 }
 
-const SWARM_COLORS = [
-  OKABE_ITO.blue,
-  OKABE_ITO.orange,
-  OKABE_ITO.green,
-  OKABE_ITO.purple,
-  OKABE_ITO.vermillion,
-];
+// shared with the produce-time conformance resolver (core/tokens.ts) so both
+// stay in sync — one palette, not two.
+const SWARM_COLORS = BEESWARM_CATEGORY_COLORS;
 
 export function BeeswarmChart({
   config,
@@ -73,7 +75,16 @@ export function BeeswarmChart({
     bottom: 40 + (hasLegend ? 24 : 0), // value ticks + (optional) legend
     left: 24,
   };
-  const frame = resolveFrameWithHeader(config.title, config.valueLabel, width, height, basePad, scale, 0.5, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.valueLabel,
+    width,
+    height,
+    basePad,
+    scale,
+    0.5,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
