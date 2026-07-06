@@ -1,4 +1,6 @@
-app = "atelier-embeds"
+# The journalist's OWN fly.io app — replaced by `flyctl launch --name <their-app>` at setup.
+# fly.io app names are globally unique; there is no shared central host. See skills/atelier/SKILL.md.
+app = "CHANGE-ME-your-embeds-app"
 primary_region = "cdg"
 
 [build]

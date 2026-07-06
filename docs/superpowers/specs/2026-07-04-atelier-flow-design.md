@@ -74,11 +74,14 @@ Ask the journalist which they want:
   with a one-line embed note (`<iframe src="…">` or `<img>`). Immediate, no infra.
 - **Embed link (non-technical):** deploy the HTML and return an iframe-ready URL.
 
-**Embed-link mechanics:** ONE persistent fly.io host app (e.g. `atelier-embeds.fly.dev`) serving many
-projects, each at `…/<slug>/index.html`. A deploy script (`skills/atelier/scripts/deploy-embed.mjs`)
-uses `flyctl` to upload a project's HTML to the app and prints the embeddable URL. One app, many
-embeds — no per-project app sprawl. Requires the user's fly.io account (a `flyctl auth` + the app
-created once). Until the app is set up, EXPORT offers **code now + "embed link (setup pending)."**
+**Embed-link mechanics:** the host is the **journalist's OWN fly.io account** — one persistent app of
+their own (fly.io app names are globally unique, so they pick it, e.g. `<newsroom>-embeds.fly.dev`)
+serving all their projects, each at `…/<slug>/index.html`. A deploy script
+(`skills/atelier/scripts/deploy-embed.mjs`) uses `flyctl` to upload a project's HTML to that app and
+prints the embeddable URL. One app per journalist, many embeds — no per-project app sprawl and no
+shared central host. The app name is required (CLI arg or `$ATELIER_EMBED_APP`); there is no shared
+default. Requires the journalist's fly.io account (a `flyctl auth` + the app created once). Until their
+app is set up, EXPORT offers **code now + "embed link (setup pending)."**
 
 ## Gates (summary)
 

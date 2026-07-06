@@ -95,18 +95,24 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
   - **HTML statique (one self-contained file, no JS):** the `static.html` produced by `export-code`
     (the image inlined) — a single dependency-free file that embeds in any CMS/email/offline.
   - **Composant en lien embed (hosted, non-technical):** run
-    `bun skills/atelier/scripts/deploy-embed.mjs <outDir>/interactive.html <slug>` → an iframe-ready URL to
-    the hosted interactive component. If the fly.io host is not set up yet, offer the code-source /
-    static-HTML forms now and say the embed link is pending setup.
+    `bun skills/atelier/scripts/deploy-embed.mjs <outDir>/interactive.html <slug> <appName>` → an
+    iframe-ready URL to the hosted interactive component. The host is the **journalist's OWN fly.io app**
+    (not a shared central host) — pass its name as the 3rd argument or via `$ATELIER_EMBED_APP`. If the
+    journalist has not set up their fly.io host yet, offer the code-source / static-HTML forms now and say
+    the embed link is pending their one-time setup.
 
-  **One-time fly.io host setup** (run once from `skills/atelier/embed-host/`):
+  **One-time fly.io host setup — on the JOURNALIST'S OWN fly.io account** (run once from
+  `skills/atelier/embed-host/`; fly.io app names are globally unique, so the journalist picks their own,
+  e.g. `<newsroom>-embeds`):
   ```bash
-  flyctl launch --no-deploy          # creates the atelier-embeds app; commit fly.toml
+  flyctl auth login                        # the journalist's own fly.io account
+  flyctl launch --no-deploy --name <their-app>   # creates their embed host app; commit fly.toml
   flyctl volumes create data --size 1
   flyctl deploy
   ```
-  After that, `deploy-embed.mjs` uploads directly via `flyctl ssh sftp shell`. The `ATELIER_EMBED_APP`
-  env var overrides the default app name `atelier-embeds` if needed.
+  After that, `deploy-embed.mjs <html> <slug> <their-app>` (or `$ATELIER_EMBED_APP=<their-app>`) uploads
+  directly to their app via `flyctl ssh sftp shell`. There is no shared default app name — each journalist
+  hosts on their own account.
 
 ## Gates
 
