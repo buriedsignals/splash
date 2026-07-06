@@ -10,7 +10,15 @@ if (!acceptedPath || !outDir) {
   console.error("usage: produce-all.mjs <accepted.json> <outDir>");
   process.exit(1);
 }
-const accepted = JSON.parse(readFileSync(acceptedPath, "utf8"));
+let accepted;
+try {
+  accepted = JSON.parse(readFileSync(acceptedPath, "utf8"));
+} catch (e) {
+  console.error(
+    `cannot read accepted proposals from ${acceptedPath}: ${e instanceof Error ? e.message : e}`,
+  );
+  process.exit(1);
+}
 const report = await produceAll(accepted, outDir, realDispatch);
 console.log(JSON.stringify(report, null, 2));
 // Exit non-zero if anything failed, so a caller can detect trouble; needs-fallback and
