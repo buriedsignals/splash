@@ -76,7 +76,7 @@ EXPORT. Verify quality, not just that it built.
 
 **Producer commands (from suggest-chart/SKILL.md):**
 - `chart-native`: `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
-- `map-native`: run from `skills/map-native/` — `bun scripts/produce.mjs <config.json> <outDir> [static|reveal|story|scrolly|all]`
+- `map-native`: run from `skills/map-native/` — `bun scripts/produce.mjs <config.json> <outDir> <format>` where `<format>` is the one suggest-chart routed (`static` | `reveal` | `story` | `scrolly` | `all`). ALWAYS pass it explicitly: an omitted flag now defaults to `static` (one PNG), never the full video set — so a video request that forgets the flag yields a wrong-but-cheap static, not a wrong-and-costly 9-render run.
 - `scrolly`: run from `skills/scrolly/` — `bun scripts/produce.mjs <config.json> <outDir>` → produces a single `scrolly.html` (no all|static flag)
 - `dw-chart` / `map-dw`: via their producer entry (Datawrapper API — token from `.env`)
 

@@ -23,12 +23,19 @@ const root = join(here, "..");
 
 const configPath = process.argv[2];
 const outDir = process.argv[3];
-const format = process.argv[4] ?? process.env.FORMATS ?? "all";
+// Default to `static` (one fast PNG), NOT `all` — an omitted flag must never silently
+// trigger the full video set (up to 9 heavy Remotion renders, needing a MapTiler key +
+// ANGLE + Chromium and minutes each). Callers asking for video pass the format explicitly.
+const formatArg = process.argv[4] ?? process.env.FORMATS;
+const format = formatArg ?? "static";
 const VALID = new Set(["static", "reveal", "story", "scrolly", "all"]);
 
 if (!configPath || !outDir || !VALID.has(format)) {
   console.error("usage: produce.mjs <config.json> <outDir> <static|reveal|story|scrolly|all>");
   process.exit(1);
+}
+if (!formatArg) {
+  console.error("note: no format given → defaulting to `static`. Pass reveal|story|scrolly|all for video.");
 }
 
 mkdirSync(outDir, { recursive: true });

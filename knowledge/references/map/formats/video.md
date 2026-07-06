@@ -6,6 +6,14 @@
 A video map is a **frame sequence** — an MP4 / WebM export. There is no runtime interaction,
 no hover, no tile fetching by the viewer.
 
+## Rendering cost — video is opt-in
+
+**A video map is expensive: the full set is up to 9 Remotion renders (reveal / story / scrolly
+× landscape / square / portrait), each needing a MapTiler key, ANGLE, and Chromium, minutes
+apiece. The producer renders video ONLY when the format is requested explicitly — an omitted
+`produce.mjs` flag defaults to `static` (one PNG), never the full set.** Route and pass the
+exact format the story needs; never render kinds or aspects the deliverable will not use.
+
 ## Frame-determinism
 
 **Motion is a pure function of the frame index — no `Date.now()`, no `Math.random()`, no
