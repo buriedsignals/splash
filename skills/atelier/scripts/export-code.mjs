@@ -3,7 +3,7 @@
 // a single self-contained static.html (the image inlined, no JS, embeds anywhere); (3) COMPOSANT
 // EMBED: run deploy-embed on interactive.html for a hosted link. Homogeneous across producers now
 // that every interactive producer emits a self-contained interactive.html.
-//   bun export-code.mjs <outDir> <exportDir>
+//   bun export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId>
 import {
   readdirSync,
   readFileSync,
@@ -12,6 +12,20 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join, basename, extname, resolve } from "node:path";
+import { assertShippable } from "../src/export-guard.ts";
+
+// Splits argv into positionals and `--flag value` pairs, so the required --results/--id
+// flags can sit alongside the existing positional args in any order.
+function parseArgs(argv) {
+  const positional = [];
+  const flags = {};
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--results" || a === "--id") flags[a.slice(2)] = argv[++i];
+    else positional.push(a);
+  }
+  return { positional, flags };
+}
 
 // True when a path resolves into a temporary / session-scratch location that gets
 // cleaned — the journalist would lose the deliverable. EXPORT must write to a stable
@@ -45,15 +59,30 @@ export function staticHtml(dataUri, alt = "visual") {
 }
 
 if (import.meta.main) {
-  const [outDir, exportDir] = process.argv.slice(2);
-  if (!outDir || !exportDir) {
-    console.error("usage: export-code.mjs <outDir> <exportDir>");
+  const { positional, flags } = parseArgs(process.argv.slice(2));
+  const [outDir, exportDir] = positional;
+  const { results: resultsPath, id } = flags;
+  if (!outDir || !exportDir || !resultsPath || !id) {
+    console.error(
+      "usage: export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId>",
+    );
     process.exit(1);
   }
-  if (isEphemeralPath(exportDir))
+  if (isEphemeralPath(exportDir)) {
     console.error(
-      `WARNING: export path is ephemeral (${resolve(exportDir)}) — it will be cleaned and the journalist will lose the file. Pass a stable location like exports/<slug>.`,
+      `refusing to export to an ephemeral path (${resolve(exportDir)}) — it will be cleaned and the journalist will lose the file. Pass a stable location like exports/<slug>.`,
     );
+    process.exit(1);
+  }
+  // The one mechanical gate, before any copy/write: refuse unless this exact proposal was
+  // actually produced AND the human approved the render.
+  try {
+    const report = JSON.parse(readFileSync(resultsPath, "utf8"));
+    assertShippable(report, id);
+  } catch (e) {
+    console.error(e.message);
+    process.exit(1);
+  }
   mkdirSync(exportDir, { recursive: true });
   const artifacts = readdirSync(outDir).filter((f) =>
     [".html", ".png", ".jpg", ".mp4"].includes(extname(f).toLowerCase()),

@@ -2,8 +2,24 @@
 // an iframe-ready URL. The host lives on the journalist's fly.io account, not a shared central one —
 // so the app name must be supplied (fly.io app names are globally unique; there is no shared default).
 // Requires a one-time host setup on the journalist's account (see skills/atelier/SKILL.md).
-//   bun deploy-embed.mjs <htmlFile> <slug> [appName]   (appName falls back to $ATELIER_EMBED_APP)
+//   bun deploy-embed.mjs <htmlFile> <slug> --results <report.json> --id <proposalId> [appName]
+//   (appName falls back to $ATELIER_EMBED_APP)
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { assertShippable } from "../src/export-guard.ts";
+
+// Splits argv into positionals and `--flag value` pairs, so the required --results/--id
+// flags can sit alongside the existing positional args in any order.
+function parseArgs(argv) {
+  const positional = [];
+  const flags = {};
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--results" || a === "--id") flags[a.slice(2)] = argv[++i];
+    else positional.push(a);
+  }
+  return { positional, flags };
+}
 
 export function slugify(s) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -25,9 +41,22 @@ export function embedUrl(app, slug) {
 }
 
 if (import.meta.main) {
-  const [htmlFile, rawSlug, argApp] = process.argv.slice(2);
-  if (!htmlFile || !rawSlug) {
-    console.error("usage: deploy-embed.mjs <htmlFile> <slug> [appName]");
+  const { positional, flags } = parseArgs(process.argv.slice(2));
+  const [htmlFile, rawSlug, argApp] = positional;
+  const { results: resultsPath, id } = flags;
+  if (!htmlFile || !rawSlug || !resultsPath || !id) {
+    console.error(
+      "usage: deploy-embed.mjs <htmlFile> <slug> --results <report.json> --id <proposalId> [appName]",
+    );
+    process.exit(1);
+  }
+  // The one mechanical gate, before any upload: refuse unless this exact proposal was
+  // actually produced AND the human approved the render.
+  try {
+    const report = JSON.parse(readFileSync(resultsPath, "utf8"));
+    assertShippable(report, id);
+  } catch (e) {
+    console.error(e.message);
     process.exit(1);
   }
   let APP;
