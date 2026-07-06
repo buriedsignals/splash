@@ -16,6 +16,7 @@ const TEST_DIRS = [
   "skills/suggest-chart/eval",
   "skills/suggest-article/eval",
   "skills/atelier",
+  "docs/installer",
 ];
 
 const rows = [];

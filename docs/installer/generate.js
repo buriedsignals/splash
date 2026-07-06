@@ -61,14 +61,11 @@ cat > "$HOME/Atelier/.env" <<'ATELIER_ENV'
 ${env}
 ATELIER_ENV
 
-if ! grep -q "${rt.keyEnv}" "$HOME/.zshrc" 2>/dev/null; then
-  echo 'export ${rt.keyEnv}=${k.ai ?? ""}' >> "$HOME/.zshrc"
-fi
-
 echo ""
 echo "Done! To launch Atelier, open Terminal and run:"
 echo "    ${rt.launch}"
 echo ""
-echo "Security note: this file contains your keys. You can delete it now."
+echo "Security note: delete THIS downloaded file now (it has your keys inline). Your keys"
+echo "live only in $HOME/Atelier/.env (git-ignored), read at launch — never in ~/.zshrc."
 `;
 }

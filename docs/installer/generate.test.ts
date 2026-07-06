@@ -35,7 +35,10 @@ test("includes install steps and the launch instruction", () => {
   const s = generateScript(base);
   expect(s).toContain("curl -fsSL https://claude.ai/install.sh | bash");
   expect(s).toContain("git clone");
-  expect(s).toContain("cd ~/Atelier && claude --plugin-dir .");
+  expect(s).toContain(
+    "cd ~/Atelier && set -a && . ./.env && set +a && claude --plugin-dir .",
+  );
+  expect(s).not.toContain('>> "$HOME/.zshrc"'); // key hygiene: never WRITE the secret to a global shell profile
   expect(s.startsWith("#!/bin/bash")).toBe(true);
   expect(s).toContain("Delete this file"); // security self-warning
   expect(s).toContain("playwright install chromium"); // render engine pre-installed
