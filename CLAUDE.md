@@ -228,10 +228,10 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 
 ## ★ État courant — 2026-07-06 (LIS CECI EN PREMIER pour l'état de `main`)
 
-Grosse session **audit + refonte**. Tout mergé dans `main`, gate `bun run check` **13/13 vert**, zéro mention vendor dans les commits de la session.
+Grosse session **audit + refonte** (~40 commits, tout mergé dans `main`), gate `bun run check` **14/14 vert**. Commits sans attribution vendor — les seules occurrences « claude »/« CLAUDE.md » sont des références FONCTIONNELLES au runtime / au fichier (le repo EST un `.claude-plugin`), pas des attributions ; traitées par le scrub pré-release.
 
 **Sol technique (le plancher qui manquait) :**
-- **CI + `bun run check`** racine (`scripts/check.mjs` : tsc des 4 skills à tsconfig + les 9 suites de test) ; `.github/workflows/ci.yml`. Le gate couvre maintenant les tests d'orchestration (`skills/atelier` entier).
+- **CI + `bun run check`** racine (`scripts/check.mjs` : tsc des 4 skills à tsconfig + les **10 suites de test**, dont `skills/atelier` entier ET `docs/installer`) ; `.github/workflows/ci.yml`.
 - **tsc réparé** sur `map-native` + `scrolly` : 220 erreurs → **0** (dont un vrai bug latent camera `LngLatLike`), `@types/react-dom`/`@types/node` déclarés, zéro `any` introduit.
 - **LICENSE (MIT)** + **README** racine (manquaient — bloquaient la sortie MIT).
 - test rouge `map-dw` réparé ; tests API `dw-chart` self-skip sans token (clean checkout vert).
@@ -251,7 +251,7 @@ Grosse session **audit + refonte**. Tout mergé dans `main`, gate `bun run check
 1. **conformance-au-produce — FAIT pour chart-native** (commit `ef362f6`) : `resolveConformanceColors` partagé + les 7 types couleur (line/bar/scatter/histogram/beeswarm/connected-scatter/lollipop) câblés dans `produce.mjs` → une violation **échoue le run avant de builder** (garde-fous à l'exécution, plus test-only). **★ A trouvé un vrai bug a11y live** : `OKABE_ITO.vermillion` (#D55E00) en **TEXTE** = 3.87:1 sur blanc (< WCAG 4.5:1), sur histogram + lollipop → **FIXÉ** : les labels rendent en `COLORS.ink` (le vermillon reste sur le MARK — ligne médiane / stem+dot ; emphase via poids bold), vérifié **au rendu** (histogram + lollipop), produce **fail-hard** maintenant (plus de warn), règle KB gravée (design-conformance.md item 7 : « le label porte la valeur, le mark porte la teinte »). **RESTE conformance** : (a) les **~34 autres types** chart (palettes bespoke non modélisées dans le résolveur) ; (b) **parité map-native** (résolveur + câblage produce).
    **Autre design-bearing (→ brainstorming)** : **couture 4→41 types natifs** (table-driven `spec-to-config` + test de complétude : seuls bar/line/scatter/pie sont atteignables de bout en bout).
 2. **Contenu** : export-time hash enforcement + `produce-all` qui clear `renderApproved` au re-produce ; produire/surfacer les propositions secondaires acceptées (② n'en produit qu'une).
-3. **Release MIT** : `scripts/scrub-trailers.sh --yes` ; pin `REPO_URL` de l'installeur ; retirer la clé en clair de `~/.zshrc`.
-4. **Doc** : scinder ce CLAUDE.md (état-courant vs changelog).
+3. **Release MIT — gate mécanique `bun run release:check`** (`scripts/preflight-release.mjs` : LICENSE / README / REPO_URL confirmé / trailers scrubés / `.env` untracked ; **PAS** dans le `bun run check` quotidien — échoue tant que pas prêt ; actuellement **3/5**). **FAIT** : la clé installeur ne va plus dans `~/.zshrc` (elle vit dans le `.env` gitignored, sourcée au lancement `set -a && . ./.env && set +a`). **RESTE** (les 2 blockers que le preflight signale) : (a) confirmer le vrai `REPO_URL` public dans `docs/installer/generate.js` + retirer le TODO ; (b) `scripts/scrub-trailers.sh --yes` (destructif, au pré-release).
+4. **Doc** : scinder ce CLAUDE.md (état-courant vs changelog) — l'audit l'a flaggé.
 
 **Caveat honnête maintenu :** l'éval du suggester reste **auto-référentielle** (on écrit cas+gold ; ② et le juge = agents) → instrument d'amélioration *relative*, pas de vérité absolue. Renfort futur = corpus tiers + juge sur le **rendu** (pas le JSON).
