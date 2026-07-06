@@ -11,7 +11,19 @@ import {
   copyFileSync,
   writeFileSync,
 } from "node:fs";
-import { join, basename, extname } from "node:path";
+import { join, basename, extname, resolve } from "node:path";
+
+// True when a path resolves into a temporary / session-scratch location that gets
+// cleaned — the journalist would lose the deliverable. EXPORT must write to a stable
+// project path (exports/<slug>) instead.
+export function isEphemeralPath(p) {
+  const abs = resolve(p);
+  return (
+    /(^|\/)(tmp|scratchpad)(\/|$)/.test(abs) ||
+    abs.includes("/private/tmp/") ||
+    abs.includes("/var/folders/")
+  );
+}
 
 // The iframe/img/video snippet for a single artifact (used for the interactive/embed forms).
 export function embedSnippet(file) {
@@ -38,6 +50,10 @@ if (import.meta.main) {
     console.error("usage: export-code.mjs <outDir> <exportDir>");
     process.exit(1);
   }
+  if (isEphemeralPath(exportDir))
+    console.error(
+      `WARNING: export path is ephemeral (${resolve(exportDir)}) — it will be cleaned and the journalist will lose the file. Pass a stable location like exports/<slug>.`,
+    );
   mkdirSync(exportDir, { recursive: true });
   const artifacts = readdirSync(outDir).filter((f) =>
     [".html", ".png", ".jpg", ".mp4"].includes(extname(f).toLowerCase()),

@@ -82,6 +82,12 @@ EXPORT. Verify quality, not just that it built.
 
 ### 6. EXPORT — GATE 4 (delivery depends on the visual's format)
 
+**Delivery location — stable, never the scratchpad.** Write every hand-over (export folder, mp4, PNG) to
+`exports/<slug>/` under the journalist's working directory (the atelier project root), NOT the session
+scratchpad — the scratchpad is temporary and gets cleaned, so the journalist would lose the deliverable
+(and cannot find it). After delivering, print the file/folder's ABSOLUTE path. `export-code.mjs` warns if
+the export path looks ephemeral.
+
 Branch on the format the journalist chose at CADRAGE / that `suggest-chart` routed to:
 
 - **VIDEO (mp4):** the producer emits three aspect ratios — **landscape** (`*landscape.mp4`, 16:9, for
@@ -93,7 +99,7 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
   producer rendered). A static image IS the media — just give the file.
 - **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`):** only here do the
   three delivery forms apply — ask which the journalist wants:
-  - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs <outDir> <exportDir>`.
+  - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs <outDir> exports/<slug>`.
     Hands over a folder with all the built files (`interactive.html`, `static.png`, `static.html`) + an
     `EMBED.md`. Embed the interactive visual with the `<iframe src="interactive.html">` snippet.
   - **HTML statique (one self-contained file, no JS):** the `static.html` produced by `export-code`

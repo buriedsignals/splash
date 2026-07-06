@@ -46,3 +46,46 @@ Append-only. One entry per feedback: verbatim, diagnostic, action, status.
       question du runtime (au prix de l'agnosticisme runtime).
 
 **Status** : mitigated / monitor
+
+## 2026-07-06 · export lands in an ephemeral session scratchpad
+
+**Feedback** (Rémy, from the CO₂-emissions `/atelier:atelier` run):
+> Le livrable a atterri dans `/private/tmp/.../scratchpad/co2-export/` — hors repo, dossier de session
+> temporaire. J'ai dû demander « où est l'export ? ». Éphémère, introuvable.
+
+**Diagnostic** :
+- Fichiers : `skills/atelier/SKILL.md` (EXPORT), `skills/atelier/scripts/export-code.mjs`, `.gitignore`.
+- Root cause : la phase EXPORT ne précisait aucune destination stable → l'orchestrateur a écrit dans le
+  scratchpad de session (nettoyé, hors repo).
+
+**Action** :
+- [x] Fix (moyen) :
+  1. `SKILL.md` EXPORT — livrer dans `exports/<slug>/` sous le cwd du journaliste (jamais le scratchpad),
+     et imprimer le chemin ABSOLU. Exemple export-code mis à jour.
+  2. `export-code.mjs` — garde-fou `isEphemeralPath()` : warning si l'exportDir résout vers /tmp,
+     /private/tmp, /var/folders ou scratchpad.
+  3. `.gitignore` — `exports/` (les livrables ne polluent pas git).
+  4. Test : `isEphemeralPath` true sur temp/scratchpad, false sur `exports/<slug>`.
+
+**Verify** : `bun test skills/atelier/scripts/export-code.test.ts` → 6/6.
+**Status** : fixed
+
+## 2026-07-06 · Playwright browser not pre-installed (mid-run download)
+
+**Feedback** (même run) :
+> « Playwright's browser isn't installed. Installing the headless shell it needs. » — installé en cours
+> de flow. Pour un non-tech ça peut planter/inquiéter.
+
+**Diagnostic** :
+- Fichier : `docs/installer/generate.js` (le `.command` d'install).
+- Root cause : les producteurs (chart-native, map-native) rendent via Playwright Chromium, jamais
+  pré-installé → téléchargement à la première visualisation.
+
+**Action** :
+- [x] Fix : le `.command` généré pré-installe le moteur de rendu après le clone
+  (`cd skills/chart-native && bun install && bunx playwright install chromium`).
+- [x] Garde-fou : `generate.test.ts` assert que le script contient `playwright install chromium`
+  (+ `bash -n` valide toujours la syntaxe).
+
+**Verify** : `bun test docs/installer` → 9/9.
+**Status** : fixed
