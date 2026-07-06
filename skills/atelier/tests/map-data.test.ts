@@ -33,4 +33,15 @@ describe("map-data derivation", () => {
       { note: 'she said "hi"' },
     ]);
   });
+  it("round-trips a cell value containing an embedded newline", () => {
+    expect(toRows(toCsv([{ note: "line1\nline2", other: 5 }]))).toEqual([
+      { note: "line1\nline2", other: 5 },
+    ]);
+  });
+  it("round-trips a cell value combining a comma and a quote", () => {
+    expect(toRows(toCsv([{ v: 'a, "b", c' }]))).toEqual([{ v: 'a, "b", c' }]);
+  });
+  it("keeps the literal string NaN as a string, not numeric NaN", () => {
+    expect(toRows("code,value\nNaN,5")).toEqual([{ code: "NaN", value: 5 }]);
+  });
 });

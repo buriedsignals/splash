@@ -24,17 +24,20 @@ export function toCsv(rows: Row[]): string {
   return `${header}\n${body}`;
 }
 
-// Splits a CSV line into raw cells, respecting double-quoted fields (comma inside
-// quotes is not a delimiter; "" inside a quoted field is a literal ").
-function splitCsvLine(line: string): string[] {
-  const cells: string[] = [];
+// Parses the whole CSV text in a single quote-aware scan: a record break (\n, or
+// \r\n) and a field break (,) only count when NOT inside a quoted field, so a cell
+// containing an embedded newline (produced by csvField's quoting) is never torn
+// across records. "" inside a quoted field is a literal ".
+function parseCsv(text: string): string[][] {
+  const records: string[][] = [];
+  let row: string[] = [];
   let cell = "";
   let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
     if (inQuotes) {
       if (ch === '"') {
-        if (line[i + 1] === '"') {
+        if (text[i + 1] === '"') {
           cell += '"';
           i++;
         } else {
@@ -46,37 +49,52 @@ function splitCsvLine(line: string): string[] {
     } else if (ch === '"' && cell === "") {
       inQuotes = true;
     } else if (ch === ",") {
-      cells.push(cell);
+      row.push(cell);
       cell = "";
+    } else if (ch === "\n") {
+      row.push(cell);
+      records.push(row);
+      row = [];
+      cell = "";
+    } else if (ch === "\r") {
+      // Bare \r is dropped; \r\n's record break is handled by the \n above.
+      if (text[i + 1] !== "\n") cell += ch;
     } else {
       cell += ch;
     }
   }
-  cells.push(cell);
-  return cells;
+  row.push(cell);
+  records.push(row);
+  return records;
 }
 
-// Coerce a raw cell to a number only when it round-trips exactly, so zero-padded
-// codes ("08"), decimals with trailing zeros ("1.50"), and non-numeric strings
-// ("2A", "") are preserved as strings.
+// Coerce a raw cell to a number only when it round-trips exactly AND is finite, so
+// zero-padded codes ("08"), decimals with trailing zeros ("1.50"), non-numeric
+// strings ("2A", ""), and the literal strings "NaN"/"Infinity"/"-Infinity" are
+// preserved as strings.
 function coerceCell(raw: string): string | number {
-  if (raw !== "" && String(Number(raw)) === raw) return Number(raw);
+  if (
+    raw !== "" &&
+    Number.isFinite(Number(raw)) &&
+    String(Number(raw)) === raw
+  ) {
+    return Number(raw);
+  }
   return raw;
 }
 
 export function toRows(csv: string): Row[] {
-  const lines = csv.trim().split("\n");
-  const cols = splitCsvLine(lines[0]);
-  return lines
-    .slice(1)
-    .filter((l) => l.length > 0)
-    .map((line) => {
-      const cells = splitCsvLine(line);
-      const row: Row = {};
-      cols.forEach((c, i) => {
-        const raw = cells[i] ?? "";
-        row[c] = coerceCell(raw);
-      });
-      return row;
+  const records = parseCsv(csv.trim()).filter(
+    (r) => !(r.length === 1 && r[0] === ""),
+  );
+  if (records.length === 0) return [];
+  const cols = records[0];
+  return records.slice(1).map((cells) => {
+    const row: Row = {};
+    cols.forEach((c, i) => {
+      const raw = cells[i] ?? "";
+      row[c] = coerceCell(raw);
     });
+    return row;
+  });
 }
