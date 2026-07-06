@@ -156,6 +156,8 @@ Give each validator warning a `severity: "blocking" | "advisory"`; `validate` fa
   seam; a completeness test asserting every advertised native type has a case belongs with that plan.
 - **Any change to the interactive human dialogue** (CADRAGE questions, PROPOSITION presentation) —
   unchanged; this spec only makes PRODUCTION→EXPORT mechanical.
+- **Follow-on**: export-time artifact-hash enforcement (compare shipped bytes to `approvedHash`) +
+  produce-all clearing `renderApproved` on re-produce — deferred.
 
 ## Testing
 

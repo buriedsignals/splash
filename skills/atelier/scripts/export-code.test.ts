@@ -1,6 +1,12 @@
 import { describe, it, expect } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  writeFileSync,
+  existsSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { embedSnippet, staticHtml, isEphemeralPath } from "./export-code.mjs";
@@ -87,6 +93,13 @@ describe("export-code CLI — export-completeness gate", () => {
       );
       expect(out).toContain("EXPORT_CODE_RESULT");
       expect(existsSync(join(exportDir, "chart.html"))).toBe(true);
+      // The generated hosted-embed instructions must include the required
+      // --results/--id flags — a journalist copy-pasting the command must not hit
+      // deploy-embed's "usage" error (locks the seam from FIX 1).
+      const embedMd = readFileSync(join(exportDir, "EMBED.md"), "utf8");
+      expect(embedMd).toContain("deploy-embed.mjs");
+      expect(embedMd).toContain("--results");
+      expect(embedMd).toContain("--id");
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
       rmSync(outDir, { recursive: true, force: true });

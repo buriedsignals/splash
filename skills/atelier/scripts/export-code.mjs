@@ -115,7 +115,7 @@ if (import.meta.main) {
     );
   if (interactive)
     forms.push(
-      `## 3. Composant en lien embed (hosted)\nGet a hosted URL:\n\n\`\`\`sh\nbun skills/atelier/scripts/deploy-embed.mjs <this-folder>/${interactive} <slug>\n\`\`\``,
+      `## 3. Composant en lien embed (hosted)\nGet a hosted URL:\n\n\`\`\`sh\nbun skills/atelier/scripts/deploy-embed.mjs <this-folder>/${interactive} <slug> --results ${resultsPath} --id ${id}\n\`\`\`\n\nRe-hosting later (or re-running this) requires a produced + render-approved report for proposal \`${id}\` — keep \`${resultsPath}\` (or an equivalent report) alongside this export.`,
     );
   writeFileSync(
     join(exportDir, "EMBED.md"),

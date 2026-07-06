@@ -1,9 +1,13 @@
 import { createHash } from "node:crypto";
 import type { ProduceReport } from "./producer-spec";
 
-// The ONLY writer of renderApproved. Binds approval to the exact artifact bytes, so a
-// later re-produce (which changes the bytes) leaves the old hash mismatched — an honest
-// audit marker + accident-resistance, NOT enforcement against a deliberate skip.
+// The ONLY writer of renderApproved. `approvedHash` (sha256 of the approved artifact bytes)
+// is recorded as an audit marker of exactly what was approved — nothing re-reads or compares
+// it later, so it is NOT enforcement. The actual accident-resistance in this spine comes from
+// produce-all: every run writes a FRESH report with renderApproved=false for every result, so
+// a re-produce forces re-approval before export/deploy-embed will ship it. Binding the shipped
+// bytes to approvedHash at export time (to catch a produce-without-a-fresh-report edge case) is
+// a deferred follow-on — see 2026-07-06-deterministic-orchestration-design.md.
 export function applyRenderGate(
   report: ProduceReport,
   id: string,

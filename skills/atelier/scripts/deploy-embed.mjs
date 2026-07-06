@@ -66,6 +66,15 @@ if (import.meta.main) {
     console.error(e.message);
     process.exit(1);
   }
+  // htmlFile is interpolated unquoted into the sftp command stream below — whitespace would
+  // break the `put` line, a newline could inject a second sftp command. Reject rather than
+  // quote: a valid built artifact path should never contain either.
+  if (/\s/.test(htmlFile)) {
+    console.error(
+      `refusing to upload: htmlFile path contains whitespace/newline ("${htmlFile}") — this would break or inject into the sftp command stream. Move the file to a path without spaces.`,
+    );
+    process.exit(1);
+  }
   const slug = slugify(rawSlug);
   // Upload htmlFile → /data/<slug>/index.html on the host app via flyctl sftp.
   try {
