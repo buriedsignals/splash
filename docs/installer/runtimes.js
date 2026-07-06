@@ -9,7 +9,10 @@ export const RUNTIMES = {
     keyLabel: "Anthropic API key",
     keyUrl: "https://console.anthropic.com/settings/keys",
     keyEnv: "ANTHROPIC_API_KEY",
-    launch: "cd ~/Atelier && claude --plugin-dir .",
+    // Load the keys from the gitignored ~/Atelier/.env for THIS launch only — never
+    // persist the secret in a global shell profile (~/.zshrc).
+    launch:
+      "cd ~/Atelier && set -a && . ./.env && set +a && claude --plugin-dir .",
   },
   // Not yet verified — see the design's "Verification gates". Cards render disabled
   // ("coming soon") until each is confirmed to load the Atelier plugin/skill.
