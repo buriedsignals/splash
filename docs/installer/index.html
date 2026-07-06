@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Install Atelier</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <h1>Install Atelier</h1>
+    <p>Fill this in, download one file, double-click it. No terminal needed. Your keys never
+      leave this page.</p>
+
+    <form id="setup">
+      <fieldset>
+        <legend>AI runtime</legend>
+        <div id="runtimes"></div>
+      </fieldset>
+
+      <label>AI API key <span id="keyLabel"></span>
+        <input name="ai" type="password" autocomplete="off" />
+        <a id="keyUrl" href="#" target="_blank" rel="noopener">Where do I get this?</a>
+      </label>
+
+      <label>MapTiler key <small>(maps — skip to add later)</small>
+        <input name="maptiler" type="password" autocomplete="off" />
+        <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener">Get one</a>
+      </label>
+
+      <label>Datawrapper token <small>(charts — skip to add later)</small>
+        <input name="datawrapper" type="password" autocomplete="off" />
+        <a href="https://app.datawrapper.de/account/api-tokens" target="_blank" rel="noopener">Get one</a>
+      </label>
+
+      <details>
+        <summary>Embed host (advanced, optional)</summary>
+        <label>fly.io app name <input name="embedApp" type="text" autocomplete="off" /></label>
+        <label>FLY_API_TOKEN <input name="flyToken" type="password" autocomplete="off" /></label>
+      </details>
+
+      <button type="submit">Download my installer</button>
+    </form>
+  </main>
+
+  <script type="module">
+    import { RUNTIMES } from "./runtimes.js";
+    import { generateScript, scriptFilename } from "./generate.js";
+
+    const form = document.getElementById("setup");
+    const runtimesEl = document.getElementById("runtimes");
+    const keyLabelEl = document.getElementById("keyLabel");
+    const keyUrlEl = document.getElementById("keyUrl");
+
+    let selected = "claude";
+
+    for (const [id, rt] of Object.entries(RUNTIMES)) {
+      const label = document.createElement("label");
+      label.className = "runtime" + (rt.verified ? "" : " disabled");
+      label.innerHTML =
+        `<input type="radio" name="runtime" value="${id}" ${id === selected ? "checked" : ""}
+          ${rt.verified ? "" : "disabled"} /> ${rt.label}` +
+        (rt.verified ? "" : ` <small>coming soon</small>`);
+      runtimesEl.appendChild(label);
+    }
+
+    function syncKeyField() {
+      const rt = RUNTIMES[selected];
+      keyLabelEl.textContent = `(${rt.keyLabel})`;
+      keyUrlEl.href = rt.keyUrl;
+    }
+    syncKeyField();
+
+    form.addEventListener("change", (e) => {
+      if (e.target.name === "runtime") { selected = e.target.value; syncKeyField(); }
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const f = new FormData(form);
+      const script = generateScript({
+        runtime: selected,
+        keys: { ai: f.get("ai"), maptiler: f.get("maptiler"), datawrapper: f.get("datawrapper") },
+        embed: { app: f.get("embedApp"), flyToken: f.get("flyToken") },
+      });
+      const blob = new Blob([script], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = scriptFilename();
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+  </script>
+</body>
+</html>
