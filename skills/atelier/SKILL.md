@@ -28,6 +28,10 @@ carry that forward.
 
 ### 3. CADRAGE — GATE 1 (questionnaire, journalist's language, ≤4 questions, one at a time)
 
+Ask each question as ONE well-formed single-select prompt (a short header, 2–4 concrete options) and
+wait for the answer before the next — never batch several into one call, which is what malforms the
+question tool.
+
 1. Branch: "Do you already have a visual in mind, or should I guide you?"
 2. Takeaway: "What is the one thing a reader should leave with?" → the insight/angle.
 3. Audience & channel: "Where does this publish — article embed, social, print?" → the format signal
