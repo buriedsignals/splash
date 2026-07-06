@@ -38,6 +38,7 @@ test("includes install steps and the launch instruction", () => {
   expect(s).toContain("cd ~/Atelier && claude --plugin-dir .");
   expect(s.startsWith("#!/bin/bash")).toBe(true);
   expect(s).toContain("Delete this file"); // security self-warning
+  expect(s).toContain("playwright install chromium"); // render engine pre-installed
 });
 
 test("the generated script is valid bash", () => {

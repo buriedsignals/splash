@@ -51,6 +51,11 @@ if [ ! -d "$HOME/Atelier" ]; then
   git clone ${REPO_URL} "$HOME/Atelier"
 fi
 
+echo "-> Installing the render engine (Playwright Chromium)..."
+# Producers (chart-native, map-native) render with Playwright's Chromium — pre-install it
+# so the first visual doesn't stall on a mid-run browser download.
+( cd "$HOME/Atelier/skills/chart-native" && bun install >/dev/null 2>&1 && bunx playwright install chromium )
+
 echo "-> Writing configuration..."
 cat > "$HOME/Atelier/.env" <<'ATELIER_ENV'
 ${env}
