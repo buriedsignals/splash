@@ -4,7 +4,7 @@
 // green on a clean checkout. Exits non-zero if any check fails.
 import { spawnSync } from "node:child_process";
 
-const TSC_DIRS = ["skills/chart-native", "skills/map-native", "skills/scrolly"];
+const TSC_DIRS = ["skills/atelier", "skills/chart-native", "skills/map-native", "skills/scrolly"];
 
 const TEST_DIRS = [
   "skills/dw-chart",
@@ -15,7 +15,7 @@ const TEST_DIRS = [
   "skills/map-dw/src",
   "skills/suggest-chart/eval",
   "skills/suggest-article/eval",
-  "skills/atelier/scripts",
+  "skills/atelier",
 ];
 
 const rows = [];
