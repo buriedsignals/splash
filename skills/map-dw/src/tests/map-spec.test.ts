@@ -207,4 +207,30 @@ describe("validateMapSpec — locator", () => {
       expect(r.ok).toBe(false);
     }
   });
+
+  it("warns to prefer map-native for a sub-national / regional extent", () => {
+    // Lamerd ↔ Kuwait ≈ 5° span — map-dw renders inland Lamerd offshore here.
+    const r = validateMapSpec({
+      ...validLocator,
+      markers: [
+        { lng: 53.1804, lat: 27.3424, label: "Lamerd" },
+        { lng: 47.9774, lat: 29.3759, label: "Kuwait" },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings.join()).toMatch(/prefer map-native/);
+  });
+
+  it("does NOT warn for a wide continental / global extent", () => {
+    // European capitals span ~40° of longitude — map-dw's basemap is fine.
+    const r = validateMapSpec({
+      ...validLocator,
+      markers: [
+        { lng: -9.14, lat: 38.72, label: "Lisbon" },
+        { lng: 30.52, lat: 50.45, label: "Kyiv" },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings.join()).not.toMatch(/prefer map-native/);
+  });
 });
