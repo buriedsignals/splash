@@ -28,6 +28,10 @@ carry that forward.
 
 ### 3. CADRAGE — GATE 1 (questionnaire, journalist's language, ≤4 questions, one at a time)
 
+Ask each question as ONE well-formed single-select prompt (a short header, 2–4 concrete options) and
+wait for the answer before the next — never batch several into one call, which is what malforms the
+question tool.
+
 1. Branch: "Do you already have a visual in mind, or should I guide you?"
 2. Takeaway: "What is the one thing a reader should leave with?" → the insight/angle.
 3. Audience & channel: "Where does this publish — article embed, social, print?" → the format signal
@@ -78,6 +82,12 @@ EXPORT. Verify quality, not just that it built.
 
 ### 6. EXPORT — GATE 4 (delivery depends on the visual's format)
 
+**Delivery location — stable, never the scratchpad.** Write every hand-over (export folder, mp4, PNG) to
+`exports/<slug>/` under the journalist's working directory (the atelier project root), NOT the session
+scratchpad — the scratchpad is temporary and gets cleaned, so the journalist would lose the deliverable
+(and cannot find it). After delivering, print the file/folder's ABSOLUTE path. `export-code.mjs` warns if
+the export path looks ephemeral.
+
 Branch on the format the journalist chose at CADRAGE / that `suggest-chart` routed to:
 
 - **VIDEO (mp4):** the producer emits three aspect ratios — **landscape** (`*landscape.mp4`, 16:9, for
@@ -89,24 +99,35 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
   producer rendered). A static image IS the media — just give the file.
 - **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`):** only here do the
   three delivery forms apply — ask which the journalist wants:
-  - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs <outDir> <exportDir>`.
+  - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs <outDir> exports/<slug>`.
     Hands over a folder with all the built files (`interactive.html`, `static.png`, `static.html`) + an
     `EMBED.md`. Embed the interactive visual with the `<iframe src="interactive.html">` snippet.
   - **HTML statique (one self-contained file, no JS):** the `static.html` produced by `export-code`
     (the image inlined) — a single dependency-free file that embeds in any CMS/email/offline.
   - **Composant en lien embed (hosted, non-technical):** run
-    `bun skills/atelier/scripts/deploy-embed.mjs <outDir>/interactive.html <slug>` → an iframe-ready URL to
-    the hosted interactive component. If the fly.io host is not set up yet, offer the code-source /
-    static-HTML forms now and say the embed link is pending setup.
+    `bun skills/atelier/scripts/deploy-embed.mjs <outDir>/interactive.html <slug> <appName>` → an
+    iframe-ready URL to the hosted interactive component. The host is the **journalist's OWN fly.io app**
+    (not a shared central host) — pass its name as the 3rd argument or via `$ATELIER_EMBED_APP`. If the
+    journalist has not set up their fly.io host yet, offer the code-source / static-HTML forms now and say
+    the embed link is pending their one-time setup.
 
-  **One-time fly.io host setup** (run once from `skills/atelier/embed-host/`):
+  **One-time fly.io host setup — on the JOURNALIST'S OWN fly.io account** (run once from
+  `skills/atelier/embed-host/`; fly.io app names are globally unique, so the journalist picks their own,
+  e.g. `<newsroom>-embeds`):
   ```bash
-  flyctl launch --no-deploy          # creates the atelier-embeds app; commit fly.toml
+  flyctl auth login                        # the journalist's own fly.io account
+  flyctl launch --no-deploy --name <their-app>   # creates their embed host app; commit fly.toml
   flyctl volumes create data --size 1
   flyctl deploy
   ```
-  After that, `deploy-embed.mjs` uploads directly via `flyctl ssh sftp shell`. The `ATELIER_EMBED_APP`
-  env var overrides the default app name `atelier-embeds` if needed.
+  After that, `deploy-embed.mjs <html> <slug> <their-app>` (or `$ATELIER_EMBED_APP=<their-app>`) uploads
+  directly to their app via `flyctl ssh sftp shell`. There is no shared default app name — each journalist
+  hosts on their own account.
+
+  **Auth:** `flyctl` reads credentials from either `flyctl auth login` (interactive, stored in `~/.fly/`)
+  or a `FLY_API_TOKEN` in the environment (create with `flyctl tokens create deploy`). For a headless /
+  automated run, put `FLY_API_TOKEN` (and `ATELIER_EMBED_APP`) in `.env` — Bun loads them into the
+  environment and `flyctl` picks them up. See `.env.example`.
 
 ## Gates
 

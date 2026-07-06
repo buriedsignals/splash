@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { embedSnippet, staticHtml } from "./export-code.mjs";
+import { embedSnippet, staticHtml, isEphemeralPath } from "./export-code.mjs";
 
 describe("staticHtml", () => {
   it("is a single self-contained document with the image inlined (no external refs)", () => {
@@ -25,5 +25,21 @@ describe("embedSnippet", () => {
   });
   it("throws on an unsupported extension", () => {
     expect(() => embedSnippet("data.csv")).toThrow(/unsupported/i);
+  });
+});
+
+describe("isEphemeralPath", () => {
+  it("flags temp / scratchpad destinations the journalist would lose", () => {
+    expect(isEphemeralPath("/tmp/co2-export")).toBe(true);
+    expect(
+      isEphemeralPath("/private/tmp/claude-501/session/scratchpad/x"),
+    ).toBe(true);
+    expect(isEphemeralPath("/var/folders/ab/xyz/T/out")).toBe(true);
+  });
+  it("accepts a stable project location", () => {
+    expect(isEphemeralPath("exports/co2-share")).toBe(false);
+    expect(isEphemeralPath("/Users/journalist/Atelier/exports/co2-share")).toBe(
+      false,
+    );
   });
 });

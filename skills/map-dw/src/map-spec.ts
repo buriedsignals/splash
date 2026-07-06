@@ -5,6 +5,12 @@ export interface GradientStop {
   position: number; // 0..1
 }
 
+// Below this marker-extent span (degrees, max of lat/lon range), a locator is
+// sub-national / regional: map-dw's generalized basemap can render inland places
+// offshore at that zoom, so map-native (MapTiler, auto-fit, accurate coast) is the
+// correct producer. Mirrors suggest-chart's sub-national point-map rule.
+export const REGIONAL_EXTENT_DEG = 12;
+
 // Light → Okabe-Ito blue, colorblind-safe sequential. Used when no colorScale is given.
 export const DEFAULT_BLUE: GradientStop[] = [
   { color: "#deebf7", position: 0 },
@@ -248,6 +254,24 @@ export function validateMapSpec(
         )
           errors.push(`markers[${i}].color must be a hex value`);
       });
+      // Extent guardrail: steer a sub-national / regional locator to map-native,
+      // whose basemap renders coastlines accurately at that zoom (map-dw's does not).
+      const lats = (s.markers as Array<Record<string, unknown>>)
+        .map((m) => m?.lat)
+        .filter((v): v is number => typeof v === "number");
+      const lngs = (s.markers as Array<Record<string, unknown>>)
+        .map((m) => m?.lng)
+        .filter((v): v is number => typeof v === "number");
+      if (lats.length >= 1 && lngs.length >= 1) {
+        const span = Math.max(
+          Math.max(...lats) - Math.min(...lats),
+          Math.max(...lngs) - Math.min(...lngs),
+        );
+        if (span < REGIONAL_EXTENT_DEG)
+          warnings.push(
+            `locator extent spans ${span.toFixed(1)}° — map-dw's basemap generalizes coastlines at this zoom (inland places can render offshore); prefer map-native for a sub-national / regional point map`,
+          );
+      }
     }
   }
 

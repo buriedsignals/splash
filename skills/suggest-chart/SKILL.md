@@ -52,7 +52,17 @@ Producers: **dw-chart** (static Datawrapper chart — default), **chart-native**
    Static is the default (most readers do not interact). Escalate to interactive / scrolly / video ONLY on
    the named conditions.
 
-   **Map format ladder** (applied after Gate 5 routes to a map):
+   **Map element type FIRST — before the format ladder.** Branch on what the data is:
+   - **Point / locator / symbol data** (coordinates, located events/places — not region fills) that is
+     **sub-national or regional** (a country, a region, a city cluster) → **`map-native`**, regardless of
+     static/interactive. `map-native` emits a static PNG too, and its MapTiler basemap auto-fits and
+     renders coastlines accurately at any zoom — `map-dw`'s locator basemap generalizes the coast at wide
+     zoom, so inland places can render offshore. This mirrors the HARD RULE in the map-native POINT /
+     LOCATOR section. `map-dw` locator stays valid ONLY for wide national / continental / global point
+     maps (extent ≥ ~12°); `validateMapSpec` warns if you route a tighter locator to `map-dw`.
+   - **Choropleth data** (region fills) → apply the format ladder below.
+
+   **Map format ladder** (choropleth; applied after Gate 5 routes to a map):
    - **Static (Gate 1 — default):** → `map-dw`.
    - **Interactive (Gate 2:** exploration hook — "find your country", per-region hover at scale, web-only)
      or **Video (Gate 4:** temporal/spatial diffusion, social/vertical distribution) → `map-native`.

@@ -1,0 +1,51 @@
+body {
+  font:
+    16px/1.5 system-ui,
+    sans-serif;
+  max-width: 40rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+h1 {
+  margin-bottom: 0.25rem;
+}
+form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+label {
+  display: grid;
+  gap: 0.25rem;
+}
+input[type="text"],
+input[type="password"] {
+  padding: 0.5rem;
+  font: inherit;
+}
+fieldset {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+#runtimes {
+  display: grid;
+  gap: 0.5rem;
+}
+.runtime {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.runtime.disabled {
+  color: #999;
+}
+button {
+  padding: 0.75rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+small {
+  color: #666;
+  font-weight: 400;
+}
