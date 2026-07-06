@@ -20,4 +20,17 @@ describe("map-data derivation", () => {
   it("toCsv of an empty array is an empty string", () => {
     expect(toCsv([])).toBe("");
   });
+  it("round-trips a cell value containing a comma", () => {
+    expect(toRows(toCsv([{ city: "Washington, D.C.", pop: 700 }]))).toEqual([
+      { city: "Washington, D.C.", pop: 700 },
+    ]);
+  });
+  it("keeps a leading-zero code as a string", () => {
+    expect(toRows("code,value\n08,5")).toEqual([{ code: "08", value: 5 }]);
+  });
+  it("round-trips a cell value containing an embedded double-quote", () => {
+    expect(toRows(toCsv([{ note: 'she said "hi"' }]))).toEqual([
+      { note: 'she said "hi"' },
+    ]);
+  });
 });
