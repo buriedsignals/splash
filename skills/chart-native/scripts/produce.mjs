@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chartDistSub } from "../src/build-paths.ts";
 import { runProduceConformance } from "../src/core/produce-conformance.ts";
+import { REMOTION_PREFIX } from "../src/native-types.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -25,26 +26,9 @@ if (!type || !configPath || !outDir) {
   process.exit(1);
 }
 
-// type → the Remotion composition prefix (XReveal / XSquare / XPortrait). Several
-// keys don't PascalCase cleanly (pyramid → PopulationPyramid, grouped → GroupedBar).
-const PREFIX = {
-  line: "Line", bar: "Bar", scatter: "Scatter", pie: "Pie",
-  stacked: "StackedBar", slope: "Slope", grouped: "GroupedBar",
-  dumbbell: "Dumbbell", "stacked-area": "StackedArea", heatmap: "Heatmap",
-  histogram: "Histogram", diverging: "DivergingBar", waterfall: "Waterfall",
-  lollipop: "Lollipop", pyramid: "Pyramid", bullet: "Bullet",
-  "connected-scatter": "ConnectedScatter", marimekko: "Marimekko", radar: "Radar",
-  boxplot: "Boxplot", bump: "Bump", beeswarm: "Beeswarm", treemap: "Treemap",
-  "diverging-stacked": "DivergingStacked", sankey: "Sankey",
-  streamgraph: "Streamgraph", gantt: "Gantt", fan: "Fan", calendar: "Calendar",
-  waffle: "Waffle", lorenz: "Lorenz", candlestick: "Candlestick", chord: "Chord",
-  sunburst: "Sunburst", parallel: "Parallel", "dot-strip": "DotStrip",
-  violin: "Violin", arc: "Arc", "radial-bar": "RadialBar", combo: "Combo",
-  pictogram: "Pictogram",
-};
-const X = PREFIX[type];
+const X = REMOTION_PREFIX[type];
 if (!X) {
-  console.error(`produce: unknown type "${type}". Known: ${Object.keys(PREFIX).join(", ")}`);
+  console.error(`produce: unknown type "${type}". Known: ${Object.keys(REMOTION_PREFIX).join(", ")}`);
   process.exit(1);
 }
 
