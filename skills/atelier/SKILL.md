@@ -62,31 +62,64 @@ Only accepted proposals continue.
 
 ### 5. PRODUCTION
 
-For each validated visual, run the chosen producer with the suggest-chart spec (the produce commands
-in suggest-chart/SKILL.md). The producer emits its self-contained artifact(s) and runs its own render
-guardrails. Collect the output paths.
+PRODUCTION is a coded, **drop-proof** loop — you do NOT run producers one at a time from prose.
+You assemble the accepted proposals into one file and let `produce-all` produce every one of them,
+so a secondary proposal can never silently drop.
 
-**Before producing:** run the producer's spec validator (`validateChartSpec` for charts;
-`validateChoroplethConfig` / `validateLocatorConfig` / `validateSymbolConfig` for maps) and fix any
-warning — in particular a title that reads as a label rather than the insight — so a weak spec never
-reaches GATE 3.
+**5a. Validate each spec first.** For every accepted proposal, run the producer's spec validator
+(`validateChartSpec` for charts; `validateChoroplethConfig` / `validateLocatorConfig` /
+`validateSymbolConfig` / `validateMapSpec` for maps) and fix any warning — in particular a title that
+reads as a label rather than the insight — so a weak spec never reaches GATE 3.
 
-GATE 3 (render): show the ACTUAL render (open it / a screenshot) and get an explicit "ship it" before
-EXPORT. Verify quality, not just that it built.
+**5b. Assemble `exports/<slug>/accepted.json`** — an array, one entry per accepted proposal:
+`{ "id": "<stable-id>", "producer": "dw-chart|chart-native|map-dw|map-native|scrolly",
+"format": "static|interactive|video|scrolly", "spec": <the validated producer spec>,
+"provenance": "table|prose|none", "confirmedTable": <true ONLY after Gate 2b> }`.
+`producer` + `format` are what suggest-chart routed; `provenance` comes from suggest-article.
 
-**Producer commands (from suggest-chart/SKILL.md):**
-- `chart-native`: `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
-- `map-native`: run from `skills/map-native/` — `bun scripts/produce.mjs <config.json> <outDir> <format>` where `<format>` is the one suggest-chart routed (`static` | `reveal` | `story` | `scrolly` | `all`). ALWAYS pass it explicitly: an omitted flag now defaults to `static` (one PNG), never the full video set — so a video request that forgets the flag yields a wrong-but-cheap static, not a wrong-and-costly 9-render run.
-- `scrolly`: run from `skills/scrolly/` — `bun scripts/produce.mjs <config.json> <outDir>` → produces a single `scrolly.html` (no all|static flag)
-- `dw-chart` / `map-dw`: via their producer entry (Datawrapper API — token from `.env`)
+**5c. Produce everything at once** — report to a FILE (the gates and EXPORT read it back):
+```bash
+bun skills/atelier/scripts/produce-all.mjs exports/<slug>/accepted.json exports/<slug> \
+  > exports/<slug>/report.json
+```
+`produce-all` iterates EVERY proposal, dispatches to the right producer + format, and writes
+`{ results: [{ id, producer, format, status, outputs?, publicUrl?, reason?, error?, renderApproved }] }`.
+It exits non-zero only if some `status` is `"failed"`. (Redirecting to `report.json` is required — the
+report is the machine channel; producer progress goes to stderr, so stdout stays pure JSON.)
+Each proposal's artifacts land in a **per-proposal subdir** `exports/<slug>/<id>/` — that subdir (not the
+parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
+
+**5d. Act on each result's `status` (every accepted id appears — nothing is dropped):**
+- **`produced`** → go to GATE 3 for that visual.
+- **`needs-confirmation`** (a `provenance:"prose"` proposal not yet confirmed) → this is **Gate 2b**:
+  show the reconstructed table to the journalist, get an explicit OK, set that proposal's
+  `confirmedTable: true` in `accepted.json`, and re-run 5c. Never chart a prose figure unconfirmed.
+- **`needs-fallback`** (a native chart type chart-native cannot map) → re-emit a **dw-chart** `ChartSpec`
+  for that claim via suggest-chart, replace that proposal's `producer`/`spec` in `accepted.json`, re-run
+  5c. Do not hand-translate.
+- **`failed`** → surface the `error`; fix the spec or drop the proposal. Never ship a failed visual.
+
+**GATE 3 (render) — per produced visual.** Show the ACTUAL render (open it / a screenshot) and get an
+explicit "ship it". Verify quality, not just that it built. **After "ship it", record the approval:**
+```bash
+bun skills/atelier/scripts/gate-render.mjs exports/<slug>/report.json <id> <the-approved-artifact>
+```
+`gate-render` is the ONLY writer of the render approval, and EXPORT refuses any visual it has not
+approved — so an unseen or unapproved render can never ship.
+
+_(Under the hood `produce-all` dispatches to `chart-native/scripts/produce-from-spec.mjs`,
+`map-native/scripts/produce.mjs`, `scrolly/scripts/produce.mjs`, and the Datawrapper producers — you
+call `produce-all`, not them directly. An omitted map-native format still defaults to `static`, never
+the full video set.)_
 
 ### 6. EXPORT — GATE 4 (delivery depends on the visual's format)
 
 **Delivery location — stable, never the scratchpad.** Write every hand-over (export folder, mp4, PNG) to
 `exports/<slug>/` under the journalist's working directory (the atelier project root), NOT the session
 scratchpad — the scratchpad is temporary and gets cleaned, so the journalist would lose the deliverable
-(and cannot find it). After delivering, print the file/folder's ABSOLUTE path. `export-code.mjs` warns if
-the export path looks ephemeral.
+(and cannot find it). After delivering, print the file/folder's ABSOLUTE path. `export-code.mjs` refuses
+(non-zero) if the export path looks ephemeral. The ship scripts also refuse unless the proposal is
+`produced` AND render-approved (GATE 3 done) — pass the report + id so the gate can check.
 
 Branch on the format the journalist chose at CADRAGE / that `suggest-chart` routed to:
 
@@ -99,13 +132,13 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
   producer rendered). A static image IS the media — just give the file.
 - **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`):** only here do the
   three delivery forms apply — ask which the journalist wants:
-  - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs <outDir> exports/<slug>`.
+  - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs exports/<slug>/<id> exports/<slug>/<id>-export --results exports/<slug>/report.json --id <id>` (the source is the per-proposal build subdir from 5c).
     Hands over a folder with all the built files (`interactive.html`, `static.png`, `static.html`) + an
     `EMBED.md`. Embed the interactive visual with the `<iframe src="interactive.html">` snippet.
   - **HTML statique (one self-contained file, no JS):** the `static.html` produced by `export-code`
     (the image inlined) — a single dependency-free file that embeds in any CMS/email/offline.
   - **Composant en lien embed (hosted, non-technical):** run
-    `bun skills/atelier/scripts/deploy-embed.mjs <outDir>/interactive.html <slug> <appName>` → an
+    `bun skills/atelier/scripts/deploy-embed.mjs exports/<slug>/<id>/interactive.html <slug> --results exports/<slug>/report.json --id <id> <appName>` → an
     iframe-ready URL to the hosted interactive component. The host is the **journalist's OWN fly.io app**
     (not a shared central host) — pass its name as the 3rd argument or via `$ATELIER_EMBED_APP`. If the
     journalist has not set up their fly.io host yet, offer the code-source / static-HTML forms now and say
