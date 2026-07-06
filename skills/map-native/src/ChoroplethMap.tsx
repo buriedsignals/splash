@@ -40,6 +40,7 @@ if (!import.meta.env.VITE_MAPTILER_KEY)
 maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 export interface ChoroplethConfig extends ChoroplethData {
+  basemap?: string;
   title?: string;
   description?: string;
   unit?: string; // the long legend label, e.g. "share of electricity… (%)"
@@ -195,12 +196,12 @@ export const ChoroplethMap: React.FC<Props> = ({
       center: [10, 50] as [number, number],
       zoom: 3,
       interactive,
-      attributionControl: true,
+      attributionControl: {}, // {} = default attribution (maplibre types reject `true`)
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
       fadeDuration: 0,
-    } as Parameters<typeof maptilersdk.Map>[0]);
+    } as ConstructorParameters<typeof maptilersdk.Map>[0]);
 
     mapRef.current = map;
 

@@ -120,7 +120,7 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
       maptilerLogo: false,
       fadeDuration: 0,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    } as Parameters<typeof maptilersdk.Map>[0] & {
+    } as ConstructorParameters<typeof maptilersdk.Map>[0] & {
       canvasContextAttributes: unknown;
     });
 
@@ -198,10 +198,11 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
               b.camera as maptilersdk.LngLatBoundsLike,
               { padding: mapFrame.pad },
             );
-            if (!result) return { center: [10, 50], zoom: 4 };
+            if (!result || !result.center) return { center: [10, 50], zoom: 4 };
+            const c = maptilersdk.LngLat.convert(result.center);
             return {
-              center: [result.center.lng, result.center.lat],
-              zoom: result.zoom,
+              center: [c.lng, c.lat],
+              zoom: result.zoom ?? 2,
             };
           });
 
@@ -316,7 +317,7 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
       <MapFrame
         title={config.title ?? ""}
         description={config.description}
-        source={config.source ?? { name: "" }}
+        source={{ name: config.source?.name ?? "", url: config.source?.url }}
         width={width}
         height={height}
         responsive={false}

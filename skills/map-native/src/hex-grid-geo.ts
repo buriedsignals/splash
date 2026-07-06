@@ -18,6 +18,8 @@ export interface HexGridData {
   binShape?: "hex" | "square";
   aggregate?: "count" | "sum" | "mean";
   cellSizeKm?: number;
+  // A named registry palette or a custom CVD-safe ramp; falls back to BLUES when absent.
+  palette?: string | string[];
 }
 export interface HexCell {
   feature: GeoJSON.Feature;
@@ -155,11 +157,8 @@ export function computeHexGrid(data: HexGridData): HexGridLayout {
   // scale AND honours the config's `palette` (semantic aliases resolved), so a subject-fit
   // ramp (amber for heat/seismicity, greens for environment…) is used instead of always
   // BLUES. Falls back to BLUES when no palette is set.
-  const ramp = (data as { palette?: string | string[] }).palette
-    ? resolvePalette(
-        "sequential",
-        (data as { palette: string | string[] }).palette,
-      ).ramp
+  const ramp = data.palette
+    ? resolvePalette("sequential", data.palette).ramp
     : BLUES;
   const values = raw.map((c) => c.value);
   const min = Math.min(...values),

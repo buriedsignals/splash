@@ -35,6 +35,9 @@ const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 // ---------------------------------------------------------------------------
 
 export interface ScrollyMapConfig extends ChoroplethData {
+  // Optional discriminant: choropleth is the default map when no `type` is set. Declaring it
+  // (optional) makes the Scrolly union discriminable so `config.type === "symbol"` etc. narrow.
+  type?: "choropleth";
   title?: string;
   description?: string;
   unit?: string;
@@ -123,12 +126,12 @@ export const ScrollyMap: React.FC<{
       dragRotate: false,
       boxZoom: false,
       keyboard: false,
-      attributionControl: true,
+      attributionControl: {}, // {} = default attribution (maplibre types reject `true`)
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
       fadeDuration: 0,
-    } as Parameters<typeof maptilersdk.Map>[0]);
+    } as ConstructorParameters<typeof maptilersdk.Map>[0]);
 
     // Expose for smoke test.
     (window as unknown as Record<string, unknown>)["__map__"] = map;
@@ -168,10 +171,11 @@ export const ScrollyMap: React.FC<{
           b.camera as maptilersdk.LngLatBoundsLike,
           { padding: 48 },
         );
-        if (!result) return null;
+        if (!result || !result.center) return null;
+        const c = maptilersdk.LngLat.convert(result.center);
         return {
-          center: [result.center.lng, result.center.lat] as [number, number],
-          zoom: result.zoom,
+          center: [c.lng, c.lat] as [number, number],
+          zoom: result.zoom ?? 2,
         };
       });
 

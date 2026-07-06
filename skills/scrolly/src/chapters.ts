@@ -15,7 +15,9 @@ export interface ScrollyStep {
 export interface ScrollyStory {
   title: string;
   description?: string;
-  source?: { name: string; url: string };
+  // A cited source must carry a name (conformance relies on it); the URL is optional —
+  // not every source is linkable. Matches map-native's MapFrame furniture shape.
+  source?: { name: string; url?: string };
   visual: VisualKind;
   steps: ScrollyStep[];
 }
@@ -37,7 +39,7 @@ export function mapStoryToChapters(
   meta: {
     title: string;
     description?: string;
-    source?: { name: string; url: string };
+    source?: { name: string; url?: string };
     regionsWithData: number;
   },
 ): ScrollyStory {

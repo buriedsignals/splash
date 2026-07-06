@@ -29,14 +29,16 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
 const NUM_BINS = 5;
 
-export interface ChoroplethRevealProps {
+// A type alias (not an interface) so it is assignable to Remotion's
+// `Props extends Record<string, unknown>` constraint on <Composition>.
+export type ChoroplethRevealProps = {
   config: ChoroplethData & {
     title?: string;
     unit?: string;
     scaleType?: "sequential" | "diverging";
     palette?: string | string[];
   };
-}
+};
 
 export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
   config,
@@ -73,7 +75,7 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
       maptilerLogo: false,
       fadeDuration: 0,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    } as Parameters<typeof maptilersdk.Map>[0] & {
+    } as ConstructorParameters<typeof maptilersdk.Map>[0] & {
       canvasContextAttributes: unknown;
     });
 

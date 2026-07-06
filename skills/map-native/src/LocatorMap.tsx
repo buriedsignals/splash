@@ -94,7 +94,7 @@ export const LocatorMap: React.FC<Props> = ({
       config.filters
         ? deriveFilterOptions(
             config.filters,
-            config.markers as Record<string, unknown>[],
+            config.markers as unknown as Record<string, unknown>[],
           )
         : [],
     [config],
@@ -209,7 +209,7 @@ export const LocatorMap: React.FC<Props> = ({
       ],
       zoom: 3,
       interactive,
-      attributionControl: true,
+      attributionControl: {}, // {} = default attribution (maplibre types reject `true`)
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
@@ -334,7 +334,11 @@ export const LocatorMap: React.FC<Props> = ({
         id: LABEL_LAYER,
         type: "symbol",
         source: "locator",
-        filter: ["all", glyphFilter, ["==", ["get", "__showLabel"], true]],
+        filter: [
+          "all",
+          glyphFilter,
+          ["==", ["get", "__showLabel"], true],
+        ] as maptilersdk.FilterSpecification,
         layout: {
           "text-field": ["get", "label"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
@@ -636,7 +640,7 @@ export const LocatorMap: React.FC<Props> = ({
       <MapFrame
         title={config.title ?? ""}
         description={config.description}
-        source={config.source ?? { name: "" }}
+        source={{ name: config.source?.name ?? "", url: config.source?.url }}
         width={containerSize.w}
         height={containerSize.h}
         responsive

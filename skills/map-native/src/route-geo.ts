@@ -109,7 +109,10 @@ export function computeRoute(
       turf.booleanPointInPolygon(origin, f as GeoJSON.Feature<GeoJSON.Polygon>)
     )
       return 0; // route origin already inside → stop 0
-    const inter = turf.lineIntersect(line, f);
+    const inter = turf.lineIntersect(
+      line,
+      f as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>,
+    );
     if (!inter.features.length) return Infinity;
     return Math.min(
       ...inter.features.map((pt) =>
@@ -175,7 +178,10 @@ export function computeRouteReveal(
       turf.booleanPointInPolygon(origin, f as GeoJSON.Feature<GeoJSON.Polygon>)
     )
       return 0;
-    const inter = turf.lineIntersect(line, f);
+    const inter = turf.lineIntersect(
+      line,
+      f as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>,
+    );
     if (!inter.features.length) return Infinity;
     return Math.min(
       ...inter.features.map((pt) =>
