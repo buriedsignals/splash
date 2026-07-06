@@ -104,6 +104,70 @@ function collectOutputs(dir: string): string[] {
     .map((name) => join(dir, name));
 }
 
+function toText(buf: Buffer | string | undefined): string {
+  return typeof buf === "string" ? buf : (buf?.toString("utf8") ?? "");
+}
+
+// Last N lines of a stream, for a bounded error/report dump (mirrors scripts/check.mjs's
+// own `.slice(-30)` convention for failure output).
+function tail(text: string, lines = 30): string {
+  return text.split("\n").slice(-lines).join("\n").trim();
+}
+
+type ExecOutcome =
+  | { status: "produced" }
+  | { status: "needs-fallback"; reason: string }
+  | { status: "failed"; error: string };
+
+// Runs a file-based producer script and normalizes its outcome. Captures BOTH stdout
+// and stderr — NEITHER is ever inherited — so a producer's own build/render logs
+// (chart-native's Vite output, map-native's "[produce map] building…", etc.) can never
+// interleave with produce-all's own final JSON.stringify(report) line on the real
+// stdout. Exit code 2 is chart-native's reliable FALLBACK_TO_DW signal; we still parse
+// the captured stderr for the human-readable reason line (present whenever the
+// fallback is chart-native's — the only producer that emits it) and fall back to a
+// generic reason if a future producer ever exits 2 without one.
+export function runProducerScript(
+  cmd: string,
+  args: string[],
+  cwd: string,
+): ExecOutcome {
+  try {
+    execFileSync(cmd, args, {
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"],
+      maxBuffer: 1024 * 1024 * 20,
+    });
+    return { status: "produced" };
+  } catch (e) {
+    const execErr = e as NodeJS.ErrnoException & {
+      stdout?: Buffer | string;
+      stderr?: Buffer | string;
+      status?: number | null;
+    };
+    const stdoutText = toText(execErr.stdout);
+    const stderrText = toText(execErr.stderr);
+    const fallbackLine = stderrText
+      .split("\n")
+      .find((line) => line.includes("FALLBACK_TO_DW"));
+    if (execErr.status === 2) {
+      return {
+        status: "needs-fallback",
+        reason:
+          fallbackLine?.trim() ??
+          "native type unsupported (exit code 2, FALLBACK_TO_DW)",
+      };
+    }
+    const dump = [
+      stdoutText && `stdout:\n${tail(stdoutText)}`,
+      stderrText && `stderr:\n${tail(stderrText)}`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    return { status: "failed", error: dump || execErr.message || String(e) };
+  }
+}
+
 function dispatchFileBased(
   producer: FileBasedProducer,
   spec: NativeSpec | Record<string, unknown>,
@@ -117,37 +181,12 @@ function dispatchFileBased(
   const configPath = join(tmpDir, "config.json");
   writeFileSync(configPath, JSON.stringify(spec, null, 2));
 
-  try {
-    execFileSync(
-      "bun",
-      [SCRIPT[producer], configPath, absOutDir, formatFlag(producer, format)],
-      {
-        cwd: SKILL_DIR[producer],
-        // stdout inherited (live build/render logs, useful for a real run); stderr
-        // piped so a failure's message — including the FALLBACK_TO_DW line — is
-        // captured on the thrown error instead of just printed and lost. A generous
-        // maxBuffer avoids truncating a large failure dump (build stacks, mostly).
-        stdio: ["ignore", "inherit", "pipe"],
-        maxBuffer: 1024 * 1024 * 20,
-      },
-    );
-  } catch (e) {
-    const execErr = e as NodeJS.ErrnoException & { stderr?: Buffer | string };
-    const stderrText =
-      typeof execErr.stderr === "string"
-        ? execErr.stderr
-        : (execErr.stderr?.toString("utf8") ?? "");
-    const fallbackLine = stderrText
-      .split("\n")
-      .find((line) => line.includes("FALLBACK_TO_DW"));
-    if (fallbackLine) {
-      return { status: "needs-fallback", reason: fallbackLine.trim() };
-    }
-    return {
-      status: "failed",
-      error: stderrText.trim() || execErr.message || String(e),
-    };
-  }
+  const outcome = runProducerScript(
+    "bun",
+    [SCRIPT[producer], configPath, absOutDir, formatFlag(producer, format)],
+    SKILL_DIR[producer],
+  );
+  if (outcome.status !== "produced") return outcome;
 
   return { status: "produced", outputs: collectOutputs(absOutDir) };
 }

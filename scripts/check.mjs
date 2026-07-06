@@ -15,7 +15,7 @@ const TEST_DIRS = [
   "skills/map-dw/src",
   "skills/suggest-chart/eval",
   "skills/suggest-article/eval",
-  "skills/atelier/scripts",
+  "skills/atelier",
 ];
 
 const rows = [];
