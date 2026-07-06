@@ -5,6 +5,7 @@
   "description": "Open-source visual storytelling for every newsroom — article/data to a finished, exported visual.",
   "license": "MIT",
   "scripts": {
-    "check": "bun scripts/check.mjs"
+    "check": "bun scripts/check.mjs",
+    "release:check": "bun scripts/preflight-release.mjs"
   }
 }
