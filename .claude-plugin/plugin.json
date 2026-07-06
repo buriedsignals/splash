@@ -1,0 +1,9 @@
+{
+  "name": "atelier",
+  "description": "Open-source visual storytelling for every newsroom. From an article and/or data to a finished, exported visual (chart, map, scrolly, video) — orchestrates ANALYSE → CADRAGE → PROPOSITION → PRODUCTION → EXPORT with human gates. No code to write.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Remy Dumas"
+  },
+  "license": "MIT"
+}
