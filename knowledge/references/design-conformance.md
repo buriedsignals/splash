@@ -18,6 +18,12 @@ A produced chart MUST satisfy:
 3. **Direct labels** over legends where the chart supports value labels.
 4. **Number formatting**: strip noise, abbreviate (`12.8k`, not `12,831`).
 5. **Source cited**: name + url.
+
+**Language (suggester-enforced, not a code guard):** every reader-facing string — title, intro,
+direct labels, annotations, alt text, the source label — is written in the **article's / journalist's
+language**, detected upstream; never default the furniture to English. Authored text, so it is enforced
+by `suggest-article` / `suggest-chart`, not by the conformance code (proper nouns and data values keep
+their original form).
 6. **Alt text = the insight, not the structure** (WCAG 1.1.1) → goes to DW `aria-description`.
 7. **Contrast** WCAG ≥ 4.5:1 for text (DW defaults satisfy this; don't override to low-contrast).
 

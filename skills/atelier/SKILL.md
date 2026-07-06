@@ -147,5 +147,6 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
 - Never export before the render OK (gate 3).
 - Never invent data or fabricate a dataset attribution.
 - Never conduct the dialogue in a language other than the journalist's (detect from first message).
+- Never let the produced visual's furniture (title, intro, source label, scrolly captions) default to English — the detected language is threaded to suggest-article and suggest-chart so the OUTPUT matches the dialogue, not only the chat.
 - Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate.
 - Never name a chart type in the intent passed to suggest-article or suggest-chart (on the guided path).
