@@ -1,6 +1,11 @@
 // The two map DATA views (map-dw uses a CSV string, map-native uses a rows array).
 // Only the DATA payload is mechanically derivable; the geo binding (basemap, join key)
 // is producer-specific and supplied by the agent — NOT derived here.
+//
+// STATUS: not yet wired into the spine — routed specs already carry `data` as a CSV string,
+// so no current call site imports this. Reserved for the deferred format-escalation follow-on
+// (converting a map-dw CSV spec ⇄ a map-native rows config). Kept rather than removed because
+// the RFC 4180 round-trip is correct + tested and that feature is near-term.
 export interface Row {
   [col: string]: string | number;
 }

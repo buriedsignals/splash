@@ -3,6 +3,11 @@
 > **Reprise de session :** lis CE fichier en entier + `git log --oneline -15` + la spec-parapluie
 > `docs/superpowers/specs/2026-06-14-atelier-architecture-design.md`. Tout le contexte tient ici.
 > (Mémoire Claude Code : non portable vers ce repo — la source de vérité, c'est ce CLAUDE.md + les specs.)
+>
+> **★ État le plus récent : voir la section « État courant — 2026-07-06 » EN FIN DE FICHIER** — état actuel de
+> `main` + roadmap. Le reste est un log historique daté (des chiffres anciens sont périmés, ex. « chart-native
+> 3 types » = en réalité 41 ; « suggester non mergé » = mergé). Ce fichier de 40K+ mériterait d'être scindé
+> (état-courant vs changelog) — flaggé par l'audit 2026-07-06.
 
 ## Quoi / pourquoi (la bourse)
 
@@ -220,3 +225,32 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - **★ Couche KB par-format map créée** : `knowledge/references/map/formats/{static,interactive,video}.md` (miroir des charts ; manquait depuis slice 4). Le KB map a maintenant les 3 couches : global + par-type + par-format. `video.md` alimente le Group B.
 - **Principe gravé (mémoire `feedback_system_improvement_loop` mise à jour)** : tout retour = 4 livrables couplés (code + conformité + KB **à la bonne couche** global/type/format + harnais), écrit/distribué au bon endroit, comme les charts.
 - **RESTE — Group B** : vidéo storytellée (système de modes caméra `reveal-simple | guided-tour | …` choisi par l'IA selon l'article ; réutilise `deriveMapStory`/`deriveSymbolStory` ; intègre l'aesthetic `map-explainer` de Tom — tracé qui se dessine + régions/villes en séquence) **+ scrolly sortable en vidéo**. Spec à écrire.
+
+## ★ État courant — 2026-07-06 (LIS CECI EN PREMIER pour l'état de `main`)
+
+Grosse session **audit + refonte**. Tout mergé dans `main`, gate `bun run check` **13/13 vert**, zéro mention vendor dans les commits de la session.
+
+**Sol technique (le plancher qui manquait) :**
+- **CI + `bun run check`** racine (`scripts/check.mjs` : tsc des 4 skills à tsconfig + les 9 suites de test) ; `.github/workflows/ci.yml`. Le gate couvre maintenant les tests d'orchestration (`skills/atelier` entier).
+- **tsc réparé** sur `map-native` + `scrolly` : 220 erreurs → **0** (dont un vrai bug latent camera `LngLatLike`), `@types/react-dom`/`@types/node` déclarés, zéro `any` introduit.
+- **LICENSE (MIT)** + **README** racine (manquaient — bloquaient la sortie MIT).
+- test rouge `map-dw` réparé ; tests API `dw-chart` self-skip sans token (clean checkout vert).
+- **`docs/RELEASE.md`** = checklist pré-release + **`scripts/scrub-trailers.sh`** (scrub des trailers `<vendor>-Session` — préparé, PAS exécuté ; à lancer au pré-release).
+
+**Correction :** `map-native produce.mjs` défaut `static` (fin du footgun 9-renders vidéo) ; **i18n** — le suggester émet les libellés dans la langue de l'article (règles dans les 3 SKILL.md + KB `design-conformance.md`). F-color vérifié déjà résolu (note d'audit périmée).
+
+**★ Spine d'orchestration déterministe (le gros morceau) — `skills/atelier/src/` + `scripts/` :**
+- Conçu (spec `docs/superpowers/specs/2026-07-06-deterministic-orchestration-design.md`, **validé au feu adverse** → design rendu plus lean/honnête), planifié (`docs/.../plans/2026-07-06-deterministic-orchestration.md`), **construit en 7 tâches TDD sous-agents, chacune reviewée** (ledger : `.superpowers/sdd/progress.md`).
+- `produce-all.mjs`/`produce-all.ts` : **boucle in-code drop-proof** (chaque proposition acceptée → rapport structuré, jamais droppée). `adapters.ts` : dispatch par producteur (file/cloud), `FALLBACK_TO_DW` via exit-2, **stdout capturé → rapport JSON pur**. `gate.ts`/`gate-render.mjs` : seul écrivain de `renderApproved` (sha256, audit-marker). `export-guard.ts` **câblé DANS** `export-code.mjs`/`deploy-embed.mjs` (refuse avant tout write/upload sauf produced + render-approved). `map-data.ts` : round-trip CSV RFC4180 — **pas encore consommé** (réservé au futur format-escalation).
+- **Câblé dans `atelier/SKILL.md`** (PRODUCTION/EXPORT pilotent le spine : `accepted.json` → `produce-all` → statut → `gate-render` → export gardé) + **prouvé e2e sur un vrai chart Datawrapper** (a attrapé un vrai bug de chemin, corrigé — les outputs sont dans `exports/<slug>/<id>/`).
+- **Le review-loop a attrapé de VRAIS bugs** (3 corruptions CSV, le gate qui ne lançait pas les tests, la pollution stdout, une commande cassée dans EMBED.md).
+
+**★ Recadrage archi (Rémy, prioritaire) :** atelier = **NOUVEAU projet nourri par l'expérience viznews**, PAS une absorption/consolidation. On ne porte rien depuis viznews, on ne le touche pas.
+
+**PROCHAINS follow-ons (session fraîche recommandée) :**
+1. **Design-bearing (→ brainstorming)** : **conformance-au-produce** (extraire un résolveur couleur partagé, puis câbler `check*Conformance` dans `produce` — aujourd'hui test-only) ; **couture 4→41 types natifs** (table-driven `spec-to-config` + test de complétude : seuls bar/line/scatter/pie sont atteignables de bout en bout).
+2. **Contenu** : export-time hash enforcement + `produce-all` qui clear `renderApproved` au re-produce ; produire/surfacer les propositions secondaires acceptées (② n'en produit qu'une).
+3. **Release MIT** : `scripts/scrub-trailers.sh --yes` ; pin `REPO_URL` de l'installeur ; retirer la clé en clair de `~/.zshrc`.
+4. **Doc** : scinder ce CLAUDE.md (état-courant vs changelog).
+
+**Caveat honnête maintenu :** l'éval du suggester reste **auto-référentielle** (on écrit cas+gold ; ② et le juge = agents) → instrument d'amélioration *relative*, pas de vérité absolue. Renfort futur = corpus tiers + juge sur le **rendu** (pas le JSON).
