@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Each skill is self-contained with its own dependencies. Install per skill
+      # (no root workspace yet); cross-skill imports resolve against these installs.
+      - name: Install skill dependencies
+        run: |
+          for d in \
+            skills/dw-chart \
+            skills/chart-native \
+            skills/map-native \
+            skills/scrolly \
+            skills/suggest-chart/eval \
+            skills/map-dw/eval \
+            skills/suggest-article/eval; do
+            echo "::group::bun install $d"
+            (cd "$d" && bun install)
+            echo "::endgroup::"
+          done
+
+      # Typecheck + full test suite. Datawrapper producer tests self-skip without a
+      # token, so this is green without secrets.
+      - name: Check
+        run: bun run check
