@@ -26,6 +26,13 @@ by `suggest-article` / `suggest-chart`, not by the conformance code (proper noun
 their original form).
 6. **Alt text = the insight, not the structure** (WCAG 1.1.1) → goes to DW `aria-description`.
 7. **Contrast** WCAG ≥ 4.5:1 for text (DW defaults satisfy this; don't override to low-contrast).
+   **Label text carries the value, the MARK carries the hue.** A text label (direct label, annotation,
+   highlighted-row label) must meet 4.5:1 on its background → it uses a text-safe near-black ink, NOT a
+   data hue that fails contrast. Emphasise a highlighted label by weight/position and by colouring its
+   MARK (dot, line, bar), not by colouring the label text. Several Okabe-Ito hues fail 4.5:1 as TEXT on
+   white (e.g. vermillion `#D55E00` = 3.87:1) — valid as marks, not as label text; a data-hue label must
+   itself be ≥ 4.5:1 or carry a credited halo (which the conformance check does not model today).
+   Enforced at produce for chart-native via `resolveConformanceColors` + the per-type checks.
 
 DW field mapping (used by `spec-to-metadata.ts`): title→`title`; insight→`describe.intro`;
 alt→`describe.aria-description`; source→`describe.source-name`/`source-url`; number format→`describe.number-format`;

@@ -91,11 +91,12 @@ export function resolveConformanceColors(
     case "histogram": {
       // HistogramChart.tsx: bars are a FIXED `COLORS.line` (HistogramConfig has
       // no baseColor field — config.baseColor must NOT leak through). The median
-      // annotation is a fixed `OKABE_ITO.vermillion` accent, ALWAYS rendered as
-      // the "median N unit" label TEXT.
+      // LINE is a fixed `OKABE_ITO.vermillion` accent (a mark, not text); the
+      // "median N unit" label TEXT is `COLORS.ink` (WCAG-safe), kept legible over
+      // the bars by a white halo.
       return {
         data: COLORS.line,
-        text: [COLORS.ink, COLORS.muted, OKABE_ITO.vermillion],
+        text: [COLORS.ink, COLORS.muted],
         bg,
       };
     }
@@ -120,13 +121,10 @@ export function resolveConformanceColors(
 
     case "lollipop": {
       // LollipopChart.tsx: fixed `BASE = OKABE_ITO.blue` for the stem/dot (no
-      // baseColor field). Value-label text is COLORS.ink by default, or the fixed
-      // `ACCENT = OKABE_ITO.vermillion` for the highlighted row (`highlightLabel`).
-      const highlighted = readString(config.highlightLabel) != null;
-      const text = highlighted
-        ? [COLORS.ink, COLORS.muted, OKABE_ITO.vermillion]
-        : [COLORS.ink, COLORS.muted];
-      return { data: OKABE_ITO.blue, text, bg };
+      // baseColor field). ALL category/value label TEXT is `COLORS.ink` — the
+      // highlighted row is emphasised by the vermillion MARK (stem/dot) + bold
+      // weight, NOT by colouring the label text (which fails WCAG contrast).
+      return { data: OKABE_ITO.blue, text: [COLORS.ink, COLORS.muted], bg };
     }
   }
 }

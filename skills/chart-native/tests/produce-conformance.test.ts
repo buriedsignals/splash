@@ -29,30 +29,22 @@ describe("runProduceConformance — the 7 wired types pass on their shipped samp
   }
 });
 
-// FINDING (surfaced by this change, not fixed by it — see conformance-report.md):
-// OKABE_ITO.vermillion (#D55E00) on white is 3.87:1, below the 4.5:1 WCAG minimum.
-// histogram's median label and lollipop's highlighted label both render TEXT in
-// this colour — a real, pre-existing gap the old test-only checks never caught
-// because their fixture `text` arrays omitted the accent. produce.mjs WARNS
-// (does not fail-hard) on exactly this known message, per the task's instruction
-// not to break the producer over a pre-existing violation; any OTHER violation on
-// these two types still fails hard (see the "catches real violations" describe
-// block below, which proves that).
-describe("runProduceConformance — known pre-existing sample violation (flagged, not fixed here)", () => {
-  it("histogram: the median label's fixed vermillion accent fails WCAG contrast on white", () => {
+// The histogram median label and lollipop highlighted-row label USED to render TEXT in
+// OKABE_ITO.vermillion (#D55E00, 3.87:1 on white < 4.5:1) — a real a11y gap the old
+// test-only checks missed (their fixture `text` arrays omitted the accent) and that
+// conformance-at-produce surfaced. FIXED: those labels now render in COLORS.ink; the
+// vermillion stays on the mark (stem/dot, median line). Both types now pass at produce.
+describe("runProduceConformance — the vermillion-text a11y fix (labels now WCAG-safe)", () => {
+  it("histogram: the median label is now ink — conformant, 0 violations", () => {
     const r = runProduceConformance("histogram", histogramSample);
     expect(r.checked).toBe(true);
-    expect(r.violations).toEqual([
-      "text colour #D55E00 contrast 3.87:1 on #FFFFFF < 4.5:1",
-    ]);
+    expect(r.violations).toEqual([]);
   });
 
-  it("lollipop: the highlighted row's fixed vermillion accent fails WCAG contrast on white", () => {
+  it("lollipop: the highlighted row's label is now ink — conformant, 0 violations", () => {
     const r = runProduceConformance("lollipop", lollipopSample);
     expect(r.checked).toBe(true);
-    expect(r.violations).toEqual([
-      "text colour #D55E00 contrast 3.87:1 on #FFFFFF < 4.5:1",
-    ]);
+    expect(r.violations).toEqual([]);
   });
 });
 

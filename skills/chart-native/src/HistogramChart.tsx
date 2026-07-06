@@ -68,7 +68,16 @@ export function HistogramChart({
     bottom: 56, // bin-edge axis, clear of the source line below
     left: 40, // count axis
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -275,7 +284,7 @@ function HistogramSvg({
             textAnchor="middle"
             fontSize={ts.axis}
             fontWeight={700}
-            fill={MEDIAN}
+            fill={COLORS.ink}
             stroke="#fff"
             strokeWidth={3 * sc}
             style={{ paintOrder: "stroke" }}
