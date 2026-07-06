@@ -13,7 +13,9 @@ folder. The installer is then at `https://<org>.github.io/atelier/installer/`.
 
 ## Release smoke test (manual, required before announcing the URL)
 On a clean macOS user account:
-1. Open the install URL, pick Claude Code, paste a real Anthropic key + MapTiler + Datawrapper.
+1. Open the install URL; confirm each runtime radio sits inline with its label (Claude Code
+   selected, the others greyed "coming soon"). Pick Claude Code, paste a real Anthropic key +
+   MapTiler + Datawrapper.
 2. Download and double-click `atelier-setup.command`.
 3. Confirm: Homebrew, Bun, and Claude Code install; `~/Atelier` is cloned; `~/Atelier/.env`
    holds the keys; the final message prints the launch command.
