@@ -161,13 +161,13 @@ export const HexGridMap: React.FC<Props> = ({
       center: [10, 50] as [number, number],
       zoom: 3,
       interactive,
-      attributionControl: true,
+      attributionControl: {}, // {} = default attribution (maplibre types reject `true`)
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
       fadeDuration: 0,
-    } as Parameters<typeof maptilersdk.Map>[0]);
+    } as ConstructorParameters<typeof maptilersdk.Map>[0]);
 
     mapRef.current = map;
 
@@ -431,7 +431,7 @@ export const HexGridMap: React.FC<Props> = ({
       <MapFrame
         title={config.title ?? ""}
         description={config.description}
-        source={config.source ?? { name: "" }}
+        source={{ name: config.source?.name ?? "", url: config.source?.url }}
         width={containerSize.w}
         height={containerSize.h}
         responsive

@@ -36,7 +36,9 @@ const config:
 
 // Expose config type for the smoke harness — lets it assert the correct layer id
 // without guessing from the HTML.
-(window as any).__config_type__ = config.type;
+// Chart configs carry `nativeType` instead of `type`; expose `type` only when present.
+(window as unknown as Record<string, unknown>).__config_type__ =
+  "type" in config ? config.type : undefined;
 
 const root = document.getElementById("root");
 if (!root) throw new Error("no #root element");

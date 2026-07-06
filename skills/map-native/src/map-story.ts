@@ -239,7 +239,12 @@ export function magnitudeRevealRows(
   const desc = [...withData].sort(
     (a, b) => b.value - a.value || a.key.localeCompare(b.key),
   );
-  const leaders = desc.slice(0, Math.min(3, desc.length)).map((r, i) => ({
+  const leaders: {
+    key: string;
+    value: number;
+    rank: number;
+    rankRole: "leader" | "tail";
+  }[] = desc.slice(0, Math.min(3, desc.length)).map((r, i) => ({
     key: r.key,
     value: r.value,
     rank: i + 1,

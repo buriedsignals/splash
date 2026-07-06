@@ -140,13 +140,13 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
       center: [90, 27] as [number, number],
       zoom: 4,
       interactive,
-      attributionControl: true,
+      attributionControl: {}, // {} = default attribution (maplibre types reject `true`)
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
       fadeDuration: 0,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    } as Parameters<typeof maptilersdk.Map>[0]);
+    } as ConstructorParameters<typeof maptilersdk.Map>[0]);
 
     mapRef.current = map;
 

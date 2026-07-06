@@ -29,6 +29,7 @@ import { Composition } from "remotion";
 import { HarnessCheck } from "../../src/components/HarnessCheck";
 import { ChoroplethStory } from "../../src/components/ChoroplethStory";
 import { SymbolStory } from "../../src/components/SymbolStory";
+import type { SymbolConfig } from "../../src/SymbolMap";
 import { SymbolReveal } from "../../src/components/SymbolReveal";
 import { ChoroplethReveal } from "../../src/components/ChoroplethReveal";
 import { RouteReveal } from "../../src/components/RouteReveal";
@@ -88,7 +89,9 @@ const scrollyMeta = ({ props }: { props: { config: any } }) => ({
   ),
 });
 
-const symbolDefaultProps = { config: sampleSymbol };
+// The JSON import widens `type` to `string`; assert the sample back to SymbolConfig
+// (its `type` is "symbol" at rest) so the composition's `{ config: SymbolConfig }` prop matches.
+const symbolDefaultProps = { config: sampleSymbol as SymbolConfig };
 
 const ROUTE_REVEAL_FRAMES = routeRevealFrames(
   computeRouteReveal(sampleRoute as any, world as any).territories.length,

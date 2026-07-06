@@ -132,7 +132,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
       maptilerLogo: false,
       fadeDuration: 0,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    } as Parameters<typeof maptilersdk.Map>[0] & {
+    } as ConstructorParameters<typeof maptilersdk.Map>[0] & {
       canvasContextAttributes: unknown;
     });
 
@@ -215,10 +215,11 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
           b.camera as maptilersdk.LngLatBoundsLike,
           { padding: mapFrame.pad },
         );
-        if (!result) return { center: [10, 20], zoom: 2 };
+        if (!result || !result.center) return { center: [10, 20], zoom: 2 };
+        const c = maptilersdk.LngLat.convert(result.center);
         return {
-          center: [result.center.lng, result.center.lat],
-          zoom: result.zoom,
+          center: [c.lng, c.lat],
+          zoom: result.zoom ?? 2,
         };
       });
 
@@ -355,7 +356,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
       <MapFrame
         title={config.title ?? ""}
         description={config.description}
-        source={config.source ?? { name: "" }}
+        source={{ name: config.source?.name ?? "", url: config.source?.url }}
         width={width}
         height={height}
         responsive={false}

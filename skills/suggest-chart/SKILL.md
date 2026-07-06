@@ -19,6 +19,14 @@ Producers: **dw-chart** (static Datawrapper chart — default), **chart-native**
 
 - Data (CSV or a profile of it) + a one-line **intent** ("show the unemployment trend 2018-2023").
 
+## Language
+
+**Every reader-facing string you emit — `title`, `intro`, `altInsight`, `directLabel`, annotation
+text, and any source label you write — MUST be in the language of the article / the journalist's
+dialogue (detected upstream), never English by default.** A French newsroom gets a French chart
+title, not an English one. Do not translate proper nouns, the source publication's name, or data
+values themselves.
+
 ## Runtime procedure
 
 ② is the host agent. Execute these steps in order — do not skip the self-check.

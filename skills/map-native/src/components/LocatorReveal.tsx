@@ -115,7 +115,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
       ],
       zoom: 3,
       interactive: false,
-      attributionControl: true,
+      attributionControl: {}, // {} = default attribution (maplibre types reject `true`)
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
@@ -251,7 +251,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
       <MapFrame
         title={config.title ?? ""}
         description={config.description}
-        source={config.source ?? { name: "" }}
+        source={{ name: config.source?.name ?? "", url: config.source?.url }}
         width={width}
         height={height}
         responsive={false}

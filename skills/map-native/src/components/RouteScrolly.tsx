@@ -282,7 +282,7 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       maptilerLogo: false,
       fadeDuration: 0,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    } as Parameters<typeof maptilersdk.Map>[0]);
+    } as ConstructorParameters<typeof maptilersdk.Map>[0]);
 
     m.on("load", () => {
       // Strip basemap labels and inner admin borders (keep country + disputed borders)
@@ -306,14 +306,15 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
           ],
           { padding: mapFrame.pad },
         );
-        if (!camera) {
+        if (!camera || !camera.center) {
           return {
             center: [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2],
             zoom: 4,
           };
         }
+        const c = maptilersdk.LngLat.convert(camera.center);
         return {
-          center: [camera.center.lng, camera.center.lat],
+          center: [c.lng, c.lat],
           zoom: camera.zoom ?? 4,
         };
       };

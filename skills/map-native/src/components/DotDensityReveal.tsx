@@ -98,13 +98,13 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
       center: [10, 30] as [number, number],
       zoom: 2,
       interactive: false,
-      attributionControl: true,
+      attributionControl: {}, // {} = default attribution (maplibre types reject `true`)
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
       fadeDuration: 0,
-    } as Parameters<typeof maptilersdk.Map>[0]);
+    } as ConstructorParameters<typeof maptilersdk.Map>[0]);
     mapRef.current = map;
 
     map.on("load", () => {
@@ -249,7 +249,7 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
       <MapFrame
         title={config.title ?? ""}
         description={config.description}
-        source={config.source ?? { name: "" }}
+        source={{ name: config.source?.name ?? "", url: config.source?.url }}
         width={width}
         height={height}
         responsive={false}

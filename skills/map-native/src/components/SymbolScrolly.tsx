@@ -85,7 +85,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
       maptilerLogo: false,
       fadeDuration: 0,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    } as Parameters<typeof maptilersdk.Map>[0] & {
+    } as ConstructorParameters<typeof maptilersdk.Map>[0] & {
       canvasContextAttributes: unknown;
     });
 
@@ -121,10 +121,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
       // Build beats and timeline.
       const meta = {
         title: config.title ?? "",
-        insight:
-          ((config as Record<string, unknown>).insight as string) ??
-          config.title ??
-          "",
+        insight: config.insight ?? config.title ?? "",
         unit: config.valueUnit ?? "",
       };
       const beats = deriveSymbolStory(config.points, meta, {
@@ -139,10 +136,11 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
             padding: mapFrame.pad,
           },
         );
-        if (!result) return { center: [10, 20], zoom: 2 };
+        if (!result || !result.center) return { center: [10, 20], zoom: 2 };
+        const c = maptilersdk.LngLat.convert(result.center);
         return {
-          center: [result.center.lng, result.center.lat],
-          zoom: result.zoom,
+          center: [c.lng, c.lat],
+          zoom: result.zoom ?? 2,
         };
       });
 

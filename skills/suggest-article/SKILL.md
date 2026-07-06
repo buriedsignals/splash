@@ -64,6 +64,10 @@ snippet it was read from (shown at the confirmation gate; proves transcription).
 confidence`, which is byte-for-byte the prior cut's input plus editorial location. No chart family lives
 here — opportunity-finding (here) and chart-choice (`suggest-chart`) stay cleanly separated.
 
+**Language:** the `claim` you surface and the `intent` you write are in the **article's language**
+(you read the article — you know its language). The downstream furniture inherits it; never
+normalise to English.
+
 ## How it works
 
 ② is the host agent. Execute these steps in order; do not skip the provenance self-check.

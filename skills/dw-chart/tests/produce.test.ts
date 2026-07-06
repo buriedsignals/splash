@@ -16,7 +16,12 @@ let id = "";
 let msId = "";
 let annId = "";
 
-describe("produceChart (real API)", () => {
+// Real Datawrapper API round-trips. Requires DATAWRAPPER_API_TOKEN; skipped without it
+// so a clean checkout / CI stays green (mirrors map-dw's live-test gating).
+const hasToken = !!process.env.DATAWRAPPER_API_TOKEN;
+const d = hasToken ? describe : describe.skip;
+
+d("produceChart (real API)", () => {
   it("produces a published chart, an embed, and an owned PNG with conformance applied", async () => {
     expect(!!process.env.DATAWRAPPER_API_TOKEN).toBe(true);
     const out = join(tmpdir(), "atelier-produce.png");

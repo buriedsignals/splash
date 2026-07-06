@@ -130,12 +130,12 @@ export const ScrollyCartogramMap: React.FC<{
       dragRotate: false,
       boxZoom: false,
       keyboard: false,
-      attributionControl: true,
+      attributionControl: {}, // {} = default attribution (maplibre types reject `true`)
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
       fadeDuration: 0,
-    } as Parameters<typeof maptilersdk.Map>[0]);
+    } as ConstructorParameters<typeof maptilersdk.Map>[0]);
 
     // Expose for the smoke harness.
     (window as unknown as Record<string, unknown>)["__map__"] = map;
@@ -196,10 +196,11 @@ export const ScrollyCartogramMap: React.FC<{
           b.camera as maptilersdk.LngLatBoundsLike,
           { padding: 64 },
         );
-        if (!result) return null;
+        if (!result || !result.center) return null;
+        const c = maptilersdk.LngLat.convert(result.center);
         return {
-          center: [result.center.lng, result.center.lat] as [number, number],
-          zoom: result.zoom,
+          center: [c.lng, c.lat] as [number, number],
+          zoom: result.zoom ?? 2,
         };
       });
 

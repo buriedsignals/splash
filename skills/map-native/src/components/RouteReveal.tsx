@@ -252,7 +252,7 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
       maptilerLogo: false,
       fadeDuration: 0,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    } as Parameters<typeof maptilersdk.Map>[0]);
+    } as ConstructorParameters<typeof maptilersdk.Map>[0]);
 
     m.on("load", () => {
       // Strip basemap labels and inner admin borders (keep country + disputed borders)

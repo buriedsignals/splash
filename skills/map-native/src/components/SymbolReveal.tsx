@@ -79,7 +79,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
       ],
       zoom: 3,
       interactive: false,
-      attributionControl: true,
+      attributionControl: {}, // {} = default attribution (maplibre types reject `true`)
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,

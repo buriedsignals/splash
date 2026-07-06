@@ -36,6 +36,7 @@ export interface SymbolConfig extends SymbolData {
   title?: string;
   description?: string;
   valueUnit?: string;
+  insight?: string;
   source?: { name: string; url: string };
   maxReveals?: number;
   cameraMode?: CameraMode;
@@ -81,7 +82,7 @@ export const SymbolMap: React.FC<Props> = ({
       config.filters
         ? deriveFilterOptions(
             config.filters,
-            config.points as Record<string, unknown>[],
+            config.points as unknown as Record<string, unknown>[],
           )
         : [],
     [config],
@@ -190,7 +191,7 @@ export const SymbolMap: React.FC<Props> = ({
       ],
       zoom: 3,
       interactive,
-      attributionControl: true,
+      attributionControl: {}, // {} = default attribution (maplibre types reject `true`)
       navigationControl: false,
       geolocateControl: false,
       maptilerLogo: false,
