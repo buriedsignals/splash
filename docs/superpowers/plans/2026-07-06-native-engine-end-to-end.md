@@ -1057,34 +1057,23 @@ git commit -m "feat(suggest-chart): native family table + eval nativeType valida
 
 ---
 
-## Task 9: grouped-bar KB reference
+## Task 9: grouped-bar KB reference — SATISFIED BY PRE-EXISTING WORK (verify only)
 
-**Files:**
-- Create: `skills/chart-native/knowledge/references/chart/types/grouped.md`
-- Test: covered by `tests/completeness.test.ts` (KB file existence) once grouped flips in Task 10.
+> **Plan correction (grounding, 2026-07-06):** the chart KB is NOT empty and does NOT live inside the
+> skill. It lives at the shared REPO-ROOT `knowledge/references/chart/types/` (34 sourced per-type
+> refs already), with files named by DISPLAY name. **`knowledge/references/chart/types/grouped-bar.md`
+> already exists and satisfies deliverable ④** — it is sourced (FT Visual Vocabulary, data-to-viz,
+> credited), covers baseline-0 / ≤3 series / consistent series order+colour / legend-over-direct-labels
+> / motion grammar, and cross-references `checkGroupedBarConformance`. Task 5's completeness test was
+> fixed (commit 3dcf75a) to check this real path via a render-id→display-name map (`grouped` →
+> `grouped-bar.md`). So Task 9 creates NO new file — it is a verification.
 
-**Interfaces:** none (documentation deliverable). The file must be sourced and cross-referenced to the real conformance check.
+**Files:** none created (KB ref pre-exists). Verification only.
 
-- [ ] **Step 1: Write the KB reference**
+- [ ] **Step 1: Verify the KB ref exists and cross-references the real check**
 
-Create `skills/chart-native/knowledge/references/chart/types/grouped.md` with the type's editorial rules, each grounded in a real source and cross-referenced to `checkGroupedBarConformance` (`skills/chart-native/src/core/conformance.ts:526`). Cover: intent = compare within AND across categories; wide-CSV shape; **baseline-0** (position→length, inherited bar rule); **≤3 series** (else picket fence → small multiples); Okabe-Ito CVD-safe series palette; legend replaces direct labels. Sources: FT Visual Vocabulary (Magnitude/"grouped column"), data-to-viz grouped barplot. Real URLs only; no invented links. Mirror the structure of the existing map type ref `skills/map-native/knowledge/references/map/types/proportional-symbol.md` (read it first for house style).
-
-- [ ] **Step 2: Verify the cross-reference is real**
-
-Run: `grep -n "checkGroupedBarConformance" skills/chart-native/src/core/conformance.ts`
-Expected: prints the definition line (confirms the cross-ref points at real code).
-
-- [ ] **Step 3: Run the full gate**
-
-Run: `bun run check`
-Expected: PASS (adding a markdown file changes nothing executable; completeness still green because grouped is still `deferred`).
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add skills/chart-native/knowledge/references/chart/types/grouped.md
-git commit -m "docs(chart-native): grouped-bar KB reference (first chart type ref)"
-```
+Run: `test -f knowledge/references/chart/types/grouped-bar.md && grep -n "checkGroupedBarConformance" knowledge/references/chart/types/grouped-bar.md`
+Expected: the file exists and its text cross-references `checkGroupedBarConformance` (the type's produce-time guard). No new commit — the completeness test (Task 5, fixed) already points at this file, and Task 10's flip exercises the check.
 
 ---
 
