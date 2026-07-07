@@ -11,11 +11,12 @@ import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { worstContrast, MIN_CONTRAST } from "../src/core/contrast-scan.ts";
+import { chartDistSub } from "../src/build-paths.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const chart = process.env.CHART ?? "line";
-const dist = join(root, chart === "line" ? "dist/static" : `dist/${chart}/static`);
+const dist = join(root, chartDistSub(chart, "static"));
 
 // serve over http (module scripts get crossorigin -> blocked over file://)
 const mime = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
