@@ -2,7 +2,7 @@
 // Follows the HarnessCheck harness: per-frame delayRender → setPaintProperty → map.once('idle') → continueRender.
 // Regions reveal in ascending-value order (stagger by bin index), blank at frame 0.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AbsoluteFill,
   continueRender,
@@ -25,10 +25,7 @@ import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { NO_DATA_COLOR } from "../theme/colors";
 import { legendTheme } from "../theme/legend-theme";
-
-// Legend furniture is light-only in the video/scrolly formats today (dark is a deferred
-// follow-up); hoisted to module scope so the per-frame legend effect dep stays stable.
-const LEGEND_THEME_LIGHT = legendTheme(false);
+import { resolveMapStyle } from "../route-geo";
 import { fmtBin } from "../core/legend-format";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
@@ -43,6 +40,7 @@ export type ChoroplethRevealProps = {
     unit?: string;
     scaleType?: "sequential" | "diverging";
     palette?: string | string[];
+    mapStyle?: string;
   };
 };
 
@@ -54,9 +52,8 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
   const started = useRef(false);
   const frame = useCurrentFrame();
   const { durationInFrames, width, height } = useVideoConfig();
-  // This composition does not yet thread mapStyle/dark — the basemap is always
-  // DATAVIZ.LIGHT (see the Map init below), so the legend always uses the light theme.
-  const theme = LEGEND_THEME_LIGHT;
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const theme = useMemo(() => legendTheme(dark), [dark]);
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
     hasDescription: !!(config as any).description,
@@ -74,9 +71,13 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
     if (!ref.current || started.current) return;
     started.current = true;
 
+    const style = dark
+      ? maptilersdk.MapStyle.DATAVIZ.DARK
+      : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+
     const m = new maptilersdk.Map({
       container: ref.current,
-      style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
+      style,
       center: [10, 50] as [number, number],
       zoom: 3,
       interactive: false,
@@ -164,7 +165,7 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
             type: "line",
             source: "choropleth-world",
             paint: {
-              "line-color": "#ffffff",
+              "line-color": dark ? "#1c1c1f" : "#ffffff",
               "line-width": 0.5,
               "line-opacity": 0.6,
             },
@@ -242,7 +243,7 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
   }, [mapState, frame, durationInFrames]);
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
+    <AbsoluteFill style={{ backgroundColor: dark ? "#0e0f12" : "#f4f4f4" }}>
       <style>{`.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-attrib,.maptiler-logo{display:none!important}`}</style>
       <MapFrame
         title={(config as any).title ?? ""}
@@ -253,6 +254,7 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
         responsive={false}
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
+        dark={dark}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>

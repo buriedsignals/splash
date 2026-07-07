@@ -3,7 +3,7 @@
 // drives the map camera deterministically per frame, and renders title card + callout + caption overlays.
 // Harness pattern: delayRender → jumpTo → setData (beat change only) → setPaintProperty → idle → continueRender.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AbsoluteFill,
   continueRender,
@@ -35,10 +35,7 @@ import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { resolveScene } from "../video-scene";
 import { legendTheme } from "../theme/legend-theme";
-
-// Legend furniture is light-only in the video/scrolly formats today (dark is a deferred
-// follow-up); hoisted to module scope so the per-frame legend effect dep stays stable.
-const LEGEND_THEME_LIGHT = legendTheme(false);
+import { resolveMapStyle } from "../route-geo";
 import { fmtBin } from "../core/legend-format";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
@@ -101,6 +98,7 @@ export const ChoroplethStory: React.FC<{
     scaleType?: "sequential" | "diverging";
     palette?: string | string[];
     valueKind?: "temporal" | "magnitude" | "categorical";
+    mapStyle?: string;
   };
 }> = ({ config }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -108,9 +106,8 @@ export const ChoroplethStory: React.FC<{
   const started = useRef(false);
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
-  // This composition does not yet thread mapStyle/dark — the basemap is always
-  // DATAVIZ.LIGHT (see the Map init below), so the legend always uses the light theme.
-  const theme = LEGEND_THEME_LIGHT;
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const theme = useMemo(() => legendTheme(dark), [dark]);
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
     hasDescription: !!config.description,
@@ -140,9 +137,13 @@ export const ChoroplethStory: React.FC<{
     if (!ref.current || started.current) return;
     started.current = true;
 
+    const style = dark
+      ? maptilersdk.MapStyle.DATAVIZ.DARK
+      : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+
     const m = new maptilersdk.Map({
       container: ref.current,
-      style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
+      style,
       center: [10, 20] as [number, number],
       zoom: 2,
       interactive: false,
@@ -260,7 +261,7 @@ export const ChoroplethStory: React.FC<{
             type: "line",
             source: "choropleth-world",
             paint: {
-              "line-color": "#ffffff",
+              "line-color": dark ? "#1c1c1f" : "#ffffff",
               "line-width": 0.5,
               "line-opacity": 0.6,
             },
@@ -278,7 +279,7 @@ export const ChoroplethStory: React.FC<{
                 2.5,
                 0,
               ] as never,
-              "line-color": "#1a1a1a",
+              "line-color": dark ? "#f4f4f5" : "#1a1a1a",
               "line-opacity": 0.9,
             },
           });
@@ -449,7 +450,7 @@ export const ChoroplethStory: React.FC<{
     : { titleOpacity: 1, furnitureOpacity: 0 };
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
+    <AbsoluteFill style={{ backgroundColor: dark ? "#0e0f12" : "#f4f4f4" }}>
       {/* MapFrame: shared furniture shell — title band (top) + source band (bottom, always).
           The map div is the child; data is kept out of the bands via mapFrame.pad → cameraForBounds. */}
       <MapFrame
@@ -461,6 +462,7 @@ export const ChoroplethStory: React.FC<{
         responsive={false}
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
+        dark={dark}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>
