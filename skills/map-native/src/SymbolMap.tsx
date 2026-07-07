@@ -11,7 +11,7 @@ import { symbolGeometry, type SymbolData } from "./symbol-geo";
 import type { CameraMode } from "./camera-mode";
 import { symbolLabels, labelRadialOffset } from "./symbol-labels";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
-import { resolveMapFrame } from "./core/map-format";
+import { resolveMapFrame, labelTextSize } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 import { MapFilterBar } from "./core/MapFilterBar";
 import {
@@ -26,7 +26,6 @@ if (!import.meta.env.VITE_MAPTILER_KEY)
 maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 const SYMBOL_FILL = "#2171b5"; // single hue — size is the encoding
-const LABEL_TEXT_SIZE = 13;
 const SYMBOL_STROKE = "#ffffff"; // white halo separates symbols from the basemap
 const MAX_RADIUS_PX = 40;
 
@@ -207,6 +206,14 @@ export const SymbolMap: React.FC<Props> = ({
       // Build label data alongside geometry.
       const labels = symbolLabels(geo.symbols);
 
+      // Ratio-scaled label size: a narrow/portrait embed (≤1080px) gets the same 18px
+      // bump its video sibling (SymbolReveal) already applies — fix #8 (was fixed at 13
+      // regardless of the actual render width). Read the ACTUAL current width from the
+      // mounted container (not React state, which is captured once at initial render).
+      const textSize = labelTextSize(
+        containerRef.current?.clientWidth || containerSize.w,
+      );
+
       map.addSource("symbols", {
         type: "geojson",
         data: {
@@ -220,7 +227,7 @@ export const SymbolMap: React.FC<Props> = ({
               labelText: labels[i]?.name
                 ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
                 : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
-              labelOffset: labelRadialOffset(s.radius, LABEL_TEXT_SIZE),
+              labelOffset: labelRadialOffset(s.radius, textSize),
             },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
           })),
@@ -248,7 +255,7 @@ export const SymbolMap: React.FC<Props> = ({
           layout: {
             "text-field": ["get", "labelText"],
             "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-            "text-size": LABEL_TEXT_SIZE,
+            "text-size": textSize,
             "text-variable-anchor": ["left", "right", "top", "bottom"],
             "text-radial-offset": ["get", "labelOffset"],
             "text-justify": "auto",

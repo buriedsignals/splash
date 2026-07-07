@@ -18,6 +18,8 @@ import {
   filterStateToExpression,
   type FilterState,
 } from "./core/map-filter";
+import { fmtBin } from "./core/legend-format";
+import { legendTheme } from "./theme/legend-theme";
 import type { HexGridConfigShape } from "./validate-config";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
@@ -72,6 +74,7 @@ export const HexGridMap: React.FC<Props> = ({
   const [barHeightPx, setBarHeightPx] = useState(0);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const theme = legendTheme(dark);
   const legendHeight = NUM_BINS * 18 + 18;
 
   // Measure the root element size before map init.
@@ -285,20 +288,16 @@ export const HexGridMap: React.FC<Props> = ({
 
       // Legend — sequential bin scale (swatch + min–max) + the aggregate label. Never a size legend.
       if (legendRef.current) {
-        const ink = dark ? "#f4f4f5" : "#444";
-        const sub = dark ? "#c8c8cf" : "#555";
-        const fmt = (n: number) =>
-          Number.isInteger(n) ? String(n) : n.toFixed(1);
         const header = `
-          <div style="font:600 11px/1.2 sans-serif;color:${ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
+          <div style="font:600 11px/1.2 sans-serif;color:${theme.ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
             ${layout.aggregateLabel}
           </div>`;
         const swatches = layout.bins
           .map(
             (b) => `
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-              <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);flex-shrink:0"></span>
-              <span style="font:11px/1.2 sans-serif;color:${sub}">${fmt(b.min)}–${fmt(b.max)}</span>
+              <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px ${theme.stroke};flex-shrink:0"></span>
+              <span style="font:11px/1.2 sans-serif;color:${theme.sub}">${fmtBin(b.min)}–${fmtBin(b.max)}</span>
             </div>`,
           )
           .join("");
@@ -412,7 +411,7 @@ export const HexGridMap: React.FC<Props> = ({
           bottom: 16,
           right: 12,
           zIndex: 10,
-          background: dark ? "rgba(24,24,27,0.88)" : "rgba(255,255,255,0.92)",
+          background: theme.bg,
           padding: "10px 12px",
           borderRadius: 6,
           boxShadow: "0 1px 6px rgba(0,0,0,.12)",

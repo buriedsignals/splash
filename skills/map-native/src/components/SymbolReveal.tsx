@@ -20,7 +20,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
 import { symbolLabels, labelRadialOffset } from "../symbol-labels";
 import type { SymbolConfig } from "../SymbolMap";
-import { resolveMapFrame } from "../core/map-format";
+import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { easedRevealProgress, revealCameraPlan } from "../reveal";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
@@ -52,7 +52,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
   });
 
   // Ratio-scaled label size: square/portrait are ≤1080 wide → larger text for legibility.
-  const labelTextSize = width <= 1080 ? 18 : 13;
+  const textSize = labelTextSize(width);
 
   // Eased reveal 0 → 1 with blank holds at both ends. Shifted to start after the title scene.
   const progress = easedRevealProgress(
@@ -100,7 +100,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
               labelText: labels[i]?.name
                 ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
                 : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
-              labelOffset: labelRadialOffset(s.radius, labelTextSize),
+              labelOffset: labelRadialOffset(s.radius, textSize),
             },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
           })),
@@ -126,7 +126,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
         layout: {
           "text-field": ["get", "labelText"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-          "text-size": labelTextSize,
+          "text-size": textSize,
           "text-variable-anchor": ["left", "right", "top", "bottom"],
           "text-radial-offset": ["get", "labelOffset"],
           "text-justify": "auto",

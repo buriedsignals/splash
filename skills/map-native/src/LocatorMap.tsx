@@ -16,9 +16,10 @@ import {
 } from "./locator-labels";
 import { resolveMapStyle } from "./route-geo";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
-import { resolveMapFrame } from "./core/map-format";
+import { resolveMapFrame, labelTextSize } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 import { MapFilterBar } from "./core/MapFilterBar";
+import { legendTheme } from "./theme/legend-theme";
 import {
   deriveFilterOptions,
   filterStateToExpression,
@@ -30,7 +31,6 @@ if (!import.meta.env.VITE_MAPTILER_KEY)
 maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 const DOT_RADIUS_PX = 6; // FIXED — markers are uniform size, never value-scaled
-const LABEL_TEXT_SIZE = 13;
 const MARKER_STROKE = "#ffffff";
 const PIN_ICON = "locator-pin"; // registered SDF glyph name (see addPinImage)
 
@@ -115,6 +115,7 @@ export const LocatorMap: React.FC<Props> = ({
   });
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const theme = legendTheme(dark);
   const usesSymbolLayer =
     geo.markerStyle === "pin" || geo.markerStyle === "icon";
   const GLYPH_LAYER = "locator-glyphs";
@@ -223,6 +224,14 @@ export const LocatorMap: React.FC<Props> = ({
 
       if (usesSymbolLayer) addPinImage(map);
 
+      // Ratio-scaled label size: a narrow/portrait embed (≤1080px) gets the same 18px
+      // bump its video sibling (LocatorReveal/Story/Scrolly) already applies — fix #8 (was
+      // fixed at 13 regardless of the actual render width). Read the ACTUAL current width
+      // from the mounted container (not React state, captured once at initial render).
+      const textSize = labelTextSize(
+        containerRef.current?.clientWidth || containerSize.w,
+      );
+
       const features: GeoJSON.Feature[] = geo.markers.map((mk, i) => ({
         type: "Feature",
         id: i,
@@ -233,7 +242,7 @@ export const LocatorMap: React.FC<Props> = ({
           category: mk.category ?? "",
           note: mk.note ?? "",
           priority: mk.priority ?? 0,
-          labelOffset: labelRadialOffset(DOT_RADIUS_PX, LABEL_TEXT_SIZE),
+          labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
           __showLabel: true, // recomputed by declutter
         },
         geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
@@ -342,7 +351,7 @@ export const LocatorMap: React.FC<Props> = ({
         layout: {
           "text-field": ["get", "label"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-          "text-size": LABEL_TEXT_SIZE,
+          "text-size": textSize,
           "text-variable-anchor": ["top", "bottom", "left", "right"],
           "text-radial-offset": ["get", "labelOffset"],
           "text-justify": "auto",
@@ -366,8 +375,8 @@ export const LocatorMap: React.FC<Props> = ({
         if (!m) return;
         const boxes: LabelBox[] = geo.markers.map((mk, i) => {
           const pt = m.project([mk.lon, mk.lat]);
-          const w = Math.max(1, mk.label.length) * (LABEL_TEXT_SIZE * 0.58);
-          const h = LABEL_TEXT_SIZE * 1.3;
+          const w = Math.max(1, mk.label.length) * (textSize * 0.58);
+          const h = textSize * 1.3;
           return {
             key: `m${i}`,
             x: pt.x - w / 2,
@@ -562,13 +571,12 @@ export const LocatorMap: React.FC<Props> = ({
       el.style.display = "none";
       return;
     }
-    const ink = dark ? "#f4f4f5" : "#333";
     const rows = geo.legend
       .map(
         (e) =>
           `<div style="display:flex;align-items:center;gap:8px;line-height:1.4">` +
-          `<span style="width:12px;height:12px;border-radius:50%;background:${e.color};box-shadow:0 0 0 1px rgba(0,0,0,.15);flex:0 0 auto"></span>` +
-          `<span style="font-size:12px;color:${ink}">${e.category}</span></div>`,
+          `<span style="width:12px;height:12px;border-radius:50%;background:${e.color};box-shadow:0 0 0 1px ${theme.stroke};flex:0 0 auto"></span>` +
+          `<span style="font-size:12px;color:${theme.ink}">${e.category}</span></div>`,
       )
       .join("");
     el.innerHTML = rows;
@@ -622,7 +630,7 @@ export const LocatorMap: React.FC<Props> = ({
           bottom: 16,
           right: 16,
           zIndex: 10,
-          background: dark ? "rgba(24,24,27,0.85)" : "rgba(255,255,255,0.85)",
+          background: theme.bg,
           padding: "8px 10px",
           borderRadius: 6,
           boxShadow: "0 1px 6px rgba(0,0,0,.12)",
