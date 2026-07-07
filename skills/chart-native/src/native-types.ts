@@ -88,26 +88,16 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "wide",
     deferred: A_PENDING("wide"),
   },
-  { id: "waffle", family: "A", shape: "single", deferred: A_PENDING("single") },
+  { id: "waffle", family: "A", shape: "single" },
   { id: "fan", family: "A", shape: "wide", deferred: A_PENDING("wide") },
-  {
-    id: "dot-strip",
-    family: "A",
-    shape: "single",
-    deferred: A_PENDING("single"),
-  },
+  { id: "dot-strip", family: "A", shape: "single" },
   {
     id: "violin",
     family: "A",
     shape: "distribution",
     deferred: A_PENDING("distribution"),
   },
-  {
-    id: "radial-bar",
-    family: "A",
-    shape: "single",
-    deferred: A_PENDING("single"),
-  },
+  { id: "radial-bar", family: "A", shape: "single" },
   // --- Family B, deferred by design (structural/specialist data an article rarely yields) ---
   {
     id: "heatmap",

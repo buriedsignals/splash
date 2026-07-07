@@ -17,7 +17,7 @@ import {
   type WaffleLayout,
 } from "./waffle-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, WAFFLE_CATEGORY_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
@@ -40,14 +40,7 @@ export interface WaffleChartProps {
   scale?: number;
 }
 
-const WAFFLE_COLORS = [
-  OKABE_ITO.blue,
-  OKABE_ITO.orange,
-  OKABE_ITO.green,
-  OKABE_ITO.purple,
-  OKABE_ITO.vermillion,
-  OKABE_ITO.skyblue,
-];
+const WAFFLE_COLORS = WAFFLE_CATEGORY_COLORS;
 
 const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
@@ -83,7 +76,16 @@ export function WaffleChart({
     bottom: 22 + legendRows * LEG_ROW + 18, // legend rows + source clearance
     left: 18,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.62, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.62,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

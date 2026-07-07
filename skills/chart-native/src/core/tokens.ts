@@ -84,3 +84,16 @@ export const STACKED_AREA_COLORS = [
   OKABE_ITO.green,
   OKABE_ITO.purple,
 ] as const;
+
+// Waffle / square-pie category palette (WaffleChart.tsx), extracted so the produce
+// conformance resolver derives the SAME category colours without duplicating the
+// literal (like PIE_SLICE_COLORS). ≤6 categories (waffle.md). Every waffle TEXT
+// label (legend, tooltip) is COLORS.ink — this palette is marks only.
+export const WAFFLE_CATEGORY_COLORS = [
+  OKABE_ITO.blue,
+  OKABE_ITO.orange,
+  OKABE_ITO.green,
+  OKABE_ITO.purple,
+  OKABE_ITO.vermillion,
+  OKABE_ITO.skyblue,
+] as const;

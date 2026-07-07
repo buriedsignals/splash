@@ -1,0 +1,10 @@
+{
+  "nativeType": "dot-strip",
+  "title": "Wait times vary far more between clinics than within them",
+  "source": {
+    "name": "NHS 2025 wait-time audit",
+    "url": "https://example.org/nhs-2025-waits"
+  },
+  "unit": "wait (days)",
+  "data": "clinic,days\nRiverside,3\nRiverside,4\nRiverside,4\nRiverside,5\nRiverside,5\nRiverside,6\nRiverside,7\nNorthside,9\nNorthside,10\nNorthside,10\nNorthside,11\nNorthside,12\nNorthside,12\nNorthside,13\nHarbour,18\nHarbour,19\nHarbour,20\nHarbour,20\nHarbour,21\nHarbour,22\nHarbour,23"
+}
