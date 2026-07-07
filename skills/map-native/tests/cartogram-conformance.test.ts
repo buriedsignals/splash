@@ -204,4 +204,24 @@ describe("checkCartogramConformance", () => {
       ).join(" "),
     ).toContain("title");
   });
+
+  it("flags a non-CVD-safe custom palette (the ramp the component actually paints)", () => {
+    const r = checkCartogramConformance(
+      { ...goodScaled, palette: ["#ff0000", "#00ff00", "#0000ff"] },
+      okColors,
+    );
+    expect(r.some((m) => /palette/i.test(m))).toBe(true);
+  });
+
+  it("does not flag a named registry palette", () => {
+    const r = checkCartogramConformance(
+      { ...goodScaled, palette: "oranges" },
+      okColors,
+    );
+    expect(r.some((m) => /palette/i.test(m))).toBe(false);
+  });
+
+  it("does not flag when no palette is given (library default)", () => {
+    expect(checkCartogramConformance(goodScaled, okColors)).toEqual([]);
+  });
 });

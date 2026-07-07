@@ -514,6 +514,9 @@ export type HexGridConfigShape = {
   cellSizeKm?: number;
   basemap: string;
   mapStyle?: string;
+  // A named registry palette or a custom CVD-safe ramp (see theme/scale.ts); hex-grid is
+  // always sequential, so no scaleType field — mirrors validateCartogramConfig's palette.
+  palette?: string | string[];
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
@@ -535,6 +538,7 @@ export function validateHexGridConfig(
     !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
   )
     errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  errors.push(...paletteErrors(s));
   if (
     s.binShape !== undefined &&
     !["hex", "square"].includes(s.binShape as string)

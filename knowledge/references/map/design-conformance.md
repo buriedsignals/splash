@@ -2,7 +2,7 @@
 
 > Source: data-to-viz (data-to-viz.com), FT Visual Vocabulary, Datawrapper Academy, WCAG 2.1.
 
-A produced map MUST satisfy all eight rules below across static / interactive / video formats.
+A produced map MUST satisfy all ten rules below across static / interactive / video formats.
 
 1. **Title = the insight**, sentence case ("Malaria incidence is highest in the Sahel", not
    "Malaria 2010-2023", not "MALARIA MAP"). Minimum 12 characters, not a bare year range, not
@@ -58,11 +58,20 @@ A produced map MUST satisfy all eight rules below across static / interactive / 
    capability (`resolveMapStyle` in `src/route-geo.ts`). Implemented via `MapFrame` `dark` prop
    + dark-control CSS injection in `RouteMap`.
 
+10. **Colour ramp must be CVD-safe** — every sequential/diverging ramp a map paints (choropleth,
+    hex-grid, cartogram) is validated against the vetted, colour-blind-safe registry
+    (`isCvdSafeRamp` in `src/theme/scale.ts`); a custom-array palette that isn't drawn from the
+    vetted colour set is rejected, even when the type only computes it at produce time (not just
+    at config-validate time). Source: ColorBrewer / CVD-safe design convention. Enforced by
+    `checkPaletteConformance`, called from `checkChoroplethConformance`, `checkHexGridConformance`,
+    and `checkCartogramConformance` (`skills/map-native/src/conformance.ts`).
+
 ---
 
 Enforcing code:
 - Guard functions: `skills/map-native/src/conformance.ts`
-  (`checkGlobalMapConformance`, `checkChoroplethConformance`, `checkSymbolConformance`, `checkMapFraming`)
+  (`checkGlobalMapConformance`, `checkChoroplethConformance`, `checkSymbolConformance`,
+  `checkHexGridConformance`, `checkCartogramConformance`, `checkMapFraming`, `checkPaletteConformance`)
 - Frame layout: `skills/map-native/src/core/MapFrame.tsx` + `src/core/map-format.ts`
   (`resolveMapFrame`)
 - Build-time harness: `skills/map-native/scripts/snap-responsive.mjs` + `snap-a11y.mjs`
