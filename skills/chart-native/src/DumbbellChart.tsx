@@ -75,7 +75,16 @@ export function DumbbellChart({
     bottom: 28 + legendRowUnscaled + 20, // legend + source clearance
     left: 124, // category labels
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -294,7 +303,7 @@ function DumbbellSvg({
                   textAnchor="end"
                   fontSize={ts.axis}
                   fontWeight={600}
-                  fill={leftIsMin ? LEFT_COLOR : RIGHT_COLOR}
+                  fill={COLORS.ink}
                 >
                   {fmt(leftIsMin ? r.leftVal : r.rightVal)}
                 </text>
@@ -305,7 +314,7 @@ function DumbbellSvg({
                   textAnchor="start"
                   fontSize={ts.axis}
                   fontWeight={600}
-                  fill={leftIsMin ? RIGHT_COLOR : LEFT_COLOR}
+                  fill={COLORS.ink}
                 >
                   {fmt(leftIsMin ? r.rightVal : r.leftVal)}
                 </text>
