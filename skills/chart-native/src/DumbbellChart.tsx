@@ -295,7 +295,7 @@ function DumbbellSvg({
                   r={dot(1)}
                   fill={RIGHT_COLOR}
                 />
-                {/* outer value labels, coloured by series */}
+                {/* outer value labels in ink; the dots + legend carry the series colour */}
                 <text
                   x={minX - 9 * sc}
                   y={r.y}

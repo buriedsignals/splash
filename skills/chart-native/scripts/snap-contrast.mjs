@@ -52,6 +52,10 @@ const samples = await page.evaluate(() => {
     const h = (n) => Math.round(n).toString(16).padStart(2, "0");
     return `#${h(r)}${h(g)}${h(b)}`;
   };
+  // Known limitations: (1) reads mark fill from inline fill ATTRIBUTE only; a mark
+  // filled via CSS class falls through to paper #ffffff fallback. (2) the whole <text>
+  // (glyph + halo) is hidden before sampling; a label relying on halo legibility OVER
+  // a coloured mark could be false-positive flagged against the mark alone.
   const bgAt = (x, y, glyph) => {
     for (const el of document.elementsFromPoint(x, y)) {
       if (el === glyph) continue;
