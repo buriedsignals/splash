@@ -12,9 +12,10 @@ const base = {
 };
 
 describe("MAPPERS table", () => {
-  it("exposes exactly the four legacy mappers", () => {
+  it("exposes exactly the four legacy mappers plus grouped", () => {
     expect(Object.keys(MAPPERS).sort()).toEqual([
       "bar",
+      "grouped",
       "line",
       "pie",
       "scatter",
