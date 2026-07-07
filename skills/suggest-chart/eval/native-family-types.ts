@@ -8,4 +8,5 @@ export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   "part-to-whole": ["pie"],
   magnitude: ["bar", "grouped"],
   distribution: ["histogram"],
+  ranking: ["lollipop"],
 };

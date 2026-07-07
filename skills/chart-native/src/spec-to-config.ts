@@ -166,6 +166,24 @@ export const MAPPERS: Record<
       },
     };
   },
+  lollipop(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const catCol = columns[0];
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    return {
+      type: "lollipop",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        catField: catCol,
+        valField: valCol,
+        ...(spec.highlight ? { highlightLabel: spec.highlight } : {}),
+        rows,
+      },
+    };
+  },
   pie(parsed, spec) {
     const { columns, rows, numericColumns } = parsed;
     const catCol = columns[0];

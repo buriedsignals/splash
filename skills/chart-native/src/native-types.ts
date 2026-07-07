@@ -68,12 +68,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "single",
     deferred: A_PENDING("single"),
   },
-  {
-    id: "lollipop",
-    family: "A",
-    shape: "single",
-    deferred: A_PENDING("single"),
-  },
+  { id: "lollipop", family: "A", shape: "single" },
   { id: "pyramid", family: "A", shape: "wide", deferred: A_PENDING("wide") },
   { id: "bullet", family: "A", shape: "single", deferred: A_PENDING("single") },
   {

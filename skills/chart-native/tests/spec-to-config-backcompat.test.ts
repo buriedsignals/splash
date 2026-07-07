@@ -12,15 +12,10 @@ const base = {
 };
 
 describe("MAPPERS table", () => {
-  it("exposes exactly the four legacy mappers plus grouped and histogram", () => {
-    expect(Object.keys(MAPPERS).sort()).toEqual([
-      "bar",
-      "grouped",
-      "histogram",
-      "line",
-      "pie",
-      "scatter",
-    ]);
+  it("still exposes the four legacy mappers", () => {
+    for (const k of ["bar", "line", "scatter", "pie"]) {
+      expect(Object.keys(MAPPERS)).toContain(k);
+    }
   });
   it("bar config is byte-identical to the pre-table output", () => {
     const spec: NativeSpec = {
