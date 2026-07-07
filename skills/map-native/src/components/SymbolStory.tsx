@@ -25,6 +25,7 @@ import {
 } from "../story-timeline";
 import type { Beat } from "../map-story";
 import type { SymbolConfig } from "../SymbolMap";
+import { resolveMapStyle } from "../route-geo";
 import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
@@ -50,6 +51,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
   const started = useRef(false);
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
     hasDescription: !!config.description,
@@ -83,9 +85,13 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
 
     const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
 
+    const style = dark
+      ? maptilersdk.MapStyle.DATAVIZ.DARK
+      : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+
     const m = new maptilersdk.Map({
       container: ref.current,
-      style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
+      style,
       center: [10, 20] as [number, number],
       zoom: 2,
       interactive: false,
@@ -152,8 +158,8 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           "text-max-width": 8,
         },
         paint: {
-          "text-color": "#1a1a1a",
-          "text-halo-color": "#ffffff",
+          "text-color": dark ? "#f4f4f5" : "#1a1a1a",
+          "text-halo-color": dark ? "rgba(0,0,0,0.85)" : "#ffffff",
           "text-halo-width": 1.6,
           "text-opacity": 0,
         },
@@ -298,7 +304,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     : { titleOpacity: 1, furnitureOpacity: 0 };
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
+    <AbsoluteFill style={{ backgroundColor: dark ? "#0e0f12" : "#f4f4f4" }}>
       {/* MapFrame: shared furniture shell — title band (top) + source band (bottom). */}
       <MapFrame
         title={config.title ?? ""}
@@ -309,6 +315,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         responsive={false}
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
+        dark={dark}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>

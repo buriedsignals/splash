@@ -36,6 +36,7 @@ import {
 } from "../../../scrolly/src/chapters";
 import { scrollyFrames } from "../route-story";
 import { stepSlide } from "./ChoroplethScrolly";
+import { resolveMapStyle } from "../route-geo";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -58,6 +59,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
   const started = useRef(false);
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
     hasDescription: !!config.description,
@@ -77,9 +79,13 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
 
     const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
 
+    const style = dark
+      ? maptilersdk.MapStyle.DATAVIZ.DARK
+      : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+
     const m = new maptilersdk.Map({
       container: ref.current,
-      style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
+      style,
       center: [10, 20] as [number, number],
       zoom: 2,
       interactive: false,
@@ -146,8 +152,8 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
           "text-max-width": 8,
         },
         paint: {
-          "text-color": "#1a1a1a",
-          "text-halo-color": "#ffffff",
+          "text-color": dark ? "#f4f4f5" : "#1a1a1a",
+          "text-halo-color": dark ? "rgba(0,0,0,0.85)" : "#ffffff",
           "text-halo-width": 1.6,
           "text-opacity": 0,
         },
@@ -259,7 +265,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
       map.setPaintProperty("symbol-circles", "circle-stroke-color", [
         "case",
         ["==", ["get", "label"], highlightLabel],
-        "#1a1a1a",
+        dark ? "#f4f4f5" : "#1a1a1a",
         SYMBOL_STROKE,
       ] as never);
     }
@@ -273,7 +279,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
   const scene = resolveScene(frame, { titleSceneEndFrame: TITLE_SCENE_FRAMES });
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
+    <AbsoluteFill style={{ backgroundColor: dark ? "#0e0f12" : "#f4f4f4" }}>
       <MapFrame
         title={config.title ?? ""}
         description={config.description}
@@ -283,6 +289,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
         responsive={false}
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
+        dark={dark}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>
@@ -297,6 +304,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
               align={s.align}
               slide={stepSlide(frame, mapState.phases, i, fps, total)}
               prose={s.prose}
+              dark={dark}
             />
           ),
         )}
