@@ -42,6 +42,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   { id: "grouped", family: "A", shape: "wide" },
   // --- Native Batch 2 wide (flipped to mapped) ---
   { id: "stacked", family: "A", shape: "wide" },
+  { id: "stacked-area", family: "A", shape: "wide" },
   // --- Family A, deferred until their shape batch ---
   { id: "slope", family: "A", shape: "wide", deferred: A_PENDING("wide") },
   {
@@ -49,12 +50,6 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     family: "A",
     shape: "paired",
     deferred: A_PENDING("paired"),
-  },
-  {
-    id: "stacked-area",
-    family: "A",
-    shape: "wide",
-    deferred: A_PENDING("wide"),
   },
   { id: "histogram", family: "A", shape: "distribution" },
   {

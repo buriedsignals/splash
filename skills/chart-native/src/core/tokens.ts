@@ -72,3 +72,15 @@ export const STACKED_SERIES_COLORS = [
   OKABE_ITO.green,
   OKABE_ITO.purple,
 ] as const;
+
+// Stacked area band palette (StackedAreaChart.tsx), extracted so the produce
+// conformance guard derives the SAME colours. Skyblue-first — DIFFERENT order
+// from STACKED_SERIES_COLORS (black-first) and GROUPED_SERIES_COLORS
+// (blue-first); do not reuse either. ≤5 series (stacked-area.md).
+export const STACKED_AREA_COLORS = [
+  OKABE_ITO.skyblue,
+  OKABE_ITO.orange,
+  OKABE_ITO.blue,
+  OKABE_ITO.green,
+  OKABE_ITO.purple,
+] as const;
