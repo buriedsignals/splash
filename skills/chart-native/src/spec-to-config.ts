@@ -132,6 +132,27 @@ export const MAPPERS: Record<
       },
     };
   },
+  "connected-scatter"(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const labelCol = columns[0]; // the sequence/time key that ORDERS the path
+    const measures = numericColumns.filter((c) => c !== labelCol);
+    const xField = measures[0] ?? columns[1];
+    const yField = measures[1] ?? columns[2];
+    return {
+      type: "connected-scatter",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        labelField: labelCol,
+        xField,
+        yField,
+        xLabel: xField,
+        yLabel: yField,
+        rows, // pass through IN ORDER — do NOT sort (the path follows row order)
+      },
+    };
+  },
   grouped(parsed, spec) {
     const catCol = parsed.columns[0];
     // wide convention: every NUMERIC column after the category is a series
@@ -147,6 +168,79 @@ export const MAPPERS: Record<
         catField: catCol,
         seriesFields,
         rows: parsed.rows,
+      },
+    };
+  },
+  histogram(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const valueField =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    return {
+      type: "histogram",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        // unit does double duty (subtitle + inline "median N unit"); prefer the short callout unit
+        unit: spec.valueUnit ?? spec.unit,
+        valueField,
+        rows,
+      },
+    };
+  },
+  lollipop(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const catCol = columns[0];
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    return {
+      type: "lollipop",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        catField: catCol,
+        valField: valCol,
+        ...(spec.highlight ? { highlightLabel: spec.highlight } : {}),
+        rows,
+      },
+    };
+  },
+  beeswarm(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    const textCols = columns.filter(
+      (c) => c !== valCol && !numericColumns.includes(c),
+    );
+    const distinct = (c: string) => new Set(rows.map((r) => String(r[c]))).size;
+    // low-cardinality text col groups the swarm into colours (HARD-capped at ≤5
+    // by checkBeeswarmConformance at produce time); the other text col (if any)
+    // is per-point label only — never blindly columns[0] (a unique-per-row name
+    // would blow the category cap). If the lowest-distinct text col STILL exceeds
+    // 5 (e.g. a single high-cardinality name column), skip grouping entirely and
+    // demote that column to a per-point label instead — a single-hue swarm, not a
+    // produce-time conformance failure.
+    const sorted = [...textCols].sort((a, b) => distinct(a) - distinct(b));
+    const lowest = sorted[0];
+    const useCategory = lowest !== undefined && distinct(lowest) <= 5;
+    const catCol = useCategory ? lowest : undefined;
+    const labelCol = useCategory ? sorted[1] : lowest;
+    const categories = catCol
+      ? [...new Set(rows.map((r) => String(r[catCol])))]
+      : undefined;
+    const points = rows.map((r) => ({
+      value: Number(r[valCol]),
+      ...(labelCol ? { label: String(r[labelCol]) } : {}),
+      ...(catCol ? { category: String(r[catCol]) } : {}),
+    }));
+    return {
+      type: "beeswarm",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        valueLabel: spec.unit, // NativeSpec has no valueLabel; its long-axis `unit` maps here
+        ...(categories ? { categories } : {}),
+        points,
       },
     };
   },

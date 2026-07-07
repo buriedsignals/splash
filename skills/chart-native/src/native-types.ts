@@ -55,12 +55,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "wide",
     deferred: A_PENDING("wide"),
   },
-  {
-    id: "histogram",
-    family: "A",
-    shape: "distribution",
-    deferred: A_PENDING("distribution"),
-  },
+  { id: "histogram", family: "A", shape: "distribution" },
   {
     id: "diverging",
     family: "A",
@@ -73,20 +68,10 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "single",
     deferred: A_PENDING("single"),
   },
-  {
-    id: "lollipop",
-    family: "A",
-    shape: "single",
-    deferred: A_PENDING("single"),
-  },
+  { id: "lollipop", family: "A", shape: "single" },
   { id: "pyramid", family: "A", shape: "wide", deferred: A_PENDING("wide") },
   { id: "bullet", family: "A", shape: "single", deferred: A_PENDING("single") },
-  {
-    id: "connected-scatter",
-    family: "A",
-    shape: "paired",
-    deferred: A_PENDING("paired"),
-  },
+  { id: "connected-scatter", family: "A", shape: "paired" },
   {
     id: "boxplot",
     family: "A",
@@ -94,12 +79,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     deferred: A_PENDING("distribution"),
   },
   { id: "bump", family: "A", shape: "wide", deferred: A_PENDING("wide") },
-  {
-    id: "beeswarm",
-    family: "A",
-    shape: "distribution",
-    deferred: A_PENDING("distribution"),
-  },
+  { id: "beeswarm", family: "A", shape: "distribution" },
   {
     id: "treemap",
     family: "A",

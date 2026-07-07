@@ -2,6 +2,8 @@ import { validateChartSpec } from "../../dw-chart/src/chart-spec";
 import { validateMapSpec } from "../../map-dw/src/map-spec";
 import { validateChoroplethConfig } from "../../map-native/src/validate-config";
 import { NATIVE_TYPES } from "../../chart-native/src/native-types";
+import { parseCsv } from "../../chart-native/src/csv";
+import { validateShape } from "../../chart-native/src/shape-validation";
 import { FAMILY_TYPES } from "./family-types";
 import { NATIVE_FAMILY_TYPES } from "./native-family-types";
 
@@ -95,7 +97,8 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
   }
 
   if (producer === "chart-native") {
-    const nativeType = (spec as Record<string, unknown>)?.["nativeType"];
+    const s = spec as Record<string, unknown>;
+    const nativeType = s["nativeType"];
     const known =
       typeof nativeType === "string" &&
       NATIVE_TYPES.some((e) => e.id === nativeType && !e.deferred);
@@ -103,6 +106,23 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
       notes.push(
         `nativeType ${String(nativeType)} is not a mapped native type`,
       );
+    const title =
+      typeof s["title"] === "string" ? (s["title"] as string).trim() : "";
+    const src = s["source"] as { name?: string; url?: string } | undefined;
+    const hasSource = !!src?.name?.trim() && !!src?.url?.trim();
+    let dataOk = true;
+    const data = s["data"];
+    if (known && typeof data === "string") {
+      try {
+        validateShape(nativeType as string, parseCsv(data));
+      } catch (e) {
+        dataOk = false;
+        notes.push((e as Error).message);
+      }
+    }
+    if (!title) notes.push("native spec is missing an insight title");
+    if (!hasSource) notes.push("native spec is missing source name+url");
+    const validates = known && !!title && hasSource && dataOk;
     const allowed = NATIVE_FAMILY_TYPES[expect.family] ?? [];
     const familyMatch =
       typeof nativeType === "string" && allowed.includes(nativeType);
@@ -111,10 +131,10 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
         `nativeType ${String(nativeType)} not in native family ${expect.family} [${allowed.join(",")}]`,
       );
     return {
-      validates: known,
+      validates,
       familyMatch,
-      guardrailsOk: known,
-      pass: known && familyMatch,
+      guardrailsOk: validates,
+      pass: validates && familyMatch,
       notes,
     };
   }

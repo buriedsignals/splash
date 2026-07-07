@@ -138,15 +138,24 @@ hover). A plain static chart stays `dw-chart`.
 
 Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
-directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped**
-(`spec-to-config.ts`); for any other type the native producer exits with `FALLBACK_TO_DW` and you route
-to `dw-chart` instead. Produce with
+directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped,
+histogram, lollipop, connected-scatter, beeswarm** (`spec-to-config.ts`); for any type NOT in this list
+the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead. Produce with
 `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`); `highlight` is the category to accent; `directLabel` is the line's series label.
+`scatter`, `pie`, `grouped`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`); `highlight` is
+the category to accent; `directLabel` is the line's series label.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
 `North,2400,1900`.
+`histogram` expects **one numeric column of RAW individual observations** (not pre-binned counts); the
+engine bins them.
+`lollipop` expects **category + one value** (a ranking/magnitude dot-and-stem); `highlight` names the
+category to accent.
+`connected-scatter` expects the **first column as the ordering/time key, then TWO numeric measure
+columns**; rows must be ordered by that key (the path follows row order).
+`beeswarm` expects **one numeric value column** (raw observations) + an **optional low-cardinality
+grouping column** (≤5 groups → colours) + an optional per-point label column.
 
 ### map-dw (static choropleth map) — default map path
 
