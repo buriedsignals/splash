@@ -8,6 +8,10 @@
 > `main` + roadmap. Le reste est un log historique daté (des chiffres anciens sont périmés, ex. « chart-native
 > 3 types » = en réalité 41 ; « suggester non mergé » = mergé). Ce fichier de 40K+ mériterait d'être scindé
 > (état-courant vs changelog) — flaggé par l'audit 2026-07-06.
+>
+> **★ POUR CONTINUER LA COUTURE (types natifs restants) : lis `docs/superpowers/2026-07-06-native-couture-handoff.md`**
+> — grounding scouté des 10 types restants (recettes garde/mapper + statut a11y), finding a11y systémique,
+> décision de conception ouverte, et procédure de reprise. 14/41 types atteignables ; le reste y est cadré.
 
 ## Quoi / pourquoi (la bourse)
 
