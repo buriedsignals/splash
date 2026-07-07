@@ -371,6 +371,33 @@ export const MAPPERS: Record<
       },
     };
   },
+  waterfall(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const labelCol = columns[0];
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    // optional boolean-ish "total" column marks running-total rows (opening/closing)
+    const totalCol = columns.find((c) => c.toLowerCase() === "total");
+    const wrows = rows.map((r) => ({
+      label: String(r[labelCol]),
+      value: Number(r[valCol]),
+      ...(totalCol &&
+      String(r[totalCol])
+        .toLowerCase()
+        .match(/^(1|true|yes)$/)
+        ? { total: true }
+        : {}),
+    }));
+    return {
+      type: "waterfall",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        rows: wrows,
+      },
+    };
+  },
 };
 
 /** NativeSpec → { type, config } for the produce() path. */

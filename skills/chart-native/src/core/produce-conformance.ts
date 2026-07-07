@@ -22,6 +22,7 @@ import {
   checkWaffleConformance,
   checkRadialBarConformance,
   checkDivergingBarConformance,
+  checkWaterfallConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -37,6 +38,7 @@ import {
   COLORS,
   OKABE_ITO,
   DIVERGING_SIGN_COLORS,
+  WATERFALL_ROLE_COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeDivergingLayout } from "../diverging-bar-geometry";
@@ -46,6 +48,7 @@ import { computeGroupedLayout } from "../grouped-bar-geometry";
 import { computeStackedLayout } from "../stacked-bar-geometry";
 import { computeStackedAreaLayout } from "../stacked-area-geometry";
 import { computeRadialBarLayout } from "../radial-bar-geometry";
+import { computeWaterfallLayout } from "../waterfall-geometry";
 import type { ChartConfig } from "../LineChart";
 import type { BarConfig } from "../BarChart";
 import type { ScatterConfig } from "../ScatterChart";
@@ -61,6 +64,7 @@ import type { DotStripConfig } from "../DotStripChart";
 import type { WaffleConfig } from "../WaffleChart";
 import type { RadialBarConfig } from "../RadialBarChart";
 import type { DivergingBarConfig } from "../DivergingBarChart";
+import type { WaterfallConfig } from "../WaterfallChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -115,6 +119,11 @@ const DIVERGING_DIMS = {
   height: 460,
   padding: { top: 64, right: 64, bottom: 40, left: 124 },
 };
+const WATERFALL_DIMS = {
+  width: 840,
+  height: 460,
+  padding: { top: 64, right: 24, bottom: 72, left: 52 },
+};
 
 // Every type with a produce-time guard wired (flat-triple resolver types + the
 // bespoke-signature types resolved inline below). The completeness test asserts
@@ -129,6 +138,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "waffle",
   "radial-bar",
   "diverging",
+  "waterfall",
 ];
 
 export function runProduceConformance(
@@ -453,6 +463,24 @@ export function runProduceConformance(
             source: cfg.source,
             valueDomain: layout.valueDomain,
             signColors: [...DIVERGING_SIGN_COLORS],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "waterfall": {
+      const cfg = config as unknown as WaterfallConfig;
+      const layout = computeWaterfallLayout({ rows: cfg.rows }, WATERFALL_DIMS);
+      return {
+        checked: true,
+        violations: checkWaterfallConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            countDomain: layout.countDomain,
+            rows: cfg.rows.map((r) => ({ value: r.value, total: r.total })),
+            roleColors: [...WATERFALL_ROLE_COLORS],
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),
