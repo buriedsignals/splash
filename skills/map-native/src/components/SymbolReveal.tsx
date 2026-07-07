@@ -20,6 +20,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
 import { symbolLabels, labelRadialOffset } from "../symbol-labels";
 import type { SymbolConfig } from "../SymbolMap";
+import { resolveMapStyle } from "../route-geo";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { easedRevealProgress, revealCameraPlan } from "../reveal";
@@ -44,6 +45,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
   const [mapReady, setMapReady] = useState(false);
   const [handle] = useState(() => delayRender("symbol-reveal-init"));
 
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
@@ -70,9 +72,12 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
   useEffect(() => {
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
+    const style = dark
+      ? maptilersdk.MapStyle.DATAVIZ.DARK
+      : maptilersdk.MapStyle.DATAVIZ.LIGHT;
     const map = new maptilersdk.Map({
       container: containerRef.current,
-      style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
+      style,
       center: [
         (geo.bounds[0] + geo.bounds[2]) / 2,
         (geo.bounds[1] + geo.bounds[3]) / 2,
@@ -136,8 +141,8 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
           "text-max-width": 8,
         },
         paint: {
-          "text-color": "#1a1a1a",
-          "text-halo-color": "#ffffff",
+          "text-color": dark ? "#f4f4f5" : "#1a1a1a",
+          "text-halo-color": dark ? "rgba(0,0,0,0.85)" : "#ffffff",
           "text-halo-width": 1.6,
           "text-opacity": 0,
         },
@@ -174,7 +179,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
   }, [mapReady, frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#f4f4f4" }}>
+    <AbsoluteFill style={{ backgroundColor: dark ? "#0e0f12" : "#f4f4f4" }}>
       <MapFrame
         title={config.title ?? ""}
         description={config.description}
@@ -184,6 +189,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
         responsive={false}
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
+        dark={dark}
       >
         {/* Map fills the full composition frame */}
         <div

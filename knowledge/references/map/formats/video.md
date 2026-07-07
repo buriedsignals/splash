@@ -68,6 +68,16 @@ opening of a data video — the "event" in the EIPR arc is introduced before dat
 broadcast lower-third convention (a title card and running lower-third furniture are distinct
 scenes, never composited simultaneously).
 
+## Dark mode is a video concern too
+
+**A video renderer must honor `config.mapStyle: "dataviz-dark"` exactly like its static/
+interactive sibling — never hardcode a light basemap.** Resolve it through the single
+source, `resolveMapStyle` (`src/route-geo.ts`); do not re-derive dark/light locally. This
+matters more in video than elsewhere: a wrong basemap style renders into a baked file the
+newsroom cannot patch after export. Enforcement: `tests/resolve-map-style-parity.test.ts`
+source-scans every `*Story`/`*Reveal`/`*Scrolly` component for genuine `resolveMapStyle`
+consumption — a regression is caught mechanically, not only at render-verify.
+
 ## Reveal vs storytelling camera — editorial choice
 
 **The choice between a simple reveal and a storytelling camera tour is editorial.**
