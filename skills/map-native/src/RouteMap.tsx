@@ -7,6 +7,7 @@ import { computeRoute, resolveMapStyle, type RouteConfig } from "./route-geo";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
+import { legendTheme } from "./theme/legend-theme";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -51,6 +52,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
   const [titleHeightPx, setTitleHeightPx] = useState(0);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const theme = legendTheme(dark);
 
   // Measure the root element size before map init.
   useEffect(() => {
@@ -450,18 +452,16 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
 
       // Territory legend panel — swatch + label per territory (ordered by route traversal)
       if (legendRef.current) {
-        const ink = isDark ? "#f4f4f5" : "#444";
-        const sub = isDark ? "#c8c8cf" : "#555";
         const swatches = layout.territories
           .map(
             (t) => `
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span style="display:inline-block;width:14px;height:14px;background:${t.color};border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);flex-shrink:0"></span>
-            <span style="font:11px/1.2 sans-serif;color:${sub}">${t.label}</span>
+            <span style="display:inline-block;width:14px;height:14px;background:${t.color};border-radius:2px;box-shadow:0 0 0 1px ${theme.stroke};flex-shrink:0"></span>
+            <span style="font:11px/1.2 sans-serif;color:${theme.sub}">${t.label}</span>
           </div>`,
           )
           .join("");
-        const header = `<div style="font:600 11px/1.2 sans-serif;color:${ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Territories</div>`;
+        const header = `<div style="font:600 11px/1.2 sans-serif;color:${theme.ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Territories</div>`;
         legendRef.current.innerHTML = header + swatches;
       }
 
@@ -559,7 +559,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
           bottom: 16,
           right: 12,
           zIndex: 10,
-          background: dark ? "rgba(24,24,27,0.88)" : "rgba(255,255,255,0.92)",
+          background: theme.bg,
           padding: "10px 12px",
           borderRadius: 6,
           boxShadow: "0 1px 6px rgba(0,0,0,.12)",

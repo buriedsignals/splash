@@ -44,6 +44,21 @@ mkdirSync(outDir, { recursive: true });
 // per-type dispatch (video comps) further down, so there is no double-read.
 const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
 
+// Dark-video/scrolly gap warning: the video/scrolly renderers (*Story/*Reveal/*Scrolly
+// under src/components/) do not yet honor mapStyle:dark — they always render a LIGHT
+// basemap (a known, deferred follow-up; see CLAUDE.md "parité harnais-contraste côté
+// map"). Warn (never fail — this is a known gap, not a defect) so a journalist who asked
+// for a dark video/scrolly isn't silently handed a light MP4 with no explanation.
+// `format` here is one of static|reveal|story|scrolly|all: only "static" also drives the
+// interactive build without touching a video/scrolly renderer, so any other value means a
+// video or scrolly kind will be rendered.
+if (parsedConfig.mapStyle === "dataviz-dark" && format !== "static") {
+  console.warn(
+    `[produce map] WARNING: mapStyle "dataviz-dark" requested with format "${format}" — ` +
+      "dark mode is not yet honored in the video/scrolly renderers; the output will render with a LIGHT basemap.",
+  );
+}
+
 // Conformance-at-produce-time: run the type-appropriate guard (core/map-produce-conformance.ts)
 // against the ACTUAL config being rendered — furniture L0 (insight title, source name+url, WCAG
 // contrast) + palette CVD-safety for the ramp-driven types — BEFORE any build step. A violation
