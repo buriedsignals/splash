@@ -7,6 +7,6 @@ export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   correlation: ["scatter", "connected-scatter"],
   "part-to-whole": ["pie"],
   magnitude: ["bar", "grouped"],
-  distribution: ["histogram"],
+  distribution: ["histogram", "beeswarm"],
   ranking: ["lollipop"],
 };

@@ -79,12 +79,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     deferred: A_PENDING("distribution"),
   },
   { id: "bump", family: "A", shape: "wide", deferred: A_PENDING("wide") },
-  {
-    id: "beeswarm",
-    family: "A",
-    shape: "distribution",
-    deferred: A_PENDING("distribution"),
-  },
+  { id: "beeswarm", family: "A", shape: "distribution" },
   {
     id: "treemap",
     family: "A",

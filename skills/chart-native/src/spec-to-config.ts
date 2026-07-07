@@ -205,6 +205,41 @@ export const MAPPERS: Record<
       },
     };
   },
+  beeswarm(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    const textCols = columns.filter(
+      (c) => c !== valCol && !numericColumns.includes(c),
+    );
+    const distinct = (c: string) => new Set(rows.map((r) => String(r[c]))).size;
+    // low-cardinality text col groups the swarm into colours (HARD-capped at ≤5
+    // by checkBeeswarmConformance at produce time); the other text col (if any)
+    // is per-point label only — never blindly columns[0] (a unique-per-row name
+    // would blow the category cap).
+    const catCol = textCols.length
+      ? [...textCols].sort((a, b) => distinct(a) - distinct(b))[0]
+      : undefined;
+    const labelCol = textCols.find((c) => c !== catCol);
+    const categories = catCol
+      ? [...new Set(rows.map((r) => String(r[catCol])))]
+      : undefined;
+    const points = rows.map((r) => ({
+      value: Number(r[valCol]),
+      ...(labelCol ? { label: String(r[labelCol]) } : {}),
+      ...(catCol ? { category: String(r[catCol]) } : {}),
+    }));
+    return {
+      type: "beeswarm",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        valueLabel: spec.unit, // NativeSpec has no valueLabel; its long-axis `unit` maps here
+        ...(categories ? { categories } : {}),
+        points,
+      },
+    };
+  },
   pie(parsed, spec) {
     const { columns, rows, numericColumns } = parsed;
     const catCol = columns[0];
