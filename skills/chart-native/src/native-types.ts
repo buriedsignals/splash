@@ -40,8 +40,9 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   { id: "pie", family: "A", shape: "single" },
   // --- the Plan 1 witness (flipped to mapped in Task 10) ---
   { id: "grouped", family: "A", shape: "wide" },
+  // --- Native Batch 2 wide (flipped to mapped) ---
+  { id: "stacked", family: "A", shape: "wide" },
   // --- Family A, deferred until their shape batch ---
-  { id: "stacked", family: "A", shape: "wide", deferred: A_PENDING("wide") },
   { id: "slope", family: "A", shape: "wide", deferred: A_PENDING("wide") },
   {
     id: "dumbbell",

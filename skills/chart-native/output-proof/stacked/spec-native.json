@@ -1,0 +1,10 @@
+{
+  "nativeType": "stacked",
+  "title": "Renewables now supply the biggest slice of the grid",
+  "source": {
+    "name": "Ember, 2025 global electricity review",
+    "url": "https://example.org/ember-electricity-2025"
+  },
+  "unit": "TWh generated",
+  "data": "year,hydro,wind,solar\n2015,120,30,10\n2018,124,55,28\n2021,128,85,55\n2024,131,112,92"
+}

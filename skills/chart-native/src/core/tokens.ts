@@ -62,3 +62,13 @@ export const GROUPED_SERIES_COLORS = [
   OKABE_ITO.orange,
   OKABE_ITO.green,
 ] as const;
+
+// Stacked bar series palette (StackedBarChart.tsx), extracted so the produce
+// conformance guard derives the SAME colours. ≤5 series (stacked-bar.md).
+export const STACKED_SERIES_COLORS = [
+  OKABE_ITO.black,
+  OKABE_ITO.orange,
+  OKABE_ITO.skyblue,
+  OKABE_ITO.green,
+  OKABE_ITO.purple,
+] as const;

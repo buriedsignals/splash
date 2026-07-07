@@ -20,7 +20,7 @@ import {
   type StackedLayout,
 } from "./stacked-bar-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, TYPE, STACKED_SERIES_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
@@ -45,13 +45,9 @@ export interface StackedBarChartProps {
 }
 
 // categorical series colours, in stacking order — all Okabe-Ito (CVD-safe).
-const SERIES_COLORS = [
-  OKABE_ITO.black,
-  OKABE_ITO.orange,
-  OKABE_ITO.skyblue,
-  OKABE_ITO.green,
-  OKABE_ITO.purple,
-];
+// Extracted to core/tokens.ts (STACKED_SERIES_COLORS) so the produce-time
+// conformance guard derives the SAME colours.
+const SERIES_COLORS = STACKED_SERIES_COLORS;
 
 export function StackedBarChart({
   config,
@@ -101,7 +97,16 @@ export function StackedBarChart({
     bottom: 44 + legendRows * legendRowUnscaled + 24,
     left: leftAxis,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

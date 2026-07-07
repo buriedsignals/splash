@@ -16,6 +16,7 @@ import {
   checkBeeswarmConformance,
   checkPieConformance,
   checkGroupedBarConformance,
+  checkStackedBarConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -25,12 +26,14 @@ import {
   BEESWARM_CATEGORY_COLORS,
   PIE_SLICE_COLORS,
   GROUPED_SERIES_COLORS,
+  STACKED_SERIES_COLORS,
   COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeHistogramLayout } from "../histogram-geometry";
 import { computeLollipopLayout } from "../lollipop-geometry";
 import { computeGroupedLayout } from "../grouped-bar-geometry";
+import { computeStackedLayout } from "../stacked-bar-geometry";
 import type { ChartConfig } from "../LineChart";
 import type { BarConfig } from "../BarChart";
 import type { ScatterConfig } from "../ScatterChart";
@@ -40,6 +43,7 @@ import type { ConnectedScatterConfig } from "../ConnectedScatterChart";
 import type { LollipopConfig } from "../LollipopChart";
 import type { PieConfig } from "../PieChart";
 import type { GroupedConfig } from "../GroupedBarChart";
+import type { StackedConfig } from "../StackedBarChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -71,6 +75,11 @@ const GROUPED_DIMS = {
   height: 460,
   padding: { top: 64, right: 16, bottom: 96, left: 52 },
 };
+const STACKED_DIMS = {
+  width: 840,
+  height: 460,
+  padding: { top: 64, right: 16, bottom: 120, left: 52 },
+};
 
 // Every type with a produce-time guard wired (flat-triple resolver types + the
 // bespoke-signature types resolved inline below). The completeness test asserts
@@ -79,6 +88,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   ...RESOLVABLE_CONFORMANCE_TYPES,
   "pie",
   "grouped",
+  "stacked",
 ];
 
 export function runProduceConformance(
@@ -253,6 +263,34 @@ export function runProduceConformance(
       return {
         checked: true,
         violations: checkGroupedBarConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            valueDomain: layout.valueDomain,
+            seriesCount: cfg.seriesFields.length,
+            seriesColors,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "stacked": {
+      const cfg = config as unknown as StackedConfig;
+      const seriesColors = cfg.seriesFields.map(
+        (_, i) => STACKED_SERIES_COLORS[i % STACKED_SERIES_COLORS.length],
+      );
+      const layout = computeStackedLayout(
+        {
+          catField: cfg.catField,
+          seriesFields: cfg.seriesFields,
+          rows: cfg.rows,
+        },
+        STACKED_DIMS,
+      );
+      return {
+        checked: true,
+        violations: checkStackedBarConformance(
           {
             title: cfg.title,
             source: cfg.source,

@@ -1,7 +1,7 @@
 // Map a normalised NativeSpec (what suggest-chart emits when it routes to the
 // native engine) → a concrete `{type, config}` the produce() path renders. Covers
 // the tabular families an article→CSV flow realistically produces: bar/column,
-// line, scatter, pie, grouped. An unsupported nativeType throws `UnsupportedNativeType` so
+// line, scatter, pie, grouped, stacked. An unsupported nativeType throws `UnsupportedNativeType` so
 // the caller can fall back to dw-chart. Pure, framework-free, unit-tested.
 
 import { parseCsv, type ParsedCsv } from "./csv";
@@ -161,6 +161,25 @@ export const MAPPERS: Record<
       .filter((c) => parsed.numericColumns.includes(c));
     return {
       type: "grouped",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        catField: catCol,
+        seriesFields,
+        rows: parsed.rows,
+      },
+    };
+  },
+  stacked(parsed, spec) {
+    const catCol = parsed.columns[0];
+    // wide convention: every NUMERIC column after the category is a series
+    // (byte-identical to grouped's mapper — same wide-CSV shape).
+    const seriesFields = parsed.columns
+      .slice(1)
+      .filter((c) => parsed.numericColumns.includes(c));
+    return {
+      type: "stacked",
       config: {
         title: spec.title,
         source: src(spec.source),
