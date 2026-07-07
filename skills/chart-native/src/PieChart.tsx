@@ -16,7 +16,7 @@ import {
   type PieLayout,
 } from "./pie-geometry";
 import { formatNumber, clamp01, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO, PIE_SLICE_COLORS } from "./core/tokens";
+import { COLORS, FONT, TYPE, PIE_SLICE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { withinBounds, overlaps, type Box } from "./core/labels";

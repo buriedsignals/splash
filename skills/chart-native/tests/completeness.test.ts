@@ -9,11 +9,22 @@ import { PRODUCE_GUARDED_TYPES } from "../src/core/produce-conformance";
 const KB_DIR = join(
   import.meta.dir,
   "..",
+  "..",
+  "..",
   "knowledge",
   "references",
   "chart",
   "types",
 );
+
+// KB files use display names; render ids differ for a few types.
+const KB_FILENAME: Record<string, string> = {
+  grouped: "grouped-bar.md",
+  stacked: "stacked-bar.md",
+  diverging: "diverging-bar.md",
+  pyramid: "population-pyramid.md",
+};
+const kbFile = (id: string) => KB_FILENAME[id] ?? `${id}.md`;
 
 describe("native engine completeness invariant (chart-native local half)", () => {
   it("HARD: every reachable type is conformance-guarded (no reachable-but-unguarded)", () => {
@@ -27,7 +38,7 @@ describe("native engine completeness invariant (chart-native local half)", () =>
       if (e.deferred || LEGACY_KB_FAMILY_BACKFILL.includes(e.id)) continue;
       expect(Object.keys(MAPPERS)).toContain(e.id);
       expect(PRODUCE_GUARDED_TYPES).toContain(e.id);
-      expect(existsSync(join(KB_DIR, `${e.id}.md`))).toBe(true);
+      expect(existsSync(join(KB_DIR, kbFile(e.id)))).toBe(true);
     }
   });
 
