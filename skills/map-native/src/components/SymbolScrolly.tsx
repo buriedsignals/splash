@@ -15,6 +15,7 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
+import { symbolLabels, labelRadialOffset } from "../symbol-labels";
 import { deriveSymbolStory } from "../symbol-story";
 import {
   buildTimeline,
@@ -26,7 +27,7 @@ import type { Beat } from "../map-story";
 import type { SymbolConfig } from "../SymbolMap";
 import { TitleCard } from "./StoryCards";
 import { ScrollyPanel } from "./ScrollyPanel";
-import { resolveMapFrame } from "../core/map-format";
+import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
 import {
@@ -63,6 +64,9 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
     labelOverhang: 80,
   });
 
+  // Ratio-scaled label size: square/portrait are ≤1080 wide → larger text for legibility.
+  const textSize = labelTextSize(width);
+
   const [mapState, setMapState] = useState<SymbolMapState | null>(null);
   const [handle] = useState(() => delayRender("symbol-scrolly-init"));
 
@@ -90,15 +94,20 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
     });
 
     m.on("load", () => {
+      const labels = symbolLabels(geo.symbols);
       m.addSource("symbols", {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: geo.symbols.map((s) => ({
+          features: geo.symbols.map((s, i) => ({
             type: "Feature",
             properties: {
               radius: s.radius,
               label: s.label ?? "",
+              labelText: labels[i]?.name
+                ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
+                : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
+              labelOffset: labelRadialOffset(s.radius, textSize),
             },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
           })),
@@ -115,6 +124,32 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
           "circle-opacity": 0.75,
           "circle-stroke-color": SYMBOL_STROKE,
           "circle-stroke-width": 1.5,
+        },
+      });
+
+      // Direct label layer — every mark carries its name+value, not just the
+      // top-N callouts. Fades in with the establish reveal via text-opacity.
+      m.addLayer({
+        id: "symbol-labels",
+        type: "symbol",
+        source: "symbols",
+        layout: {
+          "text-field": ["get", "labelText"],
+          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+          "text-size": textSize,
+          "text-variable-anchor": ["left", "right", "top", "bottom"],
+          "text-radial-offset": ["get", "labelOffset"],
+          "text-justify": "auto",
+          "text-allow-overlap": false,
+          "text-optional": true,
+          "text-line-height": 1.3,
+          "text-max-width": 8,
+        },
+        paint: {
+          "text-color": "#1a1a1a",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.6,
+          "text-opacity": 0,
         },
       });
 
@@ -197,6 +232,11 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
         ["get", "radius"],
         fillReveal,
       ]);
+
+      // Labels fade in alongside the circles they name — every mark, not just callouts.
+      if (map.getLayer("symbol-labels")) {
+        map.setPaintProperty("symbol-labels", "text-opacity", fillReveal);
+      }
 
       // Change #3 — sync the revealed symbol's emphasis to its panel slide-in.
       // dataReveal ramps 0→1 across the current step's panel move phase (clamp01 of
