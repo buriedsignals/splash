@@ -19,7 +19,7 @@ import {
   type WaterfallLayout,
 } from "./waterfall-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, WATERFALL_ROLE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
@@ -40,9 +40,9 @@ export interface WaterfallChartProps {
   scale?: number;
 }
 
-const UP = OKABE_ITO.blue; // increase
-const DOWN = OKABE_ITO.vermillion; // decrease
-const TOTAL = OKABE_ITO.black; // a total (neutral)
+const UP = WATERFALL_ROLE_COLORS[0]; // increase
+const DOWN = WATERFALL_ROLE_COLORS[1]; // decrease
+const TOTAL = WATERFALL_ROLE_COLORS[2]; // a total (neutral)
 
 const barColor = (b: { isTotal: boolean; sign: 1 | -1 }) =>
   b.isTotal ? TOTAL : b.sign < 0 ? DOWN : UP;

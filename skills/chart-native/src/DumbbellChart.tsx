@@ -19,7 +19,7 @@ import {
   type DumbbellLayout,
 } from "./dumbbell-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, TYPE, DUMBBELL_DOT_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
@@ -46,8 +46,8 @@ export interface DumbbellChartProps {
   scale?: number;
 }
 
-const LEFT_COLOR = OKABE_ITO.orange; // series A dot
-const RIGHT_COLOR = OKABE_ITO.blue; // series B dot
+const LEFT_COLOR = DUMBBELL_DOT_COLORS[0]; // series A dot
+const RIGHT_COLOR = DUMBBELL_DOT_COLORS[1]; // series B dot
 const CONNECTOR = COLORS.muted; // neutral gap line
 
 export function DumbbellChart({

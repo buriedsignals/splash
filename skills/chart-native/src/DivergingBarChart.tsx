@@ -17,7 +17,7 @@ import {
   type DivergingLayout,
 } from "./diverging-bar-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, DIVERGING_SIGN_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
@@ -41,8 +41,8 @@ export interface DivergingBarChartProps {
   scale?: number;
 }
 
-const POS = OKABE_ITO.blue; // positive sign
-const NEG = OKABE_ITO.vermillion; // negative sign
+const POS = DIVERGING_SIGN_COLORS[0]; // positive sign
+const NEG = DIVERGING_SIGN_COLORS[1]; // negative sign
 
 const signed = (v: number) => (v > 0 ? `+${v}` : `${v}`);
 
