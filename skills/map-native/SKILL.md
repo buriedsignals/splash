@@ -218,7 +218,10 @@ the interactive scrolly play through the same beats. This is the difference betw
 Conformance is enforced, not hand-baked: `src/conformance.ts` (`checkChoroplethConformance`)
 is the map-native equivalent of chart-native's `checkConformance` — it runs the global L0 guard
 (insight title, source name + url, WCAG contrast) plus type-specific map checks (CVD-safe scale,
-legend, basemap-fit possible). Unit-tested in `tests/conformance.test.ts`.
+legend, basemap-fit possible). Unit-tested in `tests/conformance.test.ts`. Conformance also runs
+**fail-hard at produce time** — `scripts/produce.mjs` calls `runProduceMapConformance` (furniture
+L0 + palette CVD-safety) against the actual config BEFORE any build step; a violation exits
+non-zero with the violation list, before anything is built or rendered.
 
 ## Choropleth — the worked exemplar
 
@@ -315,7 +318,7 @@ Slice 1 ships only `world`. The others are added by dropping their simplified Ge
 ## Produce — format selector from one config
 
 `produce.mjs <config.json> <outDir> <format>` where `format ∈ { static | reveal | story | scrolly | all }`
-(defaults to `all`). The static + interactive proofs (`static.png`, `interactive.png`) are always
+(defaults to `static`). The static + interactive proofs (`static.png`, `interactive.png`) are always
 emitted; the `format` arg gates the VIDEO render:
 - `reveal` → simple-reveal videos (fixed camera, data animates in) — `reveal-{landscape,square,portrait}.mp4`
 - `story` → storytelling camera-tour videos — `story-{landscape,square,portrait}.mp4`

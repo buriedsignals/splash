@@ -8,6 +8,7 @@ import { computeCartogram } from "./cartogram-geo";
 import { bbox } from "@turf/turf";
 import {
   isCvdSafeRamp,
+  resolvePalette,
   DEFAULT_SEQUENTIAL,
   DEFAULT_DIVERGING,
 } from "./theme/scale";
@@ -495,6 +496,11 @@ export function checkHexGridConformance(
     cellCount: number;
     boundsNonEmpty: boolean;
     mapStyle?: string;
+    // Threaded so the CVD-safety guardrail can validate the ramp the component
+    // actually paints (hex-grid-geo.ts:160) — mirrors the choropleth call below.
+    palette?: string | string[];
+    scaleType?: "sequential" | "diverging";
+    values?: number[];
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -517,6 +523,26 @@ export function checkHexGridConformance(
   if (input.cellCount < 1) v.push("no populated cells to draw");
   if (!input.boundsNonEmpty)
     v.push("empty grid bounds — basemap-fit impossible");
+  // hex-grid paints resolvePalette(scaleType, data.palette).ramp (hex-grid-geo.ts:160,
+  // always "sequential" today). Validate it — the custom-array branch of resolvePalette
+  // (scale.ts:116-122) is the only way a non-CVD ramp reaches produce.
+  try {
+    const ramp = resolvePalette(
+      input.scaleType ?? "sequential",
+      input.palette,
+    ).ramp;
+    v.push(
+      ...checkPaletteConformance({
+        scaleType: input.scaleType ?? "sequential",
+        scaleColors: ramp,
+        values: input.values,
+        paletteName:
+          typeof input.palette === "string" ? input.palette : undefined,
+      }),
+    );
+  } catch (e) {
+    v.push(`palette: ${(e as Error).message}`);
+  }
   if (
     input.mapStyle &&
     !(MAP_STYLES as readonly string[]).includes(input.mapStyle)
@@ -537,6 +563,9 @@ export function checkCartogramConformance(
     features: GeoJSON.FeatureCollection;
     bins?: number;
     scaleType?: "sequential" | "diverging";
+    // Threaded so the CVD-safety guardrail can validate the ramp the component
+    // actually paints (reuses `layout.bins`/`layout.scaleType` below — no extra compute).
+    palette?: string | string[];
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -559,6 +588,7 @@ export function checkCartogramConformance(
         valueLabel: input.valueLabel,
         bins: input.bins,
         scaleType: input.scaleType,
+        palette: input.palette,
       },
       input.features,
     );
@@ -576,6 +606,18 @@ export function checkCartogramConformance(
     v.push(
       "cartogram needs a sequential bin legend — the colour scale is undecodable without it",
     );
+
+  // Validate the ramp the component actually paints — reuses layout.bins/layout.scaleType
+  // (computed above), no extra compute. Mirrors the choropleth call at :191.
+  v.push(
+    ...checkPaletteConformance({
+      scaleType: layout.scaleType,
+      scaleColors: layout.bins.map((b) => b.color),
+      values: input.values.map((x) => x.value),
+      paletteName:
+        typeof input.palette === "string" ? input.palette : undefined,
+    }),
+  );
 
   if (layout.cells.length < 1) v.push("no populated cells to draw");
 
