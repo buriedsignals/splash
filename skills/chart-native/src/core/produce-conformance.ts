@@ -25,6 +25,7 @@ import {
   checkWaterfallConformance,
   checkDumbbellConformance,
   checkSlopeConformance,
+  checkBulletConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -43,6 +44,7 @@ import {
   WATERFALL_ROLE_COLORS,
   DUMBBELL_DOT_COLORS,
   SLOPE_LINE_COLORS,
+  BULLET_MEASURE_COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeDivergingLayout } from "../diverging-bar-geometry";
@@ -71,6 +73,7 @@ import type { DivergingBarConfig } from "../DivergingBarChart";
 import type { WaterfallConfig } from "../WaterfallChart";
 import type { DumbbellConfig } from "../DumbbellChart";
 import type { SlopeConfig } from "../SlopeChart";
+import type { BulletConfig } from "../BulletChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -147,6 +150,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "waterfall",
   "dumbbell",
   "slope",
+  "bullet",
 ];
 
 export function runProduceConformance(
@@ -524,6 +528,22 @@ export function runProduceConformance(
             rightPeriod: cfg.rightPeriod,
             accentColor: SLOPE_LINE_COLORS[1],
             lineColors: [...SLOPE_LINE_COLORS],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "bullet": {
+      const cfg = config as unknown as BulletConfig;
+      return {
+        checked: true,
+        violations: checkBulletConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            measureColors: [...BULLET_MEASURE_COLORS],
+            rows: cfg.rows.map((r) => ({ target: r.target })),
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

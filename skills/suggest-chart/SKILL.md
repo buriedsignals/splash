@@ -140,11 +140,11 @@ Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
 directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
-waterfall, dumbbell, slope** (`spec-to-config.ts`); for any type NOT in this list
+waterfall, dumbbell, slope, bullet** (`spec-to-config.ts`); for any type NOT in this list
 the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead. Produce with
 `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
@@ -188,6 +188,10 @@ column headers become the series labels. Route it for a two-point comparison per
 `slope` expects **category + exactly TWO time-point columns** (e.g. `2019`,`2024`); the two column headers
 become the period captions. Route it for a two-point change/comparison per category — NOT for 3+ points
 (use `line`). `highlight` names the one line that bucks the trend.
+`bullet` expects **category + a measure value + a `target`** (a column named `target`, or the last numeric
+column). Route it ONLY when there's a target to measure against (a KPI vs its goal). The measure is coloured
+by hit (blue) / miss (vermillion); by default it sits on a single neutral track — qualitative range bands
+require explicit threshold columns (deferred), never invent them.
 
 ### map-dw (static choropleth map) — default map path
 

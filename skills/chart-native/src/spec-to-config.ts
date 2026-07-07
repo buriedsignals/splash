@@ -411,6 +411,40 @@ export const MAPPERS: Record<
       },
     };
   },
+  bullet(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const labelCol = columns[0];
+    // target = a column literally named "target", else the last numeric column
+    const targetCol =
+      columns.find((c) => c.toLowerCase() === "target") ??
+      numericColumns[numericColumns.length - 1];
+    // value = the other numeric column (the measure)
+    const valueCol =
+      numericColumns.find((c) => c !== targetCol) ?? numericColumns[0];
+    const bulletRows = rows.map((r) => {
+      const value = Number(r[valueCol]);
+      const target = Number(r[targetCol]);
+      // per-row scale with ~15% headroom so the target marker never hugs the edge
+      const max = Math.ceil(Math.max(value, target) * 1.15);
+      return {
+        label: String(r[labelCol]),
+        unit: spec.unit,
+        value,
+        target,
+        max,
+        bands: [] as number[], // single neutral track; qualitative multi-band deferred
+      };
+    });
+    return {
+      type: "bullet",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        rows: bulletRows,
+      },
+    };
+  },
   waterfall(parsed, spec) {
     const { columns, numericColumns, rows } = parsed;
     const labelCol = columns[0];
