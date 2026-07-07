@@ -335,6 +335,23 @@ export const MAPPERS: Record<
       },
     };
   },
+  diverging(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const catCol = columns[0];
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    return {
+      type: "diverging",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        catField: catCol,
+        valField: valCol,
+        rows,
+      },
+    };
+  },
   waffle(parsed, spec) {
     const catCol = parsed.columns[0];
     const valCol =
@@ -351,6 +368,54 @@ export const MAPPERS: Record<
         source: src(spec.source),
         unit: spec.unit,
         items,
+      },
+    };
+  },
+  dumbbell(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const labelCol = columns[0];
+    const [leftField, rightField] = numericColumns.slice(0, 2);
+    return {
+      type: "dumbbell",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        labelField: labelCol,
+        leftField,
+        rightField,
+        leftLabel: leftField,
+        rightLabel: rightField,
+        rows,
+      },
+    };
+  },
+  waterfall(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const labelCol = columns[0];
+    // optional boolean-ish "total" column marks running-total rows (opening/closing)
+    const totalCol = columns.find((c) => c.toLowerCase() === "total");
+    const valueCandidates = numericColumns.filter((c) => c !== totalCol);
+    const valCol =
+      valueCandidates[valueCandidates.length - 1] ??
+      columns[columns.length - 1];
+    const wrows = rows.map((r) => ({
+      label: String(r[labelCol]),
+      value: Number(r[valCol]),
+      ...(totalCol &&
+      String(r[totalCol])
+        .toLowerCase()
+        .match(/^(1|true|yes)$/)
+        ? { total: true }
+        : {}),
+    }));
+    return {
+      type: "waterfall",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        rows: wrows,
       },
     };
   },

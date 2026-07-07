@@ -21,6 +21,9 @@ import {
   checkDotStripConformance,
   checkWaffleConformance,
   checkRadialBarConformance,
+  checkDivergingBarConformance,
+  checkWaterfallConformance,
+  checkDumbbellConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -35,14 +38,19 @@ import {
   WAFFLE_CATEGORY_COLORS,
   COLORS,
   OKABE_ITO,
+  DIVERGING_SIGN_COLORS,
+  WATERFALL_ROLE_COLORS,
+  DUMBBELL_DOT_COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
+import { computeDivergingLayout } from "../diverging-bar-geometry";
 import { computeHistogramLayout } from "../histogram-geometry";
 import { computeLollipopLayout } from "../lollipop-geometry";
 import { computeGroupedLayout } from "../grouped-bar-geometry";
 import { computeStackedLayout } from "../stacked-bar-geometry";
 import { computeStackedAreaLayout } from "../stacked-area-geometry";
 import { computeRadialBarLayout } from "../radial-bar-geometry";
+import { computeWaterfallLayout } from "../waterfall-geometry";
 import type { ChartConfig } from "../LineChart";
 import type { BarConfig } from "../BarChart";
 import type { ScatterConfig } from "../ScatterChart";
@@ -57,6 +65,9 @@ import type { StackedAreaConfig } from "../StackedAreaChart";
 import type { DotStripConfig } from "../DotStripChart";
 import type { WaffleConfig } from "../WaffleChart";
 import type { RadialBarConfig } from "../RadialBarChart";
+import type { DivergingBarConfig } from "../DivergingBarChart";
+import type { WaterfallConfig } from "../WaterfallChart";
+import type { DumbbellConfig } from "../DumbbellChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -106,6 +117,16 @@ const RADIAL_BAR_DIMS = {
   height: 480,
   padding: { top: 90, right: 16, bottom: 28, left: 16 },
 };
+const DIVERGING_DIMS = {
+  width: 840,
+  height: 460,
+  padding: { top: 64, right: 64, bottom: 40, left: 124 },
+};
+const WATERFALL_DIMS = {
+  width: 840,
+  height: 460,
+  padding: { top: 64, right: 24, bottom: 72, left: 52 },
+};
 
 // Every type with a produce-time guard wired (flat-triple resolver types + the
 // bespoke-signature types resolved inline below). The completeness test asserts
@@ -119,6 +140,9 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "dot-strip",
   "waffle",
   "radial-bar",
+  "diverging",
+  "waterfall",
+  "dumbbell",
 ];
 
 export function runProduceConformance(
@@ -422,6 +446,62 @@ export function runProduceConformance(
             valueDomain: layout.valueDomain,
             seriesCount: cfg.seriesFields.length,
             seriesColors,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "diverging": {
+      const cfg = config as unknown as DivergingBarConfig;
+      const layout = computeDivergingLayout(
+        { catField: cfg.catField, valField: cfg.valField, rows: cfg.rows },
+        DIVERGING_DIMS,
+        "desc",
+      );
+      return {
+        checked: true,
+        violations: checkDivergingBarConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            valueDomain: layout.valueDomain,
+            signColors: [...DIVERGING_SIGN_COLORS],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "waterfall": {
+      const cfg = config as unknown as WaterfallConfig;
+      const layout = computeWaterfallLayout({ rows: cfg.rows }, WATERFALL_DIMS);
+      return {
+        checked: true,
+        violations: checkWaterfallConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            countDomain: layout.countDomain,
+            rows: cfg.rows.map((r) => ({ value: r.value, total: r.total })),
+            roleColors: [...WATERFALL_ROLE_COLORS],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "dumbbell": {
+      const cfg = config as unknown as DumbbellConfig;
+      return {
+        checked: true,
+        violations: checkDumbbellConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            leftLabel: cfg.leftLabel,
+            rightLabel: cfg.rightLabel,
+            dotColors: [...DUMBBELL_DOT_COLORS],
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

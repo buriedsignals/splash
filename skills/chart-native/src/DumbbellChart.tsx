@@ -19,7 +19,7 @@ import {
   type DumbbellLayout,
 } from "./dumbbell-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, TYPE, DUMBBELL_DOT_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
@@ -46,8 +46,8 @@ export interface DumbbellChartProps {
   scale?: number;
 }
 
-const LEFT_COLOR = OKABE_ITO.orange; // series A dot
-const RIGHT_COLOR = OKABE_ITO.blue; // series B dot
+const LEFT_COLOR = DUMBBELL_DOT_COLORS[0]; // series A dot
+const RIGHT_COLOR = DUMBBELL_DOT_COLORS[1]; // series B dot
 const CONNECTOR = COLORS.muted; // neutral gap line
 
 export function DumbbellChart({
@@ -75,7 +75,16 @@ export function DumbbellChart({
     bottom: 28 + legendRowUnscaled + 20, // legend + source clearance
     left: 124, // category labels
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -286,7 +295,7 @@ function DumbbellSvg({
                   r={dot(1)}
                   fill={RIGHT_COLOR}
                 />
-                {/* outer value labels, coloured by series */}
+                {/* outer value labels in ink; the dots + legend carry the series colour */}
                 <text
                   x={minX - 9 * sc}
                   y={r.y}
@@ -294,7 +303,7 @@ function DumbbellSvg({
                   textAnchor="end"
                   fontSize={ts.axis}
                   fontWeight={600}
-                  fill={leftIsMin ? LEFT_COLOR : RIGHT_COLOR}
+                  fill={COLORS.ink}
                 >
                   {fmt(leftIsMin ? r.leftVal : r.rightVal)}
                 </text>
@@ -305,7 +314,7 @@ function DumbbellSvg({
                   textAnchor="start"
                   fontSize={ts.axis}
                   fontWeight={600}
-                  fill={leftIsMin ? RIGHT_COLOR : LEFT_COLOR}
+                  fill={COLORS.ink}
                 >
                   {fmt(leftIsMin ? r.rightVal : r.leftVal)}
                 </text>

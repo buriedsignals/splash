@@ -76,7 +76,16 @@ export function BulletChart({
     bottom: 16,
     left: 150, // KPI labels + units in the gutter
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -268,7 +277,7 @@ function BulletSvg({
                 textAnchor="start"
                 fontSize={ts.axis}
                 fontWeight={700}
-                fill={color}
+                fill={COLORS.ink}
                 stroke="#fff"
                 strokeWidth={3 * sc}
                 style={{ paintOrder: "stroke" }}

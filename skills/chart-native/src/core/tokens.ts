@@ -97,3 +97,20 @@ export const WAFFLE_CATEGORY_COLORS = [
   OKABE_ITO.vermillion,
   OKABE_ITO.skyblue,
 ] as const;
+
+// Diverging bars: positive (blue) / negative (vermillion) sign colours — the guard
+// (checkDivergingBarConformance) validates THESE, so component + guard never drift.
+export const DIVERGING_SIGN_COLORS = [
+  OKABE_ITO.blue,
+  OKABE_ITO.vermillion,
+] as const;
+
+// Waterfall roles: increase (blue) / decrease (vermillion) / total (black).
+export const WATERFALL_ROLE_COLORS = [
+  OKABE_ITO.blue,
+  OKABE_ITO.vermillion,
+  OKABE_ITO.black,
+] as const;
+
+// Dumbbell endpoints: left series (orange) / right series (blue).
+export const DUMBBELL_DOT_COLORS = [OKABE_ITO.orange, OKABE_ITO.blue] as const;
