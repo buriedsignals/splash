@@ -390,6 +390,27 @@ export const MAPPERS: Record<
       },
     };
   },
+  slope(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const labelCol = columns[0];
+    const leftField = numericColumns[0];
+    const rightField = numericColumns[numericColumns.length - 1];
+    return {
+      type: "slope",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        labelField: labelCol,
+        leftField,
+        rightField,
+        leftPeriod: leftField, // the two column headers are the period captions
+        rightPeriod: rightField,
+        ...(spec.highlight ? { highlightLabel: spec.highlight } : {}),
+        rows,
+      },
+    };
+  },
   waterfall(parsed, spec) {
     const { columns, numericColumns, rows } = parsed;
     const labelCol = columns[0];

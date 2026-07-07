@@ -112,5 +112,9 @@ export const WATERFALL_ROLE_COLORS = [
   OKABE_ITO.black,
 ] as const;
 
+// Slope: neutral context line (muted) + the one editorial accent (vermillion).
+// The guard (checkSlopeConformance) validates THESE, so component + guard never drift.
+export const SLOPE_LINE_COLORS = [COLORS.muted, OKABE_ITO.vermillion] as const;
+
 // Dumbbell endpoints: left series (orange) / right series (blue).
 export const DUMBBELL_DOT_COLORS = [OKABE_ITO.orange, OKABE_ITO.blue] as const;
