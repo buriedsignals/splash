@@ -318,6 +318,25 @@ export const MAPPERS: Record<
       },
     };
   },
+  waffle(parsed, spec) {
+    const catCol = parsed.columns[0];
+    const valCol =
+      parsed.numericColumns[parsed.numericColumns.length - 1] ??
+      parsed.columns[parsed.columns.length - 1];
+    const items = parsed.rows.map((r) => ({
+      label: String(r[catCol]),
+      value: Number(r[valCol]),
+    }));
+    return {
+      type: "waffle",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        items,
+      },
+    };
+  },
 };
 
 /** NativeSpec → { type, config } for the produce() path. */

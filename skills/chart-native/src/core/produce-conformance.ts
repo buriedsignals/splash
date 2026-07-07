@@ -19,6 +19,7 @@ import {
   checkStackedBarConformance,
   checkStackedAreaConformance,
   checkDotStripConformance,
+  checkWaffleConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -30,6 +31,7 @@ import {
   GROUPED_SERIES_COLORS,
   STACKED_SERIES_COLORS,
   STACKED_AREA_COLORS,
+  WAFFLE_CATEGORY_COLORS,
   COLORS,
   OKABE_ITO,
 } from "./tokens";
@@ -51,6 +53,7 @@ import type { GroupedConfig } from "../GroupedBarChart";
 import type { StackedConfig } from "../StackedBarChart";
 import type { StackedAreaConfig } from "../StackedAreaChart";
 import type { DotStripConfig } from "../DotStripChart";
+import type { WaffleConfig } from "../WaffleChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -103,6 +106,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "stacked",
   "stacked-area",
   "dot-strip",
+  "waffle",
 ];
 
 export function runProduceConformance(
@@ -277,6 +281,26 @@ export function runProduceConformance(
             dotColor: OKABE_ITO.blue,
             hasSummaryMarker: true,
             categoryCounts: [...counts.values()],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "waffle": {
+      const cfg = config as unknown as WaffleConfig;
+      const categoryColors = cfg.items.map(
+        (_, i) => WAFFLE_CATEGORY_COLORS[i % WAFFLE_CATEGORY_COLORS.length],
+      );
+      return {
+        checked: true,
+        violations: checkWaffleConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            unit: cfg.unit,
+            categoryCount: cfg.items.length,
+            categoryColors,
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

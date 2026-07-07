@@ -5,7 +5,7 @@
 export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   "change-over-time": ["line", "stacked-area"],
   correlation: ["scatter", "connected-scatter"],
-  "part-to-whole": ["pie", "stacked"],
+  "part-to-whole": ["pie", "stacked", "waffle"],
   magnitude: ["bar", "grouped"],
   distribution: ["histogram", "beeswarm", "dot-strip"],
   ranking: ["lollipop"],
