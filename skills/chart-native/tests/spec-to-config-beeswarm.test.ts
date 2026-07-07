@@ -44,4 +44,16 @@ describe("specToNativeConfig — beeswarm (distribution)", () => {
     expect(p0.category).toBe("A");
     expect(p0.label).toBe("Ada");
   });
+  it("omits categories and uses the column as a per-point label when the only text column exceeds 5 distinct", () => {
+    const spec: NativeSpec = {
+      ...base,
+      nativeType: "beeswarm",
+      data: "company,revenue\nAcme,80\nBolt,95\nCog,110\nDyne,120\nEcho,130\nFizz,140\nGlyph,150",
+    };
+    const { config } = specToNativeConfig(spec);
+    expect(config.categories).toBeUndefined();
+    const p0 = (config.points as { label?: string; category?: string }[])[0];
+    expect(p0.label).toBe("Acme");
+    expect(p0.category).toBeUndefined();
+  });
 });

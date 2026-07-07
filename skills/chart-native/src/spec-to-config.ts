@@ -216,11 +216,15 @@ export const MAPPERS: Record<
     // low-cardinality text col groups the swarm into colours (HARD-capped at ≤5
     // by checkBeeswarmConformance at produce time); the other text col (if any)
     // is per-point label only — never blindly columns[0] (a unique-per-row name
-    // would blow the category cap).
-    const catCol = textCols.length
-      ? [...textCols].sort((a, b) => distinct(a) - distinct(b))[0]
-      : undefined;
-    const labelCol = textCols.find((c) => c !== catCol);
+    // would blow the category cap). If the lowest-distinct text col STILL exceeds
+    // 5 (e.g. a single high-cardinality name column), skip grouping entirely and
+    // demote that column to a per-point label instead — a single-hue swarm, not a
+    // produce-time conformance failure.
+    const sorted = [...textCols].sort((a, b) => distinct(a) - distinct(b));
+    const lowest = sorted[0];
+    const useCategory = lowest !== undefined && distinct(lowest) <= 5;
+    const catCol = useCategory ? lowest : undefined;
+    const labelCol = useCategory ? sorted[1] : lowest;
     const categories = catCol
       ? [...new Set(rows.map((r) => String(r[catCol])))]
       : undefined;
