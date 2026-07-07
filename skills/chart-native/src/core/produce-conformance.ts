@@ -21,6 +21,7 @@ import {
   checkDotStripConformance,
   checkWaffleConformance,
   checkRadialBarConformance,
+  checkDivergingBarConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -35,8 +36,10 @@ import {
   WAFFLE_CATEGORY_COLORS,
   COLORS,
   OKABE_ITO,
+  DIVERGING_SIGN_COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
+import { computeDivergingLayout } from "../diverging-bar-geometry";
 import { computeHistogramLayout } from "../histogram-geometry";
 import { computeLollipopLayout } from "../lollipop-geometry";
 import { computeGroupedLayout } from "../grouped-bar-geometry";
@@ -57,6 +60,7 @@ import type { StackedAreaConfig } from "../StackedAreaChart";
 import type { DotStripConfig } from "../DotStripChart";
 import type { WaffleConfig } from "../WaffleChart";
 import type { RadialBarConfig } from "../RadialBarChart";
+import type { DivergingBarConfig } from "../DivergingBarChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -106,6 +110,11 @@ const RADIAL_BAR_DIMS = {
   height: 480,
   padding: { top: 90, right: 16, bottom: 28, left: 16 },
 };
+const DIVERGING_DIMS = {
+  width: 840,
+  height: 460,
+  padding: { top: 64, right: 64, bottom: 40, left: 124 },
+};
 
 // Every type with a produce-time guard wired (flat-triple resolver types + the
 // bespoke-signature types resolved inline below). The completeness test asserts
@@ -119,6 +128,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "dot-strip",
   "waffle",
   "radial-bar",
+  "diverging",
 ];
 
 export function runProduceConformance(
@@ -422,6 +432,27 @@ export function runProduceConformance(
             valueDomain: layout.valueDomain,
             seriesCount: cfg.seriesFields.length,
             seriesColors,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "diverging": {
+      const cfg = config as unknown as DivergingBarConfig;
+      const layout = computeDivergingLayout(
+        { catField: cfg.catField, valField: cfg.valField, rows: cfg.rows },
+        DIVERGING_DIMS,
+        "desc",
+      );
+      return {
+        checked: true,
+        violations: checkDivergingBarConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            valueDomain: layout.valueDomain,
+            signColors: [...DIVERGING_SIGN_COLORS],
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

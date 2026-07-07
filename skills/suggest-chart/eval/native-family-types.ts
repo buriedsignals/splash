@@ -9,4 +9,5 @@ export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   magnitude: ["bar", "grouped", "radial-bar"],
   distribution: ["histogram", "beeswarm", "dot-strip"],
   ranking: ["lollipop"],
+  deviation: ["diverging"],
 };

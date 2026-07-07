@@ -335,6 +335,23 @@ export const MAPPERS: Record<
       },
     };
   },
+  diverging(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const catCol = columns[0];
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    return {
+      type: "diverging",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        catField: catCol,
+        valField: valCol,
+        rows,
+      },
+    };
+  },
   waffle(parsed, spec) {
     const catCol = parsed.columns[0];
     const valCol =
