@@ -17,7 +17,7 @@ import {
   type StackedAreaLayout,
 } from "./stacked-area-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, STACKED_AREA_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { spreadLabels } from "./core/labels";
@@ -42,13 +42,7 @@ export interface StackedAreaChartProps {
 }
 
 // categorical band colours, in stacking order — all Okabe-Ito (CVD-safe).
-const AREA_COLORS = [
-  OKABE_ITO.skyblue,
-  OKABE_ITO.orange,
-  OKABE_ITO.blue,
-  OKABE_ITO.green,
-  OKABE_ITO.purple,
-];
+const AREA_COLORS = STACKED_AREA_COLORS;
 
 export function StackedAreaChart({
   config,
@@ -74,7 +68,16 @@ export function StackedAreaChart({
     bottom: 52, // year axis, clear of the source line below
     left: 44, // % axis
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -293,7 +296,9 @@ function StackedAreaSvg({
           ))}
         </g>
 
-        {/* right-edge direct band labels (name + latest value), fade in last */}
+        {/* right-edge direct band labels (name + latest value), fade in last.
+            TEXT is always COLORS.ink (WCAG-safe) — the label carries the value,
+            the band's fill carries the hue (same rule as the vermillion fix). */}
         <g opacity={labelOp}>
           {bands.map((b) => (
             <text
@@ -304,7 +309,7 @@ function StackedAreaSvg({
               textAnchor="start"
               fontSize={ts.axis}
               fontWeight={700}
-              fill={AREA_COLORS[b.seriesIndex % AREA_COLORS.length]}
+              fill={COLORS.ink}
             >
               {b.seriesKey} {b.lastValue}
             </text>

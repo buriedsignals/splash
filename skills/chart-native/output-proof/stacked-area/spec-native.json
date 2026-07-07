@@ -1,0 +1,10 @@
+{
+  "nativeType": "stacked-area",
+  "title": "Renewables have overtaken coal as Germany's largest power source",
+  "source": {
+    "name": "Ember, 2025 global electricity review",
+    "url": "https://example.org/ember-electricity-2025-stacked-area"
+  },
+  "unit": "TWh generated",
+  "data": "year,coal,gas,renewables\n2015,120,90,40\n2017,100,85,60\n2019,80,80,90\n2021,55,75,130\n2023,30,65,170\n2025,15,55,210"
+}
