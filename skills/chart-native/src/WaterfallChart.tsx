@@ -244,11 +244,13 @@ function WaterfallSvg({
           const focused = interactive && hover === i;
           const dim = interactive && hover !== null && !focused;
           const topY = Math.min(b.startY, b.endY);
-          // a vertical in-bar label only fits if the bar is taller than the label;
-          // otherwise fall back to OUTSIDE-above (works for tiny steps too).
-          const fullH = Math.abs(b.startY - b.endY);
+          // a vertical above-bar label (kept vertical so narrow neighbouring bars
+          // don't collide horizontally) only fits if there is enough room ABOVE
+          // the bar top to clear the frame/title; otherwise fall back to the
+          // OUTSIDE-above horizontal ink label (tiny steps, or tall bars with
+          // little headroom above them).
           const valLabelW = labelOf(b).length * ts.axis * 0.9 * 0.6;
-          const labelInside = narrow && fullH > valLabelW + 8 * sc;
+          const labelVertical = narrow && topY > valLabelW + 10 * sc;
           return (
             <g key={`bar${i}`} opacity={dim ? 0.55 : 1}>
               <rect
@@ -272,17 +274,21 @@ function WaterfallSvg({
                 onFocus={interactive ? () => setHover(i) : undefined}
                 onBlur={interactive ? () => setHover(null) : undefined}
               />
-              {/* signed value label — VERTICAL inside the bar only when narrow AND
-                  the bar is tall enough; otherwise above it (handles tiny steps) */}
-              {labelInside ? (
+              {/* signed value label — VERTICAL, on the white paper ABOVE the bar,
+                  only when narrow AND there's room to clear the frame; otherwise
+                  the plain horizontal ink label above it (handles tiny steps and
+                  tall bars). Always ink: the label carries the value, the mark
+                  carries the hue (WCAG — white-on-vermillion inside the bar was
+                  3.87:1, below 4.5:1). */}
+              {labelVertical ? (
                 <text
-                  transform={`rotate(-90 ${b.x + b.w / 2} ${Math.max(b.startY, b.endY) - 6 * sc})`}
+                  transform={`rotate(-90 ${b.x + b.w / 2} ${topY - 6 * sc})`}
                   x={b.x + b.w / 2}
-                  y={Math.max(b.startY, b.endY) - 6 * sc}
+                  y={topY - 6 * sc}
                   textAnchor="start"
                   fontSize={ts.axis * 0.9}
                   fontWeight={700}
-                  fill="#fff"
+                  fill={COLORS.ink}
                   opacity={labelOp}
                 >
                   {labelOf(b)}
