@@ -228,10 +228,6 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         fillReveal,
       ]);
     }
-    // Labels fade in alongside the circles they name — every mark, not just callouts.
-    if (map.getLayer("symbol-labels")) {
-      map.setPaintProperty("symbol-labels", "text-opacity", fillReveal);
-    }
     // Compute overlay state while we have access to map.project.
     const beat = beats[beatIndex];
     const phase = phases[beatIndex];
@@ -248,6 +244,21 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
 
     // Caption reveal: same easing.
     const captionReveal = calloutReveal;
+
+    // Labels fade in alongside the circles they name — every mark, not just callouts.
+    // The city currently under the giant CountryLabel callout (below) has its small
+    // persistent label suppressed in lockstep with the callout's own fade-in — the two
+    // never collide — while every other symbol keeps its label at the normal fillReveal
+    // opacity. Mirrors the ["case", ...] emphasis pattern used in SymbolScrolly.
+    if (map.getLayer("symbol-labels")) {
+      const highlightLabel = beat.callout?.region ?? "__none__";
+      map.setPaintProperty("symbol-labels", "text-opacity", [
+        "case",
+        ["==", ["get", "label"], highlightLabel],
+        fillReveal * (1 - calloutReveal),
+        fillReveal,
+      ] as never);
+    }
 
     // Callout projection: highlighted city's lon/lat → screen coords.
     let calloutPt: { x: number; y: number } | null = null;
