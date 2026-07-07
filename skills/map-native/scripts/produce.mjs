@@ -40,6 +40,28 @@ if (!formatArg) {
 
 mkdirSync(outDir, { recursive: true });
 
+// Read the config once — reused below both for the conformance gate and for the
+// per-type dispatch (video comps) further down, so there is no double-read.
+const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
+
+// Conformance-at-produce-time: run the type-appropriate guard (core/map-produce-conformance.ts)
+// against the ACTUAL config being rendered — furniture L0 (insight title, source name+url, WCAG
+// contrast) + palette CVD-safety for the ramp-driven types — BEFORE any build step. A violation
+// fails the run here; nothing is built, nothing is rendered. Mirrors chart-native's produce.mjs gate.
+{
+  const { runProduceMapConformance } = await import("../src/core/map-produce-conformance.ts");
+  const res = runProduceMapConformance(parsedConfig.type, parsedConfig);
+  if (!res.checked) {
+    console.log(`[produce map] conformance: no guard wired for "${parsedConfig.type ?? "choropleth"}" — skipping.`);
+  } else if (res.violations.length > 0) {
+    console.error("[produce map] CONFORMANCE VIOLATION — refusing to produce:");
+    res.violations.forEach((v) => console.error(`  ✗ ${v}`));
+    process.exit(1);
+  } else {
+    console.log("[produce map] conformance: OK (0 violations)");
+  }
+}
+
 // Per-run build dirs: isolate so concurrent runs never contaminate each other
 const tag = basename(outDir).replace(/[^a-z0-9_-]/gi, "") || "run";
 const staticDir = join(root, "dist", `static-${tag}`);
@@ -86,7 +108,6 @@ const result = {
   interactiveHtml: interactiveHtmlDest,
 };
 
-const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
 const isSymbol = parsedConfig.type === "symbol";
 const isRoute = parsedConfig.type === "route";
 const isLocator = parsedConfig.type === "locator";
