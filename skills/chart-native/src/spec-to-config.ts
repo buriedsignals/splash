@@ -371,6 +371,25 @@ export const MAPPERS: Record<
       },
     };
   },
+  dumbbell(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const labelCol = columns[0];
+    const [leftField, rightField] = numericColumns.slice(0, 2);
+    return {
+      type: "dumbbell",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        labelField: labelCol,
+        leftField,
+        rightField,
+        leftLabel: leftField,
+        rightLabel: rightField,
+        rows,
+      },
+    };
+  },
   waterfall(parsed, spec) {
     const { columns, numericColumns, rows } = parsed;
     const labelCol = columns[0];

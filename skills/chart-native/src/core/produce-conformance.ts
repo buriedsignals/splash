@@ -23,6 +23,7 @@ import {
   checkRadialBarConformance,
   checkDivergingBarConformance,
   checkWaterfallConformance,
+  checkDumbbellConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -39,6 +40,7 @@ import {
   OKABE_ITO,
   DIVERGING_SIGN_COLORS,
   WATERFALL_ROLE_COLORS,
+  DUMBBELL_DOT_COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeDivergingLayout } from "../diverging-bar-geometry";
@@ -65,6 +67,7 @@ import type { WaffleConfig } from "../WaffleChart";
 import type { RadialBarConfig } from "../RadialBarChart";
 import type { DivergingBarConfig } from "../DivergingBarChart";
 import type { WaterfallConfig } from "../WaterfallChart";
+import type { DumbbellConfig } from "../DumbbellChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -139,6 +142,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "radial-bar",
   "diverging",
   "waterfall",
+  "dumbbell",
 ];
 
 export function runProduceConformance(
@@ -481,6 +485,23 @@ export function runProduceConformance(
             countDomain: layout.countDomain,
             rows: cfg.rows.map((r) => ({ value: r.value, total: r.total })),
             roleColors: [...WATERFALL_ROLE_COLORS],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "dumbbell": {
+      const cfg = config as unknown as DumbbellConfig;
+      return {
+        checked: true,
+        violations: checkDumbbellConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            leftLabel: cfg.leftLabel,
+            rightLabel: cfg.rightLabel,
+            dotColors: [...DUMBBELL_DOT_COLORS],
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

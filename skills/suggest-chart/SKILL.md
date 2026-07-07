@@ -140,11 +140,11 @@ Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
 directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
-waterfall** (`spec-to-config.ts`); for any type NOT in this list
+waterfall, dumbbell** (`spec-to-config.ts`); for any type NOT in this list
 the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead. Produce with
 `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
@@ -182,6 +182,9 @@ midpoint). Route it ONLY when values span both negative and positive — otherwi
 `waterfall` expects **ordered label + one signed value** (a bridge of increases/decreases); an optional
 `total` column (1/true) marks opening/closing running-total bars. Route it for step-by-step build-up to
 a final figure.
+`dumbbell` expects **category + exactly two numeric columns** (start/end, e.g. `2019`,`2024`); the two
+column headers become the series labels. Route it for a two-point comparison per category — never a line
+(two points imply no trend).
 
 ### map-dw (static choropleth map) — default map path
 
