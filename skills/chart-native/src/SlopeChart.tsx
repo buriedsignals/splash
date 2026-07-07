@@ -77,7 +77,16 @@ export function SlopeChart({
     bottom: 56, // period captions, clear of the source line below
     left: 138, // category name + left value labels
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -342,7 +351,7 @@ function SlopeSvg({
                     textAnchor="end"
                     fontSize={ts.axis}
                     fontWeight={hi ? 700 : 400}
-                    fill={hi ? ACCENT : COLORS.ink}
+                    fill={COLORS.ink}
                   >
                     {l.rawLabel} {fmt(l.leftVal)}
                   </text>
@@ -362,7 +371,7 @@ function SlopeSvg({
                     textAnchor="start"
                     fontSize={ts.axis}
                     fontWeight={hi ? 700 : 600}
-                    fill={hi ? ACCENT : COLORS.ink}
+                    fill={COLORS.ink}
                   >
                     {fmt(l.rightVal)}
                   </text>
