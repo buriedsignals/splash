@@ -35,6 +35,8 @@ import {
   type ScrollyStory,
 } from "../../../scrolly/src/chapters";
 import { scrollyFrames } from "../route-story";
+import { legendTheme } from "../theme/legend-theme";
+import { fmtBin } from "../core/legend-format";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -123,13 +125,18 @@ export const ChoroplethScrolly: React.FC<{
   };
 }> = ({ config }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const legendRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
+  // This composition does not yet thread mapStyle/dark — the basemap is always
+  // DATAVIZ.LIGHT (see the Map init below), so the legend always uses the light theme.
+  const theme = legendTheme(false);
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
     hasDescription: !!config.description,
     labelOverhang: 24,
+    legendHeight: NUM_BINS * 18 + 18,
   });
   const [mapState, setMapState] = useState<MapStory | null>(null);
   const [handle] = useState(() => delayRender("choropleth-scrolly-init"));
@@ -391,6 +398,32 @@ export const ChoroplethScrolly: React.FC<{
     map.triggerRepaint();
   }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Legend — sequential/diverging bin scale (swatch + min–max) + unit label. Populated from
+  // the same sortedBins used to build colorExpr, so the key always matches what's painted.
+  useEffect(() => {
+    const el = legendRef.current;
+    if (!el || !mapState) return;
+    const bins = mapState.sortedBins;
+    // Bins are evenly spaced (see computeChoropleth) — the width of any one bin IS the gap
+    // between adjacent boundaries, giving fmtBin enough decimal precision for distinct labels.
+    const minGap = bins.length ? bins[0].max - bins[0].min : undefined;
+    const unit = config.unit ?? "";
+    const header = `
+      <div style="font:600 11px/1.2 sans-serif;color:${theme.ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
+        ${unit}
+      </div>`;
+    const swatches = bins
+      .map(
+        (b) => `
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px ${theme.stroke};flex-shrink:0"></span>
+          <span style="font:11px/1.2 sans-serif;color:${theme.sub}">${fmtBin(b.min, { minGap })}–${fmtBin(b.max, { minGap })}</span>
+        </div>`,
+      )
+      .join("");
+    el.innerHTML = header + swatches;
+  }, [mapState, theme, config.unit]);
+
   // Delta 3: scrolly panels + title scene.
   const total = scrollyFrames(mapState?.story.steps.length ?? 2, fps);
   const scene = resolveScene(frame, { titleSceneEndFrame: TITLE_SCENE_FRAMES });
@@ -409,6 +442,25 @@ export const ChoroplethScrolly: React.FC<{
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>
+
+      {/* Legend — bottom-right, fades in with the furniture */}
+      <div
+        ref={legendRef}
+        data-testid="map-legend"
+        style={{
+          position: "absolute",
+          bottom: 16,
+          right: 16,
+          zIndex: 10,
+          background: theme.bg,
+          padding: "10px 12px",
+          borderRadius: 6,
+          boxShadow: "0 1px 6px rgba(0,0,0,.12)",
+          minWidth: 120,
+          opacity: scene.furnitureOpacity,
+          pointerEvents: "none",
+        }}
+      />
 
       {mapState &&
         mapState.story.steps.map((s, i) =>
