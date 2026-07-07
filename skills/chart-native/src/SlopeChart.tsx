@@ -20,7 +20,7 @@ import {
   type SlopeLayout,
 } from "./slope-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, SLOPE_LINE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
@@ -48,8 +48,8 @@ export interface SlopeChartProps {
   scale?: number;
 }
 
-const CONTEXT = COLORS.muted; // neutral context line (slope.md rule 4)
-const ACCENT = OKABE_ITO.vermillion; // the one editorial line
+const CONTEXT = SLOPE_LINE_COLORS[0]; // neutral context line (slope.md rule 4)
+const ACCENT = SLOPE_LINE_COLORS[1]; // the one editorial line
 
 export function SlopeChart({
   config,

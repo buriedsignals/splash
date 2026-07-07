@@ -18,7 +18,7 @@ import {
   type BulletLayout,
 } from "./bullet-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, BULLET_MEASURE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
@@ -47,8 +47,8 @@ export interface BulletChartProps {
   scale?: number;
 }
 
-const HIT = OKABE_ITO.blue; // met the target
-const MISS = OKABE_ITO.vermillion; // missed the target
+const HIT = BULLET_MEASURE_COLORS[0]; // met the target
+const MISS = BULLET_MEASURE_COLORS[1]; // missed the target
 
 const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
