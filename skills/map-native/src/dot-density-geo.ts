@@ -38,7 +38,21 @@ export interface DotDensityLayout {
 
 const TARGET_TOTAL_DOTS = 5000;
 const MAX_TOTAL_DOTS = 10000;
-const ACCENT = "#2171b5"; // univariate single hue
+
+// Univariate single-hue accent — the ONE place this colour is declared. Dark-safe: mirrors the
+// route-geo intent (QUALITATIVE drops black so a fill is never invisible on a dataviz-dark
+// basemap) — a near-white dot would read as "no colour", not "blue data", so the dark variant
+// reuses the Okabe-Ito sky blue already vetted as CVD-safe elsewhere in this codebase (QUALITATIVE[1])
+// rather than inventing a new hue. Both the dot paint and the legend swatch MUST read this token —
+// never re-declare the hex literal at a call site (that's the drift this fixes).
+export const UNIVARIATE_ACCENT: { light: string; dark: string } = {
+  light: "#2171b5",
+  dark: "#56B4E9",
+};
+
+export function univariateAccent(dark: boolean): string {
+  return dark ? UNIVARIATE_ACCENT.dark : UNIVARIATE_ACCENT.light;
+}
 
 // Round up to a "nice" number (1/2/5 × 10^k) ≥ raw.
 function niceValue(raw: number): number {
@@ -53,7 +67,9 @@ export function computeDotDensity(
   data: DotDensityData,
   features: GeoJSON.FeatureCollection,
   joinKey: string,
+  dark = false,
 ): DotDensityLayout {
+  const accent = univariateAccent(dark);
   const hasCategories = !!(data.categories && data.categories.length > 0);
   const fields = hasCategories
     ? data.categories!.map((c) => c.field)
@@ -111,7 +127,7 @@ export function computeDotDensity(
       totalDots += count;
       return {
         category: hasCategories ? field : null,
-        color: hasCategories ? (colorByField.get(field) as string) : ACCENT,
+        color: hasCategories ? (colorByField.get(field) as string) : accent,
         count,
         seed: hashSeed(`${key}|${i}`),
       };

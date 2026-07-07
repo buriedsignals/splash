@@ -37,7 +37,7 @@ import {
 import type { Beat } from "../map-story";
 import type { LocatorConfigShape } from "../validate-config";
 import { TitleCard, CaptionCard } from "./StoryCards";
-import { resolveMapFrame } from "../core/map-format";
+import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { resolveScene } from "../video-scene";
 
@@ -80,7 +80,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
     labelOverhang: 80,
     legendHeight: geo.hasCategories ? geo.legend.length * 20 + 16 : 0,
   });
-  const labelTextSize = width <= 1080 ? 18 : 13;
+  const textSize = labelTextSize(width);
 
   const [mapState, setMapState] = useState<LocatorMapState | null>(null);
   const [handle] = useState(() =>
@@ -108,7 +108,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         label: mk.label,
         color: mk.color,
         category: mk.category ?? "",
-        labelOffset: labelRadialOffset(DOT_RADIUS_PX, labelTextSize),
+        labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
         __showLabel: true,
         __highlight: true, // establish: all markers full; recomputed per beat
       },
@@ -176,7 +176,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         layout: {
           "text-field": ["get", "label"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-          "text-size": labelTextSize,
+          "text-size": textSize,
           "text-variable-anchor": ["top", "bottom", "left", "right"],
           "text-radial-offset": ["get", "labelOffset"],
           "text-justify": "auto",
@@ -268,7 +268,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
             label: mk.label,
             color: mk.color,
             category: mk.category ?? "",
-            labelOffset: labelRadialOffset(DOT_RADIUS_PX, labelTextSize),
+            labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
             __highlight: highlight,
             __showLabel: false, // set by declutter below
           },
@@ -279,8 +279,8 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
       // Declutter — prioritise highlighted markers on dim beats so their labels win.
       const boxes: LabelBox[] = geo.markers.map((mk, i) => {
         const pt = map.project([mk.lon, mk.lat]);
-        const w = Math.max(1, mk.label.length) * (labelTextSize * 0.58);
-        const hh = labelTextSize * 1.3;
+        const w = Math.max(1, mk.label.length) * (textSize * 0.58);
+        const hh = textSize * 1.3;
         const basePriority = mk.priority ?? 0;
         const priority =
           emphasise && highlightSet.has(mk.label)

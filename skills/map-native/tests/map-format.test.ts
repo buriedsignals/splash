@@ -1,5 +1,9 @@
 import { describe, it, expect } from "bun:test";
-import { resolveMapFrame, maxFittableLngSpan } from "../src/core/map-format";
+import {
+  resolveMapFrame,
+  maxFittableLngSpan,
+  labelTextSize,
+} from "../src/core/map-format";
 import { FRAME_TYPE } from "../src/theme/map-tokens";
 
 describe("maxFittableLngSpan (F8 aspect limit)", () => {
@@ -109,5 +113,18 @@ describe("resolveMapFrame", () => {
       filterBarHeight: 44,
     });
     expect(withBar.pad.top - without.pad.top).toBeGreaterThanOrEqual(44);
+  });
+});
+
+describe("labelTextSize (bug #8 — on-map label size, single-sourced)", () => {
+  it("is 18 at the narrow/portrait breakpoint (≤1080)", () => {
+    expect(labelTextSize(1080)).toBe(18);
+    expect(labelTextSize(360)).toBe(18);
+    expect(labelTextSize(1)).toBe(18);
+  });
+
+  it("is 13 above the breakpoint (wide landscape)", () => {
+    expect(labelTextSize(1081)).toBe(13);
+    expect(labelTextSize(1920)).toBe(13);
   });
 });

@@ -170,6 +170,61 @@ describe("runProduceMapConformance — ramp palette arm (produce-time)", () => {
   });
 });
 
+// Bug #6 regression: hex-grid always paints `resolvePalette("sequential", data.palette)`
+// (hex-grid-geo.ts) — it never reads a `scaleType` off its config at all
+// (`HexGridConfigShape` has no such field). Before this fix, the guard's RAMP arm read
+// `config.scaleType` for every RAMP_TYPES member including hex-grid, so a stray
+// `scaleType:"diverging"` could steer the guard toward a ramp the renderer never paints —
+// either a false-positive refusal of valid sequential data, or a clean pass for a diverging
+// palette that then throws at render time (`resolvePalette("sequential", "rdbu")`).
+describe("runProduceMapConformance — hex-grid pins sequential (bug #6)", () => {
+  // All-positive aggregate values, with an explicit stray `scaleType:"diverging"` the
+  // renderer would never look at.
+  const hexAllPositive: Record<string, unknown> = {
+    ...configs["hex-grid"],
+    aggregate: "sum",
+    points: [
+      { lon: -0.0377, lat: 51.2629, value: 5 },
+      { lon: -0.3925, lat: 51.2551, value: 12 },
+      { lon: -0.5423, lat: 51.6124, value: 8 },
+    ],
+    scaleType: "diverging",
+  };
+
+  it("does not false-refuse all-positive hex data carrying a stray scaleType:diverging", () => {
+    // OLD behavior: the guard would have honoured config.scaleType="diverging", resolved
+    // the default diverging ramp (no throw — it exists), then flagged the semantic
+    // mismatch "data is all one sign (magnitude) but the scale is diverging" — a
+    // false-positive refusal of a config the renderer paints perfectly fine as sequential.
+    const result = runProduceMapConformance("hex-grid", hexAllPositive);
+    expect(result.checked).toBe(true);
+    expect(
+      result.violations.some((m) => /but the scale is diverging/.test(m)),
+    ).toBe(false);
+    expect(result.violations).toEqual([]);
+  });
+
+  it("flags a diverging-only palette instead of green-lighting a config that crashes at render", () => {
+    // Same stray scaleType:"diverging", now paired with a palette that is ONLY valid under
+    // a diverging scale ("rdbu"). OLD behavior: scaleType read from config → "diverging" →
+    // resolvePalette("diverging", "rdbu") succeeds (rdbu IS diverging-kind) → clean pass,
+    // checked:true, violations:[] — then the real renderer calls
+    // resolvePalette("sequential", "rdbu") and THROWS, crashing the produce run after the
+    // guard already green-lit it. NEW behavior: the guard pins "sequential" the same way
+    // the renderer does, so resolvePalette("sequential", "rdbu") throws HERE, inside the
+    // guard's own try/catch — a clean violation instead of a greenlight-then-crash.
+    const result = runProduceMapConformance("hex-grid", {
+      ...hexAllPositive,
+      palette: "rdbu",
+    });
+    expect(result.checked).toBe(true);
+    expect(result.violations.some((m) => /palette/i.test(m))).toBe(true);
+    expect(
+      result.violations.some((m) => /rdbu.*diverging.*sequential/.test(m)),
+    ).toBe(true);
+  });
+});
+
 describe("runProduceMapConformance — clean config per type", () => {
   for (const type of MAP_TYPES) {
     it(`passes a clean ${type} config with no violations`, () => {

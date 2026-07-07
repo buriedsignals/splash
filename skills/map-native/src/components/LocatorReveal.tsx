@@ -27,7 +27,7 @@ import {
 } from "../locator-labels";
 import { resolveMapStyle } from "../route-geo";
 import type { LocatorConfigShape } from "../validate-config";
-import { resolveMapFrame } from "../core/map-format";
+import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { easedRevealProgress, revealCameraPlan } from "../reveal";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
@@ -72,7 +72,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
   });
 
   // Ratio-scaled label size: square/portrait are ≤1080 wide → larger text for legibility.
-  const labelTextSize = width <= 1080 ? 18 : 13;
+  const textSize = labelTextSize(width);
 
   // Eased reveal 0 → 1 with blank holds at both ends. Shifted to start after the title scene.
   const progress = easedRevealProgress(
@@ -98,7 +98,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
         key: `m${i}`,
         label: mk.label,
         color: mk.color,
-        labelOffset: labelRadialOffset(DOT_RADIUS_PX, labelTextSize),
+        labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
         __showLabel: true, // recomputed by declutter
       },
       geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
@@ -155,7 +155,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
         layout: {
           "text-field": ["get", "label"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
-          "text-size": labelTextSize,
+          "text-size": textSize,
           "text-variable-anchor": ["top", "bottom", "left", "right"],
           "text-radial-offset": ["get", "labelOffset"],
           "text-justify": "auto",
@@ -179,8 +179,8 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
         // priority, then mark only `shown` features with __showLabel = true.
         const boxes: LabelBox[] = geo.markers.map((mk, i) => {
           const pt = map.project([mk.lon, mk.lat]);
-          const w = Math.max(1, mk.label.length) * (labelTextSize * 0.58);
-          const h = labelTextSize * 1.3;
+          const w = Math.max(1, mk.label.length) * (textSize * 0.58);
+          const h = textSize * 1.3;
           return {
             key: `m${i}`,
             x: pt.x - w / 2,

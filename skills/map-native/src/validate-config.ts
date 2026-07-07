@@ -49,6 +49,7 @@ export function paletteErrors(s: Record<string, unknown>): string[] {
 
 export type ChoroplethConfigShape = ChoroplethData & {
   basemap: string;
+  mapStyle?: string;
   title: string;
   description?: string;
   unit?: string;
@@ -106,6 +107,11 @@ export function validateChoroplethConfig(
   if (!regionKey) errors.push("regionKey must be a non-empty string");
   if (!valueField) errors.push("valueField must be a non-empty string");
   validateBasemap(s.basemap, errors);
+  if (
+    s.mapStyle !== undefined &&
+    !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
+  )
+    errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
   errors.push(...paletteErrors(s));
@@ -173,6 +179,7 @@ export type SymbolConfigShape = {
   type: "symbol";
   points: { lon: number; lat: number; value: number; label?: string }[];
   basemap: string;
+  mapStyle?: string;
   title: string;
   description?: string;
   valueUnit?: string;
@@ -195,6 +202,11 @@ export function validateSymbolConfig(
   const s = (spec ?? {}) as Record<string, unknown>;
 
   validateBasemap(s.basemap, errors);
+  if (
+    s.mapStyle !== undefined &&
+    !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
+  )
+    errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
 

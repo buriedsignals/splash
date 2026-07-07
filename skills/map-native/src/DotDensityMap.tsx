@@ -9,7 +9,7 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
 const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
-import { computeDotDensity } from "./dot-density-geo";
+import { computeDotDensity, univariateAccent } from "./dot-density-geo";
 import { scatterInPolygon } from "./dot-scatter";
 import { resolveMapStyle } from "./route-geo";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
@@ -21,6 +21,7 @@ import {
   filterStateToExpression,
   type FilterState,
 } from "./core/map-filter";
+import { legendTheme } from "./theme/legend-theme";
 import type { DotDensityConfigShape } from "./validate-config";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
@@ -74,6 +75,7 @@ export const DotDensityMap: React.FC<Props> = ({
   const [barHeightPx, setBarHeightPx] = useState(0);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const theme = legendTheme(dark);
   // Legend rows: always the "1 dot = N" line; plus one row per category when multivariate.
   const legendRows =
     1 + (config.categories?.length ? config.categories.length : 0);
@@ -183,7 +185,7 @@ export const DotDensityMap: React.FC<Props> = ({
       }
 
       const world = worldGeoJson as GeoJSON.FeatureCollection;
-      const layout = computeDotDensity(config, world, JOIN_KEY);
+      const layout = computeDotDensity(config, world, JOIN_KEY, dark);
 
       // Build the DOT GeoJSON once: one Point feature per dot, coloured by group.
       // Deterministic — scatterInPolygon is seeded, so this is frame-stable.
@@ -334,21 +336,19 @@ export const DotDensityMap: React.FC<Props> = ({
 
       // Legend — "1 dot = N units" always; category swatches when multivariate.
       if (legendRef.current) {
-        const ink = dark ? "#f4f4f5" : "#444";
-        const sub = dark ? "#c8c8cf" : "#555";
         const dotN = layout.dotValue.toLocaleString();
         const header = `
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:${layout.hasCategories ? 8 : 0}px">
-            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dark ? "#e8e8ec" : "#2171b5"};flex-shrink:0"></span>
-            <span style="font:600 11px/1.2 sans-serif;color:${ink}">1 dot = ${dotN}</span>
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${univariateAccent(dark)};flex-shrink:0"></span>
+            <span style="font:600 11px/1.2 sans-serif;color:${theme.ink}">1 dot = ${dotN}</span>
           </div>`;
         const swatches = layout.hasCategories
           ? layout.legend
               .map(
                 (l) => `
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-              <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${l.color};box-shadow:0 0 0 1px rgba(0,0,0,.15);flex-shrink:0"></span>
-              <span style="font:11px/1.2 sans-serif;color:${sub}">${l.category}</span>
+              <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${l.color};box-shadow:0 0 0 1px ${theme.stroke};flex-shrink:0"></span>
+              <span style="font:11px/1.2 sans-serif;color:${theme.sub}">${l.category}</span>
             </div>`,
               )
               .join("")
@@ -464,7 +464,7 @@ export const DotDensityMap: React.FC<Props> = ({
           bottom: 16,
           right: 12,
           zIndex: 10,
-          background: dark ? "rgba(24,24,27,0.88)" : "rgba(255,255,255,0.92)",
+          background: theme.bg,
           padding: "10px 12px",
           borderRadius: 6,
           boxShadow: "0 1px 6px rgba(0,0,0,.12)",

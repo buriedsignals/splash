@@ -15,6 +15,7 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
+import { symbolLabels, labelRadialOffset } from "../symbol-labels";
 import { deriveSymbolStory } from "../symbol-story";
 import {
   buildTimeline,
@@ -26,7 +27,7 @@ import type { Beat } from "../map-story";
 import type { SymbolConfig } from "../SymbolMap";
 import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
-import { resolveMapFrame } from "../core/map-format";
+import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { resolveScene } from "../video-scene";
 
@@ -54,6 +55,9 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     hasDescription: !!config.description,
     labelOverhang: 80,
   });
+
+  // Ratio-scaled label size: square/portrait are ≤1080 wide → larger text for legibility.
+  const textSize = labelTextSize(width);
 
   const [mapState, setMapState] = useState<SymbolMapState | null>(null);
   const [handle] = useState(() => delayRender("symbol-story-init"));
@@ -96,15 +100,20 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     });
 
     m.on("load", () => {
+      const labels = symbolLabels(geo.symbols);
       m.addSource("symbols", {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: geo.symbols.map((s) => ({
+          features: geo.symbols.map((s, i) => ({
             type: "Feature",
             properties: {
               radius: s.radius,
               label: s.label ?? "",
+              labelText: labels[i]?.name
+                ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
+                : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
+              labelOffset: labelRadialOffset(s.radius, textSize),
             },
             geometry: { type: "Point", coordinates: [s.lon, s.lat] },
           })),
@@ -121,6 +130,32 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           "circle-opacity": 0.75,
           "circle-stroke-color": SYMBOL_STROKE,
           "circle-stroke-width": 1.5,
+        },
+      });
+
+      // Direct label layer — every mark carries its name+value, not just the
+      // top-N callouts. Fades in with the establish reveal via text-opacity.
+      m.addLayer({
+        id: "symbol-labels",
+        type: "symbol",
+        source: "symbols",
+        layout: {
+          "text-field": ["get", "labelText"],
+          "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+          "text-size": textSize,
+          "text-variable-anchor": ["left", "right", "top", "bottom"],
+          "text-radial-offset": ["get", "labelOffset"],
+          "text-justify": "auto",
+          "text-allow-overlap": false,
+          "text-optional": true,
+          "text-line-height": 1.3,
+          "text-max-width": 8,
+        },
+        paint: {
+          "text-color": "#1a1a1a",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.6,
+          "text-opacity": 0,
         },
       });
 
@@ -209,6 +244,21 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
 
     // Caption reveal: same easing.
     const captionReveal = calloutReveal;
+
+    // Labels fade in alongside the circles they name — every mark, not just callouts.
+    // The city currently under the giant CountryLabel callout (below) has its small
+    // persistent label suppressed in lockstep with the callout's own fade-in — the two
+    // never collide — while every other symbol keeps its label at the normal fillReveal
+    // opacity. Mirrors the ["case", ...] emphasis pattern used in SymbolScrolly.
+    if (map.getLayer("symbol-labels")) {
+      const highlightLabel = beat.callout?.region ?? "__none__";
+      map.setPaintProperty("symbol-labels", "text-opacity", [
+        "case",
+        ["==", ["get", "label"], highlightLabel],
+        fillReveal * (1 - calloutReveal),
+        fillReveal,
+      ] as never);
+    }
 
     // Callout projection: highlighted city's lon/lat → screen coords.
     let calloutPt: { x: number; y: number } | null = null;

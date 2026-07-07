@@ -1,5 +1,9 @@
 import { describe, it, expect } from "bun:test";
-import { computeDotDensity } from "../src/dot-density-geo";
+import {
+  computeDotDensity,
+  univariateAccent,
+  UNIVARIATE_ACCENT,
+} from "../src/dot-density-geo";
 import { QUALITATIVE } from "../src/route-geo";
 
 const feat = (id: string): GeoJSON.Feature => ({
@@ -79,6 +83,60 @@ describe("computeDotDensity — multivariate", () => {
     expect(aaa.groups.map((g) => g.category)).toEqual(["a", "b"]);
     expect(aaa.groups[0].count).toBe(Math.round(300000 / layout.dotValue));
     expect(aaa.groups[0].color).toBe(QUALITATIVE[0]);
+  });
+});
+
+describe("univariateAccent — dark-safe single-source token", () => {
+  it("returns the light hue by default / when dark is false", () => {
+    expect(univariateAccent(false)).toBe(UNIVARIATE_ACCENT.light);
+    expect(UNIVARIATE_ACCENT.light).toBe("#2171b5");
+  });
+  it("returns a distinct, non-near-white hue when dark is true", () => {
+    expect(univariateAccent(true)).toBe(UNIVARIATE_ACCENT.dark);
+    expect(UNIVARIATE_ACCENT.dark).not.toBe(UNIVARIATE_ACCENT.light);
+    expect(UNIVARIATE_ACCENT.dark.toLowerCase()).not.toBe("#e8e8ec");
+  });
+});
+
+describe("computeDotDensity — dark threading", () => {
+  it("paints univariate dots with the light accent by default (back-compat)", () => {
+    const layout = computeDotDensity(
+      {
+        regionKey: "id",
+        valueField: "pop",
+        rows: [{ id: "AAA", pop: 500000 }],
+      },
+      world,
+      "iso_a3",
+    );
+    expect(layout.regions[0].groups[0].color).toBe(univariateAccent(false));
+  });
+  it("paints univariate dots with the dark-safe accent when dark=true", () => {
+    const layout = computeDotDensity(
+      {
+        regionKey: "id",
+        valueField: "pop",
+        rows: [{ id: "AAA", pop: 500000 }],
+      },
+      world,
+      "iso_a3",
+      true,
+    );
+    expect(layout.regions[0].groups[0].color).toBe(univariateAccent(true));
+    expect(layout.regions[0].groups[0].color).not.toBe(univariateAccent(false));
+  });
+  it("ignores the dark flag for multivariate maps (colours come from QUALITATIVE)", () => {
+    const layout = computeDotDensity(
+      {
+        regionKey: "id",
+        categories: [{ field: "a", label: "Group A" }],
+        rows: [{ id: "AAA", a: 300000 }],
+      },
+      world,
+      "iso_a3",
+      true,
+    );
+    expect(layout.regions[0].groups[0].color).toBe(QUALITATIVE[0]);
   });
 });
 

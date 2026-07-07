@@ -30,9 +30,10 @@ A produced map MUST satisfy all ten rules below across static / interactive / vi
    colour (no-data and ocean stay constant). This keeps the map clean and never lets a no-data
    overlay be mistaken for a low value. (The interactive/static web format MAY still key a "no
    data" swatch in its legend — `NO_DATA_COLOR` in `src/theme/colors.ts` — where a legend explains
-   it; the video formats carry no legend, so no-data is simply unpainted.) Source: Datawrapper
-   Academy (choropleth best practices — absence must never read as a value); cartographic
-   convention (let the basemap be the basemap).
+   it; no-data itself stays unpainted in every format including video — the bin legend renders
+   there too (rule 5), it simply carries no no-data row.) Source: Datawrapper Academy (choropleth
+   best practices — absence must never read as a value); cartographic convention (let the basemap
+   be the basemap).
 
 7. **Framing / safe-area** — the title lives in a reserved top band (never overlaid on map data);
    the legend occupies a RESERVED band sized to its rendered height — no data feature renders

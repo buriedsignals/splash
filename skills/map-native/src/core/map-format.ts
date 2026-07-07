@@ -46,6 +46,17 @@ export function maxFittableLngSpan(width: number, height: number): number {
   return 360 * (width / height);
 }
 
+// Ratio-scaled on-map label text size: square/portrait canvases (≤1080 wide) get larger
+// text for legibility; wide landscape canvases keep the smaller size. This was already the
+// rule the video/scrolly siblings (SymbolReveal/LocatorReveal/LocatorStory/LocatorScrolly)
+// applied via an inline expression — single-sourced here so static/interactive (SymbolMap/
+// LocatorMap) inherit the same narrow-canvas bump instead of a fixed 13px (bug #8). NOT
+// multiplied by `frame.scale` elsewhere: scale would over-inflate on wide canvases and
+// decouple the text from the fixed-px glyphs/tile labels it sits beside.
+export function labelTextSize(width: number): number {
+  return width <= 1080 ? 18 : 13;
+}
+
 export function resolveMapFrame(
   width: number,
   height: number,
