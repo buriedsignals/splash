@@ -251,4 +251,18 @@ describe("scoreSpec — chart-native producer", () => {
     });
     expect(r.familyMatch).toBe(false);
   });
+  it("passes a valid native grouped spec for the magnitude family (post-flip)", () => {
+    const r = scoreSpec(
+      {
+        producer: "chart-native",
+        nativeType: "grouped",
+        title: "Urban wages pulled ahead of rural pay across every region",
+        source: { name: "INSEE 2025", url: "https://insee.fr/x" },
+        unit: "median monthly wage (€)",
+        data: "region,urban,rural\nNorth,2400,1900",
+      },
+      { family: "magnitude", element: "chart", producer: "chart-native" },
+    );
+    expect(r.pass).toBe(true);
+  });
 });
