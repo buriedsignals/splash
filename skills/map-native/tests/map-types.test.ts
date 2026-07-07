@@ -14,8 +14,11 @@ import { MAP_TYPES } from "../src/map-types";
 function extractDiscriminatedTypes(): string[] {
   const src = readFileSync(join(__dirname, "../src/mount.tsx"), "utf8");
   // mount.tsx reads `config.type` once into a local (`configType`), then
-  // discriminates via `configType === "<literal>"` — match that pattern
-  // regardless of the local's exact name, so this survives a rename.
+  // discriminates via `configType === "<literal>"`. This regex is coupled to
+  // that local's exact name: renaming it would make the pattern match zero
+  // discriminators, so `extractDiscriminatedTypes()` would return just
+  // `["choropleth"]` and this test would fail loudly (RED) rather than
+  // silently pass — the safe direction, but not rename-proof.
   const literals = [...src.matchAll(/\bconfigType\s*===\s*"([^"]+)"/g)].map(
     (m) => m[1],
   );

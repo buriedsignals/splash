@@ -2,7 +2,10 @@ import { describe, it, expect } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { MAP_TYPES } from "../src/map-types";
-import { runProduceMapConformance } from "../src/core/map-produce-conformance";
+import {
+  runProduceMapConformance,
+  RAMP_TYPES,
+} from "../src/core/map-produce-conformance";
 
 const KB_DIR = join(
   import.meta.dir,
@@ -83,5 +86,24 @@ describe("map-native completeness invariant (reachable ⟹ guarded ∧ KB ref)",
         "symbol",
       ].sort(),
     );
+  });
+
+  // Sibling to the HARD test above, scoped to the ramp-driven subset: guarantees a
+  // future ramp type added to RAMP_TYPES without CVD wiring would fail here — the
+  // invariant the plain furniture HARD test doesn't cover (a clean, palette-less
+  // config passes CVD trivially by resolving the vetted default ramp; it never
+  // exercises the custom-palette branch of `checkPaletteConformance`).
+  it("HARD: every RAMP_TYPES entry is reachable and rejects a non-CVD-safe custom palette", () => {
+    for (const id of RAMP_TYPES) {
+      expect((MAP_TYPES as readonly string[]).includes(id)).toBe(true);
+
+      const result = runProduceMapConformance(id, {
+        ...cleanFurniture,
+        palette: ["#ff0000", "#00ff00", "#0000ff"],
+      });
+      expect(result.checked).toBe(true);
+      expect(result.violations.length).toBeGreaterThan(0);
+      expect(result.violations.some((v) => /palette/i.test(v))).toBe(true);
+    }
   });
 });

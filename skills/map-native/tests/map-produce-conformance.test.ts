@@ -1,7 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import {
   runProduceMapConformance,
-  MAP_PRODUCE_GUARDED_TYPES,
   RAMP_TYPES,
 } from "../src/core/map-produce-conformance";
 import { MAP_TYPES } from "../src/map-types";
@@ -203,12 +202,6 @@ describe("runProduceMapConformance — dark theme furniture", () => {
 });
 
 describe("MAP_PRODUCE_GUARDED_TYPES / RAMP_TYPES", () => {
-  it("guards all 7 MAP_TYPES (parity invariant target)", () => {
-    expect([...MAP_PRODUCE_GUARDED_TYPES].sort()).toEqual(
-      [...MAP_TYPES].sort(),
-    );
-  });
-
   it("names exactly the 3 ramp-driven types", () => {
     expect([...RAMP_TYPES].sort()).toEqual(
       ["cartogram", "choropleth", "hex-grid"].sort(),
