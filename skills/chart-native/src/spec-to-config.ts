@@ -374,10 +374,12 @@ export const MAPPERS: Record<
   waterfall(parsed, spec) {
     const { columns, numericColumns, rows } = parsed;
     const labelCol = columns[0];
-    const valCol =
-      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
     // optional boolean-ish "total" column marks running-total rows (opening/closing)
     const totalCol = columns.find((c) => c.toLowerCase() === "total");
+    const valueCandidates = numericColumns.filter((c) => c !== totalCol);
+    const valCol =
+      valueCandidates[valueCandidates.length - 1] ??
+      columns[columns.length - 1];
     const wrows = rows.map((r) => ({
       label: String(r[labelCol]),
       value: Number(r[valCol]),
