@@ -172,6 +172,14 @@ describe("validateSymbolConfig", () => {
       expect(r.warnings.some((w) => /source/.test(w))).toBe(true);
     }
   });
+  it("accepts a known mapStyle and rejects an unknown one", () => {
+    expect(
+      validateSymbolConfig({ ...okSymbol, mapStyle: "dataviz-dark" }).ok,
+    ).toBe(true);
+    const bad = validateSymbolConfig({ ...okSymbol, mapStyle: "midnight" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.some((e) => /mapStyle/.test(e))).toBe(true);
+  });
 });
 
 const okRoute = {

@@ -14,6 +14,8 @@ import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame, labelTextSize } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 import { MapFilterBar } from "./core/MapFilterBar";
+import { resolveMapStyle } from "./route-geo";
+import { legendTheme } from "./theme/legend-theme";
 import {
   deriveFilterOptions,
   filterStateToExpression,
@@ -32,6 +34,7 @@ const MAX_RADIUS_PX = 40;
 export interface SymbolConfig extends SymbolData {
   type: "symbol";
   basemap: string;
+  mapStyle?: string;
   title?: string;
   description?: string;
   valueUnit?: string;
@@ -90,6 +93,9 @@ export const SymbolMap: React.FC<Props> = ({
   const [barHeightPx, setBarHeightPx] = useState(0);
 
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
+
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const theme = legendTheme(dark);
 
   // Measure the root element size before map init.
   useEffect(() => {
@@ -181,9 +187,13 @@ export const SymbolMap: React.FC<Props> = ({
     // Expose so the title-height effect can trigger a re-fit without re-creating this closure.
     fitToDataRef.current = fitToData;
 
+    const style = dark
+      ? maptilersdk.MapStyle.DATAVIZ.DARK
+      : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+
     const map = new maptilersdk.Map({
       container: containerRef.current,
-      style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
+      style,
       center: [
         (geo.bounds[0] + geo.bounds[2]) / 2,
         (geo.bounds[1] + geo.bounds[3]) / 2,
@@ -265,8 +275,8 @@ export const SymbolMap: React.FC<Props> = ({
             "text-max-width": 8,
           },
           paint: {
-            "text-color": "#1a1a1a",
-            "text-halo-color": "#ffffff",
+            "text-color": dark ? "#f4f4f5" : "#1a1a1a",
+            "text-halo-color": dark ? "rgba(0,0,0,0.85)" : "#ffffff",
             "text-halo-width": 1.6,
           },
         });
@@ -276,7 +286,10 @@ export const SymbolMap: React.FC<Props> = ({
 
       if (interactive) {
         map.addControl(new maptilersdk.NavigationControl({}), "top-right");
-        map.addControl(makeResetControl(clampBounds(geo.bounds)), "top-right");
+        map.addControl(
+          makeResetControl(clampBounds(geo.bounds), { dark }),
+          "top-right",
+        );
         const popup = new maptilersdk.Popup({ closeButton: false });
         map.on("mouseenter", "symbol-circles", (e) => {
           map.getCanvas().style.cursor = "pointer";
@@ -370,6 +383,13 @@ export const SymbolMap: React.FC<Props> = ({
   }, []);
 
   // Nested-circle legend (largest stop outermost), drawn as inline SVG.
+  // The circle has no fill — its stroke IS the graphic, unlike the swatch-plus-box-shadow
+  // pattern used by the ramp legends (Choropleth/Cartogram/HexGrid/DotDensity), where
+  // `theme.stroke` is a translucent 1px separator drawn OVER an opaque colour fill. Reused
+  // here it would render near-invisible (confirmed on dark: rgba(0,0,0,.15) over a near-black
+  // panel). Use `theme.sub` instead — an opaque, theme-aware grey that keeps the circle
+  // outline visible in both themes, mirroring the ink/sub weighting used everywhere else
+  // (prominent value text = ink, secondary graphic = sub).
   function renderLegend() {
     const el = legendRef.current;
     if (!el) return;
@@ -378,8 +398,8 @@ export const SymbolMap: React.FC<Props> = ({
     const rows = geo.legend
       .map(
         (s) =>
-          `<circle cx="${max + 2}" cy="${h - s.radius - 2}" r="${s.radius}" fill="none" stroke="#666" />` +
-          `<text x="${max * 2 + 10}" y="${h - s.radius * 2 - 2 + 4}" font-size="11" fill="#333">${s.value}${config.valueUnit ?? ""}</text>`,
+          `<circle cx="${max + 2}" cy="${h - s.radius - 2}" r="${s.radius}" fill="none" stroke="${theme.sub}" />` +
+          `<text x="${max * 2 + 10}" y="${h - s.radius * 2 - 2 + 4}" font-size="11" fill="${theme.ink}">${s.value}${config.valueUnit ?? ""}</text>`,
       )
       .join("");
     el.innerHTML = `<svg width="${max * 2 + 70}" height="${h}">${rows}</svg>`;
@@ -394,6 +414,15 @@ export const SymbolMap: React.FC<Props> = ({
     filterBarHeight: interactive && filterOptions.length ? barHeightPx : 0,
   });
   frameRef.current = frame;
+
+  const DARK_CTRL_CSS = `
+    .maplibregl-ctrl-group { background: rgba(28,28,31,0.92) !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.14) !important; }
+    .maplibregl-ctrl-group button + button { border-top: 1px solid rgba(255,255,255,0.14) !important; }
+    .maplibregl-ctrl button .maplibregl-ctrl-icon { filter: invert(1) brightness(1.1) !important; }
+    .maplibregl-popup-content { background: rgba(28,28,31,0.95) !important; color: #f4f4f5 !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.14) !important; }
+    .maplibregl-popup-content strong { color: #ffffff !important; }
+    .maplibregl-popup-tip { border-top-color: rgba(28,28,31,0.95) !important; border-bottom-color: rgba(28,28,31,0.95) !important; }
+  `;
 
   // Inner content: the map canvas + legend. This subtree is STABLE — always the
   // same JSX shape so containerRef never moves in the DOM. MapFrame wraps it.
@@ -410,6 +439,7 @@ export const SymbolMap: React.FC<Props> = ({
         /* Interactive controls must render above the furniture overlays (z-index 10).
            In static/video the top-right control area is empty — this rule is inert. */
         .maplibregl-ctrl-top-right { z-index: 20 !important; }
+        ${dark ? DARK_CTRL_CSS : ""}
       `}</style>
 
       {/* Map canvas — stable DOM node; the map is mounted into this div */}
@@ -429,7 +459,7 @@ export const SymbolMap: React.FC<Props> = ({
           bottom: 16,
           right: 16,
           zIndex: 10,
-          background: "rgba(255,255,255,0.85)",
+          background: theme.bg,
           padding: "8px 10px",
           borderRadius: 6,
           boxShadow: "0 1px 6px rgba(0,0,0,.12)",
@@ -452,6 +482,7 @@ export const SymbolMap: React.FC<Props> = ({
         responsive
         frame={frame}
         onTitleHeight={handleTitleHeight}
+        dark={dark}
         belowTitle={
           interactive && filterOptions.length ? (
             <MapFilterBar
@@ -459,6 +490,7 @@ export const SymbolMap: React.FC<Props> = ({
               state={filterState}
               onChange={setFilterState}
               onHeight={handleBarHeight}
+              dark={dark}
             />
           ) : undefined
         }
