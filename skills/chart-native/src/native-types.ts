@@ -53,20 +53,10 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   { id: "pyramid", family: "A", shape: "wide", deferred: A_PENDING("wide") },
   { id: "bullet", family: "A", shape: "single" },
   { id: "connected-scatter", family: "A", shape: "paired" },
-  {
-    id: "boxplot",
-    family: "A",
-    shape: "distribution",
-    deferred: A_PENDING("distribution"),
-  },
+  { id: "boxplot", family: "A", shape: "distribution" },
   { id: "bump", family: "A", shape: "wide", deferred: A_PENDING("wide") },
   { id: "beeswarm", family: "A", shape: "distribution" },
-  {
-    id: "treemap",
-    family: "A",
-    shape: "single",
-    deferred: A_PENDING("single"),
-  },
+  { id: "treemap", family: "A", shape: "single" },
   {
     id: "diverging-stacked",
     family: "A",

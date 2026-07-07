@@ -140,11 +140,11 @@ Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
 directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
-waterfall, dumbbell, slope, bullet** (`spec-to-config.ts`); for any type NOT in this list
+waterfall, dumbbell, slope, bullet, treemap, boxplot** (`spec-to-config.ts`); for any type NOT in this list
 the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead. Produce with
 `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
@@ -192,6 +192,15 @@ become the period captions. Route it for a two-point change/comparison per categ
 column). Route it ONLY when there's a target to measure against (a KPI vs its goal). The measure is coloured
 by hit (blue) / miss (vermillion); by default it sits on a single neutral track — qualitative range bands
 require explicit threshold columns (deferred), never invent them.
+`treemap` expects **label + one value, with an OPTIONAL grouping category column** (`label,value` or
+`label,value,category`) — a part-to-whole layout where each cell's AREA is proportional to value; when a
+grouping column is present, cells are coloured and clustered by group (≤5 groups — beyond that group the
+tail into "Other"). For a flat ranking with few items, prefer `bar`/`waffle`; for ≤6 shares with no
+hierarchy, prefer `pie`.
+`boxplot` expects **category + one numeric value column, with MANY raw observations per category**
+(not pre-aggregated summary stats — the engine computes the five-number summary itself); shows the
+distribution spread (median, IQR, whiskers, outliers) per group. For a single ungrouped distribution,
+or to see every individual point, prefer `histogram`/`beeswarm`/`dot-strip` instead.
 
 ### map-dw (static choropleth map) — default map path
 

@@ -26,6 +26,8 @@ import {
   checkDumbbellConformance,
   checkSlopeConformance,
   checkBulletConformance,
+  checkTreemapConformance,
+  checkBoxplotConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -45,6 +47,7 @@ import {
   DUMBBELL_DOT_COLORS,
   SLOPE_LINE_COLORS,
   BULLET_MEASURE_COLORS,
+  TREEMAP_GROUP_COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeDivergingLayout } from "../diverging-bar-geometry";
@@ -74,6 +77,8 @@ import type { WaterfallConfig } from "../WaterfallChart";
 import type { DumbbellConfig } from "../DumbbellChart";
 import type { SlopeConfig } from "../SlopeChart";
 import type { BulletConfig } from "../BulletChart";
+import type { TreemapConfig } from "../TreemapChart";
+import type { BoxplotConfig } from "../BoxplotChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -151,6 +156,8 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "dumbbell",
   "slope",
   "bullet",
+  "treemap",
+  "boxplot",
 ];
 
 export function runProduceConformance(
@@ -544,6 +551,45 @@ export function runProduceConformance(
             source: cfg.source,
             measureColors: [...BULLET_MEASURE_COLORS],
             rows: cfg.rows.map((r) => ({ target: r.target })),
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "treemap": {
+      const cfg = config as unknown as TreemapConfig;
+      const groupColors =
+        cfg.categories && cfg.categories.length
+          ? cfg.categories.map(
+              (_, i) => TREEMAP_GROUP_COLORS[i % TREEMAP_GROUP_COLORS.length],
+            )
+          : [OKABE_ITO.blue];
+      return {
+        checked: true,
+        violations: checkTreemapConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            values: cfg.items.map((it) => it.value),
+            groupColors,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "boxplot": {
+      const cfg = config as unknown as BoxplotConfig;
+      return {
+        checked: true,
+        violations: checkBoxplotConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            valueLabel: cfg.valueLabel,
+            categoryCount: cfg.categories.length,
+            boxColors: [OKABE_ITO.blue],
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

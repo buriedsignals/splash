@@ -445,6 +445,65 @@ export const MAPPERS: Record<
       },
     };
   },
+  treemap(parsed, spec) {
+    const { columns, rows, numericColumns } = parsed;
+    const labelCol = columns[0];
+    const valueCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    // optional grouping column: the first column that is neither the label nor
+    // the value column and isn't numeric (mirrors waffle's label/value pair,
+    // plus one extra text column for the group colouring).
+    const catCol = columns.find(
+      (c) => c !== labelCol && c !== valueCol && !numericColumns.includes(c),
+    );
+    const items = rows.map((r) => ({
+      label: String(r[labelCol]),
+      value: Number(r[valueCol]),
+      ...(catCol ? { category: String(r[catCol]) } : {}),
+    }));
+    const categories = catCol
+      ? [...new Set(rows.map((r) => String(r[catCol])))]
+      : undefined;
+    return {
+      type: "treemap",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        ...(categories ? { categories } : {}),
+        items,
+      },
+    };
+  },
+  boxplot(parsed, spec) {
+    const { columns, rows, numericColumns } = parsed;
+    const catCol = columns[0];
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    // group RAW observations by category — do NOT aggregate; the geometry
+    // computes the five-number summary itself (mirrors dot-strip's raw-rows
+    // convention, but grouped into per-category arrays).
+    const groups = new Map<string, number[]>();
+    for (const r of rows) {
+      const cat = String(r[catCol]);
+      const values = groups.get(cat) ?? [];
+      values.push(Number(r[valCol]));
+      groups.set(cat, values);
+    }
+    const categories = [...groups.entries()].map(([label, values]) => ({
+      label,
+      values,
+    }));
+    return {
+      type: "boxplot",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        valueLabel: spec.unit, // NativeSpec has no valueLabel; its long-axis `unit` maps here
+        categories,
+      },
+    };
+  },
   waterfall(parsed, spec) {
     const { columns, numericColumns, rows } = parsed;
     const labelCol = columns[0];

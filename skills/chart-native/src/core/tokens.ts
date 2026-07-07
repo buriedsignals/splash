@@ -125,3 +125,17 @@ export const BULLET_MEASURE_COLORS = [
   OKABE_ITO.blue,
   OKABE_ITO.vermillion,
 ] as const;
+
+// Treemap group palette (TreemapChart.tsx), extracted so the produce conformance
+// guard derives the SAME group colours. ≤5 groups (treemap.md); an ungrouped
+// (flat) treemap uses a single OKABE_ITO.blue hue for every cell. Every hue here
+// has at least one of {white, COLORS.ink} clearing 4.5:1 against it, which is
+// what TreemapChart's `cellText` picks per-cell (there's no neutral background
+// to fall back to inside a coloured cell).
+export const TREEMAP_GROUP_COLORS = [
+  OKABE_ITO.blue,
+  OKABE_ITO.orange,
+  OKABE_ITO.green,
+  OKABE_ITO.purple,
+  OKABE_ITO.vermillion,
+] as const;
