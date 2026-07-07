@@ -35,6 +35,10 @@ import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { resolveScene } from "../video-scene";
 import { legendTheme } from "../theme/legend-theme";
+
+// Legend furniture is light-only in the video/scrolly formats today (dark is a deferred
+// follow-up); hoisted to module scope so the per-frame legend effect dep stays stable.
+const LEGEND_THEME_LIGHT = legendTheme(false);
 import { fmtBin } from "../core/legend-format";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
@@ -106,7 +110,7 @@ export const ChoroplethStory: React.FC<{
   const { fps, width, height } = useVideoConfig();
   // This composition does not yet thread mapStyle/dark — the basemap is always
   // DATAVIZ.LIGHT (see the Map init below), so the legend always uses the light theme.
-  const theme = legendTheme(false);
+  const theme = LEGEND_THEME_LIGHT;
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
     hasDescription: !!config.description,
