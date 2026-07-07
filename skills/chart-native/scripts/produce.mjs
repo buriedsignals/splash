@@ -81,6 +81,11 @@ run("bun", ["scripts/assert-selfcontained.mjs", interactiveDest]);
 console.log(`[produce ${type}] snapping static + interactive…`);
 run("bun", ["scripts/snap-proof.mjs"], { OUTDIR: outDir });
 
+// 2b. render-time WCAG contrast guard — every text label must clear 4.5:1 against
+// its real background. Fails the run before export on a mark-coloured label.
+console.log(`[produce ${type}] checking text contrast (snap-contrast)…`);
+run("bun", ["scripts/snap-contrast.mjs"]);
+
 const result = {
   static: join(outDir, "static.png"),
   interactive: join(outDir, "interactive.png"),
