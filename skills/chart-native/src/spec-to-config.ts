@@ -318,6 +318,23 @@ export const MAPPERS: Record<
       },
     };
   },
+  "radial-bar"(parsed, spec) {
+    const catCol = parsed.columns[0];
+    const valCol =
+      parsed.numericColumns[parsed.numericColumns.length - 1] ??
+      parsed.columns[parsed.columns.length - 1];
+    return {
+      type: "radial-bar",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        categoryField: catCol,
+        valueField: valCol,
+        rows: parsed.rows, // CSV order — angle encodes cyclical position, do NOT sort
+      },
+    };
+  },
   waffle(parsed, spec) {
     const catCol = parsed.columns[0];
     const valCol =

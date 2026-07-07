@@ -97,12 +97,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "distribution",
     deferred: A_PENDING("distribution"),
   },
-  {
-    id: "radial-bar",
-    family: "A",
-    shape: "single",
-    deferred: A_PENDING("single"),
-  },
+  { id: "radial-bar", family: "A", shape: "single" },
   // --- Family B, deferred by design (structural/specialist data an article rarely yields) ---
   {
     id: "heatmap",

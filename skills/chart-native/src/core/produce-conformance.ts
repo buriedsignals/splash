@@ -20,6 +20,7 @@ import {
   checkStackedAreaConformance,
   checkDotStripConformance,
   checkWaffleConformance,
+  checkRadialBarConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -41,6 +42,7 @@ import { computeLollipopLayout } from "../lollipop-geometry";
 import { computeGroupedLayout } from "../grouped-bar-geometry";
 import { computeStackedLayout } from "../stacked-bar-geometry";
 import { computeStackedAreaLayout } from "../stacked-area-geometry";
+import { computeRadialBarLayout } from "../radial-bar-geometry";
 import type { ChartConfig } from "../LineChart";
 import type { BarConfig } from "../BarChart";
 import type { ScatterConfig } from "../ScatterChart";
@@ -54,6 +56,7 @@ import type { StackedConfig } from "../StackedBarChart";
 import type { StackedAreaConfig } from "../StackedAreaChart";
 import type { DotStripConfig } from "../DotStripChart";
 import type { WaffleConfig } from "../WaffleChart";
+import type { RadialBarConfig } from "../RadialBarChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -95,6 +98,14 @@ const STACKED_AREA_DIMS = {
   height: 460,
   padding: { top: 64, right: 116, bottom: 52, left: 44 },
 };
+// computeRadialBarLayout derives tickCount from the data's value domain alone
+// (rScale.ticks(4)), never from these dims — any valid dims yield the same
+// tick count the real render uses (tickCount is data-only, per the task brief).
+const RADIAL_BAR_DIMS = {
+  width: 840,
+  height: 480,
+  padding: { top: 90, right: 16, bottom: 28, left: 16 },
+};
 
 // Every type with a produce-time guard wired (flat-triple resolver types + the
 // bespoke-signature types resolved inline below). The completeness test asserts
@@ -107,6 +118,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "stacked-area",
   "dot-strip",
   "waffle",
+  "radial-bar",
 ];
 
 export function runProduceConformance(
@@ -301,6 +313,31 @@ export function runProduceConformance(
             unit: cfg.unit,
             categoryCount: cfg.items.length,
             categoryColors,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "radial-bar": {
+      const cfg = config as unknown as RadialBarConfig;
+      const layout = computeRadialBarLayout(
+        {
+          categoryField: cfg.categoryField,
+          valueField: cfg.valueField,
+          rows: cfg.rows,
+        },
+        RADIAL_BAR_DIMS,
+      );
+      return {
+        checked: true,
+        violations: checkRadialBarConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            dataColor: OKABE_ITO.blue,
+            radialBaseline: 0,
+            tickCount: layout.ticks.length,
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

@@ -139,11 +139,11 @@ hover). A plain static chart stays `dw-chart`.
 Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
 directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
-stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle** (`spec-to-config.ts`); for any type NOT in this list
+stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar** (`spec-to-config.ts`); for any type NOT in this list
 the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead. Produce with
 `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
@@ -172,6 +172,10 @@ type earns its keep when several rows share a category.
 one square per unit) — group any tail beyond 6 into "Other"; `unit` must name what one square represents
 (e.g. "each square = 1%"), it renders as the subtitle. Not for change over time (use `stacked-area`)
 or for more than ~6 slices (use `pie` or `bar`).
+`radial-bar` expects **category + one value**; use it ONLY when the category axis is CYCLICAL (hours
+of the day, months of the year, compass points) and the cycle itself is part of the story — keep rows
+in **CSV order** (do NOT sort by value; angle encodes the category's cyclical position, unlike every
+other single-value type above). For a non-cyclical magnitude/ranking, prefer plain `bar`.
 
 ### map-dw (static choropleth map) — default map path
 
