@@ -132,6 +132,27 @@ export const MAPPERS: Record<
       },
     };
   },
+  "connected-scatter"(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const labelCol = columns[0]; // the sequence/time key that ORDERS the path
+    const measures = numericColumns.filter((c) => c !== labelCol);
+    const xField = measures[0] ?? columns[1];
+    const yField = measures[1] ?? columns[2];
+    return {
+      type: "connected-scatter",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        labelField: labelCol,
+        xField,
+        yField,
+        xLabel: xField,
+        yLabel: yField,
+        rows, // pass through IN ORDER — do NOT sort (the path follows row order)
+      },
+    };
+  },
   grouped(parsed, spec) {
     const catCol = parsed.columns[0];
     // wide convention: every NUMERIC column after the category is a series

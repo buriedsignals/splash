@@ -71,12 +71,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   { id: "lollipop", family: "A", shape: "single" },
   { id: "pyramid", family: "A", shape: "wide", deferred: A_PENDING("wide") },
   { id: "bullet", family: "A", shape: "single", deferred: A_PENDING("single") },
-  {
-    id: "connected-scatter",
-    family: "A",
-    shape: "paired",
-    deferred: A_PENDING("paired"),
-  },
+  { id: "connected-scatter", family: "A", shape: "paired" },
   {
     id: "boxplot",
     family: "A",

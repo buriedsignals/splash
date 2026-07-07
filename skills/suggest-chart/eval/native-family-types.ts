@@ -4,7 +4,7 @@
 // (created in Task 10). No tiers.
 export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   "change-over-time": ["line"],
-  correlation: ["scatter"],
+  correlation: ["scatter", "connected-scatter"],
   "part-to-whole": ["pie"],
   magnitude: ["bar", "grouped"],
   distribution: ["histogram"],
