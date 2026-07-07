@@ -416,6 +416,11 @@ export function checkDotDensityConformance(
     totalDots: number;
     capped: boolean;
     mapStyle?: string;
+    // Univariate-only single-source check (multivariate colours come from the QUALITATIVE
+    // per-category palette, not this token — see below). Both optional so existing callers
+    // that don't supply them are unaffected; when both are present the assertion applies.
+    univariateDotColor?: string;
+    univariateSwatchColor?: string;
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -444,6 +449,18 @@ export function checkDotDensityConformance(
     !(MAP_STYLES as readonly string[]).includes(input.mapStyle)
   )
     v.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  // Univariate single-source parity: the legend "1 dot = N" swatch must paint the SAME colour
+  // as the dots on the map. A future one-sided theme edit (dot fixed, swatch left stale, or
+  // vice versa) fails here instead of only being caught at render-verify.
+  if (
+    !input.hasCategories &&
+    input.univariateDotColor !== undefined &&
+    input.univariateSwatchColor !== undefined &&
+    input.univariateDotColor !== input.univariateSwatchColor
+  )
+    v.push(
+      `dot-density legend swatch colour (${input.univariateSwatchColor}) must equal the univariate dot paint colour (${input.univariateDotColor}) — single-sourced token`,
+    );
   return v;
 }
 
