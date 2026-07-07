@@ -18,6 +18,7 @@ import {
   checkGroupedBarConformance,
   checkStackedBarConformance,
   checkStackedAreaConformance,
+  checkDotStripConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -30,6 +31,7 @@ import {
   STACKED_SERIES_COLORS,
   STACKED_AREA_COLORS,
   COLORS,
+  OKABE_ITO,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeHistogramLayout } from "../histogram-geometry";
@@ -48,6 +50,7 @@ import type { PieConfig } from "../PieChart";
 import type { GroupedConfig } from "../GroupedBarChart";
 import type { StackedConfig } from "../StackedBarChart";
 import type { StackedAreaConfig } from "../StackedAreaChart";
+import type { DotStripConfig } from "../DotStripChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -99,6 +102,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "grouped",
   "stacked",
   "stacked-area",
+  "dot-strip",
 ];
 
 export function runProduceConformance(
@@ -251,6 +255,28 @@ export function runProduceConformance(
             source: cfg.source,
             sliceCount: cfg.rows.length,
             sliceColors,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "dot-strip": {
+      const cfg = config as unknown as DotStripConfig;
+      const counts = new Map<string, number>();
+      for (const r of cfg.rows) {
+        const c = String(r[cfg.categoryField]);
+        counts.set(c, (counts.get(c) ?? 0) + 1);
+      }
+      return {
+        checked: true,
+        violations: checkDotStripConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            dotColor: OKABE_ITO.blue,
+            hasSummaryMarker: true,
+            categoryCounts: [...counts.values()],
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

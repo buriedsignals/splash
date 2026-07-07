@@ -90,12 +90,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   },
   { id: "waffle", family: "A", shape: "single", deferred: A_PENDING("single") },
   { id: "fan", family: "A", shape: "wide", deferred: A_PENDING("wide") },
-  {
-    id: "dot-strip",
-    family: "A",
-    shape: "single",
-    deferred: A_PENDING("single"),
-  },
+  { id: "dot-strip", family: "A", shape: "single" },
   {
     id: "violin",
     family: "A",

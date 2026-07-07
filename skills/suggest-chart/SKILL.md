@@ -139,11 +139,11 @@ hover). A plain static chart stays `dw-chart`.
 Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
 directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
-stacked-area, histogram, lollipop, connected-scatter, beeswarm** (`spec-to-config.ts`); for any type NOT in this list
+stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip** (`spec-to-config.ts`); for any type NOT in this list
 the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead. Produce with
 `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
@@ -164,6 +164,10 @@ category to accent.
 columns**; rows must be ordered by that key (the path follows row order).
 `beeswarm` expects **one numeric value column** (raw observations) + an **optional low-cardinality
 grouping column** (≤5 groups → colours) + an optional per-point label column.
+`dot-strip` expects **category + one value, with MANY rows per category** (raw observations, NOT
+pre-aggregated) — shows the spread of individual values within a few groups, one horizontal strip per
+category plus a mean marker; a single category with only one observation per row is still valid, but the
+type earns its keep when several rows share a category.
 
 ### map-dw (static choropleth map) — default map path
 

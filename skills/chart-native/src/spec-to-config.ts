@@ -284,6 +284,23 @@ export const MAPPERS: Record<
       },
     };
   },
+  "dot-strip"(parsed, spec) {
+    const catCol = parsed.columns[0];
+    const valCol =
+      parsed.numericColumns[parsed.numericColumns.length - 1] ??
+      parsed.columns[parsed.columns.length - 1];
+    return {
+      type: "dot-strip",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        categoryField: catCol,
+        valueField: valCol,
+        rows: parsed.rows, // RAW observations — many rows share a category, do NOT aggregate
+      },
+    };
+  },
   pie(parsed, spec) {
     const { columns, rows, numericColumns } = parsed;
     const catCol = columns[0];
