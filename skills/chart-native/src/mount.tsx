@@ -97,6 +97,7 @@ import { ComboChart, type ComboConfig } from "./ComboChart";
 import { InteractiveComboChart } from "./InteractiveComboChart";
 import { PictogramChart, type PictogramConfig } from "./PictogramChart";
 import { InteractivePictogramChart } from "./InteractivePictogramChart";
+import { AUDIT_REGISTRY, INTERACTIVE_REGISTRY } from "./component-registry";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -152,99 +153,6 @@ const injectedConfig = typeof __CONFIG__ !== "undefined" ? __CONFIG__ : null;
 const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
-
-// Audit entry: renders ANY chart from an arbitrary config + progress so the
-// layout audit (scripts/audit.mjs) can stress-test collisions across datasets.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const AUDIT_REGISTRY: Record<string, any> = {
-  line: LineChart,
-  bar: BarChart,
-  scatter: ScatterChart,
-  pie: PieChart,
-  stacked: StackedBarChart,
-  slope: SlopeChart,
-  grouped: GroupedBarChart,
-  dumbbell: DumbbellChart,
-  "stacked-area": StackedAreaChart,
-  heatmap: HeatmapChart,
-  histogram: HistogramChart,
-  diverging: DivergingBarChart,
-  waterfall: WaterfallChart,
-  lollipop: LollipopChart,
-  pyramid: PopulationPyramidChart,
-  bullet: BulletChart,
-  "connected-scatter": ConnectedScatterChart,
-  marimekko: MarimekkoChart,
-  radar: RadarChart,
-  boxplot: BoxplotChart,
-  bump: BumpChart,
-  beeswarm: BeeswarmChart,
-  treemap: TreemapChart,
-  "diverging-stacked": DivergingStackedChart,
-  sankey: SankeyChart,
-  streamgraph: StreamgraphChart,
-  gantt: GanttChart,
-  fan: FanChart,
-  calendar: CalendarChart,
-  waffle: WaffleChart,
-  lorenz: LorenzChart,
-  candlestick: CandlestickChart,
-  chord: ChordChart,
-  sunburst: SunburstChart,
-  parallel: ParallelChart,
-  "dot-strip": DotStripChart,
-  violin: ViolinChart,
-  arc: ArcChart,
-  "radial-bar": RadialBarChart,
-  combo: ComboChart,
-  pictogram: PictogramChart,
-};
-
-// type → Interactive binding, for the produce() injection path (mirrors AUDIT_REGISTRY)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const INTERACTIVE_REGISTRY: Record<string, any> = {
-  line: InteractiveLineChart,
-  bar: InteractiveBarChart,
-  scatter: InteractiveScatterChart,
-  pie: InteractivePieChart,
-  stacked: InteractiveStackedBarChart,
-  slope: InteractiveSlopeChart,
-  grouped: InteractiveGroupedBarChart,
-  dumbbell: InteractiveDumbbellChart,
-  "stacked-area": InteractiveStackedAreaChart,
-  heatmap: InteractiveHeatmapChart,
-  histogram: InteractiveHistogramChart,
-  diverging: InteractiveDivergingBarChart,
-  waterfall: InteractiveWaterfallChart,
-  lollipop: InteractiveLollipopChart,
-  pyramid: InteractivePopulationPyramidChart,
-  bullet: InteractiveBulletChart,
-  "connected-scatter": InteractiveConnectedScatterChart,
-  marimekko: InteractiveMarimekkoChart,
-  radar: InteractiveRadarChart,
-  boxplot: InteractiveBoxplotChart,
-  bump: InteractiveBumpChart,
-  beeswarm: InteractiveBeeswarmChart,
-  treemap: InteractiveTreemapChart,
-  "diverging-stacked": InteractiveDivergingStackedChart,
-  sankey: InteractiveSankeyChart,
-  streamgraph: InteractiveStreamgraphChart,
-  gantt: InteractiveGanttChart,
-  fan: InteractiveFanChart,
-  calendar: InteractiveCalendarChart,
-  waffle: InteractiveWaffleChart,
-  lorenz: InteractiveLorenzChart,
-  candlestick: InteractiveCandlestickChart,
-  chord: InteractiveChordChart,
-  sunburst: InteractiveSunburstChart,
-  parallel: InteractiveParallelChart,
-  "dot-strip": InteractiveDotStripChart,
-  violin: InteractiveViolinChart,
-  arc: InteractiveArcChart,
-  "radial-bar": InteractiveRadialBarChart,
-  combo: InteractiveComboChart,
-  pictogram: InteractivePictogramChart,
-};
 
 if (injectedConfig && chart !== "audit") {
   // produce() path: render the injected config for ANY type via the registries

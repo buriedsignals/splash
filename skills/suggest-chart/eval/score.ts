@@ -1,7 +1,9 @@
 import { validateChartSpec } from "../../dw-chart/src/chart-spec";
 import { validateMapSpec } from "../../map-dw/src/map-spec";
 import { validateChoroplethConfig } from "../../map-native/src/validate-config";
+import { NATIVE_TYPES } from "../../chart-native/src/native-types";
 import { FAMILY_TYPES } from "./family-types";
+import { NATIVE_FAMILY_TYPES } from "./native-family-types";
 
 export interface Score {
   validates: boolean;
@@ -88,6 +90,31 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
       familyMatch: true, // a map is its own element; family is geographic by construction
       guardrailsOk,
       pass: v.ok && guardrailsOk,
+      notes,
+    };
+  }
+
+  if (producer === "chart-native") {
+    const nativeType = (spec as Record<string, unknown>)?.["nativeType"];
+    const known =
+      typeof nativeType === "string" &&
+      NATIVE_TYPES.some((e) => e.id === nativeType && !e.deferred);
+    if (!known)
+      notes.push(
+        `nativeType ${String(nativeType)} is not a mapped native type`,
+      );
+    const allowed = NATIVE_FAMILY_TYPES[expect.family] ?? [];
+    const familyMatch =
+      typeof nativeType === "string" && allowed.includes(nativeType);
+    if (!familyMatch)
+      notes.push(
+        `nativeType ${String(nativeType)} not in native family ${expect.family} [${allowed.join(",")}]`,
+      );
+    return {
+      validates: known,
+      familyMatch,
+      guardrailsOk: known,
+      pass: known && familyMatch,
       notes,
     };
   }

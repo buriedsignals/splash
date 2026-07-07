@@ -1,0 +1,11 @@
+{
+  "producer": "chart-native",
+  "nativeType": "grouped",
+  "title": "Urban wages pulled ahead of rural pay in every region",
+  "source": {
+    "name": "INSEE 2025",
+    "url": "https://www.insee.fr/en/statistiques"
+  },
+  "unit": "median monthly wage (€)",
+  "data": "region,urban,rural\nNorth,2400,1900\nSouth,2250,1750\nEast,2300,1820\nWest,2500,2010"
+}
