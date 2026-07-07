@@ -195,7 +195,7 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
     // Bins are evenly spaced (see computeChoropleth) — the width of any one bin IS the gap
     // between adjacent boundaries, giving fmtBin enough decimal precision for distinct labels.
     const minGap = bins.length ? bins[0].max - bins[0].min : undefined;
-    const unit = (config as any).unit ?? "";
+    const unit = config.unit ?? "";
     const header = `
       <div style="font:600 11px/1.2 sans-serif;color:${theme.ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
         ${unit}
