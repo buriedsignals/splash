@@ -17,7 +17,7 @@ export interface LegendItem {
 
 export function layoutLegend(
   series: string[],
-  colors: string[],
+  colors: readonly string[],
   availWidth: number,
   x0: number,
   yTop: number,

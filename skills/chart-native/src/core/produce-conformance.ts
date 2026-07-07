@@ -15,15 +15,22 @@ import {
   checkHistogramConformance,
   checkBeeswarmConformance,
   checkPieConformance,
+  checkGroupedBarConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
   RESOLVABLE_CONFORMANCE_TYPES,
 } from "./resolve-conformance-colors";
-import { BEESWARM_CATEGORY_COLORS, PIE_SLICE_COLORS, COLORS } from "./tokens";
+import {
+  BEESWARM_CATEGORY_COLORS,
+  PIE_SLICE_COLORS,
+  GROUPED_SERIES_COLORS,
+  COLORS,
+} from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeHistogramLayout } from "../histogram-geometry";
 import { computeLollipopLayout } from "../lollipop-geometry";
+import { computeGroupedLayout } from "../grouped-bar-geometry";
 import type { ChartConfig } from "../LineChart";
 import type { BarConfig } from "../BarChart";
 import type { ScatterConfig } from "../ScatterChart";
@@ -32,6 +39,7 @@ import type { BeeswarmConfig } from "../BeeswarmChart";
 import type { ConnectedScatterConfig } from "../ConnectedScatterChart";
 import type { LollipopConfig } from "../LollipopChart";
 import type { PieConfig } from "../PieChart";
+import type { GroupedConfig } from "../GroupedBarChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -58,6 +66,11 @@ const LOLLIPOP_DIMS = {
   height: 480,
   padding: { top: 90, right: 18, bottom: 24, left: 124 },
 };
+const GROUPED_DIMS = {
+  width: 840,
+  height: 460,
+  padding: { top: 64, right: 16, bottom: 96, left: 52 },
+};
 
 // Every type with a produce-time guard wired (flat-triple resolver types + the
 // bespoke-signature types resolved inline below). The completeness test asserts
@@ -65,6 +78,7 @@ const LOLLIPOP_DIMS = {
 export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   ...RESOLVABLE_CONFORMANCE_TYPES,
   "pie",
+  "grouped",
 ];
 
 export function runProduceConformance(
@@ -217,6 +231,34 @@ export function runProduceConformance(
             source: cfg.source,
             sliceCount: cfg.rows.length,
             sliceColors,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "grouped": {
+      const cfg = config as unknown as GroupedConfig;
+      const seriesColors = cfg.seriesFields.map(
+        (_, i) => GROUPED_SERIES_COLORS[i % GROUPED_SERIES_COLORS.length],
+      );
+      const layout = computeGroupedLayout(
+        {
+          catField: cfg.catField,
+          seriesFields: cfg.seriesFields,
+          rows: cfg.rows,
+        },
+        GROUPED_DIMS,
+      );
+      return {
+        checked: true,
+        violations: checkGroupedBarConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            valueDomain: layout.valueDomain,
+            seriesCount: cfg.seriesFields.length,
+            seriesColors,
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

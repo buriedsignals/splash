@@ -54,3 +54,11 @@ export const PIE_SLICE_COLORS = [
   OKABE_ITO.vermillion,
   OKABE_ITO.purple,
 ] as const;
+
+// Grouped bar/column series palette (GroupedBarChart.tsx), extracted so the produce
+// conformance resolver derives the SAME series colours. ≤3 series (grouped-bar.md).
+export const GROUPED_SERIES_COLORS = [
+  OKABE_ITO.blue,
+  OKABE_ITO.orange,
+  OKABE_ITO.green,
+] as const;

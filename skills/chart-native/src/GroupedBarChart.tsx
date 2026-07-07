@@ -19,7 +19,7 @@ import {
 } from "./grouped-bar-geometry";
 import { growBar } from "./bar-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, TYPE, GROUPED_SERIES_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
@@ -45,7 +45,7 @@ export interface GroupedBarChartProps {
 }
 
 // categorical series colours — all Okabe-Ito (CVD-safe). ≤3 series (grouped-bar.md).
-const GROUP_COLORS = [OKABE_ITO.blue, OKABE_ITO.orange, OKABE_ITO.green];
+const GROUP_COLORS = GROUPED_SERIES_COLORS;
 
 export function GroupedBarChart({
   config,
@@ -85,7 +85,16 @@ export function GroupedBarChart({
     bottom: 44 + legendRows * legendRowUnscaled + 24,
     left: leftAxis,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
