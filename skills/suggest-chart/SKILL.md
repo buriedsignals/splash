@@ -194,9 +194,10 @@ by hit (blue) / miss (vermillion); by default it sits on a single neutral track 
 require explicit threshold columns (deferred), never invent them.
 `treemap` expects **label + one value, with an OPTIONAL grouping category column** (`label,value` or
 `label,value,category`) — a part-to-whole layout where each cell's AREA is proportional to value; when a
-grouping column is present, cells are coloured and clustered by group (≤5 groups — beyond that group the
-tail into "Other"). For a flat ranking with few items, prefer `bar`/`waffle`; for ≤6 shares with no
-hierarchy, prefer `pie`.
+grouping column has **≤5 distinct values**, cells are coloured and clustered by group. Past 5 distinct
+values, the mapper degrades to a **flat single-hue treemap** (grouping dropped, no legend) rather than
+wrapping the 5-colour palette. For a flat ranking with few items, prefer `bar`/`waffle`; for ≤6 shares with
+no hierarchy, prefer `pie`.
 `boxplot` expects **category + one numeric value column, with MANY raw observations per category**
 (not pre-aggregated summary stats — the engine computes the five-number summary itself); shows the
 distribution spread (median, IQR, whiskers, outliers) per group. For a single ungrouped distribution,

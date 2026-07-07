@@ -453,9 +453,20 @@ export const MAPPERS: Record<
     // optional grouping column: the first column that is neither the label nor
     // the value column and isn't numeric (mirrors waffle's label/value pair,
     // plus one extra text column for the group colouring).
-    const catCol = columns.find(
+    const rawCatCol = columns.find(
       (c) => c !== labelCol && c !== valueCol && !numericColumns.includes(c),
     );
+    // TREEMAP_GROUP_COLORS has exactly 5 entries; the component/guard index it
+    // modulo-length, so a column with >5 distinct values would silently wrap
+    // and paint two different groups the same colour (indistinguishable —
+    // same legend swatch, guard can't catch it since it counts REALIZED hex
+    // values, structurally ≤5). Mirrors beeswarm's cap-then-degrade: past 5,
+    // drop the grouping entirely and fall through to the flat single-hue path.
+    const catCol =
+      rawCatCol !== undefined &&
+      new Set(rows.map((r) => String(r[rawCatCol]))).size <= 5
+        ? rawCatCol
+        : undefined;
     const items = rows.map((r) => ({
       label: String(r[labelCol]),
       value: Number(r[valueCol]),
