@@ -26,12 +26,14 @@ describe("validateShape", () => {
     ).toThrow(ShapeMismatchError);
   });
   it("names the expected shape and what it got", () => {
+    let msg = "";
     try {
       validateShape("grouped", p("region,2019\nNorth,4"));
     } catch (e) {
-      expect((e as Error).message).toMatch(/wide/);
-      expect((e as Error).message).toMatch(/grouped/);
+      msg = (e as Error).message;
     }
+    expect(msg).toMatch(/wide/);
+    expect(msg).toMatch(/grouped/);
   });
   it("rejects a paired-shape CSV that has fewer than two numeric columns", () => {
     expect(() => validateShape("scatter", p("city,pop\nX,10"))).toThrow(

@@ -1,8 +1,11 @@
 import { describe, it, expect } from "bun:test";
-import { NATIVE_TYPES } from "../../../chart-native/src/native-types";
+import {
+  NATIVE_TYPES,
+  LEGACY_KB_FAMILY_BACKFILL,
+} from "../../../chart-native/src/native-types";
 import { NATIVE_FAMILY_TYPES } from "../native-family-types";
 
-const LEGACY = new Set(["line", "bar", "scatter", "pie"]); // KB/family backfill (Plan 2)
+const LEGACY = new Set(LEGACY_KB_FAMILY_BACKFILL);
 
 describe("NATIVE_FAMILY_TYPES completeness (suggest-chart half)", () => {
   const familyIds = new Set(Object.values(NATIVE_FAMILY_TYPES).flat());

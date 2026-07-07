@@ -48,7 +48,7 @@ describe("MAPPERS table", () => {
       },
     });
   });
-  it("throws a shape error before an unsupported type is even looked up", () => {
+  it("throws a shape error for a supported type given a malformed CSV", () => {
     const spec: NativeSpec = {
       ...base,
       nativeType: "bar",
