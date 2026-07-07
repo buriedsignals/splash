@@ -70,7 +70,16 @@ export function DivergingBarChart({
     bottom: 28,
     left: 124, // category labels in the gutter
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -232,7 +241,7 @@ function DivergingSvg({
                 textAnchor={vAnchor}
                 fontSize={ts.axis}
                 fontWeight={700}
-                fill={fill}
+                fill={COLORS.ink}
                 opacity={labelOp}
               >
                 {signed(b.value)}
