@@ -5,6 +5,7 @@ import type { ScrollyStory } from "../../scrolly/src/chapters";
 import { auditTemporalNarrative } from "../../scrolly/src/conformance";
 import type { Beat } from "./map-story";
 import { computeCartogram } from "./cartogram-geo";
+import { HEX_GRID_SCALE_TYPE } from "./hex-grid-geo";
 import { bbox } from "@turf/turf";
 import {
   isCvdSafeRamp,
@@ -514,9 +515,14 @@ export function checkHexGridConformance(
     boundsNonEmpty: boolean;
     mapStyle?: string;
     // Threaded so the CVD-safety guardrail can validate the ramp the component
-    // actually paints (hex-grid-geo.ts:160) — mirrors the choropleth call below.
+    // actually paints (hex-grid-geo.ts) — mirrors the choropleth call below. No
+    // `scaleType` input: hex-grid always paints `HEX_GRID_SCALE_TYPE` ("sequential") — it
+    // never reads a scaleType off its config (`HexGridConfigShape` has no such field), so
+    // this guard must not either. A stray caller-supplied scaleType used to be able to
+    // steer this check toward a ramp the renderer never paints (bug #6: false-refusal on
+    // valid sequential data, or a clean pass for a diverging palette that then throws at
+    // render time).
     palette?: string | string[];
-    scaleType?: "sequential" | "diverging";
     values?: number[];
   },
   textColors: { text: string[]; bg: string },
@@ -540,17 +546,15 @@ export function checkHexGridConformance(
   if (input.cellCount < 1) v.push("no populated cells to draw");
   if (!input.boundsNonEmpty)
     v.push("empty grid bounds — basemap-fit impossible");
-  // hex-grid paints resolvePalette(scaleType, data.palette).ramp (hex-grid-geo.ts:160,
-  // always "sequential" today). Validate it — the custom-array branch of resolvePalette
-  // (scale.ts:116-122) is the only way a non-CVD ramp reaches produce.
+  // hex-grid paints resolvePalette(HEX_GRID_SCALE_TYPE, data.palette).ramp
+  // (hex-grid-geo.ts) — pinned, never derived from config. Validate it — the custom-array
+  // branch of resolvePalette (scale.ts:116-122) is the only way a non-CVD ramp reaches
+  // produce.
   try {
-    const ramp = resolvePalette(
-      input.scaleType ?? "sequential",
-      input.palette,
-    ).ramp;
+    const ramp = resolvePalette(HEX_GRID_SCALE_TYPE, input.palette).ramp;
     v.push(
       ...checkPaletteConformance({
-        scaleType: input.scaleType ?? "sequential",
+        scaleType: HEX_GRID_SCALE_TYPE,
         scaleColors: ramp,
         values: input.values,
         paletteName:

@@ -100,4 +100,18 @@ describe("checkHexGridConformance", () => {
   it("does not flag when no palette is given (library default BLUES)", () => {
     expect(checkHexGridConformance(good, okColors)).toEqual([]);
   });
+  it("does not false-refuse all-positive values (the semantic check is pinned to sequential)", () => {
+    // hex-grid always paints sequential — there is no `scaleType` input to this function
+    // at all, so all-positive aggregate values must never be flagged as a diverging
+    // mismatch (the class of bug #6, mirrored here at the checkHexGridConformance level).
+    const r = checkHexGridConformance(
+      { ...good, values: [5, 12, 8] },
+      okColors,
+    );
+    expect(r).toEqual([]);
+  });
+  it("flags a diverging-only palette (renderer always paints sequential, never diverging)", () => {
+    const r = checkHexGridConformance({ ...good, palette: "rdbu" }, okColors);
+    expect(r.some((m) => /rdbu.*diverging.*sequential/.test(m))).toBe(true);
+  });
 });

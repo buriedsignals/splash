@@ -22,6 +22,7 @@ import { MAP_TYPES, type MapType } from "../map-types";
 import { resolveMapStyle } from "../route-geo";
 import { FRAME_COLORS, FRAME_COLORS_DARK } from "../theme/map-tokens";
 import { resolvePalette } from "../theme/scale";
+import { HEX_GRID_SCALE_TYPE } from "../hex-grid-geo";
 import {
   checkGlobalMapConformance,
   checkPaletteConformance,
@@ -29,6 +30,21 @@ import {
 
 // The 3 types whose colour scale is a resolvePalette() ramp (not a fixed qualitative set).
 export const RAMP_TYPES = ["choropleth", "hex-grid", "cartogram"] as const;
+
+// Resolves the scaleType the SAME way the renderer actually paints it, per ramp type — so
+// this guard can never validate a ramp the map never renders (bug #6). hex-grid always
+// pins `HEX_GRID_SCALE_TYPE` ("sequential") and never reads a scaleType off its config
+// (`HexGridConfigShape` has no such field) — so a stray `config.scaleType` here must be
+// ignored, not honoured. choropleth/cartogram genuinely support both and thread the
+// config's own choice (mirrors `checkCartogramConformance`, which reads it off the real
+// computed `layout.scaleType`).
+function resolveRampScaleType(
+  type: string,
+  config: Record<string, unknown>,
+): "sequential" | "diverging" {
+  if (type === "hex-grid") return HEX_GRID_SCALE_TYPE;
+  return config.scaleType === "diverging" ? "diverging" : "sequential";
+}
 
 // All 7 MAP_TYPES are furniture-guarded here — the parity target a later completeness
 // invariant (reachable ⟹ guarded) checks against.
@@ -113,8 +129,7 @@ export function runProduceMapConformance(
 
   if ((RAMP_TYPES as readonly string[]).includes(type)) {
     try {
-      const scaleType =
-        config.scaleType === "diverging" ? "diverging" : "sequential";
+      const scaleType = resolveRampScaleType(type, config);
       const ramp = resolvePalette(
         scaleType,
         config.palette as string | string[] | undefined,

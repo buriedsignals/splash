@@ -39,6 +39,14 @@ export interface HexGridLayout {
   capped: boolean;
 }
 
+// hex-grid ALWAYS paints a sequential ramp (see `computeHexGrid` below) — there is no
+// diverging mode and no `scaleType` config field (`HexGridConfigShape` in validate-config.ts
+// has none). Exported as a single named constant so every consumer that needs to resolve
+// "the ramp the renderer paints" (the produce guard, `checkHexGridConformance`) reads the
+// SAME value instead of re-deriving it independently — the divergence between those
+// re-derivations (some read a stray `config.scaleType`) was bug #6.
+export const HEX_GRID_SCALE_TYPE: "sequential" = "sequential";
+
 const TARGET_CELLS = 250;
 const MAX_CELLS = 2000;
 const MERC = 85;
@@ -158,7 +166,7 @@ export function computeHexGrid(data: HexGridData): HexGridLayout {
   // ramp (amber for heat/seismicity, greens for environment…) is used instead of always
   // BLUES. Falls back to BLUES when no palette is set.
   const ramp = data.palette
-    ? resolvePalette("sequential", data.palette).ramp
+    ? resolvePalette(HEX_GRID_SCALE_TYPE, data.palette).ramp
     : BLUES;
   const values = raw.map((c) => c.value);
   const min = Math.min(...values),
