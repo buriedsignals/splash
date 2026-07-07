@@ -210,3 +210,45 @@ describe("scoreSpec — scrolly", () => {
     expect(r.notes.some((n) => /producer/i.test(n))).toBe(true);
   });
 });
+
+describe("scoreSpec — chart-native producer", () => {
+  const nativeBar = {
+    producer: "chart-native",
+    nativeType: "bar",
+    title: "Brazil runs on renewables while most big economies still lag",
+    source: { name: "Ember 2025", url: "https://ourworldindata.org/x" },
+    unit: "share of electricity from renewables (%)",
+    data: "country,share\nBrazil,87.3\nIndia,19.8",
+  };
+  it("passes a valid native bar spec for the magnitude family", () => {
+    const r = scoreSpec(nativeBar, {
+      family: "magnitude",
+      element: "chart",
+      producer: "chart-native",
+    });
+    expect(r.pass).toBe(true);
+  });
+  it("fails an unknown nativeType", () => {
+    const r = scoreSpec(
+      { ...nativeBar, nativeType: "wat" },
+      { family: "magnitude", element: "chart", producer: "chart-native" },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.notes.join(" ")).toMatch(/nativeType/);
+  });
+  it("fails a deferred nativeType (② must not route to an unready type)", () => {
+    const r = scoreSpec(
+      { ...nativeBar, nativeType: "sankey" },
+      { family: "magnitude", element: "chart", producer: "chart-native" },
+    );
+    expect(r.pass).toBe(false);
+  });
+  it("fails a nativeType outside the intent family", () => {
+    const r = scoreSpec(nativeBar, {
+      family: "correlation",
+      element: "chart",
+      producer: "chart-native",
+    });
+    expect(r.familyMatch).toBe(false);
+  });
+});
