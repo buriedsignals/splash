@@ -16,7 +16,7 @@ import {
   type PieLayout,
 } from "./pie-geometry";
 import { formatNumber, clamp01, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, OKABE_ITO, PIE_SLICE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { withinBounds, overlaps, type Box } from "./core/labels";
@@ -42,13 +42,7 @@ export interface PieChartProps {
 }
 
 // a few CVD-safe hues, in reading order (pie.md: ≤5 slices)
-const SLICE_COLORS = [
-  OKABE_ITO.blue,
-  OKABE_ITO.orange,
-  OKABE_ITO.green,
-  OKABE_ITO.vermillion,
-  OKABE_ITO.purple,
-];
+const SLICE_COLORS = PIE_SLICE_COLORS;
 
 export function PieChart({
   config,
@@ -70,7 +64,16 @@ export function PieChart({
   const basePad = responsive
     ? { top: 16, right: 24, bottom: legendH + 16, left: 24 }
     : { top: 80, right: 130, bottom: 64, left: 130 };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

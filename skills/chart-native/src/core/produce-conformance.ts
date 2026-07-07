@@ -14,12 +14,13 @@ import {
   checkScatterConformance,
   checkHistogramConformance,
   checkBeeswarmConformance,
+  checkPieConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
   RESOLVABLE_CONFORMANCE_TYPES,
 } from "./resolve-conformance-colors";
-import { BEESWARM_CATEGORY_COLORS } from "./tokens";
+import { BEESWARM_CATEGORY_COLORS, PIE_SLICE_COLORS, COLORS } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeHistogramLayout } from "../histogram-geometry";
 import { computeLollipopLayout } from "../lollipop-geometry";
@@ -30,6 +31,7 @@ import type { HistogramConfig } from "../HistogramChart";
 import type { BeeswarmConfig } from "../BeeswarmChart";
 import type { ConnectedScatterConfig } from "../ConnectedScatterChart";
 import type { LollipopConfig } from "../LollipopChart";
+import type { PieConfig } from "../PieChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -57,11 +59,19 @@ const LOLLIPOP_DIMS = {
   padding: { top: 90, right: 18, bottom: 24, left: 124 },
 };
 
+// Every type with a produce-time guard wired (flat-triple resolver types + the
+// bespoke-signature types resolved inline below). The completeness test asserts
+// MAPPERS ⊆ this set (no reachable type is unguarded).
+export const PRODUCE_GUARDED_TYPES: readonly string[] = [
+  ...RESOLVABLE_CONFORMANCE_TYPES,
+  "pie",
+];
+
 export function runProduceConformance(
   type: string,
   config: Record<string, unknown>,
 ): ConformanceRunResult {
-  if (!(RESOLVABLE_CONFORMANCE_TYPES as readonly string[]).includes(type)) {
+  if (!PRODUCE_GUARDED_TYPES.includes(type)) {
     return { checked: false, violations: [] };
   }
 
@@ -190,6 +200,25 @@ export function runProduceConformance(
             valueDomain: layout.valueDomain,
           },
           colors,
+        ),
+      };
+    }
+
+    case "pie": {
+      const cfg = config as unknown as PieConfig;
+      const sliceColors = cfg.rows.map(
+        (_, i) => PIE_SLICE_COLORS[i % PIE_SLICE_COLORS.length],
+      );
+      return {
+        checked: true,
+        violations: checkPieConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            sliceCount: cfg.rows.length,
+            sliceColors,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),
       };
     }

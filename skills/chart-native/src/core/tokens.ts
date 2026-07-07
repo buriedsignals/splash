@@ -43,3 +43,14 @@ export const BEESWARM_CATEGORY_COLORS = [
   OKABE_ITO.purple,
   OKABE_ITO.vermillion,
 ] as const;
+
+// Pie/donut slice palette (PieChart.tsx), extracted so the produce-time conformance
+// resolver derives the SAME slice colours without duplicating the literal (like
+// BEESWARM_CATEGORY_COLORS). Marks only — every pie TEXT label is COLORS.ink.
+export const PIE_SLICE_COLORS = [
+  OKABE_ITO.blue,
+  OKABE_ITO.orange,
+  OKABE_ITO.green,
+  OKABE_ITO.vermillion,
+  OKABE_ITO.purple,
+] as const;
