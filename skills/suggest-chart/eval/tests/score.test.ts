@@ -266,3 +266,88 @@ describe("scoreSpec — chart-native producer", () => {
     expect(r.pass).toBe(true);
   });
 });
+
+describe("scoreSpec — chart-native line/scatter/pie routing + validation", () => {
+  const base = {
+    source: { name: "OWID 2025", url: "https://ourworldindata.org/x" },
+  };
+  it("routes a native line spec to change-over-time", () => {
+    const r = scoreSpec(
+      {
+        producer: "chart-native",
+        nativeType: "line",
+        ...base,
+        title: "Renewables climbed every year since 2015",
+        unit: "share of electricity (%)",
+        data: "year,share\n2015,20\n2020,30\n2024,42",
+      },
+      {
+        family: "change-over-time",
+        element: "chart",
+        producer: "chart-native",
+      },
+    );
+    expect(r.pass).toBe(true);
+  });
+  it("routes a native scatter spec to correlation", () => {
+    const r = scoreSpec(
+      {
+        producer: "chart-native",
+        nativeType: "scatter",
+        ...base,
+        title: "Higher spend tracks higher scores",
+        unit: "score",
+        data: "school,spend,score\nA,5200,72\nB,3100,58",
+      },
+      { family: "correlation", element: "chart", producer: "chart-native" },
+    );
+    expect(r.pass).toBe(true);
+  });
+  it("routes a native pie spec to part-to-whole", () => {
+    const r = scoreSpec(
+      {
+        producer: "chart-native",
+        nativeType: "pie",
+        ...base,
+        title: "Hydro supplies most clean power",
+        unit: "share",
+        data: "source,gwh\nHydro,420\nWind,180",
+      },
+      { family: "part-to-whole", element: "chart", producer: "chart-native" },
+    );
+    expect(r.pass).toBe(true);
+  });
+  it("fails a native spec with an empty title (validates parity with DW)", () => {
+    const r = scoreSpec(
+      {
+        producer: "chart-native",
+        nativeType: "line",
+        ...base,
+        title: "",
+        unit: "x",
+        data: "year,v\n2015,1\n2016,2",
+      },
+      {
+        family: "change-over-time",
+        element: "chart",
+        producer: "chart-native",
+      },
+    );
+    expect(r.validates).toBe(false);
+  });
+  it("fails a native spec whose data does not fit the type's shape", () => {
+    // scatter is `paired` (needs ≥2 numeric); a single-numeric CSV must fail validation
+    const r = scoreSpec(
+      {
+        producer: "chart-native",
+        nativeType: "scatter",
+        ...base,
+        title: "This should not validate",
+        unit: "x",
+        data: "city,pop\nX,10\nY,20",
+      },
+      { family: "correlation", element: "chart", producer: "chart-native" },
+    );
+    expect(r.validates).toBe(false);
+  });
+});
