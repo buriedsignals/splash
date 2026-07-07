@@ -102,6 +102,16 @@ run("bun", ["scripts/snap-responsive.mjs"], { OUTDIR: outDir, SERVE_DIR: interac
 console.log(`[produce map] snapping a11y…`);
 run("bun", ["scripts/snap-a11y.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
+// Theme guard — ONLY when the config asked for the dark basemap: assert the STATIC
+// build actually rendered dark (furniture + basemap), not just that the config said so.
+// Placed after snap-a11y (the last step in this pipeline); map-native has no
+// snap-contrast.mjs yet (that harness is a separate, not-yet-built satellite — see
+// CLAUDE.md "parité harnais-contraste côté map"). Fail-hard, like every other snap-*.
+if (parsedConfig.mapStyle === "dataviz-dark") {
+  console.log(`[produce map] snapping theme (dark)…`);
+  run("bun", ["scripts/snap-theme.mjs"], { OUTDIR: outDir, SERVE_DIR: staticDir });
+}
+
 const result = {
   static: join(outDir, "static.png"),
   interactive: join(outDir, "interactive.png"),
