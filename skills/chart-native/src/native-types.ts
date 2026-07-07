@@ -55,12 +55,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "wide",
     deferred: A_PENDING("wide"),
   },
-  {
-    id: "histogram",
-    family: "A",
-    shape: "distribution",
-    deferred: A_PENDING("distribution"),
-  },
+  { id: "histogram", family: "A", shape: "distribution" },
   {
     id: "diverging",
     family: "A",

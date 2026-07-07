@@ -150,6 +150,22 @@ export const MAPPERS: Record<
       },
     };
   },
+  histogram(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const valueField =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    return {
+      type: "histogram",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        // unit does double duty (subtitle + inline "median N unit"); prefer the short callout unit
+        unit: spec.valueUnit ?? spec.unit,
+        valueField,
+        rows,
+      },
+    };
+  },
   pie(parsed, spec) {
     const { columns, rows, numericColumns } = parsed;
     const catCol = columns[0];
