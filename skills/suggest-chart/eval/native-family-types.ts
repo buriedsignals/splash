@@ -7,7 +7,7 @@ export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   correlation: ["scatter", "connected-scatter"],
   "part-to-whole": ["pie", "stacked", "waffle", "treemap"],
   magnitude: ["bar", "grouped", "radial-bar", "dumbbell", "bullet"],
-  distribution: ["histogram", "beeswarm", "dot-strip", "boxplot"],
+  distribution: ["histogram", "beeswarm", "dot-strip", "boxplot", "pyramid"],
   ranking: ["lollipop"],
-  deviation: ["diverging", "waterfall"],
+  deviation: ["diverging", "waterfall", "diverging-stacked"],
 };

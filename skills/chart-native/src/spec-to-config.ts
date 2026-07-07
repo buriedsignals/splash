@@ -515,6 +515,61 @@ export const MAPPERS: Record<
       },
     };
   },
+  "diverging-stacked"(parsed, spec) {
+    const { columns, rows, numericColumns } = parsed;
+    const labelCol = columns[0];
+    // wide convention: every NUMERIC column after the label is an ordered Likert
+    // response, negative → positive (mirrors grouped/stacked's wide-CSV shape).
+    const responses = columns
+      .slice(1)
+      .filter((c) => numericColumns.includes(c));
+    // An ODD response count has a genuine middle bucket (e.g. a 5-point Likert's
+    // "neutral") — straddle it at the centre per diverging-stacked.md rule 1
+    // (checkGlobalConformance can't catch a missing straddle; only the render
+    // can, and it did: omitting this collapsed "neutral" into the positive
+    // ramp AND made two positive segments share one hue, since the 2-tier
+    // ramp only has capacity for 2 members per side). An EVEN count is a
+    // forced-choice bipolar scale with no true middle, so it's left undefined
+    // (the geometry's plain floor(R/2) split, no straddle).
+    const neutralIndex =
+      responses.length % 2 === 1 ? Math.floor(responses.length / 2) : undefined;
+    const items = rows.map((r) => ({
+      label: String(r[labelCol]),
+      values: responses.map((c) => Number(r[c])),
+    }));
+    return {
+      type: "diverging-stacked",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        responses,
+        ...(neutralIndex !== undefined ? { neutralIndex } : {}),
+        items,
+      },
+    };
+  },
+  pyramid(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const bandCol = columns[0];
+    // paired convention (mirrors dumbbell): first two numeric columns are the
+    // two mirrored sides; their headers double as the side labels.
+    const [leftField, rightField] = numericColumns.slice(0, 2);
+    return {
+      type: "pyramid",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        bandField: bandCol,
+        leftField,
+        rightField,
+        leftLabel: leftField,
+        rightLabel: rightField,
+        rows,
+      },
+    };
+  },
   waterfall(parsed, spec) {
     const { columns, numericColumns, rows } = parsed;
     const labelCol = columns[0];

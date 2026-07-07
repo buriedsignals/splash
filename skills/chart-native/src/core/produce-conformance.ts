@@ -28,6 +28,8 @@ import {
   checkBulletConformance,
   checkTreemapConformance,
   checkBoxplotConformance,
+  checkDivergingStackedConformance,
+  checkPopulationPyramidConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -48,6 +50,8 @@ import {
   SLOPE_LINE_COLORS,
   BULLET_MEASURE_COLORS,
   TREEMAP_GROUP_COLORS,
+  DIVERGING_STACKED_COLORS,
+  PYRAMID_SIDE_COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeDivergingLayout } from "../diverging-bar-geometry";
@@ -79,6 +83,8 @@ import type { SlopeConfig } from "../SlopeChart";
 import type { BulletConfig } from "../BulletChart";
 import type { TreemapConfig } from "../TreemapChart";
 import type { BoxplotConfig } from "../BoxplotChart";
+import type { DivergingStackedConfig } from "../DivergingStackedChart";
+import type { PopulationPyramidConfig } from "../PopulationPyramidChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -158,6 +164,8 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "bullet",
   "treemap",
   "boxplot",
+  "diverging-stacked",
+  "pyramid",
 ];
 
 export function runProduceConformance(
@@ -590,6 +598,43 @@ export function runProduceConformance(
             valueLabel: cfg.valueLabel,
             categoryCount: cfg.categories.length,
             boxColors: [OKABE_ITO.blue],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "diverging-stacked": {
+      const cfg = config as unknown as DivergingStackedConfig;
+      return {
+        checked: true,
+        violations: checkDivergingStackedConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            responseCount: cfg.responses.length,
+            rows: cfg.items.map((it) => it.values),
+            sentimentColors: [
+              ...DIVERGING_STACKED_COLORS.neg,
+              ...DIVERGING_STACKED_COLORS.pos,
+            ],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "pyramid": {
+      const cfg = config as unknown as PopulationPyramidConfig;
+      return {
+        checked: true,
+        violations: checkPopulationPyramidConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            leftLabel: cfg.leftLabel,
+            rightLabel: cfg.rightLabel,
+            groupColors: [...PYRAMID_SIDE_COLORS],
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),
