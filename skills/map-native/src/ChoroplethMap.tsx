@@ -34,6 +34,9 @@ import {
   type FilterState,
 } from "./core/map-filter";
 import type { MapFilter } from "./core/map-filter";
+import { resolveMapStyle } from "./route-geo";
+import { legendTheme } from "./theme/legend-theme";
+import { fmtBin } from "./core/legend-format";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -41,6 +44,7 @@ maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 export interface ChoroplethConfig extends ChoroplethData {
   basemap?: string;
+  mapStyle?: string;
   title?: string;
   description?: string;
   unit?: string; // the long legend label, e.g. "share of electricity… (%)"
@@ -98,6 +102,9 @@ export const ChoroplethMap: React.FC<Props> = ({
   );
   const [filterState, setFilterState] = useState<FilterState>({});
   const [barHeightPx, setBarHeightPx] = useState(0);
+
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const theme = legendTheme(dark);
 
   // Measure the root element size before map init.
   useEffect(() => {
@@ -190,9 +197,15 @@ export const ChoroplethMap: React.FC<Props> = ({
     // Expose so the title-height callback can trigger a re-fit without re-creating the closure.
     fitToDataRef.current = fitToData;
 
+    const style = dark
+      ? maptilersdk.MapStyle.DATAVIZ.DARK
+      : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+    // Region stroke: faint but visible against the base style (mirrors CartogramMap).
+    const strokeColor = dark ? "#1c1c1f" : "#ffffff";
+
     const map = new maptilersdk.Map({
       container: containerRef.current,
-      style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
+      style,
       center: [10, 50] as [number, number],
       zoom: 3,
       interactive,
@@ -272,7 +285,7 @@ export const ChoroplethMap: React.FC<Props> = ({
         type: "line",
         source: "choropleth-world",
         paint: {
-          "line-color": "#ffffff",
+          "line-color": strokeColor,
           "line-width": 0.5,
           "line-opacity": 0.6,
         },
@@ -292,7 +305,7 @@ export const ChoroplethMap: React.FC<Props> = ({
           "top-right",
         );
 
-        map.addControl(makeResetControl(dataBounds), "top-right");
+        map.addControl(makeResetControl(dataBounds, { dark }), "top-right");
       }
 
       // Expose map instance and data bounds for audit + snap-proof
@@ -304,16 +317,20 @@ export const ChoroplethMap: React.FC<Props> = ({
       if (legendRef.current) {
         const bins = layout.bins;
         const unit = config.unit ?? "";
+        // Bins are evenly spaced (see computeChoropleth) — the width of any one bin IS the
+        // gap between adjacent boundaries. Passing it to fmtBin gives fractional data (e.g.
+        // 0–2.5) enough decimal precision to print DISTINCT labels instead of `0–0, 0–1…`.
+        const minGap = bins.length ? bins[0].max - bins[0].min : undefined;
         legendRef.current.innerHTML = `
-          <div style="font:600 11px/1 sans-serif;color:#444;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
+          <div style="font:600 11px/1 sans-serif;color:${theme.ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
             ${unit}
           </div>
           ${bins
             .map(
               (b) => `
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-              <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;flex-shrink:0"></span>
-              <span style="font:11px/1 sans-serif;color:#555">${Math.round(b.min)}–${Math.round(b.max)}</span>
+              <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px ${theme.stroke};flex-shrink:0"></span>
+              <span style="font:11px/1 sans-serif;color:${theme.sub}">${fmtBin(b.min, { minGap })}–${fmtBin(b.max, { minGap })}</span>
             </div>
           `,
             )
@@ -452,6 +469,15 @@ export const ChoroplethMap: React.FC<Props> = ({
   });
   frameRef.current = frame;
 
+  const DARK_CTRL_CSS = `
+    .maplibregl-ctrl-group { background: rgba(28,28,31,0.92) !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.14) !important; }
+    .maplibregl-ctrl-group button + button { border-top: 1px solid rgba(255,255,255,0.14) !important; }
+    .maplibregl-ctrl button .maplibregl-ctrl-icon { filter: invert(1) brightness(1.1) !important; }
+    .maplibregl-popup-content { background: rgba(28,28,31,0.95) !important; color: #f4f4f5 !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.14) !important; }
+    .maplibregl-popup-content strong { color: #ffffff !important; }
+    .maplibregl-popup-tip { border-top-color: rgba(28,28,31,0.95) !important; border-bottom-color: rgba(28,28,31,0.95) !important; }
+  `;
+
   // Inner content: the map canvas + legend. Stable JSX shape — containerRef never
   // changes DOM position regardless of config or containerSize updates.
   const inner = (
@@ -471,6 +497,7 @@ export const ChoroplethMap: React.FC<Props> = ({
         /* Interactive controls must render above the furniture overlays (z-index 10).
            In static/video the top-right control area is empty — this rule is inert. */
         .maplibregl-ctrl-top-right { z-index: 20 !important; }
+        ${dark ? DARK_CTRL_CSS : ""}
       `}</style>
 
       {/* Map canvas — stable DOM node; the map is mounted into this div */}
@@ -490,7 +517,7 @@ export const ChoroplethMap: React.FC<Props> = ({
           bottom: 16,
           right: 12,
           zIndex: 10,
-          background: "rgba(255,255,255,0.92)",
+          background: theme.bg,
           padding: "10px 12px",
           borderRadius: 6,
           boxShadow: "0 1px 6px rgba(0,0,0,.12)",
@@ -515,6 +542,7 @@ export const ChoroplethMap: React.FC<Props> = ({
         responsive
         frame={frame}
         onTitleHeight={handleTitleHeight}
+        dark={dark}
         belowTitle={
           interactive && filterOptions.length ? (
             <MapFilterBar
@@ -522,6 +550,7 @@ export const ChoroplethMap: React.FC<Props> = ({
               state={filterState}
               onChange={setFilterState}
               onHeight={handleBarHeight}
+              dark={dark}
             />
           ) : undefined
         }

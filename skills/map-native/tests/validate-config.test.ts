@@ -96,6 +96,14 @@ describe("validateChoroplethConfig", () => {
     if (!bad.ok)
       expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
   });
+  it("accepts a known mapStyle and rejects an unknown one", () => {
+    expect(
+      validateChoroplethConfig({ ...ok, mapStyle: "dataviz-dark" }).ok,
+    ).toBe(true);
+    const bad = validateChoroplethConfig({ ...ok, mapStyle: "midnight" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.some((e) => /mapStyle/.test(e))).toBe(true);
+  });
 });
 
 const okSymbol = {
