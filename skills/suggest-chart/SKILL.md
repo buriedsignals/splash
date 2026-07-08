@@ -285,9 +285,13 @@ Field notes:
   data FILENAME** (`youth_unemployment.csv` is not a public attribution) — use the publication the article
   cites, or the honest prose label. **A NAMED dataset/publication (e.g. "Eurostat") MUST carry both its
   name AND a real, verifiable URL — never ship the name alone, and never invent a URL to fill the field.**
-  If the true URL isn't known, ask the journalist for it (free text, collecting name + URL together) rather
-  than shipping it incomplete. The only legitimate name-only case is the honest prose fallback below, which
-  names no separate dataset to link.
+  **The URL MUST point to the SPECIFIC, traceable dataset/page the figures come from** (e.g. the Eurostat
+  dataset page for the exact table/code, the Insee series page) — a generic organisation homepage
+  (`eurostat.ec.europa.eu`, `insee.fr`) is NOT traceable and must be treated the same as a missing URL. If
+  the journalist only gives an organisation name, its homepage, or the true specific URL isn't known, ASK
+  for the specific dataset/page reference (free text, collecting name + the specific URL together) rather
+  than shipping it generic or incomplete. The only legitimate name-only case is the honest prose fallback
+  below, which names no separate dataset to link.
 - `colorScale` (optional): an array of `{color: hex, position: 0..1}` stops, ascending. If omitted,
   `map-dw` applies the default blue sequential scale. Choose the stops from a subject-fit ramp per the
   **Map colour** rule below — do NOT leave every map blue.

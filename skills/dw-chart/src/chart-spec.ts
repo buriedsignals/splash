@@ -223,7 +223,25 @@ export function validateChartSpec(
       const n = Object.keys(s.seriesColors as object).length;
       if (n > 8)
         errors.push("seriesColors: at most 8 colours (categorical ceiling)");
-      if (n > 2 && !MULTI_SERIES_TYPES.has(s.type as ChartType))
+      // A chart is genuinely multi-series when it has more than one value column
+      // (label + >=2 values) — read the ACTUAL data shape, not just the type's
+      // membership in MULTI_SERIES_TYPES. That set only covers DW's transpose-based
+      // multi-series types (stacked/grouped); a type like "d3-lines" takes N value
+      // columns directly without ever appearing there. Capping on type membership
+      // alone made a real 3-series d3-lines chart fail this guard, so the caller
+      // dropped seriesColors entirely and the chart shipped on Datawrapper's
+      // default all-blue ramp instead of a subject-fit Okabe-Ito palette (up to 8
+      // series). Falling back to type membership when the shape can't be read
+      // keeps existing behaviour for callers that validate before data is final.
+      const dataIsMultiSeries =
+        typeof s.data === "string" && s.data.includes(",")
+          ? dataShape(s.data as string).columns.length > 2
+          : false;
+      if (
+        n > 2 &&
+        !MULTI_SERIES_TYPES.has(s.type as ChartType) &&
+        !dataIsMultiSeries
+      )
         errors.push(
           "seriesColors: a single-series chart should use at most 2 colours",
         );
