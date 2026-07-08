@@ -157,6 +157,40 @@ describe("scoreProposalSet", () => {
     expect(r.pass).toBe(false); // recall 0.5 < τr 0.7
   });
 
+  it("catches folding two distinct opportunities into one proposal (recall drops)", () => {
+    // Finding 4: two separate opportunities (cross-border series + rents) must be two
+    // proposals. Stapling both into a single proposal cites only one source table, so it
+    // can match at most one gold opportunity — the second is silently dropped → recall 0.5.
+    const folded: ProposalSet = {
+      proposals: [
+        {
+          anchor: {
+            paragraphIndex: 1,
+            quote: "cross-border workers grew and rents rose",
+          },
+          claim:
+            "Cross-border workers grew since 2015 while rent climbed across districts",
+          intent: "Show both the worker growth and the rent spread together",
+          data: "year,France,Switzerland\n2015,18,22\n2017,21,25\n2019,26,29",
+          dataSource: {
+            table: "cross-border.csv",
+            columns: ["year", "France", "Switzerland"],
+          },
+          confidence: "high",
+          rationale: "Two claims folded into one visual.",
+        },
+      ],
+      notes: "",
+    };
+    const r = scoreProposalSet(
+      folded,
+      { ...expect2, minProposals: 1, maxProposals: 3 },
+      sourceTables,
+    );
+    expect(r.recall).toBe(0.5);
+    expect(r.pass).toBe(false); // the second opportunity (rents) never surfaced
+  });
+
   it("computes precision below 1 when a proposal matches no gold opportunity", () => {
     const spurious: ProposalSet = {
       proposals: [

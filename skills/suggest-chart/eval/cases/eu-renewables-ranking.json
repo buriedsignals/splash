@@ -1,0 +1,6 @@
+{
+  "id": "eu-renewables-ranking",
+  "data": "code,share\nNOR,99\nSWE,68\nDEU,59\nGBR,48\nFRA,27\nESP,44\nITA,41\nPOL,21",
+  "intent": "Which of these eight European countries leads on renewables, and which lag furthest behind?",
+  "expect": { "family": "ranking", "element": "chart", "maxWarnings": 0 }
+}

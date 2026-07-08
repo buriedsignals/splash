@@ -220,6 +220,11 @@ export function validateSymbolConfig(
   if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
     errors.push(`title is a year range, not an insight: "${title}"`);
 
+  // COORDINATE-PROVENANCE BOUNDARY: this loop checks that lon/lat are numbers in
+  // range — it CANNOT verify a coordinate is real (a fabricated one is a valid number
+  // too). Provenance is the suggester's responsibility (see suggest-chart/SKILL.md,
+  // "HARD RULE — coordinate provenance"): every lon/lat must come from the supplied
+  // data or a real geocoder, NEVER hand-typed from the model's knowledge.
   const points = s.points;
   if (!Array.isArray(points) || points.length === 0) {
     errors.push("points must be a non-empty array");
@@ -377,6 +382,10 @@ export function validateLocatorConfig(
   )
     errors.push("markerStyle must be one of: dot, pin, icon");
 
+  // COORDINATE-PROVENANCE BOUNDARY: range checks only — a fabricated lon/lat is still a
+  // valid number. Provenance is the suggester's job (suggest-chart/SKILL.md, "HARD RULE
+  // — coordinate provenance"): coordinates come from the data or a real geocoder, never
+  // invented.
   const markers = s.markers;
   if (!Array.isArray(markers) || markers.length === 0) {
     errors.push("markers must be a non-empty array");

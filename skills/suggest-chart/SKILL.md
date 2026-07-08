@@ -51,9 +51,13 @@ unset ships French words with English numbers — the exact mismatch this field 
    Read `<repo-root>/knowledge/references/formats/format-selection.md` (Gate 5).
    Emit a **map** ONLY when ALL THREE conditions hold:
    - the **spatial pattern is the story** (clustering, spread, adjacency, diffusion — NOT a ranking).
-     **Ranking-framing prose — "X leads, Y lags", "swings from 27% to 6%", a leaders-vs-laggards spread —
-     is a BAR signal, not a licence for a map; "map" in the headline does not make the spatial pattern the
-     story.**
+     **Ranking-framing prose — "X leads, Y lags", "swings from 27% to 6%", "which country is highest",
+     a leaders-vs-laggards spread — is a BAR signal, not a licence for a map; "map" in the headline does
+     not make the spatial pattern the story.** And a spatial pattern can only BE the story when the units
+     form a **contiguous area** where adjacency is readable: a **hand-picked, NON-CONTIGUOUS set of blocs**
+     — a scattered list of countries/regions that do not tile a continuous space (e.g. eight cherry-picked
+     EU members, not every NUTS region of a country) — has **no adjacency/cluster to read**, so this
+     condition structurally CANNOT hold. Ranking framing + non-contiguous blocs → **sorted bar**, always.
    - the value is **map-safe** — a normalised rate (per-capita, %, index) **OR a per-region
      categorical/temporal attribute (year an event took effect, class, rank)**; the guard is only against
      **raw absolute counts** (which redraw the population map).
@@ -384,6 +388,25 @@ bar derives its values from the data; you name the FIELD, not the values. Two ki
 
 Use when the data is **point data** (coordinates, not region fills) — a set of located events, places,
 or symbols — and Gate 5 still routes to a map (the spatial pattern is the story).
+
+**★ HARD RULE — coordinate provenance (NEVER fabricate lon/lat).** A point map needs a `lon`/`lat` for
+every marker/point. Those numbers MUST come from ONE of:
+1. the **supplied data** — the newsroom's table has explicit `lon`/`lat` (or `x`/`y` / `longitude`/
+   `latitude`) columns; read them straight through; OR
+2. a **real deterministic geocoding step** — an actual geocoder run (e.g. a MapTiler geocoding API call
+   with the place names, from `/atelier/.env`'s `MAPTILER_API_KEY`), whose returned coordinates you use.
+   A geocode is a real lookup, not a recollection.
+
+You must **NEVER hand-type a coordinate from the model's own knowledge** ("Gare du Nord is at ~2.35,
+48.88") — that is fabricated data, indistinguishable at a glance from a real value but wrong in ways no
+one can audit. The `lon`/`lat` in the config examples below (`2.35, 48.85`) are **illustrative
+placeholders**, not values to copy. `validateLocatorConfig` / `validateSymbolConfig` only check that a
+coordinate is a number in range — they CANNOT tell a real coordinate from an invented one, so the honesty
+guard is HERE, at emission time, not in the validator. **If the data has no coordinates and no geocoder
+is available, do NOT emit a point map**: stop and ask the journalist for a coordinates file, or fall back
+to a non-spatial visual (e.g. a sorted bar of the places by value). The same rule governs every other
+required value the source does not state — a date, a dimension label, a number: source it, look it up
+deterministically, or decline; never synthesize it.
 
 **Config shape — locator (discrete markers):**
 ```json

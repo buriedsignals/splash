@@ -39,6 +39,14 @@ it as a free-text prompt instead (see GATE 2/3 source handling below).
 1. Branch: "Do you already have a visual in mind, or should I guide you?"
 2. Takeaway: "What is the one thing a reader should leave with?" → the insight/angle. **Skippable on
    DIRECT only** (see branch logic below) — a named visual already carries its own intent.
+   **★ Every takeaway option you offer MUST be supported by the supplied data (use the ANALYSE data
+   shape).** Never float a framing the data cannot substantiate: do NOT offer a temporal / trend framing
+   ("the gap is widening", "growth since 2015", "rising", "over time") when the data is a **single
+   snapshot with no time dimension** — a widening/narrowing story is undecidable from one point in time;
+   do NOT offer a per-capita / rate framing when only absolute counts exist; do NOT offer a
+   spatial-pattern framing when the data is not geographic. Offering an unsupported framing forces a
+   later retraction and tempts a fabricated series to "back it up". If the journalist genuinely wants a
+   trend, say the current data can't show it and ask for the time series — never invent one.
 3. Audience & channel: "Where does this publish — article embed, social, print?" → the format signal
    (feeds suggest-chart Gates 1–4: static / interactive / video / scrolly) AND the media aspect for a
    video/image: social-vertical → portrait (9:16), feed → square (1:1), article/web → landscape (16:9).
@@ -74,6 +82,15 @@ For each `suggest-article` opportunity, invoke `suggest-chart` **as a real Skill
 the element/format/producer yourself — that re-decides what a sub-skill already decides and skips its
 KB-grounded guardrails) to get its routing decision. Present the ProposalSet × `suggest-chart` routing
 as plain-language lines — for each opportunity: what it shows, which visual, why.
+
+**★ One opportunity = one accept decision = one `suggest-chart` call.** Each DISTINCT `suggest-article`
+opportunity is routed and accepted INDEPENDENTLY — never fold a second opportunity's series/claim into
+another opportunity's visual. If ANALYSE surfaces two claims (e.g. a minimum-wage series AND an
+inflation series), that is TWO proposals, TWO Gate-2 accept decisions, and TWO `suggest-chart` calls —
+even when both trend over time and could be stapled onto one chart. Combining them silently drops the
+second opportunity from the journalist's sight (they never got to accept/reject it) and it never reaches
+its own routing. Surface EVERY opportunity as its own line; the journalist decides which to keep, and
+each kept one becomes its own `accepted.json` entry (5b) that `produce-all` renders separately.
 
 **Only offer what is confirmed producible.** Before presenting an element/format (or sub-format —
 e.g. which scrolly reveal style) to the journalist, it must already have been checked as reachable via
@@ -252,7 +269,23 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
 - Never auto-progress from one phase to the next without the journalist's explicit response.
 - Never produce a visual before the PROPOSITION / provenance OK (gates 2 and 2b) on the guided path.
 - Never export before the render OK (gate 3).
-- Never invent data or fabricate a dataset attribution.
+- Never invent data or fabricate a dataset attribution. This covers EVERY required value the source does
+  not state — not just a chart series, but a **coordinate (lon/lat), a date/year, a dimension label, or a
+  number**. If a required value is absent from the article/data, atelier has exactly three honest moves:
+  **stop and ask the journalist**, run a **real deterministic step** (e.g. a geocoder for coordinates —
+  an actual API lookup, never a recollection), or **decline that visual** / fall back to one the data can
+  support. Synthesizing the value from the model's own knowledge — a metro station's coordinates, a year
+  where the text only said "cette année"/"this year" — is fabrication, and it is never allowed even when
+  the guess would "probably" be right. (Reinforced at the extraction boundary in
+  `suggest-article/SKILL.md` and the coordinate boundary in `suggest-chart/SKILL.md`.)
+- Never fold two distinct opportunities into one visual. Each `suggest-article` opportunity gets its OWN
+  Gate-2 accept decision and its OWN `suggest-chart` routing call (PROPOSITION); stapling a second
+  series/claim onto an already-routed chart silently drops that opportunity from the journalist's view
+  and skips its routing — surface and route each one separately.
+- Never offer the journalist a CADRAGE takeaway framing the supplied data cannot support (a temporal /
+  "widening gap" framing on single-snapshot data, a per-capita framing on absolute counts). Constrain the
+  offered options to the ANALYSE data shape; if the wanted framing needs data you don't have, say so and
+  ask for it — never invent the series to justify the framing.
 - Never conduct the dialogue in a language other than the journalist's (detect from first message).
 - Never let the produced visual's furniture (title, intro, source label, scrolly captions) default to English — the detected language is threaded to suggest-article and suggest-chart so the OUTPUT matches the dialogue, not only the chat.
 - Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate. This means actually INVOKING `suggest-article` (ANALYSE) and `suggest-chart` (PROPOSITION routing) as real Skill calls, not hand-authoring their output from memory/inspection — their eval-hardened guardrails and KB grounding only fire when they genuinely run. This holds for the FIRST routing AND for any LATER change to the chosen element/format (a journalist request mid-flow, a fallback, a retry after a failed gate): re-invoke `suggest-chart` again with the new signal — never re-decide it yourself by grepping producer source and hand-authoring/`Write`-ing a `spec.json`; only `suggest-chart`'s own re-run re-validates the choice and re-applies its guardrails.

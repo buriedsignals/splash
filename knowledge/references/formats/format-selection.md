@@ -66,9 +66,13 @@ bar uses length on a common baseline — the most accurate. So:
   weak "find my country" pull; that alone never earns a map).
 - **Use a SORTED BAR CHART instead when** the story is "which region is highest/lowest" (ranking) · no
   clear geographic cluster · subtle adjacent differences (colour can't resolve them; bar length can) ·
-  few regions (≤~15) · absolute counts not rates. **Prose that frames the finding as a ranking — "X leads,
-  Y lags", "swings from 27% to 6%", a leaders-vs-laggards spread — is a BAR signal, not a licence for a
-  map; the word "map" in a headline does not make the spatial pattern the story.**
+  few regions (≤~15) · absolute counts not rates · **the units are a hand-picked, NON-CONTIGUOUS set of
+  blocs** (a scattered list of countries/regions that don't tile a continuous space — there is no
+  adjacency or cluster to perceive, so the spatial-pattern condition cannot hold). **Prose that frames the
+  finding as a ranking — "X leads, Y lags", "swings from 27% to 6%", "which country is highest", a
+  leaders-vs-laggards spread — is a BAR signal, not a licence for a map; the word "map" in a headline does
+  not make the spatial pattern the story.** A ranking framing over non-contiguous blocs is the textbook
+  bar case — never a choropleth.
 - **Practical test (the TIE-BREAKER):** drop the geographic data into a sorted bar chart. If the story is
   equally/more legible there → use the bar chart. When a geographic dataset could go either way, DEFAULT
   to the bar; maps only earn their spatial overhead when the pattern is genuinely lost without the map
