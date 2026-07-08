@@ -70,6 +70,14 @@ Scrolly.tsx  (scaffold)
   step's beat camera and applies the beat's highlight stroke + the on-map name/value annotation — the
   SAME visual language as the video. Live browser → real animated `flyTo` (with `prefers-reduced-motion`
   → `jumpTo`), not the frame-deterministic `jumpTo` the video needs.
+- **Camera flight is shared + PEAK-BOUNDED** (`src/scrolly-camera.ts` `flyToBeat`, used by ALL six
+  Scrolly*Map types). A reveal beat's camera is already the focused feature's bounds, but maplibre's
+  DEFAULT `flyTo` curve zooms OUT to a wide apex mid-flight — for far-apart reveals that pulls the camera
+  all the way back to the full data extent, so the reader loses the focused region (and the focus label
+  drops under `text-allow-overlap:false`). `flyToBeat` caps the flight's peak zoom (`flyTo`'s `minZoom`,
+  = zoom at the arc apex; no `curve` passed, else maplibre ignores it) to `PEAK_ZOOM_MARGIN` below the
+  TIGHTER endpoint → a reveal→reveal transition stays framed; only an establish⇄takeaway transition
+  (whose endpoint IS the extent) widens fully. Endpoints are unchanged — only the transition is bounded.
 
 ## Inherited interactive best-practices (from `map-native/references/interactive-map-best-practices.md`)
 
@@ -105,6 +113,7 @@ bun run smoke                                               # real-browser: scro
 
 - `src/chapters.ts` — pure `chapters[]` model + `mapStoryToChapters`. Unit-tested.
 - `src/ScrollyMap.tsx` — v1 map renderer, driven by `currentStep` (flyTo + highlight + annotation + data-only hover).
+- `src/scrolly-camera.ts` — shared `flyToBeat` (peak-bounded flight: reveals stay tight, never pull back to the full extent) + pure `peakFlightZoom`. Used by every Scrolly*Map type. Unit-tested.
 - `src/Scrolly.tsx` — the scaffold: sticky graphic + prose steps + IntersectionObserver dispatcher.
 - `src/mount.tsx` — reads the baked `__CONFIG__`, renders `<Scrolly>`.
 - `src/conformance.ts` — `checkScrollyConformance` (≥3 steps, prose on every step, map refs in beat range).

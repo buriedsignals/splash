@@ -8,6 +8,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { flyToBeat } from "./scrolly-camera";
 import { computeHexGrid } from "../../map-native/src/hex-grid-geo";
 import { deriveHexGridStory } from "../../map-native/src/hex-grid-story";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
@@ -238,20 +239,9 @@ export const ScrollyHexMap: React.FC<{
       map.setPaintProperty(CELL_LAYER, "fill-opacity", 0.9);
     }
 
-    // Camera flight — reduced-motion → jumpTo, else flyTo.
+    // Shared peak-bounded flight (stays tight between reveals).
     const cam = cameras[step];
-    if (cam) {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        map.jumpTo({ center: cam.center, zoom: cam.zoom });
-      } else {
-        map.flyTo({
-          center: cam.center,
-          zoom: cam.zoom,
-          duration: 1200,
-          essential: true,
-        });
-      }
-    }
+    if (cam) flyToBeat(map, cam);
   }, [currentStep, mapState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------

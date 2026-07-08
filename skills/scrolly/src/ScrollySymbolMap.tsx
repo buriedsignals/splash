@@ -8,6 +8,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { flyToBeat } from "./scrolly-camera";
 import { symbolGeometry } from "../../map-native/src/symbol-geo";
 import {
   symbolLabels,
@@ -220,19 +221,9 @@ export const ScrollySymbolMap: React.FC<{
     // Expose current step for the smoke test.
     (window as unknown as Record<string, unknown>)["__scrolly_step__"] = step;
 
+    // Shared peak-bounded flight (stays tight on the city between reveals).
     const cam = cameras[step];
-    if (cam) {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        map.jumpTo({ center: cam.center, zoom: cam.zoom });
-      } else {
-        map.flyTo({
-          center: cam.center,
-          zoom: cam.zoom,
-          duration: 1200,
-          essential: true,
-        });
-      }
-    }
+    if (cam) flyToBeat(map, cam);
   }, [currentStep, mapState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
