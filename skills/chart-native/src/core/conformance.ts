@@ -55,6 +55,68 @@ export interface ConformanceColors {
   bg: string;
 }
 
+// F2 — NEWSROOM BRAND PROFILE, policy (b) brand-first + warning.
+//
+// A newsroom's house colour may not be CVD-safe or may fail the value-label
+// contrast the engines enforce at produce-time. We do NOT rewrite it (that was the
+// rejected policy (a) nearest-safe nudging). Instead, when a colour was EXPLICITLY
+// set by the journalist via the brand profile, its CVD-safety / contrast violation
+// is DOWNGRADED to a render-review concern (non-fatal) — the tradeoff is surfaced,
+// the editor decides. A colour that was NOT brand-explicit (the auto subject-fit
+// path) stays hard-guarded exactly as today.
+export interface BrandReconciliation {
+  /** hard failures — the auto path, unchanged (produce must refuse on these) */
+  violations: string[];
+  /** downgraded brand-colour a11y issues — recorded for the render-review (policy b) */
+  concerns: string[];
+}
+
+// The two a11y violation shapes the bypass is scoped to. Both embed the exact hex,
+// so the match keys off the COLOUR (not fuzzy text): a CVD-safety failure (any of
+// "data/series/slice/… colour #hex is not in the Okabe-Ito set") and a text
+// contrast failure. Everything else (title, source, baseline-0, …) is never
+// downgraded — those are hard regardless of brand choice.
+const CVD_VIOLATION = /(#[0-9a-fA-F]{6}) is not in the Okabe-Ito set/;
+const CONTRAST_VIOLATION =
+  /text colour (#[0-9a-fA-F]{6}) contrast ([\d.]+):1 on (#[0-9a-fA-F]{6}) < 4\.5:1/;
+
+/**
+ * Partition raw conformance violations under policy (b). A CVD-safety or text
+ * contrast violation that names a journalist-chosen brand colour becomes a
+ * render-review CONCERN; every other violation (and any a11y failure whose colour
+ * is NOT in the brand set) stays a hard violation. An empty/undefined brand set
+ * means "no brand profile" → all violations stay hard (the auto path, unchanged).
+ * Pure — no rewrite, no global relaxation.
+ */
+export function reconcileBrandViolations(
+  rawViolations: readonly string[],
+  brandColors: readonly string[] | undefined,
+): BrandReconciliation {
+  const brand = new Set((brandColors ?? []).map((c) => c.toUpperCase()));
+  if (brand.size === 0) return { violations: [...rawViolations], concerns: [] };
+
+  const violations: string[] = [];
+  const concerns: string[] = [];
+  for (const raw of rawViolations) {
+    const cvd = CVD_VIOLATION.exec(raw);
+    if (cvd && brand.has(cvd[1].toUpperCase())) {
+      concerns.push(
+        `brand colour ${cvd[1]} is not colour-blind-safe (outside the Okabe-Ito set) — kept per the newsroom's house style (render-review concern)`,
+      );
+      continue;
+    }
+    const contrast = CONTRAST_VIOLATION.exec(raw);
+    if (contrast && brand.has(contrast[1].toUpperCase())) {
+      concerns.push(
+        `brand colour ${contrast[1]} is ${contrast[2]}:1 on ${contrast[3]}, below WCAG 4.5:1 — kept per the newsroom's house style (render-review concern)`,
+      );
+      continue;
+    }
+    violations.push(raw);
+  }
+  return { violations, concerns };
+}
+
 /**
  * Check a chart's config + colours against design-conformance.md. Returns the
  * list of violations (empty = conformant). The component bakes these in; this

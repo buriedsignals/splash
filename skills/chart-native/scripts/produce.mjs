@@ -7,7 +7,7 @@
 //   bun scripts/produce.mjs <type> <config.json> <outDir> [formats]
 //   formats: "all" (default — static + interactive + 3 videos) | "static" (no video)
 import { execFileSync } from "node:child_process";
-import { mkdirSync, copyFileSync, readFileSync } from "node:fs";
+import { mkdirSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chartDistSub } from "../src/build-paths.ts";
@@ -47,8 +47,18 @@ if (!X) {
 // pass. (The two previously-known pre-existing violations — histogram's median label
 // and lollipop's highlighted-row label in OKABE_ITO vermillion, 3.87:1 < 4.5:1 — are
 // now fixed: those labels render in COLORS.ink; the vermillion stays on the mark.)
+const config = JSON.parse(readFileSync(configPath, "utf8"));
+// F2 — the house colours the journalist set via the brand profile (policy b). These
+// are the ONLY colours whose CVD/contrast failures are downgraded to a render-review
+// concern; every other colour stays hard-guarded. Empty on the auto path.
+const brandColors =
+  config.brandExplicit === true
+    ? [config.baseColor, config.accent, ...(Array.isArray(config.seriesColors) ? config.seriesColors : [])].filter(
+        (c) => typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c),
+      )
+    : [];
+let brandConcerns = [];
 {
-  const config = JSON.parse(readFileSync(configPath, "utf8"));
   const result = runProduceConformance(type, config);
   if (!result.checked) {
     console.log(
@@ -58,12 +68,28 @@ if (!X) {
     console.error(`[produce ${type}] CONFORMANCE VIOLATION — refusing to produce:`);
     for (const v of result.violations) console.error(`  - ${v}`);
     process.exit(1);
+  } else if (result.concerns.length > 0) {
+    // policy (b): the brand colour is KEPT (not rewritten); the a11y tradeoff is
+    // recorded for the render-review instead of failing the run.
+    brandConcerns = result.concerns;
+    console.log(
+      `[produce ${type}] conformance: OK — kept the newsroom's house colour with ${result.concerns.length} render-review concern(s) (policy b, brand-first):`,
+    );
+    for (const c of result.concerns) console.log(`  ~ ${c}`);
   } else {
     console.log(`[produce ${type}] conformance: OK (0 violations).`);
   }
 }
 
 mkdirSync(outDir, { recursive: true });
+// Record the brand render-review concerns next to the outputs so the render gate /
+// the journalist see the surfaced a11y tradeoff (they are never silently dropped).
+if (brandConcerns.length > 0) {
+  writeFileSync(
+    join(outDir, "brand-concerns.json"),
+    JSON.stringify({ type, concerns: brandConcerns }, null, 2),
+  );
+}
 const env = { ...process.env, CHART: type, CONFIG: configPath };
 const run = (cmd, args, extraEnv = {}) =>
   execFileSync(cmd, args, { stdio: "inherit", cwd: root, env: { ...env, ...extraEnv }, shell: isWin });
@@ -88,7 +114,10 @@ snap("scripts/snap-proof.mjs", { OUTDIR: outDir });
 // 2b. render-time WCAG contrast guard — every text label must clear 4.5:1 against
 // its real background. Fails the run before export on a mark-coloured label.
 console.log(`[produce ${type}] checking text contrast (snap-contrast)…`);
-snap("scripts/snap-contrast.mjs");
+// F2 — tell snap-contrast which fills are brand-explicit so a low-contrast label in
+// the newsroom's house colour is recorded as a render-review concern, not a hard
+// failure (policy b). No brand profile → empty → the auto path stays strict.
+snap("scripts/snap-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",") });
 
 // 2c. render-time WCAG contrast guard for the INTERACTIVE hover/focus tooltip — a
 // static-build check can't see this (the tooltip only exists on hover, in HTML/CSS,

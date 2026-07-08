@@ -18,6 +18,17 @@ const root = join(here, "..");
 const chart = process.env.CHART ?? "line";
 const dist = join(root, chartDistSub(chart, "static"));
 
+// F2 — policy (b): fills the journalist set via the brand profile. A label painted
+// in one of these that fails WCAG is a RECORDED render-review concern, not a hard
+// failure (the newsroom keeps its house colour). Any other low-contrast label — the
+// auto path — still fails the run. Empty (no brand profile) → strict, as before.
+const brandColors = new Set(
+  (process.env.BRAND_EXPLICIT_COLORS ?? "")
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean),
+);
+
 // serve over http (module scripts get crossorigin -> blocked over file://)
 const mime = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
 const server = createServer(async (req, res) => {
@@ -93,14 +104,24 @@ await browser.close();
 server.close();
 
 const violations = [];
+const concerns = [];
 for (const s of samples) {
   const worst = worstContrast(s.fill, s.bgs);
-  if (worst < MIN_CONTRAST) violations.push({ ...s, worst: Number(worst.toFixed(2)) });
+  if (worst >= MIN_CONTRAST) continue;
+  const flagged = { ...s, worst: Number(worst.toFixed(2)) };
+  // A failing label in a brand-explicit fill is downgraded to a concern (policy b).
+  if (brandColors.has(s.fill.toUpperCase())) concerns.push(flagged);
+  else violations.push(flagged);
 }
 
-console.log(JSON.stringify({ chart, checked: samples.length, violations }, null, 2));
+console.log(JSON.stringify({ chart, checked: samples.length, violations, concerns }, null, 2));
+if (concerns.length) {
+  console.log(
+    `[snap-contrast ${chart}] ${concerns.length} brand label(s) below ${MIN_CONTRAST}:1 — kept per the newsroom's house style (render-review concern, policy b).`,
+  );
+}
 if (violations.length) {
   console.error(`[snap-contrast ${chart}] ${violations.length} text label(s) below ${MIN_CONTRAST}:1 WCAG contrast`);
   process.exit(1);
 }
-console.log(`[snap-contrast ${chart}] OK — ${samples.length} labels clear ${MIN_CONTRAST}:1.`);
+console.log(`[snap-contrast ${chart}] OK — ${samples.length} labels clear ${MIN_CONTRAST}:1${concerns.length ? ` (${concerns.length} brand concern[s] kept)` : ""}.`);

@@ -24,6 +24,13 @@ export interface NativeSpec {
    *  separators + furniture at render time. Absent → English. Set by the suggester
    *  from the article language; injected onto every config in specToNativeConfig. */
   lang?: string;
+  /**
+   * F2 — set true when `baseColor` was SEEDED from the newsroom's brand profile (a
+   * conscious house-style choice), not the auto subject-fit hue. Threaded onto the
+   * produced config so the produce-time a11y guards downgrade a CVD/contrast failure
+   * on this colour to a render-review concern instead of hard-failing (policy b).
+   */
+  brandExplicit?: boolean;
 }
 
 export class UnsupportedNativeType extends Error {
@@ -714,5 +721,8 @@ export function specToNativeConfig(spec: NativeSpec): {
   // Single injection point: thread the language onto EVERY produced config so all
   // types inherit locale-aware number/furniture rendering without touching each mapper.
   if (spec.lang) out.config.lang = spec.lang;
+  // F2 — carry the brand-explicit marker through to the config the guards read.
+  // Only set when true, so existing (auto-path) specs produce byte-identical configs.
+  if (spec.brandExplicit) out.config.brandExplicit = true;
   return out;
 }
