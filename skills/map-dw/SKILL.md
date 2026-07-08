@@ -28,7 +28,7 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
 - **Not** for: routes/line markers, area markers, or non-map visuals. For animated/video maps use
   the map-video skills; for rich custom interactivity use a D3 map skill.
 
-## Three gotchas that will waste your day (read first)
+## Four gotchas that will waste your day (read first)
 
 1. **Colour scale (choropleth + symbol):** it lives in `metadata.visualize.colorscale.colors` as
    `{color, position}` stops. **If you also send `colorscale.stops` (a STRING like "equidistant"),
@@ -40,6 +40,13 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
 3. **Locator framing:** DW's `view.fit:true` does **not** reliably frame to the markers — it
    rendered the **whole world**. The mapper always computes an explicit `view.center` + `view.zoom`
    from the markers' bounding box (40% padding). Caught only by looking at the PNG.
+4. **`numberFormat` is a Datawrapper numeral.js token, NOT printf/Python.** Use `"0%"` for a
+   column that is already percentage-scale (16 meaning 16%, not 0.16 — Datawrapper appends the
+   sign without multiplying), `"0.0"`/`"0,0"` for decimals/thousands. A printf leftover (`".0f%"`)
+   is silently unrecognised by Datawrapper and the legend falls back to bare numbers ("15…70"
+   instead of "15%…70%") — indistinguishable from the field having been dropped. `spec-to-map-metadata.ts`
+   normalises it the same way `dw-chart/src/chart-spec.ts` does for value labels/axes;
+   `validateMapSpec` warns when a token was auto-corrected and rejects one it cannot map.
 
 (Also: SVG/PDF export is paid → the owned fallback is PNG, free. Token in `.env` as
 `DATAWRAPPER_API_TOKEN`; `bun test` needs `set -a; source .env; set +a`.)

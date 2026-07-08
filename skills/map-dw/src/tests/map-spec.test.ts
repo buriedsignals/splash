@@ -91,6 +91,26 @@ describe("validateMapSpec — choropleth", () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.warnings.join()).toMatch(/label/);
   });
+
+  it("accepts a valid numeral numberFormat with no warning", () => {
+    const r = validateMapSpec({ ...valid, numberFormat: "0%" });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings).toEqual([]);
+  });
+
+  // Mirrors dw-chart's chart-spec.ts guard: a printf/Python leftover token is silently
+  // unrecognised by Datawrapper and the legend falls back to bare numbers — warn so the
+  // caller (the ② suggester layer) knows its token was auto-corrected.
+  it("warns when numberFormat is a printf-style token that gets auto-corrected", () => {
+    const r = validateMapSpec({ ...valid, numberFormat: ".0f%" });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings.join()).toMatch(/numberFormat/);
+  });
+
+  it("fails on an un-mappable numberFormat", () => {
+    const r = validateMapSpec({ ...valid, numberFormat: "%s" });
+    expect(r.ok).toBe(false);
+  });
 });
 
 const validSymbol = {
