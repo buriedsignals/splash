@@ -21,16 +21,20 @@ topic. Normalise to `{ article?, data?, topic? }`. Do not proceed until you have
 
 ### 2. ANALYSE (silent)
 
-Invoke `suggest-article` to read silently: identify the data, the quantified claims, and the
-narrative structure. Produce NO output to the journalist yet — this primes CADRAGE. For a bare topic
-(no article/data), instead NAME the real dataset the topic needs (the honest sans-rien path) and
-carry that forward.
+Invoke `suggest-article` **as a real Skill call** (not a mental paraphrase — actually run the
+`suggest-article` skill) to read silently: identify the data, the quantified claims, and the
+narrative structure. Produce NO output to the journalist yet — this primes CADRAGE. Improvising this
+analysis inline instead of invoking the skill skips its provenance discipline and guardrails — a real
+cost observed in practice, not a theoretical one. For a bare topic (no article/data), instead NAME the
+real dataset the topic needs (the honest sans-rien path) and carry that forward.
 
 ### 3. CADRAGE — GATE 1 (questionnaire, journalist's language, ≤4 questions, one at a time)
 
 Ask each question as ONE well-formed single-select prompt (a short header, 2–4 concrete options) and
 wait for the answer before the next — never batch several into one call, which is what malforms the
-question tool.
+question tool. **Exception:** a question that must capture free-form data — most notably the data
+SOURCE (its label and URL) — is NEVER single-select; a fixed menu of options cannot carry a URL. Ask
+it as a free-text prompt instead (see GATE 2/3 source handling below).
 
 1. Branch: "Do you already have a visual in mind, or should I guide you?"
 2. Takeaway: "What is the one thing a reader should leave with?" → the insight/angle.
@@ -51,15 +55,19 @@ Branch:
 
 ### 4. PROPOSITION — GATE 2 (guided path only)
 
-Present the `suggest-article` ProposalSet × `suggest-chart` routing as plain-language lines — for each
-opportunity: what it shows, which visual, why.
+For each `suggest-article` opportunity, invoke `suggest-chart` **as a real Skill call** (never guess
+the element/format/producer yourself — that re-decides what a sub-skill already decides and skips its
+KB-grounded guardrails) to get its routing decision. Present the ProposalSet × `suggest-chart` routing
+as plain-language lines — for each opportunity: what it shows, which visual, why.
 
 **GATE 2b (data provenance — prose proposals only):** if a proposal's figures are
 `provenance:"prose"`, show the reconstructed table and get an explicit confirmation that the numbers
-are correct BEFORE the journalist accepts/edits/rejects that proposal. The ordering is: confirm the
-table (2b) FIRST as its OWN question, THEN accept / edit / reject (2) — never bundle "are these figures
-right?" and "do you accept this visual?" into one question (they are different decisions). Never
-fabricate a dataset attribution.
+are correct BEFORE the journalist accepts/edits/rejects that proposal. The reconstructed table MUST be
+built from the CURRENT article/data given this session — never carried over, silently, from a prior or
+stale export sitting in `exports/<slug>/`; if a prior export exists, the journalist's current input is
+always the authority. The ordering is: confirm the table (2b) FIRST as its OWN question, THEN accept /
+edit / reject (2) — never bundle "are these figures right?" and "do you accept this visual?" into one
+question (they are different decisions). Never fabricate a dataset attribution.
 
 Only accepted proposals continue.
 
@@ -106,17 +114,23 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
 
 **3a. Render-review FIRST (mandatory, Layer 2).** Before you show the journalist anything, put the
 produced visual through an INDEPENDENT editorial pass per `references/render-review.md`: read the ACTUAL
-render + the article + data against the six criteria (title honesty, source traceability, honest
-encoding, earns-its-place, legibility/a11y, fidelity). These catch what the spine's code gates cannot —
-a title that misstates the metric, a fabricated source, a misleading encoding. Where the harness supports
-subagents, SPAWN a fresh reviewer given only the render + article + data + criteria; else review
-adversarially (try to falsify). Record it (export is refused without a review record):
+render + the article + data against the six criteria (title honesty — including that the title matches
+the takeaway the journalist confirmed at CADRAGE Gate 1, not a narrower or different claim — source
+traceability, honest encoding, earns-its-place, legibility/a11y, fidelity). These catch what the spine's
+code gates cannot — a title that misstates the metric, a fabricated or incomplete source, a misleading
+encoding. **Never spawn an Agent/Task sub-agent to do this review** — during the atelier flow you ONLY
+sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing
+(an agentId) into the journalist-facing conversation. Review adversarially yourself (try to falsify each
+criterion). Record it (export is refused without a review record):
 ```bash
 bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> [concern...]
 ```
 
 **3b. Show + approve.** Show the ACTUAL render (open it / a screenshot) TOGETHER WITH the review's
-concerns, and get an explicit "ship it". The concerns are advisory — the journalist is the editor.
+concerns, and get an explicit "ship it". The concerns are advisory — the journalist is the editor. If a
+concern is about the source (missing, name-only, or unclear), ask the journalist to supply it as ONE
+free-text prompt collecting the label AND the official URL together — never a single-select (see
+CADRAGE) — then update the spec and re-run 3a before showing again.
 Verify quality, not just that it built. **After "ship it", record the approval:**
 ```bash
 bun skills/atelier/scripts/gate-render.mjs exports/<slug>/report.json <id> <the-approved-artifact>
@@ -198,8 +212,12 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
 - Never invent data or fabricate a dataset attribution.
 - Never conduct the dialogue in a language other than the journalist's (detect from first message).
 - Never let the produced visual's furniture (title, intro, source label, scrolly captions) default to English — the detected language is threaded to suggest-article and suggest-chart so the OUTPUT matches the dialogue, not only the chat.
-- Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate.
+- Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate. This means actually INVOKING `suggest-article` (ANALYSE) and `suggest-chart` (PROPOSITION routing) as real Skill calls, not hand-authoring their output from memory/inspection — their eval-hardened guardrails and KB grounding only fire when they genuinely run.
 - Never name a chart type in the intent passed to suggest-article or suggest-chart (on the guided path).
 - Never ship a visual without the mandatory render-review (Gate 3a) — `assertShippable` refuses a visual with no review record; the review's concerns are advisory but running it is not optional.
 - Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow.
 - Never hand over an INTERACTIVE visual without offering the three delivery forms at GATE 4 — code source, static HTML, and the fly.io embed link — as an explicit choice (machinery: `export-code.mjs` + `deploy-embed.mjs`). A SCROLLY has no static image, so it offers only **code source + embed link** (its embed targets `scrolly.html`, not `interactive.html`) — do not promise a static-HTML form for a scrolly.
+- Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.
+- Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.)
+- Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1, Q2) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic") that excludes an entity the visual actually shows. If the data supports more than the title states, widen the title or flag it at Gate 3.
+- Never silently substitute a value from a prior/stale export when it disagrees with the journalist's current article/data — the values used (and shown at Gate 2b) MUST always be the ones the journalist provided in the current session.

@@ -17,7 +17,11 @@ A produced chart MUST satisfy:
    clear subject on the default palette.
 3. **Direct labels** over legends where the chart supports value labels.
 4. **Number formatting**: strip noise, abbreviate (`12.8k`, not `12,831`).
-5. **Source cited**: name + url.
+5. **Source cited**: name + a real URL. A NAMED dataset/publication (e.g. "Eurostat", "INSEE") MUST
+   carry both — never ship the name alone, and never fabricate a URL to fill the field. If the true URL
+   is unknown, ask the journalist for it rather than shipping incomplete or invented. The only name-only
+   exception is the honest prose fallback ("Figures as reported in this article" / the outlet's own name)
+   when there is no separate dataset being cited.
 
 **Language (suggester-enforced, not a code guard):** every reader-facing string — title, intro,
 direct labels, annotations, alt text, the source label — is written in the **article's / journalist's
