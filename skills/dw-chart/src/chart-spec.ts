@@ -1,4 +1,5 @@
 import { dataShape } from "./csv";
+import { hasValueLabelControl } from "./value-label-safety";
 
 export const OKABE_ITO = [
   "#0072B2",
@@ -168,6 +169,16 @@ export function validateChartSpec(
     errors.push("data must be CSV text");
   if (typeof s.altInsight !== "string" || !s.altInsight.trim())
     errors.push("altInsight is required (WCAG: alt = the insight)");
+  // #5 — valueLabels is only honoured on bar/column charts; on any other type Datawrapper
+  // silently ignores it, so warn rather than let it pass as a silent no-op.
+  if (
+    s.valueLabels === true &&
+    CHART_TYPES.includes(s.type as ChartType) &&
+    !hasValueLabelControl(s.type as ChartType)
+  )
+    warnings.push(
+      `valueLabels is only honoured on bar/column charts; ignored for ${s.type} (use the chart-native path for direct labelling on line/scatter/pie)`,
+    );
   // F2 — a brand-explicit house colour is kept even when it isn't CVD-safe (policy
   // b): the failure is recorded as a warning for the render-review, not a hard error.
   const brandExplicit = s.brandExplicit === true;

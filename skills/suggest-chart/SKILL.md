@@ -195,7 +195,9 @@ column headers become the series labels. Route it for a two-point comparison per
 (two points imply no trend).
 `slope` expects **category + exactly TWO time-point columns** (e.g. `2019`,`2024`); the two column headers
 become the period captions. Route it for a two-point change/comparison per category — NOT for 3+ points
-(use `line`). `highlight` names the one line that bucks the trend.
+(use `line`). **A slope asserts a MONOTONIC change between its two points** — if the underlying series
+reverses in between (a peak or dip the two endpoints hide), the slope misrepresents the trend: keep a
+`line`, or disclose the dropped middle to the journalist. `highlight` names the one line that bucks the trend.
 `bullet` expects **category + a measure value + a `target`** (a column named `target`, or the last numeric
 column). Route it ONLY when there's a target to measure against (a KPI vs its goal). The measure is coloured
 by hit (blue) / miss (vermillion); by default it sits on a single neutral track — qualitative range bands
@@ -279,7 +281,9 @@ Field notes:
   renewables") — NOT a label or column name.
 - `intro`: the description / context for the map.
 - `altInsight`: WCAG accessible alternative — the same insight as `title`.
-- `source`: the honest source the article names (prose-provenance rule). Never fabricated.
+- `source`: the honest source the article names (prose-provenance rule). Never fabricated, and **never the
+  data FILENAME** (`youth_unemployment.csv` is not a public attribution) — use the publication the article
+  cites, or the honest prose label.
 - `colorScale` (optional): an array of `{color: hex, position: 0..1}` stops, ascending. If omitted,
   `map-dw` applies the default blue sequential scale. Choose the stops from a subject-fit ramp per the
   **Map colour** rule below — do NOT leave every map blue.
