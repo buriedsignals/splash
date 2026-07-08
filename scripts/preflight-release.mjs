@@ -19,13 +19,13 @@ check("README present", existsSync("README.md"), "add a root README");
 // 3. Installer REPO_URL confirmed — keyed on the TODO marker, so it passes the moment the
 //    real public URL is set and the `confirm before public release` note is removed (the
 //    org name may legitimately be the real one, so we do NOT match on the URL value).
-const gen = existsSync("docs/installer/generate.js")
-  ? readFileSync("docs/installer/generate.js", "utf8")
+const gen = existsSync("docs/installer/commands.js")
+  ? readFileSync("docs/installer/commands.js", "utf8")
   : "";
 check(
   "installer REPO_URL confirmed",
   gen !== "" && !gen.includes("confirm before public release"),
-  "set the real public repo URL in docs/installer/generate.js and remove the `confirm before public release` note",
+  "set the real public repo URL in docs/installer/commands.js and remove the `confirm before public release` note",
 );
 
 // 4. No AI-session URL trailers in commit history (publication rule: no vendor attribution).
