@@ -4,6 +4,7 @@ import type {
   ProposalResult,
 } from "./producer-spec";
 import { validateAccepted, type ValidationOutcome } from "./validate-gate";
+import { isFormatAllowed, type Channel } from "./channel";
 
 // Produce ONE proposal → its outcome (bookkeeping fields are added by produceAll).
 export type Dispatch = (
@@ -33,6 +34,20 @@ export async function produceAll(
       format: p.format,
       renderApproved: false,
     };
+    // Channel/format gate — the hard rule: not-embed ⇒ never interactive/scrolly. A
+    // shipped format must belong to its channel's allowed set (skills/atelier/src/
+    // channel.ts). A proposal without a channel defaults to "article-web" (the
+    // permissive default, matching normalizeChannel's own default) so legacy proposals
+    // are unaffected. A violation is a fail-hard recorded result, never a silent ship.
+    const channel: Channel = p.channel ?? "article-web";
+    if (!isFormatAllowed(channel, p.format)) {
+      results.push({
+        ...base,
+        status: "failed",
+        error: `format "${p.format}" not allowed on channel "${channel}"`,
+      });
+      continue;
+    }
     // Gate 2b: a prose figure must be human-confirmed before it is charted. The trigger
     // (provenance === "prose") is set by suggest-article from the data, so this gate is
     // mechanical (not a self-declared boolean from the shipping step).
