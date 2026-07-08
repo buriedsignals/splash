@@ -223,3 +223,35 @@ describe("validateChartSpec", () => {
     if (r.ok) expect(r.warnings.join()).toMatch(/insight/);
   });
 });
+
+describe("validateChartSpec — #5 valueLabels only on bar/column", () => {
+  const base = {
+    title: "Something clear about the data over time",
+    data: "year,value\n2019,10\n2024,20",
+    altInsight: "Something clear about the data over time.",
+  };
+  it("warns when valueLabels is set on a line chart (Datawrapper ignores it)", () => {
+    const r = validateChartSpec({
+      ...base,
+      type: "d3-lines",
+      valueLabels: true,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) => /valueLabels is only honoured/.test(w)),
+      ).toBe(true);
+  });
+  it("does NOT warn for valueLabels on a bar chart", () => {
+    const r = validateChartSpec({
+      ...base,
+      type: "d3-bars",
+      valueLabels: true,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) => /valueLabels is only honoured/.test(w)),
+      ).toBe(false);
+  });
+});
