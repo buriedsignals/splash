@@ -72,14 +72,15 @@ function validateNative(spec: unknown): ValidationOutcome {
   }
 }
 
-// scrolly dispatches on nativeType: a chart-track config carries one (validate as a
-// ChartSpec), a map-track config is a choropleth config.
+// scrolly mirrors Scrolly.tsx's own dispatch: a chart-track config carries `nativeType`
+// and IS a chart-native NativeSpec (validate by construction, NOT as a DW ChartSpec); a
+// map-track config is one of the map-native family (dispatch by `type`, choropleth
+// default). Anything else here silently blocked valid symbol/hex-grid/dot-density/
+// locator/cartogram and chart scrollies.
 function validateScrolly(spec: unknown): ValidationOutcome {
   const hasNativeType =
     typeof (spec as { nativeType?: unknown } | null)?.nativeType === "string";
-  return hasNativeType
-    ? strip(validateChartSpec(spec))
-    : strip(validateChoroplethConfig(spec));
+  return hasNativeType ? validateNative(spec) : validateMapNative(spec);
 }
 
 // Run the producer-appropriate validator on an accepted proposal's spec.
@@ -95,5 +96,21 @@ export function validateAccepted(p: AcceptedProposal): ValidationOutcome {
       return validateScrolly(p.spec);
     case "chart-native":
       return validateNative(p.spec);
+    default: {
+      // produce-all.mjs builds `accepted` from an untyped JSON.parse, so a hand-authored
+      // report can carry a producer outside the union. Handle it as a validation FAILURE,
+      // never a crash: produceAll reads `.ok` before its try/catch, so an undefined return
+      // here would kill the whole batch and break the drop-proof invariant. The `never`
+      // assignment keeps compile-time exhaustiveness — a new Producer member added above
+      // fails to compile here until it is handled.
+      const _exhaustive: never = p.producer;
+      void _exhaustive;
+      return {
+        ok: false,
+        errors: [
+          `unknown producer "${String((p as { producer?: unknown }).producer)}"`,
+        ],
+      };
+    }
   }
 }

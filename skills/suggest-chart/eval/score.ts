@@ -109,7 +109,7 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
     const title =
       typeof s["title"] === "string" ? (s["title"] as string).trim() : "";
     const src = s["source"] as { name?: string; url?: string } | undefined;
-    const hasSource = !!src?.name?.trim() && !!src?.url?.trim();
+    const hasSource = !!src?.name?.trim(); // url optional (E2 — honest prose sources have none)
     let dataOk = true;
     const data = s["data"];
     if (known && typeof data === "string") {
@@ -121,7 +121,7 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
       }
     }
     if (!title) notes.push("native spec is missing an insight title");
-    if (!hasSource) notes.push("native spec is missing source name+url");
+    if (!hasSource) notes.push("native spec is missing source name");
     const validates = known && !!title && hasSource && dataOk;
     const allowed = NATIVE_FAMILY_TYPES[expect.family] ?? [];
     const familyMatch =

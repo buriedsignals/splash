@@ -43,13 +43,18 @@ applies to every visual thereafter.
   `brand.json → suggester seeds brand hue → reconcile a11y → spec → producer`.
 - **Fallback:** no brand profile → today's subject-fit auto-colour, unchanged.
 
-## Scope (first cut)
+## Scope (first cut) — reconciled to the DECIDED policy (b)
 - Colours only (palette + accent). Fonts/logo deferred.
-- Reconciliation = policy (a): nearest CVD-safe / contrast-safe mapping + a render-review note.
+- Reconciliation = **policy (b), brand-first + warning**: apply the brand colour as chosen; when it fails
+  CVD-safety / contrast, DOWNGRADE the produce-time a11y guard (produce-conformance / snap-contrast) to a
+  render-review **concern** — but ONLY for a colour the journalist explicitly set via the brand profile.
+  The AUTO (no-brand) path stays hard-guarded exactly as today.
 - Profile = a per-project `brand.json`, loaded by the suggester; CADRAGE offers it when present.
-- New helper: `nearestSafeHue(brandHex)` (CVD-safe + ≥4.5:1-capable) — pure, tested; reused by every producer path.
+- New mechanism: a **`brand-explicit` bypass flag** threaded from the brand profile → spec → the produce
+  guards, so they emit a render-review concern instead of a hard failure for that colour (never a global
+  relaxation). No colour is silently rewritten (that was policy (a), rejected).
 
-## Open questions for sign-off
-1. **Reconciliation policy:** (a) strict-a11y-nearest-safe **[reco]**, (b) brand-first-warn, (c) hybrid?
-2. **First-cut scope:** colours only **[reco]**, or also accent-for-furniture now?
-3. **Where the profile lives:** `brand.json` in the project **[reco]** vs env vs a hosted profile.
+## Resolved (sign-off)
+1. **Reconciliation policy:** DECIDED = (b) brand-first + warning (see above).
+2. **First-cut scope:** colours only (palette + accent). *(open: add accent-for-furniture in cut 1?)*
+3. **Where the profile lives:** `brand.json` in the project. *(open: env vs hosted profile later.)*

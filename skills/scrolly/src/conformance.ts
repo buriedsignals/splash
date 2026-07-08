@@ -11,9 +11,11 @@ export function checkScrollyConformance(
   if (!story.title?.trim()) v.push("missing story title");
   if (!story.description?.trim())
     v.push("missing description — a module must state what/when/where");
-  if (!story.source?.name?.trim() || !story.source?.url?.trim())
+  // Source NAME required (an embedded module must carry its own attribution); URL optional
+  // — an honest prose source legitimately has none (E2 deadlock).
+  if (!story.source?.name?.trim())
     v.push(
-      "missing source (name + url) — an embedded module must carry its own source",
+      "missing source name — an embedded module must carry its own source",
     );
   if (story.steps.length < 3)
     v.push(`only ${story.steps.length} steps — a scrolly needs at least 3`);

@@ -5,9 +5,11 @@ import type { ProduceReport } from "./producer-spec";
 // BEFORE it can ship: the review flags what deterministic code cannot — a title that
 // misstates the metric (rate-as-count), a fabricated source, a misleading encoding, a
 // chart that adds nothing over a sentence. The `concerns` are ADVISORY (surfaced to the
-// journalist at Gate 3, never a hard block); what is MANDATORY is that the review ran —
-// assertShippable refuses to export a visual with no review record, so the host cannot
-// skip it the way it skipped ②'s self-check in 4/5 manual sessions.
+// journalist at Gate 3, never a hard block); what is MANDATORY is that a review RECORD
+// exists — assertShippable refuses to export a visual without one. Honest scope: this is a
+// CHECKPOINT that a review ran, not mechanical proof of its substance (unlike Gate 2b,
+// whose trigger is upstream provenance data); the substance comes from an INDEPENDENT
+// reviewer, per references/render-review.md.
 export function applyReviewGate(
   report: ProduceReport,
   id: string,

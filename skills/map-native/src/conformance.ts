@@ -80,8 +80,10 @@ export function checkGlobalMapConformance(
     v.push(`title is ALL CAPS — write it as a sentence: "${title}"`);
   if (!input.description?.trim())
     v.push("missing description — a module must state what/when/where");
+  // Source NAME required (anti-fabrication); URL optional — an honest prose source has
+  // none (E2). Traceability against the article is the render-review's job, not a blind
+  // url-present check.
   if (!input.source?.name?.trim()) v.push("missing source name");
-  if (!input.source?.url?.trim()) v.push("missing source url");
   for (const t of textColors.text) {
     const r = contrastRatio(t, textColors.bg);
     if (r < 4.5)

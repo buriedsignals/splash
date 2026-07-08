@@ -4,7 +4,10 @@ A MANDATORY editorial pass on every PRODUCED visual, run BEFORE the journalist's
 It reads the ACTUAL rendered visual (the `static.png` / a video frame / the interactive) together
 with the article + the data + the emitted spec, and flags editorial defects that deterministic code
 cannot see. Its concerns are **advisory** — surfaced to the journalist, who decides — but running it
-is **mandatory**: `assertShippable` refuses to export a visual with no review record.
+is **mandatory**: `assertShippable` refuses to export a visual with no review record. Honest scope: the
+record is a **checkpoint that a review ran**, not mechanical proof of its substance (unlike Gate 2b, whose
+trigger is upstream provenance data) — a self-attested record from the host that wrote the spec can
+rubber-stamp its own error. What makes it real is **independence**, below.
 
 Why it exists: the spine gates catch mechanical faults (an invalid spec), but the most damaging faults
 are editorial and need the article as ground truth — a title that misstates the metric, a fabricated
@@ -14,8 +17,10 @@ source, a misleading encoding. In the test campaign these shipped from otherwise
 Review with a FRESH pair of eyes, not the reasoning that produced the spec — a self-review by the
 author rubber-stamps its own error (the false "cinq fois plus de jeunes au chômage" title looked fine
 to the host that wrote it). Where the harness supports subagents, **spawn an independent reviewer** given
-only the render + article + data + these criteria. Otherwise review **adversarially**: actively try to
-FALSIFY the visual against each criterion, default to flagging.
+only the render + article + data + these criteria — this is the DEFAULT whenever it is available.
+Otherwise, review **adversarially**: actively try to FALSIFY the visual against each criterion, default to
+flagging — but be honest that this single-agent fallback does NOT deliver true independence and carries
+residual rubber-stamp risk; it is a lesser substitute, not an equivalent.
 
 ## Criteria — flag a concern for each that fails
 1. **Title honesty.** The title states exactly what the data shows. A RATE title must not assert a COUNT

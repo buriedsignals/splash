@@ -116,12 +116,11 @@ export function checkValueLabelContrast(patch: {
   // A column value label is unsafe only when placed INSIDE (outside = dark on white).
   const vl = vis["valueLabels"] as
     { enabled?: boolean; placement?: string } | undefined;
+  // Absent placement is treated as UNSAFE (Datawrapper defaults column labels inside),
+  // mirroring the bar path's defensive default — so a re-enabled label with no explicit
+  // `placement:"outside"` cannot slip past the guard.
   const insideColumnLabel =
-    isColumn &&
-    !!vl &&
-    vl.enabled !== false &&
-    vl.placement !== undefined &&
-    vl.placement !== "outside";
+    isColumn && !!vl && vl.enabled !== false && vl.placement !== "outside";
 
   if (!insideBarLabel && !insideColumnLabel) return out;
 

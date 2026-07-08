@@ -152,4 +152,25 @@ describe("produceAll — validation gate (real validator)", () => {
     expect(results.map((r) => r.id).sort()).toEqual(["a", "b"]);
     expect(results.find((r) => r.id === "b")?.status).toBe("failed");
   });
+
+  it("does not crash on a producer outside the union — records it failed, keeps drop-proof", async () => {
+    const { dispatch, produced } = spy();
+    const { results } = await produceAll(
+      [
+        { id: "a", producer: "dw-chart", format: "static", spec: validDwSpec },
+        {
+          id: "x",
+          producer: "sankey-native" as never,
+          format: "static",
+          spec: {},
+        },
+        { id: "c", producer: "dw-chart", format: "static", spec: validDwSpec },
+      ],
+      "out",
+      dispatch,
+    );
+    expect(results.map((r) => r.id).sort()).toEqual(["a", "c", "x"]);
+    expect(results.find((r) => r.id === "x")?.status).toBe("failed");
+    expect(produced.sort()).toEqual(["a", "c"]); // the good ones still produced
+  });
 });

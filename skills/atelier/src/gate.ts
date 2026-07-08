@@ -19,6 +19,12 @@ export function applyRenderGate(
       throw new Error(
         `cannot approve proposal ${id}: not produced (status=${r.status})`,
       );
+    // Enforce 3a → 3b: the render-review must be recorded before an approval can be, so a
+    // journalist never approves without the review's concerns having been surfaced.
+    if (!r.reviewed)
+      throw new Error(
+        `cannot approve proposal ${id}: not render-reviewed — run review-gate first (Gate 3a before 3b)`,
+      );
     const approvedHash = createHash("sha256")
       .update(artifactBytes)
       .digest("hex");

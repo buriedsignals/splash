@@ -75,4 +75,40 @@ describe("validateAccepted — the spine validation gate", () => {
     );
     expect(r.ok).toBe(true);
   });
+
+  it("validates a SYMBOL scrolly via the map-native path (not the choropleth validator)", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        type: "symbol",
+        points: [{ lon: 2.35, lat: 48.85, value: 100, label: "Paris" }],
+        basemap: "world",
+        title: "Where the closures hit hardest across France",
+        source: { name: "X", url: "https://x" },
+      }),
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  it("validates a CHART scrolly via the native path (not the DW ChartSpec validator)", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        nativeType: "line",
+        title: "How emissions per capita diverged since 1990",
+        source: { name: "X" },
+        unit: "t CO2",
+        data: "year,value\n1990,9\n2020,6",
+      }),
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  it("returns a FAILURE (never a crash) for a producer outside the union", () => {
+    const r = validateAccepted({
+      ...base,
+      producer: "sankey-native" as never,
+      spec: {},
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors[0]).toContain("unknown producer");
+  });
 });
