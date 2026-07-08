@@ -24,6 +24,12 @@ test("runs the local configurator and does NOT write .env from caller env vars",
   expect(sh).toContain("install/configurator.ts");
   expect(sh).not.toContain("ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY"); // no baked-key .env write
   expect(sh).toContain("Configuration was not completed"); // aborts if the configurator was closed
+  // the configurator call must be guarded by the `if`, not a bare statement — otherwise
+  // `set -euo pipefail` kills the script AT that line on a non-zero exit, and the
+  // "re-run this installer" abort message below never runs (dead code under errexit).
+  expect(sh).toMatch(
+    /if ! \(\s*cd "\$DEST" && bun install\/configurator\.ts\s*\)/,
+  );
 });
 
 test("acquires the repo by zip, installs the render engine, and makes a local launcher", () => {

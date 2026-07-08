@@ -31,8 +31,7 @@ fi
 
 # 3. Local configurator — pick runtime + enter keys (verified live); writes ~/Atelier/.env
 echo "-> Opening the configurator in your browser to collect your keys…"
-( cd "$DEST" && bun install/configurator.ts )
-if [ ! -f "$DEST/.env" ]; then
+if ! ( cd "$DEST" && bun install/configurator.ts ) || [ ! -f "$DEST/.env" ]; then
   echo "Configuration was not completed — re-run this installer." >&2
   exit 1
 fi
