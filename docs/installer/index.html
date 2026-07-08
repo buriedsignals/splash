@@ -9,89 +9,39 @@
 <body>
   <main>
     <h1>Install Atelier</h1>
-    <p>Fill this in, then choose one of the two ways to install. Your keys never leave this page.</p>
+    <p>One command sets everything up. You'll enter your keys <strong>afterward</strong>, in a
+      configurator that opens on your own machine — they never touch this website or your Downloads.</p>
 
-    <form id="setup">
-      <fieldset>
-        <legend>AI runtime</legend>
-        <div id="runtimes"></div>
-      </fieldset>
+    <div id="os-toggle" data-testid="os-toggle" role="tablist">
+      <button type="button" data-os="mac" aria-selected="true">macOS</button>
+      <button type="button" data-os="windows" aria-selected="false">Windows</button>
+    </div>
 
-      <label>AI API key <span id="keyLabel"></span>
-        <input name="ai" type="password" autocomplete="off" />
-        <a id="keyUrl" href="#" target="_blank" rel="noopener">Where do I get this?</a>
-      </label>
-      <label>MapTiler key <small>(maps — skip to add later)</small>
-        <input name="maptiler" type="password" autocomplete="off" />
-        <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener">Get one</a>
-      </label>
-      <label>Datawrapper token <small>(charts — skip to add later)</small>
-        <input name="datawrapper" type="password" autocomplete="off" />
-        <a href="https://app.datawrapper.de/account/api-tokens" target="_blank" rel="noopener">Get one</a>
-      </label>
-      <details>
-        <summary>Embed host (advanced, optional)</summary>
-        <label>fly.io app name <input name="embedApp" type="text" autocomplete="off" /></label>
-        <label>FLY_API_TOKEN <input name="flyToken" type="password" autocomplete="off" /></label>
-      </details>
-    </form>
-
-    <section id="output" hidden>
-      <div id="os-toggle" data-testid="os-toggle" role="tablist">
-        <button type="button" data-os="mac" aria-selected="true">macOS</button>
-        <button type="button" data-os="windows" aria-selected="false">Windows</button>
-      </div>
-
-      <div class="mode" data-testid="mode-copypaste">
-        <h2>Option A — paste one line into the terminal</h2>
-        <p class="hint" id="terminalHint"></p>
-        <pre><code id="copypaste"></code></pre>
-        <button type="button" id="copyBtn">Copy</button>
-        <p class="note">After it finishes, close the terminal window (the line held your keys).</p>
-      </div>
-
-      <div class="mode" data-testid="mode-download">
-        <h2>Option B — download a file and open it</h2>
-        <button type="button" id="downloadBtn">Download my installer</button>
-        <p class="note" id="workaround"></p>
-      </div>
+    <section class="mode" data-testid="mode-copypaste">
+      <h2>Option A — paste one line into the terminal</h2>
+      <p class="hint" id="terminalHint"></p>
+      <pre><code id="command"></code></pre>
+      <button type="button" id="copyBtn">Copy</button>
     </section>
+
+    <section class="mode" data-testid="mode-download">
+      <h2>Option B — download a file and open it</h2>
+      <button type="button" id="downloadBtn">Download the installer</button>
+      <p class="note" id="workaround"></p>
+    </section>
+
+    <p class="note">After it installs, a <strong>configurator</strong> opens in your browser to collect
+      your keys (MapTiler, Datawrapper, optionally an Anthropic API key). They're verified on the spot
+      and saved to <code>~/Atelier/.env</code> on your machine.</p>
   </main>
 
   <script type="module">
-    import { RUNTIMES } from "./runtimes.js";
-    import { generateCopyPaste, generateLauncher, launcherFilename } from "./generate.js";
+    import { installCommand, launcherContents, launcherFilename } from "./commands.js";
 
-    const form = document.getElementById("setup");
-    const runtimesEl = document.getElementById("runtimes");
-    const keyLabelEl = document.getElementById("keyLabel");
-    const keyUrlEl = document.getElementById("keyUrl");
-    const output = document.getElementById("output");
-    const copypasteEl = document.getElementById("copypaste");
+    const cmdEl = document.getElementById("command");
     const terminalHint = document.getElementById("terminalHint");
     const workaround = document.getElementById("workaround");
-
-    let selectedRuntime = "claude";
     let os = /Win/i.test(navigator.platform || navigator.userAgent) ? "windows" : "mac";
-
-    for (const [id, rt] of Object.entries(RUNTIMES)) {
-      const label = document.createElement("label");
-      label.className = "runtime" + (rt.verified ? "" : " disabled");
-      label.innerHTML =
-        `<input type="radio" name="runtime" value="${id}" ${id === selectedRuntime ? "checked" : ""}
-          ${rt.verified ? "" : "disabled"} /> ${rt.label}` +
-        (rt.verified ? "" : " <small>coming soon</small>");
-      runtimesEl.appendChild(label);
-    }
-
-    function config() {
-      const f = new FormData(form);
-      return {
-        os, runtime: selectedRuntime,
-        keys: { ai: f.get("ai"), maptiler: f.get("maptiler"), datawrapper: f.get("datawrapper") },
-        embed: { app: f.get("embedApp"), flyToken: f.get("flyToken") },
-      };
-    }
 
     const HINTS = {
       mac: "Open Terminal (Cmd-Space, type “Terminal”), paste, press Enter.",
@@ -103,36 +53,24 @@
     };
 
     function render() {
-      const rt = RUNTIMES[selectedRuntime];
-      keyLabelEl.textContent = `(${rt.keyLabel})`;
-      keyUrlEl.href = rt.keyUrl;
       document.querySelectorAll('#os-toggle button').forEach((b) =>
         b.setAttribute("aria-selected", String(b.dataset.os === os)));
-      try {
-        copypasteEl.textContent = generateCopyPaste(config());
-      } catch { copypasteEl.textContent = ""; }
+      cmdEl.textContent = installCommand(os);
       terminalHint.textContent = HINTS[os];
       workaround.textContent = WORKAROUND[os];
-      output.hidden = false;
     }
     render();
 
-    form.addEventListener("change", (e) => {
-      if (e.target.name === "runtime") selectedRuntime = e.target.value;
-      render();
-    });
-    form.addEventListener("input", render);
     document.getElementById("os-toggle").addEventListener("click", (e) => {
       if (e.target.dataset.os) { os = e.target.dataset.os; render(); }
     });
     document.getElementById("copyBtn").addEventListener("click", () =>
-      navigator.clipboard.writeText(copypasteEl.textContent));
+      navigator.clipboard.writeText(cmdEl.textContent));
     document.getElementById("downloadBtn").addEventListener("click", () => {
-      const { filename, contents } = generateLauncher(config());
-      const blob = new Blob([contents], { type: "text/plain" });
+      const blob = new Blob([launcherContents(os)], { type: "text/plain" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = filename;
+      a.download = launcherFilename(os);
       a.click();
       URL.revokeObjectURL(a.href);
     });
