@@ -62,7 +62,7 @@ export interface ConformanceColors {
  */
 /**
  * L0 — GLOBAL dataviz rules that hold for EVERY chart type (and map): insight
- * title, Okabe-Ito data colour, source name+url, WCAG text contrast. The
+ * title, Okabe-Ito data colour, source name (url optional), WCAG text contrast. The
  * type-specific guards below compose on top (global ++ type), mirroring the
  * layered knowledge tree.
  */
@@ -86,9 +86,12 @@ export function checkGlobalConformance(input: {
   if (!isOkabeIto(colors.data))
     v.push(`data colour ${colors.data} is not in the Okabe-Ito set`);
 
-  // 5. Source cited: name + url.
+  // 5. Source cited: NAME required (anti-fabrication + attribution). URL is OPTIONAL —
+  //    an honest prose source ("Chiffres tels que rapportés dans cet article") or a
+  //    newsroom's own reporting legitimately has none, and requiring it hard-blocked the
+  //    prose path (E2 deadlock). Source traceability against the article is the
+  //    render-review's job, not a blind url-present check here.
   if (!input.source?.name?.trim()) v.push("missing source name");
-  if (!input.source?.url?.trim()) v.push("missing source url");
 
   // 7. Contrast ≥ 4.5:1 for every text colour. Decorative gridlines are exempt.
   for (const t of colors.text) {

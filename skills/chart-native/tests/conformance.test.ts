@@ -58,14 +58,17 @@ describe("the shipped chart is conformant (design-conformance.md)", () => {
 });
 
 describe("the guard actually catches violations (not a rubber stamp)", () => {
-  it("flags a year-range title, off-palette colour, and missing source url", () => {
+  it("flags a year-range title, off-palette colour, and a missing source name", () => {
     const bad = {
       ...config,
       title: "2019-2024",
-      source: { name: "X", url: "" },
+      source: { name: "", url: "" }, // name is required (anti-fabrication); url is optional
     } as ChartConfig;
     const violations = checkConformance(bad, { ...colors, data: "#1f77b4" });
     expect(violations.length).toBeGreaterThanOrEqual(3);
+    expect(violations.some((m) => m.includes("missing source name"))).toBe(
+      true,
+    );
   });
   it("flags low-contrast text", () => {
     const v = checkConformance(config, { ...colors, text: ["#BBBBBB"] });
