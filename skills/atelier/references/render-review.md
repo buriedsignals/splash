@@ -37,6 +37,9 @@ residual rubber-stamp risk; it is a lesser substitute, not an equivalent.
    reads as a sentence → recommend no-chart (or a callout), not a chart.
 5. **Legibility & a11y.** Readable at a glance at the target size; value labels clear 4.5:1; furniture
    (title, source, unit/legend) present, in the article's language, numbers localized (FR "1 900", "19,3").
+   For a chart-scrolly, this includes the caption wording itself — ordinals ("2e" not "2nd") and
+   connective phrases ("en tête", "Le plus bas"), not just numbers (`chart-native/src/chart-story.ts`
+   branches on `spec.lang`, same convention as `core/locale.ts`).
 6. **Fidelity.** The emphasis the journalist accepted (a highlighted region, a labelled outlier) is
    actually in the render.
 

@@ -2,6 +2,7 @@ import { specToNativeConfig } from "./spec-to-config";
 import type { NativeSpec } from "./spec-to-config";
 import { computeChartLayout } from "./chart-geometry";
 import type { Dims } from "./chart-geometry";
+import { isFrench, localizeDecimal } from "./core/locale";
 
 // Fixed canvas dims that match LineChart's defaults (width=840, height=480) and the
 // minimum right-padding (Math.max(140, labelGutter) where 140 is the floor). Using
@@ -84,10 +85,25 @@ export function scatterNotableIndices(xs: number[], ys: number[]): number[] {
   return [...new Set([argmax(xs), argmax(ys), argmin(ys)])];
 }
 
-function ordinal(n: number): string {
+// English ordinal: 1st, 2nd, 3rd, 4th…
+function ordinalEn(n: number): string {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+}
+
+// French ordinal, the standard journalistic abbreviation: 1er, 2e, 3e, 4e…
+function ordinalFr(n: number): string {
+  return n === 1 ? `${n}er` : `${n}e`;
+}
+
+// The caption engine's wording must follow the deliverable's language (`spec.lang`,
+// threaded from the article by the suggester — see NativeSpec.lang), never hardcode
+// English: a French newsroom reading "1st, 2nd, leads, The lowest" is the same class
+// of bug as an unlocalized number separator, just in the caption layer instead of the
+// axis. Unknown/absent lang falls back to English (matches core/locale's convention).
+function ordinal(n: number, lang?: string): string {
+  return isFrench(lang) ? ordinalFr(n) : ordinalEn(n);
 }
 
 // Build the ordered chart-scrolly beats from a NativeSpec, ADAPTING to the chart type:
@@ -112,8 +128,12 @@ export function deriveChartStory(
   const shortUnit = vu || (uu && uu.length <= 4 && !uu.includes(" ") ? uu : "");
   const fmt = (v: number) => {
     const n = Math.round(v * 100) / 100;
-    if (!shortUnit) return `${n}`;
-    return shortUnit === "%" ? `${n}%` : `${n} ${shortUnit}`;
+    const s = !shortUnit
+      ? `${n}`
+      : shortUnit === "%"
+        ? `${n}%`
+        : `${n} ${shortUnit}`;
+    return localizeDecimal(s, spec.lang);
   };
   const beats: ChartBeat[] = [
     { kind: "title", callout: null, copy: spec.title },
@@ -158,15 +178,23 @@ export function deriveChartStory(
     // Same value-only stable sort as computeBarLayout — this IS the chart's display
     // order, so `sortedIndex` (== highlightIndex) fetches the row the accented bar shows.
     const displayOrder = [...labelled].sort((a, b) => b.value - a.value);
+    // Connective wording is French/English-branched here — same locale as `ordinal`
+    // and `fmt` above, sourced from `spec.lang` (never hardcode English for every
+    // deliverable language).
+    const fr = isFrench(spec.lang);
     for (const r of barRankedReveals(labelled)) {
       const row = displayOrder[r.sortedIndex];
       const value = fmt(row.value);
       const copy =
         r.role === "tail"
-          ? `The lowest — ${row.label}, ${value}`
+          ? fr
+            ? `Le plus bas — ${row.label}, ${value}`
+            : `The lowest — ${row.label}, ${value}`
           : r.rank === 1
-            ? `${row.label} leads — ${value}`
-            : `${row.label} — ${value}, ${ordinal(r.rank)}`;
+            ? fr
+              ? `${row.label} en tête — ${value}`
+              : `${row.label} leads — ${value}`
+            : `${row.label} — ${value}, ${ordinal(r.rank, spec.lang)}`;
       beats.push({
         kind: "reveal",
         highlightIndex: r.sortedIndex,
