@@ -19,4 +19,10 @@ Auth: `Authorization: Bearer $DATAWRAPPER_API_TOKEN`. Base: `https://api.datawra
 | Source citation | `metadata.describe.source-name` / `source-url` |
 | Number format | `metadata.describe.number-format` |
 | Single colour (Okabe-Ito) | `metadata.visualize.base-color` |
-| Direct labels | `metadata.visualize.value-labels.show` |
+| Horizontal-bar value labels (inside labels are white/unsafe → use the axis) | `metadata.visualize.show-value-labels:false` + `force-grid:true` |
+
+## Value-label contrast (WCAG AA)
+
+Horizontal `d3-bars` draw the value INSIDE the bar with an un-overridable white/black auto-pick. White fails AA on darker subject hues (white on `#009E73` = 3.42:1, on `#D55E00` = 3.87:1). No colour field or outside placement exists (verified against the live API + Academy docs), so the mapper turns inside labels off and shows the numeric value axis (black ink, 17.8:1).
+
+Enforced by `checkValueLabelContrast` (`src/value-label-safety.ts`), which `produceChart` runs before publishing and throws on a white-inside-coloured-mark below 4.5:1.
