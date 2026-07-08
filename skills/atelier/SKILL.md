@@ -47,16 +47,22 @@ it as a free-text prompt instead (see GATE 2/3 source handling below).
    spatial-pattern framing when the data is not geographic. Offering an unsupported framing forces a
    later retraction and tempts a fabricated series to "back it up". If the journalist genuinely wants a
    trend, say the current data can't show it and ask for the time series — never invent one.
-3. Audience & channel: "Where does this publish — article embed, social, print?" → the format signal
-   (feeds suggest-chart Gates 1–4: static / interactive / video / scrolly) AND the media aspect for a
-   video/image: social-vertical → portrait (9:16), feed → square (1:1), article/web → landscape (16:9).
-   **Always asked — on EITHER branch, never skipped.** A DIRECT-named visual still needs a channel: a
-   journalist-naming "a bar chart" doesn't by itself say feed→square vs web→landscape, and downstream,
-   `suggest-chart`'s Gate 2 escalation to interactive cannot even be evaluated without it — one of its
-   three ALL-required criteria IS the channel ("distribution is web-only"; see
-   `knowledge/references/formats/format-selection.md`). Skipping Q3 is exactly the failure mode that lets
-   a visual escalate to interactive/video/scrolly with none of the escalation criteria established —
-   never skip it.
+3. Audience & channel: a STRUCTURED single-select, journalist's language, exactly three options —
+   **Social vertical (Stories/Reels)** · **Social feed (Instagram/Facebook post)** · **Article web / embed**.
+   This is not a free-text prompt (never ask it as one) — the pick maps 1:1 onto
+   `skills/atelier/src/channel.ts`'s `Channel` enum, which deterministically fixes both the media SIZE and
+   the ALLOWED FORMAT SET for everything downstream:
+   - **Social vertical** → portrait **9:16** · formats {image, video}.
+   - **Social feed** → square **1:1** · formats {image, video}.
+   - **Article web / embed** → media **landscape 16:9** / component **responsive** · formats {image, video,
+     interactive}.
+   **Hard rule: not article/embed ⇒ image or video only — NEVER interactive or scrolly.** Only the
+   article/web channel can host an interactive (scrolly is a kind of interactive). **Always asked — on
+   EITHER branch, never skipped.** A DIRECT-named visual still needs a channel: a journalist-naming "a bar
+   chart" doesn't by itself say feed→square vs web→landscape, and downstream, `suggest-chart`'s routing
+   cannot even restrict its format set without it (see `knowledge/references/formats/format-selection.md`).
+   Skipping Q3 is exactly the failure mode that let a visual escalate to interactive/video/scrolly with
+   none of the channel constraints established — never skip it.
 4. Constraint (only if relevant): mobile-first, deadline, house palette.
    - **House palette (F2 brand profile):** if the project has a `brand.json` (loadBrandProfile → `palette` + optional `accent`), OFFER "use your house palette?" here. On yes, seed the producer spec's colour from the palette and mark it `brandExplicit` (seedBrandColor) — the brand colour is applied AS CHOSEN (policy b, brand-first). A non-CVD-safe / low-contrast house colour is NOT rewritten; the produce-time a11y guards downgrade it to a render-review concern (surfaced at Gate 3), the editor decides. No brand.json → auto subject-fit colour, unchanged. Colours only in this cut (fonts/logo deferred).
 
@@ -82,6 +88,32 @@ For each `suggest-article` opportunity, invoke `suggest-chart` **as a real Skill
 the element/format/producer yourself — that re-decides what a sub-skill already decides and skips its
 KB-grounded guardrails) to get its routing decision. Present the ProposalSet × `suggest-chart` routing
 as plain-language lines — for each opportunity: what it shows, which visual, why.
+
+**Announce the reconciled `{format, size, sub-format}` — vetoable.** After routing, state in plain
+language what the CADRAGE Q3 channel + `suggest-chart`'s routing land on for THIS opportunity, and let
+the journalist veto or change it before moving on — e.g. « un chart INTERACTIF, responsive,
+explore-libre — calé sur ton article web ; on part là-dessus ou tu changes ? » or « une image PORTRAIT
+(9:16) pour ta Story — ok ? ». This is a statement of the already-routed decision offered for veto, not
+a fresh options menu. **Hard rule surfaced here too:** a non-article/embed channel can only land on
+image or video — never interactive or scrolly; if the journalist asks for an interactive on a social
+channel, say so and point back to the CADRAGE Q3 channel pick rather than silently escalating.
+
+**Narrative sub-format — who picks it reuses the CADRAGE branch:**
+- **interactive** → the sub-format is **explore-libre** (pan/zoom/hover) vs **scrolly** (sequential).
+- **video** → the sub-format is the camera/reveal mode (reveal-simple, guided-tour, zoom-out, pan,
+  line-reveal, ranked-bars… — per producer).
+- **GUIDED** → the AI PICKS the sub-format (grounded in the routing, announced above, vetoable) — do not
+  make the journalist choose a reveal style blind.
+- **DIRECT** → the journalist NAMES the sub-format themselves, but only once it is checked reachable via
+  `suggest-chart` (see "Only offer what is confirmed producible" below) — never offer a named sub-format
+  that turns out not to be producible.
+
+**Article/web defaults to interactive — with a static fallback ALWAYS produced (a11y invariant).** For
+the article-web channel, `suggest-chart` routing DEFAULTS to interactive — it wins unless there is a
+concrete reason not to — but whenever interactive is chosen, a static image that carries the claim ON
+ITS OWN is ALSO produced alongside it (≈85% of readers never touch hover/click; interactive is additive,
+never load-bearing). Never present an interactive-only proposal for article/web — the static fallback is
+part of the SAME accept decision, not a separate ask.
 
 **★ One opportunity = one accept decision = one `suggest-chart` call.** Each DISTINCT `suggest-article`
 opportunity is routed and accepted INDEPENDENTLY — never fold a second opportunity's series/claim into
@@ -212,17 +244,27 @@ scratchpad — the scratchpad is temporary and gets cleaned, so the journalist w
 (non-zero) if the export path looks ephemeral. The ship scripts also refuse unless the proposal is
 `produced` AND render-approved (GATE 3 done) — pass the report + id so the gate can check.
 
-Branch on the format the journalist chose at CADRAGE / that `suggest-chart` routed to:
+Branch EXACTLY on the channel/format model (`skills/atelier/src/channel.ts`) — **image and video hand
+over the media directly, no delivery menu; only interactive gets a delivery choice, and only because
+article-web is the one channel that can host it**:
 
-- **VIDEO (mp4):** the producer emits three aspect ratios — **landscape** (`*landscape.mp4`, 16:9, for
-  article/web/YouTube), **square** (`*square.mp4`, 1:1, for a feed post), **portrait** (`*portrait.mp4`,
-  9:16, for Reels/TikTok/Shorts). Confirm which aspect the journalist needs — default it from the CADRAGE
-  channel answer (social/vertical → portrait; feed → square; article/web → landscape) — and hand over
-  that mp4. A video IS the media — no code/embed forms; just give the chosen file.
-- **STATIC IMAGE (a static chart / map PNG):** hand over the `static.png` directly (the aspect the
-  producer rendered). A static image IS the media — just give the file.
-- **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`):** only here do the
-  three delivery forms apply — ask which the journalist wants:
+- **VIDEO (mp4):** hand over the mp4 directly, at the CADRAGE channel's size and the narrative sub-format
+  chosen at PROPOSITION (camera/reveal mode) — no code/embed forms, the media IS the deliverable. The
+  producer emits three aspect ratios — **landscape** (`*landscape.mp4`, 16:9, for article/web/YouTube),
+  **square** (`*square.mp4`, 1:1, for a feed post), **portrait** (`*portrait.mp4`, for Reels/TikTok/Shorts).
+  Default the aspect from the CADRAGE channel answer (social-vertical → portrait; social-feed → square;
+  article-web → landscape) and hand over that mp4. **Caveat (fix pending, Slice 2):** the native
+  chart-native/map-native video producers currently render "portrait" at **4:5** (1080×1350), NOT the true
+  **9:16** (1080×1920) the social-vertical channel targets — the channel table already SAYS 9:16, native
+  video pixel-rendering doesn't honor it yet (see the self-review note in
+  `docs/superpowers/plans/2026-07-08-channel-driven-format-slice-1.md`). Do not tell the journalist the
+  portrait mp4 is 9:16 until that lands — say 4:5 today. This caveat is **video-only**: `dw-chart`'s
+  STATIC portrait export already renders the true 1080×1920.
+- **STATIC IMAGE (a static chart / map PNG):** hand over the `static.png` directly, at the channel's size
+  (portrait 1080×1920 for social-vertical, square 1080×1080 for social-feed, landscape 1200×675 for
+  article-web) — no delivery menu, just the file.
+- **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`, article-web only):**
+  only here do the three delivery forms apply — ask which the journalist wants:
   - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs exports/<slug>/<id> exports/<slug>/<id>-export --results exports/<slug>/report.json --id <id>` (the source is the per-proposal build subdir from 5c).
     Hands over a folder with all the built files (`interactive.html`, `static.png`, `static.html`) + an
     `EMBED.md`. Embed the interactive visual with the `<iframe src="interactive.html">` snippet.
