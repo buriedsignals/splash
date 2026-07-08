@@ -26,6 +26,13 @@ import {
   checkDumbbellConformance,
   checkSlopeConformance,
   checkBulletConformance,
+  checkTreemapConformance,
+  checkBoxplotConformance,
+  checkViolinConformance,
+  checkDivergingStackedConformance,
+  checkPopulationPyramidConformance,
+  checkFanConformance,
+  checkBumpConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -45,6 +52,10 @@ import {
   DUMBBELL_DOT_COLORS,
   SLOPE_LINE_COLORS,
   BULLET_MEASURE_COLORS,
+  TREEMAP_GROUP_COLORS,
+  DIVERGING_STACKED_COLORS,
+  PYRAMID_SIDE_COLORS,
+  BUMP_ACCENT_COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeDivergingLayout } from "../diverging-bar-geometry";
@@ -74,6 +85,13 @@ import type { WaterfallConfig } from "../WaterfallChart";
 import type { DumbbellConfig } from "../DumbbellChart";
 import type { SlopeConfig } from "../SlopeChart";
 import type { BulletConfig } from "../BulletChart";
+import type { TreemapConfig } from "../TreemapChart";
+import type { BoxplotConfig } from "../BoxplotChart";
+import type { ViolinConfig } from "../ViolinChart";
+import type { DivergingStackedConfig } from "../DivergingStackedChart";
+import type { PopulationPyramidConfig } from "../PopulationPyramidChart";
+import type { FanConfig } from "../FanChart";
+import type { BumpConfig } from "../BumpChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -151,6 +169,13 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "dumbbell",
   "slope",
   "bullet",
+  "treemap",
+  "boxplot",
+  "violin",
+  "diverging-stacked",
+  "pyramid",
+  "fan",
+  "bump",
 ];
 
 export function runProduceConformance(
@@ -544,6 +569,161 @@ export function runProduceConformance(
             source: cfg.source,
             measureColors: [...BULLET_MEASURE_COLORS],
             rows: cfg.rows.map((r) => ({ target: r.target })),
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "treemap": {
+      const cfg = config as unknown as TreemapConfig;
+      const groupColors =
+        cfg.categories && cfg.categories.length
+          ? cfg.categories.map(
+              (_, i) => TREEMAP_GROUP_COLORS[i % TREEMAP_GROUP_COLORS.length],
+            )
+          : [OKABE_ITO.blue];
+      return {
+        checked: true,
+        violations: checkTreemapConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            values: cfg.items.map((it) => it.value),
+            groupColors,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "boxplot": {
+      const cfg = config as unknown as BoxplotConfig;
+      return {
+        checked: true,
+        violations: checkBoxplotConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            valueLabel: cfg.valueLabel,
+            categoryCount: cfg.categories.length,
+            boxColors: [OKABE_ITO.blue],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "violin": {
+      const cfg = config as unknown as ViolinConfig;
+      return {
+        checked: true,
+        violations: checkViolinConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            fillColor: OKABE_ITO.blue,
+            hasMedianMarker: true,
+            categoryCounts: cfg.categories.map((c) => c.values.length),
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "diverging-stacked": {
+      const cfg = config as unknown as DivergingStackedConfig;
+      return {
+        checked: true,
+        violations: checkDivergingStackedConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            responseCount: cfg.responses.length,
+            rows: cfg.items.map((it) => it.values),
+            sentimentColors: [
+              ...DIVERGING_STACKED_COLORS.neg,
+              ...DIVERGING_STACKED_COLORS.pos,
+            ],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "pyramid": {
+      const cfg = config as unknown as PopulationPyramidConfig;
+      return {
+        checked: true,
+        violations: checkPopulationPyramidConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            leftLabel: cfg.leftLabel,
+            rightLabel: cfg.rightLabel,
+            groupColors: [...PYRAMID_SIDE_COLORS],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "fan": {
+      const cfg = config as unknown as FanConfig;
+      // reconstruct the per-step forecast the check needs from the ACTUAL
+      // rows the component renders (mirrors fan-conformance.test.ts's shipped
+      // -sample shape): only rows with a central estimate are forecast steps,
+      // and a band is included only when both lo{n}/hi{n} are populated.
+      const forecast = cfg.rows
+        .filter((r) => r.central != null)
+        .map((r) => {
+          const bands: Record<number, [number, number]> = {};
+          for (const lv of cfg.levels) {
+            const lo = r[`lo${lv}`];
+            const hi = r[`hi${lv}`];
+            if (lo != null && hi != null) bands[lv] = [lo, hi];
+          }
+          return { central: r.central, bands };
+        });
+      return {
+        checked: true,
+        violations: checkFanConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            valueLabel: cfg.unit,
+            levels: cfg.levels,
+            forecast,
+            hue: OKABE_ITO.blue,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "bump": {
+      const cfg = config as unknown as BumpConfig;
+      const maxRank = Math.max(...cfg.items.flatMap((it) => it.ranks));
+      const highlightCount = cfg.highlight?.length ?? 0;
+      // mirrors BumpChart's own accentOf construction: one accent per highlighted
+      // item (cycled), or the single default accent when nothing is highlighted
+      // (every line renders "highlighted", see bump-geometry.ts).
+      const accentColors =
+        highlightCount > 0
+          ? cfg.highlight!.map(
+              (_, i) => BUMP_ACCENT_COLORS[i % BUMP_ACCENT_COLORS.length],
+            )
+          : [BUMP_ACCENT_COLORS[0]];
+      return {
+        checked: true,
+        violations: checkBumpConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            periodCount: cfg.periods.length,
+            maxRank,
+            highlightCount,
+            accentColors,
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

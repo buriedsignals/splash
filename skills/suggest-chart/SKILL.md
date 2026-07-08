@@ -140,11 +140,11 @@ Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
 directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
-waterfall, dumbbell, slope, bullet** (`spec-to-config.ts`); for any type NOT in this list
-the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead. Produce with
-`bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
+waterfall, dumbbell, slope, bullet, treemap, boxplot, violin, diverging-stacked, pyramid, fan, bump** (`spec-to-config.ts`);
+for any type NOT in this list the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead.
+Produce with `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `violin`, `diverging-stacked`, `pyramid`, `fan`, `bump`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
@@ -192,6 +192,48 @@ become the period captions. Route it for a two-point change/comparison per categ
 column). Route it ONLY when there's a target to measure against (a KPI vs its goal). The measure is coloured
 by hit (blue) / miss (vermillion); by default it sits on a single neutral track — qualitative range bands
 require explicit threshold columns (deferred), never invent them.
+`treemap` expects **label + one value, with an OPTIONAL grouping category column** (`label,value` or
+`label,value,category`) — a part-to-whole layout where each cell's AREA is proportional to value; when a
+grouping column has **≤5 distinct values**, cells are coloured and clustered by group. Past 5 distinct
+values, the mapper degrades to a **flat single-hue treemap** (grouping dropped, no legend) rather than
+wrapping the 5-colour palette. For a flat ranking with few items, prefer `bar`/`waffle`; for ≤6 shares with
+no hierarchy, prefer `pie`.
+`boxplot` expects **category + one numeric value column, with MANY raw observations per category**
+(not pre-aggregated summary stats — the engine computes the five-number summary itself); shows the
+distribution spread (median, IQR, whiskers, outliers) per group. For a single ungrouped distribution,
+or to see every individual point, prefer `histogram`/`beeswarm`/`dot-strip` instead.
+`violin` expects the **same CSV shape as `boxplot`**: category + one numeric value column, with MANY
+raw observations per category (not pre-aggregated). Unlike `boxplot`, it draws a density silhouette (a
+KDE) so multimodal/skewed shapes are visible, not just the five-number summary — route it when the
+distribution's SHAPE is the story, not only its centre/spread. Needs at least 2 observations per
+category (a density is undefined below that). For very few categories or small n, prefer `boxplot`,
+`dot-strip`, or `beeswarm` instead.
+`diverging-stacked` expects a **wide CSV**: the first column is the item/statement, and every following
+numeric column is an ORDERED Likert response (negative → neutral → positive) that sums to ~100% per row
+(e.g. `item,stronglyDisagree,disagree,neutral,agree,stronglyAgree`). With an ODD response count, the
+middle column straddles the centre (half each side, grey) — a genuine neutral bucket; an EVEN count has
+no true middle and splits evenly with no straddle. Do NOT reorder responses — order encodes sign. Route
+it for survey/opinion composition per item; for a plain (non-signed) composition use `stacked`.
+`pyramid` expects **band + exactly two numeric columns** (e.g. `ageBand,male,female`); the two column
+headers become the mirrored side labels, drawn back-to-back from a shared central axis on the SAME
+magnitude scale. Route it for a paired age/sex (or any two-group) population breakdown — for a plain
+two-point comparison per category (not mirrored/centred), prefer `dumbbell`.
+`fan` is NOT a tidy wide CSV — it expects **forecast-style columns with MAGIC names**: a time column
+first, then `actual` (the historical series), `central` (the forecast's point estimate), and paired
+`lo{n}`/`hi{n}` confidence-band columns for each level (e.g. `year,actual,central,lo80,hi80,lo95,hi95`).
+The first column must be a **numeric time axis** (e.g. a year). History rows populate `actual` and leave
+`central`/the bands blank; forecast rows are the mirror (blank `actual`, populated `central`+bands).
+Levels are derived from whichever `lo{n}`/`hi{n}` pairs are present (**≥2 confidence-band pairs required**,
+e.g. `lo80`/`hi80` AND `lo95`/`hi95` — a single pair fails shape-validation). Route it ONLY for a
+forecast/projection story where the UNCERTAINTY itself is the point — never invent bands for a plain
+point forecast (use `line`).
+`bump` expects a **wide CSV**: the first column is the item's label, and every following numeric column
+is an ORDERED period holding that item's RANK at that period (1 = top), e.g. `team,2021,2022,2023`. Route
+it for a ranking-over-time race where the CROSSINGS are the story (who overtook whom) — for a magnitude/
+value trend over time, prefer `line`; for a single before/after comparison, prefer `slope`. `highlight`
+names the ONE item to accent (others render as neutral grey context); at most a few highlights keep the
+tangle of lines readable. A `highlight` is **effectively required** — without it every line renders the
+same colour (all-blue) and the chart is an indistinguishable tangle.
 
 ### map-dw (static choropleth map) — default map path
 

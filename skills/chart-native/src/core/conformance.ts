@@ -1223,9 +1223,12 @@ export function checkSankeyConformance(
 /**
  * L2 — DIVERGING STACKED / Likert: global rules + the survey musts. A centred
  * composition → not a baseline-0 *length* type (the centre is 0, by construction).
- * Adds: ≥ 2 ordered responses, ≤ 7 (more is unreadable), each item's responses
- * summing to ~100% (a real composition), and the sentiment colours in the
- * Okabe-Ito set (the neutral grey is scaffolding, exempt — pass it as null/omit).
+ * Adds: ≥ 2 ordered responses, ≤ 5 (the ramp's real collision-free capacity —
+ * DIVERGING_STACKED_COLORS has only 2 hues per side, so a 6+ point scale wraps
+ * and two response levels on the overloaded side silently render the SAME hue;
+ * see DivergingStackedChart's `colorOf`), each item's responses summing to
+ * ~100% (a real composition), and the sentiment colours in the Okabe-Ito set
+ * (the neutral grey is scaffolding, exempt — pass it as null/omit).
  */
 export function checkDivergingStackedConformance(
   input: {
@@ -1251,9 +1254,9 @@ export function checkDivergingStackedConformance(
     v.push(
       `diverging stacked needs ≥ 2 responses — got ${input.responseCount}`,
     );
-  if (input.responseCount > 7)
+  if (input.responseCount > 5)
     v.push(
-      `diverging stacked has ${input.responseCount} responses (> 7) — group them`,
+      `diverging stacked supports at most 5 response levels — got ${input.responseCount}; a longer Likert scale would collide colours (only 2 hues per side) — use fewer levels or a different encoding`,
     );
   for (const row of input.rows) {
     const sum = row.reduce((s, x) => s + x, 0);

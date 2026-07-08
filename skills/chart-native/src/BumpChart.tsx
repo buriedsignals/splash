@@ -18,7 +18,7 @@ import {
   type BumpLayout,
 } from "./bump-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, BUMP_ACCENT_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate, textWidth } from "./core/text";
@@ -42,8 +42,6 @@ export interface BumpChartProps {
   scale?: number;
 }
 
-const ACCENTS = [OKABE_ITO.blue, OKABE_ITO.orange, OKABE_ITO.green];
-
 export function BumpChart({
   config,
   progress = 1,
@@ -66,10 +64,10 @@ export function BumpChart({
   // accent colour per highlighted item, in highlight order.
   const accentOf = new Map<string, string>();
   (config.highlight ?? []).forEach((label, i) =>
-    accentOf.set(label, ACCENTS[i % ACCENTS.length]),
+    accentOf.set(label, BUMP_ACCENT_COLORS[i % BUMP_ACCENT_COLORS.length]),
   );
   const colorOf = (label: string, highlighted: boolean) =>
-    highlighted ? (accentOf.get(label) ?? ACCENTS[0]) : COLORS.muted;
+    highlighted ? (accentOf.get(label) ?? BUMP_ACCENT_COLORS[0]) : COLORS.muted;
 
   // right gutter = the widest END label (capped) + the dot + a gap.
   const labelWBase = Math.max(
@@ -85,7 +83,16 @@ export function BumpChart({
     bottom: 52, // period captions, clear of the source line
     left: 26, // rank numbers
   };
-  const frame = resolveFrameWithHeader(config.title, config.valueLabel, width, height, basePad, scale, 0.62, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.valueLabel,
+    width,
+    height,
+    basePad,
+    scale,
+    0.62,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -285,7 +292,7 @@ function BumpSvg({
                   textAnchor="start"
                   fontSize={ts.axis}
                   fontWeight={ln.highlighted ? 700 : 400}
-                  fill={ln.highlighted ? color : COLORS.ink}
+                  fill={COLORS.ink}
                   opacity={labelOp}
                 >
                   {truncate(ln.label, padding.right - 14 * sc, ts.axis)}

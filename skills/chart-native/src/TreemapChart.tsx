@@ -6,9 +6,12 @@
 //
 // Recipe step 5 (global vs type):
 //   - GLOBAL invariants reused, not re-solved: Okabe-Ito group palette + WCAG
-//     (in-cell label colour by luminance) + title=insight + cited source
-//     (ChartFrame + checkTreemapConformance), scale via resolveFrame, the shared
-//     core/legend + core/text.truncate.
+//     (in-cell label colour picked by REAL contrast ratio against the cell's own
+//     fill — a cell has no neutral background to fall back on, unlike a direct
+//     label beside a mark, so the label picks whichever of white/ink clears
+//     4.5:1 against THAT fill) + title=insight + cited source (ChartFrame +
+//     checkTreemapConformance), scale via resolveFrame, the shared core/legend +
+//     core/text.truncate.
 //   - TYPE-specific: the squarified tiling (area = value) and the scale-in reveal.
 import { useState } from "react";
 import {
@@ -17,8 +20,14 @@ import {
   type TreemapLayout,
 } from "./treemap-geometry";
 import { clamp01, easeOutCubic, stagger, formatNumber } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
-import { relativeLuminance } from "./core/conformance";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  TREEMAP_GROUP_COLORS,
+} from "./core/tokens";
+import { contrastRatio } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
@@ -42,16 +51,16 @@ export interface TreemapChartProps {
   scale?: number;
 }
 
-const GROUP_COLORS = [
-  OKABE_ITO.blue,
-  OKABE_ITO.orange,
-  OKABE_ITO.green,
-  OKABE_ITO.purple,
-  OKABE_ITO.vermillion,
-];
-
+// Pick whichever of white/ink clears the higher real contrast against this
+// exact cell fill — a luminance-threshold heuristic (e.g. "< 0.45 → white")
+// picks a WINNER by brightness but never checks it actually clears 4.5:1; the
+// Okabe-Ito group hues span a mid-luminance band (orange/green/purple) where
+// white alone fails WCAG against them. Both options are pre-verified ≥4.5:1
+// for every TREEMAP_GROUP_COLORS hue (see tokens.ts).
 const cellText = (hex: string) =>
-  relativeLuminance(hex) < 0.45 ? "#FFFFFF" : COLORS.ink;
+  contrastRatio(hex, "#FFFFFF") >= contrastRatio(hex, COLORS.ink)
+    ? "#FFFFFF"
+    : COLORS.ink;
 
 export function TreemapChart({
   config,
@@ -78,7 +87,16 @@ export function TreemapChart({
     bottom: 12 + (hasLegend ? 46 : 0), // legend band, clear of the source line
     left: 12,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.6, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.6,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -87,7 +105,7 @@ export function TreemapChart({
   (config.categories ?? []).forEach((c, i) => colorIndex.set(c, i));
   const colorOf = (cat?: string) =>
     cat != null && colorIndex.has(cat)
-      ? GROUP_COLORS[colorIndex.get(cat)! % GROUP_COLORS.length]
+      ? TREEMAP_GROUP_COLORS[colorIndex.get(cat)! % TREEMAP_GROUP_COLORS.length]
       : OKABE_ITO.blue;
 
   const data: TreemapData = {

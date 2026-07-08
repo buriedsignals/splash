@@ -445,6 +445,220 @@ export const MAPPERS: Record<
       },
     };
   },
+  treemap(parsed, spec) {
+    const { columns, rows, numericColumns } = parsed;
+    const labelCol = columns[0];
+    const valueCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    // optional grouping column: the first column that is neither the label nor
+    // the value column and isn't numeric (mirrors waffle's label/value pair,
+    // plus one extra text column for the group colouring).
+    const rawCatCol = columns.find(
+      (c) => c !== labelCol && c !== valueCol && !numericColumns.includes(c),
+    );
+    // TREEMAP_GROUP_COLORS has exactly 5 entries; the component/guard index it
+    // modulo-length, so a column with >5 distinct values would silently wrap
+    // and paint two different groups the same colour (indistinguishable —
+    // same legend swatch, guard can't catch it since it counts REALIZED hex
+    // values, structurally ≤5). Mirrors beeswarm's cap-then-degrade: past 5,
+    // drop the grouping entirely and fall through to the flat single-hue path.
+    const catCol =
+      rawCatCol !== undefined &&
+      new Set(rows.map((r) => String(r[rawCatCol]))).size <= 5
+        ? rawCatCol
+        : undefined;
+    const items = rows.map((r) => ({
+      label: String(r[labelCol]),
+      value: Number(r[valueCol]),
+      ...(catCol ? { category: String(r[catCol]) } : {}),
+    }));
+    const categories = catCol
+      ? [...new Set(rows.map((r) => String(r[catCol])))]
+      : undefined;
+    return {
+      type: "treemap",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        ...(categories ? { categories } : {}),
+        items,
+      },
+    };
+  },
+  boxplot(parsed, spec) {
+    const { columns, rows, numericColumns } = parsed;
+    const catCol = columns[0];
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    // group RAW observations by category — do NOT aggregate; the geometry
+    // computes the five-number summary itself (mirrors dot-strip's raw-rows
+    // convention, but grouped into per-category arrays).
+    const groups = new Map<string, number[]>();
+    for (const r of rows) {
+      const cat = String(r[catCol]);
+      const values = groups.get(cat) ?? [];
+      values.push(Number(r[valCol]));
+      groups.set(cat, values);
+    }
+    const categories = [...groups.entries()].map(([label, values]) => ({
+      label,
+      values,
+    }));
+    return {
+      type: "boxplot",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        valueLabel: spec.unit, // NativeSpec has no valueLabel; its long-axis `unit` maps here
+        categories,
+      },
+    };
+  },
+  violin(parsed, spec) {
+    const { columns, rows, numericColumns } = parsed;
+    const catCol = columns[0];
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    // group RAW observations by category — the KDE needs the real distribution,
+    // not a summary (identical convention to boxplot's mapper; the geometry
+    // itself computes density + median/IQR from the raw values).
+    const groups = new Map<string, number[]>();
+    for (const r of rows) {
+      const cat = String(r[catCol]);
+      const values = groups.get(cat) ?? [];
+      values.push(Number(r[valCol]));
+      groups.set(cat, values);
+    }
+    const categories = [...groups.entries()].map(([label, values]) => ({
+      label,
+      values,
+    }));
+    return {
+      type: "violin",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        categories,
+      },
+    };
+  },
+  "diverging-stacked"(parsed, spec) {
+    const { columns, rows, numericColumns } = parsed;
+    const labelCol = columns[0];
+    // wide convention: every NUMERIC column after the label is an ordered Likert
+    // response, negative → positive (mirrors grouped/stacked's wide-CSV shape).
+    const responses = columns
+      .slice(1)
+      .filter((c) => numericColumns.includes(c));
+    // An ODD response count has a genuine middle bucket (e.g. a 5-point Likert's
+    // "neutral") — straddle it at the centre per diverging-stacked.md rule 1
+    // (checkGlobalConformance can't catch a missing straddle; only the render
+    // can, and it did: omitting this collapsed "neutral" into the positive
+    // ramp AND made two positive segments share one hue, since the 2-tier
+    // ramp only has capacity for 2 members per side). An EVEN count is a
+    // forced-choice bipolar scale with no true middle, so it's left undefined
+    // (the geometry's plain floor(R/2) split, no straddle).
+    const neutralIndex =
+      responses.length % 2 === 1 ? Math.floor(responses.length / 2) : undefined;
+    const items = rows.map((r) => ({
+      label: String(r[labelCol]),
+      values: responses.map((c) => Number(r[c])),
+    }));
+    return {
+      type: "diverging-stacked",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        responses,
+        ...(neutralIndex !== undefined ? { neutralIndex } : {}),
+        items,
+      },
+    };
+  },
+  pyramid(parsed, spec) {
+    const { columns, numericColumns, rows } = parsed;
+    const bandCol = columns[0];
+    // paired convention (mirrors dumbbell): first two numeric columns are the
+    // two mirrored sides; their headers double as the side labels.
+    const [leftField, rightField] = numericColumns.slice(0, 2);
+    return {
+      type: "pyramid",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        bandField: bandCol,
+        leftField,
+        rightField,
+        leftLabel: leftField,
+        rightLabel: rightField,
+        rows,
+      },
+    };
+  },
+  fan(parsed, spec) {
+    const { columns, rows } = parsed;
+    const xField = columns[0];
+    // derive confidence levels by scanning headers for the lo{n}/hi{n} pairing
+    // convention the geometry expects (fan-geometry.ts:12,63-67) — a lone
+    // lo{n} with no matching hi{n} is dropped rather than guessed.
+    const levels = columns
+      .map((c) => /^lo(\d+)$/.exec(c)?.[1])
+      .filter((n): n is string => n !== undefined && columns.includes(`hi${n}`))
+      .map(Number)
+      .sort((a, b) => a - b);
+    const bandKeys = levels.flatMap((lv) => [`lo${lv}`, `hi${lv}`]);
+    const keys = ["actual", "central", ...bandKeys];
+    // history rows populate `actual` and leave central/bands blank; forecast
+    // rows are the mirror — coerce only the POPULATED cells to numbers so
+    // fan-geometry's `!= null` checks correctly read "no value" (blank) vs a
+    // real 0, instead of everything landing on the domain as 0.
+    const fanRows = rows.map((r) => {
+      const out: Record<string, number> = { [xField]: Number(r[xField]) };
+      for (const k of keys) {
+        const v = r[k];
+        if (v !== undefined && v !== "") out[k] = Number(v);
+      }
+      return out;
+    });
+    return {
+      type: "fan",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        xField,
+        levels,
+        rows: fanRows,
+      },
+    };
+  },
+  bump(parsed, spec) {
+    const { columns, rows, numericColumns } = parsed;
+    const labelCol = columns[0];
+    // wide convention: every NUMERIC column after the label is an ordered period
+    // (mirrors grouped/stacked's wide-CSV shape); the header itself is the period
+    // caption (e.g. "team,2021,2022,2023").
+    const periods = columns.slice(1).filter((c) => numericColumns.includes(c));
+    const items = rows.map((r) => ({
+      label: String(r[labelCol]),
+      ranks: periods.map((p) => Number(r[p])),
+    }));
+    return {
+      type: "bump",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        valueLabel: spec.unit,
+        periods,
+        ...(spec.highlight ? { highlight: [spec.highlight] } : {}),
+        items,
+      },
+    };
+  },
   waterfall(parsed, spec) {
     const { columns, numericColumns, rows } = parsed;
     const labelCol = columns[0];

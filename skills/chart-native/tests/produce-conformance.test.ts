@@ -111,10 +111,10 @@ describe("runProduceConformance — catches real violations on the config being 
 
 describe("runProduceConformance — an unwired type is reported, not silently skipped", () => {
   it("returns checked:false for a type without a produce-time guard yet", () => {
-    // "bump" (not "pie"/"grouped"/"stacked"/"slope" — all guarded now, see their
-    // own produce-conformance-*.test.ts) is still deferred/unmapped, so it stays
-    // the unwired-type witness here.
-    const r = runProduceConformance("bump", { title: "irrelevant" });
+    // "heatmap" (not "violin" — now guarded, see violin-conformance.test.ts and
+    // its own produce-conformance-*.test.ts) is Family B, deferred by design
+    // (needs an x×y×value matrix), so it stays the unwired-type witness here.
+    const r = runProduceConformance("heatmap", { title: "irrelevant" });
     expect(r.checked).toBe(false);
     expect(r.violations).toEqual([]);
   });

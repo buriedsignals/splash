@@ -5,7 +5,9 @@
 // = fixed (video/static); responsive=true = flow embed.
 //
 // Recipe step 5 (global vs type):
-//   - GLOBAL invariants reused, not re-solved: WCAG (in-bar label contrast) +
+//   - GLOBAL invariants reused, not re-solved: WCAG (in-bar label colour picked by
+//     REAL contrast ratio against that segment's own fill — a segment has no
+//     neutral background to fall back on, unlike a direct label beside a mark) +
 //     title=insight + cited source (ChartFrame + checkDivergingStackedConformance),
 //     scale via resolveFrame, core/text.truncate, the shared core/legend.
 //   - TYPE-specific: the diverging Okabe-Ito sentiment ramp, the centre baseline,
@@ -18,8 +20,8 @@ import {
   type DivergingStackedLayout,
 } from "./diverging-stacked-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
-import { relativeLuminance } from "./core/conformance";
+import { COLORS, FONT, TYPE, DIVERGING_STACKED_COLORS } from "./core/tokens";
+import { contrastRatio } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
@@ -46,12 +48,19 @@ export interface DivergingStackedChartProps {
 
 // diverging Okabe-Ito ramp: warm (negative) → neutral grey → cool (positive).
 // The colour for response i is chosen by its position relative to the neutral.
-const NEG = [OKABE_ITO.vermillion, OKABE_ITO.orange];
-const POS = [OKABE_ITO.skyblue, OKABE_ITO.blue];
-const NEUTRAL = "#BFBFBF";
+const NEG = DIVERGING_STACKED_COLORS.neg;
+const POS = DIVERGING_STACKED_COLORS.pos;
+const NEUTRAL = DIVERGING_STACKED_COLORS.neutral;
 
+// Pick whichever of white/ink clears the higher REAL contrast against this exact
+// segment fill — a luminance-threshold heuristic (e.g. "< 0.5 → white") picks a
+// winner by brightness but never checks it actually clears 4.5:1; the Okabe-Ito
+// sentiment hues span a mid-luminance band (orange/skyblue) where white alone
+// fails WCAG against them (same bug class fixed for treemap's cell text).
 const labelColor = (hex: string) =>
-  relativeLuminance(hex) < 0.5 ? "#FFFFFF" : COLORS.ink;
+  contrastRatio(hex, "#FFFFFF") >= contrastRatio(hex, COLORS.ink)
+    ? "#FFFFFF"
+    : COLORS.ink;
 
 export function DivergingStackedChart({
   config,
@@ -86,7 +95,16 @@ export function DivergingStackedChart({
     bottom: 32 + legendRows * LEG_ROW + 12, // ticks + legend rows + source clearance
     left: 130, // item labels in the gutter
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.62, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.62,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

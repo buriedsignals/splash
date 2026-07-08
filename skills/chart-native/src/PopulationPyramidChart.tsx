@@ -17,7 +17,7 @@ import {
   type PyramidLayout,
 } from "./population-pyramid-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, PYRAMID_SIDE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
@@ -44,8 +44,7 @@ export interface PopulationPyramidChartProps {
   scale?: number;
 }
 
-const LEFT_COLOR = OKABE_ITO.blue; // group A
-const RIGHT_COLOR = OKABE_ITO.orange; // group B
+const [LEFT_COLOR, RIGHT_COLOR] = PYRAMID_SIDE_COLORS; // group A / group B
 
 export function PopulationPyramidChart({
   config,
@@ -71,7 +70,16 @@ export function PopulationPyramidChart({
     bottom: 54, // magnitude axis + legend
     left: 18,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

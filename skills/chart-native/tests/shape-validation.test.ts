@@ -45,4 +45,58 @@ describe("validateShape", () => {
       validateShape("beeswarm", p("group,value\nA,1\nA,2\nB,3")),
     ).not.toThrow();
   });
+
+  // fan is declared "wide" but its CSV is SPARSE by convention (history rows
+  // fill `actual` and leave the forecast columns blank; forecast rows are the
+  // mirror), so every forecast column fails the generic wide/numeric-density
+  // rule — validateShape special-cases it on the magic header names instead.
+  it("accepts a sparse fan CSV (actual + central + ≥2 matched lo/hi pairs)", () => {
+    expect(() =>
+      validateShape(
+        "fan",
+        p(
+          "year,actual,central,lo80,hi80,lo95,hi95\n2020,100,,,,,\n2021,105,,,,,\n2022,,110,102,118,95,125",
+        ),
+      ),
+    ).not.toThrow();
+  });
+  it("rejects a fan CSV missing the central column", () => {
+    expect(() =>
+      validateShape(
+        "fan",
+        p("year,actual,lo80,hi80\n2020,100,,\n2021,,95,105"),
+      ),
+    ).toThrow(ShapeMismatchError);
+  });
+  it("rejects a fan CSV with an unmatched lo{n} (no paired hi{n})", () => {
+    expect(() =>
+      validateShape(
+        "fan",
+        p("year,actual,central,lo80\n2020,100,,\n2021,,110,102"),
+      ),
+    ).toThrow(ShapeMismatchError);
+  });
+  // checkFanConformance (conformance.ts) requires ≥2 confidence levels — a fan with
+  // only one matched lo/hi pair passes the header check but dead-ends at produce, so
+  // shape-validation must reject it fail-fast instead.
+  it("rejects a fan CSV with only one matched lo/hi pair (needs ≥2)", () => {
+    expect(() =>
+      validateShape(
+        "fan",
+        p(
+          "year,actual,central,lo80,hi80\n2020,100,,,\n2021,105,,,\n2022,,110,102,118",
+        ),
+      ),
+    ).toThrow(ShapeMismatchError);
+  });
+  it("rejects a fan CSV with a non-numeric first column", () => {
+    expect(() =>
+      validateShape(
+        "fan",
+        p(
+          "quarter,actual,central,lo80,hi80,lo95,hi95\nQ1,100,,,,,\nQ2,105,,,,,\nQ3,,110,102,118,95,125",
+        ),
+      ),
+    ).toThrow(ShapeMismatchError);
+  });
 });

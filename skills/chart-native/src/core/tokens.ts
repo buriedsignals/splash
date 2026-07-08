@@ -125,3 +125,47 @@ export const BULLET_MEASURE_COLORS = [
   OKABE_ITO.blue,
   OKABE_ITO.vermillion,
 ] as const;
+
+// Treemap group palette (TreemapChart.tsx), extracted so the produce conformance
+// guard derives the SAME group colours. ≤5 groups (treemap.md); an ungrouped
+// (flat) treemap uses a single OKABE_ITO.blue hue for every cell. Every hue here
+// has at least one of {white, COLORS.ink} clearing 4.5:1 against it, which is
+// what TreemapChart's `cellText` picks per-cell (there's no neutral background
+// to fall back to inside a coloured cell).
+export const TREEMAP_GROUP_COLORS = [
+  OKABE_ITO.blue,
+  OKABE_ITO.orange,
+  OKABE_ITO.green,
+  OKABE_ITO.purple,
+  OKABE_ITO.vermillion,
+] as const;
+
+// Diverging-stacked (Likert) ramp: warm negative (farthest→closest: vermillion,
+// orange) → neutral grey (straddles the centre) → cool positive (closest→farthest:
+// skyblue, blue). The guard (checkDivergingStackedConformance) validates the
+// non-neutral hues, so component + guard never drift. Every non-neutral hue has
+// at least one of {white, COLORS.ink} clearing 4.5:1 against it — DivergingStackedChart
+// picks whichever wins by REAL contrast for its in-segment percent labels (not a
+// luminance threshold, the same class of bug fixed for treemap's cell text).
+export const DIVERGING_STACKED_COLORS = {
+  neg: [OKABE_ITO.vermillion, OKABE_ITO.orange] as const,
+  pos: [OKABE_ITO.skyblue, OKABE_ITO.blue] as const,
+  neutral: "#BFBFBF",
+} as const;
+
+// Population pyramid sides: left group (blue) / right group (orange). The guard
+// (checkPopulationPyramidConformance) validates THESE, so component + guard never
+// drift.
+export const PYRAMID_SIDE_COLORS = [OKABE_ITO.blue, OKABE_ITO.orange] as const;
+
+// Bump accent colours: cycled per highlighted line, in highlight order (the rest
+// render as neutral COLORS.muted context, exempt from palette membership like a
+// gridline). The guard (checkBumpConformance) validates these, so component +
+// guard never drift. Every direct/end label renders in COLORS.ink regardless of
+// accent — the accent stays on the LINE/mark, per the "label carries the value,
+// mark carries the hue" rule.
+export const BUMP_ACCENT_COLORS = [
+  OKABE_ITO.blue,
+  OKABE_ITO.orange,
+  OKABE_ITO.green,
+] as const;
