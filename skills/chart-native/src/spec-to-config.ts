@@ -86,6 +86,13 @@ export const MAPPERS: Record<
   line(parsed, spec) {
     const { columns, rows, numericColumns } = parsed;
     const catCol = columns[0];
+    // A native line draws exactly ONE series. A wide multi-series CSV
+    // (year,USA,China,India,EU) has >1 numeric column BEYOND the x/category column;
+    // the old mapper silently kept only the last, dropping the rest (silent data
+    // loss — the title may name all four). Fail loud so produce-from-spec.mjs exits
+    // 2 → FALLBACK_TO_DW → the orchestrator routes to dw-chart (draws multi-line).
+    const seriesCols = numericColumns.filter((c) => c !== catCol);
+    if (seriesCols.length > 1) throw new UnsupportedNativeType("line");
     const valCol =
       numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
     const xCol = catCol;

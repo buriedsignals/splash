@@ -60,6 +60,28 @@ describe("specToNativeConfig — line", () => {
     };
     expect(specToNativeConfig(spec).config.xType).toBe("linear");
   });
+  it("falls back (UnsupportedNativeType) on a wide multi-series CSV instead of silently keeping the last column", () => {
+    // year is numeric (an x column) plus FOUR numeric series → a native line can
+    // only draw one; the old mapper silently dropped USA/China/India and rendered
+    // EU alone. Fail loud so the orchestrator routes to dw-chart (multi-line).
+    const spec: NativeSpec = {
+      ...base,
+      nativeType: "line",
+      data: "year,USA,China,India,EU\n2018,5.1,4.8,2.1,3.3\n2019,5.4,5.2,2.4,3.6",
+    };
+    expect(() => specToNativeConfig(spec)).toThrow(UnsupportedNativeType);
+  });
+  it("still maps a single-series line (one value column beyond the x axis) unchanged", () => {
+    const spec: NativeSpec = {
+      ...base,
+      nativeType: "line",
+      data: "year,rate\n2018,5.1\n2019,4.8\n2020,6.2",
+    };
+    const { type, config } = specToNativeConfig(spec);
+    expect(type).toBe("line");
+    expect(config.xField).toBe("year");
+    expect(config.yField).toBe("rate");
+  });
 });
 
 describe("specToNativeConfig — scatter", () => {
