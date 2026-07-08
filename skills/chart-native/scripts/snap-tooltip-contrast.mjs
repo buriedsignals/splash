@@ -128,6 +128,21 @@ for (let i = 0; i < N; i++) {
 await browser.close();
 
 console.log(JSON.stringify({ chart, marksHovered: N, checked, violations }, null, 2));
+
+// `total === 0` above catches "no focusable marks at all" (interactive build broken
+// at the DOM level). This is the OTHER half: marks exist and were focused (total > 0),
+// but NOT ONE of them ever surfaced a `.tooltip` text node across all N attempts — the
+// hover/focus->tooltip mechanism itself is broken (e.g. a `.tooltip` class rename, or
+// a focus/mouseenter handler regression). Without this guard `checked === 0` implies
+// `violations.length === 0` (nothing was ever sampled to violate), so control would
+// fall through to the "OK" log below and this harness would silently PASS while
+// checking nothing — the exact vacuity this fail-hard produce gate must not allow.
+if (checked === 0) {
+  console.error(
+    `[snap-tooltip-contrast ${chart}] no tooltip text was ever observed across ${N} focused marks — the hover/focus→tooltip mechanism appears broken (CSS class rename? focus handler regression?)`,
+  );
+  process.exit(1);
+}
 if (violations.length) {
   console.error(
     `[snap-tooltip-contrast ${chart}] ${violations.length} tooltip text node(s) below ${MIN_CONTRAST}:1 WCAG contrast`,
