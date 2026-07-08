@@ -317,7 +317,10 @@ function BarSvg({
                 textAnchor={val.anchor}
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={fill}
+                // the label carries the VALUE (always ink for WCAG contrast); the
+                // MARK carries the hue. Emphasis on a highlighted bar stays on the
+                // bar fill + the bold weight, never on a low-contrast text colour.
+                fill={COLORS.ink}
                 opacity={labelOp}
               >
                 {formatNumber(b.rawVal)}
