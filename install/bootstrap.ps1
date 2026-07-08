@@ -16,6 +16,9 @@ if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
   irm bun.sh/install.ps1 | iex
 }
 $env:PATH = "$HOME\.bun\bin;$env:PATH"
+if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
+  throw "Bun could not be installed. Install it from https://bun.sh, then re-run this installer."
+}
 
 # 2. Node.js — ONLY to drive Playwright/Remotion (they hang under Bun on Windows: Bun #15679)
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
@@ -23,11 +26,17 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   winget install --id OpenJS.NodeJS.LTS -e --accept-package-agreements --accept-source-agreements
   $env:PATH = "$env:ProgramFiles\nodejs;$env:PATH"
 }
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+  throw "Node.js is required (it drives Playwright/Remotion on Windows) but could not be installed via winget. Install Node LTS from https://nodejs.org, then re-run this installer."
+}
 
 # 3. Runtime — Claude Code (native installer)
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
   Write-Host "-> Installing Claude Code…"
   irm https://claude.ai/install.ps1 | iex
+}
+if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
+  throw "Claude Code could not be installed. See https://claude.ai, then re-run this installer."
 }
 
 # 4. Atelier source (zip — no git; extracts to atelier-<ref>\)
@@ -43,9 +52,15 @@ if (-not (Test-Path $Dest)) {
 # 5. Producer deps + render engine
 Write-Host "-> Installing render dependencies…"
 foreach ($skill in $NativeSkills) {
-  Push-Location (Join-Path $Dest $skill); bun install | Out-Null; Pop-Location
+  Push-Location (Join-Path $Dest $skill)
+  bun install | Out-Null
+  if ($LASTEXITCODE -ne 0) { Pop-Location; throw "bun install failed in $skill." }
+  Pop-Location
 }
-Push-Location (Join-Path $Dest "skills\chart-native"); bunx playwright install chromium; Pop-Location
+Push-Location (Join-Path $Dest "skills\chart-native")
+bunx playwright install chromium
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download failed — re-run this installer to resume." }
+Pop-Location
 
 # 6. Write .env from env vars
 Write-Host "-> Writing configuration…"

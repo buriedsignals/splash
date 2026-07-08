@@ -25,3 +25,8 @@ test("writes .env from env vars, a .cmd launcher (never a .ps1), then scrubs sec
   expect(ps).toContain("Launch Atelier.cmd");
   expect(ps).toContain("Remove-Item Env:");
 });
+
+test("guards native-command failures (no silent Done on a failed install)", () => {
+  expect(ps).toContain("$LASTEXITCODE");
+  expect(ps).toMatch(/throw ".*Node\.js/);
+});
