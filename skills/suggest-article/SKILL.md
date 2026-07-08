@@ -23,7 +23,7 @@ consumes. Not for picking a chart type (that is `suggest-chart`), not for produc
 
 The hard part — and ②'s core value — is that **② binds data to claim itself**. It is not handed
 pre-paired claim↔data: it reads the article, finds the claim, and extracts the supporting CSV subset
-from the supplied tables. Three failure modes to avoid: (1) **inventing data** — every column, every
+from the supplied tables. Four failure modes to avoid: (1) **inventing data** — every column, every
 value, AND every dimension label in a proposal's `data` MUST come from a cited source table or appear
 verbatim in the article (the eval's `provenanceOk` catches an out-of-source column or value); never
 synthesize a number, a year, or a category the source does not state; (2) **over-proposing** — not
@@ -33,7 +33,12 @@ the article makes two separate quantified claims (e.g. a minimum-wage series AND
 they are **two proposals**, each with its own `claim`, `intent`, and `data` — never merge them into a
 single proposal (a "wide" table stapling unrelated series together) just because both are numeric or
 both trend over time. One opportunity = one proposal; the downstream accept gate + `suggest-chart`
-routing fire once per proposal, so a folded second series is silently dropped.
+routing fire once per proposal, so a folded second series is silently dropped; (4) **conflating the
+internal CSV table name with a citable public source** — `dataSource.table` (e.g. `"cross-border.csv"`)
+identifies which SUPPLIED FILE backed the claim; it is NOT a publication name or URL a reader can
+verify, and it must never be copied downstream into a chart's shipped source label (a table filename is
+not an attribution). Capture any REAL citation the article itself states as `sourceHint` instead (see
+Bind data, step 3) — verbatim only, never invented.
 
 ## Provenance tiers (table, prose, none)
 
@@ -76,8 +81,9 @@ snippet it was read from (shown at the confirmation gate; proves transcription).
 
 `article + data → [ANALYSE: extract claims + bind data] → [PROPOSITION: pick the few that earn a visual]
 → ProposalSet`. The proposal is the bridge: it carries `claim + data + intent + anchor + provenance +
-confidence`, which is byte-for-byte the prior cut's input plus editorial location. No chart family lives
-here — opportunity-finding (here) and chart-choice (`suggest-chart`) stay cleanly separated.
+confidence`, which is byte-for-byte the prior cut's input plus editorial location, plus an optional
+`sourceHint` (the article's own citation, if it gives one — see Bind data, step 3). No chart family
+lives here — opportunity-finding (here) and chart-choice (`suggest-chart`) stay cleanly separated.
 
 **Language:** the `claim` you surface and the `intent` you write are in the **article's language**
 (you read the article — you know its language). The downstream furniture inherits it; never
@@ -96,6 +102,14 @@ normalise to English.
    **actual** rows/columns into a self-contained CSV subset. Record `dataSource.table` and the columns
    used. Every column MUST exist in that table — never fabricate a series. If no table backs a claim,
    the claim is **not** a visual proposal.
+   **Also capture, separately, any REAL-WORLD citation the article itself gives for these figures** —
+   an outlet naming a dataset/report, or an actual URL quoted in the text — as `sourceHint: { name,
+   url? }`, verbatim only. Never invent a name or URL that is not literally present in the article, and
+   never use the CSV table's filename (`dataSource.table`) as this label — that names which supplied
+   file backed the claim, not a citable publication a reader can verify. If the article states a name
+   but no URL (or no attribution at all), do not guess or fill in a URL — omit `sourceHint.url` (or the
+   whole field) and leave it to the downstream atelier flow (CADRAGE/PROPOSITION Gate 2c) to ask the
+   journalist directly for the specific, traceable dataset/page URL.
 4. **PROPOSITION — choose the few.** Read the shared KB (at the atelier repo root, NOT under this skill)
    `<repo-root>/knowledge/references/chart-selection.md` and `<repo-root>/knowledge/references/design-conformance.md`
    for *which claims warrant a visual* (a magnitude, a trend, a ranking, a
@@ -124,6 +138,9 @@ Output one `ProposalSet`:
       "intent": "How did cross-border worker numbers grow since 2015?",
       "data": "year,France,Switzerland\n2015,18,22\n2023,35,38",
       "dataSource": { "table": "cross-border.csv", "columns": ["year","France","Switzerland"] },
+      // "sourceHint" is OPTIONAL — set ONLY when the article itself names a citable dataset/URL for
+      // these figures, e.g. { "name": "Insee", "url": "https://www.insee.fr/fr/statistiques/xxxx" }.
+      // Omitted here because this article gives no separate attribution — atelier asks the journalist.
       "confidence": "high",
       "rationale": "A two-side growth claim over a continuous period is the article's spine."
     }

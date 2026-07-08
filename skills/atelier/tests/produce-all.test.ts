@@ -85,6 +85,43 @@ describe("produceAll — loop mechanics", () => {
   });
 });
 
+// Gate 3 reset (the re-produce invalidation invariant): a fresh produce is ALWAYS an
+// unreviewed, unapproved artifact — even if a re-produce follows a proposal that was
+// already reviewed/approved before a correction (e.g. a source fix). produceAll never
+// reads a prior report, so this already holds structurally; these tests additionally
+// prove the explicit reset survives a dispatch that (adversarially, mimicking a future
+// bug) tries to smuggle a stale reviewed/renderApproved/approvedHash through its return.
+describe("produceAll — Gate 3 reset on (re-)produce", () => {
+  it("never sets reviewed/renderApproved from a normal dispatch result (starts distrusted)", async () => {
+    const dispatch: Dispatch = async () => ({
+      status: "produced",
+      outputs: ["out/p1.png"],
+    });
+    const { results } = await produceAll([p("p1")], "out", dispatch, PASS);
+    expect(results[0].reviewed).toBeUndefined();
+    expect(results[0].renderApproved).toBe(false);
+    expect(results[0].approvedHash).toBeUndefined();
+  });
+
+  it("strips a stale reviewed/renderApproved/approvedHash even if dispatch smuggles it through", async () => {
+    // Simulates a re-produce whose dispatch (a future refactor, a careless cast) leaks
+    // fields from a PRIOR report — the loop must still ship a distrusted fresh result.
+    const dispatch: Dispatch = async () =>
+      ({
+        status: "produced",
+        outputs: ["out/p1.png"],
+        reviewed: true,
+        renderApproved: true,
+        approvedHash: "stale-hash-from-a-prior-approved-render",
+      }) as unknown as Awaited<ReturnType<Dispatch>>;
+    const { results } = await produceAll([p("p1")], "out", dispatch, PASS);
+    expect(results[0].status).toBe("produced");
+    expect(results[0].reviewed).toBeUndefined();
+    expect(results[0].renderApproved).toBe(false);
+    expect(results[0].approvedHash).toBeUndefined();
+  });
+});
+
 // The hard rule: not-embed ⇒ never interactive/scrolly. A shipped format must belong to
 // its channel's allowed set (skills/atelier/src/channel.ts). A violation is a fail-hard
 // recorded result — never a thrown exception, never a silent ship.
