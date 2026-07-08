@@ -74,8 +74,11 @@ const goodSymbol = {
 
 describe("scoreMapSpec — symbol", () => {
   it("passes a valid, lat/lon/size-bound symbol spec on a known basemap", () => {
+    // #2 — a symbol map carries one inherent warning (hover-only, not directly labeled),
+    // so the gate must allow it (maxWarnings:1). It is a category caveat, not a spec defect.
     const r = scoreMapSpec(goodSymbol, {
       basemap: "france-metropolitan-departments",
+      maxWarnings: 1,
     });
     expect(r.validates).toBe(true);
     expect(r.basemapKnown).toBe(true);

@@ -48,7 +48,10 @@ function usesFmtBinNotMathRound(source: string): {
   hasMathRound: boolean;
 } {
   const block = extractLegendBlock(source);
-  const hasFmtBin = /fmtBin\(/.test(block);
+  // Accept either the single-sourced `fmtBin(...)` or its range wrapper `fmtBinRange(...)`
+  // (Fix 1a) — `fmtBinRange` delegates to `fmtBin` internally and additionally appends the
+  // value unit, so it satisfies the same "single-sourced formatting, never Math.round" intent.
+  const hasFmtBin = /fmtBin(Range)?\(/.test(block);
   const hasMathRound = /Math\.round\(/.test(block);
   return { ok: hasFmtBin && !hasMathRound, hasFmtBin, hasMathRound };
 }
@@ -73,8 +76,8 @@ describe("bin-legend format parity: every bin legend formats breakpoints via fmt
     expect(usesFmtBinNotMathRound(source).ok).toBe(true); // sanity: real source passes
 
     const regressed = source.replace(
-      /fmtBin\(b\.min, \{ minGap[^}]*\}\)/g,
-      "Math.round(b.min)",
+      /fmtBinRange\(b\.min, b\.max, \{[^}]*\}\)/g,
+      "`${Math.round(b.min)}–${Math.round(b.max)}`",
     );
     expect(usesFmtBinNotMathRound(regressed).ok).toBe(false);
   });

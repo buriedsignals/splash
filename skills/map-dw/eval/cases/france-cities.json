@@ -11,5 +11,5 @@
     "altInsight": "Paris (2.1M residents) is far larger than Marseille (0.87M), Lyon (0.52M) and Bordeaux (0.26M)",
     "source": { "name": "INSEE" }
   },
-  "expect": { "basemap": "france-metropolitan-departments", "maxWarnings": 0 }
+  "expect": { "basemap": "france-metropolitan-departments", "maxWarnings": 1 }
 }

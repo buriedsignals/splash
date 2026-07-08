@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { fmtBin } from "../src/core/legend-format";
+import { fmtBin, fmtBinRange } from "../src/core/legend-format";
 
 describe("fmtBin (no minGap — matches the prior inline `fmt`)", () => {
   it("prints integers bare", () => {
@@ -39,5 +39,38 @@ describe("fmtBin (minGap — adjacent labels must stay distinct)", () => {
   it("ignores a zero or negative minGap (falls back to default)", () => {
     expect(fmtBin(2, { minGap: 0 })).toBe("2");
     expect(fmtBin(2, { minGap: -1 })).toBe("2");
+  });
+});
+
+describe("fmtBinRange (Fix 1a — the legend bins carry the value unit, not just the header)", () => {
+  it("appends the unit ONCE at the end of the range", () => {
+    // The choropleth legend showed bare "16–30"; a static reader could not tell it was a
+    // percentage. With the unit the bin reads "16–30%".
+    expect(fmtBinRange(16, 30, { unit: "%" })).toBe("16–30%");
+  });
+
+  it("is a no-op suffix when no unit is given (back-compat with the bare range)", () => {
+    expect(fmtBinRange(16, 30)).toBe("16–30");
+    expect(fmtBinRange(16, 30, {})).toBe("16–30");
+  });
+
+  it("NEVER multiplies — a percentage-point boundary (29) stays 29, not 2900", () => {
+    // map-native appends the unit as a literal suffix (like Datawrapper's number-append),
+    // so the value must already be in display units. This is the guard against the 100× bug.
+    expect(fmtBinRange(29, 45, { unit: "%" })).toBe("29–45%");
+  });
+
+  it("keeps decimal precision from minGap and appends the unit after it", () => {
+    expect(fmtBinRange(0, 0.02, { unit: "%", minGap: 0.02 })).toBe(
+      "0.00–0.02%",
+    );
+  });
+
+  it("localizes the boundaries (French comma decimal) and still appends the unit", () => {
+    // Avoid asserting the exact FR thousands glyph (U+202F) — use decimals, which the
+    // French locale renders with a comma. The unit still lands after the localized range.
+    expect(fmtBinRange(19.3, 45.6, { unit: " %", lang: "fr" })).toBe(
+      "19,3–45,6 %",
+    );
   });
 });

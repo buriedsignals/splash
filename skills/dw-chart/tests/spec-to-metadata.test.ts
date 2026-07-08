@@ -368,9 +368,11 @@ describe("specToMetadata", () => {
     expect(p.metadata.visualize["text-annotations"]).toBeUndefined();
   });
 
-  it("still maps annotations for a chart type that supports them (bar)", () => {
+  it("still maps annotations for a chart type that supports them (vertical column)", () => {
+    // A vertical column chart IS the category-x / numeric-y model the placement mapper is
+    // built for, so annotations map (and place) correctly there.
     const p = specToMetadata({
-      type: "d3-bars",
+      type: "column-chart",
       title: "T",
       data: "region,sales\nChina,8.1\nEurope,3.2",
       altInsight: "x",
@@ -378,6 +380,20 @@ describe("specToMetadata", () => {
     } as any);
     const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
     expect(ann.text).toBe("outlier");
+  });
+
+  it("does NOT map annotations onto a horizontal bar chart (#5 — coord model mismatch, dropped by DW)", () => {
+    // d3-bars is horizontal (category-y, value-x); this mapper emits column/line coords
+    // (category-x, value-y), which Datawrapper's bar annotation layer silently drops
+    // (verified via a rendered export). Skip the dead mapping; validateChartSpec warns.
+    const p = specToMetadata({
+      type: "d3-bars",
+      title: "T",
+      data: "region,sales\nChina,8.1\nEurope,3.2",
+      altInsight: "x",
+      annotations: [{ text: "outlier", x: "China", y: 8.1 }],
+    } as any);
+    expect(p.metadata.visualize["text-annotations"]).toBeUndefined();
   });
 
   it("routes valueFormat to the y-grid axis format (e.g. h:mm:ss)", () => {

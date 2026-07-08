@@ -2,6 +2,8 @@ import { describe, it, expect } from "bun:test";
 import {
   validateChartSpec,
   normalizeNumberFormat,
+  isPercentScaleMismatch,
+  numericValuesOf,
   OKABE_ITO,
   DEFAULT_BASE_COLOR,
 } from "../src/chart-spec";
@@ -341,7 +343,7 @@ describe("validateChartSpec — #5 valueLabels only on bar/column", () => {
         r.warnings.some((w) => /valueLabels is only honoured/.test(w)),
       ).toBe(true);
   });
-  it("does NOT warn for valueLabels on a bar chart", () => {
+  it("does NOT emit the 'only honoured' warning for a bar chart (bars have value-label control)", () => {
     const r = validateChartSpec({
       ...base,
       type: "d3-bars",
@@ -351,6 +353,138 @@ describe("validateChartSpec — #5 valueLabels only on bar/column", () => {
     if (r.ok)
       expect(
         r.warnings.some((w) => /valueLabels is only honoured/.test(w)),
+      ).toBe(false);
+  });
+});
+
+describe("validateChartSpec — #4 valueLabels on horizontal bars is not a silent no-op", () => {
+  const base = {
+    title: "Something clear about the data",
+    data: "region,value\nNorth,10\nSouth,11",
+    altInsight: "Something clear about the data.",
+  };
+  it("warns that inside value labels can't be contrast-safe on d3-bars (axis shown instead)", () => {
+    // The prior gap: hasValueLabelControl('d3-bars') is true, so the 'only honoured'
+    // warning skipped it, yet applyValueLabels() turns the on-bar labels OFF → the
+    // journalist asked for value labels and silently got none. This warning surfaces it.
+    const r = validateChartSpec({
+      ...base,
+      type: "d3-bars",
+      valueLabels: true,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) =>
+          /can't render contrast-safe INSIDE horizontal bars/.test(w),
+        ),
+      ).toBe(true);
+  });
+  it("does NOT warn when valueLabels is not requested on a horizontal bar", () => {
+    const r = validateChartSpec({ ...base, type: "d3-bars" });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(r.warnings.some((w) => /INSIDE horizontal bars/.test(w))).toBe(
+        false,
+      );
+  });
+  it("does NOT warn for valueLabels on a vertical column chart (outside labels render fine)", () => {
+    const r = validateChartSpec({
+      ...base,
+      type: "column-chart",
+      valueLabels: true,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(r.warnings.some((w) => /INSIDE horizontal bars/.test(w))).toBe(
+        false,
+      );
+  });
+});
+
+describe("isPercentScaleMismatch (#1c — DW '%' appends, never multiplies)", () => {
+  it("flags a '%' token on 0–1 fractional data (renders '0%' — precision lost)", () => {
+    expect(isPercentScaleMismatch("0%", [0.29, 0.22, 0.15])).toBe(true);
+    expect(isPercentScaleMismatch("0.0%", [0.5, 1])).toBe(true);
+  });
+  it("does NOT flag a '%' token on data already in percentage points (0–100)", () => {
+    // 29 with "0%" renders "29%" — CORRECT. Verified against a real rendered export.
+    expect(isPercentScaleMismatch("0%", [29, 22, 15])).toBe(false);
+  });
+  it("does NOT flag a non-percent token, or an absent format", () => {
+    expect(isPercentScaleMismatch("0,0", [0.29])).toBe(false);
+    expect(isPercentScaleMismatch(undefined, [0.29])).toBe(false);
+  });
+  it("does NOT flag all-zero data (nothing to misread)", () => {
+    expect(isPercentScaleMismatch("0%", [0, 0])).toBe(false);
+  });
+  it("normalises a printf percent token before checking", () => {
+    expect(isPercentScaleMismatch(".1f%", [0.29])).toBe(true); // ".1f%" → "0.0%"
+  });
+});
+
+describe("numericValuesOf", () => {
+  it("pulls the numeric cells of the named columns", () => {
+    const csv = "region,a,b\nNorth,1,2\nSouth,3,x";
+    expect(numericValuesOf(csv, ["a", "b"])).toEqual([1, 2, 3]);
+  });
+  it("ignores unknown columns and non-numeric cells", () => {
+    expect(numericValuesOf("region,v\nX,10", ["nope"])).toEqual([]);
+  });
+});
+
+describe("validateChartSpec — #1c percent-scale mismatch warning", () => {
+  it("warns when a '%' numberFormat is applied to 0–1 fractional data", () => {
+    const r = validateChartSpec({
+      type: "column-chart",
+      title: "Renewable share climbed across the board",
+      data: "region,share\nNorth,0.29\nSouth,0.22",
+      numberFormat: "0%",
+      altInsight: "Renewable share is highest in the North.",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) => /appends "%" WITHOUT multiplying/.test(w)),
+      ).toBe(true);
+  });
+  it("does NOT warn when the '%' data is already percentage points", () => {
+    const r = validateChartSpec({
+      type: "column-chart",
+      title: "Renewable share climbed across the board",
+      data: "region,share\nNorth,29\nSouth,22",
+      numberFormat: "0%",
+      altInsight: "Renewable share is highest in the North.",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) => /appends "%" WITHOUT multiplying/.test(w)),
+      ).toBe(false);
+  });
+});
+
+describe("validateChartSpec — #5 annotations dropped on horizontal bars", () => {
+  const annBase = {
+    title: "North East rents rose fastest",
+    data: "region,rent\nNorth East,8.4\nLondon,2.8",
+    altInsight: "North East rents rose 8.4 vs London 2.8",
+    annotations: [{ text: "outlier", x: "North East", y: 8.4 }],
+  };
+  it("warns that annotations are dropped on d3-bars (coordinate model mismatch)", () => {
+    const r = validateChartSpec({ ...annBase, type: "d3-bars" });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) => /horizontal bar chart\) are dropped/.test(w)),
+      ).toBe(true);
+  });
+  it("does NOT warn for annotations on a vertical column chart (they place correctly)", () => {
+    const r = validateChartSpec({ ...annBase, type: "column-chart" });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) => /are dropped by this pipeline/.test(w)),
       ).toBe(false);
   });
 });

@@ -38,17 +38,24 @@ function describeBlock(spec: {
   source?: { name: string; url?: string };
   altInsight: string;
   numberFormat?: string;
+  unit?: string;
 }): Record<string, unknown> {
   const numberFormat = spec.numberFormat
     ? normalizeNumberFormat(spec.numberFormat)
     : undefined;
-  return {
+  const block: Record<string, unknown> = {
     intro: spec.intro ?? "",
     "source-name": spec.source?.name ?? "",
     "source-url": spec.source?.url ?? "",
     "aria-description": spec.altInsight,
     "number-format": numberFormat ?? "0,0.[00]",
   };
+  // The value unit is a literal SUFFIX Datawrapper appends to auto-formatted numbers (the
+  // legend + %REGION_VALUE% choropleth tooltip) WITHOUT multiplying — the same mechanism the
+  // Academy recommends for showing "%" on already-percentage data. Verified: number-append
+  // is a real describe field.
+  if (spec.unit) block["number-append"] = spec.unit;
+  return block;
 }
 
 // NOTE (load-bearing, choropleth): the gradient lives in `visualize.colorscale.colors`
@@ -102,6 +109,11 @@ function symbolMetadata(spec: SymbolMapSpec): MapPatch {
   const labelCol = spec.labelColumn ?? spec.sizeColumn;
   const fields: Record<string, string> = { [spec.sizeColumn]: spec.sizeColumn };
   if (labelCol !== spec.sizeColumn) fields[labelCol] = labelCol;
+  // The tooltip body uses a raw `{{ column }}` mustache token that Datawrapper substitutes
+  // VERBATIM (no auto number-format applied — verified live: it showed "2100"). So the unit
+  // must be baked into the template here, else `number-append` (which only touches auto-
+  // formatted numbers) never reaches the symbol tooltip and it shows a bare "85".
+  const unitSuffix = spec.unit ?? "";
   return {
     title: spec.title,
     type: "d3-maps-symbols",
@@ -123,7 +135,7 @@ function symbolMetadata(spec: SymbolMapSpec): MapPatch {
         tooltip: {
           enabled: true,
           title: `{{ ${labelCol} }}`,
-          body: `{{ ${spec.sizeColumn} }}`,
+          body: `{{ ${spec.sizeColumn} }}${unitSuffix}`,
           fields,
         },
       },

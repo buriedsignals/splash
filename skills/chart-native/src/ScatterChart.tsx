@@ -367,7 +367,10 @@ function ScatterSvg({
               textAnchor={anchor}
               fontSize={ts.axis}
               fontWeight={600}
-              fill={dotColor}
+              // #3 — the point-label TEXT is ink for WCAG contrast; the coloured DOT (and its
+              // leader line) carry the hue. Painting labels in `dotColor` failed contrast for a
+              // subject-fit hue and forced the producer back to the default blue.
+              fill={COLORS.ink}
             >
               {points[Number(id)].label}
             </text>

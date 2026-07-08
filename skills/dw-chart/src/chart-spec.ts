@@ -1,5 +1,8 @@
 import { dataShape } from "./csv";
-import { hasValueLabelControl } from "./value-label-safety";
+import {
+  hasValueLabelControl,
+  HORIZONTAL_BAR_TYPES,
+} from "./value-label-safety";
 
 export const OKABE_ITO = [
   "#0072B2",
@@ -90,6 +93,25 @@ export const ANNOTATION_UNSUPPORTED_TYPES = new Set<ChartType>([
   "tables",
 ]);
 
+// HORIZONTAL bar families. Datawrapper DOES have a text-annotation layer here (unlike the
+// pie/donut/table set above), BUT this pipeline can't place an annotation on them: its
+// coordinate mapper (plotDomain/pointFraction/placeAnnotation in spec-to-metadata.ts) is
+// built for the COLUMN/LINE model — categorical x-axis, numeric y-axis. A horizontal bar
+// chart swaps those axes (categories on y, value on x), so an annotation emitted as
+// {x:"North", y:"100"} is silently DROPPED by Datawrapper. VERIFIED via a rendered export:
+// d3-bars with the column/line coords showed no annotation; the same annotation with
+// swapped (value-x, category-y) coords DID render — confirming the orientation mismatch.
+// Until a bar-specific placement mapper exists, warn (never a silent drop) and skip the
+// dead mapping. d3-bars was render-verified; grouped/stacked/split/bullet share its
+// horizontal geometry. Column charts (vertical) are unaffected — the mapper is built for them.
+export const ANNOTATION_UNMAPPED_BAR_TYPES = new Set<ChartType>([
+  "d3-bars",
+  "d3-bars-grouped",
+  "d3-bars-stacked",
+  "d3-bars-split",
+  "d3-bars-bullet",
+]);
+
 export interface ChartSpec {
   type: ChartType;
   title: string; // the insight, sentence case
@@ -169,6 +191,52 @@ export function normalizeNumberFormat(fmt: string): string {
   return f; // unrecognised but not obviously broken (duration, currency, custom) → pass through
 }
 
+/**
+ * PERCENT-SCALE MISMATCH GUARD. Datawrapper's "%" token (numeral.js) appends the sign WITHOUT
+ * multiplying by 100 — VERIFIED against a real rendered export: value 29 with "0%" renders
+ * "29%" (correct), value 0.29 with "0%" renders "0%" (all precision lost). So a percent format
+ * is only correct when the data is ALREADY in percentage points (0–100). If every value is a
+ * 0–1 fraction, the "%" token silently ships "0%". Returns true for that mismatch so the caller
+ * can warn (pre-scale the data, or drop the "%"). Pure. NB: this is the true failure mode — the
+ * often-assumed "29 → 2900%" (a ×100 multiply) does NOT happen in Datawrapper.
+ */
+export function isPercentScaleMismatch(
+  numberFormat: string | undefined,
+  values: number[],
+): boolean {
+  if (!numberFormat) return false;
+  let norm: string;
+  try {
+    norm = normalizeNumberFormat(numberFormat);
+  } catch {
+    return false; // an un-mappable token is reported elsewhere; not our concern here
+  }
+  if (!norm.includes("%")) return false;
+  const finite = values.filter((v) => Number.isFinite(v));
+  if (finite.length === 0) return false;
+  const maxAbs = Math.max(...finite.map((v) => Math.abs(v)));
+  // Every value in [0,1] (and at least one non-zero) ⇒ fractional data ⇒ "%" renders "0%".
+  return maxAbs > 0 && maxAbs <= 1;
+}
+
+// Pull the numeric cells of the given data columns (by header name) out of CSV text. Used by
+// the percent-scale guard to inspect the values a "%" format would be applied to.
+export function numericValuesOf(csv: string, columns: string[]): number[] {
+  const lines = csv.trim().split("\n");
+  if (lines.length < 2) return [];
+  const header = lines[0].split(",").map((c) => c.trim());
+  const idxs = columns.map((c) => header.indexOf(c)).filter((i) => i >= 0);
+  const out: number[] = [];
+  for (const line of lines.slice(1)) {
+    const cells = line.split(",");
+    for (const i of idxs) {
+      const n = Number(cells[i]);
+      if (Number.isFinite(n)) out.push(n);
+    }
+  }
+  return out;
+}
+
 export function validateChartSpec(
   input: unknown,
 ):
@@ -196,6 +264,16 @@ export function validateChartSpec(
   )
     warnings.push(
       `valueLabels is only honoured on bar/column charts; ignored for ${s.type} (use the chart-native path for direct labelling on line/scatter/pie)`,
+    );
+  // #4 — HORIZONTAL bars DO have value-label control (so the warning above skips them), but
+  // that control is not what the caller asked for: Datawrapper draws the label INSIDE the bar
+  // in an auto white/black it offers no override for, which fails WCAG on darker subject hues.
+  // `applyValueLabels` therefore turns the inside label OFF and shows the value axis instead —
+  // a substitution that was previously SILENT (valueLabels:true → no numbers on the bars, no
+  // warning). Surface it so it is never a silent no-op.
+  if (s.valueLabels === true && HORIZONTAL_BAR_TYPES.has(s.type as ChartType))
+    warnings.push(
+      `valueLabels can't render contrast-safe INSIDE horizontal bars (${s.type}) — Datawrapper offers no colour/placement override, so the value axis is shown instead of on-bar labels. Use a column chart (e.g. column-chart) if you need outside value labels.`,
     );
   // F2 — a brand-explicit house colour is kept even when it isn't CVD-safe (policy
   // b): the failure is recorded as a warning for the render-review, not a hard error.
@@ -287,6 +365,21 @@ export function validateChartSpec(
       }
     }
   }
+  // PERCENT-SCALE MISMATCH (#1c). A "%" format on 0–1 fractional data renders "0%" in
+  // Datawrapper (it appends the sign, never multiplies — verified via a rendered export).
+  if (
+    typeof s.numberFormat === "string" &&
+    typeof s.data === "string" &&
+    s.data.includes(",")
+  ) {
+    const valueCols = dataShape(s.data as string).columns.slice(1);
+    if (
+      isPercentScaleMismatch(s.numberFormat, numericValuesOf(s.data, valueCols))
+    )
+      warnings.push(
+        `numberFormat "${s.numberFormat}" is a percent token but the data looks like 0–1 fractions — Datawrapper appends "%" WITHOUT multiplying, so these render "0%". Pre-scale the values to percentage points (e.g. 0.29 → 29), or drop the "%".`,
+      );
+  }
   if (s.seriesLabels !== undefined) {
     if (typeof s.seriesLabels !== "object" || s.seriesLabels === null) {
       errors.push("seriesLabels must be an object (column key → display name)");
@@ -345,6 +438,17 @@ export function validateChartSpec(
   )
     warnings.push(
       `annotations are not supported on ${s.type} charts — Datawrapper has no text-annotation layer for pie/donut/table types, so they will be dropped; move the callout into the title/intro, or use a bar/column/line alternative`,
+    );
+  // #5 — HORIZONTAL bars have a DW annotation layer, but this pipeline's column/line
+  // coordinate model can't place one on them, so it is silently dropped (verified via a
+  // rendered export). Warn + skip the dead mapping (see spec-to-metadata.ts).
+  if (
+    Array.isArray(s.annotations) &&
+    s.annotations.length &&
+    ANNOTATION_UNMAPPED_BAR_TYPES.has(s.type as ChartType)
+  )
+    warnings.push(
+      `annotations on ${s.type} (a horizontal bar chart) are dropped by this pipeline — its placement uses a column/line coordinate model (category-x, value-y) that Datawrapper's horizontal-bar annotation layer (value-x, category-y) ignores; use a column-chart (annotations place correctly there), or move the callout into the title/intro`,
     );
   // An annotation's `x` should reference an actual data row label, else
   // Datawrapper silently misplaces (or drops) it.
