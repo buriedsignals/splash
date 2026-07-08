@@ -119,7 +119,11 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
 - **`needs-fallback`** (a native chart type chart-native cannot map) → re-emit a **dw-chart** `ChartSpec`
   for that claim via suggest-chart, replace that proposal's `producer`/`spec` in `accepted.json`, re-run
   5c. Do not hand-translate.
-- **`failed`** → surface the `error`; fix the spec or drop the proposal. Never ship a failed visual.
+- **`failed`** → surface the `error`; fix the spec or drop the proposal. Never ship a failed visual. If the
+  failure traces to the PRODUCER/COMPONENT'S own source code rather than the spec — a genuine engine bug,
+  not a data/shape problem — do NOT edit that code (`skills/*/src`, any `.tsx`/`.ts` producer file) to force
+  the gate green: REPORT the bug to the journalist (this visual cannot ship yet) and drop or route around
+  the proposal instead (see Never).
 
 **GATE 3 (render) — per produced visual.**
 
@@ -139,9 +143,10 @@ bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> [conc
 
 **3b. Show + approve.** Show the ACTUAL render (open it / a screenshot) TOGETHER WITH the review's
 concerns, and get an explicit "ship it". The concerns are advisory — the journalist is the editor. If a
-concern is about the source (missing, name-only, or unclear), ask the journalist to supply it as ONE
-free-text prompt collecting the label AND the official URL together — never a single-select (see
-CADRAGE) — then update the spec and re-run 3a before showing again.
+concern is about the source (missing, name-only, generic, or unclear), ask the journalist to supply it as
+ONE free-text prompt collecting the label AND the **specific, traceable dataset/page URL** together (e.g.
+the Eurostat dataset page for the exact table, the Insee series page — NOT the organisation's homepage) —
+never a single-select (see CADRAGE) — then update the spec and re-run 3a before showing again.
 Verify quality, not just that it built. **After "ship it", record the approval:**
 ```bash
 bun skills/atelier/scripts/gate-render.mjs exports/<slug>/report.json <id> <the-approved-artifact>
@@ -226,9 +231,10 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
 - Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate. This means actually INVOKING `suggest-article` (ANALYSE) and `suggest-chart` (PROPOSITION routing) as real Skill calls, not hand-authoring their output from memory/inspection — their eval-hardened guardrails and KB grounding only fire when they genuinely run.
 - Never name a chart type in the intent passed to suggest-article or suggest-chart (on the guided path).
 - Never ship a visual without the mandatory render-review (Gate 3a) — `assertShippable` refuses a visual with no review record; the review's concerns are advisory but running it is not optional.
-- Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow.
+- Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow. This holds with NO exception for making a produce/conformance gate pass: never edit a producer/component's source code (`skills/*/src`, any `.tsx`/`.ts` producer file) mid-PRODUCTION to turn a failing gate green — a real newsroom journalist cannot patch the engine, so atelier must not either. If a produce or conformance gate fails because of a genuine engine bug (not a spec/data problem), SURFACE the bug to the journalist, do NOT ship that visual, and do NOT patch the code — the bug is reported, never worked around.
 - Never hand over an INTERACTIVE visual without offering the three delivery forms at GATE 4 — code source, static HTML, and the fly.io embed link — as an explicit choice (machinery: `export-code.mjs` + `deploy-embed.mjs`). A SCROLLY has no static image, so it offers only **code source + embed link** (its embed targets `scrolly.html`, not `interactive.html`) — do not promise a static-HTML form for a scrolly.
 - Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.
 - Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.)
+- Never accept a generic organisation homepage (e.g. `eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 URL as the source — it must be treated exactly like a missing URL. The source MUST point to the SPECIFIC, traceable dataset/page the figures come from (the Eurostat dataset page for the exact table, the Insee series page, …). If the journalist only gives an organisation name or its homepage, ASK for the specific dataset/page reference rather than shipping the generic one.
 - Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1, Q2) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic") that excludes an entity the visual actually shows. If the data supports more than the title states, widen the title or flag it at Gate 3.
 - Never silently substitute a value from a prior/stale export when it disagrees with the journalist's current article/data — the values used (and shown at Gate 2b) MUST always be the ones the journalist provided in the current session.

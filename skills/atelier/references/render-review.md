@@ -35,13 +35,18 @@ accepted limitation, not a reason to spawn a background agent mid-flow.
    the title rather than shipping the narrower claim.
 2. **Source traceability.** The displayed source is supported by the article/data, and is COMPLETE — a
    NAMED dataset/publication (e.g. "Eurostat") MUST carry both its label AND a real, verifiable URL; a
-   bare name with no URL is incomplete and must be flagged even when the name itself is genuine. An
-   attribution the article never gave — a dataset name and/or URL invented for unattributed figures — is
-   a **fabrication**; flag it hard. Prose figures → "Chiffres tels que rapportés dans cet article" (or the
+   bare name with no URL is incomplete and must be flagged even when the name itself is genuine. The URL
+   itself must resolve to the SPECIFIC, traceable dataset/page the figures actually come from (e.g. the
+   Eurostat dataset page for the exact table/code, the Insee series page) — a generic organisation
+   homepage (`eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 link is NOT traceable and must be
+   flagged exactly like a missing URL, even when the organisation name itself is genuine. An attribution
+   the article never gave — a dataset name and/or URL invented for unattributed figures — is a
+   **fabrication**; flag it hard. Prose figures → "Chiffres tels que rapportés dans cet article" (or the
    outlet the journalist names) is the one legitimate name-only case (it cites no separate dataset), never
-   a fabricated dataset. If the source is missing, incomplete, or unclear, it must be corrected by asking
-   the journalist directly — as ONE free-text prompt collecting the label and URL together, never a
-   single-select (a URL cannot be one of a few fixed menu options) — before shipping.
+   a fabricated dataset. If the source is missing, incomplete, generic (a homepage standing in for the
+   dataset page), or unclear, it must be corrected by asking the journalist directly for the SPECIFIC
+   dataset/page reference — as ONE free-text prompt collecting the label and that specific URL together,
+   never a single-select (a URL cannot be one of a few fixed menu options) — before shipping.
 3. **Honest encoding.** No two differently-denominated series sharing one axis; a majority/threshold that
    carries the story is drawn (a 50% line for a yes/no); a two-point change is a slope/dumbbell, not a
    line; a ranking is a bar, not a map.

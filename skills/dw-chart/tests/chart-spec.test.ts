@@ -3,6 +3,7 @@ import {
   validateChartSpec,
   normalizeNumberFormat,
   OKABE_ITO,
+  DEFAULT_BASE_COLOR,
 } from "../src/chart-spec";
 
 describe("normalizeNumberFormat", () => {
@@ -211,6 +212,65 @@ describe("validateChartSpec", () => {
     });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors.join()).toMatch(/single-series/);
+  });
+  it("accepts 3 distinct Okabe-Ito seriesColors on a 3-series d3-lines chart (not the default-blue ramp)", () => {
+    // d3-lines is NOT in MULTI_SERIES_TYPES (that set is for DW's transpose-based
+    // types), but 3 value columns make this genuinely multi-series data — the
+    // cap must key off the real shape, not type membership, or the caller drops
+    // seriesColors and every series renders the same default blue.
+    const seriesColors = {
+      Coal: "#0072B2",
+      Gas: "#E69F00",
+      Renewables: "#009E73",
+    };
+    const r = validateChartSpec({
+      type: "d3-lines",
+      title: "Renewables overtake coal",
+      data: "year,Coal,Gas,Renewables\n2018,100,80,20\n2023,50,70,120",
+      altInsight: "Renewables rose from 20 to 120 while coal fell",
+      seriesColors,
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const colours = Object.values(r.spec.seriesColors ?? {});
+      expect(colours).toEqual(Object.values(seriesColors));
+      expect(new Set(colours).size).toBe(3); // distinct, not collapsed to one blue
+      expect(colours).not.toEqual([
+        DEFAULT_BASE_COLOR,
+        DEFAULT_BASE_COLOR,
+        DEFAULT_BASE_COLOR,
+      ]);
+    }
+  });
+  it("degrades gracefully (documented error, not a crash) for a >8-series d3-lines chart", () => {
+    const seriesColors: Record<string, string> = {};
+    const cols = ["year"];
+    for (let i = 0; i < 9; i++) {
+      seriesColors[`s${i}`] = OKABE_ITO[i % OKABE_ITO.length];
+      cols.push(`s${i}`);
+    }
+    const data = `${cols.join(",")}\n2023,${cols
+      .slice(1)
+      .map(() => 1)
+      .join(",")}`;
+    expect(() =>
+      validateChartSpec({
+        type: "d3-lines",
+        title: "T",
+        data,
+        altInsight: "x",
+        seriesColors,
+      }),
+    ).not.toThrow();
+    const r = validateChartSpec({
+      type: "d3-lines",
+      title: "T",
+      data,
+      altInsight: "x",
+      seriesColors,
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/at most 8/);
   });
   it("warns when the title is a bare year range", () => {
     const r = validateChartSpec({
