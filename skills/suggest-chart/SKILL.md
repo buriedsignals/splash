@@ -221,16 +221,19 @@ two-point comparison per category (not mirrored/centred), prefer `dumbbell`.
 `fan` is NOT a tidy wide CSV — it expects **forecast-style columns with MAGIC names**: a time column
 first, then `actual` (the historical series), `central` (the forecast's point estimate), and paired
 `lo{n}`/`hi{n}` confidence-band columns for each level (e.g. `year,actual,central,lo80,hi80,lo95,hi95`).
-History rows populate `actual` and leave `central`/the bands blank; forecast rows are the mirror (blank
-`actual`, populated `central`+bands). Levels are derived from whichever `lo{n}`/`hi{n}` pairs are present
-(≥1 pair required; ≥2 levels reads best as a true "fan"). Route it ONLY for a forecast/projection story
-where the UNCERTAINTY itself is the point — never invent bands for a plain point forecast (use `line`).
+The first column must be a **numeric time axis** (e.g. a year). History rows populate `actual` and leave
+`central`/the bands blank; forecast rows are the mirror (blank `actual`, populated `central`+bands).
+Levels are derived from whichever `lo{n}`/`hi{n}` pairs are present (**≥2 confidence-band pairs required**,
+e.g. `lo80`/`hi80` AND `lo95`/`hi95` — a single pair fails shape-validation). Route it ONLY for a
+forecast/projection story where the UNCERTAINTY itself is the point — never invent bands for a plain
+point forecast (use `line`).
 `bump` expects a **wide CSV**: the first column is the item's label, and every following numeric column
 is an ORDERED period holding that item's RANK at that period (1 = top), e.g. `team,2021,2022,2023`. Route
 it for a ranking-over-time race where the CROSSINGS are the story (who overtook whom) — for a magnitude/
 value trend over time, prefer `line`; for a single before/after comparison, prefer `slope`. `highlight`
 names the ONE item to accent (others render as neutral grey context); at most a few highlights keep the
-tangle of lines readable.
+tangle of lines readable. A `highlight` is **effectively required** — without it every line renders the
+same colour (all-blue) and the chart is an indistinguishable tangle.
 
 ### map-dw (static choropleth map) — default map path
 

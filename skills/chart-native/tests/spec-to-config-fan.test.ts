@@ -45,14 +45,15 @@ describe("specToNativeConfig — fan (sparse forecast-band CSV)", () => {
     const spec: NativeSpec = {
       ...base,
       nativeType: "fan",
-      // lo80/hi80 is a valid matched pair (satisfies shape validation); lo95
-      // has no hi95, so it must NOT surface as a level.
+      // lo50/hi50 and lo80/hi80 are valid matched pairs (satisfies shape
+      // validation's ≥2-pair floor); lo95 has no hi95, so it must NOT surface
+      // as a level.
       data:
-        "year,actual,central,lo80,hi80,lo95\n" +
-        "2023,100,,,,\n" +
-        "2024,,110,102,118,90",
+        "year,actual,central,lo50,hi50,lo80,hi80,lo95\n" +
+        "2023,100,,,,,,\n" +
+        "2024,,110,105,115,102,118,90",
     };
     const { config } = specToNativeConfig(spec);
-    expect(config.levels).toEqual([80]);
+    expect(config.levels).toEqual([50, 80]);
   });
 });

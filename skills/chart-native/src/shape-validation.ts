@@ -33,17 +33,27 @@ export function validateShape(id: string, parsed: ParsedCsv): void {
   // columns by that measure. Check the magic header names directly instead of
   // the generic wide/numeric-density rule.
   if (id === "fan") {
+    const xField = parsed.columns[0];
+    if (!parsed.numericColumns.includes(xField))
+      throw new ShapeMismatchError(
+        id,
+        shape,
+        `first column "${xField}" is not numeric — fan requires a numeric time axis in the first column`,
+      );
     const headers = parsed.columns.slice(1);
     const loLevels = headers
       .map((c) => /^lo(\d+)$/.exec(c)?.[1])
       .filter(
         (n): n is string => n !== undefined && headers.includes(`hi${n}`),
       );
-    if (!headers.includes("central") || loLevels.length < 1)
+    // checkFanConformance (conformance.ts) requires levels.length >= 2 — mirror
+    // that floor here so a 1-band fan fails fast at shape-validation instead of
+    // dead-ending at produce.
+    if (!headers.includes("central") || loLevels.length < 2)
       throw new ShapeMismatchError(
         id,
         shape,
-        `got columns [${parsed.columns.join(",")}] — fan needs a "central" column plus ≥1 matched lo{n}/hi{n} confidence-band pair`,
+        `got columns [${parsed.columns.join(",")}] — fan needs a "central" column plus ≥2 matched lo{n}/hi{n} confidence-band pairs`,
       );
     return;
   }
