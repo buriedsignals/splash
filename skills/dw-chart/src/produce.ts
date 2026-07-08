@@ -41,11 +41,19 @@ export async function produceChart(
   // Fail loud BEFORE any API call if the metadata would ship a value label below
   // WCAG 4.5:1 (a white label inside a coloured bar/column). The safe mapper never
   // trips this; it guards against a future regression re-enabling inside labels.
-  const contrast = checkValueLabelContrast(patch);
-  if (contrast.length)
+  // F2 (policy b): a failure in a journalist-chosen brand colour is KEPT and recorded
+  // as a concern (never a hard failure); every other failure still throws.
+  const brandColors =
+    spec.brandExplicit && spec.baseColor ? [spec.baseColor] : [];
+  const contrast = checkValueLabelContrast(patch, { brandColors });
+  const hard = contrast.filter((c) => !c.concern);
+  const concerns = contrast.filter((c) => c.concern);
+  for (const c of concerns)
+    console.warn(`[dw-chart] value-label brand concern: ${c.message}`);
+  if (hard.length)
     throw new Error(
       `value-label contrast guardrail failed:\n  - ` +
-        contrast.map((c) => c.message).join("\n  - "),
+        hard.map((c) => c.message).join("\n  - "),
     );
   const id = await createChart(spec.title, spec.type);
   // Same resolved CSV (renamed headers + sort) that the metadata mapping saw.

@@ -82,6 +82,9 @@ export interface ValueLabelViolation {
   color: string;
   ratio: number;
   message: string;
+  // F2 — set when `color` is a journalist-chosen brand colour (policy b): the label
+  // is KEPT and this is a recorded render-review concern, not a hard failure.
+  concern?: boolean;
 }
 
 // GUARD (contrast discipline, in the spirit of chart-native's snap-contrast): fail
@@ -89,12 +92,19 @@ export interface ValueLabelViolation {
 // i.e. a white label placed INSIDE a coloured bar/column below 4.5:1. The safe
 // paths above never trip it; it exists so a future edit that re-enables inside
 // labels on a coloured mark is caught before publish instead of shipping silently.
-export function checkValueLabelContrast(patch: {
-  type: string;
-  metadata: { visualize: Record<string, unknown> };
-}): ValueLabelViolation[] {
+export function checkValueLabelContrast(
+  patch: {
+    type: string;
+    metadata: { visualize: Record<string, unknown> };
+  },
+  // F2 — the house colours the journalist set via the brand profile (policy b). A
+  // failing label in one of these is flagged `concern:true` (kept, recorded) instead
+  // of a hard violation. Absent/empty → every failure is hard, as before.
+  opts: { brandColors?: readonly string[] } = {},
+): ValueLabelViolation[] {
   const vis = patch.metadata.visualize;
   const out: ValueLabelViolation[] = [];
+  const brand = new Set((opts.brandColors ?? []).map((c) => c.toUpperCase()));
 
   // Every fill colour the marks could use (single base colour + any per-series).
   const fills: string[] = [];
@@ -126,18 +136,24 @@ export function checkValueLabelContrast(patch: {
 
   for (const fill of fills) {
     const ratio = contrastRatio(WHITE, fill);
-    if (ratio < MIN_CONTRAST)
+    if (ratio < MIN_CONTRAST) {
+      const isBrand = brand.has(fill.toUpperCase());
       out.push({
         type: patch.type,
         color: fill,
         ratio,
-        message:
-          `${patch.type}: a white value label inside a ${fill} mark is ` +
-          `${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA). ` +
-          (isHorizontalBar
-            ? "Set visualize['show-value-labels']=false and show the value axis (force-grid)."
-            : "Set visualize.valueLabels.placement='outside' so the label sits in dark ink."),
+        ...(isBrand ? { concern: true } : {}),
+        message: isBrand
+          ? `${patch.type}: a value label inside the ${fill} brand mark is ` +
+            `${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA) — kept per the ` +
+            `newsroom's house style (render-review concern).`
+          : `${patch.type}: a white value label inside a ${fill} mark is ` +
+            `${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA). ` +
+            (isHorizontalBar
+              ? "Set visualize['show-value-labels']=false and show the value axis (force-grid)."
+              : "Set visualize.valueLabels.placement='outside' so the label sits in dark ink."),
       });
+    }
   }
   return out;
 }

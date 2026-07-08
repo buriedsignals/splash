@@ -77,6 +77,11 @@ export interface ChartSpec {
   intro?: string; // subtitle / insight elaboration
   data: string; // CSV text
   baseColor?: string; // single-series colour (Okabe-Ito), CHOSEN per subject — not left at the default blue
+  // F2 — set true when baseColor / seriesColors were SEEDED from the newsroom's brand
+  // profile (a conscious house-style choice). Policy (b): a non-CVD-safe brand colour
+  // is then KEPT (validation records it as a warning, not a hard error) — the auto
+  // path (brandExplicit absent) stays hard-guarded.
+  brandExplicit?: boolean;
   // The chart's subject hint (e.g. "solar", "temperature", "marriage"). When set,
   // the guardrail requires baseColor to be an explicit subject-fit choice, not the
   // library default blue — this is what stops every chart rendering the same blue.
@@ -159,11 +164,19 @@ export function validateChartSpec(
     errors.push("data must be CSV text");
   if (typeof s.altInsight !== "string" || !s.altInsight.trim())
     errors.push("altInsight is required (WCAG: alt = the insight)");
+  // F2 — a brand-explicit house colour is kept even when it isn't CVD-safe (policy
+  // b): the failure is recorded as a warning for the render-review, not a hard error.
+  const brandExplicit = s.brandExplicit === true;
   if (
     s.baseColor !== undefined &&
     !(OKABE_ITO as readonly string[]).includes(s.baseColor as string)
-  )
-    errors.push("baseColor must be an Okabe-Ito colour (colorblind-safe)");
+  ) {
+    if (brandExplicit)
+      warnings.push(
+        `brand colour ${s.baseColor} is not colour-blind-safe (outside the Okabe-Ito set) — kept per the newsroom's house style (render-review concern)`,
+      );
+    else errors.push("baseColor must be an Okabe-Ito colour (colorblind-safe)");
+  }
   // GUARDRAIL: a chart with a declared subject must not fall back to the default
   // blue — the recurrence of the "everything is blue" defect. Choose a subject-fit
   // Okabe-Ito hue (or set a non-default baseColor deliberately).
@@ -184,8 +197,13 @@ export function validateChartSpec(
       for (const [key, val] of Object.entries(
         s.seriesColors as Record<string, unknown>,
       )) {
-        if (!(OKABE_ITO as readonly string[]).includes(val as string))
-          errors.push(`seriesColors.${key} must be an Okabe-Ito colour`);
+        if (!(OKABE_ITO as readonly string[]).includes(val as string)) {
+          if (brandExplicit)
+            warnings.push(
+              `brand colour ${val} (seriesColors.${key}) is not colour-blind-safe — kept per the newsroom's house style (render-review concern)`,
+            );
+          else errors.push(`seriesColors.${key} must be an Okabe-Ito colour`);
+        }
       }
       const n = Object.keys(s.seriesColors as object).length;
       if (n > 8)

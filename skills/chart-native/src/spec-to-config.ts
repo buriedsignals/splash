@@ -20,6 +20,13 @@ export interface NativeSpec {
   highlight?: string; // bar: the category to accent
   /** Okabe-Ito hex for the primary series (e.g. "#009E73"). Absent → component default. */
   baseColor?: string;
+  /**
+   * F2 — set true when `baseColor` was SEEDED from the newsroom's brand profile (a
+   * conscious house-style choice), not the auto subject-fit hue. Threaded onto the
+   * produced config so the produce-time a11y guards downgrade a CVD/contrast failure
+   * on this colour to a render-review concern instead of hard-failing (policy b).
+   */
+  brandExplicit?: boolean;
 }
 
 export class UnsupportedNativeType extends Error {
@@ -706,5 +713,9 @@ export function specToNativeConfig(spec: NativeSpec): {
   const mapper = MAPPERS[spec.nativeType];
   if (!mapper) throw new UnsupportedNativeType(spec.nativeType);
   validateShape(spec.nativeType, parsed);
-  return mapper(parsed, spec);
+  const out = mapper(parsed, spec);
+  // F2 — carry the brand-explicit marker through to the config the guards read.
+  // Only set when true, so existing (auto-path) specs produce byte-identical configs.
+  if (spec.brandExplicit) out.config.brandExplicit = true;
+  return out;
 }

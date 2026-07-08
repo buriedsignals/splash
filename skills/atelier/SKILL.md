@@ -38,6 +38,7 @@ question tool.
    (feeds suggest-chart Gates 1–4: static / interactive / video / scrolly) AND the media aspect for a
    video/image: social-vertical → portrait (9:16), feed → square (1:1), article/web → landscape (16:9).
 4. Constraint (only if relevant): mobile-first, deadline, house palette.
+   - **House palette (F2 brand profile):** if the project has a `brand.json` (loadBrandProfile → `palette` + optional `accent`), OFFER "use your house palette?" here. On yes, seed the producer spec's colour from the palette and mark it `brandExplicit` (seedBrandColor) — the brand colour is applied AS CHOSEN (policy b, brand-first). A non-CVD-safe / low-contrast house colour is NOT rewritten; the produce-time a11y guards downgrade it to a render-review concern (surfaced at Gate 3), the editor decides. No brand.json → auto subject-fit colour, unchanged. Colours only in this cut (fonts/logo deferred).
 
 Branch:
 - **DIRECT** (journalist names the visual, e.g. "a scrolly map"): skip PROPOSITION. Go to PRODUCTION,

@@ -33,6 +33,7 @@ import {
   checkPopulationPyramidConformance,
   checkFanConformance,
   checkBumpConformance,
+  reconcileBrandViolations,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -97,6 +98,31 @@ export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
   checked: boolean;
   violations: string[];
+  /**
+   * F2 — render-review concerns: CVD/contrast issues DOWNGRADED from hard
+   * violations because the failing colour was set explicitly via the newsroom's
+   * brand profile (policy b, brand-first + warning). Empty on the auto path.
+   */
+  concerns: string[];
+}
+
+// F2 — the colours a brand-explicit config declares, so the guard knows which
+// failing hues to downgrade (never a global relaxation — only the journalist's
+// own colours). Reads the first-cut colour fields (baseColor is what line/bar/
+// scatter actually paint; seriesColors/accent are threaded for completeness).
+function brandExplicitColors(config: Record<string, unknown>): string[] {
+  if (config.brandExplicit !== true) return [];
+  const out: string[] = [];
+  const push = (v: unknown) => {
+    if (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v)) out.push(v);
+  };
+  push(config.baseColor);
+  push(config.accent);
+  const series = config.seriesColors;
+  if (Array.isArray(series)) for (const c of series) push(c);
+  else if (series && typeof series === "object")
+    for (const c of Object.values(series as Record<string, unknown>)) push(c);
+  return out;
 }
 
 // Placeholder pixel dims fed to the pure geometry layer purely to satisfy its
@@ -178,10 +204,29 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "bump",
 ];
 
+/**
+ * F2 — the brand-aware boundary. Runs the type's raw guard, then reconciles the
+ * violations against the config's brand-explicit colours (policy b): a CVD/contrast
+ * failure on a journalist-chosen brand colour becomes a render-review CONCERN; every
+ * other violation (and any a11y failure on an auto-chosen colour) stays hard.
+ */
 export function runProduceConformance(
   type: string,
   config: Record<string, unknown>,
 ): ConformanceRunResult {
+  const raw = computeRawConformance(type, config);
+  if (!raw.checked) return { checked: false, violations: [], concerns: [] };
+  const { violations, concerns } = reconcileBrandViolations(
+    raw.violations,
+    brandExplicitColors(config),
+  );
+  return { checked: true, violations, concerns };
+}
+
+function computeRawConformance(
+  type: string,
+  config: Record<string, unknown>,
+): { checked: boolean; violations: string[] } {
   if (!PRODUCE_GUARDED_TYPES.includes(type)) {
     return { checked: false, violations: [] };
   }
