@@ -1,5 +1,6 @@
 import type { ChartSpec } from "./chart-spec";
 import {
+  ANNOTATION_UNSUPPORTED_TYPES,
   MULTI_SERIES_TYPES,
   normalizeNumberFormat,
   type ChartType,
@@ -466,7 +467,15 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
   if (LINE_LIKE_TYPES.has(spec.type))
     visualize["labeling"] = isSingleSeries(spec) ? "off" : "right";
 
-  if (spec.annotations && spec.annotations.length) {
+  // Pie/donut/table types have no text-annotation layer in Datawrapper at all
+  // (validateChartSpec warns about this) — skip the mapping rather than build
+  // metadata (text-annotations + a nonsensical y-range on a chart with no y-axis)
+  // that Datawrapper would just ignore at render.
+  if (
+    spec.annotations &&
+    spec.annotations.length &&
+    !ANNOTATION_UNSUPPORTED_TYPES.has(spec.type)
+  ) {
     const dom = plotDomain(csv);
     const span = dom.yMax - dom.yMin || 1;
     // Every VALUE column's polyline (all columns after the label column). A label must
