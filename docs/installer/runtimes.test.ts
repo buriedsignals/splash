@@ -17,15 +17,13 @@ test("only Claude Code is verified in v1", () => {
   expect(RUNTIMES.goose.verified).toBe(false);
 });
 
-test("verified runtime carries every field the generator needs", () => {
-  for (const key of [
-    "installCmd",
-    "bin",
-    "keyLabel",
-    "keyUrl",
-    "keyEnv",
-    "launch",
-  ]) {
+test("verified runtime carries every field the form needs", () => {
+  for (const key of ["label", "keyLabel", "keyUrl", "keyEnv"]) {
     expect(RUNTIMES.claude[key]).toBeTruthy();
   }
+});
+
+test("install/launch logic no longer lives in the registry (it moved to the bootstrap)", () => {
+  expect(RUNTIMES.claude.installCmd).toBeUndefined();
+  expect(RUNTIMES.claude.launch).toBeUndefined();
 });
