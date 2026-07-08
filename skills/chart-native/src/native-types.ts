@@ -59,7 +59,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   { id: "treemap", family: "A", shape: "single" },
   { id: "diverging-stacked", family: "A", shape: "wide" },
   { id: "waffle", family: "A", shape: "single" },
-  { id: "fan", family: "A", shape: "wide", deferred: A_PENDING("wide") },
+  { id: "fan", family: "A", shape: "wide" },
   { id: "dot-strip", family: "A", shape: "single" },
   {
     id: "violin",

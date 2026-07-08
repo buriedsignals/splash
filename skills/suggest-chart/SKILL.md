@@ -140,11 +140,11 @@ Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
 directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
-waterfall, dumbbell, slope, bullet, treemap, boxplot, diverging-stacked, pyramid** (`spec-to-config.ts`); for
+waterfall, dumbbell, slope, bullet, treemap, boxplot, diverging-stacked, pyramid, fan** (`spec-to-config.ts`); for
 any type NOT in this list the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead.
 Produce with `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `diverging-stacked`, `pyramid`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `diverging-stacked`, `pyramid`, `fan`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
@@ -212,6 +212,13 @@ it for survey/opinion composition per item; for a plain (non-signed) composition
 headers become the mirrored side labels, drawn back-to-back from a shared central axis on the SAME
 magnitude scale. Route it for a paired age/sex (or any two-group) population breakdown — for a plain
 two-point comparison per category (not mirrored/centred), prefer `dumbbell`.
+`fan` is NOT a tidy wide CSV — it expects **forecast-style columns with MAGIC names**: a time column
+first, then `actual` (the historical series), `central` (the forecast's point estimate), and paired
+`lo{n}`/`hi{n}` confidence-band columns for each level (e.g. `year,actual,central,lo80,hi80,lo95,hi95`).
+History rows populate `actual` and leave `central`/the bands blank; forecast rows are the mirror (blank
+`actual`, populated `central`+bands). Levels are derived from whichever `lo{n}`/`hi{n}` pairs are present
+(≥1 pair required; ≥2 levels reads best as a true "fan"). Route it ONLY for a forecast/projection story
+where the UNCERTAINTY itself is the point — never invent bands for a plain point forecast (use `line`).
 
 ### map-dw (static choropleth map) — default map path
 

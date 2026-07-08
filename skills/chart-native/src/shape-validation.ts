@@ -26,6 +26,28 @@ export function validateShape(id: string, parsed: ParsedCsv): void {
   const nCols = parsed.columns.length;
   const nNum = parsed.numericColumns.length;
 
+  // `fan` is declared "wide" but its convention is SPARSE-by-design (history
+  // rows populate `actual` and leave the forecast columns blank; forecast rows
+  // are the mirror) — `parsed.numericColumns` only counts columns that are
+  // numeric on EVERY row, so a realistic fan CSV always has zero "series"
+  // columns by that measure. Check the magic header names directly instead of
+  // the generic wide/numeric-density rule.
+  if (id === "fan") {
+    const headers = parsed.columns.slice(1);
+    const loLevels = headers
+      .map((c) => /^lo(\d+)$/.exec(c)?.[1])
+      .filter(
+        (n): n is string => n !== undefined && headers.includes(`hi${n}`),
+      );
+    if (!headers.includes("central") || loLevels.length < 1)
+      throw new ShapeMismatchError(
+        id,
+        shape,
+        `got columns [${parsed.columns.join(",")}] — fan needs a "central" column plus ≥1 matched lo{n}/hi{n} confidence-band pair`,
+      );
+    return;
+  }
+
   switch (shape) {
     case "single":
       if (nCols < 2 || nNum < 1)

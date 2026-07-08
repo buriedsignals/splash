@@ -3,7 +3,7 @@
 // non-deferred NATIVE_TYPES entry — asserted by tests/native-family-types.test.ts
 // (created in Task 10). No tiers.
 export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
-  "change-over-time": ["line", "stacked-area", "slope"],
+  "change-over-time": ["line", "stacked-area", "slope", "fan"],
   correlation: ["scatter", "connected-scatter"],
   "part-to-whole": ["pie", "stacked", "waffle", "treemap"],
   magnitude: ["bar", "grouped", "radial-bar", "dumbbell", "bullet"],

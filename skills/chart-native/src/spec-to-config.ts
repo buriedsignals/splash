@@ -570,6 +570,43 @@ export const MAPPERS: Record<
       },
     };
   },
+  fan(parsed, spec) {
+    const { columns, rows } = parsed;
+    const xField = columns[0];
+    // derive confidence levels by scanning headers for the lo{n}/hi{n} pairing
+    // convention the geometry expects (fan-geometry.ts:12,63-67) — a lone
+    // lo{n} with no matching hi{n} is dropped rather than guessed.
+    const levels = columns
+      .map((c) => /^lo(\d+)$/.exec(c)?.[1])
+      .filter((n): n is string => n !== undefined && columns.includes(`hi${n}`))
+      .map(Number)
+      .sort((a, b) => a - b);
+    const bandKeys = levels.flatMap((lv) => [`lo${lv}`, `hi${lv}`]);
+    const keys = ["actual", "central", ...bandKeys];
+    // history rows populate `actual` and leave central/bands blank; forecast
+    // rows are the mirror — coerce only the POPULATED cells to numbers so
+    // fan-geometry's `!= null` checks correctly read "no value" (blank) vs a
+    // real 0, instead of everything landing on the domain as 0.
+    const fanRows = rows.map((r) => {
+      const out: Record<string, number> = { [xField]: Number(r[xField]) };
+      for (const k of keys) {
+        const v = r[k];
+        if (v !== undefined && v !== "") out[k] = Number(v);
+      }
+      return out;
+    });
+    return {
+      type: "fan",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        xField,
+        levels,
+        rows: fanRows,
+      },
+    };
+  },
   waterfall(parsed, spec) {
     const { columns, numericColumns, rows } = parsed;
     const labelCol = columns[0];

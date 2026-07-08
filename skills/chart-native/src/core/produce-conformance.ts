@@ -30,6 +30,7 @@ import {
   checkBoxplotConformance,
   checkDivergingStackedConformance,
   checkPopulationPyramidConformance,
+  checkFanConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -85,6 +86,7 @@ import type { TreemapConfig } from "../TreemapChart";
 import type { BoxplotConfig } from "../BoxplotChart";
 import type { DivergingStackedConfig } from "../DivergingStackedChart";
 import type { PopulationPyramidConfig } from "../PopulationPyramidChart";
+import type { FanConfig } from "../FanChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -166,6 +168,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "boxplot",
   "diverging-stacked",
   "pyramid",
+  "fan",
 ];
 
 export function runProduceConformance(
@@ -635,6 +638,39 @@ export function runProduceConformance(
             leftLabel: cfg.leftLabel,
             rightLabel: cfg.rightLabel,
             groupColors: [...PYRAMID_SIDE_COLORS],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "fan": {
+      const cfg = config as unknown as FanConfig;
+      // reconstruct the per-step forecast the check needs from the ACTUAL
+      // rows the component renders (mirrors fan-conformance.test.ts's shipped
+      // -sample shape): only rows with a central estimate are forecast steps,
+      // and a band is included only when both lo{n}/hi{n} are populated.
+      const forecast = cfg.rows
+        .filter((r) => r.central != null)
+        .map((r) => {
+          const bands: Record<number, [number, number]> = {};
+          for (const lv of cfg.levels) {
+            const lo = r[`lo${lv}`];
+            const hi = r[`hi${lv}`];
+            if (lo != null && hi != null) bands[lv] = [lo, hi];
+          }
+          return { central: r.central, bands };
+        });
+      return {
+        checked: true,
+        violations: checkFanConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            valueLabel: cfg.unit,
+            levels: cfg.levels,
+            forecast,
+            hue: OKABE_ITO.blue,
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),
