@@ -8,9 +8,11 @@ import { FAMILY_TYPES } from "./family-types";
 import { NATIVE_FAMILY_TYPES } from "./native-family-types";
 import {
   isFormatAllowed,
+  CHANNELS,
   type Channel,
   type VisualFormat,
 } from "../../atelier/src/channel";
+import { isRowDriven, type ChartType } from "../../dw-chart/src/export-aspect";
 
 export interface Score {
   validates: boolean;
@@ -60,12 +62,14 @@ export function impliedFormat(spec: unknown): VisualFormat {
   return "static";
 }
 
-// Gates an already-computed Score on the channel-format check: a spec whose
-// implied format is not in allowedFormats(expect.channel) can never pass. The
-// aspect↔type guard (portrait/square channel ⇒ never a row-driven horizontal
-// type) stays a prose rule in suggest-chart/SKILL.md — it isn't mechanically
-// derivable from a spec's producer/format fields alone, so it is NOT checked
-// here (see the SKILL.md "Aspect↔type guard" rule instead).
+// Gates an already-computed Score on two channel-driven checks: (1) a spec whose
+// implied format is not in allowedFormats(expect.channel) can never pass; (2) for a
+// portrait or square channel, a row-driven horizontal type (isRowDriven, already
+// importable from dw-chart's export-aspect.ts) can never pass either — those types
+// grow with row count and can't be composed into a vertical/square media box. Both
+// ARE mechanically derivable — the type lives on spec.type, the channel's aspect on
+// CHANNELS[expect.channel].aspect — so both are checked here (see the SKILL.md
+// "Aspect↔type guard" rule for the human-facing framing of check (2)).
 function withChannelGate(score: Score, channelOk: boolean): Score {
   if (channelOk) return score;
   return { ...score, guardrailsOk: false, pass: false };
@@ -122,6 +126,19 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
     channelOk = isFormatAllowed(expect.channel, fmt);
     if (!channelOk) {
       notes.push(`format '${fmt}' not allowed on channel '${expect.channel}'`);
+    }
+    // Aspect↔type guard: a portrait/square channel can never host a row-driven
+    // horizontal type (d3-bars, dot/arrow/range plots) — those grow with row count
+    // and can't be composed into a vertical/square media box (see export-aspect.ts).
+    const aspect = CHANNELS[expect.channel].aspect;
+    if (aspect === "portrait" || aspect === "square") {
+      const specType = (spec as Record<string, unknown> | null)?.["type"];
+      if (typeof specType === "string" && isRowDriven(specType as ChartType)) {
+        channelOk = false;
+        notes.push(
+          `row-driven type '${specType}' cannot take a portrait/square channel — route to a column`,
+        );
+      }
     }
   }
 

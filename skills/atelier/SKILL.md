@@ -163,8 +163,14 @@ reads as a label rather than the insight — so a weak spec never reaches GATE 3
 "format": "static|interactive|video|scrolly", "spec": <the validated producer spec>,
 "provenance": "table|prose|none", "confirmedTable": <true ONLY after an actual Gate 2b prose-table
 confirmation — stays false/absent for "table" (and "none") provenance, which never go through 2b;
-never set it true on a table-provenance proposal just because it looks accepted> }`.
-`producer` + `format` are what suggest-chart routed; `provenance` comes from suggest-article.
+never set it true on a table-provenance proposal just because it looks accepted>,
+"channel": "social-vertical|social-feed|article-web" }`.
+`producer` + `format` are what suggest-chart routed; `provenance` comes from suggest-article. **`channel`
+is REQUIRED — it is the CADRAGE Q3 confirmed pick (§3, the structured audience & channel question),
+copied verbatim onto every proposal it applies to.** `produce-all`'s channel/format gate (5c) reads this
+field to enforce "not-embed ⇒ never interactive/scrolly"; **omitting it silently defeats that guard** —
+it falls back to `"article-web"` (the permissive default, matching `normalizeChannel`), so a social-only
+visual with a dropped `channel` would ship an interactive nobody asked for. Never omit it.
 
 **5c. Produce everything at once** — report to a FILE (the gates and EXPORT read it back):
 ```bash

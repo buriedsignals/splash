@@ -448,3 +448,42 @@ describe("scoreSpec — channel-driven format gate", () => {
     expect(r.pass).toBe(true);
   });
 });
+
+describe("scoreSpec — aspect↔type guard (row-driven horizontal type vs portrait/square channel)", () => {
+  const rowDrivenBar = {
+    type: "d3-bars",
+    title: "Estonia recycles the most packaging waste in Europe",
+    data: "country,rate\nEstonia,63\nMalta,31",
+    altInsight: "Estonia recycles the most packaging waste in Europe.",
+    baseColor: "#009E73",
+  };
+
+  it("fails a row-driven d3-bars spec on a social-vertical (portrait) channel", () => {
+    const r = scoreSpec(rowDrivenBar, {
+      family: "magnitude",
+      element: "chart",
+      channel: "social-vertical",
+    });
+    expect(r.pass).toBe(false);
+    expect(r.notes.some((n) => /row-driven type 'd3-bars'/.test(n))).toBe(true);
+  });
+
+  it("does not flag a column-chart (not row-driven) on the same portrait channel", () => {
+    const r = scoreSpec(
+      { ...rowDrivenBar, type: "column-chart" },
+      { family: "magnitude", element: "chart", channel: "social-vertical" },
+    );
+    expect(r.notes.some((n) => /row-driven/.test(n))).toBe(false);
+    expect(r.pass).toBe(true);
+  });
+
+  it("does not flag a row-driven d3-bars spec on the article-web (landscape) channel", () => {
+    const r = scoreSpec(rowDrivenBar, {
+      family: "magnitude",
+      element: "chart",
+      channel: "article-web",
+    });
+    expect(r.notes.some((n) => /row-driven/.test(n))).toBe(false);
+    expect(r.pass).toBe(true);
+  });
+});
