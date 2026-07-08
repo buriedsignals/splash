@@ -23,10 +23,17 @@ consumes. Not for picking a chart type (that is `suggest-chart`), not for produc
 
 The hard part — and ②'s core value — is that **② binds data to claim itself**. It is not handed
 pre-paired claim↔data: it reads the article, finds the claim, and extracts the supporting CSV subset
-from the supplied tables. Two failure modes to avoid: (1) **inventing data** — every column in a
-proposal's `data` MUST come from a cited source table (the eval's `provenanceOk` catches this);
-(2) **over-proposing** — not every number earns a chart. Propose the strongest 1–3 claims, leave the
-rest as prose, and record what you left out (and why) in `notes`.
+from the supplied tables. Three failure modes to avoid: (1) **inventing data** — every column, every
+value, AND every dimension label in a proposal's `data` MUST come from a cited source table or appear
+verbatim in the article (the eval's `provenanceOk` catches an out-of-source column or value); never
+synthesize a number, a year, or a category the source does not state; (2) **over-proposing** — not
+every number earns a chart. Propose the strongest 1–3 claims, leave the rest as prose, and record what
+you left out (and why) in `notes`; (3) **folding two distinct opportunities into one proposal** — if
+the article makes two separate quantified claims (e.g. a minimum-wage series AND an inflation series),
+they are **two proposals**, each with its own `claim`, `intent`, and `data` — never merge them into a
+single proposal (a "wide" table stapling unrelated series together) just because both are numeric or
+both trend over time. One opportunity = one proposal; the downstream accept gate + `suggest-chart`
+routing fire once per proposal, so a folded second series is silently dropped.
 
 ## Provenance tiers (table, prose, none)
 
@@ -44,15 +51,23 @@ A claim's data can come from one of three sources. Bind to the strongest availab
 
 Emit a `prose` proposal ONLY if ALL hold:
 - **≥2 literal numeric values** appear verbatim in the text (e.g. `12%`, `19%`);
-- each value is **attached to an explicit dimension label** in the same clause
-  (a year, period, or category: `2019`, `2024`);
+- each value is **attached to an explicit dimension label that appears VERBATIM in the
+  text**, in the same clause (a literal year, period, or category: `2019`, `2024`);
 - **no inferred / approximated / ranged value** ("around a fifth", "a marked shift",
   "10–15%") — those stay prose;
+- **no relative / deictic date resolved to a concrete label** — "cette année" / "this
+  year" / "l'an dernier" / "last year" / "récemment" / "depuis peu" name no literal year:
+  you MUST NOT turn them into `2024` (or any calendar value). If the second point's label
+  is only a relative expression, the comparison stays **prose** (leave it out; note it) —
+  never manufacture the missing year;
 - a **single scalar** ("50%") does not qualify (a claim needs ≥1 comparison).
 
-NEVER interpolate between values, invent a third point, or guess an unstated number.
+NEVER interpolate between values, invent a third point, resolve a relative date to a
+concrete year, or guess an unstated number, label, or coordinate. Every value AND every
+dimension label in the reconstructed table must be readable **verbatim** from the article.
 The reconstructed `data` CSV's columns come from the dimension label and the measured
-quantity named in the claim, e.g. `year,cycling_share\n2019,12\n2024,19`.
+quantity named in the claim, e.g. `year,cycling_share\n2019,12\n2024,19` — and `2024`
+is legitimate ONLY because the text literally wrote "2024", not "this year".
 
 A `prose` proposal also carries `proseEvidence`: for each value, the verbatim text
 snippet it was read from (shown at the confirmation gate; proves transcription).

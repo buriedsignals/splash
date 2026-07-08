@@ -35,6 +35,31 @@ describe("scoreSpec — map routing", () => {
     expect(r.pass).toBe(false);
     expect(r.notes.some((n) => /map|gate 5/i.test(n))).toBe(true);
   });
+  it("Gate 5: a ranking framing over non-contiguous geographic blocs must route to a bar, not a choropleth", () => {
+    // Finding 6 (eu-renewables-ranking): a hand-picked, non-contiguous set of countries
+    // framed as a ranking ("which leads / which lags") has no adjacency to read → bar.
+    const rankingBar = {
+      type: "d3-bars",
+      title: "Norway leads on renewables while Poland lags furthest behind",
+      data: "code,share\nNOR,99\nSWE,68\nDEU,59\nFRA,27\nPOL,21",
+      altInsight: "Norway highest at 99%, Poland lowest at 21%",
+      baseColor: "#009E73",
+      sort: "desc",
+    };
+    // The correct routing (sorted bar) passes.
+    expect(
+      scoreSpec(rankingBar, {
+        family: "ranking",
+        element: "chart",
+        maxWarnings: 0,
+      }).pass,
+    ).toBe(true);
+    // Routing the same ranking story to a choropleth (the anti-pattern) fails.
+    const r = scoreSpec(validMap, { family: "ranking", element: "chart" });
+    expect(r.pass).toBe(false);
+    expect(r.notes.some((n) => /map|gate 5|bars/i.test(n))).toBe(true);
+  });
+
   it("defaults element to chart (existing behaviour unchanged)", () => {
     const chart = {
       type: "d3-bars",

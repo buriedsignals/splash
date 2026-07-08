@@ -63,6 +63,58 @@ describe("provenanceOk — prose tier", () => {
     expect(s.notes.some((m) => m.includes("needsConfirmation"))).toBe(true);
   });
 
+  // Anti-fabrication for DEICTIC dates: the article names no literal year ("cette
+  // année" / "l'an dernier"), so resolving them to 2023/2024 is invention. The numeric
+  // year tokens are not in the text → provenanceOk must fail. Charting the same claim
+  // with the VERBATIM period labels (no invented years) must pass.
+  const deicticArticle =
+    "La participation au vote a atteint 62 % cette année, contre 55 % l'an dernier.";
+  function deicticProse(
+    over: Partial<ProposalSet["proposals"][number]> = {},
+  ): ProposalSet {
+    return {
+      proposals: [
+        {
+          anchor: {
+            paragraphIndex: 0,
+            quote: "62 % cette année, contre 55 % l'an dernier",
+          },
+          claim: "La participation au vote est passée de 55 % à 62 %",
+          intent: "Comment la participation au vote a-t-elle évolué ?",
+          data: "periode,participation\nl'an dernier,55\ncette annee,62",
+          dataSource: {
+            table: "article-prose",
+            columns: ["periode", "participation"],
+          },
+          provenance: "prose",
+          needsConfirmation: true,
+          confidence: "medium",
+          rationale: "Deux valeurs explicites comparées dans l'article.",
+          ...over,
+        },
+      ],
+      notes: "",
+    };
+  }
+
+  it("fails when a deictic date is resolved to an invented year (2024 not in text)", () => {
+    const s = scoreProposalSet(
+      deicticProse({ data: "year,participation\n2023,55\n2024,62" }),
+      expect0,
+      {},
+      deicticArticle,
+    );
+    expect(s.provenanceOk).toBe(false);
+    expect(s.notes.some((m) => m.includes("2024") || m.includes("2023"))).toBe(
+      true,
+    );
+  });
+
+  it("passes when the two verbatim period labels are used (no invented year)", () => {
+    const s = scoreProposalSet(deicticProse(), expect0, {}, deicticArticle);
+    expect(s.provenanceOk).toBe(true);
+  });
+
   it("still enforces the table tier (regression): unknown table fails", () => {
     const tableSet: ProposalSet = {
       proposals: [

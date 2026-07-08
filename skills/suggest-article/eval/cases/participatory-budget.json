@@ -1,0 +1,20 @@
+{
+  "id": "participatory-budget",
+  "note": "Deictic-date trap: the vote-turnout comparison names its two moments only as 'cette année' / 'l'an dernier' — no literal year. ② must NOT resolve them to 2023/2024 (fabrication caught by provenanceOk: those tokens are absent from the text). If it charts the turnout at all, it uses the verbatim period labels. The rock-solid opportunity is the table-backed budget breakdown.",
+  "article": "## Le budget participatif de la commune\n\nCette année, la ville a réparti son budget participatif entre quatre projets. La rénovation de l'école en a capté la plus grosse part avec 45 %, devant la piste cyclable à 25 %, le parc à 20 % et l'éclairage à 10 %.\n\nLa participation au vote a atteint 62 % cette année, contre 55 % l'an dernier.\n\nLe maire a refusé de commenter le calendrier des travaux.",
+  "data": {
+    "projets.csv": "projet,part\nÉcole,45\nPiste cyclable,25\nParc,20\nÉclairage,10"
+  },
+  "expect": {
+    "opportunities": [
+      {
+        "claimMatches": ["école"],
+        "dataTable": "projets.csv",
+        "dataColumns": ["projet", "part"]
+      }
+    ],
+    "minProposals": 1,
+    "maxProposals": 2,
+    "noChartClaims": ["refusé de commenter"]
+  }
+}
