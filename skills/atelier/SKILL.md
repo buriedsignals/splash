@@ -37,20 +37,31 @@ SOURCE (its label and URL) — is NEVER single-select; a fixed menu of options c
 it as a free-text prompt instead (see GATE 2/3 source handling below).
 
 1. Branch: "Do you already have a visual in mind, or should I guide you?"
-2. Takeaway: "What is the one thing a reader should leave with?" → the insight/angle.
+2. Takeaway: "What is the one thing a reader should leave with?" → the insight/angle. **Skippable on
+   DIRECT only** (see branch logic below) — a named visual already carries its own intent.
 3. Audience & channel: "Where does this publish — article embed, social, print?" → the format signal
    (feeds suggest-chart Gates 1–4: static / interactive / video / scrolly) AND the media aspect for a
    video/image: social-vertical → portrait (9:16), feed → square (1:1), article/web → landscape (16:9).
+   **Always asked — on EITHER branch, never skipped.** A DIRECT-named visual still needs a channel: a
+   journalist-naming "a bar chart" doesn't by itself say feed→square vs web→landscape, and downstream,
+   `suggest-chart`'s Gate 2 escalation to interactive cannot even be evaluated without it — one of its
+   three ALL-required criteria IS the channel ("distribution is web-only"; see
+   `knowledge/references/formats/format-selection.md`). Skipping Q3 is exactly the failure mode that lets
+   a visual escalate to interactive/video/scrolly with none of the escalation criteria established —
+   never skip it.
 4. Constraint (only if relevant): mobile-first, deadline, house palette.
    - **House palette (F2 brand profile):** if the project has a `brand.json` (loadBrandProfile → `palette` + optional `accent`), OFFER "use your house palette?" here. On yes, seed the producer spec's colour from the palette and mark it `brandExplicit` (seedBrandColor) — the brand colour is applied AS CHOSEN (policy b, brand-first). A non-CVD-safe / low-contrast house colour is NOT rewritten; the produce-time a11y guards downgrade it to a render-review concern (surfaced at Gate 3), the editor decides. No brand.json → auto subject-fit colour, unchanged. Colours only in this cut (fonts/logo deferred).
 
 Branch:
-- **DIRECT** (journalist names the visual, e.g. "a scrolly map"): skip PROPOSITION. Go to PRODUCTION,
-  passing suggest-chart the (data, intent) PLUS the forced element/format — suggest-chart still emits
-  a VALIDATED spec and applies its guardrails (obey the choice, but if it violates a hard guardrail,
-  surface the warning to the journalist rather than shipping a broken visual). On DIRECT, the branch
-  fires at Q1 — the remaining CADRAGE questions (Q2–Q4) are skipped; intent is inferred from the
-  article + the named visual.
+- **DIRECT** (journalist names the visual, e.g. "a scrolly map"): skip PROPOSITION. Still ask Q3
+  (audience & channel) before PRODUCTION — it is REQUIRED on both branches. Go to PRODUCTION,
+  passing suggest-chart the (data, intent, channel) PLUS the forced element/format — suggest-chart still
+  emits a VALIDATED spec and applies its guardrails (obey the choice, but if it violates a hard
+  guardrail, surface the warning to the journalist rather than shipping a broken visual). On DIRECT, the
+  branch fires at Q1 and Q2 (takeaway) is skipped — intent is inferred from the article + the named
+  visual instead. **Q3 (channel) is the ONLY other question DIRECT may skip and it does NOT skip it** —
+  it is always asked, on both branches, because the format/aspect routing downstream (PRODUCTION's
+  aspect defaulting, `suggest-chart`'s Gate 1–4 ladder) depends on it. Q4 stays conditional, as above.
 - **GUIDED**: go to PROPOSITION.
 
 ### 4. PROPOSITION — GATE 2 (guided path only)
