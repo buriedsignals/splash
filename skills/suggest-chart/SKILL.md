@@ -143,9 +143,9 @@ unset ships French words with English numbers — the exact mismatch this field 
    social-vertical→9:16, article-web→16:9. `normalizeChannel` still accepts legacy free text, e.g. "feed"
    or "stories", and maps it to the same enum),
    altInsight (WCAG: the insight, not the structure) }`.
-4. Guardrails: **≤2 colours**; **CHOOSE `baseColor` by subject — never leave the default blue for a
-   subject that is not water/cold** (the validator FAILS a declared `subject` whose `baseColor` is absent
-   or the default `#0072B2`); if the data is too complex for a clean chart, return
+4. Guardrails: **≤2 colours**; **CHOOSE `baseColor` by subject — NEVER leave a chart on a blue-family hue
+   for a subject that is not water/cold/sky/marine** (the validator FAILS a declared `subject` whose
+   `baseColor` is absent or the default `#0072B2`); if the data is too complex for a clean chart, return
    `{ "decision": "no-chart", "reason": "..." }` instead of forcing one.
 
 **Colour — choose by subject, free but quality-guarded** (palette-freedom principle: the system CHOOSES a
@@ -155,9 +155,25 @@ Set `subject` to the topic and pick the Okabe-Ito hue whose meaning fits:
 - environment / forest / growth → green `#009E73`
 - heat / temperature / warning / danger → vermilion `#D55E00`
 - water / cold / sky / marine → blue `#0072B2` (the ONE case the default blue is correct)
-- social / culture / politics-neutral → reddish-purple `#CC79A7` or sky `#56B4E9`
+- social / culture / politics-neutral → reddish-purple `#CC79A7`
+- **housing / rent / cost-of-living / real estate → amber `#E69F00`** — a "cost of living / hearth"
+  subject; warm, and pointedly NOT the blue that reads as water/cold (found shipped with NO `baseColor`
+  at all on a rent chart — leaving it unset is the same defect as leaving it blue: both fall through to
+  the component's blue default).
+- **labour market / cross-border commuting / migration / transport-flow → vermilion `#D55E00`** — a
+  friction/flow subject; if vermilion is already used elsewhere in the same piece, fall back to reddish-
+  purple `#CC79A7` rather than to blue.
+
+**NEVER leave blue for a subject that is not water/cold/sky/marine — and "blue" means the WHOLE blue
+family, not just the exact library default.** Both `#0072B2` (blue) and `#56B4E9` (sky) read as "blue" to
+a reader; swapping the literal default for the lighter sky-blue is the SAME defect with a different hex —
+found shipped live on a "cross-border commuting" chart (`baseColor: "#56B4E9"`), a subject that matches
+none of water/cold/sky/marine. If the subject doesn't match that list, NEITHER `#0072B2` NOR `#56B4E9` may
+be the `baseColor` — pick amber/green/vermilion/purple/yellow/black deliberately instead.
+
 All eight Okabe-Ito hues are CVD-safe, so any choice passes the guard; the point is that the choice must
-FIT the subject, not fall through to blue by default.
+FIT the subject, not fall through to blue (in either shade) by default. Never invent a hex outside this
+set of eight — the guard only recognises the Okabe-Ito hues.
 
 ## Producer — dw-chart (default) vs chart-native vs map-dw vs map-native
 
@@ -175,7 +191,20 @@ hover). A plain static chart stays `dw-chart`.
 
 Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
-directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
+directLabel?, highlight?, baseColor, altInsight }`. **`baseColor` and `altInsight` are MANDATORY on every
+`NativeSpec` you emit — never omit either just because `spec-to-config.ts`'s type comment marks
+`baseColor` optional-with-a-default:**
+- **`baseColor`**: pick a deliberate subject-fit Okabe-Ito hue using the exact same Colour rule as
+  `ChartSpec` above (`NativeSpec` has no separate `subject` field, so the colour choice itself IS the
+  subject decision — reason about the subject, then set the hex). Leaving `baseColor` unset silently
+  falls back to the component's blue default — the same "everything is blue" defect this rule exists to
+  stop (found shipped live: a housing/rent native chart with no `baseColor` key at all).
+- **`altInsight`**: the WCAG alt text — the insight, not the chart's structure — same requirement and
+  wording discipline as `ChartSpec.altInsight` above. Always include it, even though it is a plain extra
+  JSON key today (passed through untouched) rather than yet enforced by every produce path — found
+  missing entirely on a shipped beeswarm spec, leaving the visual with no accessible description at all.
+
+The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
 waterfall, dumbbell, slope, bullet, treemap, boxplot, violin, diverging-stacked, pyramid, fan, bump** (`spec-to-config.ts`);
 for any type NOT in this list the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead.

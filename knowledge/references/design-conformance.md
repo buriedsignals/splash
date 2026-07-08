@@ -9,12 +9,19 @@ A produced chart MUST satisfy:
    CVD-safety + contrast). Categorical charts: only the Okabe-Ito colorblind-safe set —
    `#0072B2 #E69F00 #009E73 #D55E00 #CC79A7 #56B4E9 #F0E442 #000000`, **≤2 colours** — but CHOOSE the hue that
    fits the subject (energy/solar → amber `#E69F00`, environment → green `#009E73`, heat → vermilion
-   `#D55E00`, water/cold → blue `#0072B2`). Blue is the default ONLY for water/cold subjects; a declared
-   `subject` left on the default blue FAILS the guard. Choropleths: pick `scaleType` from the data semantic
-   (magnitude → sequential; signed-around-a-midpoint → diverging) and a subject-fit `palette` from the
-   `map-native` registry (`blues/greens/oranges/purples`, `rdbu/brbg/puor/orbu`) — every registry ramp is
-   vetted CVD-safe; the conformance guard fails a semantic↔scaleType mismatch, a non-CVD-safe ramp, and a
-   clear subject on the default palette.
+   `#D55E00`, water/cold → blue `#0072B2`, **housing/rent/cost-of-living → amber `#E69F00`**,
+   **labour market/cross-border commuting/migration/transport-flow → vermilion `#D55E00`**). Blue is the
+   default ONLY for water/cold/sky/marine subjects; a declared `subject` left on the default blue FAILS the
+   guard. **"Blue" for this rule means the WHOLE blue family — `#0072B2` AND `#56B4E9` (sky) — not just the
+   exact library default**; picking the lighter sky-blue for a non-blue-fit subject is the same "left it
+   blue" defect with a different hex (regression found live: a "cross-border commuting" chart shipped
+   `#56B4E9`). Never leave `baseColor`/`palette` unset for a chart with a clear subject either — an absent
+   colour silently falls back to the same blue default (regression found live: a housing/rent chart shipped
+   with no colour field at all). Never invent a hex outside the eight Okabe-Ito colours above. Choropleths:
+   pick `scaleType` from the data semantic (magnitude → sequential; signed-around-a-midpoint → diverging)
+   and a subject-fit `palette` from the `map-native` registry (`blues/greens/oranges/purples`,
+   `rdbu/brbg/puor/orbu`) — every registry ramp is vetted CVD-safe; the conformance guard fails a
+   semantic↔scaleType mismatch, a non-CVD-safe ramp, and a clear subject on the default palette.
 3. **Direct labels** over legends where the chart supports value labels.
 4. **Number formatting**: strip noise, abbreviate (`12.8k`, not `12,831`).
 5. **Source cited**: name + a real URL. A NAMED dataset/publication (e.g. "Eurostat", "INSEE") MUST
@@ -28,7 +35,12 @@ direct labels, annotations, alt text, the source label — is written in the **a
 language**, detected upstream; never default the furniture to English. Authored text, so it is enforced
 by `suggest-article` / `suggest-chart`, not by the conformance code (proper nouns and data values keep
 their original form).
-6. **Alt text = the insight, not the structure** (WCAG 1.1.1) → goes to DW `aria-description`.
+6. **Alt text = the insight, not the structure** (WCAG 1.1.1) → goes to DW `aria-description` (dw-chart:
+   `spec.altInsight`, hard-required by `validateChartSpec`). Mandatory on **every** producer's spec, dw-chart
+   or native — a spec that never sets `altInsight` ships a visual with no accessible description at all
+   (regression found live: a shipped beeswarm spec had no `altInsight` field anywhere). `chart-native`'s
+   `checkGlobalConformance` (`skills/chart-native/src/core/conformance.ts`) enforces the same requirement
+   when a caller threads the spec's `altInsight` through it, mirroring dw-chart's guard.
 7. **Contrast** WCAG ≥ 4.5:1 for text (DW defaults satisfy this; don't override to low-contrast).
    **Label text carries the value, the MARK carries the hue.** A text label (direct label, annotation,
    highlighted-row label) must meet 4.5:1 on its background → it uses a text-safe near-black ink, NOT a
