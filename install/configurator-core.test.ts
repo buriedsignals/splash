@@ -47,6 +47,10 @@ test("configurator HTML has the fields + the subscription note", () => {
   expect(h.toLowerCase()).toContain("subscription"); // "leave blank if you use a subscription"
 });
 
+test("configurator HTML's submit handler refuses to show Saved on a non-2xx /submit response", () => {
+  expect(renderConfiguratorHtml()).toContain("if(!r.ok)");
+});
+
 const MT = process.env.VITE_MAPTILER_KEY;
 const DW = process.env.DATAWRAPPER_API_TOKEN;
 const AN = process.env.ANTHROPIC_API_KEY;

@@ -77,7 +77,8 @@ document.getElementById('verify').onclick=async()=>{
   document.getElementById('save').disabled=!(v.maptiler!==false&&v.datawrapper!==false&&v.anthropic!==false);
 };
 f.onsubmit=async(e)=>{e.preventDefault();
-  await fetch('/submit',{method:'POST',body:JSON.stringify(data())});
+  const r=await fetch('/submit',{method:'POST',body:JSON.stringify(data())});
+  if(!r.ok){alert('Some keys did not verify. Click "Verify keys", fix the red ones, then save.');return;}
   document.body.innerHTML='<h1>Saved ✓</h1><p>Return to your Terminal — the install continues.</p>';};
 </script></body></html>`;
 }

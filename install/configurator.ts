@@ -53,6 +53,12 @@ const server = Bun.serve({
     }
     if (req.method === "POST" && url.pathname === "/submit") {
       const cfg = (await req.json()) as ConfiguratorConfig;
+      const v = await verifyAll(cfg);
+      if (Object.values(v).some((ok) => ok === false)) {
+        return new Response("verification failed — re-check your keys", {
+          status: 400,
+        });
+      }
       const envPath = join(DEST, ".env");
       writeFileSync(envPath, serializeEnv(cfg));
       try {
