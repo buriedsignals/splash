@@ -47,6 +47,21 @@ export function isOkabeIto(hex: string): boolean {
   return OKABE_ITO_SET.has(hex.toUpperCase());
 }
 
+// Subjects for which blue — either shade — IS the subject-fit choice (water, cold,
+// sky, marine). Mirrors dw-chart's BLUE_FIT_SUBJECT (chart-spec.ts) so the same rule
+// can hold on the native path; duplicated rather than imported — skills are
+// autonomous/self-contained (format-skill-autonome), chart-native does not reach
+// into dw-chart's internals.
+const BLUE_FIT_SUBJECT =
+  /\b(water|sea|ocean|river|rain|flood|cold|winter|ice|snow|sky|marine|hydro)\b/i;
+
+// Both Okabe-Ito blues read as "blue" to a reader. Picking the lighter sky-blue for a
+// non-blue-fit subject is the SAME "left it blue" defect as the literal default — a
+// real regression caught live: a "cross-border commuting" chart shipped `#56B4E9`
+// because the (dw-chart) guard only excludes the EXACT default `#0072B2`. This set
+// closes that gap for whichever caller opts into the subject-fit check below.
+const BLUE_FAMILY = new Set(["#0072B2", "#56B4E9"]);
+
 export interface ConformanceColors {
   /** the data/series colour (also used for the direct-label text) */
   data: string;
@@ -132,6 +147,28 @@ export function checkGlobalConformance(input: {
   title: string;
   source: { name?: string; url?: string };
   colors: ConformanceColors;
+  /**
+   * WCAG 1.1.1 — alt text must state the INSIGHT (not the chart's structure),
+   * mirroring dw-chart's `validateChartSpec` (`chart-spec.ts`), which already hard-
+   * requires `altInsight`. OPTIONAL on this signature for backward compatibility
+   * with the ~30 render-config callers below (a post-mapping `Config` doesn't carry
+   * this spec-level field today) — but any caller that DECLARES the key (even by
+   * copying a possibly-missing value straight off a spec, e.g.
+   * `altInsight: spec.altInsight`) gets it enforced as a hard violation, not a soft
+   * note. Gated on `"altInsight" in input` (not `!== undefined`) so a caller who
+   * genuinely omits the key stays a no-op, while a caller who threads a spec's
+   * (possibly-missing) field through still gets caught when it's missing.
+   */
+  altInsight?: string;
+  /**
+   * The chart's declared subject (e.g. "housing", "cross-border commuting"), when
+   * the caller has one. Mirrors dw-chart's subject↔baseColor guardrail (chart-
+   * spec.ts) so the same "never leave it blue" rule can be enforced here too — see
+   * BLUE_FIT_SUBJECT / BLUE_FAMILY above. Same opt-in `"subject" in input` gate as
+   * `altInsight`: omit entirely for the existing render-config callers below (which
+   * have no subject concept), thread it when the caller has a real spec subject.
+   */
+  subject?: string;
 }): string[] {
   const v: string[] = [];
   const { colors } = input;
@@ -148,12 +185,34 @@ export function checkGlobalConformance(input: {
   if (!isOkabeIto(colors.data))
     v.push(`data colour ${colors.data} is not in the Okabe-Ito set`);
 
+  // 2b. A declared subject must not leave the chart on a blue-family hue (#0072B2 OR
+  // #56B4E9) unless the subject actually fits blue (water/cold/sky/marine). Catches
+  // both the literal default and the "escape hatch" sky-blue — same defect, two hexes.
+  if (
+    "subject" in input &&
+    typeof input.subject === "string" &&
+    input.subject.trim() &&
+    !BLUE_FIT_SUBJECT.test(input.subject) &&
+    BLUE_FAMILY.has(colors.data.toUpperCase())
+  )
+    v.push(
+      `subject "${input.subject}" has no subject-fit colour — ${colors.data} is a blue-family Okabe-Ito hue and must not stand in for a subject that is not water/cold/sky/marine (choose a deliberate hue instead, e.g. amber/green/vermilion/purple)`,
+    );
+
   // 5. Source cited: NAME required (anti-fabrication + attribution). URL is OPTIONAL —
   //    an honest prose source ("Chiffres tels que rapportés dans cet article") or a
   //    newsroom's own reporting legitimately has none, and requiring it hard-blocked the
   //    prose path (E2 deadlock). Source traceability against the article is the
   //    render-review's job, not a blind url-present check here.
   if (!input.source?.name?.trim()) v.push("missing source name");
+
+  // 6. Alt text = the insight (WCAG 1.1.1), mirroring dw-chart's altInsight
+  // requirement (chart-spec.ts). Opt-in — see the field's doc comment above: only
+  // enforced when the caller declares the key.
+  if ("altInsight" in input && !input.altInsight?.trim())
+    v.push(
+      "missing altInsight (WCAG 1.1.1: alt text must state the insight, not the chart's structure)",
+    );
 
   // 7. Contrast ≥ 4.5:1 for every text colour. Decorative gridlines are exempt.
   for (const t of colors.text) {

@@ -4,11 +4,12 @@
 import { describe, it, expect } from "bun:test";
 import {
   checkConformance,
+  checkGlobalConformance,
   contrastRatio,
   isOkabeIto,
   relativeLuminance,
 } from "../src/core/conformance";
-import { COLORS } from "../src/core/tokens";
+import { COLORS, OKABE_ITO } from "../src/core/tokens";
 import type { ChartConfig } from "../src/LineChart";
 import sample from "../assets/sample-data/series.json";
 
@@ -73,5 +74,120 @@ describe("the guard actually catches violations (not a rubber stamp)", () => {
   it("flags low-contrast text", () => {
     const v = checkConformance(config, { ...colors, text: ["#BBBBBB"] });
     expect(v.some((m) => m.includes("contrast"))).toBe(true);
+  });
+});
+
+// BUG B (a11y regression: geneve-loyers / loyers-dispersion-beeswarm shipped with no
+// altInsight anywhere) — checkGlobalConformance's L0 check now catches a missing/empty
+// altInsight, mirroring dw-chart's validateChartSpec (chart-spec.ts) requirement. Opt-in
+// via `"altInsight" in input` (see the field's doc comment) so the ~30 existing
+// render-config callers below, which never pass it, are provably unaffected.
+describe("checkGlobalConformance — altInsight (WCAG 1.1.1, opt-in)", () => {
+  const validInput = {
+    title: "A clear insight about the data over time",
+    source: { name: "Source" },
+    colors: {
+      data: OKABE_ITO.blue,
+      text: [COLORS.ink, COLORS.muted],
+      bg: COLORS.bg,
+    },
+  };
+
+  it("flags a missing (key omitted but value undefined) altInsight when the caller opts in", () => {
+    const v = checkGlobalConformance({ ...validInput, altInsight: undefined });
+    expect(v.some((m) => m.includes("altInsight"))).toBe(true);
+  });
+
+  it("flags an empty-string altInsight", () => {
+    const v = checkGlobalConformance({ ...validInput, altInsight: "" });
+    expect(v.some((m) => m.includes("altInsight"))).toBe(true);
+  });
+
+  it("passes a non-empty altInsight", () => {
+    const v = checkGlobalConformance({
+      ...validInput,
+      altInsight: "Rents rose fastest in the North East",
+    });
+    expect(v.some((m) => m.includes("altInsight"))).toBe(false);
+  });
+
+  it("is non-vacuous: callers that never declare the key are NOT affected (today's ~30 render-config call sites)", () => {
+    const v = checkGlobalConformance(validInput);
+    expect(v).toEqual([]);
+  });
+});
+
+// BUG A (a "cross-border commuting" chart-native chart shipped baseColor #56B4E9; a
+// housing/rent chart shipped no baseColor at all) — checkGlobalConformance's L0 check
+// now flags a declared, non-blue-fit subject left on EITHER Okabe-Ito blue shade, not
+// just the literal default #0072B2. Opt-in via `"subject" in input`.
+describe("checkGlobalConformance — subject-fit colour (opt-in, blue-family aware)", () => {
+  const base = {
+    title: "A clear insight about the data over time",
+    source: { name: "Source" },
+  };
+
+  it("flags the literal default blue for a non-blue-fit subject", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      colors: {
+        data: OKABE_ITO.blue,
+        text: [COLORS.ink, COLORS.muted],
+        bg: COLORS.bg,
+      },
+      subject: "cross-border commuting",
+    });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(true);
+  });
+
+  it("flags sky-blue (#56B4E9) for a non-blue-fit subject — the near-default escape hatch", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      colors: {
+        data: OKABE_ITO.skyblue,
+        text: [COLORS.ink, COLORS.muted],
+        bg: COLORS.bg,
+      },
+      subject: "cross-border commuting",
+    });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(true);
+  });
+
+  it("does NOT flag blue for a genuinely blue-fit subject (water/cold/sky/marine)", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      colors: {
+        data: OKABE_ITO.blue,
+        text: [COLORS.ink, COLORS.muted],
+        bg: COLORS.bg,
+      },
+      subject: "water levels",
+    });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(false);
+  });
+
+  it("does NOT flag a deliberate non-blue hue for a non-blue-fit subject (housing → amber)", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      colors: {
+        data: OKABE_ITO.orange,
+        text: [COLORS.ink, COLORS.muted],
+        bg: COLORS.bg,
+      },
+      subject: "housing costs",
+    });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(false);
+  });
+
+  it("is non-vacuous: callers that never declare a subject are NOT affected (today's ~30 render-config call sites, still all-blue by default)", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      colors: {
+        data: OKABE_ITO.blue,
+        text: [COLORS.ink, COLORS.muted],
+        bg: COLORS.bg,
+      },
+    });
+    expect(v).toEqual([]);
   });
 });
