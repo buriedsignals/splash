@@ -64,10 +64,13 @@ const server = Bun.serve({
         join(DEST, ".atelier-runtime"),
         (cfg.runtime || "claude") + "\n",
       );
-      queueMicrotask(() => {
+      // Give Bun a moment to flush this response to the browser before we exit, so the
+      // journalist sees the "Saved ✓" page instead of a dropped connection. The bootstrap
+      // then continues (it checks ~/Atelier/.env exists). Localhost round-trip is <10ms.
+      setTimeout(() => {
         server.stop();
         process.exit(0);
-      });
+      }, 250);
       return new Response("ok");
     }
     return new Response("not found", { status: 404 });
