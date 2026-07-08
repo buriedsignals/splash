@@ -57,9 +57,13 @@ export async function exportPng(
   id: string,
   outPath: string,
   width = 600,
+  height?: number,
 ): Promise<number> {
+  // The DW export API pins the render box when BOTH width and height are given; with
+  // width only it falls back to the chart's own natural aspect (the FINDING-2 defect).
+  const dims = `width=${width}` + (height ? `&height=${height}` : "");
   const r = await fetch(
-    `${API}/charts/${id}/export/png?unit=px&mode=rgb&width=${width}&plain=false`,
+    `${API}/charts/${id}/export/png?unit=px&mode=rgb&${dims}&plain=false`,
     {
       headers: auth(),
     },

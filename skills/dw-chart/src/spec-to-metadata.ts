@@ -448,7 +448,27 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
   const axisFormat = valueFormat ?? numberFormat;
   if (axisFormat) visualize["y-grid-format"] = axisFormat;
   if (spec.baseColor) visualize["base-color"] = spec.baseColor;
-  if (spec.seriesColors) visualize["custom-colors"] = spec.seriesColors;
+  // Datawrapper keys `custom-colors` by the SERIES NAME as it appears in the
+  // uploaded data — and `resolveData` renames the headers via `seriesLabels`
+  // BEFORE upload. So a seriesColors map keyed to the ORIGINAL machine column
+  // names (e.g. `cpi_energy`) no longer matches the renamed series (`Energy`),
+  // Datawrapper silently drops the whole map, and the chart ships on DW's default
+  // all-blue ramp (the recurring referendum/recyclage/inflation defect). Re-key the
+  // colours through the SAME rename the data went through, so a renamed N-series
+  // chart keeps its intended distinct Okabe-Ito hues. Keys not renamed (already the
+  // display name) pass through unchanged — matching how annotation columns are
+  // remapped above.
+  if (spec.seriesColors) {
+    const labels = spec.seriesLabels;
+    visualize["custom-colors"] = labels
+      ? Object.fromEntries(
+          Object.entries(spec.seriesColors).map(([key, hex]) => [
+            labels[key] ?? key,
+            hex,
+          ]),
+        )
+      : spec.seriesColors;
+  }
   // VALUE LABELS (contrast-safe). Datawrapper's bar/column value labels have two
   // traps: vertical columns default to hover-only (invisible on the static PNG),
   // and horizontal bars draw a white inside label that fails WCAG on darker subject

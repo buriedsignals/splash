@@ -241,6 +241,50 @@ describe("specToMetadata", () => {
       Renewables: "#009E73",
     });
   });
+  it("re-keys seriesColors through seriesLabels so colours match the renamed series", () => {
+    // FINDING 1: DW keys custom-colors by the series name in the UPLOADED data, and
+    // resolveData renames headers via seriesLabels before upload. Colours keyed to the
+    // ORIGINAL machine names must be re-keyed to the renamed labels, or DW drops the
+    // whole map and falls back to its default all-blue ramp (referendum/recyclage/inflation).
+    const p = specToMetadata({
+      type: "multiple-lines",
+      title: "Energy prices rose fastest in the 2022 shock",
+      data: "year,cpi_food,cpi_energy,cpi_housing\n2020,100,100,100\n2022,111,140,108",
+      seriesLabels: {
+        cpi_food: "Food",
+        cpi_energy: "Energy",
+        cpi_housing: "Housing",
+      },
+      seriesColors: {
+        cpi_food: "#E69F00",
+        cpi_energy: "#D55E00",
+        cpi_housing: "#0072B2",
+      },
+      altInsight: "Energy rose 40% by 2022 vs 11% for food",
+    } as any);
+    // Keys are the RENAMED series names (what DW sees in the data), values preserved.
+    expect(p.metadata.visualize["custom-colors"]).toEqual({
+      Food: "#E69F00",
+      Energy: "#D55E00",
+      Housing: "#0072B2",
+    });
+  });
+  it("leaves already-display-named seriesColors keys untouched (partial / no rename)", () => {
+    // A seriesColors key NOT present in seriesLabels is already a display name and must
+    // pass through unchanged, so a mixed map still resolves fully.
+    const p = specToMetadata({
+      type: "multiple-lines",
+      title: "T",
+      data: "year,cpi_food,Housing\n2020,100,100\n2022,111,108",
+      seriesLabels: { cpi_food: "Food" },
+      seriesColors: { cpi_food: "#E69F00", Housing: "#0072B2" },
+      altInsight: "x",
+    } as any);
+    expect(p.metadata.visualize["custom-colors"]).toEqual({
+      Food: "#E69F00",
+      Housing: "#0072B2",
+    });
+  });
   it("maps transpose:true to metadata.data.transpose === true", () => {
     const p = specToMetadata({ ...spec, transpose: true } as any);
     expect((p.metadata as any).data?.transpose).toBe(true);

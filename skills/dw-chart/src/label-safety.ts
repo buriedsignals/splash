@@ -569,14 +569,19 @@ export interface ResponsiveSafetyResult {
 // that observes the real responsive deliverable.
 export async function checkResponsive(
   url: string,
-  opts: { widths?: number[]; browser?: Browser } = {},
+  opts: { widths?: number[]; browser?: Browser; aspect?: number } = {},
 ): Promise<ResponsiveSafetyResult> {
   const widths = opts.widths ?? RESPONSIVE_WIDTHS;
+  // height/width of the DELIVERED export. Defaults to the landscape export aspect,
+  // but the caller passes the channel's aspect (square/portrait/…) so what the
+  // guardrail measures is the aspect the reader actually gets — "validated ==
+  // delivered" must hold at the delivered aspect, not only the landscape one.
+  const aspect = opts.aspect ?? EXPORT_HEIGHT / EXPORT_WIDTH;
   const browser = opts.browser ?? (await chromium.launch());
   try {
     const byWidth: { width: number; violations: string[] }[] = [];
     for (const width of widths) {
-      const height = Math.round((width * EXPORT_HEIGHT) / EXPORT_WIDTH);
+      const height = Math.round(width * aspect);
       const g = await measureChart(url, { width, height, browser });
       const violations = findLabelViolations(g.content, g.rects, g.series).map(
         (v) => `@${width}px ${v}`,
