@@ -90,7 +90,7 @@ run("bun", ["scripts/snap-contrast.mjs"]);
 // static-build check can't see this (the tooltip only exists on hover, in HTML/CSS,
 // not SVG). Fails the run before export on a tooltip name painted in the mark hue.
 console.log(`[produce ${type}] checking tooltip contrast (snap-tooltip-contrast)…`);
-snap("scripts/snap-tooltip-contrast.mjs");
+run("bun", ["scripts/snap-tooltip-contrast.mjs"]);
 
 const result = {
   static: join(outDir, "static.png"),
