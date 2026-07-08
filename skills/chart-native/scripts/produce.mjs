@@ -86,6 +86,12 @@ run("bun", ["scripts/snap-proof.mjs"], { OUTDIR: outDir });
 console.log(`[produce ${type}] checking text contrast (snap-contrast)…`);
 run("bun", ["scripts/snap-contrast.mjs"]);
 
+// 2c. render-time WCAG contrast guard for the INTERACTIVE hover/focus tooltip — a
+// static-build check can't see this (the tooltip only exists on hover, in HTML/CSS,
+// not SVG). Fails the run before export on a tooltip name painted in the mark hue.
+console.log(`[produce ${type}] checking tooltip contrast (snap-tooltip-contrast)…`);
+snap("scripts/snap-tooltip-contrast.mjs");
+
 const result = {
   static: join(outDir, "static.png"),
   interactive: join(outDir, "interactive.png"),
