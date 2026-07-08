@@ -13,6 +13,7 @@
 // data loss), so those types keep the channel WIDTH but export at their natural height.
 
 import type { ChartType } from "./chart-spec";
+import { CHANNELS, normalizeChannel } from "../../atelier/src/channel";
 
 export interface ExportSize {
   width: number;
@@ -41,38 +42,22 @@ export type ExportAspect = keyof typeof EXPORT_SIZES;
 // → 16:9".
 export const DEFAULT_EXPORT_ASPECT: ExportAspect = "landscape";
 
-// Every CADRAGE channel answer we recognize → one canonical aspect. Kept generous so
-// the suggester can pass the journalist's own word ("feed", "story", "reel", …)
-// without a lookup on its side. Matched case/space-insensitively.
-export const CHANNEL_ASPECT: Record<string, ExportAspect> = {
-  // square / feed
-  feed: "square",
-  square: "square",
-  // portrait / social-vertical
-  social: "portrait",
-  "social-vertical": "portrait",
-  vertical: "portrait",
-  story: "portrait",
-  stories: "portrait",
-  portrait: "portrait",
-  reel: "portrait",
-  reels: "portrait",
-  tiktok: "portrait",
-  shorts: "portrait",
-  // landscape / web
-  web: "landscape",
-  article: "landscape",
-  embed: "landscape",
-  landscape: "landscape",
-  print: "landscape",
-  youtube: "landscape",
-};
-
+// Every CADRAGE channel answer we recognize → one canonical aspect. The keyword
+// table (feed/square, social/vertical/story/reel/tiktok/shorts, web/article/embed/…)
+// now lives ONCE in the shared cross-producer channel model
+// (skills/atelier/src/channel.ts `normalizeChannel`) so dw-chart, suggest-chart, and
+// produce-all's conformance check can't drift from each other. Resolve the
+// free-text channel string to the canonical enum there, then read its aspect.
+//
 // Resolve the export aspect for a CADRAGE channel string. Unknown / absent → the
-// web/article default (16:9). Pure.
+// web/article default (16:9, via normalizeChannel's default). Pure.
 export function channelToAspect(channel?: string): ExportAspect {
-  const key = channel?.trim().toLowerCase();
-  return (key && CHANNEL_ASPECT[key]) || DEFAULT_EXPORT_ASPECT;
+  const aspect = CHANNELS[normalizeChannel(channel)].aspect;
+  // CHANNELS' base `aspect` is always "portrait" | "square" | "landscape" for the
+  // three channels this table covers — "responsive" is reserved for the interactive
+  // sub-format (article-web only) and never appears here, so this narrows safely
+  // onto ExportAspect (keyof EXPORT_SIZES, a static-PNG-only concern).
+  return aspect as ExportAspect;
 }
 
 // ROW-COUNT-DRIVEN HORIZONTAL chart types. Each data ROW is laid out as its own
