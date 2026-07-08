@@ -107,6 +107,50 @@ describe("export-code CLI — export-completeness gate", () => {
     }
   });
 
+  it("packages interactive.html + static.html (no-JS fallback) + EMBED.md — NEVER a standalone static.png", () => {
+    // Mirrors what chart-native/map-native's produce.mjs actually leaves in outDir for an
+    // interactive delivery: a self-contained interactive.html, PLUS the raw "static.png"
+    // byproduct it always builds regardless of the requested format, PLUS a stray
+    // "interactive.png" review screenshot (snap-proof.mjs writes both).
+    const outDir = mkdtempSync(join(tmpdir(), "atelier-export-code-out-"));
+    writeFileSync(join(outDir, "interactive.html"), "<html>interactive</html>");
+    writeFileSync(join(outDir, "static.png"), Buffer.from("fake-png-bytes"));
+    writeFileSync(
+      join(outDir, "interactive.png"),
+      Buffer.from("fake-screenshot-bytes"),
+    );
+    const resultsPath = join(outDir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(shippableReport("p1")));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-code-fixture-interactive-"),
+    );
+    try {
+      execFileSync(
+        "bun",
+        [scriptPath, outDir, exportDir, "--results", resultsPath, "--id", "p1"],
+        { encoding: "utf8" },
+      );
+      // The interactive form ships.
+      expect(existsSync(join(exportDir, "interactive.html"))).toBe(true);
+      // The a11y fallback ships as self-contained no-JS HTML, not a bare image.
+      expect(existsSync(join(exportDir, "static.html"))).toBe(true);
+      const staticHtmlContent = readFileSync(
+        join(exportDir, "static.html"),
+        "utf8",
+      );
+      expect(staticHtmlContent).toContain("data:image/png;base64");
+      expect(staticHtmlContent).not.toContain("<script");
+      // Neither raw PNG is ever copied into the delivered folder.
+      expect(existsSync(join(exportDir, "static.png"))).toBe(false);
+      expect(existsSync(join(exportDir, "interactive.png"))).toBe(false);
+      const embedMd = readFileSync(join(exportDir, "EMBED.md"), "utf8");
+      expect(embedMd).not.toContain(".png");
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+
   it("refuses (non-zero exit) to export a proposal that is not produced + render-approved", () => {
     const outDir = setupOutDir();
     const resultsPath = join(outDir, "report.json");

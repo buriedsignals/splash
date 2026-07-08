@@ -3,6 +3,9 @@
 // a single self-contained static.html (the image inlined, no JS, embeds anywhere); (3) COMPOSANT
 // EMBED: run deploy-embed on interactive.html for a hosted link. Homogeneous across producers now
 // that every interactive producer emits a self-contained interactive.html.
+// An interactive delivery has NO standalone image form: the producer's raw "static.png" byproduct
+// (chart-native/map-native always build one regardless of the requested format) is used ONLY to
+// build the static.html fallback below and is never copied into the export folder as its own file.
 //   bun export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId>
 import {
   readdirSync,
@@ -84,19 +87,28 @@ if (import.meta.main) {
     process.exit(1);
   }
   mkdirSync(exportDir, { recursive: true });
-  const artifacts = readdirSync(outDir).filter((f) =>
+  const candidates = readdirSync(outDir).filter((f) =>
     [".html", ".png", ".jpg", ".mp4"].includes(extname(f).toLowerCase()),
   );
-  if (!artifacts.length) {
+  if (!candidates.length) {
     console.error(`no exportable artifacts in ${outDir}`);
     process.exit(1);
   }
-  for (const f of artifacts) copyFileSync(join(outDir, f), join(exportDir, f));
 
   // The interactive (embeddable) artifact — a self-contained .html when present.
-  const interactive = artifacts.find((f) => f.endsWith(".html")) ?? null;
-  // The static image, if any → build a self-contained static.html (image inlined).
-  const png = artifacts.find((f) => /\.(png|jpg)$/i.test(f)) ?? null;
+  const interactive = candidates.find((f) => f.endsWith(".html")) ?? null;
+  // The producer's raw static-image byproduct — named "static.png"/"static.jpg" by both
+  // chart-native and map-native — used ONLY to build the self-contained static.html fallback
+  // below. Matched by name (not "any png/jpg") so a stray review screenshot like
+  // "interactive.png" is never picked up by mistake.
+  const png = candidates.find((f) => /^static\.(png|jpg)$/i.test(f)) ?? null;
+
+  // Copy every artifact EXCEPT raw images (.png/.jpg) — an interactive/scrolly delivery has no
+  // standalone image form; the three forms are code source, static HTML (no JS), and the hosted
+  // embed link (see SKILL.md EXPORT §6).
+  const artifacts = candidates.filter((f) => !/\.(png|jpg)$/i.test(f));
+  for (const f of artifacts) copyFileSync(join(outDir, f), join(exportDir, f));
+
   let staticFile = null;
   if (png) {
     const ext = extname(png).toLowerCase() === ".jpg" ? "jpeg" : "png";
@@ -107,7 +119,7 @@ if (import.meta.main) {
 
   const forms = [];
   forms.push(
-    `## 1. Code source (self-host + customise)\nAll files in this folder. Upload them together; embed the ${interactive ? "interactive" : "static"} visual with:\n\n\`\`\`html\n${embedSnippet(interactive ?? png ?? artifacts[0])}\n\`\`\``,
+    `## 1. Code source (self-host + customise)\nAll files in this folder. Upload them together; embed the ${interactive ? "interactive" : "static"} visual with:\n\n\`\`\`html\n${embedSnippet(interactive ?? artifacts[0])}\n\`\`\``,
   );
   if (staticFile)
     forms.push(

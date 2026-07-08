@@ -108,12 +108,14 @@ channel, say so and point back to the CADRAGE Q3 channel pick rather than silent
   `suggest-chart` (see "Only offer what is confirmed producible" below) — never offer a named sub-format
   that turns out not to be producible.
 
-**Article/web defaults to interactive — with a static fallback ALWAYS produced (a11y invariant).** For
-the article-web channel, `suggest-chart` routing DEFAULTS to interactive — it wins unless there is a
-concrete reason not to — but whenever interactive is chosen, a static image that carries the claim ON
-ITS OWN is ALSO produced alongside it (≈85% of readers never touch hover/click; interactive is additive,
-never load-bearing). Never present an interactive-only proposal for article/web — the static fallback is
-part of the SAME accept decision, not a separate ask.
+**Article/web defaults to interactive — with a static HTML (no-JS) fallback ALWAYS produced (a11y
+invariant).** For the article-web channel, `suggest-chart` routing DEFAULTS to interactive — it wins
+unless there is a concrete reason not to — but whenever interactive is chosen, a self-contained static
+HTML file (no JS) that carries the claim ON ITS OWN is ALSO produced alongside it, as part of the EXPORT
+delivery (§6) — NOT a separate static PNG image (≈85% of readers never touch hover/click; interactive is
+additive, never load-bearing). Never present an interactive-only proposal for article/web — the
+static-HTML fallback is part of the SAME accept decision, not a separate ask, and interactive delivery
+never offers or ships a standalone image.
 
 **★ One opportunity = one accept decision = one `suggest-chart` call.** Each DISTINCT `suggest-article`
 opportunity is routed and accepted INDEPENDENTLY — never fold a second opportunity's series/claim into
@@ -270,12 +272,17 @@ article-web is the one channel that can host it**:
   (portrait 1080×1920 for social-vertical, square 1080×1080 for social-feed, landscape 1200×675 for
   article-web) — no delivery menu, just the file.
 - **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`, article-web only):**
-  only here do the three delivery forms apply — ask which the journalist wants:
+  only here do the three delivery forms apply — ask which the journalist wants. **There is no image
+  export for interactive/scrolly** — the accessible fallback is the static HTML (no JS) form below, not a
+  PNG:
   - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs exports/<slug>/<id> exports/<slug>/<id>-export --results exports/<slug>/report.json --id <id>` (the source is the per-proposal build subdir from 5c).
-    Hands over a folder with all the built files (`interactive.html`, `static.png`, `static.html`) + an
-    `EMBED.md`. Embed the interactive visual with the `<iframe src="interactive.html">` snippet.
-  - **HTML statique (one self-contained file, no JS):** the `static.html` produced by `export-code`
-    (the image inlined) — a single dependency-free file that embeds in any CMS/email/offline.
+    Hands over a folder with `interactive.html`, `static.html` (the no-JS a11y fallback), and an
+    `EMBED.md` — **no `static.png`**, even though the producer built one as a byproduct in the build
+    subdir; `export-code` only reads it to inline into `static.html` and never copies it standalone.
+    Embed the interactive visual with the `<iframe src="interactive.html">` snippet.
+  - **HTML statique (one self-contained file, no JS — the accessibility fallback):** the `static.html`
+    produced by `export-code` (the image inlined, but the delivery form is the no-JS HTML document, not a
+    bare image file) — a single dependency-free file that embeds in any CMS/email/offline.
   - **Composant en lien embed (hosted, non-technical):** run
     `bun skills/atelier/scripts/deploy-embed.mjs exports/<slug>/<id>/interactive.html <slug> --results exports/<slug>/report.json --id <id> <appName>` → an
     iframe-ready URL to the hosted interactive component. The host is the **journalist's OWN fly.io app**

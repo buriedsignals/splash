@@ -45,10 +45,11 @@ the insight can be annotated directly on the chart · general audience · tight 
 **Channel scoping (post GATE -1):** on the two **social** channels, this gate is the primary decision —
 "static wins" in full, and the only escalation available is to video (GATE 4). On **article-web**, the
 channel default is now interactive (GATE -1) as a deliberate product choice, so this grounding no longer
-functions as a gate you must pass to reach interactive — instead it is the **reason a static fallback
-that carries the core claim is always produced alongside the interactive** (see GATE 2's non-negotiable
-invariant). The reach argument doesn't disappear when interactive wins the channel default; it moves to
-guaranteeing the fallback.
+functions as a gate you must pass to reach interactive — instead it is the **reason a static HTML (no-JS)
+fallback that carries the core claim is always produced alongside the interactive** (see GATE 2's
+non-negotiable invariant). The fallback is a self-contained no-JS HTML document, NOT a separate static
+image export — interactive delivery has no standalone PNG/image form. The reach argument doesn't
+disappear when interactive wins the channel default; it moves to guaranteeing the fallback.
 
 ## GATE 2 — INTERACTIVE: signal + the non-negotiable fallback
 
@@ -67,9 +68,11 @@ On the **social** channels these conditions are moot — interactive isn't in th
 so this gate never applies there regardless of signal strength.
 
 **Non-negotiable (the a11y-fallback invariant — GATE 1's grounding made concrete):** whenever interactive
-is chosen, the static fallback must carry the core claim WITHOUT interaction — the interactive layer is
-additive, never load-bearing (85% never see hover/click state, Archie Tse / NYT, Malofiej 2016). This is
-why defaulting article-web to interactive is safe: the reach guarantee ships either way.
+is chosen, the static HTML (no-JS) fallback must carry the core claim WITHOUT interaction — the
+interactive layer is additive, never load-bearing (85% never see hover/click state, Archie Tse / NYT,
+Malofiej 2016). The fallback ships as one of the interactive delivery's three forms (code source / static
+HTML no-JS / hosted embed link) — never as a separate static image export. This is why defaulting
+article-web to interactive is safe: the reach guarantee ships either way.
 
 ## GATE 3 — escalate to SCROLLYTELLING (only if ALL)
 
@@ -129,7 +132,8 @@ CLAIM + DATA
   GATE 0  → chart family from intent
   GATE 1  → static-first grounding: full gate on social · a11y-fallback baseline on article-web
   GATE 2  → article-web: interactive is already default; these 3 are signal, not an AND-gate
-            (large/multi-series + personal-hook + web-only) — static fallback ALWAYS ships alongside
+            (large/multi-series + personal-hook + web-only) — static HTML (no-JS) fallback ALWAYS
+            ships alongside (never a separate image export)
   GATE 3  → sequential + single-chart 4+ states + long-form + resources?  ALL YES → SCROLLY
   GATE 4  → motion-is-the-encoding OR social/vertical?           YES → VIDEO
   GATE 5  (geo only) spatial pattern IS the story + map-safe value (rate OR categorical/temporal, not raw
@@ -139,7 +143,8 @@ CLAIM + DATA
 Static-first is not conservatism — it is empirically grounded. On the social channels every escalation
 (to video) still must buy a specific capability static cannot provide. On article-web, interactive is now
 the deliberate channel default rather than an earned escalation — but the same grounding still governs
-the non-negotiable static fallback that ships alongside it, so the reach guarantee is never lost. Never
+the non-negotiable static HTML (no-JS) fallback that ships alongside it (as one of the interactive
+delivery's three forms, never as a separate image export), so the reach guarantee is never lost. Never
 drop the fallback invariant, and never pick interactive on a social channel because "interactive =
 sophisticated" — it simply isn't in that channel's allowed set.
 
