@@ -81,3 +81,40 @@ f.onsubmit=async(e)=>{e.preventDefault();
   document.body.innerHTML='<h1>Saved ✓</h1><p>Return to your Terminal — the install continues.</p>';};
 </script></body></html>`;
 }
+
+// Live verification — real provider GETs (no token cost). true iff the credential works.
+export async function verifyMapTiler(key: string): Promise<boolean> {
+  if (!key) return false;
+  try {
+    const r = await fetch(
+      `https://api.maptiler.com/maps/streets-v2/style.json?key=${encodeURIComponent(key)}`,
+    );
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function verifyDatawrapper(token: string): Promise<boolean> {
+  if (!token) return false;
+  try {
+    const r = await fetch("https://api.datawrapper.de/v3/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function verifyAnthropic(key: string): Promise<boolean> {
+  if (!key) return false;
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/models", {
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01" },
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}

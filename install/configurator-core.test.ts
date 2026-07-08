@@ -3,6 +3,9 @@ import {
   serializeEnv,
   renderConfiguratorHtml,
   RUNTIMES,
+  verifyMapTiler,
+  verifyDatawrapper,
+  verifyAnthropic,
 } from "./configurator-core.ts";
 
 const base = {
@@ -43,3 +46,31 @@ test("configurator HTML has the fields + the subscription note", () => {
   expect(h).toContain('name="anthropic"');
   expect(h.toLowerCase()).toContain("subscription"); // "leave blank if you use a subscription"
 });
+
+const MT = process.env.VITE_MAPTILER_KEY;
+const DW = process.env.DATAWRAPPER_API_TOKEN;
+const AN = process.env.ANTHROPIC_API_KEY;
+
+test.skipIf(!MT)(
+  "verifyMapTiler: true for the real key, false for a bad one",
+  async () => {
+    expect(await verifyMapTiler(MT!)).toBe(true);
+    expect(await verifyMapTiler("not-a-real-key")).toBe(false);
+  },
+);
+
+test.skipIf(!DW)(
+  "verifyDatawrapper: true for the real token, false for a bad one",
+  async () => {
+    expect(await verifyDatawrapper(DW!)).toBe(true);
+    expect(await verifyDatawrapper("not-a-real-token")).toBe(false);
+  },
+);
+
+test.skipIf(!AN)(
+  "verifyAnthropic: true for the real key, false for a bad one",
+  async () => {
+    expect(await verifyAnthropic(AN!)).toBe(true);
+    expect(await verifyAnthropic("sk-ant-not-real")).toBe(false);
+  },
+);
