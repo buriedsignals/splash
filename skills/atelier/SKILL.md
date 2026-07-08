@@ -62,6 +62,10 @@ Branch:
   visual instead. **Q3 (channel) is the ONLY other question DIRECT may skip and it does NOT skip it** —
   it is always asked, on both branches, because the format/aspect routing downstream (PRODUCTION's
   aspect defaulting, `suggest-chart`'s Gate 1–4 ladder) depends on it. Q4 stays conditional, as above.
+  If DIRECT names a visual whose exact sub-format is still open (e.g. "a scrolly" — bars vs line
+  reveal), do not float multiple sub-format options to the journalist before checking each one's
+  reachability via `suggest-chart` — confirm producibility first, then offer only what's reachable
+  (same rule as PROPOSITION below; never offer then retract).
 - **GUIDED**: go to PROPOSITION.
 
 ### 4. PROPOSITION — GATE 2 (guided path only)
@@ -71,6 +75,12 @@ the element/format/producer yourself — that re-decides what a sub-skill alread
 KB-grounded guardrails) to get its routing decision. Present the ProposalSet × `suggest-chart` routing
 as plain-language lines — for each opportunity: what it shows, which visual, why.
 
+**Only offer what is confirmed producible.** Before presenting an element/format (or sub-format —
+e.g. which scrolly reveal style) to the journalist, it must already have been checked as reachable via
+`suggest-chart`'s own routing/reachability, never assumed from memory. Never offer an option and then
+have to retract it as engine-infeasible after the fact — if a candidate isn't reachable, drop it before
+it reaches the journalist rather than proposing it and walking it back.
+
 **GATE 2b (data provenance — prose proposals only):** if a proposal's figures are
 `provenance:"prose"`, show the reconstructed table and get an explicit confirmation that the numbers
 are correct BEFORE the journalist accepts/edits/rejects that proposal. The reconstructed table MUST be
@@ -78,7 +88,10 @@ built from the CURRENT article/data given this session — never carried over, s
 stale export sitting in `exports/<slug>/`; if a prior export exists, the journalist's current input is
 always the authority. The ordering is: confirm the table (2b) FIRST as its OWN question, THEN accept /
 edit / reject (2) — never bundle "are these figures right?" and "do you accept this visual?" into one
-question (they are different decisions). Never fabricate a dataset attribution.
+question (they are different decisions). Never fabricate a dataset attribution. **GATE 2b applies only
+to `provenance:"prose"` proposals** — a `"table"` (or `"none"`) proposal never goes through 2b, so its
+`confirmedTable` (set in 5b) stays `false`/absent; only set it `true` after an actual 2b confirmation
+fires for a prose proposal.
 
 Only accepted proposals continue.
 
@@ -86,7 +99,10 @@ Only accepted proposals continue.
 
 PRODUCTION is a coded, **drop-proof** loop — you do NOT run producers one at a time from prose.
 You assemble the accepted proposals into one file and let `produce-all` produce every one of them,
-so a secondary proposal can never silently drop.
+so a secondary proposal can never silently drop. If the element/format needs to change during
+PRODUCTION (a fallback, a journalist request, a retry) — go back through `suggest-chart` for the new
+routing, the same way `needs-fallback` (5d) already re-emits via suggest-chart; never hand-author the
+producer spec yourself (see Never).
 
 **5a. Validate each spec first.** For every accepted proposal, run the producer's spec validator
 (`validateChartSpec` for charts; `validateChoroplethConfig` / `validateLocatorConfig` /
@@ -96,7 +112,9 @@ reads as a label rather than the insight — so a weak spec never reaches GATE 3
 **5b. Assemble `exports/<slug>/accepted.json`** — an array, one entry per accepted proposal:
 `{ "id": "<stable-id>", "producer": "dw-chart|chart-native|map-dw|map-native|scrolly",
 "format": "static|interactive|video|scrolly", "spec": <the validated producer spec>,
-"provenance": "table|prose|none", "confirmedTable": <true ONLY after Gate 2b> }`.
+"provenance": "table|prose|none", "confirmedTable": <true ONLY after an actual Gate 2b prose-table
+confirmation — stays false/absent for "table" (and "none") provenance, which never go through 2b;
+never set it true on a table-provenance proposal just because it looks accepted> }`.
 `producer` + `format` are what suggest-chart routed; `provenance` comes from suggest-article.
 
 **5c. Produce everything at once** — report to a FILE (the gates and EXPORT read it back):
@@ -120,6 +138,11 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
   for that claim via suggest-chart, replace that proposal's `producer`/`spec` in `accepted.json`, re-run
   5c. Do not hand-translate.
 - **`failed`** → surface the `error`; fix the spec or drop the proposal. Never ship a failed visual. If the
+  failure is a **conformance gate** rejecting the accepted spec (e.g. a colour/contrast/format
+  violation) — do NOT silently mutate the accepted spec (`baseColor`, format, etc.) to make the gate
+  pass without saying so: SURFACE the conformance issue to the journalist as-is, and if the spec
+  genuinely needs to change to fix it, re-open GATE 2 for the journalist to re-accept the changed spec —
+  never edit-and-reship a spec the journalist never saw (see Never). If the
   failure traces to the PRODUCER/COMPONENT'S own source code rather than the spec — a genuine engine bug,
   not a data/shape problem — do NOT edit that code (`skills/*/src`, any `.tsx`/`.ts` producer file) to force
   the gate green: REPORT the bug to the journalist (this visual cannot ship yet) and drop or route around
@@ -147,10 +170,14 @@ concern is about the source (missing, name-only, generic, or unclear), ask the j
 ONE free-text prompt collecting the label AND the **specific, traceable dataset/page URL** together (e.g.
 the Eurostat dataset page for the exact table, the Insee series page — NOT the organisation's homepage) —
 never a single-select (see CADRAGE) — then update the spec and re-run 3a before showing again.
-Verify quality, not just that it built. **After "ship it", record the approval:**
+Verify quality, not just that it built. **After "ship it", record the approval — pass the LOCAL
+artifact file path on disk, NEVER the public/cloud URL** (a Datawrapper `publicUrl`, a fly.io embed
+link, etc.): `gate-render` opens and hashes the file at that path, so a public URL ENOENTs.
 ```bash
-bun skills/atelier/scripts/gate-render.mjs exports/<slug>/report.json <id> <the-approved-artifact>
+bun skills/atelier/scripts/gate-render.mjs exports/<slug>/report.json <id> exports/<slug>/<id>/static.png
 ```
+(swap `static.png` for whichever local file the journalist approved — e.g. `interactive.html`,
+`scrolly.html`, or the rendered `.mp4` — always the path under `exports/<slug>/<id>/`, never a URL.)
 `gate-render` is the ONLY writer of the render approval; EXPORT refuses any visual not render-reviewed
 (3a) AND not approved (3b) — so an unreviewed, unseen, or unapproved render can never ship.
 
@@ -228,13 +255,15 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
 - Never invent data or fabricate a dataset attribution.
 - Never conduct the dialogue in a language other than the journalist's (detect from first message).
 - Never let the produced visual's furniture (title, intro, source label, scrolly captions) default to English — the detected language is threaded to suggest-article and suggest-chart so the OUTPUT matches the dialogue, not only the chat.
-- Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate. This means actually INVOKING `suggest-article` (ANALYSE) and `suggest-chart` (PROPOSITION routing) as real Skill calls, not hand-authoring their output from memory/inspection — their eval-hardened guardrails and KB grounding only fire when they genuinely run.
+- Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate. This means actually INVOKING `suggest-article` (ANALYSE) and `suggest-chart` (PROPOSITION routing) as real Skill calls, not hand-authoring their output from memory/inspection — their eval-hardened guardrails and KB grounding only fire when they genuinely run. This holds for the FIRST routing AND for any LATER change to the chosen element/format (a journalist request mid-flow, a fallback, a retry after a failed gate): re-invoke `suggest-chart` again with the new signal — never re-decide it yourself by grepping producer source and hand-authoring/`Write`-ing a `spec.json`; only `suggest-chart`'s own re-run re-validates the choice and re-applies its guardrails.
 - Never name a chart type in the intent passed to suggest-article or suggest-chart (on the guided path).
 - Never ship a visual without the mandatory render-review (Gate 3a) — `assertShippable` refuses a visual with no review record; the review's concerns are advisory but running it is not optional.
 - Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow. This holds with NO exception for making a produce/conformance gate pass: never edit a producer/component's source code (`skills/*/src`, any `.tsx`/`.ts` producer file) mid-PRODUCTION to turn a failing gate green — a real newsroom journalist cannot patch the engine, so atelier must not either. If a produce or conformance gate fails because of a genuine engine bug (not a spec/data problem), SURFACE the bug to the journalist, do NOT ship that visual, and do NOT patch the code — the bug is reported, never worked around.
+- Never silently mutate the ACCEPTED SPEC (`baseColor`, format, etc.) mid-PRODUCTION to route around a conformance-gate failure — this is the spec analogue of the rule above ("never edit product code" → "never silently edit the accepted spec to bypass a gate"). A conformance failure is SURFACED to the journalist as-is; if the spec must change to fix it, GATE 2 is re-opened for re-acceptance of the changed spec. The produce-time conformance guards exist precisely so a non-conformant visual never ships unseen.
 - Never hand over an INTERACTIVE visual without offering the three delivery forms at GATE 4 — code source, static HTML, and the fly.io embed link — as an explicit choice (machinery: `export-code.mjs` + `deploy-embed.mjs`). A SCROLLY has no static image, so it offers only **code source + embed link** (its embed targets `scrolly.html`, not `interactive.html`) — do not promise a static-HTML form for a scrolly.
 - Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.
 - Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.)
 - Never accept a generic organisation homepage (e.g. `eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 URL as the source — it must be treated exactly like a missing URL. The source MUST point to the SPECIFIC, traceable dataset/page the figures come from (the Eurostat dataset page for the exact table, the Insee series page, …). If the journalist only gives an organisation name or its homepage, ASK for the specific dataset/page reference rather than shipping the generic one.
 - Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1, Q2) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic") that excludes an entity the visual actually shows. If the data supports more than the title states, widen the title or flag it at Gate 3.
 - Never silently substitute a value from a prior/stale export when it disagrees with the journalist's current article/data — the values used (and shown at Gate 2b) MUST always be the ones the journalist provided in the current session.
+- Never offer the journalist an element/format (or sub-format) option before confirming — via `suggest-chart`'s reachability, not from memory — that it is actually producible. Retracting an offered option as infeasible forces the journalist to re-answer the same decision multiple times; check first, propose only what's confirmed.
