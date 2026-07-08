@@ -56,7 +56,9 @@ opportunity: what it shows, which visual, why.
 **GATE 2b (data provenance — prose proposals only):** if a proposal's figures are
 `provenance:"prose"`, show the reconstructed table and get an explicit confirmation that the numbers
 are correct BEFORE the journalist accepts/edits/rejects that proposal. The ordering is: confirm the
-table (2b) first, then accept / edit / reject (2). Never fabricate a dataset attribution.
+table (2b) FIRST as its OWN question, THEN accept / edit / reject (2) — never bundle "are these figures
+right?" and "do you accept this visual?" into one question (they are different decisions). Never
+fabricate a dataset attribution.
 
 Only accepted proposals continue.
 
