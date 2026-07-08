@@ -586,6 +586,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        lang={config.lang}
       >
         {inner}
       </MapFrame>

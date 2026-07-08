@@ -20,6 +20,7 @@ import {
   type BarLayout,
 } from "./bar-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
+import type { Lang } from "./core/locale";
 import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrameWithHeader } from "./core/format";
@@ -37,6 +38,8 @@ export interface BarConfig {
   highlightIndex?: number;
   /** Okabe-Ito hex for the primary series colour. Absent → COLORS.line default. */
   baseColor?: string;
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   rows: Record<string, string | number>[];
 }
 
@@ -94,6 +97,7 @@ export function BarChart({
   const layout = computeBarLayout(data, dims, {
     orientation: config.orientation,
     sort: config.sort,
+    lang: config.lang,
   });
 
   const [hover, setHover] = useState<number | null>(null);
@@ -135,6 +139,7 @@ export function BarChart({
       tooltip={tooltip}
       scale={sc}
       embedded={embedded}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -286,7 +291,7 @@ function BarSvg({
                 role={interactive ? "img" : undefined}
                 aria-label={
                   interactive
-                    ? `${b.rawCat}: ${formatNumber(b.rawVal)} ${config.unit}`
+                    ? `${b.rawCat}: ${formatNumber(b.rawVal, config.lang)} ${config.unit}`
                     : undefined
                 }
                 style={interactive ? { cursor: "pointer" } : undefined}
@@ -323,7 +328,7 @@ function BarSvg({
                 fill={COLORS.ink}
                 opacity={labelOp}
               >
-                {formatNumber(b.rawVal)}
+                {formatNumber(b.rawVal, config.lang)}
               </text>
             </g>
           );
@@ -389,7 +394,7 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong>{formatNumber(b.rawVal)}</strong>{" "}
+      <strong>{formatNumber(b.rawVal, config.lang)}</strong>{" "}
       <span style={{ opacity: 0.8 }}>{config.unit}</span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>{String(b.rawCat)}</div>
     </div>

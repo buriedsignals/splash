@@ -655,6 +655,7 @@ export const LocatorMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
             <MapFilterBar

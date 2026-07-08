@@ -3,6 +3,7 @@
 // is legible WITHOUT hover. The component does the screen-space placement using these
 // hints; this module decides the text and the inside-vs-beside choice deterministically.
 import type { PlacedSymbol } from "./symbol-geo";
+import { localizeDecimal, type Lang } from "./core/locale";
 
 export interface SymbolLabel {
   lon: number;
@@ -14,11 +15,13 @@ export interface SymbolLabel {
 
 // Compact numeric format for a direct label: integers below 1000, else k / M with a
 // trimmed trailing ".0". The unit is NOT included (it belongs in the legend/description).
-export function formatLabelValue(value: number): string {
+export function formatLabelValue(value: number, lang?: Lang): string {
   const abs = Math.abs(value);
-  if (abs >= 1_000_000) return trimDot((value / 1_000_000).toFixed(1)) + "M";
-  if (abs >= 1_000) return trimDot((value / 1_000).toFixed(1)) + "k";
-  return String(Math.round(value));
+  let s: string;
+  if (abs >= 1_000_000) s = trimDot((value / 1_000_000).toFixed(1)) + "M";
+  else if (abs >= 1_000) s = trimDot((value / 1_000).toFixed(1)) + "k";
+  else s = String(Math.round(value));
+  return localizeDecimal(s, lang); // FR: "1.2M" → "1,2M"
 }
 
 function trimDot(s: string): string {
@@ -26,12 +29,15 @@ function trimDot(s: string): string {
 }
 
 // One label per symbol, in the input order (symbols arrive sorted value-descending).
-export function symbolLabels(symbols: PlacedSymbol[]): SymbolLabel[] {
+export function symbolLabels(
+  symbols: PlacedSymbol[],
+  lang?: Lang,
+): SymbolLabel[] {
   return symbols.map((s) => ({
     lon: s.lon,
     lat: s.lat,
     name: s.label ?? "",
-    valueText: formatLabelValue(s.value),
+    valueText: formatLabelValue(s.value, lang),
     radius: s.radius,
   }));
 }

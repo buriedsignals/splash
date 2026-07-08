@@ -20,6 +20,10 @@ export interface NativeSpec {
   highlight?: string; // bar: the category to accent
   /** Okabe-Ito hex for the primary series (e.g. "#009E73"). Absent → component default. */
   baseColor?: string;
+  /** BCP-47 language of the deliverable (e.g. "fr", "en"). Localizes number
+   *  separators + furniture at render time. Absent → English. Set by the suggester
+   *  from the article language; injected onto every config in specToNativeConfig. */
+  lang?: string;
 }
 
 export class UnsupportedNativeType extends Error {
@@ -706,5 +710,9 @@ export function specToNativeConfig(spec: NativeSpec): {
   const mapper = MAPPERS[spec.nativeType];
   if (!mapper) throw new UnsupportedNativeType(spec.nativeType);
   validateShape(spec.nativeType, parsed);
-  return mapper(parsed, spec);
+  const out = mapper(parsed, spec);
+  // Single injection point: thread the language onto EVERY produced config so all
+  // types inherit locale-aware number/furniture rendering without touching each mapper.
+  if (spec.lang) out.config.lang = spec.lang;
+  return out;
 }

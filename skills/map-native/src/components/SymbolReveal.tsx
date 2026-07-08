@@ -93,7 +93,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
     });
     mapRef.current = map;
     map.on("load", () => {
-      const labels = symbolLabels(geo.symbols);
+      const labels = symbolLabels(geo.symbols, config.lang);
       map.addSource("symbols", {
         type: "geojson",
         data: {
@@ -190,6 +190,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        lang={config.lang}
       >
         {/* Map fills the full composition frame */}
         <div

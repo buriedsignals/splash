@@ -41,6 +41,7 @@ import type { DotDensityConfigShape } from "../validate-config";
 import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
+import { formatLocaleNumber } from "../core/locale";
 import { resolveScene } from "../video-scene";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
@@ -311,7 +312,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
     if (!el || !legendState) return;
     const ink = dark ? "#f4f4f5" : "#444";
     const sub = dark ? "#c8c8cf" : "#555";
-    const dotN = legendState.dotValue.toLocaleString();
+    const dotN = formatLocaleNumber(legendState.dotValue, config.lang);
     const header = `
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:${legendState.hasCategories ? 8 : 0}px">
         <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dark ? "#e8e8ec" : "#2171b5"};flex-shrink:0"></span>
@@ -353,6 +354,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        lang={config.lang}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>

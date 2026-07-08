@@ -188,6 +188,7 @@ export function scrollyStepCount(
     title: config.title ?? "",
     insight: config.insight ?? config.title ?? "",
     unit: config.valueUnit ?? "",
+    lang: config.lang,
   });
   return mapStoryToChapters(beats, {
     title: config.title ?? "",

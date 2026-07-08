@@ -19,6 +19,7 @@ import {
   type FilterState,
 } from "./core/map-filter";
 import { fmtBin } from "./core/legend-format";
+import { formatLocaleNumber, localizeNumberString } from "./core/locale";
 import { legendTheme } from "./theme/legend-theme";
 import type { HexGridConfigShape } from "./validate-config";
 
@@ -265,13 +266,16 @@ export const HexGridMap: React.FC<Props> = ({
           const value = Number(p.__value ?? 0);
           // count → "42 points"; sum/mean → the aggregate value line + point count.
           let html: string;
+          const lang = config.lang;
           if (aggregate === "count") {
-            html = `<strong>${count.toLocaleString()} points</strong>`;
+            html = `<strong>${formatLocaleNumber(count, lang)} points</strong>`;
           } else {
             const label = aggregate === "mean" ? "mean" : "sum";
             const shown =
-              aggregate === "mean" ? value.toFixed(1) : value.toLocaleString();
-            html = `<strong>${label} ${shown}</strong><br/>${count.toLocaleString()} points`;
+              aggregate === "mean"
+                ? localizeNumberString(value.toFixed(1), lang)
+                : formatLocaleNumber(value, lang);
+            html = `<strong>${label} ${shown}</strong><br/>${formatLocaleNumber(count, lang)} points`;
           }
           popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
         });
@@ -297,7 +301,7 @@ export const HexGridMap: React.FC<Props> = ({
             (b) => `
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
               <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px ${theme.stroke};flex-shrink:0"></span>
-              <span style="font:11px/1.2 sans-serif;color:${theme.sub}">${fmtBin(b.min)}–${fmtBin(b.max)}</span>
+              <span style="font:11px/1.2 sans-serif;color:${theme.sub}">${fmtBin(b.min, { lang: config.lang })}–${fmtBin(b.max, { lang: config.lang })}</span>
             </div>`,
           )
           .join("");
@@ -437,6 +441,7 @@ export const HexGridMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
             <MapFilterBar

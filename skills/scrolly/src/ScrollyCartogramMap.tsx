@@ -48,6 +48,8 @@ export interface ScrollyCartogramConfig {
   description?: string;
   insight?: string;
   source?: { name: string; url: string };
+  /** deliverable language — localizes numbers + "Source". Default English. */
+  lang?: string;
 }
 
 interface CameraPoint {

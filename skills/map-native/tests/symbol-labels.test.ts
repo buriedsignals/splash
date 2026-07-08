@@ -27,6 +27,16 @@ describe("formatLabelValue", () => {
     expect(formatLabelValue(2000)).toBe("2k");
     expect(formatLabelValue(2_300_000)).toBe("2.3M");
   });
+  it("uses the French comma decimal when lang is fr, English unchanged", () => {
+    expect(formatLabelValue(1500, "fr")).toBe("1,5k");
+    expect(formatLabelValue(2_300_000, "fr")).toBe("2,3M");
+    expect(formatLabelValue(296, "fr")).toBe("296");
+    expect(formatLabelValue(1500, "en")).toBe("1.5k");
+  });
+  it("threads lang through symbolLabels into every valueText", () => {
+    const [label] = symbolLabels([sym({ value: 1500 })], "fr");
+    expect(label.valueText).toBe("1,5k");
+  });
 });
 
 describe("symbolLabels", () => {
