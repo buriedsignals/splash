@@ -60,6 +60,13 @@ so ②'s validators, provenance discipline, and guardrails never fire.
 | E4 | L | Gate 3 quality claimed from a mid-animation still, not the terminal frame | Render-verify the terminal frame | discipline |
 | E5 | L | Failure surfaced as a raw Node stack trace (partly mitigated by the spine's error field) | Cleaner error surfacing | actionable message |
 
+## GROUP F — delivery & newsroom fit (product gaps — surfaced by Rémy after the sessions)
+
+| ID | Sev | Finding | Evidence | Fix direction | Verify |
+|----|-----|---------|----------|---------------|--------|
+| F1 | M | Interactive/scrolly export does NOT offer its 3 delivery forms (code-source / static-HTML / fly.io embed) at Gate 4 — the host skips the choice | Gate 4 defines the 3 forms; the machinery EXISTS (`export-code.mjs`→`EMBED.md`, `deploy-embed.mjs`→fly.io) but the flow doesn't surface it | Enforce Gate 4: an interactive/scrolly output always presents the 3 forms as an explicit choice (flow-fidelity — same root as A1/A5) | an interactive run offers code / static-HTML / embed |
+| F2 | M-H | No newsroom BRAND / house-style mechanism: CADRAGE Q4 (house palette) is skipped as "not relevant", and the producers accept no brand palette — colours are always auto-chosen (subject-fit), never the newsroom's own. Core to "a visual for **every newsroom**": a newsroom won't publish off-brand. | user obs; T1/T4 skip Q4 ("je saute la contrainte"); producers take Okabe-Ito `baseColor`/`seriesColors` only | Design a per-newsroom **brand profile** (set once, install-model): colours (± fonts/logo) threaded to every producer, RECONCILED with the a11y guards (brand red vs CVD-safety/contrast tension). Offered at onboarding/CADRAGE. **Design-bearing → short spec first.** | a newsroom palette applies on-brand while a11y holds |
+
 ---
 
 ## Execution tiers
@@ -67,6 +74,7 @@ so ②'s validators, provenance discipline, and guardrails never fire.
 - **Tier 0 (design first — the root):** A1/A2/A3/A4/A5 + E1/E2 → one design: **push ②'s discipline into the deterministic spine as un-skippable code gates** (validator, provenance/source-honesty, language). Highest leverage; needs a decision then a plan.
 - **Tier 1 (start now, independent, clear bugs):** B1, B2, B3, B4 — TDD + render-verify, parallel (disjoint files).
 - **Tier 2 (needs Tier-0 shape):** C1, C2, D1, E2 — enforced by the spine gates.
-- **Tier 3 (polish):** C3, C4, C5, D2, D3, E3, E4, E5.
+- **Tier 3 (polish + gate-fidelity):** C3, C4, C5, D2, D3, E3, E4, E5, **F1** (Gate 4 offers the 3 export forms).
+- **Tier B (brand — own design pass):** **F2** newsroom brand profile — design-bearing (brand × a11y tension), short spec before build; important for the "every newsroom" objective.
 
 Every fix: failing test first → fix → `bun run check` green → **render-verify the actual output** → per-fix review. Whole-branch adversarial review before merge. No vendor mention. English code/commits.
