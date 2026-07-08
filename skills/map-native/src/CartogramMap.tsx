@@ -22,6 +22,7 @@ import {
   type FilterState,
 } from "./core/map-filter";
 import { fmtBin } from "./core/legend-format";
+import { formatLocaleNumber } from "./core/locale";
 import { legendTheme } from "./theme/legend-theme";
 import type { CartogramConfigShape } from "./validate-config";
 
@@ -255,7 +256,7 @@ export const CartogramMap: React.FC<Props> = ({
           const id = String(p.__id ?? "—");
           const value = Number(p.__value ?? 0);
           const valueLabel = layout.valueLabel;
-          const html = `<strong>${id}</strong><br/>${value.toLocaleString()} ${valueLabel}`;
+          const html = `<strong>${id}</strong><br/>${formatLocaleNumber(value, config.lang)} ${valueLabel}`;
           popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
         });
 
@@ -285,7 +286,7 @@ export const CartogramMap: React.FC<Props> = ({
             (b) => `
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
               <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px ${theme.stroke};flex-shrink:0"></span>
-              <span style="font:11px/1.2 sans-serif;color:${theme.sub}">${fmtBin(b.min)}–${fmtBin(b.max)}</span>
+              <span style="font:11px/1.2 sans-serif;color:${theme.sub}">${fmtBin(b.min, { lang: config.lang })}–${fmtBin(b.max, { lang: config.lang })}</span>
             </div>`,
           )
           .join("");
@@ -425,6 +426,7 @@ export const CartogramMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
             <MapFilterBar

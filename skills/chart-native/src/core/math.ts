@@ -3,12 +3,20 @@
 // formatting, clamping, and the easing/stagger vocabulary the motion build uses.
 // Decouples the geometry files from each other (bar must not import from line).
 
-/** Abbreviate a number the FT way: 12831 -> "12.8k", 1_800_000 -> "1.8M". */
-export function formatNumber(n: number): string {
+import { localizeDecimal, type Lang } from "./locale";
+
+/**
+ * Abbreviate a number the FT way: 12831 -> "12.8k", 1_800_000 -> "1.8M".
+ * `lang` localizes the DECIMAL separator ("19.3" -> "19,3" in French); English
+ * output is byte-identical to before (default lang = English).
+ */
+export function formatNumber(n: number, lang?: Lang): string {
   const abs = Math.abs(n);
-  if (abs >= 1_000_000) return `${trimZero(n / 1_000_000)}M`;
-  if (abs >= 1_000) return `${trimZero(n / 1_000)}k`;
-  return trimZero(n);
+  let s: string;
+  if (abs >= 1_000_000) s = `${trimZero(n / 1_000_000)}M`;
+  else if (abs >= 1_000) s = `${trimZero(n / 1_000)}k`;
+  else s = trimZero(n);
+  return localizeDecimal(s, lang);
 }
 function trimZero(n: number): string {
   const r = Math.round(n * 10) / 10;

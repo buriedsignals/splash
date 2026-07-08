@@ -42,6 +42,8 @@ export interface RouteConfig {
   title?: string;
   description?: string;
   source?: { name: string; url?: string };
+  /** deliverable language — localizes the "Source" furniture label. Default English. */
+  lang?: string;
   palette?: string[];
   territories?: Array<{
     key: string;

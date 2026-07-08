@@ -100,7 +100,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
     });
 
     m.on("load", () => {
-      const labels = symbolLabels(geo.symbols);
+      const labels = symbolLabels(geo.symbols, config.lang);
       m.addSource("symbols", {
         type: "geojson",
         data: {
@@ -290,6 +290,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        lang={config.lang}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>

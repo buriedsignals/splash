@@ -10,13 +10,26 @@
 // boundaries 0, 0.02, 0.04 with a 1-decimal format all print "0.0"). Derive enough decimal
 // places from minGap so adjacent boundaries stay visually distinct, and apply that precision
 // uniformly across the whole bin scale (consistent decimal count reads as one system).
-export function fmtBin(n: number, opts?: { minGap?: number }): string {
+//
+// `lang` localizes the separators (French "12 000" / "0,02"); English is grouped too
+// ("12,000"), matching the tooltip number formatting. Absent → English.
+import { localizeNumberString, type Lang } from "./locale";
+export function fmtBin(
+  n: number,
+  opts?: { minGap?: number; lang?: Lang },
+): string {
   const minGap = opts?.minGap;
+  const lang = opts?.lang;
+  let ascii: string;
   if (minGap !== undefined && minGap > 0 && minGap < 1) {
     const decimals = clamp(Math.ceil(-Math.log10(minGap)), 1, 4);
-    return n.toFixed(decimals);
+    ascii = n.toFixed(decimals);
+  } else {
+    ascii = Number.isInteger(n) ? n.toFixed(0) : n.toFixed(1);
   }
-  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+  // Localize thousands grouping + decimal separator (English groups too — matches the
+  // .toLocaleString() the tooltips use; French uses U+202F + comma). Deterministic.
+  return localizeNumberString(ascii, lang);
 }
 
 function clamp(x: number, lo: number, hi: number): number {

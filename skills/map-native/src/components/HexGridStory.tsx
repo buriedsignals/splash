@@ -315,6 +315,7 @@ export const HexGridStory: React.FC<{ config: HexGridConfigShape }> = ({
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        lang={config.lang}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>

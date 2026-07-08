@@ -7,6 +7,7 @@
 
 import { scaleBand, scaleLinear } from "d3-scale";
 import { formatNumber } from "./core/math";
+import type { Lang } from "./core/locale";
 
 export type Orientation = "vertical" | "horizontal";
 export type Sort = "desc" | "asc" | "none";
@@ -26,6 +27,8 @@ export interface BarDims {
 export interface BarOptions {
   orientation: Orientation;
   sort?: Sort; // default "none"
+  /** deliverable language — localizes value-axis tick labels. Default English. */
+  lang?: Lang;
 }
 
 export interface Bar {
@@ -139,7 +142,7 @@ export function computeBarLayout(
 
   const valueTicks = value
     .ticks(5)
-    .map((t) => ({ pos: value(t), label: formatNumber(t) }));
+    .map((t) => ({ pos: value(t), label: formatNumber(t, options.lang) }));
   const catTicks = parsed.map((d) => ({
     pos: (band(d.rawCat) ?? 0) + bw / 2,
     label: String(d.rawCat),

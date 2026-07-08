@@ -14,6 +14,7 @@ import { scatterInPolygon } from "./dot-scatter";
 import { resolveMapStyle } from "./route-geo";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
+import { formatLocaleNumber } from "./core/locale";
 import { MapFrame } from "./core/MapFrame";
 import { MapFilterBar } from "./core/MapFilterBar";
 import {
@@ -314,11 +315,13 @@ export const DotDensityMap: React.FC<Props> = ({
             for (const c of config.categories ?? []) {
               const v = p[`__cat_${c.field}`];
               if (v != null)
-                parts.push(`${c.label}: ${Number(v).toLocaleString()}`);
+                parts.push(
+                  `${c.label}: ${formatLocaleNumber(Number(v), config.lang)}`,
+                );
             }
             body = parts.join("<br/>");
           } else if (p.__value != null) {
-            body = Number(p.__value).toLocaleString();
+            body = formatLocaleNumber(Number(p.__value), config.lang);
           }
           const html = `<strong>${name}</strong>${body ? `<br/>${body}` : ""}`;
           popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
@@ -336,7 +339,7 @@ export const DotDensityMap: React.FC<Props> = ({
 
       // Legend — "1 dot = N units" always; category swatches when multivariate.
       if (legendRef.current) {
-        const dotN = layout.dotValue.toLocaleString();
+        const dotN = formatLocaleNumber(layout.dotValue, config.lang);
         const header = `
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:${layout.hasCategories ? 8 : 0}px">
             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${univariateAccent(dark)};flex-shrink:0"></span>
@@ -490,6 +493,7 @@ export const DotDensityMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
             <MapFilterBar

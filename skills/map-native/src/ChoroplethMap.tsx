@@ -37,6 +37,7 @@ import type { MapFilter } from "./core/map-filter";
 import { resolveMapStyle } from "./route-geo";
 import { legendTheme } from "./theme/legend-theme";
 import { fmtBin } from "./core/legend-format";
+import { formatLocaleNumber } from "./core/locale";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -54,6 +55,8 @@ export interface ChoroplethConfig extends ChoroplethData {
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
   filters?: MapFilter[];
+  /** deliverable language — localizes legend numbers + "Source". Default English. */
+  lang?: string;
 }
 
 interface Props {
@@ -330,7 +333,7 @@ export const ChoroplethMap: React.FC<Props> = ({
               (b) => `
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
               <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px ${theme.stroke};flex-shrink:0"></span>
-              <span style="font:11px/1 sans-serif;color:${theme.sub}">${fmtBin(b.min, { minGap })}–${fmtBin(b.max, { minGap })}</span>
+              <span style="font:11px/1 sans-serif;color:${theme.sub}">${fmtBin(b.min, { minGap, lang: config.lang })}–${fmtBin(b.max, { minGap, lang: config.lang })}</span>
             </div>
           `,
             )
@@ -360,7 +363,11 @@ export const ChoroplethMap: React.FC<Props> = ({
           const name = f.properties?.name ?? f.properties?.iso_a3 ?? "—";
           const value = f.properties?.__value;
           const valueUnit = config.valueUnit ?? "";
-          const html = `<strong>${name} — ${value}${valueUnit}</strong>`;
+          const shownValue =
+            typeof value === "number"
+              ? formatLocaleNumber(value, config.lang)
+              : value;
+          const html = `<strong>${name} — ${shownValue}${valueUnit}</strong>`;
           popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
         });
 
@@ -543,6 +550,7 @@ export const ChoroplethMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
             <MapFilterBar

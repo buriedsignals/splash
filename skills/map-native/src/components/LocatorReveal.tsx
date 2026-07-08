@@ -258,6 +258,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        lang={config.lang}
       >
         {/* Map fills the full composition frame */}
         <div

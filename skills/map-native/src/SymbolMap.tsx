@@ -43,6 +43,8 @@ export interface SymbolConfig extends SymbolData {
   maxReveals?: number;
   cameraMode?: CameraMode;
   filters?: MapFilter[];
+  /** deliverable language — localizes symbol value labels + "Source". Default English. */
+  lang?: string;
 }
 
 interface Props {
@@ -214,7 +216,7 @@ export const SymbolMap: React.FC<Props> = ({
       (window as unknown as Record<string, unknown>)["__map__"] = map;
 
       // Build label data alongside geometry.
-      const labels = symbolLabels(geo.symbols);
+      const labels = symbolLabels(geo.symbols, config.lang);
 
       // Ratio-scaled label size: a narrow/portrait embed (≤1080px) gets the same 18px
       // bump its video sibling (SymbolReveal) already applies — fix #8 (was fixed at 13
@@ -483,6 +485,7 @@ export const SymbolMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
             <MapFilterBar

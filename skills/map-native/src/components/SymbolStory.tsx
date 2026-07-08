@@ -106,7 +106,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     });
 
     m.on("load", () => {
-      const labels = symbolLabels(geo.symbols);
+      const labels = symbolLabels(geo.symbols, config.lang);
       m.addSource("symbols", {
         type: "geojson",
         data: {
@@ -316,6 +316,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        lang={config.lang}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>

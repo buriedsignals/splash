@@ -51,7 +51,13 @@ export async function produceChart(
   // Same resolved CSV (renamed headers + sort) that the metadata mapping saw.
   const csv = resolveData(spec);
   await setData(id, csv);
-  await patchChart(id, { type: patch.type, metadata: patch.metadata });
+  // `language` localizes DW's own number/date formatting (fr-FR → "1 900,5"); include
+  // it whenever the spec set a language, else DW uses its default (en-US).
+  await patchChart(id, {
+    type: patch.type,
+    metadata: patch.metadata,
+    ...(patch.language ? { language: patch.language } : {}),
+  });
   let publicUrl = await publishChart(id);
 
   // RESPONSIVE LABEL-SAFETY. `specToMetadata` places every annotation in DATA space
@@ -78,7 +84,11 @@ export async function produceChart(
         String(Math.round(lo - step)),
         String(Math.round(hi + step)),
       ];
-      await patchChart(id, { type: patch.type, metadata: patch.metadata });
+      await patchChart(id, {
+        type: patch.type,
+        metadata: patch.metadata,
+        ...(patch.language ? { language: patch.language } : {}),
+      });
       publicUrl = await publishChart(id);
       result = await checkResponsive(publicUrl);
       tries += 1;

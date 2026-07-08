@@ -55,6 +55,8 @@ export type ChoroplethConfigShape = ChoroplethData & {
   unit?: string;
   valueUnit?: string;
   source?: { name?: string; url?: string };
+  /** deliverable language — localizes numbers + "Source". Default English. */
+  lang?: string;
   cameraMode?: CameraMode;
   scaleType?: "sequential" | "diverging";
   // A named registry palette or a custom CVD-safe ramp (see theme/scale.ts).
@@ -184,6 +186,8 @@ export type SymbolConfigShape = {
   description?: string;
   valueUnit?: string;
   source?: { name?: string; url?: string };
+  /** deliverable language — localizes numbers + "Source". Default English. */
+  lang?: string;
   cameraMode?: CameraMode;
   maxReveals?: number;
   filters?: MapFilter[];
@@ -272,6 +276,8 @@ export type RouteConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** deliverable language — localizes numbers + "Source". Default English. */
+  lang?: string;
 };
 
 // Framework-free structural validation of a route-map config (pre-render — no
@@ -343,6 +349,8 @@ export type LocatorConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** deliverable language — localizes numbers + "Source". Default English. */
+  lang?: string;
   filters?: MapFilter[];
 };
 
@@ -438,6 +446,8 @@ export type DotDensityConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** deliverable language — localizes numbers + "Source". Default English. */
+  lang?: string;
   filters?: MapFilter[];
 };
 
@@ -532,6 +542,8 @@ export type HexGridConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** deliverable language — localizes numbers + "Source". Default English. */
+  lang?: string;
   filters?: MapFilter[];
 };
 
@@ -636,6 +648,8 @@ export type CartogramConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** deliverable language — localizes numbers + "Source". Default English. */
+  lang?: string;
   filters?: MapFilter[];
 };
 

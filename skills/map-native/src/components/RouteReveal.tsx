@@ -503,6 +503,7 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        lang={config.lang}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>

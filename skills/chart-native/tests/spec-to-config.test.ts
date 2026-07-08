@@ -11,6 +11,22 @@ const base = {
   unit: "share of electricity from renewables, 2024 (%)",
 };
 
+describe("specToNativeConfig — lang threading", () => {
+  const spec: NativeSpec = {
+    ...base,
+    nativeType: "bar",
+    data: "country,share\nBrazil,87.3\nIndia,19.8",
+  };
+  it("threads spec.lang onto the produced config (any type, single injection point)", () => {
+    const { config } = specToNativeConfig({ ...spec, lang: "fr" });
+    expect(config.lang).toBe("fr");
+  });
+  it("omits lang when not supplied (default English at render time)", () => {
+    const { config } = specToNativeConfig(spec);
+    expect(config.lang).toBeUndefined();
+  });
+});
+
 describe("specToNativeConfig — bar", () => {
   const spec: NativeSpec = {
     ...base,

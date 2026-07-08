@@ -72,6 +72,25 @@ describe("deriveMapStory — value grammar", () => {
     const one = reveals.find((b) => b.callout?.name === "Norway");
     expect(one?.callout?.value).toBe("1 night"); // not "1 nights"
   });
+  it("localizes callout numbers when meta.lang is fr (thousands grouping)", () => {
+    const d: ChoroplethData = {
+      regionKey: "code",
+      valueField: "mw",
+      rows: [
+        { code: "NOR", mw: 33900 },
+        { code: "DEU", mw: 25600 },
+      ],
+    };
+    const layout = computeChoropleth(d, feats, "iso_a3");
+    const beats = deriveMapStory(layout, feats, "iso_a3", {
+      title: "T",
+      insight: "i",
+      unit: " MW",
+      lang: "fr",
+    });
+    const nor = beats.find((b) => b.callout?.name === "Norway");
+    expect(nor?.callout?.value).toBe("33 900 MW"); // narrow no-break space
+  });
   it("never touches a SYMBOL unit like ' %' at value 1", () => {
     const d: ChoroplethData = {
       regionKey: "code",

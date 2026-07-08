@@ -221,6 +221,7 @@ export const HexGridReveal: React.FC<{ config: HexGridConfigShape }> = ({
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        lang={config.lang}
       >
         {/* Map fills the full composition frame */}
         <div

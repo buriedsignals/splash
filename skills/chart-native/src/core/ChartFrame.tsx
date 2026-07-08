@@ -12,6 +12,7 @@
 // overlaps the subtitle or the first data row on the first (and only) render.
 import type { ReactNode } from "react";
 import { COLORS, FONT, TYPE } from "./tokens";
+import { sourceLabel, type Lang } from "./locale";
 
 export interface ChartFrameProps {
   title: string;
@@ -31,6 +32,8 @@ export interface ChartFrameProps {
    *  chart's OWN title + source to avoid duplicating the host's, keeping only the unit
    *  subtitle (axis context the host does not show). Default false (standalone chart). */
   embedded?: boolean;
+  /** deliverable language — localizes the "Source" furniture label. Default English. */
+  lang?: Lang;
 }
 
 export function ChartFrame({
@@ -44,7 +47,9 @@ export function ChartFrame({
   tooltip,
   scale = 1,
   embedded = false,
+  lang,
 }: ChartFrameProps) {
+  const srcLabel = sourceLabel(lang);
   const PAD = 24 * scale; // header / source left-right inset
   const titleSize = TYPE.title * scale;
   const axisSize = TYPE.axis * scale;
@@ -95,7 +100,7 @@ export function ChartFrame({
               padding: `4px ${PAD}px 8px`,
             }}
           >
-            Source:{" "}
+            {srcLabel}{" "}
             {source.url ? (
               <a
                 href={source.url}
@@ -159,7 +164,7 @@ export function ChartFrame({
           color: COLORS.muted,
         }}
       >
-        Source: {source.name}
+        {srcLabel} {source.name}
       </div>
     </div>
   );

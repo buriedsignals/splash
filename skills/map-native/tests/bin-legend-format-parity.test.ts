@@ -73,7 +73,7 @@ describe("bin-legend format parity: every bin legend formats breakpoints via fmt
     expect(usesFmtBinNotMathRound(source).ok).toBe(true); // sanity: real source passes
 
     const regressed = source.replace(
-      /fmtBin\(b\.min, \{ minGap \}\)/g,
+      /fmtBin\(b\.min, \{ minGap[^}]*\}\)/g,
       "Math.round(b.min)",
     );
     expect(usesFmtBinNotMathRound(regressed).ok).toBe(false);

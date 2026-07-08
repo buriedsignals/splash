@@ -379,11 +379,31 @@ export function annotationXFrac(
 export interface DwPatch {
   title: string;
   type: string;
+  /** DW chart language (BCP-47 regional, e.g. "fr-FR"). Datawrapper localizes number
+   *  + date formatting from this field. Absent → DW default (en-US). */
+  language?: string;
   metadata: {
     describe: Record<string, unknown>;
     visualize: Record<string, unknown>;
     data?: Record<string, unknown>;
   };
+}
+
+// Map a deliverable language to the regional locale tag Datawrapper reads (verified
+// live: PATCH /v3/charts/{id} with language:"fr-FR" renders "1 900,5"). A short tag
+// gets a sensible region; a tag that is already regional ("fr-CH") passes through.
+export function dwLocale(lang: string): string {
+  if (lang.includes("-")) return lang;
+  const map: Record<string, string> = {
+    fr: "fr-FR",
+    en: "en-US",
+    de: "de-DE",
+    es: "es-ES",
+    it: "it-IT",
+    nl: "nl-NL",
+    pt: "pt-PT",
+  };
+  return map[lang.toLowerCase()] ?? lang;
 }
 
 // The single source of truth for the CSV that reaches Datawrapper: apply the
@@ -534,6 +554,7 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
     type: spec.type,
     metadata: { describe, visualize },
   };
+  if (spec.lang) patch.language = dwLocale(spec.lang);
   if (spec.transpose !== undefined)
     patch.metadata.data = { transpose: spec.transpose };
   return patch;

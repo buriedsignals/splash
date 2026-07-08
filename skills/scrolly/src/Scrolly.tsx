@@ -40,6 +40,7 @@ import {
 } from "./ScrollyCartogramMap";
 
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
+import { sourceLabel } from "../../map-native/src/core/locale";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
 // The chart types the scrolly can narrate (deriveChartStory dispatches on these). Any other
@@ -195,6 +196,7 @@ export const Scrolly: React.FC<{
       valueField: config.valueField,
       narrativePattern: (config as unknown as Record<string, unknown>)
         .valueKind as "temporal" | "magnitude" | "categorical" | undefined,
+      lang: config.lang,
     });
     const regionsWithData = layout.joined.filter(
       (j) => j.value !== null,
@@ -575,7 +577,7 @@ export const Scrolly: React.FC<{
       {/* ------------------------------------------------------------------ */}
       {config.source && (
         <div style={creditStyle}>
-          Source:{" "}
+          {sourceLabel(config.lang)}{" "}
           <a
             href={config.source.url}
             target="_blank"

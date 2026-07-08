@@ -99,6 +99,8 @@ export const ChoroplethStory: React.FC<{
     palette?: string | string[];
     valueKind?: "temporal" | "magnitude" | "categorical";
     mapStyle?: string;
+    /** deliverable language — localizes legend numbers + "Source". Default English. */
+    lang?: string;
   };
 }> = ({ config }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -183,6 +185,7 @@ export const ChoroplethStory: React.FC<{
             unit: config.valueUnit ?? "",
             valueField: config.valueField,
             narrativePattern: config.valueKind,
+            lang: config.lang,
           };
           const beats = deriveMapStory(layout, worldGeoJson, "iso_a3", meta);
 
@@ -432,7 +435,7 @@ export const ChoroplethStory: React.FC<{
         (b) => `
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
           <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px ${theme.stroke};flex-shrink:0"></span>
-          <span style="font:11px/1.2 sans-serif;color:${theme.sub}">${fmtBin(b.min, { minGap })}–${fmtBin(b.max, { minGap })}</span>
+          <span style="font:11px/1.2 sans-serif;color:${theme.sub}">${fmtBin(b.min, { minGap, lang: config.lang })}–${fmtBin(b.max, { minGap, lang: config.lang })}</span>
         </div>`,
       )
       .join("");
@@ -463,6 +466,7 @@ export const ChoroplethStory: React.FC<{
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        lang={config.lang}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />
       </MapFrame>

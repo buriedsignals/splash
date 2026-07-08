@@ -10,6 +10,7 @@ import {
   type ChoroplethData,
 } from "../../map-native/src/choropleth-geo";
 import { deriveMapStory, type Beat } from "../../map-native/src/map-story";
+import { formatLocaleNumber } from "../../map-native/src/core/locale";
 import { NO_DATA_COLOR } from "../../map-native/src/theme/colors";
 import {
   choroplethFillColor,
@@ -44,6 +45,8 @@ export interface ScrollyMapConfig extends ChoroplethData {
   valueUnit?: string;
   insight?: string;
   source?: { name: string; url: string };
+  /** deliverable language — localizes numbers + "Source". Default English. */
+  lang?: string;
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
   // Narrative pattern hint (② sets it): "temporal" → tell the sequence, never
@@ -162,6 +165,7 @@ export const ScrollyMap: React.FC<{
         unit: config.valueUnit ?? "",
         valueField: config.valueField,
         narrativePattern: config.valueKind,
+        lang: config.lang,
       };
       const beats = deriveMapStory(layout, world, "iso_a3", meta);
 
@@ -284,9 +288,13 @@ export const ScrollyMap: React.FC<{
         const name = f.properties?.["name"] ?? f.properties?.["iso_a3"] ?? "—";
         const value = f.properties?.["__value"];
         const valueUnit = config.valueUnit ?? "";
+        const shownValue =
+          typeof value === "number"
+            ? formatLocaleNumber(value, config.lang)
+            : value;
         popup
           .setLngLat(e.lngLat)
-          .setHTML(`<strong>${name} — ${value}${valueUnit}</strong>`)
+          .setHTML(`<strong>${name} — ${shownValue}${valueUnit}</strong>`)
           .addTo(map);
       });
 

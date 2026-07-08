@@ -1,5 +1,6 @@
 import type { ChoroplethLayout } from "./choropleth-geo";
 import { regionBounds } from "./choropleth-geo";
+import { formatLocaleNumber } from "./core/locale";
 import {
   classifyNarrativePattern,
   type NarrativePattern,
@@ -47,6 +48,8 @@ export interface MapStoryMeta {
   // Explicit pattern hint from the config (② sets valueKind → this). When set it
   // wins over inference. "temporal" | "magnitude" | "categorical".
   narrativePattern?: NarrativePattern;
+  /** deliverable language — localizes the callout numbers. Default English. */
+  lang?: string;
 }
 
 export function deriveMapStory(
@@ -66,7 +69,7 @@ export function deriveMapStory(
         meta.unit && n === 1
           ? meta.unit.replace(/^(\s*)([A-Za-z]+)s$/, "$1$2")
           : (meta.unit ?? "");
-      return `${n}${unit}`;
+      return `${formatLocaleNumber(n, meta.lang)}${unit}`;
     });
 
   // Regions that actually have a value, sorted by ascending key for tie-stability.

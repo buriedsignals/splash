@@ -11,6 +11,7 @@ import {
   FRAME_FONT,
 } from "../theme/map-tokens";
 import type { ResolvedMapFrame } from "./map-format";
+import { sourceLabel, type Lang } from "./locale";
 
 export interface MapFrameProps {
   title: string;
@@ -27,6 +28,8 @@ export interface MapFrameProps {
   dark?: boolean;
   /** Optional node rendered directly below the title/description block, inside the title band. */
   belowTitle?: ReactNode;
+  /** deliverable language — localizes the "Source" furniture label. Default English. */
+  lang?: Lang;
 }
 
 export function MapFrame({
@@ -42,6 +45,7 @@ export function MapFrame({
   furnitureOpacity = 1,
   dark = false,
   belowTitle,
+  lang,
 }: MapFrameProps) {
   const titleRef = useRef<HTMLDivElement>(null);
   const [, setMeasuredHeight] = useState(0);
@@ -156,7 +160,7 @@ export function MapFrame({
               }),
         }}
       >
-        Source:{" "}
+        {sourceLabel(lang)}{" "}
         {responsive && source.url ? (
           <a
             href={source.url}

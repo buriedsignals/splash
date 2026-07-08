@@ -45,6 +45,8 @@ export interface ScrollySymbolConfig {
   unit?: string;
   valueUnit?: string;
   source?: { name: string; url: string };
+  /** deliverable language — localizes numbers + "Source". Default English. */
+  lang?: string;
 }
 
 interface CameraPoint {
@@ -72,7 +74,7 @@ export const ScrollySymbolMap: React.FC<{
 
   // Precompute geometry and labels outside the effect (pure, stable).
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
-  const labels = symbolLabels(geo.symbols);
+  const labels = symbolLabels(geo.symbols, config.lang);
   const beats = deriveSymbolStory(config.points, {
     title: config.title ?? "",
     insight: config.insight ?? config.title,

@@ -91,6 +91,10 @@ export interface ChartSpec {
   // show a raw column name. Publishable-blocker if omitted for machine-named columns.
   seriesLabels?: Record<string, string>;
   sort?: "asc" | "desc"; // ranking sort: sorts data rows by the last column
+  // BCP-47 language of the deliverable (e.g. "fr", "en", "fr-CH"). Sets the DW chart
+  // `language`, so Datawrapper localizes value labels + dates (fr → "1 900,5"). Set by
+  // the suggester from the article language. Absent → DW default (en-US).
+  lang?: string;
   source?: { name: string; url?: string };
   altInsight: string; // WCAG: alt = the insight, not the structure
   annotations?: {

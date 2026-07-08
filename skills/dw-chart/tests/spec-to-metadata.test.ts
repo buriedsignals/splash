@@ -35,6 +35,25 @@ const spec: ChartSpec = {
   altInsight: "Unemployment fell from 5.1% in 2018 to 3.7% in 2023",
 };
 
+describe("specToMetadata — locale / language", () => {
+  it("sets the DW chart language to fr-FR when spec.lang is 'fr' (DW localizes numbers + dates)", () => {
+    const patch = specToMetadata({ ...spec, lang: "fr" });
+    expect(patch.language).toBe("fr-FR");
+  });
+  it("passes a regional tag through unchanged", () => {
+    const patch = specToMetadata({ ...spec, lang: "fr-CH" });
+    expect(patch.language).toBe("fr-CH");
+  });
+  it("maps 'en' to en-US", () => {
+    const patch = specToMetadata({ ...spec, lang: "en" });
+    expect(patch.language).toBe("en-US");
+  });
+  it("omits language when spec.lang is absent (DW default locale)", () => {
+    const patch = specToMetadata(spec);
+    expect(patch.language).toBeUndefined();
+  });
+});
+
 describe("placeAnnotation (width-invariant, data-space)", () => {
   it("places a PEAK label above the point and asks for top headroom (never on the curve)", () => {
     // 2022-Q4 is the max (yFrac 0). Only the 'up' quadrants clear the descending arms.
