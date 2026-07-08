@@ -1,4 +1,5 @@
 import type { Beat } from "../../map-native/src/map-story";
+import { isFrench } from "../../map-native/src/core/locale";
 
 export type VisualKind = "map" | "chart" | "image";
 export type StepAction = "flyTo" | "drawTo" | "crossfade";
@@ -41,8 +42,12 @@ export function mapStoryToChapters(
     description?: string;
     source?: { name: string; url?: string };
     regionsWithData: number;
+    /** deliverable language — localizes the auto-generated reveal descriptors
+     * ("the highest of the N shown" / "the first" / …). Default English. */
+    lang?: string;
   },
 ): ScrollyStory {
+  const fr = isFrench(meta.lang);
   const revealIdx: number[] = [];
   beats.forEach((b, i) => {
     if (b.kind === "reveal") revealIdx.push(i);
@@ -68,18 +73,25 @@ export function mapStoryToChapters(
         // ("the first" / "the most recent" / "the 3rd") and, for interior steps,
         // the interval to the previous reveal or since the first — all values
         // that deriveMapStory computed from the data (seqIndex/seqTotal/seqYear*).
-        descriptor = temporalDescriptor(b);
+        descriptor = temporalDescriptor(b, meta.lang);
       } else if (revealIdx.length > 1) {
         // magnitude / ranking — a RANK-aware descriptor for EVERY reveal, not just the
         // extremes (deriveMapStory tags each magnitude beat with rank + rankRole, F11):
         // the leader reads "the highest of the N shown", the tail "the lowest", and the
         // middle leaders their ordinal ("the second", "the third") — so the walk explains
         // the distribution instead of jumping max→min. Falls back to the old max/min
-        // labelling if a beat lacks rank tags (older stories).
-        if (b.rankRole === "tail" || i === minBeat) descriptor = "the lowest";
+        // labelling if a beat lacks rank tags (older stories). Localized per meta.lang —
+        // the auto-generated words must never leak English into a French deliverable.
+        if (b.rankRole === "tail" || i === minBeat)
+          descriptor = fr ? "le plus bas" : "the lowest";
         else if (b.rank === 1 || i === maxBeat)
-          descriptor = `the highest of the ${meta.regionsWithData} shown`;
-        else if (b.rank !== undefined) descriptor = `the ${ordinal(b.rank)}`;
+          descriptor = fr
+            ? `le plus élevé des ${meta.regionsWithData}`
+            : `the highest of the ${meta.regionsWithData} shown`;
+        else if (b.rank !== undefined)
+          descriptor = fr
+            ? `le ${ordinal(b.rank, meta.lang)}`
+            : `the ${ordinal(b.rank, meta.lang)}`;
       }
       prose = `${b.callout.name} — ${b.callout.value}${descriptor ? ", " + descriptor : ""}`;
     } else {
@@ -105,22 +117,39 @@ export function mapStoryToChapters(
   };
 }
 
-// Ordinal word for the small ranks the sequence uses ("the first" reads better
-// than "the 1st"); numeric ordinals with the right suffix beyond that.
-function ordinal(n: number): string {
-  const words = [
-    "first",
-    "second",
-    "third",
-    "fourth",
-    "fifth",
-    "sixth",
-    "seventh",
-    "eighth",
-    "ninth",
-    "tenth",
-  ];
+// Ordinal words for the small ranks the sequence uses ("the first" reads better
+// than "the 1st"), keyed by language; numeric ordinals with the right suffix beyond
+// that (French has no st/nd/rd — just "Ne").
+const ORDINAL_WORDS_EN = [
+  "first",
+  "second",
+  "third",
+  "fourth",
+  "fifth",
+  "sixth",
+  "seventh",
+  "eighth",
+  "ninth",
+  "tenth",
+];
+const ORDINAL_WORDS_FR = [
+  "premier",
+  "deuxième",
+  "troisième",
+  "quatrième",
+  "cinquième",
+  "sixième",
+  "septième",
+  "huitième",
+  "neuvième",
+  "dixième",
+];
+
+function ordinal(n: number, lang?: string): string {
+  const fr = isFrench(lang);
+  const words = fr ? ORDINAL_WORDS_FR : ORDINAL_WORDS_EN;
   if (n >= 1 && n <= words.length) return words[n - 1];
+  if (fr) return `${n}e`;
   const rem100 = n % 100;
   const rem10 = n % 10;
   const suffix =
@@ -136,7 +165,8 @@ function ordinal(n: number): string {
   return `${n}${suffix}`;
 }
 
-function years(n: number): string {
+function years(n: number, lang?: string): string {
+  if (isFrench(lang)) return `${n} an${n === 1 ? "" : "s"}`;
   return `${n} year${n === 1 ? "" : "s"}`;
 }
 
@@ -144,13 +174,16 @@ function years(n: number): string {
 // deriveMapStory computed from the data: the reveal's ordinal position in the
 // earliest→latest sequence, and the interval (in years) to the previous reveal
 // or since the first reveal. NEVER a bare connective, NEVER an invented fact.
-export function temporalDescriptor(b: Beat): string {
+// `lang` picks the FR/EN phrasing — an auto-generated caption must never leak
+// English words into a French deliverable (or vice versa).
+export function temporalDescriptor(b: Beat, lang?: string): string {
+  const fr = isFrench(lang);
   const idx = b.seqIndex ?? 0;
   const total = b.seqTotal ?? 0;
   if (total <= 1) return "";
 
   // First reveal — the earliest in the sequence.
-  if (idx === 0) return "the first";
+  if (idx === 0) return fr ? "le premier" : "the first";
 
   // Interval to the previously revealed step, when we know both years.
   const gapPrev =
@@ -164,13 +197,22 @@ export function temporalDescriptor(b: Beat): string {
       b.seqYear !== undefined && b.seqYearFirst !== undefined
         ? b.seqYear - b.seqYearFirst
         : undefined;
-    return sinceFirst && sinceFirst > 0
-      ? `the most recent, ${years(sinceFirst)} after the first`
-      : "the most recent";
+    if (sinceFirst && sinceFirst > 0) {
+      return fr
+        ? `le plus récent, ${years(sinceFirst, lang)} après le premier`
+        : `the most recent, ${years(sinceFirst, lang)} after the first`;
+    }
+    return fr ? "le plus récent" : "the most recent";
   }
 
   // Interior reveal — ordinal position plus the gap to the previous reveal.
-  const ord = `the ${ordinal(idx + 1)}`;
-  if (gapPrev && gapPrev > 0) return `${ord}, ${years(gapPrev)} later`;
+  const ord = fr
+    ? `le ${ordinal(idx + 1, lang)}`
+    : `the ${ordinal(idx + 1, lang)}`;
+  if (gapPrev && gapPrev > 0) {
+    return fr
+      ? `${ord}, ${years(gapPrev, lang)} plus tard`
+      : `${ord}, ${years(gapPrev, lang)} later`;
+  }
   return ord;
 }

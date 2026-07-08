@@ -67,6 +67,33 @@ describe("deriveSymbolStory", () => {
   });
 });
 
+describe("deriveSymbolStory — lang", () => {
+  const parisPoints: SymbolPoint[] = [
+    { lon: 2.3376, lat: 48.8709, value: 34000, label: "Châtelet" },
+    { lon: 2.3488, lat: 48.8467, value: 9800, label: "Gare du Nord" },
+  ];
+
+  it("localizes callout numbers when meta.lang is fr (thousands grouping)", () => {
+    const beats = deriveSymbolStory(parisPoints, {
+      title: "T",
+      unit: " voyageurs/j",
+      lang: "fr",
+    });
+    const chatelet = beats.find((b) => b.callout?.name === "Châtelet")!;
+    expect(chatelet.callout!.value).toBe("34 000 voyageurs/j"); // narrow no-break space
+    expect(chatelet.copy).toBe("Châtelet — 34 000 voyageurs/j");
+  });
+
+  it("keeps the default English grouping when lang is unset", () => {
+    const beats = deriveSymbolStory(parisPoints, {
+      title: "T",
+      unit: " riders/day",
+    });
+    const chatelet = beats.find((b) => b.callout?.name === "Châtelet")!;
+    expect(chatelet.callout!.value).toBe("34,000 riders/day");
+  });
+});
+
 describe("deriveSymbolStory maxReveals", () => {
   const pts: SymbolPoint[] = [
     { lon: 0, lat: 51, value: 300, label: "London", radius: 40 },

@@ -100,12 +100,14 @@ export const Scrolly: React.FC<{
         title: config.title ?? "",
         insight: config.insight ?? config.title,
         unit: config.valueUnit ?? "",
+        lang: config.lang,
       });
       return mapStoryToChapters(beats, {
         title: config.title ?? "",
         description: config.description,
         source: config.source,
         regionsWithData: config.points.length,
+        lang: config.lang,
       });
     }
 
@@ -120,6 +122,7 @@ export const Scrolly: React.FC<{
         description: config.description,
         source: config.source,
         regionsWithData: layout.cells.length,
+        lang: config.lang,
       });
     }
 
@@ -142,6 +145,7 @@ export const Scrolly: React.FC<{
         description: config.description,
         source: config.source,
         regionsWithData: layout.regions.length,
+        lang: config.lang,
       });
     }
 
@@ -164,6 +168,7 @@ export const Scrolly: React.FC<{
         description: config.description,
         source: config.source,
         regionsWithData: geo.markers.length,
+        lang: config.lang,
       });
     }
 
@@ -178,6 +183,7 @@ export const Scrolly: React.FC<{
         description: config.description,
         source: config.source,
         regionsWithData: layout.cells.length,
+        lang: config.lang,
       });
     }
 
@@ -206,6 +212,7 @@ export const Scrolly: React.FC<{
       description: config.description ?? config.unit,
       source: config.source,
       regionsWithData,
+      lang: config.lang,
     });
   }, [config]);
 
