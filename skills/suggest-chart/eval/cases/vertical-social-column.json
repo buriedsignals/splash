@@ -1,0 +1,12 @@
+{
+  "id": "vertical-social-column",
+  "data": "department,budget\nEducation,42\nRoads,31\nHealth,28\nCulture,12\nSecurity,9",
+  "intent": "For an Instagram Stories post (vertical 9:16), show which city department gets the biggest budget share",
+  "expect": {
+    "family": "magnitude",
+    "element": "chart",
+    "maxWarnings": 0,
+    "channel": "social-vertical",
+    "format": "static"
+  }
+}

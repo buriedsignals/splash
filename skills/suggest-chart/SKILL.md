@@ -72,6 +72,26 @@ unset ships French words with English numbers — the exact mismatch this field 
    Static is the default (most readers do not interact). Escalate to interactive / scrolly / video ONLY on
    the named conditions.
 
+   **Channel restricts the format set FIRST — before any gate below.** The confirmed distribution channel
+   (`skills/atelier/src/channel.ts` `Channel`) hard-constrains which formats are even reachable, before the
+   gates below choose within that set:
+   - **social-vertical / social-feed ⇒ format ∈ {static image, video} — NEVER interactive or scrolly.** A
+     social post/story has no host page for a live component; do not propose one for these channels.
+   - **article-web ⇒ format ∈ {static, interactive, video, scrolly}, and interactive is the DEFAULT** — it
+     wins unless a concrete reason (not a mere preference) rules it out. **Whenever interactive is chosen, a
+     static fallback that carries the claim on its own is ALSO produced** — the interactive layer is
+     additive, never load-bearing (a11y invariant: most readers never hover/click/scroll).
+
+   **Aspect↔type guard.** For a portrait (social-vertical) or square (social-feed) channel, NEVER choose a
+   row-driven horizontal type (`d3-bars`, `d3-dot-plot`, `d3-arrow-plot`, `d3-range-plot`) — they cannot
+   take that aspect. Route to a vertical **column** type instead (e.g. `column-chart`), or a
+   portrait/square-composed media render. (This is the recyclage failure: a confirmed vertical channel
+   shipped a landscape bar strip.)
+
+   Once the format is chosen within the channel's allowed set, the decision to make is the reconciled
+   `{format, size, sub-format}` against the channel — emit it explicitly, not as a silent default (the
+   PROPOSITION step is what surfaces this to the journalist, vetoable).
+
    **Map element type FIRST — before the format ladder.** Branch on what the data is:
    - **Point / locator / symbol data** (coordinates, located events/places — not region fills) that is
      **sub-national or regional** (a country, a region, a city cluster) → **`map-native`**, regardless of
@@ -118,7 +138,10 @@ unset ships French words with English numbers — the exact mismatch this field 
    `{ type, title (the insight, sentence case), intro?, data (CSV), subject (the topic hint, e.g. "solar"),
    baseColor (a subject-fit Okabe-Ito hue — see Colour below), seriesColors? (multi-series: series → hue),
    seriesLabels? (machine column → human name), valueLabels?, numberFormat?, source?,
-   channel (the CADRAGE Q3 answer — sizes the static export: feed→square, social/vertical→9:16, web/article→16:9),
+   channel (the CADRAGE Q3 answer — one of the structured channels `social-vertical | social-feed |
+   article-web` from `skills/atelier/src/channel.ts`; sizes the static export: social-feed→square,
+   social-vertical→9:16, article-web→16:9. `normalizeChannel` still accepts legacy free text, e.g. "feed"
+   or "stories", and maps it to the same enum),
    altInsight (WCAG: the insight, not the structure) }`.
 4. Guardrails: **≤2 colours**; **CHOOSE `baseColor` by subject — never leave the default blue for a
    subject that is not water/cold** (the validator FAILS a declared `subject` whose `baseColor` is absent

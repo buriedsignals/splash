@@ -376,3 +376,75 @@ describe("scoreSpec — chart-native line/scatter/pie routing + validation", () 
     expect(r.validates).toBe(false);
   });
 });
+
+describe("scoreSpec — channel-driven format gate", () => {
+  const nativeBar = {
+    producer: "chart-native",
+    nativeType: "bar",
+    title: "Brazil runs on renewables while most big economies still lag",
+    source: { name: "Ember 2025", url: "https://ourworldindata.org/x" },
+    unit: "share of electricity from renewables (%)",
+    data: "country,share\nBrazil,87.3\nIndia,19.8",
+  };
+
+  it("fails an interactive (chart-native) spec on a social-feed channel — interactive is never allowed there", () => {
+    const r = scoreSpec(nativeBar, {
+      family: "magnitude",
+      element: "chart",
+      producer: "chart-native",
+      channel: "social-feed",
+    });
+    expect(r.pass).toBe(false);
+    expect(
+      r.notes.some((n) => /not allowed on channel 'social-feed'/.test(n)),
+    ).toBe(true);
+  });
+
+  it("allows the same interactive spec on an article-web channel (interactive is the default there)", () => {
+    const r = scoreSpec(nativeBar, {
+      family: "magnitude",
+      element: "chart",
+      producer: "chart-native",
+      channel: "article-web",
+    });
+    expect(r.pass).toBe(true);
+  });
+
+  it("allows a native spec explicitly rendered as video on a social-vertical channel (video ∈ the social set)", () => {
+    // impliedFormat() cannot tell interactive vs video from `producer: "chart-native"`
+    // alone (both derive from the same producer) — it prefers an explicit `format`
+    // field on the spec itself when present, which disambiguates here.
+    const r = scoreSpec(
+      { ...nativeBar, format: "video" },
+      {
+        family: "magnitude",
+        element: "chart",
+        producer: "chart-native",
+        channel: "social-vertical",
+      },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  it("LIMITATION: without an explicit `format` field, a chart-native spec defaults to 'interactive' and is blocked on social channels even if it is actually destined to render as video (a false negative) — ② must set `format` on video renders for this gate to be accurate", () => {
+    const r = scoreSpec(nativeBar, {
+      family: "magnitude",
+      element: "chart",
+      producer: "chart-native",
+      channel: "social-vertical",
+    });
+    expect(r.pass).toBe(false);
+    expect(
+      r.notes.some((n) => /not allowed on channel 'social-vertical'/.test(n)),
+    ).toBe(true);
+  });
+
+  it("leaves scoring unaffected when expect.channel is unset (back-compat)", () => {
+    const r = scoreSpec(nativeBar, {
+      family: "magnitude",
+      element: "chart",
+      producer: "chart-native",
+    });
+    expect(r.pass).toBe(true);
+  });
+});
