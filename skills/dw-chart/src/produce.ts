@@ -70,12 +70,17 @@ export async function produceChart(
   let publicUrl = await publishChart(id);
 
   // EXPORT ASPECT (FINDING 2): size the static PNG to the CADRAGE channel — feed →
-  // square, social/vertical → portrait, web/article → landscape (default) — instead
-  // of Datawrapper's own natural aspect. Table-driven (export-aspect.ts). The same
-  // aspect is fed to the responsive guardrail below so annotation placement is
-  // validated at the aspect the reader actually receives.
-  const exportSize = channelToExportSize(spec.channel);
-  const exportAspect = exportSize.height / exportSize.width;
+  // square, social/vertical → portrait, web/article → landscape (default). TYPE-AWARE
+  // (export-aspect.ts): row-count-driven horizontal types (bars/dot/arrow/range/tables)
+  // get the channel WIDTH but a content-driven height (no pinned height) so DW never
+  // CROPS overflowing rows; fixed-aspect types get the full channel box. The resulting
+  // aspect is fed to the responsive guardrail below so annotation placement is validated
+  // at the aspect the reader actually receives — when the height is natural we leave the
+  // aspect undefined so the guardrail falls back to its default landscape aspect.
+  const exportSize = channelToExportSize(spec.channel, spec.type);
+  const exportAspect = exportSize.height
+    ? exportSize.height / exportSize.width
+    : undefined;
 
   // RESPONSIVE LABEL-SAFETY. `specToMetadata` places every annotation in DATA space
   // (anchor at x,y; align picks a curve-clear quadrant; axis headroom gives it
