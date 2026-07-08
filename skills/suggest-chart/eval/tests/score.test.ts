@@ -376,3 +376,114 @@ describe("scoreSpec — chart-native line/scatter/pie routing + validation", () 
     expect(r.validates).toBe(false);
   });
 });
+
+describe("scoreSpec — channel-driven format gate", () => {
+  const nativeBar = {
+    producer: "chart-native",
+    nativeType: "bar",
+    title: "Brazil runs on renewables while most big economies still lag",
+    source: { name: "Ember 2025", url: "https://ourworldindata.org/x" },
+    unit: "share of electricity from renewables (%)",
+    data: "country,share\nBrazil,87.3\nIndia,19.8",
+  };
+
+  it("fails an interactive (chart-native) spec on a social-feed channel — interactive is never allowed there", () => {
+    const r = scoreSpec(nativeBar, {
+      family: "magnitude",
+      element: "chart",
+      producer: "chart-native",
+      channel: "social-feed",
+    });
+    expect(r.pass).toBe(false);
+    expect(
+      r.notes.some((n) => /not allowed on channel 'social-feed'/.test(n)),
+    ).toBe(true);
+  });
+
+  it("allows the same interactive spec on an article-web channel (interactive is the default there)", () => {
+    const r = scoreSpec(nativeBar, {
+      family: "magnitude",
+      element: "chart",
+      producer: "chart-native",
+      channel: "article-web",
+    });
+    expect(r.pass).toBe(true);
+  });
+
+  it("allows a native spec explicitly rendered as video on a social-vertical channel (video ∈ the social set)", () => {
+    // impliedFormat() cannot tell interactive vs video from `producer: "chart-native"`
+    // alone (both derive from the same producer) — it prefers an explicit `format`
+    // field on the spec itself when present, which disambiguates here.
+    const r = scoreSpec(
+      { ...nativeBar, format: "video" },
+      {
+        family: "magnitude",
+        element: "chart",
+        producer: "chart-native",
+        channel: "social-vertical",
+      },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  it("LIMITATION: without an explicit `format` field, a chart-native spec defaults to 'interactive' and is blocked on social channels even if it is actually destined to render as video (a false negative) — ② must set `format` on video renders for this gate to be accurate", () => {
+    const r = scoreSpec(nativeBar, {
+      family: "magnitude",
+      element: "chart",
+      producer: "chart-native",
+      channel: "social-vertical",
+    });
+    expect(r.pass).toBe(false);
+    expect(
+      r.notes.some((n) => /not allowed on channel 'social-vertical'/.test(n)),
+    ).toBe(true);
+  });
+
+  it("leaves scoring unaffected when expect.channel is unset (back-compat)", () => {
+    const r = scoreSpec(nativeBar, {
+      family: "magnitude",
+      element: "chart",
+      producer: "chart-native",
+    });
+    expect(r.pass).toBe(true);
+  });
+});
+
+describe("scoreSpec — aspect↔type guard (row-driven horizontal type vs portrait/square channel)", () => {
+  const rowDrivenBar = {
+    type: "d3-bars",
+    title: "Estonia recycles the most packaging waste in Europe",
+    data: "country,rate\nEstonia,63\nMalta,31",
+    altInsight: "Estonia recycles the most packaging waste in Europe.",
+    baseColor: "#009E73",
+  };
+
+  it("fails a row-driven d3-bars spec on a social-vertical (portrait) channel", () => {
+    const r = scoreSpec(rowDrivenBar, {
+      family: "magnitude",
+      element: "chart",
+      channel: "social-vertical",
+    });
+    expect(r.pass).toBe(false);
+    expect(r.notes.some((n) => /row-driven type 'd3-bars'/.test(n))).toBe(true);
+  });
+
+  it("does not flag a column-chart (not row-driven) on the same portrait channel", () => {
+    const r = scoreSpec(
+      { ...rowDrivenBar, type: "column-chart" },
+      { family: "magnitude", element: "chart", channel: "social-vertical" },
+    );
+    expect(r.notes.some((n) => /row-driven/.test(n))).toBe(false);
+    expect(r.pass).toBe(true);
+  });
+
+  it("does not flag a row-driven d3-bars spec on the article-web (landscape) channel", () => {
+    const r = scoreSpec(rowDrivenBar, {
+      family: "magnitude",
+      element: "chart",
+      channel: "article-web",
+    });
+    expect(r.notes.some((n) => /row-driven/.test(n))).toBe(false);
+    expect(r.pass).toBe(true);
+  });
+});

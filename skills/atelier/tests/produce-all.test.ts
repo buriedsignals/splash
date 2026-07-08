@@ -85,6 +85,67 @@ describe("produceAll — loop mechanics", () => {
   });
 });
 
+// The hard rule: not-embed ⇒ never interactive/scrolly. A shipped format must belong to
+// its channel's allowed set (skills/atelier/src/channel.ts). A violation is a fail-hard
+// recorded result — never a thrown exception, never a silent ship.
+describe("produceAll — channel/format gate", () => {
+  it("blocks an interactive proposal on a social-feed channel (fail-hard, not silently shipped)", async () => {
+    let dispatched = false;
+    const dispatch: Dispatch = async () => {
+      dispatched = true;
+      return { status: "produced" };
+    };
+    const { results } = await produceAll(
+      [p("p1", { channel: "social-feed", format: "interactive" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(dispatched).toBe(false); // dispatch NEVER ran — never shipped
+    expect(results[0].status).toBe("failed");
+    expect(results[0].error).toContain("interactive");
+    expect(results[0].error).toContain("social-feed");
+  });
+
+  it("allows an interactive proposal on the article-web channel", async () => {
+    let dispatched = false;
+    const dispatch: Dispatch = async () => {
+      dispatched = true;
+      return { status: "produced" };
+    };
+    const { results } = await produceAll(
+      [p("p1", { channel: "article-web", format: "interactive" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(dispatched).toBe(true);
+    expect(results[0].status).toBe("produced");
+  });
+
+  it("allows a video proposal on the social-vertical channel", async () => {
+    const dispatch: Dispatch = async () => ({ status: "produced" });
+    const { results } = await produceAll(
+      [p("p1", { channel: "social-vertical", format: "video" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(results[0].status).toBe("produced");
+  });
+
+  it("defaults to article-web when channel is absent (legacy proposals unaffected)", async () => {
+    const dispatch: Dispatch = async () => ({ status: "produced" });
+    const { results } = await produceAll(
+      [p("p1", { format: "interactive" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(results[0].status).toBe("produced");
+  });
+});
+
 // The validation gate uses the REAL default validator (no injected pass-through).
 const validDwSpec = {
   type: "d3-bars",

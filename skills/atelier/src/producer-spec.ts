@@ -1,4 +1,6 @@
 // The orchestration contract: what the agent hands the spine, and what it gets back.
+import type { Channel } from "./channel";
+
 export type Producer =
   "dw-chart" | "chart-native" | "map-dw" | "map-native" | "scrolly";
 export type VisualFormat = "static" | "interactive" | "video" | "scrolly";
@@ -10,6 +12,10 @@ export interface AcceptedProposal {
   spec: unknown; // the producer-specific, already-validated spec
   provenance?: "table" | "prose" | "none";
   confirmedTable?: boolean; // Gate 2b: set true only after the human confirms the prose table
+  // CADRAGE Q3's confirmed distribution channel (skills/atelier/src/channel.ts). Absent
+  // ⇒ produce-all's format guard defaults to "article-web" (the permissive default,
+  // matching normalizeChannel), so legacy proposals without a channel are unaffected.
+  channel?: Channel;
 }
 
 export type ProduceStatus =

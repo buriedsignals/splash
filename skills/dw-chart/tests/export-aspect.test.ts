@@ -6,6 +6,11 @@ import {
   ROW_DRIVEN_TYPES,
   EXPORT_SIZES,
 } from "../src/export-aspect";
+import {
+  ALL_CHANNELS,
+  CHANNELS,
+  normalizeChannel,
+} from "../../atelier/src/channel";
 
 describe("channelToExportSize (FINDING 2: static export aspect follows the CADRAGE channel)", () => {
   it("maps feed/square to a ~1:1 square box", () => {
@@ -112,5 +117,46 @@ describe("channelToExportSize type-awareness (REGRESSION: row-driven types must 
     expect(channelToExportSize(undefined, "d3-pies")).toEqual(
       EXPORT_SIZES.landscape,
     );
+  });
+});
+
+describe("channelToAspect / channelToExportSize now delegate to the shared atelier channel model (single source of truth)", () => {
+  it("matches the plan's literal cases: Stories→portrait, feed→square, undefined+row-driven→width-only landscape", () => {
+    expect(channelToExportSize("Stories", "d3-lines")).toEqual(
+      EXPORT_SIZES.portrait,
+    );
+    expect(channelToExportSize("feed", "d3-lines")).toEqual(
+      EXPORT_SIZES.square,
+    );
+    const def = channelToExportSize(undefined, "d3-bars");
+    expect(def.height).toBeUndefined();
+    expect(def.width).toBe(EXPORT_SIZES.landscape.width);
+  });
+
+  it("channelToAspect(x) always equals CHANNELS[normalizeChannel(x)].aspect (no local duplicate keyword table)", () => {
+    for (const ch of [
+      undefined,
+      "",
+      "Stories",
+      "feed",
+      "web",
+      "tiktok",
+      "something-new",
+    ]) {
+      expect(channelToAspect(ch)).toBe(CHANNELS[normalizeChannel(ch)].aspect);
+    }
+  });
+
+  // M1 — pixel-size drift guard: dw-chart's EXPORT_SIZES box (keyed by aspect) and
+  // atelier's CHANNELS[ch].mediaSize (keyed by channel) encode the SAME pixel
+  // dimensions in two places — this pins them together so they can't silently
+  // diverge (portrait 1080×1920 · square 1080×1080 · landscape 1200×675).
+  it("EXPORT_SIZES[aspect] matches CHANNELS[channel].mediaSize for every channel (no dimension drift)", () => {
+    for (const ch of ALL_CHANNELS) {
+      const entry = CHANNELS[ch];
+      expect(EXPORT_SIZES[entry.aspect as keyof typeof EXPORT_SIZES]).toEqual(
+        entry.mediaSize,
+      );
+    }
   });
 });

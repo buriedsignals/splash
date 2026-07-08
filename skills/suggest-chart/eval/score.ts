@@ -6,6 +6,13 @@ import { parseCsv } from "../../chart-native/src/csv";
 import { validateShape } from "../../chart-native/src/shape-validation";
 import { FAMILY_TYPES } from "./family-types";
 import { NATIVE_FAMILY_TYPES } from "./native-family-types";
+import {
+  isFormatAllowed,
+  CHANNELS,
+  type Channel,
+  type VisualFormat,
+} from "../../atelier/src/channel";
+import { isRowDriven, type ChartType } from "../../dw-chart/src/export-aspect";
 
 export interface Score {
   validates: boolean;
@@ -20,6 +27,52 @@ export interface Expectation {
   maxWarnings?: number;
   element?: "chart" | "map";
   producer?: "dw-chart" | "chart-native" | "map-dw" | "map-native" | "scrolly";
+  // Channel-driven format gate (Slice 1): when set, the spec's implied format
+  // (see impliedFormat() below) MUST be in allowedFormats(channel) or the spec
+  // fails, regardless of validation/family/warnings — the mechanical half of
+  // "not-embed ⇒ never interactive".
+  channel?: Channel;
+  // Documents the format a case expects. Not separately asserted here — the
+  // channel gate above (via impliedFormat) is what's actually checked; this
+  // field is for case-authoring clarity and future consumers.
+  format?: VisualFormat;
+}
+
+// Derives the format a spec implies, for the channel gate. Prefers an explicit
+// `format` field ON THE SPEC ITSELF (e.g. a chart-native config rendered as
+// video, which the producer discriminator alone can't distinguish from
+// interactive) over the producer→format default mapping below.
+export function impliedFormat(spec: unknown): VisualFormat {
+  const s =
+    spec && typeof spec === "object" ? (spec as Record<string, unknown>) : null;
+  const explicit = s?.["format"];
+  if (
+    explicit === "static" ||
+    explicit === "interactive" ||
+    explicit === "video" ||
+    explicit === "scrolly"
+  ) {
+    return explicit;
+  }
+  const producer = s?.["producer"];
+  if (producer === "scrolly") return "scrolly";
+  if (producer === "chart-native" || producer === "map-native")
+    return "interactive";
+  // dw-chart / map-dw, or a legacy ChartSpec with no `producer` field at all.
+  return "static";
+}
+
+// Gates an already-computed Score on two channel-driven checks: (1) a spec whose
+// implied format is not in allowedFormats(expect.channel) can never pass; (2) for a
+// portrait or square channel, a row-driven horizontal type (isRowDriven, already
+// importable from dw-chart's export-aspect.ts) can never pass either — those types
+// grow with row count and can't be composed into a vertical/square media box. Both
+// ARE mechanically derivable — the type lives on spec.type, the channel's aspect on
+// CHANNELS[expect.channel].aspect — so both are checked here (see the SKILL.md
+// "Aspect↔type guard" rule for the human-facing framing of check (2)).
+function withChannelGate(score: Score, channelOk: boolean): Score {
+  if (channelOk) return score;
+  return { ...score, guardrailsOk: false, pass: false };
 }
 
 // Deterministic gate for a ②-emitted spec. The no-chart case (expect.family === "none")
@@ -67,6 +120,28 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
     };
   }
 
+  let channelOk = true;
+  if (expect.channel) {
+    const fmt = impliedFormat(spec);
+    channelOk = isFormatAllowed(expect.channel, fmt);
+    if (!channelOk) {
+      notes.push(`format '${fmt}' not allowed on channel '${expect.channel}'`);
+    }
+    // Aspect↔type guard: a portrait/square channel can never host a row-driven
+    // horizontal type (d3-bars, dot/arrow/range plots) — those grow with row count
+    // and can't be composed into a vertical/square media box (see export-aspect.ts).
+    const aspect = CHANNELS[expect.channel].aspect;
+    if (aspect === "portrait" || aspect === "square") {
+      const specType = (spec as Record<string, unknown> | null)?.["type"];
+      if (typeof specType === "string" && isRowDriven(specType as ChartType)) {
+        channelOk = false;
+        notes.push(
+          `row-driven type '${specType}' cannot take a portrait/square channel — route to a column`,
+        );
+      }
+    }
+  }
+
   if (isMap) {
     if (expect.producer && producer !== expect.producer) {
       notes.push(
@@ -87,13 +162,16 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
     const guardrailsOk = warns <= (expect.maxWarnings ?? 0);
     if (!guardrailsOk)
       notes.push(`map: ${warns} warnings > ${expect.maxWarnings ?? 0}`);
-    return {
-      validates: v.ok,
-      familyMatch: true, // a map is its own element; family is geographic by construction
-      guardrailsOk,
-      pass: v.ok && guardrailsOk,
-      notes,
-    };
+    return withChannelGate(
+      {
+        validates: v.ok,
+        familyMatch: true, // a map is its own element; family is geographic by construction
+        guardrailsOk,
+        pass: v.ok && guardrailsOk,
+        notes,
+      },
+      channelOk,
+    );
   }
 
   if (producer === "chart-native") {
@@ -130,13 +208,16 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
       notes.push(
         `nativeType ${String(nativeType)} not in native family ${expect.family} [${allowed.join(",")}]`,
       );
-    return {
-      validates,
-      familyMatch,
-      guardrailsOk: validates,
-      pass: validates && familyMatch,
-      notes,
-    };
+    return withChannelGate(
+      {
+        validates,
+        familyMatch,
+        guardrailsOk: validates,
+        pass: validates && familyMatch,
+        notes,
+      },
+      channelOk,
+    );
   }
 
   const v = validateChartSpec(spec);
@@ -157,11 +238,14 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
   const guardrailsOk = v.ok && v.warnings.length <= (expect.maxWarnings ?? 0);
   if (v.ok && !guardrailsOk) notes.push("warnings: " + v.warnings.join("; "));
 
-  return {
-    validates,
-    familyMatch,
-    guardrailsOk,
-    pass: validates && familyMatch && guardrailsOk,
-    notes,
-  };
+  return withChannelGate(
+    {
+      validates,
+      familyMatch,
+      guardrailsOk,
+      pass: validates && familyMatch && guardrailsOk,
+      notes,
+    },
+    channelOk,
+  );
 }
