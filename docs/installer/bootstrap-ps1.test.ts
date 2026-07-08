@@ -12,6 +12,8 @@ test("installs Bun, Node (for Playwright), and Claude via native installers; no 
   expect(ps).toContain("OpenJS.NodeJS");
   expect(ps).toContain("https://claude.ai/install.ps1");
   expect(ps).not.toContain("git clone");
+  // Existence-throw guard: a failed native Claude installer must not fall through silently.
+  expect(ps).toContain("Claude Code could not be installed");
 });
 
 test("runs the local configurator and does NOT write .env from caller env vars", () => {

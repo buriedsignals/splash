@@ -61,6 +61,9 @@ if ($runtime -eq "claude" -and -not (Get-Command claude -ErrorAction SilentlyCon
   Write-Host "-> Installing Claude Code…"
   irm https://claude.ai/install.ps1 | iex
 }
+if ($runtime -eq "claude" -and -not (Get-Command claude -ErrorAction SilentlyContinue)) {
+  throw "Claude Code could not be installed. See https://claude.ai, then re-run this installer."
+}
 
 # 6. Producer deps + render engine
 Write-Host "-> Installing render dependencies…"
