@@ -345,6 +345,41 @@ describe("specToMetadata", () => {
     expect(p.metadata.visualize["custom-range-y"]).toBeUndefined();
   });
 
+  it("does not map annotations onto a pie chart's metadata (DW has no text-annotation layer there — validateChartSpec warns instead)", () => {
+    const p = specToMetadata({
+      type: "d3-pies",
+      title: "T",
+      data: "region,sales\nChina,8.1\nEurope,3.2",
+      altInsight: "x",
+      annotations: [{ text: "biggest slice", x: "China", y: 8.1 }],
+    } as any);
+    expect(p.metadata.visualize["text-annotations"]).toBeUndefined();
+    expect(p.metadata.visualize["custom-range-y"]).toBeUndefined();
+  });
+
+  it("does not map annotations onto a table's metadata (no plot to anchor to)", () => {
+    const p = specToMetadata({
+      type: "tables",
+      title: "T",
+      data: "region,sales\nChina,8.1\nEurope,3.2",
+      altInsight: "x",
+      annotations: [{ text: "note", x: "China", y: 8.1 }],
+    } as any);
+    expect(p.metadata.visualize["text-annotations"]).toBeUndefined();
+  });
+
+  it("still maps annotations for a chart type that supports them (bar)", () => {
+    const p = specToMetadata({
+      type: "d3-bars",
+      title: "T",
+      data: "region,sales\nChina,8.1\nEurope,3.2",
+      altInsight: "x",
+      annotations: [{ text: "outlier", x: "China", y: 8.1 }],
+    } as any);
+    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
+    expect(ann.text).toBe("outlier");
+  });
+
   it("routes valueFormat to the y-grid axis format (e.g. h:mm:ss)", () => {
     const p = specToMetadata({
       type: "d3-lines",

@@ -72,6 +72,24 @@ export const PART_TO_WHOLE_TYPES = new Set<ChartType>([
   "election-donut-chart",
 ]);
 
+// Chart types with NO text-annotation layer in Datawrapper at all. Verified against
+// Datawrapper's own docs (academy "How to create text annotations" + "Customizing your
+// pie chart"): annotations are supported on column/bar/range/arrow/dot/bullet charts,
+// line/multiple-lines/area charts, and scatter plots — but pie/donut charts only expose
+// a "highlight element" (bold a slice's label), never an anchored text+arrow annotation,
+// and a table has no plot to anchor one to. Mapping `spec.annotations` for these types
+// would silently produce metadata Datawrapper ignores at render — the invariant is that
+// annotations must never be silently dropped, so these types get a validate() warning
+// instead of a dead mapping (see chart-spec.ts validateChartSpec + spec-to-metadata.ts).
+export const ANNOTATION_UNSUPPORTED_TYPES = new Set<ChartType>([
+  "d3-pies",
+  "d3-donuts",
+  "election-donut-chart",
+  "d3-multiple-pies",
+  "d3-multiple-donuts",
+  "tables",
+]);
+
 export interface ChartSpec {
   type: ChartType;
   title: string; // the insight, sentence case
@@ -299,6 +317,17 @@ export function validateChartSpec(
         "title looks like a label, not an insight — state what the data shows",
       );
   }
+  // Annotations have NO home on pie/donut/table types (Datawrapper docs: no
+  // text-annotation layer there) — warn so the drop is never silent, rather than
+  // let spec-to-metadata build metadata Datawrapper will just ignore at render.
+  if (
+    Array.isArray(s.annotations) &&
+    s.annotations.length &&
+    ANNOTATION_UNSUPPORTED_TYPES.has(s.type as ChartType)
+  )
+    warnings.push(
+      `annotations are not supported on ${s.type} charts — Datawrapper has no text-annotation layer for pie/donut/table types, so they will be dropped; move the callout into the title/intro, or use a bar/column/line alternative`,
+    );
   // An annotation's `x` should reference an actual data row label, else
   // Datawrapper silently misplaces (or drops) it.
   if (

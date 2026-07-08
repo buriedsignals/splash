@@ -139,6 +139,45 @@ describe("validateChartSpec", () => {
     });
     expect(r.ok && r.warnings.some((w) => /annotation x/i.test(w))).toBe(false);
   });
+  it("warns (never silently drops) when annotations are set on a pie chart — DW has no text-annotation layer there", () => {
+    const r = validateChartSpec({
+      ...base,
+      type: "d3-pies",
+      data: "region,sales\nChina,8.1\nEurope,3.2",
+      annotations: [{ text: "biggest slice", x: "China", y: 8.1 }],
+    });
+    expect(r.ok).toBe(true);
+    expect(
+      r.ok &&
+        r.warnings.some((w) =>
+          /annotations are not supported on d3-pies/i.test(w),
+        ),
+    ).toBe(true);
+  });
+  it("warns when annotations are set on a table (no plot to anchor to)", () => {
+    const r = validateChartSpec({
+      ...base,
+      type: "tables",
+      data: "region,sales\nChina,8.1\nEurope,3.2",
+      annotations: [{ text: "note", x: "China", y: 8.1 }],
+    });
+    expect(r.ok).toBe(true);
+    expect(
+      r.ok &&
+        r.warnings.some((w) =>
+          /annotations are not supported on tables/i.test(w),
+        ),
+    ).toBe(true);
+  });
+  it("does not warn about annotation support on a chart type that does support them (line)", () => {
+    const r = validateChartSpec({
+      ...base,
+      annotations: [{ text: "Peak", x: "2018", y: 5.1 }],
+    });
+    expect(
+      r.ok && r.warnings.some((w) => /annotations are not supported/i.test(w)),
+    ).toBe(false);
+  });
   it("rejects a non-boolean transpose", () => {
     const r = validateChartSpec({ ...base, transpose: "yes" });
     expect(r.ok).toBe(false);
