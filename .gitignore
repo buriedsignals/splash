@@ -1,3 +1,6 @@
 .env
 .superpowers/
 exports/
+
+# dependencies (never track — includes symlinked node_modules in worktrees)
+node_modules
