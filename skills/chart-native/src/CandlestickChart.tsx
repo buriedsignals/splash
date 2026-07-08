@@ -72,7 +72,16 @@ export function CandlestickChart({
     bottom: 52, // date axis, clear of the source line
     left: 48, // price axis
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.62, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.62,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -294,7 +303,10 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong style={{ color, fontSize: 13 }}>{d.date}</strong>{" "}
+      <span aria-hidden="true" style={{ color, marginRight: 4 }}>
+        ■
+      </span>
+      <strong style={{ color: "#fff", fontSize: 13 }}>{d.date}</strong>{" "}
       <span style={{ fontSize: 12 }}>
         {d.close >= d.open ? "▲" : "▼"} {formatNumber(d.close)}
       </span>

@@ -86,7 +86,16 @@ export function ParallelChart({
     bottom: 30 + (config.highlight?.length ? legendRows * LEG_ROW + 24 : 0),
     left: 16,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.6, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.6,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -370,11 +379,13 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong
-        style={{ color: colorOf(ln.label, ln.highlighted), fontSize: 13 }}
+      <span
+        aria-hidden="true"
+        style={{ color: colorOf(ln.label, ln.highlighted), marginRight: 4 }}
       >
-        {ln.label}
-      </strong>
+        ■
+      </span>
+      <strong style={{ color: "#fff", fontSize: 13 }}>{ln.label}</strong>
       <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>
         {config.dimensions.map((d) => `${d.label} ${item[d.key]}`).join(" · ")}
       </div>

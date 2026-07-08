@@ -105,7 +105,16 @@ export function SunburstChart({
     bottom: 18 + legendRows * LEG_ROW + 16, // branch legend rows + source clearance
     left: 14,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 1, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    1,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -364,9 +373,13 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong style={{ color: branchColor(a.branch), fontSize: 13 }}>
-        {a.label}
-      </strong>{" "}
+      <span
+        aria-hidden="true"
+        style={{ color: branchColor(a.branch), marginRight: 4 }}
+      >
+        ■
+      </span>
+      <strong style={{ color: "#fff", fontSize: 13 }}>{a.label}</strong>{" "}
       <span style={{ fontSize: 13 }}>{formatNumber(a.value)}</span>
       <div style={{ opacity: 0.75, fontSize: 11 }}>
         {Math.round(a.share * 100)}% of the whole

@@ -418,7 +418,13 @@ function Tooltip({
       }}
     >
       <strong style={{ fontSize: 13 }}>{seg.value}%</strong>{" "}
-      <span style={{ color: colorOf(seg.responseIndex), fontSize: 12 }}>
+      <span
+        aria-hidden="true"
+        style={{ color: colorOf(seg.responseIndex), marginRight: 4 }}
+      >
+        ■
+      </span>
+      <span style={{ color: "#fff", fontSize: 12 }}>
         {config.responses[seg.responseIndex]}
       </span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>{r.label}</div>

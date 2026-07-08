@@ -363,7 +363,10 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong style={{ color, fontSize: 13 }}>{ln.label}</strong>
+      <span aria-hidden="true" style={{ color, marginRight: 4 }}>
+        ■
+      </span>
+      <strong style={{ color: "#fff", fontSize: 13 }}>{ln.label}</strong>
       <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>
         {config.periods
           .map((per, i) => `${per} #${ln.points[i].rank}`)
