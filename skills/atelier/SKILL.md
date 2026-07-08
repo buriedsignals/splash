@@ -99,13 +99,27 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
   5c. Do not hand-translate.
 - **`failed`** → surface the `error`; fix the spec or drop the proposal. Never ship a failed visual.
 
-**GATE 3 (render) — per produced visual.** Show the ACTUAL render (open it / a screenshot) and get an
-explicit "ship it". Verify quality, not just that it built. **After "ship it", record the approval:**
+**GATE 3 (render) — per produced visual.**
+
+**3a. Render-review FIRST (mandatory, Layer 2).** Before you show the journalist anything, put the
+produced visual through an INDEPENDENT editorial pass per `references/render-review.md`: read the ACTUAL
+render + the article + data against the six criteria (title honesty, source traceability, honest
+encoding, earns-its-place, legibility/a11y, fidelity). These catch what the spine's code gates cannot —
+a title that misstates the metric, a fabricated source, a misleading encoding. Where the harness supports
+subagents, SPAWN a fresh reviewer given only the render + article + data + criteria; else review
+adversarially (try to falsify). Record it (export is refused without a review record):
+```bash
+bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> [concern...]
+```
+
+**3b. Show + approve.** Show the ACTUAL render (open it / a screenshot) TOGETHER WITH the review's
+concerns, and get an explicit "ship it". The concerns are advisory — the journalist is the editor.
+Verify quality, not just that it built. **After "ship it", record the approval:**
 ```bash
 bun skills/atelier/scripts/gate-render.mjs exports/<slug>/report.json <id> <the-approved-artifact>
 ```
-`gate-render` is the ONLY writer of the render approval, and EXPORT refuses any visual it has not
-approved — so an unseen or unapproved render can never ship.
+`gate-render` is the ONLY writer of the render approval; EXPORT refuses any visual not render-reviewed
+(3a) AND not approved (3b) — so an unreviewed, unseen, or unapproved render can never ship.
 
 _(Under the hood `produce-all` dispatches to `chart-native/scripts/produce-from-spec.mjs`,
 `map-native/scripts/produce.mjs`, `scrolly/scripts/produce.mjs`, and the Datawrapper producers — you
@@ -183,3 +197,6 @@ Branch on the format the journalist chose at CADRAGE / that `suggest-chart` rout
 - Never let the produced visual's furniture (title, intro, source label, scrolly captions) default to English — the detected language is threaded to suggest-article and suggest-chart so the OUTPUT matches the dialogue, not only the chat.
 - Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate.
 - Never name a chart type in the intent passed to suggest-article or suggest-chart (on the guided path).
+- Never ship a visual without the mandatory render-review (Gate 3a) — `assertShippable` refuses a visual with no review record; the review's concerns are advisory but running it is not optional.
+- Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow.
+- Never hand over an interactive or scrolly visual without offering the three delivery forms at GATE 4 — code source, static HTML, and the fly.io embed link — as an explicit choice (the machinery is `export-code.mjs` + `deploy-embed.mjs`).

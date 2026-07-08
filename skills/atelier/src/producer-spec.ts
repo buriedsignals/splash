@@ -25,6 +25,8 @@ export interface ProposalResult {
   reason?: string; // needs-fallback / needs-confirmation explanation
   error?: string; // failed explanation
   warnings?: string[]; // non-blocking validation warnings, surfaced at the render gate
+  reviewed?: boolean; // render-review ran (Layer 2); export is refused until it has
+  reviewConcerns?: string[]; // advisory editorial concerns from the review, shown at Gate 3
   renderApproved: boolean; // Gate 3, default false
   approvedHash?: string; // sha256 of the approved artifact, set by the render gate
 }
