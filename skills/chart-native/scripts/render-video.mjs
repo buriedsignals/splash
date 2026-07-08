@@ -23,7 +23,7 @@ if (process.env.CONFIG) {
 }
 
 const run = (args) =>
-  execFileSync("npx", args, { stdio: "inherit", cwd: join(here, "..") });
+  execFileSync("npx", args, { stdio: "inherit", cwd: join(here, ".."), shell: process.platform === "win32" });
 
 console.log(`1/2 validating a still frame (frame 140) of ${comp} before the mp4…`);
 run(["remotion", "still", remotion, comp, stillOut, "--frame=140", "--gl=angle", ...propsArgs]);

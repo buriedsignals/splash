@@ -9,8 +9,7 @@
 <body>
   <main>
     <h1>Install Atelier</h1>
-    <p>Fill this in, download one file, double-click it. No terminal needed. Your keys never
-      leave this page.</p>
+    <p>Fill this in, then choose one of the two ways to install. Your keys never leave this page.</p>
 
     <form id="setup">
       <fieldset>
@@ -22,71 +21,118 @@
         <input name="ai" type="password" autocomplete="off" />
         <a id="keyUrl" href="#" target="_blank" rel="noopener">Where do I get this?</a>
       </label>
-
       <label>MapTiler key <small>(maps — skip to add later)</small>
         <input name="maptiler" type="password" autocomplete="off" />
         <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener">Get one</a>
       </label>
-
       <label>Datawrapper token <small>(charts — skip to add later)</small>
         <input name="datawrapper" type="password" autocomplete="off" />
         <a href="https://app.datawrapper.de/account/api-tokens" target="_blank" rel="noopener">Get one</a>
       </label>
-
       <details>
         <summary>Embed host (advanced, optional)</summary>
         <label>fly.io app name <input name="embedApp" type="text" autocomplete="off" /></label>
         <label>FLY_API_TOKEN <input name="flyToken" type="password" autocomplete="off" /></label>
       </details>
-
-      <button type="submit">Download my installer</button>
     </form>
+
+    <section id="output" hidden>
+      <div id="os-toggle" data-testid="os-toggle" role="tablist">
+        <button type="button" data-os="mac" aria-selected="true">macOS</button>
+        <button type="button" data-os="windows" aria-selected="false">Windows</button>
+      </div>
+
+      <div class="mode" data-testid="mode-copypaste">
+        <h2>Option A — paste one line into the terminal</h2>
+        <p class="hint" id="terminalHint"></p>
+        <pre><code id="copypaste"></code></pre>
+        <button type="button" id="copyBtn">Copy</button>
+        <p class="note">After it finishes, close the terminal window (the line held your keys).</p>
+      </div>
+
+      <div class="mode" data-testid="mode-download">
+        <h2>Option B — download a file and open it</h2>
+        <button type="button" id="downloadBtn">Download my installer</button>
+        <p class="note" id="workaround"></p>
+      </div>
+    </section>
   </main>
 
   <script type="module">
     import { RUNTIMES } from "./runtimes.js";
-    import { generateScript, scriptFilename } from "./generate.js";
+    import { generateCopyPaste, generateLauncher, launcherFilename } from "./generate.js";
 
     const form = document.getElementById("setup");
     const runtimesEl = document.getElementById("runtimes");
     const keyLabelEl = document.getElementById("keyLabel");
     const keyUrlEl = document.getElementById("keyUrl");
+    const output = document.getElementById("output");
+    const copypasteEl = document.getElementById("copypaste");
+    const terminalHint = document.getElementById("terminalHint");
+    const workaround = document.getElementById("workaround");
 
-    let selected = "claude";
+    let selectedRuntime = "claude";
+    let os = /Win/i.test(navigator.platform || navigator.userAgent) ? "windows" : "mac";
 
     for (const [id, rt] of Object.entries(RUNTIMES)) {
       const label = document.createElement("label");
       label.className = "runtime" + (rt.verified ? "" : " disabled");
       label.innerHTML =
-        `<input type="radio" name="runtime" value="${id}" ${id === selected ? "checked" : ""}
+        `<input type="radio" name="runtime" value="${id}" ${id === selectedRuntime ? "checked" : ""}
           ${rt.verified ? "" : "disabled"} /> ${rt.label}` +
-        (rt.verified ? "" : ` <small>coming soon</small>`);
+        (rt.verified ? "" : " <small>coming soon</small>");
       runtimesEl.appendChild(label);
     }
 
-    function syncKeyField() {
-      const rt = RUNTIMES[selected];
-      keyLabelEl.textContent = `(${rt.keyLabel})`;
-      keyUrlEl.href = rt.keyUrl;
-    }
-    syncKeyField();
-
-    form.addEventListener("change", (e) => {
-      if (e.target.name === "runtime") { selected = e.target.value; syncKeyField(); }
-    });
-
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
+    function config() {
       const f = new FormData(form);
-      const script = generateScript({
-        runtime: selected,
+      return {
+        os, runtime: selectedRuntime,
         keys: { ai: f.get("ai"), maptiler: f.get("maptiler"), datawrapper: f.get("datawrapper") },
         embed: { app: f.get("embedApp"), flyToken: f.get("flyToken") },
-      });
-      const blob = new Blob([script], { type: "text/plain" });
+      };
+    }
+
+    const HINTS = {
+      mac: "Open Terminal (Cmd-Space, type “Terminal”), paste, press Enter.",
+      windows: "Open PowerShell (Start, type “PowerShell”), paste, press Enter.",
+    };
+    const WORKAROUND = {
+      mac: "If macOS blocks the file: System Settings → Privacy & Security → “Open Anyway”.",
+      windows: "If Windows shows “Windows protected your PC”: click More info → Run anyway.",
+    };
+
+    function render() {
+      const rt = RUNTIMES[selectedRuntime];
+      keyLabelEl.textContent = `(${rt.keyLabel})`;
+      keyUrlEl.href = rt.keyUrl;
+      document.querySelectorAll('#os-toggle button').forEach((b) =>
+        b.setAttribute("aria-selected", String(b.dataset.os === os)));
+      try {
+        copypasteEl.textContent = generateCopyPaste(config());
+      } catch { copypasteEl.textContent = ""; }
+      terminalHint.textContent = HINTS[os];
+      workaround.textContent = WORKAROUND[os];
+      output.hidden = false;
+    }
+    render();
+
+    form.addEventListener("change", (e) => {
+      if (e.target.name === "runtime") selectedRuntime = e.target.value;
+      render();
+    });
+    form.addEventListener("input", render);
+    document.getElementById("os-toggle").addEventListener("click", (e) => {
+      if (e.target.dataset.os) { os = e.target.dataset.os; render(); }
+    });
+    document.getElementById("copyBtn").addEventListener("click", () =>
+      navigator.clipboard.writeText(copypasteEl.textContent));
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      const { filename, contents } = generateLauncher(config());
+      const blob = new Blob([contents], { type: "text/plain" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = scriptFilename();
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(a.href);
     });
