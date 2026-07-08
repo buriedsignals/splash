@@ -40,10 +40,6 @@ function readString(v: unknown): string | undefined {
   return typeof v === "string" && v.trim() ? v : undefined;
 }
 
-function readArray(v: unknown): unknown[] {
-  return Array.isArray(v) ? v : [];
-}
-
 /**
  * Resolve the {data, text, bg} triple a chart-native component would actually
  * paint for `config`. `config` is arbitrary JSON (produce's raw input); we only
@@ -57,35 +53,29 @@ export function resolveConformanceColors(
 
   switch (type) {
     case "line": {
-      // LineChart.tsx: `lineColor = config.baseColor ?? COLORS.line`, drawn as
-      // BOTH the series stroke and the direct-label TEXT (fill={lineColor}).
+      // LineChart.tsx: `lineColor = config.baseColor ?? COLORS.line` paints the series
+      // stroke and the line-end DOT (marks — 3:1 graphical contrast). The direct-label TEXT
+      // is `COLORS.ink` (#3 decoupling: "label carries the value, mark carries the hue"), so
+      // the data colour is NEVER a text colour — a subject-fit hue (vermillion, green) can
+      // ship as the mark without failing the 4.5:1 text check that used to force blue.
       const data = readString(config.baseColor) ?? COLORS.line;
-      return { data, text: [COLORS.ink, COLORS.muted, data], bg };
+      return { data, text: [COLORS.ink, COLORS.muted], bg };
     }
 
     case "bar": {
-      // BarChart.tsx `barColor()`: `baseColor ?? COLORS.line` for every bar, and
-      // the value label's fill is that SAME colour — unless `highlightIndex` is
-      // set, which splits bars orange/muted instead (not modelled here; see
-      // conformance-report.md "known limitations").
+      // BarChart.tsx `barColor()`: `baseColor ?? COLORS.line` fills the bars (mark). BOTH the
+      // category and value labels render in `COLORS.ink` (BarChart.tsx:309,328) — the mark
+      // carries the hue, the label carries the value. So the data colour is not a text colour.
       const data = readString(config.baseColor) ?? COLORS.line;
-      return { data, text: [COLORS.ink, COLORS.muted, data], bg };
+      return { data, text: [COLORS.ink, COLORS.muted], bg };
     }
 
     case "scatter": {
-      // ScatterChart.tsx: `dotColor = config.baseColor ?? COLORS.line`, drawn as
-      // the dots AND any point-label text. Labels render by DEFAULT (the
-      // headline outlier, `labelPoints` unset or "default") or when `annotate`
-      // names points; only `labelPoints:"none"` with no `annotate` suppresses
-      // them. Conservatively include the data colour in `text` unless we can
-      // prove no label renders.
+      // ScatterChart.tsx: `dotColor = config.baseColor ?? COLORS.line` paints the dots and
+      // their leader lines (marks). The point-label TEXT is `COLORS.ink` (#3 decoupling), so
+      // the data colour is never a text colour regardless of which points are labelled.
       const data = readString(config.baseColor) ?? COLORS.line;
-      const noAnnotate = readArray(config.annotate).length === 0;
-      const labelsOff = config.labelPoints === "none" && noAnnotate;
-      const text = labelsOff
-        ? [COLORS.ink, COLORS.muted]
-        : [COLORS.ink, COLORS.muted, data];
-      return { data, text, bg };
+      return { data, text: [COLORS.ink, COLORS.muted], bg };
     }
 
     case "histogram": {

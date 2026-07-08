@@ -36,7 +36,7 @@ import {
 import type { MapFilter } from "./core/map-filter";
 import { resolveMapStyle } from "./route-geo";
 import { legendTheme } from "./theme/legend-theme";
-import { fmtBin } from "./core/legend-format";
+import { fmtBinRange } from "./core/legend-format";
 import { formatLocaleNumber } from "./core/locale";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
@@ -333,7 +333,7 @@ export const ChoroplethMap: React.FC<Props> = ({
               (b) => `
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
               <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px ${theme.stroke};flex-shrink:0"></span>
-              <span style="font:11px/1 sans-serif;color:${theme.sub}">${fmtBin(b.min, { minGap, lang: config.lang })}–${fmtBin(b.max, { minGap, lang: config.lang })}</span>
+              <span style="font:11px/1 sans-serif;color:${theme.sub}">${fmtBinRange(b.min, b.max, { unit: config.valueUnit, minGap, lang: config.lang })}</span>
             </div>
           `,
             )

@@ -1,6 +1,7 @@
 import type { ChartSpec } from "./chart-spec";
 import {
   ANNOTATION_UNSUPPORTED_TYPES,
+  ANNOTATION_UNMAPPED_BAR_TYPES,
   MULTI_SERIES_TYPES,
   normalizeNumberFormat,
   type ChartType,
@@ -467,14 +468,17 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
   if (LINE_LIKE_TYPES.has(spec.type))
     visualize["labeling"] = isSingleSeries(spec) ? "off" : "right";
 
-  // Pie/donut/table types have no text-annotation layer in Datawrapper at all
-  // (validateChartSpec warns about this) — skip the mapping rather than build
-  // metadata (text-annotations + a nonsensical y-range on a chart with no y-axis)
-  // that Datawrapper would just ignore at render.
+  // Skip the annotation mapping for types this pipeline can't annotate (validateChartSpec
+  // warns about both), rather than build metadata Datawrapper ignores at render:
+  //  • pie/donut/table — no text-annotation layer in Datawrapper at all;
+  //  • horizontal bars (d3-bars family) — the layer exists, but this mapper's column/line
+  //    coordinate model (category-x, value-y) is dropped by the bar layer (value-x,
+  //    category-y). Verified via a rendered export.
   if (
     spec.annotations &&
     spec.annotations.length &&
-    !ANNOTATION_UNSUPPORTED_TYPES.has(spec.type)
+    !ANNOTATION_UNSUPPORTED_TYPES.has(spec.type) &&
+    !ANNOTATION_UNMAPPED_BAR_TYPES.has(spec.type)
   ) {
     const dom = plotDomain(csv);
     const span = dom.yMax - dom.yMin || 1;

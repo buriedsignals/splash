@@ -1,5 +1,9 @@
 import { dataShape } from "../../dw-chart/src/csv";
-import { normalizeNumberFormat } from "../../dw-chart/src/chart-spec";
+import {
+  normalizeNumberFormat,
+  isPercentScaleMismatch,
+  numericValuesOf,
+} from "../../dw-chart/src/chart-spec";
 
 export interface GradientStop {
   color: string; // hex
@@ -39,6 +43,11 @@ export interface ChoroplethMapSpec {
   intro?: string;
   colorScale?: GradientStop[]; // sequential light→dark stops
   numberFormat?: string;
+  // A literal value UNIT suffix, e.g. "%" / " M" / " people". Emitted as Datawrapper's
+  // `describe.number-append` — a suffix that shows on the legend + %REGION_VALUE% tooltip
+  // WITHOUT multiplying (unlike a "%" numberFormat token). So a percentage-point value 9.8
+  // renders "9.8%" with unit:"%" and a plain numberFormat, not the "0%" a "%" token gives 0.098.
+  unit?: string;
   source?: { name: string; url?: string };
   altInsight: string; // WCAG: alt = the insight
 }
@@ -59,6 +68,11 @@ export interface SymbolMapSpec {
   intro?: string;
   colorScale?: GradientStop[]; // sequential light→dark stops (same colorscale field as choropleth)
   numberFormat?: string;
+  // Literal value UNIT suffix (e.g. "M" / "%"). For symbol maps it is baked into the hover
+  // tooltip body (which uses raw `{{ column }}` mustache tokens Datawrapper does NOT auto-format)
+  // AND emitted as `describe.number-append` for the size legend. Fixes the tooltip showing a
+  // bare "85" with no "M".
+  unit?: string;
   source?: { name: string; url?: string };
   altInsight: string;
 }
@@ -174,6 +188,7 @@ function warnLabelTitle(
 // from the field having been dropped. Reject the un-mappable; warn when auto-corrected.
 function validateNumberFormat(
   s: Record<string, unknown>,
+  valueColumn: string | undefined,
   errors: string[],
   warnings: string[],
 ): void {
@@ -188,6 +203,18 @@ function validateNumberFormat(
   } catch (e) {
     errors.push((e as Error).message);
   }
+  // PERCENT-SCALE MISMATCH (#1c). A "%" token on 0–1 fractional data renders "0%" in
+  // Datawrapper (it appends the sign, never multiplies). Use `unit:"%"` on percentage-point
+  // data instead. Verified via a rendered export.
+  if (
+    typeof valueColumn === "string" &&
+    typeof s.data === "string" &&
+    s.data.includes(",") &&
+    isPercentScaleMismatch(v, numericValuesOf(s.data, [valueColumn]))
+  )
+    warnings.push(
+      `numberFormat "${v}" is a percent token but ${valueColumn} looks like 0–1 fractions — Datawrapper appends "%" WITHOUT multiplying, so these render "0%". Pre-scale to percentage points (e.g. 0.29 → 29), or use unit:"%" with a plain format.`,
+    );
 }
 
 export function validateMapSpec(
@@ -230,7 +257,12 @@ export function validateMapSpec(
     requireColumn(s, "valueColumn", columns, errors);
     validateColorScale(s.colorScale, errors);
     warnLabelTitle(s, columns, warnings);
-    validateNumberFormat(s, errors, warnings);
+    validateNumberFormat(
+      s,
+      typeof s.valueColumn === "string" ? s.valueColumn : undefined,
+      errors,
+      warnings,
+    );
   } else if (s.mapType === "symbol") {
     requireStrings(
       s,
@@ -254,7 +286,22 @@ export function validateMapSpec(
       requireColumn(s, "labelColumn", columns, errors);
     validateColorScale(s.colorScale, errors);
     warnLabelTitle(s, columns, warnings);
-    validateNumberFormat(s, errors, warnings);
+    validateNumberFormat(
+      s,
+      typeof s.sizeColumn === "string" ? s.sizeColumn : undefined,
+      errors,
+      warnings,
+    );
+    // #2 — LABELED (static legibility). Datawrapper symbol maps are hover-only: the
+    // proportional circles carry NO direct name/value labels, and Datawrapper offers no way
+    // to add data-value labels to a symbol map (the "labels by column" feature is
+    // choropleth-only — verified against the Datawrapper Academy docs). So the owned static
+    // PNG export (and print) can't be read without interaction — it violates the project rule
+    // "the data must be legible WITHOUT hover". map-native's proportional-symbol renderer
+    // labels the top-N circles by name + value; route there when static legibility matters.
+    warnings.push(
+      "symbol map is not directly labeled — Datawrapper draws proportional circles with values on HOVER only (it cannot label symbols by data column), so the static export is not legible without interaction; use map-native (which labels the top-N circles by name + value) for a statically-legible proportional-symbol map",
+    );
   } else {
     // locator
     requireStrings(s, ["title", "altInsight"], errors);

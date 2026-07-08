@@ -386,7 +386,11 @@ function ChartSvg({
             dy="0.32em"
             fontSize={ts.label}
             fontWeight={600}
-            fill={lineColor}
+            // #3 — the direct-label TEXT carries the series name in ink; the coloured
+            // line-end DOT (above) carries the hue. Painting this text in `lineColor` failed
+            // WCAG for a subject-fit hue (vermillion 3.87:1, green 3.42:1) — which forced the
+            // producer back to the default blue, the one hue the KB warns against defaulting to.
+            fill={COLORS.ink}
           >
             {config.directLabel}
           </text>

@@ -35,3 +35,20 @@ export function fmtBin(
 function clamp(x: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, x));
 }
+
+// fmtBinRange — a binned-legend range label ("16–30") with the value UNIT appended once
+// at the end ("16–30%"). Fixes the choropleth legend showing bare numbers ("9.8") when the
+// scale carries a unit (the tooltip already appended `valueUnit`, but the legend bins never
+// did — a static reader saw "9.8", not "9.8%"). The unit is appended ONCE (range convention)
+// and only the suffix — NOT a numeral multiply — so a percentage-point value (29) stays "29%"
+// (map-native never multiplies; the value must already be in display units). Pure + unit-tested.
+export function fmtBinRange(
+  min: number,
+  max: number,
+  opts?: { unit?: string; minGap?: number; lang?: Lang },
+): string {
+  const unit = opts?.unit ?? "";
+  const lo = fmtBin(min, { minGap: opts?.minGap, lang: opts?.lang });
+  const hi = fmtBin(max, { minGap: opts?.minGap, lang: opts?.lang });
+  return `${lo}–${hi}${unit}`;
+}

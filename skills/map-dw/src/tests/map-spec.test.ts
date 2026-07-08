@@ -111,6 +111,34 @@ describe("validateMapSpec — choropleth", () => {
     const r = validateMapSpec({ ...valid, numberFormat: "%s" });
     expect(r.ok).toBe(false);
   });
+
+  it("#1c — warns when a '%' numberFormat is applied to 0–1 fractional value data", () => {
+    const r = validateMapSpec({
+      ...valid,
+      data: "code,value\nFRA,0.10\nDEU,0.40\nSWE,0.70",
+      numberFormat: "0%",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) => /appends "%" WITHOUT multiplying/.test(w)),
+      ).toBe(true);
+  });
+
+  it("#1c — does NOT warn when the '%' value data is already percentage points", () => {
+    const r = validateMapSpec({ ...valid, numberFormat: "0%" }); // values 10/40/70
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) => /appends "%" WITHOUT multiplying/.test(w)),
+      ).toBe(false);
+  });
+
+  it("#1b — accepts a unit suffix on a choropleth (no error, no warning)", () => {
+    const r = validateMapSpec({ ...valid, unit: "%" });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings).toEqual([]);
+  });
 });
 
 const validSymbol = {
@@ -125,10 +153,31 @@ const validSymbol = {
 };
 
 describe("validateMapSpec — symbol", () => {
-  it("passes a complete symbol spec", () => {
+  it("passes a complete symbol spec (with the #2 hover-only legibility warning)", () => {
     const r = validateMapSpec(validSymbol);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.warnings).toEqual([]);
+    // #2 — every DW symbol map is hover-only, so it always carries the 'not directly
+    // labeled' warning steering static-legibility cases to map-native.
+    if (r.ok)
+      expect(r.warnings).toEqual([
+        "symbol map is not directly labeled — Datawrapper draws proportional circles with values on HOVER only (it cannot label symbols by data column), so the static export is not legible without interaction; use map-native (which labels the top-N circles by name + value) for a statically-legible proportional-symbol map",
+      ]);
+  });
+
+  it("#2 — the not-directly-labeled warning fires on every symbol map (steer static to map-native)", () => {
+    const r = validateMapSpec(validSymbol);
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(r.warnings.some((w) => /not directly labeled/.test(w))).toBe(true);
+  });
+
+  it("#2 — a choropleth is NOT flagged as unlabeled (it can label by column)", () => {
+    const r = validateMapSpec(valid);
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(r.warnings.some((w) => /not directly labeled/.test(w))).toBe(
+        false,
+      );
   });
 
   it("requires lat/lon/size columns and they must be real data columns", () => {

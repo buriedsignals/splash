@@ -98,6 +98,22 @@ describe("specToMapMetadata", () => {
       /invalid numberFormat/,
     );
   });
+
+  it("#1b — emits the declared unit as describe.number-append (legend + %REGION_VALUE% tooltip)", () => {
+    // With a plain numberFormat + unit:"%", a percentage-point value 9.8 renders "9.8%"
+    // WITHOUT the 100× a "%" token would risk — the append is a literal suffix.
+    const d = specToMapMetadata({ ...base, unit: "%" }).metadata
+      .describe as Record<string, unknown>;
+    expect(d["number-append"]).toBe("%");
+  });
+
+  it("#1b — no unit ⇒ no number-append key (back-compat)", () => {
+    const d = specToMapMetadata(base).metadata.describe as Record<
+      string,
+      unknown
+    >;
+    expect("number-append" in d).toBe(false);
+  });
 });
 
 const symbol: SymbolMapSpec = {
@@ -169,6 +185,29 @@ describe("specToMapMetadata — symbol", () => {
     expect(t.title).toBe("{{ city }}");
     expect(t.body).toBe("{{ population }}");
     expect(t.fields).toEqual({ city: "city", population: "population" });
+  });
+
+  it("#1b — bakes the declared unit into the tooltip body (mustache is NOT auto-formatted)", () => {
+    // The confirmed bug: the symbol tooltip showed a bare "85" with no "M". `number-append`
+    // only touches auto-formatted numbers, and the tooltip body is a raw mustache token, so
+    // the unit must live in the template.
+    const t = specToMapMetadata({ ...symbol, unit: "M" }).metadata.visualize
+      .tooltip as Record<string, unknown>;
+    expect(t.body).toBe("{{ population }}M");
+  });
+
+  it("#1b — also emits the unit as describe.number-append (for the size legend)", () => {
+    const d = specToMapMetadata({ ...symbol, unit: "M" }).metadata
+      .describe as Record<string, unknown>;
+    expect(d["number-append"]).toBe("M");
+  });
+
+  it("#1b — no unit ⇒ no number-append key and an unchanged tooltip body (back-compat)", () => {
+    const p = specToMapMetadata(symbol);
+    const d = p.metadata.describe as Record<string, unknown>;
+    const t = p.metadata.visualize.tooltip as Record<string, unknown>;
+    expect("number-append" in d).toBe(false);
+    expect(t.body).toBe("{{ population }}");
   });
 });
 
