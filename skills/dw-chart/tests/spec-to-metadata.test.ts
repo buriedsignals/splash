@@ -173,10 +173,13 @@ describe("specToMetadata", () => {
     expect(p.metadata.describe["source-url"]).toBe("https://ons.gov.uk");
     expect(p.metadata.describe["number-format"]).toBe("0,0.[0]");
   });
-  it("applies the base colour and direct labels", () => {
+  it("applies the base colour (a line chart keeps Datawrapper's own labelling)", () => {
     const p = specToMetadata(spec);
     expect(p.metadata.visualize["base-color"]).toBe("#0072B2");
-    expect(p.metadata.visualize["value-labels"]).toEqual({ show: true });
+    // Line charts are not routed through the bar/column value-label mapper, so the
+    // old no-op `value-labels` field is gone (it was ignored by every DW engine).
+    expect(p.metadata.visualize["value-labels"]).toBeUndefined();
+    expect(p.metadata.visualize["valueLabels"]).toBeUndefined();
   });
   it("routes numberFormat to value-label-format (bar labels ignore describe.number-format)", () => {
     const p = specToMetadata({ ...spec, numberFormat: "0.[0]%" });
