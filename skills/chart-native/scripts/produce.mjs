@@ -13,12 +13,12 @@ import { fileURLToPath } from "node:url";
 import { chartDistSub } from "../src/build-paths.ts";
 import { runProduceConformance } from "../src/core/produce-conformance.ts";
 import { REMOTION_PREFIX } from "../src/native-types.ts";
-import { snapRunner } from "../src/platform-runners.ts";
+import { snapCommand } from "../src/platform-runners.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const isWin = process.platform === "win32";
-const SNAP = snapRunner(process.platform);
+const SNAP = snapCommand(process.platform);
 
 const type = process.argv[2];
 const configPath = process.argv[3];
@@ -67,6 +67,7 @@ mkdirSync(outDir, { recursive: true });
 const env = { ...process.env, CHART: type, CONFIG: configPath };
 const run = (cmd, args, extraEnv = {}) =>
   execFileSync(cmd, args, { stdio: "inherit", cwd: root, env: { ...env, ...extraEnv }, shell: isWin });
+const snap = (script, extraEnv = {}) => run(SNAP[0], [...SNAP.slice(1), script], extraEnv);
 
 // 1. web builds (config baked in via the Vite define)
 console.log(`[produce ${type}] building static + interactive…`);
@@ -82,12 +83,12 @@ run("bun", ["scripts/assert-selfcontained.mjs", interactiveDest]);
 
 // 2. snap static + interactive into outDir
 console.log(`[produce ${type}] snapping static + interactive…`);
-run(SNAP, ["scripts/snap-proof.mjs"], { OUTDIR: outDir });
+snap("scripts/snap-proof.mjs", { OUTDIR: outDir });
 
 // 2b. render-time WCAG contrast guard — every text label must clear 4.5:1 against
 // its real background. Fails the run before export on a mark-coloured label.
 console.log(`[produce ${type}] checking text contrast (snap-contrast)…`);
-run(SNAP, ["scripts/snap-contrast.mjs"]);
+snap("scripts/snap-contrast.mjs");
 
 const result = {
   static: join(outDir, "static.png"),
