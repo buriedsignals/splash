@@ -30,3 +30,11 @@ test("guards native-command failures (no silent Done on a failed install)", () =
   expect(ps).toContain("$LASTEXITCODE");
   expect(ps).toMatch(/throw ".*Node\.js/);
 });
+
+test("matches the extracted archive dir by glob (survives a v-prefixed / slashed release tag)", () => {
+  // GitHub strips a leading "v" and rewrites "/" in a tag's archive top-dir, so interpolating
+  // "atelier-$Ref" would point at a nonexistent path once REF is pinned to a tag. Mirror the
+  // bootstrap.sh glob instead.
+  expect(ps).toMatch(/Get-ChildItem .*-Filter "atelier-\*"/);
+  expect(ps).not.toContain('"atelier-$Ref"');
+});

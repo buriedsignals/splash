@@ -42,11 +42,16 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
 # 4. Atelier source (zip — no git; extracts to atelier-<ref>\)
 if (-not (Test-Path $Dest)) {
   Write-Host "-> Downloading Atelier…"
-  $zip = Join-Path $env:TEMP "atelier.zip"
+  $tmp = Join-Path $env:TEMP "atelier-dl"
+  Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+  New-Item -ItemType Directory -Path $tmp | Out-Null
+  $zip = Join-Path $tmp "atelier.zip"
   Invoke-WebRequest "$Repo/archive/$Ref.zip" -OutFile $zip
-  Expand-Archive $zip -DestinationPath $env:TEMP -Force
-  Move-Item (Join-Path $env:TEMP "atelier-$Ref") $Dest
-  Remove-Item $zip
+  Expand-Archive $zip -DestinationPath $tmp -Force
+  # GitHub's archive top-dir is "atelier-<ref>" but strips a leading "v" / rewrites "/" in
+  # tags, so match it by glob (mirror bootstrap.sh) instead of interpolating $Ref.
+  Move-Item (Get-ChildItem $tmp -Directory -Filter "atelier-*" | Select-Object -First 1).FullName $Dest
+  Remove-Item $tmp -Recurse -Force
 }
 
 # 5. Producer deps + render engine
