@@ -6,6 +6,7 @@ import {
   type MapSpec,
   type SymbolMapSpec,
 } from "./map-spec";
+import { normalizeNumberFormat } from "../../dw-chart/src/chart-spec";
 
 export interface MapPatch {
   title: string;
@@ -26,18 +27,27 @@ const CIRCLE_ICON = {
   height: 700,
 };
 
+// Normalise `numberFormat` the same way dw-chart does for value labels/axes (see
+// dw-chart/src/chart-spec.ts normalizeNumberFormat): a printf/Python-style mistake
+// (".0f%") is NOT recognised by Datawrapper's numeral.js parser — it silently falls
+// back to a plain unformatted number, so the legend renders "15…70" instead of
+// "15%…70%". Indistinguishable from the field having been dropped along the way.
+// Fixing it here (once) closes the gap for every mapType that carries numberFormat.
 function describeBlock(spec: {
   intro?: string;
   source?: { name: string; url?: string };
   altInsight: string;
   numberFormat?: string;
 }): Record<string, unknown> {
+  const numberFormat = spec.numberFormat
+    ? normalizeNumberFormat(spec.numberFormat)
+    : undefined;
   return {
     intro: spec.intro ?? "",
     "source-name": spec.source?.name ?? "",
     "source-url": spec.source?.url ?? "",
     "aria-description": spec.altInsight,
-    "number-format": spec.numberFormat ?? "0,0.[00]",
+    "number-format": numberFormat ?? "0,0.[00]",
   };
 }
 

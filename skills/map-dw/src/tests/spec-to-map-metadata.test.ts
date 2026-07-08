@@ -66,6 +66,38 @@ describe("specToMapMetadata", () => {
     >;
     expect(d["aria-description"]).toBe("Sweden highest, France lowest");
   });
+
+  it("defaults number-format to a plain numeral token when numberFormat is absent", () => {
+    const d = specToMapMetadata(base).metadata.describe as Record<
+      string,
+      unknown
+    >;
+    expect(d["number-format"]).toBe("0,0.[00]");
+  });
+
+  it("passes a valid percent token through unchanged, so the legend renders %", () => {
+    const d = specToMapMetadata({ ...base, numberFormat: "0%" }).metadata
+      .describe as Record<string, unknown>;
+    expect(d["number-format"]).toBe("0%");
+  });
+
+  // The regression this guards: a printf/Python-style token (what the ② suggester layer
+  // sometimes emits, per dw-chart/chart-spec.ts's normalizeNumberFormat) is silently
+  // unrecognised by Datawrapper's numeral.js parser and the legend falls back to bare
+  // numbers ("15…70" instead of "15%…70%") — indistinguishable from the field having been
+  // dropped. Normalising here (same fix dw-chart already applies for value labels/axes)
+  // closes that gap for the map legend too.
+  it('normalises a printf-style percent mistake (".0f%") to a valid Datawrapper token', () => {
+    const d = specToMapMetadata({ ...base, numberFormat: ".0f%" }).metadata
+      .describe as Record<string, unknown>;
+    expect(d["number-format"]).toBe("0%");
+  });
+
+  it("throws on an un-mappable numberFormat rather than silently dropping it", () => {
+    expect(() => specToMapMetadata({ ...base, numberFormat: "%s" })).toThrow(
+      /invalid numberFormat/,
+    );
+  });
 });
 
 const symbol: SymbolMapSpec = {

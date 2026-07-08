@@ -1,4 +1,5 @@
 import { dataShape } from "../../dw-chart/src/csv";
+import { normalizeNumberFormat } from "../../dw-chart/src/chart-spec";
 
 export interface GradientStop {
   color: string; // hex
@@ -167,6 +168,28 @@ function warnLabelTitle(
   }
 }
 
+// Mirrors dw-chart's chart-spec.ts guard: a printf/Python-style token (".0f%") is NOT a
+// valid Datawrapper numeral.js token — Datawrapper silently ignores it and the legend
+// falls back to a plain unformatted number ("15…70" instead of "15%…70%"), indistinguishable
+// from the field having been dropped. Reject the un-mappable; warn when auto-corrected.
+function validateNumberFormat(
+  s: Record<string, unknown>,
+  errors: string[],
+  warnings: string[],
+): void {
+  const v = s.numberFormat;
+  if (typeof v !== "string" || !v.trim()) return;
+  try {
+    const norm = normalizeNumberFormat(v);
+    if (norm !== v.trim())
+      warnings.push(
+        `numberFormat "${v}" is not a Datawrapper token — normalised to "${norm}". Emit a numeral token (e.g. "0.0", "0%").`,
+      );
+  } catch (e) {
+    errors.push((e as Error).message);
+  }
+}
+
 export function validateMapSpec(
   input: unknown,
 ):
@@ -207,6 +230,7 @@ export function validateMapSpec(
     requireColumn(s, "valueColumn", columns, errors);
     validateColorScale(s.colorScale, errors);
     warnLabelTitle(s, columns, warnings);
+    validateNumberFormat(s, errors, warnings);
   } else if (s.mapType === "symbol") {
     requireStrings(
       s,
@@ -230,6 +254,7 @@ export function validateMapSpec(
       requireColumn(s, "labelColumn", columns, errors);
     validateColorScale(s.colorScale, errors);
     warnLabelTitle(s, columns, warnings);
+    validateNumberFormat(s, errors, warnings);
   } else {
     // locator
     requireStrings(s, ["title", "altInsight"], errors);
