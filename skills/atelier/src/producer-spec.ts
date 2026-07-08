@@ -24,6 +24,7 @@ export interface ProposalResult {
   publicUrl?: string; // hosted URL (cloud producers)
   reason?: string; // needs-fallback / needs-confirmation explanation
   error?: string; // failed explanation
+  warnings?: string[]; // non-blocking validation warnings, surfaced at the render gate
   renderApproved: boolean; // Gate 3, default false
   approvedHash?: string; // sha256 of the approved artifact, set by the render gate
 }
