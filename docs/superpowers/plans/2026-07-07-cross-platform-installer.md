@@ -22,6 +22,7 @@ _Every task's requirements implicitly include this section._
 - The gate `bun run check` (currently 14/14) MUST stay green. **Zero new `any`.**
 - Work branch: `feat/cross-platform-installer` (already checked out).
 - Bootstraps live at repo-root `install/`, hosted via `raw.githubusercontent.com/<repo>/<ref>/install/…`. `REPO_URL` / `REF` are placeholders until the public repo is confirmed (tracked by `scripts/preflight-release.mjs`); `buriedsignals/atelier` + `main` are the working defaults.
+- **★ AMENDMENT (supersedes the bare-`node` runner in Tasks 6–7):** snap steps run via **`tsx`** on Windows, not `node` — the snap scripts import `.ts` with **extensionless** specifiers that node cannot resolve (bun/tsx can), and node ≤22 can't read `.ts` at all. `tsx` runs under the Node runtime (avoids the Bun+Playwright hang) with bun-like resolution. Design: `snapCommand(p) → ["npx","tsx"] | ["bun"]`; `remotionCommand(p) → ["npx","remotion"] | ["bunx","remotion"]`. `tsx` is a pinned devDep in chart-native + map-native (esbuild already present). Validated on Mac: chart-native snap under local tsx → PNG byte-identical to bun; map-native `.ts` chain resolves under tsx. Where Tasks 6/7 below say `snapRunner`/`remotionRunner`/`node`, read `snapCommand`/`remotionCommand`/`tsx` per this amendment.
 
 ---
 

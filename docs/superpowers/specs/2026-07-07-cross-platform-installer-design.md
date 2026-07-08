@@ -186,12 +186,17 @@ Chaque étape teste l'existant avant d'installer (safe re-run). En pseudo-séque
 
 Dans `skills/chart-native/scripts/produce.mjs` et `skills/map-native/scripts/produce.mjs` : les
 étapes qui **lancent Chromium** basculent quand `process.platform === 'win32'` :
-- `snap-*.mjs` : `bun` → **`node`**.
-- `remotion still|render` : `bunx` → **`npx`**.
+- `snap-*.mjs` : `bun` → **`tsx`** (via `npx tsx`). *(Correction post-conception, validée au build :
+  bare `node` ne suffit pas — les snap scripts importent des `.ts` avec specifiers **sans extension**
+  que node ne résout pas, contrairement à bun/tsx. `tsx` tourne sous le **runtime node** (donc pas de
+  hang Bun+Playwright) avec une résolution façon-bun. Prouvé sur Mac : PNG byte-identique à la sortie bun.)*
+- `remotion still|render` : `bunx` → **`npx`** (remotion bundle son propre entry — pas de résolution `.ts` projet).
 - Le reste (`bunx vite build` — pas de Chromium) **inchangé** (vite build sous bun marche sur Win).
 
-Le choix du runner est une petite fonction pure (`chromiumRunner(platform)` → `"node"` | `"bun"`)
-testable unitairement. Node fourni par le bootstrap Windows (§6.2).
+Le choix du runner est une petite fonction pure (`snapCommand(platform)` → `["npx","tsx"]` | `["bun"]`,
+`remotionCommand(platform)` → `["npx","remotion"]` | `["bunx","remotion"]`) testable unitairement.
+`tsx` est une **devDep pinnée** de chart-native + map-native (esbuild déjà présent). Le `run` helper reçoit
+`shell: isWin` (résolution des shims `.cmd` npx/bunx). Node fourni par le bootstrap Windows (§6.2).
 
 ## 9. Flux des clés
 
