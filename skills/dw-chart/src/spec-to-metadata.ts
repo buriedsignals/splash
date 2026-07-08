@@ -5,6 +5,7 @@ import {
   type ChartType,
 } from "./chart-spec";
 import { dataShape, renameColumns, sortCsv, valueAt } from "./csv";
+import { applyValueLabels, hasValueLabelControl } from "./value-label-safety";
 
 // Line/area chart types whose default "direct labelling" puts the series name at
 // the line end — the clip/overlap source on a single series (the title + subtitle
@@ -425,9 +426,16 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
   const axisFormat = valueFormat ?? numberFormat;
   if (axisFormat) visualize["y-grid-format"] = axisFormat;
   if (spec.baseColor) visualize["base-color"] = spec.baseColor;
-  if (spec.valueLabels !== undefined)
-    visualize["value-labels"] = { show: spec.valueLabels };
   if (spec.seriesColors) visualize["custom-colors"] = spec.seriesColors;
+  // VALUE LABELS (contrast-safe). Datawrapper's bar/column value labels have two
+  // traps: vertical columns default to hover-only (invisible on the static PNG),
+  // and horizontal bars draw a white inside label that fails WCAG on darker subject
+  // hues (no colour/placement override exists). Route both through the safe mapper:
+  // columns → outside dark ink + always-on; horizontal bars → the value axis (the
+  // bar keeps its hue, the axis carries the value in black ink). Other chart types
+  // (line/scatter/pie) keep Datawrapper's own labelling — see value-label-safety.ts.
+  if (hasValueLabelControl(spec.type))
+    applyValueLabels(spec.type, visualize, spec.valueLabels, numberFormat);
 
   // LABEL SAFETY (publishable-blocker guard): the line-end direct label on a
   // SINGLE-series line/area chart wraps and clips the right edge / collides with

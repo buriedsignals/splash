@@ -9,6 +9,7 @@ const rep = (over: Partial<ProduceReport["results"][0]>): ProduceReport => ({
       producer: "chart-native",
       format: "static",
       status: "produced",
+      reviewed: true,
       renderApproved: true,
       ...over,
     },
@@ -16,8 +17,13 @@ const rep = (over: Partial<ProduceReport["results"][0]>): ProduceReport => ({
 });
 
 describe("assertShippable", () => {
-  it("passes a produced + render-approved proposal", () => {
+  it("passes a produced + reviewed + render-approved proposal", () => {
     expect(() => assertShippable(rep({}), "p1")).not.toThrow();
+  });
+  it("refuses a produced-but-unreviewed proposal", () => {
+    expect(() => assertShippable(rep({ reviewed: false }), "p1")).toThrow(
+      /not render-reviewed/,
+    );
   });
   it("refuses a produced-but-unapproved proposal", () => {
     expect(() => assertShippable(rep({ renderApproved: false }), "p1")).toThrow(

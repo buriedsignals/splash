@@ -64,10 +64,21 @@ describe("runProduceConformance — catches real violations on the config being 
     expect(r.violations.some((v) => v.includes("year range"))).toBe(true);
   });
 
-  it("line: a missing source url is caught", () => {
-    const bad = { ...seriesSample, source: { name: "X", url: "" } };
+  it("line: a name-only source (no url) is conformant — prose provenance never deadlocks (E2)", () => {
+    const prose = {
+      ...seriesSample,
+      source: { name: "Chiffres tels que rapportés dans cet article" },
+    };
+    const r = runProduceConformance("line", prose);
+    // url absence is no longer a violation; a NAMED source still is required.
+    expect(r.violations.some((v) => v.includes("source url"))).toBe(false);
+    expect(r.violations.some((v) => v.includes("source name"))).toBe(false);
+  });
+
+  it("line: a source with no NAME is still caught (anti-fabrication)", () => {
+    const bad = { ...seriesSample, source: { name: "" } };
     const r = runProduceConformance("line", bad);
-    expect(r.violations.some((v) => v.includes("missing source url"))).toBe(
+    expect(r.violations.some((v) => v.includes("missing source name"))).toBe(
       true,
     );
   });

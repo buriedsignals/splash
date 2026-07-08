@@ -9,6 +9,7 @@ const report = (): ProduceReport => ({
       producer: "chart-native",
       format: "static",
       status: "produced",
+      reviewed: true,
       renderApproved: false,
     },
   ],
@@ -34,6 +35,13 @@ describe("applyRenderGate", () => {
   it("throws on an unknown id", () => {
     expect(() => applyRenderGate(report(), "nope", new Uint8Array())).toThrow(
       /unknown proposal/,
+    );
+  });
+  it("refuses to approve a produced-but-unreviewed proposal (Gate 3a before 3b)", () => {
+    const r = report();
+    r.results[0].reviewed = false;
+    expect(() => applyRenderGate(r, "p1", new Uint8Array())).toThrow(
+      /not render-reviewed/,
     );
   });
 });

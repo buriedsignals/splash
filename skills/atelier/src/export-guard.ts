@@ -10,6 +10,10 @@ export function assertShippable(report: ProduceReport, id: string): void {
     throw new Error(
       `refusing to export ${id}: not produced (status=${r.status})`,
     );
+  if (!r.reviewed)
+    throw new Error(
+      `refusing to export ${id}: not render-reviewed (run the render-review + review-gate first)`,
+    );
   if (!r.renderApproved)
     throw new Error(
       `refusing to export ${id}: not render-approved (run gate-render first)`,

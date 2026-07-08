@@ -51,6 +51,7 @@ describe("deploy-embed CLI — export-completeness gate", () => {
             producer: "chart-native",
             format: "interactive",
             status: "produced",
+            reviewed: true,
             renderApproved: true,
             ...over,
           },

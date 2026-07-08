@@ -198,10 +198,10 @@ describe("checkGlobalMapConformance", () => {
       ),
     ).toBe(true);
   });
-  it("flags a missing source name and url", () => {
+  it("flags a missing source name (url is optional — E2)", () => {
     const r = checkGlobalMapConformance({ ...gOk, source: {} }, gText);
     expect(r.some((m) => /source name/.test(m))).toBe(true);
-    expect(r.some((m) => /source url/.test(m))).toBe(true);
+    expect(r.some((m) => /source url/.test(m))).toBe(false); // url no longer required
   });
   it("flags low-contrast text", () => {
     expect(
