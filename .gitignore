@@ -4,3 +4,6 @@ exports/
 
 # dependencies (never track — includes symlinked node_modules in worktrees)
 node_modules
+
+# git worktrees created by the harness (EnterWorktree)
+.claude/worktrees/

@@ -26,7 +26,8 @@ jobs:
             skills/scrolly \
             skills/suggest-chart/eval \
             skills/map-dw/eval \
-            skills/suggest-article/eval; do
+            skills/suggest-article/eval \
+            install; do
             echo "::group::bun install $d"
             (cd "$d" && bun install)
             echo "::endgroup::"

@@ -1,43 +1,38 @@
 # Atelier installer
 
-Static, client-side page that generates, per OS, a copy-paste one-liner AND a downloadable
-launcher — both fetch the hosted bootstrap. No backend, no keys stored.
+Static, key-free public page → one command → a **local `127.0.0.1` configurator** (Bun) where the
+journalist enters keys, verified live, written to `~/Atelier/.env` (chmod 600). No backend, no keys
+in the page, the command, or the Downloads folder.
 
 ## Pieces
-- `index.html` / `generate.js` / `runtimes.js` — the page (collects keys, emits both modes).
-- `install/bootstrap.sh` / `install/bootstrap.ps1` (repo root) — the install logic, no keys.
+- `index.html` / `commands.js` — the public page (a static key-free command per OS + a key-free download).
+- `install/bootstrap.{sh,ps1}` — install the toolchain, then run the configurator.
+- `install/configurator.{ts,-core.ts}` — the Bun local server (form, live verification, writes `.env`).
+
+## Flow
+1. Public page shows `curl …/bootstrap.sh | bash` (mac) / `irm …/bootstrap.ps1 | iex` (win), or a key-free `.command`/`.cmd`.
+2. The bootstrap installs Bun, fetches Atelier (zip), then runs `bun install/configurator.ts`.
+3. The configurator opens on `127.0.0.1`, the journalist enters keys (MapTiler / Datawrapper / optional
+   Anthropic — blank means the Claude subscription OAuth login). Keys are verified live, then written to
+   `~/Atelier/.env` (chmod 600) with the chosen runtime.
+4. The bootstrap installs the runtime + deps + Playwright, and drops a local `Launch Atelier` launcher.
 
 ## Hosting
-- Page: GitHub Pages serves `docs/` (Settings → Pages → main branch, `/docs`), URL
-  `https://<org>.github.io/atelier/installer/`.
-- Bootstraps: fetched over `raw.githubusercontent.com/<repo>/<ref>/install/bootstrap.{sh,ps1}`.
-  `<repo>`/`<ref>` are set in `generate.js` (page side) and hardcoded in each bootstrap. Before
-  the public release, confirm the real repo and pin `<ref>` to a release tag in BOTH places
-  (`scripts/preflight-release.mjs` tracks the `REPO_URL`).
+- Page: GitHub Pages serves `docs/`. Bootstraps fetched over `raw.githubusercontent.com/<repo>/<ref>/install/`.
+- Before public release: confirm the repo + pin `<ref>` to a tag in `commands.js` and both bootstraps.
 
-## Adding a runtime
-1. Verify the Atelier plugin loads on that runtime.
-2. Fill claude-style fields in `runtimes.js` + set `verified: true`.
-3. Teach both bootstraps to install it.
-4. `bun test docs/installer` must pass.
+## Auth
+Works with a Claude **subscription** (leave the Anthropic key blank → `claude` does an OAuth browser
+login on first launch) OR an **API key** (enter it → verified → written to `.env`).
 
-## Release smoke test (manual, required before announcing the URL)
-On a clean macOS account AND a clean Windows VM, for BOTH modes:
-1. Open the install URL, pick Claude Code, paste real Anthropic + MapTiler + Datawrapper keys.
-2. **Copy-paste:** run the one-liner in Terminal (Mac) / PowerShell (Windows). **Download:**
-   double-click `atelier-setup.command` (Mac) / `atelier-setup.cmd` (Windows); clear the OS
-   warning per the on-page note.
-3. Confirm: Bun (+ Node on Windows) + Claude Code install; `~/Atelier` is populated from zip;
-   `~/Atelier/.env` holds the keys; a `Launch Atelier` file is created.
-4. Double-click `Launch Atelier` → Atelier starts and reads the keys.
-5. **Windows native render (validates the produce guard):** produce one native chart
-   (chart-native) and one native map (map-native) → they render (do NOT hang). The guard runs
-   the Chromium-launching snap steps under **`tsx`** on Windows (Node runtime — avoids the
-   Bun+Playwright `chromium.launch()` hang, Bun #15679 — while resolving the snap scripts'
-   `.ts`/extensionless imports, which bare `node` cannot), and Remotion under `npx`. `tsx` is a
-   pinned devDep installed by the bootstrap's `bun install`. Watch-items to confirm on real
-   Windows: (a) the `.cmd` shims (`npx`/`tsx`) resolve — the produce `run` helper uses
-   `shell: true` on win32 for this; (b) a username with a space (e.g. `C:\Users\Jean Dupont`)
-   doesn't break the Remotion `--props` temp path under `shell:true` — if it does, write props
-   into a space-free dir. The Datawrapper path (map-dw / dw-chart) needs no local render and
-   works on Windows regardless.
+## Windows
+Native (no WSL): Bun + Node + Claude Code install natively; the configurator is Bun (cross-platform).
+`chmod 600` is a no-op on NTFS — the `.env` lives in the protected user profile.
+
+## Release smoke test (manual, before announcing the URL)
+On a clean macOS account AND a clean Windows VM, both modes:
+1. Run the command / double-click the file (clear the OS warning per the on-page note).
+2. Confirm Bun (+ Node on Win) install; `~/Atelier` populated from zip; the **configurator opens**.
+3. Enter keys → they verify live → `.env` (600) + `.atelier-runtime` written.
+4. Claude Code + deps + Playwright install; `Launch Atelier` created; double-click → Atelier starts.
+5. Windows native render (chart-native + map-native) does NOT hang (tsx guard, inherited).
