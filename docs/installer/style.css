@@ -49,3 +49,32 @@ small {
   color: #666;
   font-weight: 400;
 }
+#os-toggle {
+  display: flex;
+  gap: 0;
+  margin: 1rem 0;
+}
+#os-toggle button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+#os-toggle button[aria-selected="true"] {
+  background: #0072b2;
+  color: #fff;
+}
+.mode {
+  margin: 1.5rem 0;
+}
+.mode pre {
+  overflow-x: auto;
+  background: #111;
+  color: #eee;
+  padding: 0.75rem;
+  border-radius: 4px;
+}
+.note {
+  font-size: 0.85rem;
+  color: #555;
+}
