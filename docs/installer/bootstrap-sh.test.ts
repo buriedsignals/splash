@@ -8,8 +8,9 @@ const sh = readFileSync(
 );
 
 test("bootstrap.sh is valid bash", () => {
-  const proc = Bun.spawnSync(["bash", "-n"], { stdin: Buffer.from(sh) });
-  expect(proc.exitCode).toBe(0);
+  expect(
+    Bun.spawnSync(["bash", "-n"], { stdin: Buffer.from(sh) }).exitCode,
+  ).toBe(0);
 });
 
 test("installs Bun and Claude via their own installers, no Homebrew, no git", () => {
@@ -19,13 +20,14 @@ test("installs Bun and Claude via their own installers, no Homebrew, no git", ()
   expect(sh).not.toContain("git clone");
 });
 
-test("acquires the repo by zip and installs the render engine", () => {
-  expect(sh).toContain("/archive/");
-  expect(sh).toContain("playwright install chromium");
+test("runs the local configurator and does NOT write .env from caller env vars", () => {
+  expect(sh).toContain("install/configurator.ts");
+  expect(sh).not.toContain("ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY"); // no baked-key .env write
+  expect(sh).toContain("Configuration was not completed"); // aborts if the configurator was closed
 });
 
-test("writes .env from env vars and a local double-click launcher, then scrubs secrets", () => {
-  expect(sh).toContain("ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}");
+test("acquires the repo by zip, installs the render engine, and makes a local launcher", () => {
+  expect(sh).toContain("/archive/");
+  expect(sh).toContain("playwright install chromium");
   expect(sh).toContain("Launch Atelier.command");
-  expect(sh).toContain("unset ANTHROPIC_API_KEY");
 });
