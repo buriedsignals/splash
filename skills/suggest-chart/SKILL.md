@@ -140,11 +140,11 @@ Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
 directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
-waterfall, dumbbell, slope, bullet, treemap, boxplot, diverging-stacked, pyramid, fan, bump** (`spec-to-config.ts`);
+waterfall, dumbbell, slope, bullet, treemap, boxplot, violin, diverging-stacked, pyramid, fan, bump** (`spec-to-config.ts`);
 for any type NOT in this list the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead.
 Produce with `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `diverging-stacked`, `pyramid`, `fan`, `bump`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `violin`, `diverging-stacked`, `pyramid`, `fan`, `bump`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
@@ -202,6 +202,12 @@ no hierarchy, prefer `pie`.
 (not pre-aggregated summary stats — the engine computes the five-number summary itself); shows the
 distribution spread (median, IQR, whiskers, outliers) per group. For a single ungrouped distribution,
 or to see every individual point, prefer `histogram`/`beeswarm`/`dot-strip` instead.
+`violin` expects the **same CSV shape as `boxplot`**: category + one numeric value column, with MANY
+raw observations per category (not pre-aggregated). Unlike `boxplot`, it draws a density silhouette (a
+KDE) so multimodal/skewed shapes are visible, not just the five-number summary — route it when the
+distribution's SHAPE is the story, not only its centre/spread. Needs at least 2 observations per
+category (a density is undefined below that). For very few categories or small n, prefer `boxplot`,
+`dot-strip`, or `beeswarm` instead.
 `diverging-stacked` expects a **wide CSV**: the first column is the item/statement, and every following
 numeric column is an ORDERED Likert response (negative → neutral → positive) that sums to ~100% per row
 (e.g. `item,stronglyDisagree,disagree,neutral,agree,stronglyAgree`). With an ODD response count, the

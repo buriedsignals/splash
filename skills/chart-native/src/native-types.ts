@@ -29,9 +29,6 @@ export const LEGACY_KB_FAMILY_BACKFILL: readonly string[] = [
   "pie",
 ];
 
-const A_PENDING = (shape: NativeShape) =>
-  `family-A: reachable+guarded pending its shape batch (${shape})`;
-
 export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   // --- reachable today (Plan 1 keeps/loads them into the MAPPERS table) ---
   { id: "line", family: "A", shape: "single" },
@@ -61,12 +58,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   { id: "waffle", family: "A", shape: "single" },
   { id: "fan", family: "A", shape: "wide" },
   { id: "dot-strip", family: "A", shape: "single" },
-  {
-    id: "violin",
-    family: "A",
-    shape: "distribution",
-    deferred: A_PENDING("distribution"),
-  },
+  { id: "violin", family: "A", shape: "distribution" },
   { id: "radial-bar", family: "A", shape: "single" },
   // --- Family B, deferred by design (structural/specialist data an article rarely yields) ---
   {

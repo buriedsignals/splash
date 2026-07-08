@@ -28,6 +28,7 @@ import {
   checkBulletConformance,
   checkTreemapConformance,
   checkBoxplotConformance,
+  checkViolinConformance,
   checkDivergingStackedConformance,
   checkPopulationPyramidConformance,
   checkFanConformance,
@@ -86,6 +87,7 @@ import type { SlopeConfig } from "../SlopeChart";
 import type { BulletConfig } from "../BulletChart";
 import type { TreemapConfig } from "../TreemapChart";
 import type { BoxplotConfig } from "../BoxplotChart";
+import type { ViolinConfig } from "../ViolinChart";
 import type { DivergingStackedConfig } from "../DivergingStackedChart";
 import type { PopulationPyramidConfig } from "../PopulationPyramidChart";
 import type { FanConfig } from "../FanChart";
@@ -169,6 +171,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "bullet",
   "treemap",
   "boxplot",
+  "violin",
   "diverging-stacked",
   "pyramid",
   "fan",
@@ -605,6 +608,23 @@ export function runProduceConformance(
             valueLabel: cfg.valueLabel,
             categoryCount: cfg.categories.length,
             boxColors: [OKABE_ITO.blue],
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "violin": {
+      const cfg = config as unknown as ViolinConfig;
+      return {
+        checked: true,
+        violations: checkViolinConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            fillColor: OKABE_ITO.blue,
+            hasMedianMarker: true,
+            categoryCounts: cfg.categories.map((c) => c.values.length),
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

@@ -515,6 +515,35 @@ export const MAPPERS: Record<
       },
     };
   },
+  violin(parsed, spec) {
+    const { columns, rows, numericColumns } = parsed;
+    const catCol = columns[0];
+    const valCol =
+      numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
+    // group RAW observations by category — the KDE needs the real distribution,
+    // not a summary (identical convention to boxplot's mapper; the geometry
+    // itself computes density + median/IQR from the raw values).
+    const groups = new Map<string, number[]>();
+    for (const r of rows) {
+      const cat = String(r[catCol]);
+      const values = groups.get(cat) ?? [];
+      values.push(Number(r[valCol]));
+      groups.set(cat, values);
+    }
+    const categories = [...groups.entries()].map(([label, values]) => ({
+      label,
+      values,
+    }));
+    return {
+      type: "violin",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        categories,
+      },
+    };
+  },
   "diverging-stacked"(parsed, spec) {
     const { columns, rows, numericColumns } = parsed;
     const labelCol = columns[0];
