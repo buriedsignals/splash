@@ -21,9 +21,13 @@ Three candidate policies:
 - **(c) Hybrid** — brand palette for DECORATIVE furniture (accent, header) only; data-encoding colours
   stay from a CVD-safe ramp *seeded* by the brand hue.
 
-**Recommendation: (a).** The a11y promise is a core, system-wide value; a chart off-brand by one shade is
-acceptable, an inaccessible published chart is not. The render-review surfaces the nudge so the journalist
-is never surprised, and can override to (b) case-by-case.
+**DECIDED (Rémy): policy (b) — brand-first + warning.** The newsroom's brand is applied as chosen; a
+non-CVD-safe / low-contrast brand colour is NOT nudged — instead the render-review surfaces the a11y
+concern and the journalist (the editor) decides. **Key implication to build:** the hard produce-time a11y
+guards (produce-conformance, snap-contrast) must DOWNGRADE to a render-review concern **only** for a
+colour the journalist explicitly set via the brand profile; the AUTO (no-brand) path stays hard-guarded.
+So a11y is hard by default, overridable only by a conscious brand choice, with the tradeoff surfaced.
+*(My earlier reco was (a) strict-nearest-safe; overridden — recorded for honesty.)*
 
 ## Mechanism: a per-newsroom brand profile, set once (install-model)
 Mirror the fly.io host model ("install 1× puis boucle"): the newsroom sets a brand profile ONCE; it
