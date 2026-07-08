@@ -607,6 +607,29 @@ export const MAPPERS: Record<
       },
     };
   },
+  bump(parsed, spec) {
+    const { columns, rows, numericColumns } = parsed;
+    const labelCol = columns[0];
+    // wide convention: every NUMERIC column after the label is an ordered period
+    // (mirrors grouped/stacked's wide-CSV shape); the header itself is the period
+    // caption (e.g. "team,2021,2022,2023").
+    const periods = columns.slice(1).filter((c) => numericColumns.includes(c));
+    const items = rows.map((r) => ({
+      label: String(r[labelCol]),
+      ranks: periods.map((p) => Number(r[p])),
+    }));
+    return {
+      type: "bump",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        valueLabel: spec.unit,
+        periods,
+        ...(spec.highlight ? { highlight: [spec.highlight] } : {}),
+        items,
+      },
+    };
+  },
   waterfall(parsed, spec) {
     const { columns, numericColumns, rows } = parsed;
     const labelCol = columns[0];

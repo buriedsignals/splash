@@ -140,11 +140,11 @@ Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
 directLabel?, highlight? }`. The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
-waterfall, dumbbell, slope, bullet, treemap, boxplot, diverging-stacked, pyramid, fan** (`spec-to-config.ts`); for
-any type NOT in this list the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead.
+waterfall, dumbbell, slope, bullet, treemap, boxplot, diverging-stacked, pyramid, fan, bump** (`spec-to-config.ts`);
+for any type NOT in this list the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead.
 Produce with `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `diverging-stacked`, `pyramid`, `fan`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `diverging-stacked`, `pyramid`, `fan`, `bump`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
@@ -219,6 +219,12 @@ History rows populate `actual` and leave `central`/the bands blank; forecast row
 `actual`, populated `central`+bands). Levels are derived from whichever `lo{n}`/`hi{n}` pairs are present
 (≥1 pair required; ≥2 levels reads best as a true "fan"). Route it ONLY for a forecast/projection story
 where the UNCERTAINTY itself is the point — never invent bands for a plain point forecast (use `line`).
+`bump` expects a **wide CSV**: the first column is the item's label, and every following numeric column
+is an ORDERED period holding that item's RANK at that period (1 = top), e.g. `team,2021,2022,2023`. Route
+it for a ranking-over-time race where the CROSSINGS are the story (who overtook whom) — for a magnitude/
+value trend over time, prefer `line`; for a single before/after comparison, prefer `slope`. `highlight`
+names the ONE item to accent (others render as neutral grey context); at most a few highlights keep the
+tangle of lines readable.
 
 ### map-dw (static choropleth map) — default map path
 

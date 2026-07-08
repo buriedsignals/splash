@@ -31,6 +31,7 @@ import {
   checkDivergingStackedConformance,
   checkPopulationPyramidConformance,
   checkFanConformance,
+  checkBumpConformance,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -53,6 +54,7 @@ import {
   TREEMAP_GROUP_COLORS,
   DIVERGING_STACKED_COLORS,
   PYRAMID_SIDE_COLORS,
+  BUMP_ACCENT_COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
 import { computeDivergingLayout } from "../diverging-bar-geometry";
@@ -87,6 +89,7 @@ import type { BoxplotConfig } from "../BoxplotChart";
 import type { DivergingStackedConfig } from "../DivergingStackedChart";
 import type { PopulationPyramidConfig } from "../PopulationPyramidChart";
 import type { FanConfig } from "../FanChart";
+import type { BumpConfig } from "../BumpChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -169,6 +172,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "diverging-stacked",
   "pyramid",
   "fan",
+  "bump",
 ];
 
 export function runProduceConformance(
@@ -671,6 +675,35 @@ export function runProduceConformance(
             levels: cfg.levels,
             forecast,
             hue: OKABE_ITO.blue,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "bump": {
+      const cfg = config as unknown as BumpConfig;
+      const maxRank = Math.max(...cfg.items.flatMap((it) => it.ranks));
+      const highlightCount = cfg.highlight?.length ?? 0;
+      // mirrors BumpChart's own accentOf construction: one accent per highlighted
+      // item (cycled), or the single default accent when nothing is highlighted
+      // (every line renders "highlighted", see bump-geometry.ts).
+      const accentColors =
+        highlightCount > 0
+          ? cfg.highlight!.map(
+              (_, i) => BUMP_ACCENT_COLORS[i % BUMP_ACCENT_COLORS.length],
+            )
+          : [BUMP_ACCENT_COLORS[0]];
+      return {
+        checked: true,
+        violations: checkBumpConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            periodCount: cfg.periods.length,
+            maxRank,
+            highlightCount,
+            accentColors,
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

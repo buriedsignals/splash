@@ -8,6 +8,6 @@ export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   "part-to-whole": ["pie", "stacked", "waffle", "treemap"],
   magnitude: ["bar", "grouped", "radial-bar", "dumbbell", "bullet"],
   distribution: ["histogram", "beeswarm", "dot-strip", "boxplot", "pyramid"],
-  ranking: ["lollipop"],
+  ranking: ["lollipop", "bump"],
   deviation: ["diverging", "waterfall", "diverging-stacked"],
 };
