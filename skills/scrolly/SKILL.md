@@ -71,13 +71,18 @@ Scrolly.tsx  (scaffold)
   SAME visual language as the video. Live browser → real animated `flyTo` (with `prefers-reduced-motion`
   → `jumpTo`), not the frame-deterministic `jumpTo` the video needs.
 - **Camera flight is shared + PEAK-BOUNDED** (`src/scrolly-camera.ts` `flyToBeat`, used by ALL six
-  Scrolly*Map types). A reveal beat's camera is already the focused feature's bounds, but maplibre's
-  DEFAULT `flyTo` curve zooms OUT to a wide apex mid-flight — for far-apart reveals that pulls the camera
-  all the way back to the full data extent, so the reader loses the focused region (and the focus label
-  drops under `text-allow-overlap:false`). `flyToBeat` caps the flight's peak zoom (`flyTo`'s `minZoom`,
-  = zoom at the arc apex; no `curve` passed, else maplibre ignores it) to `PEAK_ZOOM_MARGIN` below the
-  TIGHTER endpoint → a reveal→reveal transition stays framed; only an establish⇄takeaway transition
-  (whose endpoint IS the extent) widens fully. Endpoints are unchanged — only the transition is bounded.
+  Scrolly*Map types). A reveal beat's camera is already the focused feature's tight bounds (the
+  DESTINATION is correct — the camera settles tightly when the reader pauses). The failure was in the
+  TRANSITION: `flyToBeat` caps the flight's peak zoom (`flyTo`'s `minZoom` = zoom at the arc apex; no
+  `curve` passed, else maplibre ignores it) so the arc never widens past the tighter endpoint. It caps to
+  the TIGHTER endpoint itself, **with NO margin** — an earlier version subtracted `min(from,to) − 0.5`,
+  which was the bug: a reveal is a zoom-IN (`to > from`), so `from − 0.5` sits BELOW the current zoom → the
+  flight first pulls BACK to (roughly) the full extent, and because the reader outscrolls the 1200 ms
+  flight and `map.getZoom()` is read live mid-flight, each interrupted step re-subtracted the margin from
+  an already-dipped zoom → the camera RATCHETED wider every step and never zoomed in. Capping to the
+  tighter endpoint makes a zoom-in monotonic (floor = the current zoom, which only rises — a reveal's
+  fit-zoom is always ≥ the extent zoom), so it can never drift past the establish extent. Only an
+  establish⇄takeaway transition (whose endpoint IS the extent) widens to it. Endpoints unchanged.
 
 ## Inherited interactive best-practices (from `map-native/references/interactive-map-best-practices.md`)
 
