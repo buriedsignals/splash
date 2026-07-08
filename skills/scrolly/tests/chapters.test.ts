@@ -295,4 +295,111 @@ describe("mapStoryToChapters — temporal pattern", () => {
       expect(r.prose).not.toMatch(/,\s*(then|next)\s*$/i);
     }
   });
+
+  it("words temporal reveals in French when meta.lang is fr — no English leak", () => {
+    const story = mapStoryToChapters(temporalBeats, { ...meta, lang: "fr" });
+    const reveals = story.steps.filter((s) => s.prose.includes("—"));
+    expect(reveals[0].prose).toBe("Netherlands — 2001, le premier");
+    expect(reveals[1].prose).toBe(
+      "France — 2013, le deuxième, 12 ans plus tard",
+    );
+    expect(reveals[2].prose).toBe(
+      "Thailand — 2025, le plus récent, 24 ans après le premier",
+    );
+    const englishTells = [
+      "the first",
+      "the second",
+      "the most recent",
+      "after the first",
+      "years",
+      "later",
+    ];
+    for (const r of reveals) {
+      for (const tell of englishTells) {
+        expect(r.prose.toLowerCase()).not.toContain(tell);
+      }
+    }
+  });
+});
+
+describe("mapStoryToChapters — French magnitude descriptors (lang: fr)", () => {
+  const meta = {
+    title: "Renewables across Europe",
+    description: "Share of electricity from renewables, 2024",
+    source: { name: "Ember", url: "https://example.org" },
+    regionsWithData: 8,
+    lang: "fr",
+  };
+
+  it("translates the highest/lowest descriptors, no English leak", () => {
+    const story = mapStoryToChapters(beats, meta);
+    expect(story.steps[2].prose).toBe("Norway — 99%, le plus élevé des 8");
+    expect(story.steps[3].prose).toBe("Poland — 21%, le plus bas");
+    expect(story.steps[2].prose.toLowerCase()).not.toContain("highest");
+    expect(story.steps[3].prose.toLowerCase()).not.toContain("lowest");
+  });
+
+  it("translates the middle-leader ordinal (F11) into French", () => {
+    const mk = (
+      name: string,
+      value: string,
+      rank: number,
+      rankRole: "leader" | "tail",
+    ): Beat => ({
+      kind: "reveal",
+      camera: [0, 0, 1, 1],
+      highlight: [name],
+      dim: true,
+      callout: { region: name, name, value, text: `${name} — ${value}` },
+      copy: `${name} — ${value}`,
+      pattern: "magnitude",
+      rank,
+      rankRole,
+    });
+    const ranked: Beat[] = [
+      {
+        kind: "title",
+        camera: [0, 0, 1, 1],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "T",
+      },
+      {
+        kind: "establish",
+        camera: [0, 0, 1, 1],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+      mk("Malta", "82 nights", 1, "leader"),
+      mk("Cyprus", "74 nights", 2, "leader"),
+      mk("Greece", "71 nights", 3, "leader"),
+      mk("Norway", "1 night", 16, "tail"),
+      {
+        kind: "takeaway",
+        camera: [0, 0, 1, 1],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+    ];
+    const story = mapStoryToChapters(ranked, { ...meta, regionsWithData: 16 });
+    const proses = story.steps
+      .filter(
+        (s) =>
+          typeof s.ref === "number" &&
+          (s.ref as number) >= 2 &&
+          (s.ref as number) <= 5,
+      )
+      .map((s) => s.prose);
+    expect(proses).toEqual([
+      "Malta — 82 nights, le plus élevé des 16",
+      "Cyprus — 74 nights, le deuxième",
+      "Greece — 71 nights, le troisième",
+      "Norway — 1 night, le plus bas",
+    ]);
+  });
 });

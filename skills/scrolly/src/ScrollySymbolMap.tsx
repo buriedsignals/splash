@@ -80,6 +80,7 @@ export const ScrollySymbolMap: React.FC<{
     title: config.title ?? "",
     insight: config.insight ?? config.title,
     unit: config.valueUnit ?? "",
+    lang: config.lang,
   });
 
   // ---------------------------------------------------------------------------

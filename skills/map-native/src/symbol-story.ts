@@ -5,11 +5,14 @@
 // around the city) → takeaway (points bbox).
 import type { SymbolPoint } from "./symbol-geo";
 import type { Beat } from "./map-story";
+import { formatLocaleNumber, type Lang } from "./core/locale";
 
 export interface SymbolStoryMeta {
   title: string;
   insight?: string;
   unit?: string;
+  /** deliverable language — localizes the callout numbers. Default English. */
+  lang?: Lang;
 }
 
 // Half-width (degrees) of the city framing box → a tight, legible city zoom.
@@ -23,7 +26,11 @@ export function deriveSymbolStory(
   opts: { maxReveals?: number } = {},
 ): Beat[] {
   const unit = meta.unit ?? "";
-  const fmt = (v: number) => `${Math.round(v)}${unit}`;
+  // Mirrors deriveMapStory's fmt (map-story.ts) — same helper, same convention: the
+  // caller's `unit` string carries its own leading space when one is needed ("$bn" vs
+  // " nights"), the localizer only handles thousands-grouping/decimal per `meta.lang`.
+  const fmt = (v: number) =>
+    `${formatLocaleNumber(Math.round(v), meta.lang)}${unit}`;
 
   const lons = points.map((p) => p.lon);
   const lats = points.map((p) => p.lat);
