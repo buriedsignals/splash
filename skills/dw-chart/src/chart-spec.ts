@@ -93,23 +93,36 @@ export const ANNOTATION_UNSUPPORTED_TYPES = new Set<ChartType>([
   "tables",
 ]);
 
-// HORIZONTAL bar families. Datawrapper DOES have a text-annotation layer here (unlike the
+// HORIZONTAL value-x/category-y chart families (bar family + the other row-driven
+// horizontal types). Datawrapper DOES have a text-annotation layer here (unlike the
 // pie/donut/table set above), BUT this pipeline can't place an annotation on them: its
 // coordinate mapper (plotDomain/pointFraction/placeAnnotation in spec-to-metadata.ts) is
-// built for the COLUMN/LINE model — categorical x-axis, numeric y-axis. A horizontal bar
+// built for the COLUMN/LINE model — categorical x-axis, numeric y-axis. A horizontal
 // chart swaps those axes (categories on y, value on x), so an annotation emitted as
-// {x:"North", y:"100"} is silently DROPPED by Datawrapper. VERIFIED via a rendered export:
-// d3-bars with the column/line coords showed no annotation; the same annotation with
-// swapped (value-x, category-y) coords DID render — confirming the orientation mismatch.
-// Until a bar-specific placement mapper exists, warn (never a silent drop) and skip the
-// dead mapping. d3-bars was render-verified; grouped/stacked/split/bullet share its
-// horizontal geometry. Column charts (vertical) are unaffected — the mapper is built for them.
+// {x:"North", y:"100"} is silently mismatched. VERIFIED via a rendered export: d3-bars
+// with the column/line coords showed no annotation; the same annotation with swapped
+// (value-x, category-y) coords DID render — confirming the orientation mismatch.
+// d3-arrow-plot was independently LIVE-REPRODUCED (not just inferred): validateChartSpec
+// passed a d3-arrow-plot + annotation spec (ok:true, 0 warnings) before this fix, then
+// produceChart's responsive label-safety guardrail threw "clipped" at EVERY viewport
+// width (340/600/1200px) — the axis range the annotation mapper widened for a value-y
+// model corrupted the value-x axis ticks instead. d3-dot-plot and d3-range-plot share
+// the identical category-y/value-x layout — they are exactly the OTHER members of
+// `ROW_DRIVEN_TYPES` (export-aspect.ts, independently derived for the row-crop bug: "each
+// data ROW is laid out as its own horizontal track — categories on the y-axis, value on
+// the x-axis") beyond the d3-bars family + d3-bars-bullet already covered here, so they
+// get the same treatment. Until a value-x/category-y-aware placement mapper exists, warn
+// (never a silent drop/crash) and skip the dead mapping. Column charts and (vertical)
+// line/scatter charts are unaffected — the mapper is built for them.
 export const ANNOTATION_UNMAPPED_BAR_TYPES = new Set<ChartType>([
   "d3-bars",
   "d3-bars-grouped",
   "d3-bars-stacked",
   "d3-bars-split",
   "d3-bars-bullet",
+  "d3-arrow-plot",
+  "d3-dot-plot",
+  "d3-range-plot",
 ]);
 
 export interface ChartSpec {
@@ -371,19 +384,25 @@ export function validateChartSpec(
     }
   }
   // PERCENT-SCALE MISMATCH (#1c). A "%" format on 0–1 fractional data renders "0%" in
-  // Datawrapper (it appends the sign, never multiplies — verified via a rendered export).
-  if (
-    typeof s.numberFormat === "string" &&
-    typeof s.data === "string" &&
-    s.data.includes(",")
-  ) {
+  // Datawrapper (it appends the sign, never multiplies — EMPIRICALLY VERIFIED against
+  // real rendered PNG exports: 41/63/70 + "0%" → "41%"/"63%"/"70%", correct, no ×100;
+  // 0.41/0.63/0.70 + "0%" → "0%"/"1%"/"1%", precision destroyed). This corrupts the
+  // reader-facing value — a HARD error (not a warning): `warnings` is advisory only
+  // (produceChart's `if (!v.ok) throw` never inspects it), so a soft flag here would
+  // still let a broken "0%" chart publish. Checked on BOTH `numberFormat` (value
+  // labels + describe.number-format) AND `valueFormat` (the axis token — spec-to-metadata
+  // falls back `axisFormat = valueFormat ?? numberFormat`, so a valueFormat-only "%" on
+  // fractional data hits the identical bug on the axis ticks, unflagged before).
+  if (typeof s.data === "string" && s.data.includes(",")) {
     const valueCols = dataShape(s.data as string).columns.slice(1);
-    if (
-      isPercentScaleMismatch(s.numberFormat, numericValuesOf(s.data, valueCols))
-    )
-      warnings.push(
-        `numberFormat "${s.numberFormat}" is a percent token but the data looks like 0–1 fractions — Datawrapper appends "%" WITHOUT multiplying, so these render "0%". Pre-scale the values to percentage points (e.g. 0.29 → 29), or drop the "%".`,
-      );
+    const values = numericValuesOf(s.data, valueCols);
+    for (const field of ["numberFormat", "valueFormat"] as const) {
+      const fmt = s[field];
+      if (typeof fmt === "string" && isPercentScaleMismatch(fmt, values))
+        errors.push(
+          `${field} "${fmt}" is a percent token but the data looks like 0–1 fractions — Datawrapper appends "%" WITHOUT multiplying, so these render "0%". Pre-scale the values to percentage points (e.g. 0.29 → 29), or drop the "%".`,
+        );
+    }
   }
   if (s.seriesLabels !== undefined) {
     if (typeof s.seriesLabels !== "object" || s.seriesLabels === null) {
@@ -444,16 +463,19 @@ export function validateChartSpec(
     warnings.push(
       `annotations are not supported on ${s.type} charts — Datawrapper has no text-annotation layer for pie/donut/table types, so they will be dropped; move the callout into the title/intro, or use a bar/column/line alternative`,
     );
-  // #5 — HORIZONTAL bars have a DW annotation layer, but this pipeline's column/line
-  // coordinate model can't place one on them, so it is silently dropped (verified via a
-  // rendered export). Warn + skip the dead mapping (see spec-to-metadata.ts).
+  // #5 — HORIZONTAL value-x/category-y charts (the d3-bars family + d3-dot-plot /
+  // d3-arrow-plot / d3-range-plot) have a DW annotation layer, but this pipeline's
+  // column/line coordinate model can't place one on them, so it is silently dropped —
+  // or, for d3-arrow-plot, LIVE-REPRODUCED as a produce-time crash (responsive
+  // label-safety guardrail threw at every viewport width) before this type was added
+  // here. Warn + skip the dead mapping (see spec-to-metadata.ts).
   if (
     Array.isArray(s.annotations) &&
     s.annotations.length &&
     ANNOTATION_UNMAPPED_BAR_TYPES.has(s.type as ChartType)
   )
     warnings.push(
-      `annotations on ${s.type} (a horizontal bar chart) are dropped by this pipeline — its placement uses a column/line coordinate model (category-x, value-y) that Datawrapper's horizontal-bar annotation layer (value-x, category-y) ignores; use a column-chart (annotations place correctly there), or move the callout into the title/intro`,
+      `annotations on ${s.type} (a horizontal, value-x/category-y chart) are dropped by this pipeline — its placement uses a column/line coordinate model (category-x, value-y) that Datawrapper's horizontal annotation layer (value-x, category-y) ignores; use a column-chart (annotations place correctly there), or move the callout into the title/intro`,
     );
   // An annotation's `x` should reference an actual data row label, else
   // Datawrapper silently misplaces (or drops) it.
