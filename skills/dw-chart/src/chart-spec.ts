@@ -137,6 +137,11 @@ export interface ChartSpec {
   // show a raw column name. Publishable-blocker if omitted for machine-named columns.
   seriesLabels?: Record<string, string>;
   sort?: "asc" | "desc"; // ranking sort: sorts data rows by the last column
+  // CADRAGE delivery channel (Gate 1, Q3). Fixes the static PNG export aspect:
+  // feed/square → 1:1, social/vertical/story → 9:16, web/article → 16:9 (default).
+  // Free-form (the journalist's own word) — resolved via export-aspect.ts. Absent →
+  // web/landscape. Does not affect the interactive embed (that stays fluid).
+  channel?: string;
   // BCP-47 language of the deliverable (e.g. "fr", "en", "fr-CH"). Sets the DW chart
   // `language`, so Datawrapper localizes value labels + dates (fr → "1 900,5"). Set by
   // the suggester from the article language. Absent → DW default (en-US).

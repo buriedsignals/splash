@@ -7,8 +7,9 @@ import {
   publishChart,
   exportPng,
 } from "./datawrapper";
-import { checkResponsive, EXPORT_WIDTH } from "./label-safety";
+import { checkResponsive } from "./label-safety";
 import { checkValueLabelContrast } from "./value-label-safety";
+import { channelToExportSize } from "./export-aspect";
 
 export interface ProduceResult {
   chartId: string;
@@ -68,6 +69,19 @@ export async function produceChart(
   });
   let publicUrl = await publishChart(id);
 
+  // EXPORT ASPECT (FINDING 2): size the static PNG to the CADRAGE channel — feed →
+  // square, social/vertical → portrait, web/article → landscape (default). TYPE-AWARE
+  // (export-aspect.ts): row-count-driven horizontal types (bars/dot/arrow/range/tables)
+  // get the channel WIDTH but a content-driven height (no pinned height) so DW never
+  // CROPS overflowing rows; fixed-aspect types get the full channel box. The resulting
+  // aspect is fed to the responsive guardrail below so annotation placement is validated
+  // at the aspect the reader actually receives — when the height is natural we leave the
+  // aspect undefined so the guardrail falls back to its default landscape aspect.
+  const exportSize = channelToExportSize(spec.channel, spec.type);
+  const exportAspect = exportSize.height
+    ? exportSize.height / exportSize.width
+    : undefined;
+
   // RESPONSIVE LABEL-SAFETY. `specToMetadata` places every annotation in DATA space
   // (anchor at x,y; align picks a curve-clear quadrant; axis headroom gives it
   // whitespace) — width-invariant by construction, so it is normally clean at all
@@ -81,7 +95,7 @@ export async function produceChart(
     patch.metadata.visualize["text-annotations"],
   );
   if (!opts.skipLabelSafety && hasAnnotations) {
-    let result = await checkResponsive(publicUrl);
+    let result = await checkResponsive(publicUrl, { aspect: exportAspect });
     let tries = 0;
     while (!result.ok && tries < 3) {
       const range = readRange(patch);
@@ -98,7 +112,7 @@ export async function produceChart(
         ...(patch.language ? { language: patch.language } : {}),
       });
       publicUrl = await publishChart(id);
-      result = await checkResponsive(publicUrl);
+      result = await checkResponsive(publicUrl, { aspect: exportAspect });
       tries += 1;
     }
     if (!result.ok)
@@ -109,7 +123,7 @@ export async function produceChart(
       );
   }
 
-  await exportPng(id, pngPath, EXPORT_WIDTH);
+  await exportPng(id, pngPath, exportSize.width, exportSize.height);
 
   const embed =
     `<iframe title="${spec.title}" src="${publicUrl}" scrolling="no" frameborder="0" ` +

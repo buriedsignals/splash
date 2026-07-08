@@ -116,7 +116,9 @@ unset ships French words with English numbers — the exact mismatch this field 
 2. Read `<repo-root>/knowledge/references/design-conformance.md` (shared KB, repo root) → fill the conformance fields.
 3. Emit a **ChartSpec** (the exact shape `dw-chart/src/chart-spec.ts` validates):
    `{ type, title (the insight, sentence case), intro?, data (CSV), subject (the topic hint, e.g. "solar"),
-   baseColor (a subject-fit Okabe-Ito hue — see Colour below), valueLabels?, numberFormat?, source?,
+   baseColor (a subject-fit Okabe-Ito hue — see Colour below), seriesColors? (multi-series: series → hue),
+   seriesLabels? (machine column → human name), valueLabels?, numberFormat?, source?,
+   channel (the CADRAGE Q3 answer — sizes the static export: feed→square, social/vertical→9:16, web/article→16:9),
    altInsight (WCAG: the insight, not the structure) }`.
 4. Guardrails: **≤2 colours**; **CHOOSE `baseColor` by subject — never leave the default blue for a
    subject that is not water/cold** (the validator FAILS a declared `subject` whose `baseColor` is absent

@@ -57,9 +57,16 @@ export async function exportPng(
   id: string,
   outPath: string,
   width = 600,
+  height?: number,
 ): Promise<number> {
+  // The DW export API pins the render box when BOTH width and height are given; with
+  // width only it renders at the chart's own natural (content-driven) aspect. Pinning a
+  // height makes DW CROP any content that overflows the box — it does NOT scale it to fit
+  // — so row-count-driven horizontal types (bars/dot/arrow/range/tables) MUST be exported
+  // width-only or rows are silently dropped (see export-aspect.ts ROW_DRIVEN_TYPES).
+  const dims = `width=${width}` + (height ? `&height=${height}` : "");
   const r = await fetch(
-    `${API}/charts/${id}/export/png?unit=px&mode=rgb&width=${width}&plain=false`,
+    `${API}/charts/${id}/export/png?unit=px&mode=rgb&${dims}&plain=false`,
     {
       headers: auth(),
     },
