@@ -440,6 +440,44 @@ describe("specToMetadata", () => {
     expect(p.metadata.visualize["text-annotations"]).toBeUndefined();
   });
 
+  // d3-arrow-plot: LIVE-REPRODUCED bug — before this type was added to
+  // ANNOTATION_UNMAPPED_BAR_TYPES, validateChartSpec passed this exact spec (ok:true, 0
+  // warnings) and produceChart's responsive guardrail then threw at every viewport width
+  // (340/600/1200px). Same category-y/value-x layout as d3-bars (ROW_DRIVEN_TYPES,
+  // export-aspect.ts), so the mapping must be skipped the same way.
+  it("does NOT map annotations onto a d3-arrow-plot (value-x/category-y, like d3-bars)", () => {
+    const p = specToMetadata({
+      type: "d3-arrow-plot",
+      title: "T",
+      data: "region,y2018,y2023\nNorth East,180,280\nLondon,420,470",
+      altInsight: "x",
+      annotations: [{ text: "outlier", x: "North East", y: 280 }],
+    } as any);
+    expect(p.metadata.visualize["text-annotations"]).toBeUndefined();
+  });
+
+  it("does NOT map annotations onto a d3-dot-plot (value-x/category-y)", () => {
+    const p = specToMetadata({
+      type: "d3-dot-plot",
+      title: "T",
+      data: "region,sales\nChina,8.1\nEurope,3.2",
+      altInsight: "x",
+      annotations: [{ text: "outlier", x: "China", y: 8.1 }],
+    } as any);
+    expect(p.metadata.visualize["text-annotations"]).toBeUndefined();
+  });
+
+  it("does NOT map annotations onto a d3-range-plot (value-x/category-y)", () => {
+    const p = specToMetadata({
+      type: "d3-range-plot",
+      title: "T",
+      data: "region,lo,hi\nChina,3.2,8.1\nEurope,1.1,4.4",
+      altInsight: "x",
+      annotations: [{ text: "outlier", x: "China", y: 8.1 }],
+    } as any);
+    expect(p.metadata.visualize["text-annotations"]).toBeUndefined();
+  });
+
   it("routes valueFormat to the y-grid axis format (e.g. h:mm:ss)", () => {
     const p = specToMetadata({
       type: "d3-lines",

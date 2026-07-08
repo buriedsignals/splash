@@ -433,8 +433,15 @@ describe("numericValuesOf", () => {
   });
 });
 
-describe("validateChartSpec — #1c percent-scale mismatch warning", () => {
-  it("warns when a '%' numberFormat is applied to 0–1 fractional data", () => {
+describe("validateChartSpec — #1c percent-scale mismatch (HARD error)", () => {
+  // Elevated from a warning to a hard error: EMPIRICALLY VERIFIED against real
+  // rendered PNG exports (probe charts, deleted after inspection) — 41/63/70 with
+  // "0%" render "41%"/"63%"/"70%" (CORRECT, no ×100), while 0.41/0.63/0.70 with "0%"
+  // render "0%"/"1%"/"1%" (precision destroyed). A warning is advisory only —
+  // produceChart's guard (`if (!v.ok) throw`) never inspects `warnings` — so this
+  // defect could still publish. A hard error blocks it at the same boundary as the
+  // un-mappable-token check above.
+  it("rejects a '%' numberFormat applied to 0–1 fractional data", () => {
     const r = validateChartSpec({
       type: "column-chart",
       title: "Renewable share climbed across the board",
@@ -442,13 +449,13 @@ describe("validateChartSpec — #1c percent-scale mismatch warning", () => {
       numberFormat: "0%",
       altInsight: "Renewable share is highest in the North.",
     });
-    expect(r.ok).toBe(true);
-    if (r.ok)
+    expect(r.ok).toBe(false);
+    if (!r.ok)
       expect(
-        r.warnings.some((w) => /appends "%" WITHOUT multiplying/.test(w)),
+        r.errors.some((e) => /appends "%" WITHOUT multiplying/.test(e)),
       ).toBe(true);
   });
-  it("does NOT warn when the '%' data is already percentage points", () => {
+  it("does NOT reject when the '%' data is already percentage points", () => {
     const r = validateChartSpec({
       type: "column-chart",
       title: "Renewable share climbed across the board",
@@ -457,14 +464,39 @@ describe("validateChartSpec — #1c percent-scale mismatch warning", () => {
       altInsight: "Renewable share is highest in the North.",
     });
     expect(r.ok).toBe(true);
-    if (r.ok)
+  });
+  // The axis token (`valueFormat`) falls back into the SAME field in spec-to-metadata
+  // (`axisFormat = valueFormat ?? numberFormat` → `y-grid-format`) — a fractional-data
+  // chart that sets `valueFormat:"0%"` (axis only, no numberFormat) hits the identical
+  // "0%" bug on the axis ticks. The original guard only ever read `s.numberFormat`, so
+  // this path shipped unflagged; now checked too.
+  it("rejects a '%' valueFormat (axis token) applied to 0–1 fractional data", () => {
+    const r = validateChartSpec({
+      type: "column-chart",
+      title: "Renewable share climbed across the board",
+      data: "region,share\nNorth,0.29\nSouth,0.22",
+      valueFormat: "0%",
+      altInsight: "Renewable share is highest in the North.",
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
       expect(
-        r.warnings.some((w) => /appends "%" WITHOUT multiplying/.test(w)),
-      ).toBe(false);
+        r.errors.some((e) => /appends "%" WITHOUT multiplying/.test(e)),
+      ).toBe(true);
+  });
+  it("does NOT reject a '%' valueFormat when the data is already percentage points", () => {
+    const r = validateChartSpec({
+      type: "column-chart",
+      title: "Renewable share climbed across the board",
+      data: "region,share\nNorth,29\nSouth,22",
+      valueFormat: "0%",
+      altInsight: "Renewable share is highest in the North.",
+    });
+    expect(r.ok).toBe(true);
   });
 });
 
-describe("validateChartSpec — #5 annotations dropped on horizontal bars", () => {
+describe("validateChartSpec — #5 annotations dropped on horizontal value-x/category-y charts", () => {
   const annBase = {
     title: "North East rents rose fastest",
     data: "region,rent\nNorth East,8.4\nLondon,2.8",
@@ -476,7 +508,9 @@ describe("validateChartSpec — #5 annotations dropped on horizontal bars", () =
     expect(r.ok).toBe(true);
     if (r.ok)
       expect(
-        r.warnings.some((w) => /horizontal bar chart\) are dropped/.test(w)),
+        r.warnings.some((w) =>
+          /value-x\/category-y chart\) are dropped/.test(w),
+        ),
       ).toBe(true);
   });
   it("does NOT warn for annotations on a vertical column chart (they place correctly)", () => {
@@ -486,5 +520,44 @@ describe("validateChartSpec — #5 annotations dropped on horizontal bars", () =
       expect(
         r.warnings.some((w) => /are dropped by this pipeline/.test(w)),
       ).toBe(false);
+  });
+  // d3-arrow-plot: REPRODUCED live — validateChartSpec previously returned ok:true with
+  // 0 warnings for this exact spec, then produceChart's responsive label-safety guardrail
+  // threw at EVERY viewport width (340/600/1200px, all "clipped" on the value axis ticks).
+  // d3-arrow-plot shares the row-count-driven HORIZONTAL layout (category-y, value-x) that
+  // ROW_DRIVEN_TYPES (export-aspect.ts) already documents for the d3-bars family — the
+  // same coordinate-model mismatch this guard exists for.
+  it("warns that annotations are dropped on d3-arrow-plot (value-x/category-y, like d3-bars)", () => {
+    const r = validateChartSpec({ ...annBase, type: "d3-arrow-plot" });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) =>
+          /value-x\/category-y chart\) are dropped/.test(w),
+        ),
+      ).toBe(true);
+  });
+  // d3-dot-plot and d3-range-plot are the other two ROW_DRIVEN_TYPES horizontal chart
+  // types (besides the d3-bars family + d3-bars-bullet, already covered) — same
+  // category-y/value-x orientation, same unmappable annotation.
+  it("warns that annotations are dropped on d3-dot-plot (value-x/category-y)", () => {
+    const r = validateChartSpec({ ...annBase, type: "d3-dot-plot" });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) =>
+          /value-x\/category-y chart\) are dropped/.test(w),
+        ),
+      ).toBe(true);
+  });
+  it("warns that annotations are dropped on d3-range-plot (value-x/category-y)", () => {
+    const r = validateChartSpec({ ...annBase, type: "d3-range-plot" });
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(
+        r.warnings.some((w) =>
+          /value-x\/category-y chart\) are dropped/.test(w),
+        ),
+      ).toBe(true);
   });
 });
