@@ -18,6 +18,30 @@ describe("contrast math (WCAG)", () => {
   });
 });
 
+describe("applyValueLabels — vertical columns (fixes B4: hover-only → visible)", () => {
+  it("places labels OUTSIDE in dark ink, shown always, on a column chart", () => {
+    const vis: Record<string, unknown> = {};
+    applyValueLabels("column-chart", vis, undefined, "0,0");
+    expect(vis["valueLabels"]).toEqual({
+      enabled: true,
+      placement: "outside",
+      show: "always",
+      format: "0,0",
+    });
+  });
+
+  it("honours an explicit valueLabels:false by not forcing them on", () => {
+    const vis: Record<string, unknown> = {};
+    applyValueLabels("grouped-column-chart", vis, false, undefined);
+    expect(vis["valueLabels"]).toEqual({
+      enabled: false,
+      placement: "outside",
+      show: "hover",
+      format: null,
+    });
+  });
+});
+
 describe("applyValueLabels — horizontal bars (fixes B3: no white inside label)", () => {
   it("turns off the inside auto-white label and shows the value axis", () => {
     const vis: Record<string, unknown> = {};
@@ -49,6 +73,16 @@ describe("specToMetadata routes bar/column value labels safely", () => {
     const p = specToMetadata(barSpec);
     expect(p.metadata.visualize["show-value-labels"]).toBe(false);
     expect(p.metadata.visualize["force-grid"]).toBe(true);
+  });
+
+  it("a column chart emits outside labels shown always (visible on the PNG)", () => {
+    const p = specToMetadata({
+      ...barSpec,
+      type: "column-chart",
+    });
+    const vl = p.metadata.visualize["valueLabels"] as Record<string, unknown>;
+    expect(vl.placement).toBe("outside");
+    expect(vl.show).toBe("always");
   });
 });
 

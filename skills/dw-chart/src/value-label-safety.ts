@@ -40,7 +40,7 @@ export const HORIZONTAL_BAR_TYPES = new Set<ChartType>([
 
 // True when a chart type carries value labels we route through the safe path.
 export function hasValueLabelControl(type: ChartType): boolean {
-  return HORIZONTAL_BAR_TYPES.has(type);
+  return COLUMN_TYPES.has(type) || HORIZONTAL_BAR_TYPES.has(type);
 }
 
 // Emit the contrast-safe value-label metadata for a bar/column chart, mutating
@@ -53,6 +53,20 @@ export function applyValueLabels(
   numberFormat: string | undefined,
 ): void {
   const show = wanted !== false; // default ON so the numbers are readable
+
+  if (COLUMN_TYPES.has(type)) {
+    // Datawrapper's column value labels default to `show:"hover"` → they print
+    // NOTHING on the static PNG (the reader can only read the y-axis). Force them
+    // visible AND outside the column, where they render in dark ink on the white
+    // canvas (always ≥4.5:1) instead of white-on-colour inside the bar.
+    visualize["valueLabels"] = {
+      enabled: show,
+      placement: "outside",
+      show: show ? "always" : "hover",
+      format: numberFormat ?? null,
+    };
+    return;
+  }
 
   if (HORIZONTAL_BAR_TYPES.has(type)) {
     // Datawrapper cannot render a contrast-safe INSIDE label on a coloured bar, so
