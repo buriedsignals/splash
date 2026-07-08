@@ -337,7 +337,14 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{nd.value}</strong>
       {nd.category && (
-        <span style={{ color, fontSize: 12 }}> · {nd.category}</span>
+        <span style={{ fontSize: 12 }}>
+          {" "}
+          ·{" "}
+          <span aria-hidden="true" style={{ color, marginRight: 4 }}>
+            ■
+          </span>
+          <span style={{ color: "#fff" }}>{nd.category}</span>
+        </span>
       )}
       {nd.label && <div style={{ opacity: 0.7, fontSize: 11 }}>{nd.label}</div>}
     </div>

@@ -112,7 +112,16 @@ export function SankeyChart({
     bottom: 30, // clear the source line below the bottom node label
     left: leftGutter,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.62, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.62,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -380,8 +389,11 @@ function Tooltip({
       <strong style={{ fontSize: 13 }}>{fmt(lk.value)}</strong>{" "}
       <span style={{ fontSize: 12, opacity: 0.85 }}>{config.unit}</span>
       <div style={{ fontSize: 11, marginTop: 1 }}>
-        <span style={{ color }}>{nodeById.get(lk.source)!.label}</span> →{" "}
-        {nodeById.get(lk.target)!.label}
+        <span aria-hidden="true" style={{ color, marginRight: 4 }}>
+          ■
+        </span>
+        <span style={{ color: "#fff" }}>{nodeById.get(lk.source)!.label}</span>{" "}
+        → {nodeById.get(lk.target)!.label}
       </div>
     </div>
   );

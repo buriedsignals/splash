@@ -494,7 +494,10 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong style={{ color, fontSize: 13 }}>
+      <span aria-hidden="true" style={{ color, marginRight: 4 }}>
+        ■
+      </span>
+      <strong style={{ color: "#fff", fontSize: 13 }}>
         {config.series[hoverPt.si].label}
       </strong>
       <div style={{ fontSize: 12, marginTop: 1 }}>

@@ -300,9 +300,13 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong style={{ color: colorOf(hover), fontSize: 13 }}>
-        {cat.label}
-      </strong>{" "}
+      <span
+        aria-hidden="true"
+        style={{ color: colorOf(hover), marginRight: 4 }}
+      >
+        ■
+      </span>
+      <strong style={{ color: "#fff", fontSize: 13 }}>{cat.label}</strong>{" "}
       <span style={{ fontSize: 13 }}>{fmt(cat.value)}</span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>
         {cat.cells} of 100 squares
