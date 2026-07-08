@@ -265,7 +265,7 @@ identify the path).
   "title": "<the insight — sentence case, never a column label>",
   "intro": "<description of the map for context>",
   "altInsight": "<the insight — WCAG alt, same wording as title>",
-  "source": { "name": "<honest source>", "url": "<optional>" }
+  "source": { "name": "<honest source>", "url": "<its real URL>" }
 }
 ```
 
@@ -283,7 +283,11 @@ Field notes:
 - `altInsight`: WCAG accessible alternative — the same insight as `title`.
 - `source`: the honest source the article names (prose-provenance rule). Never fabricated, and **never the
   data FILENAME** (`youth_unemployment.csv` is not a public attribution) — use the publication the article
-  cites, or the honest prose label.
+  cites, or the honest prose label. **A NAMED dataset/publication (e.g. "Eurostat") MUST carry both its
+  name AND a real, verifiable URL — never ship the name alone, and never invent a URL to fill the field.**
+  If the true URL isn't known, ask the journalist for it (free text, collecting name + URL together) rather
+  than shipping it incomplete. The only legitimate name-only case is the honest prose fallback below, which
+  names no separate dataset to link.
 - `colorScale` (optional): an array of `{color: hex, position: 0..1}` stops, ascending. If omitted,
   `map-dw` applies the default blue sequential scale. Choose the stops from a subject-fit ramp per the
   **Map colour** rule below — do NOT leave every map blue.
@@ -514,7 +518,11 @@ insight state the insight, not column names. Confirm `nativeType` ∈ {line, bar
 - **Colours:** single-series → at most 2 Okabe-Ito colours (default `#0072B2`); multi-series → one Okabe-Ito colour per series in `seriesColors`, at most 8.
 - **Pie/donut:** at most 5 slices — if more, group into "Other" or choose bars.
 - **Annotations:** add a `text-annotation` for the key outlier or turning point ("annotations explain WHY"). Keep the text TERSE (≈ ≤ 30 chars, e.g. "Crossed 50% urban, c. 2007" — not a full sentence): a long annotation clips or overlaps a value label at 340 px and the responsive label-safety guardrail will REJECT the whole chart. Put the elaboration in the intro, not the annotation.
-- **Title:** state the insight, not a label or a year range (the validator warns otherwise).
+- **Title:** state the insight, not a label or a year range (the validator warns otherwise). It must
+  match the takeaway the journalist confirmed at CADRAGE — not a narrower or different claim (a specific
+  multiplier like "2x" standing in for a confirmed "widening gap"; a scope word like "Nordic countries"
+  that excludes an entity the visual itself shows, e.g. an Alpine country on the same map). If the data
+  supports more than the title states, widen the title's wording rather than narrowing the claim.
 - **Multi-series orientation:** `transpose:true` is ONLY for stacked/grouped **categorical** charts (e.g. stacked `year, Coal, Gas, Renewables`) where the x-category, not the series, belongs on the axis. **Never transpose a line/time chart** — a multi-series time trend (`year, France, Switzerland`) is `d3-lines` with one line per column and NO transpose. `multiple-lines`/`multiple-columns` = deliberate small multiples (one panel per series), not a single trend.
 - **Two-point comparison (prose-extracted):** a claim with exactly two values (e.g. 2019 vs 2024) renders as a **slope**, **dumbbell**, or **paired columns** — NEVER a continuous line, which would imply a trend from two points.
 - **Honest source label (prose):** when the data is `provenance: "prose"`, the chart's source reads "Figures as reported in this article" (or the source the article itself names) — never a fabricated dataset attribution.

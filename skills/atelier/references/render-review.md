@@ -16,20 +16,32 @@ source, a misleading encoding. In the test campaign these shipped from otherwise
 ## Independence (the point)
 Review with a FRESH pair of eyes, not the reasoning that produced the spec — a self-review by the
 author rubber-stamps its own error (the false "cinq fois plus de jeunes au chômage" title looked fine
-to the host that wrote it). Where the harness supports subagents, **spawn an independent reviewer** given
-only the render + article + data + these criteria — this is the DEFAULT whenever it is available.
-Otherwise, review **adversarially**: actively try to FALSIFY the visual against each criterion, default to
-flagging — but be honest that this single-agent fallback does NOT deliver true independence and carries
-residual rubber-stamp risk; it is a lesser substitute, not an equivalent.
+to the host that wrote it). **Never spawn an Agent/Task sub-agent to get that fresh pair of eyes** —
+during a live journalist-facing atelier run this is a hard rule: atelier ONLY sequences, gates, and
+invokes producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (an agentId) into
+the journalist-facing conversation. Always review **adversarially** yourself instead: actively try to
+FALSIFY the visual against each criterion, default to flagging — but be honest that this single-agent
+review does NOT deliver true independence and carries residual rubber-stamp risk; it is a known,
+accepted limitation, not a reason to spawn a background agent mid-flow.
 
 ## Criteria — flag a concern for each that fails
 1. **Title honesty.** The title states exactly what the data shows. A RATE title must not assert a COUNT
    or VOLUME ("cinq fois plus de jeunes au chômage" over a rate, "deux fois plus d'emballages" over a %
-   are both false). The insight must be literally true of the data.
-2. **Source traceability.** The displayed source is supported by the article/data. An attribution the
-   article never gave — a dataset name + URL invented for unattributed figures — is a **fabrication**;
-   flag it hard. Prose figures → "Chiffres tels que rapportés dans cet article" (or the outlet the
-   journalist names), never a fabricated dataset.
+   are both false). The insight must be literally true of the data. It must ALSO match the takeaway the
+   journalist confirmed at CADRAGE (Gate 1, Q2) — not a narrower or different claim: a specific multiplier
+   ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic countries") that
+   excludes an entity the visual actually shows (e.g. an Alpine country on the same map), are both false
+   even if each number is individually correct. If the data supports more than the title states, widen
+   the title rather than shipping the narrower claim.
+2. **Source traceability.** The displayed source is supported by the article/data, and is COMPLETE — a
+   NAMED dataset/publication (e.g. "Eurostat") MUST carry both its label AND a real, verifiable URL; a
+   bare name with no URL is incomplete and must be flagged even when the name itself is genuine. An
+   attribution the article never gave — a dataset name and/or URL invented for unattributed figures — is
+   a **fabrication**; flag it hard. Prose figures → "Chiffres tels que rapportés dans cet article" (or the
+   outlet the journalist names) is the one legitimate name-only case (it cites no separate dataset), never
+   a fabricated dataset. If the source is missing, incomplete, or unclear, it must be corrected by asking
+   the journalist directly — as ONE free-text prompt collecting the label and URL together, never a
+   single-select (a URL cannot be one of a few fixed menu options) — before shipping.
 3. **Honest encoding.** No two differently-denominated series sharing one axis; a majority/threshold that
    carries the story is drawn (a 50% line for a yes/no); a two-point change is a slope/dumbbell, not a
    line; a ranking is a bar, not a map.
