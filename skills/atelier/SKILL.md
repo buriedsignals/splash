@@ -144,6 +144,29 @@ to `provenance:"prose"` proposals** — a `"table"` (or `"none"`) proposal never
 `confirmedTable` (set in 5b) stays `false`/absent; only set it `true` after an actual 2b confirmation
 fires for a prose proposal.
 
+**GATE 2c (source attribution — every accepted proposal, established BEFORE PRODUCTION).** Do not wait
+for the render-review (Gate 3a) to be the first thing that catches a weak source — establish the
+citable source now, for each proposal that just cleared Gate 2 (and 2b where it applies):
+- Start from what `suggest-article` already surfaced (its `sourceHint`, set only when the article
+  itself names where the figures come from, or quotes an actual URL). If that already gives BOTH a
+  name and a specific, traceable dataset/page URL, use it verbatim — never invent or embellish it.
+- Otherwise, ask the journalist ONE free-text question that collects the label AND the specific URL
+  TOGETHER, in the SAME turn — never split it into "what's the source?" then a follow-up "and the
+  URL?"; that two-step pattern is exactly the multi-turn back-and-forth this gate exists to close.
+- Apply the same rejection rule used at Gate 3 (see Never, below) to the answer BEFORE accepting it: a
+  name with no URL for a named dataset/publication, or a bare organisation homepage
+  (`eurostat.ec.europa.eu`, `insee.fr`) standing in for the specific dataset/page, is incomplete — say
+  so and ask again for the specific page. Never ship it as-is and never quietly downgrade to the
+  "reported in this article" fallback just to avoid asking again.
+- The honest prose fallback ("Figures as reported in this article" / the outlet's own name) is
+  legitimate ONLY when the data genuinely has no separate cited dataset (`provenance:"prose"` or
+  `"none"`) — never use it merely because the journalist has not yet answered, and never use it as a
+  shortcut out of this gate.
+- Only once the proposal's source is a name + a specific traceable URL (or the genuine no-dataset
+  prose case) does it go into `accepted.json`'s spec (5b). This does not replace Gate 3a's render-review
+  source check — that stays the safety net if the URL turns out unreachable once the actual render is
+  seen — but it should rarely have anything left to catch.
+
 Only accepted proposals continue.
 
 ### 5. PRODUCTION
@@ -158,7 +181,10 @@ producer spec yourself (see Never).
 **5a. Validate each spec first.** For every accepted proposal, run the producer's spec validator
 (`validateChartSpec` for charts; `validateChoroplethConfig` / `validateLocatorConfig` /
 `validateSymbolConfig` / `validateMapSpec` for maps) and fix any warning — in particular a title that
-reads as a label rather than the insight — so a weak spec never reaches GATE 3.
+reads as a label rather than the insight — so a weak spec never reaches GATE 3. The spec's `source`
+must be the one already established at Gate 2c (name + a specific traceable URL, or the genuine
+no-dataset prose case) — never a placeholder, never the `suggest-article` `dataSource.table` filename
+slipped in as the label (see suggest-article's Gotcha (4)).
 
 **5b. Assemble `exports/<slug>/accepted.json`** — an array, one entry per accepted proposal:
 `{ "id": "<stable-id>", "producer": "dw-chart|chart-native|map-dw|map-native|scrolly",
@@ -183,6 +209,15 @@ bun skills/atelier/scripts/produce-all.mjs exports/<slug>/accepted.json exports/
 `{ results: [{ id, producer, format, status, outputs?, publicUrl?, reason?, error?, renderApproved }] }`.
 It exits non-zero only if some `status` is `"failed"`. (Redirecting to `report.json` is required — the
 report is the machine channel; producer progress goes to stderr, so stdout stays pure JSON.)
+
+**★ Every re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) writes a WHOLLY FRESH
+`report.json`.** `renderApproved` starts `false` and `reviewed` is absent for EVERY proposal in that
+run — even one that was already reviewed and approved before the correction — this is by design, not a
+regression: a re-produced artifact has never been through Gate 3 itself, no matter how many times its
+predecessor was. It means Gate 3a (`review-gate`) and Gate 3b (`gate-render`) MUST run again, in order,
+on the NEW render before it can ship — never call `gate-render` right after a re-produce assuming a
+prior sign-off still holds (see Never, below), and never hand-edit `report.json` to restore a prior
+`reviewed`/`renderApproved` value onto a new artifact.
 Each proposal's artifacts land in a **per-proposal subdir** `exports/<slug>/<id>/` — that subdir (not the
 parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
 
@@ -222,11 +257,16 @@ bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> [conc
 ```
 
 **3b. Show + approve.** Show the ACTUAL render (open it / a screenshot) TOGETHER WITH the review's
-concerns, and get an explicit "ship it". The concerns are advisory — the journalist is the editor. If a
+concerns, and get an explicit "ship it". The concerns are advisory — the journalist is the editor. This
+should rarely fire on source now that Gate 2c establishes it proactively before PRODUCTION — but if a
 concern is about the source (missing, name-only, generic, or unclear), ask the journalist to supply it as
 ONE free-text prompt collecting the label AND the **specific, traceable dataset/page URL** together (e.g.
 the Eurostat dataset page for the exact table, the Insee series page — NOT the organisation's homepage) —
-never a single-select (see CADRAGE) — then update the spec and re-run 3a before showing again.
+never a single-select (see CADRAGE) — then update the spec, **re-run 5c (`produce-all`) to get the NEW
+render, and re-run 3a (`review-gate`) on THAT render** before showing again — never jump straight from an
+updated spec to 3b (`gate-render`); the fresh report 5c writes resets `reviewed`/`renderApproved` for
+exactly this reason (see the ★ note under 5c above), and 3b's approval is only ever for the render just
+shown, never a prior one.
 Verify quality, not just that it built. **After "ship it", record the approval — pass the LOCAL
 artifact file path on disk, NEVER the public/cloud URL** (a Datawrapper `publicUrl`, a fly.io embed
 link, etc.): `gate-render` opens and hashes the file at that path, so a public URL ENOENTs.
@@ -315,7 +355,8 @@ article-web is the one channel that can host it**:
 | 1 | CADRAGE | Journalist answers the ≤4 questions + branch chosen | Wrong format, misread intent |
 | 2b | PROPOSITION | Journalist confirms prose-extracted data table (fires BEFORE Gate 2 for prose proposals) | Fabricated data attribution |
 | 2 | PROPOSITION | Journalist accepts / edits / rejects each proposal | Wrong claim visualised |
-| 3 | PRODUCTION | Journalist says "ship it" after seeing the real render | Visual quality not verified |
+| 2c | PROPOSITION | Source established: name + a specific traceable URL (or the genuine no-dataset prose case), for every accepted proposal | Weak/generic/name-only source ships, caught only late (after a full produce→review cycle) by the render-review |
+| 3 | PRODUCTION | Journalist says "ship it" after seeing the ACTUAL render (re-run in full — 3a then 3b — after every re-produce, never reused from a prior render) | Visual quality not verified; a re-produced render ships on a stale sign-off |
 | 4 | EXPORT | Video/static → give the media file directly; interactive/scrolly → journalist chooses code source / static HTML / embed link | Wrong delivery format |
 
 ## Never
@@ -346,12 +387,13 @@ article-web is the one channel that can host it**:
 - Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate. This means actually INVOKING `suggest-article` (ANALYSE) and `suggest-chart` (PROPOSITION routing) as real Skill calls, not hand-authoring their output from memory/inspection — their eval-hardened guardrails and KB grounding only fire when they genuinely run. This holds for the FIRST routing AND for any LATER change to the chosen element/format (a journalist request mid-flow, a fallback, a retry after a failed gate): re-invoke `suggest-chart` again with the new signal — never re-decide it yourself by grepping producer source and hand-authoring/`Write`-ing a `spec.json`; only `suggest-chart`'s own re-run re-validates the choice and re-applies its guardrails.
 - Never name a chart type in the intent passed to suggest-article or suggest-chart (on the guided path).
 - Never ship a visual without the mandatory render-review (Gate 3a) — `assertShippable` refuses a visual with no review record; the review's concerns are advisory but running it is not optional.
+- Never call `gate-render` (Gate 3b) right after a re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) without first re-running `review-gate` (Gate 3a) on the NEW render. `produce-all` always writes a WHOLLY FRESH `report.json` — every proposal in that run comes back unreviewed and unapproved (`renderApproved:false`), even one that was already signed off before the correction — so the review MUST run again on what actually changed. Do not treat the script's hard refusal ("not render-reviewed") as the safety net to rely on; redo Gate 3a → 3b in order every time, and never hand-edit `report.json` to restore a prior review/approval onto a new artifact.
 - Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow. This holds with NO exception for making a produce/conformance gate pass: never edit a producer/component's source code (`skills/*/src`, any `.tsx`/`.ts` producer file) mid-PRODUCTION to turn a failing gate green — a real newsroom journalist cannot patch the engine, so atelier must not either. If a produce or conformance gate fails because of a genuine engine bug (not a spec/data problem), SURFACE the bug to the journalist, do NOT ship that visual, and do NOT patch the code — the bug is reported, never worked around.
 - Never silently mutate the ACCEPTED SPEC (`baseColor`, format, etc.) mid-PRODUCTION to route around a conformance-gate failure — this is the spec analogue of the rule above ("never edit product code" → "never silently edit the accepted spec to bypass a gate"). A conformance failure is SURFACED to the journalist as-is; if the spec must change to fix it, GATE 2 is re-opened for re-acceptance of the changed spec. The produce-time conformance guards exist precisely so a non-conformant visual never ships unseen.
 - Never hand over an INTERACTIVE visual without offering the three delivery forms at GATE 4 — code source, static HTML, and the fly.io embed link — as an explicit choice (machinery: `export-code.mjs` + `deploy-embed.mjs`). A SCROLLY has no static image, so it offers only **code source + embed link** (its embed targets `scrolly.html`, not `interactive.html`) — do not promise a static-HTML form for a scrolly.
 - Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.
-- Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.)
-- Never accept a generic organisation homepage (e.g. `eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 URL as the source — it must be treated exactly like a missing URL. The source MUST point to the SPECIFIC, traceable dataset/page the figures come from (the Eurostat dataset page for the exact table, the Insee series page, …). If the journalist only gives an organisation name or its homepage, ASK for the specific dataset/page reference rather than shipping the generic one.
+- Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.) Establish this proactively at Gate 2c (PROPOSITION), before PRODUCTION — never wait for the render-review to be the first thing that catches it, and never reach for the prose fallback just because the journalist has not answered yet.
+- Never accept a generic organisation homepage (e.g. `eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 URL as the source — it must be treated exactly like a missing URL. The source MUST point to the SPECIFIC, traceable dataset/page the figures come from (the Eurostat dataset page for the exact table, the Insee series page, …). If the journalist only gives an organisation name or its homepage, ASK for the specific dataset/page reference rather than shipping the generic one (see Gate 2c) — in the SAME free-text turn, never as a separate follow-up question.
 - Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1, Q2) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic") that excludes an entity the visual actually shows. If the data supports more than the title states, widen the title or flag it at Gate 3.
 - Never silently substitute a value from a prior/stale export when it disagrees with the journalist's current article/data — the values used (and shown at Gate 2b) MUST always be the ones the journalist provided in the current session.
 - Never offer the journalist an element/format (or sub-format) option before confirming — via `suggest-chart`'s reachability, not from memory — that it is actually producible. Retracting an offered option as infeasible forces the journalist to re-answer the same decision multiple times; check first, propose only what's confirmed.

@@ -80,6 +80,16 @@ export async function produceAll(
         ...(validation.warnings.length
           ? { warnings: validation.warnings }
           : {}),
+        // Gate 3 reset (belt-and-suspenders): a fresh produce is ALWAYS an unreviewed,
+        // unapproved artifact — re-assert that explicitly, after the dispatch spread, so
+        // a re-produce can never ship on a PRIOR render's sign-off even if some future
+        // Dispatch implementation ever smuggled a stale reviewed/renderApproved/
+        // approvedHash through (e.g. by spreading a wider object instead of a literal,
+        // which the Dispatch type's excess-property check would not catch). Gate 3a
+        // (review-gate) and Gate 3b (gate-render) MUST both run again on this new render.
+        reviewed: undefined,
+        renderApproved: false,
+        approvedHash: undefined,
       });
     } catch (e) {
       results.push({
