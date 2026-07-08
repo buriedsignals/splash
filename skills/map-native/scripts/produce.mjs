@@ -17,6 +17,7 @@ import { mkdtempSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
+import { snapCommand, remotionCommand } from "../src/platform-runners.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -82,13 +83,19 @@ const tag = basename(outDir).replace(/[^a-z0-9_-]/gi, "") || "run";
 const staticDir = join(root, "dist", `static-${tag}`);
 const interactiveDir = join(root, "dist", `interactive-${tag}`);
 
+const isWin = process.platform === "win32";
+const SNAP = snapCommand(process.platform);
+const REMOTION = remotionCommand(process.platform);
+
 const env = { ...process.env, CONFIG: configPath };
 const run = (cmd, args, extraEnv = {}) =>
   execFileSync(cmd, args, {
     stdio: "inherit",
     cwd: root,
     env: { ...env, ...extraEnv },
+    shell: isWin,
   });
+const snap = (script, extraEnv = {}) => run(SNAP[0], [...SNAP.slice(1), script], extraEnv);
 
 // 1. Web builds (config baked in via the Vite define) — each into its own dir
 console.log(`[produce map] building static… → ${staticDir}`);
@@ -99,10 +106,10 @@ run("bunx", ["vite", "build"], { INTERACTIVE: "1", BUILD_OUT: interactiveDir });
 
 // 2. Snap static + interactive into outDir — tell each script which build dir to use
 console.log(`[produce map] snapping static…`);
-run("bun", ["scripts/snap-static.mjs"], { OUTDIR: outDir, SERVE_DIR: staticDir });
+snap("scripts/snap-static.mjs", { OUTDIR: outDir, SERVE_DIR: staticDir });
 
 console.log(`[produce map] snapping interactive (proof)…`);
-run("bun", ["scripts/snap-proof.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+snap("scripts/snap-proof.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
 // Copy self-contained interactive.html into outDir
 const interactiveHtmlSrc = join(interactiveDir, "index.html");
@@ -112,10 +119,10 @@ console.log(`[produce map] interactive.html → ${interactiveHtmlDest}`);
 run("bun", ["scripts/assert-selfcontained.mjs", interactiveHtmlDest]);
 
 console.log(`[produce map] snapping responsive…`);
-run("bun", ["scripts/snap-responsive.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+snap("scripts/snap-responsive.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
 console.log(`[produce map] snapping a11y…`);
-run("bun", ["scripts/snap-a11y.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+snap("scripts/snap-a11y.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
 // Theme guard — ONLY when the config asked for the dark basemap: assert the STATIC
 // build actually rendered dark (furniture + basemap), not just that the config said so.
@@ -124,7 +131,7 @@ run("bun", ["scripts/snap-a11y.mjs"], { OUTDIR: outDir, SERVE_DIR: interactiveDi
 // CLAUDE.md "parité harnais-contraste côté map"). Fail-hard, like every other snap-*.
 if (parsedConfig.mapStyle === "dataviz-dark") {
   console.log(`[produce map] snapping theme (dark)…`);
-  run("bun", ["scripts/snap-theme.mjs"], { OUTDIR: outDir, SERVE_DIR: staticDir });
+  snap("scripts/snap-theme.mjs", { OUTDIR: outDir, SERVE_DIR: staticDir });
 }
 
 const result = {
@@ -197,10 +204,10 @@ function renderVideoSet(kind, propsPath, remotionEntry, comps) {
     const stillOut = join(outDir, `${kind}-${name}-still.png`);
     const mp4Out = join(outDir, `${kind}-${name}.mp4`);
     console.log(`[produce map] ${kind} ${name} (${comp}) — still…`);
-    run("bunx", ["remotion", "still", remotionEntry, comp, stillOut,
+    run(REMOTION[0], [...REMOTION.slice(1), "still", remotionEntry, comp, stillOut,
       `--frame=${STILL_FRAME[kind]}`, "--gl=angle", `--props=${propsPath}`], { COMP: comp });
     console.log(`[produce map] ${kind} ${name} (${comp}) — mp4…`);
-    run("bunx", ["remotion", "render", remotionEntry, comp, mp4Out,
+    run(REMOTION[0], [...REMOTION.slice(1), "render", remotionEntry, comp, mp4Out,
       "--gl=angle", "--concurrency=1", "--timeout=120000", `--props=${propsPath}`], { COMP: comp });
     out[name] = mp4Out;
   }
