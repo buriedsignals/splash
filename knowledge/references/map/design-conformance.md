@@ -45,10 +45,19 @@ A produced map MUST satisfy all ten rules below across static / interactive / vi
    by `checkMapFraming` (including `legendHeight` overrun check) and the `snap-responsive`
    harness (title gutter assertion).
 
-8. **Direct labels** — proportional-symbol maps carry name + value labels on each symbol (not
-   hover-only). A directly-labelled value states its unit — "296$bn" not "296". Source:
+8. **Direct labels** — proportional-symbol / dot maps carry name + value labels on each symbol (not
+   hover-only). A directly-labelled value states its unit — "296$bn" not "296". A static symbol/dot
+   map whose values live only in a hover tooltip does NOT carry its claim: the owned static PNG (the
+   social static, or the article-web a11y static fallback) shows mute, unlabeled circles. Source:
    data-to-viz (symbol map). Enforced by `checkSymbolConformance` (`labeled` and `labelHasUnit`
    fields).
+   **Producer routing:** Datawrapper symbol maps are hover-only — they offer no "label symbols by
+   column" / "show values on symbols" option (verified against the Datawrapper Academy "Customizing
+   your symbol map" docs), so `map-dw` cannot ship a statically-legible symbol map. Every valued point
+   map (symbol / proportional / dot) MUST therefore be produced by **`map-native`**, which directly
+   labels the top-N circles by name + value. `map-dw`'s `validateMapSpec` (`skills/map-dw/src/map-spec.ts`)
+   **rejects** a symbol spec with a route-to-`map-native` error — the mechanical gate mirroring
+   `checkSymbolConformance`'s `labeled` assertion. (`map-dw` covers choropleth + wide locator only.)
 
 9. **Furniture and controls follow the basemap theme** — the title pill, source line, and
    interactive controls (zoom +/−, reset) MUST match the basemap theme: dark furniture and

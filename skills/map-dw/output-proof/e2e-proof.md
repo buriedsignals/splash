@@ -29,10 +29,16 @@ Produced via `produceMap` (which reuses the dw-chart `datawrapper.ts` client) fr
 
 ---
 
-# Live e2e proof — symbol map
+# Live e2e proof — symbol map (RETIRED — historical evidence)
 
-Produced via `produceMap` from the generic `eval/cases/france-cities.json` case.
-**Left published for human review — do not delete.**
+> **RETIRED.** map-dw no longer produces symbol maps: `validateMapSpec` rejects a symbol spec and
+> routes it to `map-native` (see below + the hover-tooltip section). This proof is kept as the
+> **evidence for that decision** — the exported static PNG shows sized-but-UNLABELED circles (names
+> and values appear ONLY on hover), so the owned static export cannot carry the claim. The generic
+> `eval/cases/france-cities.json` case was removed. Valued point maps now go to `map-native`, whose
+> proportional-symbol renderer directly labels the top-N circles by name + value.
+
+Produced via `produceMap` (before the retirement) from the former `eval/cases/france-cities.json` case.
 
 - **publicUrl:** https://datawrapper.dwcdn.net/39yaG/1/
 - **chartId:** `39yaG`

@@ -31,8 +31,11 @@ d("produceMap (live)", () => {
     await deleteChart(r.chartId);
   }, 60000);
 
-  it("publishes a real symbol map and exports a non-empty PNG", async () => {
-    const spec: MapSpec = {
+  it("REFUSES to produce a symbol map (hover-only, unlabeled static) and routes to map-native", async () => {
+    // #2 — map-dw symbol maps are retired: the owned static PNG ships mute, unlabeled circles
+    // (values are hover-only). produceMap must reject the spec before touching the API and steer
+    // the caller to map-native, whose proportional-symbol renderer labels the circles by name + value.
+    const spec = {
       mapType: "symbol",
       basemap: "france-metropolitan-departments",
       latColumn: "lat",
@@ -43,12 +46,9 @@ d("produceMap (live)", () => {
       altInsight:
         "Paris (2.1M) far larger than Marseille (0.87M) and Lyon (0.52M)",
       source: { name: "INSEE" },
-    };
+    } as unknown as MapSpec;
     const png = `/tmp/map-dw-symbol-e2e-${Date.now()}.png`;
-    const r = await produceMap(spec, png);
-    expect(r.publicUrl).toMatch(/datawrapper/);
-    expect((await Bun.file(png).arrayBuffer()).byteLength).toBeGreaterThan(0);
-    await deleteChart(r.chartId);
+    await expect(produceMap(spec, png)).rejects.toThrow(/map-native/);
   }, 60000);
 
   it("publishes a real locator map and exports a non-empty PNG", async () => {
