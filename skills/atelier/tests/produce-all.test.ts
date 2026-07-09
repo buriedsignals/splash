@@ -183,6 +183,93 @@ describe("produceAll — channel/format gate", () => {
   });
 });
 
+// GUARD 1 — producer-match. The producer that ACTUALLY ran (reported by the dispatch as
+// `actualProducer`) must equal the accepted proposal's declared producer. A real QA
+// finding: a dw-chart proposal was silently produced with chart-native. This is the
+// mechanical teeth — a flip is a fail-hard recorded result, never a silent ship. The ONE
+// sanctioned switch is native→dw (the FALLBACK_TO_DW re-emit).
+describe("produceAll — producer-match gate (GUARD 1)", () => {
+  it("REFUSES a dw→native flip: dw-chart accepted but dispatch ran chart-native", async () => {
+    const dispatch: Dispatch = async () => ({
+      status: "produced",
+      outputs: ["out/p1.png"],
+      actualProducer: "chart-native", // the silent flip
+    });
+    const { results } = await produceAll(
+      [p("p1", { producer: "dw-chart", format: "static" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(results[0].status).toBe("failed");
+    expect(results[0].error).toContain("dw-chart");
+    expect(results[0].error).toContain("chart-native");
+    // the report records the truth of what ran, not just the declaration
+    expect(results[0].actualProducer).toBe("chart-native");
+  });
+
+  it("ALLOWS the sanctioned native→dw fallback (chart-native accepted, dw-chart ran)", async () => {
+    const dispatch: Dispatch = async () => ({
+      status: "produced",
+      outputs: ["out/p1.png"],
+      actualProducer: "dw-chart",
+    });
+    const { results } = await produceAll(
+      [p("p1", { producer: "chart-native", format: "static" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(results[0].status).toBe("produced");
+    expect(results[0].actualProducer).toBe("dw-chart");
+  });
+
+  it("records actualProducer = declared when the dispatch reports no switch", async () => {
+    const dispatch: Dispatch = async () => ({
+      status: "produced",
+      outputs: ["out/p1.png"],
+      actualProducer: "chart-native",
+    });
+    const { results } = await produceAll(
+      [p("p1", { producer: "chart-native" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(results[0].status).toBe("produced");
+    expect(results[0].actualProducer).toBe("chart-native");
+  });
+
+  it("defaults actualProducer to the declared producer when the dispatch omits it (back-compat)", async () => {
+    const dispatch: Dispatch = async () => ({
+      status: "produced",
+      outputs: ["out/p1.png"],
+    });
+    const { results } = await produceAll(
+      [p("p1", { producer: "map-native" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(results[0].status).toBe("produced");
+    expect(results[0].actualProducer).toBe("map-native");
+  });
+
+  it("does NOT judge a non-produced result (needs-fallback) on producer-match", async () => {
+    const dispatch: Dispatch = async () => ({
+      status: "needs-fallback",
+      reason: "UnsupportedNativeType: sankey",
+    });
+    const { results } = await produceAll(
+      [p("p1", { producer: "chart-native" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(results[0].status).toBe("needs-fallback");
+  });
+});
+
 // The validation gate uses the REAL default validator (no injected pass-through).
 const validDwSpec = {
   type: "d3-bars",

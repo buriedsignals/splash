@@ -129,6 +129,7 @@ interface FileDispatchOutcome {
   outputs?: string[];
   reason?: string;
   error?: string;
+  actualProducer?: Producer; // GUARD 1: the producer this dispatch actually ran
 }
 
 // Flat directory listing (none of the 3 file-based scripts write subdirectories into
@@ -231,7 +232,14 @@ function dispatchFileBased(
   );
   if (outcome.status !== "produced") return outcome;
 
-  return { status: "produced", outputs: collectOutputs(absOutDir) };
+  // Record the producer this dispatch actually ran (GUARD 1) — it IS `producer` here (the
+  // file-based branch dispatches strictly by the declared key), which is exactly what
+  // makes the report an honest witness: produce-all asserts it against the accepted one.
+  return {
+    status: "produced",
+    outputs: collectOutputs(absOutDir),
+    actualProducer: producer,
+  };
 }
 
 type DispatchResult = Awaited<ReturnType<Dispatch>>;
@@ -258,6 +266,7 @@ export const realDispatch: Dispatch = async (
       status: "produced",
       outputs: [result.pngPath],
       publicUrl: result.publicUrl,
+      actualProducer: "dw-chart",
     };
   }
 
@@ -268,5 +277,6 @@ export const realDispatch: Dispatch = async (
     status: "produced",
     outputs: [result.pngPath],
     publicUrl: result.publicUrl,
+    actualProducer: "map-dw",
   };
 };
