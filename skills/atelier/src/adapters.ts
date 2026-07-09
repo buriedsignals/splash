@@ -13,6 +13,18 @@
 //     scrolly       scripts/produce.mjs <config.json> <outDir> — takes NO format flag
 //                   (always builds one scrolly.html); a 4th argv is simply unread.
 //
+//   CHANNEL THREADING (Slice 2, producer rendering — 2026-07-08): the proposal's
+//   confirmed CADRAGE Q3 channel (skills/atelier/src/channel.ts) is forwarded to the
+//   two NATIVE producers (chart-native, map-native) ONLY, as an env var
+//   `ATELIER_CHANNEL` on the spawned process — NOT a 6th positional argv. Chosen
+//   because both entry scripts already read a sibling env fallback this way
+//   (chart-native's produce.mjs: `process.argv[5] ?? process.env.FORMATS ?? "all"`),
+//   and because an env var survives produce-from-spec.mjs's own inner
+//   execFileSync("bun", [...]) re-spawn of produce.mjs for free (inherited process.env)
+//   with no extra plumbing in that forwarding script. Absent channel (legacy
+//   proposals) defaults to "article-web", matching normalizeChannel's default.
+//   dw-chart / map-dw / scrolly dispatch is UNCHANGED — no channel is threaded to them.
+//
 //   CLOUD-PUBLISHING (import + await, hits the Datawrapper API):
 //     dw-chart  produceChart(spec: ChartSpec, pngPath) → { chartId, embed, pngPath, publicUrl }
 //     map-dw    produceMap(spec: MapSpec, pngPath)     → { chartId, embed, pngPath, publicUrl }
@@ -30,6 +42,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import type { Channel } from "./channel";
 import type { Dispatch } from "./produce-all";
 import type { AcceptedProposal, Producer, VisualFormat } from "./producer-spec";
 import type { NativeSpec } from "../../chart-native/src/spec-to-config";
@@ -49,6 +62,29 @@ function isFileBased(producer: Producer): producer is FileBasedProducer {
     producer === "map-native" ||
     producer === "scrolly"
   );
+}
+
+// The two NATIVE producers (chart-native, map-native) render at the channel's
+// size/aspect (Slice 2); scrolly rides its host engine's own render path and does
+// not read a channel today, so it is deliberately excluded here.
+const CHANNEL_THREADED_PRODUCERS = new Set<FileBasedProducer>([
+  "chart-native",
+  "map-native",
+]);
+
+const DEFAULT_CHANNEL: Channel = "article-web";
+
+// Builds the extra env for a file-based dispatch: {} for a producer that doesn't
+// consume a channel (scrolly, and any future non-native file-based producer);
+// otherwise ATELIER_CHANNEL, defaulting an absent proposal.channel to article-web
+// (back-compat — legacy proposals with no channel still dispatch fine). Exported for
+// unit testing (the "argv/env builder").
+export function channelEnvFor(
+  producer: FileBasedProducer,
+  channel: Channel | undefined,
+): Record<string, string> {
+  if (!CHANNEL_THREADED_PRODUCERS.has(producer)) return {};
+  return { ATELIER_CHANNEL: channel ?? DEFAULT_CHANNEL };
 }
 
 // Absolute so cwd never matters for resolution, even though we also set cwd (below)
@@ -131,12 +167,17 @@ export function runProducerScript(
   cmd: string,
   args: string[],
   cwd: string,
+  env: Record<string, string> = {},
 ): ExecOutcome {
   try {
     execFileSync(cmd, args, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
       maxBuffer: 1024 * 1024 * 20,
+      // Merge onto the parent's own env (never replace it) — empty `env` is a no-op,
+      // matching the pre-Slice-2 behavior exactly (execFileSync inherits process.env
+      // when no `env` option is given at all).
+      env: { ...process.env, ...env },
     });
     return { status: "produced" };
   } catch (e) {
@@ -173,6 +214,7 @@ function dispatchFileBased(
   spec: NativeSpec | Record<string, unknown>,
   outDir: string,
   format: VisualFormat,
+  channel: Channel | undefined,
 ): FileDispatchOutcome {
   const absOutDir = resolve(outDir);
   mkdirSync(absOutDir, { recursive: true });
@@ -185,6 +227,7 @@ function dispatchFileBased(
     "bun",
     [SCRIPT[producer], configPath, absOutDir, formatFlag(producer, format)],
     SKILL_DIR[producer],
+    channelEnvFor(producer, channel),
   );
   if (outcome.status !== "produced") return outcome;
 
@@ -202,7 +245,7 @@ export const realDispatch: Dispatch = async (
       p.producer === "chart-native"
         ? (p.spec as NativeSpec)
         : (p.spec as Record<string, unknown>);
-    return dispatchFileBased(p.producer, spec, outDir, p.format);
+    return dispatchFileBased(p.producer, spec, outDir, p.format, p.channel);
   }
 
   const absOutDir = resolve(outDir);

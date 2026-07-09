@@ -144,11 +144,20 @@ declare const __INTERACTIVE__: boolean;
 declare const __CHART__: string;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const __CONFIG__: any;
+// Channel-driven format (Slice 2) — the produce() STATIC canvas size, baked in by
+// vite.config.ts from renderSize(ATELIER_CHANNEL) (halved for the snap's
+// deviceScaleFactor:2). Undefined in any build that doesn't define them (should
+// not happen via vite.config.ts, but guarded defensively) → the historical
+// landscape default.
+declare const __MEDIA_W__: number;
+declare const __MEDIA_H__: number;
 const interactive =
   typeof __INTERACTIVE__ !== "undefined" ? __INTERACTIVE__ : false;
 const chart = typeof __CHART__ !== "undefined" ? __CHART__ : "line";
 // injected arbitrary config (produce() path) — null when rendering the sample
 const injectedConfig = typeof __CONFIG__ !== "undefined" ? __CONFIG__ : null;
+const mediaW = typeof __MEDIA_W__ !== "undefined" ? __MEDIA_W__ : 840;
+const mediaH = typeof __MEDIA_H__ !== "undefined" ? __MEDIA_H__ : 480;
 
 const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
@@ -163,7 +172,12 @@ if (injectedConfig && chart !== "audit") {
     interactive && Inter ? (
       <Inter config={injectedConfig} animateOn={ANIMATE_ON} />
     ) : (
-      <Comp config={injectedConfig} progress={1} width={840} height={480} />
+      <Comp
+        config={injectedConfig}
+        progress={1}
+        width={mediaW}
+        height={mediaH}
+      />
     ),
   );
 } else if (chart === "audit") {

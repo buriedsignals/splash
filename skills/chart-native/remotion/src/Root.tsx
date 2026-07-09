@@ -70,7 +70,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="BarReveal"
@@ -96,7 +96,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="ScatterReveal"
@@ -122,7 +122,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="PieReveal"
@@ -148,7 +148,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="StackedBarReveal"
@@ -174,7 +174,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="SlopeReveal"
@@ -200,7 +200,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="GroupedBarReveal"
@@ -226,7 +226,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="DumbbellReveal"
@@ -252,7 +252,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="StackedAreaReveal"
@@ -278,7 +278,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="HeatmapReveal"
@@ -304,7 +304,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="HistogramReveal"
@@ -330,7 +330,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="DivergingBarReveal"
@@ -356,7 +356,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="WaterfallReveal"
@@ -382,7 +382,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="LollipopReveal"
@@ -408,7 +408,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="PyramidReveal"
@@ -434,7 +434,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="BulletReveal"
@@ -460,7 +460,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="ConnectedScatterReveal"
@@ -486,7 +486,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="MarimekkoReveal"
@@ -512,7 +512,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="RadarReveal"
@@ -538,7 +538,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="BoxplotReveal"
@@ -564,7 +564,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="BumpReveal"
@@ -590,7 +590,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="BeeswarmReveal"
@@ -616,7 +616,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="TreemapReveal"
@@ -642,7 +642,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="DivergingStackedReveal"
@@ -668,7 +668,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="SankeyReveal"
@@ -694,7 +694,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="StreamgraphReveal"
@@ -720,7 +720,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="GanttReveal"
@@ -746,7 +746,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="FanReveal"
@@ -772,7 +772,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="CalendarReveal"
@@ -798,7 +798,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="WaffleReveal"
@@ -824,7 +824,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="LorenzReveal"
@@ -850,7 +850,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="CandlestickReveal"
@@ -876,7 +876,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="ChordReveal"
@@ -902,7 +902,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="SunburstReveal"
@@ -928,7 +928,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="ParallelReveal"
@@ -954,7 +954,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="DotStripReveal"
@@ -980,7 +980,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="ViolinReveal"
@@ -1006,7 +1006,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="ArcReveal"
@@ -1032,7 +1032,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="RadialBarReveal"
@@ -1058,7 +1058,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="ComboReveal"
@@ -1084,7 +1084,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
       <Composition
         id="PictogramReveal"
@@ -1110,7 +1110,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={240}
         fps={30}
         width={1080}
-        height={1350}
+        height={1920}
       />
     </>
   );

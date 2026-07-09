@@ -298,16 +298,12 @@ article-web is the one channel that can host it**:
 
 - **VIDEO (mp4):** hand over the mp4 directly, at the CADRAGE channel's size and the narrative sub-format
   chosen at PROPOSITION (camera/reveal mode) — no code/embed forms, the media IS the deliverable. The
-  producer emits three aspect ratios — **landscape** (`*landscape.mp4`, 16:9, for article/web/YouTube),
-  **square** (`*square.mp4`, 1:1, for a feed post), **portrait** (`*portrait.mp4`, for Reels/TikTok/Shorts).
-  Default the aspect from the CADRAGE channel answer (social-vertical → portrait; social-feed → square;
-  article-web → landscape) and hand over that mp4. **Caveat (fix pending, Slice 2):** the native
-  chart-native/map-native video producers currently render "portrait" at **4:5** (1080×1350), NOT the true
-  **9:16** (1080×1920) the social-vertical channel targets — the channel table already SAYS 9:16, native
-  video pixel-rendering doesn't honor it yet (see the self-review note in
-  `docs/superpowers/plans/2026-07-08-channel-driven-format-slice-1.md`). Do not tell the journalist the
-  portrait mp4 is 9:16 until that lands — say 4:5 today. This caveat is **video-only**: `dw-chart`'s
-  STATIC portrait export already renders the true 1080×1920.
+  producer renders **only the one aspect the channel requires** — social-vertical → **portrait 9:16**
+  (1080×1920), social-feed → **square 1:1** (1080×1080), article-web → **landscape 16:9** — **one mp4, not
+  three** (the aspect is threaded via `ATELIER_CHANNEL`; a fail-hard produce-time conformance step refuses
+  a render whose size ≠ the channel). Native chart-native/map-native now render **true 9:16** for
+  social-vertical (Slice 2 repointed the portrait comps 1080×1350 → 1080×1920), matching `dw-chart`'s
+  static portrait — no more 4:5 caveat.
 - **STATIC IMAGE (a static chart / map PNG):** hand over the `static.png` directly, at the channel's size
   (portrait 1080×1920 for social-vertical, square 1080×1080 for social-feed, landscape 1200×675 for
   article-web) — no delivery menu, just the file.

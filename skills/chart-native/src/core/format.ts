@@ -24,12 +24,16 @@ export interface ResolvedFrame {
  *                    The plot never gets taller than innerWidth * plotAspect;
  *                    extra height becomes top/bottom margin (centres the band).
  */
+// resolveFrame's own landscape-tuned default (~840×480). Shared with the tall-canvas
+// boost below so the two never drift apart.
+export const DEFAULT_PLOT_ASPECT = 0.8;
+
 export function resolveFrame(
   width: number,
   height: number,
   basePad: Pad,
   scale = 1,
-  plotAspect = 0.8,
+  plotAspect = DEFAULT_PLOT_ASPECT,
 ): ResolvedFrame {
   const s = scale;
   const pad: Pad = {
@@ -111,6 +115,40 @@ export function estimateHeaderPx(
   return Math.ceil(topPad + titlePx + subtitlePx + buffer);
 }
 
+// Channel-driven format (Slice 2): a portrait/story canvas (social-vertical,
+// 9:16) needs the plot to fill most of the available height — the
+// landscape-tuned plotAspect (~0.8, i.e. plot height ≈ 0.8x its width) would
+// otherwise centre a small, landscape-shaped chart in a sea of empty top/bottom
+// margin on a canvas that is nearly twice as tall as it is wide. Boost
+// plotAspect proportionally to how much taller-than-wide the canvas is; square
+// (ratio 1) and landscape (ratio ~0.56-0.57) canvases fall under the threshold
+// and are untouched — only a genuinely tall/portrait canvas triggers it.
+// Capped so an extreme ratio never stretches the plot absurdly.
+//
+// Scoped to resolveFrameWithHeader (below), NOT the base resolveFrame — so
+// RadarChart's direct resolveFrame(..., 1) call ("keep it circular") is never
+// touched by this boost.
+const TALL_CANVAS_RATIO = 1.2; // height/width above this = "tall" (only 9:16 today)
+// A straight canvasAspect multiplier (1.78x at true 9:16) only fills ~47% of the
+// available height once top/bottom header/footer margins are subtracted — the
+// chart reads as a small island. A 1.3x headroom factor closes that gap (~63%
+// fill at 9:16) without crowding the title/source bands; capped so an extreme
+// ratio never stretches the plot absurdly.
+const TALL_CANVAS_HEADROOM = 1.3;
+const TALL_CANVAS_BOOST_CAP = 2.5; // never more than a 2.5x plotAspect multiplier
+
+function boostPlotAspectForTallCanvas(
+  width: number,
+  height: number,
+  plotAspect: number,
+): number {
+  const canvasAspect = height / width;
+  return canvasAspect > TALL_CANVAS_RATIO
+    ? plotAspect *
+        Math.min(canvasAspect * TALL_CANVAS_HEADROOM, TALL_CANVAS_BOOST_CAP)
+    : plotAspect;
+}
+
 /**
  * Like resolveFrame but enforces padding.top ≥ the estimated header height so
  * that a 2-line (or longer) title never overlaps the first data row on the
@@ -135,7 +173,17 @@ export function resolveFrameWithHeader(
 ): ResolvedFrame {
   const frame = responsive
     ? { scale: 1, pad: { ...basePad }, type: TYPE as ResolvedFrame["type"] }
-    : resolveFrame(width, height, basePad, scale, plotAspect);
+    : resolveFrame(
+        width,
+        height,
+        basePad,
+        scale,
+        boostPlotAspectForTallCanvas(
+          width,
+          height,
+          plotAspect ?? DEFAULT_PLOT_ASPECT,
+        ),
+      );
 
   if (!responsive) {
     const minTop = estimateHeaderPx(title, subtitle, width, scale);

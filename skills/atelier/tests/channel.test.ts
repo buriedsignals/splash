@@ -10,6 +10,9 @@ import {
   isFormatAllowed,
   mediaSize,
   normalizeChannel,
+  channelAspect,
+  renderSize,
+  assertRenderedSize,
   type Channel,
 } from "../src/channel";
 
@@ -151,5 +154,86 @@ describe("normalizeChannel", () => {
   it("is case/space-insensitive (mixed case + surrounding whitespace)", () => {
     expect(normalizeChannel("  SOCIAL-VERTICAL  ")).toBe("social-vertical");
     expect(normalizeChannel("Feed")).toBe("social-feed");
+  });
+});
+
+describe("channelAspect (Slice 2)", () => {
+  it("social-vertical → portrait, social-feed → square, article-web → landscape", () => {
+    expect(channelAspect("social-vertical")).toBe("portrait");
+    expect(channelAspect("social-feed")).toBe("square");
+    expect(channelAspect("article-web")).toBe("landscape");
+  });
+
+  it("matches CHANNELS[*].aspect for every channel", () => {
+    for (const ch of ALL_CHANNELS) {
+      expect(channelAspect(ch)).toBe(CHANNELS[ch].aspect);
+    }
+  });
+});
+
+describe("renderSize (Slice 2)", () => {
+  it("social-vertical → 1080x1920 (true 9:16)", () => {
+    expect(renderSize("social-vertical")).toEqual({
+      width: 1080,
+      height: 1920,
+    });
+  });
+
+  it("social-feed → 1080x1080", () => {
+    expect(renderSize("social-feed")).toEqual({ width: 1080, height: 1080 });
+  });
+
+  it("article-web → 1200x675", () => {
+    expect(renderSize("article-web")).toEqual({ width: 1200, height: 675 });
+  });
+
+  it("matches mediaSize/CHANNELS[*].mediaSize for every channel", () => {
+    for (const ch of ALL_CHANNELS) {
+      expect(renderSize(ch)).toEqual(mediaSize(ch));
+      expect(renderSize(ch)).toEqual(CHANNELS[ch].mediaSize);
+    }
+  });
+});
+
+describe("assertRenderedSize (Slice 2)", () => {
+  it("passes silently on an exact match (social-vertical, 1080x1920)", () => {
+    expect(() =>
+      assertRenderedSize(1080, 1920, "social-vertical"),
+    ).not.toThrow();
+  });
+
+  it("passes silently on an exact match for every channel", () => {
+    for (const ch of ALL_CHANNELS) {
+      const { width, height } = CHANNELS[ch].mediaSize;
+      expect(() => assertRenderedSize(width, height, ch)).not.toThrow();
+    }
+  });
+
+  it("throws on a 4:5 (1080x1350) render for a social-vertical (9:16) channel — the exact bug this slice fixes", () => {
+    expect(() => assertRenderedSize(1080, 1350, "social-vertical")).toThrow(
+      "rendered size 1080x1350 does not match channel 'social-vertical' (1080x1920)",
+    );
+  });
+
+  it("throws on any width/height mismatch, not just height", () => {
+    expect(() => assertRenderedSize(1200, 1080, "social-feed")).toThrow(
+      "rendered size 1200x1080 does not match channel 'social-feed' (1080x1080)",
+    );
+  });
+
+  it("passes on a 1px height difference (676 vs 675) — chart-native's article-web static rounding case (odd height halved+doubled at deviceScaleFactor:2)", () => {
+    expect(() => assertRenderedSize(1200, 676, "article-web")).not.toThrow();
+  });
+
+  it("a tightened tolerance (0) rejects the same 1px-off case", () => {
+    expect(() => assertRenderedSize(1200, 676, "article-web", 0)).toThrow(
+      "rendered size 1200x676 does not match channel 'article-web' (1200x675)",
+    );
+  });
+
+  it("still throws on a real mismatch (1080x1350 4:5 vs a social-vertical 9:16 1080x1920 channel) — the exact bug this slice fixes — even with the default tolerance", () => {
+    expect(() => assertRenderedSize(1080, 1350, "social-vertical")).toThrow(
+      "rendered size 1080x1350 does not match channel 'social-vertical' (1080x1920)",
+    );
   });
 });

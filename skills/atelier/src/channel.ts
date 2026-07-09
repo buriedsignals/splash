@@ -74,6 +74,48 @@ export function mediaSize(channel: Channel): ChannelSize {
   return CHANNELS[channel].mediaSize;
 }
 
+// Slice 2 (producer rendering) accessors — same data as mediaSize/CHANNELS[*].aspect,
+// named for the producer-rendering call sites (chart-native/map-native produce.mjs)
+// so those scripts read "the render size/aspect for this channel" rather than reaching
+// into the decision-layer CHANNELS table directly.
+export function channelAspect(channel: Channel): ChannelAspect {
+  return CHANNELS[channel].aspect;
+}
+
+export function renderSize(channel: Channel): ChannelSize {
+  return CHANNELS[channel].mediaSize;
+}
+
+// A produced deliverable's pixel size must equal its channel's mediaSize — producers
+// render ONE aspect (not three) and must render it at the right size. Throws (rather
+// than returning a violation string) so it fails hard at produce time, mirroring the
+// other produce-time guards (conformance, snap-contrast): a caller that wants a softer
+// signal can try/catch. Used by both native producers (chart-native, map-native).
+//
+// `tolerancePx` (default 2) absorbs the sub-pixel rounding chart-native's static path
+// hits for article-web: its snap screenshots at deviceScaleFactor:2, so the CSS canvas
+// size is `Math.round(mediaSize / 2)` and the exported PNG is that value doubled back.
+// article-web's height (675) is odd, so the nearest reachable even pixel size is 676 —
+// 1px off — while social-vertical/social-feed (even dimensions throughout) land exact.
+// A real mismatch (e.g. a 4:5 1080x1350 render for a 9:16 1080x1920 channel) is still
+// far outside this tolerance and throws.
+export function assertRenderedSize(
+  actualW: number,
+  actualH: number,
+  channel: Channel,
+  tolerancePx = 2,
+): void {
+  const { width, height } = renderSize(channel);
+  if (
+    Math.abs(actualW - width) > tolerancePx ||
+    Math.abs(actualH - height) > tolerancePx
+  ) {
+    throw new Error(
+      `rendered size ${actualW}x${actualH} does not match channel '${channel}' (${width}x${height})`,
+    );
+  }
+}
+
 // Legacy free-text keywords a journalist (or an older caller) might use, mirroring
 // the keyword sets that used to live only in dw-chart/src/export-aspect.ts
 // CHANNEL_ASPECT. Kept generous so any of these words routes without a lookup on the

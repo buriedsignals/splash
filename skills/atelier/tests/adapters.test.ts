@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { formatFlag } from "../src/adapters";
+import { formatFlag, channelEnvFor } from "../src/adapters";
 
 describe("formatFlag — VisualFormat → producer flag", () => {
   it("maps chart-native video → all, static → static", () => {
@@ -13,6 +13,128 @@ describe("formatFlag — VisualFormat → producer flag", () => {
   it("maps map-native interactive → static (web build), video → all", () => {
     expect(formatFlag("map-native", "interactive")).toBe("static");
     expect(formatFlag("map-native", "video")).toBe("all");
+  });
+});
+
+// Slice 2 (channel-driven producer rendering): the proposal's confirmed channel is
+// threaded to the NATIVE producers only (chart-native, map-native) as ATELIER_CHANNEL
+// — never as a positional argv (see adapters.ts's header comment for why). scrolly
+// and any absent channel are covered here too (the exact bug this slice fixes: a
+// dropped channel silently defaulting the WRONG way, or leaking to a producer that
+// never asked for one).
+describe("channelEnvFor — the argv/env builder for channel threading", () => {
+  it("threads ATELIER_CHANNEL for chart-native with an explicit channel", () => {
+    expect(channelEnvFor("chart-native", "social-vertical")).toEqual({
+      ATELIER_CHANNEL: "social-vertical",
+    });
+  });
+
+  it("threads ATELIER_CHANNEL for map-native with an explicit channel", () => {
+    expect(channelEnvFor("map-native", "social-feed")).toEqual({
+      ATELIER_CHANNEL: "social-feed",
+    });
+  });
+
+  it("defaults an absent channel to article-web for both native producers", () => {
+    expect(channelEnvFor("chart-native", undefined)).toEqual({
+      ATELIER_CHANNEL: "article-web",
+    });
+    expect(channelEnvFor("map-native", undefined)).toEqual({
+      ATELIER_CHANNEL: "article-web",
+    });
+  });
+
+  it("never threads a channel to scrolly, even when one is provided", () => {
+    expect(channelEnvFor("scrolly", "social-vertical")).toEqual({});
+    expect(channelEnvFor("scrolly", undefined)).toEqual({});
+  });
+});
+
+// Proves the wiring one level down: runProducerScript's new `env` param actually
+// reaches the spawned process (not just the pure builder above) — a real child
+// process reading process.env.ATELIER_CHANNEL, mirroring how chart-native/map-native's
+// produce.mjs will read it (Task 2/3).
+describe("runProducerScript — forwards the env param to the spawned process", () => {
+  function setupEnvHarness() {
+    const dir = mkdtempSync(join(tmpdir(), "atelier-adapters-env-harness-"));
+    const fakeProducer = join(dir, "fake-producer-env.mjs");
+    writeFileSync(
+      fakeProducer,
+      [
+        'console.log("channel seen: " + (process.env.ATELIER_CHANNEL ?? "none"));',
+      ].join("\n"),
+    );
+    const harness = join(dir, "harness-env.mjs");
+    writeFileSync(
+      harness,
+      [
+        'import { pathToFileURL } from "node:url";',
+        "const [adaptersPath, cmd, argsJson, cwd, envJson] = process.argv.slice(2);",
+        "const { runProducerScript } = await import(pathToFileURL(adaptersPath).href);",
+        "const outcome = runProducerScript(cmd, JSON.parse(argsJson), cwd, JSON.parse(envJson));",
+        "process.stdout.write(JSON.stringify({ outcome }));",
+      ].join("\n"),
+    );
+    return { dir, fakeProducer, harness };
+  }
+
+  const adaptersPath = join(import.meta.dir, "..", "src", "adapters.ts");
+
+  it("a producer script observes the passed ATELIER_CHANNEL", () => {
+    const { fakeProducer, harness, dir } = setupEnvHarness();
+    // fake-producer-env.mjs writes to stdout, which runProducerScript captures (not
+    // inherited) — so we assert via the fallback path instead: make it "fail" so the
+    // captured stdout is surfaced in the outcome for inspection.
+    writeFileSync(
+      fakeProducer,
+      [
+        'console.log("channel seen: " + (process.env.ATELIER_CHANNEL ?? "none"));',
+        'console.error("boom");',
+        "process.exit(1);",
+      ].join("\n"),
+    );
+    const out = execFileSync(
+      "bun",
+      [
+        harness,
+        adaptersPath,
+        "bun",
+        JSON.stringify([fakeProducer]),
+        dir,
+        JSON.stringify({ ATELIER_CHANNEL: "social-vertical" }),
+      ],
+      { encoding: "utf8" },
+    );
+    const parsed = JSON.parse(out);
+    expect(parsed.outcome.status).toBe("failed");
+    expect(parsed.outcome.error).toContain("channel seen: social-vertical");
+  });
+
+  it("an empty env is a no-op — the spawned process sees no ATELIER_CHANNEL", () => {
+    const { fakeProducer, harness, dir } = setupEnvHarness();
+    writeFileSync(
+      fakeProducer,
+      [
+        'console.log("channel seen: " + (process.env.ATELIER_CHANNEL ?? "none"));',
+        'console.error("boom");',
+        "process.exit(1);",
+      ].join("\n"),
+    );
+    const out = execFileSync(
+      "bun",
+      [
+        harness,
+        adaptersPath,
+        "bun",
+        JSON.stringify([fakeProducer]),
+        dir,
+        JSON.stringify({}),
+      ],
+      { encoding: "utf8" },
+    );
+    const parsed = JSON.parse(out);
+    expect(parsed.outcome.status).toBe("failed");
+    expect(parsed.outcome.error).toContain("channel seen: none");
   });
 });
 

@@ -244,8 +244,8 @@ audit's basemap-fit check. Strips symbol/label clutter from the basemap. Hover p
 No-data regions rendered in neutral `#e0e0e0` + named in the legend.
 
 **Remotion compositions**: `ChoroplethStory` (1280×720 landscape), `ChoroplethStorySquare`
-(1080×1080), `ChoroplethStoryPortrait` (1080×1350) — duration derived from the `mapStory` beats via
-`buildTimeline` (~15 s / 453 frames at 30 fps for the 4-beat sample), not a fixed length.
+(1080×1080), `ChoroplethStoryPortrait` (1080×1920, true 9:16) — duration derived from the `mapStory`
+beats via `buildTimeline` (~15 s / 453 frames at 30 fps for the 4-beat sample), not a fixed length.
 
 ## How it works (the shape)
 
@@ -320,15 +320,22 @@ Slice 1 ships only `world`. The others are added by dropping their simplified Ge
 `produce.mjs <config.json> <outDir> <format>` where `format ∈ { static | reveal | story | scrolly | all }`
 (defaults to `static`). The static + interactive proofs (`static.png`, `interactive.png`) are always
 emitted; the `format` arg gates the VIDEO render:
-- `reveal` → simple-reveal videos (fixed camera, data animates in) — `reveal-{landscape,square,portrait}.mp4`
-- `story` → storytelling camera-tour videos — `story-{landscape,square,portrait}.mp4`
+- `reveal` → simple-reveal video (fixed camera, data animates in) — `reveal-{aspect}.mp4`
+- `story` → storytelling camera-tour video — `story-{aspect}.mp4`
 - `scrolly` → scrolly-as-video (interactive scrolly captured as MP4, step-paced prose panel + pinned map) —
-  `scrolly-{landscape,square,portrait}.mp4`. Covers all 3 types (choropleth, symbol, route). Route gains
+  `scrolly-{aspect}.mp4`. Covers all 3 types (choropleth, symbol, route). Route gains
   `scrolly` alongside `story` (route has no simple-reveal). See `knowledge/references/map/formats/video-scrolly.md`.
 - `all` → reveal + story + scrolly.
 
-Output JSON is nested by sub-format:
-`{ static, interactive, reveal?: {landscape,square,portrait}, story?: {landscape,square,portrait}, scrolly?: {landscape,square,portrait} }`
+**Channel-driven aspect (Slice 2):** `ATELIER_CHANNEL` (env, default `article-web`) picks which ONE
+aspect is rendered — `social-vertical`→portrait 1080×1920, `social-feed`→square 1080×1080,
+`article-web`→landscape 1200×675 (`skills/atelier/src/channel.ts` `channelAspect`/`renderSize`) — never
+the full landscape+square+portrait triple. The STATIC build is also sized to the channel's exact
+pixels (`static.png` comes out at `renderSize(channel)`); `interactive.png`/`interactive.html` stay
+unsized (the `interactive` format is article-web-only, filling its host).
+
+Output JSON is nested by sub-format, keyed by the ONE rendered aspect name:
+`{ static, interactive, reveal?: {[aspect]: mp4}, story?: {[aspect]: mp4}, scrolly?: {[aspect]: mp4} }`
 (sub-keys present only for the formats produced). The config is injected via the `__CONFIG__` Vite
 define (web builds) and `--props` (Remotion), so nothing touches the committed sample. Simple-reveal
 best practices live in `knowledge/references/map/formats/video-reveal.md`.

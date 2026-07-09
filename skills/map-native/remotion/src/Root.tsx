@@ -2,19 +2,19 @@
 //   HarnessCheck          — Minimal MapTiler-in-Remotion smoke test (no external geo files needed)
 //   ChoroplethStory       — Choropleth story landscape 1280×720
 //   ChoroplethStorySquare — Choropleth story square 1080×1080
-//   ChoroplethStoryPortrait — Choropleth story portrait 1080×1350
+//   ChoroplethStoryPortrait — Choropleth story portrait 1080×1920
 //   SymbolStory           — Symbol map story landscape 1280×720
 //   SymbolStorySquare     — Symbol map story square 1080×1080
-//   SymbolStoryPortrait   — Symbol map story portrait 1080×1350
+//   SymbolStoryPortrait   — Symbol map story portrait 1080×1920
 //   SymbolReveal          — Symbol simple-reveal landscape 1280×720
 //   SymbolRevealSquare    — Symbol simple-reveal square 1080×1080
-//   SymbolRevealPortrait  — Symbol simple-reveal portrait 1080×1350
+//   SymbolRevealPortrait  — Symbol simple-reveal portrait 1080×1920
 //   ChoroplethReveal        — Choropleth simple-reveal landscape 1280×720
 //   ChoroplethRevealSquare  — Choropleth simple-reveal square 1080×1080
-//   ChoroplethRevealPortrait — Choropleth simple-reveal portrait 1080×1350
+//   ChoroplethRevealPortrait — Choropleth simple-reveal portrait 1080×1920
 //   RouteReveal           — Route draw-on landscape 1280×720
 //   RouteRevealSquare     — Route draw-on square 1080×1080
-//   RouteRevealPortrait   — Route draw-on portrait 1080×1350
+//   RouteRevealPortrait   — Route draw-on portrait 1080×1920
 //
 // Render HarnessCheck to prove the harness:
 //   bunx remotion render remotion/src/index.ts HarnessCheck out/harness-check.mp4 --gl=angle --concurrency=1 --timeout=120000
@@ -194,7 +194,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={STORY_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={choroplethDefaultProps}
     />
     <Composition
@@ -221,7 +221,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={SYMBOL_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={symbolDefaultProps}
     />
     <Composition
@@ -248,7 +248,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={symbolDefaultProps}
     />
     <Composition
@@ -275,7 +275,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={choroplethDefaultProps}
     />
     <Composition
@@ -301,7 +301,7 @@ export const RemotionRoot: React.FC = () => (
       component={MapScrolly}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={choroplethDefaultProps}
       calculateMetadata={scrollyMeta}
     />
@@ -329,7 +329,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={ROUTE_REVEAL_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={routeDefaultProps as any}
     />
     <Composition
@@ -356,7 +356,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={locatorDefaultProps as any}
     />
     <Composition
@@ -383,7 +383,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={LOCATOR_STORY_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={locatorDefaultProps as any}
     />
     <Composition
@@ -410,7 +410,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={dotDensityDefaultProps as any}
     />
     <Composition
@@ -437,7 +437,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={DOT_DENSITY_STORY_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={dotDensityDefaultProps as any}
     />
     <Composition
@@ -464,7 +464,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={hexGridDefaultProps as any}
     />
     <Composition
@@ -491,7 +491,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={HEX_GRID_STORY_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={hexGridDefaultProps as any}
     />
     <Composition
@@ -518,7 +518,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={REVEAL_FRAMES + TITLE_SCENE_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={cartogramDefaultProps as any}
     />
     <Composition
@@ -545,7 +545,7 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={CARTOGRAM_STORY_FRAMES}
       fps={30}
       width={1080}
-      height={1350}
+      height={1920}
       defaultProps={cartogramDefaultProps as any}
     />
   </>
