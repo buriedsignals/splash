@@ -20,8 +20,31 @@ Rule: **tooltip XOR labels** — choose one disclosure channel per data point:
   interactive maps). Baked labels in an interactive map compete visually with the popup and signal
   to the reader that hover adds nothing.
 
-Implementation in `SymbolMap.tsx`: the `symbol-labels` layer is added only when `interactive` is
-`false`. The hover popup already renders `name + value + unit`; no baked label is needed.
+Implementation in `SymbolMap.tsx`: the `symbol-labels` layer is added when
+`!interactive || staticFallbackLabels`. On the LIVE interactive page `staticFallbackLabels` is
+`false`, so the map is hover-only. The hover popup already renders `name + value + unit`; no baked
+label is needed.
+
+## The interactive deliverable's static a11y fallback MUST be labeled (the carve-out)
+
+**Tooltip XOR labels governs the LIVE page only. An interactive deliverable also ships a no-JS
+`static.html` a11y fallback (an inlined static image) for non-interactive / accessibility consumers —
+and that fallback has NO hover.** So while the live map is intentionally hover-only, its static
+fallback render MUST carry direct per-symbol labels (name + value + unit), exactly like the
+pure-static map — otherwise the fallback ships mute circles that cannot carry the claim without
+interaction (render-confirmed: an interactive symbol map whose fallback labeled only one hovered
+point left every other symbol unreadable).
+
+Mechanism: the snapshot that captures the fallback appends `?staticLabels=1` to the interactive
+build's URL (`scripts/snap-a11y.mjs`); `mount.tsx` reads it (`wantsStaticFallbackLabels`) and passes
+`staticFallbackLabels` to `SymbolMap`, which then renders the `symbol-labels` layer even though
+`interactive` is `true`. A real reader loading `interactive.html` never sets the flag, so the live
+page stays hover-only and is never double-labeled. `checkSymbolConformance` enforces the invariant:
+for an `interactive` symbol map, `staticFallbackLabeled` must not be `false`.
+
+Source: WCAG 2.1 SC 1.1.1 / 1.4.1 (information must not depend on a single sensory/interaction
+channel — a hover-only value has no non-interactive equivalent); FT/NYT direct-labeling practice
+(the static export must be legible on its own).
 
 ## Bounded free-explore
 

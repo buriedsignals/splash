@@ -51,12 +51,20 @@ interface Props {
   config: SymbolConfig;
   progress?: number;
   interactive?: boolean;
+  // Force the direct-label layer even when `interactive` is true. An interactive
+  // deliverable's no-JS STATIC a11y fallback has no hover, so it must still carry each
+  // symbol's name+value label (tooltip XOR labels applies to the LIVE page only). The
+  // snapshot that captures that fallback sets this (via the `?staticLabels` URL flag →
+  // mount.tsx); a real reader loading interactive.html never does, so the live page stays
+  // hover-only and is never double-labeled.
+  staticFallbackLabels?: boolean;
 }
 
 export const SymbolMap: React.FC<Props> = ({
   config,
   progress = 1,
   interactive = false,
+  staticFallbackLabels = false,
 }) => {
   const outerRef = useRef<HTMLDivElement>(null); // measures the root container
   const containerRef = useRef<HTMLDivElement>(null); // the MapTiler host
@@ -259,7 +267,10 @@ export const SymbolMap: React.FC<Props> = ({
         },
       });
 
-      if (!interactive) {
+      // Direct labels render for the pure-static map AND for the static a11y fallback of
+      // an interactive map (no hover there → the data must be legible without it). The LIVE
+      // interactive page (staticFallbackLabels=false) stays hover-only — tooltip XOR labels.
+      if (!interactive || staticFallbackLabels) {
         map.addLayer({
           id: "symbol-labels",
           type: "symbol",

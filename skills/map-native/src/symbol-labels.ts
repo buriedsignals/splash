@@ -42,6 +42,15 @@ export function symbolLabels(
   }));
 }
 
+// Static-fallback-labels signal. An interactive symbol build serves TWO surfaces from one
+// artifact: the LIVE interactive page (hover-only, no baked labels — tooltip XOR labels) and
+// its no-JS STATIC a11y fallback (no hover → must carry direct labels). They differ only by
+// this URL query flag: the snapshot that captures the static fallback appends `?staticLabels=1`;
+// a real reader loading interactive.html never does, so the live page stays hover-only.
+export function wantsStaticFallbackLabels(search: string): boolean {
+  return new URLSearchParams(search).has("staticLabels");
+}
+
 // Radial offset (in ems) that places a label just OUTSIDE a circle of `radius` px,
 // for MapLibre `text-radial-offset` (which is in ems). `text-radial-offset` needs a
 // distance from the point centre; the circle edge is `radius` px out, plus a small
