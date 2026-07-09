@@ -18,12 +18,15 @@ import {
 import { formatNumber, clamp01, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE, PIE_SLICE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { withinBounds, overlaps, type Box } from "./core/labels";
 
 export interface PieConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle (what the whole is)
   labelField: string;
   valueField: string;
@@ -120,6 +123,7 @@ export function PieChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -237,7 +241,7 @@ function PieSvg({
               role={interactive ? "img" : undefined}
               aria-label={
                 interactive
-                  ? `${s.rawLabel}: ${Math.round(s.share * 100)}% (${formatNumber(s.value)})`
+                  ? `${s.rawLabel}: ${Math.round(s.share * 100)}% (${formatNumber(s.value, config.lang)})`
                   : undefined
               }
               style={interactive ? { cursor: "pointer" } : undefined}
@@ -257,7 +261,7 @@ function PieSvg({
               fontWeight={700}
               fill={COLORS.ink}
             >
-              {formatNumber(total)}
+              {formatNumber(total, config.lang)}
             </text>
             <text y={18 * sc} fontSize={ts.axis} fill={COLORS.muted}>
               {config.unit}
@@ -341,7 +345,7 @@ function Tooltip({
       }}
     >
       <strong>{s.rawLabel}</strong> {Math.round(s.share * 100)}%
-      <div style={{ opacity: 0.7, fontSize: 11 }}>{formatNumber(s.value)}</div>
+      <div style={{ opacity: 0.7, fontSize: 11 }}>{formatNumber(s.value, config.lang)}</div>
     </div>
   );
 }

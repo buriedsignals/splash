@@ -27,6 +27,7 @@ import {
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { relativeLuminance } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
 import { truncate } from "./core/text";
@@ -34,6 +35,8 @@ import { truncate } from "./core/text";
 export interface SunburstConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle
   root: {
     label: string;
@@ -164,6 +167,7 @@ export function SunburstChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -267,7 +271,7 @@ function SunburstSvg({
                 role={interactive ? "img" : undefined}
                 aria-label={
                   interactive
-                    ? `${a.label}: ${formatNumber(a.value)} ${config.unit}, ${Math.round(a.share * 100)}%`
+                    ? `${a.label}: ${formatNumber(a.value, config.lang)} ${config.unit}, ${Math.round(a.share * 100)}%`
                     : undefined
                 }
                 style={
@@ -380,7 +384,7 @@ function Tooltip({
         ■
       </span>
       <strong style={{ color: "#fff", fontSize: 13 }}>{a.label}</strong>{" "}
-      <span style={{ fontSize: 13 }}>{formatNumber(a.value)}</span>
+      <span style={{ fontSize: 13 }}>{formatNumber(a.value, config.lang)}</span>
       <div style={{ opacity: 0.75, fontSize: 11 }}>
         {Math.round(a.share * 100)}% of the whole
       </div>

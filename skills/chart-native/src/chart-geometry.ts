@@ -7,6 +7,7 @@ import { scaleLinear, scaleTime } from "d3-scale";
 import { extent } from "d3-array";
 import { timeParse, timeFormat } from "d3-time-format";
 import { formatNumber, clamp01 } from "./core/math";
+import type { Lang } from "./core/locale";
 
 export interface ChartData {
   xField: string;
@@ -63,6 +64,7 @@ export function computeChartLayout(
   data: ChartData,
   dims: Dims,
   xTickCount = 6,
+  lang?: Lang,
 ): Layout {
   if (!data.points.length) {
     throw new Error("computeChartLayout: data.points is empty");
@@ -136,7 +138,7 @@ export function computeChartLayout(
     .filter((t, i, a) => i === 0 || t.label !== a[i - 1].label);
   const yTicks = yScale
     .ticks(5)
-    .map((t) => ({ y: yScale(t), label: formatNumber(t) }));
+    .map((t) => ({ y: yScale(t), label: formatNumber(t, lang) }));
 
   return {
     innerWidth,

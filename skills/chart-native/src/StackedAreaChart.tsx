@@ -19,12 +19,15 @@ import {
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE, STACKED_AREA_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { spreadLabels } from "./core/labels";
 
 export interface StackedAreaConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string;
   xField: string;
   seriesFields: string[]; // stacking order, bottom → top
@@ -133,6 +136,7 @@ export function StackedAreaChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>

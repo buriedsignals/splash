@@ -84,3 +84,54 @@ describe("formatNumber — abbreviation stays, decimal becomes locale-aware", ()
     expect(formatNumber(42, "fr")).toBe("42");
   });
 });
+
+// German + Italian are the other Swiss-newsroom languages. Both use a comma decimal
+// and a period thousands separator (the mirror of English), with their own "Source"
+// furniture word — sourced from the standard de-DE / it-IT conventions.
+describe("locale — German (de)", () => {
+  it("picks a comma decimal and a period thousands separator", () => {
+    expect(decimalSep("de")).toBe(",");
+    expect(groupSep("de")).toBe(".");
+    expect(decimalSep("de-CH")).toBe(","); // region variant → base German
+  });
+
+  it("groups thousands with a period and uses a comma decimal", () => {
+    expect(formatLocaleNumber(1900, "de")).toBe("1.900");
+    expect(formatLocaleNumber(19.3, "de")).toBe("19,3");
+    expect(formatLocaleNumber(12345.6, "de")).toBe("12.345,6");
+    expect(formatLocaleNumber(-1900, "de")).toBe("-1.900");
+  });
+
+  it("localizes the abbreviated decimal and the Source furniture", () => {
+    expect(localizeDecimal("1.9k", "de")).toBe("1,9k");
+    expect(formatNumber(1900, "de")).toBe("1,9k");
+    expect(sourceLabel("de")).toBe("Quelle:");
+  });
+});
+
+describe("locale — Italian (it)", () => {
+  it("picks a comma decimal and a period thousands separator", () => {
+    expect(decimalSep("it")).toBe(",");
+    expect(groupSep("it")).toBe(".");
+  });
+
+  it("groups thousands with a period and uses a comma decimal", () => {
+    expect(formatLocaleNumber(1900, "it")).toBe("1.900");
+    expect(formatLocaleNumber(12345.6, "it")).toBe("12.345,6");
+  });
+
+  it("localizes the abbreviated decimal and the Source furniture", () => {
+    expect(localizeDecimal("1.8M", "it")).toBe("1,8M");
+    expect(formatNumber(1_800_000, "it")).toBe("1,8M");
+    expect(sourceLabel("it")).toBe("Fonte:");
+  });
+});
+
+describe("locale — unknown language falls back to English", () => {
+  it("keeps English separators + furniture for an unmapped tag", () => {
+    expect(decimalSep("pt")).toBe(".");
+    expect(groupSep("pt")).toBe(",");
+    expect(formatLocaleNumber(1900, "pt")).toBe("1,900");
+    expect(sourceLabel("pt")).toBe("Source:");
+  });
+});

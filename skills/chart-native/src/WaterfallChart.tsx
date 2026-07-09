@@ -21,11 +21,14 @@ import {
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, WATERFALL_ROLE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface WaterfallConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string;
   rows: { label: string; value: number; total?: boolean }[];
 }
@@ -46,10 +49,10 @@ const TOTAL = WATERFALL_ROLE_COLORS[2]; // a total (neutral)
 
 const barColor = (b: { isTotal: boolean; sign: 1 | -1 }) =>
   b.isTotal ? TOTAL : b.sign < 0 ? DOWN : UP;
-const labelOf = (b: { isTotal: boolean; value: number }) =>
+const labelOf = (b: { isTotal: boolean; value: number }, lang?: Lang) =>
   b.isTotal
-    ? formatNumber(b.value)
-    : `${b.value > 0 ? "+" : "−"}${formatNumber(Math.abs(b.value))}`;
+    ? formatNumber(b.value, lang)
+    : `${b.value > 0 ? "+" : "−"}${formatNumber(Math.abs(b.value), lang)}`;
 
 export function WaterfallChart({
   config,
@@ -136,6 +139,7 @@ export function WaterfallChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -249,7 +253,8 @@ function WaterfallSvg({
           // the bar top to clear the frame/title; otherwise fall back to the
           // OUTSIDE-above horizontal ink label (tiny steps, or tall bars with
           // little headroom above them).
-          const valLabelW = labelOf(b).length * ts.axis * 0.9 * 0.6;
+          const valLabelW =
+            labelOf(b, config.lang).length * ts.axis * 0.9 * 0.6;
           const labelVertical = narrow && topY > valLabelW + 10 * sc;
           return (
             <g key={`bar${i}`} opacity={dim ? 0.55 : 1}>
@@ -265,7 +270,7 @@ function WaterfallSvg({
                 role={interactive ? "img" : undefined}
                 aria-label={
                   interactive
-                    ? `${b.label}: ${labelOf(b)} ${config.unit}`
+                    ? `${b.label}: ${labelOf(b, config.lang)} ${config.unit}`
                     : undefined
                 }
                 style={interactive ? { cursor: "pointer" } : undefined}
@@ -291,7 +296,7 @@ function WaterfallSvg({
                   fill={COLORS.ink}
                   opacity={labelOp}
                 >
-                  {labelOf(b)}
+                  {labelOf(b, config.lang)}
                 </text>
               ) : (
                 <text
@@ -303,7 +308,7 @@ function WaterfallSvg({
                   fill={COLORS.ink}
                   opacity={labelOp}
                 >
-                  {labelOf(b)}
+                  {labelOf(b, config.lang)}
                 </text>
               )}
               {/* category label under the plot — rotated when bars are narrow */}
@@ -383,11 +388,11 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong>{labelOf(b)}</strong>{" "}
+      <strong>{labelOf(b, config.lang)}</strong>{" "}
       <span style={{ opacity: 0.8 }}>{config.unit}</span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>
         {b.label}
-        {b.isTotal ? "" : ` · running ${formatNumber(b.endVal)}`}
+        {b.isTotal ? "" : ` · running ${formatNumber(b.endVal, config.lang)}`}
       </div>
     </div>
   );

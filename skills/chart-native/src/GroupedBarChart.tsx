@@ -21,6 +21,7 @@ import { growBar } from "./bar-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE, GROUPED_SERIES_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
 import { layoutLegend } from "./core/legend";
@@ -28,6 +29,8 @@ import { layoutLegend } from "./core/legend";
 export interface GroupedConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string;
   catField: string;
   seriesFields: string[];
@@ -143,6 +146,7 @@ export function GroupedBarChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -249,7 +253,7 @@ function GroupedSvg({
               role={interactive ? "img" : undefined}
               aria-label={
                 interactive
-                  ? `${b.rawCat} ${b.seriesKey}: ${formatNumber(b.rawVal)} ${config.unit}`
+                  ? `${b.rawCat} ${b.seriesKey}: ${formatNumber(b.rawVal, config.lang)} ${config.unit}`
                   : undefined
               }
               style={interactive ? { cursor: "pointer" } : undefined}
@@ -352,7 +356,7 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong>{formatNumber(b.rawVal)}</strong>{" "}
+      <strong>{formatNumber(b.rawVal, config.lang)}</strong>{" "}
       <span style={{ opacity: 0.8 }}>{config.unit}</span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>
         {String(b.rawCat)} · {b.seriesKey}

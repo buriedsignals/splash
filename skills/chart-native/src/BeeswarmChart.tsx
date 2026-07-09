@@ -25,12 +25,15 @@ import {
   BEESWARM_CATEGORY_COLORS,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
 
 export interface BeeswarmConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   valueLabel: string; // subtitle / units
   categories?: string[];
   points: { value: number; label?: string; category?: string }[];
@@ -148,6 +151,7 @@ export function BeeswarmChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>

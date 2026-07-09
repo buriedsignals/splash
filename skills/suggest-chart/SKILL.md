@@ -27,13 +27,19 @@ dialogue (detected upstream), never English by default.** A French newsroom gets
 title, not an English one. Do not translate proper nouns, the source publication's name, or data
 values themselves.
 
-**You MUST also set the `lang` field on the emitted spec** (a BCP-47 tag — `"fr"`, `"en"`, `"fr-CH"`…)
-to that same article language. `lang` is what makes the PRODUCER format **numbers and furniture** per
-locale: French renders "1 900" / "19,3" (narrow-space thousands, comma decimal) and "Source :" (space
-before the colon), not the English "1,900" / "19.3" / "Source:". It flows to every producer — `ChartSpec`
-(dw-chart sets the Datawrapper chart `language`), `NativeSpec` (chart-native), and the map configs. Omit
-it only for an English deliverable (English is the default). Writing a French title but leaving `lang`
-unset ships French words with English numbers — the exact mismatch this field prevents.
+**You MUST also set the `lang` field on the emitted spec** (a BCP-47 tag — `"fr"`, `"de"`, `"it"`, `"en"`,
+`"fr-CH"`…) to that same article language. `lang` is what makes the PRODUCER format **numbers and furniture**
+per locale. The native renderer honours **fr / de / it / en** (unknown → English):
+- French → "1 900" / "19,3" (narrow-space thousands, comma decimal) and "Source :" (space before the colon).
+- German → "1.900" / "19,3" (period thousands, comma decimal) and "Quelle:".
+- Italian → "1.900" / "19,3" (period thousands, comma decimal) and "Fonte:".
+- English (default) → "1,900" / "19.3" and "Source:".
+
+It flows to every producer — `ChartSpec` (dw-chart sets the Datawrapper chart `language`), `NativeSpec`
+(chart-native), and the map configs. Omit it only for an English deliverable (English is the default).
+Writing a German title but leaving `lang` unset ships German words with English numbers and an English
+"Source:" — the exact mismatch this field prevents. (Swiss newsrooms: a `de-CH` / `it-CH` tag resolves to
+base `de` / `it` today.)
 
 ## Runtime procedure
 

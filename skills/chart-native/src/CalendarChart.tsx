@@ -19,11 +19,14 @@ import {
 import { clamp01, easeOutCubic, formatNumber } from "./core/math";
 import { COLORS, FONT, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface CalendarConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle / value unit
   days: { date: string; value: number }[];
 }
@@ -102,6 +105,7 @@ export function CalendarChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -222,7 +226,7 @@ function CalendarSvg({
             role={interactive ? "img" : undefined}
             aria-label={
               interactive
-                ? `${c.date}: ${formatNumber(c.value)} ${config.unit}`
+                ? `${c.date}: ${formatNumber(c.value, config.lang)} ${config.unit}`
                 : undefined
             }
             style={
@@ -254,7 +258,7 @@ function CalendarSvg({
           fontSize={ts.source}
           fill={COLORS.muted}
         >
-          {formatNumber(valueDomain[0])}
+          {formatNumber(valueDomain[0], config.lang)}
         </text>
         <text
           x={barX + barW}
@@ -263,7 +267,7 @@ function CalendarSvg({
           fontSize={ts.source}
           fill={COLORS.muted}
         >
-          {formatNumber(valueDomain[1])}
+          {formatNumber(valueDomain[1], config.lang)}
         </text>
         <text
           x={barX + barW + 10 * sc}
@@ -316,7 +320,7 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong style={{ fontSize: 13 }}>{formatNumber(c.value)}</strong>{" "}
+      <strong style={{ fontSize: 13 }}>{formatNumber(c.value, config.lang)}</strong>{" "}
       <span style={{ opacity: 0.8, fontSize: 12 }}>{config.unit}</span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>{label}</div>
     </div>

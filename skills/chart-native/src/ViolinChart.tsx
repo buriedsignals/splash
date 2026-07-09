@@ -22,12 +22,15 @@ import { area, curveCatmullRom } from "d3-shape";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate, textWidth } from "./core/text";
 
 export interface ViolinConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle + value-axis meaning
   summaryLabel?: string; // legend text for the median tick
   categories: { label: string; values: number[] }[];
@@ -139,6 +142,7 @@ export function ViolinChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>

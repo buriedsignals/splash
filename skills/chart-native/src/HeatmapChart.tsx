@@ -20,11 +20,14 @@ import { clamp01, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE } from "./core/tokens";
 import { relativeLuminance } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface HeatmapConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string;
   rowField: string;
   colFields: string[];
@@ -119,6 +122,7 @@ export function HeatmapChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
