@@ -10,7 +10,13 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const outDir = process.env.OUTDIR ?? process.argv[2] ?? "/tmp";
 const interactiveDir = process.env.SERVE_DIR ?? join(root, "dist", "interactive");
-const url = pathToFileURL(join(interactiveDir, "index.html")).href;
+// `?staticLabels=1` asks the symbol build to render its direct labels for this a11y-fallback
+// capture — the no-JS fallback has no hover, so it must carry each symbol's name+value directly
+// (the live interactive.html, loaded without this flag, stays hover-only). No-op for non-symbol
+// map types (mount.tsx only threads the flag to SymbolMap). Hover/controls are still exercised
+// below, so this render proves BOTH: labeled-without-interaction AND the tooltip on hover.
+const url =
+  pathToFileURL(join(interactiveDir, "index.html")).href + "?staticLabels=1";
 
 const browser = await chromium.launch();
 const page = await browser.newPage({

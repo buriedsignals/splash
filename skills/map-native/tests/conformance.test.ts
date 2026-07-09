@@ -155,6 +155,32 @@ describe("checkSymbolConformance", () => {
       ),
     ).toBe(true);
   });
+  it("flags an interactive symbol map whose static a11y fallback is not labeled", () => {
+    expect(
+      checkSymbolConformance(
+        { ...okSymbol, interactive: true, staticFallbackLabeled: false },
+        symText,
+      ).some((m) => /fallback/i.test(m)),
+    ).toBe(true);
+  });
+  it("passes an interactive symbol map whose static a11y fallback IS labeled", () => {
+    expect(
+      checkSymbolConformance(
+        { ...okSymbol, interactive: true, staticFallbackLabeled: true },
+        symText,
+      ),
+    ).toEqual([]);
+  });
+  it("does not apply the fallback rule to a non-interactive (pure static) symbol map", () => {
+    // staticFallbackLabeled is irrelevant when the map is not interactive — the
+    // pure-static map is labeled directly (rule 6, `labeled`), so no fallback rule fires.
+    expect(
+      checkSymbolConformance(
+        { ...okSymbol, interactive: false, staticFallbackLabeled: false },
+        symText,
+      ),
+    ).toEqual([]);
+  });
 });
 
 const gText = { text: ["#1A1A1A", "#5f5f5f"], bg: "#FFFFFF" };

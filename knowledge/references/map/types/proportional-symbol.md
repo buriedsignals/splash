@@ -81,8 +81,9 @@ For maps with many tightly-clustered points, label all symbols and let the GL an
 `checkSymbolConformance` enforces:
 - `labeled` must be `true`; when `false` the violation is `"symbols are not directly labeled — values are undecodable without hover"`.
 - When `valueUnit` is set, `labelHasUnit` must be `true`; when `false` the violation is `"labelled value omits its unit … — a directly-labelled value must state its unit"`.
+- For an **interactive** deliverable, `staticFallbackLabeled` must not be `false`; when it is, the violation is `"interactive symbol map's static a11y fallback is not labeled …"` (see the interactive carve-out below).
 
-In **interactive** mode the `symbol-labels` layer is omitted entirely; the hover popup delivers name + value + unit instead (tooltip XOR labels — see `knowledge/references/map/formats/interactive.md`).
+In **interactive** mode the LIVE page omits the `symbol-labels` layer; the hover popup delivers name + value + unit instead (tooltip XOR labels — see `knowledge/references/map/formats/interactive.md`). **But the interactive deliverable's no-JS STATIC a11y fallback has no hover** — it MUST still render the direct-label layer, exactly like the pure-static map, or it ships mute circles that cannot carry the claim. In `SymbolMap.tsx` the label layer is added when `!interactive || staticFallbackLabels`; the fallback snapshot sets `staticFallbackLabels` (via the `?staticLabels` flag threaded from `mount.tsx`, appended by `scripts/snap-a11y.mjs`) so the fallback is labeled while the live page stays hover-only — never double-labeled.
 
 **Producer: map-native is the only producer for a symbol map.** Datawrapper (`map-dw`) draws its
 proportional circles with values on HOVER only and offers no "label symbols by column" option (verified

@@ -3,6 +3,7 @@ import {
   symbolLabels,
   formatLabelValue,
   labelRadialOffset,
+  wantsStaticFallbackLabels,
 } from "../src/symbol-labels";
 import type { PlacedSymbol } from "../src/symbol-geo";
 
@@ -61,6 +62,18 @@ describe("symbolLabels", () => {
   });
   it("is deterministic", () => {
     expect(symbolLabels(symbols)).toEqual(labels);
+  });
+});
+
+describe("wantsStaticFallbackLabels", () => {
+  it("is true when the ?staticLabels flag is present (the a11y-fallback snapshot)", () => {
+    expect(wantsStaticFallbackLabels("?staticLabels=1")).toBe(true);
+    expect(wantsStaticFallbackLabels("?staticLabels")).toBe(true);
+    expect(wantsStaticFallbackLabels("?foo=bar&staticLabels=1")).toBe(true);
+  });
+  it("is false for a live reader load (no flag) — the interactive page stays hover-only", () => {
+    expect(wantsStaticFallbackLabels("")).toBe(false);
+    expect(wantsStaticFallbackLabels("?other=1")).toBe(false);
   });
 });
 

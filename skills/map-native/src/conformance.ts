@@ -237,6 +237,14 @@ export function checkSymbolConformance(
     labeled: boolean;
     valueUnit?: string;
     labelHasUnit?: boolean;
+    // When the map ships as an INTERACTIVE deliverable, the live render is
+    // intentionally hover-only (tooltip XOR labels). But its no-JS static a11y
+    // fallback has NO hover — it MUST still carry each symbol's direct name+value
+    // label, exactly like the pure-static map. `staticFallbackLabeled` reports
+    // whether that fallback render includes the direct-label layer; the rule below
+    // only fires for `interactive` maps (a pure-static map is covered by `labeled`).
+    interactive?: boolean;
+    staticFallbackLabeled?: boolean;
     format?: { width: number; height: number };
   },
   textColors: { text: string[]; bg: string },
@@ -273,6 +281,10 @@ export function checkSymbolConformance(
   if (!input.labeled)
     v.push(
       "symbols are not directly labeled — values are undecodable without hover",
+    );
+  if (input.interactive && input.staticFallbackLabeled === false)
+    v.push(
+      "interactive symbol map's static a11y fallback is not labeled — the no-hover fallback must carry each symbol's name + value directly (the live map keeps hover-only)",
     );
   if (input.valueUnit && input.valueUnit.trim() && input.labelHasUnit === false)
     v.push(
