@@ -155,6 +155,15 @@ describe("normalizeChannel", () => {
     expect(normalizeChannel("  SOCIAL-VERTICAL  ")).toBe("social-vertical");
     expect(normalizeChannel("Feed")).toBe("social-feed");
   });
+
+  it("maps every canonical channel value to itself (the suggester emits these verbatim)", () => {
+    // Regression: a canonical "social-feed" used to fall through to article-web
+    // (not in the alias table), sizing a feed post as landscape.
+    expect(normalizeChannel("social-vertical")).toBe("social-vertical");
+    expect(normalizeChannel("social-feed")).toBe("social-feed");
+    expect(normalizeChannel("article-web")).toBe("article-web");
+    expect(normalizeChannel("SOCIAL-FEED")).toBe("social-feed");
+  });
 });
 
 describe("channelAspect (Slice 2)", () => {
