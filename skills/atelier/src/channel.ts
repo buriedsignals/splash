@@ -153,6 +153,12 @@ const DEFAULT_CHANNEL: Channel = "article-web";
 export function normalizeChannel(freeText?: string): Channel {
   const key = (freeText ?? "").trim().toLowerCase();
   if (!key) return DEFAULT_CHANNEL;
+  // A canonical channel value maps to itself. The suggester emits these verbatim
+  // (atelier/SKILL.md §5b requires `channel: social-vertical|social-feed|article-web`),
+  // and they are NOT all present in the alias table below — without this a canonical
+  // "social-feed" would fall through to the article-web default and size a feed post
+  // as landscape.
+  if ((ALL_CHANNELS as readonly string[]).includes(key)) return key as Channel;
   if (key in CHANNEL_KEYWORDS) return CHANNEL_KEYWORDS[key];
   for (const word of key.split(/\s+/)) {
     if (word in CHANNEL_KEYWORDS) return CHANNEL_KEYWORDS[word];
