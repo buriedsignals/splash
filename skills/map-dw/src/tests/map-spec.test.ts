@@ -153,25 +153,27 @@ const validSymbol = {
 };
 
 describe("validateMapSpec — symbol", () => {
-  it("passes a complete symbol spec (with the #2 hover-only legibility warning)", () => {
+  // #2 — map-dw symbol maps are RETIRED as a claim-carrying producer. Datawrapper draws
+  // proportional circles with values on HOVER only and offers no "label symbols by column"
+  // option (verified against the Datawrapper Academy "Customizing your symbol map" docs), so
+  // the owned static PNG — which every atelier channel requires as the claim-carrying
+  // deliverable (the social static, or the article-web a11y static fallback) — ships mute,
+  // unlabeled circles. A valid symbol spec is therefore REJECTED and routed to map-native,
+  // whose proportional-symbol renderer directly labels the top-N circles by name + value.
+  it("rejects a complete symbol spec and routes it to map-native", () => {
     const r = validateMapSpec(validSymbol);
-    expect(r.ok).toBe(true);
-    // #2 — every DW symbol map is hover-only, so it always carries the 'not directly
-    // labeled' warning steering static-legibility cases to map-native.
-    if (r.ok)
-      expect(r.warnings).toEqual([
-        "symbol map is not directly labeled — Datawrapper draws proportional circles with values on HOVER only (it cannot label symbols by data column), so the static export is not legible without interaction; use map-native (which labels the top-N circles by name + value) for a statically-legible proportional-symbol map",
-      ]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/map-native/);
   });
 
-  it("#2 — the not-directly-labeled warning fires on every symbol map (steer static to map-native)", () => {
+  it("#2 — the route-to-map-native error fires on every symbol map (static circles are unlabeled)", () => {
     const r = validateMapSpec(validSymbol);
-    expect(r.ok).toBe(true);
-    if (r.ok)
-      expect(r.warnings.some((w) => /not directly labeled/.test(w))).toBe(true);
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.some((e) => /HOVER only|hover only/.test(e))).toBe(true);
   });
 
-  it("#2 — a choropleth is NOT flagged as unlabeled (it can label by column)", () => {
+  it("#2 — a choropleth is NOT rejected (it can label regions statically by column)", () => {
     const r = validateMapSpec(valid);
     expect(r.ok).toBe(true);
     if (r.ok)

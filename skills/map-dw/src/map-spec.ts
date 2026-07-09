@@ -292,15 +292,21 @@ export function validateMapSpec(
       errors,
       warnings,
     );
-    // #2 — LABELED (static legibility). Datawrapper symbol maps are hover-only: the
-    // proportional circles carry NO direct name/value labels, and Datawrapper offers no way
-    // to add data-value labels to a symbol map (the "labels by column" feature is
-    // choropleth-only — verified against the Datawrapper Academy docs). So the owned static
-    // PNG export (and print) can't be read without interaction — it violates the project rule
-    // "the data must be legible WITHOUT hover". map-native's proportional-symbol renderer
-    // labels the top-N circles by name + value; route there when static legibility matters.
-    warnings.push(
-      "symbol map is not directly labeled — Datawrapper draws proportional circles with values on HOVER only (it cannot label symbols by data column), so the static export is not legible without interaction; use map-native (which labels the top-N circles by name + value) for a statically-legible proportional-symbol map",
+    // #2 — LABELED (static legibility) → HARD ERROR, route to map-native. Datawrapper symbol
+    // maps are hover-only: the proportional circles carry NO always-visible name/value labels,
+    // and Datawrapper offers no "label symbols by column" / "show values on symbols" option (the
+    // "labels by column" feature is choropleth-only — verified against the Datawrapper Academy
+    // "Customizing your symbol map" docs, which describe symbol labels as tooltip-only). map-dw
+    // is the STATIC map producer, and every atelier channel requires a claim-carrying static
+    // deliverable (the social static, or the article-web a11y static fallback). So a map-dw
+    // symbol map can ONLY ship mute, unlabeled circles — no place identifiable, no value
+    // readable without hover — which violates the project rule "the data must be legible WITHOUT
+    // hover" (render-confirmed on aeroports-trafic + frontaliers-dots: not one symbol labeled).
+    // It is therefore NOT a producible map-dw output: route it to map-native, whose
+    // proportional-symbol renderer directly labels the top-N circles by name + value and whose
+    // conformance asserts `labeled` (skills/map-native/src/conformance.ts checkSymbolConformance).
+    errors.push(
+      'symbol maps are not producible by map-dw: Datawrapper draws proportional circles with values on HOVER only (no always-visible data-value labels on symbols — Datawrapper Academy), so the owned static PNG ships mute, unlabeled circles that cannot carry the claim without interaction; route to map-native instead (producer:"map-native", type:"symbol"), which directly labels the top-N circles by name + value',
     );
   } else {
     // locator
