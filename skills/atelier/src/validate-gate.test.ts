@@ -111,4 +111,89 @@ describe("validateAccepted — the spine validation gate", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors[0]).toContain("unknown producer");
   });
+
+  // GUARD 2 — reject placeholder / reserved-domain source URLs (RFC 2606/6761). A
+  // fabricated `…example.com` source must fail validation for EVERY producer, before the
+  // producer ever runs — the spine is the single mechanical wire point.
+  it("REJECTS a dw-chart spec whose source URL is a reserved placeholder domain", () => {
+    const r = validateAccepted(
+      accept("dw-chart", {
+        type: "d3-bars",
+        title: "Estonia recycles the most packaging waste in Europe",
+        intro: "Share of packaging waste recycled (%)",
+        subject: "recycling",
+        baseColor: "#009E73",
+        sort: "desc",
+        data: "country,rate\nEstonia,63\nMalta,31",
+        source: { name: "Made up", url: "https://example.com/data" },
+        altInsight: "Estonia recycles the most packaging waste in Europe.",
+      }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("example.com");
+  });
+
+  it("REJECTS a map-native config whose source URL uses a reserved TLD", () => {
+    const r = validateAccepted(
+      accept("map-native", {
+        regionKey: "iso",
+        valueField: "share",
+        rows: [{ iso: "NOR", share: 99 }],
+        basemap: "world",
+        title: "Nordic countries lead on renewable electricity",
+        description: "Share of renewables, 2023",
+        source: { name: "Fabricated", url: "https://dataset.test/table" },
+      }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("test");
+  });
+
+  it("REJECTS a chart-native spec whose source URL is localhost", () => {
+    const r = validateAccepted(
+      accept("chart-native", {
+        nativeType: "bar",
+        title: "x",
+        source: { name: "s", url: "http://localhost:3000/x" },
+        unit: "u",
+        data: "country,rate\nA,63\nB,31",
+      }),
+    );
+    expect(r.ok).toBe(false);
+  });
+
+  it("still ACCEPTS a real, specific source URL (guard does not over-reject)", () => {
+    const r = validateAccepted(
+      accept("dw-chart", {
+        type: "d3-bars",
+        title: "Estonia recycles the most packaging waste in Europe",
+        intro: "Share of packaging waste recycled (%)",
+        subject: "recycling",
+        baseColor: "#009E73",
+        sort: "desc",
+        data: "country,rate\nEstonia,63\nMalta,31",
+        source: {
+          name: "Eurostat",
+          url: "https://ec.europa.eu/eurostat/databrowser/view/env_waspac/default/table",
+        },
+        altInsight: "Estonia recycles the most packaging waste in Europe.",
+      }),
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  it("does NOT reject a name-only source with no URL (the legitimate prose fallback)", () => {
+    // GUARD 2 only fires on a PRESENT placeholder URL; a missing URL is handled by the
+    // producers' own leniency / Gate 2c, not here — so the honest prose fallback passes.
+    const r = validateAccepted(
+      accept("chart-native", {
+        nativeType: "bar",
+        title: "x",
+        source: { name: "Figures as reported in this article" },
+        unit: "u",
+        data: "country,rate\nA,63\nB,31",
+      }),
+    );
+    expect(r.ok).toBe(true);
+  });
 });

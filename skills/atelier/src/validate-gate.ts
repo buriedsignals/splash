@@ -20,6 +20,7 @@ import {
   UnsupportedNativeType,
   type NativeSpec,
 } from "../../chart-native/src/spec-to-config";
+import { placeholderSourceReason } from "./source-guard";
 
 export type ValidationOutcome =
   { ok: true; warnings: string[] } | { ok: false; errors: string[] };
@@ -83,8 +84,34 @@ function validateScrolly(spec: unknown): ValidationOutcome {
   return hasNativeType ? validateNative(spec) : validateMapNative(spec);
 }
 
-// Run the producer-appropriate validator on an accepted proposal's spec.
+// GUARD 2 — placeholder source URL. Every producer spec carries `source: { name, url? }`
+// (dw-chart, chart-native, map-dw, map-native, and both scrolly track kinds). A source
+// URL whose host is an RFC 2606/6761 reserved placeholder domain (…example.com, .test,
+// localhost, …) is a fabricated citation — reject it hard at the spine, for EVERY
+// producer, before any producer runs. Only a PRESENT placeholder is caught; a missing URL
+// is left to the producers' own leniency / Gate 2c (so the honest name-only prose
+// fallback still passes).
+function placeholderSourceError(spec: unknown): string | null {
+  const url = (spec as { source?: { url?: unknown } } | null)?.source?.url;
+  if (typeof url !== "string") return null;
+  return placeholderSourceReason(url);
+}
+
+// Run the producer-appropriate validator on an accepted proposal's spec, then the
+// cross-producer source-URL guard (GUARD 2).
 export function validateAccepted(p: AcceptedProposal): ValidationOutcome {
+  const outcome = validateByProducer(p);
+  const placeholder = placeholderSourceError(p.spec);
+  if (placeholder) {
+    return {
+      ok: false,
+      errors: [...(outcome.ok ? [] : outcome.errors), placeholder],
+    };
+  }
+  return outcome;
+}
+
+function validateByProducer(p: AcceptedProposal): ValidationOutcome {
   switch (p.producer) {
     case "dw-chart":
       return strip(validateChartSpec(p.spec));

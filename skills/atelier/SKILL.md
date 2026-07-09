@@ -184,7 +184,10 @@ producer spec yourself (see Never).
 reads as a label rather than the insight — so a weak spec never reaches GATE 3. The spec's `source`
 must be the one already established at Gate 2c (name + a specific traceable URL, or the genuine
 no-dataset prose case) — never a placeholder, never the `suggest-article` `dataSource.table` filename
-slipped in as the label (see suggest-article's Gotcha (4)).
+slipped in as the label (see suggest-article's Gotcha (4)). **A reserved placeholder URL
+(`…example.com`, `.test`, `.invalid`, `localhost`, RFC 2606/6761) is MECHANICALLY rejected by the spine's
+validation gate (GUARD 2, `src/source-guard.ts`) — the proposal comes back `status:"failed"`, never
+produced; a name-only prose source with no URL still passes.**
 
 **5b. Assemble `exports/<slug>/accepted.json`** — an array, one entry per accepted proposal:
 `{ "id": "<stable-id>", "producer": "dw-chart|chart-native|map-dw|map-native|scrolly",
@@ -206,9 +209,15 @@ bun skills/atelier/scripts/produce-all.mjs exports/<slug>/accepted.json exports/
   > exports/<slug>/report.json
 ```
 `produce-all` iterates EVERY proposal, dispatches to the right producer + format, and writes
-`{ results: [{ id, producer, format, status, outputs?, publicUrl?, reason?, error?, renderApproved }] }`.
+`{ results: [{ id, producer, actualProducer, format, status, outputs?, publicUrl?, reason?, error?, renderApproved }] }`.
 It exits non-zero only if some `status` is `"failed"`. (Redirecting to `report.json` is required — the
 report is the machine channel; producer progress goes to stderr, so stdout stays pure JSON.)
+**★ Mechanical producer-match guard (GUARD 1, `src/producer-guard.ts`):** `actualProducer` records the
+producer that ACTUALLY ran; `produce-all` fails-hard (`status:"failed"`) when it diverges from the
+accepted proposal's `producer` — so an accepted **dw-chart** that is silently produced with
+**chart-native** (an observed flip) is refused, never shipped. The ONE sanctioned switch is the
+native→dw fallback (`needs-fallback`, below). Any element/format change goes back through `suggest-chart`
+(5d / see Never) — never hand-swap the producer in `accepted.json`.
 
 **★ Every re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) writes a WHOLLY FRESH
 `report.json`.** `renderApproved` starts `false` and `reviewed` is absent for EVERY proposal in that
@@ -228,7 +237,8 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
   `confirmedTable: true` in `accepted.json`, and re-run 5c. Never chart a prose figure unconfirmed.
 - **`needs-fallback`** (a native chart type chart-native cannot map) → re-emit a **dw-chart** `ChartSpec`
   for that claim via suggest-chart, replace that proposal's `producer`/`spec` in `accepted.json`, re-run
-  5c. Do not hand-translate.
+  5c. Do not hand-translate. This native→dw direction is the ONE producer switch GUARD 1 sanctions; the
+  reverse (dw→native) or any other switch is refused (see 5c).
 - **`failed`** → surface the `error`; fix the spec or drop the proposal. Never ship a failed visual. If the
   failure is a **conformance gate** rejecting the accepted spec (e.g. a colour/contrast/format
   violation) — do NOT silently mutate the accepted spec (`baseColor`, format, etc.) to make the gate
@@ -395,7 +405,7 @@ article-web is the one channel that can host it**:
 - Never silently mutate the ACCEPTED SPEC (`baseColor`, format, etc.) mid-PRODUCTION to route around a conformance-gate failure — this is the spec analogue of the rule above ("never edit product code" → "never silently edit the accepted spec to bypass a gate"). A conformance failure is SURFACED to the journalist as-is; if the spec must change to fix it, GATE 2 is re-opened for re-acceptance of the changed spec. The produce-time conformance guards exist precisely so a non-conformant visual never ships unseen.
 - Never hand over an INTERACTIVE visual without running `export-code.mjs` FIRST (unconditionally, NOT gated on a journalist choice) — that one run produces the code-source folder AND the `static.html` no-JS a11y fallback, so both are delivered before any choice; only the hosted fly.io embed link stays an explicit opt-in afterwards (machinery: `export-code.mjs` then optional `deploy-embed.mjs`). Never mark an interactive/scrolly delivered on produce-time outputs alone — a Gate-3 review PNG / `interactive.png` / build-subdir `static.png` is NOT a delivery; only the `export-code` folder is (enforced mechanically by `assertDelivered`). A SCROLLY has no static image, so it ships **code source + embed link** only (its embed targets `scrolly.html`, not `interactive.html`) — do not promise a static-HTML form for a scrolly.
 - Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.
-- Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.) Establish this proactively at Gate 2c (PROPOSITION), before PRODUCTION — never wait for the render-review to be the first thing that catches it, and never reach for the prose fallback just because the journalist has not answered yet.
+- Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.) Establish this proactively at Gate 2c (PROPOSITION), before PRODUCTION — never wait for the render-review to be the first thing that catches it, and never reach for the prose fallback just because the journalist has not answered yet. A *fabricated* placeholder URL is worse than none and is now MECHANICALLY refused: the spine's validation gate (GUARD 2, `src/source-guard.ts`) rejects any source URL on a reserved placeholder domain (`example.com`/`.org`/`.net`, or the `.example`/`.test`/`.invalid`/`.localhost` TLDs, RFC 2606/6761) — the proposal fails to produce rather than shipping a fake citation.
 - Never accept a generic organisation homepage (e.g. `eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 URL as the source — it must be treated exactly like a missing URL. The source MUST point to the SPECIFIC, traceable dataset/page the figures come from (the Eurostat dataset page for the exact table, the Insee series page, …). If the journalist only gives an organisation name or its homepage, ASK for the specific dataset/page reference rather than shipping the generic one (see Gate 2c) — in the SAME free-text turn, never as a separate follow-up question.
 - Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1, Q2) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic") that excludes an entity the visual actually shows. If the data supports more than the title states, widen the title or flag it at Gate 3.
 - Never silently substitute a value from a prior/stale export when it disagrees with the journalist's current article/data — the values used (and shown at Gate 2b) MUST always be the ones the journalist provided in the current session.
