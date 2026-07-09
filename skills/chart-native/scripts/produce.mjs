@@ -5,7 +5,9 @@
 // samples. Returns the output paths as JSON on stdout.
 //
 //   bun scripts/produce.mjs <type> <config.json> <outDir> [formats]
-//   formats: "all" (default — static + interactive + 3 videos) | "static" (no video)
+//   formats: "all" (default — static + interactive + the ONE video aspect the
+//            channel requires, ATELIER_CHANNEL env, default article-web) | "static"
+//            (no video)
 import { execFileSync } from "node:child_process";
 import { mkdirSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -14,6 +16,7 @@ import { chartDistSub } from "../src/build-paths.ts";
 import { runProduceConformance } from "../src/core/produce-conformance.ts";
 import { REMOTION_PREFIX } from "../src/native-types.ts";
 import { snapCommand } from "../src/platform-runners.ts";
+import { channelAspect } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -28,6 +31,16 @@ if (!type || !configPath || !outDir) {
   console.error("usage: produce.mjs <type> <config.json> <outDir> [all|static]");
   process.exit(1);
 }
+
+// Channel-driven format (Slice 2) — the distribution channel this deliverable
+// targets (default article-web, matching normalizeChannel's default / back-compat
+// for legacy callers with no channel). Threaded in by adapters.ts as an env var
+// (see skills/atelier/src/adapters.ts channelEnvFor). Gates which SINGLE video
+// aspect gets rendered below (never the unconditional landscape+square+portrait
+// triple) and sizes the static/interactive Vite build (vite.config.ts).
+const VALID_CHANNELS = new Set(["social-vertical", "social-feed", "article-web"]);
+const rawChannel = process.env.ATELIER_CHANNEL ?? "article-web";
+const channel = VALID_CHANNELS.has(rawChannel) ? rawChannel : "article-web";
 
 const X = REMOTION_PREFIX[type];
 if (!X) {
@@ -90,7 +103,9 @@ if (brandConcerns.length > 0) {
     JSON.stringify({ type, concerns: brandConcerns }, null, 2),
   );
 }
-const env = { ...process.env, CHART: type, CONFIG: configPath };
+// Re-assert the canonicalized channel (rawChannel may have been invalid/absent)
+// so vite.config.ts and render-video.mjs never have to re-derive the fallback.
+const env = { ...process.env, CHART: type, CONFIG: configPath, ATELIER_CHANNEL: channel };
 const run = (cmd, args, extraEnv = {}) =>
   execFileSync(cmd, args, { stdio: "inherit", cwd: root, env: { ...env, ...extraEnv }, shell: isWin });
 const snap = (script, extraEnv = {}) => run(SNAP[0], [...SNAP.slice(1), script], extraEnv);
@@ -131,21 +146,31 @@ const result = {
   interactiveHtml: interactiveDest,
 };
 
-// 3. videos (config injected via Remotion --props inside render-video.mjs)
+// 3. video (config injected via Remotion --props inside render-video.mjs) — render
+// ONLY the single comp matching the channel's aspect (not the old unconditional
+// landscape+square+portrait triple); the aspect is a CADRAGE decision, not picked
+// post-hoc at export.
+const VIDEO_COMP_BY_ASPECT = {
+  landscape: [`${X}Reveal`, "landscape"],
+  square: [`${X}Square`, "square"],
+  portrait: [`${X}Portrait`, "portrait"],
+};
 if (formats === "all") {
-  for (const [comp, name] of [
-    [`${X}Reveal`, "landscape"],
-    [`${X}Square`, "square"],
-    [`${X}Portrait`, "portrait"],
-  ]) {
-    console.log(`[produce ${type}] rendering ${name} (${comp})…`);
-    run(
-      "bun",
-      ["scripts/render-video.mjs", join(outDir, `video-${name}-still.png`), join(outDir, `${name}.mp4`)],
-      { COMP: comp },
-    );
-    result[name] = join(outDir, `${name}.mp4`);
+  const aspect = channelAspect(channel);
+  const entry = VIDEO_COMP_BY_ASPECT[aspect];
+  if (!entry) {
+    console.error(`produce: no video comp for channel "${channel}" aspect "${aspect}"`);
+    process.exit(1);
   }
+  const [comp, name] = entry;
+  console.log(`[produce ${type}] rendering ${name} (${comp}) for channel "${channel}"…`);
+  run(
+    "bun",
+    ["scripts/render-video.mjs", join(outDir, `video-${name}-still.png`), join(outDir, `${name}.mp4`)],
+    { COMP: comp },
+  );
+  result[name] = join(outDir, `${name}.mp4`);
+  console.log(`[produce ${type}] done rendering ${name}.`);
 }
 
 console.log("PRODUCE_RESULT " + JSON.stringify(result));
