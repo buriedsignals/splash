@@ -29,6 +29,18 @@ hidden"**. It is the **"show your data"** answer to the box plot: same axis, but
 3. **Label the value axis with its unit** (POSITION encoding → the axis need NOT start at 0).
 4. **Colour categories with Okabe-Ito + a legend** (or one hue); a few notable points may be labelled,
    the rest read on hover.
+5. **A single-hue swarm carries the subject-fit colour, never the default blue.** When the swarm is
+   one hue (no category grouping), `BeeswarmChart` paints `config.baseColor` (the suggester's subject-fit
+   choice — housing → amber `#E69F00`, labour/flows → vermilion `#D55E00`, …), falling back to Okabe-Ito
+   blue ONLY when absent. A story about a non-water/cold subject left on a blue-family hue (`#0072B2` OR
+   the sky-blue escape hatch `#56B4E9`) is the "shipped default blue" defect → `checkBeeswarmConformance`
+   forwards the `subject` to the global subject-fit check for a single-hue swarm and FAILS produce (a
+   categorical swarm's colours encode categories, not the subject, so subject-fit does not apply there).
+6. **Name the outliers that "break away."** The story's called-out points (`config.highlight`) render
+   LARGER + fully opaque with a **direct name + value label in ink** (WCAG: the label carries the value,
+   the amber/coloured MARK carries the hue) — so the outliers read at a glance in static/video, not only
+   on hover. Placement is edge-aware (a right-edge outlier's label extends inward, never clipping) and
+   adjacent labels stack on alternating rows so they don't collide.
 
 ## data-to-viz caveats (credited)
 

@@ -92,12 +92,20 @@ export function resolveConformanceColors(
     }
 
     case "beeswarm": {
-      // BeeswarmChart.tsx: dots are `OKABE_ITO.blue` by default, or cycle through
-      // BEESWARM_CATEGORY_COLORS by category index (no config colour override).
-      // The category swatch is a shape, never TEXT (the legend label is always
-      // COLORS.ink) — so no category colour belongs in `text`.
+      // BeeswarmChart.tsx `colorOf`: a CATEGORICAL swarm cycles BEESWARM_CATEGORY_COLORS
+      // by category index; a SINGLE-HUE swarm (no categories) paints `config.baseColor`
+      // (subject-fit hue) or OKABE_ITO.blue. The guard must validate the REAL painted
+      // hue — so resolve baseColor for the single-hue case (a housing swarm's amber must
+      // be checked as amber, and a swarm left on blue must be catchable). The category
+      // swatch is a shape, never TEXT (the legend label is always COLORS.ink) — so no
+      // category colour belongs in `text`.
+      const hasCats =
+        Array.isArray(config.categories) && config.categories.length > 0;
+      const data = hasCats
+        ? BEESWARM_CATEGORY_COLORS[0]
+        : (readString(config.baseColor) ?? BEESWARM_CATEGORY_COLORS[0]);
       return {
-        data: BEESWARM_CATEGORY_COLORS[0],
+        data,
         text: [COLORS.ink, COLORS.muted],
         bg,
       };

@@ -197,14 +197,17 @@ hover). A plain static chart stays `dw-chart`.
 
 Emit a `NativeSpec` instead:
 `{ producer: "chart-native", nativeType, title, source{name,url}, unit, data (CSV), sort?, orientation?,
-directLabel?, highlight?, baseColor, altInsight }`. **`baseColor` and `altInsight` are MANDATORY on every
-`NativeSpec` you emit — never omit either just because `spec-to-config.ts`'s type comment marks
-`baseColor` optional-with-a-default:**
+directLabel?, highlight?, highlights?, subject?, baseColor, altInsight }`. **`baseColor` and `altInsight`
+are MANDATORY on every `NativeSpec` you emit — never omit either just because `spec-to-config.ts`'s type
+comment marks `baseColor` optional-with-a-default:**
 - **`baseColor`**: pick a deliberate subject-fit Okabe-Ito hue using the exact same Colour rule as
-  `ChartSpec` above (`NativeSpec` has no separate `subject` field, so the colour choice itself IS the
-  subject decision — reason about the subject, then set the hex). Leaving `baseColor` unset silently
+  `ChartSpec` above (reason about the subject, then set the hex). Leaving `baseColor` unset silently
   falls back to the component's blue default — the same "everything is blue" defect this rule exists to
   stop (found shipped live: a housing/rent native chart with no `baseColor` key at all).
+- **`subject`** (recommended): set the topic string (e.g. `"housing rents"`). It is injected onto the
+  produced config and the produce-time guard then HARD-FAILS a chart left on a blue-family hue for a
+  non-water/cold subject — the same subject-fit enforcement `ChartSpec` has. It is the belt-and-braces
+  for the `baseColor` rule (today wired for `beeswarm`; other types can adopt it).
 - **`altInsight`**: the WCAG alt text — the insight, not the chart's structure — same requirement and
   wording discipline as `ChartSpec.altInsight` above. Always include it, even though it is a plain extra
   JSON key today (passed through untouched) rather than yet enforced by every produce path — found
@@ -236,7 +239,11 @@ category to accent.
 `connected-scatter` expects the **first column as the ordering/time key, then TWO numeric measure
 columns**; rows must be ordered by that key (the path follows row order).
 `beeswarm` expects **one numeric value column** (raw observations) + an **optional low-cardinality
-grouping column** (≤5 groups → colours) + an optional per-point label column.
+grouping column** (≤5 groups → colours) + an optional per-point label column. A SINGLE-HUE swarm (no
+grouping column) honours `baseColor` — a housing rent-dispersion swarm is amber, never the default blue;
+set `subject` so the produce guard enforces it. Name the outliers that "break away" via `highlights`
+(an array, e.g. `["Cologny","Genthod"]`; the single `highlight` also works) — they render larger with a
+direct name+value label so they read without a hover.
 `dot-strip` expects **category + one value, with MANY rows per category** (raw observations, NOT
 pre-aggregated) — shows the spread of individual values within a few groups, one horizontal strip per
 category plus a mean marker; a single category with only one observation per row is still valid, but the
