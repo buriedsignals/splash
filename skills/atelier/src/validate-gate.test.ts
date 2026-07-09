@@ -196,4 +196,111 @@ describe("validateAccepted — the spine validation gate", () => {
     );
     expect(r.ok).toBe(true);
   });
+
+  // ENFORCEMENT SLICE 2 — the deterministic guardrails that used to live ONLY in
+  // suggest-chart's eval (scoreSpec), now re-applied at the spine so a HAND-AUTHORED spec
+  // that skipped suggest-chart must clear the same bar. There is no trust boundary
+  // (orchestrator == suggest-chart, one LLM), so this is the tractable defense.
+  const withChannel = (
+    producer: AcceptedProposal["producer"],
+    spec: unknown,
+    channel: AcceptedProposal["channel"],
+  ): AcceptedProposal => ({ ...base, producer, spec, channel });
+
+  it("REJECTS a hand-authored row-driven d3-bars on a portrait (social-vertical) channel", () => {
+    const r = validateAccepted(
+      withChannel(
+        "dw-chart",
+        {
+          type: "d3-bars",
+          title: "Estonia recycles the most packaging waste in Europe",
+          subject: "recycling",
+          baseColor: "#009E73",
+          data: "country,rate\nEstonia,63\nMalta,31",
+          altInsight: "Estonia recycles the most packaging waste in Europe.",
+        },
+        "social-vertical",
+      ),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("row-driven");
+  });
+
+  it("ACCEPTS the SAME otherwise-valid d3-bars on the article-web (landscape) channel", () => {
+    const r = validateAccepted(
+      withChannel(
+        "dw-chart",
+        {
+          type: "d3-bars",
+          title: "Estonia recycles the most packaging waste in Europe",
+          subject: "recycling",
+          baseColor: "#009E73",
+          data: "country,rate\nEstonia,63\nMalta,31",
+          altInsight: "Estonia recycles the most packaging waste in Europe.",
+        },
+        "article-web",
+      ),
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  it("catches the portrait channel carried ONLY on the dw spec (not on the proposal)", () => {
+    const r = validateAccepted(
+      accept("dw-chart", {
+        type: "d3-bars",
+        title: "Estonia recycles the most packaging waste in Europe",
+        subject: "recycling",
+        baseColor: "#009E73",
+        data: "country,rate\nEstonia,63\nMalta,31",
+        altInsight: "Estonia recycles the most packaging waste in Europe.",
+        channel: "stories", // free-text portrait channel on the spec itself
+      }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("row-driven");
+  });
+
+  it("REJECTS a chart-native spec that is missing its source name (furniture parity)", () => {
+    const r = validateAccepted(
+      accept("chart-native", {
+        nativeType: "bar",
+        title: "Rents keep climbing across the canton",
+        unit: "CHF",
+        data: "commune,rent\nA,63\nB,31",
+      }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("source name");
+  });
+
+  it("REJECTS a chart-native spec on a blue-family hue for a non-water subject", () => {
+    const r = validateAccepted(
+      accept("chart-native", {
+        nativeType: "bar",
+        title: "Cross-border commuting keeps rising",
+        source: { name: "OFS" },
+        subject: "cross-border commuting",
+        baseColor: "#56B4E9", // sky-blue — the live defect
+        unit: "commuters",
+        data: "year,commuters\n2019,63\n2024,90",
+      }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("blue");
+  });
+
+  it("ACCEPTS a clean chart-native spec (subject-fit hue, title + source present)", () => {
+    const r = validateAccepted(
+      accept("chart-native", {
+        nativeType: "bar",
+        title: "Cross-border commuting keeps rising",
+        source: { name: "OFS" },
+        subject: "cross-border commuting",
+        baseColor: "#D55E00", // vermilion — a subject-fit flow hue
+        unit: "commuters",
+        data: "year,commuters\n2019,63\n2024,90",
+      }),
+    );
+    expect(r.ok).toBe(true);
+  });
 });

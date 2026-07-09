@@ -219,6 +219,23 @@ accepted proposal's `producer` — so an accepted **dw-chart** that is silently 
 native→dw fallback (`needs-fallback`, below). Any element/format change goes back through `suggest-chart`
 (5d / see Never) — never hand-swap the producer in `accepted.json`.
 
+**★ Spine validation gate re-applies suggest-chart's DETERMINISTIC guardrails (`src/validate-gate.ts`
+→ `validateAccepted`).** Before dispatch, `produce-all` runs, on EVERY accepted proposal itself: the
+producer's own validator (`validateChartSpec` / `validateMapSpec` / `validateChoroplethConfig` /
+`validateShape`), the placeholder-source guard (GUARD 2), AND — since there is **no trust boundary**
+between this orchestrator and `suggest-chart` (they are the same LLM, so a spec's provenance cannot be
+proven) — the deterministic guardrails that otherwise lived only in `suggest-chart`'s eval
+(`src/guardrail-parity.ts`): the **aspect↔type guard** (a row-driven horizontal chart type like `d3-bars`
+can never take a portrait/square channel), **chart-native furniture** (an insight title + a source name
+are present), and **chart-native subject-fit** (a declared non-water subject is not painted on a
+blue-family hue). A spec the orchestrator HAND-AUTHORED — bypassing `suggest-chart` entirely — must still
+clear this identical deterministic bar or it comes back `status:"failed"`, never shipped. **Out of scope
+(genuinely non-deterministic at produce):** the SEMANTIC / gold-dependent parts of the eval — element vs
+producer vs family "correctness", and the LLM-judge's editorial quality (is the title really the insight?
+is this the RIGHT chart for the claim?) — have no gold at produce and are the render-review's job (GATE 3),
+not a mechanical gate. Validator WARNINGS also stay advisory here by design (surfaced at the render gate),
+unlike the eval's stricter `maxWarnings:0` suggester scorecard.
+
 **★ Every re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) writes a WHOLLY FRESH
 `report.json`.** `renderApproved` starts `false` and `reviewed` is absent for EVERY proposal in that
 run — even one that was already reviewed and approved before the correction — this is by design, not a
