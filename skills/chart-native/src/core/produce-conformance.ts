@@ -313,6 +313,10 @@ function computeRawConformance(
             valueLabel: cfg.valueLabel,
             pointCount: cfg.points.length,
             categoryColors,
+            // opt-in subject-fit (like the other subject checks): a config that
+            // carries a subject gets a single-hue swarm on a blue-family hue caught;
+            // configs without a subject are a no-op (the guard gates internally).
+            subject: cfg.subject,
           },
           colors,
         ),

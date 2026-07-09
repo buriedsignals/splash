@@ -22,11 +22,14 @@ import {
 import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, SLOPE_LINE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface SlopeConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string;
   labelField: string;
   leftField: string;
@@ -136,6 +139,7 @@ export function SlopeChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>

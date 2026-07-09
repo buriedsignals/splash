@@ -18,6 +18,13 @@ export interface NativeSpec {
   orientation?: "horizontal" | "vertical";
   directLabel?: string; // line: the series label
   highlight?: string; // bar: the category to accent
+  /** several categories/points to accent (e.g. beeswarm's outlier communes). When
+   *  present it takes precedence over the single `highlight`. */
+  highlights?: string[];
+  /** the chart subject (e.g. "housing rents", "cross-border commuting"). Injected onto
+   *  every produced config so the produce-time subject-fit guard can catch a chart left
+   *  on a blue-family hue for a non-water/cold subject (design-conformance.md). */
+  subject?: string;
   /** Okabe-Ito hex for the primary series (e.g. "#009E73"). Absent → component default. */
   baseColor?: string;
   /** BCP-47 language of the deliverable (e.g. "fr", "en"). Localizes number
@@ -291,6 +298,14 @@ export const MAPPERS: Record<
       ...(labelCol ? { label: String(r[labelCol]) } : {}),
       ...(catCol ? { category: String(r[catCol]) } : {}),
     }));
+    // outliers the story calls out — support several (the "two communes that break
+    // away"). Prefer the multi-value `highlights`; fall back to the single `highlight`.
+    const outliers =
+      spec.highlights && spec.highlights.length
+        ? spec.highlights
+        : spec.highlight
+          ? [spec.highlight]
+          : [];
     return {
       type: "beeswarm",
       config: {
@@ -298,6 +313,10 @@ export const MAPPERS: Record<
         source: src(spec.source),
         valueLabel: spec.unit, // NativeSpec has no valueLabel; its long-axis `unit` maps here
         ...(categories ? { categories } : {}),
+        // a single-hue swarm honours the subject-fit baseColor; a categorised swarm
+        // ignores it (the component's colorOf uses the category palette there).
+        ...(!categories && spec.baseColor ? { baseColor: spec.baseColor } : {}),
+        ...(outliers.length ? { highlight: outliers } : {}),
         points,
       },
     };
@@ -724,5 +743,9 @@ export function specToNativeConfig(spec: NativeSpec): {
   // F2 — carry the brand-explicit marker through to the config the guards read.
   // Only set when true, so existing (auto-path) specs produce byte-identical configs.
   if (spec.brandExplicit) out.config.brandExplicit = true;
+  // Subject → carried onto every config for the produce-time subject-fit guard (only
+  // beeswarm reads it today; other types can opt in). Only set when present, so specs
+  // without a subject produce byte-identical configs.
+  if (spec.subject) out.config.subject = spec.subject;
   return out;
 }

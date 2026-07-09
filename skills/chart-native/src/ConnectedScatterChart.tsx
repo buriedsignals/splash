@@ -20,11 +20,14 @@ import {
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface ConnectedScatterConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string;
   labelField: string;
   xField: string;
@@ -124,6 +127,7 @@ export function ConnectedScatterChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>

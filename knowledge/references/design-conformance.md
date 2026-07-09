@@ -30,11 +30,25 @@ A produced chart MUST satisfy:
    exception is the honest prose fallback ("Figures as reported in this article" / the outlet's own name)
    when there is no separate dataset being cited.
 
-**Language (suggester-enforced, not a code guard):** every reader-facing string — title, intro,
-direct labels, annotations, alt text, the source label — is written in the **article's / journalist's
-language**, detected upstream; never default the furniture to English. Authored text, so it is enforced
-by `suggest-article` / `suggest-chart`, not by the conformance code (proper nouns and data values keep
-their original form).
+**Language (two halves — authored text by the suggester, machine furniture + numbers by the renderer):**
+every reader-facing string — title, intro, direct labels, annotations, alt text — is written in the
+**article's / journalist's language**, detected upstream; that AUTHORED text is the suggester's job
+(`suggest-article` / `suggest-chart`), not a code guard (proper nouns and data values keep their original
+form). The suggester ALSO sets a BCP-47 `lang` on the spec (`fr` / `de` / `it` / `en`); it is injected onto
+every native config (`spec-to-config.ts`). From that `lang`, the RENDERER localizes the two machine-generated
+pieces the suggester does not author, so they can never default to English:
+- **Furniture word** — the "Source" label: `Source :` (fr, space before the colon), `Quelle:` (de),
+  `Fonte:` (it), `Source:` (en / unknown fallback). Rendered by `core/ChartFrame.tsx` via `core/locale.ts`.
+- **Number separators** — decimal + thousands: `19,3` / `1 900` (fr, U+202F thousands), `19,3` / `1.900`
+  (de + it, period thousands), `19.3` / `1,900` (en). Every value label, axis tick and abbreviation
+  (`1,9k`) routes through `core/locale.ts` (`formatNumber(n, lang)` / `formatLocaleNumber` / `localizeDecimal`).
+  Intl-free (a hand-rolled table) so the output is byte-identical across Node, Remotion and the browser.
+
+This furniture/number localization IS guarded in code: `tests/locale-furniture-parity.test.ts` fails if a
+base chart component that renders `<ChartFrame>` forgets to thread `lang={config.lang}` — so a NEW type
+inherits localized furniture mechanically and cannot silently ship English. Add a language = one row in
+`core/locale.ts`; every type gets it for free. (Region variants like `de-CH`, whose idiomatic thousands
+separator is an apostrophe `1'900`, resolve to base `de` today — add a `de-CH` row when needed.)
 6. **Alt text = the insight, not the structure** (WCAG 1.1.1) → goes to DW `aria-description` (dw-chart:
    `spec.altInsight`, hard-required by `validateChartSpec`). Mandatory on **every** producer's spec, dw-chart
    or native — a spec that never sets `altInsight` ships a visual with no accessible description at all

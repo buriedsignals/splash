@@ -29,6 +29,7 @@ import {
 } from "./core/tokens";
 import { contrastRatio } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
 import { truncate } from "./core/text";
@@ -36,6 +37,8 @@ import { truncate } from "./core/text";
 export interface TreemapConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle (what the area measures)
   categories?: string[];
   items: { label: string; value: number; category?: string }[];
@@ -154,6 +157,7 @@ export function TreemapChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -245,7 +249,7 @@ function TreemapSvg({
                 role={interactive ? "img" : undefined}
                 aria-label={
                   interactive
-                    ? `${c.label}: ${formatNumber(c.value)} ${config.unit}, ${Math.round(c.share * 100)}%`
+                    ? `${c.label}: ${formatNumber(c.value, config.lang)} ${config.unit}, ${Math.round(c.share * 100)}%`
                     : undefined
                 }
                 style={
@@ -281,7 +285,7 @@ function TreemapSvg({
                   pointerEvents="none"
                 >
                   {truncate(
-                    `${formatNumber(c.value)} · ${Math.round(c.share * 100)}%`,
+                    `${formatNumber(c.value, config.lang)} · ${Math.round(c.share * 100)}%`,
                     cw - 2 * pad,
                     ts.source,
                   )}
@@ -356,7 +360,7 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{c.label}</strong>
       <div style={{ fontSize: 12, marginTop: 1 }}>
-        {formatNumber(c.value)} {config.unit}
+        {formatNumber(c.value, config.lang)} {config.unit}
       </div>
       <div style={{ opacity: 0.7, fontSize: 11 }}>
         {Math.round(c.share * 100)}% of the whole

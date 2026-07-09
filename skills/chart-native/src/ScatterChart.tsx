@@ -18,12 +18,15 @@ import {
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { placeLabels } from "./core/labels";
 
 export interface ScatterConfig {
   title: string; // the insight (sentence case)
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   xField: string;
   yField: string;
   sizeField?: string;
@@ -136,6 +139,7 @@ export function ScatterChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
       embedded={embedded}
     >
       {svg}
@@ -385,9 +389,9 @@ function pointAria(
   pt: { rawX: number; rawY: number; rawSize?: number; label?: string },
   config: ScatterConfig,
 ): string {
-  const base = `${pt.label ? pt.label + ": " : ""}${config.xLabel} ${formatNumber(pt.rawX)}, ${config.yLabel} ${formatNumber(pt.rawY)}`;
+  const base = `${pt.label ? pt.label + ": " : ""}${config.xLabel} ${formatNumber(pt.rawX, config.lang)}, ${config.yLabel} ${formatNumber(pt.rawY, config.lang)}`;
   return pt.rawSize !== undefined
-    ? `${base}, ${config.sizeField} ${formatNumber(pt.rawSize)}`
+    ? `${base}, ${config.sizeField} ${formatNumber(pt.rawSize, config.lang)}`
     : base;
 }
 
@@ -423,10 +427,10 @@ function Tooltip({
     >
       {pt.label && <strong>{pt.label}</strong>}
       <div style={{ opacity: 0.85 }}>
-        {config.xLabel}: {formatNumber(pt.rawX)}
+        {config.xLabel}: {formatNumber(pt.rawX, config.lang)}
       </div>
       <div style={{ opacity: 0.85 }}>
-        {config.yLabel}: {formatNumber(pt.rawY)}
+        {config.yLabel}: {formatNumber(pt.rawY, config.lang)}
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ import {
 import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
 import { truncate } from "./core/text";
@@ -27,6 +28,8 @@ import { truncate } from "./core/text";
 export interface GanttConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle / time-axis caption
   categories?: string[];
   items: { label: string; start: string; end: string; category?: string }[];
@@ -136,6 +139,7 @@ export function GanttChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>

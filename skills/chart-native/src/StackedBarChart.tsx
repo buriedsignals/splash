@@ -22,12 +22,15 @@ import {
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, TYPE, STACKED_SERIES_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
 
 export interface StackedConfig {
   title: string; // = the insight (sentence case)
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string;
   catField: string;
   seriesFields: string[]; // stacking order, bottom → top
@@ -155,6 +158,7 @@ export function StackedBarChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -273,7 +277,7 @@ function StackedSvg({
                     role={interactive ? "img" : undefined}
                     aria-label={
                       interactive
-                        ? `${col.rawCat} ${seg.seriesKey}: ${formatNumber(seg.value)} ${config.unit}`
+                        ? `${col.rawCat} ${seg.seriesKey}: ${formatNumber(seg.value, config.lang)} ${config.unit}`
                         : undefined
                     }
                     style={interactive ? { cursor: "pointer" } : undefined}
@@ -320,7 +324,7 @@ function StackedSvg({
                   fill={COLORS.ink}
                   opacity={totalOp}
                 >
-                  {formatNumber(col.total)}
+                  {formatNumber(col.total, config.lang)}
                 </text>
               )}
             </g>
@@ -402,7 +406,7 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong>{seg.seriesKey}</strong> {formatNumber(seg.value)}{" "}
+      <strong>{seg.seriesKey}</strong> {formatNumber(seg.value, config.lang)}{" "}
       <span style={{ opacity: 0.8 }}>{config.unit}</span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>
         {String(col.rawCat)} · {share}% of total

@@ -25,14 +25,26 @@ import {
   BEESWARM_CATEGORY_COLORS,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import { formatLocaleNumber, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
 
 export interface BeeswarmConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   valueLabel: string; // subtitle / units
   categories?: string[];
+  /** Okabe-Ito hex for a SINGLE-HUE swarm (no categories) — the subject-fit colour.
+   *  Absent → OKABE_ITO.blue. Ignored when `categories` is set (the palette drives colour). */
+  baseColor?: string;
+  /** point labels the story calls out (the outliers that "break away") — rendered
+   *  larger with a direct name+value label in ink, so they read without a hover. */
+  highlight?: string[];
+  /** the chart subject (e.g. "housing rents") — carried for the produce-time subject-fit
+   *  guard; not rendered. A single-hue swarm on a blue-family hue for a non-blue subject fails. */
+  subject?: string;
   points: { value: number; label?: string; category?: string }[];
 }
 
@@ -92,10 +104,13 @@ export function BeeswarmChart({
 
   const colorIndex = new Map<string, number>();
   (config.categories ?? []).forEach((c, i) => colorIndex.set(c, i));
+  // single-hue swarm → the subject-fit baseColor (or the Okabe-Ito blue default);
+  // categorical swarm → the per-category palette.
+  const singleHue = config.baseColor ?? OKABE_ITO.blue;
   const colorOf = (cat?: string) =>
     cat != null && colorIndex.has(cat)
       ? SWARM_COLORS[colorIndex.get(cat)! % SWARM_COLORS.length]
-      : OKABE_ITO.blue;
+      : singleHue;
 
   const data: BeeswarmData = {
     valueLabel: config.valueLabel,
@@ -148,6 +163,7 @@ export function BeeswarmChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -184,6 +200,12 @@ function BeeswarmSvg({
   const { innerWidth, innerHeight, nodes, valueTicks, radius } = layout;
   const n = nodes.length;
   const chrome = easeOutCubic(p / 0.16);
+  const hiSet = new Set(config.highlight ?? []);
+  // the named outliers, left→right — the direct-label layer stacks them on
+  // alternating rows in this order so adjacent labels don't collide.
+  const hiNodes = nodes
+    .filter((nd) => nd.label != null && hiSet.has(nd.label))
+    .sort((a, b) => a.x - b.x);
 
   const legend =
     config.categories && config.categories.length
@@ -238,22 +260,25 @@ function BeeswarmSvg({
           ))}
         </g>
 
-        {/* the swarm — dots scale in from nothing, staggered along the value axis */}
+        {/* the swarm — dots scale in from nothing, staggered along the value axis.
+            The story's named outliers ("break away" points) render LARGER + fully
+            opaque so they read at a glance; their name+value label is drawn below. */}
         {nodes.map((nd) => {
           const ap = easeOutCubic(stagger(p, nd.order, n, 0.15, 0.6 / n, 0.3));
           const color = colorOf(nd.category);
           const focused = interactive && hover === nd.index;
           const dim = interactive && hover !== null && !focused;
+          const isHi = nd.label != null && hiSet.has(nd.label);
           return (
             <circle
               key={`d${nd.index}`}
               cx={nd.x}
               cy={nd.y}
-              r={radius * ap * (focused ? 1.35 : 1)}
+              r={radius * ap * (focused ? 1.35 : isHi ? 1.55 : 1)}
               fill={color}
-              fillOpacity={dim ? 0.35 : 0.9}
-              stroke="#fff"
-              strokeWidth={0.8 * sc}
+              fillOpacity={dim ? 0.35 : isHi ? 1 : 0.9}
+              stroke={isHi ? COLORS.ink : "#fff"}
+              strokeWidth={(isHi ? 1.4 : 0.8) * sc}
               tabIndex={interactive ? 0 : undefined}
               role={interactive ? "img" : undefined}
               aria-label={
@@ -271,6 +296,44 @@ function BeeswarmSvg({
             />
           );
         })}
+
+        {/* direct labels for the named outliers — name + value in INK (WCAG: the label
+            carries the value, the mark carries the hue), with a white halo so they stay
+            legible over neighbouring dots. Static/video only; interactive uses the hover
+            tooltip (which the highlighted dots also enlarge for). Placement is EDGE-AWARE
+            (anchor flips so a right-edge outlier's label extends inward, never clipping)
+            and adjacent outliers are stacked on alternating rows so their labels don't
+            collide. The value is the FULL localized number (a precise callout, not the
+            abbreviated axis form). */}
+        {!interactive &&
+          hiNodes.map((nd, k) => {
+            const lap = clamp01(
+              (stagger(p, nd.order, n, 0.15, 0.6 / n, 0.3) - 0.5) / 0.5,
+            );
+            const nearRight = nd.x > innerWidth - 90 * sc;
+            const nearLeft = nd.x < 90 * sc;
+            const anchor = nearRight ? "end" : nearLeft ? "start" : "middle";
+            const dx = nearRight ? -6 * sc : nearLeft ? 6 * sc : 0;
+            // stack adjacent outliers on alternating rows to avoid label overlap
+            const rowLift = (k % 2) * (ts.axis + 6 * sc);
+            return (
+              <text
+                key={`hi${nd.index}`}
+                x={nd.x + dx}
+                y={nd.y - radius * 1.55 - 6 * sc - rowLift}
+                textAnchor={anchor}
+                fontSize={ts.axis}
+                fontWeight={700}
+                fill={COLORS.ink}
+                stroke="#fff"
+                strokeWidth={3 * sc}
+                paintOrder="stroke"
+                opacity={lap}
+              >
+                {`${nd.label} ${formatLocaleNumber(nd.value, config.lang)}`}
+              </text>
+            );
+          })}
 
         {/* category legend below the swarm */}
         <g opacity={chrome}>

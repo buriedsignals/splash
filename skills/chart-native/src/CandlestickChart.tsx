@@ -19,11 +19,14 @@ import {
 import { clamp01, easeOutCubic, stagger, formatNumber } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface CandlestickConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle
   priceLabel: string;
   periods: {
@@ -127,6 +130,7 @@ export function CandlestickChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -194,7 +198,7 @@ function CandlestickSvg({
                 fontSize={ts.source}
                 fill={COLORS.muted}
               >
-                {formatNumber(Number(t.label))}
+                {formatNumber(Number(t.label), config.lang)}
               </text>
             </g>
           ))}
@@ -308,11 +312,11 @@ function Tooltip({
       </span>
       <strong style={{ color: "#fff", fontSize: 13 }}>{d.date}</strong>{" "}
       <span style={{ fontSize: 12 }}>
-        {d.close >= d.open ? "▲" : "▼"} {formatNumber(d.close)}
+        {d.close >= d.open ? "▲" : "▼"} {formatNumber(d.close, config.lang)}
       </span>
       <div style={{ opacity: 0.75, fontSize: 11 }}>
-        O {formatNumber(d.open)} · H {formatNumber(d.high)} · L{" "}
-        {formatNumber(d.low)} · C {formatNumber(d.close)}
+        O {formatNumber(d.open, config.lang)} · H {formatNumber(d.high, config.lang)} · L{" "}
+        {formatNumber(d.low, config.lang)} · C {formatNumber(d.close, config.lang)}
       </div>
     </div>
   );

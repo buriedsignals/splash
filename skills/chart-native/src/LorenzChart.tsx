@@ -19,6 +19,7 @@ import { line, area, curveLinear } from "d3-shape";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
 import { layoutLegend, legendRowCount } from "./core/legend";
@@ -26,6 +27,8 @@ import { layoutLegend, legendRowCount } from "./core/legend";
 export interface LorenzConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle
   xLabel: string;
   yLabel: string;
@@ -128,6 +131,7 @@ export function LorenzChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>

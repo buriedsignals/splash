@@ -22,6 +22,7 @@ import {
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { legendRowCount } from "./core/legend";
 import { truncate } from "./core/text";
@@ -29,6 +30,8 @@ import { truncate } from "./core/text";
 export interface DotStripConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle + value-axis meaning
   categoryField: string;
   valueField: string;
@@ -134,6 +137,7 @@ export function DotStripChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>

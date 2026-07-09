@@ -20,12 +20,15 @@ import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { relativeLuminance } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
 
 export interface MarimekkoConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string;
   seriesFields: string[];
   columns: { label: string; weight: number; values: number[] }[];
@@ -141,6 +144,7 @@ export function MarimekkoChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>

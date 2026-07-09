@@ -29,11 +29,14 @@ import {
 } from "./core/math";
 import { COLORS, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface ChartConfig {
   title: string; // = the insight (sentence case)
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string;
   directLabel: string; // direct label over a legend
   xField: string;
@@ -121,7 +124,7 @@ export function LineChart({
   // width-aware tick count so labels never collide on narrow embeds (~1 per 110px)
   const innerW = width - padding.left - padding.right;
   const xTickCount = responsive ? Math.max(2, Math.round(innerW / 110)) : 6;
-  const layout = computeChartLayout(data, dims, xTickCount);
+  const layout = computeChartLayout(data, dims, xTickCount, config.lang);
 
   const [hover, setHover] = useState<number | null>(null);
 
@@ -191,7 +194,7 @@ export function LineChart({
           boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
         }}
       >
-        <strong>{formatNumber(layout.points[hover].rawY)}</strong>{" "}
+        <strong>{formatNumber(layout.points[hover].rawY, config.lang)}</strong>{" "}
         <span style={{ opacity: 0.8 }}>{config.unit}</span>
         <div style={{ opacity: 0.7, fontSize: 11 }}>
           {String(layout.points[hover].rawX)}
@@ -209,6 +212,7 @@ export function LineChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
       embedded={embedded}
     >
       {svg}
@@ -401,7 +405,7 @@ function ChartSvg({
             fontSize={ts.axis}
             fill={COLORS.muted}
           >
-            {formatNumber(lastPoint.rawY)}
+            {formatNumber(lastPoint.rawY, config.lang)}
           </text>
         </g>
 
@@ -416,7 +420,7 @@ function ChartSvg({
               style={{ cursor: "pointer" }}
               tabIndex={0}
               role="img"
-              aria-label={`${pt.rawX}: ${formatNumber(pt.rawY)} ${config.unit}`}
+              aria-label={`${pt.rawX}: ${formatNumber(pt.rawY, config.lang)} ${config.unit}`}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
               onFocus={() => setHover(i)}

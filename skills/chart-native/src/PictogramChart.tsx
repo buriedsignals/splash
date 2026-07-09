@@ -26,12 +26,15 @@ import {
 } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
 
 export interface PictogramConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle
   categoryField: string;
   valueField: string;
@@ -164,6 +167,7 @@ export function PictogramChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -269,7 +273,7 @@ function PictogramSvg({
               role={interactive ? "img" : undefined}
               aria-label={
                 interactive
-                  ? `${r.category}: ${formatNumber(r.value)} ${config.iconNoun}`
+                  ? `${r.category}: ${formatNumber(r.value, config.lang)} ${config.iconNoun}`
                   : undefined
               }
               style={
@@ -305,7 +309,7 @@ function PictogramSvg({
                 fill={COLORS.muted}
                 opacity={clamp01((reveal * maxCols - r.count) / 0.6)}
               >
-                {formatNumber(r.value)}
+                {formatNumber(r.value, config.lang)}
               </text>
             </g>
           );
@@ -328,7 +332,7 @@ function PictogramSvg({
             fontWeight={600}
             fill={COLORS.ink}
           >
-            = {formatNumber(layout.unitPerIcon)} {config.iconNoun}
+            = {formatNumber(layout.unitPerIcon, config.lang)} {config.iconNoun}
           </text>
         </g>
       </g>
@@ -371,7 +375,7 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{r.category}</strong>
       <span style={{ fontSize: 11, opacity: 0.85, marginLeft: 6 }}>
-        {formatNumber(r.value)} {config.iconNoun}
+        {formatNumber(r.value, config.lang)} {config.iconNoun}
       </span>
     </div>
   );

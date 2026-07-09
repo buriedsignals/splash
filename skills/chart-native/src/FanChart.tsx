@@ -21,11 +21,14 @@ import {
 } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 
 export interface FanConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string; // subtitle / value-axis caption
   xField: string;
   levels: number[];
@@ -120,6 +123,7 @@ export function FanChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
@@ -233,7 +237,7 @@ function FanSvg({
                 fontSize={ts.source}
                 fill={COLORS.muted}
               >
-                {formatNumber(Number(t.label))}
+                {formatNumber(Number(t.label), config.lang)}
               </text>
             </g>
           ))}

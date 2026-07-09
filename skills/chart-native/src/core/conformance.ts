@@ -1482,13 +1482,23 @@ export function checkBeeswarmConformance(
     valueLabel?: string;
     pointCount: number;
     categoryColors: string[]; // [] for a single-hue swarm
+    /**
+     * The chart subject (e.g. "housing rents"). Subject-fit only applies to a
+     * SINGLE-HUE swarm — its one colour stands for the subject, so it must not be
+     * left on a blue-family hue for a non-water/cold subject (the exact "shipped
+     * default blue" defect). A CATEGORICAL swarm's colours encode categories, not
+     * the subject, so subject is NOT forwarded there.
+     */
+    subject?: string;
   },
   colors: ConformanceColors,
 ): string[] {
+  const singleHue = input.categoryColors.length === 0;
   const v = checkGlobalConformance({
     title: input.title,
     source: input.source,
     colors,
+    ...(singleHue ? { subject: input.subject } : {}),
   });
   if (!input.valueLabel?.trim())
     v.push("missing value-axis label (the unit — position encoding needs it)");

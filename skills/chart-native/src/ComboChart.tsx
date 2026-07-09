@@ -20,12 +20,15 @@ import { line as d3line, curveMonotoneX } from "d3-shape";
 import { clamp01, easeInOutCubic, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
+import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
 
 export interface ComboConfig {
   title: string;
   source: { name: string; url: string };
+  /** deliverable language — localizes number separators + "Source". Default English. */
+  lang?: Lang;
   unit: string;
   categoryField: string;
   columnField: string;
@@ -129,6 +132,7 @@ export function ComboChart({
       responsive={responsive}
       tooltip={tooltip}
       scale={sc}
+      lang={config.lang}
     >
       {svg}
     </ChartFrame>
