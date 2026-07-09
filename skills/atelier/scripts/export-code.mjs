@@ -15,7 +15,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join, basename, extname, resolve } from "node:path";
-import { assertShippable } from "../src/export-guard.ts";
+import { assertShippable, assertDelivered } from "../src/export-guard.ts";
 
 // Splits argv into positionals and `--flag value` pairs, so the required --results/--id
 // flags can sit alongside the existing positional args in any order.
@@ -137,6 +137,12 @@ if (import.meta.main) {
     join(exportDir, "README.txt"),
     `Atelier export — files: ${artifacts.join(", ")}${staticFile ? ", " + staticFile : ""}.\ninteractive: ${interactive ?? "none"} · static: ${staticFile ?? "none"}. See EMBED.md for the three delivery forms.\n`,
   );
+  // Mechanical teeth: self-verify this folder IS a real delivery before reporting success —
+  // the a11y static.html fallback must be present for an interactive (a scrolly is exempt).
+  // A build that dropped the fallback fails here loudly instead of shipping inaccessible.
+  const isScrolly = interactive != null && /scrolly/i.test(interactive);
+  assertDelivered(readdirSync(exportDir), { scrolly: isScrolly });
+
   console.log(
     "EXPORT_CODE_RESULT " +
       JSON.stringify({ exportDir, interactive, staticFile, artifacts }),

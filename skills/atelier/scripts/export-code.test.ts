@@ -75,6 +75,10 @@ describe("export-code CLI — export-completeness gate", () => {
   function setupOutDir() {
     const outDir = mkdtempSync(join(tmpdir(), "atelier-export-code-out-"));
     writeFileSync(join(outDir, "chart.html"), "<html>chart</html>");
+    // Real producers always leave a static.png byproduct alongside the interactive
+    // HTML; export-code inlines it into the mandatory static.html a11y fallback, which
+    // the delivery gate (assertDelivered) requires for any non-scrolly interactive.
+    writeFileSync(join(outDir, "static.png"), Buffer.from("fake-png-bytes"));
     return outDir;
   }
 
@@ -145,6 +149,39 @@ describe("export-code CLI — export-completeness gate", () => {
       expect(existsSync(join(exportDir, "interactive.png"))).toBe(false);
       const embedMd = readFileSync(join(exportDir, "EMBED.md"), "utf8");
       expect(embedMd).not.toContain(".png");
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses (non-zero exit) an interactive export whose build has no static.png — the a11y fallback would be missing", () => {
+    // A produced + render-approved interactive.html but NO static.png byproduct: the no-JS
+    // static.html a11y fallback cannot be built, so the delivery gate (assertDelivered)
+    // must fail the export loudly rather than ship an inaccessible interactive.
+    const outDir = mkdtempSync(join(tmpdir(), "atelier-export-code-out-"));
+    writeFileSync(join(outDir, "interactive.html"), "<html>interactive</html>");
+    const resultsPath = join(outDir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(shippableReport("p1")));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-code-fixture-noa11y-"),
+    );
+    try {
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          outDir,
+          exportDir,
+          "--results",
+          resultsPath,
+          "--id",
+          "p1",
+        ],
+        { stdout: "pipe", stderr: "pipe" },
+      );
+      expect(proc.exitCode).not.toBe(0);
+      expect(proc.stderr.toString()).toMatch(/static\.html/);
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
       rmSync(outDir, { recursive: true, force: true });
