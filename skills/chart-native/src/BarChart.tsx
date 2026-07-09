@@ -24,7 +24,7 @@ import type { Lang } from "./core/locale";
 import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrameWithHeader } from "./core/format";
-import { truncate } from "./core/text";
+import { truncate, textWidth, wrapLabel } from "./core/text";
 
 export interface BarConfig {
   title: string; // = the insight (sentence case)
@@ -75,6 +75,20 @@ export function BarChart({
 }: BarChartProps) {
   const p = clamp01(progress);
   const basePad = paddingFor(config.orientation, responsive);
+  // Horizontal category labels sit in the LEFT gutter; the fixed 124px default clips
+  // long names ("Administration générale et finances…"). Widen the gutter to fit the
+  // LONGEST label (measured at the pre-scale base axis font, since basePad is scaled by
+  // resolveFrame afterwards), but never past ~45% of the width — beyond that the
+  // truncate() safety net trims with an ellipsis rather than starving the plot. A
+  // short-label chart's longest label is < 124px, so max() keeps the 124 default and
+  // its layout is unchanged.
+  if (config.orientation === "horizontal") {
+    const longest = config.rows.reduce(
+      (m, r) => Math.max(m, textWidth(String(r[config.catField]), TYPE.axis)),
+      0,
+    );
+    basePad.left = Math.max(basePad.left, Math.min(width * 0.5, longest + 18));
+  }
   const frame = resolveFrameWithHeader(
     config.title,
     config.unit,
@@ -262,6 +276,16 @@ function BarSvg({
                 anchor: "middle" as const,
                 dy: "0",
               };
+          // category label: horizontal labels live in the (widened) left gutter and
+          // WRAP onto ≤2 lines if the longest still exceeds the capped gutter — never a
+          // single clipped line. Vertical labels keep the single-line truncate at the
+          // bar width (unchanged).
+          const catMaxPx = horizontal ? padding.left - 14 * sc : b.w;
+          const catLines = horizontal
+            ? wrapLabel(String(b.rawCat), catMaxPx, ts.axis, 2)
+            : [truncate(String(b.rawCat), catMaxPx, ts.axis)];
+          const catLineH = ts.axis * 1.15;
+          const catY0 = cat.y - ((catLines.length - 1) * catLineH) / 2;
           // value label at the END of the bar
           const val = horizontal
             ? {
@@ -300,21 +324,20 @@ function BarSvg({
                 onFocus={interactive ? () => setHover(i) : undefined}
                 onBlur={interactive ? () => setHover(null) : undefined}
               />
-              <text
-                x={cat.x}
-                y={cat.y}
-                dy={cat.dy}
-                textAnchor={cat.anchor}
-                fontSize={ts.axis}
-                fill={COLORS.ink}
-                opacity={catOp}
-              >
-                {truncate(
-                  String(b.rawCat),
-                  horizontal ? padding.left - 14 * sc : b.w,
-                  ts.axis,
-                )}
-              </text>
+              {catLines.map((ln, li) => (
+                <text
+                  key={`cat${i}-${li}`}
+                  x={cat.x}
+                  y={horizontal ? catY0 + li * catLineH : cat.y}
+                  dy={horizontal ? "0.32em" : cat.dy}
+                  textAnchor={cat.anchor}
+                  fontSize={ts.axis}
+                  fill={COLORS.ink}
+                  opacity={catOp}
+                >
+                  {ln}
+                </text>
+              ))}
               <text
                 x={val.x}
                 y={val.y}

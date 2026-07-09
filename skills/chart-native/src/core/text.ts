@@ -26,3 +26,42 @@ export function truncate(
   if (chars >= text.length) return text;
   return text.slice(0, chars).trimEnd() + "…";
 }
+
+/**
+ * Wrap `text` into at most `maxLines` lines, each fitting `maxPx` at `fontSize`,
+ * breaking on spaces (greedy). Returns `[text]` when it already fits on one line —
+ * so a short label is unchanged. The LAST allowed line holds all remaining words and
+ * is truncated with an ellipsis only if they still overflow (so a very long label
+ * degrades to "line 1 / trimmed line 2" instead of a single clipped line). Used for a
+ * horizontal bar's category labels: widen the gutter to fit the longest label on one
+ * line, and wrap the rare label that exceeds even the capped gutter.
+ */
+export function wrapLabel(
+  text: string,
+  maxPx: number,
+  fontSize: number,
+  maxLines = 2,
+): string[] {
+  if (maxPx <= 0 || textWidth(text, fontSize) <= maxPx) return [text];
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length <= 1) return [truncate(text, maxPx, fontSize)];
+  const lines: string[] = [];
+  let cur = "";
+  for (let i = 0; i < words.length; i++) {
+    const cand = cur ? `${cur} ${words[i]}` : words[i];
+    if (cur === "" || textWidth(cand, fontSize) <= maxPx) {
+      cur = cand;
+    } else {
+      lines.push(cur);
+      cur = words[i];
+      if (lines.length === maxLines - 1) {
+        // last allowed line: this word + everything after, trimmed if it overflows
+        const rest = [cur, ...words.slice(i + 1)].join(" ");
+        lines.push(truncate(rest, maxPx, fontSize));
+        return lines;
+      }
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}

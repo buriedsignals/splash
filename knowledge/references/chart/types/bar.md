@@ -46,6 +46,12 @@ baseline. Length is near the top of the perception hierarchy → bars are the sa
 - **Never rotate x labels 90°** to fit long labels on columns — switch to horizontal bars instead.
 - Rule of thumb the producer applies as the default: `horizontal` if any label is long or there are
   > 8 categories, else `vertical` — overridable.
+- **The left gutter FITS the longest label — never clip.** A horizontal bar's category labels live in
+  the left gutter; `BarChart` sizes that gutter to the widest label (measured from the data), so a long
+  name ("Administration générale et finances") renders in full instead of a truncated "Administratio…".
+  The gutter is capped at ~45% of the width so it can't starve the plot — only past that cap does a
+  pathologically long label fall back to an ellipsis (`core/text.ts` `truncate`). A short-label chart
+  keeps the default gutter, so its layout is unchanged. (Verified by `tests/bar-longlabels.test.tsx`.)
 
 ## data-to-viz caveats (credited)
 
