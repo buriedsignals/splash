@@ -91,13 +91,25 @@ export function renderSize(channel: Channel): ChannelSize {
 // than returning a violation string) so it fails hard at produce time, mirroring the
 // other produce-time guards (conformance, snap-contrast): a caller that wants a softer
 // signal can try/catch. Used by both native producers (chart-native, map-native).
+//
+// `tolerancePx` (default 2) absorbs the sub-pixel rounding chart-native's static path
+// hits for article-web: its snap screenshots at deviceScaleFactor:2, so the CSS canvas
+// size is `Math.round(mediaSize / 2)` and the exported PNG is that value doubled back.
+// article-web's height (675) is odd, so the nearest reachable even pixel size is 676 —
+// 1px off — while social-vertical/social-feed (even dimensions throughout) land exact.
+// A real mismatch (e.g. a 4:5 1080x1350 render for a 9:16 1080x1920 channel) is still
+// far outside this tolerance and throws.
 export function assertRenderedSize(
   actualW: number,
   actualH: number,
   channel: Channel,
+  tolerancePx = 2,
 ): void {
   const { width, height } = renderSize(channel);
-  if (actualW !== width || actualH !== height) {
+  if (
+    Math.abs(actualW - width) > tolerancePx ||
+    Math.abs(actualH - height) > tolerancePx
+  ) {
     throw new Error(
       `rendered size ${actualW}x${actualH} does not match channel '${channel}' (${width}x${height})`,
     );

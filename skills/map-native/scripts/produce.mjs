@@ -23,10 +23,33 @@ import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { snapCommand, remotionCommand } from "../src/platform-runners.ts";
-import { channelAspect, renderSize } from "../../atelier/src/channel.ts";
+import { channelAspect, renderSize, assertRenderedSize } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
+
+// Render-size conformance (Slice 2, Task 4) — a cheap, render-free PNG-dimension
+// probe: reads the IHDR chunk directly (PNG signature 8 bytes + 4-byte chunk length +
+// 4-byte "IHDR" tag, then width/height as big-endian uint32 at bytes 16-19/20-23). No
+// new dependency, cross-platform, no browser/Playwright needed — the file already
+// exists on disk by the time this runs.
+function readPngSize(pngPath) {
+  const buf = readFileSync(pngPath);
+  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+}
+
+// Reads a named Remotion <Composition>'s registered width/height straight out of
+// Root.tsx's source text — "known constants" read at produce-time with no render (no
+// React/Remotion runtime needed). Used to fail-hard if a future edit regresses a
+// comp's dims (e.g. re-introducing the 4:5 1350 bug this slice fixed) without having
+// to actually render the video.
+function readCompDims(rootTsxSrc, compId) {
+  const re = new RegExp(
+    `id=["']${compId}["'][\\s\\S]*?width=\\{(\\d+)\\}[\\s\\S]*?height=\\{(\\d+)\\}`,
+  );
+  const m = rootTsxSrc.match(re);
+  return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
+}
 
 // Channel-driven format (Slice 2): the confirmed CADRAGE Q3 channel, forwarded by
 // adapters.ts as `ATELIER_CHANNEL` (see adapters.ts's CHANNEL THREADING note). Absent
@@ -157,6 +180,24 @@ if (parsedConfig.mapStyle === "dataviz-dark") {
   snap("scripts/snap-theme.mjs", { OUTDIR: outDir, SERVE_DIR: staticDir });
 }
 
+// Render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
+// dimensions must equal the channel's exact media size. Fail-hard before export,
+// wired like snap-theme/snap-a11y above. No render: static.png already exists on
+// disk (snap-static above already sized the build to MAP_WIDTH/MAP_HEIGHT); this
+// just reads its IHDR chunk to confirm what actually landed on disk.
+console.log(`[produce map] checking rendered size vs channel "${channel}"…`);
+{
+  const staticPngPath = join(outDir, "static.png");
+  const { width: actualW, height: actualH } = readPngSize(staticPngPath);
+  try {
+    assertRenderedSize(actualW, actualH, channel);
+    console.log(`[produce map] render-size: OK (${actualW}x${actualH} matches channel "${channel}").`);
+  } catch (err) {
+    console.error(`[produce map] RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
+    process.exit(1);
+  }
+}
+
 const result = {
   static: join(outDir, "static.png"),
   interactive: join(outDir, "interactive.png"),
@@ -263,6 +304,18 @@ if (kinds.length) {
     const propsPath = join(tmpDir, "props.json");
     writeFileSync(propsPath, JSON.stringify({ config }));
     const remotionEntry = join(root, "remotion", "src", "index.ts");
+    // Video render-size conformance (Task 4) — read Root.tsx once and assert the
+    // SELECTED comp's registered dims (no render). Square/Portrait comps are
+    // uniformly pinned to renderSize(channel) across all 7 map types (1080x1080 /
+    // 1080x1920 — the true-9:16 fix this slice made), so an exact match is a real
+    // regression guard (e.g. against re-introducing the 4:5 1350 bug). Landscape
+    // comps keep the pre-channel 1280x720 convention (same 16:9 aspect ratio as
+    // article-web's 1200x675, but not the exact pixel box) — out of this slice's
+    // scope (see plan self-review "repoint only"); enforcing exact equality there
+    // would fail-hard on every article-web video (the DEFAULT channel), which the
+    // Final e2e render-verify expects to still render. So we only hard-assert for
+    // portrait/square and log landscape's actual dims for visibility.
+    const rootTsxSrc = readFileSync(join(root, "remotion", "src", "Root.tsx"), "utf8");
     for (const kind of kinds) {
       const allComps = kind === "story"
         ? storyComps(config, cameraMode)   // dispatches on cameraMode
@@ -278,6 +331,28 @@ if (kinds.length) {
         throw new Error(
           `no ${kind} comp matches channel '${channel}' aspect '${aspect}' (available: ${allComps.map(([, n]) => n).join(", ")})`,
         );
+      }
+      for (const [comp] of comps) {
+        const compDims = readCompDims(rootTsxSrc, comp);
+        if (!compDims) {
+          console.error(`[produce map] could not find comp "${comp}" dims in Root.tsx`);
+          process.exit(1);
+        }
+        if (aspect === "portrait" || aspect === "square") {
+          try {
+            assertRenderedSize(compDims.width, compDims.height, channel);
+            console.log(
+              `[produce map] video render-size: OK (${comp} ${compDims.width}x${compDims.height} matches channel "${channel}").`,
+            );
+          } catch (err) {
+            console.error(`[produce map] VIDEO RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
+            process.exit(1);
+          }
+        } else {
+          console.log(
+            `[produce map] video render-size: ${comp} is ${compDims.width}x${compDims.height} (landscape keeps its pre-channel 1280x720 convention, not pinned to the channel's exact mediaSize — see comment above).`,
+          );
+        }
       }
       result[kind] = renderVideoSet(kind, propsPath, remotionEntry, comps);
     }

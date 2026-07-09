@@ -220,4 +220,20 @@ describe("assertRenderedSize (Slice 2)", () => {
       "rendered size 1200x1080 does not match channel 'social-feed' (1080x1080)",
     );
   });
+
+  it("passes on a 1px height difference (676 vs 675) — chart-native's article-web static rounding case (odd height halved+doubled at deviceScaleFactor:2)", () => {
+    expect(() => assertRenderedSize(1200, 676, "article-web")).not.toThrow();
+  });
+
+  it("a tightened tolerance (0) rejects the same 1px-off case", () => {
+    expect(() => assertRenderedSize(1200, 676, "article-web", 0)).toThrow(
+      "rendered size 1200x676 does not match channel 'article-web' (1200x675)",
+    );
+  });
+
+  it("still throws on a real mismatch (1080x1350 4:5 vs a social-vertical 9:16 1080x1920 channel) — the exact bug this slice fixes — even with the default tolerance", () => {
+    expect(() => assertRenderedSize(1080, 1350, "social-vertical")).toThrow(
+      "rendered size 1080x1350 does not match channel 'social-vertical' (1080x1920)",
+    );
+  });
 });

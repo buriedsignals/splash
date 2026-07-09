@@ -16,12 +16,35 @@ import { chartDistSub } from "../src/build-paths.ts";
 import { runProduceConformance } from "../src/core/produce-conformance.ts";
 import { REMOTION_PREFIX } from "../src/native-types.ts";
 import { snapCommand } from "../src/platform-runners.ts";
-import { channelAspect } from "../../atelier/src/channel.ts";
+import { channelAspect, assertRenderedSize } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const isWin = process.platform === "win32";
 const SNAP = snapCommand(process.platform);
+
+// Render-size conformance (Slice 2, Task 4) — a cheap, render-free PNG-dimension
+// probe: reads the IHDR chunk directly (PNG signature 8 bytes + 4-byte chunk length +
+// 4-byte "IHDR" tag, then width/height as big-endian uint32 at bytes 16-19/20-23). No
+// new dependency, cross-platform, no browser/Playwright needed — the file already
+// exists on disk by the time this runs.
+function readPngSize(pngPath) {
+  const buf = readFileSync(pngPath);
+  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+}
+
+// Reads a named Remotion <Composition>'s registered width/height straight out of
+// Root.tsx's source text — "known constants" read at produce-time with no render
+// (no React/Remotion runtime needed). Used to fail-hard if a future edit regresses a
+// comp's dims (e.g. re-introducing the 4:5 1350 bug this slice fixed) without having
+// to actually render the video.
+function readCompDims(rootTsxSrc, compId) {
+  const re = new RegExp(
+    `id=["']${compId}["'][\\s\\S]*?width=\\{(\\d+)\\}[\\s\\S]*?height=\\{(\\d+)\\}`,
+  );
+  const m = rootTsxSrc.match(re);
+  return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
+}
 
 const type = process.argv[2];
 const configPath = process.argv[3];
@@ -140,6 +163,23 @@ snap("scripts/snap-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",")
 console.log(`[produce ${type}] checking tooltip contrast (snap-tooltip-contrast)…`);
 snap("scripts/snap-tooltip-contrast.mjs");
 
+// 2d. render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
+// dimensions must equal the channel's exact media size. Fail-hard before export,
+// wired like snap-contrast/snap-tooltip-contrast above. No render: static.png already
+// exists on disk (step 2); this just reads its IHDR chunk.
+console.log(`[produce ${type}] checking rendered size vs channel "${channel}"…`);
+{
+  const staticPngPath = join(outDir, "static.png");
+  const { width: actualW, height: actualH } = readPngSize(staticPngPath);
+  try {
+    assertRenderedSize(actualW, actualH, channel);
+    console.log(`[produce ${type}] render-size: OK (${actualW}x${actualH} matches channel "${channel}").`);
+  } catch (err) {
+    console.error(`[produce ${type}] RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
+    process.exit(1);
+  }
+}
+
 const result = {
   static: join(outDir, "static.png"),
   interactive: join(outDir, "interactive.png"),
@@ -163,6 +203,41 @@ if (formats === "all") {
     process.exit(1);
   }
   const [comp, name] = entry;
+
+  // Video render-size conformance (Task 4) — assert the SELECTED comp's registered
+  // dims (read straight from Root.tsx, no render) match the channel. Square/Portrait
+  // comps are uniformly pinned to renderSize(channel) across every one of the 41
+  // chart types (1080x1080 / 1080x1920 — the true-9:16 fix this slice made) so an
+  // exact match is a real regression guard (e.g. against re-introducing the 4:5 1350
+  // bug). Landscape ("Reveal") comps keep each family's own pre-channel aesthetic
+  // dims (e.g. 840x480, 840x460 for bar/stacked, 840x420 for calendar…) — they were
+  // never resized to the channel's exact media pixels (out of this slice's scope, see
+  // plan self-review "repoint only"); enforcing exact equality there would fail-hard
+  // on every article-web video (the DEFAULT channel), which is not this slice's intent
+  // (the Final e2e render-verify expects an article-web video to still render). So we
+  // only hard-assert for portrait/square and log landscape's actual dims for visibility.
+  const rootTsxSrc = readFileSync(join(root, "remotion", "src", "Root.tsx"), "utf8");
+  const compDims = readCompDims(rootTsxSrc, comp);
+  if (!compDims) {
+    console.error(`[produce ${type}] could not find comp "${comp}" dims in Root.tsx`);
+    process.exit(1);
+  }
+  if (aspect === "portrait" || aspect === "square") {
+    try {
+      assertRenderedSize(compDims.width, compDims.height, channel);
+      console.log(
+        `[produce ${type}] video render-size: OK (${comp} ${compDims.width}x${compDims.height} matches channel "${channel}").`,
+      );
+    } catch (err) {
+      console.error(`[produce ${type}] VIDEO RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
+      process.exit(1);
+    }
+  } else {
+    console.log(
+      `[produce ${type}] video render-size: ${comp} is ${compDims.width}x${compDims.height} (landscape keeps its family-tuned aspect, not pinned to the channel's exact mediaSize — see comment above).`,
+    );
+  }
+
   console.log(`[produce ${type}] rendering ${name} (${comp}) for channel "${channel}"…`);
   run(
     "bun",
