@@ -84,6 +84,14 @@ For maps with many tightly-clustered points, label all symbols and let the GL an
 
 In **interactive** mode the `symbol-labels` layer is omitted entirely; the hover popup delivers name + value + unit instead (tooltip XOR labels — see `knowledge/references/map/formats/interactive.md`).
 
+**Producer: map-native is the only producer for a symbol map.** Datawrapper (`map-dw`) draws its
+proportional circles with values on HOVER only and offers no "label symbols by column" option (verified
+against the Datawrapper Academy "Customizing your symbol map" docs), so a `map-dw` symbol map's owned
+static PNG ships mute, unlabeled circles that cannot carry the claim without interaction. `map-dw`'s
+`validateMapSpec` therefore **rejects** a symbol spec and routes it here. Any valued point map — symbol,
+proportional, or dot — is produced by `map-native`, whose direct labels (rule 6) make the static export
+legible. (`map-dw` covers choropleth + wide locator only.)
+
 ### 7. Furniture: title as insight, description, source
 
 Every module requires a title that states the insight (not a label or year range), a description

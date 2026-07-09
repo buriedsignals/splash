@@ -93,13 +93,23 @@ unset ships French words with English numbers — the exact mismatch this field 
    PROPOSITION step is what surfaces this to the journalist, vetoable).
 
    **Map element type FIRST — before the format ladder.** Branch on what the data is:
-   - **Point / locator / symbol data** (coordinates, located events/places — not region fills) that is
-     **sub-national or regional** (a country, a region, a city cluster) → **`map-native`**, regardless of
-     static/interactive. `map-native` emits a static PNG too, and its MapTiler basemap auto-fits and
-     renders coastlines accurately at any zoom — `map-dw`'s locator basemap generalizes the coast at wide
-     zoom, so inland places can render offshore. This mirrors the HARD RULE in the map-native POINT /
-     LOCATOR section. `map-dw` locator stays valid ONLY for wide national / continental / global point
-     maps (extent ≥ ~12°); `validateMapSpec` warns if you route a tighter locator to `map-dw`.
+   - **Symbol / proportional / dot data** (coordinates carrying a VALUE mapped to circle size/colour —
+     city populations, event counts, amounts by place) → **ALWAYS `map-native`**, regardless of extent or
+     static/interactive. `map-dw` CANNOT produce a claim-carrying static symbol map: Datawrapper draws the
+     proportional circles with values on HOVER only and offers no "label symbols by column" option (verified
+     against the Datawrapper Academy "Customizing your symbol map" docs), so its owned static PNG ships mute,
+     unlabeled circles — no place identifiable, no value readable without interaction. Every atelier channel
+     requires a claim-carrying static (the social static, or the article-web a11y static fallback), so a
+     valued point map MUST use `map-native`, whose proportional-symbol renderer directly labels the top-N
+     circles by name + value (conformance asserts `labeled`). `validateMapSpec` now **rejects** a `map-dw`
+     symbol spec with a route-to-`map-native` error — there is NO `map-dw` symbol path.
+   - **Locator data** (a few point markers/pins calling out places — NO value) that is **sub-national or
+     regional** (a country, a region, a city cluster) → **`map-native`**, regardless of static/interactive.
+     `map-native`'s MapTiler basemap auto-fits and renders coastlines accurately at any zoom — `map-dw`'s
+     locator basemap generalizes the coast at wide zoom, so inland places can render offshore. This mirrors
+     the HARD RULE in the map-native POINT / LOCATOR section. `map-dw` locator stays valid ONLY for **wide**
+     national / continental / global point maps (extent ≥ ~12°), where the pins carry their own title labels;
+     `validateMapSpec` warns if you route a tighter locator to `map-dw`.
    - **Choropleth data** (region fills) → apply the format ladder below.
 
    **Map format ladder** (choropleth; applied after Gate 5 routes to a map):
