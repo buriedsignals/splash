@@ -21,6 +21,7 @@ import {
   type NativeSpec,
 } from "../../chart-native/src/spec-to-config";
 import { placeholderSourceReason } from "./source-guard";
+import { guardrailParityViolations } from "./guardrail-parity";
 
 export type ValidationOutcome =
   { ok: true; warnings: string[] } | { ok: false; errors: string[] };
@@ -98,14 +99,21 @@ function placeholderSourceError(spec: unknown): string | null {
 }
 
 // Run the producer-appropriate validator on an accepted proposal's spec, then the
-// cross-producer source-URL guard (GUARD 2).
+// cross-producer source-URL guard (GUARD 2), then the deterministic guardrail-parity gate
+// (ENFORCEMENT SLICE 2 — the deterministic guardrails that lived only in suggest-chart's
+// eval, re-applied here so a hand-authored bypass must clear the same bar). A spec is
+// accepted only when it clears the producer validator AND every re-applied deterministic
+// guardrail; any violation fails validation before the producer ever runs.
 export function validateAccepted(p: AcceptedProposal): ValidationOutcome {
   const outcome = validateByProducer(p);
+  const extraErrors: string[] = [];
   const placeholder = placeholderSourceError(p.spec);
-  if (placeholder) {
+  if (placeholder) extraErrors.push(placeholder);
+  extraErrors.push(...guardrailParityViolations(p));
+  if (extraErrors.length) {
     return {
       ok: false,
-      errors: [...(outcome.ok ? [] : outcome.errors), placeholder],
+      errors: [...(outcome.ok ? [] : outcome.errors), ...extraErrors],
     };
   }
   return outcome;

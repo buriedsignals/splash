@@ -338,6 +338,30 @@ describe("produceAll — validation gate (real validator)", () => {
     expect(results.find((r) => r.id === "b")?.status).toBe("failed");
   });
 
+  it("fails-hard a hand-authored row-driven bar on a portrait channel (guardrail parity, dispatch never runs)", async () => {
+    // ENFORCEMENT SLICE 2 — a spec the orchestrator hand-authored (bypassing suggest-chart)
+    // must still clear suggest-chart's deterministic aspect↔type guard. The bar is a valid
+    // ChartSpec, so the producer validator passes; the guardrail-parity gate is what catches
+    // the portrait/row-driven mismatch. Never dispatched, recorded failed (drop-proof).
+    const { dispatch, produced } = spy();
+    const { results } = await produceAll(
+      [
+        {
+          id: "bypass",
+          producer: "dw-chart",
+          format: "static",
+          channel: "social-vertical",
+          spec: validDwSpec,
+        },
+      ],
+      "out",
+      dispatch,
+    );
+    expect(produced).toEqual([]); // the producer never ran
+    expect(results[0].status).toBe("failed");
+    expect(results[0].error).toContain("row-driven");
+  });
+
   it("does not crash on a producer outside the union — records it failed, keeps drop-proof", async () => {
     const { dispatch, produced } = spy();
     const { results } = await produceAll(
