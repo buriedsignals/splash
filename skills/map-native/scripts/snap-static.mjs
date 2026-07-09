@@ -15,6 +15,17 @@ await mkdir(outDir, { recursive: true });
 
 const staticDir = process.env.SERVE_DIR ?? join(root, "dist", "static");
 
+// Channel-driven format (Slice 2): produce.mjs threads the channel's exact deliverable
+// pixels (MAP_WIDTH/MAP_HEIGHT, from renderSize(channel) in skills/atelier/src/channel.ts)
+// so static.png comes out AT that size — deviceScaleFactor:1 so the viewport IS the final
+// pixel box (no 2x-rounding surprise, e.g. article-web's odd 675 height). Manual/no-env
+// runs (e.g. `bun scripts/snap-static.mjs` per SKILL.md) keep the original 1280x720 @2x.
+const hasChannelSize = process.env.MAP_WIDTH && process.env.MAP_HEIGHT;
+const viewport = hasChannelSize
+  ? { width: Number(process.env.MAP_WIDTH), height: Number(process.env.MAP_HEIGHT) }
+  : { width: 1280, height: 720 };
+const deviceScaleFactor = hasChannelSize ? 1 : 2;
+
 // Serve static files from dist/static
 const MIME = {
   ".html": "text/html",
@@ -51,10 +62,7 @@ const baseUrl = `http://127.0.0.1:${port}`;
 console.log("serving:", baseUrl);
 
 const browser = await chromium.launch();
-const page = await browser.newPage({
-  viewport: { width: 1280, height: 720 },
-  deviceScaleFactor: 2,
-});
+const page = await browser.newPage({ viewport, deviceScaleFactor });
 
 console.log("loading:", baseUrl);
 await page.goto(baseUrl);

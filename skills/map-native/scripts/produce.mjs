@@ -5,12 +5,17 @@
 //
 //   bun scripts/produce.mjs <config.json> <outDir> <static|reveal|story|all>
 //   static — web build + 4 snaps only (no video)
-//   reveal — web build + 4 snaps + reveal videos (landscape/square/portrait)
-//   story  — web build + 4 snaps + story videos (landscape/square/portrait)
-//   all    — web build + 4 snaps + reveal + story videos
+//   reveal — web build + 4 snaps + ONE reveal video, at the channel's aspect
+//   story  — web build + 4 snaps + ONE story video, at the channel's aspect
+//   all    — web build + 4 snaps + ONE reveal + ONE story video
+//
+// Channel-driven format (Slice 2, ATELIER_CHANNEL env, default "article-web"): the
+// static build is sized to the channel's exact pixels, and video/scrolly render ONLY
+// the single comp matching the channel's aspect (portrait/square/landscape) — never
+// the full landscape+square+portrait triple.
 //
 // Outputs:
-//   { static, interactive, reveal?: {landscape,square,portrait}, story?: {landscape,square,portrait} }
+//   { static, interactive, reveal?: {[aspectName]: mp4}, story?: {[aspectName]: mp4} }
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync, copyFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
@@ -18,9 +23,19 @@ import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { snapCommand, remotionCommand } from "../src/platform-runners.ts";
+import { channelAspect, renderSize } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
+
+// Channel-driven format (Slice 2): the confirmed CADRAGE Q3 channel, forwarded by
+// adapters.ts as `ATELIER_CHANNEL` (see adapters.ts's CHANNEL THREADING note). Absent
+// (legacy proposals, manual runs) defaults to "article-web" — matches normalizeChannel's
+// default and today's landscape-first behavior, so produce.mjs still works with no
+// channel arg at all.
+const channel = process.env.ATELIER_CHANNEL ?? "article-web";
+const aspect = channelAspect(channel); // "portrait" | "square" | "landscape"
+const mediaSize = renderSize(channel); // { width, height } — the channel's exact pixels
 
 const configPath = process.argv[2];
 const outDir = process.argv[3];
@@ -104,9 +119,17 @@ run("bunx", ["vite", "build"], { BUILD_OUT: staticDir });
 console.log(`[produce map] building interactive… → ${interactiveDir}`);
 run("bunx", ["vite", "build"], { INTERACTIVE: "1", BUILD_OUT: interactiveDir });
 
-// 2. Snap static + interactive into outDir — tell each script which build dir to use
-console.log(`[produce map] snapping static…`);
-snap("scripts/snap-static.mjs", { OUTDIR: outDir, SERVE_DIR: staticDir });
+// 2. Snap static + interactive into outDir — tell each script which build dir to use.
+// Static is sized to the channel's exact deliverable pixels (MAP_WIDTH/MAP_HEIGHT) —
+// interactive stays unsized (channel "interactive" is only ever article-web, which never
+// needs a fixed pixel box — it fills its host).
+console.log(`[produce map] snapping static… (channel=${channel} aspect=${aspect} ${mediaSize.width}x${mediaSize.height})`);
+snap("scripts/snap-static.mjs", {
+  OUTDIR: outDir,
+  SERVE_DIR: staticDir,
+  MAP_WIDTH: String(mediaSize.width),
+  MAP_HEIGHT: String(mediaSize.height),
+});
 
 console.log(`[produce map] snapping interactive (proof)…`);
 snap("scripts/snap-proof.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
@@ -241,11 +264,21 @@ if (kinds.length) {
     writeFileSync(propsPath, JSON.stringify({ config }));
     const remotionEntry = join(root, "remotion", "src", "index.ts");
     for (const kind of kinds) {
-      const comps = kind === "story"
+      const allComps = kind === "story"
         ? storyComps(config, cameraMode)   // dispatches on cameraMode
         : kind === "scrolly"
           ? SCROLLY_COMPS
           : VIDEO_COMPS[kind];
+      // Render ONLY the comp matching the channel's aspect (portrait/square/landscape) —
+      // not the unconditional triple. Cuts render cost 3→1 and guarantees the channel is
+      // the only aspect ever emitted (e.g. a social-vertical run never produces a stray
+      // square/landscape mp4).
+      const comps = allComps.filter(([, name]) => name === aspect);
+      if (comps.length === 0) {
+        throw new Error(
+          `no ${kind} comp matches channel '${channel}' aspect '${aspect}' (available: ${allComps.map(([, n]) => n).join(", ")})`,
+        );
+      }
       result[kind] = renderVideoSet(kind, propsPath, remotionEntry, comps);
     }
   } finally {
