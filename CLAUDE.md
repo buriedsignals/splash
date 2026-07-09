@@ -492,3 +492,12 @@ Boucle **feedback→système complète** via le harness privé (`../atelier-harn
 4. `.example` TLD accepté comme source (partiellement artefact de mes personas ; atelier pourrait rejeter les TLD réservés). Watch-items agents : Swiss-German apostrophe `de-CH`, beeswarm `subject` opt-in au produce, bar wrap capé 2 lignes.
 
 **PROCHAIN** = lot « enforcement mécanique orchestrateur » (le vrai levier) / a11y fallback labels interactif-symbol / réconcilier routage+judge avec B / a11y-tooltip / release MIT.
+
+### Vérif des 4 formats non-statiques (retour Rémy : « pas vu de map interactive ni de vidéo ») — 2026-07-09
+Le batch avait tout render-vérifié en **statique** → angle mort sur interactif/vidéo. Produit + vérifié **live sur main mergé** (Playwright hover/zoom + frames mp4 via ffmpeg) les 4 formats :
+- **Chart interactif** ✅ hover tooltip OK + **locale FR dans le tooltip** (« +2,4 · running 2,4 »). *Minor : value-labels rotés vertical à 1200px de large — lisible, à surveiller.*
+- **Map interactif** ✅ zoom control marche, choroplèthe CVD + légende, fit sur l'Europe.
+- **Chart vidéo** ✅ barres qui s'animent, valeurs qui se révèlent (frame par beat vérifiée).
+- **Map vidéo** ⚠️ **BUG cadrage** : le reveal choroplèthe rend en **vue-monde** (Europe petite, ~60% du cadre vide) au lieu de fit-données comme le statique/interactif. `reveal.ts revealCameraPlan(bounds)` = caméra FIXE au bounds passé → soit le bounds data-extent n'atteint pas le comp Remotion (`remotion/src/Root.tsx`), soit `fitBounds` n'est pas appliqué au render → défaut monde/zoom 0. Root-cause à finir dans Root.tsx ; lié au chantier caméra vidéo « Group B ». **Fix concret + visible à faire.**
+
+**Leçon re-gravée** : pour interactif → vérif live navigateur (hover/pan/zoom Playwright) ; pour vidéo → frames par type de beat (early/mid/end), jamais juste le statique. Le statique cache les bugs de hover ET de cadrage-caméra vidéo.
