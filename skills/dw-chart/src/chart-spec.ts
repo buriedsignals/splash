@@ -23,8 +23,10 @@ export const DEFAULT_BASE_COLOR = "#0072B2";
 
 // Subjects for which the default blue IS the subject-fit choice (water, cold, sky,
 // finance-neutral). For these the guard does not fire on the default. Everything else
-// with a subject must pick a non-default hue.
-const BLUE_FIT_SUBJECT =
+// with a subject must pick a non-default hue. Exported so the atelier spine's
+// guardrail-parity gate re-applies the SAME blue-fit subject list to native specs at the
+// produce boundary (single source of truth — the two must never drift).
+export const BLUE_FIT_SUBJECT =
   /\b(water|sea|ocean|river|rain|flood|cold|winter|ice|snow|sky|marine|hydro)\b/i;
 
 // DW lists `waterfall` and `dual-axis` in /v3/visualizations but the create API rejects them
