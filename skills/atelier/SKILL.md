@@ -308,23 +308,30 @@ article-web is the one channel that can host it**:
   (portrait 1080×1920 for social-vertical, square 1080×1080 for social-feed, landscape 1200×675 for
   article-web) — no delivery menu, just the file.
 - **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`, article-web only):**
-  only here do the three delivery forms apply — ask which the journalist wants. **There is no image
-  export for interactive/scrolly** — the accessible fallback is the static HTML (no JS) form below, not a
-  PNG:
-  - **Code source (dev — self-host / customise):** run `bun skills/atelier/scripts/export-code.mjs exports/<slug>/<id> exports/<slug>/<id>-export --results exports/<slug>/report.json --id <id>` (the source is the per-proposal build subdir from 5c).
-    Hands over a folder with `interactive.html`, `static.html` (the no-JS a11y fallback), and an
-    `EMBED.md` — **no `static.png`**, even though the producer built one as a byproduct in the build
-    subdir; `export-code` only reads it to inline into `static.html` and never copies it standalone.
-    Embed the interactive visual with the `<iframe src="interactive.html">` snippet.
-  - **HTML statique (one self-contained file, no JS — the accessibility fallback):** the `static.html`
-    produced by `export-code` (the image inlined, but the delivery form is the no-JS HTML document, not a
-    bare image file) — a single dependency-free file that embeds in any CMS/email/offline.
-  - **Composant en lien embed (hosted, non-technical):** run
-    `bun skills/atelier/scripts/deploy-embed.mjs exports/<slug>/<id>/interactive.html <slug> --results exports/<slug>/report.json --id <id> <appName>` → an
-    iframe-ready URL to the hosted interactive component. The host is the **journalist's OWN fly.io app**
+  **There is no image export for interactive/scrolly** — the accessible fallback is the static HTML (no JS)
+  form, not a PNG. **Run `export-code.mjs` FIRST, unconditionally — it is NOT gated on a journalist choice**
+  and must not wait for the journalist to pick a delivery form:
+  - `bun skills/atelier/scripts/export-code.mjs exports/<slug>/<id> exports/<slug>/<id>-export --results exports/<slug>/report.json --id <id>` (the source is the per-proposal build subdir from 5c).
+    In ONE pass it writes the hand-over folder: `interactive.html`, `static.html` (the no-JS a11y fallback —
+    **ALWAYS produced whenever the build has a `static.png` byproduct**, which every interactive chart/map
+    does; a scrolly has none, so it ships without the static form), and an `EMBED.md` documenting all forms.
+    **No `static.png`** is copied standalone — `export-code` only inlines it into `static.html`. This one run
+    GUARANTEES the accessibility fallback exists and that there IS a delivered artifact before the flow may
+    call the visual delivered.
+  - **THEN present what the journalist already has** — the code-source folder (`interactive.html` +
+    `static.html`, embed with `<iframe src="interactive.html">`) and the no-JS `static.html` — and offer the
+    ONE opt-in extra, the hosted embed (it is the only outward-facing form, so it stays a choice):
+  - **Composant en lien embed (hosted, non-technical, opt-in):** run
+    `bun skills/atelier/scripts/deploy-embed.mjs exports/<slug>/<id>/interactive.html <slug> --results exports/<slug>/report.json --id <id> <appName>` →
+    an iframe-ready URL to the hosted interactive component. The host is the **journalist's OWN fly.io app**
     (not a shared central host) — pass its name as the 3rd argument or via `$ATELIER_EMBED_APP`. If the
-    journalist has not set up their fly.io host yet, offer the code-source / static-HTML forms now and say
-    the embed link is pending their one-time setup.
+    journalist has not set up their fly.io host yet, the code-source + static-HTML forms are ALREADY
+    delivered (export-code ran); the embed link is the only thing pending their one-time setup.
+
+  **★ `delivered` REQUIRES that `export-code.mjs` produced the folder** (for interactive/scrolly). Never
+  report an interactive/scrolly as delivered on produce-time outputs alone — a Gate-3 review PNG,
+  `interactive.png`, or the build subdir's `static.png` are NOT a delivery. If EXPORT did not run, the visual
+  is NOT delivered, no matter how the run otherwise ended.
 
   **One-time fly.io host setup — on the JOURNALIST'S OWN fly.io account** (run once from
   `skills/atelier/embed-host/`; fly.io app names are globally unique, so the journalist picks their own,
@@ -386,7 +393,7 @@ article-web is the one channel that can host it**:
 - Never call `gate-render` (Gate 3b) right after a re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) without first re-running `review-gate` (Gate 3a) on the NEW render. `produce-all` always writes a WHOLLY FRESH `report.json` — every proposal in that run comes back unreviewed and unapproved (`renderApproved:false`), even one that was already signed off before the correction — so the review MUST run again on what actually changed. Do not treat the script's hard refusal ("not render-reviewed") as the safety net to rely on; redo Gate 3a → 3b in order every time, and never hand-edit `report.json` to restore a prior review/approval onto a new artifact.
 - Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow. This holds with NO exception for making a produce/conformance gate pass: never edit a producer/component's source code (`skills/*/src`, any `.tsx`/`.ts` producer file) mid-PRODUCTION to turn a failing gate green — a real newsroom journalist cannot patch the engine, so atelier must not either. If a produce or conformance gate fails because of a genuine engine bug (not a spec/data problem), SURFACE the bug to the journalist, do NOT ship that visual, and do NOT patch the code — the bug is reported, never worked around.
 - Never silently mutate the ACCEPTED SPEC (`baseColor`, format, etc.) mid-PRODUCTION to route around a conformance-gate failure — this is the spec analogue of the rule above ("never edit product code" → "never silently edit the accepted spec to bypass a gate"). A conformance failure is SURFACED to the journalist as-is; if the spec must change to fix it, GATE 2 is re-opened for re-acceptance of the changed spec. The produce-time conformance guards exist precisely so a non-conformant visual never ships unseen.
-- Never hand over an INTERACTIVE visual without offering the three delivery forms at GATE 4 — code source, static HTML, and the fly.io embed link — as an explicit choice (machinery: `export-code.mjs` + `deploy-embed.mjs`). A SCROLLY has no static image, so it offers only **code source + embed link** (its embed targets `scrolly.html`, not `interactive.html`) — do not promise a static-HTML form for a scrolly.
+- Never hand over an INTERACTIVE visual without running `export-code.mjs` FIRST (unconditionally, NOT gated on a journalist choice) — that one run produces the code-source folder AND the `static.html` no-JS a11y fallback, so both are delivered before any choice; only the hosted fly.io embed link stays an explicit opt-in afterwards (machinery: `export-code.mjs` then optional `deploy-embed.mjs`). Never mark an interactive/scrolly delivered on produce-time outputs alone — a Gate-3 review PNG / `interactive.png` / build-subdir `static.png` is NOT a delivery; only the `export-code` folder is (enforced mechanically by `assertDelivered`). A SCROLLY has no static image, so it ships **code source + embed link** only (its embed targets `scrolly.html`, not `interactive.html`) — do not promise a static-HTML form for a scrolly.
 - Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.
 - Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.) Establish this proactively at Gate 2c (PROPOSITION), before PRODUCTION — never wait for the render-review to be the first thing that catches it, and never reach for the prose fallback just because the journalist has not answered yet.
 - Never accept a generic organisation homepage (e.g. `eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 URL as the source — it must be treated exactly like a missing URL. The source MUST point to the SPECIFIC, traceable dataset/page the figures come from (the Eurostat dataset page for the exact table, the Insee series page, …). If the journalist only gives an organisation name or its homepage, ASK for the specific dataset/page reference rather than shipping the generic one (see Gate 2c) — in the SAME free-text turn, never as a separate follow-up question.

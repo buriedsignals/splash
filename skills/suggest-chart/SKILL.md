@@ -231,6 +231,12 @@ Produce with `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
 `scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `violin`, `diverging-stacked`, `pyramid`, `fan`, `bump`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
+**`highlight` MUST match the confirmed CADRAGE framing — omit it when the framing is a NEUTRAL overview.**
+Only accent a category when the confirmed insight singles that category out ("education dominates", "one
+region leads"). When the journalist confirmed a neutral "vue d'ensemble" / "how it breaks down" framing
+with no single subject, leave `highlight` UNSET — accenting one category then steers the eye to a story the
+journalist explicitly did NOT choose (an encoding drift from the confirmed takeaway). Same discipline as the
+title rule: the encoding may not narrow or diverge from the framing confirmed at Gate 1.
 `grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
 is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
 `North,2400,1900`.
