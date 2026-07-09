@@ -74,9 +74,16 @@ base `de` / `it` today.)
    `sort:"desc"`) — the honest default for "which region is highest" (drop-into-a-bar tie-breaker). State
    WHY (cite Gate 5) in the decision output.
 
-4. **Format (Gates 1–4):** read `<repo-root>/knowledge/references/formats/format-selection.md` (Gates 1–4).
-   Static is the default (most readers do not interact). Escalate to interactive / scrolly / video ONLY on
-   the named conditions.
+4. **Format (Gates -1→4):** read `<repo-root>/knowledge/references/formats/format-selection.md`.
+   **The channel sets the format default FIRST (GATE -1) — there is no single global "static-first" rule.**
+   On the two social channels static-first governs (the only escalation available is to video). On
+   **article-web the channel default is interactive** (`skills/atelier/src/channel.ts`
+   `article-web.interactiveDefault: true`), always shipped with a self-contained static HTML (no-JS) a11y
+   fallback — see the channel block below. The format-selection "escalation" conditions (large/multi-series
+   data · a personal-data hook · web-only distribution) are **signals of how strongly a visual benefits from
+   interactivity — NOT a precondition an article-web interactive must clear.** A plain article-web
+   interactive with none of those signals is the intended default, not an over-escalation; the static-HTML
+   fallback guarantees a11y either way.
 
    **Channel restricts the format set FIRST — before any gate below.** The confirmed distribution channel
    (`skills/atelier/src/channel.ts` `Channel`) hard-constrains which formats are even reachable, before the
@@ -118,10 +125,15 @@ base `de` / `it` today.)
      `validateMapSpec` warns if you route a tighter locator to `map-dw`.
    - **Choropleth data** (region fills) → apply the format ladder below.
 
-   **Map format ladder** (choropleth; applied after Gate 5 routes to a map):
-   - **Static (Gate 1 — default):** → `map-dw`.
-   - **Interactive (Gate 2:** exploration hook — "find your country", per-region hover at scale, web-only)
-     or **Video (Gate 4:** temporal/spatial diffusion, social/vertical distribution) → `map-native`.
+   **Map format ladder** (choropleth; applied after Gate 5 routes to a map — the SAME channel-first rule
+   as charts: the channel sets the format default, the producer follows the format):
+   - **Static → `map-dw`** — the static-choropleth producer: used on the social channels (their non-video
+     format), and on article-web only when a concrete reason prefers static over the interactive default.
+   - **Interactive → `map-native`** — on **article-web this is the channel default** (a live choropleth:
+     "find your country", per-region hover at scale), shipped with map-native's static HTML (no-JS) a11y
+     fallback. The exploration hooks describe when interactivity pays off MOST — a signal, NOT a gate the
+     article-web interactive must clear.
+   - **Video → `map-native`** (Gate 4: temporal/spatial diffusion, social/vertical distribution).
    - **Scrolly (Gate 3:** the story is **irreducibly sequential** — the author paces a guided north→south /
      step-by-step walk through the data, a single map evolves across 4+ discrete states, the piece is
      long-form and NOT breaking news, and resources exist for the added production): → `scrolly`. See the
@@ -409,10 +421,11 @@ produceMap` seam. The Datawrapper token comes from `/atelier/.env` (`DATAWRAPPER
 
 ### map-native (interactive / video choropleth map)
 
-Used when Gate 5 routes to a map AND the format ladder (Gates 1–4) escalates to **interactive** (Gate 2:
-exploration hook, "find your area", per-region hover at scale) or **video** (Gate 4: temporal/spatial
-diffusion that motion clarifies, or social/vertical distribution). The static path always remains
-`map-dw`; escalation to `map-native` requires an explicit format trigger.
+Used when Gate 5 routes to a map AND the chosen format is **interactive** (Gate 2: exploration hook,
+"find your area", per-region hover at scale — on article-web this is the channel default, not an
+escalation) or **video** (Gate 4: temporal/spatial diffusion that motion clarifies, or social/vertical
+distribution). `map-dw` stays the static-choropleth producer — the social static, or the article-web
+case where a concrete reason prefers static over the interactive default.
 
 **ISO-A3 requirement:** `map-native` joins on `world.geojson`'s ISO-A3 codes. Region identifiers MUST be
 ISO-A3 (e.g. `NOR`, `DEU`, `FRA`). If the region codes in the data cannot be matched to ISO-A3 — fall
@@ -653,7 +666,9 @@ insight state the insight, not column names. Confirm `nativeType` ∈ {line, bar
   validator as `map-native` — the scrolly config is a choropleth config). Fix all errors; address all
   warnings. Cite Gate 3 as the format trigger in the decision output.
 - In all cases: the decision output MUST cite which gate(s) drove the routing (Gate 5 for geographic
-  routing; format gates for format escalation; ISO-A3 fallback rule if applicable).
+  routing; the channel/format gates for the format decision — GATE -1 for the article-web interactive
+  default or a social channel's static/video-only set, Gate 2/3/4 when a specific signal drove a
+  particular format; ISO-A3 fallback rule if applicable).
 
 ## Output
 
