@@ -5,13 +5,19 @@ import type {
 } from "./producer-spec";
 import { validateAccepted, type ValidationOutcome } from "./validate-gate";
 import { isFormatAllowed, type Channel } from "./channel";
+import { producerMismatchReason } from "./producer-guard";
 
 // Produce ONE proposal → its outcome (bookkeeping fields are added by produceAll).
+// `actualProducer` is the producer the dispatch actually ran (GUARD 1) — the real
+// dispatch always reports it; when omitted it defaults to the declared producer.
 export type Dispatch = (
   p: AcceptedProposal,
   outDir: string,
 ) => Promise<
-  Pick<ProposalResult, "status" | "outputs" | "publicUrl" | "reason" | "error">
+  Pick<
+    ProposalResult,
+    "status" | "outputs" | "publicUrl" | "reason" | "error" | "actualProducer"
+  >
 >;
 
 // The spec validator is injected (like dispatch) so loop-mechanics tests can pass a
@@ -74,23 +80,44 @@ export async function produceAll(
     }
     try {
       const r = await dispatch(p, `${outDir}/${p.id}`);
-      results.push({
-        ...base,
-        ...r,
-        ...(validation.warnings.length
-          ? { warnings: validation.warnings }
-          : {}),
-        // Gate 3 reset (belt-and-suspenders): a fresh produce is ALWAYS an unreviewed,
-        // unapproved artifact — re-assert that explicitly, after the dispatch spread, so
-        // a re-produce can never ship on a PRIOR render's sign-off even if some future
-        // Dispatch implementation ever smuggled a stale reviewed/renderApproved/
-        // approvedHash through (e.g. by spreading a wider object instead of a literal,
-        // which the Dispatch type's excess-property check would not catch). Gate 3a
-        // (review-gate) and Gate 3b (gate-render) MUST both run again on this new render.
+      const warned = validation.warnings.length
+        ? { warnings: validation.warnings }
+        : {};
+      // Gate 3 reset (belt-and-suspenders): a fresh produce is ALWAYS an unreviewed,
+      // unapproved artifact — re-assert that explicitly, after the dispatch spread, so a
+      // re-produce can never ship on a PRIOR render's sign-off even if some future
+      // Dispatch implementation ever smuggled a stale reviewed/renderApproved/
+      // approvedHash through (e.g. by spreading a wider object instead of a literal, which
+      // the Dispatch type's excess-property check would not catch). Gate 3a (review-gate)
+      // and Gate 3b (gate-render) MUST both run again on this new render.
+      const reset = {
         reviewed: undefined,
         renderApproved: false,
         approvedHash: undefined,
-      });
+      };
+      // GUARD 1 — producer-match. Only a PRODUCED result can flip producers (a
+      // needs-fallback/needs-confirmation/failed dispatch produced nothing). The producer
+      // that actually ran (r.actualProducer, defaulting to the declared one) must equal
+      // the accepted proposal's producer. A real finding: a dw-chart proposal was
+      // silently produced with chart-native. The ONE sanctioned switch is native→dw (the
+      // FALLBACK_TO_DW re-emit). Any other flip is a fail-hard recorded result — never a
+      // silent ship. actualProducer is recorded either way, so the report is honest.
+      if (r.status === "produced") {
+        const actualProducer = r.actualProducer ?? p.producer;
+        const mismatch = producerMismatchReason(p.producer, actualProducer);
+        if (mismatch) {
+          results.push({
+            ...base,
+            status: "failed",
+            actualProducer,
+            error: mismatch,
+          });
+          continue;
+        }
+        results.push({ ...base, ...r, actualProducer, ...warned, ...reset });
+        continue;
+      }
+      results.push({ ...base, ...r, ...warned, ...reset });
     } catch (e) {
       results.push({
         ...base,

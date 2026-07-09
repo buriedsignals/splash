@@ -23,7 +23,10 @@ export type ProduceStatus =
 
 export interface ProposalResult {
   id: string;
-  producer: Producer;
+  producer: Producer; // the producer the accepted proposal COMMITTED to (declared)
+  // GUARD 1: the producer that ACTUALLY ran, as reported by the dispatch. Recorded so the
+  // report is honest about any switch; produce-all fails a mismatch (except native→dw).
+  actualProducer?: Producer;
   format: VisualFormat;
   status: ProduceStatus;
   outputs?: string[]; // file paths (file-based producers)
