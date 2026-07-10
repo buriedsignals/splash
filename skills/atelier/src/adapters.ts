@@ -26,7 +26,11 @@
 //   dw-chart / map-dw / scrolly dispatch is UNCHANGED — no channel is threaded to them.
 //
 //   CLOUD-PUBLISHING (import + await, hits the Datawrapper API):
-//     dw-chart  produceChart(spec: ChartSpec, pngPath) → { chartId, embed, pngPath, publicUrl }
+//     dw-chart  produceChart(spec: ChartSpec, pngPath, opts?) → { chartId, embed, pngPath?, publicUrl }
+//               opts.format ("static" default | "interactive") — single-format-produce-
+//               export (Task 3): "static" exports the media (pngPath present);
+//               "interactive" delivers the hosted embed alone (pngPath undefined). Not
+//               yet threaded from `p.format` here (Task 4's job) — always builds "static".
 //     map-dw    produceMap(spec: MapSpec, pngPath)     → { chartId, embed, pngPath, publicUrl }
 //   Both ChartSpec.data and MapSpec.data are already CSV text set by the upstream
 //   suggester — no toCsv (Task 2) conversion is needed here.
@@ -261,10 +265,16 @@ export const realDispatch: Dispatch = async (
   const pngPath = join(absOutDir, `${p.id}.png`);
 
   if (p.producer === "dw-chart") {
+    // No `format` opt passed here (Task 4's job — threading spec.format into this
+    // call is orchestrator wiring, out of Task 3's scope) — produceChart defaults to
+    // "static", so pngPath is always defined in practice today. `result.pngPath` is
+    // typed optional because dw-chart's own single-format contract now omits it for
+    // "interactive" (see skills/dw-chart/src/produce.ts) — guard here so this stays
+    // correctly typed once a future caller passes format:"interactive".
     const result = await produceChart(p.spec as ChartSpec, pngPath);
     return {
       status: "produced",
-      outputs: [result.pngPath],
+      outputs: result.pngPath ? [result.pngPath] : [],
       publicUrl: result.publicUrl,
       actualProducer: "dw-chart",
     };

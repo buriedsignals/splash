@@ -11,10 +11,20 @@ import { checkResponsive } from "./label-safety";
 import { checkValueLabelContrast } from "./value-label-safety";
 import { channelToExportSize } from "./export-aspect";
 
+// The single-format-produce-export redesign's vocabulary, restricted to the two
+// values dw-chart actually builds differently (it has no video/scrolly — see
+// Task 3's brief). Kept as a plain string union (not imported from
+// ../../atelier/src/channel.ts) to avoid a cross-skill runtime dependency for a
+// hosted producer that is otherwise self-contained.
+export type DwChartFormat = "static" | "interactive";
+
 export interface ProduceResult {
   chartId: string;
   embed: string;
-  pngPath: string;
+  // Present only when format "static" was built (the media export). Absent for
+  // "interactive" — the deliverable there is the hosted embed (`embed`/`publicUrl`),
+  // no local PNG is produced.
+  pngPath?: string;
   publicUrl: string;
 }
 
@@ -33,8 +43,12 @@ function readRange(patch: {
 export async function produceChart(
   spec: ChartSpec,
   pngPath: string,
-  opts: { skipLabelSafety?: boolean } = {},
+  opts: { skipLabelSafety?: boolean; format?: DwChartFormat } = {},
 ): Promise<ProduceResult> {
+  // Defaults to "static" — every existing caller (make-proof.ts, produce-all-types.ts,
+  // the pre-single-format test suite) calls produceChart with no format at all and
+  // expects the PNG on disk, so an absent format must keep producing it (back-compat).
+  const format = opts.format ?? "static";
   const v = validateChartSpec(spec);
   if (!v.ok) throw new Error(`invalid chart spec: ${v.errors.join("; ")}`);
 
@@ -123,10 +137,19 @@ export async function produceChart(
       );
   }
 
-  await exportPng(id, pngPath, exportSize.width, exportSize.height);
+  // Build ONLY what the format needs (single-format-produce-export design): "static"
+  // exports the media file; "interactive" delivers the hosted embed alone — no PNG is
+  // rendered/written for it. The publish above (createChart/setData/patchChart/
+  // publishChart) is unconditional either way: dw-chart is HOSTED, so even the
+  // "static" PNG can only be exported FROM a published chart — that step is
+  // unavoidable infrastructure, not a produced deliverable of its own.
+  const builtPngPath = format === "static" ? pngPath : undefined;
+  if (builtPngPath) {
+    await exportPng(id, builtPngPath, exportSize.width, exportSize.height);
+  }
 
   const embed =
     `<iframe title="${spec.title}" src="${publicUrl}" scrolling="no" frameborder="0" ` +
     `style="width:0;min-width:100%;border:none;" height="400"></iframe>`;
-  return { chartId: id, embed, pngPath, publicUrl };
+  return { chartId: id, embed, pngPath: builtPngPath, publicUrl };
 }

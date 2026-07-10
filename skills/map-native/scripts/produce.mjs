@@ -1,21 +1,36 @@
-// produce(configPath, outDir): the map-native producer — build + render the
+// produce(configPath, outDir, format): the map-native producer — build + render the
 // native outputs from an ARBITRARY config. Injects the config via CONFIG=
 // (Vite define for web, Remotion --props for video), so nothing touches the
 // committed sample. Returns the output paths as JSON on stdout.
 //
-//   bun scripts/produce.mjs <config.json> <outDir> <static|reveal|story|all>
-//   static — web build + 4 snaps only (no video)
-//   reveal — web build + 4 snaps + ONE reveal video, at the channel's aspect
-//   story  — web build + 4 snaps + ONE story video, at the channel's aspect
-//   all    — web build + 4 snaps + ONE reveal + ONE story video
+//   bun scripts/produce.mjs <config.json> <outDir> <format>
+//   format: the SINGLE VisualFormat to build — "static" | "interactive" | "video" |
+//   "scrolly" (the ../../atelier/src/channel.ts vocabulary — same format-value set as
+//   chart-native's produce.mjs, single-format-produce-export design). Builds EXACTLY
+//   that one format's artifacts, nothing else (no cross-format byproducts — e.g. a
+//   "static" run no longer also builds interactive.html just because the channel
+//   allows it). "scrolly" is not built by map-native directly (see the case below) —
+//   it fails hard, mirroring chart-native.
 //
-// Channel-driven format (Slice 2, ATELIER_CHANNEL env, default "article-web"): the
-// static build is sized to the channel's exact pixels, and video/scrolly render ONLY
-// the single comp matching the channel's aspect (portrait/square/landscape) — never
-// the full landscape+square+portrait triple.
+// Video-kind note: map-native has always offered TWO video styles internally —
+// "reveal" (fixed camera, data fades/animates in — src/reveal.ts) and "story"
+// (camera-guided narrative tour derived from deriveMapStory beats). The single
+// VisualFormat "video" has no slot for that second axis, so this produce picks ONE
+// deterministically: the STORY kind — the only style every one of the 7 map types
+// supports (route has no simple-reveal) and the project's own documented preference
+// ("a reveal that just fades every region in at once tells no story" — SKILL.md
+// §Narrated story). The old "scrolly-captured-as-mp4" kind (a video CAPTURE of the
+// scroll experience) is also no longer reachable through this CLI — the true scrolly
+// HTML format lives in skills/scrolly (see the "scrolly" case). Neither src/reveal.ts
+// nor the scrolly video-capture render path is deleted — just unwired from this
+// single-format entry point. Flag to a human if "reveal" needs its own producible
+// path back under this contract.
 //
-// Outputs:
-//   { static, interactive, reveal?: {[aspectName]: mp4}, story?: {[aspectName]: mp4} }
+// Outputs (only the built format's keys are present):
+//   static      → { static }
+//   interactive → { interactive, reviewStill } (reviewStill is EPHEMERAL, not shipped)
+//   video       → { [aspect]: mp4, reviewStill } (reviewStill IS the review, not a
+//                 separate deliverable)
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync, copyFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
@@ -27,6 +42,29 @@ import { channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
+
+// Load VITE_MAPTILER_KEY / REMOTION_MAPTILER_KEY from the monorepo root .env when not
+// already set, mirroring skills/scrolly/scripts/produce.mjs's own fallback (same
+// problem: bun/vite only auto-load a `.env` from the process's cwd, and this script's
+// cwd is the skill dir, two levels below the monorepo root where the real `.env`
+// lives). Every map component throws "*_MAPTILER_KEY missing" at load time without
+// it — even a "static" build needs VITE_MAPTILER_KEY, and "video" additionally needs
+// REMOTION_MAPTILER_KEY (Remotion's own env-prefix convention) for the Remotion CLI
+// subprocess. Silent when the file is absent/unreadable — the map component's own
+// throw is the real, clear failure signal in that case.
+if (!process.env.VITE_MAPTILER_KEY || !process.env.REMOTION_MAPTILER_KEY) {
+  const rootEnv = join(root, "../../.env");
+  try {
+    const lines = readFileSync(rootEnv, "utf8").split("\n");
+    for (const line of lines) {
+      const m = line.match(/^(VITE_MAPTILER_KEY|REMOTION_MAPTILER_KEY)\s*=\s*(.+)$/);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+    }
+  } catch {
+    // .env absent or unreadable — proceed; the map components' own throw at load
+    // time is the clear failure signal.
+  }
+}
 
 // Render-size conformance (Slice 2, Task 4) — a cheap, render-free PNG-dimension
 // probe: reads the IHDR chunk directly (PNG signature 8 bytes + 4-byte chunk length +
@@ -60,29 +98,24 @@ const channel = process.env.ATELIER_CHANNEL ?? "article-web";
 const aspect = channelAspect(channel); // "portrait" | "square" | "landscape"
 const mediaSize = renderSize(channel); // { width, height } — the channel's exact pixels
 
-// Channel-gated interactive (fix/channel-gated-produce): only build the interactive web
-// output and run the interactive-only snaps (snap-proof, snap-responsive, snap-a11y) when
-// the channel allows the interactive format. social-vertical / social-feed (allowedFormats
-// = static, video) must NOT ship an interactive byproduct; article-web (allows interactive)
-// is unchanged. The static build, snap-static, snap-theme (dark), render-size, and the
-// video path always run regardless of channel.
+// Channel-gated interactive (fix/channel-gated-produce, kept under the single-format
+// redesign): the "interactive" format is only buildable when the channel actually
+// allows it (social-vertical / social-feed forbid it — allowedFormats = static,
+// video). `case "interactive"` below fails hard rather than silently producing when
+// this is false.
 const interactiveAllowed = isFormatAllowed(channel, "interactive");
+
+// The single-format-produce-export redesign's vocabulary (mirrors chart-native's
+// produce.mjs — kept as a plain runtime Set here since this is a .mjs, not imported,
+// to avoid a type-only import needing a bundler step).
+const VALID_FORMATS = new Set(["static", "interactive", "video", "scrolly"]);
 
 const configPath = process.argv[2];
 const outDir = process.argv[3];
-// Default to `static` (one fast PNG), NOT `all` — an omitted flag must never silently
-// trigger the full video set (up to 9 heavy Remotion renders, needing a MapTiler key +
-// ANGLE + Chromium and minutes each). Callers asking for video pass the format explicitly.
-const formatArg = process.argv[4] ?? process.env.FORMATS;
-const format = formatArg ?? "static";
-const VALID = new Set(["static", "reveal", "story", "scrolly", "all"]);
-
-if (!configPath || !outDir || !VALID.has(format)) {
-  console.error("usage: produce.mjs <config.json> <outDir> <static|reveal|story|scrolly|all>");
+const format = process.argv[4] ?? process.env.FORMAT;
+if (!configPath || !outDir || !VALID_FORMATS.has(format)) {
+  console.error("usage: produce.mjs <config.json> <outDir> <static|interactive|video|scrolly>");
   process.exit(1);
-}
-if (!formatArg) {
-  console.error("note: no format given → defaulting to `static`. Pass reveal|story|scrolly|all for video.");
 }
 
 mkdirSync(outDir, { recursive: true });
@@ -91,18 +124,15 @@ mkdirSync(outDir, { recursive: true });
 // per-type dispatch (video comps) further down, so there is no double-read.
 const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
 
-// Dark-video/scrolly gap warning: the video/scrolly renderers (*Story/*Reveal/*Scrolly
-// under src/components/) do not yet honor mapStyle:dark — they always render a LIGHT
-// basemap (a known, deferred follow-up; see CLAUDE.md "parité harnais-contraste côté
-// map"). Warn (never fail — this is a known gap, not a defect) so a journalist who asked
-// for a dark video/scrolly isn't silently handed a light MP4 with no explanation.
-// `format` here is one of static|reveal|story|scrolly|all: only "static" also drives the
-// interactive build without touching a video/scrolly renderer, so any other value means a
-// video or scrolly kind will be rendered.
-if (parsedConfig.mapStyle === "dataviz-dark" && format !== "static") {
+// Dark-video gap warning: the video renderer (*Story under src/components/) does not
+// yet honor mapStyle:dark — it always renders a LIGHT basemap (a known, deferred
+// follow-up; see CLAUDE.md "parité harnais-contraste côté map"). Warn (never fail —
+// this is a known gap, not a defect) so a journalist who asked for a dark video isn't
+// silently handed a light MP4 with no explanation. Only "video" touches the renderer.
+if (parsedConfig.mapStyle === "dataviz-dark" && format === "video") {
   console.warn(
-    `[produce map] WARNING: mapStyle "dataviz-dark" requested with format "${format}" — ` +
-      "dark mode is not yet honored in the video/scrolly renderers; the output will render with a LIGHT basemap.",
+    `[produce map] WARNING: mapStyle "dataviz-dark" requested with format "video" — ` +
+      "dark mode is not yet honored in the video renderer; the output will render with a LIGHT basemap.",
   );
 }
 
@@ -143,92 +173,7 @@ const run = (cmd, args, extraEnv = {}) =>
   });
 const snap = (script, extraEnv = {}) => run(SNAP[0], [...SNAP.slice(1), script], extraEnv);
 
-// 1. Web builds (config baked in via the Vite define) — each into its own dir
-console.log(`[produce map] building static… → ${staticDir}`);
-run("bunx", ["vite", "build"], { BUILD_OUT: staticDir });
-
-// The interactive web build + its interactive-only snaps run ONLY when the channel
-// allows the interactive format (skipped for social-vertical / social-feed).
-let interactiveHtmlDest = null;
-if (interactiveAllowed) {
-  console.log(`[produce map] building interactive… → ${interactiveDir}`);
-  run("bunx", ["vite", "build"], { INTERACTIVE: "1", BUILD_OUT: interactiveDir });
-} else {
-  console.log(`[produce map] channel "${channel}" forbids interactive — skipping interactive build.`);
-}
-
-// 2. Snap static (always) into outDir — sized to the channel's exact deliverable pixels
-// (MAP_WIDTH/MAP_HEIGHT). The interactive snaps (proof/responsive/a11y) run only when the
-// interactive build exists; interactive stays unsized (channel "interactive" is only ever
-// article-web, which never needs a fixed pixel box — it fills its host).
-console.log(`[produce map] snapping static… (channel=${channel} aspect=${aspect} ${mediaSize.width}x${mediaSize.height})`);
-snap("scripts/snap-static.mjs", {
-  OUTDIR: outDir,
-  SERVE_DIR: staticDir,
-  MAP_WIDTH: String(mediaSize.width),
-  MAP_HEIGHT: String(mediaSize.height),
-});
-
-if (interactiveAllowed) {
-  console.log(`[produce map] snapping interactive (proof)…`);
-  snap("scripts/snap-proof.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
-
-  // Copy self-contained interactive.html into outDir
-  const interactiveHtmlSrc = join(interactiveDir, "index.html");
-  interactiveHtmlDest = join(outDir, "interactive.html");
-  copyFileSync(interactiveHtmlSrc, interactiveHtmlDest);
-  console.log(`[produce map] interactive.html → ${interactiveHtmlDest}`);
-  run("bun", ["scripts/assert-selfcontained.mjs", interactiveHtmlDest]);
-
-  console.log(`[produce map] snapping responsive…`);
-  snap("scripts/snap-responsive.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
-
-  console.log(`[produce map] snapping a11y…`);
-  snap("scripts/snap-a11y.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
-} else {
-  console.log(`[produce map] interactive snaps (proof/responsive/a11y) skipped for channel "${channel}".`);
-}
-
-// Theme guard — ONLY when the config asked for the dark basemap: assert the STATIC
-// build actually rendered dark (furniture + basemap), not just that the config said so.
-// Placed after snap-a11y (the last step in this pipeline); map-native has no
-// snap-contrast.mjs yet (that harness is a separate, not-yet-built satellite — see
-// CLAUDE.md "parité harnais-contraste côté map"). Fail-hard, like every other snap-*.
-if (parsedConfig.mapStyle === "dataviz-dark") {
-  console.log(`[produce map] snapping theme (dark)…`);
-  snap("scripts/snap-theme.mjs", { OUTDIR: outDir, SERVE_DIR: staticDir });
-}
-
-// Render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
-// dimensions must equal the channel's exact media size. Fail-hard before export,
-// wired like snap-theme/snap-a11y above. No render: static.png already exists on
-// disk (snap-static above already sized the build to MAP_WIDTH/MAP_HEIGHT); this
-// just reads its IHDR chunk to confirm what actually landed on disk.
-console.log(`[produce map] checking rendered size vs channel "${channel}"…`);
-{
-  const staticPngPath = join(outDir, "static.png");
-  const { width: actualW, height: actualH } = readPngSize(staticPngPath);
-  try {
-    assertRenderedSize(actualW, actualH, channel);
-    console.log(`[produce map] render-size: OK (${actualW}x${actualH} matches channel "${channel}").`);
-  } catch (err) {
-    console.error(`[produce map] RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
-    process.exit(1);
-  }
-}
-
-const result = { static: join(outDir, "static.png") };
-if (interactiveAllowed) {
-  result.interactive = join(outDir, "interactive.png");
-  result.interactiveHtml = interactiveHtmlDest;
-}
-
-const isSymbol = parsedConfig.type === "symbol";
 const isRoute = parsedConfig.type === "route";
-const isLocator = parsedConfig.type === "locator";
-const isDotDensity = parsedConfig.type === "dot-density";
-const isHexGrid = parsedConfig.type === "hex-grid";
-const isCartogram = parsedConfig.type === "cartogram";
 
 // Returns the composition set for the story kind, dispatched on cameraMode.
 // guided-tour: choropleth/symbol fly-through (SP2). route-reveal: draw-on route (SP3b).
@@ -257,126 +202,181 @@ function storyComps(config, cameraMode) {
   throw new Error(`camera mode '${cameraMode}' is not implemented`);
 }
 
-// comps[kind] = [[compId, sizeName], ...] for the config's type
-const VIDEO_COMPS = {
-  reveal: isCartogram
-    ? [["CartogramReveal", "landscape"], ["CartogramRevealSquare", "square"], ["CartogramRevealPortrait", "portrait"]]
-    : isHexGrid
-    ? [["HexGridReveal", "landscape"], ["HexGridRevealSquare", "square"], ["HexGridRevealPortrait", "portrait"]]
-    : isDotDensity
-    ? [["DotDensityReveal", "landscape"], ["DotDensityRevealSquare", "square"], ["DotDensityRevealPortrait", "portrait"]]
-    : isLocator
-    ? [["LocatorReveal", "landscape"], ["LocatorRevealSquare", "square"], ["LocatorRevealPortrait", "portrait"]]
-    : isSymbol
-    ? [["SymbolReveal", "landscape"], ["SymbolRevealSquare", "square"], ["SymbolRevealPortrait", "portrait"]]
-    : [["ChoroplethReveal", "landscape"], ["ChoroplethRevealSquare", "square"], ["ChoroplethRevealPortrait", "portrait"]],
-};
+// Still mid-frame for the story kind (matches the pre-single-format STILL_FRAME.story).
+const STORY_STILL_FRAME = 140;
 
-const SCROLLY_COMPS = [
-  ["MapScrolly", "landscape"],
-  ["MapScrollySquare", "square"],
-  ["MapScrollyPortrait", "portrait"],
-];
+const result = {};
 
-// Still mid-frame per kind (reveal is 240 frames; story uses its existing 140).
-const STILL_FRAME = { reveal: 120, story: 140, scrolly: 140 };
+switch (format) {
+  // static → static.png (the media) only. No interactive build, no video. The dark
+  // basemap theme guard applies here (it reads the static dist).
+  case "static": {
+    console.log(`[produce map] building static… → ${staticDir}`);
+    run("bunx", ["vite", "build"], { BUILD_OUT: staticDir });
 
-function renderVideoSet(kind, propsPath, remotionEntry, comps) {
-  const out = {};
-  for (const [comp, name] of comps) {
-    const stillOut = join(outDir, `${kind}-${name}-still.png`);
-    const mp4Out = join(outDir, `${kind}-${name}.mp4`);
-    console.log(`[produce map] ${kind} ${name} (${comp}) — still…`);
-    run(REMOTION[0], [...REMOTION.slice(1), "still", remotionEntry, comp, stillOut,
-      `--frame=${STILL_FRAME[kind]}`, "--gl=angle", `--props=${propsPath}`], { COMP: comp });
-    console.log(`[produce map] ${kind} ${name} (${comp}) — mp4…`);
-    run(REMOTION[0], [...REMOTION.slice(1), "render", remotionEntry, comp, mp4Out,
-      "--gl=angle", "--concurrency=1", "--timeout=120000", `--props=${propsPath}`], { COMP: comp });
-    out[name] = mp4Out;
+    console.log(`[produce map] snapping static… (channel=${channel} aspect=${aspect} ${mediaSize.width}x${mediaSize.height})`);
+    snap("scripts/snap-static.mjs", {
+      OUTDIR: outDir,
+      SERVE_DIR: staticDir,
+      MAP_WIDTH: String(mediaSize.width),
+      MAP_HEIGHT: String(mediaSize.height),
+    });
+
+    // Theme guard — ONLY when the config asked for the dark basemap: assert the
+    // static build actually rendered dark (furniture + basemap), not just that the
+    // config said so. map-native has no snap-contrast.mjs yet (a separate,
+    // not-yet-built satellite — see CLAUDE.md "parité harnais-contraste côté map").
+    if (parsedConfig.mapStyle === "dataviz-dark") {
+      console.log(`[produce map] snapping theme (dark)…`);
+      snap("scripts/snap-theme.mjs", { OUTDIR: outDir, SERVE_DIR: staticDir });
+    }
+
+    // Render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
+    // dimensions must equal the channel's exact media size. Fail-hard before export.
+    // No render: static.png already exists on disk (snap-static above already sized
+    // the build to MAP_WIDTH/MAP_HEIGHT); this just reads its IHDR chunk to confirm
+    // what actually landed on disk.
+    console.log(`[produce map] checking rendered size vs channel "${channel}"…`);
+    {
+      const staticPngPath = join(outDir, "static.png");
+      const { width: actualW, height: actualH } = readPngSize(staticPngPath);
+      try {
+        assertRenderedSize(actualW, actualH, channel);
+        console.log(`[produce map] render-size: OK (${actualW}x${actualH} matches channel "${channel}").`);
+      } catch (err) {
+        console.error(`[produce map] RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
+        process.exit(1);
+      }
+    }
+
+    result.static = join(outDir, "static.png");
+    break;
   }
-  return out;
-}
 
-// Route has no simple-reveal; its only video is route-reveal (story-kind).
-// For route: all/reveal/story → ["story"]; static → []. Non-route branch unchanged.
-// Cartogram: Slice B adds reveal + story video kinds (scrolly in Task 3).
-const kinds = isCartogram
-  ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
-  : isHexGrid
-  ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
-  : isDotDensity
-  ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
-  : isLocator
-  ? (format === "static" ? [] : format === "reveal" ? ["reveal"] : format === "story" ? ["story"] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["reveal", "story", "scrolly"] : [])
-  : isRoute
-  ? (format === "static" ? [] : format === "scrolly" ? ["scrolly"] : format === "all" ? ["story", "scrolly"] : ["story"])
-  : (format === "all" ? ["reveal", "story", "scrolly"]
-     : format === "reveal" ? ["reveal"]
-     : format === "story" ? ["story"]
-     : format === "scrolly" ? ["scrolly"]
-     : []);
-if (kinds.length) {
-  const config = parsedConfig;
-  const cameraMode = config.cameraMode ?? (isRoute ? "route-reveal" : "guided-tour");
-  const tmpDir = mkdtempSync(join(tmpdir(), "map-native-props-"));
-  try {
-    const propsPath = join(tmpDir, "props.json");
-    writeFileSync(propsPath, JSON.stringify({ config }));
-    const remotionEntry = join(root, "remotion", "src", "index.ts");
+  // interactive → interactive.html (the deliverable) + interactive.png (a Gate-3
+  // review still — EPHEMERAL, never shipped) + the interaction guards (responsive,
+  // a11y). No static build at all: static.png/snap-static/snap-theme do not apply to
+  // an interactive-only produce.
+  case "interactive": {
+    if (!interactiveAllowed) {
+      console.error(
+        `[produce map] format "interactive" is not allowed for channel "${channel}" — refusing to produce.`,
+      );
+      process.exit(1);
+    }
+
+    console.log(`[produce map] building interactive… → ${interactiveDir}`);
+    run("bunx", ["vite", "build"], { INTERACTIVE: "1", BUILD_OUT: interactiveDir });
+
+    console.log(`[produce map] snapping interactive (ephemeral review still)…`);
+    snap("scripts/snap-proof.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+
+    const interactiveHtmlSrc = join(interactiveDir, "index.html");
+    const interactiveHtmlDest = join(outDir, "interactive.html");
+    copyFileSync(interactiveHtmlSrc, interactiveHtmlDest);
+    console.log(`[produce map] interactive.html → ${interactiveHtmlDest}`);
+    run("bun", ["scripts/assert-selfcontained.mjs", interactiveHtmlDest]);
+
+    console.log(`[produce map] snapping responsive…`);
+    snap("scripts/snap-responsive.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+
+    console.log(`[produce map] snapping a11y…`);
+    snap("scripts/snap-a11y.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+
+    result.interactive = interactiveHtmlDest;
+    result.reviewStill = join(outDir, "interactive.png"); // ephemeral — not delivered
+    break;
+  }
+
+  // video (config injected via Remotion --props) — render ONLY the single STORY comp
+  // matching the channel's aspect (see the file-header "Video-kind note" for why
+  // story, not reveal). No web build at all: Remotion has its own bundler entry
+  // (remotion/src/index.ts), independent of the static/interactive Vite dist.
+  case "video": {
+    const cameraMode = parsedConfig.cameraMode ?? (isRoute ? "route-reveal" : "guided-tour");
+    const allComps = storyComps(parsedConfig, cameraMode);
+    // Render ONLY the comp matching the channel's aspect (portrait/square/landscape) —
+    // not the unconditional triple. Guarantees the channel is the only aspect ever
+    // emitted (e.g. a social-vertical run never produces a stray square/landscape mp4).
+    const comps = allComps.filter(([, name]) => name === aspect);
+    if (comps.length === 0) {
+      throw new Error(
+        `no story comp matches channel '${channel}' aspect '${aspect}' (available: ${allComps.map(([, n]) => n).join(", ")})`,
+      );
+    }
+    const [comp, name] = comps[0];
+
     // Video render-size conformance (Task 4) — read Root.tsx once and assert the
     // SELECTED comp's registered dims (no render). Square/Portrait comps are
     // uniformly pinned to renderSize(channel) across all 7 map types (1080x1080 /
     // 1080x1920 — the true-9:16 fix this slice made), so an exact match is a real
-    // regression guard (e.g. against re-introducing the 4:5 1350 bug). Landscape
-    // comps keep the pre-channel 1280x720 convention (same 16:9 aspect ratio as
-    // article-web's 1200x675, but not the exact pixel box) — out of this slice's
-    // scope (see plan self-review "repoint only"); enforcing exact equality there
-    // would fail-hard on every article-web video (the DEFAULT channel), which the
-    // Final e2e render-verify expects to still render. So we only hard-assert for
+    // regression guard. Landscape comps keep the pre-channel 1280x720 convention
+    // (same 16:9 aspect ratio as article-web's 1200x675, but not the exact pixel box)
+    // — out of this slice's scope; enforcing exact equality there would fail-hard on
+    // every article-web video (the DEFAULT channel). So we only hard-assert for
     // portrait/square and log landscape's actual dims for visibility.
     const rootTsxSrc = readFileSync(join(root, "remotion", "src", "Root.tsx"), "utf8");
-    for (const kind of kinds) {
-      const allComps = kind === "story"
-        ? storyComps(config, cameraMode)   // dispatches on cameraMode
-        : kind === "scrolly"
-          ? SCROLLY_COMPS
-          : VIDEO_COMPS[kind];
-      // Render ONLY the comp matching the channel's aspect (portrait/square/landscape) —
-      // not the unconditional triple. Cuts render cost 3→1 and guarantees the channel is
-      // the only aspect ever emitted (e.g. a social-vertical run never produces a stray
-      // square/landscape mp4).
-      const comps = allComps.filter(([, name]) => name === aspect);
-      if (comps.length === 0) {
-        throw new Error(
-          `no ${kind} comp matches channel '${channel}' aspect '${aspect}' (available: ${allComps.map(([, n]) => n).join(", ")})`,
-        );
-      }
-      for (const [comp] of comps) {
-        const compDims = readCompDims(rootTsxSrc, comp);
-        if (!compDims) {
-          console.error(`[produce map] could not find comp "${comp}" dims in Root.tsx`);
-          process.exit(1);
-        }
-        if (aspect === "portrait" || aspect === "square") {
-          try {
-            assertRenderedSize(compDims.width, compDims.height, channel);
-            console.log(
-              `[produce map] video render-size: OK (${comp} ${compDims.width}x${compDims.height} matches channel "${channel}").`,
-            );
-          } catch (err) {
-            console.error(`[produce map] VIDEO RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
-            process.exit(1);
-          }
-        } else {
-          console.log(
-            `[produce map] video render-size: ${comp} is ${compDims.width}x${compDims.height} (landscape keeps its pre-channel 1280x720 convention, not pinned to the channel's exact mediaSize — see comment above).`,
-          );
-        }
-      }
-      result[kind] = renderVideoSet(kind, propsPath, remotionEntry, comps);
+    const compDims = readCompDims(rootTsxSrc, comp);
+    if (!compDims) {
+      console.error(`[produce map] could not find comp "${comp}" dims in Root.tsx`);
+      process.exit(1);
     }
-  } finally {
-    rmSync(tmpDir, { recursive: true, force: true });
+    if (aspect === "portrait" || aspect === "square") {
+      try {
+        assertRenderedSize(compDims.width, compDims.height, channel);
+        console.log(
+          `[produce map] video render-size: OK (${comp} ${compDims.width}x${compDims.height} matches channel "${channel}").`,
+        );
+      } catch (err) {
+        console.error(`[produce map] VIDEO RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
+        process.exit(1);
+      }
+    } else {
+      console.log(
+        `[produce map] video render-size: ${comp} is ${compDims.width}x${compDims.height} (landscape keeps its pre-channel 1280x720 convention, not pinned to the channel's exact mediaSize — see comment above).`,
+      );
+    }
+
+    const tmpDir = mkdtempSync(join(tmpdir(), "map-native-props-"));
+    try {
+      const propsPath = join(tmpDir, "props.json");
+      writeFileSync(propsPath, JSON.stringify({ config: parsedConfig }));
+      const remotionEntry = join(root, "remotion", "src", "index.ts");
+
+      const stillOut = join(outDir, `video-${name}-still.png`);
+      const mp4Out = join(outDir, `${name}.mp4`);
+      console.log(`[produce map] video ${name} (${comp}) — still…`);
+      run(REMOTION[0], [...REMOTION.slice(1), "still", remotionEntry, comp, stillOut,
+        `--frame=${STORY_STILL_FRAME}`, "--gl=angle", `--props=${propsPath}`], { COMP: comp });
+      console.log(`[produce map] video ${name} (${comp}) — mp4…`);
+      run(REMOTION[0], [...REMOTION.slice(1), "render", remotionEntry, comp, mp4Out,
+        "--gl=angle", "--concurrency=1", "--timeout=120000", `--props=${propsPath}`], { COMP: comp });
+
+      result[name] = mp4Out;
+      result.reviewStill = stillOut; // the still IS the review, not a separate deliverable
+      console.log(`[produce map] done rendering ${name}.`);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+    break;
+  }
+
+  // scrolly — NOT built by map-native directly. The true interactive scroll-driven
+  // format (skills/scrolly) is its own producer (see ../../atelier/src/producer-spec.ts
+  // Producer union and adapters.ts's SCRIPT table): it hosts map-native's rendering
+  // under its own build/render pipeline, dispatched independently by the orchestrator
+  // as producer "scrolly", never through this script. map-native's own former
+  // "scrolly" CLI value built a scrolly-experience captured AS AN MP4 — a different,
+  // narrower thing than the true HTML scrolly format — and is no longer reachable
+  // through this single-format entry point either (see the file-header note). Fail
+  // hard with a clear reason instead of silently mis-producing.
+  case "scrolly": {
+    console.error(
+      `[produce map] format "scrolly" is not built by map-native — dispatch to the "scrolly" ` +
+        `producer (skills/scrolly), which hosts map-native's rendering for the scroll-driven format.`,
+    );
+    process.exit(1);
+    break;
   }
 }
 
