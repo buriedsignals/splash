@@ -1,13 +1,22 @@
 # Render-review — the editorial second pair of eyes (Gate 3, Layer 2)
 
 A MANDATORY editorial pass on every PRODUCED visual, run BEFORE the journalist's "ship it".
-It reads the ACTUAL rendered visual (the `static.png` / a video frame / the interactive) together
-with the article + the data + the emitted spec, and flags editorial defects that deterministic code
-cannot see. Its concerns are **advisory** — surfaced to the journalist, who decides — but running it
-is **mandatory**: `assertShippable` refuses to export a visual with no review record. Honest scope: the
-record is a **checkpoint that a review ran**, not mechanical proof of its substance (unlike Gate 2b, whose
-trigger is upstream provenance data) — a self-attested record from the host that wrote the spec can
-rubber-stamp its own error. What makes it real is **independence**, below.
+It reads the ACTUAL rendered visual — the `static.png` / a video frame for what a still can show, and,
+for an interactive or scrolly deliverable, the RESULT of the producer's interaction test (below) for what
+a still cannot — together with the article + the data + the emitted spec, and flags editorial defects that
+deterministic code cannot see. Its concerns are **advisory** — surfaced to the journalist, who decides —
+but running it is **mandatory**: `assertShippable` refuses to export a visual with no review record.
+Honest scope: the record is a **checkpoint that a review ran**, not mechanical proof of its substance
+(unlike Gate 2b, whose trigger is upstream provenance data) — a self-attested record from the host that
+wrote the spec can rubber-stamp its own error. What makes it real is **independence**, below.
+
+**A static image is not evidence of interaction.** A `static.png` (or a single video frame) shows layout,
+labels, colour, aspect, title, source, emphasis — and NOTHING about behaviour. Hover, focus, tooltip
+content, tooltip in-viewport clamping, popup name/value, pan/zoom are INVISIBLE in a still. Asserting any
+of them from a still — "the tooltip stays in-viewport on hover", "hover surfaces a tooltip", "pan/zoom
+works" — is a FALSE verification: a claim the review never performed. This has shipped twice (a symbol map
+and a waterfall interactive both had "in-viewport tooltip works on hover" asserted off two static PNGs).
+See **Interaction claims require an interaction test**, below — the invariant every type inherits.
 
 Why it exists: the spine gates catch mechanical faults (an invalid spec), but the most damaging faults
 are editorial and need the article as ground truth — a title that misstates the metric, a fabricated
@@ -24,7 +33,51 @@ FALSIFY the visual against each criterion, default to flagging — but be honest
 review does NOT deliver true independence and carries residual rubber-stamp risk; it is a known,
 accepted limitation, not a reason to spawn a background agent mid-flow.
 
+## Interaction claims require an interaction test (invariant — every type inherits it)
+For an **interactive** or **scrolly** deliverable, a claim about BEHAVIOUR — a tooltip surfaces on
+hover/focus, the tooltip text is legible, the tooltip stays in-viewport at a mark on the edge, a map popup
+shows the right name/value, pan/zoom works — is **allowed ONLY if backed by actually RUNNING the
+producer's interaction snapshot script and reading its pass/fail**. NEVER infer it from a `static.png` or a
+video frame. No run, no interaction claim: say "not interaction-tested", never assert it passed.
+
+You do not have to trust your own reasoning here, and you must not: the producers ship the exact runnable
+checks, and they ALREADY RAN, fail-hard, inside `produce-all` when the channel allows interactive (the
+build cannot reach Gate 3 with a broken hover/tooltip). So the evidence for any interaction claim is those
+scripts' pass — cite it. Re-run the relevant script yourself whenever you need to (re)confirm a specific
+claim, and ALWAYS after any re-produce (Gate 3a re-runs on the new render — a static read never substitutes
+for the interaction test). These are the scripts that ship in the repo (the private QA harness is NOT
+available to a newsroom — rely only on these):
+
+**chart-native (interactive / chart-scrolly)** — run from `skills/chart-native/`, `CHART=<type>` selects the
+built type; each prints a JSON summary to stdout and exits non-zero on failure (a clean run exits 0 with an
+`OK` line):
+- `bun scripts/snap-tooltip-contrast.mjs` — focuses up to 12 data marks; asserts a `.tooltip` actually
+  SURFACES on focus/hover AND its text clears 4.5:1 WCAG contrast. JSON `{chart, marksHovered, checked,
+  violations}`; fails hard if not one mark ever opened a tooltip (the hover→tooltip mechanism is broken) or
+  any tooltip text is under-contrast. → evidence for "hover surfaces a legible tooltip".
+- `bun scripts/snap-tooltip-viewport.mjs` — focuses up to 16 marks at a narrow (380px) and a wide (1100px)
+  embed width; asserts each surfaced tooltip stays inside its plot box `[margin, size−margin]` (a mark on
+  the right/top edge must not push the tooltip off-screen). JSON `{chart, widths, checked, violations}`;
+  fails hard on any overflow or if no tooltip was ever observed. → the ONLY evidence that licenses "the
+  tooltip stays in-viewport on hover".
+- `bun scripts/snap-interactive.mjs` — loads the interactive build, hovers a data point, asserts the
+  `.tooltip` renders, and screenshots it. → a driven hover image (a still that was PRODUCED BY a real hover,
+  not a static render) when you want to eyeball the actual tooltip.
+
+**map-native (interactive map)** — run from `skills/map-native/`, pass the built interactive dir:
+- `bun scripts/snap-proof.mjs` (env `SERVE_DIR=<interactive dist> OUTDIR=<dir>`) — loads the interactive
+  map, hovers to trigger a popup, and asserts the popup carries a region/place name (letters) and, for
+  choropleth/symbol layers, a value (a digit); writes `interactive.png` from the real hover. Exits non-zero
+  if no popup is ever found. → evidence for "hover surfaces a popup with the right name/value".
+
+Any assertion listed under **Criteria** as `[interaction-tested]` MUST cite the script above whose pass
+backs it (or its produce-time run). If you did not run it and cannot cite the produce-time pass, do not make
+the claim — flag "interaction not verified" instead.
+
 ## Criteria — flag a concern for each that fails
+Tag each finding with HOW it was verified: **[static]** (readable from the `static.png` / video frame) or
+**[interaction-tested]** (requires running an interaction script above — never a still). Keep the two
+apart in the record so a reader can tell what was eyeballed from what was exercised.
 1. **Title honesty.** The title states exactly what the data shows. A RATE title must not assert a COUNT
    or VOLUME ("cinq fois plus de jeunes au chômage" over a rate, "deux fois plus d'emballages" over a %
    are both false). The insight must be literally true of the data. It must ALSO match the takeaway the
@@ -52,13 +105,20 @@ accepted limitation, not a reason to spawn a background agent mid-flow.
    line; a ranking is a bar, not a map.
 4. **Earns its place.** The visual shows more than the sentence already says. A two-value "chart" that
    reads as a sentence → recommend no-chart (or a callout), not a chart.
-5. **Legibility & a11y.** Readable at a glance at the target size; value labels clear 4.5:1; furniture
-   (title, source, unit/legend) present, in the article's language, numbers localized (FR "1 900", "19,3").
-   For a chart-scrolly, this includes the caption wording itself — ordinals ("2e" not "2nd") and
-   connective phrases ("en tête", "Le plus bas"), not just numbers (`chart-native/src/chart-story.ts`
-   branches on `spec.lang`, same convention as `core/locale.ts`).
-6. **Fidelity.** The emphasis the journalist accepted (a highlighted region, a labelled outlier) is
-   actually in the render.
+5. **Legibility & a11y.** **[static]** for the still surface: readable at a glance at the target size;
+   value labels clear 4.5:1; furniture (title, source, unit/legend) present, in the article's language,
+   numbers localized (FR "1 900", "19,3"). For a chart-scrolly, this includes the caption wording itself —
+   ordinals ("2e" not "2nd") and connective phrases ("en tête", "Le plus bas"), not just numbers
+   (`chart-native/src/chart-story.ts` branches on `spec.lang`, same convention as `core/locale.ts`).
+   **[interaction-tested]** for the hover surface of an interactive/scrolly deliverable: that a tooltip
+   surfaces on hover/focus, its text is legible (4.5:1), it stays in-viewport at an edge mark, and (map) a
+   popup shows the right name/value — these are NEVER visible in the `static.png`; assert them only by
+   citing the pass of `snap-tooltip-contrast` / `snap-tooltip-viewport` (chart) or `snap-proof` (map). No
+   cited run → record "tooltip/hover not interaction-tested", never "works".
+6. **Fidelity. [static]** The emphasis the journalist accepted (a highlighted region, a labelled outlier)
+   is actually in the render (visible in the still). Criteria 1–4 and 6 are **[static]** — verifiable from
+   the `static.png` / video frame + article + spec. Only the hover surface of criterion 5 is
+   **[interaction-tested]**.
 
 ## Record it (this is what makes export possible)
 ```bash
@@ -67,3 +127,9 @@ bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> [conc
 Each trailing arg is one concern; no args = a clean review. Then show the render to the journalist
 **together with** these concerns, and proceed to the "ship it" approval (`gate-render.mjs`). The concerns
 never hard-block — the journalist is the editor.
+
+Keep the record honest about METHOD: a clean review of an interactive/scrolly deliverable means the
+interaction test actually ran (its produce-time pass, or a re-run) — not that a still looked fine. If you
+could not run it, that is itself a concern to record ("hover/tooltip not interaction-tested"), never a
+silent pass. Do not word a concern (or its absence) so it implies an interaction was checked when only a
+`static.png` was read.
