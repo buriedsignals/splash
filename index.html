@@ -319,6 +319,45 @@
     background: rgba(252, 250, 243, 0.88); opacity: 0.85;
   }
 
+  /* ---------------- built over ---------------- */
+  .builton { padding: 10px 24px 100px; }
+  .bo-grid { max-width: 880px; margin: 40px auto 0; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  @media (max-width: 720px) { .bo-grid { grid-template-columns: 1fr; } }
+  .bo-card {
+    position: relative; display: flex; flex-direction: column; gap: 10px;
+    background: var(--plate); border: 1.5px solid var(--rule); border-radius: 16px;
+    padding: 28px 28px 24px; overflow: hidden;
+    box-shadow: 0 12px 30px rgba(28, 33, 38, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .bo-grid .bo-card:nth-child(1) { transform: rotate(-0.6deg); }
+  .bo-grid .bo-card:nth-child(2) { transform: rotate(0.6deg) translateY(8px); }
+  .bo-card:hover { transform: rotate(0deg) translateY(-5px); box-shadow: 0 24px 50px rgba(28, 33, 38, 0.18); border-color: var(--red); }
+  .bo-flag { position: absolute; top: 16px; right: 18px; font-size: 30px; transform: rotate(5deg); line-height: 1; }
+  .bo-card .bo-glyph { height: 40px; display: flex; align-items: center; }
+  .bo-card h3 { font-family: var(--grot); font-weight: 700; font-size: 22px; letter-spacing: -0.01em; }
+  .bo-card p { font-size: 14px; color: var(--ink-soft); flex: 1; }
+  .bo-card .bo-loc {
+    font-family: var(--grot); font-weight: 700; font-size: 10.5px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--red);
+    border-top: 1px solid var(--rule-soft); padding-top: 12px; margin-top: 4px;
+  }
+  .bo-and {
+    max-width: 880px; margin: 34px auto 14px; text-align: center;
+    font-family: var(--grot); font-weight: 700; font-size: 10.5px;
+    letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .bo-row { max-width: 880px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .bo-row a {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--rule); border-radius: 999px; padding: 8px 15px;
+    font-family: var(--grot); font-weight: 600; font-size: 12px; letter-spacing: 0.05em;
+    color: var(--ink-soft); background: var(--plate);
+    transition: border-color 0.2s, color 0.2s, transform 0.15s;
+  }
+  .bo-row a:hover { border-color: var(--ink); color: var(--ink); transform: translateY(-2px); }
+  .bo-row .bflag { font-size: 14.5px; line-height: 1; }
+
   /* ---------------- coda ---------------- */
   .coda { background: var(--paper-deep); border-top: 1px solid var(--rule-soft); padding: 90px 24px 100px; text-align: center; }
   .coda h2 { font-family: var(--serif); font-weight: 560; font-size: clamp(28px, 4.2vw, 44px); letter-spacing: -0.01em; }
@@ -629,6 +668,43 @@
       </span>
     </div>
 
+  </div>
+</section>
+
+<!-- ============ built over ============ -->
+<section class="builton" id="built-over">
+  <div class="chapter-head" style="padding-bottom: 0;">
+    <p class="grot-tag">Built over</p>
+    <h2>Standing on <em>Swiss</em> shoulders</h2>
+  </div>
+  <div class="bo-grid">
+    <a class="bo-card" href="https://www.remotion.dev" target="_blank" rel="noopener">
+      <span class="bo-flag" aria-hidden="true">🇨🇭</span>
+      <span class="bo-glyph" aria-hidden="true">
+        <svg width="38" height="38" viewBox="0 0 38 38"><rect x="1.5" y="1.5" width="35" height="35" rx="9" fill="none" stroke="#1C2126" stroke-width="2.4"/><path d="M14 11 L28 19 L14 27 Z" fill="#C74A2E"/></svg>
+      </span>
+      <h3>Remotion</h3>
+      <p>Video written in React — every Splash motion render is a program, replayable frame for frame, not a screen capture.</p>
+      <span class="bo-loc">Zurich, Switzerland</span>
+    </a>
+    <a class="bo-card" href="https://www.maptiler.com" target="_blank" rel="noopener">
+      <span class="bo-flag" aria-hidden="true">🇨🇭</span>
+      <span class="bo-glyph" aria-hidden="true">
+        <svg width="38" height="38" viewBox="0 0 38 38"><rect x="1.5" y="1.5" width="35" height="35" rx="9" fill="none" stroke="#1C2126" stroke-width="2.4"/><path d="M19 8 C 13.6 8, 10 12, 10 16.6 C 10 22.6, 19 30, 19 30 C 19 30, 28 22.6, 28 16.6 C 28 12, 24.4 8, 19 8 Z" fill="#1E7FB8"/><circle cx="19" cy="16.4" r="3.4" fill="#FCFAF3"/></svg>
+      </span>
+      <h3>MapTiler</h3>
+      <p>Basemaps, satellite imagery and 3D terrain — the geography under every map beat, from dataviz-dark to quantized-mesh.</p>
+      <span class="bo-loc">Zug, Switzerland</span>
+    </a>
+  </div>
+  <p class="bo-and">…in good company</p>
+  <div class="bo-row">
+    <a href="https://www.datawrapper.de" target="_blank" rel="noopener"><span class="bflag" aria-hidden="true">🇩🇪</span>Datawrapper</a>
+    <a href="https://d3js.org" target="_blank" rel="noopener"><span class="bflag" aria-hidden="true">🇺🇸</span>D3.js</a>
+    <a href="https://observablehq.com/plot/" target="_blank" rel="noopener"><span class="bflag" aria-hidden="true">🇺🇸</span>Observable Plot</a>
+    <a href="https://cesium.com/platform/cesiumjs/" target="_blank" rel="noopener"><span class="bflag" aria-hidden="true">🇺🇸</span>CesiumJS</a>
+    <a href="https://www.naturalearthdata.com" target="_blank" rel="noopener"><span class="bflag" aria-hidden="true">🇺🇸</span>Natural Earth</a>
+    <a href="https://www.openstreetmap.org" target="_blank" rel="noopener"><span class="bflag" aria-hidden="true">🌐</span>OpenStreetMap</a>
   </div>
 </section>
 
