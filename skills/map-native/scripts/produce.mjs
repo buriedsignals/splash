@@ -23,7 +23,7 @@ import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { snapCommand, remotionCommand } from "../src/platform-runners.ts";
-import { channelAspect, renderSize, assertRenderedSize } from "../../atelier/src/channel.ts";
+import { channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -59,6 +59,14 @@ function readCompDims(rootTsxSrc, compId) {
 const channel = process.env.ATELIER_CHANNEL ?? "article-web";
 const aspect = channelAspect(channel); // "portrait" | "square" | "landscape"
 const mediaSize = renderSize(channel); // { width, height } — the channel's exact pixels
+
+// Channel-gated interactive (fix/channel-gated-produce): only build the interactive web
+// output and run the interactive-only snaps (snap-proof, snap-responsive, snap-a11y) when
+// the channel allows the interactive format. social-vertical / social-feed (allowedFormats
+// = static, video) must NOT ship an interactive byproduct; article-web (allows interactive)
+// is unchanged. The static build, snap-static, snap-theme (dark), render-size, and the
+// video path always run regardless of channel.
+const interactiveAllowed = isFormatAllowed(channel, "interactive");
 
 const configPath = process.argv[2];
 const outDir = process.argv[3];
@@ -139,13 +147,20 @@ const snap = (script, extraEnv = {}) => run(SNAP[0], [...SNAP.slice(1), script],
 console.log(`[produce map] building static… → ${staticDir}`);
 run("bunx", ["vite", "build"], { BUILD_OUT: staticDir });
 
-console.log(`[produce map] building interactive… → ${interactiveDir}`);
-run("bunx", ["vite", "build"], { INTERACTIVE: "1", BUILD_OUT: interactiveDir });
+// The interactive web build + its interactive-only snaps run ONLY when the channel
+// allows the interactive format (skipped for social-vertical / social-feed).
+let interactiveHtmlDest = null;
+if (interactiveAllowed) {
+  console.log(`[produce map] building interactive… → ${interactiveDir}`);
+  run("bunx", ["vite", "build"], { INTERACTIVE: "1", BUILD_OUT: interactiveDir });
+} else {
+  console.log(`[produce map] channel "${channel}" forbids interactive — skipping interactive build.`);
+}
 
-// 2. Snap static + interactive into outDir — tell each script which build dir to use.
-// Static is sized to the channel's exact deliverable pixels (MAP_WIDTH/MAP_HEIGHT) —
-// interactive stays unsized (channel "interactive" is only ever article-web, which never
-// needs a fixed pixel box — it fills its host).
+// 2. Snap static (always) into outDir — sized to the channel's exact deliverable pixels
+// (MAP_WIDTH/MAP_HEIGHT). The interactive snaps (proof/responsive/a11y) run only when the
+// interactive build exists; interactive stays unsized (channel "interactive" is only ever
+// article-web, which never needs a fixed pixel box — it fills its host).
 console.log(`[produce map] snapping static… (channel=${channel} aspect=${aspect} ${mediaSize.width}x${mediaSize.height})`);
 snap("scripts/snap-static.mjs", {
   OUTDIR: outDir,
@@ -154,21 +169,25 @@ snap("scripts/snap-static.mjs", {
   MAP_HEIGHT: String(mediaSize.height),
 });
 
-console.log(`[produce map] snapping interactive (proof)…`);
-snap("scripts/snap-proof.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+if (interactiveAllowed) {
+  console.log(`[produce map] snapping interactive (proof)…`);
+  snap("scripts/snap-proof.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
-// Copy self-contained interactive.html into outDir
-const interactiveHtmlSrc = join(interactiveDir, "index.html");
-const interactiveHtmlDest = join(outDir, "interactive.html");
-copyFileSync(interactiveHtmlSrc, interactiveHtmlDest);
-console.log(`[produce map] interactive.html → ${interactiveHtmlDest}`);
-run("bun", ["scripts/assert-selfcontained.mjs", interactiveHtmlDest]);
+  // Copy self-contained interactive.html into outDir
+  const interactiveHtmlSrc = join(interactiveDir, "index.html");
+  interactiveHtmlDest = join(outDir, "interactive.html");
+  copyFileSync(interactiveHtmlSrc, interactiveHtmlDest);
+  console.log(`[produce map] interactive.html → ${interactiveHtmlDest}`);
+  run("bun", ["scripts/assert-selfcontained.mjs", interactiveHtmlDest]);
 
-console.log(`[produce map] snapping responsive…`);
-snap("scripts/snap-responsive.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+  console.log(`[produce map] snapping responsive…`);
+  snap("scripts/snap-responsive.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
 
-console.log(`[produce map] snapping a11y…`);
-snap("scripts/snap-a11y.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+  console.log(`[produce map] snapping a11y…`);
+  snap("scripts/snap-a11y.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+} else {
+  console.log(`[produce map] interactive snaps (proof/responsive/a11y) skipped for channel "${channel}".`);
+}
 
 // Theme guard — ONLY when the config asked for the dark basemap: assert the STATIC
 // build actually rendered dark (furniture + basemap), not just that the config said so.
@@ -198,11 +217,11 @@ console.log(`[produce map] checking rendered size vs channel "${channel}"…`);
   }
 }
 
-const result = {
-  static: join(outDir, "static.png"),
-  interactive: join(outDir, "interactive.png"),
-  interactiveHtml: interactiveHtmlDest,
-};
+const result = { static: join(outDir, "static.png") };
+if (interactiveAllowed) {
+  result.interactive = join(outDir, "interactive.png");
+  result.interactiveHtml = interactiveHtmlDest;
+}
 
 const isSymbol = parsedConfig.type === "symbol";
 const isRoute = parsedConfig.type === "route";
