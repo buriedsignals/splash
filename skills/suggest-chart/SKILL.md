@@ -357,7 +357,7 @@ identify the path).
   "producer": "map-dw",
   "mapType": "choropleth",
   "basemap": "<DW basemap id — e.g. world-2019>",
-  "mapKeyAttr": "<the join key on that basemap — e.g. ISO_A3>",
+  "mapKeyAttr": "<the join key on that basemap — e.g. DW_STATE_CODE for ISO-A3 country codes>",
   "regionKey": "<data column holding region codes/names>",
   "valueColumn": "<data column holding the normalised rate>",
   "data": "<CSV text>",
@@ -371,9 +371,15 @@ identify the path).
 Field notes:
 - `mapType` MUST be `"choropleth"` — required by the validator.
 - `basemap` + `mapKeyAttr`: pick the DW basemap whose key matches the region identifiers. Slice 1 supports
-  the common case — **countries by ISO-A3 or name → the world basemap** (e.g. `"world-2019"`, key
-  `mapKeyAttr: "ISO_A3"`). Use the basemap-key discovery `map-dw` documents (`GET /v3/basemaps/{id}` →
-  `meta.keys`) to confirm the correct `mapKeyAttr` for the chosen basemap.
+  the common case — **countries by ISO-A3 → basemap `"world-2019"`, key `mapKeyAttr: "DW_STATE_CODE"`**
+  (`DW_STATE_CODE` is world-2019's ISO-A3 alpha-3 key; verified live it joins ~all ISO-A3 rows). **Do NOT
+  emit `mapKeyAttr: "ISO_A3"` on `world-2019`** — world-2019 has no `ISO_A3` join key (its keys are
+  `DW_NAME`, `NAME_SHORT`, `DW_STATE_CODE`, `ISO_2`, …), so that combo joins 0 rows and ships a fully grey,
+  dataless map. `validateMapSpec` now HARD-rejects it against the `map-dw/src/basemap-keys.ts` registry and
+  names the valid keys. Country *names* (English) join on `DW_NAME`; ISO-A2 codes on `ISO_2`. For any other
+  basemap, confirm the exact `mapKeyAttr` via the basemap-key discovery `map-dw` documents (`GET
+  /v3/basemaps/{id}` → `meta.keys`, mirrored in `basemap-keys.ts`) — never assume `ISO_A3` exists on a
+  basemap; check its declared keys first.
 - `regionKey`: the data column holding the region codes (ISO-A2/A3, country name, …).
 - `valueColumn` (NOT `valueField`): the numeric column with the normalised rate per Gate 5.
 - `title`: the spatial finding as a sentence ("Nordic countries generate most of their electricity from
