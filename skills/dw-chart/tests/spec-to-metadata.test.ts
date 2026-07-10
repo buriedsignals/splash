@@ -500,3 +500,138 @@ describe("specToMetadata", () => {
     expect(p.metadata.visualize["y-grid-format"]).toBe("$0,0");
   });
 });
+
+describe("specToMetadata — scatter annotations (x and y are DIFFERENT columns)", () => {
+  // esperance-vie: x = GDP per capita (col 1), y = life expectancy (col 2), country in
+  // col 0 as the point label. A scatter's y is the SECOND numeric column, not "the first
+  // value column" the category-x/value-y model reads.
+  const SCATTER =
+    "country,gdp_per_capita,life_expectancy\n" +
+    "Japan,40000,85\n" +
+    "Qatar,114000,80\n" +
+    "Nigeria,2200,55\n" +
+    "France,38000,83\n" +
+    "India,2100,70";
+
+  it("derives a scatter annotation's y from the Y column (life expectancy), not the X column (GDP)", () => {
+    const p = specToMetadata({
+      type: "d3-scatter-plot",
+      title: "T",
+      data: SCATTER,
+      altInsight: "x",
+      annotations: [
+        { text: "Japon", x: "Japan" },
+        { text: "Qatar", x: "Qatar" },
+        { text: "Nigeria", x: "Nigeria" },
+      ],
+    } as any);
+    const anns = p.metadata.visualize["text-annotations"] as any[];
+    // BUG was: y came back as the GDP values 40000 / 114000 / 2200 (the x column).
+    expect(anns.map((a) => a.y)).toEqual(["85", "80", "55"]);
+  });
+
+  it("resolves every scatter annotation y INSIDE the y-axis (life-expectancy) domain, never the GDP domain", () => {
+    const p = specToMetadata({
+      type: "d3-scatter-plot",
+      title: "T",
+      data: SCATTER,
+      altInsight: "x",
+      annotations: [
+        { text: "Japon", x: "Japan" },
+        { text: "Qatar", x: "Qatar" },
+        { text: "Nigeria", x: "Nigeria" },
+      ],
+    } as any);
+    const anns = p.metadata.visualize["text-annotations"] as any[];
+    for (const a of anns) {
+      const y = Number(a.y);
+      expect(y).toBeGreaterThanOrEqual(55); // life-expectancy min
+      expect(y).toBeLessThanOrEqual(85); // life-expectancy max
+    }
+  });
+
+  it("writes the numeric X-column value (GDP) so Datawrapper can position a label pinned by name", () => {
+    const p = specToMetadata({
+      type: "d3-scatter-plot",
+      title: "T",
+      data: SCATTER,
+      altInsight: "x",
+      annotations: [
+        { text: "Japon", x: "Japan" },
+        { text: "Qatar", x: "Qatar" },
+        { text: "Nigeria", x: "Nigeria" },
+      ],
+    } as any);
+    const anns = p.metadata.visualize["text-annotations"] as any[];
+    // A country name is not a plottable x — the mapper must resolve it to the GDP value.
+    expect(anns.map((a) => a.x)).toEqual(["40000", "114000", "2200"]);
+  });
+
+  it("pins custom-range-y to the y-column (life-expectancy) domain, not the mixed x+y domain", () => {
+    const p = specToMetadata({
+      type: "d3-scatter-plot",
+      title: "T",
+      data: SCATTER,
+      altInsight: "x",
+      annotations: [{ text: "Japon", x: "Japan", y: 85 }],
+    } as any);
+    const range = p.metadata.visualize["custom-range-y"] as string[];
+    // BUG was [-6782, 120837] — the GDP column polluting the y domain. Correct domain is
+    // life-expectancy ~[55, 85] plus a small pad; it must never reach into the GDP range.
+    expect(Number(range[0])).toBeGreaterThan(40);
+    expect(Number(range[1])).toBeLessThan(120);
+  });
+
+  it("honours an explicit numeric x/y and keeps the y in-domain", () => {
+    const p = specToMetadata({
+      type: "d3-scatter-plot",
+      title: "T",
+      data: SCATTER,
+      altInsight: "x",
+      annotations: [{ text: "Japon", x: 40000, y: 85 }],
+    } as any);
+    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
+    expect(ann.x).toBe("40000");
+    expect(ann.y).toBe("85");
+  });
+
+  it("resolves a scatter with no label column (x = col 0, y = col 1) from the x-value", () => {
+    const p = specToMetadata({
+      type: "d3-scatter-plot",
+      title: "T",
+      data: "gdp,life\n40000,85\n2200,55",
+      altInsight: "x",
+      annotations: [{ text: "rich", x: 40000 }],
+    } as any);
+    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
+    expect(ann.x).toBe("40000");
+    expect(ann.y).toBe("85"); // life (col 1), not gdp
+  });
+
+  it("THROWS when a scatter annotation derives its y from a non-y column (wrong-column tripwire)", () => {
+    // Pinning `column` at the GDP (x) column asks the mapper to read y from GDP — the
+    // exact class of bug. The derived y (40000) lands outside the 55–85 axis, so the
+    // mechanical domain guard must fail hard rather than ship an off-canvas annotation.
+    expect(() =>
+      specToMetadata({
+        type: "d3-scatter-plot",
+        title: "T",
+        data: SCATTER,
+        altInsight: "x",
+        annotations: [{ text: "Japon", x: "Japan", column: "gdp_per_capita" }],
+      } as any),
+    ).toThrow(/outside the y-axis domain|wrong column/i);
+  });
+
+  it("does not regress a single-value column chart annotation (category-x / value-y)", () => {
+    const p = specToMetadata({
+      type: "column-chart",
+      title: "T",
+      data: "region,sales\nChina,8.1\nEurope,3.2",
+      altInsight: "x",
+      annotations: [{ text: "biggest", x: "China" }],
+    } as any);
+    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
+    expect(ann.y).toBe("8.1"); // the single value column, as before
+  });
+});
