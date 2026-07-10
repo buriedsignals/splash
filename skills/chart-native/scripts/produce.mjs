@@ -198,8 +198,9 @@ switch (format) {
 
   // interactive → interactive.html (the deliverable) + interactive.png (a Gate-3
   // review still — EPHEMERAL, never shipped) + the interaction guards. No static
-  // build at all: the static Vite pass and snap-contrast (which reads the static
-  // dist) do not apply to an interactive-only produce.
+  // build at all: the static Vite pass does not run, so snap-contrast (which reads
+  // the static dist) does not apply here — snap-interactive-contrast below is its
+  // interactive-dist counterpart, so rendered-text WCAG contrast is still checked.
   case "interactive": {
     if (interactiveAllowed) {
       console.log(`[produce ${type}] building interactive…`);
@@ -216,6 +217,15 @@ switch (format) {
       // exists here to serve/screenshot); only interactive.png is written.
       console.log(`[produce ${type}] snapping interactive (ephemeral review still)…`);
       snap("scripts/snap-proof.mjs", { OUTDIR: outDir, SKIP_STATIC: "1" });
+
+      // render-time WCAG contrast guard for the interactive dist's own SVG text
+      // (axis/value/direct labels — the same labels the static build renders,
+      // mount.tsx wraps the identical *Chart.tsx component either way). Closes the
+      // coverage gap left by this format no longer building the static dist: a
+      // mark-coloured label would otherwise ship unguarded on the article-web
+      // interactive path (the most common delivery). Fails the run before export.
+      console.log(`[produce ${type}] checking text contrast (snap-interactive-contrast)…`);
+      snap("scripts/snap-interactive-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",") });
 
       // render-time WCAG contrast guard for the INTERACTIVE hover/focus tooltip — a
       // static-build check can't see this (the tooltip only exists on hover, in

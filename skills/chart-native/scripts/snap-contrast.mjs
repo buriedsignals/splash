@@ -12,6 +12,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { worstContrast, MIN_CONTRAST } from "../src/core/contrast-scan.ts";
 import { chartDistSub } from "../src/build-paths.ts";
+import { sampleTextContrast } from "./lib/sample-text-contrast.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -53,52 +54,9 @@ await page.waitForTimeout(2100); // let the reveal settle to progress=1
 
 // In-page: for every visible <text>, sample the real background behind it at 3
 // points (glyph hidden first), returning {text, fill, bgs[]}. Contrast is computed
-// in node with the shared helper.
-const samples = await page.evaluate(() => {
-  const toHex = (rgb) => {
-    const m = rgb && rgb.match(/[\d.]+/g);
-    if (!m) return null;
-    const [r, g, b, a] = m.map(Number);
-    if (a === 0) return null; // transparent → not a background
-    const h = (n) => Math.round(n).toString(16).padStart(2, "0");
-    return `#${h(r)}${h(g)}${h(b)}`;
-  };
-  // Known limitations: (1) reads mark fill from inline fill ATTRIBUTE only; a mark
-  // filled via CSS class falls through to paper #ffffff fallback. (2) the whole <text>
-  // (glyph + halo) is hidden before sampling; a label relying on halo legibility OVER
-  // a coloured mark could be false-positive flagged against the mark alone.
-  const bgAt = (x, y, glyph) => {
-    for (const el of document.elementsFromPoint(x, y)) {
-      if (el === glyph) continue;
-      const fillAttr = el.getAttribute && el.getAttribute("fill");
-      if (fillAttr && fillAttr !== "none") {
-        const hx = toHex(getComputedStyle(el).fill);
-        if (hx) return hx;
-      }
-      const bc = toHex(getComputedStyle(el).backgroundColor);
-      if (bc) return bc;
-    }
-    return "#ffffff"; // the paper
-  };
-  const out = [];
-  for (const t of Array.from(document.querySelectorAll("text"))) {
-    const s = (t.textContent || "").trim();
-    if (!s) continue;
-    const cs = getComputedStyle(t);
-    if (cs.visibility === "hidden" || cs.opacity === "0") continue;
-    const fill = toHex(cs.fill);
-    if (!fill) continue;
-    const r = t.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1) continue;
-    const y = r.top + r.height / 2;
-    const prev = t.style.visibility;
-    t.style.visibility = "hidden"; // remove glyph + its halo before sampling
-    const bgs = [0.2, 0.5, 0.8].map((f) => bgAt(r.left + r.width * f, y, t));
-    t.style.visibility = prev;
-    out.push({ text: s, fill, bgs });
-  }
-  return out;
-});
+// in node with the shared helper. The sampler itself lives in ./lib/sample-text-
+// contrast.mjs, shared with snap-interactive-contrast.mjs (same engine, different dist).
+const samples = await page.evaluate(sampleTextContrast);
 
 await browser.close();
 server.close();
