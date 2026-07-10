@@ -10,9 +10,62 @@
 // Header-height safety: chart components call resolveFrameWithHeader() which
 // pre-computes padding.top ≥ estimated header height so a 2-line title never
 // overlaps the subtitle or the first data row on the first (and only) render.
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { COLORS, FONT, TYPE } from "./tokens";
 import { sourceLabel, type Lang } from "./locale";
+import { clampOffset } from "./tooltip-clamp";
+
+// Keep any interactive tooltip inside the plot box. Each *Chart.tsx positions its
+// `.tooltip` div to the right of / above the hovered mark with `whiteSpace: nowrap`
+// and no bounds check, so a mark near an edge pushes the tooltip off-screen and its
+// text clips. This shared wrapper (rendered by ChartFrame for EVERY chart type)
+// measures the rendered tooltip after layout and flips/clamps it back in-bounds via a
+// corrective transform. Measuring `tip - wrap` cancels the wrapper's own transform, so
+// the correction is shift-independent and the effect converges in one extra pass.
+function ClampedTooltip({
+  children,
+  width,
+  height,
+}: {
+  children: ReactNode;
+  width: number;
+  height: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shift, setShift] = useState({ dx: 0, dy: 0 });
+  useLayoutEffect(() => {
+    const wrap = ref.current;
+    if (!wrap) return;
+    const tip = wrap.querySelector<HTMLElement>(".tooltip");
+    if (!tip) {
+      if (shift.dx !== 0 || shift.dy !== 0) setShift({ dx: 0, dy: 0 });
+      return;
+    }
+    const wrapRect = wrap.getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
+    const rel = {
+      left: tipRect.left - wrapRect.left,
+      top: tipRect.top - wrapRect.top,
+      width: tipRect.width,
+      height: tipRect.height,
+    };
+    const { dx, dy } = clampOffset(rel, { width, height });
+    if (dx !== shift.dx || dy !== shift.dy) setShift({ dx, dy });
+  });
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        transform: `translate(${shift.dx}px, ${shift.dy}px)`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 export interface ChartFrameProps {
   title: string;
@@ -89,7 +142,11 @@ export function ChartFrame({
         )}
         <div style={{ position: "relative", width, height }}>
           {children}
-          {tooltip}
+          {tooltip && (
+            <ClampedTooltip width={width} height={height}>
+              {tooltip}
+            </ClampedTooltip>
+          )}
         </div>
         {/* Source footer — suppressed when embedded (the host shows the source). */}
         {!embedded && (
@@ -154,7 +211,11 @@ export function ChartFrame({
         )}
       </div>
       {children}
-      {tooltip}
+      {tooltip && (
+        <ClampedTooltip width={width} height={height}>
+          {tooltip}
+        </ClampedTooltip>
+      )}
       <div
         style={{
           position: "absolute",
