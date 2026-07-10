@@ -20,6 +20,13 @@ import {
 } from "./waterfall-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, WATERFALL_ROLE_COLORS } from "./core/tokens";
+import {
+  truncate,
+  rotatedLabelDescentPx,
+  rotatedLabelFitPx,
+  ROTATED_TICK_MAX_CHARS,
+  ROTATED_TICK_ANGLE_DEG,
+} from "./core/text";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -46,6 +53,24 @@ export interface WaterfallChartProps {
 const UP = WATERFALL_ROLE_COLORS[0]; // increase
 const DOWN = WATERFALL_ROLE_COLORS[1]; // decrease
 const TOTAL = WATERFALL_ROLE_COLORS[2]; // a total (neutral)
+
+// Rotated (−40°) category-label furniture, shared by the margin reservation
+// (WaterfallChart) and the per-tick truncation (WaterfallSvg) so the two can't
+// drift. UNSCALED (px at scale 1); resolveFrame scales the reserved margin, and the
+// SVG re-applies `sc`.
+const ROTATED_TICK_OFFSET = 16; // the rotate pivot sits this far below the plot
+const ROTATED_SOURCE_CLEARANCE = 12 + TYPE.source + 12; // source pad + font + gap
+// The rotated labels never eat more than this fraction of the canvas height — so a
+// long name shortens the LABEL (via truncation) instead of collapsing the PLOT. On
+// a short landscape canvas (article-web renders at 600×338) this caps the label; on
+// a tall portrait canvas it is slack and the full ROTATED_TICK_MAX_CHARS cap wins.
+const MAX_ROTATED_BOTTOM_FRAC = 0.38;
+const SAFE_LEFT = 4; // keep a rotated label's START ≥ this many px from the edge
+// Rotated category labels render a step SMALLER than the axis font: on a short
+// landscape canvas the vertical budget is tight, and a smaller glyph fits more
+// characters in the same descent — enough to tell common-prefix names apart
+// ("Ministère de l'Éduc…" vs "…l'Écon…") instead of an identical "Ministère d…".
+const ROTATED_LABEL_FONT_SCALE = 0.8;
 
 const barColor = (b: { isTotal: boolean; sign: 1 | -1 }) =>
   b.isTotal ? TOTAL : b.sign < 0 ? DOWN : UP;
@@ -77,12 +102,30 @@ export function WaterfallChart({
   const estBw = ((width - (48 + 18) * s) / config.rows.length) * 0.66;
   const maxCatLen = Math.max(...config.rows.map((r) => r.label.length));
   const narrowEst = maxCatLen * TYPE.axis * s * 0.6 > estBw;
+  // Bottom room for the −40° rotated category labels so they clear the source line.
+  // basePad is UNSCALED (resolveFrame scales it), so measure with the unscaled axis
+  // font. The ideal reservation fits a ROTATED_TICK_MAX_CHARS-capped label, but is
+  // itself CAPPED at MAX_ROTATED_BOTTOM_FRAC of the canvas so a long name shortens
+  // the label (WaterfallSvg truncates to whatever descent the margin actually gives)
+  // rather than collapsing the plot. Source clearance is guaranteed either way.
+  const rotatedLabelPxEst =
+    Math.min(maxCatLen, ROTATED_TICK_MAX_CHARS) *
+    TYPE.axis *
+    ROTATED_LABEL_FONT_SCALE *
+    0.6;
+  const idealRotatedBottom =
+    ROTATED_TICK_OFFSET +
+    rotatedLabelDescentPx(rotatedLabelPxEst) +
+    ROTATED_SOURCE_CLEARANCE;
+  const rotatedBottom = Math.ceil(
+    Math.min(idealRotatedBottom, height * MAX_ROTATED_BOTTOM_FRAC),
+  );
   const basePad = {
     // +20 headroom (fixed) so a value label above the tallest bar clears the
     // absolute subtitle.
     top: responsive ? 16 : 53 + titleLines * 27 + 20,
     right: 18,
-    bottom: narrowEst ? 98 : 72, // rotated labels need more room; clear the source
+    bottom: narrowEst ? rotatedBottom : 72, // rotated labels clear the source
     left: 48, // count axis
   };
   const frame = resolveFrameWithHeader(
@@ -182,6 +225,22 @@ function WaterfallSvg({
   const bw = bars[0]?.w ?? 0;
   const maxCatLen = Math.max(...bars.map((b) => b.label.length));
   const narrow = maxCatLen * ts.axis * 0.6 > bw;
+  // Rotated category labels are truncated (ellipsis at END → readable START kept) to
+  // the SMALLEST of three budgets, so a long name never runs off the left edge and
+  // never collides with the source:
+  //   • readability cap  — ROTATED_TICK_MAX_CHARS.
+  //   • horizontal (per-tick) — keep the far START end at x ≥ SAFE_LEFT.
+  //   • vertical — the label's descent must fit the reserved bottom margin ABOVE the
+  //     source. Derived from the actual scaled padding.bottom so it self-matches
+  //     whatever WaterfallChart reserved (which the fraction cap may have trimmed).
+  const catFont = ts.axis * ROTATED_LABEL_FONT_SCALE;
+  const rotatedMaxPx = ROTATED_TICK_MAX_CHARS * catFont * 0.6;
+  const rotatedDescentBudget = Math.max(
+    0,
+    padding.bottom - (ROTATED_TICK_OFFSET + ROTATED_SOURCE_CLEARANCE) * sc,
+  );
+  const rotatedVerticalMaxPx =
+    rotatedDescentBudget / Math.sin((ROTATED_TICK_ANGLE_DEG * Math.PI) / 180);
 
   return (
     <svg
@@ -256,6 +315,19 @@ function WaterfallSvg({
           const valLabelW =
             labelOf(b, config.lang).length * ts.axis * 0.9 * 0.6;
           const labelVertical = narrow && topY > valLabelW + 10 * sc;
+          // rotated category label truncated to fit its diagonal footprint (see above)
+          const catTickX = padding.left + b.x + b.w / 2;
+          const catLabel = narrow
+            ? truncate(
+                b.label,
+                Math.min(
+                  rotatedMaxPx,
+                  rotatedVerticalMaxPx,
+                  rotatedLabelFitPx(catTickX, SAFE_LEFT * sc),
+                ),
+                catFont,
+              )
+            : b.label;
           return (
             <g key={`bar${i}`} opacity={dim ? 0.55 : 1}>
               <rect
@@ -311,18 +383,21 @@ function WaterfallSvg({
                   {labelOf(b, config.lang)}
                 </text>
               )}
-              {/* category label under the plot — rotated when bars are narrow */}
+              {/* category label under the plot — rotated when bars are narrow. The
+                  label is END-anchored and truncated (readable START kept) to fit the
+                  reserved bottom margin, so it clears the source and never clips the
+                  left edge; a step-smaller font fits more of a long name. */}
               {narrow ? (
                 <text
-                  transform={`rotate(-40 ${b.x + b.w / 2} ${innerHeight + 16 * sc})`}
+                  transform={`rotate(-${ROTATED_TICK_ANGLE_DEG} ${b.x + b.w / 2} ${innerHeight + ROTATED_TICK_OFFSET * sc})`}
                   x={b.x + b.w / 2}
-                  y={innerHeight + 16 * sc}
+                  y={innerHeight + ROTATED_TICK_OFFSET * sc}
                   textAnchor="end"
-                  fontSize={ts.axis}
+                  fontSize={catFont}
                   fill={COLORS.ink}
                   opacity={catOp}
                 >
-                  {b.label}
+                  {catLabel}
                 </text>
               ) : (
                 <text
@@ -333,7 +408,7 @@ function WaterfallSvg({
                   fill={COLORS.ink}
                   opacity={catOp}
                 >
-                  {b.label}
+                  {catLabel}
                 </text>
               )}
             </g>
