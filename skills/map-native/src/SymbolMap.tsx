@@ -7,7 +7,11 @@ import React, {
 } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import { symbolGeometry, type SymbolData } from "./symbol-geo";
+import {
+  symbolGeometry,
+  nearestSymbolIndex,
+  type SymbolData,
+} from "./symbol-geo";
 import type { CameraMode } from "./camera-mode";
 import { symbolLabels, labelRadialOffset } from "./symbol-labels";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
@@ -258,6 +262,17 @@ export const SymbolMap: React.FC<Props> = ({
         id: "symbol-circles",
         type: "circle",
         source: "symbols",
+        layout: {
+          // Smaller circles draw ON TOP. circle-sort-key sorts ascending (higher key
+          // = above), so negate the radius: a small radius → higher key → on top. This
+          // is the single supported mechanism for a circle layer's z-order (source-array
+          // order does NOT control it), and it is standard proportional-symbol practice
+          // — a small circle nested inside a larger one stays visible AND hoverable
+          // instead of being occluded by the big circle in front. Base radius is used
+          // (not progress-scaled) — every radius scales by the same progress, so the
+          // relative order is invariant.
+          "circle-sort-key": ["*", -1, ["get", "radius"]],
+        },
         paint: {
           "circle-radius": ["*", ["get", "radius"], progress],
           "circle-color": SYMBOL_FILL,
@@ -304,9 +319,29 @@ export const SymbolMap: React.FC<Props> = ({
           "top-right",
         );
         const popup = new maptilersdk.Popup({ closeButton: false });
-        map.on("mouseenter", "symbol-circles", (e) => {
+        // Overlap-robust hover: use `mousemove` (not `mouseenter`, which fires only once
+        // on entering the layer and never re-picks as the pointer sweeps between nested
+        // circles) and, among ALL symbol features under the pointer, pick the one whose
+        // CENTRE is nearest — so a small circle behind a larger one is reachable when the
+        // pointer is over its centre, not just the front circle. Fixes the "hover blocked
+        // by another in front" bug on tight clusters.
+        map.on("mousemove", "symbol-circles", (e) => {
           map.getCanvas().style.cursor = "pointer";
-          const f = e.features?.[0];
+          const feats = e.features;
+          if (!feats || feats.length === 0) return;
+          const centers = feats.map((f) => {
+            const c = (f.geometry as GeoJSON.Point).coordinates as [
+              number,
+              number,
+            ];
+            const pt = map.project(c);
+            return { x: pt.x, y: pt.y };
+          });
+          const idx = nearestSymbolIndex(centers, {
+            x: e.point.x,
+            y: e.point.y,
+          });
+          const f = feats[idx];
           if (!f) return;
           const p = f.properties as { label: string; value: number };
           popup

@@ -79,8 +79,13 @@ export function symbolGeometry(
   const min = Math.min(...values);
   const max = Math.max(...values);
 
+  // Sort value-DESC for stable, deterministic order (legend + labels read the largest
+  // first). NOTE: source-array order does NOT reliably control a MapLibre circle layer's
+  // z-order — that is enforced separately by a `circle-sort-key` in SymbolMap so smaller
+  // circles draw ON TOP (visible AND hoverable when nested inside a larger one). See the
+  // symbol-circles layer + the `nearestSymbolIndex` hover pick below.
   const symbols: PlacedSymbol[] = [...data.points]
-    .sort((a, b) => b.value - a.value) // large first → small drawn on top
+    .sort((a, b) => b.value - a.value)
     .map((p) => ({ ...p, radius: symbolRadius(p.value, max, maxRadius) }));
 
   const lons = data.points.map((p) => p.lon);
@@ -99,4 +104,30 @@ export function symbolGeometry(
     domain: [min, max],
     bounds,
   };
+}
+
+// Hover hit-test for OVERLAPPING proportional symbols. Given the projected pixel
+// centres of every symbol feature under the pointer and the pointer position, return
+// the INDEX of the one whose centre is nearest. Overlapping circles share pixels, so
+// the topmost-drawn feature is not necessarily the one the reader is pointing at — a
+// small circle nested behind a larger one is unreachable if the handler just takes the
+// front feature. Nearest-centre keeps every city reachable: sweep toward a city's
+// centre and it wins. Pure (pixel maths only) so it is unit-tested without a browser.
+// Returns -1 for an empty list.
+export function nearestSymbolIndex(
+  centers: { x: number; y: number }[],
+  point: { x: number; y: number },
+): number {
+  let best = -1;
+  let bestDist = Infinity;
+  for (let i = 0; i < centers.length; i++) {
+    const dx = centers[i].x - point.x;
+    const dy = centers[i].y - point.y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 < bestDist) {
+      bestDist = d2;
+      best = i;
+    }
+  }
+  return best;
 }

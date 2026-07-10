@@ -30,16 +30,35 @@ lie. (Source: data-to-viz "bubble map"; FT Visual Vocabulary, SPATIAL group.)
 
 `checkSymbolConformance` enforces: `sizingMode` must be `"area"`; any other value is a violation.
 
-### 2. Descending z-order + semi-transparent fill + contrasting stroke halo
+### 2. Small-on-top z-order + semi-transparent fill + contrasting stroke halo
 
-Render symbols largest-first (descending sort) so large circles are behind smaller ones rather than
-obscuring them. Apply a semi-transparent fill (α ≈ 0.5–0.7) so overlapping symbols remain
-distinguishable. Add a contrasting stroke — typically white on a dark basemap — to create a halo
-that visually separates adjacent and overlapping symbols from each other and from the basemap
-linework. (Source: Datawrapper Academy, symbol maps.)
+Render symbols so **smaller circles draw ON TOP** of larger ones — a small circle nested inside a
+large one must stay visible rather than be swallowed. **The source-array order does NOT control a
+MapLibre circle layer's z-order**; the only supported mechanism is a `circle-sort-key` (sorts
+ascending → a higher key draws above). Negate the radius so a small radius yields a higher key and
+draws on top: `"circle-sort-key": ["*", -1, ["get", "radius"]]`. (Sorting the geometry value-
+descending in `symbol-geo.ts` is for deterministic legend/label order, NOT z-order — relying on it
+for draw order silently occludes small circles.) Apply a semi-transparent fill (α ≈ 0.5–0.7) so
+overlapping symbols remain distinguishable, and a contrasting stroke — typically white — to create a
+halo that separates adjacent/overlapping symbols from each other and from the basemap linework.
+(Source: data-to-viz bubble map — "draw the bigger bubbles behind"; Datawrapper Academy, symbol maps.)
 
 `checkSymbolConformance` enforces: `strokeContrast` must be ≥ 2 (WCAG ratio between stroke colour
 and basemap background); below 2 the halo is too faint to separate symbols.
+
+### 2b. Overlapping symbols must each stay hoverable (interactive)
+
+On the interactive build the popup is the only place a dense cluster's values live (tooltip XOR
+labels, rule 6). When circles overlap, **every city must remain reachable** — not just the front
+one. Two coupled rules make this hold: (a) small-on-top z-order (2 above) keeps nested circles
+visible; (b) the hover handler uses `mousemove` (re-picks as the pointer sweeps *within* the layer —
+`mouseenter` fires only once on entry and never re-picks) and, among all symbol features under the
+pointer, selects the one whose **centre is nearest** the pointer (`nearestSymbolIndex` in
+`symbol-geo.ts`), NOT the topmost `features[0]`. Taking the front feature makes small circles behind
+a larger one unreachable — the "hover blocked by another in front" bug. Regression-locked by
+`tests/symbol-hover-overlap.test.ts` (source-scan: sort-key + mousemove + nearest-centre) and the
+pure `nearestSymbolIndex` coverage in `tests/symbol-geo.test.ts`. Verified live with Playwright: a
+tightly-overlapping 6-city Pearl-River-Delta cluster went from 2/6 to 6/6 cities reachable.
 
 ### 3. Nested-circle legend with 2–3 "nice" reference values
 
