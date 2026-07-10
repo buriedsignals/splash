@@ -5,15 +5,23 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { formatFlag, channelEnvFor } from "../src/adapters";
 
-describe("formatFlag — VisualFormat → producer flag", () => {
-  it("maps chart-native video → all, static → static", () => {
-    expect(formatFlag("chart-native", "video")).toBe("all");
-    expect(formatFlag("chart-native", "static")).toBe("static");
-  });
-  it("maps map-native interactive → static (web build), video → all", () => {
-    expect(formatFlag("map-native", "interactive")).toBe("static");
-    expect(formatFlag("map-native", "video")).toBe("all");
-  });
+// Single-format-produce-export (Tasks 2-3): chart-native's produce-from-spec.mjs/
+// produce.mjs and map-native's produce.mjs now read the SAME static|interactive|
+// video|scrolly vocabulary directly off argv — no more "all"/style translation
+// (the old chart-native video→"all", map-native interactive→"static" mapping is gone).
+// scrolly's own produce.mjs ignores the argv entirely, but formatFlag still passes the
+// value straight through for it too (a harmless no-op) rather than special-casing.
+describe("formatFlag — VisualFormat passes straight through to every file-based producer", () => {
+  const FORMATS = ["static", "interactive", "video", "scrolly"] as const;
+  const PRODUCERS = ["chart-native", "map-native", "scrolly"] as const;
+
+  for (const producer of PRODUCERS) {
+    for (const format of FORMATS) {
+      it(`${producer} + "${format}" → "${format}" (no "all"/style translation)`, () => {
+        expect(formatFlag(producer, format)).toBe(format);
+      });
+    }
+  }
 });
 
 // Slice 2 (channel-driven producer rendering): the proposal's confirmed channel is
