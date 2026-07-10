@@ -78,7 +78,7 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 
 ## ★ État courant — 2026-07-09 (LIS CECI pour l'état de `main`)
 
-`main` = `75221c7`, gate `bun run check` **16/16 vert** (tsc 4 skills + install, 11 suites de test). 0 mention vendor attributive, 0 `any` introduit. Le **journal daté complet** de comment on est arrivé là = `docs/atelier/CHANGELOG.md`.
+`main` (voir `git log --oneline -15` pour le HEAD exact), gate `bun run check` **16/16 vert** (tsc 4 skills + install, 11 suites de test). 0 mention vendor attributive, 0 `any` introduit. Le **journal daté complet** de comment on est arrivé là = `docs/atelier/CHANGELOG.md`.
 
 **Ce qui est construit et vert :**
 - **Chaîne canal→format→taille→sous-format→export COMPLÈTE** (Slice 1 décision + Slice 2 rendu) : social-vertical → vrai 9:16, feed → carré, article-web → paysage/interactif ; hors-embed⇒jamais interactif enforced ; taille rendue == canal (fail-hard). Source unique `skills/atelier/src/channel.ts`.
@@ -86,9 +86,8 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 - **Enforcement mécanique orchestrateur slice 1+2** : gate fail-hard `isFormatAllowed`, garde aspect↔type au produce, producer-match, rejet TLD placeholder, ré-application au produce des garde-fous déterministes de suggest-chart (`guardrail-parity.ts`).
 - **Filet deep-verify MÉCANIQUE** (`../atelier-harness/scripts/deep-verify.mjs`) : ouvre interactif/scrolly et teste ce qu'un juge aveugle-aux-pixels rate (tooltip in-viewport · scrolly intro≠takeaway · fuite langue · hover). Parade systémique aux misses de vérif.
 - **Bugs QA corrigés + deep-verifiés** (tooltip hors-fenêtre flip/clamp · labels rotés coupés tronqués · hover masqué small-on-top+nearest · CSV RFC4180 quoted · scrolly intro≠outro+noms FR+ramp subject-fit · dense-symbol snap-a11y prose · popup choroplèthe localisé).
+- **Produce channel-gated** : les producteurs ne buildent plus l'interactif (ni ses snaps) quand le canal l'interdit (social → static.png seul ; article-web → interactif inchangé). Fin de l'over-produce.
 
 **Principe de travail (toujours) :** boucle feedback→système (cf. Conventions) + **toujours vérifier le LIVRÉ, pas le proof** (leçon gravée : ouvrir/hover/lire l'artefact réel ; le proof peut mentir — interactif pré-hover, reveal non-coloré).
-
-- **Produce channel-gated** : les producteurs ne buildent plus l'interactif (ni ses snaps) quand le canal l'interdit (social → static.png seul ; article-web → interactif inchangé). Fin de l'over-produce.
 
 **PROCHAIN / backlog :** capture source (persona/article → prose au lieu de la vraie source = flow/orchestration, pas mécaniquement fixable proprement) · Family B types natifs (15 déférés par design) · **release MIT** (confirmer REPO_URL public + scrub trailers `<vendor>-Session` — besoin de l'input Rémy + destructif, au pré-release) · le harness QA privé = `../atelier-harness` (WORKFLOW.md + `scripts/deep-verify.mjs`).
