@@ -362,74 +362,57 @@ article-web is the one channel that can host it**:
   (portrait 1080×1920 for social-vertical, square 1080×1080 for social-feed, landscape 1200×675 for
   article-web) — no delivery menu, just the file.
 - **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`, article-web only):**
-  atelier **PROPOSES three delivery forms and the journalist CHOOSES one** — the delivery is shaped to the
-  choice. Producing the artifacts stays unconditional (that is how the files get made); the DELIVERY FORM is
-  now the journalist's choice, not a fixed hand-over. **There is no standalone image export** — the no-JS
-  `static.html` is the accessibility artifact and lives INSIDE the code-source folder.
-  1. **Run `export-code.mjs` FIRST, unconditionally** (it produces every artifact on disk regardless of the
-     journalist's later choice — this is what keeps atelier local-first):
+  atelier **PROPOSES three delivery forms and the journalist CHOOSES one — and ONLY the chosen form is built
+  (LAZILY, on demand)**. There is no "produce all forms unconditionally": the React bundle and the fly.io
+  deploy are expensive/irreversible, so nothing beyond the produced `interactive.html`/`scrolly.html` is
+  materialised until the journalist has picked. **There is NO auto no-JS `static.html` fallback** — accessibility
+  is a FORMAT choice at CADRAGE (picking `static` IS the accessible path), not a file bolted onto every
+  interactive. `export-code.mjs` is a **two-phase** script:
+  1. **Phase 1 — emit the proposal (build NOTHING).** Run WITHOUT `--form`:
      `bun skills/atelier/scripts/export-code.mjs exports/<slug>/<id> exports/<slug>/<id>-export --results exports/<slug>/report.json --id <id>` (the source is the per-proposal build subdir from 5c).
-     In ONE pass it writes the hand-over folder — `interactive.html` (the single self-contained file, JS
-     inlined), `static.html` (the no-JS a11y fallback — **ALWAYS produced whenever the build has a `static.png`
-     byproduct**, which every interactive chart/map does; a scrolly has none, so it ships without it),
-     `EMBED.md`, and (for a **chart-native** producer) a `<id>-source/` **runnable React source bundle** (form
-     1 — see below). It then EMITS a fixed three-form proposal: an `EXPORT_FORMS_JSON {…}` line (machine-parseable:
-     `forms.a` = `{kind, path[, note]}`, `forms.b.path` = the standalone HTML file, `forms.c.command` OR
-     `forms.c.url`) plus an `EXPORT_FORMS_PROPOSAL … END_EXPORT_FORMS_PROPOSAL` human block. **No `static.png`**
-     is copied standalone — `export-code` only inlines it into `static.html`. This one run GUARANTEES the
-     accessibility fallback exists AND that there IS a delivered artifact before the flow may call the visual
-     delivered.
-     - **The `<id>-source/` bundle (chart-native form 1)** is assembled by
-       `skills/chart-native/scripts/export-source.mjs` from the `config.json` + `native-source.json` the
-       producer drops in the build subdir: a self-contained Vite project (`src/` = a copy of chart-native/src,
-       `config.json`, `main.tsx`/`index.html` that import the chart + config statically, `package.json` with the
-       interactive deps only — no remotion, `vite.config.ts`, `tsconfig.json`, `README.md`). The journalist runs
-       `bun install && bun run build` → `dist/index.html` (the interactive). Verified: it builds from scratch and
-       renders the chart, fully self-contained.
-     - **Hosted Datawrapper producers (`dw-chart` / `map-dw`) have NO local `interactive.html`** — a DW
-       interactive IS the already-published hosted embed (the report's `publicUrl`), and its static export is
-       named `<id>.png` (not `static.png`). `export-code` handles this shape from the report: it detects the
-       hosted delivery (a `publicUrl` with no local html), recognises the static image via the producer's own
-       declared `outputs`, and writes a COMPLETE folder anyway — `static.html` (no-JS a11y fallback, the DW
-       image inlined) + `EMBED.md`. For this shape form B is that standalone `static.html` (the only
-       self-contained file it has) and form C is the LIVE hosted URL (no `deploy-embed` step — already
-       published). So a dw-chart/map-dw interactive delivers `static.html` + `EMBED.md`, never an empty folder.
-  2. **THEN relay the emitted three-form proposal VERBATIM and ASK which form the journalist wants (a / b / c)
-     — this is an explicit, un-skippable GATE.** Do NOT collapse it to a bare "Livré."; do NOT pick for them.
-     Relay the script's `EXPORT_FORMS_PROPOSAL` block (it already carries the concrete paths/command for THIS
-     export), then wait for their answer. The three forms are:
+     It emits a fixed three-form proposal DESCRIBING what each form WOULD be — an `EXPORT_FORMS_JSON {…}` line
+     (machine-parseable: `forms.a` = `{kind, path, pending:true}`, `forms.b.path` = the standalone HTML file,
+     `forms.c.command`/`url`, each with a `deliver` command = the exact `--form` re-invocation) plus an
+     `EXPORT_FORMS_PROPOSAL … END_EXPORT_FORMS_PROPOSAL` human block. **No bundle is assembled, no deploy runs,
+     no folder is written** at this phase — the paths in the proposal are `pending`.
+  2. **THEN relay the emitted proposal VERBATIM and ASK which form the journalist wants (a / b / c) — an
+     explicit, un-skippable GATE.** Do NOT collapse it to a bare "Livré."; do NOT pick for them. Relay the
+     script's `EXPORT_FORMS_PROPOSAL` block (it already carries the concrete paths + the `deliver` command for
+     THIS export), then wait for their answer. The three forms are:
      - **a) Code source** (`forms.a`) — the delivery depends on the producer:
-       - **chart-native** (`kind: "react-source-bundle"`) → the `<id>-source/` **runnable React source bundle**
-         (`bun install && bun run build` → the interactive). For a technical journalist who rebuilds/customises
-         the source. THIS is the headline form-1 capability.
-       - **map-native / scrolly** (`kind: "built-files-folder"`) → the built `-export` folder. Their `src/` is
-         NOT self-contained (map-native imports scrolly; scrolly imports chart-native + map-native + maptiler/
-         turf), so a straight-copy React bundle would not build — they hand over the built files instead
-         (follow-up: factor a self-contained core if a source bundle is wanted for them).
-       - **hosted DW** (`kind: "built-files-folder"`, with a `note`) → the built `-export` folder + the live
-         Datawrapper link. There is NO React source to rebuild (it is a Datawrapper embed); the `note` says so
-         honestly ("Datawrapper — pas de source React à rebuilder ; voici les fichiers + le lien").
-     - **b) HTML autonome** — hand over JUST the single self-contained file: the JS-inlined `interactive.html`
-       (`scrolly.html` for a scrolly; the no-JS `static.html` for a hosted-DW producer, its only standalone
-       file). One file, drops into any CMS/email/offline.
-     - **c) Embed (hébergé)** — run `deploy-embed.mjs` to upload to the journalist's own fly.io host and share
-       the returned URL (for a hosted-DW producer this is the already-live `publicUrl`, no deploy step).
-  3. **THEN deliver per the choice** — a) hand over `forms.a.path` (the `<id>-source/` React bundle for
-     chart-native, else the built-files folder) — print its ABSOLUTE path · b) print the standalone HTML
-     file's ABSOLUTE path (that single file IS the delivery) · c) run
-     `bun skills/atelier/scripts/deploy-embed.mjs exports/<slug>/<id>/interactive.html <slug> --results exports/<slug>/report.json --id <id> <appName>`
-     and share the returned URL. The host is the **journalist's OWN fly.io app** (not a shared central host) —
-     pass its name as the 3rd argument or via `$ATELIER_EMBED_APP`. **A SCROLLY has no `static.html`**, so its
-     forms are **code source (a) + HTML autonome (the `scrolly.html`, b) + embed (c)** — same three, only the
-     no-JS image-only fallback does not exist. Accessibility is preserved in every case: the no-JS `static.html`
-     ships inside form a and IS form b's file for hosted-DW; it is only waived when the journalist explicitly
-     picks the hosted embed (c). If the journalist has not set up their fly.io host yet, forms a and b are
-     ALREADY produced on disk; only the embed link (c) pends their one-time setup.
+       - **chart-native** (`kind: "react-source-bundle"`) → a `<id>-source/` **runnable React source bundle**,
+         assembled ON DEMAND by `skills/chart-native/scripts/export-source.mjs` from the `config.json` +
+         `native-source.json` the producer drops in the build subdir: a self-contained Vite project (`src/` = a
+         copy of chart-native/src, `config.json`, `main.tsx`/`index.html` that import the chart + config
+         statically, `package.json` with the interactive deps only — no remotion, `vite.config.ts`,
+         `tsconfig.json`, `README.md`). The journalist runs `bun install && bun run build` → `dist/index.html`
+         (the interactive). THIS is the headline form-1 capability.
+       - **map-native / scrolly** (`kind: "built-files-folder"`) → the built self-contained html (their `src/` is
+         NOT a straight-copy React project — map-native imports scrolly; scrolly imports chart-native +
+         map-native + maptiler/turf — so no rebuildable bundle; they hand over the built file).
+     - **b) HTML autonome** — JUST the single self-contained file: the JS-inlined `interactive.html`
+       (`scrolly.html` for a scrolly). One file, drops into any CMS/email/offline.
+     - **c) Embed (hébergé)** — deploy the html to the journalist's own fly.io host and share the returned URL
+       (for a **hosted-DW** producer, whose interactive IS the already-published embed, this is the live
+       `publicUrl` — no deploy step).
+  3. **THEN build + deliver ONLY the chosen form** — re-run `export-code.mjs` with `--form <html|code-source|embed>`
+     (the `deliver` command from the proposal is exactly this):
+     - `--form html` → copies the standalone `interactive.html`/`scrolly.html` into the export folder; print its
+       ABSOLUTE path (that single file IS the delivery).
+     - `--form code-source` → runs `export-source.mjs` NOW to assemble the `<id>-source/` bundle (chart-native),
+       else copies the built html (map-native/scrolly); print its ABSOLUTE path.
+     - `--form embed` → runs `deploy-embed.mjs` NOW to upload to the journalist's OWN fly.io app (name via the
+       3rd arg or `$ATELIER_EMBED_APP`) and records the hosted URL in `EMBED_URL.txt` (a hosted-DW producer
+       records its already-live `publicUrl`, no deploy). Share the URL.
+     Each run ends with the `assertDelivered(files, { format, form })` gate — the folder must match the
+     `(format, chosen form)` shape or the export fails loudly. **Hosted Datawrapper interactives** (`publicUrl`,
+     no local html) offer ONLY form c (the live embed) — there is no React source and no standalone local html
+     to hand over.
 
-  **★ `delivered` REQUIRES that `export-code.mjs` produced the folder** (for interactive/scrolly). Never
-  report an interactive/scrolly as delivered on produce-time outputs alone — a Gate-3 review PNG,
-  `interactive.png`, or the build subdir's `static.png` are NOT a delivery. If EXPORT did not run, the visual
-  is NOT delivered, no matter how the run otherwise ended.
+  **★ `delivered` REQUIRES that `export-code.mjs --form <chosen>` built the artifact** (for interactive/scrolly).
+  Never report an interactive/scrolly as delivered on produce-time outputs alone — a Gate-3 review PNG,
+  `interactive.png`, or the build subdir's byproducts are NOT a delivery. If the `--form` build did not run, the
+  visual is NOT delivered, no matter how the run otherwise ended.
 
   **One-time fly.io host setup — on the JOURNALIST'S OWN fly.io account** (run once from
   `skills/atelier/embed-host/`; fly.io app names are globally unique, so the journalist picks their own,
@@ -492,7 +475,7 @@ article-web is the one channel that can host it**:
 - Never call `gate-render` (Gate 3b) right after a re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) without first re-running `review-gate` (Gate 3a) on the NEW render. `produce-all` always writes a WHOLLY FRESH `report.json` — every proposal in that run comes back unreviewed and unapproved (`renderApproved:false`), even one that was already signed off before the correction — so the review MUST run again on what actually changed. Do not treat the script's hard refusal ("not render-reviewed") as the safety net to rely on; redo Gate 3a → 3b in order every time, and never hand-edit `report.json` to restore a prior review/approval onto a new artifact.
 - Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow. This holds with NO exception for making a produce/conformance gate pass: never edit a producer/component's source code (`skills/*/src`, any `.tsx`/`.ts` producer file) mid-PRODUCTION to turn a failing gate green — a real newsroom journalist cannot patch the engine, so atelier must not either. If a produce or conformance gate fails because of a genuine engine bug (not a spec/data problem), SURFACE the bug to the journalist, do NOT ship that visual, and do NOT patch the code — the bug is reported, never worked around.
 - Never silently mutate the ACCEPTED SPEC (`baseColor`, format, etc.) mid-PRODUCTION to route around a conformance-gate failure — this is the spec analogue of the rule above ("never edit product code" → "never silently edit the accepted spec to bypass a gate"). A conformance failure is SURFACED to the journalist as-is; if the spec must change to fix it, GATE 2 is re-opened for re-acceptance of the changed spec. The produce-time conformance guards exist precisely so a non-conformant visual never ships unseen.
-- Never hand over an INTERACTIVE visual without running `export-code.mjs` FIRST (unconditionally, NOT gated on a journalist choice) — that one run produces the code-source folder AND the `static.html` no-JS a11y fallback, so both are delivered before any choice; only the hosted fly.io embed link stays an explicit opt-in afterwards (machinery: `export-code.mjs` then optional `deploy-embed.mjs`). Never mark an interactive/scrolly delivered on produce-time outputs alone — a Gate-3 review PNG / `interactive.png` / build-subdir `static.png` is NOT a delivery; only the `export-code` folder is (enforced mechanically by `assertDelivered`). A SCROLLY has no static image, so it ships **code source + embed link** only (its embed targets `scrolly.html`, not `interactive.html`) — do not promise a static-HTML form for a scrolly.
+- Never hand over an INTERACTIVE/SCROLLY visual without running `export-code.mjs` (two-phase): phase 1 (no `--form`) EMITS the a/b/c proposal building NOTHING; phase 2 (`--form <html|code-source|embed>`) builds + delivers ONLY the chosen form, gated by `assertDelivered`. Never build all forms unconditionally, and never fabricate a no-JS `static.html` fallback — that fallback is GONE (accessibility is the `static` FORMAT choice at CADRAGE). Never mark an interactive/scrolly delivered on produce-time outputs alone — a Gate-3 review PNG / `interactive.png` / a build byproduct is NOT a delivery; only the `export-code --form <chosen>` artifact is (enforced mechanically by `assertDelivered`). A hosted-DW interactive delivers ONLY via `--form embed` (its live `publicUrl`) — it has no React source and no standalone local html.
 - Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.
 - Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.) Establish this proactively at Gate 2c (PROPOSITION), before PRODUCTION — never wait for the render-review to be the first thing that catches it, and never reach for the prose fallback just because the journalist has not answered yet. A *fabricated* placeholder URL is worse than none and is now MECHANICALLY refused: the spine's validation gate (GUARD 2, `src/source-guard.ts`) rejects any source URL on a reserved placeholder domain (`example.com`/`.org`/`.net`, or the `.example`/`.test`/`.invalid`/`.localhost` TLDs, RFC 2606/6761) — the proposal fails to produce rather than shipping a fake citation.
 - Never accept a generic organisation homepage (e.g. `eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 URL as the source — it must be treated exactly like a missing URL. The source MUST point to the SPECIFIC, traceable dataset/page the figures come from (the Eurostat dataset page for the exact table, the Insee series page, …). If the journalist only gives an organisation name or its homepage, ASK for the specific dataset/page reference rather than shipping the generic one (see Gate 2c) — in the SAME free-text turn, never as a separate follow-up question.
