@@ -76,14 +76,28 @@ container + a screen-reader data-table alternative · don't steal focus to the m
   resort. Compute this from each symbol's PROJECTED SCREEN position after the camera settles — the edge
   is a screen-space property, not a data property.
 - **Shared primitive (single source of truth):** `src/symbol-labels.ts` → `placeSymbolLabel()` (pure,
-  unit-tested) picks the in-viewport anchor; `estimateLabelBox()` sizes the label. The renderer drives
-  a per-feature, data-driven `text-anchor` (`["get","anchor"]`) — NOT `text-variable-anchor` — and
-  recomputes on `idle`/`moveend`. `SymbolMap.tsx` (static + interactive a11y fallback) uses this.
+  unit-tested) picks the in-viewport anchor; `estimateLabelBox()` sizes the label; `assignSymbolLabelAnchors()`
+  is the shared loop that projects every symbol and mutates each feature's `anchor`, returning a `changed`
+  flag used as the setData guard. Every renderer drives a per-feature, data-driven `text-anchor`
+  (`["get","anchor"]`) — NOT `text-variable-anchor` — and calls this shared loop after the camera settles.
   Mirrors the chart-tooltip in-viewport clamp (`chart-native/src/core/tooltip-clamp.ts`).
-- **Follow-up (known gap):** the video/scrolly symbol renderers (`components/SymbolReveal.tsx`,
-  `SymbolStory.tsx`, `SymbolScrolly.tsx`) still use `text-variable-anchor` and should adopt
-  `placeSymbolLabel` too — SymbolReveal has a fixed camera (compute once at the load `idle`), while
-  SymbolStory/SymbolScrolly `jumpTo` per frame (recompute per frame before `continueRender`).
+- **All symbol renderers now enforce this** (source-scanned in `symbol-labels-parity.test.ts`): `SymbolMap.tsx`
+  (static + interactive a11y fallback) and the animated `components/SymbolReveal.tsx` / `SymbolStory.tsx` /
+  `SymbolScrolly.tsx`. Compute cadence differs by camera: **SymbolReveal** has a fixed camera → compute ONCE
+  at the load `idle`; **SymbolStory/SymbolScrolly** `jumpTo` per frame → recompute per frame after the jump
+  settles (the projection is synchronous, so project+clamp inline before `continueRender`).
+- **Gotcha (compute-once path):** when the clamp flips a label, its `setData` reloads the source
+  ASYNCHRONOUSLY. In the fixed-camera load `idle` you MUST wait for a nested `map.once("idle")` after that
+  `setData` before `continueRender`, or the still is captured mid-reload and the symbol layer paints blank
+  (mirrors LocatorReveal's nested-idle after its declutter setData). The per-frame renderers are already safe
+  because their `once("idle")` is registered AFTER the setData. Caught by render-verify on a width-constrained
+  fit (an east-edge symbol like Indonésie/Thaïlande flips → setData every load).
+- **Follow-up (Locator variants):** `LocatorReveal/Story/Scrolly` (+ `LocatorMap`) still use
+  `text-variable-anchor`, but their label model DIFFERS — a priority declutter (`placeLabels`, decides which
+  labels show at all) with `text-allow-overlap: true` and a default TOP/centred anchor (label above the pin,
+  so horizontal overhang is half a symbol label's). Adopting the viewport clamp there means reconciling
+  `placeSymbolLabel`'s side-preference with `placeLabels`' visibility pass — a distinct integration, not the
+  same trivial swap. Deferred as its own follow-up.
 
 ## Enforceable checklist for the engine
 

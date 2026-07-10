@@ -6,6 +6,9 @@ import {
   wantsStaticFallbackLabels,
   estimateLabelBox,
   placeSymbolLabel,
+  assignSymbolLabelAnchors,
+  type LabelAnchor,
+  type SymbolAnchorProps,
 } from "../src/symbol-labels";
 import type { PlacedSymbol } from "../src/symbol-geo";
 
@@ -188,5 +191,71 @@ describe("placeSymbolLabel — never overflows the viewport", () => {
       viewport,
     };
     expect(placeSymbolLabel(input)).toEqual(placeSymbolLabel(input));
+  });
+});
+
+// The shared edge-clamp loop that BOTH the static SymbolMap and the animated symbol
+// renderers (Reveal/Story/Scrolly) run after their camera settles. Given each symbol's
+// projected screen centre it mutates the per-feature `anchor` in place and reports
+// whether anything changed (the renderer's setData guard). Pure → unit-testable without
+// a browser, so the animated renderers' code path is covered here too.
+describe("assignSymbolLabelAnchors — the shared per-renderer edge-clamp loop", () => {
+  const viewport = { width: 1200, height: 675 };
+  const opts = { viewport, textSize: 13, gap: 6 };
+  const mk = (over: Partial<SymbolAnchorProps>): SymbolAnchorProps => ({
+    labelText: "Rome\n67",
+    radius: 30,
+    anchor: "left",
+    ...over,
+  });
+
+  it("flips an edge symbol's anchor away from the default and reports changed=true", () => {
+    // An Indonesia-like symbol whose centre sits 50px from the right edge: a
+    // right-placed ("left" anchor) label runs off-canvas, so it must flip to the LEFT.
+    const props = [
+      mk({ labelText: "Berlin\n120" }), // centred → keeps the default
+      mk({ labelText: "Indonésie\n760k" }), // right edge → must flip
+    ];
+    const projected = [
+      { x: 600, y: 340 },
+      { x: 1150, y: 340 },
+    ];
+    const changed = assignSymbolLabelAnchors(props, projected, opts);
+    expect(changed).toBe(true);
+    expect(props[0].anchor).toBe("left"); // unchanged default
+    expect(props[1].anchor).not.toBe("left"); // flipped inward (right/top/bottom)
+    expect(props[1].anchor).toBe("right");
+  });
+
+  it("is idempotent once settled — a second pass reports changed=false (setData guard)", () => {
+    const props = [mk({ labelText: "Indonésie\n760k" })];
+    const projected = [{ x: 1150, y: 340 }];
+    expect(assignSymbolLabelAnchors(props, projected, opts)).toBe(true);
+    // Already clamped → no anchor changes → the renderer must NOT setData again
+    // (this is what breaks the setData→idle loop in the per-frame renderers).
+    expect(assignSymbolLabelAnchors(props, projected, opts)).toBe(false);
+  });
+
+  it("recomputes per camera: the SAME symbol clamps differently as it crosses the edge", () => {
+    // Models SymbolStory/Scrolly jumpTo-per-frame: the projected x moves between frames,
+    // so the anchor must be re-derived from the current projection, not frozen at load.
+    const props = [mk({ labelText: "Indonésie\n760k", anchor: "left" })];
+    // Frame A — symbol comfortably centred: default RIGHT placement fits.
+    expect(assignSymbolLabelAnchors(props, [{ x: 600, y: 340 }], opts)).toBe(
+      false,
+    );
+    expect(props[0].anchor).toBe("left");
+    // Frame B — camera panned so the symbol is now against the right edge: must flip.
+    expect(assignSymbolLabelAnchors(props, [{ x: 1180, y: 340 }], opts)).toBe(
+      true,
+    );
+    expect(props[0].anchor).toBe("right");
+  });
+
+  it("skips a symbol with no projected point (defensive) and leaves its anchor", () => {
+    const props = [mk({ anchor: "top" as LabelAnchor })];
+    const projected: { x: number; y: number }[] = [];
+    expect(assignSymbolLabelAnchors(props, projected, opts)).toBe(false);
+    expect(props[0].anchor).toBe("top");
   });
 });

@@ -15,7 +15,12 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
-import { symbolLabels, labelRadialOffset } from "../symbol-labels";
+import {
+  symbolLabels,
+  labelRadialOffset,
+  assignSymbolLabelAnchors,
+  type SymbolAnchorProps,
+} from "../symbol-labels";
 import { deriveSymbolStory } from "../symbol-story";
 import {
   buildTimeline,
@@ -37,6 +42,9 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 const SYMBOL_FILL = "#2171b5";
 const SYMBOL_STROKE = "#ffffff";
 const MAX_RADIUS_PX = 40;
+// Px clearance between a circle's edge and its label — matches labelRadialOffset's
+// default `gap`, so the edge-clamp pixel offset equals the ems radial offset MapLibre renders.
+const LABEL_GAP = 6;
 
 interface SymbolMapState {
   map: InstanceType<typeof maptilersdk.Map>;
@@ -44,6 +52,9 @@ interface SymbolMapState {
   phases: Phase[];
   solutions: CameraSolution[];
   cityByKey: Map<string, [number, number]>;
+  // Retained so the per-frame effect can re-derive each label's in-viewport anchor after
+  // the camera jumpTo settles (the projection changes per frame).
+  symbolFeatures: GeoJSON.Feature[];
 }
 
 export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
@@ -107,23 +118,24 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
 
     m.on("load", () => {
       const labels = symbolLabels(geo.symbols, config.lang);
+      // `anchor` starts at the FT/NYT direct-label default (text to the RIGHT of the point,
+      // MapLibre "left") and is re-derived per frame from each symbol's projected position.
+      const symbolFeatures: GeoJSON.Feature[] = geo.symbols.map((s, i) => ({
+        type: "Feature",
+        properties: {
+          radius: s.radius,
+          label: s.label ?? "",
+          labelText: labels[i]?.name
+            ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
+            : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
+          labelOffset: labelRadialOffset(s.radius, textSize),
+          anchor: "left",
+        },
+        geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+      }));
       m.addSource("symbols", {
         type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: geo.symbols.map((s, i) => ({
-            type: "Feature",
-            properties: {
-              radius: s.radius,
-              label: s.label ?? "",
-              labelText: labels[i]?.name
-                ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
-                : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
-              labelOffset: labelRadialOffset(s.radius, textSize),
-            },
-            geometry: { type: "Point", coordinates: [s.lon, s.lat] },
-          })),
-        },
+        data: { type: "FeatureCollection", features: symbolFeatures },
       });
 
       m.addLayer({
@@ -149,7 +161,9 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           "text-field": ["get", "labelText"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
           "text-size": textSize,
-          "text-variable-anchor": ["left", "right", "top", "bottom"],
+          // Per-feature data-driven anchor (NOT variable-anchor, which is blind to the
+          // canvas edge). Re-derived per frame after each jumpTo so no label runs off-frame.
+          "text-anchor": ["get", "anchor"],
           "text-radial-offset": ["get", "labelOffset"],
           "text-justify": "auto",
           "text-allow-overlap": false,
@@ -203,7 +217,14 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
       m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
 
       m.once("idle", () => {
-        setMapState({ map: m, beats, phases, solutions, cityByKey });
+        setMapState({
+          map: m,
+          beats,
+          phases,
+          solutions,
+          cityByKey,
+          symbolFeatures,
+        });
         continueRender(handle);
       });
     });
@@ -212,7 +233,8 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
   // Per-frame update — deterministic, driven entirely by `frame`.
   useEffect(() => {
     if (!mapState) return;
-    const { map, beats, phases, solutions, cityByKey } = mapState;
+    const { map, beats, phases, solutions, cityByKey, symbolFeatures } =
+      mapState;
 
     const h = delayRender(`symbol-story-frame-${frame}`);
 
@@ -224,6 +246,37 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
 
     // Deterministic jump — never flyTo.
     map.jumpTo({ center: camera.center, zoom: camera.zoom });
+
+    // INVARIANT: a symbol label never renders outside the map viewport. The camera moves
+    // per frame, so re-derive each label's in-viewport anchor from its NEW projected
+    // position — jumpTo settles the projection synchronously, so we can project + clamp
+    // inline here (before the frame's idle/continueRender) and the captured frame shows the
+    // flipped anchors. The shared clamp's `changed` guard means setData only fires on frames
+    // where a label actually crossed an edge (no setData→idle churn otherwise).
+    if (map.getLayer("symbol-labels")) {
+      const el = ref.current;
+      if (el) {
+        const viewport = { width: el.clientWidth, height: el.clientHeight };
+        const projected = symbolFeatures.map((f) =>
+          map.project(
+            (f.geometry as GeoJSON.Point).coordinates as [number, number],
+          ),
+        );
+        const changed = assignSymbolLabelAnchors(
+          symbolFeatures.map(
+            (f) => f.properties as unknown as SymbolAnchorProps,
+          ),
+          projected,
+          { viewport, textSize, gap: LABEL_GAP },
+        );
+        if (changed) {
+          (map.getSource("symbols") as maptilersdk.GeoJSONSource).setData({
+            type: "FeatureCollection",
+            features: symbolFeatures,
+          });
+        }
+      }
+    }
 
     // Circles ESTABLISH during establish beat (radius 0→target via fillReveal),
     // then stay full for the rest of the tour. No dimming of non-highlighted symbols.

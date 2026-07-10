@@ -18,7 +18,12 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { symbolGeometry } from "../symbol-geo";
-import { symbolLabels, labelRadialOffset } from "../symbol-labels";
+import {
+  symbolLabels,
+  labelRadialOffset,
+  assignSymbolLabelAnchors,
+  type SymbolAnchorProps,
+} from "../symbol-labels";
 import type { SymbolConfig } from "../SymbolMap";
 import { resolveMapStyle } from "../route-geo";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
@@ -32,6 +37,9 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 const SYMBOL_FILL = "#2171b5";
 const SYMBOL_STROKE = "#ffffff";
 const MAX_RADIUS_PX = 40;
+// Px clearance between a circle's edge and its label — matches labelRadialOffset's
+// default `gap`, so the edge-clamp pixel offset equals the ems radial offset MapLibre renders.
+const LABEL_GAP = 6;
 
 export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
   config,
@@ -94,22 +102,24 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
     mapRef.current = map;
     map.on("load", () => {
       const labels = symbolLabels(geo.symbols, config.lang);
+      // Retained so the load `idle` can re-derive each label's in-viewport anchor and
+      // setData once (fixed camera → compute-once, like SymbolMap). `anchor` starts at the
+      // FT/NYT direct-label default (text to the RIGHT of the point, MapLibre "left").
+      const symbolFeatures: GeoJSON.Feature[] = geo.symbols.map((s, i) => ({
+        type: "Feature",
+        properties: {
+          radius: s.radius,
+          labelText: labels[i]?.name
+            ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
+            : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
+          labelOffset: labelRadialOffset(s.radius, textSize),
+          anchor: "left",
+        },
+        geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+      }));
       map.addSource("symbols", {
         type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: geo.symbols.map((s, i) => ({
-            type: "Feature",
-            properties: {
-              radius: s.radius,
-              labelText: labels[i]?.name
-                ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
-                : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
-              labelOffset: labelRadialOffset(s.radius, textSize),
-            },
-            geometry: { type: "Point", coordinates: [s.lon, s.lat] },
-          })),
-        },
+        data: { type: "FeatureCollection", features: symbolFeatures },
       });
       map.addLayer({
         id: "symbol-circles",
@@ -132,7 +142,10 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
           "text-field": ["get", "labelText"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
           "text-size": textSize,
-          "text-variable-anchor": ["left", "right", "top", "bottom"],
+          // Per-feature data-driven anchor (NOT variable-anchor, which is blind to the
+          // canvas edge and clips an edge label — "Indonésie" → "Indonés"). Re-derived
+          // once below from each symbol's projected position so no label runs off-frame.
+          "text-anchor": ["get", "anchor"],
           "text-radial-offset": ["get", "labelOffset"],
           "text-justify": "auto",
           "text-allow-overlap": false,
@@ -149,8 +162,42 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
       });
       map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
       map.once("idle", () => {
-        setMapReady(true);
-        continueRender(handle);
+        // INVARIANT: a symbol label never renders outside the map viewport. Fixed camera →
+        // compute the in-viewport anchors ONCE here (mirrors SymbolMap) via the shared clamp,
+        // then setData so the layer picks them up. The `changed` guard means a no-op pass
+        // does not setData (and cannot loop the load `idle`).
+        const finish = () => {
+          setMapReady(true);
+          continueRender(handle);
+        };
+        const el = containerRef.current;
+        if (el && map.getLayer("symbol-labels")) {
+          const viewport = { width: el.clientWidth, height: el.clientHeight };
+          const projected = symbolFeatures.map((f) =>
+            map.project(
+              (f.geometry as GeoJSON.Point).coordinates as [number, number],
+            ),
+          );
+          const changed = assignSymbolLabelAnchors(
+            symbolFeatures.map(
+              (f) => f.properties as unknown as SymbolAnchorProps,
+            ),
+            projected,
+            { viewport, textSize, gap: LABEL_GAP },
+          );
+          if (changed) {
+            (map.getSource("symbols") as maptilersdk.GeoJSONSource).setData({
+              type: "FeatureCollection",
+              features: symbolFeatures,
+            });
+            // Wait for the setData-driven repaint to settle BEFORE continuing the render,
+            // else the still is captured mid-reload and the symbol layer paints blank
+            // (mirrors LocatorReveal's nested-idle after its declutter setData).
+            map.once("idle", finish);
+            return;
+          }
+        }
+        finish();
       });
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

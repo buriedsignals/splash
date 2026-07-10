@@ -16,8 +16,8 @@ import type { CameraMode } from "./camera-mode";
 import {
   symbolLabels,
   labelRadialOffset,
-  estimateLabelBox,
-  placeSymbolLabel,
+  assignSymbolLabelAnchors,
+  type SymbolAnchorProps,
 } from "./symbol-labels";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame, labelTextSize } from "./core/map-format";
@@ -339,31 +339,16 @@ export const SymbolMap: React.FC<Props> = ({
           const el = containerRef.current;
           if (!el || !map.getLayer("symbol-labels")) return;
           const viewport = { width: el.clientWidth, height: el.clientHeight };
-          let changed = false;
-          for (let i = 0; i < symbolFeatures.length; i++) {
-            const s = geo.symbols[i];
-            const pt = map.project([s.lon, s.lat] as [number, number]);
-            const props = symbolFeatures[i].properties as Record<
-              string,
-              unknown
-            >;
-            const { width, height } = estimateLabelBox(
-              String(props.labelText ?? ""),
-              textSize,
-            );
-            const { anchor } = placeSymbolLabel({
-              cx: pt.x,
-              cy: pt.y,
-              offset: s.radius + LABEL_GAP,
-              width,
-              height,
-              viewport,
-            });
-            if (props.anchor !== anchor) {
-              props.anchor = anchor;
-              changed = true;
-            }
-          }
+          const projected = geo.symbols.map((s) =>
+            map.project([s.lon, s.lat] as [number, number]),
+          );
+          const changed = assignSymbolLabelAnchors(
+            symbolFeatures.map(
+              (f) => f.properties as unknown as SymbolAnchorProps,
+            ),
+            projected,
+            { viewport, textSize, gap: LABEL_GAP },
+          );
           if (!changed) return;
           (map.getSource("symbols") as maptilersdk.GeoJSONSource).setData({
             type: "FeatureCollection",
