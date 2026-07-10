@@ -35,8 +35,21 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
   and `validateMapSpec` rejects them). Also **not** for routes/line markers, area markers, or non-map
   visuals. For animated/video maps use the map-video skills; for rich custom interactivity use a D3 map skill.
 
-## Four gotchas that will waste your day (read first)
+## Five gotchas that will waste your day (read first)
 
+0. **Join key (choropleth) — the silent grey map.** `mapKeyAttr` MUST be one of the chosen
+   basemap's real join keys, and the data's `regionKey` values must live in that key's code
+   space. A wrong key (e.g. `ISO_A3` on `world-2019`, whose alpha-3 key is `DW_STATE_CODE`)
+   silently fails the region join and ships a **fully grey, dataless map** — Datawrapper still
+   publishes it, so nothing surfaces until someone reads the PNG. Two guards protect this:
+   `validateMapSpec` rejects a `mapKeyAttr` that is not a declared key of a **known** basemap
+   (`src/basemap-keys.ts`, sourced from `GET /v3/basemaps/{id}` → `meta.keys[].value`) and names
+   the valid keys; and `produceMap` runs a **dataless-join guard** (`src/join-match.ts`) that
+   recomputes the real match rate from the live basemap geometry and **fails hard** (never
+   publishes) when fewer than `MIN_JOIN_MATCH_RATE` (50%) of the data rows join — covering ANY
+   basemap, known to the registry or not. Pick the key from `GET /v3/basemaps/{id}` → `meta.keys`;
+   e.g. `world-2019`→`DW_STATE_CODE` (alpha-3), `us-states`→`id` (2-letter postal, NOT `NAME_ABBR`
+   which is the dotted "Ala." form), `europe-sovereign-states`→`ISO_3_SOV`.
 1. **Colour scale (choropleth + symbol):** it lives in `metadata.visualize.colorscale.colors` as
    `{color, position}` stops. **If you also send `colorscale.stops` (a STRING like "equidistant"),
    the renderer paints every region/symbol AND the legend BLACK.** The mapper deliberately emits
@@ -65,15 +78,22 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Contract | `src/map-spec.ts` | `MapSpec` + `validateMapSpec` (key-bound, CVD-safe stops, WCAG alt) |
+| Contract | `src/map-spec.ts` | `MapSpec` + `validateMapSpec` (key-bound, valid join key, CVD-safe stops, WCAG alt) |
+| Join keys | `src/basemap-keys.ts` | registry of each known basemap's valid `map-key-attr` values (from the live DW basemap API) |
 | Mapping | `src/spec-to-map-metadata.ts` | MapSpec → DW metadata (colorscale-without-`stops` fix) |
 | Client | `../dw-chart/src/datawrapper.ts` | REUSED generic REST client (create/data/patch/publish/png) |
-| Orchestrator | `src/produce.ts` | `produceMap` → `{chartId, embed, pngPath, publicUrl}` |
+| Dataless guard | `src/join-match.ts` | produce-time real join-match rate from live geometry; fails hard on a dataless join |
+| Orchestrator | `src/produce.ts` | `produceMap` → `{chartId, embed, pngPath, publicUrl}` (runs the dataless-join guard before publishing) |
 
 ## How it works (the shape)
 
 1. **Validate** the `MapSpec` (fail loud on missing bindings/alt, bad colour stop, and confirm the
-   geo/value columns are real CSV columns — the data↔map binding; markers carry valid lng/lat).
+   geo/value columns are real CSV columns — the data↔map binding; markers carry valid lng/lat; and
+   for a choropleth on a **known** basemap, that `mapKeyAttr` is one of its real join keys).
+1.5. **Dataless-join guard** (choropleth): fetch the live basemap geometry and confirm the data's
+   `regionKey` values actually join to regions. Below `MIN_JOIN_MATCH_RATE` (50% matched) the join
+   has failed — the map would be fully grey — so `produceMap` **throws before publishing** rather
+   than ship a dataless "produced" render. Covers any basemap, registry-known or not.
 2. **Map** spec → DW `metadata`, dispatched on `mapType`:
    - **choropleth** (`d3-maps-choropleth`): `axes.keys`=region col, `axes.values`=value col;
      `visualize.basemap`, `visualize["map-key-attr"]`=basemap join key (e.g. `DW_STATE_CODE`),
@@ -100,6 +120,10 @@ variant (`-continental`, or another id of the same extent).
 
 1. Build a `MapSpec` (see `eval/cases/eu-renewables.json`). Pick a basemap from `GET /v3/basemaps`
    and its join key from `GET /v3/basemaps/{id}` → `meta.keys[].value (some basemaps expose it at top-level `keys[].value`)` (the `map-key-attr`).
+   The `mapKeyAttr` MUST be one of those declared keys AND match the data's `regionKey` code space
+   (e.g. alpha-3 `DW_STATE_CODE`, not `ISO_A3`, on `world-2019`) — a wrong key ships a grey dataless
+   map. Known basemaps' keys are recorded in `src/basemap-keys.ts` (validated offline); add a basemap
+   there when you introduce it.
 2. `set -a; source /atelier/.env; set +a` (token).
 3. `produceMap(spec, 'out.png')`.
 
@@ -123,8 +147,10 @@ variant (`-continental`, or another id of the same extent).
 
 - `src/{map-spec,spec-to-map-metadata,produce}.ts` — contract (choropleth + locator produced; symbol
   rejected → `map-native`), mapper, orchestrator.
-- `src/tests/` — pure unit tests + live e2e (choropleth + locator; symbol asserts rejection) (skips
-  without token).
+- `src/basemap-keys.ts` — per-basemap valid join keys (offline registry) for the `validateMapSpec`
+  join-key check; `src/join-match.ts` — produce-time dataless-join guard (live match rate, fail-hard).
+- `src/tests/` — pure unit tests + live e2e (choropleth + locator; symbol asserts rejection; join-key
+  mismatch asserts validation error + a dataless join asserts a produce refusal) (skips without token).
 - `eval/` — `scoreMapSpec` (pure gate, per-type) + `basemaps.ts` allowlist + generic cases
   (choropleth, locator) + live basemap check.
 - `output-proof/` — the real published choropleth and locator maps (PNG + publicUrl), left published;

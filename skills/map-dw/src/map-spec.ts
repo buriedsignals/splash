@@ -4,6 +4,7 @@ import {
   isPercentScaleMismatch,
   numericValuesOf,
 } from "../../dw-chart/src/chart-spec";
+import { validJoinKeysFor } from "./basemap-keys";
 
 export interface GradientStop {
   color: string; // hex
@@ -176,6 +177,26 @@ function requireColumn(
     );
 }
 
+// CHOROPLETH JOIN KEY (the silent grey-map bug). `mapKeyAttr` must be one of the basemap's
+// real join keys (`GET /v3/basemaps/{id}` → `meta.keys[].value`, recorded in basemap-keys.ts).
+// A wrong key silently fails the region join and ships a fully grey, DATALESS map — Datawrapper
+// still publishes it, so nothing surfaces until someone reads the PNG. Verified: `ISO_A3` on
+// `world-2019` (real alpha-3 key `DW_STATE_CODE`) matched 0 rows and rendered all-grey. When the
+// basemap is known, reject the wrong key HARD and suggest the valid ones; an unknown basemap is
+// left to the produce-time dataless-join guard (join-match.ts).
+function validateJoinKey(s: Record<string, unknown>, errors: string[]): void {
+  const basemap = typeof s.basemap === "string" ? s.basemap.trim() : "";
+  const key = typeof s.mapKeyAttr === "string" ? s.mapKeyAttr.trim() : "";
+  if (!basemap || !key) return; // absence already flagged by requireStrings
+  const valid = validJoinKeysFor(basemap);
+  if (!valid) return; // unknown basemap — covered by the produce-time dataless guard
+  if (!valid.includes(key))
+    errors.push(
+      `mapKeyAttr "${key}" is not a join key of basemap "${basemap}" — the region join ` +
+        `would fail and the map would render fully grey with no data. Valid keys: ${valid.join(", ")}`,
+    );
+}
+
 function warnLabelTitle(
   s: Record<string, unknown>,
   columns: string[],
@@ -263,6 +284,7 @@ export function validateMapSpec(
     const columns = columnsOf(s, errors);
     requireColumn(s, "regionKey", columns, errors);
     requireColumn(s, "valueColumn", columns, errors);
+    validateJoinKey(s, errors);
     validateColorScale(s.colorScale, errors);
     warnLabelTitle(s, columns, warnings);
     validateNumberFormat(
