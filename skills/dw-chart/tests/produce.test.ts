@@ -15,6 +15,7 @@ const spec = JSON.parse(
 let id = "";
 let msId = "";
 let annId = "";
+let interactiveId = "";
 
 // Real Datawrapper API round-trips. Requires DATAWRAPPER_API_TOKEN; skipped without it
 // so a clean checkout / CI stays green (mirrors map-dw's live-test gating).
@@ -90,10 +91,26 @@ d("produceChart (real API)", () => {
     expect(notes[0].text).toBe("Peak");
     rmSync(out, { force: true });
   }, 60000);
+
+  // Single-format-produce-export (Task 3): "interactive" delivers the hosted embed
+  // alone — dw-chart must NOT export/write a PNG for it (the old unconditional
+  // exportPng call after every publish). "static" (the default, tested above) is
+  // unchanged: it still exports the media.
+  it('produces the embed/publicUrl but writes NO png when format is "interactive"', async () => {
+    const out = join(tmpdir(), "atelier-interactive.png");
+    rmSync(out, { force: true });
+    const res = await produceChart(spec, out, { format: "interactive" });
+    interactiveId = res.chartId;
+    expect(res.publicUrl).toContain("datawrapper");
+    expect(res.embed).toContain(res.publicUrl);
+    expect(res.pngPath).toBeUndefined();
+    expect(existsSync(out)).toBe(false);
+  }, 60000);
 });
 
 afterAll(async () => {
   if (id) await deleteChart(id);
   if (msId) await deleteChart(msId);
   if (annId) await deleteChart(annId);
+  if (interactiveId) await deleteChart(interactiveId);
 });

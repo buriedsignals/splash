@@ -1,13 +1,15 @@
-// produce(type, configPath, outDir): the chart-native producer — build + render
+// produce(type, configPath, outDir, format): the chart-native producer — build + render
 // the native outputs from an ARBITRARY config (the flow's entry point, the native
 // equivalent of dw-chart's produceChart). Injects the config via CONFIG= (Vite
 // define for web, Remotion --props for video), so nothing touches the committed
 // samples. Returns the output paths as JSON on stdout.
 //
-//   bun scripts/produce.mjs <type> <config.json> <outDir> [formats]
-//   formats: "all" (default — static + interactive + the ONE video aspect the
-//            channel requires, ATELIER_CHANNEL env, default article-web) | "static"
-//            (no video)
+//   bun scripts/produce.mjs <type> <config.json> <outDir> <format>
+//   format: the SINGLE VisualFormat to build — "static" | "interactive" | "video" |
+//           "scrolly" (the ../../atelier/src/channel.ts vocabulary). Builds EXACTLY
+//           that one format's artifacts, nothing else (no cross-format byproducts —
+//           see the single-format-produce-export design). "scrolly" is not built by
+//           chart-native directly (see the case below) — it fails hard.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -46,33 +48,34 @@ function readCompDims(rootTsxSrc, compId) {
   return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
 }
 
+// The single-format-produce-export redesign's vocabulary (mirrors ../../atelier/src/
+// channel.ts's VisualFormat — kept as a plain runtime Set here since this is a .mjs,
+// not imported, to avoid a type-only import needing a bundler step).
+const VALID_FORMATS = new Set(["static", "interactive", "video", "scrolly"]);
+
 const type = process.argv[2];
 const configPath = process.argv[3];
 const outDir = process.argv[4];
-const formats = process.argv[5] ?? process.env.FORMATS ?? "all";
-if (!type || !configPath || !outDir) {
-  console.error("usage: produce.mjs <type> <config.json> <outDir> [all|static]");
+const format = process.argv[5] ?? process.env.FORMAT;
+if (!type || !configPath || !outDir || !VALID_FORMATS.has(format)) {
+  console.error("usage: produce.mjs <type> <config.json> <outDir> <static|interactive|video|scrolly>");
   process.exit(1);
 }
 
 // Channel-driven format (Slice 2) — the distribution channel this deliverable
 // targets (default article-web, matching normalizeChannel's default / back-compat
 // for legacy callers with no channel). Threaded in by adapters.ts as an env var
-// (see skills/atelier/src/adapters.ts channelEnvFor). Gates which SINGLE video
-// aspect gets rendered below (never the unconditional landscape+square+portrait
-// triple) and sizes the static/interactive Vite build (vite.config.ts).
+// (see skills/atelier/src/adapters.ts channelEnvFor). Sizes the static/interactive
+// Vite build (vite.config.ts) and selects the video aspect below.
 const VALID_CHANNELS = new Set(["social-vertical", "social-feed", "article-web"]);
 const rawChannel = process.env.ATELIER_CHANNEL ?? "article-web";
 const channel = VALID_CHANNELS.has(rawChannel) ? rawChannel : "article-web";
 
-// Channel-gated interactive (fix/channel-gated-produce): only build interactive.html
-// and run the interactive-only snaps when the channel actually allows the interactive
-// format. social-vertical / social-feed (allowedFormats = static, video) must NOT ship
-// an interactive byproduct — building it wastes a Vite pass and drops a stray
-// interactive.html / interactive.png next to a social deliverable. article-web (allows
-// interactive) is unchanged: interactive build + all interactive snaps run as before.
-// The static build, static conformance (snap-contrast, render-size), and the video path
-// always run regardless of channel.
+// Channel-gated interactive (fix/channel-gated-produce, kept under the single-format
+// redesign): the "interactive" format is only buildable when the channel actually
+// allows it (social-vertical / social-feed forbid it — allowedFormats = static,
+// video). `case "interactive"` below fails hard rather than silently producing when
+// this is false.
 const interactiveAllowed = isFormatAllowed(channel, "interactive");
 
 const X = REMOTION_PREFIX[type];
@@ -153,148 +156,184 @@ const run = (cmd, args, extraEnv = {}) =>
   execFileSync(cmd, args, { stdio: "inherit", cwd: root, env: { ...env, ...extraEnv }, shell: isWin });
 const snap = (script, extraEnv = {}) => run(SNAP[0], [...SNAP.slice(1), script], extraEnv);
 
-// 1. web builds (config baked in via the Vite define). The static build always runs;
-// the interactive build runs ONLY when the channel allows the interactive format.
-console.log(
-  interactiveAllowed
-    ? `[produce ${type}] building static + interactive…`
-    : `[produce ${type}] building static (channel "${channel}" forbids interactive — skipping interactive build)…`,
-);
-run("bunx", ["vite", "build"]);
-let interactiveDest = null;
-if (interactiveAllowed) {
-  run("bunx", ["vite", "build"], { INTERACTIVE: "1" });
+const result = {};
 
-  // 1b. copy self-contained interactive.html into outDir
-  const interactiveSrc = join(root, chartDistSub(type, "interactive"), "index.html");
-  interactiveDest = join(outDir, "interactive.html");
-  copyFileSync(interactiveSrc, interactiveDest);
-  console.log(`[produce ${type}] interactive.html → ${interactiveDest}`);
-  run("bun", ["scripts/assert-selfcontained.mjs", interactiveDest]);
-}
+switch (format) {
+  // static → static.png (the media) only. No interactive/video byproducts.
+  case "static": {
+    console.log(`[produce ${type}] building static…`);
+    run("bunx", ["vite", "build"]);
 
-// 2. snap static (always) + interactive (only when the channel allows it) into outDir.
-// snap-proof ALWAYS writes static.png; SKIP_INTERACTIVE tells it to skip the interactive
-// PNG so a social produce doesn't fail on a missing interactive build.
-console.log(
-  interactiveAllowed
-    ? `[produce ${type}] snapping static + interactive…`
-    : `[produce ${type}] snapping static (interactive skipped for channel "${channel}")…`,
-);
-snap("scripts/snap-proof.mjs", {
-  OUTDIR: outDir,
-  SKIP_INTERACTIVE: interactiveAllowed ? "" : "1",
-});
+    console.log(`[produce ${type}] snapping static…`);
+    snap("scripts/snap-proof.mjs", { OUTDIR: outDir, SKIP_INTERACTIVE: "1" });
 
-// 2b. render-time WCAG contrast guard — every text label must clear 4.5:1 against
-// its real background. Fails the run before export on a mark-coloured label.
-console.log(`[produce ${type}] checking text contrast (snap-contrast)…`);
-// F2 — tell snap-contrast which fills are brand-explicit so a low-contrast label in
-// the newsroom's house colour is recorded as a render-review concern, not a hard
-// failure (policy b). No brand profile → empty → the auto path stays strict.
-snap("scripts/snap-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",") });
+    // render-time WCAG contrast guard — every text label must clear 4.5:1 against its
+    // real background. Fails the run before export on a mark-coloured label. F2 — tell
+    // snap-contrast which fills are brand-explicit so a low-contrast label in the
+    // newsroom's house colour is recorded as a render-review concern, not a hard
+    // failure (policy b). No brand profile → empty → the auto path stays strict.
+    console.log(`[produce ${type}] checking text contrast (snap-contrast)…`);
+    snap("scripts/snap-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",") });
 
-// 2c / 2c-bis — INTERACTIVE hover/focus tooltip guards. Both read the interactive
-// build, so they only run when the channel allows interactive (skipped for social
-// channels, which never build it).
-if (interactiveAllowed) {
-  // 2c. render-time WCAG contrast guard for the INTERACTIVE hover/focus tooltip — a
-  // static-build check can't see this (the tooltip only exists on hover, in HTML/CSS,
-  // not SVG). Fails the run before export on a tooltip name painted in the mark hue.
-  console.log(`[produce ${type}] checking tooltip contrast (snap-tooltip-contrast)…`);
-  snap("scripts/snap-tooltip-contrast.mjs");
+    // render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
+    // dimensions must equal the channel's exact media size. Fail-hard before export.
+    // No render: static.png already exists on disk (the snap above); this just reads
+    // its IHDR chunk.
+    console.log(`[produce ${type}] checking rendered size vs channel "${channel}"…`);
+    {
+      const staticPngPath = join(outDir, "static.png");
+      const { width: actualW, height: actualH } = readPngSize(staticPngPath);
+      try {
+        assertRenderedSize(actualW, actualH, channel);
+        console.log(`[produce ${type}] render-size: OK (${actualW}x${actualH} matches channel "${channel}").`);
+      } catch (err) {
+        console.error(`[produce ${type}] RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
+        process.exit(1);
+      }
+    }
 
-  // 2c-bis. render-time in-viewport guard for the INTERACTIVE hover/focus tooltip — a
-  // mark near the right/top edge must not push the tooltip off-screen (its text would
-  // clip). ChartFrame's ClampedTooltip flips/clamps it back in-bounds; this asserts the
-  // property mechanically at a narrow + wide embed width. Fails the run before export.
-  console.log(`[produce ${type}] checking tooltip stays in-viewport (snap-tooltip-viewport)…`);
-  snap("scripts/snap-tooltip-viewport.mjs");
-}
-
-// 2d. render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
-// dimensions must equal the channel's exact media size. Fail-hard before export,
-// wired like snap-contrast/snap-tooltip-contrast above. No render: static.png already
-// exists on disk (step 2); this just reads its IHDR chunk.
-console.log(`[produce ${type}] checking rendered size vs channel "${channel}"…`);
-{
-  const staticPngPath = join(outDir, "static.png");
-  const { width: actualW, height: actualH } = readPngSize(staticPngPath);
-  try {
-    assertRenderedSize(actualW, actualH, channel);
-    console.log(`[produce ${type}] render-size: OK (${actualW}x${actualH} matches channel "${channel}").`);
-  } catch (err) {
-    console.error(`[produce ${type}] RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
-    process.exit(1);
+    result.static = join(outDir, "static.png");
+    break;
   }
-}
 
-const result = { static: join(outDir, "static.png") };
-if (interactiveAllowed) {
-  result.interactive = join(outDir, "interactive.png");
-  result.interactiveHtml = interactiveDest;
-}
+  // interactive → interactive.html (the deliverable) + interactive.png (a Gate-3
+  // review still — EPHEMERAL, never shipped) + the interaction guards. No static
+  // build at all: the static Vite pass does not run, so snap-contrast (which reads
+  // the static dist) does not apply here — snap-interactive-contrast below is its
+  // interactive-dist counterpart, so rendered-text WCAG contrast is still checked.
+  case "interactive": {
+    if (interactiveAllowed) {
+      console.log(`[produce ${type}] building interactive…`);
+      run("bunx", ["vite", "build"], { INTERACTIVE: "1" });
 
-// 3. video (config injected via Remotion --props inside render-video.mjs) — render
-// ONLY the single comp matching the channel's aspect (not the old unconditional
-// landscape+square+portrait triple); the aspect is a CADRAGE decision, not picked
-// post-hoc at export.
-const VIDEO_COMP_BY_ASPECT = {
-  landscape: [`${X}Reveal`, "landscape"],
-  square: [`${X}Square`, "square"],
-  portrait: [`${X}Portrait`, "portrait"],
-};
-if (formats === "all") {
-  const aspect = channelAspect(channel);
-  const entry = VIDEO_COMP_BY_ASPECT[aspect];
-  if (!entry) {
-    console.error(`produce: no video comp for channel "${channel}" aspect "${aspect}"`);
-    process.exit(1);
-  }
-  const [comp, name] = entry;
+      const interactiveSrc = join(root, chartDistSub(type, "interactive"), "index.html");
+      const interactiveDest = join(outDir, "interactive.html");
+      copyFileSync(interactiveSrc, interactiveDest);
+      console.log(`[produce ${type}] interactive.html → ${interactiveDest}`);
+      run("bun", ["scripts/assert-selfcontained.mjs", interactiveDest]);
 
-  // Video render-size conformance (Task 4) — assert the SELECTED comp's registered
-  // dims (read straight from Root.tsx, no render) match the channel. Square/Portrait
-  // comps are uniformly pinned to renderSize(channel) across every one of the 41
-  // chart types (1080x1080 / 1080x1920 — the true-9:16 fix this slice made) so an
-  // exact match is a real regression guard (e.g. against re-introducing the 4:5 1350
-  // bug). Landscape ("Reveal") comps keep each family's own pre-channel aesthetic
-  // dims (e.g. 840x480, 840x460 for bar/stacked, 840x420 for calendar…) — they were
-  // never resized to the channel's exact media pixels (out of this slice's scope, see
-  // plan self-review "repoint only"); enforcing exact equality there would fail-hard
-  // on every article-web video (the DEFAULT channel), which is not this slice's intent
-  // (the Final e2e render-verify expects an article-web video to still render). So we
-  // only hard-assert for portrait/square and log landscape's actual dims for visibility.
-  const rootTsxSrc = readFileSync(join(root, "remotion", "src", "Root.tsx"), "utf8");
-  const compDims = readCompDims(rootTsxSrc, comp);
-  if (!compDims) {
-    console.error(`[produce ${type}] could not find comp "${comp}" dims in Root.tsx`);
-    process.exit(1);
-  }
-  if (aspect === "portrait" || aspect === "square") {
-    try {
-      assertRenderedSize(compDims.width, compDims.height, channel);
-      console.log(
-        `[produce ${type}] video render-size: OK (${comp} ${compDims.width}x${compDims.height} matches channel "${channel}").`,
+      // Gate-3 review still (ephemeral, not a deliverable) — snap-proof normally also
+      // writes static.png, so SKIP_STATIC tells it to skip that half (no static dist
+      // exists here to serve/screenshot); only interactive.png is written.
+      console.log(`[produce ${type}] snapping interactive (ephemeral review still)…`);
+      snap("scripts/snap-proof.mjs", { OUTDIR: outDir, SKIP_STATIC: "1" });
+
+      // render-time WCAG contrast guard for the interactive dist's own SVG text
+      // (axis/value/direct labels — the same labels the static build renders,
+      // mount.tsx wraps the identical *Chart.tsx component either way). Closes the
+      // coverage gap left by this format no longer building the static dist: a
+      // mark-coloured label would otherwise ship unguarded on the article-web
+      // interactive path (the most common delivery). Fails the run before export.
+      console.log(`[produce ${type}] checking text contrast (snap-interactive-contrast)…`);
+      snap("scripts/snap-interactive-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",") });
+
+      // render-time WCAG contrast guard for the INTERACTIVE hover/focus tooltip — a
+      // static-build check can't see this (the tooltip only exists on hover, in
+      // HTML/CSS, not SVG). Fails the run before export on a tooltip name painted in
+      // the mark hue.
+      console.log(`[produce ${type}] checking tooltip contrast (snap-tooltip-contrast)…`);
+      snap("scripts/snap-tooltip-contrast.mjs");
+
+      // render-time in-viewport guard for the INTERACTIVE hover/focus tooltip — a mark
+      // near the right/top edge must not push the tooltip off-screen (its text would
+      // clip). ChartFrame's ClampedTooltip flips/clamps it back in-bounds; this asserts
+      // the property mechanically at a narrow + wide embed width. Fails the run before
+      // export.
+      console.log(`[produce ${type}] checking tooltip stays in-viewport (snap-tooltip-viewport)…`);
+      snap("scripts/snap-tooltip-viewport.mjs");
+
+      result.interactive = interactiveDest;
+      result.reviewStill = join(outDir, "interactive.png"); // ephemeral — not delivered
+    } else {
+      console.error(
+        `[produce ${type}] format "interactive" is not allowed for channel "${channel}" — refusing to produce.`,
       );
-    } catch (err) {
-      console.error(`[produce ${type}] VIDEO RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
       process.exit(1);
     }
-  } else {
-    console.log(
-      `[produce ${type}] video render-size: ${comp} is ${compDims.width}x${compDims.height} (landscape keeps its family-tuned aspect, not pinned to the channel's exact mediaSize — see comment above).`,
-    );
+    break;
   }
 
-  console.log(`[produce ${type}] rendering ${name} (${comp}) for channel "${channel}"…`);
-  run(
-    "bun",
-    ["scripts/render-video.mjs", join(outDir, `video-${name}-still.png`), join(outDir, `${name}.mp4`)],
-    { COMP: comp },
-  );
-  result[name] = join(outDir, `${name}.mp4`);
-  console.log(`[produce ${type}] done rendering ${name}.`);
+  // video (config injected via Remotion --props inside render-video.mjs) — render
+  // ONLY the single comp matching the channel's aspect (not the old unconditional
+  // landscape+square+portrait triple); the aspect is a CADRAGE decision, not picked
+  // post-hoc at export. No web build at all: Remotion has its own bundler entry
+  // (remotion/index.ts), independent of the static/interactive Vite dist.
+  case "video": {
+    const VIDEO_COMP_BY_ASPECT = {
+      landscape: [`${X}Reveal`, "landscape"],
+      square: [`${X}Square`, "square"],
+      portrait: [`${X}Portrait`, "portrait"],
+    };
+    const aspect = channelAspect(channel);
+    const entry = VIDEO_COMP_BY_ASPECT[aspect];
+    if (!entry) {
+      console.error(`produce: no video comp for channel "${channel}" aspect "${aspect}"`);
+      process.exit(1);
+    }
+    const [comp, name] = entry;
+
+    // Video render-size conformance (Task 4) — assert the SELECTED comp's registered
+    // dims (read straight from Root.tsx, no render) match the channel. Square/Portrait
+    // comps are uniformly pinned to renderSize(channel) across every one of the 41
+    // chart types (1080x1080 / 1080x1920 — the true-9:16 fix this slice made) so an
+    // exact match is a real regression guard (e.g. against re-introducing the 4:5 1350
+    // bug). Landscape ("Reveal") comps keep each family's own pre-channel aesthetic
+    // dims (e.g. 840x480, 840x460 for bar/stacked, 840x420 for calendar…) — they were
+    // never resized to the channel's exact media pixels (out of this slice's scope, see
+    // plan self-review "repoint only"); enforcing exact equality there would fail-hard
+    // on every article-web video (the DEFAULT channel), which is not this slice's intent
+    // (the Final e2e render-verify expects an article-web video to still render). So we
+    // only hard-assert for portrait/square and log landscape's actual dims for visibility.
+    const rootTsxSrc = readFileSync(join(root, "remotion", "src", "Root.tsx"), "utf8");
+    const compDims = readCompDims(rootTsxSrc, comp);
+    if (!compDims) {
+      console.error(`[produce ${type}] could not find comp "${comp}" dims in Root.tsx`);
+      process.exit(1);
+    }
+    if (aspect === "portrait" || aspect === "square") {
+      try {
+        assertRenderedSize(compDims.width, compDims.height, channel);
+        console.log(
+          `[produce ${type}] video render-size: OK (${comp} ${compDims.width}x${compDims.height} matches channel "${channel}").`,
+        );
+      } catch (err) {
+        console.error(`[produce ${type}] VIDEO RENDER-SIZE VIOLATION — refusing to produce: ${err.message}`);
+        process.exit(1);
+      }
+    } else {
+      console.log(
+        `[produce ${type}] video render-size: ${comp} is ${compDims.width}x${compDims.height} (landscape keeps its family-tuned aspect, not pinned to the channel's exact mediaSize — see comment above).`,
+      );
+    }
+
+    console.log(`[produce ${type}] rendering ${name} (${comp}) for channel "${channel}"…`);
+    run(
+      "bun",
+      ["scripts/render-video.mjs", join(outDir, `video-${name}-still.png`), join(outDir, `${name}.mp4`)],
+      { COMP: comp },
+    );
+    result[name] = join(outDir, `${name}.mp4`);
+    result.reviewStill = join(outDir, `video-${name}-still.png`); // the still IS the review, not a separate deliverable
+    console.log(`[produce ${type}] done rendering ${name}.`);
+    break;
+  }
+
+  // scrolly — NOT built by chart-native directly. The true interactive scroll-driven
+  // format (skills/scrolly) is its own producer (see ../../atelier/src/producer-spec.ts
+  // Producer union and adapters.ts's SCRIPT table): it hosts chart-native's chart
+  // geometry under its own build/render pipeline, dispatched independently by the
+  // orchestrator as producer "scrolly", never through this script. chart-native has no
+  // Vite "scrolly" build mode, no scrolly mount, no scrolly snap — inventing one here
+  // would duplicate skills/scrolly rather than reuse it. Fail hard with a clear reason
+  // instead of silently mis-producing.
+  case "scrolly": {
+    console.error(
+      `[produce ${type}] format "scrolly" is not built by chart-native — dispatch to the "scrolly" ` +
+        `producer (skills/scrolly), which hosts chart-native's geometry for the scroll-driven format.`,
+    );
+    process.exit(1);
+    break;
+  }
 }
 
 console.log("PRODUCE_RESULT " + JSON.stringify(result));

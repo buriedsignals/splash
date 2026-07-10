@@ -3,7 +3,9 @@
 // produce(). Falls back loudly (non-zero exit + reason) when the native type isn't
 // mapped, so the orchestrator can route to dw-chart instead.
 //
-//   bun scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]
+//   bun scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [format]
+// The single format (static|interactive|video|scrolly) comes from the spec's pinned
+// `format` (single-format-produce-export design) or an explicit arg override — no "all".
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdtempSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -11,16 +13,24 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { specToNativeConfig, UnsupportedNativeType } from "../src/spec-to-config.ts";
 
+const VALID_FORMATS = new Set(["static", "interactive", "video", "scrolly"]);
 const here = dirname(fileURLToPath(import.meta.url));
 const specPath = process.argv[2];
 const outDir = process.argv[3];
-const formats = process.argv[4] ?? "all";
+const formatArg = process.argv[4];
 if (!specPath || !outDir) {
-  console.error("usage: produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]");
+  console.error("usage: produce-from-spec.mjs <nativeSpec.json> <outDir> [format]");
   process.exit(1);
 }
 
 const spec = JSON.parse(readFileSync(specPath, "utf8"));
+const format = formatArg ?? spec.format;
+if (!VALID_FORMATS.has(format)) {
+  console.error(
+    `produce-from-spec: a single format is required (spec.format or argv[4]) — one of static|interactive|video|scrolly, got "${format}"`,
+  );
+  process.exit(1);
+}
 
 let mapped;
 try {
@@ -37,7 +47,7 @@ mkdirSync(outDir, { recursive: true });
 const configPath = join(mkdtempSync(join(tmpdir(), "native-config-")), "config.json");
 writeFileSync(configPath, JSON.stringify(mapped.config, null, 2));
 
-execFileSync("bun", [join(here, "produce.mjs"), mapped.type, configPath, outDir, formats], {
+execFileSync("bun", [join(here, "produce.mjs"), mapped.type, configPath, outDir, format], {
   stdio: "inherit",
   cwd: join(here, ".."),
 });

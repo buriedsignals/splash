@@ -1,22 +1,29 @@
-// EXPORT (code path): bundle a producer's artifacts into a hand-over folder covering the
-// delivery forms — (1) CODE SOURCE: all the built files, self-host + customise; (2) HTML STATIQUE:
-// a single self-contained static.html (the image inlined, no JS, embeds anywhere); (3) COMPOSANT
-// EMBED: run deploy-embed on interactive.html for a hosted link.
-// An interactive delivery has NO standalone image form: the producer's raw "static.png" byproduct
-// (chart-native/map-native always build one regardless of the requested format) is used ONLY to
-// build the static.html fallback below and is never copied into the export folder as its own file.
+// EXPORT (code path) — SINGLE-FORMAT delivery. An accepted proposal carries ONE pinned
+// VisualFormat (the single-format redesign: one element = one format, produced + delivered
+// alone). This script delivers exactly that format's ONE artifact, and for interactive /
+// scrolly it delivers exactly the ONE delivery form the journalist chose — built LAZILY,
+// only once chosen:
+//   static → the media image, handed over directly (no folder machinery, no .html, no menu).
+//   video  → the .mp4, handed over directly.
+//   interactive / scrolly → a two-phase LAZY delivery:
+//       phase 1 (no --form): EMIT the a/b/c delivery-form proposal (the machine-relayable
+//                            `EXPORT_FORMS_JSON` line + the human `EXPORT_FORMS_PROPOSAL`
+//                            block) describing what each form WOULD be — building NOTHING
+//                            (no React bundle, no fly deploy, no file copies).
+//       phase 2 (--form <html|code-source|embed>): materialise + deliver ONLY that form:
+//           html        → copy the interactive.html / scrolly.html file.
+//           code-source → run export-source.mjs NOW → the runnable `<id>-source` React
+//                         bundle (chart-native), else the built-files folder (map-native /
+//                         scrolly, whose src is not a straight-copy React project).
+//           embed       → run deploy-embed.mjs NOW (fly.io) and record the hosted URL in
+//                         EMBED_URL.txt (a hosted-DW producer records its already-live
+//                         publicUrl — no deploy step).
+// There is NO auto no-JS static.html fallback any more: accessibility is a FORMAT choice at
+// CADRAGE (picking "static" IS the accessible path), not a file bolted onto every interactive.
+// The final gate is assertDelivered(files, { format, form }) — the folder must match the
+// (format, chosen form) shape or the export fails loudly instead of shipping a non-delivery.
 //
-// TWO producer shapes, both must yield a COMPLETE folder (never crash / never empty):
-//   • FILE-BASED (chart-native / map-native / scrolly): emit a self-contained interactive.html
-//     (or scrolly.html) + a canonically-named "static.png" byproduct. Forms 1 (code source) +
-//     2 (static.html) + 3 (deploy-embed on the local html).
-//   • HOSTED DW (dw-chart / map-dw): emit NO local html — the interactive form IS the already-
-//     published Datawrapper embed (the report's `publicUrl`) — and name their static export
-//     "<id>.png" (adapters.ts: `${p.id}.png`), NOT "static.png". Detected here via the report
-//     (publicUrl present + no local html); the static image is recognised via the producer's
-//     OWN declared `outputs` (authoritative, never a stray screenshot). Forms: hosted embed +
-//     static.html a11y fallback. Never calls embedSnippet on a missing local file.
-//   bun export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId>
+//   bun export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId> [--form <html|code-source|embed>]
 import {
   readdirSync,
   readFileSync,
@@ -26,38 +33,45 @@ import {
   existsSync,
 } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { dirname, join, basename, extname, resolve } from "node:path";
+import { dirname, join, basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertShippable, assertDelivered } from "../src/export-guard.ts";
 
-// The chart-native source-bundle generator — form 1 ("Code source") for chart-native is a
-// self-contained, runnable Vite project (bun install && bun run build), NOT the built-files
-// folder. Resolved relative to this script so it works regardless of cwd.
+const SELF = fileURLToPath(import.meta.url);
+// The chart-native source-bundle generator — form "code-source" for chart-native is a
+// self-contained, runnable Vite project (bun install && bun run build), NOT a built-files
+// copy. Resolved relative to this script so it works regardless of cwd.
 const EXPORT_SOURCE_SCRIPT = join(
-  dirname(fileURLToPath(import.meta.url)),
+  dirname(SELF),
   "..",
   "..",
   "chart-native",
   "scripts",
   "export-source.mjs",
 );
+const DEPLOY_EMBED_SCRIPT = join(dirname(SELF), "deploy-embed.mjs");
 
-// Splits argv into positionals and `--flag value` pairs, so the required --results/--id
-// flags can sit alongside the existing positional args in any order.
+const IMAGE_RE = /\.(png|svg|jpe?g)$/i;
+const VIDEO_RE = /\.mp4$/i;
+const VALID_FORMS = ["html", "code-source", "embed"];
+
+// Splits argv into positionals and `--flag value` pairs, so the required --results/--id and
+// the optional --form flag can sit alongside the positional args in any order.
 function parseArgs(argv) {
   const positional = [];
   const flags = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--results" || a === "--id") flags[a.slice(2)] = argv[++i];
+    if (a === "--results" || a === "--id" || a === "--form")
+      flags[a.slice(2)] = argv[++i];
     else positional.push(a);
   }
   return { positional, flags };
 }
 
-// True when a path resolves into a temporary / session-scratch location that gets
-// cleaned — the journalist would lose the deliverable. EXPORT must write to a stable
-// project path (exports/<slug>) instead.
+// True when a path resolves into a temporary / session-scratch location that gets cleaned —
+// the journalist would lose the deliverable. EXPORT must write to a stable project path
+// (exports/<slug>) instead.
 export function isEphemeralPath(p) {
   const abs = resolve(p);
   return (
@@ -67,32 +81,35 @@ export function isEphemeralPath(p) {
   );
 }
 
-// The iframe/img/video snippet for a single artifact (used for the interactive/embed forms).
-export function embedSnippet(file) {
-  const name = basename(file);
-  const ext = extname(file).toLowerCase();
-  if (ext === ".html")
-    return `<iframe src="${name}" style="width:100%;border:0;aspect-ratio:16/10" loading="lazy" title="visual"></iframe>`;
-  if (ext === ".png" || ext === ".jpg")
-    return `<img src="${name}" alt="visual" style="max-width:100%;height:auto" />`;
-  if (ext === ".mp4")
-    return `<video src="${name}" controls playsinline style="max-width:100%"></video>`;
-  throw new Error(`unsupported artifact extension: ${ext}`);
+// The single static image the producer left in outDir: chart-native / map-native name it
+// "static.png" (or .svg); a hosted-DW producer names it "<id>.png" and declares it in the
+// report's `outputs` (authoritative — never a stray review screenshot). Falls back to a sole
+// image if unambiguous.
+function resolveStaticMedia(files, result) {
+  const canonical = files.find((f) => /^static\.(png|svg|jpe?g)$/i.test(f));
+  if (canonical) return canonical;
+  const declared = (result.outputs ?? [])
+    .map((p) => basename(p))
+    .find((f) => IMAGE_RE.test(f) && files.includes(f));
+  if (declared) return declared;
+  const imgs = files.filter((f) => IMAGE_RE.test(f));
+  return imgs.length === 1 ? imgs[0] : null;
 }
 
-// A fully self-contained STATIC html: the image inlined as a data URI, no JS, no external refs —
-// the "HTML statique" delivery form (works in any CMS / email / offline).
-export function staticHtml(dataUri, alt = "visual") {
-  return `<!doctype html><meta charset="utf-8"><title>${alt}</title><body style="margin:0"><img src="${dataUri}" alt="${alt}" style="display:block;max-width:100%;height:auto" /></body>`;
-}
-
-if (import.meta.main) {
+function main() {
   const { positional, flags } = parseArgs(process.argv.slice(2));
   const [outDir, exportDir] = positional;
-  const { results: resultsPath, id } = flags;
+  const { results: resultsPath, id, form: rawForm } = flags;
   if (!outDir || !exportDir || !resultsPath || !id) {
     console.error(
-      "usage: export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId>",
+      "usage: export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId> [--form <html|code-source|embed>]",
+    );
+    process.exit(1);
+  }
+  const form = rawForm ?? null;
+  if (form !== null && !VALID_FORMS.includes(form)) {
+    console.error(
+      `invalid --form "${form}" (expected one of: ${VALID_FORMS.join(", ")})`,
     );
     process.exit(1);
   }
@@ -102,231 +119,295 @@ if (import.meta.main) {
     );
     process.exit(1);
   }
-  // The one mechanical gate, before any copy/write: refuse unless this exact proposal was
+
+  // The one MECHANICAL gate, before any copy/write: refuse unless this exact proposal was
   // actually produced AND the human approved the render.
   let result;
   try {
     const report = JSON.parse(readFileSync(resultsPath, "utf8"));
     assertShippable(report, id);
-    // assertShippable guarantees this proposal exists in the report.
     result = report.results.find((x) => x.id === id);
   } catch (e) {
     console.error(e.message);
     process.exit(1);
   }
-  // Cloud/hosted producers (dw-chart / map-dw) record a hosted `publicUrl` — that hosted
-  // Datawrapper embed IS their "interactive" form; they emit NO local interactive.html and
-  // name their static export "<id>.png" (adapters.ts dispatches with `${p.id}.png`), not
-  // "static.png". File-based producers (chart-native / map-native / scrolly) never set it.
-  const hostedUrl = result?.publicUrl ?? null;
-  mkdirSync(exportDir, { recursive: true });
-  const candidates = readdirSync(outDir).filter((f) =>
-    [".html", ".png", ".jpg", ".mp4"].includes(extname(f).toLowerCase()),
-  );
-  if (!candidates.length) {
-    console.error(`no exportable artifacts in ${outDir}`);
+
+  const format = result.format;
+  if (!format) {
+    console.error(`report result ${id} has no pinned format`);
     process.exit(1);
   }
-
-  // The interactive (embeddable) artifact — a self-contained .html when present. A hosted
-  // DW producer emits none: its interactive form is the hosted embed (hostedUrl), so this
-  // stays null and the delivery is driven by hostedUrl below.
-  const interactive = candidates.find((f) => f.endsWith(".html")) ?? null;
-  // A hosted-embed delivery: a cloud producer published a hosted URL AND left no local html
-  // to self-host. This is the dw-chart / map-dw shape — its owned deliverable is the
-  // static.html a11y fallback + an EMBED.md pointing at the already-live hosted embed.
-  const isHostedEmbed = hostedUrl != null && interactive == null;
-  // The producer's raw static-image byproduct — used ONLY to build the self-contained
-  // static.html fallback below. chart-native / map-native canonically name it
-  // "static.png"/"static.jpg"; matched by name (not "any png/jpg") so a stray review
-  // screenshot like "interactive.png" is never picked up by mistake. A hosted DW producer
-  // instead names it "<id>.png", so when there is no canonical "static.*" AND this is a
-  // hosted delivery, recognise it via the producer's OWN declared output (`result.outputs`
-  // from the report) — the authoritative record of what it wrote, which by construction can
-  // never be a stray screenshot (screenshots are not in `outputs`).
-  let png = candidates.find((f) => /^static\.(png|jpg)$/i.test(f)) ?? null;
-  if (!png && isHostedEmbed) {
-    const declared = (result.outputs ?? [])
-      .map((p) => basename(p))
-      .find((f) => /\.(png|jpg)$/i.test(f) && candidates.includes(f));
-    png = declared ?? null;
-  }
-
-  // Copy every artifact EXCEPT raw images (.png/.jpg) — an interactive/scrolly delivery has no
-  // standalone image form; the three forms are code source, static HTML (no JS), and the hosted
-  // embed link (see SKILL.md EXPORT §6).
-  const artifacts = candidates.filter((f) => !/\.(png|jpg)$/i.test(f));
-  for (const f of artifacts) copyFileSync(join(outDir, f), join(exportDir, f));
-
-  let staticFile = null;
-  if (png) {
-    const ext = extname(png).toLowerCase() === ".jpg" ? "jpeg" : "png";
-    const dataUri = `data:image/${ext};base64,${readFileSync(join(outDir, png)).toString("base64")}`;
-    staticFile = "static.html";
-    writeFileSync(join(exportDir, staticFile), staticHtml(dataUri));
-  }
-
-  const forms = [];
-  if (isHostedEmbed) {
-    // Hosted DW producer (dw-chart / map-dw): the interactive form is the ALREADY-LIVE
-    // hosted Datawrapper embed — there is no local file to self-host, so no "code source"
-    // form; the owned deliverable is the no-JS static.html a11y fallback below.
-    forms.push(
-      `## 1. Composant en lien embed (hosted, already live)\nThe interactive visual is hosted on Datawrapper — embed it directly (no deploy step, it is already published):\n\n\`\`\`html\n<iframe title="visual" src="${hostedUrl}" scrolling="no" frameborder="0" style="width:0;min-width:100%;border:none;" height="400"></iframe>\n\`\`\`\n\nHosted URL: ${hostedUrl}`,
-    );
-  } else {
-    forms.push(
-      `## 1. Code source (self-host + customise)\nAll files in this folder. Upload them together; embed the ${interactive ? "interactive" : "static"} visual with:\n\n\`\`\`html\n${embedSnippet(interactive ?? artifacts[0])}\n\`\`\``,
-    );
-  }
-  if (staticFile)
-    forms.push(
-      `## 2. HTML statique (one self-contained file, no JS)\n\`${staticFile}\` — the image is inlined; it embeds anywhere with no dependencies:\n\n\`\`\`html\n<iframe src="${staticFile}" style="width:100%;border:0" title="visual"></iframe>\n\`\`\``,
-    );
-  if (interactive)
-    forms.push(
-      `## 3. Composant en lien embed (hosted)\nGet a hosted URL:\n\n\`\`\`sh\nbun skills/atelier/scripts/deploy-embed.mjs <this-folder>/${interactive} <slug> --results ${resultsPath} --id ${id}\n\`\`\`\n\nRe-hosting later (or re-running this) requires a produced + render-approved report for proposal \`${id}\` — keep \`${resultsPath}\` (or an equivalent report) alongside this export.`,
-    );
-  writeFileSync(
-    join(exportDir, "EMBED.md"),
-    `# Export — ${forms.length} delivery form${forms.length > 1 ? "s" : ""}\n\n${forms.join("\n\n")}\n`,
-  );
-  const deliveredFiles = [...artifacts, staticFile].filter(Boolean);
-  writeFileSync(
-    join(exportDir, "README.txt"),
-    `Atelier export — files: ${deliveredFiles.join(", ") || "(none — hosted embed only)"}.\ninteractive: ${interactive ?? (isHostedEmbed ? `hosted embed (${hostedUrl})` : "none")} · static: ${staticFile ?? "none"}. See EMBED.md for the delivery forms.\n`,
-  );
-  // Mechanical teeth: self-verify this folder IS a real delivery before reporting success —
-  // the a11y static.html fallback must be present for an interactive (a scrolly is exempt).
-  // A build that dropped the fallback fails here loudly instead of shipping inaccessible.
-  const isScrolly = interactive != null && /scrolly/i.test(interactive);
-  assertDelivered(readdirSync(exportDir), { scrolly: isScrolly });
-
-  console.log(
-    "EXPORT_CODE_RESULT " +
-      JSON.stringify({ exportDir, interactive, staticFile, artifacts }),
-  );
-
-  // The THREE-FORM delivery PROPOSAL — the artifacts above always exist on disk; the
-  // journalist picks ONE form and the delivery is shaped to it (SKILL.md EXPORT §6). This
-  // is emitted as a FIXED, machine-relayable block so the orchestrator relays THIS message
-  // verbatim instead of re-deriving the rule from memory — the failure mode being fixed is
-  // the orchestrator collapsing the whole step to a bare "Livré." with nothing handed over.
-  //   A — Code source: for a chart-native producer, a SELF-CONTAINED runnable Vite source
-  //       bundle (bun install && bun run build → the interactive), assembled by
-  //       chart-native/scripts/export-source.mjs from the config.json + native-source.json the
-  //       producer dropped in outDir. For map-native/scrolly there is no React source to
-  //       rebuild → the built-files folder. For a hosted DW producer there is NO React source
-  //       (it is a Datawrapper embed) → the built-files folder + the live DW link, labelled
-  //       honestly.
-  //   B — HTML autonome: the single self-contained file — the JS-inlined interactive.html /
-  //       scrolly.html; for a hosted DW producer (no local html) the only standalone file is
-  //       the no-JS static.html (the DW image inlined), so that is form B there.
-  //   C — Embed (hosted): the deploy-embed command for a file-based producer, or the
-  //       already-live publicUrl for a hosted DW producer (no deploy step).
+  const hostedUrl = result.publicUrl ?? null;
+  const files = readdirSync(outDir);
   const absExportDir = resolve(exportDir);
-  // Form B — the single "HTML autonome" file the journalist can drop anywhere.
-  const standalone = interactive ?? staticFile;
 
-  // Form A — assemble the chart-native React source bundle when the producer left the
-  // inputs (config.json + native-source.json) in outDir. Any failure falls back to the
-  // built-files folder so the delivery still ships (the -export folder is a valid hand-over).
-  const nativeManifest = join(outDir, "native-source.json");
-  const nativeConfig = join(outDir, "config.json");
-  let formA = null;
-  if (
-    !isHostedEmbed &&
-    interactive &&
-    existsSync(nativeManifest) &&
-    existsSync(nativeConfig)
-  ) {
-    let bundleType = null;
-    try {
-      bundleType = JSON.parse(readFileSync(nativeManifest, "utf8")).type ?? null;
-    } catch {
-      bundleType = null;
-    }
-    if (bundleType) {
-      const bundleDir = join(absExportDir, `${id}-source`);
-      try {
-        execFileSync(
-          "bun",
-          [EXPORT_SOURCE_SCRIPT, bundleType, nativeConfig, bundleDir],
-          { stdio: "inherit" },
-        );
-        formA = {
-          label: "Code source (bundle React)",
-          kind: "react-source-bundle",
-          path: bundleDir,
-        };
-      } catch (e) {
-        console.error(
-          `[export-code] source-bundle generation failed (${e.message}); form 1 falls back to the built-files folder.`,
-        );
-      }
-    }
+  const fail = (msg) => {
+    console.error(msg);
+    process.exit(1);
+  };
+  const done = (payload) =>
+    console.log("EXPORT_CODE_RESULT " + JSON.stringify(payload));
+
+  // ---- STATIC: hand over the lone media image directly. ----
+  if (format === "static") {
+    if (form !== null) fail(`static format takes no --form (got "${form}")`);
+    const media = resolveStaticMedia(files, result);
+    if (!media) fail(`no static image (.png/.svg/.jpg) found in ${outDir}`);
+    mkdirSync(exportDir, { recursive: true });
+    copyFileSync(join(outDir, media), join(exportDir, media));
+    assertDelivered(readdirSync(exportDir), { format, form: null });
+    done({ format, media: join(absExportDir, media), exportDir: absExportDir });
+    return;
   }
-  if (!formA) {
-    formA = isHostedEmbed
+
+  // ---- VIDEO: hand over the lone .mp4 directly (the review still is not a deliverable). ----
+  if (format === "video") {
+    if (form !== null) fail(`video format takes no --form (got "${form}")`);
+    const mp4 = files.find((f) => VIDEO_RE.test(f));
+    if (!mp4) fail(`no .mp4 found in ${outDir}`);
+    mkdirSync(exportDir, { recursive: true });
+    copyFileSync(join(outDir, mp4), join(exportDir, mp4));
+    assertDelivered(readdirSync(exportDir), { format, form: null });
+    done({ format, media: join(absExportDir, mp4), exportDir: absExportDir });
+    return;
+  }
+
+  // ---- INTERACTIVE / SCROLLY: two-phase lazy delivery. ----
+  const isScrolly = format === "scrolly";
+  const wantHtml = isScrolly ? "scrolly.html" : "interactive.html";
+  const interactive = files.includes(wantHtml)
+    ? wantHtml
+    : (files.find((f) => f.toLowerCase().endsWith(".html")) ?? null);
+  // Hosted DW producers (dw-chart / map-dw) record a hosted `publicUrl` and emit NO local
+  // html — that hosted embed IS their interactive form.
+  const isHostedEmbed = hostedUrl != null && interactive == null;
+  if (!isHostedEmbed && !interactive)
+    fail(`no interactive .html found in ${outDir} for a ${format} delivery`);
+  // chart-native drops config.json + native-source.json so export-source.mjs can assemble a
+  // runnable React bundle; map-native / scrolly do not (their src is not a straight-copy
+  // project) → their code-source form is the built-files folder.
+  const hasNativeSource =
+    existsSync(join(outDir, "native-source.json")) &&
+    existsSync(join(outDir, "config.json"));
+
+  // ---- Phase 1: emit the proposal, build NOTHING. ----
+  if (form === null) {
+    emitProposal({
+      id,
+      outDir,
+      exportDir,
+      resultsPath,
+      format,
+      isScrolly,
+      isHostedEmbed,
+      hostedUrl,
+      interactive,
+      hasNativeSource,
+      absExportDir,
+    });
+    return;
+  }
+
+  // ---- Phase 2: materialise + deliver ONLY the chosen form. ----
+  mkdirSync(exportDir, { recursive: true });
+
+  if (form === "html") {
+    if (!interactive)
+      fail(
+        `${format} form=html has no standalone HTML file — a hosted Datawrapper interactive delivers via --form embed`,
+      );
+    copyFileSync(join(outDir, interactive), join(exportDir, interactive));
+    assertDelivered(readdirSync(exportDir), { format, form: "html" });
+    done({
+      format,
+      form: "html",
+      file: join(absExportDir, interactive),
+      exportDir: absExportDir,
+    });
+    return;
+  }
+
+  if (form === "code-source") {
+    if (isHostedEmbed)
+      fail(
+        `${format} form=code-source is not available for a hosted Datawrapper interactive (there is no React source to rebuild) — deliver via --form embed`,
+      );
+    if (hasNativeSource) {
+      let bundleType = null;
+      try {
+        bundleType = JSON.parse(
+          readFileSync(join(outDir, "native-source.json"), "utf8"),
+        ).type;
+      } catch {
+        bundleType = null;
+      }
+      if (!bundleType)
+        fail("native-source.json has no chart type; cannot build the React source bundle");
+      const bundleDir = join(absExportDir, `${id}-source`);
+      execFileSync(
+        "bun",
+        [EXPORT_SOURCE_SCRIPT, bundleType, join(outDir, "config.json"), bundleDir],
+        { stdio: "inherit" },
+      );
+      assertDelivered(readdirSync(bundleDir), { format, form: "code-source" });
+      done({
+        format,
+        form: "code-source",
+        kind: "react-source-bundle",
+        path: bundleDir,
+        exportDir: absExportDir,
+      });
+      return;
+    }
+    // Built-files folder (map-native / scrolly): the self-contained html IS the built
+    // deliverable to self-host.
+    if (!interactive)
+      fail(`${format} form=code-source found no built html in ${outDir}`);
+    copyFileSync(join(outDir, interactive), join(exportDir, interactive));
+    assertDelivered(readdirSync(exportDir), { format, form: "code-source" });
+    done({
+      format,
+      form: "code-source",
+      kind: "built-files-folder",
+      path: absExportDir,
+      exportDir: absExportDir,
+    });
+    return;
+  }
+
+  if (form === "embed") {
+    let url;
+    if (isHostedEmbed) {
+      // A hosted DW interactive is already published — no deploy step, record the live URL.
+      url = hostedUrl;
+    } else {
+      if (!interactive)
+        fail(`${format} form=embed found no html to deploy in ${outDir}`);
+      const out = execFileSync(
+        "bun",
+        [
+          DEPLOY_EMBED_SCRIPT,
+          join(outDir, interactive),
+          id,
+          "--results",
+          resolve(resultsPath),
+          "--id",
+          id,
+        ],
+        { encoding: "utf8" },
+      );
+      const line = out.split("\n").find((l) => l.startsWith("EMBED_URL "));
+      if (!line) fail("deploy-embed did not return an EMBED_URL");
+      url = line.slice("EMBED_URL ".length).trim();
+    }
+    writeFileSync(join(exportDir, "EMBED_URL.txt"), url + "\n");
+    assertDelivered(readdirSync(exportDir), { format, form: "embed" });
+    done({ format, form: "embed", url, exportDir: absExportDir });
+    return;
+  }
+}
+
+// The lazy delivery-form PROPOSAL for an interactive / scrolly. Emitted as a FIXED,
+// machine-relayable block so the orchestrator relays THIS message verbatim (killing the
+// "Livré." with-nothing failure mode) and gets the a/b/c answer — THEN re-invokes this
+// script with --form <chosen> to build ONLY that form. Nothing is built here.
+//   a — Code source: for chart-native a runnable React source bundle (built on --form
+//       code-source); for map-native / scrolly the built-files folder.
+//   b — HTML autonome: the single self-contained interactive.html / scrolly.html.
+//   c — Embed (hébergé): deploy the html to the journalist's fly.io host (or, for a hosted
+//       DW producer, the already-live publicUrl — no deploy step).
+function emitProposal(ctx) {
+  const {
+    id,
+    outDir,
+    exportDir,
+    resultsPath,
+    format,
+    isScrolly,
+    isHostedEmbed,
+    hostedUrl,
+    interactive,
+    hasNativeSource,
+    absExportDir,
+  } = ctx;
+  const deliverBase = `bun ${SELF} ${outDir} ${exportDir} --results ${resolve(resultsPath)} --id ${id}`;
+  const forms = {};
+
+  if (isHostedEmbed) {
+    // Datawrapper interactive: the interactive IS the already-live hosted embed. The only
+    // delivery form is that embed (no React source, no local html — static.html was dropped).
+    forms.c = {
+      label: "Embed (hébergé, déjà en ligne)",
+      url: hostedUrl,
+      deliver: `${deliverBase} --form embed`,
+    };
+  } else {
+    forms.a = hasNativeSource
       ? {
-          label: "Code source (Datawrapper — pas de source React)",
-          kind: "built-files-folder",
-          path: absExportDir,
-          note: `Datawrapper — pas de source React à rebuilder ; voici les fichiers (${absExportDir}) + le lien : ${hostedUrl}`,
+          kind: "react-source-bundle",
+          label: "Code source (bundle React)",
+          path: join(absExportDir, `${id}-source`),
+          pending: true,
+          deliver: `${deliverBase} --form code-source`,
         }
       : {
-          label: "Code source (fichiers construits)",
           kind: "built-files-folder",
+          label: "Code source (fichiers construits)",
           path: absExportDir,
+          pending: true,
+          deliver: `${deliverBase} --form code-source`,
         };
-  }
-  const forms3 = { a: formA };
-  if (standalone)
-    forms3.b = { label: "HTML autonome", path: join(absExportDir, standalone) };
-  if (isHostedEmbed)
-    forms3.c = { label: "Embed (hébergé)", url: hostedUrl };
-  else if (interactive)
-    forms3.c = {
-      label: "Embed (hébergé)",
-      command: `bun skills/atelier/scripts/deploy-embed.mjs ${join(absExportDir, interactive)} ${id} --results ${resolve(resultsPath)} --id ${id}`,
+    forms.b = {
+      label: "HTML autonome",
+      path: join(absExportDir, interactive),
+      deliver: `${deliverBase} --form html`,
     };
+    forms.c = {
+      label: "Embed (hébergé)",
+      command: `bun ${DEPLOY_EMBED_SCRIPT} ${join(absExportDir, interactive)} ${id} --results ${resolve(resultsPath)} --id ${id}`,
+      deliver: `${deliverBase} --form embed`,
+    };
+  }
+
   console.log(
     "EXPORT_FORMS_JSON " +
       JSON.stringify({
         proposalId: id,
+        format,
         scrolly: isScrolly,
         hosted: isHostedEmbed,
         exportDir: absExportDir,
-        forms: forms3,
+        forms,
       }),
   );
 
-  // A clean, human-readable relay block (same content) — the orchestrator prints it verbatim
-  // and asks the journalist which form (a / b / c) they want. This is the un-skippable gate.
-  const relayFormA =
-    formA.kind === "react-source-bundle"
-      ? `  a) Code source — projet React autonome à rebuilder/personnaliser (bun install && bun run build) : ${formA.path}`
-      : formA.note
-        ? `  a) Code source — ${formA.note}`
-        : `  a) Code source — le dossier complet des fichiers construits à héberger vous-même : ${formA.path}`;
+  // A clean, human-readable relay block (same content) — the orchestrator prints it verbatim,
+  // asks which form (a / b / c), then re-runs export-code with --form <choice>.
   const relay = [
     "EXPORT_FORMS_PROPOSAL",
-    "Le visuel est produit. Choisissez la forme de livraison :",
-    relayFormA,
+    "Le visuel est produit. Choisissez la forme de livraison (rien n'est encore construit — la forme choisie est générée à la demande) :",
   ];
-  if (forms3.b)
+  if (forms.a)
     relay.push(
-      `  b) HTML autonome — un seul fichier autonome à déposer n'importe où : ${forms3.b.path}`,
+      forms.a.kind === "react-source-bundle"
+        ? `  a) Code source — projet React autonome à rebuilder/personnaliser (bun install && bun run build) : ${forms.a.path}`
+        : `  a) Code source — le dossier complet des fichiers construits à héberger vous-même : ${forms.a.path}`,
     );
-  if (forms3.c)
+  if (forms.b)
     relay.push(
-      forms3.c.url
-        ? `  c) Embed (hébergé) — lien déjà en ligne, réutilisable partout : ${forms3.c.url}`
-        : `  c) Embed (hébergé) — publier pour obtenir un lien à réutiliser : ${forms3.c.command}`,
+      `  b) HTML autonome — un seul fichier autonome à déposer n'importe où : ${forms.b.path}`,
+    );
+  if (forms.c)
+    relay.push(
+      forms.c.url
+        ? `  c) Embed (hébergé) — lien déjà en ligne, réutilisable partout : ${forms.c.url}`
+        : `  c) Embed (hébergé) — publier sur votre hôte fly.io pour obtenir un lien à réutiliser`,
     );
   relay.push(
-    `Quelle forme souhaitez-vous ? (${Object.keys(forms3).join(" / ")})`,
+    `Quelle forme souhaitez-vous ? (${Object.keys(forms).join(" / ")}) — puis relancer export-code avec --form <html|code-source|embed>.`,
     "END_EXPORT_FORMS_PROPOSAL",
   );
   console.log(relay.join("\n"));
 }
+
+if (import.meta.main) main();

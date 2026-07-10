@@ -105,6 +105,13 @@ base `de` / `it` today.)
    `{format, size, sub-format}` against the channel — emit it explicitly, not as a silent default (the
    PROPOSITION step is what surfaces this to the journalist, vetoable).
 
+   **Commit to exactly ONE `format`.** The emitted spec carries a single `VisualFormat`
+   (`static|interactive|video|scrolly`, `skills/atelier/src/channel.ts`) chosen from `allowedFormats(channel)`
+   — never the whole allowed set. `interactiveDefault` (above) only steers WHICH single format article-web
+   defaults to; it is not a fallback list to emit alongside the choice. This single pinned format is what
+   PROPOSITION (`skills/atelier/SKILL.md` Gate 2) announces for the journalist's veto, and what
+   `assertFormatAllowed(channel, format)` re-checks at produce time.
+
    **Map element type FIRST — before the format ladder.** Branch on what the data is:
    - **Symbol / proportional / dot data** (coordinates carrying a VALUE mapped to circle size/colour —
      city populations, event counts, amounts by place) → **ALWAYS `map-native`**, regardless of extent or

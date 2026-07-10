@@ -17,5 +17,8 @@ test("produce.mjs routes Chromium snap steps through snapCommand (no hardcoded b
   expect(src).toContain("snapCommand(process.platform)");
   expect(src).not.toContain('run("bun", ["scripts/snap-proof.mjs"]');
   expect(src).not.toContain('run("bun", ["scripts/snap-contrast.mjs"]');
+  expect(src).not.toContain(
+    'run("bun", ["scripts/snap-interactive-contrast.mjs"]',
+  );
   expect(src).not.toContain('run("node"');
 });

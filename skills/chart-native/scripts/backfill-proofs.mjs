@@ -25,7 +25,7 @@ for (const t of TYPES) {
   }
   console.log(`\n========== backfill ${t} ==========`);
   try {
-    execFileSync("bun", [join(here, "produce.mjs"), t, sample, outDir, "all"], {
+    execFileSync("bun", [join(here, "produce.mjs"), t, sample, outDir, "static"], {
       stdio: "inherit",
       cwd: root,
     });
