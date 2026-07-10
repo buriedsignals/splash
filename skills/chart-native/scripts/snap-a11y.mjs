@@ -33,8 +33,14 @@ await page.waitForSelector(".tooltip", { timeout: 3000 });
 const tip = await page.locator(".tooltip").textContent();
 const ariaSample = await pts.nth(2).getAttribute("aria-label");
 
-// 2) source is a real link with href
-const srcHref = await page.locator("a[href]").first().getAttribute("href");
+// 2) source link href, if the source is a linked (named-dataset) source. A prose /
+// name-only source renders no anchor — legitimate ("a name-only prose source with no URL
+// still passes"), so don't block on a missing link (getAttribute on a zero-match locator
+// would otherwise hang/throw).
+const srcHref =
+  (await page.locator("a[href]").count())
+    ? await page.locator("a[href]").first().getAttribute("href")
+    : "";
 
 console.log(JSON.stringify({ focusablePoints: n, tooltipBeforeFocus: before, tooltipAfterFocus: tip, pointAria: ariaSample, sourceHref: srcHref }, null, 2));
 await page.locator("#root > div").screenshot({ path: out });

@@ -55,11 +55,18 @@ await page.waitForTimeout(2000);
 
 const a11y = await page.evaluate(() => {
   const region = document.querySelector('[role="region"]');
+  const sourceEl = document.querySelector('[data-testid="map-source"]');
+  const anchor = sourceEl && sourceEl.querySelector("a");
   const link = document.querySelector('[data-testid="map-source"] a[href]');
   const ctrlButtons = [...document.querySelectorAll(".maplibregl-ctrl button")];
   return {
     regionRole: !!region,
     regionLabel: (region && region.getAttribute("aria-label")) || "",
+    sourceText: (sourceEl && sourceEl.textContent.trim()) || "",
+    // A prose (name-only) source renders as plain text with no anchor — legitimate,
+    // no href expected. A linked source (named dataset with a URL) renders an <a>,
+    // which must carry an href. Distinguish so a legitimate prose source passes.
+    sourceHasAnchor: !!anchor,
     sourceHref: (link && link.getAttribute("href")) || "",
     controlButtons: ctrlButtons.length, // zoom in/out + reset ⌂ → expect >= 2
     allButtons: ctrlButtons.every((b) => b.tagName === "BUTTON"), // tab-reachable by default
@@ -303,7 +310,14 @@ console.log(JSON.stringify(result, null, 2));
 const failures = [];
 if (!result.regionRole) failures.push("map container missing role=region");
 if (!result.regionLabel.trim()) failures.push("region missing aria-label");
-if (!result.sourceHref.trim()) failures.push("source link missing href");
+// The source must be PRESENT (readable text). If it renders a link (named dataset with a
+// URL), that link must carry an href. A prose / name-only source (plain text, no anchor)
+// is a legitimate fallback per the source contract ("a name-only prose source with no URL
+// still passes") — the "named dataset must be linked" rule is enforced at config-time by
+// the conformance guard, not here.
+if (!result.sourceText.trim()) failures.push("source missing (no text)");
+else if (result.sourceHasAnchor && !result.sourceHref.trim())
+  failures.push("source renders a link with no href");
 if (result.controlButtons < 2) failures.push("missing zoom/reset control buttons");
 if (!result.allButtons) failures.push("a control is not a <button> (not keyboard-reachable)");
 if (!result.tooltipOk) failures.push("no popup appeared on hovering a feature");
