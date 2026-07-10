@@ -1,11 +1,14 @@
 import { describe, it, expect } from "bun:test";
 import { scoreSpec } from "../score";
 
+// A valid world choropleth: ISO-A3 country codes join world-2019 on its DW_STATE_CODE key
+// (world-2019 has NO ISO_A3 key — verified live, DW_STATE_CODE carries the alpha-3 codes and
+// joins ~all rows). validateMapSpec checks this against map-dw/src/basemap-keys.ts.
 const validMap = {
   producer: "map-dw",
   mapType: "choropleth",
-  basemap: "world",
-  mapKeyAttr: "ISO_A3",
+  basemap: "world-2019",
+  mapKeyAttr: "DW_STATE_CODE",
   regionKey: "code",
   valueColumn: "share",
   title: "Renewables form a clear north–south gradient across Europe",
@@ -167,8 +170,8 @@ describe("scoreSpec — native map", () => {
     const mapDw = {
       producer: "map-dw",
       mapType: "choropleth",
-      basemap: "world",
-      mapKeyAttr: "ISO_A3",
+      basemap: "world-2019",
+      mapKeyAttr: "DW_STATE_CODE",
       regionKey: "code",
       valueColumn: "share",
       data: "code,share\nNOR,99",
@@ -187,8 +190,8 @@ describe("scoreSpec — native map", () => {
     const mapDw = {
       producer: "map-dw",
       mapType: "choropleth",
-      basemap: "world",
-      mapKeyAttr: "ISO_A3",
+      basemap: "world-2019",
+      mapKeyAttr: "DW_STATE_CODE",
       regionKey: "code",
       valueColumn: "share",
       data: "code,share\nNOR,99",
@@ -198,6 +201,27 @@ describe("scoreSpec — native map", () => {
     expect(
       scoreSpec(mapDw, { family: "geographic", element: "map" }).validates,
     ).toBe(true);
+  });
+});
+
+describe("scoreSpec — world choropleth join key (regression: grey dataless map)", () => {
+  // A suggester that follows the map-dw guidance MUST emit the valid basemap+key. world-2019's
+  // ISO-A3 alpha-3 key is DW_STATE_CODE, NOT ISO_A3 — world-2019 has no ISO_A3 join key at all,
+  // so `basemap:"world-2019" + mapKeyAttr:"ISO_A3"` joins 0 rows and ships a fully grey map.
+  // validateMapSpec (via basemap-keys.ts) must HARD-reject the broken combo and accept the valid one.
+  it("scores the valid world-2019 + DW_STATE_CODE combo as validating", () => {
+    const r = scoreSpec(validMap, { family: "geographic", element: "map" });
+    expect(r.validates).toBe(true);
+    expect(r.pass).toBe(true);
+  });
+  it("rejects the broken world-2019 + ISO_A3 combo (would render a grey dataless map)", () => {
+    const broken = { ...validMap, mapKeyAttr: "ISO_A3" };
+    const r = scoreSpec(broken, { family: "geographic", element: "map" });
+    expect(r.validates).toBe(false);
+    expect(r.pass).toBe(false);
+    expect(r.notes.some((n) => /not a join key|DW_STATE_CODE/.test(n))).toBe(
+      true,
+    );
   });
 });
 
