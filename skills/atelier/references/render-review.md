@@ -28,7 +28,7 @@ accepted limitation, not a reason to spawn a background agent mid-flow.
 1. **Title honesty.** The title states exactly what the data shows. A RATE title must not assert a COUNT
    or VOLUME ("cinq fois plus de jeunes au chômage" over a rate, "deux fois plus d'emballages" over a %
    are both false). The insight must be literally true of the data. It must ALSO match the takeaway the
-   journalist confirmed at CADRAGE (Gate 1, Q2) — not a narrower or different claim: a specific multiplier
+   journalist confirmed at CADRAGE (Gate 1b) — not a narrower or different claim: a specific multiplier
    ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic countries") that
    excludes an entity the visual actually shows (e.g. an Alpine country on the same map), are both false
    even if each number is individually correct. If the data supports more than the title states, widen

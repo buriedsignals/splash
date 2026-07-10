@@ -37,8 +37,15 @@ SOURCE (its label and URL) — is NEVER single-select; a fixed menu of options c
 it as a free-text prompt instead (see GATE 2/3 source handling below).
 
 1. Branch: "Do you already have a visual in mind, or should I guide you?"
-2. Takeaway: "What is the one thing a reader should leave with?" → the insight/angle. **Skippable on
-   DIRECT only** (see branch logic below) — a named visual already carries its own intent.
+2. **Takeaway — GATE 1b (un-skippable, both branches):** "What is the one thing a reader should leave
+   with?" → the insight/angle. This is a DISTINCT, mandatory step — it is NEVER collapsed into Q3, and it
+   is NEVER satisfied by inferring the takeaway from the article and moving on. Even when the article
+   plainly implies a takeaway, you MUST state your inferred takeaway back to the journalist in one plain
+   sentence and get their EXPLICIT confirmation (or correction) before leaving CADRAGE. On GUIDED, ask it
+   openly (offer only supported framings, below); on DIRECT, the open-ended asking is replaced by a
+   confirm-back of the takeaway inferred from the article + the named visual — but the confirmation itself
+   is NEVER skipped. Do not advance to PROPOSITION/PRODUCTION on an unconfirmed, silently-inferred
+   takeaway — that is exactly the miss this gate exists to close.
    **★ Every takeaway option you offer MUST be supported by the supplied data (use the ANALYSE data
    shape).** Never float a framing the data cannot substantiate: do NOT offer a temporal / trend framing
    ("the gap is widening", "growth since 2015", "rising", "over time") when the data is a **single
@@ -72,10 +79,12 @@ Branch:
   passing suggest-chart the (data, intent, channel) PLUS the forced element/format — suggest-chart still
   emits a VALIDATED spec and applies its guardrails (obey the choice, but if it violates a hard
   guardrail, surface the warning to the journalist rather than shipping a broken visual). On DIRECT, the
-  branch fires at Q1 and Q2 (takeaway) is skipped — intent is inferred from the article + the named
-  visual instead. **Q3 (channel) is the ONLY other question DIRECT may skip and it does NOT skip it** —
-  it is always asked, on both branches, because the format/aspect routing downstream (PRODUCTION's
-  aspect defaulting, `suggest-chart`'s Gate 1–4 ladder) depends on it. Q4 stays conditional, as above.
+  branch fires at Q1. **Q2 (takeaway, GATE 1b) is NOT skipped either** — its open-ended asking is simply
+  replaced by a confirm-back: state the takeaway inferred from the article + the named visual and get the
+  journalist's explicit confirmation before PRODUCTION (a named visual carries a chart TYPE, not a
+  confirmed CLAIM). **Q3 (channel) is likewise always asked, on both branches**, because the format/aspect
+  routing downstream (PRODUCTION's aspect defaulting, `suggest-chart`'s Gate 1–4 ladder) depends on it.
+  Q4 stays conditional, as above.
   If DIRECT names a visual whose exact sub-format is still open (e.g. "a scrolly" — bars vs line
   reveal), do not float multiple sub-format options to the journalist before checking each one's
   reachability via `suggest-chart` — confirm producibility first, then offer only what's reachable
@@ -272,7 +281,7 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
 **3a. Render-review FIRST (mandatory, Layer 2).** Before you show the journalist anything, put the
 produced visual through an INDEPENDENT editorial pass per `references/render-review.md`: read the ACTUAL
 render + the article + data against the six criteria (title honesty — including that the title matches
-the takeaway the journalist confirmed at CADRAGE Gate 1, not a narrower or different claim — source
+the takeaway the journalist confirmed at CADRAGE Gate 1b, not a narrower or different claim — source
 traceability, honest encoding, earns-its-place, legibility/a11y, fidelity). These catch what the spine's
 code gates cannot — a title that misstates the metric, a fabricated or incomplete source, a misleading
 encoding. **Never spawn an Agent/Task sub-agent to do this review** — during the atelier flow you ONLY
@@ -383,6 +392,7 @@ article-web is the one channel that can host it**:
 | Gate | Phase | Stop condition | Failure mode if skipped |
 |------|-------|---------------|------------------------|
 | 1 | CADRAGE | Journalist answers the ≤4 questions + branch chosen | Wrong format, misread intent |
+| 1b | CADRAGE | Takeaway stated back and EXPLICITLY confirmed by the journalist — never inferred-and-skipped; asked openly on GUIDED, confirmed via confirm-back on DIRECT (both branches) | Visual carries an unconfirmed/guessed claim; title diverges from the journalist's intent |
 | 2b | PROPOSITION | Journalist confirms prose-extracted data table (fires BEFORE Gate 2 for prose proposals) | Fabricated data attribution |
 | 2 | PROPOSITION | Journalist accepts / edits / rejects each proposal | Wrong claim visualised |
 | 2c | PROPOSITION | Source established: name + a specific traceable URL (or the genuine no-dataset prose case), for every accepted proposal | Weak/generic/name-only source ships, caught only late (after a full produce→review cycle) by the render-review |
@@ -424,6 +434,6 @@ article-web is the one channel that can host it**:
 - Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.
 - Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.) Establish this proactively at Gate 2c (PROPOSITION), before PRODUCTION — never wait for the render-review to be the first thing that catches it, and never reach for the prose fallback just because the journalist has not answered yet. A *fabricated* placeholder URL is worse than none and is now MECHANICALLY refused: the spine's validation gate (GUARD 2, `src/source-guard.ts`) rejects any source URL on a reserved placeholder domain (`example.com`/`.org`/`.net`, or the `.example`/`.test`/`.invalid`/`.localhost` TLDs, RFC 2606/6761) — the proposal fails to produce rather than shipping a fake citation.
 - Never accept a generic organisation homepage (e.g. `eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 URL as the source — it must be treated exactly like a missing URL. The source MUST point to the SPECIFIC, traceable dataset/page the figures come from (the Eurostat dataset page for the exact table, the Insee series page, …). If the journalist only gives an organisation name or its homepage, ASK for the specific dataset/page reference rather than shipping the generic one (see Gate 2c) — in the SAME free-text turn, never as a separate follow-up question.
-- Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1, Q2) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic") that excludes an entity the visual actually shows. If the data supports more than the title states, widen the title or flag it at Gate 3.
+- Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1b) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic") that excludes an entity the visual actually shows. If the data supports more than the title states, widen the title or flag it at Gate 3.
 - Never silently substitute a value from a prior/stale export when it disagrees with the journalist's current article/data — the values used (and shown at Gate 2b) MUST always be the ones the journalist provided in the current session.
 - Never offer the journalist an element/format (or sub-format) option before confirming — via `suggest-chart`'s reachability, not from memory — that it is actually producible. Retracting an offered option as infeasible forces the journalist to re-answer the same decision multiple times; check first, propose only what's confirmed.
