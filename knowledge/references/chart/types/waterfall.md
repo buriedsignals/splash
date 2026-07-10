@@ -32,6 +32,21 @@ how much each"** — the **flow** family.
 4. **Signed value labels on the deltas** (`+600`, `−900`), absolute on the totals. The sign is the
    message.
 5. **Order is the narrative** — steps run in story order (not sorted); the sequence IS the argument.
+6. **Long category labels stay READABLE, never clipped or on the source.** When the bars are narrow
+   (many steps / a portrait canvas), the category labels rotate −40°, END-anchored, so a long name
+   descends down-and-LEFT from the tick. Left unbounded this ran the readable START off the left edge
+   and the foot onto the "Source :" line (render-confirmed on French ministry names). The rule, three
+   coupled parts (`WaterfallChart.tsx` + `core/text.ts`): **(a)** truncate each rotated label with an
+   ellipsis at the **END** — the readable START is kept (`truncate` + `rotatedLabelFitPx` per-tick
+   horizontal budget so the start never leaves the canvas); **(b)** reserve bottom margin for the
+   label's descent so it clears the source (`rotatedLabelDescentPx`), the margin itself **capped at a
+   fraction of the canvas height** (`MAX_ROTATED_BOTTOM_FRAC`) so a long name shortens the LABEL, not
+   the plot — the count-axis ticks never crowd; **(c)** render the rotated label a **step smaller**
+   than the axis font (`ROTATED_LABEL_FONT_SCALE`) so more of a shared-prefix name fits the tight
+   budget (tell "Ministère de l'Éduc…" from "…l'Écon…" instead of an identical "Ministère d…"). Locked
+   by `tests/waterfall-longlabels.test.tsx` (asserts start-on-canvas + foot-clears-source against the
+   rendered geometry) and `tests/text.test.ts`. Helpers are shared, so any future type that rotates
+   category ticks inherits the same discipline.
 
 ## data-to-viz caveats (credited)
 
