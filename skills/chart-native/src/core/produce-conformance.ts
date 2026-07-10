@@ -56,9 +56,9 @@ import {
   TREEMAP_GROUP_COLORS,
   DIVERGING_STACKED_COLORS,
   PYRAMID_SIDE_COLORS,
-  BUMP_ACCENT_COLORS,
 } from "./tokens";
 import { computeBarLayout } from "../bar-geometry";
+import { resolveBumpAccents } from "../bump-geometry";
 import { computeDivergingLayout } from "../diverging-bar-geometry";
 import { computeHistogramLayout } from "../histogram-geometry";
 import { computeLollipopLayout } from "../lollipop-geometry";
@@ -754,15 +754,13 @@ function computeRawConformance(
       const cfg = config as unknown as BumpConfig;
       const maxRank = Math.max(...cfg.items.flatMap((it) => it.ranks));
       const highlightCount = cfg.highlight?.length ?? 0;
-      // mirrors BumpChart's own accentOf construction: one accent per highlighted
-      // item (cycled), or the single default accent when nothing is highlighted
-      // (every line renders "highlighted", see bump-geometry.ts).
-      const accentColors =
-        highlightCount > 0
-          ? cfg.highlight!.map(
-              (_, i) => BUMP_ACCENT_COLORS[i % BUMP_ACCENT_COLORS.length],
-            )
-          : [BUMP_ACCENT_COLORS[0]];
+      // the SAME resolution BumpChart paints (resolveBumpAccents) — so the guard
+      // validates the REAL painted hue: the spec's subject-fit colour (baseColor /
+      // seriesColors) when given, the BUMP_ACCENT_COLORS default otherwise.
+      const accentColors = resolveBumpAccents(cfg.highlight, {
+        baseColor: cfg.baseColor,
+        seriesColors: cfg.seriesColors,
+      });
       return {
         checked: true,
         violations: checkBumpConformance(

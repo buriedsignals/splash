@@ -703,6 +703,9 @@ export const MAPPERS: Record<
         valueLabel: spec.unit,
         periods,
         ...(spec.highlight ? { highlight: [spec.highlight] } : {}),
+        // the tracked line honours the spec's subject-fit colour, like every other
+        // type (the bump mapper tracks ONE line, so it's the single-highlight case).
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         items,
       },
     };

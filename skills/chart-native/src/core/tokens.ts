@@ -158,12 +158,15 @@ export const DIVERGING_STACKED_COLORS = {
 // drift.
 export const PYRAMID_SIDE_COLORS = [OKABE_ITO.blue, OKABE_ITO.orange] as const;
 
-// Bump accent colours: cycled per highlighted line, in highlight order (the rest
-// render as neutral COLORS.muted context, exempt from palette membership like a
-// gridline). The guard (checkBumpConformance) validates these, so component +
-// guard never drift. Every direct/end label renders in COLORS.ink regardless of
-// accent — the accent stays on the LINE/mark, per the "label carries the value,
-// mark carries the hue" rule.
+// Bump accent DEFAULT palette — the fallback when the spec provides no colour.
+// The spec's subject-fit hue wins first (baseColor for one tracked line,
+// seriesColors for several); resolveBumpAccents (bump-geometry.ts) is the single
+// path both BumpChart (paints) and produce-conformance (validates) go through, so
+// component + guard never drift. Uncoloured slots cycle this palette in highlight
+// order (the rest of the lines render as neutral COLORS.muted context, exempt from
+// palette membership like a gridline). Every direct/end label renders in COLORS.ink
+// regardless of accent — the accent stays on the LINE/mark, per the "label carries
+// the value, mark carries the hue" rule.
 export const BUMP_ACCENT_COLORS = [
   OKABE_ITO.blue,
   OKABE_ITO.orange,
