@@ -89,4 +89,6 @@ Atelier = **un skill open-source MIT, installable, agnostique runtime, local-fir
 
 **Principe de travail (toujours) :** boucle feedback→système (cf. Conventions) + **toujours vérifier le LIVRÉ, pas le proof** (leçon gravée : ouvrir/hover/lire l'artefact réel ; le proof peut mentir — interactif pré-hover, reveal non-coloré).
 
-**PROCHAIN / backlog :** over-produce social (build interactif buildé pour un canal social — refacto produce dédié) · capture source (persona/article → prose au lieu de la vraie source = flow/orchestration) · Family B types natifs (15 déférés par design) · **release MIT** (confirmer REPO_URL public + scrub trailers `<vendor>-Session`) · le harness QA privé = `../atelier-harness` (WORKFLOW.md).
+- **Produce channel-gated** : les producteurs ne buildent plus l'interactif (ni ses snaps) quand le canal l'interdit (social → static.png seul ; article-web → interactif inchangé). Fin de l'over-produce.
+
+**PROCHAIN / backlog :** capture source (persona/article → prose au lieu de la vraie source = flow/orchestration, pas mécaniquement fixable proprement) · Family B types natifs (15 déférés par design) · **release MIT** (confirmer REPO_URL public + scrub trailers `<vendor>-Session` — besoin de l'input Rémy + destructif, au pré-release) · le harness QA privé = `../atelier-harness` (WORKFLOW.md + `scripts/deep-verify.mjs`).
