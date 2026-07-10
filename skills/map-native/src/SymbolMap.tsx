@@ -13,7 +13,12 @@ import {
   type SymbolData,
 } from "./symbol-geo";
 import type { CameraMode } from "./camera-mode";
-import { symbolLabels, labelRadialOffset } from "./symbol-labels";
+import {
+  symbolLabels,
+  labelRadialOffset,
+  estimateLabelBox,
+  placeSymbolLabel,
+} from "./symbol-labels";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame, labelTextSize } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
@@ -35,6 +40,10 @@ maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 const SYMBOL_FILL = "#2171b5"; // single hue — size is the encoding
 const SYMBOL_STROKE = "#ffffff"; // white halo separates symbols from the basemap
 const MAX_RADIUS_PX = 40;
+// Px clearance between a circle's edge and its label — matches labelRadialOffset's
+// default `gap`, so the pixel offset used for edge-aware placement equals the ems
+// radial offset MapLibre actually renders.
+const LABEL_GAP = 6;
 
 export interface SymbolConfig extends SymbolData {
   type: "symbol";
@@ -239,24 +248,28 @@ export const SymbolMap: React.FC<Props> = ({
         containerRef.current?.clientWidth || containerSize.w,
       );
 
+      // Symbol features — shared by the circle AND label layers. `anchor` starts at the
+      // FT/NYT direct-label default (label to the RIGHT of the point, MapLibre text-anchor
+      // "left") and is re-derived per feature after the camera settles so no label ever
+      // renders off the viewport (see updateSymbolLabelAnchors below).
+      const symbolFeatures: GeoJSON.Feature[] = geo.symbols.map((s, i) => ({
+        type: "Feature",
+        properties: {
+          value: s.value,
+          label: s.label ?? "",
+          radius: s.radius,
+          labelText: labels[i]?.name
+            ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
+            : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
+          labelOffset: labelRadialOffset(s.radius, textSize),
+          anchor: "left",
+        },
+        geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+      }));
+
       map.addSource("symbols", {
         type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: geo.symbols.map((s, i) => ({
-            type: "Feature",
-            properties: {
-              value: s.value,
-              label: s.label ?? "",
-              radius: s.radius,
-              labelText: labels[i]?.name
-                ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
-                : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
-              labelOffset: labelRadialOffset(s.radius, textSize),
-            },
-            geometry: { type: "Point", coordinates: [s.lon, s.lat] },
-          })),
-        },
+        data: { type: "FeatureCollection", features: symbolFeatures },
       });
 
       map.addLayer({
@@ -295,7 +308,14 @@ export const SymbolMap: React.FC<Props> = ({
             "text-field": ["get", "labelText"],
             "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
             "text-size": textSize,
-            "text-variable-anchor": ["left", "right", "top", "bottom"],
+            // Per-feature anchor (data-driven), NOT text-variable-anchor: variable-anchor
+            // only re-anchors on label↔label collision — it is blind to the viewport edge,
+            // so a symbol near an edge keeps its default side and its text runs off-canvas
+            // (bug: "Indonésie" clipped to "Indonés"). updateSymbolLabelAnchors recomputes
+            // `anchor` from each symbol's projected screen position to keep it in-frame.
+            // "auto" justify follows the anchor (right-anchored ⇒ right-aligned), so a
+            // flipped label's lines still hug the point.
+            "text-anchor": ["get", "anchor"],
             "text-radial-offset": ["get", "labelOffset"],
             "text-justify": "auto",
             "text-allow-overlap": false,
@@ -309,6 +329,48 @@ export const SymbolMap: React.FC<Props> = ({
             "text-halo-width": 1.6,
           },
         });
+
+        // INVARIANT: a symbol label never renders outside the map viewport. MapLibre's
+        // anchor is blind to the canvas edge, so after every camera settle we project each
+        // symbol, estimate its label box, and let placeSymbolLabel flip (right→left) or
+        // clamp the anchor inward. The `changed` guard means the setData-triggered `idle`
+        // does not re-enter this in a loop (mirrors LocatorMap's declutter).
+        const updateSymbolLabelAnchors = () => {
+          const el = containerRef.current;
+          if (!el || !map.getLayer("symbol-labels")) return;
+          const viewport = { width: el.clientWidth, height: el.clientHeight };
+          let changed = false;
+          for (let i = 0; i < symbolFeatures.length; i++) {
+            const s = geo.symbols[i];
+            const pt = map.project([s.lon, s.lat] as [number, number]);
+            const props = symbolFeatures[i].properties as Record<
+              string,
+              unknown
+            >;
+            const { width, height } = estimateLabelBox(
+              String(props.labelText ?? ""),
+              textSize,
+            );
+            const { anchor } = placeSymbolLabel({
+              cx: pt.x,
+              cy: pt.y,
+              offset: s.radius + LABEL_GAP,
+              width,
+              height,
+              viewport,
+            });
+            if (props.anchor !== anchor) {
+              props.anchor = anchor;
+              changed = true;
+            }
+          }
+          if (!changed) return;
+          (map.getSource("symbols") as maptilersdk.GeoJSONSource).setData({
+            type: "FeatureCollection",
+            features: symbolFeatures,
+          });
+        };
+        map.on("idle", updateSymbolLabelAnchors);
       }
 
       fitToData();

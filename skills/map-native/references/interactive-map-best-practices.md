@@ -61,6 +61,30 @@ Legend always visible (never collapsed on mobile) · source/credit always visibl
 while tiles fetch · no keyboard trap · text contrast ≥4.5:1 on overlays · `aria-label` on the map
 container + a screen-reader data-table alternative · don't steal focus to the map on scroll steps.
 
+## 8. Direct labels must stay inside the map viewport (edge-aware placement)
+
+- **INVARIANT: a symbol/point label never renders outside the map viewport.** A proportional-symbol
+  map direct-labels each circle (name + value) so it reads without hover; a label near a viewport edge
+  must flip/clamp INWARD, never clip. (Reported: an "Indonésie" circle near the right edge rendered as
+  "Indonés" — the name ran off-canvas and was cut.)
+- **MapLibre `text-variable-anchor` does NOT enforce this.** It only re-anchors on label↔label
+  *collision*; it is blind to the canvas edge, so an edge symbol with no colliding neighbour keeps its
+  default side (the list's first anchor) and its text overflows. The edge must be handled explicitly.
+- **Rule:** default to the FT/NYT direct-label side (label to the RIGHT of the point). When a right
+  placement would exceed the right edge, **flip to the LEFT** (right-align the text so its block hugs
+  the point); guard the top/bottom edges the same way; clamp to the least-overflowing side as a last
+  resort. Compute this from each symbol's PROJECTED SCREEN position after the camera settles — the edge
+  is a screen-space property, not a data property.
+- **Shared primitive (single source of truth):** `src/symbol-labels.ts` → `placeSymbolLabel()` (pure,
+  unit-tested) picks the in-viewport anchor; `estimateLabelBox()` sizes the label. The renderer drives
+  a per-feature, data-driven `text-anchor` (`["get","anchor"]`) — NOT `text-variable-anchor` — and
+  recomputes on `idle`/`moveend`. `SymbolMap.tsx` (static + interactive a11y fallback) uses this.
+  Mirrors the chart-tooltip in-viewport clamp (`chart-native/src/core/tooltip-clamp.ts`).
+- **Follow-up (known gap):** the video/scrolly symbol renderers (`components/SymbolReveal.tsx`,
+  `SymbolStory.tsx`, `SymbolScrolly.tsx`) still use `text-variable-anchor` and should adopt
+  `placeSymbolLabel` too — SymbolReveal has a fixed camera (compute once at the load `idle`), while
+  SymbolStory/SymbolScrolly `jumpTo` per frame (recompute per frame before `continueRender`).
+
 ## Enforceable checklist for the engine
 
 - Water blue / land light / no-data mid-grey — three distinct layers (conformance: assert the three
@@ -71,6 +95,8 @@ container + a screen-reader data-table alternative · don't steal focus to the m
 - Video: a title beat precedes map motion; lower-thirds after orientation.
 - Scrolly: one `chapters[]` source of truth; `onStepEnter` dispatcher; CSS sticky; same config feeds video.
 - A11y: reduced-motion, container `aria-label`, no keyboard trap, ≥4.5:1 overlay contrast, loading state.
+- Direct symbol labels stay inside the viewport — edge-aware `placeSymbolLabel` (flip right→left, clamp),
+  never `text-variable-anchor` alone (it ignores the canvas edge). Unit-tested in `symbol-labels.test.ts`.
 
 ## Sources
 
