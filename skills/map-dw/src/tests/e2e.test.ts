@@ -51,6 +51,27 @@ d("produceMap (live)", () => {
     await expect(produceMap(spec, png)).rejects.toThrow(/map-native/);
   }, 60000);
 
+  it("REFUSES to produce a dataless choropleth (join-key mismatch) instead of shipping grey", async () => {
+    // The silent grey-map bug: `mapKeyAttr:"ISO_A3"` on `world-2019` (real alpha-3 key
+    // `DW_STATE_CODE`) fails the region join — every region unmatched — yet Datawrapper
+    // still publishes it. Bypass the validation-level key check with a basemap the static
+    // registry does not know, so ONLY the produce-time dataless-join guard can catch it.
+    const spec = {
+      mapType: "choropleth",
+      basemap: "world",
+      mapKeyAttr: "ISO_A3", // wrong for DW's `world` basemap (its codes live under `id`)
+      regionKey: "code",
+      valueColumn: "value",
+      data: "code,value\nUSA,88\nFRA,84\nDEU,92\nGBR,95",
+      title: "Internet penetration across four large economies",
+      altInsight:
+        "Internet penetration ranges from 84% in France to 95% in the UK",
+      source: { name: "ITU" },
+    } as unknown as MapSpec;
+    const png = `/tmp/map-dw-dataless-e2e-${Date.now()}.png`;
+    await expect(produceMap(spec, png)).rejects.toThrow(/dataless choropleth/);
+  }, 60000);
+
   it("publishes a real locator map and exports a non-empty PNG", async () => {
     const spec: MapSpec = {
       mapType: "locator",

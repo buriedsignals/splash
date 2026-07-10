@@ -7,6 +7,11 @@ import {
   publishChart,
   exportPng,
 } from "../../dw-chart/src/datawrapper";
+import {
+  assessJoinMatch,
+  datalessJoinError,
+  MIN_JOIN_MATCH_RATE,
+} from "./join-match";
 
 export interface ProduceMapResult {
   chartId: string;
@@ -21,6 +26,21 @@ export async function produceMap(
 ): Promise<ProduceMapResult> {
   const v = validateMapSpec(spec);
   if (!v.ok) throw new Error(`invalid map spec: ${v.errors.join("; ")}`);
+
+  // DATALESS-JOIN GUARD (the general net behind validateMapSpec's key check). Before touching
+  // the API, confirm the choropleth's data rows actually join to the live basemap geometry. A
+  // failed join ships a fully grey, dataless map that Datawrapper still publishes — so fail hard
+  // HERE (never create/publish the chart) rather than let the orchestrator mark it "produced".
+  // Covers any basemap, including those absent from the static key registry.
+  if (spec.mapType === "choropleth") {
+    const j = await assessJoinMatch(
+      spec.basemap,
+      spec.mapKeyAttr,
+      spec.data,
+      spec.regionKey,
+    );
+    if (j.rate < MIN_JOIN_MATCH_RATE) throw new Error(datalessJoinError(j));
+  }
 
   const patch = specToMapMetadata(spec);
   const id = await createChart(spec.title, patch.type);

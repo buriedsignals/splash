@@ -139,6 +139,39 @@ describe("validateMapSpec — choropleth", () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.warnings).toEqual([]);
   });
+
+  // JOIN-KEY MISMATCH (the silent grey-map bug). `mapKeyAttr:"ISO_A3"` on `world-2019` — whose
+  // real alpha-3 key is `DW_STATE_CODE` — silently fails the join and ships a fully grey,
+  // dataless map. A KNOWN basemap must reject a key that is not one of its declared join keys.
+  it("rejects a mapKeyAttr that is not a join key of the (known) basemap", () => {
+    const r = validateMapSpec({ ...valid, mapKeyAttr: "ISO_A3" }); // world-2019
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/not a join key/);
+  });
+
+  it("names the valid join keys when it rejects a wrong mapKeyAttr", () => {
+    const r = validateMapSpec({ ...valid, mapKeyAttr: "ISO_A3" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/DW_STATE_CODE/);
+  });
+
+  it("still accepts every declared join key of the basemap", () => {
+    for (const key of ["DW_STATE_CODE", "DW_NAME", "ISO_2"]) {
+      const r = validateMapSpec({ ...valid, mapKeyAttr: key });
+      expect(r.ok).toBe(true);
+    }
+  });
+
+  it("skips the join-key check for a basemap absent from the registry (produce guard covers it)", () => {
+    // An unknown basemap has no recorded keys — validation cannot know them, so it must NOT
+    // reject a plausible key here; the produce-time dataless-join guard is the net instead.
+    const r = validateMapSpec({
+      ...valid,
+      basemap: "narnia-2030",
+      mapKeyAttr: "WHATEVER",
+    });
+    expect(r.ok).toBe(true);
+  });
 });
 
 const validSymbol = {
