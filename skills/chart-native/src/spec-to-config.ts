@@ -139,6 +139,16 @@ export const MAPPERS: Record<
     const xCol = numericColumns[0] ?? columns[1];
     const yCol = numericColumns[1] ?? columns[2] ?? valCol;
     const hasLabel = !numericColumns.includes(catCol);
+    // The story points the journalist/② names → ScatterChart's `annotate` (labelled by
+    // their label value). Prefer the multi-value `highlights` (e.g. "Japan, Qatar,
+    // Nigeria"); fall back to the single `highlight`. Without this, ScatterChart labels
+    // ONLY the max-y outlier — a 3-highlight scatter shipped with a single label.
+    const annotate =
+      spec.highlights && spec.highlights.length
+        ? spec.highlights
+        : spec.highlight
+          ? [spec.highlight]
+          : undefined;
     return {
       type: "scatter",
       config: {
@@ -152,6 +162,7 @@ export const MAPPERS: Record<
         xLabel: xCol,
         yLabel: yCol,
         ...(hasLabel ? { labelField: catCol } : {}),
+        ...(annotate ? { annotate } : {}),
         ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows,
       },

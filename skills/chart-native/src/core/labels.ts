@@ -29,6 +29,14 @@ export interface PlaceCandidate {
   r: number;
   /** higher = placed first when space is contested */
   priority: number;
+  /**
+   * true = this label was EXPLICITLY requested (a journalist/②-named highlight) and
+   * must never be silently dropped. When no clean (in-bounds, no-overlap) spot exists,
+   * it is offset to the best in-bounds position anyway — an overlapping-but-present
+   * label beats a missing requested one. Absent/false = the default "fewer-but-readable"
+   * behaviour (auto labels may be skipped when they can't be placed cleanly).
+   */
+  required?: boolean;
 }
 
 export interface PlacedLabel {
@@ -202,11 +210,17 @@ export function placeLabels(
             : undefined,
       });
     }
-    const chosen = positions.find(
+    let chosen = positions.find(
       (pos) =>
         withinBounds(pos.box, bounds) &&
         !obstacles.some((o) => overlaps(pos.box, o)),
     );
+    // A REQUIRED label (an explicitly-requested highlight) is never dropped: if no
+    // clean spot exists, take the best in-bounds position even if it overlaps a mark or
+    // another label (offset over drop). Only truly unplaceable (no in-bounds spot at
+    // all — a label wider than the plot) falls through unplaced.
+    if (!chosen && c.required)
+      chosen = positions.find((pos) => withinBounds(pos.box, bounds));
     if (chosen) {
       obstacles.push(chosen.box);
       placed.push({

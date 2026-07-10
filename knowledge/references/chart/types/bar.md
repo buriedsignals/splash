@@ -30,9 +30,16 @@ baseline. Length is near the top of the perception hierarchy → bars are the sa
    bars in arbitrary/alphabetical order when the story is about magnitude.
 3. **One value per bar, gaps between bars.** Bar width carries no meaning; keep a consistent gap
    (~20–35% of the band) so bars read as discrete, not as a histogram (where bars touch).
-4. **Direct value labels over a legend/axis read.** Label each bar with its value (abbreviated:
+4. **Direct value labels over a legend/axis read.** Label **every** bar with its value (abbreviated:
    `10.4k`, not `10,381`) at the end of the bar; this beats forcing the eye back to the axis. The
-   axis can then be light or dropped. (Inherits the global "direct labels" rule.)
+   axis can then be light or dropped. (Inherits the global "direct labels" rule.) The label sits
+   **outside** the bar (above a column, right of a horizontal bar) so a too-short bar never clips it.
+   This invariant holds at **every frame of the reveal**, not only the final hold: the label rides the
+   bar's *animated* end and fades in **with** the bar, so a mid-build video still (the frame captured
+   for the deliverable, ≈60 % through) never ships a label-less bar — the two smallest, last-staggered
+   bars included. (Regression: an Olympic-medals ranking video shipped its GER/NGR bars unlabelled
+   because the label was gated to the last 35 % of each bar's growth; the still froze before that.
+   Guarded by `tests/bar-value-label-reveal.test.tsx`.)
 5. **Highlight at most one bar.** A single accent colour on the key bar (the subject of the
    headline) is a strong editorial move; everything else stays the neutral series colour. Stay
    within ≤2 colours (global rule). Default: no highlight, single series colour.
@@ -70,6 +77,8 @@ for the shared video discipline; the bar-specific gesture:
 - chrome (value axis + gridlines) wipes in first;
 - each bar **grows from the baseline to full length** (`scaleY`/width 0→1), eased-out, **staggered**
   in reading order (left→right for columns, top→bottom for bars);
-- the value label fades + rises as its bar lands.
+- the value label **rides the bar's growing end** (always outside the bar) and fades in **with** the
+  bar — present from the moment the bar is meaningfully drawn, not only once it lands, so no frame
+  ever shows a bar without its value (see rule 4).
 The growth direction is anchored at the **zero baseline** (consistent with rule 1) — bars never grow
 from the middle or the top.

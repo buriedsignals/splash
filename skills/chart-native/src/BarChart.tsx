@@ -260,7 +260,14 @@ function BarSvg({
           const g = growBar(b, barP(i), orientation);
           const fill = barColor(i, config.highlightIndex, config.baseColor);
           const grown = barP(i);
-          const labelOp = clamp01((grown - 0.65) / 0.35);
+          // bar.md rule 4 — EVERY bar carries its direct value label, at EVERY frame it
+          // is drawn (not just the p=1 hold). The label rides the bar's ANIMATED end
+          // (below) and fades in with the bar's own growth, reaching full opacity once
+          // the bar is meaningfully present (~15% grown). The old gate (grown-0.65)/0.35
+          // hid the last-staggered smallest bars' labels until ~97% growth, so a mid-
+          // build video still (frame 140/240 ≈ progress 0.64) shipped the two smallest
+          // bars label-less. Full opacity at progress 1 is unchanged.
+          const labelOp = clamp01(grown / 0.15);
           const catOp = clamp01(grown * 1.6);
           // category label position (always at the bar's band centre)
           const cat = horizontal
@@ -286,17 +293,20 @@ function BarSvg({
             : [truncate(String(b.rawCat), catMaxPx, ts.axis)];
           const catLineH = ts.axis * 1.15;
           const catY0 = cat.y - ((catLines.length - 1) * catLineH) / 2;
-          // value label at the END of the bar
+          // value label at the ANIMATED end of the bar (rides the growing edge, so it is
+          // always OUTSIDE the bar — never clipped inside a too-short bar — and "rises as
+          // its bar lands"). Uses `g` (the drawn rect at this frame), not the final `b`;
+          // at progress 1, g === b, so the static/hold layout is unchanged.
           const val = horizontal
             ? {
-                x: b.x + b.w + 6 * sc,
+                x: g.x + g.w + 6 * sc,
                 y: b.y + b.h / 2,
                 anchor: "start" as const,
                 dy: "0.32em",
               }
             : {
                 x: b.x + b.w / 2,
-                y: b.y - 6 * sc,
+                y: g.y - 6 * sc,
                 anchor: "middle" as const,
                 dy: "0",
               };
