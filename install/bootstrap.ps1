@@ -22,9 +22,16 @@ if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
 
 # 2. Node.js — ONLY to drive Playwright/Remotion (they hang under Bun on Windows: Bun #15679)
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-  Write-Host "-> Installing Node.js…"
-  winget install --id OpenJS.NodeJS.LTS -e --accept-package-agreements --accept-source-agreements
-  $env:PATH = "$env:ProgramFiles\nodejs;$env:PATH"
+  # winget is absent on Windows 10 LTSC / enterprise images / disabled app-execution-alias.
+  # Calling it unguarded under $ErrorActionPreference='Stop' aborts with a raw
+  # "'winget' is not recognized" before the friendly nodejs.org guidance below can run.
+  if (Get-Command winget -ErrorAction SilentlyContinue) {
+    Write-Host "-> Installing Node.js…"
+    winget install --id OpenJS.NodeJS.LTS -e --accept-package-agreements --accept-source-agreements
+    $env:PATH = "$env:ProgramFiles\nodejs;$env:PATH"
+  } else {
+    Write-Host "-> winget not available; skipping automatic Node.js install."
+  }
 }
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   throw "Node.js is required (it drives Playwright/Remotion on Windows) but could not be installed via winget. Install Node LTS from https://nodejs.org, then re-run this installer."
@@ -60,6 +67,11 @@ $runtime = if (Test-Path (Join-Path $Dest ".atelier-runtime")) { (Get-Content (J
 if ($runtime -eq "claude" -and -not (Get-Command claude -ErrorAction SilentlyContinue)) {
   Write-Host "-> Installing Claude Code…"
   irm https://claude.ai/install.ps1 | iex
+  # claude.ai/install.ps1 updates the PERSISTENT user PATH (effective only in a NEW session),
+  # not this process's $env:PATH — so the existence check below would throw a false "could not
+  # be installed" on a fresh machine and abort before the launcher is created. Prepend claude's
+  # bin dir for THIS session (mirror of bootstrap.sh's `export PATH="$HOME/.local/bin:$PATH"`).
+  $env:PATH = "$HOME\.local\bin;$env:PATH"
 }
 if ($runtime -eq "claude" -and -not (Get-Command claude -ErrorAction SilentlyContinue)) {
   throw "Claude Code could not be installed. See https://claude.ai, then re-run this installer."
@@ -83,7 +95,8 @@ $launcher = Join-Path $Dest "Launch Atelier.cmd"
 @'
 @echo off
 cd /d "%~dp0"
-for /f "usebackq tokens=1,* delims==" %%a in (".env") do set "%%a=%%b"
+rem .env values are double-quoted so spaces (e.g. fly tokens "FlyV1 fm2_…") survive; %%~b strips the quotes.
+for /f "usebackq tokens=1,* delims==" %%a in (".env") do set "%%a=%%~b"
 claude --plugin-dir .
 '@ | Set-Content -Path $launcher -Encoding ascii
 

@@ -48,11 +48,21 @@ const server = Bun.serve({
       });
     }
     if (req.method === "POST" && url.pathname === "/verify") {
-      const cfg = (await req.json()) as ConfiguratorConfig;
+      let cfg: ConfiguratorConfig;
+      try {
+        cfg = (await req.json()) as ConfiguratorConfig;
+      } catch {
+        return new Response("invalid request body", { status: 400 });
+      }
       return Response.json(await verifyAll(cfg));
     }
     if (req.method === "POST" && url.pathname === "/submit") {
-      const cfg = (await req.json()) as ConfiguratorConfig;
+      let cfg: ConfiguratorConfig;
+      try {
+        cfg = (await req.json()) as ConfiguratorConfig;
+      } catch {
+        return new Response("invalid request body", { status: 400 });
+      }
       const v = await verifyAll(cfg);
       if (Object.values(v).some((ok) => ok === false)) {
         return new Response("verification failed — re-check your keys", {
@@ -60,16 +70,33 @@ const server = Bun.serve({
         });
       }
       const envPath = join(DEST, ".env");
-      writeFileSync(envPath, serializeEnv(cfg));
       try {
-        chmodSync(envPath, 0o600);
-      } catch {
-        /* NTFS — no-op */
+        writeFileSync(envPath, serializeEnv(cfg));
+        try {
+          chmodSync(envPath, 0o600);
+        } catch {
+          /* NTFS — no-op */
+        }
+        writeFileSync(
+          join(DEST, ".atelier-runtime"),
+          (cfg.runtime || "claude") + "\n",
+        );
+      } catch (err) {
+        // Read-only ~/Atelier or a full disk. Don't leave the write to throw unhandled — that
+        // returned Bun's dev 500 overlay AND left this process (and the blocking bootstrap)
+        // running forever. Report the real cause and exit non-zero so the bootstrap's
+        // "Configuration was not completed — re-run this installer" guidance fires.
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`\nCould not write ${envPath}: ${msg}`);
+        setTimeout(() => {
+          server.stop();
+          process.exit(1);
+        }, 250);
+        return new Response(
+          `could not write ~/Atelier/.env: ${msg} — check folder permissions and free disk space, then re-run the installer`,
+          { status: 500 },
+        );
       }
-      writeFileSync(
-        join(DEST, ".atelier-runtime"),
-        (cfg.runtime || "claude") + "\n",
-      );
       // Give Bun a moment to flush this response to the browser before we exit, so the
       // journalist sees the "Saved ✓" page instead of a dropped connection. The bootstrap
       // then continues (it checks ~/Atelier/.env exists). Localhost round-trip is <10ms.
@@ -85,4 +112,20 @@ const server = Bun.serve({
 
 const localUrl = `http://127.0.0.1:${server.port}/`;
 console.log(`-> Configure Atelier at ${localUrl}`);
+console.log(
+  "   (Waiting for you to finish in the browser… press Ctrl-C here to cancel.)",
+);
 if (!NO_OPEN) openBrowser(localUrl);
+
+// Safety net: the server otherwise only stops on a successful /submit, so a closed tab or a
+// browser that never opened (headless box) would block the bootstrap forever. Exit non-zero
+// after a generous idle window so the "re-run this installer" guidance fires. A successful
+// submit exits first; unref() keeps this timer from holding the process open on its own.
+const IDLE_TIMEOUT_MS = 30 * 60_000;
+setTimeout(() => {
+  console.error(
+    "\nTimed out waiting for the configurator. Re-run the installer when you're ready.",
+  );
+  server.stop();
+  process.exit(1);
+}, IDLE_TIMEOUT_MS).unref?.();

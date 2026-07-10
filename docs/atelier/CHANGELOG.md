@@ -4,6 +4,58 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-10 (suite) — audit installeur : 15 défauts confirmés → 15 fixes système + 11 tests
+
+Branche `fix/installer-audit-15` (non mergée à l'écriture). Rémy : « teste le système d'installation ».
+Méthode = **audit adverse fan-out** (workflow : 6 finders/composant × étage de vérification adverse ;
+23 findings bruts → 21 confirmés/plausibles, 1 réfuté) **puis drive e2e du vrai configurateur** (principe
+« vérifier le LIVRÉ, pas le proof » : ouvrir/piloter les vrais endpoints + `source` bash réel, pas lire le
+code). Le système = page publique (`docs/installer/`) → bootstrap (`install/bootstrap.{sh,ps1}`) →
+configurateur Bun local (`install/configurator.{ts,-core.ts}`). Gate `bun run check` **16/16** après fixes.
+
+**🔴 Bloquants / hauts (5) :**
+- **Clés requises vides acceptées** → install « réussie » mais `.env` à clés vides (les gates client
+  `!==false` et serveur `some(===false)` laissent passer `null`=blank). Fix = **warn/confirm doux** :
+  marqueurs `(required)`, `confirm()` avant Save, trim client. **Pas de hard-block** (chart-native = 0 clé
+  légitime). `configurator-core.ts`.
+- **Windows : PATH claude non préfixé en session** → `claude.ai/install.ps1` ne touche que le PATH
+  persistant, le re-test `Get-Command claude` throw à tort « could not be installed » → abort avant le
+  launcher. Fix = `$env:PATH = "$HOME\.local\bin;$env:PATH"` après install (miroir de `bootstrap.sh:45`).
+  Vérifié *par mécanisme* (install.ps1 inspecté), non exécuté sur Windows.
+- **`.env` non-quoté** → le launcher mac `. ./.env` word-splittait les tokens fly `FlyV1 fm2_…` (espace
+  littéral) → `command not found` → claude ne démarrait jamais. Fix = `serializeEnv` **double-quote** +
+  trim + strip `"`/newline ; launcher Windows `set "%%a=%%~b"` (retire les quotes). **Asymétrie .sh/.cmd
+  gravée** : le format `.env` partagé doit être sûr pour `source` (bash) ET `for /f` (cmd). Prouvé e2e :
+  vrai serveur → `.env` → `. ./.env` → token intact, chaîne n'abort plus.
+- **Option B mac morte** (download `.command` sans bit `+x`, self-heal `chmod +x "$0"` inatteignable).
+  Fix = workaround on-page `chmod +x`. `index.html`.
+- **Release-gate aveugle** : `preflight-release.mjs` ne scannait que `commands.js` → un vert pouvait
+  shipper des bootstraps pointant le repo placeholder (404 constaté aujourd'hui). Fix = scan des **2
+  bootstraps** + gate du **REF non-pinné** (`main`) dans les 3 fichiers.
+
+**🟠 Moyens (4) :** `bun install` garde stderr + guard (fini le dead-stop silencieux sous `set -e`) ·
+winget gardé (`Get-Command winget` → fallback amical vivant sur LTSC/entreprise) · `writeFileSync`/
+`req.json` gardés → **400/500 propres + exit(1) au lieu de hang infini** (`~/Atelier` read-only/disque
+plein) · `verify*` renvoie **`null` (injoignable) ≠ `false` (invalide)** → clé valide derrière proxy/TLS-MITM
+plus bloquée.
+
+**🟡 Bas (6) :** configurateur derrière `[ ! -f .env ]` + `ATELIER_RECONFIGURE` (re-run n'exige plus la
+re-saisie) · hint « Ctrl-C » + idle-timeout 30 min · trim des clés (espace collé → MapTiler 403) · toggle
+OS `role=tablist`→`aria-pressed` (a11y : `aria-selected` inerte sur `<button>`) · Copy avec feedback +
+fallback `execCommand` + `.catch` · download `revokeObjectURL` différé + anchor in-DOM (Safari).
+
+**Tests (11 nouveaux) :** `configurator-core.test.ts` (format quoté, **preuve behaviorale bash-source**,
+`verify*`→null réseau, marqueurs required) · `configurator.test.ts` (nouveau — serveur : malformé→400,
+blank→`.env` quoté, 404) · `bootstrap-{sh,ps1}.test.ts` (stderr gardé, guard re-run, PATH claude, winget,
+`%%~b`) · `page.test.ts` (chmod workaround, copy fallback, revoke différé, aria-pressed) ·
+`preflight-release.test.ts` (nouveau — scan bootstraps + REF).
+
+**★ Méta-leçons gravées :** (1) **le contrat `.env` du launcher est cross-platform** — un format sûr d'un
+seul côté (`for /f` Windows tolérait l'espace, `source` bash non) est un demi-fix ; graver les deux. (2)
+**un release-gate doit gater CHAQUE fichier qui hardcode le placeholder**, pas un seul — sinon un vert
+faux-négatif shippe un install 404. (3) **le vérificateur d'un finding peut mourir** (1 agent en erreur
+réseau a filtré le finding blocker Windows) → re-vérifier soi-même les findings orphelins critiques.
+
 ## Session 2026-07-10 — 3 cycles QA (waves 1-3, 16 cas) → 12 fixes, tous mergés vert
 
 Boucle « fond de roulement » (`../atelier-harness/WORKFLOW.md`) : lancer des tests e2e en parallèle

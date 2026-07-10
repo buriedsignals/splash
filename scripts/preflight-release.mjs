@@ -16,16 +16,41 @@ check("LICENSE present", existsSync("LICENSE"), "add an MIT LICENSE at the repo 
 // 2. Root README present (the public landing page).
 check("README present", existsSync("README.md"), "add a root README");
 
-// 3. Installer REPO_URL confirmed — keyed on the TODO marker, so it passes the moment the
-//    real public URL is set and the `confirm before public release` note is removed (the
-//    org name may legitimately be the real one, so we do NOT match on the URL value).
-const gen = existsSync("docs/installer/commands.js")
-  ? readFileSync("docs/installer/commands.js", "utf8")
-  : "";
+// 3. Installer REPO_URL confirmed across ALL THREE files that hardcode it — the public page
+//    generator AND both bootstraps. Keyed on the TODO marker, so it passes the moment the real
+//    URL is set and every note is removed. Gating only commands.js let a green check ship
+//    bootstraps still pointed at the placeholder repo, so every install 404s at download time.
+const INSTALLER_SRC = [
+  "docs/installer/commands.js",
+  "install/bootstrap.sh",
+  "install/bootstrap.ps1",
+];
+const marked = INSTALLER_SRC.filter(
+  (f) =>
+    existsSync(f) &&
+    readFileSync(f, "utf8").includes("confirm before public release"),
+);
 check(
-  "installer REPO_URL confirmed",
-  gen !== "" && !gen.includes("confirm before public release"),
-  "set the real public repo URL in docs/installer/commands.js and remove the `confirm before public release` note",
+  "installer REPO_URL confirmed (page + both bootstraps)",
+  marked.length === 0,
+  `remove the \`confirm before public release\` note (and set the real public repo URL) in: ${marked.join(", ") || "(files missing)"}`,
+);
+
+// 3b. REF pinned to a released tag, not the moving `main`, in all three files — a public
+//     install must reproduce a fixed release, not whatever `main` happens to be that day.
+const refUnpinned = INSTALLER_SRC.filter((f) => {
+  if (!existsSync(f)) return false;
+  const s = readFileSync(f, "utf8");
+  return (
+    /REF\s*=\s*["']main["']/.test(s) || // commands.js: const REF = "main"
+    /ATELIER_REF:-main/.test(s) || // bootstrap.sh: "${ATELIER_REF:-main}"
+    /\{\s*"main"\s*\}/.test(s) // bootstrap.ps1: else { "main" }
+  );
+});
+check(
+  "installer REF pinned to a release tag (not main)",
+  refUnpinned.length === 0,
+  `pin REF to a released tag (not \`main\`) in: ${refUnpinned.join(", ")}`,
 );
 
 // 4. No AI-session URL trailers in commit history (publication rule: no vendor attribution).

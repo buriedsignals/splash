@@ -12,9 +12,9 @@
     <p>One command sets everything up. You'll enter your keys <strong>afterward</strong>, in a
       configurator that opens on your own machine — they never touch this website or your Downloads.</p>
 
-    <div id="os-toggle" data-testid="os-toggle" role="tablist">
-      <button type="button" data-os="mac" aria-selected="true">macOS</button>
-      <button type="button" data-os="windows" aria-selected="false">Windows</button>
+    <div id="os-toggle" data-testid="os-toggle" role="group" aria-label="Operating system">
+      <button type="button" data-os="mac" aria-pressed="true">macOS</button>
+      <button type="button" data-os="windows" aria-pressed="false">Windows</button>
     </div>
 
     <section class="mode" data-testid="mode-copypaste">
@@ -48,13 +48,13 @@
       windows: "Open PowerShell (Start, type “PowerShell”), paste, press Enter.",
     };
     const WORKAROUND = {
-      mac: "If macOS blocks the file: System Settings → Privacy & Security → “Open Anyway”.",
+      mac: "If macOS says “permission denied”, open Terminal and run: chmod +x ~/Downloads/atelier-setup.command — then double-click it again. If it says the file is blocked: System Settings → Privacy & Security → “Open Anyway”.",
       windows: "If Windows shows “Windows protected your PC”: click More info → Run anyway.",
     };
 
     function render() {
       document.querySelectorAll('#os-toggle button').forEach((b) =>
-        b.setAttribute("aria-selected", String(b.dataset.os === os)));
+        b.setAttribute("aria-pressed", String(b.dataset.os === os)));
       cmdEl.textContent = installCommand(os);
       terminalHint.textContent = HINTS[os];
       workaround.textContent = WORKAROUND[os];
@@ -64,15 +64,38 @@
     document.getElementById("os-toggle").addEventListener("click", (e) => {
       if (e.target.dataset.os) { os = e.target.dataset.os; render(); }
     });
-    document.getElementById("copyBtn").addEventListener("click", () =>
-      navigator.clipboard.writeText(cmdEl.textContent));
+    const copyBtn = document.getElementById("copyBtn");
+    copyBtn.addEventListener("click", async () => {
+      const text = cmdEl.textContent;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          // Insecure context (file://, non-localhost http): clipboard API is undefined.
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.cssText = "position:fixed;opacity:0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+        }
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+      } catch {
+        copyBtn.textContent = "Press ⌘/Ctrl-C to copy";
+        setTimeout(() => { copyBtn.textContent = "Copy"; }, 2500);
+      }
+    });
     document.getElementById("downloadBtn").addEventListener("click", () => {
       const blob = new Blob([launcherContents(os)], { type: "text/plain" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = launcherFilename(os);
+      document.body.appendChild(a); // Safari honors download only for an in-DOM anchor
       a.click();
-      URL.revokeObjectURL(a.href);
+      // Defer cleanup so Safari finishes reading the blob before the URL is revoked.
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     });
   </script>
 </body>

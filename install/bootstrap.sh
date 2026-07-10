@@ -29,11 +29,15 @@ if [ ! -d "$DEST" ]; then
   rm -rf "$tmp"
 fi
 
-# 3. Local configurator — pick runtime + enter keys (verified live); writes ~/Atelier/.env
-echo "-> Opening the configurator in your browser to collect your keys…"
-if ! ( cd "$DEST" && bun install/configurator.ts ) || [ ! -f "$DEST/.env" ]; then
-  echo "Configuration was not completed — re-run this installer." >&2
-  exit 1
+# 3. Local configurator — pick runtime + enter keys (verified live); writes ~/Atelier/.env.
+# Skip it on a re-run that already has a verified .env (set ATELIER_RECONFIGURE=1 to force it),
+# so recovering from a later failure doesn't force re-entering and re-verifying every key.
+if [ ! -f "$DEST/.env" ] || [ "${ATELIER_RECONFIGURE:-0}" = "1" ]; then
+  echo "-> Opening the configurator in your browser to collect your keys…"
+  if ! ( cd "$DEST" && bun install/configurator.ts ) || [ ! -f "$DEST/.env" ]; then
+    echo "Configuration was not completed — re-run this installer." >&2
+    exit 1
+  fi
 fi
 
 # 4. Runtime — install the one the configurator recorded (Claude Code today)
@@ -44,12 +48,20 @@ if [ "$runtime" = "claude" ] && ! command -v claude >/dev/null 2>&1; then
 fi
 export PATH="$HOME/.local/bin:$PATH"
 
-# 5. Producer deps + render engine (Playwright Chromium, shared cache)
+# 5. Producer deps + render engine (Playwright Chromium, shared cache). Keep stderr visible and
+# guard each step: a failed install here (flaky wifi, proxy, full disk) must report its cause and
+# stop with guidance — not die silently under `set -e` after the .env was already written.
 echo "-> Installing render dependencies…"
 for skill in "${NATIVE_SKILLS[@]}"; do
-  ( cd "$DEST/$skill" && bun install >/dev/null 2>&1 )
+  if ! ( cd "$DEST/$skill" && bun install >/dev/null ); then
+    echo "Dependency install failed in $skill (see the error above) — check your connection, then re-run this installer." >&2
+    exit 1
+  fi
 done
-( cd "$DEST/skills/chart-native" && bunx playwright install chromium )
+if ! ( cd "$DEST/skills/chart-native" && bunx playwright install chromium ); then
+  echo "Playwright Chromium download failed (see above) — re-run this installer to resume." >&2
+  exit 1
+fi
 
 # 6. Local double-click launcher (created locally → no quarantine → clean re-launch)
 launcher="$DEST/Launch Atelier.command"
