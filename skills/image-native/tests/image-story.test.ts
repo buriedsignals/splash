@@ -38,4 +38,26 @@ describe("checkImageConformance", () => {
   it("should return no violations for a fully valid story", () => {
     expect(checkImageConformance(validStory())).toEqual([]);
   });
+
+  it("should flag a missing title", () => {
+    const s = validStory();
+    s.title = "  ";
+    expect(checkImageConformance(s)).toContain("missing story title");
+  });
+
+  it("should flag a missing description", () => {
+    const s = validStory();
+    s.description = "";
+    expect(checkImageConformance(s)).toContain(
+      "missing description — a module must state what/when/where",
+    );
+  });
+
+  it("should flag a missing source name", () => {
+    const s = validStory();
+    s.source = { name: "" };
+    expect(checkImageConformance(s)).toContain(
+      "missing source name — an embedded module must carry its own source",
+    );
+  });
 });

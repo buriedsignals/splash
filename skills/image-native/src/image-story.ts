@@ -32,8 +32,16 @@ export interface ImageStory {
 }
 
 export function checkImageConformance(
-  _story: ImageStory,
+  story: ImageStory,
   _opts?: { overlapThreshold?: number },
 ): string[] {
-  return [];
+  const v: string[] = [];
+  if (!story.title?.trim()) v.push("missing story title");
+  if (!story.description?.trim())
+    v.push("missing description — a module must state what/when/where");
+  if (!story.source?.name?.trim())
+    v.push(
+      "missing source name — an embedded module must carry its own source",
+    );
+  return v;
 }
