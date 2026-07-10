@@ -199,3 +199,53 @@ export function placeSymbolLabel(input: PlaceLabelInput): PlacedLabel {
   }
   return { anchor: best, box: boxForAnchor(best, input) };
 }
+
+// The mutable per-feature subset the edge-clamp loop reads/writes. Every symbol renderer
+// stores these on its GeoJSON feature `properties`; keeping the shape explicit lets the
+// loop stay pure (no MapTiler) and unit-testable.
+export interface SymbolAnchorProps {
+  labelText: string; // the rendered label ("name\nvalue"), for width estimation
+  radius: number; // symbol radius (px), for the centre → text-edge offset
+  anchor: LabelAnchor; // MUTATED in place to the in-viewport placement
+}
+
+// Recompute every symbol's in-viewport `anchor` from its CURRENT projected screen centre,
+// mutating each `props[i].anchor` in place. Returns true iff at least one anchor changed —
+// the renderer uses this as its setData `changed` guard so the setData-triggered `idle`
+// does not re-enter in a loop. This is the SINGLE source of the edge-clamp loop shared by
+// the static SymbolMap AND the animated symbol renderers (Reveal computes it once at the
+// load `idle`; Story/Scrolly recompute it per frame after each `jumpTo` settles). The
+// caller supplies the projected points (`map.project(...)`, index-aligned with `props`) so
+// this module stays browser-free; the placement geometry itself lives in placeSymbolLabel.
+export function assignSymbolLabelAnchors(
+  props: SymbolAnchorProps[],
+  projected: ReadonlyArray<{ x: number; y: number }>,
+  opts: {
+    viewport: { width: number; height: number };
+    textSize: number;
+    gap: number;
+  },
+): boolean {
+  let changed = false;
+  for (let i = 0; i < props.length; i++) {
+    const pt = projected[i];
+    if (!pt) continue;
+    const { width, height } = estimateLabelBox(
+      props[i].labelText,
+      opts.textSize,
+    );
+    const { anchor } = placeSymbolLabel({
+      cx: pt.x,
+      cy: pt.y,
+      offset: props[i].radius + opts.gap,
+      width,
+      height,
+      viewport: opts.viewport,
+    });
+    if (props[i].anchor !== anchor) {
+      props[i].anchor = anchor;
+      changed = true;
+    }
+  }
+  return changed;
+}

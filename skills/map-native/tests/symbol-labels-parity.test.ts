@@ -75,3 +75,41 @@ describe("symbol renderer parity: every format labels every symbol (name+value)"
     expect(hasSymbolLabelsLayer(circlesOnly)).toBe(false);
   });
 });
+
+// Edge-clamp parity (feedback→système): the "a symbol label never renders outside the
+// viewport" invariant must hold for EVERY symbol renderer, static AND animated. The
+// edge-blind MapLibre `text-variable-anchor` (re-anchors only on label↔label collision,
+// never the canvas edge) must be gone from the symbol-labels layer; each renderer must
+// instead drive a per-feature, data-driven `text-anchor` (`["get","anchor"]`) fed by the
+// SHARED clamp `assignSymbolLabelAnchors` (single source of truth — no duplicated
+// geometry). Source-scanned (not mounted) for the same reason as the parity test above:
+// MapTiler needs a real WebGL context.
+describe("symbol renderer parity: edge-aware anchors, never text-variable-anchor", () => {
+  const QUOTED_VARIABLE_ANCHOR = new RegExp(`"text` + `-variable-anchor"`);
+
+  for (const [name, path] of Object.entries(RENDERERS)) {
+    it(`${name} drives a data-driven text-anchor via the shared clamp`, () => {
+      const source = readFileSync(path, "utf-8");
+      // No edge-blind variable-anchor layout property anywhere in the renderer.
+      expect(QUOTED_VARIABLE_ANCHOR.test(source)).toBe(false);
+      // Per-feature data-driven anchor + the shared placement helper.
+      expect(/"text-anchor":\s*\["get",\s*"anchor"\]/.test(source)).toBe(true);
+      expect(/assignSymbolLabelAnchors/.test(source)).toBe(true);
+    });
+  }
+
+  // Non-vacuity: re-introducing the edge-blind variable-anchor must flip the check red.
+  it("is non-vacuous: fails when a renderer reverts to text-variable-anchor", () => {
+    const source = readFileSync(
+      RENDERERS["SymbolReveal (video, simple-reveal)"],
+      "utf-8",
+    );
+    expect(QUOTED_VARIABLE_ANCHOR.test(source)).toBe(false); // sanity: fixed source passes
+
+    const reverted = source.replace(
+      /"text-anchor":\s*\["get",\s*"anchor"\]/,
+      '"text-variable-anchor": ["left", "right", "top", "bottom"]',
+    );
+    expect(QUOTED_VARIABLE_ANCHOR.test(reverted)).toBe(true);
+  });
+});
