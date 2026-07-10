@@ -54,6 +54,9 @@ export interface ChoroplethConfig extends ChoroplethData {
   cameraMode?: CameraMode;
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
+  // Data column holding each region's display name in the deliverable language — used for
+  // the hover popup so a French map shows "Éthiopie", not the basemap's English "Ethiopia".
+  labelField?: string;
   filters?: MapFilter[];
   /** deliverable language — localizes legend numbers + "Source". Default English. */
   lang?: string;
@@ -243,6 +246,9 @@ export const ChoroplethMap: React.FC<Props> = ({
         bins: NUM_BINS,
         scaleType: config.scaleType ?? "sequential",
         palette: config.palette,
+        // Data-supplied display names (keyed by join key) so the hover popup shows the
+        // deliverable-language name (e.g. "Éthiopie"), not the basemap's English name.
+        labelField: config.labelField,
       });
 
       const coloredWorld: GeoJSON.FeatureCollection = {
@@ -255,6 +261,10 @@ export const ChoroplethMap: React.FC<Props> = ({
               ...f.properties,
               __value: joined.value,
               __hasData: joined.value !== null,
+              // Localized data label for the popup (falls back to the basemap name below).
+              ...(layout.labels?.[joined.key]
+                ? { __label: layout.labels[joined.key] }
+                : {}),
               // Write the valueField onto properties so setFilter can use ["get", valueField].
               ...(joined.value !== null
                 ? { [config.valueField]: joined.value }
@@ -360,7 +370,11 @@ export const ChoroplethMap: React.FC<Props> = ({
           }
 
           map.getCanvas().style.cursor = "pointer";
-          const name = f.properties?.name ?? f.properties?.iso_a3 ?? "—";
+          const name =
+            f.properties?.__label ??
+            f.properties?.name ??
+            f.properties?.iso_a3 ??
+            "—";
           const value = f.properties?.__value;
           const valueUnit = config.valueUnit ?? "";
           const shownValue =
