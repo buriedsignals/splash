@@ -137,6 +137,43 @@ const TALL_CANVAS_RATIO = 1.2; // height/width above this = "tall" (only 9:16 to
 const TALL_CANVAS_HEADROOM = 1.3;
 const TALL_CANVAS_BOOST_CAP = 2.5; // never more than a 2.5x plotAspect multiplier
 
+// Source-footer band reserve (static / video only).
+//
+// In the fixed (non-responsive) frame ChartFrame overlays the cited source as an
+// absolute band pinned to the BOTTOM of the canvas (ChartFrame.tsx: bottom:12*scale,
+// one line of TYPE.source text). A chart's basePad.bottom holds only its OWN x-axis
+// furniture (ticks + axis title / legend) — it has no knowledge of that footer — so
+// the x-axis TITLE, placed at `innerHeight + ~44`, i.e. absolute baseline
+// `H - pad.bottom + DY`, lands in the very same band as the source and OVERPRINTS it
+// (Bug M: "...articl" + "Taille des classes"). Reserve the footer band here, in the
+// one shared static resolver, so EVERY chart's bottom furniture floats above it —
+// the symmetric twin of the header reserve on pad.top below. Responsive/interactive
+// lays the source out in normal flow BELOW the plot, so it needs no reserve.
+//
+// The value is UNSCALED px; resolveFrame multiplies the whole basePad by `scale`, so
+// the reserve tracks the canvas (a portrait video's larger source font/inset get a
+// proportionally taller band). Composition: because everything a chart draws at the
+// bottom is measured from innerHeight, growing pad.bottom by this reserve lifts the
+// axis furniture by exactly the reserve, opening a clear band underneath for the
+// source — no per-type magic-number tuning, and it can never CREATE a bottom overlap.
+const SOURCE_FOOTER_BOTTOM_INSET = 12; // matches ChartFrame.tsx static bottom:12*scale
+const SOURCE_FOOTER_LINE_HEIGHT = 1.2; // one line of TYPE.source text
+const SOURCE_FOOTER_CLEARANCE = 8; // min visible gap: axis-title bottom → source box top
+
+/**
+ * The vertical space (UNSCALED px) the ChartFrame static source footer must own at
+ * the bottom of the frame, including a clearance gap above it. Added to basePad.bottom
+ * by resolveFrameWithHeader (static/video); resolveFrame then applies `scale`.
+ * Exported so the invariant is discoverable and testable (tests/footer-fit.test.ts).
+ */
+export function sourceFooterReserve(): number {
+  return (
+    SOURCE_FOOTER_BOTTOM_INSET +
+    TYPE.source * SOURCE_FOOTER_LINE_HEIGHT +
+    SOURCE_FOOTER_CLEARANCE
+  );
+}
+
 function boostPlotAspectForTallCanvas(
   width: number,
   height: number,
@@ -160,6 +197,13 @@ function boostPlotAspectForTallCanvas(
  * In responsive mode the title lives in normal flow above the SVG, so no
  * enforcement is needed — pass responsive=true and this function is equivalent
  * to resolveFrame with scale=1.
+ *
+ * @param reserveSourceFooter  static/video only: grow basePad.bottom by
+ *   sourceFooterReserve() so the x-axis title clears the bottom source line
+ *   (default true). Pass false for a chart that ALREADY reserves the source band
+ *   inside its own basePad.bottom (e.g. WaterfallChart, whose rotated-label
+ *   descent budget is derived from that same reservation) — reserving twice would
+ *   double-count and collapse the plot.
  */
 export function resolveFrameWithHeader(
   title: string,
@@ -170,13 +214,22 @@ export function resolveFrameWithHeader(
   scale = 1,
   plotAspect?: number,
   responsive = false,
+  reserveSourceFooter = true,
 ): ResolvedFrame {
+  // Reserve the source-footer band at the bottom (static/video only) by growing the
+  // chart's declared bottom padding before the plot is laid out — so centring and
+  // innerHeight both account for it, and the x-axis title clears the source line.
+  const staticBasePad: Pad = {
+    ...basePad,
+    bottom: basePad.bottom + (reserveSourceFooter ? sourceFooterReserve() : 0),
+  };
+
   const frame = responsive
     ? { scale: 1, pad: { ...basePad }, type: TYPE as ResolvedFrame["type"] }
     : resolveFrame(
         width,
         height,
-        basePad,
+        staticBasePad,
         scale,
         boostPlotAspectForTallCanvas(
           width,

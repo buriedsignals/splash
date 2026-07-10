@@ -68,7 +68,30 @@ Non-negotiables (why the 4 classic invisible bugs don't happen here):
 - This is a pure SVG/DOM chart (no WebGL canvas), so `preserveDrawingBuffer` and the Cesium headless
   dead-end don't apply; the still-before-mp4 and frame-purity disciplines still do.
 
-## 5. The web-build file:// trap
+## 5. Frame layout: the header and footer bands (`core/format`)
+
+The fixed (static/video) frame reserves two furniture bands so the plot never
+overprints its own chrome — both computed synchronously in `resolveFrameWithHeader`,
+no ResizeObserver, no second paint:
+
+- **Header band (top).** `padding.top` is raised to `estimateHeaderPx(title, subtitle)`
+  so a 2+ line insight title never overlaps the first data row. Locked by
+  `tests/header-fit.test.ts`.
+- **Footer band (bottom).** `ChartFrame` paints the cited source as an absolute band
+  pinned to the bottom of the canvas (`bottom: 12*scale`, one line of `TYPE.source`).
+  A chart's `basePad.bottom` sizes only its OWN x-axis furniture (ticks + axis title /
+  legend), so `resolveFrameWithHeader` grows `padding.bottom` by `sourceFooterReserve()`
+  (source inset + one line + clearance). Because everything a chart draws at the bottom
+  is measured from `innerHeight`, lifting `padding.bottom` by the reserve raises the
+  x-axis TITLE (`innerHeight + ~44`), the bottom legend and rotated tick feet by exactly
+  that amount — opening a clear band underneath for the source. This fixed **Bug M** (the
+  x-axis title overprinting the source into an unreadable smear). It never CREATES a
+  bottom overlap, so it is safe for every type; a chart that already reserves the whole
+  band inside its own `basePad.bottom` (`WaterfallChart` — its rotated-label descent
+  budget is derived from that reservation) opts out of the frame reserve so it is not
+  counted twice. Locked by `tests/footer-fit.test.ts` and the audit's `long-source` case.
+
+## 6. The web-build file:// trap
 
 Vite emits module scripts with `crossorigin`, which the browser refuses to load over `file://` (CORS).
 Two fixes used: the **interactive** build inlines everything via `vite-plugin-singlefile` (one HTML file,

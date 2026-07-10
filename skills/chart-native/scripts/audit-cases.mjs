@@ -52,6 +52,18 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 
 // per-type stress transforms; each returns extra cases for a given sample
 const STRESS = {
+  scatter: (s) => {
+    // a LONG source line that reaches the centred x-axis title — the live-DOM net
+    // for Bug M (the source line overprinting the x-axis title at the bottom). With
+    // the short sample source the two never met horizontally; a full-width source
+    // does, so this locks the vertical-band separation at the fixed-840 viewport.
+    const longSource = clone(s);
+    longSource.source = {
+      name: "Figures reported across the investigation into municipal library funding",
+      url: s.source?.url ?? "",
+    };
+    return [["long-source", longSource]];
+  },
   bar: (s) => {
     const long = clone(s);
     long.title = "A considerably longer headline that should wrap across several lines on a narrow phone screen without breaking";
