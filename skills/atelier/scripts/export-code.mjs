@@ -23,9 +23,24 @@ import {
   mkdirSync,
   copyFileSync,
   writeFileSync,
+  existsSync,
 } from "node:fs";
-import { join, basename, extname, resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+import { dirname, join, basename, extname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { assertShippable, assertDelivered } from "../src/export-guard.ts";
+
+// The chart-native source-bundle generator — form 1 ("Code source") for chart-native is a
+// self-contained, runnable Vite project (bun install && bun run build), NOT the built-files
+// folder. Resolved relative to this script so it works regardless of cwd.
+const EXPORT_SOURCE_SCRIPT = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "chart-native",
+  "scripts",
+  "export-source.mjs",
+);
 
 // Splits argv into positionals and `--flag value` pairs, so the required --results/--id
 // flags can sit alongside the existing positional args in any order.
@@ -191,4 +206,127 @@ if (import.meta.main) {
     "EXPORT_CODE_RESULT " +
       JSON.stringify({ exportDir, interactive, staticFile, artifacts }),
   );
+
+  // The THREE-FORM delivery PROPOSAL — the artifacts above always exist on disk; the
+  // journalist picks ONE form and the delivery is shaped to it (SKILL.md EXPORT §6). This
+  // is emitted as a FIXED, machine-relayable block so the orchestrator relays THIS message
+  // verbatim instead of re-deriving the rule from memory — the failure mode being fixed is
+  // the orchestrator collapsing the whole step to a bare "Livré." with nothing handed over.
+  //   A — Code source: for a chart-native producer, a SELF-CONTAINED runnable Vite source
+  //       bundle (bun install && bun run build → the interactive), assembled by
+  //       chart-native/scripts/export-source.mjs from the config.json + native-source.json the
+  //       producer dropped in outDir. For map-native/scrolly there is no React source to
+  //       rebuild → the built-files folder. For a hosted DW producer there is NO React source
+  //       (it is a Datawrapper embed) → the built-files folder + the live DW link, labelled
+  //       honestly.
+  //   B — HTML autonome: the single self-contained file — the JS-inlined interactive.html /
+  //       scrolly.html; for a hosted DW producer (no local html) the only standalone file is
+  //       the no-JS static.html (the DW image inlined), so that is form B there.
+  //   C — Embed (hosted): the deploy-embed command for a file-based producer, or the
+  //       already-live publicUrl for a hosted DW producer (no deploy step).
+  const absExportDir = resolve(exportDir);
+  // Form B — the single "HTML autonome" file the journalist can drop anywhere.
+  const standalone = interactive ?? staticFile;
+
+  // Form A — assemble the chart-native React source bundle when the producer left the
+  // inputs (config.json + native-source.json) in outDir. Any failure falls back to the
+  // built-files folder so the delivery still ships (the -export folder is a valid hand-over).
+  const nativeManifest = join(outDir, "native-source.json");
+  const nativeConfig = join(outDir, "config.json");
+  let formA = null;
+  if (
+    !isHostedEmbed &&
+    interactive &&
+    existsSync(nativeManifest) &&
+    existsSync(nativeConfig)
+  ) {
+    let bundleType = null;
+    try {
+      bundleType = JSON.parse(readFileSync(nativeManifest, "utf8")).type ?? null;
+    } catch {
+      bundleType = null;
+    }
+    if (bundleType) {
+      const bundleDir = join(absExportDir, `${id}-source`);
+      try {
+        execFileSync(
+          "bun",
+          [EXPORT_SOURCE_SCRIPT, bundleType, nativeConfig, bundleDir],
+          { stdio: "inherit" },
+        );
+        formA = {
+          label: "Code source (bundle React)",
+          kind: "react-source-bundle",
+          path: bundleDir,
+        };
+      } catch (e) {
+        console.error(
+          `[export-code] source-bundle generation failed (${e.message}); form 1 falls back to the built-files folder.`,
+        );
+      }
+    }
+  }
+  if (!formA) {
+    formA = isHostedEmbed
+      ? {
+          label: "Code source (Datawrapper — pas de source React)",
+          kind: "built-files-folder",
+          path: absExportDir,
+          note: `Datawrapper — pas de source React à rebuilder ; voici les fichiers (${absExportDir}) + le lien : ${hostedUrl}`,
+        }
+      : {
+          label: "Code source (fichiers construits)",
+          kind: "built-files-folder",
+          path: absExportDir,
+        };
+  }
+  const forms3 = { a: formA };
+  if (standalone)
+    forms3.b = { label: "HTML autonome", path: join(absExportDir, standalone) };
+  if (isHostedEmbed)
+    forms3.c = { label: "Embed (hébergé)", url: hostedUrl };
+  else if (interactive)
+    forms3.c = {
+      label: "Embed (hébergé)",
+      command: `bun skills/atelier/scripts/deploy-embed.mjs ${join(absExportDir, interactive)} ${id} --results ${resolve(resultsPath)} --id ${id}`,
+    };
+  console.log(
+    "EXPORT_FORMS_JSON " +
+      JSON.stringify({
+        proposalId: id,
+        scrolly: isScrolly,
+        hosted: isHostedEmbed,
+        exportDir: absExportDir,
+        forms: forms3,
+      }),
+  );
+
+  // A clean, human-readable relay block (same content) — the orchestrator prints it verbatim
+  // and asks the journalist which form (a / b / c) they want. This is the un-skippable gate.
+  const relayFormA =
+    formA.kind === "react-source-bundle"
+      ? `  a) Code source — projet React autonome à rebuilder/personnaliser (bun install && bun run build) : ${formA.path}`
+      : formA.note
+        ? `  a) Code source — ${formA.note}`
+        : `  a) Code source — le dossier complet des fichiers construits à héberger vous-même : ${formA.path}`;
+  const relay = [
+    "EXPORT_FORMS_PROPOSAL",
+    "Le visuel est produit. Choisissez la forme de livraison :",
+    relayFormA,
+  ];
+  if (forms3.b)
+    relay.push(
+      `  b) HTML autonome — un seul fichier autonome à déposer n'importe où : ${forms3.b.path}`,
+    );
+  if (forms3.c)
+    relay.push(
+      forms3.c.url
+        ? `  c) Embed (hébergé) — lien déjà en ligne, réutilisable partout : ${forms3.c.url}`
+        : `  c) Embed (hébergé) — publier pour obtenir un lien à réutiliser : ${forms3.c.command}`,
+    );
+  relay.push(
+    `Quelle forme souhaitez-vous ? (${Object.keys(forms3).join(" / ")})`,
+    "END_EXPORT_FORMS_PROPOSAL",
+  );
+  console.log(relay.join("\n"));
 }

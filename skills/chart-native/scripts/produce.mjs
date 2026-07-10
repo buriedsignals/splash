@@ -128,6 +128,16 @@ let brandConcerns = [];
 }
 
 mkdirSync(outDir, { recursive: true });
+// Drop the exact rendered config + the native render-id next to the outputs, so EXPORT
+// (form 1 — "Code source") can assemble a self-contained, runnable Vite source bundle
+// from them (skills/chart-native/scripts/export-source.mjs) without re-deriving anything.
+// Both are .json, ignored by export-code's artifact glob (.html/.png/.jpg/.mp4) and by
+// assert-selfcontained — they never leak into the interactive/static/video outputs.
+copyFileSync(configPath, join(outDir, "config.json"));
+writeFileSync(
+  join(outDir, "native-source.json"),
+  JSON.stringify({ type }, null, 2) + "\n",
+);
 // Record the brand render-review concerns next to the outputs so the render gate /
 // the journalist see the surfaced a11y tradeoff (they are never silently dropped).
 if (brandConcerns.length > 0) {
