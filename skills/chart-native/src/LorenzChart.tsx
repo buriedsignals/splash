@@ -78,10 +78,19 @@ export function LorenzChart({
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 18,
-    bottom: 64 + legendRows * LEG_ROW, // x ticks + caption + legend rows + source clearance
+    bottom: 48 + legendRows * LEG_ROW, // x ticks + caption + legend rows (source band reserved in resolveFrameWithHeader)
     left: 52, // y axis + label
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.78, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.78,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

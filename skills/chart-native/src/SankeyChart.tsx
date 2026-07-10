@@ -112,7 +112,7 @@ export function SankeyChart({
   const basePad = {
     top: responsive ? 28 : 50 + titleLines * 27, // headroom for middle labels
     right: rightGutter,
-    bottom: 30, // clear the source line below the bottom node label
+    bottom: 14, // bottom node label (source band reserved in resolveFrameWithHeader)
     left: leftGutter,
   };
   const frame = resolveFrameWithHeader(

@@ -68,7 +68,7 @@ export function StackedAreaChart({
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: 116, // right-edge band labels (name + value)
-    bottom: 52, // year axis, clear of the source line below
+    bottom: 32, // year axis (source band reserved in resolveFrameWithHeader)
     left: 44, // % axis
   };
   const frame = resolveFrameWithHeader(

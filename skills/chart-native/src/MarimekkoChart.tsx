@@ -91,10 +91,19 @@ export function MarimekkoChart({
   const basePad = {
     top: (responsive ? 16 : 53 + titleLines * 27) + colBand,
     right: 16,
-    bottom: 70, // legend (≈32 below the plot) + clearance for the source line
+    bottom: 62, // legend (≈32 below the plot, up to 2 rows) — source band reserved in resolveFrameWithHeader
     left: 16,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

@@ -70,10 +70,19 @@ export function FanChart({
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 16,
-    bottom: 52, // x captions, clear of the source line
+    bottom: 28, // x captions (source band reserved in resolveFrameWithHeader)
     left: 48, // value-axis labels (abbreviated)
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.6, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.6,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

@@ -76,7 +76,7 @@ export function WaffleChart({
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 18,
-    bottom: 22 + legendRows * LEG_ROW + 18, // legend rows + source clearance
+    bottom: 22 + legendRows * LEG_ROW, // legend rows (source band reserved in resolveFrameWithHeader)
     left: 18,
   };
   const frame = resolveFrameWithHeader(

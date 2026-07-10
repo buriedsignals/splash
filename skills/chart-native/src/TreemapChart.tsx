@@ -87,7 +87,7 @@ export function TreemapChart({
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 12,
-    bottom: 12 + (hasLegend ? 46 : 0), // legend band, clear of the source line
+    bottom: hasLegend ? 46 : 0, // legend band (source band reserved in resolveFrameWithHeader)
     left: 12,
   };
   const frame = resolveFrameWithHeader(

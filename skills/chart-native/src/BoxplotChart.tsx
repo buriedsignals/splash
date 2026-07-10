@@ -70,10 +70,19 @@ export function BoxplotChart({
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: 20,
-    bottom: 48, // value-axis tick labels, clear of the source line
+    bottom: 28, // value-axis tick labels (source band reserved in resolveFrameWithHeader)
     left: 120, // category labels in the gutter
   };
-  const frame = resolveFrameWithHeader(config.title, config.valueLabel, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.valueLabel,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

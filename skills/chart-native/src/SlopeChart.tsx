@@ -77,7 +77,7 @@ export function SlopeChart({
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: 86, // right value labels
-    bottom: 56, // period captions, clear of the source line below
+    bottom: 32, // period captions (source band reserved in resolveFrameWithHeader)
     left: 138, // category name + left value labels
   };
   const frame = resolveFrameWithHeader(

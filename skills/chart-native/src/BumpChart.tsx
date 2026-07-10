@@ -83,7 +83,7 @@ export function BumpChart({
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: rightGutter,
-    bottom: 52, // period captions, clear of the source line
+    bottom: 30, // period captions (source band reserved in resolveFrameWithHeader)
     left: 26, // rank numbers
   };
   const frame = resolveFrameWithHeader(

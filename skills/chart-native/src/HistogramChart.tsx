@@ -68,7 +68,7 @@ export function HistogramChart({
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: 18,
-    bottom: 56, // bin-edge axis, clear of the source line below
+    bottom: 30, // bin-edge axis (source band reserved in resolveFrameWithHeader)
     left: 40, // count axis
   };
   const frame = resolveFrameWithHeader(

@@ -84,8 +84,8 @@ export function GroupedBarChart({
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: sideRight,
-    // category labels + legend rows + clearance for the source line below
-    bottom: 44 + legendRows * legendRowUnscaled + 24,
+    // category labels + legend rows (source band reserved in resolveFrameWithHeader)
+    bottom: 44 + legendRows * legendRowUnscaled,
     left: leftAxis,
   };
   const frame = resolveFrameWithHeader(

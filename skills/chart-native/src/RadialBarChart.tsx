@@ -71,10 +71,19 @@ export function RadialBarChart({
   const basePad = {
     top: responsive ? 16 : 50 + titleLines * 27,
     right: 16,
-    bottom: 28, // source clearance
+    bottom: 16, // rim label margin (source band reserved in resolveFrameWithHeader)
     left: 16,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
