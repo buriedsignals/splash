@@ -143,6 +143,10 @@ export function WaterfallChart({
     scale,
     undefined,
     responsive,
+    // Waterfall already reserves the source band inside basePad.bottom
+    // (ROTATED_SOURCE_CLEARANCE), and derives its rotated-label descent budget from
+    // that reservation — opt out of the frame's reserve so it is not counted twice.
+    false,
   );
   const padding = frame.pad;
   const ts = frame.type;

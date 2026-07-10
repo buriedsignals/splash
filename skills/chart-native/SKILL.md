@@ -69,6 +69,16 @@ For each new FT type, in order:
    - A legend BELOW the plot wraps on a phone — reserve its bottom band by row count with
      `core/legend` `legendRowCount(labels, availWidth, charW, rowH)` BEFORE fixing padding, and keep
      the band clear of the source line. (Shared mechanism — don't re-derive it per type.)
+   - **Bottom-band invariant (the source footer is reserved FOR you).** In static/video the
+     cited source is an absolute band pinned to the bottom of the canvas (`ChartFrame`). A chart's
+     `basePad.bottom` sizes only its OWN x-axis furniture, so `resolveFrameWithHeader` grows
+     `padding.bottom` by `format.sourceFooterReserve()` — the x-axis TITLE (at `innerHeight + ~44`),
+     a bottom legend, and rotated tick feet then float ABOVE the source instead of overprinting it
+     (Bug M). This is the symmetric twin of the header reserve on `padding.top`. Do NOT bake source
+     clearance into a type's `basePad.bottom`; a chart that self-manages the whole band
+     (`WaterfallChart`, whose rotated-label descent budget derives from its own reservation) opts
+     out via the last `resolveFrameWithHeader` arg. Locked by `tests/footer-fit.test.ts` and the
+     audit's scatter `long-source` case.
    - Reveal grammar: nothing is drawn at progress 0; marks fade in from nothing and land at the right
      moment (the head/dots appear and disappear with the draw, not before or after). The audit
      ENFORCES this — it rasterises the plot at progress 0 (honouring clip/opacity/size) and requires
