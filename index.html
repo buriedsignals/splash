@@ -195,6 +195,9 @@
   .chapter-head h2 em { font-style: italic; }
   .dark .chapter-head .grot-tag { color: rgba(245, 242, 237, 0.5); }
 
+  .fade-dark { height: 30svh; background: linear-gradient(var(--paper), var(--dark)); }
+  .fade-paper { height: 28svh; background: linear-gradient(var(--dark), var(--paper)); }
+
   /* ---------------- scrolly scaffolding ---------------- */
   .scrolly { position: relative; }
   .stage {
@@ -361,7 +364,7 @@
   .bo-row .bflag { font-size: 14.5px; line-height: 1; }
 
   /* ---------------- coda ---------------- */
-  .coda { background: var(--paper-deep); border-top: 1px solid var(--rule-soft); padding: 90px 24px 100px; text-align: center; }
+  .coda { background: var(--paper); padding: 70px 24px 110px; text-align: center; }
   .coda h2 { font-family: var(--serif); font-weight: 560; font-size: clamp(28px, 4.2vw, 44px); letter-spacing: -0.01em; }
   .coda h2 em { font-style: italic; }
   .flowline {
@@ -468,7 +471,7 @@
 <!-- ============ CHAPTER I — chart scrolly ============ -->
 <section class="ch-chart">
   <div class="chapter-head">
-    <p class="grot-tag">Chapter I · A chart story, told by scrolling</p>
+    <p class="grot-tag">A chart story, told by scrolling</p>
     <h2>The case for going visual, <em>in three figures</em></h2>
   </div>
   <div class="scrolly" id="chartScrolly">
@@ -507,8 +510,8 @@
       <div class="step" data-step="3"><div class="card">
         <span class="grot-tag">04 · The turn</span>
         <h3>Splash is that desk, <em>as an open skill pack</em>.</h3>
-        <p>Four formats, one pipeline, driven by the AI your newsroom already pays for — and it
-        ships as open source, ready for any CMS.</p>
+        <p>Four formats, one pipeline, driven by the AI your newsroom already pays for — open
+        source, ready for any CMS. And this figure is <em>live</em>: run your cursor over the map.</p>
       </div></div>
     </div>
   </div>
@@ -516,10 +519,7 @@
 
 <!-- ============ CHAPTER II — map scrolly (dark) ============ -->
 <section class="dark ch-map">
-  <div class="chapter-head">
-    <p class="grot-tag">Chapter II · A map story, told by scrolling</p>
-    <h2>Every investigation <em>happens somewhere</em></h2>
-  </div>
+  <div class="fade-dark" aria-hidden="true"></div>
   <div class="scrolly" id="mapScrolly">
     <div class="stage">
       <canvas id="mapstage" aria-label="Scroll-driven map of South Asia"></canvas>
@@ -597,12 +597,13 @@
       </div></div>
     </div>
   </div>
+  <div class="fade-paper" aria-hidden="true"></div>
 </section>
 
 <!-- ============ CHAPTER IV — the shelf ============ -->
 <section class="shelf" id="shelf">
   <div class="chapter-head" style="padding-bottom: 0;">
-    <p class="grot-tag">Chapter III · The shelf</p>
+    <p class="grot-tag">The shelf</p>
     <h2>Six ways to <em>make a splash</em></h2>
   </div>
   <div class="shelf-grid">
@@ -841,9 +842,8 @@
     var view = fitCanvas(cv);
     window.addEventListener("resize", function () { view = fitCanvas(cv); });
 
-    var SRC = ["Pew Research Center, 2024", "The New York Times, 2012", "", "Splash — four formats, one pipeline"];
+    var SRC = ["Pew Research Center, 2024", "The New York Times, 2012", "", "Splash — this figure is interactive"];
     var ROLES = ["Journalist", "Data scientist", "Designer", "Developer", "Motion designer", "Cartographer"];
-    var FORMATS = [["Scrolly map", "#1E7FB8"], ["Chart story", "#D4A853"], ["Interactive", "#5B8A8A"], ["Video", "#C74A2E"]];
 
     function grotesk(px, w) { return (w || 500) + " " + px + "px 'Space Grotesk', sans-serif"; }
     function serif(px, w) { return (w || 550) + " " + px + "px 'Fraunces', serif"; }
@@ -933,30 +933,75 @@
       ctx.restore();
     }
 
-    function drawFormats(ctx, w, h, lp, alpha) {
-      ctx.save(); ctx.globalAlpha = alpha;
+    // interactive light-theme map (hover to explore) — the fourth figure
+    var ICAM = { x: 88.6, y: 25.8, s: 54 };
+    var TRIOL = { China: "#D4A853", India: "#5B8A8A", Bangladesh: "#C07B57" };
+    var imouse = null, ihover = null, interactiveNow = false;
+    cv.addEventListener("pointermove", function (e) {
+      var r = cv.getBoundingClientRect();
+      imouse = [e.clientX - r.left, e.clientY - r.top];
+    });
+    cv.addEventListener("pointerleave", function () { imouse = null; ihover = null; });
+    function iproj(lon, lat, w, hh) {
+      var k = w / ICAM.s;
+      return [w / 2 + (lon - ICAM.x) * k, hh / 2 - (lat - ICAM.y) * k * 1.16];
+    }
+    function ipointIn(ring, pt, w, hh) {
+      var inside = false;
+      for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        var a = iproj(ring[i][0], ring[i][1], w, hh), b = iproj(ring[j][0], ring[j][1], w, hh);
+        if (((a[1] > pt[1]) !== (b[1] > pt[1])) && (pt[0] < (b[0] - a[0]) * (pt[1] - a[1]) / (b[1] - a[1]) + a[0])) inside = !inside;
+      }
+      return inside;
+    }
+    function drawInteractive(ctx, w, h, lp, alpha) {
+      ctx.save(); ctx.globalAlpha = alpha * easeO(clamp01(lp * 1.6));
       ctx.textAlign = "center";
       ctx.font = grotesk(12, 500); ctx.fillStyle = "#8A929A";
-      ctx.fillText("What the skill pack ships", w / 2, h * 0.13);
-      var cw = w * 0.36, chh = h * 0.26, gx = w * 0.05, gy = h * 0.07;
-      var x0 = (w - 2 * cw - gx) / 2, y0 = h * 0.22;
-      FORMATS.forEach(function (fm, i) {
-        var e = easeO(clamp01(lp * 4.4 - i * 0.6));
-        var cxx = x0 + (i % 2) * (cw + gx), cyy = y0 + Math.floor(i / 2) * (chh + gy) + (1 - e) * 26;
-        ctx.globalAlpha = alpha * e;
-        ctx.fillStyle = "#FCFAF3"; ctx.strokeStyle = fm[1]; ctx.lineWidth = 2;
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(cxx, cyy, cw, chh, 12); else ctx.rect(cxx, cyy, cw, chh);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = fm[1];
-        ctx.beginPath(); ctx.arc(cxx + cw / 2, cyy + chh * 0.38, 9, 0, 7); ctx.fill();
-        ctx.fillStyle = "#1C2126"; ctx.font = grotesk(14.5, 700);
-        ctx.fillText(fm[0], cxx + cw / 2, cyy + chh * 0.74);
+      ctx.fillText("The Brahmaputra basin — hover the countries", w / 2, h * 0.1);
+      ihover = null;
+      Object.keys(DATA.countries).forEach(function (nm) {
+        var hovered = false;
+        if (imouse) {
+          for (var r = 0; r < DATA.countries[nm].length; r++) {
+            if (ipointIn(DATA.countries[nm][r], imouse, w, h)) { hovered = true; break; }
+          }
+          if (hovered) ihover = nm;
+        }
+        DATA.countries[nm].forEach(function (ring) {
+          ctx.beginPath();
+          for (var i = 0; i < ring.length; i++) {
+            var pp = iproj(ring[i][0], ring[i][1], w, h);
+            if (i === 0) ctx.moveTo(pp[0], pp[1]); else ctx.lineTo(pp[0], pp[1]);
+          }
+          ctx.closePath();
+          var base = TRIOL[nm];
+          ctx.fillStyle = base
+            ? base + (hovered ? "B3" : "59")
+            : (hovered ? "rgba(28,33,38,0.16)" : "rgba(28,33,38,0.06)");
+          ctx.fill();
+          ctx.strokeStyle = hovered ? "#1C2126" : "rgba(28,33,38,0.3)";
+          ctx.lineWidth = hovered ? 1.6 : 0.9;
+          ctx.stroke();
+        });
       });
+      cv.style.cursor = interactiveNow && ihover ? "crosshair" : "default";
+      if (ihover && imouse) {
+        ctx.font = grotesk(11.5, 700);
+        var label = ihover.toUpperCase();
+        var tw = ctx.measureText(label).width + 22;
+        var tx = Math.min(w - tw / 2 - 6, Math.max(tw / 2 + 6, imouse[0])), ty = Math.max(30, imouse[1] - 18);
+        ctx.fillStyle = "#1C2126";
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(tx - tw / 2, ty - 13, tw, 22, 7); else ctx.rect(tx - tw / 2, ty - 13, tw, 22);
+        ctx.fill();
+        ctx.fillStyle = "#F5F0E6";
+        ctx.fillText(label, tx, ty + 3);
+      }
       ctx.restore();
     }
 
-    var DRAW = [drawBars, drawSnowfall, drawRoles, drawFormats];
+    var DRAW = [drawBars, drawSnowfall, drawRoles, drawInteractive];
     var lastSrc = -1;
 
     scrolly("chartScrolly", function (f, active, n) {
@@ -968,7 +1013,7 @@
       var frac = pos - i; // -0.5 .. 0.5 around the focused step
       var lp = clamp01(0.5 + frac + 0.5); // local progress builds as the step approaches centre and passes
       lp = clamp01((pos - (i - 0.6)) / 1.0);
-      var fadeOut = 1, fadeIn = 0;
+      interactiveNow = i === 3;
       DRAW[i](ctx, w, h, lp, 1);
       if (srcEl && lastSrc !== i) { lastSrc = i; srcEl.textContent = SRC[i]; srcEl.style.opacity = SRC[i] ? 1 : 0; }
     });
