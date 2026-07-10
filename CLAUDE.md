@@ -554,3 +554,11 @@ Mergé/committé dans `main` (`f1c8cd1`), gate 16/16, vérifié au vrai produce.
 **Reste du cluster = flow, pas mécaniquement fixable proprement** : la vraie source du persona tombait en prose (suggest-article ne l'a pas extraite / Gate 2c pas suivi) — c'est la faiblesse récurrente de capture source (contrat social au déploiement). Le no-re-route-dw devient moot (le produce réussit).
 
 **★ ÉTAT — main `f1c8cd1`, gate 16/16.** Bugs restants majeurs traités. Queué : producer over-produce social (`interactive.html` buildé pour social) · popup choroplèthe nom-anglais basemap · capture source (flow) · release MIT · scinder CLAUDE.md.
+
+## ★ Popup choroplèthe localisé (nom data, pas basemap anglais) + décision honnête sur l'over-produce — 2026-07-09
+
+Mergé/committé dans `main` (`9a5abd5`), gate 16/16. **Popup choroplèthe** : le hover montrait `f.properties.name` = nom **basemap anglais** (« Ethiopia ») même en livrable FR. Fix : `config.labelField` threadé dans le `computeChoropleth` de `ChoroplethMap` (peuple `layout.labels`), `__label` localisé écrit sur chaque feature, préféré dans le popup (fallback nom basemap). **Vérifié par moi au Playwright hover** : « Éthiopie — 51% », « Soudan du Sud — 8% », « Ouganda — 45% » (était Ethiopia/S. Sudan/Uganda). (Champ `labelField?` ajouté au type `ChoroplethConfig`.)
+
+**Over-produce (interactive.html buildé pour canal social) — DÉFÉRÉ honnêtement (pas droppé)** : le livré est **déjà correct** (l'export exclut l'interactif pour social — c'est un byproduct du outDir de produce, temps de build gaspillé seulement). Le fix propre (gater le build interactif + ses ~4 snaps interactifs par canal, sans casser article-web/static/vidéo) est un **refacto multi-branches** qui mérite sa passe dédiée avec régression complète — pas un changement à la va-vite en fin de session énorme. Faible sévérité, risque réel → passe dédiée.
+
+**★ ÉTAT — main `9a5abd5`, gate 16/16.** Restants : over-produce social (refacto dédié) · capture source (flow) · release MIT · scinder CLAUDE.md.
