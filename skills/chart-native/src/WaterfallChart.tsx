@@ -18,7 +18,13 @@ import {
   type WaterfallData,
   type WaterfallLayout,
 } from "./waterfall-geometry";
-import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
+import {
+  formatNumber,
+  clamp01,
+  easeOutCubic,
+  labelReveal,
+  stagger,
+} from "./core/math";
 import { COLORS, FONT, TYPE, WATERFALL_ROLE_COLORS } from "./core/tokens";
 import {
   truncate,
@@ -302,11 +308,23 @@ function WaterfallSvg({
           const g = growWaterfallBar(b, barP(i), 2.5 * sc);
           const fill = barColor(b);
           const grown = barP(i);
-          const labelOp = clamp01((grown - 0.6) / 0.4);
+          // waterfall.md rule 4 — EVERY step carries its value label at EVERY frame.
+          // It fades in early with the bar (shared `labelReveal` knob) and rides the
+          // bar's ANIMATED top so it sits just above the growing edge, never floating
+          // detached above a stub. The old gate (grown-0.6)/0.4 hid the last-staggered
+          // steps' labels mid-build. `animTop` converges to the true top at p=1, so the
+          // static/hold render is byte-identical.
+          const labelOp = labelReveal(grown);
           const catOp = clamp01(grown * 1.5);
           const focused = interactive && hover === i;
           const dim = interactive && hover !== null && !focused;
+          // final top — drives the vertical/horizontal label DECISION (progress-independent)
           const topY = Math.min(b.startY, b.endY);
+          // animated top — the label rides this (= topY at p=1)
+          const animTop = Math.min(
+            b.startY,
+            b.startY + (b.endY - b.startY) * grown,
+          );
           // a vertical above-bar label (kept vertical so narrow neighbouring bars
           // don't collide horizontally) only fits if there is enough room ABOVE
           // the bar top to clear the frame/title; otherwise fall back to the
@@ -359,9 +377,9 @@ function WaterfallSvg({
                   3.87:1, below 4.5:1). */}
               {labelVertical ? (
                 <text
-                  transform={`rotate(-90 ${b.x + b.w / 2} ${topY - 6 * sc})`}
+                  transform={`rotate(-90 ${b.x + b.w / 2} ${animTop - 6 * sc})`}
                   x={b.x + b.w / 2}
-                  y={topY - 6 * sc}
+                  y={animTop - 6 * sc}
                   textAnchor="start"
                   fontSize={ts.axis * 0.9}
                   fontWeight={700}
@@ -373,7 +391,7 @@ function WaterfallSvg({
               ) : (
                 <text
                   x={b.x + b.w / 2}
-                  y={topY - 6 * sc}
+                  y={animTop - 6 * sc}
                   textAnchor="middle"
                   fontSize={ts.axis}
                   fontWeight={700}

@@ -18,7 +18,7 @@ import {
   type DumbbellData,
   type DumbbellLayout,
 } from "./dumbbell-geometry";
-import { clamp01, easeOutCubic, stagger } from "./core/math";
+import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
 import { COLORS, TYPE, DUMBBELL_DOT_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -233,13 +233,19 @@ function DumbbellSvg({
         {rows.map((r) => {
           const rp = rowP(r.index);
           const leftOp = clamp01(rp / 0.18);
-          const labelOp = clamp01((rp - 0.6) / 0.4);
+          // dumbbell.md rule 4 — BOTH endpoints carry a value label at EVERY frame.
+          // They fade in early with the row (shared `labelReveal` knob) and ride the
+          // two ANIMATED dot ends so they stay anchored to visible geometry through the
+          // reveal. The old gate (rp-0.6)/0.4 hid the last-staggered rows' labels (and
+          // second dot) mid-build. At p=1 endX === r.xRight, so minSide/maxSide are the
+          // final dot extremes (byte-identical).
+          const labelOp = labelReveal(rp);
           const endX = extendConnector(r, rp);
           const focused = interactive && hover === r.index;
           const dim = interactive && hover !== null && !focused;
-          // outer placement: value label sits on the far side of each dot.
-          const minX = Math.min(r.xLeft, r.xRight);
-          const maxX = Math.max(r.xLeft, r.xRight);
+          // outer placement: value label sits on the far side of each (animated) dot.
+          const minSide = Math.min(r.xLeft, endX);
+          const maxSide = Math.max(r.xLeft, endX);
           const leftIsMin = r.xLeft <= r.xRight;
           return (
             <g
@@ -290,39 +296,43 @@ function DumbbellSvg({
                 fill={LEFT_COLOR}
                 opacity={leftOp}
               />
-              {/* second dot (right field) + value labels, land as the gap opens */}
-              <g opacity={labelOp}>
-                <circle
-                  className="dumbbell-dot"
-                  cx={r.xRight}
-                  cy={r.y}
-                  r={dot(1)}
-                  fill={RIGHT_COLOR}
-                />
-                {/* outer value labels in ink; the dots + legend carry the series colour */}
-                <text
-                  x={minX - 9 * sc}
-                  y={r.y}
-                  dy="0.32em"
-                  textAnchor="end"
-                  fontSize={ts.axis}
-                  fontWeight={600}
-                  fill={COLORS.ink}
-                >
-                  {fmt(leftIsMin ? r.leftVal : r.rightVal)}
-                </text>
-                <text
-                  x={maxX + 9 * sc}
-                  y={r.y}
-                  dy="0.32em"
-                  textAnchor="start"
-                  fontSize={ts.axis}
-                  fontWeight={600}
-                  fill={COLORS.ink}
-                >
-                  {fmt(leftIsMin ? r.rightVal : r.leftVal)}
-                </text>
-              </g>
+              {/* second dot (right field) rides the connector head; both value labels
+                  ride the two animated dot ends. Each carries its own reveal opacity
+                  (fades in early with the row) — so the reveal is per-element, like the
+                  rest of the bar family, and the gap "opens up" with its values in view. */}
+              <circle
+                className="dumbbell-dot"
+                cx={endX}
+                cy={r.y}
+                r={dot(1)}
+                fill={RIGHT_COLOR}
+                opacity={labelOp}
+              />
+              {/* outer value labels in ink; the dots + legend carry the series colour */}
+              <text
+                x={minSide - 9 * sc}
+                y={r.y}
+                dy="0.32em"
+                textAnchor="end"
+                fontSize={ts.axis}
+                fontWeight={600}
+                fill={COLORS.ink}
+                opacity={labelOp}
+              >
+                {fmt(leftIsMin ? r.leftVal : r.rightVal)}
+              </text>
+              <text
+                x={maxSide + 9 * sc}
+                y={r.y}
+                dy="0.32em"
+                textAnchor="start"
+                fontSize={ts.axis}
+                fontWeight={600}
+                fill={COLORS.ink}
+                opacity={labelOp}
+              >
+                {fmt(leftIsMin ? r.rightVal : r.leftVal)}
+              </text>
             </g>
           );
         })}

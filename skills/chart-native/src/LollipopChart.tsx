@@ -17,7 +17,7 @@ import {
   type LollipopData,
   type LollipopLayout,
 } from "./lollipop-geometry";
-import { clamp01, easeOutCubic, stagger } from "./core/math";
+import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -215,7 +215,13 @@ function LollipopSvg({
           const endX = growStem(r, rp);
           const hi = isHi(r);
           const color = hi ? ACCENT : BASE;
-          const labelOp = clamp01((rp - 0.6) / 0.4);
+          // lollipop.md rule 4 — EVERY dot carries its value label at EVERY frame. It
+          // fades in early with the stem (shared `labelReveal` knob) and rides the
+          // stem's ANIMATED head `endX` (right of the dot, always outside) so it never
+          // floats detached at the final dot while the stem is still short. The old
+          // gate (rp-0.6)/0.4 hid the last-staggered rows' labels mid-build. At p=1
+          // endX === r.dotX (byte-identical).
+          const labelOp = labelReveal(rp);
           const catOp = clamp01(rp * 1.4);
           // the dot pops in as the stem lands — invisible at the start (otherwise
           // every dot sits visible on the baseline before its row animates).
@@ -273,9 +279,9 @@ function LollipopSvg({
                 fill={color}
                 opacity={dotOp}
               />
-              {/* value label at the dot */}
+              {/* value label at the dot — rides the stem's animated head */}
               <text
-                x={r.dotX + dotR + 6 * sc}
+                x={endX + dotR + 6 * sc}
                 y={r.y}
                 dy="0.32em"
                 textAnchor="start"

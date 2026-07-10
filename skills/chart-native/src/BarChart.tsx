@@ -19,7 +19,13 @@ import {
   type Sort,
   type BarLayout,
 } from "./bar-geometry";
-import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
+import {
+  formatNumber,
+  clamp01,
+  easeOutCubic,
+  labelReveal,
+  stagger,
+} from "./core/math";
 import type { Lang } from "./core/locale";
 import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
@@ -266,8 +272,9 @@ function BarSvg({
           // the bar is meaningfully present (~15% grown). The old gate (grown-0.65)/0.35
           // hid the last-staggered smallest bars' labels until ~97% growth, so a mid-
           // build video still (frame 140/240 ≈ progress 0.64) shipped the two smallest
-          // bars label-less. Full opacity at progress 1 is unchanged.
-          const labelOp = clamp01(grown / 0.15);
+          // bars label-less. Full opacity at progress 1 is unchanged. The ramp is the
+          // shared bar-family knob (core/math `labelReveal`) so every type inherits it.
+          const labelOp = labelReveal(grown);
           const catOp = clamp01(grown * 1.6);
           // category label position (always at the bar's band centre)
           const cat = horizontal

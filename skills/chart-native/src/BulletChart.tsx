@@ -17,7 +17,7 @@ import {
   type BulletData,
   type BulletLayout,
 } from "./bullet-geometry";
-import { clamp01, easeOutCubic, stagger } from "./core/math";
+import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, BULLET_MEASURE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -191,7 +191,12 @@ function BulletSvg({
           const rp = rowP(i);
           const mEnd = growMeasure(r, rp);
           const color = r.hitTarget ? HIT : MISS;
-          const labelOp = clamp01((rp - 0.6) / 0.4);
+          // bullet.md — EVERY measure carries its value label at EVERY frame. It fades
+          // in early with the measure (shared `labelReveal` knob) and rides the bar's
+          // ANIMATED end `mEnd` (just beyond, always outside → never clipped) so it is
+          // present on the last-staggered rows in a mid-build still. The old gate
+          // (rp-0.6)/0.4 hid them. At p=1 mEnd === r.valueX (byte-identical).
+          const labelOp = labelReveal(rp);
           const focused = interactive && hover === i;
           const dim = interactive && hover !== null && !focused;
           return (
@@ -275,7 +280,7 @@ function BulletSvg({
               {/* measure value label at the bar end — white halo so it stays
                   legible even when it sits right over the target tick */}
               <text
-                x={r.valueX + 7 * sc}
+                x={mEnd + 7 * sc}
                 y={r.measureY + r.measureH / 2}
                 dy="0.32em"
                 textAnchor="start"

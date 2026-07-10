@@ -44,5 +44,9 @@ Extends `bar.md`'s "grow from the baseline":
 - chrome (a light value axis / gridlines) wipes in first;
 - each **stem grows from the zero baseline to its dot**, eased-out, **staggered top→bottom**, the dot
   popping in as the stem lands;
-- the value label fades in with the dot.
+- the value label **rides the stem's growing head** (right of the dot → never clipped) and fades in
+  **early with** the stem — present from the moment the stem is meaningfully drawn, not only once the
+  dot lands, so a mid-build video still never ships a label-less dot (rule 4). The fade uses the shared
+  bar-family knob (`core/math` `labelReveal`); the old gate hid the last-staggered rows' labels
+  mid-build. Guarded by `tests/lollipop-value-label-reveal.test.tsx`.
 The stem never grows from the dot inward — always from the zero baseline (rule 1).

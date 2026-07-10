@@ -62,5 +62,9 @@ Extends `bar.md`'s "grow from the baseline", but each delta grows from its START
 - the bars build **left→right in story order**, each **growing from where the previous step ended**
   toward its own end (a total grows up from zero; an increase grows up, a decrease drops down),
   eased-out, staggered;
-- each **connector** draws to the next step and the **signed label** fades in as the bar lands.
+- each **connector** draws to the next step; the **signed label rides the bar's growing top** (always
+  above the bar → never clipped) and fades in **early with** the bar — present from the moment the step
+  is meaningfully drawn, not only once it lands, so a mid-build video still never ships a label-less
+  step (rule 4). The fade uses the shared bar-family knob (`core/math` `labelReveal`); the old gate hid
+  the last-staggered steps' labels mid-build. Guarded by `tests/waterfall-value-label-reveal.test.tsx`.
 The bridge assembles step by step, so the reader follows the running total across.
