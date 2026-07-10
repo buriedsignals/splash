@@ -26,7 +26,13 @@ export async function produceMap(
   const id = await createChart(spec.title, patch.type);
   // Locator maps carry no data table; markers live in metadata.visualize.markers.
   if (spec.mapType !== "locator") await setData(id, spec.data);
-  await patchChart(id, { type: patch.type, metadata: patch.metadata });
+  // `language` localizes DW's own legend + tooltip number formatting (fr-FR → "17 600");
+  // include it only when the spec set a language, else DW keeps its default (en-US).
+  await patchChart(id, {
+    type: patch.type,
+    metadata: patch.metadata,
+    ...(patch.language ? { language: patch.language } : {}),
+  });
   const publicUrl = await publishChart(id);
   await exportPng(id, pngPath);
 

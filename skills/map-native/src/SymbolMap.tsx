@@ -20,6 +20,7 @@ import { MapFrame } from "./core/MapFrame";
 import { MapFilterBar } from "./core/MapFilterBar";
 import { resolveMapStyle } from "./route-geo";
 import { legendTheme } from "./theme/legend-theme";
+import { formatLocaleNumber } from "./core/locale";
 import {
   deriveFilterOptions,
   filterStateToExpression,
@@ -349,7 +350,9 @@ export const SymbolMap: React.FC<Props> = ({
               (f.geometry as GeoJSON.Point).coordinates as [number, number],
             )
             .setHTML(
-              `<strong>${p.label}</strong><br/>${p.value}${config.valueUnit ?? ""}`,
+              // Locale-group the hover value, like every sibling map tooltip
+              // (Choropleth/Cartogram/HexGrid) — never a bare ${p.value}.
+              `<strong>${p.label}</strong><br/>${formatLocaleNumber(p.value, config.lang)}${config.valueUnit ?? ""}`,
             )
             .addTo(map);
         });
@@ -447,7 +450,10 @@ export const SymbolMap: React.FC<Props> = ({
       .map(
         (s) =>
           `<circle cx="${max + 2}" cy="${h - s.radius - 2}" r="${s.radius}" fill="none" stroke="${theme.sub}" />` +
-          `<text x="${max * 2 + 10}" y="${h - s.radius * 2 - 2 + 4}" font-size="11" fill="${theme.ink}">${s.value}${config.valueUnit ?? ""}</text>`,
+          // Locale-group the reference value ("17 600" fr / "17,600" en) — an un-formatted
+          // interpolation shipped the un-grouped "17600" the other map legends
+          // (Choropleth/Cartogram/…) never did. Single-sourced through core/locale.
+          `<text x="${max * 2 + 10}" y="${h - s.radius * 2 - 2 + 4}" font-size="11" fill="${theme.ink}">${formatLocaleNumber(s.value, config.lang)}${config.valueUnit ?? ""}</text>`,
       )
       .join("");
     el.innerHTML = `<svg width="${max * 2 + 70}" height="${h}">${rows}</svg>`;
