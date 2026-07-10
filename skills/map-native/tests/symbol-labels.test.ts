@@ -4,6 +4,8 @@ import {
   formatLabelValue,
   labelRadialOffset,
   wantsStaticFallbackLabels,
+  estimateLabelBox,
+  placeSymbolLabel,
 } from "../src/symbol-labels";
 import type { PlacedSymbol } from "../src/symbol-geo";
 
@@ -89,5 +91,102 @@ describe("labelRadialOffset", () => {
   });
   it("is deterministic", () => {
     expect(labelRadialOffset(30, 12)).toBe(labelRadialOffset(30, 12));
+  });
+});
+
+describe("estimateLabelBox", () => {
+  it("grows the width with the longest line's length", () => {
+    const short = estimateLabelBox("Rome\n67 t", 13);
+    const long = estimateLabelBox("Indonésie\n760k t", 13);
+    expect(long.width).toBeGreaterThan(short.width);
+  });
+  it("grows the height with the number of lines", () => {
+    const oneLine = estimateLabelBox("760k t", 13);
+    const twoLines = estimateLabelBox("Indonésie\n760k t", 13);
+    expect(twoLines.height).toBeGreaterThan(oneLine.height);
+  });
+  it("scales with the text size", () => {
+    const small = estimateLabelBox("Indonésie", 13);
+    const big = estimateLabelBox("Indonésie", 18);
+    expect(big.width).toBeGreaterThan(small.width);
+  });
+});
+
+describe("placeSymbolLabel — never overflows the viewport", () => {
+  const viewport = { width: 1200, height: 675 };
+
+  it("keeps the default RIGHT placement (anchor 'left') when it fits", () => {
+    const p = placeSymbolLabel({
+      cx: 300,
+      cy: 340,
+      offset: 30,
+      width: 80,
+      height: 40,
+      viewport,
+    });
+    expect(p.anchor).toBe("left");
+    expect(p.box.right).toBeLessThanOrEqual(viewport.width);
+  });
+
+  it("FLIPS to the LEFT (anchor 'right') when a right placement would clip the right edge", () => {
+    // Indonesia-like: a symbol whose centre sits near the right edge, so a
+    // right-placed label ("Indonésie") would run past viewport.width.
+    const cx = 1150; // 50px from the right edge
+    const width = 80;
+    const rightPlacementEnd = cx + 30 + width; // 1260 > 1200 → overflows
+    expect(rightPlacementEnd).toBeGreaterThan(viewport.width);
+
+    const p = placeSymbolLabel({
+      cx,
+      cy: 340,
+      offset: 30,
+      width,
+      height: 40,
+      viewport,
+    });
+    expect(p.anchor).toBe("right");
+    // The invariant: the whole label box stays inside the viewport.
+    expect(p.box.left).toBeGreaterThanOrEqual(0);
+    expect(p.box.right).toBeLessThanOrEqual(viewport.width);
+  });
+
+  it("keeps a LEFT-edge symbol's label inside the left edge", () => {
+    const p = placeSymbolLabel({
+      cx: 40,
+      cy: 340,
+      offset: 30,
+      width: 80,
+      height: 40,
+      viewport,
+    });
+    expect(p.box.left).toBeGreaterThanOrEqual(0);
+    expect(p.box.right).toBeLessThanOrEqual(viewport.width);
+  });
+
+  it("guards the TOP/BOTTOM edges so the label box stays vertically in-frame", () => {
+    // A symbol pinned to both horizontal edges' safe zone but hard against the top:
+    // whichever anchor is chosen, the box must not cross the top edge.
+    const p = placeSymbolLabel({
+      cx: 600,
+      cy: 6,
+      offset: 30,
+      width: 80,
+      height: 40,
+      viewport,
+    });
+    expect(p.box.top).toBeGreaterThanOrEqual(0);
+    expect(p.box.bottom).toBeLessThanOrEqual(viewport.height);
+  });
+
+  it("is deterministic", () => {
+    const input = {
+      cx: 1150,
+      cy: 340,
+      offset: 30,
+      width: 80,
+      height: 40,
+      viewport,
+    };
+    expect(placeSymbolLabel(input)).toEqual(placeSymbolLabel(input));
   });
 });
