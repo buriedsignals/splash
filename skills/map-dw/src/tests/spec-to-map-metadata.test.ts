@@ -221,27 +221,79 @@ describe("specToMapMetadata — symbol", () => {
     // the symbol case has no label column, so title templates the SIZE column by default).
     expect(typeof t.title).toBe("string");
     expect(typeof t.body).toBe("string");
-    // columns are referenced as DW mustache tokens, and declared in `fields`.
-    expect(t.title as string).toContain("{{");
-    expect(t.body as string).toContain("{{ population }}");
+    // the SIZE value is referenced via DW's tooltip FORMAT() expression (grouped, see below),
+    // and its column is declared in `fields`.
+    expect(t.body as string).toContain("FORMAT(population");
     expect(t.fields).toEqual({ population: "population" });
   });
 
   it("templates the tooltip title on an explicit labelColumn when given", () => {
     const t = specToMapMetadata({ ...symbol, labelColumn: "city" }).metadata
       .visualize.tooltip as Record<string, unknown>;
+    // a non-numeric label column stays a RAW mustache token (no FORMAT — it is not a number)
     expect(t.title).toBe("{{ city }}");
-    expect(t.body).toBe("{{ population }}");
+    expect(t.body).toBe('{{ FORMAT(population, "0,0.[00]") }}');
     expect(t.fields).toEqual({ city: "city", population: "population" });
   });
 
-  it("#1b — bakes the declared unit into the tooltip body (mustache is NOT auto-formatted)", () => {
+  // BUG #5 (verified live): the symbol tooltip showed a BARE "2100" — DW substitutes a raw
+  // `{{ column }}` mustache token VERBATIM (no thousands grouping). The grouped value must be
+  // produced by DW's tooltip FORMAT() expression (value first, numeral token second); the chart
+  // `language` then localizes the group separator (fr → "2 100"). Verified against the published
+  // renderer + Datawrapper Academy "How to customize tooltips".
+  it("#5 — groups the SIZE value in the tooltip body via FORMAT() (default grouped token)", () => {
+    const t = specToMapMetadata(symbol).metadata.visualize.tooltip as Record<
+      string,
+      unknown
+    >;
+    // "0,0" = thousands grouping, ".[00]" = up to two optional decimals — the same grouped
+    // default the choropleth legend uses. Renders 2100 → "2 100" (fr) / "2,100" (en).
+    expect(t.body).toBe('{{ FORMAT(population, "0,0.[00]") }}');
+  });
+
+  it("#5 — the numeric fallback title (no labelColumn) is grouped too", () => {
+    // With no labelColumn, the title falls back to the SIZE column — a number, so it must be
+    // grouped exactly like the body (else the tooltip title reads a bare "2100").
+    const t = specToMapMetadata(symbol).metadata.visualize.tooltip as Record<
+      string,
+      unknown
+    >;
+    expect(t.title).toBe('{{ FORMAT(population, "0,0.[00]") }}');
+  });
+
+  it("#5 — mirrors an explicit numberFormat into the tooltip FORMAT() token", () => {
+    const t = specToMapMetadata({ ...symbol, numberFormat: "0,0" }).metadata
+      .visualize.tooltip as Record<string, unknown>;
+    expect(t.body).toBe('{{ FORMAT(population, "0,0") }}');
+  });
+
+  // BUG #5 (legend): the symbol map's visible COLOR-gradient legend endpoints rendered with
+  // DW's default un-grouped format ("4000000"). The choropleth fix set `legends.color.labelFormat`
+  // — RENDER-VERIFIED it groups the symbol color legend too ("4000000" → "4 000 000").
+  it("#5 — groups the color-gradient legend via visualize.legends.color.labelFormat", () => {
+    const v = specToMapMetadata(symbol).metadata.visualize as Record<
+      string,
+      unknown
+    >;
+    const legends = v.legends as { color?: { labelFormat?: string } };
+    expect(legends?.color?.labelFormat).toBe("0,0.[00]");
+    expect(legends.color!.labelFormat).toContain("0,0");
+  });
+
+  it("#5 — mirrors an explicit numberFormat into the legend labelFormat", () => {
+    const v = specToMapMetadata({ ...symbol, numberFormat: "0,0" }).metadata
+      .visualize as Record<string, unknown>;
+    const legends = v.legends as { color: { labelFormat: string } };
+    expect(legends.color.labelFormat).toBe("0,0");
+  });
+
+  it("#1b — bakes the declared unit into the tooltip body after the grouped value", () => {
     // The confirmed bug: the symbol tooltip showed a bare "85" with no "M". `number-append`
-    // only touches auto-formatted numbers, and the tooltip body is a raw mustache token, so
-    // the unit must live in the template.
+    // only touches auto-formatted numbers, and the tooltip body is a mustache token, so the
+    // unit must live in the template — appended AFTER the grouped FORMAT() value.
     const t = specToMapMetadata({ ...symbol, unit: "M" }).metadata.visualize
       .tooltip as Record<string, unknown>;
-    expect(t.body).toBe("{{ population }}M");
+    expect(t.body).toBe('{{ FORMAT(population, "0,0.[00]") }}M');
   });
 
   it("#1b — also emits the unit as describe.number-append (for the size legend)", () => {
@@ -250,12 +302,12 @@ describe("specToMapMetadata — symbol", () => {
     expect(d["number-append"]).toBe("M");
   });
 
-  it("#1b — no unit ⇒ no number-append key and an unchanged tooltip body (back-compat)", () => {
+  it("#1b — no unit ⇒ no number-append key and no unit suffix on the tooltip body (back-compat)", () => {
     const p = specToMapMetadata(symbol);
     const d = p.metadata.describe as Record<string, unknown>;
     const t = p.metadata.visualize.tooltip as Record<string, unknown>;
     expect("number-append" in d).toBe(false);
-    expect(t.body).toBe("{{ population }}");
+    expect(t.body).toBe('{{ FORMAT(population, "0,0.[00]") }}');
   });
 });
 

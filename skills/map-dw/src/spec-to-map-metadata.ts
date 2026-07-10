@@ -139,23 +139,36 @@ function choroplethMetadata(spec: ChoroplethMapSpec): MapPatch {
 // Verified via real exported PNGs.
 //
 // NOTE (load-bearing, symbol tooltip): symbol maps reference DATA COLUMNS, NOT %REGION% (that
-// is choropleth-only). The hover tooltip uses DW mustache tokens `{{ column }}` in `title`/`body`,
-// and EACH referenced column MUST be declared in `tooltip.fields` ({ token: column }) or the
-// token renders blank. Title = the place label (labelColumn, else the size column); body = the
-// size column. Symbols are drawn on a CANVAS (no <circle> in the DOM) — hover is by pixel
-// position. Verified LIVE in a browser: hovering Paris showed a "{{ city }} / {{ population }}"
-// tooltip box (screenshot, not just metadata). See output-proof/.
+// is choropleth-only). The hover tooltip uses DW mustache tokens in `title`/`body`, and EACH
+// referenced column MUST be declared in `tooltip.fields` ({ token: column }) or the token renders
+// blank. Title = the place label (labelColumn, else the size column); body = the size column.
+// Symbols are drawn on a CANVAS (no <circle> in the DOM) — hover is by pixel position. Verified
+// LIVE in a browser: hovering Paris showed a "{{ city }} / {{ population }}" tooltip box.
+// NUMBER GROUPING (bug #5): a raw `{{ column }}` token is substituted VERBATIM (no thousands
+// grouping — a bare "2100"). The numeric SIZE value therefore goes through DW's tooltip FORMAT()
+// expression (`{{ FORMAT(col, "0,0.[00]") }}`), which applies the grouped numeral token; the chart
+// `language` localizes the separator. A non-numeric label column stays a raw token. See output-proof/.
 function symbolMetadata(spec: SymbolMapSpec): MapPatch {
   const colors = spec.colorScale ?? DEFAULT_BLUE;
   const colorCol = spec.colorColumn ?? spec.sizeColumn;
   const labelCol = spec.labelColumn ?? spec.sizeColumn;
+  const numberFormat = resolveNumberFormat(spec.numberFormat);
   const fields: Record<string, string> = { [spec.sizeColumn]: spec.sizeColumn };
   if (labelCol !== spec.sizeColumn) fields[labelCol] = labelCol;
-  // The tooltip body uses a raw `{{ column }}` mustache token that Datawrapper substitutes
-  // VERBATIM (no auto number-format applied — verified live: it showed "2100"). So the unit
-  // must be baked into the template here, else `number-append` (which only touches auto-
-  // formatted numbers) never reaches the symbol tooltip and it shows a bare "85".
+  // The tooltip body references a DATA COLUMN. A raw `{{ column }}` mustache token is substituted
+  // VERBATIM (no thousands grouping — verified live: it showed a bare "2100"). So the numeric
+  // SIZE value is wrapped in Datawrapper's tooltip FORMAT() expression (value first, numeral
+  // token second — Datawrapper Academy "How to customize tooltips"), which applies the grouped
+  // token; the chart `language` (set from spec.lang) then localizes the group separator
+  // (fr → "2 100"). RENDER-VERIFIED against a live export. The unit is baked as a literal suffix
+  // AFTER the value — `number-append` only touches auto-formatted numbers, never a mustache token.
   const unitSuffix = spec.unit ?? "";
+  const sizeToken = `{{ FORMAT(${spec.sizeColumn}, "${numberFormat}") }}`;
+  // The title is the place label. When it falls back to the numeric SIZE column (no labelColumn),
+  // group it too (else the title reads a bare number). A real label column is non-numeric text —
+  // keep it a RAW mustache token so FORMAT() is never applied to a string.
+  const titleToken =
+    labelCol === spec.sizeColumn ? sizeToken : `{{ ${labelCol} }}`;
   return {
     title: spec.title,
     type: "d3-maps-symbols",
@@ -174,10 +187,16 @@ function symbolMetadata(spec: SymbolMapSpec): MapPatch {
           interpolation: "equidistant",
           colors,
         },
+        // The visible legend on a symbol map is the continuous COLOUR gradient (the size scale
+        // is not drawn as a separate legend by default). Its min/max endpoint labels default to
+        // DW's un-grouped "0.[00]" — the bare-"4000000" bug. Set the grouped token; the chart
+        // `language` localizes the separator (fr → "4 000 000"). Same key + RENDER-VERIFIED fix
+        // as the choropleth color legend.
+        legends: { color: { labelFormat: numberFormat } },
         tooltip: {
           enabled: true,
-          title: `{{ ${labelCol} }}`,
-          body: `{{ ${spec.sizeColumn} }}${unitSuffix}`,
+          title: titleToken,
+          body: `${sizeToken}${unitSuffix}`,
           fields,
         },
       },
