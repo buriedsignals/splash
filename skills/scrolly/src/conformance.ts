@@ -35,6 +35,25 @@ export function checkScrollyConformance(
   return v;
 }
 
+// GUARDRAIL — the concluding beat must be a DISTINCT takeaway, never a verbatim repeat
+// of the intro. The observed defect: the takeaway step recycled the intro/description
+// word-for-word (a scrolly that opens and closes on the same sentence says nothing new).
+// A well-formed story opens on the description and CLOSES on a data-tied takeaway (the
+// gap / the span). Deterministic: compares the first step's prose against the last.
+// Only fires when there are ≥3 steps (a real story with a distinct close to check).
+export function auditDistinctBookends(story: ScrollyStory): string[] {
+  const steps = story.steps;
+  if (steps.length < 3) return [];
+  const first = steps[0]?.prose?.trim() ?? "";
+  const last = steps[steps.length - 1]?.prose?.trim() ?? "";
+  if (first && last && first === last)
+    return [
+      `intro and takeaway are identical — the concluding beat must state a distinct, ` +
+        `data-tied takeaway (the gap / the span), not repeat the intro: "${last}"`,
+    ];
+  return [];
+}
+
 // GUARDRAIL for defect #3 — the generic min/max template leaking into TEMPORAL
 // data. A temporal/ordinal value field must be told as a SEQUENCE ("the first /
 // then / the most recent"), never as a ranking. This audit FAILS if any map step

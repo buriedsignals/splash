@@ -79,6 +79,32 @@ Visual Vocabulary — every chart needs a headline, standfirst, and source.)
 `checkChoroplethConformance` enforces (via `checkGlobalMapConformance`): `title` ≥ 12 characters
 and not a bare year range; `description` non-empty; `source.name` and `source.url` non-empty.
 
+### 7. Ramp hue fits the subject — never default blue
+
+The sequential ramp's HUE carries meaning (the choropleth mirror of the chart `baseColor` rule):
+**energy / electricity / solar / heat → a warm `oranges` ramp** (warm = light/power); water /
+rainfall / cold / marine → `blues` (the one subject blue is right for); environment / vegetation →
+`greens`; culture / politics-neutral magnitude → `purples`. A blue ramp on an energy story reads
+water/cold/generic — the wrong association. The suggester sets `subject` + a subject-fit `palette`;
+every single-hue sequential ramp is CVD-safe, so any fitting choice passes. (Source: FT Visual
+Vocabulary — sequential ramps encode ordered magnitude by one hue; Okabe-Ito subject-fit.)
+
+`checkPaletteConformance`'s subject branch enforces: a declared `subject` left on the library default
+blue FAILS (wired at produce and in the scrolly audit).
+
+### 8. Names come from the data, in the deliverable language; distinct takeaway
+
+A scrolly/video map narrates region names in its beats. Those names come from the DATA (`labelField`),
+in the deliverable's language (`"Éthiopie"`, `"Soudan du Sud"`) — NOT the basemap GeoJSON's
+ISO/English `name` (`"Ethiopia"`, `"S. Sudan"`). The suggester emits a `labelField` column of names.
+And the concluding **takeaway beat must be a DISTINCT, data-tied close** (the leader↔tail gap, e.g.
+"Kenya : 75 %, Soudan du Sud : 8 % — un écart de 1 à 9"), never a verbatim repeat of the intro
+description. (Source: the story is the deliverable — region names + the closer are editorial
+furniture, not basemap side-effects.)
+
+Enforced by `computeChoropleth`'s `labels` map + `deriveMapStory` (`labelField` → beat names;
+`deriveTakeawayCopy` → distinct closer) and the scrolly `auditDistinctBookends` guard.
+
 ## Anti-patterns
 
 - **Raw counts** — a count choropleth is an artefact of population and area, not the phenomenon.

@@ -46,6 +46,11 @@ export interface ChoroplethOptions {
   // The palette's kind must match scaleType; if absent, the library default for the
   // scaleType is used (back-compat: sequential → blues, diverging → orbu).
   palette?: PaletteRequest;
+  // The data column holding a human-readable region NAME, in the deliverable's
+  // language. When set, the narration (deriveMapStory callouts) uses the DATA name
+  // ("Éthiopie") instead of the basemap's ISO/English name ("Ethiopia"). Without it,
+  // a French map narrates English basemap labels — the exact defect this closes.
+  labelField?: string;
 }
 export interface ChoroplethLayout {
   joined: { key: string; value: number | null }[];
@@ -54,6 +59,9 @@ export interface ChoroplethLayout {
   noData: string[];
   unmatched: string[];
   scaleType: "sequential" | "diverging";
+  // regionKey value → the data's display label (from `labelField`), when provided.
+  // Consumed by deriveMapStory so beat/callout names honour the deliverable language.
+  labels?: Record<string, string>;
 }
 
 export function computeChoropleth(
@@ -67,11 +75,22 @@ export function computeChoropleth(
   const ramp = resolvePalette(scaleType, options.palette).ramp;
 
   const byKey = new Map<string, number>();
+  // Data-supplied display names, keyed by the join key — only when labelField is set
+  // AND the row actually carries a non-empty value for it (a blank cell must never
+  // shadow the basemap fallback with "").
+  const labelField = options.labelField;
+  const labels: Record<string, string> = {};
   for (const r of data.rows) {
     const v = Number(r[data.valueField]);
     if (Number.isNaN(v))
       throw new Error(`invalid choropleth value: ${r[data.valueField]}`);
-    byKey.set(String(r[data.regionKey]), v);
+    const key = String(r[data.regionKey]);
+    byKey.set(key, v);
+    if (labelField) {
+      const label = r[labelField];
+      if (label !== undefined && label !== null && String(label).trim() !== "")
+        labels[key] = String(label);
+    }
   }
   const featureKeys = new Set(
     features.features.map((f) => String(f.properties?.[joinKey])),
@@ -150,5 +169,13 @@ export function computeChoropleth(
   } as GeoJSON.FeatureCollection;
   const bounds = bbox(mainland) as [number, number, number, number];
 
-  return { joined, bins, bounds, noData, unmatched, scaleType };
+  return {
+    joined,
+    bins,
+    bounds,
+    noData,
+    unmatched,
+    scaleType,
+    ...(labelField ? { labels } : {}),
+  };
 }
