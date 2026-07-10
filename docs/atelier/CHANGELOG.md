@@ -4,6 +4,54 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-10 — 3 cycles QA (waves 1-3, 16 cas) → 12 fixes, tous mergés vert
+
+Boucle « fond de roulement » (`../atelier-harness/WORKFLOW.md`) : lancer des tests e2e en parallèle
+(persona journaliste pilote le vrai atelier headless en sandbox worktree de `main`) → collecter les
+findings → **inspecter le LIVRÉ réel + `deep-verify.mjs`** → fixes en worktrees isolés parallèles →
+review-lot adversarial (1 agent/branche) → merge → gate. `main` : `c7d67bd` → **`661a928`**, gate
+**16/16** à chaque merge, 0 mention vendor, 0 `any`.
+
+**Waves :** W1 (matrice complète + 3 pièges nommés par Rémy) · W2 (waterfall/beeswarm/map-scrolly/
+symbol-vidéo/choroplèthe) · W3 (validation e2e des fixes mergés). 1 timeout (`inflation`) = **transient,
+non reproduit** (le repro a livré ; la vraie leçon = le *thrash-on-hang* d'atelier, pas le chemin produce).
+
+**Fixes produit (9) :**
+- **export dw-chart interactif** (le plus impactant) : `export-code.mjs` crashait (`embedSnippet(undefined)`)
+  → `-export` VIDE pour un interactif Datawrapper (embed hébergé = pas de html local ; PNG nommé
+  `<id>.png` ≠ `static.png`). Détecte la forme hébergée via le `report` (`publicUrl` + `outputs`
+  déclarés, pas un match de nom) → `-export` complet (static.html a11y + EMBED.md → URL hébergée).
+  Chemin courant (article-web + chart standard) qui dégradait **silencieusement**. Vérifié e2e API DW réelle.
+- **chart-native** : tous les highlights scatter labellisés (plus le seul max-y) · value-labels
+  survivent au reveal vidéo sur les petites barres (anti-pattern d'opacité tardive → knob partagé
+  `core/math.ts:labelReveal`, propagé à **toute la famille barres** : Bar/Diverging/Waterfall/Lollipop/
+  Bullet/Dumbbell) · titre d'axe X ne surimprime plus la source (`sourceFooterReserve`, réserve de
+  bas de cadre partagée symétrique du header → 40 charts en héritent).
+- **dw-chart** : annotations scatter résolvent la colonne **Y** (lisaient X/PIB → hors-canvas droppées) +
+  domaine y de la seule colonne Y + tripwire (throw si y d'annotation hors-domaine — un rendu ne peut
+  pas attraper une annotation *droppée*, ce check data si).
+- **CADRAGE Gate 1b** : takeaway/insight = gate explicite **non-skippable**, confirm-back les 2 branches.
+- **légendes carto** : nombres groupés locale (`17600`→`17 600 €`) — map-dw (metadata `labelFormat` +
+  `column-format` + `lang`→locale) ET map-native symbol (seul sibling encore en `${value}` brut).
+- **render-review** : toute affirmation d'interaction (tooltip in-viewport, hover, popup) doit **citer
+  le run d'un snap-script d'interaction** (`snap-tooltip-viewport.mjs` etc., qui tournent déjà fail-hard
+  dans `produce-all`), jamais déduite d'un PNG statique ; chaque critère taggé `[static]` vs `[interaction-tested]`.
+
+**Fixes harness/rubrique (3) :** le driver juge le **vrai `-export`** (`canonicalizeDeliveryOutputs`,
+plus le build-subdir) — a tué une **cascade de faux « export skipped / missing a11y »** · `judge.md`
+aligné : source name-only prose = légitime · **scrolly exempt de static.html** (faux [major] récurrent) ·
+sous-gates 1b/2c/3a réels (le modèle (1,2,2b,3,4) était périmé).
+
+**★ Méta-leçon gravée : le JUGE peut mentir aussi.** Deux cascades de faux positifs (export-skipped,
+scrolly-sans-static.html) démasquées en inspectant le filesystem/`-export` réel — pas en croyant le
+finding. Corollaire de « vérifier le livré, pas le proof » : **vérifier le livré ET challenger le
+finding** (les reviewers de merge l'ont aussi appliqué — ex. le premier a attrapé une propagation
+incomplète de la famille barres, le finding « Gate 2c inventé » était lui-même stale).
+
+**Backlog légué (mineur) :** dw-chart *statique* met l'embed hébergé en forme 1 (la forme possédée
+devrait mener — souveraineté) · 6 charts self-clearing double-comptent `sourceFooterReserve`
+(cosmétique) · légende map-dw *symbol* non vérifiée pour le groupement.
+
 ## État 2026-06-23 (fin de session)
 - **MERGÉ dans `main`** : Tranche 1 (boucle dw-chart) + Tranche 1.1 (22 types + garde-fous) + **② suggester runtime + harness d'éval**.
 - ② : procédure runtime dans `suggest-chart/SKILL.md` ; éval `skills/suggest-chart/eval/` (scoreSpec pur + family-types + 8 cas + judge.md). Baseline auto-noté : 8/8 gate, 0.93/0.96 éditorial. **Lien ②→dw-chart prouvé live** (`eval/e2e-proof.md`, chart publié réel).
