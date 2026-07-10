@@ -8,8 +8,19 @@ import {
   rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { embedSnippet, staticHtml, isEphemeralPath } from "./export-code.mjs";
+
+// Pulls the machine-relayable three-form proposal out of export-code's stdout. The block is
+// a single `EXPORT_FORMS_JSON {...}` line so the orchestrator can relay a FIXED message
+// instead of re-deriving the delivery rule (kills the "Livré."-with-nothing bug).
+function parseFormsProposal(stdout: string) {
+  const marker = "EXPORT_FORMS_JSON ";
+  const line = stdout.split("\n").find((l) => l.startsWith(marker));
+  if (!line)
+    throw new Error("no EXPORT_FORMS_JSON block in stdout:\n" + stdout);
+  return JSON.parse(line.slice(marker.length));
+}
 
 const shippableReport = (id = "p1") => ({
   results: [
@@ -295,6 +306,164 @@ describe("export-code CLI — export-completeness gate", () => {
     } finally {
       rmSync(outDir, { recursive: true, force: true });
       rmSync(exportDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("export-code CLI — three-form delivery proposal (machine-relayable)", () => {
+  const scriptPath = join(import.meta.dir, "export-code.mjs");
+
+  it("emits the three forms for a chart-native interactive: A=runnable React source bundle, B=interactive.html (single self-contained file), C=deploy-embed command", () => {
+    const outDir = mkdtempSync(join(tmpdir(), "atelier-export-code-forms-"));
+    writeFileSync(join(outDir, "interactive.html"), "<html>interactive</html>");
+    writeFileSync(join(outDir, "static.png"), Buffer.from("fake-png-bytes"));
+    // The producer (chart-native produce.mjs) drops these so EXPORT can assemble form 1's
+    // self-contained Vite source bundle: the exact rendered config + the native render-id.
+    writeFileSync(
+      join(outDir, "config.json"),
+      JSON.stringify({ title: "Power mix", rows: [{ x: "A", y: 1 }] }),
+    );
+    writeFileSync(
+      join(outDir, "native-source.json"),
+      JSON.stringify({ type: "bar" }),
+    );
+    const resultsPath = join(outDir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(shippableReport("p1")));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-code-fixture-forms-"),
+    );
+    try {
+      const out = execFileSync(
+        "bun",
+        [scriptPath, outDir, exportDir, "--results", resultsPath, "--id", "p1"],
+        { encoding: "utf8" },
+      );
+      const proposal = parseFormsProposal(out);
+      // Form A — code source: the runnable React source bundle at <id>-source, NOT pending.
+      expect(proposal.forms.a.kind).toBe("react-source-bundle");
+      expect(proposal.forms.a.pending).toBeUndefined();
+      expect(proposal.forms.a.path).toBe(join(resolve(exportDir), "p1-source"));
+      // The bundle is a real, self-contained Vite project on disk.
+      const bundle = proposal.forms.a.path;
+      expect(existsSync(join(bundle, "src", "component-registry.tsx"))).toBe(
+        true,
+      );
+      expect(existsSync(join(bundle, "config.json"))).toBe(true);
+      expect(existsSync(join(bundle, "package.json"))).toBe(true);
+      expect(existsSync(join(bundle, "index.html"))).toBe(true);
+      expect(existsSync(join(bundle, "main.tsx"))).toBe(true);
+      expect(existsSync(join(bundle, "README.md"))).toBe(true);
+      // Form B — HTML autonome: the single self-contained interactive.html (JS inlined),
+      // the drop-anywhere file — NOT the no-JS static.html (that stays inside form A).
+      expect(proposal.forms.b.path).toBe(
+        join(resolve(exportDir), "interactive.html"),
+      );
+      // Form C — embed hébergé: the exact, runnable deploy-embed command for THIS export.
+      const cmd = proposal.forms.c.command;
+      expect(cmd).toContain("deploy-embed.mjs");
+      expect(cmd).toContain(join(resolve(exportDir), "interactive.html"));
+      expect(cmd).toContain(resolve(resultsPath));
+      expect(cmd).toContain("--id");
+      expect(proposal.forms.c.url).toBeUndefined();
+      // The un-skippable relay block the orchestrator prints verbatim.
+      expect(out).toContain("EXPORT_FORMS_PROPOSAL");
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it("emits code source + HTML autonome (scrolly.html) + embed for a scrolly — no no-JS static.html exists at all", () => {
+    const outDir = mkdtempSync(join(tmpdir(), "atelier-export-code-scrolly-"));
+    writeFileSync(join(outDir, "scrolly.html"), "<html>scrolly</html>");
+    const resultsPath = join(outDir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(shippableReport("p1")));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-code-fixture-scrolly-"),
+    );
+    try {
+      const out = execFileSync(
+        "bun",
+        [scriptPath, outDir, exportDir, "--results", resultsPath, "--id", "p1"],
+        { encoding: "utf8" },
+      );
+      const proposal = parseFormsProposal(out);
+      expect(proposal.scrolly).toBe(true);
+      // A scrolly has no chart-native source inputs → form A is the built-files folder.
+      expect(proposal.forms.a.kind).toBe("built-files-folder");
+      expect(proposal.forms.a.path).toBe(resolve(exportDir));
+      expect(proposal.forms.a.pending).toBeUndefined();
+      // Form B is the single self-contained scrolly.html (a scrolly IS the HTML autonome).
+      expect(proposal.forms.b.path).toBe(
+        join(resolve(exportDir), "scrolly.html"),
+      );
+      // Embed still applies (deploy the scrolly html).
+      expect(proposal.forms.c.command).toContain("scrolly.html");
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it("emits form C as the LIVE hosted publicUrl (no deploy command) for a hosted DW interactive", () => {
+    const outDir = mkdtempSync(join(tmpdir(), "atelier-export-code-dw-forms-"));
+    const pngName = "wage-price-gap.png";
+    writeFileSync(join(outDir, pngName), Buffer.from("fake-dw-png-bytes"));
+    const hostedUrl = "https://www.datawrapper.de/_/AbCdE/";
+    const resultsPath = join(outDir, "report.json");
+    writeFileSync(
+      resultsPath,
+      JSON.stringify({
+        results: [
+          {
+            id: "wage-price-gap",
+            producer: "dw-chart",
+            format: "interactive",
+            status: "produced",
+            reviewed: true,
+            renderApproved: true,
+            publicUrl: hostedUrl,
+            outputs: [join(outDir, pngName)],
+          },
+        ],
+      }),
+    );
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-code-fixture-dw-forms-"),
+    );
+    try {
+      const out = execFileSync(
+        "bun",
+        [
+          scriptPath,
+          outDir,
+          exportDir,
+          "--results",
+          resultsPath,
+          "--id",
+          "wage-price-gap",
+        ],
+        { encoding: "utf8" },
+      );
+      const proposal = parseFormsProposal(out);
+      expect(proposal.hosted).toBe(true);
+      // Hosted DW has NO React source to rebuild — form A is the built-files folder, and its
+      // note is honest about that + points at the live DW link (no fabricated React bundle).
+      expect(proposal.forms.a.kind).toBe("built-files-folder");
+      expect(proposal.forms.a.path).toBe(resolve(exportDir));
+      expect(proposal.forms.a.pending).toBeUndefined();
+      expect(proposal.forms.a.note).toContain("Datawrapper");
+      expect(proposal.forms.a.note).toContain(hostedUrl);
+      // Form B still applies for hosted DW: the standalone static.html (its only self-contained file).
+      expect(proposal.forms.b.path).toBe(
+        join(resolve(exportDir), "static.html"),
+      );
+      // Form C is the already-live hosted URL — no deploy step.
+      expect(proposal.forms.c.url).toBe(hostedUrl);
+      expect(proposal.forms.c.command).toBeUndefined();
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
     }
   });
 });
