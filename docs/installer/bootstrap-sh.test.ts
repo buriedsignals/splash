@@ -37,3 +37,17 @@ test("acquires the repo by zip, installs the render engine, and makes a local la
   expect(sh).toContain("playwright install chromium");
   expect(sh).toContain("Launch Atelier.command");
 });
+
+test("keeps stderr on dependency install and guards each step (no silent dead-stop)", () => {
+  // The old `bun install >/dev/null 2>&1` swallowed the cause of a failed dep install under
+  // `set -e`, leaving a half-finished install with no launcher and no diagnostic.
+  expect(sh).not.toContain("bun install >/dev/null 2>&1");
+  expect(sh).toContain("Dependency install failed");
+  expect(sh).toContain("Playwright Chromium download failed");
+});
+
+test("skips the configurator on a re-run that already has a verified .env", () => {
+  expect(sh).toMatch(
+    /if \[ ! -f "\$DEST\/\.env" \] \|\| \[ "\$\{ATELIER_RECONFIGURE:-0\}" = "1" \]; then/,
+  );
+});
