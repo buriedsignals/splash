@@ -12,6 +12,9 @@ The ANALYSE+PROPOSITION stage of ②. Given an **article** (Markdown/plain text)
 binds each to the data that substantiates it, and emits a **vetoable** `ProposalSet` of visual
 opportunities. It never invents data or text. It carries **no chart type** — choosing the chart is the
 downstream `suggest-chart` cut's job. The journalist accepts/edits/rejects; there is no hard gate.
+It likewise carries **no `format`** — pinning the single `VisualFormat` (`static|interactive|video|scrolly`,
+within `allowedFormats(channel)`) is `suggest-chart`'s job too; that one pinned format is what reaches
+PROPOSITION (`skills/atelier/SKILL.md` Gate 2) for the journalist's veto.
 
 ## When to use
 

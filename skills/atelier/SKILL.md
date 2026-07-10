@@ -107,6 +107,16 @@ a fresh options menu. **Hard rule surfaced here too:** a non-article/embed chann
 image or video — never interactive or scrolly; if the journalist asks for an interactive on a social
 channel, say so and point back to the CADRAGE Q3 channel pick rather than silently escalating.
 
+**The accepted spec pins exactly ONE `format`.** `suggest-chart` commits to a single `VisualFormat`
+(`static|interactive|video|scrolly`) from `allowedFormats(channel)` — never the whole allowed set — and
+THIS is the `{format}` announced above for veto; the journalist may change it here, but to another single
+member of `allowedFormats(channel)`, not to a list. `interactiveDefault` (`skills/atelier/src/channel.ts`)
+still steers `suggest-chart`'s default pick to interactive on article-web — it only sets the default, not
+a fallback set. Once accepted, that one format is what `accepted.json` carries (5b) and what flows to
+PRODUCTION; `produce-all` applies `assertFormatAllowed(channel, format)` (`skills/atelier/src/channel.ts`)
+as the produce-time guard that the pinned format is actually a member of the channel's allowed set — no
+new gate, the check reuses PROPOSITION's own decision.
+
 **Narrative sub-format — who picks it reuses the CADRAGE branch:**
 - **interactive** → the sub-format is **explore-libre** (pan/zoom/hover) vs **scrolly** (sequential).
 - **video** → the sub-format is the camera/reveal mode (reveal-simple, guided-tour, zoom-out, pan,

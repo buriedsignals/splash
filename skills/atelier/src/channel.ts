@@ -70,6 +70,21 @@ export function isFormatAllowed(
   return CHANNELS[channel].allowedFormats.includes(format);
 }
 
+// The PROPOSITION gate (atelier/SKILL.md §Gate 2) pins exactly ONE VisualFormat on the
+// accepted spec — not the whole allowed set. This guard is the produce-time check that
+// the pinned format is actually a member of its channel's allowed set, throwing (rather
+// than returning a boolean) so a bad pin fails hard at produce, mirroring
+// assertRenderedSize below.
+export function assertFormatAllowed(
+  channel: Channel,
+  format: VisualFormat,
+): void {
+  if (!isFormatAllowed(channel, format))
+    throw new Error(
+      `format "${format}" not allowed for channel "${channel}" (allowed: ${allowedFormats(channel).join(", ")})`,
+    );
+}
+
 export function mediaSize(channel: Channel): ChannelSize {
   return CHANNELS[channel].mediaSize;
 }
