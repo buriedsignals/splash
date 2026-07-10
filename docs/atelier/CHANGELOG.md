@@ -93,6 +93,31 @@ confirmé (règle Gate 1b non obéie) · vidéo produite mais run closed-early s
 `suggest-chart` émet la clé `world`+`ISO_A3` cassée (attrapée au produce, à corriger à la source) ·
 renderers symboles vidéo/scrolly encore en `text-variable-anchor` (même classe edge-clip).
 
+### Passe backlog 2026-07-10 — 4 issues confirmées vérifiées puis corrigées
+
+Sur demande Rémy (« remonte les bugs puis corrige-les ») : vérif de chaque item backlog **dans le code**
+(réel vs bruit), puis fix des 4 confirmés mécaniques (parallèle, review **manuelle** — les agents de
+review avaient renvoyé du stub au batch précédent). Mergés, gate 16/16 :
+- **#3 `suggest-chart` clé de jointure world cassée** — émettait `world`+`ISO_A3` (0 région ; DW API live :
+  `world-2019` n'a pas d'`ISO_A3`, la clé ISO-A3 est `DW_STATE_CODE`). Corrigé à la source (SKILL.md +
+  fixtures eval → `world-2019`+`DW_STATE_CODE`, warn explicite). **map-native laissé intact** (il utilise
+  son propre `world.geojson`, ISO-A3 en `regionKey`, correct). e2e API réelle 12/12 join, rendu coloré.
+- **#4 labels symboles coupés au bord en vidéo/scrolly** — `SymbolReveal/Story/Scrolly` encore en
+  `text-variable-anchor` (aveugle au bord). Primitive partagée `assignSymbolLabelAnchors` (SymbolMap la
+  single-source aussi) ; Reveal = compute-once au load idle, Story/Scrolly = recompute par frame. Test de
+  parité (aucun renderer symbole n'utilise plus `text-variable-anchor`). Locator déféré (modèle différent).
+- **#5 map-dw symbole nombres bruts** — tooltip en `{{ col }}` brut (DW substitue verbatim → « 2100 »).
+  Corrigé via l'expression DW `{{ FORMAT(col, "0,0.[00]") }}` + `legends.color.labelFormat`, locale threadée.
+  Rendu API réelle : légende `4 000 000`, tooltip `Paris / 4 000 000 t`. (Chemin bas-trafic : `produceMap`
+  route les symboles vers map-native — corrigé quand même.)
+- **#7 réserve source double-comptée** — **23** charts (pas ~10) baquaient leur clearance dans `basePad`
+  EN PLUS de la réserve partagée `sourceFooterReserve`. Chaque `basePad.bottom` = furniture seule ;
+  Waterfall reste le seul opt-out. Audit **ALL GREEN 539 renders** (re-vérifié moi-même — garde anti-collision).
+
+Différés avec raison (backlog) : dégradation interactif→statique quasi-global (arbitrage a11y) · titre vs
+takeaway (pas de levier mécanique propre) · Locator edge-clamp · vidéo closed-early. #6 (embed en forme 1)
+résolu par le flux export a/b/c.
+
 ## État 2026-06-23 (fin de session)
 - **MERGÉ dans `main`** : Tranche 1 (boucle dw-chart) + Tranche 1.1 (22 types + garde-fous) + **② suggester runtime + harness d'éval**.
 - ② : procédure runtime dans `suggest-chart/SKILL.md` ; éval `skills/suggest-chart/eval/` (scoreSpec pur + family-types + 8 cas + judge.md). Baseline auto-noté : 8/8 gate, 0.93/0.96 éditorial. **Lien ②→dw-chart prouvé live** (`eval/e2e-proof.md`, chart publié réel).
