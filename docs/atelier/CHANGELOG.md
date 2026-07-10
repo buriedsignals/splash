@@ -52,6 +52,20 @@ incomplète de la famille barres, le finding « Gate 2c inventé » était lui-m
 devrait mener — souveraineté) · 6 charts self-clearing double-comptent `sourceFooterReserve`
 (cosmétique) · légende map-dw *symbol* non vérifiée pour le groupement.
 
+### Suite 2026-07-10 — EXPORT : le journaliste choisit la forme (feature, met à jour la déc. 2026-06-23)
+
+Parti d'un retour Rémy sur 2 runs (« ça sort plus que le .html souhaité » + « atelier ne propose jamais code source / html / embed »). Diagnostic groundé : (a) le `-export` = les formes possédées + docs, PNG de build non livrés (par design) ; (b) **vrai bug** — l'offre des formes/embed était incohérente (~la moitié des livraisons interactives disaient juste « Livré. » sans rien proposer). Deux corrections de terminologie de Rémy en cours de route (vérifiées au fichier) : « HTML statique » = le fichier **autonome** `interactive.html` (JS inline dedans), PAS le no-JS ; « code source » = **le vrai code React**, pas les fichiers compilés.
+
+Décision produit (Rémy, via petites questions) : le journaliste **choisit** une des 3 formes ; livraison façonnée ; **forme 1 = bundle React runnable**.
+
+Livré (branche `fix/export-form-choice`, mergé, gate 16/16, adversarial-review SAFE avec **build indépendamment reproduit de zéro**) :
+- **Flux** : `export-code.mjs` produit les artefacts d'office (local-first préservé) PUIS **émet** une proposition prête-à-relayer (`EXPORT_FORMS_JSON` + bloc `a/b/c`) → l'orchestrateur relaie un message fixe au lieu de se fier à sa mémoire (fin du « Livré. » nu). SKILL.md §6 : gate explicite non-skippable « propose 3 formes → le journaliste choisit → livre la forme choisie ».
+- **Forme 1 = bundle React runnable** : nouveau générateur `skills/chart-native/scripts/export-source.mjs` assemble un projet Vite auto-contenu (`<id>-source/` : copie `chart-native/src` — clôture 0 import cross-skill — + `config.json` + entry `main.tsx` + `package.json` deps interactif seul (pas remotion) + vite/tsconfig + README). **Acceptation build-de-zéro prouvée** (2×, moi + le reviewer) : `bun install` (49 pkgs) → `bun run build` (369 modules → `dist` 480 KB auto-contenu) → rend 5 barres = les 5 lignes de données, 0 erreur. chart-native seulement ; map-native/scrolly/DW = dossier fichiers (leur src pas auto-contenu → follow-up).
+- **Forme 2** = `interactive.html` autonome ; **Forme 3** = `deploy-embed` → fly.io (ou `publicUrl` DW live).
+- `judge.md` **retourné** : proposer les formes = flow voulu ; « Livré. » nu = défaut (annule la règle « demander = ancien flow »).
+
+Reste (backlog) : valider le flux conversationnel a/b/c par un run harness ; bundle runnable pour map-native/scrolly.
+
 ## État 2026-06-23 (fin de session)
 - **MERGÉ dans `main`** : Tranche 1 (boucle dw-chart) + Tranche 1.1 (22 types + garde-fous) + **② suggester runtime + harness d'éval**.
 - ② : procédure runtime dans `suggest-chart/SKILL.md` ; éval `skills/suggest-chart/eval/` (scoreSpec pur + family-types + 8 cas + judge.md). Baseline auto-noté : 8/8 gate, 0.93/0.96 éditorial. **Lien ②→dw-chart prouvé live** (`eval/e2e-proof.md`, chart publié réel).
