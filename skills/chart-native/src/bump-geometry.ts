@@ -5,6 +5,43 @@
 // function of a per-line progress computed in the component.
 
 import { scalePoint, scaleLinear } from "d3-scale";
+import { BUMP_ACCENT_COLORS } from "./core/tokens";
+
+/**
+ * Resolve the accent colours for a bump chart's HIGHLIGHTED lines, in highlight
+ * order — the SINGLE colour-resolution path shared by BumpChart (which paints them)
+ * and produce-conformance (which validates them), so the two never drift and the
+ * subject-fit colour the journalist approved in the spec reaches the bump chart like
+ * every other chart-native type.
+ *
+ *   - a SINGLE highlighted line (or none — bump-geometry marks every line highlighted
+ *     when `highlight` is empty, so they share one accent) uses `baseColor` (the
+ *     subject-fit hue), falling back to `seriesColors[0]`.
+ *   - MULTIPLE highlighted lines use `seriesColors` in highlight order (baseColor is,
+ *     by definition, a single primary hue — several distinct lines need seriesColors).
+ *   - any slot the spec leaves uncoloured falls back to BUMP_ACCENT_COLORS (the
+ *     backward-compatible Okabe-Ito default), cycled by index.
+ *
+ * The result has one entry per highlighted line; with no highlight it has a single
+ * entry — the accent every line shares. Non-highlighted lines are neutral COLORS.muted
+ * context (never in this array), exempt from palette membership like a gridline.
+ */
+export function resolveBumpAccents(
+  highlight: readonly string[] | undefined,
+  colors: { baseColor?: string; seriesColors?: readonly string[] } = {},
+): string[] {
+  const clean = (v: unknown): string | undefined =>
+    typeof v === "string" && v.trim() ? v : undefined;
+  const base = clean(colors.baseColor);
+  const series = (colors.seriesColors ?? [])
+    .map(clean)
+    .filter((c): c is string => c !== undefined);
+  const count = Math.max(1, highlight?.length ?? 0);
+  const fallback = (i: number) =>
+    BUMP_ACCENT_COLORS[i % BUMP_ACCENT_COLORS.length];
+  if (count === 1) return [base ?? series[0] ?? fallback(0)];
+  return Array.from({ length: count }, (_, i) => series[i] ?? fallback(i));
+}
 
 export interface BumpData {
   periods: string[]; // ordered time captions

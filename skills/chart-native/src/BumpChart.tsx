@@ -14,11 +14,12 @@ import { useState } from "react";
 import {
   computeBumpLayout,
   drawBumpPath,
+  resolveBumpAccents,
   type BumpData,
   type BumpLayout,
 } from "./bump-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, BUMP_ACCENT_COLORS } from "./core/tokens";
+import { COLORS, FONT, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -32,6 +33,13 @@ export interface BumpConfig {
   valueLabel: string; // subtitle (what the rank means)
   periods: string[];
   highlight?: string[];
+  /** subject-fit hue for a SINGLE tracked line (the accent the journalist approved in
+   *  the spec). Absent → the BUMP_ACCENT_COLORS default. Painted on the LINE/mark; every
+   *  end label stays COLORS.ink ("label carries the value, mark carries the hue"). */
+  baseColor?: string;
+  /** subject-fit hues for MULTIPLE tracked lines, in highlight order. Absent slots
+   *  fall back to the BUMP_ACCENT_COLORS default. */
+  seriesColors?: string[];
   items: { label: string; ranks: number[] }[];
 }
 
@@ -64,13 +72,20 @@ export function BumpChart({
     ? Math.max(1, Math.ceil(config.title.length / Math.floor(width / 11)))
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
 
-  // accent colour per highlighted item, in highlight order.
+  // accent colour per highlighted item, in highlight order — resolved through the
+  // shared path so the spec's subject-fit colour (baseColor for one tracked line,
+  // seriesColors for several) reaches the bump chart, falling back to the default
+  // palette only when the spec provides none.
+  const accents = resolveBumpAccents(config.highlight, {
+    baseColor: config.baseColor,
+    seriesColors: config.seriesColors,
+  });
   const accentOf = new Map<string, string>();
   (config.highlight ?? []).forEach((label, i) =>
-    accentOf.set(label, BUMP_ACCENT_COLORS[i % BUMP_ACCENT_COLORS.length]),
+    accentOf.set(label, accents[i]),
   );
   const colorOf = (label: string, highlighted: boolean) =>
-    highlighted ? (accentOf.get(label) ?? BUMP_ACCENT_COLORS[0]) : COLORS.muted;
+    highlighted ? (accentOf.get(label) ?? accents[0]) : COLORS.muted;
 
   // right gutter = the widest END label (capped) + the dot + a gap.
   const labelWBase = Math.max(
