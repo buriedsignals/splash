@@ -62,9 +62,10 @@ export function captionOverlapRatio(caption: string, passage: string): number {
 
 export function checkImageConformance(
   story: ImageStory,
-  _opts?: { overlapThreshold?: number },
+  opts?: { overlapThreshold?: number },
 ): string[] {
   const v: string[] = [];
+  const overlapThreshold = opts?.overlapThreshold ?? 0.6;
   if (!story.title?.trim()) v.push("missing story title");
   if (!story.description?.trim())
     v.push("missing description — a module must state what/when/where");
@@ -104,6 +105,19 @@ export function checkImageConformance(
       v.push(
         `frame "${f.id}" has no photo credit — each image carries its own attribution`,
       );
+    if (!f.sourcePassage?.trim())
+      v.push(
+        `frame "${f.id}" has no sourcePassage — an article-derived caption must record the passage it came from`,
+      );
+    else {
+      const ratio = captionOverlapRatio(f.caption ?? "", f.sourcePassage);
+      if (ratio > overlapThreshold)
+        v.push(
+          `frame "${f.id}" caption too close to its source passage (overlap ${ratio.toFixed(
+            2,
+          )} > ${overlapThreshold}) — rephrase self-contained, never a verbatim excerpt`,
+        );
+    }
   }
   return v;
 }

@@ -124,6 +124,40 @@ describe("checkImageConformance", () => {
     s.frames[1]!.id = "f0";
     expect(checkImageConformance(s)).toContain('duplicate frame id "f0"');
   });
+
+  it("should flag a frame whose caption is missing its sourcePassage", () => {
+    const s = validStory();
+    s.frames[0]!.sourcePassage = "";
+    expect(checkImageConformance(s)).toContain(
+      'frame "f0" has no sourcePassage — an article-derived caption must record the passage it came from',
+    );
+  });
+
+  it("should flag a caption that copies its sourcePassage", () => {
+    const s = validStory();
+    s.frames[0]!.sourcePassage =
+      "Residents recall a quiet towpath where families once walked on Sundays.";
+    s.frames[0]!.caption =
+      "residents recall a quiet towpath where families once walked";
+    const out = checkImageConformance(s);
+    expect(
+      out.some((m) =>
+        m.includes('frame "f0" caption too close to its source passage'),
+      ),
+    ).toBe(true);
+  });
+
+  it("should respect a custom overlapThreshold", () => {
+    const s = validStory();
+    s.frames[0]!.sourcePassage = "the eastern bank before the works began";
+    s.frames[0]!.caption = "The eastern bank before the works began.";
+    // Identical content → ratio 1.0; a threshold of 0.99 still flags it, 1.01 never would.
+    expect(
+      checkImageConformance(s, { overlapThreshold: 0.5 }).some((m) =>
+        m.includes("too close to its source passage"),
+      ),
+    ).toBe(true);
+  });
 });
 
 describe("captionOverlapRatio", () => {
