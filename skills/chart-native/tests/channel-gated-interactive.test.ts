@@ -1,15 +1,22 @@
-// Channel-gating lock (fix/channel-gated-produce, feedback→système): a produce run on a
-// SOCIAL channel (social-vertical / social-feed) must NOT build the interactive output.
-// Those channels' allowedFormats are [static, video] — no "interactive" — so shipping an
-// interactive.html / interactive.png byproduct next to a social deliverable is a bug
-// (confirmed: a social-vertical video case dropped both as byproducts). This locks two
-// facts so a future edit can't silently re-introduce the over-produce:
+// Channel-gating lock (fix/channel-gated-produce, feedback→système; re-shaped for the
+// single-format-produce-export redesign — produce.mjs now dispatches on a `switch
+// (format)` rather than always attempting both static+interactive): a produce run
+// requesting the "interactive" format on a SOCIAL channel (social-vertical /
+// social-feed) must NOT build the interactive output. Those channels' allowedFormats
+// are [static, video] — no "interactive" — so shipping an interactive.html /
+// interactive.png byproduct next to a social deliverable is a bug (confirmed: a
+// social-vertical video case dropped both as byproducts). This locks two facts so a
+// future edit can't silently re-introduce the over-produce:
 //   1. SEMANTIC: channel.ts forbids interactive on the social channels, allows it on
 //      article-web — the invariant the producer's gate reads.
-//   2. STRUCTURAL: produce.mjs only ever runs the interactive Vite build (INTERACTIVE:"1")
-//      inside an `if (interactiveAllowed)` block, where interactiveAllowed derives from
+//   2. STRUCTURAL: produce.mjs only ever runs the interactive Vite build
+//      (run("bunx", ["vite", "build"], { INTERACTIVE: "1" })) inside an
+//      `if (interactiveAllowed)` block, where interactiveAllowed derives from
 //      isFormatAllowed(channel, "interactive"). Strip every guarded block and the
-//      interactive build must vanish from the remainder.
+//      interactive build must vanish from the remainder. The match is on the full
+//      call shape (not a bare `INTERACTIVE: "1"` substring) because
+//      `SKIP_INTERACTIVE: "1"` (the static case's snap-proof env, unrelated) contains
+//      `INTERACTIVE: "1"` as a literal substring — a bare toContain would false-fail.
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -17,9 +24,16 @@ import { isFormatAllowed } from "../../atelier/src/channel";
 
 const PRODUCE = join(import.meta.dir, "..", "scripts", "produce.mjs");
 
+// The real Vite-build-with-INTERACTIVE=1 call — the one line that must never run
+// unconditionally. Whitespace-flexible so it matches regardless of indentation depth
+// (the switch/case nesting shifts it, unlike the pre-refactor flat `if` block).
+const BUILD_CALL_RE =
+  /run\(\s*"bunx",\s*\["vite",\s*"build"\],\s*\{\s*INTERACTIVE:\s*"1"\s*\}\s*\);/;
+
 // Remove every `if (interactiveAllowed) { ... }` block (balanced-brace match) so what
-// remains is the code that runs on EVERY channel. The interactive Vite build must not
-// survive this strip — if it does, it runs unconditionally (the over-produce bug).
+// remains is the code that runs on EVERY channel/format. The interactive Vite build
+// must not survive this strip — if it does, it runs unconditionally (the over-produce
+// bug).
 function stripGuardedBlocks(source: string): string {
   const GUARD = "if (interactiveAllowed) {";
   let out = source;
@@ -68,20 +82,19 @@ describe("channel-gated interactive: chart-native produce.mjs guards the interac
 
   it("only runs the interactive Vite build inside an if (interactiveAllowed) block", () => {
     // Sanity: the real source DOES build interactive (guarded).
-    expect(source).toContain('INTERACTIVE: "1"');
+    expect(source).toMatch(BUILD_CALL_RE);
     // After removing every guarded block, the interactive build must be gone.
     const stripped = stripGuardedBlocks(source);
-    expect(stripped).not.toContain('INTERACTIVE: "1"');
+    expect(stripped).not.toMatch(BUILD_CALL_RE);
   });
 
   it("is non-vacuous: an unguarded interactive build survives the strip and fails", () => {
-    // Simulate the over-produce bug: move the interactive build out of its guard so it
-    // runs unconditionally. The strip must now leave it behind.
-    const broken = source.replace(
-      /if \(interactiveAllowed\) \{\n  run\("bunx", \["vite", "build"\], \{ INTERACTIVE: "1" \}\);/,
-      'run("bunx", ["vite", "build"], { INTERACTIVE: "1" });\nif (interactiveAllowed) {',
-    );
-    expect(broken).not.toBe(source); // the replace matched
-    expect(stripGuardedBlocks(broken)).toContain('INTERACTIVE: "1"');
+    // Simulate the over-produce bug: append an UNGUARDED copy of the real vite-build
+    // call outside any if (interactiveAllowed) block. The strip must leave it behind —
+    // proving stripGuardedBlocks isn't vacuously stripping everything.
+    const match = source.match(BUILD_CALL_RE);
+    expect(match).not.toBeNull();
+    const broken = `${source}\n${match![0]}\n`;
+    expect(stripGuardedBlocks(broken)).toMatch(BUILD_CALL_RE);
   });
 });
