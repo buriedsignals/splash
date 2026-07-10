@@ -401,14 +401,20 @@ subject left on the library default). Two decisions:
 1. **scaleType from the data semantic** — magnitude (all one sign, a rate/count/year) → `sequential`;
    an anomaly / signed value around a meaningful midpoint (change, deviation, gain↔loss) → `diverging`;
    unordered categories → a qualitative scheme (not a ramp).
-2. **`palette` from the subject** — a named registry palette from `map-native/src/theme/scale.ts`:
-   - sequential: water → `blues`; energy/solar/heat → `oranges`; environment/forest → `greens`;
-     culture/politics-neutral magnitude → `purples`
+2. **`palette` from the subject** — a named registry palette from `map-native/src/theme/scale.ts` (the
+   choropleth mirror of the chart `baseColor` rule: the ramp HUE must fit the subject, never fall through
+   to blue by default):
+   - sequential: **energy / electricity / solar / heat / fire → `oranges`** (warm = light/power — a blue
+     ramp reads water/cold/generic, wrong for an energy story); water / rainfall / cold / marine → `blues`
+     (the ONE case blue is correct); environment / forest / vegetation → `greens`; culture /
+     politics-neutral magnitude → `purples`
    - diverging: temperature/anomaly → `rdbu` (red = warm/high); environment deficit↔surplus → `brbg`;
      neutral signed change → `puor`; legacy orange↔blue → `orbu`
-Emit `scaleType` + `palette` on the map config (native) or subject-fit `colorScale` stops (map-dw). Every
-registry ramp is vetted CVD-safe, so any fitting choice passes; the rule is the choice must FIT — never the
-blue default for a non-water subject.
+Emit `subject` + `scaleType` + `palette` on the map config (native) or subject-fit `colorScale` stops
+(map-dw). Every registry ramp is vetted CVD-safe (a single-hue sequential ramp is always CVD-safe), so any
+FITTING choice passes; the rule is the choice must FIT the subject — **NEVER the blue default for a
+non-water subject.** The produce guard (`checkPaletteConformance`) FAILS a declared `subject` sitting on the
+default blue, so an energy/electricity map MUST carry `palette:"oranges"` — the exact recurrence guarded.
 - `numberFormat` (optional): format string to strip noise from the value labels.
 
 **Basemap fallback rule:** if no known DW basemap matches the region identifiers in the data → do NOT
@@ -438,12 +444,16 @@ back to `map-dw` or a sorted bar chart (`d3-bars`, `sort:"desc"`) and state why 
   "producer": "map-native",
   "regionKey": "<data column holding ISO-A3 codes>",
   "valueField": "<data column holding the normalised rate>",
-  "rows": [{ "<regionKey>": "<ISO-A3>", "<valueField>": <number> }, "…"],
+  "labelField": "<data column holding the region NAME in the deliverable language>",
+  "rows": [{ "<regionKey>": "<ISO-A3>", "<labelField>": "<region name>", "<valueField>": <number> }, "…"],
   "basemap": "world",
   "title": "<the spatial insight — sentence case, never a label>",
   "description": "<what / when / where context>",
   "unit": "<long legend label, e.g. 'Share of renewables (%)'>",
   "valueUnit": "<short callout unit, e.g. '%'>",
+  "subject": "<the topic hint, e.g. 'electricity access' — drives the subject-fit ramp>",
+  "scaleType": "sequential",
+  "palette": "<subject-fit registry ramp — see the Map colour rule below; NEVER default blue for a non-water subject>",
   "source": { "name": "<honest source>", "url": "<URL>" }
 }
 ```
@@ -451,9 +461,17 @@ back to `map-dw` or a sorted bar chart (`d3-bars`, `sort:"desc"`) and state why 
 Field notes:
 - `producer`: MUST be `"map-native"` — the routing discriminator.
 - `regionKey` / `valueField`: the data column names. `rows` is an **array of objects** (not CSV string).
+- **`labelField` (REQUIRED when the deliverable language is not English, recommended always)**: the data
+  column holding a human-readable region NAME **in the deliverable's language** (e.g. `"Éthiopie"`,
+  `"Soudan du Sud"`). The narration (scrolly/video beats) uses THIS name — without it, a French map narrates
+  the basemap's ENGLISH names (`"Ethiopia"`, `"S. Sudan"`), the exact defect. Put the name column in every
+  row alongside the ISO-A3 code. If the data has no name column, add one with the correct-language names.
 - `basemap`: `"world"` for world ISO-A3 preset (slice 1b; other presets are later scope).
 - `title`: the spatial finding as a sentence — NOT a label or year range (validator enforces ≥12 chars).
 - `description`: the what/when/where — required (furniture standard; a missing value is a warning).
+- **`subject` + `palette`**: set BOTH (see the Map colour rule below). The produce guard FAILS a declared
+  `subject` left on the default blue ramp — so a warm subject (energy) MUST carry `palette:"oranges"`, water
+  keeps `"blues"`, vegetation `"greens"`. Emitting `subject` without a subject-fit `palette` blocks produce.
 - `source.name` + `source.url`: required (furniture standard; missing is a warning).
 - `unit` / `valueUnit`: optional but fill them when the data has a clear unit.
 
@@ -570,16 +588,29 @@ cannot be matched to ISO-A3 → fall back to `map-dw` or a sorted bar chart and 
   "producer": "scrolly",
   "regionKey": "<data column holding ISO-A3 codes>",
   "valueField": "<data column holding the normalised rate>",
-  "rows": [{ "<regionKey>": "<ISO-A3>", "<valueField>": <number> }, "…"],
+  "labelField": "<data column holding the region NAME in the deliverable language>",
+  "rows": [{ "<regionKey>": "<ISO-A3>", "<labelField>": "<region name>", "<valueField>": <number> }, "…"],
   "basemap": "world",
   "title": "<the spatial insight — sentence case, ≥12 chars, not a label or year range>",
   "description": "<what / when / where context>",
   "unit": "<long legend label, e.g. 'Share of renewables (%)'>",
   "valueUnit": "<short callout unit, e.g. '%'>",
+  "subject": "<the topic hint, e.g. 'electricity access' — drives the subject-fit ramp>",
+  "scaleType": "sequential",
+  "palette": "<subject-fit registry ramp — see the Map colour rule; energy → 'oranges', water → 'blues'>",
   "valueKind": "temporal | magnitude",
+  "lang": "<deliverable language, e.g. 'fr' — localizes numbers, 'Source', beat descriptors>",
   "source": { "name": "<honest source>", "url": "<URL>" }
 }
 ```
+
+**Same subject-fit + labelField + lang discipline as `map-native` above** — a scrolly is a narration, so it
+is the surface where an English basemap name or a blue energy ramp is most visible:
+- **`labelField`** (REQUIRED for a non-English deliverable): the scrolly BEATS narrate the DATA name — set
+  it so a French scrolly says `"Éthiopie"`, not the basemap's `"Ethiopia"`.
+- **`subject` + `palette`**: pick the subject-fit ramp (energy → `"oranges"`); the scrolly audit FAILS a
+  declared subject on the default blue.
+- **`lang`**: localizes the auto-generated beat descriptors, numbers, and the concluding takeaway.
 
 **Narrative pattern hint — `valueKind` (set it):** when the value field is a **year / date / ordinal
 step** and the story is a **diffusion / spread over time** (e.g. the year an event took effect per

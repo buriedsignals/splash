@@ -61,6 +61,13 @@ export type ChoroplethConfigShape = ChoroplethData & {
   scaleType?: "sequential" | "diverging";
   // A named registry palette or a custom CVD-safe ramp (see theme/scale.ts).
   palette?: string | string[];
+  // The topic hint (e.g. "electricity access", "rainfall") — the produce guard uses it
+  // to REQUIRE a subject-fit ramp: a declared subject left on the default blue fails.
+  subject?: string;
+  // Data column holding a human-readable region NAME in the deliverable's language.
+  // When set, the narration uses the DATA name ("Éthiopie"), not the basemap's English
+  // one ("Ethiopia") — a French map must never narrate English basemap labels.
+  labelField?: string;
   // Narrative pattern hint (② sets it when routing a temporal/diffusion field):
   // "temporal" → tell the sequence (first → … → most recent), never "highest/
   // lowest"; "magnitude" → keep the ranking; "categorical" → ranking fallback.

@@ -76,6 +76,29 @@ A produced map MUST satisfy all ten rules below across static / interactive / vi
     `checkPaletteConformance`, called from `checkChoroplethConformance`, `checkHexGridConformance`,
     and `checkCartogramConformance` (`skills/map-native/src/conformance.ts`).
 
+11. **Ramp HUE must fit the subject — never default blue** (the choropleth mirror of the chart
+    `baseColor` rule). A sequential ramp's hue carries meaning: **energy / electricity / solar /
+    heat → a warm `oranges` ramp** (warm = light/power); water / rainfall / cold / marine → `blues`
+    (the one case blue is right); environment / vegetation → `greens`; culture / politics-neutral →
+    `purples`. A blue ramp on an energy story reads water/cold/generic — wrong. The suggester sets
+    `subject` + a subject-fit `palette`; a declared `subject` left on the library default blue FAILS.
+    Every single-hue sequential ramp is CVD-safe, so any fitting choice passes — the rule is the
+    choice must FIT. Source: FT Visual Vocabulary (sequential ramps encode ordered magnitude by one
+    hue) + Okabe-Ito subject-fit convention. Enforced by `checkPaletteConformance`'s subject branch
+    (`skills/map-native/src/conformance.ts`), wired at produce in `map-produce-conformance.ts` and in
+    the scrolly audit (`skills/scrolly/scripts/audit-scrolly.mjs`).
+
+12. **Beat/callout names come from the DATA, in the deliverable language — never the basemap.** A
+    scrolly/video map narrates region names; those must be the DATA's names (`labelField`), in the
+    deliverable language (`"Éthiopie"`, `"Soudan du Sud"`), NOT the basemap GeoJSON's ISO/English
+    `name` property (`"Ethiopia"`, `"S. Sudan"`). The suggester emits a `labelField` column; without
+    it a French map silently narrates English basemap labels. And the concluding **takeaway beat must
+    be a DISTINCT, data-tied close** (the leader↔tail gap / the earliest↔latest span), never a verbatim
+    repeat of the intro description. Source: the story is the deliverable — names and closer are
+    editorial furniture, not basemap side-effects. Enforced by `computeChoropleth`'s `labels` map +
+    `deriveMapStory` (`labelField` → beat names; `deriveTakeawayCopy` → distinct closer) and the scrolly
+    `auditDistinctBookends` guard (`skills/scrolly/src/conformance.ts`).
+
 ---
 
 Enforcing code:

@@ -50,6 +50,11 @@ export interface ScrollyMapConfig extends ChoroplethData {
   lang?: string;
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
+  /** the topic hint (e.g. "electricity access") — drives the subject-fit ramp choice. */
+  subject?: string;
+  /** data column holding the region NAME in the deliverable language. When set, beat
+   * narration uses the DATA name ("Éthiopie") instead of the basemap's English name. */
+  labelField?: string;
   // Narrative pattern hint (② sets it): "temporal" → tell the sequence, never
   // "highest/lowest"; "magnitude" → keep the ranking; "categorical" → fallback.
   valueKind?: "temporal" | "magnitude" | "categorical";
@@ -156,6 +161,7 @@ export const ScrollyMap: React.FC<{
         bins: 5,
         scaleType: config.scaleType ?? "sequential",
         palette: config.palette,
+        labelField: config.labelField,
       });
       const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
 

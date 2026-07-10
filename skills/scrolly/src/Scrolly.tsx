@@ -194,6 +194,8 @@ export const Scrolly: React.FC<{
           "sequential" | "diverging" | undefined) ?? "sequential",
       palette: (config as unknown as Record<string, unknown>).palette as
         string | string[] | undefined,
+      labelField: (config as unknown as Record<string, unknown>).labelField as
+        string | undefined,
     });
     const beats = deriveMapStory(layout, world, "iso_a3", {
       title: config.title ?? "",

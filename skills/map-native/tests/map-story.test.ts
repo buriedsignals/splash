@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { computeChoropleth, type ChoroplethData } from "../src/choropleth-geo";
 import {
   deriveMapStory,
+  deriveTakeawayCopy,
   magnitudeRevealRows,
   magnitudeCaption,
   auditMapStoryReveals,
@@ -110,6 +111,75 @@ describe("deriveMapStory — value grammar", () => {
       .filter((b) => b.kind === "reveal")
       .find((b) => b.callout?.name === "Norway");
     expect(one?.callout?.value).toBe("1 %"); // symbol unit unchanged
+  });
+});
+
+describe("deriveTakeawayCopy — distinct data-tied closer", () => {
+  it("magnitude (EN): states leader ↔ tail with a 1-to-N gap", () => {
+    expect(
+      deriveTakeawayCopy({
+        pattern: "magnitude",
+        maxName: "Kenya",
+        maxValue: 75,
+        maxLabel: "75%",
+        minName: "South Sudan",
+        minValue: 8,
+        minLabel: "8%",
+      }),
+    ).toBe("Kenya: 75%, South Sudan: 8% — a 9-fold gap");
+  });
+  it("magnitude (FR): French colon + 'écart de 1 à N', no risky prepositions", () => {
+    expect(
+      deriveTakeawayCopy({
+        pattern: "magnitude",
+        maxName: "Kenya",
+        maxValue: 75,
+        maxLabel: "75 %",
+        minName: "Soudan du Sud",
+        minValue: 8,
+        minLabel: "8 %",
+        lang: "fr",
+      }),
+    ).toBe("Kenya : 75 %, Soudan du Sud : 8 % — un écart de 1 à 9");
+  });
+  it("magnitude: drops the ratio clause when the ratio is not meaningful (<2 or min≤0)", () => {
+    expect(
+      deriveTakeawayCopy({
+        pattern: "magnitude",
+        maxName: "A",
+        maxValue: 12,
+        maxLabel: "12",
+        minName: "B",
+        minValue: 10,
+        minLabel: "10",
+      }),
+    ).toBe("A: 12, B: 10");
+  });
+  it("temporal: closes on the earliest→latest span, not a ranking", () => {
+    expect(
+      deriveTakeawayCopy({
+        pattern: "temporal",
+        maxName: "Croatia",
+        maxValue: 2013,
+        maxLabel: "2013",
+        minName: "Estonia",
+        minValue: 2004,
+        minLabel: "2004",
+      }),
+    ).toBe("Estonia: 2004, Croatia: 2013 — a 9-year span");
+  });
+  it("degenerate single-region story → empty (caller falls back)", () => {
+    expect(
+      deriveTakeawayCopy({
+        pattern: "magnitude",
+        maxName: "Solo",
+        maxValue: 5,
+        maxLabel: "5",
+        minName: "Solo",
+        minValue: 5,
+        minLabel: "5",
+      }),
+    ).toBe("");
   });
 });
 
@@ -258,13 +328,58 @@ describe("deriveMapStory", () => {
       "takeaway",
     ]);
   });
-  it("takeaway beat has empty copy when insight equals title", () => {
+  it("takeaway is a DISTINCT data-tied closer (never the intro) when insight equals title", () => {
+    // The bug: with no distinct editorial insight the takeaway went empty and the
+    // scrolly re-rendered the intro description as the outro. Now it derives a gap
+    // line from the extremes (Norway 99% ↔ Poland 21%, ~5-fold) — distinct + data-tied.
     const layout = computeChoropleth(data, features, "iso_a3");
     const metaSame = { ...meta, insight: meta.title };
     const beats = deriveMapStory(layout, features, "iso_a3", metaSame);
     const last = beats[beats.length - 1];
     expect(last.kind).toBe("takeaway");
-    expect(last.copy).toBe("");
+    expect(last.copy).toBe("Norway: 99%, Poland: 21% — a 5-fold gap");
+    expect(last.copy).not.toBe(meta.title);
+  });
+  it("beat/callout names come from the DATA label (labelField), not the basemap name", () => {
+    // Basemap features are English ("Norway"/"Germany"/"Poland"); the data carries the
+    // French display names. With labelField set the narration must use the DATA names.
+    const fr: ChoroplethData = {
+      regionKey: "code",
+      valueField: "share",
+      rows: [
+        { code: "NOR", nom: "Norvège", share: 99 },
+        { code: "DEU", nom: "Allemagne", share: 59 },
+        { code: "POL", nom: "Pologne", share: 21 },
+      ],
+    };
+    const layout = computeChoropleth(fr, features, "iso_a3", {
+      labelField: "nom",
+    });
+    expect(layout.labels).toEqual({
+      NOR: "Norvège",
+      DEU: "Allemagne",
+      POL: "Pologne",
+    });
+    const beats = deriveMapStory(layout, features, "iso_a3", {
+      ...meta,
+      insight: meta.title, // no distinct editorial insight → derive the takeaway
+      lang: "fr",
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals[0].callout?.name).toBe("Norvège");
+    expect(reveals[0].copy).toContain("Norvège");
+    // takeaway uses the data names + French phrasing too.
+    const last = beats[beats.length - 1];
+    expect(last.copy).toContain("Norvège");
+    expect(last.copy).toContain("Pologne");
+    expect(last.copy).toContain("écart");
+  });
+  it("without labelField, names fall back to the basemap feature name (back-compat)", () => {
+    const layout = computeChoropleth(data, features, "iso_a3");
+    expect(layout.labels).toBeUndefined();
+    const beats = deriveMapStory(layout, features, "iso_a3", meta);
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals[0].callout?.name).toBe("Norway");
   });
   it("temporal field: orders reveals earliest→latest and tags seqIndex/seqTotal, no highest/lowest", () => {
     const yearly: ChoroplethData = {

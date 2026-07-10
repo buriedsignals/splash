@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   checkScrollyConformance,
   auditTemporalNarrative,
+  auditDistinctBookends,
 } from "../src/conformance";
 import type { ScrollyStory } from "../src/chapters";
 import type { Beat } from "../../map-native/src/map-story";
@@ -17,6 +18,37 @@ const ok: ScrollyStory = {
     { id: "c", visual: "map", action: "flyTo", ref: 2, prose: "Poland" },
   ],
 };
+
+describe("auditDistinctBookends", () => {
+  it("passes when the intro and takeaway differ", () => {
+    expect(auditDistinctBookends(ok)).toEqual([]);
+  });
+  it("flags an intro and takeaway that are identical (the recycled-description defect)", () => {
+    const recycled: ScrollyStory = {
+      ...ok,
+      steps: [
+        {
+          id: "a",
+          visual: "map",
+          action: "flyTo",
+          ref: 0,
+          prose: "Same line.",
+        },
+        { id: "b", visual: "map", action: "flyTo", ref: 1, prose: "Norway" },
+        {
+          id: "c",
+          visual: "map",
+          action: "flyTo",
+          ref: 2,
+          prose: "Same line.",
+        },
+      ],
+    };
+    const r = auditDistinctBookends(recycled);
+    expect(r.length).toBe(1);
+    expect(r[0]).toMatch(/intro and takeaway are identical/i);
+  });
+});
 
 describe("checkScrollyConformance", () => {
   it("passes a well-formed story", () => {

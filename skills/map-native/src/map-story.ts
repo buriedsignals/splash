@@ -1,6 +1,6 @@
 import type { ChoroplethLayout } from "./choropleth-geo";
 import { regionBounds } from "./choropleth-geo";
-import { formatLocaleNumber } from "./core/locale";
+import { formatLocaleNumber, isFrench } from "./core/locale";
 import {
   classifyNarrativePattern,
   type NarrativePattern,
@@ -99,8 +99,11 @@ export function deriveMapStory(
     const k = String(f.properties?.[joinKey]);
     if (!featByKey.has(k)) featByKey.set(k, f);
   }
+  // Prefer the DATA's display name (layout.labels, in the deliverable language) over
+  // the basemap feature name (ISO/English). A French map must narrate "Éthiopie", not
+  // the basemap's "Ethiopia" — the name comes from the data, never the basemap.
   const nameOf = (key: string) =>
-    String(featByKey.get(key)?.properties?.name ?? key);
+    layout.labels?.[key] ?? String(featByKey.get(key)?.properties?.name ?? key);
   const cameraOf = (key: string) => {
     const f = featByKey.get(key);
     return f ? regionBounds(f) : layout.bounds;
@@ -183,16 +186,81 @@ export function deriveMapStory(
     });
   });
 
+  // The concluding beat must be a DISTINCT takeaway, never a verbatim repeat of the
+  // intro/description. Prefer an explicit editorial insight when the author gave a
+  // genuinely distinct one; otherwise derive a data-tied closer from the extremes
+  // (the gap / the span) so the outro always says something the intro did not.
+  const distinctInsight =
+    meta.insight && meta.insight !== meta.title ? meta.insight : "";
+  const takeawayCopy =
+    distinctInsight ||
+    deriveTakeawayCopy({
+      pattern,
+      maxName: nameOf(maxRow.key),
+      maxValue: maxRow.value,
+      maxLabel: fmt(maxRow.value),
+      minName: nameOf(minRow.key),
+      minValue: minRow.value,
+      minLabel: fmt(minRow.value),
+      lang: meta.lang,
+    });
   beats.push({
     kind: "takeaway",
     camera: layout.bounds,
     highlight: [],
     dim: false,
     callout: null,
-    copy: meta.insight && meta.insight !== meta.title ? meta.insight : "",
+    copy: takeawayCopy,
   });
 
   return beats;
+}
+
+// A distinct, data-tied concluding line for the takeaway beat — NEVER a repeat of the
+// intro description. States the spread between the extremes: for a MAGNITUDE story the
+// leader-vs-tail gap (with a 1-to-N ratio when meaningful), for a TEMPORAL story the
+// earliest-vs-latest span. Uses a colon/neutral phrasing that avoids per-language
+// article/preposition grammar (works for any country name). Returns "" for a degenerate
+// single-region story (max === min), letting the caller fall back to insight/description.
+export function deriveTakeawayCopy(input: {
+  pattern: NarrativePattern;
+  maxName: string;
+  maxValue: number;
+  maxLabel: string;
+  minName: string;
+  minValue: number;
+  minLabel: string;
+  lang?: string;
+}): string {
+  const { maxName, maxLabel, minName, minLabel } = input;
+  // Single-region (or all-equal) story — nothing to contrast; no distinct takeaway.
+  if (maxName === minName && maxLabel === minLabel) return "";
+  const fr = isFrench(input.lang);
+  const sep = fr ? " : " : ": ";
+
+  if (input.pattern === "temporal") {
+    // Temporal: value = a year; min = earliest, max = latest. Close on the span.
+    const span = Math.abs(Math.round(input.maxValue - input.minValue));
+    const spanClause =
+      span > 0
+        ? fr
+          ? ` — ${span} an${span === 1 ? "" : "s"} d'écart`
+          : ` — a ${span}-year span`
+        : "";
+    // minLabel is the earliest year, maxLabel the most recent.
+    return `${minName}${sep}${minLabel}, ${maxName}${sep}${maxLabel}${spanClause}`;
+  }
+
+  // Magnitude: leader vs tail. Add a "1 to N" ratio when it is meaningful.
+  const ratio =
+    input.minValue > 0 ? Math.round(input.maxValue / input.minValue) : 0;
+  const gapClause =
+    ratio >= 2
+      ? fr
+        ? ` — un écart de 1 à ${ratio}`
+        : ` — a ${ratio}-fold gap`
+      : "";
+  return `${maxName}${sep}${maxLabel}, ${minName}${sep}${minLabel}${gapClause}`;
 }
 
 // Temporal reveal selection. Order every region earliest→latest (ties broken by

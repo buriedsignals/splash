@@ -122,6 +122,10 @@ export const ChoroplethScrolly: React.FC<{
     source?: { name: string; url: string };
     scaleType?: "sequential" | "diverging";
     palette?: string | string[];
+    /** the topic hint (e.g. "electricity access") → drives the subject-fit ramp guard. */
+    subject?: string;
+    /** data column holding the region NAME in the deliverable language (beat narration). */
+    labelField?: string;
     valueKind?: "temporal" | "magnitude" | "categorical";
     mapStyle?: string;
     /** deliverable language — localizes legend numbers + "Source". Default English. */
@@ -187,6 +191,7 @@ export const ChoroplethScrolly: React.FC<{
             bins: NUM_BINS,
             scaleType: config.scaleType ?? "sequential",
             palette: config.palette,
+            labelField: config.labelField,
           });
 
           const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
