@@ -14,6 +14,10 @@ const root = join(here, "..");
 const chart = process.env.CHART ?? "dot-strip";
 // OUTDIR overrides the default proof folder (the produce() path writes elsewhere)
 const outDir = process.env.OUTDIR ?? join(root, "output-proof", chart);
+// SKIP_INTERACTIVE=1 → static-only: produce.mjs sets it when the channel forbids the
+// interactive format (social-vertical / social-feed), so no interactive build exists to
+// snap. The static PNG (step 1) always runs; the interactive PNG (step 2) is skipped.
+const skipInteractive = process.env.SKIP_INTERACTIVE === "1";
 await mkdir(outDir, { recursive: true });
 
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
@@ -48,22 +52,27 @@ await sp.locator("#root > div").screenshot({ path: join(outDir, "static.png") })
 console.log("wrote static.png");
 await sp.close();
 
-// 2) INTERACTIVE — focus the first focusable data element → tooltip
-const ip = await browser.newPage({ viewport: { width: 900, height: 560 }, deviceScaleFactor: 2 });
-await ip.goto(pathToFileURL(join(distSub("interactive"), "index.html")).href);
-await ip.waitForSelector("[tabindex]");
-await ip.waitForTimeout(1700); // let the reveal settle
-const hits = ip.locator("[tabindex]");
-const n = await hits.count();
-if (n === 0) throw new Error("no focusable data element found");
-await hits.nth(0).focus();
-await ip.waitForSelector(".tooltip", { timeout: 3000 });
-const tip = await ip.locator(".tooltip").textContent();
-console.log("tooltip text:", tip);
-await ip.waitForTimeout(150);
-await ip.screenshot({ path: join(outDir, "interactive.png") });
-console.log("wrote interactive.png");
-await ip.close();
+// 2) INTERACTIVE — focus the first focusable data element → tooltip. Skipped when the
+// channel forbids interactive (SKIP_INTERACTIVE): the interactive build doesn't exist.
+if (!skipInteractive) {
+  const ip = await browser.newPage({ viewport: { width: 900, height: 560 }, deviceScaleFactor: 2 });
+  await ip.goto(pathToFileURL(join(distSub("interactive"), "index.html")).href);
+  await ip.waitForSelector("[tabindex]");
+  await ip.waitForTimeout(1700); // let the reveal settle
+  const hits = ip.locator("[tabindex]");
+  const n = await hits.count();
+  if (n === 0) throw new Error("no focusable data element found");
+  await hits.nth(0).focus();
+  await ip.waitForSelector(".tooltip", { timeout: 3000 });
+  const tip = await ip.locator(".tooltip").textContent();
+  console.log("tooltip text:", tip);
+  await ip.waitForTimeout(150);
+  await ip.screenshot({ path: join(outDir, "interactive.png") });
+  console.log("wrote interactive.png");
+  await ip.close();
+} else {
+  console.log("SKIP_INTERACTIVE=1 → skipped interactive.png (channel forbids interactive)");
+}
 
 await browser.close();
 server.close();

@@ -16,7 +16,7 @@ import { chartDistSub } from "../src/build-paths.ts";
 import { runProduceConformance } from "../src/core/produce-conformance.ts";
 import { REMOTION_PREFIX } from "../src/native-types.ts";
 import { snapCommand } from "../src/platform-runners.ts";
-import { channelAspect, assertRenderedSize } from "../../atelier/src/channel.ts";
+import { channelAspect, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -64,6 +64,16 @@ if (!type || !configPath || !outDir) {
 const VALID_CHANNELS = new Set(["social-vertical", "social-feed", "article-web"]);
 const rawChannel = process.env.ATELIER_CHANNEL ?? "article-web";
 const channel = VALID_CHANNELS.has(rawChannel) ? rawChannel : "article-web";
+
+// Channel-gated interactive (fix/channel-gated-produce): only build interactive.html
+// and run the interactive-only snaps when the channel actually allows the interactive
+// format. social-vertical / social-feed (allowedFormats = static, video) must NOT ship
+// an interactive byproduct — building it wastes a Vite pass and drops a stray
+// interactive.html / interactive.png next to a social deliverable. article-web (allows
+// interactive) is unchanged: interactive build + all interactive snaps run as before.
+// The static build, static conformance (snap-contrast, render-size), and the video path
+// always run regardless of channel.
+const interactiveAllowed = isFormatAllowed(channel, "interactive");
 
 const X = REMOTION_PREFIX[type];
 if (!X) {
@@ -133,21 +143,38 @@ const run = (cmd, args, extraEnv = {}) =>
   execFileSync(cmd, args, { stdio: "inherit", cwd: root, env: { ...env, ...extraEnv }, shell: isWin });
 const snap = (script, extraEnv = {}) => run(SNAP[0], [...SNAP.slice(1), script], extraEnv);
 
-// 1. web builds (config baked in via the Vite define)
-console.log(`[produce ${type}] building static + interactive…`);
+// 1. web builds (config baked in via the Vite define). The static build always runs;
+// the interactive build runs ONLY when the channel allows the interactive format.
+console.log(
+  interactiveAllowed
+    ? `[produce ${type}] building static + interactive…`
+    : `[produce ${type}] building static (channel "${channel}" forbids interactive — skipping interactive build)…`,
+);
 run("bunx", ["vite", "build"]);
-run("bunx", ["vite", "build"], { INTERACTIVE: "1" });
+let interactiveDest = null;
+if (interactiveAllowed) {
+  run("bunx", ["vite", "build"], { INTERACTIVE: "1" });
 
-// 1b. copy self-contained interactive.html into outDir
-const interactiveSrc = join(root, chartDistSub(type, "interactive"), "index.html");
-const interactiveDest = join(outDir, "interactive.html");
-copyFileSync(interactiveSrc, interactiveDest);
-console.log(`[produce ${type}] interactive.html → ${interactiveDest}`);
-run("bun", ["scripts/assert-selfcontained.mjs", interactiveDest]);
+  // 1b. copy self-contained interactive.html into outDir
+  const interactiveSrc = join(root, chartDistSub(type, "interactive"), "index.html");
+  interactiveDest = join(outDir, "interactive.html");
+  copyFileSync(interactiveSrc, interactiveDest);
+  console.log(`[produce ${type}] interactive.html → ${interactiveDest}`);
+  run("bun", ["scripts/assert-selfcontained.mjs", interactiveDest]);
+}
 
-// 2. snap static + interactive into outDir
-console.log(`[produce ${type}] snapping static + interactive…`);
-snap("scripts/snap-proof.mjs", { OUTDIR: outDir });
+// 2. snap static (always) + interactive (only when the channel allows it) into outDir.
+// snap-proof ALWAYS writes static.png; SKIP_INTERACTIVE tells it to skip the interactive
+// PNG so a social produce doesn't fail on a missing interactive build.
+console.log(
+  interactiveAllowed
+    ? `[produce ${type}] snapping static + interactive…`
+    : `[produce ${type}] snapping static (interactive skipped for channel "${channel}")…`,
+);
+snap("scripts/snap-proof.mjs", {
+  OUTDIR: outDir,
+  SKIP_INTERACTIVE: interactiveAllowed ? "" : "1",
+});
 
 // 2b. render-time WCAG contrast guard — every text label must clear 4.5:1 against
 // its real background. Fails the run before export on a mark-coloured label.
@@ -157,18 +184,23 @@ console.log(`[produce ${type}] checking text contrast (snap-contrast)…`);
 // failure (policy b). No brand profile → empty → the auto path stays strict.
 snap("scripts/snap-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",") });
 
-// 2c. render-time WCAG contrast guard for the INTERACTIVE hover/focus tooltip — a
-// static-build check can't see this (the tooltip only exists on hover, in HTML/CSS,
-// not SVG). Fails the run before export on a tooltip name painted in the mark hue.
-console.log(`[produce ${type}] checking tooltip contrast (snap-tooltip-contrast)…`);
-snap("scripts/snap-tooltip-contrast.mjs");
+// 2c / 2c-bis — INTERACTIVE hover/focus tooltip guards. Both read the interactive
+// build, so they only run when the channel allows interactive (skipped for social
+// channels, which never build it).
+if (interactiveAllowed) {
+  // 2c. render-time WCAG contrast guard for the INTERACTIVE hover/focus tooltip — a
+  // static-build check can't see this (the tooltip only exists on hover, in HTML/CSS,
+  // not SVG). Fails the run before export on a tooltip name painted in the mark hue.
+  console.log(`[produce ${type}] checking tooltip contrast (snap-tooltip-contrast)…`);
+  snap("scripts/snap-tooltip-contrast.mjs");
 
-// 2c-bis. render-time in-viewport guard for the INTERACTIVE hover/focus tooltip — a
-// mark near the right/top edge must not push the tooltip off-screen (its text would
-// clip). ChartFrame's ClampedTooltip flips/clamps it back in-bounds; this asserts the
-// property mechanically at a narrow + wide embed width. Fails the run before export.
-console.log(`[produce ${type}] checking tooltip stays in-viewport (snap-tooltip-viewport)…`);
-snap("scripts/snap-tooltip-viewport.mjs");
+  // 2c-bis. render-time in-viewport guard for the INTERACTIVE hover/focus tooltip — a
+  // mark near the right/top edge must not push the tooltip off-screen (its text would
+  // clip). ChartFrame's ClampedTooltip flips/clamps it back in-bounds; this asserts the
+  // property mechanically at a narrow + wide embed width. Fails the run before export.
+  console.log(`[produce ${type}] checking tooltip stays in-viewport (snap-tooltip-viewport)…`);
+  snap("scripts/snap-tooltip-viewport.mjs");
+}
 
 // 2d. render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
 // dimensions must equal the channel's exact media size. Fail-hard before export,
@@ -187,11 +219,11 @@ console.log(`[produce ${type}] checking rendered size vs channel "${channel}"…
   }
 }
 
-const result = {
-  static: join(outDir, "static.png"),
-  interactive: join(outDir, "interactive.png"),
-  interactiveHtml: interactiveDest,
-};
+const result = { static: join(outDir, "static.png") };
+if (interactiveAllowed) {
+  result.interactive = join(outDir, "interactive.png");
+  result.interactiveHtml = interactiveDest;
+}
 
 // 3. video (config injected via Remotion --props inside render-video.mjs) — render
 // ONLY the single comp matching the channel's aspect (not the old unconditional
