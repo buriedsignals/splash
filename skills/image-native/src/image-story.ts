@@ -43,5 +43,20 @@ export function checkImageConformance(
     v.push(
       "missing source name — an embedded module must carry its own source",
     );
+  const n = story.frames.length;
+  if (n < 2)
+    v.push(
+      `only ${n} frame${n === 1 ? "" : "s"} — an image sequence needs at least 2`,
+    );
+  if (n > 6)
+    v.push(
+      `${n} frames — an embedded image scrolly is capped at 6; cull upstream`,
+    );
+  if (
+    !Number.isInteger(story.keyFrame) ||
+    story.keyFrame < 0 ||
+    story.keyFrame >= n
+  )
+    v.push(`keyFrame ${story.keyFrame} out of range [0,${n})`);
   return v;
 }

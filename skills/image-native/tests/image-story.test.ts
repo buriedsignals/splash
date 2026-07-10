@@ -60,4 +60,28 @@ describe("checkImageConformance", () => {
       "missing source name — an embedded module must carry its own source",
     );
   });
+
+  it("should flag fewer than 2 frames (no crossfade possible)", () => {
+    const s = validStory();
+    s.frames = [s.frames[0]!];
+    s.keyFrame = 0;
+    expect(checkImageConformance(s)).toContain(
+      "only 1 frame — an image sequence needs at least 2",
+    );
+  });
+
+  it("should flag more than 6 frames (too long for an embedded module)", () => {
+    const s = validStory();
+    const base = s.frames[0]!;
+    s.frames = Array.from({ length: 7 }, (_, i) => ({ ...base, id: `f${i}` }));
+    expect(checkImageConformance(s)).toContain(
+      "7 frames — an embedded image scrolly is capped at 6; cull upstream",
+    );
+  });
+
+  it("should flag a keyFrame index out of range", () => {
+    const s = validStory();
+    s.keyFrame = 5;
+    expect(checkImageConformance(s)).toContain("keyFrame 5 out of range [0,2)");
+  });
 });
