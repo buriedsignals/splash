@@ -66,6 +66,33 @@ Livré (branche `fix/export-form-choice`, mergé, gate 16/16, adversarial-review
 
 Reste (backlog) : valider le flux conversationnel a/b/c par un run harness ; bundle runnable pour map-native/scrolly.
 
+### Wave 4 2026-07-10 — 6 sujets neufs (climat/sport/café/cantons/connectivité/startups) → 2 fixes
+
+Nouveaux cas (thèmes/lieux/données neufs + pièges) : `ocean-heat-video`, `record-marathon-slope`,
+`cafe-production-symbol`, `deficit-cantons-diverging`, `internet-penetration-choropleth`,
+`startup-funding-datapoor`. **Fixes des cycles précédents validés au rendu** (0 régression) : D (barre
+Fribourg +8 gardée), I (légende `4 000 000 t`), C (3 coureurs marathon labellisés), flux export a/b/c
+(proposé 4/5). Deux fixes mécaniques mergés (adversarial-review — les agents ont d'abord renvoyé des
+stubs « test », **re-vérifié à la main** : seuil, tests, wiring) :
+- **map-dw : join-key silencieux** — un `mapKeyAttr` erroné (`ISO_A3` vs vraie clé `DW_STATE_CODE` de
+  `world-2019`, 0/10 lignes matchées) passait `validateMapSpec` sans warning → carte **grise sans
+  données** publiée, marquée `produced`. Fix 2 leviers : registre `basemap-keys.ts` (clés réelles par
+  basemap → `validateMapSpec` rejette une clé invalide) + garde produce `join-match.ts` (taux de match
+  réel des LIGNES de données ; throw si < 50% → `status:failed`). **Subset-safe vérifié** (dénominateur =
+  lignes de données, pas régions du basemap → une carte « 8 cantons » = 100% match, passe ; seule une
+  jointure cassée = 0% échoue). 95 tests, API réelle correct-vs-cassé.
+- **map-native : labels symboles coupés au bord** — « Indonésie » → « Indonés » au bord droit. Root :
+  `text-variable-anchor` de MapLibre ne réancre que sur collision label-label, aveugle au bord canvas.
+  Fix : primitive partagée `placeSymbolLabel` (miroir de `tooltip-clamp`) → flip right→left / clamp
+  intra-viewport, ancre data-driven `text-anchor`, garde `changed` anti-boucle-idle. 553 tests,
+  render-vérifié (avant/après).
+
+Findings au backlog (bigger/flow/harness) : carte interactive choroplèthe dégrade en statique sur
+données quasi-globales (clamp a11y bounded-nav) · titre qui revient au cadrage de l'article vs takeaway
+confirmé (règle Gate 1b non obéie) · vidéo produite mais run closed-early sans registration de livraison ·
+`suggest-chart` émet la clé `world`+`ISO_A3` cassée (attrapée au produce, à corriger à la source) ·
+renderers symboles vidéo/scrolly encore en `text-variable-anchor` (même classe edge-clip).
+
 ## État 2026-06-23 (fin de session)
 - **MERGÉ dans `main`** : Tranche 1 (boucle dw-chart) + Tranche 1.1 (22 types + garde-fous) + **② suggester runtime + harness d'éval**.
 - ② : procédure runtime dans `suggest-chart/SKILL.md` ; éval `skills/suggest-chart/eval/` (scoreSpec pur + family-types + 8 cas + judge.md). Baseline auto-noté : 8/8 gate, 0.93/0.96 éditorial. **Lien ②→dw-chart prouvé live** (`eval/e2e-proof.md`, chart publié réel).
