@@ -72,7 +72,7 @@ export function CandlestickChart({
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 16,
-    bottom: 52, // date axis, clear of the source line
+    bottom: 28, // date axis (source band reserved in resolveFrameWithHeader)
     left: 48, // price axis
   };
   const frame = resolveFrameWithHeader(
@@ -315,8 +315,10 @@ function Tooltip({
         {d.close >= d.open ? "▲" : "▼"} {formatNumber(d.close, config.lang)}
       </span>
       <div style={{ opacity: 0.75, fontSize: 11 }}>
-        O {formatNumber(d.open, config.lang)} · H {formatNumber(d.high, config.lang)} · L{" "}
-        {formatNumber(d.low, config.lang)} · C {formatNumber(d.close, config.lang)}
+        O {formatNumber(d.open, config.lang)} · H{" "}
+        {formatNumber(d.high, config.lang)} · L{" "}
+        {formatNumber(d.low, config.lang)} · C{" "}
+        {formatNumber(d.close, config.lang)}
       </div>
     </div>
   );

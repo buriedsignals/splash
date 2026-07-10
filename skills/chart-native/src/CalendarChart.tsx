@@ -62,10 +62,19 @@ export function CalendarChart({
   const basePad = {
     top: (responsive ? 16 : 50 + titleLines * 27) + 16, // + month labels band
     right: 18,
-    bottom: 60, // colourbar legend (below the full-height grid) + source clearance
+    bottom: 44, // colourbar legend below the full-height grid (source band reserved in resolveFrameWithHeader)
     left: 36, // weekday labels
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.42, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.42,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -320,7 +329,9 @@ function Tooltip({
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
       }}
     >
-      <strong style={{ fontSize: 13 }}>{formatNumber(c.value, config.lang)}</strong>{" "}
+      <strong style={{ fontSize: 13 }}>
+        {formatNumber(c.value, config.lang)}
+      </strong>{" "}
       <span style={{ opacity: 0.8, fontSize: 12 }}>{config.unit}</span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>{label}</div>
     </div>

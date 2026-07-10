@@ -75,7 +75,7 @@ export function DumbbellChart({
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: 60, // outer value label of the rightmost dot
-    bottom: 28 + legendRowUnscaled + 20, // legend + source clearance
+    bottom: 28 + legendRowUnscaled, // legend (source band reserved in resolveFrameWithHeader)
     left: 124, // category labels
   };
   const frame = resolveFrameWithHeader(

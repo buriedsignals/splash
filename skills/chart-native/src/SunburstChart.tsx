@@ -105,7 +105,7 @@ export function SunburstChart({
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 14,
-    bottom: 18 + legendRows * LEG_ROW + 16, // branch legend rows + source clearance
+    bottom: 18 + legendRows * LEG_ROW, // branch legend rows (source band reserved in resolveFrameWithHeader)
     left: 14,
   };
   const frame = resolveFrameWithHeader(

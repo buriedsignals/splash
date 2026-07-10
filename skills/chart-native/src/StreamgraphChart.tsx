@@ -80,10 +80,19 @@ export function StreamgraphChart({
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 16,
-    bottom: 52, // time captions, clear of the source line
+    bottom: 30, // time captions (source band reserved in resolveFrameWithHeader)
     left: 16,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.6, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.6,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

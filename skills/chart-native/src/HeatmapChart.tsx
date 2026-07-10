@@ -70,10 +70,19 @@ export function HeatmapChart({
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: 16,
-    bottom: 76, // column labels + colourbar + source clearance
+    bottom: 68, // column labels + colourbar (source band reserved in resolveFrameWithHeader)
     left: 52, // row labels
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.62, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    0.62,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

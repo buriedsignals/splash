@@ -92,12 +92,12 @@ export function StackedBarChart({
     legendRowUnscaled * s,
   );
   // unscaled bottom padding (resolveFrame multiplies by scale): the legend sits
-  // 40 below the plot, then every legend row, then ~24 of clearance for the
-  // source line beneath it — so legend collides with neither the plot nor source.
+  // 40 below the plot, then every legend row. The source-footer band is reserved
+  // once in resolveFrameWithHeader, so the legend never collides with the source.
   const basePad = {
     top: baseTop,
     right: sideRight,
-    bottom: 44 + legendRows * legendRowUnscaled + 24,
+    bottom: 44 + legendRows * legendRowUnscaled,
     left: leftAxis,
   };
   const frame = resolveFrameWithHeader(

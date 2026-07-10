@@ -86,10 +86,14 @@ no ResizeObserver, no second paint:
   x-axis TITLE (`innerHeight + ~44`), the bottom legend and rotated tick feet by exactly
   that amount — opening a clear band underneath for the source. This fixed **Bug M** (the
   x-axis title overprinting the source into an unreadable smear). It never CREATES a
-  bottom overlap, so it is safe for every type; a chart that already reserves the whole
-  band inside its own `basePad.bottom` (`WaterfallChart` — its rotated-label descent
-  budget is derived from that reservation) opts out of the frame reserve so it is not
-  counted twice. Locked by `tests/footer-fit.test.ts` and the audit's `long-source` case.
+  bottom overlap, so it is safe for every type. **Every type's `basePad.bottom` therefore
+  holds its bottom furniture ONLY (axis ticks / captions / legend), never the source
+  band** — baking source clearance there would double-count the reserve and open a too-tall
+  bottom gap (Issue #7, since consolidated). The single exception is a chart that already
+  reserves the whole band inside its own `basePad.bottom` (`WaterfallChart` — its
+  rotated-label descent budget is derived from that reservation), which opts OUT of the
+  frame reserve (`reserveSourceFooter=false`) so it is not counted twice. Locked by
+  `tests/footer-fit.test.ts` and the audit's `long-source` case.
 
 ## 6. The web-build file:// trap
 

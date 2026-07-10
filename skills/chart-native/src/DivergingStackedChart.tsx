@@ -95,7 +95,7 @@ export function DivergingStackedChart({
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 20,
-    bottom: 32 + legendRows * LEG_ROW + 12, // ticks + legend rows + source clearance
+    bottom: 32 + legendRows * LEG_ROW, // ticks + legend rows (source band reserved in resolveFrameWithHeader)
     left: 130, // item labels in the gutter
   };
   const frame = resolveFrameWithHeader(

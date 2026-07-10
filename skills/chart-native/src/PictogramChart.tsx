@@ -113,10 +113,19 @@ export function PictogramChart({
   const basePad = {
     top: responsive ? 16 : 50 + titleLines * 27,
     right: 52, // row value labels
-    bottom: 30 + 30, // unit key + source clearance
+    bottom: 30, // unit key (source band reserved in resolveFrameWithHeader)
     left: 120, // category labels
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;

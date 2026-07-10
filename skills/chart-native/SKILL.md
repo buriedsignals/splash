@@ -75,10 +75,12 @@ For each new FT type, in order:
      `padding.bottom` by `format.sourceFooterReserve()` — the x-axis TITLE (at `innerHeight + ~44`),
      a bottom legend, and rotated tick feet then float ABOVE the source instead of overprinting it
      (Bug M). This is the symmetric twin of the header reserve on `padding.top`. Do NOT bake source
-     clearance into a type's `basePad.bottom`; a chart that self-manages the whole band
-     (`WaterfallChart`, whose rotated-label descent budget derives from its own reservation) opts
-     out via the last `resolveFrameWithHeader` arg. Locked by `tests/footer-fit.test.ts` and the
-     audit's scatter `long-source` case.
+     clearance into a type's `basePad.bottom` — it would DOUBLE-COUNT the shared reserve (a
+     too-tall bottom gap; Issue #7). Every type's `basePad.bottom` now holds furniture ONLY; the
+     source band is the reserve's job. The sole exception is a chart that self-manages the whole
+     band (`WaterfallChart`, whose rotated-label descent budget derives from its own reservation),
+     which opts OUT via the last `resolveFrameWithHeader` arg (`reserveSourceFooter=false`). Locked
+     by `tests/footer-fit.test.ts` and the audit's scatter `long-source` case.
    - Reveal grammar: nothing is drawn at progress 0; marks fade in from nothing and land at the right
      moment (the head/dots appear and disappear with the draw, not before or after). The audit
      ENFORCES this — it rasterises the plot at progress 0 (honouring clip/opacity/size) and requires

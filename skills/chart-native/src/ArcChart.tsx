@@ -98,12 +98,22 @@ export function ArcChart({
   const basePad = {
     top: responsive ? 16 : 50 + titleLines * 27,
     right: 22,
-    // legend rows + source clearance (node labels live INSIDE the plot, in the
-    // baseline inset reserved below — see baselineInset)
-    bottom: legendRows * LEG_ROW + 40,
+    // legend rows only — the source-footer band is reserved once in
+    // resolveFrameWithHeader (node labels live INSIDE the plot, in the baseline
+    // inset reserved below — see baselineInset)
+    bottom: legendRows * LEG_ROW + 20,
     left: 22,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
