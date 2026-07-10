@@ -287,7 +287,15 @@ code gates cannot — a title that misstates the metric, a fabricated or incompl
 encoding. **Never spawn an Agent/Task sub-agent to do this review** — during the atelier flow you ONLY
 sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing
 (an agentId) into the journalist-facing conversation. Review adversarially yourself (try to falsify each
-criterion). Record it (export is refused without a review record):
+criterion). **For an interactive or scrolly deliverable, a static read (`static.png` / a video frame)
+verifies ONLY the still surface — layout, labels, colour, aspect, title, source, emphasis. It shows
+NOTHING about hover/tooltip/pan/zoom: never assert an interaction "works" from a still.** An interaction
+claim (a tooltip surfaces, its text is legible, it stays in-viewport, a map popup shows the right
+name/value) is allowed only by citing the pass of the producer's interaction snapshot — which already ran
+fail-hard inside `produce-all` — or re-running it: chart-native `snap-tooltip-contrast.mjs` /
+`snap-tooltip-viewport.mjs`, map-native `snap-proof.mjs` (see `references/render-review.md`, "Interaction
+claims require an interaction test"). No cited run → record "not interaction-tested", never a pass. Record
+it (export is refused without a review record):
 ```bash
 bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> [concern...]
 ```
