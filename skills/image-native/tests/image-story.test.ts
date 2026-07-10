@@ -84,4 +84,40 @@ describe("checkImageConformance", () => {
     s.keyFrame = 5;
     expect(checkImageConformance(s)).toContain("keyFrame 5 out of range [0,2)");
   });
+
+  it("should flag a frame with empty alt (WCAG 1.1.1)", () => {
+    const s = validStory();
+    s.frames[1]!.alt = "   ";
+    expect(checkImageConformance(s)).toContain(
+      'frame "f1" has empty alt — a photo needs a text alternative describing what is visible',
+    );
+  });
+
+  it("should flag alt identical to caption (they answer different questions)", () => {
+    const s = validStory();
+    s.frames[0]!.alt = s.frames[0]!.caption;
+    expect(checkImageConformance(s)).toContain(
+      'frame "f0" alt duplicates its caption — alt describes what is visible, caption states significance',
+    );
+  });
+
+  it("should flag a frame missing a photo credit", () => {
+    const s = validStory();
+    s.frames[0]!.credit = { name: "" };
+    expect(checkImageConformance(s)).toContain(
+      'frame "f0" has no photo credit — each image carries its own attribution',
+    );
+  });
+
+  it("should flag an empty caption", () => {
+    const s = validStory();
+    s.frames[1]!.caption = "";
+    expect(checkImageConformance(s)).toContain('frame "f1" has empty caption');
+  });
+
+  it("should flag a duplicate frame id", () => {
+    const s = validStory();
+    s.frames[1]!.id = "f0";
+    expect(checkImageConformance(s)).toContain('duplicate frame id "f0"');
+  });
 });

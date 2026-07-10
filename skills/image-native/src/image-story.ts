@@ -58,5 +58,23 @@ export function checkImageConformance(
     story.keyFrame >= n
   )
     v.push(`keyFrame ${story.keyFrame} out of range [0,${n})`);
+  const ids = new Set<string>();
+  for (const f of story.frames) {
+    if (ids.has(f.id)) v.push(`duplicate frame id "${f.id}"`);
+    ids.add(f.id);
+    if (!f.caption?.trim()) v.push(`frame "${f.id}" has empty caption`);
+    if (!f.alt?.trim())
+      v.push(
+        `frame "${f.id}" has empty alt — a photo needs a text alternative describing what is visible`,
+      );
+    else if (f.alt.trim() === f.caption?.trim())
+      v.push(
+        `frame "${f.id}" alt duplicates its caption — alt describes what is visible, caption states significance`,
+      );
+    if (!f.credit?.name?.trim())
+      v.push(
+        `frame "${f.id}" has no photo credit — each image carries its own attribution`,
+      );
+  }
   return v;
 }
