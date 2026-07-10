@@ -114,6 +114,54 @@ describe("specToMapMetadata", () => {
     >;
     expect("number-append" in d).toBe(false);
   });
+
+  // Legend number grouping (verified-bug fix). Datawrapper's continuous choropleth legend
+  // formats its min/max endpoint labels with `visualize.legends.color.labelFormat`
+  // (default "0.[00]" — NO thousands grouping → a French GDP map shipped bare "17600" /
+  // "41500" while its subtitle correctly wrote "28 000 €"). Ground truth read from the
+  // published d3-maps-choropleth renderer: the legend label formatter (`TL`) reads
+  // `legends.color.labelFormat` and the value column's `data.column-format` prepend/append —
+  // NOT describe.number-format. So the grouped token must be set on BOTH.
+  it("groups the legend via visualize.legends.color.labelFormat (default is un-grouped)", () => {
+    const v = specToMapMetadata(base).metadata.visualize as Record<
+      string,
+      unknown
+    >;
+    const legends = v.legends as { color?: { labelFormat?: string } };
+    expect(legends?.color?.labelFormat).toBe("0,0.[00]"); // "0,0" = thousands grouping
+    expect(legends.color!.labelFormat).toContain("0,0");
+  });
+
+  it("emits the value column format on data.column-format so the legend groups + carries the unit", () => {
+    const p = specToMapMetadata({ ...base, unit: " €" });
+    const cf = (p.metadata.data as Record<string, unknown>)?.[
+      "column-format"
+    ] as Record<string, Record<string, unknown>>;
+    expect(cf.value).toBeDefined();
+    expect(cf.value.type).toBe("number");
+    expect(cf.value["number-format"]).toBe("0,0.[00]"); // grouped
+    expect(cf.value["number-append"]).toBe(" €"); // unit on legend + %REGION_VALUE% tooltip
+  });
+
+  it("mirrors an explicit numberFormat into the legend + column format", () => {
+    const p = specToMapMetadata({ ...base, numberFormat: "0,0" });
+    const v = p.metadata.visualize as Record<string, unknown>;
+    const legends = v.legends as { color: { labelFormat: string } };
+    const cf = (p.metadata.data as Record<string, unknown>)[
+      "column-format"
+    ] as Record<string, Record<string, unknown>>;
+    expect(legends.color.labelFormat).toBe("0,0");
+    expect(cf.value["number-format"]).toBe("0,0");
+  });
+
+  it("sets the DW chart language (regional locale) from spec.lang, so fr groups with a space", () => {
+    expect(specToMapMetadata({ ...base, lang: "fr" }).language).toBe("fr-FR");
+    expect(specToMapMetadata({ ...base, lang: "fr-CH" }).language).toBe(
+      "fr-CH",
+    );
+    // Absent lang ⇒ no language (DW default en-US) — not sent by produce.
+    expect(specToMapMetadata(base).language).toBeUndefined();
+  });
 });
 
 const symbol: SymbolMapSpec = {

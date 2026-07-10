@@ -50,6 +50,10 @@ export interface ChoroplethMapSpec {
   unit?: string;
   source?: { name: string; url?: string };
   altInsight: string; // WCAG: alt = the insight
+  /** Deliverable language (BCP-47, e.g. "fr", "fr-CH"). Sets the DW chart `language`, so
+   *  Datawrapper localizes the legend + tooltip numbers — French groups thousands with a
+   *  narrow no-break space ("17 600"), not the English comma. Absent → DW default (en-US). */
+  lang?: string;
 }
 
 // Symbol map (d3-maps-symbols): proportional circles placed by lat/lon.
@@ -75,6 +79,8 @@ export interface SymbolMapSpec {
   unit?: string;
   source?: { name: string; url?: string };
   altInsight: string;
+  /** Deliverable language (BCP-47) — localizes the DW chart's legend + tooltip numbers. */
+  lang?: string;
 }
 
 export interface LocatorMarker {
@@ -94,6 +100,8 @@ export interface LocatorMapSpec {
   view?: { center: [number, number]; zoom: number }; // optional explicit framing; else auto-fit
   source?: { name: string; url?: string };
   altInsight: string;
+  /** Deliverable language (BCP-47) — localizes the DW chart furniture ("Source", attribution). */
+  lang?: string;
 }
 
 export type MapSpec = ChoroplethMapSpec | SymbolMapSpec | LocatorMapSpec;

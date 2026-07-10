@@ -7,15 +7,33 @@ import {
   type SymbolMapSpec,
 } from "./map-spec";
 import { normalizeNumberFormat } from "../../dw-chart/src/chart-spec";
+import { dwLocale } from "../../dw-chart/src/spec-to-metadata";
 
 export interface MapPatch {
   title: string;
   type: string;
+  /** DW chart language (BCP-47 regional, e.g. "fr-FR"). Datawrapper localizes the legend +
+   *  tooltip number/date formatting from this field. Absent → DW default (en-US). */
+  language?: string;
   metadata: {
     axes: Record<string, unknown>;
     visualize: Record<string, unknown>;
     describe: Record<string, unknown>;
+    // Per-column format table. The choropleth legend + %REGION_VALUE% tooltip read the value
+    // column's `number-format` / `number-append` from HERE, not from `describe` — verified
+    // against the published d3-maps-choropleth renderer (its label formatter reads
+    // `data.column-format[valueColumn]`). Omitted for map types that carry no value column.
+    data?: Record<string, unknown>;
   };
+}
+
+// The single number-format token for a map's values: the caller's token (normalised the same
+// way dw-chart does) or a GROUPED default ("0,0" = thousands grouping, ".[00]" = up to two
+// optional decimals). The default must GROUP: Datawrapper's continuous choropleth legend
+// otherwise formats its endpoints with its own default "0.[00]" (NO grouping), shipping a bare
+// "17600" where a French deliverable needs "17 600" (localized by the chart `language`).
+function resolveNumberFormat(numberFormat?: string): string {
+  return numberFormat ? normalizeNumberFormat(numberFormat) : "0,0.[00]";
 }
 
 // Filled circle path used by locator-map point markers (DW's built-in "circle" icon).
@@ -40,15 +58,12 @@ function describeBlock(spec: {
   numberFormat?: string;
   unit?: string;
 }): Record<string, unknown> {
-  const numberFormat = spec.numberFormat
-    ? normalizeNumberFormat(spec.numberFormat)
-    : undefined;
   const block: Record<string, unknown> = {
     intro: spec.intro ?? "",
     "source-name": spec.source?.name ?? "",
     "source-url": spec.source?.url ?? "",
     "aria-description": spec.altInsight,
-    "number-format": numberFormat ?? "0,0.[00]",
+    "number-format": resolveNumberFormat(spec.numberFormat),
   };
   // The value unit is a literal SUFFIX Datawrapper appends to auto-formatted numbers (the
   // legend + %REGION_VALUE% choropleth tooltip) WITHOUT multiplying — the same mechanism the
@@ -63,8 +78,25 @@ function describeBlock(spec: {
 // `colors` makes the renderer paint every region + the legend BLACK. So we deliberately
 // emit `mode` + `interpolation` + `colors` and NEVER a `stops` string. Verified via real
 // exported PNGs (see output-proof/).
+// The per-column format the choropleth LEGEND + %REGION_VALUE% tooltip read (verified against
+// the published renderer): the grouped number-format + the literal unit suffix. This is what
+// puts a thousands separator (and the unit) on the legend endpoints — `describe.number-format`
+// alone never reaches them.
+function valueColumnFormat(
+  numberFormat: string,
+  unit?: string,
+): Record<string, unknown> {
+  const col: Record<string, unknown> = {
+    type: "number",
+    "number-format": numberFormat,
+  };
+  if (unit) col["number-append"] = unit;
+  return col;
+}
+
 function choroplethMetadata(spec: ChoroplethMapSpec): MapPatch {
   const colors = spec.colorScale ?? DEFAULT_BLUE;
+  const numberFormat = resolveNumberFormat(spec.numberFormat);
   return {
     title: spec.title,
     type: "d3-maps-choropleth",
@@ -78,6 +110,11 @@ function choroplethMetadata(spec: ChoroplethMapSpec): MapPatch {
           interpolation: "equidistant",
           colors,
         },
+        // The continuous color legend formats its min/max endpoint labels with
+        // `legends.color.labelFormat` (DW's default is "0.[00]" — NO thousands grouping, the
+        // bare-"17600" bug). Set the grouped token; the chart `language` localizes the group
+        // separator (fr → narrow no-break space "17 600", en → comma "17,600").
+        legends: { color: { labelFormat: numberFormat } },
         tooltip: {
           enabled: true,
           title: "%REGION_NAME%",
@@ -85,6 +122,11 @@ function choroplethMetadata(spec: ChoroplethMapSpec): MapPatch {
         },
       },
       describe: describeBlock(spec),
+      data: {
+        "column-format": {
+          [spec.valueColumn]: valueColumnFormat(numberFormat, spec.unit),
+        },
+      },
     },
   };
 }
@@ -219,6 +261,15 @@ function locatorMetadata(spec: LocatorMapSpec): MapPatch {
 }
 
 export function specToMapMetadata(spec: MapSpec): MapPatch {
+  const patch = dispatch(spec);
+  // Thread the deliverable language → DW regional locale, so Datawrapper localizes the
+  // legend + tooltip numbers (fr-FR groups thousands with a narrow no-break space). Absent
+  // ⇒ no `language` key (produce omits it; DW keeps its en-US default).
+  if (spec.lang) patch.language = dwLocale(spec.lang);
+  return patch;
+}
+
+function dispatch(spec: MapSpec): MapPatch {
   switch (spec.mapType) {
     case "choropleth":
       return choroplethMetadata(spec);
