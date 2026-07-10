@@ -4,6 +4,68 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-10 (nuit) — REDESIGN single-format produce→export (7 tâches) + 2 décisions renversées
+
+Constat post-Wave 5 (cf. sessions ci-dessous) : le pipeline `produce → export` sur-produisait sur **deux
+axes**, et la livraison était un tas plutôt que « l'export adapté ». Preuves relevées : `renouvelables`
+(format vidéo) avait aussi buildé `interactive.html` + `interactive.png` + `static.png` en byproduct ;
+`seismes` (format vidéo) n'avait **jamais** produit son `.mp4` mais avait quand même buildé `static.png` +
+`interactive.html` + 4 `responsive-*.png` avant d'atteindre le turn-cap ; `langages` avait livré le bundle
+React runnable **146-fichiers entier** sans attendre de choix ; `budget` avait livré `static.html` +
+`EMBED.md` d'un chart Datawrapper sans choix non plus. Cause racine : rien ne *pinnait* l'unique
+format/forme défini pour l'élément — le pipeline produisait/matérialisait *tout ce qui est possible* au
+lieu de *ce qui est défini*. Spec `docs/superpowers/specs/2026-07-10-single-format-produce-export-design.md`,
+plan `docs/superpowers/plans/2026-07-10-single-format-produce-export.md`, branche
+`feat/single-format-produce-export`, gate **16/16** à la fin (7 tâches, review clean par tâche).
+
+**Modèle cible : un élément = un format visuel, produit et livré seul.**
+
+**Tâches livrées :**
+1. **Pin du format** — `spec.format` (un `VisualFormat` unique) porté par la spec acceptée à la
+   PROPOSITION (Gate 2 existant, vetoable — pas de nouveau gate) ; `assertFormatAllowed(channel, format)`
+   ajouté à `skills/atelier/src/channel.ts` (throw si le format n'est pas dans `allowedFormats(channel)`).
+2. **chart-native `produce.mjs` single-format** — le mode `formats="all"` par défaut disparaît ; le script
+   ne build QUE le format demandé (`produce.mjs <type> <config> <outDir> <format>`), avec un still de
+   revue éphémère pour interactif/scrolly (non livré).
+3. **map-native + dw-chart single-format** — même dispatch strict ; dw-chart `interactive` produit
+   l'embed hébergé (`publicUrl`) comme artefact, pas de build local additionnel.
+4. **`produce-all.mjs` thread le format unique** — lit `spec.format`, `assertFormatAllowed`, invoque
+   chaque producteur avec ce seul format au lieu de `"all"`.
+5. **`assertDelivered` par forme** — n'exige plus `static.html` pour un interactif ; nouvelle règle
+   `(format, form)` : `static`/`video` → un média seul ; `interactive`/`scrolly` → la forme choisie
+   (`.html`, dossier bundle, ou URL hébergée enregistrée).
+6. **`export-code.mjs` refonte + paresse** — `static` livre le média directement (pas de dossier, pas de
+   `.html`) ; `video` livre le `.mp4` directement ; `interactive`/`scrolly` proposent a/b/c, **attendent**
+   la réponse, puis matérialisent **uniquement** la forme choisie (bundle React construit à la demande via
+   `export-source.mjs`, déploiement fly.io à la demande via `deploy-embed.mjs`, ou simple copie du `.html`).
+   Plus de bundle ni de `static.html` ni d'`EMBED.md`-fourre-tout pré-construits d'office.
+7. **Docs** (cette entrée) — `CLAUDE.md` + ce changelog mis à jour avec les 2 renversements. `judge.md`
+   (harness, repo séparé `../atelier-harness`) doit être retourné au modèle single-format en cohérence
+   (un format produit seul est attendu ; « plusieurs formats produits » ou « toutes les formes livrées
+   d'office » devient un **défaut** à flagger, plus de `static.html` requis) — appliqué au merge pour
+   que la rubrique harness atterrisse avec le comportement `main`, pas avant.
+
+**★ Deux décisions verrouillées renversées (log, cf. `CLAUDE.md` § Décisions verrouillées) :**
+- **Le fallback no-JS `static.html` (déc. 2026-06-23, mitigation a11y+souveraineté « Datawrapper reste la
+  base ») n'est plus auto-produit.** L'accessibilité/le fichier possédé no-JS = **choisir le format
+  `static`** — un interactif est juste l'interactif, plus de repli embarqué automatique.
+- **La déc. 2026-07-10 « EXPORT : le journaliste CHOISIT la forme » (produire tous les artefacts d'office
+  PUIS proposer a/b/c) devient PARESSEUSE.** Seule la forme choisie est construite/livrée. Le local-first
+  reste préservé pour static/video/html autonome (un fichier possédé existe toujours) ; l'embed reste un
+  choix explicite (hébergé, sans fichier possédé).
+
+**Suivi (backlog, hors scope de ce plan à 7 tâches) :** **map-dw** (producteur carte Datawrapper, distinct
+de map-native/dw-chart) sur-produit encore PNG+embed quel que soit le format — traitement single-format
+analogue à dw-chart à donner · le snap WCAG statique (`snap-contrast.mjs`) ne tourne plus pour le format
+`interactive` (le garde-fou config-level `produce-conformance` tourne toujours) — à trancher si un snap de
+contraste rendu dédié à l'interactif est nécessaire · le format vidéo de map-native mappe toujours sur le
+style « story » — « reveal » a perdu son accès CLI dans ce redesign, à faire un knob de config si voulu ·
+items déjà hors-scope non traités par ce redesign : **hang du rendu vidéo symbole animé** (`seismes`,
+Remotion+MapLibre par frame — le redesign réduit le déclencheur en coupant le sur-produit mais ne corrige
+pas le hang lui-même, follow-up dédié) · **harness qui coupe avant la réponse a/b/c** (le driver marque
+« delivered » à la proposition, le choix de forme n'est jamais capturé en test — nécessaire pour VOIR la
+forme livrée en QA, mais séparé du produit).
+
 ## Session 2026-07-10 — 3 cycles QA (waves 1-3, 16 cas) → 12 fixes, tous mergés vert
 
 Boucle « fond de roulement » (`../atelier-harness/WORKFLOW.md`) : lancer des tests e2e en parallèle
