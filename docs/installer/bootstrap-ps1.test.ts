@@ -31,3 +31,17 @@ test("acquires the repo by zip (glob-safe) and makes a .cmd launcher (never a .p
   expect(ps).toMatch(/Get-ChildItem .*-Filter "atelier-\*"/);
   expect(ps).toContain("Launch Atelier.cmd");
 });
+
+test("prepends claude's bin dir to the session PATH after install (no false 'could not be installed')", () => {
+  // claude.ai/install.ps1 updates only the PERSISTENT PATH; without this the very next
+  // Get-Command claude fails in-session and the script throws before creating the launcher.
+  expect(ps).toContain('$env:PATH = "$HOME\\.local\\bin;$env:PATH"');
+});
+
+test("guards winget so an absent winget falls through to the friendly Node guidance", () => {
+  expect(ps).toContain("Get-Command winget");
+});
+
+test("launcher strips the quotes the configurator now writes around .env values", () => {
+  expect(ps).toContain('set "%%a=%%~b"');
+});

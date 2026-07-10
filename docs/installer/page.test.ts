@@ -27,3 +27,27 @@ test("page documents the unsigned-file workaround for both OSes", () => {
   expect(html.toLowerCase()).toContain("run anyway");
   expect(html.toLowerCase()).toContain("privacy & security");
 });
+
+test("Option B mac workaround tells the user to chmod +x the downloaded .command", () => {
+  // A Blob download can't carry an execute bit; without this the double-click dies with
+  // 'permission denied' and the on-page advice (Gatekeeper only) doesn't fix it.
+  expect(html).toContain("chmod +x");
+});
+
+test("copy button has success feedback and an insecure-context fallback", () => {
+  expect(html).toContain("Copied!");
+  expect(html).toContain("execCommand");
+});
+
+test("download appends the anchor to the DOM and defers revokeObjectURL (Safari-safe)", () => {
+  expect(html).toContain("appendChild(a)");
+  expect(html).toMatch(
+    /setTimeout\(\s*\(\)\s*=>\s*\{[\s\S]*?revokeObjectURL[\s\S]*?\},\s*\d+\)/,
+  );
+});
+
+test("OS toggle uses aria-pressed toggle semantics, not a broken tablist", () => {
+  expect(html).toContain("aria-pressed");
+  expect(html).not.toContain('role="tablist"');
+  expect(html).not.toContain("aria-selected");
+});
