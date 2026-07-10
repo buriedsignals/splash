@@ -43,6 +43,10 @@ Extends `bar.md`'s "grow from the baseline":
 
 - chrome (the qualitative bands + the target markers) fades in first — the backdrop is set;
 - each **measure bar grows from zero to its value**, eased-out, **staggered** down the rows;
-- the value label fades in as the measure lands; the target marker was already there to be measured
-  against.
+- the value label **rides the measure's growing end** (just beyond it → never clipped) and fades in
+  **early with** the measure — present from the moment the bar is meaningfully drawn, not only once it
+  lands, so a mid-build video still never ships a label-less measure; the target marker was already
+  there to be measured against. The fade uses the shared bar-family knob (`core/math` `labelReveal`);
+  the old gate hid the last-staggered rows' labels mid-build. Guarded by
+  `tests/bullet-value-label-reveal.test.tsx`.
 The measure never grows from its tip — always from zero (rule 1).

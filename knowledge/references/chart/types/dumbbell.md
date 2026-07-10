@@ -48,5 +48,10 @@ See `formats/video.md`; the dumbbell-specific gesture:
 - chrome (the value axis + the category labels + the legend) fades in first;
 - per row, the **first dot appears**, then the **connector extends to the second dot**, eased-out,
   **staggered** down the rows in reading order (top→bottom) — the gap "opens up";
-- the **value labels fade in** as each row's second dot lands.
+- the **second dot rides the connector's growing head** and both **value labels ride the two animated
+  dot ends** (outer side of each → never clipped), all fading in **early with** the row — present from
+  the moment the row is meaningfully drawn, not only once the gap finishes opening, so a mid-build
+  video still never ships a label-less row (rule 4). The fade uses the shared bar-family knob
+  (`core/math` `labelReveal`); the old gate hid the last-staggered rows' labels mid-build. Guarded by
+  `tests/dumbbell-value-label-reveal.test.tsx`.
 The dot never grows from the axis baseline — the two dots are positions, the connector is the gap.

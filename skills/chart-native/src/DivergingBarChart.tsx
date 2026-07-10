@@ -16,7 +16,7 @@ import {
   type DivergingData,
   type DivergingLayout,
 } from "./diverging-bar-geometry";
-import { clamp01, easeOutCubic, stagger } from "./core/math";
+import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, DIVERGING_SIGN_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -195,12 +195,20 @@ function DivergingSvg({
           const g = growDivBar(b, barP(i));
           const fill = b.sign < 0 ? NEG : POS;
           const grown = barP(i);
-          const labelOp = clamp01((grown - 0.65) / 0.35);
+          // diverging-bar.md rule 4 — EVERY bar carries its signed value label at
+          // EVERY frame it is drawn. The label rides the bar's ANIMATED outer tip
+          // (from the drawn rect `g`, not the final `b`) so it stays just beyond the
+          // growing edge — always OUTSIDE the bar, never clipped — and fades in early
+          // with the bar (shared `labelReveal` knob). The old gate (grown-0.65)/0.35
+          // hid the last-staggered bars' labels until ~97% growth, so a mid-build
+          // still shipped them label-less. At p=1 g's tip === b.xTip (byte-identical).
+          const labelOp = labelReveal(grown);
           const catOp = clamp01(grown * 1.4);
           const focused = interactive && hover === i;
           const dim = interactive && hover !== null && !focused;
-          // value label at the OUTER tip, on the side the bar points to
-          const vx = b.sign < 0 ? b.xTip - 6 * sc : b.xTip + 6 * sc;
+          // value label at the OUTER tip, on the side the bar points to (animated)
+          const gTip = b.sign < 0 ? g.x : g.x + g.w;
+          const vx = b.sign < 0 ? gTip - 6 * sc : gTip + 6 * sc;
           const vAnchor = b.sign < 0 ? "end" : "start";
           return (
             <g key={`bar${i}`} opacity={dim ? 0.55 : 1}>

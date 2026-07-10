@@ -47,5 +47,10 @@ Extends `bar.md`'s "grow from the baseline", but from the CENTRED zero:
 - chrome (the zero line + any gridlines) wipes in first;
 - each bar **grows from the zero line outward** to its value (left or right), eased-out, **staggered
   top→bottom**;
-- the signed value label fades in as its bar lands.
+- the signed value label **rides the bar's growing outer tip** (always beyond the edge → never
+  clipped) and fades in **early with** the bar — present from the moment the bar is meaningfully
+  drawn, not only once it lands, so a mid-build video still never ships a label-less bar (rule 4).
+  The fade uses the shared bar-family knob (`core/math` `labelReveal`); the old gate tied the label to
+  the last 35 % of each bar's staggered growth, so the last-staggered bars froze label-less before the
+  still. Guarded by `tests/diverging-bar-value-label-reveal.test.tsx`.
 A bar never grows from its outer end — always from the zero line (rule 1).
