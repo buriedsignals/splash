@@ -163,6 +163,13 @@ snap("scripts/snap-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",")
 console.log(`[produce ${type}] checking tooltip contrast (snap-tooltip-contrast)…`);
 snap("scripts/snap-tooltip-contrast.mjs");
 
+// 2c-bis. render-time in-viewport guard for the INTERACTIVE hover/focus tooltip — a
+// mark near the right/top edge must not push the tooltip off-screen (its text would
+// clip). ChartFrame's ClampedTooltip flips/clamps it back in-bounds; this asserts the
+// property mechanically at a narrow + wide embed width. Fails the run before export.
+console.log(`[produce ${type}] checking tooltip stays in-viewport (snap-tooltip-viewport)…`);
+snap("scripts/snap-tooltip-viewport.mjs");
+
 // 2d. render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
 // dimensions must equal the channel's exact media size. Fail-hard before export,
 // wired like snap-contrast/snap-tooltip-contrast above. No render: static.png already
