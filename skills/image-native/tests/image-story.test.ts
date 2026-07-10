@@ -1,5 +1,9 @@
 import { describe, it, expect } from "bun:test";
-import { checkImageConformance, type ImageStory } from "../src/image-story";
+import {
+  checkImageConformance,
+  captionOverlapRatio,
+  type ImageStory,
+} from "../src/image-story";
 
 // A minimal, fully-valid story reused across tests. Two frames, distinct alt/caption,
 // per-frame credit, a sourcePassage that the caption does NOT copy.
@@ -119,5 +123,29 @@ describe("checkImageConformance", () => {
     const s = validStory();
     s.frames[1]!.id = "f0";
     expect(checkImageConformance(s)).toContain('duplicate frame id "f0"');
+  });
+});
+
+describe("captionOverlapRatio", () => {
+  it("should score a self-contained rephrase low even when it shares a place name and year", () => {
+    // Shared tokens are the proper noun "Annemasse" and the number "2019" — both excluded.
+    const caption = "The frontier town swelled as workers arrived.";
+    const passage =
+      "Annemasse grew fast after 2019 as cross-border workers poured in.";
+    expect(captionOverlapRatio(caption, passage)).toBeLessThan(0.3);
+  });
+
+  it("should score a near-verbatim copy high", () => {
+    const passage =
+      "Residents recall a quiet towpath where families once walked on Sundays.";
+    const caption =
+      "residents recall a quiet towpath where families once walked";
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
+  });
+
+  it("should be symmetric and return 0 for disjoint content", () => {
+    expect(captionOverlapRatio("alpha beta gamma", "delta epsilon zeta")).toBe(
+      0,
+    );
   });
 });

@@ -31,6 +31,35 @@ export interface ImageStory {
   imageDir: string; // root for resolving frameRefs (suggest-image → engine handoff)
 }
 
+// Content tokens for the overlap tripwire: lowercase word tokens, MINUS proper nouns
+// (any token that appears Capitalized in the original text) and MINUS pure numbers.
+// Rationale: a self-contained caption legitimately reuses place names, people, and dates
+// from the passage it describes — those must NOT count as "copying the article". What we
+// flag is reuse of the passage's ordinary descriptive/connective prose.
+function contentTokens(text: string): Set<string> {
+  const properOrNumber = new Set<string>();
+  for (const m of text.matchAll(/\b([A-Z][\w'-]*|\d[\d.,]*)\b/g))
+    properOrNumber.add(m[1].toLowerCase());
+  const tokens = new Set<string>();
+  for (const m of text.toLowerCase().matchAll(/[a-z][a-z'-]+/g)) {
+    const t = m[0];
+    if (properOrNumber.has(t)) continue; // proper noun (capitalized somewhere) — excluded
+    tokens.add(t);
+  }
+  return tokens;
+}
+
+// Jaccard overlap (|A∩B| / |A∪B|) of the two token sets. 0 = disjoint, 1 = identical set.
+export function captionOverlapRatio(caption: string, passage: string): number {
+  const a = contentTokens(caption);
+  const b = contentTokens(passage);
+  if (a.size === 0 || b.size === 0) return 0;
+  let inter = 0;
+  for (const t of a) if (b.has(t)) inter++;
+  const union = a.size + b.size - inter;
+  return union === 0 ? 0 : inter / union;
+}
+
 export function checkImageConformance(
   story: ImageStory,
   _opts?: { overlapThreshold?: number },
