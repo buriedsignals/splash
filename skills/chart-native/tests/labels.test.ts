@@ -97,6 +97,71 @@ describe("placeLabels — the in-bounds + no-overlap invariant ALWAYS holds", ()
     expect(placeLabels(huge, [], { bounds, charW, lh, padX })).toHaveLength(0);
   });
 
+  it("NEVER drops a REQUIRED label — offset over drop when every clean spot is blocked", () => {
+    // one anchor mid-plot; marks blanket every adjacent label spot so NO clean (no-
+    // overlap) position exists. A default label is dropped (fewer-but-readable); a
+    // required one (an explicitly-requested highlight) is placed anyway, in-bounds.
+    const anchor = { ax: 300, ay: 200, r: 6 };
+    const marks: Box[] = [
+      { x0: 200, x1: 400, y0: 180, y1: 220 }, // blocks the left/right horizontal spots
+      { x0: 260, x1: 340, y0: 120, y1: 280 }, // blocks the above/below vertical spots
+    ];
+    // baseline: without `required`, the contended label is dropped
+    const dropped = placeLabels(
+      [{ id: "x", text: "Highlight", ...anchor, priority: 1 }],
+      marks,
+      { bounds, charW, lh, padX },
+    );
+    expect(dropped).toHaveLength(0);
+    // with `required`, it survives (offset onto an overlapping-but-in-bounds spot)
+    const placed = placeLabels(
+      [{ id: "x", text: "Highlight", ...anchor, priority: 1, required: true }],
+      marks,
+      { bounds, charW, lh, padX },
+    );
+    expect(placed).toHaveLength(1);
+    expect(placed[0].id).toBe("x");
+    expect(
+      withinBounds(placedBox({ ...placed[0], text: "Highlight" }), bounds),
+    ).toBe(true);
+  });
+
+  it("places ALL required labels even when they contend for the same crowded anchor", () => {
+    // three requested highlights stacked on nearly the same point — none may be dropped
+    // (the scatter 3-highlight case: Japan/Qatar/Nigeria all requested).
+    const crowded: PlaceCandidate[] = [
+      {
+        id: "a",
+        text: "Japan",
+        ax: 300,
+        ay: 200,
+        r: 6,
+        priority: 3,
+        required: true,
+      },
+      {
+        id: "b",
+        text: "Qatar",
+        ax: 303,
+        ay: 202,
+        r: 6,
+        priority: 2,
+        required: true,
+      },
+      {
+        id: "c",
+        text: "Nigeria",
+        ax: 298,
+        ay: 199,
+        r: 6,
+        priority: 1,
+        required: true,
+      },
+    ];
+    const placed = placeLabels(crowded, [], { bounds, charW, lh, padX });
+    expect(placed.map((p) => String(p.id)).sort()).toEqual(["a", "b", "c"]);
+  });
+
   it("places a corner anchor whose label fits — the scatter 'Mexico' regression", () => {
     // A point at a plot corner (e.g. min-x, min-y): the adjacent spots clip vertically
     // (bottom/top edge) or horizontally (left/right edge). A fitting label must STILL be

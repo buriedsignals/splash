@@ -222,6 +222,10 @@ function ScatterSvg({
       ay: points[idx].y,
       r: points[idx].r,
       priority: points[idx].rawY,
+      // An EXPLICITLY-requested highlight (config.annotate) must never be silently
+      // dropped by the collision placer — if crowded, offset it rather than skip it.
+      // The auto "default outlier" is not required (a lone label never contends).
+      required: annotateSet !== null,
     })),
     points.map((pt) => ({
       x0: pt.x - pt.r,

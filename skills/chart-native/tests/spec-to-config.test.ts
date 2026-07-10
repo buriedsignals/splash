@@ -115,6 +115,40 @@ describe("specToNativeConfig — scatter", () => {
   });
 });
 
+describe("specToNativeConfig — scatter highlights → annotate", () => {
+  // The journalist/② names the story points via `highlights`; the scatter renderer
+  // labels the points named in `annotate`. The mapper must carry highlights across —
+  // otherwise ScatterChart falls back to labelling ONLY the max-y outlier (the bug:
+  // a 3-highlight scatter shipped with a single label).
+  const data =
+    "country,gdp,life\nJapan,40000,84\nQatar,62000,80\nNigeria,2000,55\nBrazil,8000,76";
+  it("maps spec.highlights (multi-value) onto config.annotate so EVERY requested point is labelled", () => {
+    const spec: NativeSpec = {
+      ...base,
+      nativeType: "scatter",
+      data,
+      highlights: ["Japan", "Qatar", "Nigeria"],
+    };
+    const { config } = specToNativeConfig(spec);
+    expect(config.annotate).toEqual(["Japan", "Qatar", "Nigeria"]);
+  });
+  it("falls back to the single `highlight` when `highlights` is absent", () => {
+    const spec: NativeSpec = {
+      ...base,
+      nativeType: "scatter",
+      data,
+      highlight: "Qatar",
+    };
+    const { config } = specToNativeConfig(spec);
+    expect(config.annotate).toEqual(["Qatar"]);
+  });
+  it("omits annotate when neither highlights nor highlight is given (default: headline outlier only)", () => {
+    const spec: NativeSpec = { ...base, nativeType: "scatter", data };
+    const { config } = specToNativeConfig(spec);
+    expect(config.annotate).toBeUndefined();
+  });
+});
+
 describe("specToNativeConfig — pie", () => {
   it("maps to labelField/valueField", () => {
     const spec: NativeSpec = {

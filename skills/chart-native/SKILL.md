@@ -28,7 +28,8 @@ description: Use when you need a native (non-Datawrapper) chart that ships ALL T
 > reduced-motion wrapper, `render(width, progress)` — line/bar are thin bindings over it),
 > `ChartFrame.tsx` (the title/subtitle/source shell), `format.ts` (`resolveFrame` — scales
 > type/margins + centres the plot for square/portrait video), `labels.ts` (`placeLabels` — the
-> collision-aware, in-bounds label placement, shared by every type).
+> collision-aware, in-bounds label placement, shared by every type; a candidate marked
+> `required: true` — an explicitly-requested highlight — is offset rather than dropped when crowded).
 
 ## The recipe — adding a chart type (always these steps)
 

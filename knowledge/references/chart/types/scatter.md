@@ -32,13 +32,19 @@ to show the **relationship/correlation** between them. An optional third variabl
    beyond the data).
 4. **Label the few that matter, not all.** Annotate the outliers / the subject of the story; labelling
    every dot is clutter and, in a static (no hover), labels collide into an unreadable pile. The
-   producer takes an explicit `annotate` list (the journalist/② names the story points); with none,
-   it labels just the headline outlier. Placement is collision-aware: it tries right/left/above/below
-   adjacent to the dot, then a short **leader line** into the empty space just above/below the cloud
-   (a thin connector back to the point — the standard technique for a label in a dense cluster), and
-   only SKIPS if even that would collide or run long. Labels stay strictly inside the plot (never over
-   the axis text) and never sit on a bubble. The full set is always reachable on hover/focus in the
-   interactive build. (Inherits the global "direct labels" principle, applied selectively.)
+   producer takes an explicit `annotate` list (the journalist/② names the story points — mapped from
+   the spec's `highlights`/`highlight`); with none, it labels just the headline outlier. **Every point
+   named in `annotate` is REQUIRED — it is always labelled, never dropped.** Placement is
+   collision-aware: it tries right/left/above/below adjacent to the dot, then a short **leader line**
+   into the empty space just above/below the cloud (a thin connector back to the point — the standard
+   technique for a label in a dense cluster); if even that is contested, a requested label is **offset
+   onto an in-bounds spot rather than skipped** (only AUTO labels are "fewer-but-readable" and may be
+   dropped). Labels stay strictly inside the plot (never over the axis text) and never sit on a bubble.
+   The full set is always reachable on hover/focus in the interactive build. (Inherits the global
+   "direct labels" principle, applied selectively.) (Regression: a GDP × life-expectancy scatter that
+   requested Japan/Qatar/Nigeria shipped a single label because the mapper dropped `highlights`;
+   guarded by `tests/spec-to-config.test.ts` + `tests/scatter-annotate.test.tsx` + the `required`
+   path in `tests/labels.test.ts`.)
 5. **Bubble size = AREA, never radius.** Map the third value to circle *area* (`r ∝ √value`); mapping
    to radius exaggerates large values ~quadratically — a classic lie. (data-to-viz: "bubble".)
 
