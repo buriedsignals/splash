@@ -3,10 +3,18 @@ import {
   ANNOTATION_UNSUPPORTED_TYPES,
   ANNOTATION_UNMAPPED_BAR_TYPES,
   MULTI_SERIES_TYPES,
+  SCATTER_ANNOTATION_TYPES,
   normalizeNumberFormat,
   type ChartType,
 } from "./chart-spec";
-import { dataShape, renameColumns, sortCsv, valueAt } from "./csv";
+import {
+  dataShape,
+  renameColumns,
+  scatterColumns,
+  scatterPointAt,
+  sortCsv,
+  valueAt,
+} from "./csv";
 import { applyValueLabels, hasValueLabelControl } from "./value-label-safety";
 
 // Line/area chart types whose default "direct labelling" puts the series name at
@@ -36,15 +44,26 @@ interface PlotDomain {
   yMin: number;
   yMax: number;
 }
-function plotDomain(csv: string): PlotDomain {
+function plotDomain(csv: string, yColumn?: string): PlotDomain {
   const lines = csv.trim().split("\n");
+  const header = lines[0].split(",").map((c) => c.trim());
   const rows = lines.slice(1).map((l) => l.split(","));
   const labels = rows.map((r) => r[0]?.trim() ?? "");
+  // Scatter passes its Y column so the domain is the y-axis ALONE — its x and y are
+  // DIFFERENT numeric columns, so slurping every column (below) would fold the x range
+  // (e.g. GDP) into the y domain (life-expectancy) and push every annotation off-canvas.
+  // For the category-x / value-y types (no yColumn) the domain is every value column.
+  const yIdx = yColumn ? header.indexOf(yColumn) : -1;
   const values: number[] = [];
   for (const r of rows) {
-    for (const cell of r.slice(1)) {
-      const n = Number(cell);
+    if (yIdx >= 1) {
+      const n = Number(r[yIdx]);
       if (Number.isFinite(n)) values.push(n);
+    } else {
+      for (const cell of r.slice(1)) {
+        const n = Number(cell);
+        if (Number.isFinite(n)) values.push(n);
+      }
     }
   }
   const yMin = values.length ? Math.min(...values) : 0;
@@ -500,20 +519,33 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
     !ANNOTATION_UNSUPPORTED_TYPES.has(spec.type) &&
     !ANNOTATION_UNMAPPED_BAR_TYPES.has(spec.type)
   ) {
-    const dom = plotDomain(csv);
+    // SCATTER is the one annotatable type whose x and y are DIFFERENT numeric columns
+    // (x = first value column, y = second; a leading text column is the point label).
+    // Reading its y from "the first value column" — or the y-domain from ALL columns —
+    // lands the annotation in the X (e.g. GDP) range instead of the Y (life-expectancy)
+    // range, and Datawrapper drops it off-canvas. Resolve the y-column so both the axis
+    // domain and each annotation's y come from the Y axis alone.
+    const scatterCols = SCATTER_ANNOTATION_TYPES.has(spec.type)
+      ? scatterColumns(csv)
+      : undefined;
+    const dom = plotDomain(csv, scatterCols?.yCol);
     const span = dom.yMax - dom.yMin || 1;
     // Every VALUE column's polyline (all columns after the label column). A label must
     // clear EVERY plotted series, not only the one it annotates — on a multi-series
-    // chart the label would otherwise sit on a sibling line (F6). Built once.
+    // chart the label would otherwise sit on a sibling line (F6). Built once. A scatter
+    // has no connecting line to clear (points are discrete; DW draws the connector), so
+    // it passes NO series to the placement.
     const header = csv
       .trim()
       .split("\n")[0]
       .split(",")
       .map((c) => c.trim());
-    const allPolys = header
-      .slice(1)
-      .map((col) => seriesPolyline(csv, dom, col))
-      .filter((p) => p.length >= 2);
+    const allPolys = scatterCols
+      ? []
+      : header
+          .slice(1)
+          .map((col) => seriesPolyline(csv, dom, col))
+          .filter((p) => p.length >= 2);
     // Accumulate the axis headroom every annotation needs, as a fraction of the
     // y-span, so a near-extreme label (a peak at the max) has real whitespace to sit
     // in — the extension is in DATA space, therefore identical at every render width.
@@ -526,14 +558,46 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
         a.column && spec.seriesLabels?.[a.column]
           ? spec.seriesLabels[a.column]
           : a.column;
-      // Datawrapper DROPS a line-chart annotation with no numeric y. Derive it
-      // from the data at x when the spec pins only an x.
-      const y =
-        a.y !== undefined
-          ? a.y
-          : a.x !== undefined
-            ? valueAt(csv, a.x, column)
-            : undefined;
+      // Resolve the annotation's data point (numeric x + y).
+      //  • SCATTER: find the row the annotation names (by label OR x-value) and read its
+      //    numeric x-column value and Y-column value, so a point pinned by NAME still
+      //    gets a positionable numeric x AND a y taken from the Y axis (not the x column).
+      //  • Other types (category-x model): keep the x as given and derive a missing y
+      //    from the data at x — Datawrapper DROPS an annotation with no numeric y.
+      let annX: string | number | undefined = a.x;
+      let y: number | undefined;
+      let derived = false;
+      if (scatterCols) {
+        const pt = scatterPointAt(csv, a.x, scatterCols, column);
+        if (pt) annX = pt.x;
+        if (a.y !== undefined) y = a.y;
+        else {
+          y = pt?.y;
+          derived = true;
+        }
+      } else if (a.y !== undefined) {
+        y = a.y;
+      } else if (a.x !== undefined) {
+        y = valueAt(csv, a.x, column);
+        derived = true;
+      }
+      // MECHANICAL GUARD (wrong-column tripwire). A DERIVED y is read from a data cell, so
+      // it MUST fall inside the y-axis domain. If it lands outside, it was read from the
+      // WRONG column (the scatter x/GDP bug: y=40000 against a 55–85 axis) — fail hard
+      // rather than ship an annotation Datawrapper silently drops off-canvas. An explicit
+      // spec.y is left alone (a deliberate threshold label may sit off the data extent).
+      if (
+        derived &&
+        y !== undefined &&
+        Number.isFinite(y) &&
+        (y < dom.yMin - 1e-9 || y > dom.yMax + 1e-9)
+      )
+        throw new Error(
+          `annotation "${a.text}" derived y=${y} is outside the y-axis domain ` +
+            `[${dom.yMin}, ${dom.yMax}] — it was read from the wrong column (on a scatter ` +
+            `the y comes from the Y column, not the x/first value column). Pin the annotation ` +
+            `to the correct column, or give it an explicit y.`,
+        );
 
       // WIDTH-INVARIANT PLACEMENT. The label is anchored at the DATA point (x,y) with
       // NO pixel dx/dy — absolute offsets are exactly what broke at responsive widths,
@@ -542,18 +606,27 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
       // quadrant (align) whose box clears the plotted series, and reports how much
       // axis headroom that box needs; both are data-space, so the label stays off the
       // curve and on-canvas at ALL widths. Datawrapper clamps any horizontal overflow.
-      const { xFrac, yFrac } = pointFraction(dom, a.x, y);
+      // On a scatter the horizontal frac is not a categorical row index, so leave x
+      // undefined (xFrac → 0.5) — placement is cosmetic there (no line to clear).
+      const { xFrac, yFrac } = pointFraction(
+        dom,
+        scatterCols ? undefined : a.x,
+        y,
+      );
       // Clear ALL series (multi-series safe), falling back to the annotated column's
-      // own polyline if the header scan found nothing.
-      const polys =
-        allPolys.length > 0 ? allPolys : [seriesPolyline(csv, dom, column)];
+      // own polyline if the header scan found nothing. Scatter passes no series.
+      const polys = scatterCols
+        ? []
+        : allPolys.length > 0
+          ? allPolys
+          : [seriesPolyline(csv, dom, column)];
       const place = placeAnnotation(polys, xFrac, yFrac);
       headTopFrac = Math.max(headTopFrac, place.headroomTopFrac);
       headBotFrac = Math.max(headBotFrac, place.headroomBottomFrac);
 
       return {
         text: a.text,
-        x: a.x !== undefined ? String(a.x) : "",
+        x: annX !== undefined ? String(annX) : "",
         y: y !== undefined ? String(y) : "",
         bold: true,
         color: "#333333",

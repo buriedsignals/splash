@@ -77,6 +77,15 @@ export const PART_TO_WHOLE_TYPES = new Set<ChartType>([
   "election-donut-chart",
 ]);
 
+// Scatter is the one ANNOTATABLE type whose x and y are DIFFERENT numeric columns (x =
+// first value column, y = second; a leading text column is the point label), unlike the
+// category-x / value-y model every other annotatable type uses. The annotation mapper
+// must therefore read a scatter annotation's y from the Y column — never "the first value
+// column" — and derive the y-axis domain from the Y column alone. The other two-value
+// types (d3-range-plot / d3-arrow-plot / d3-bars-bullet) are horizontal and already skip
+// the annotation mapping via ANNOTATION_UNMAPPED_BAR_TYPES.
+export const SCATTER_ANNOTATION_TYPES = new Set<ChartType>(["d3-scatter-plot"]);
+
 // Chart types with NO text-annotation layer in Datawrapper at all. Verified against
 // Datawrapper's own docs (academy "How to create text annotations" + "Customizing your
 // pie chart"): annotations are supported on column/bar/range/arrow/dot/bullet charts,
