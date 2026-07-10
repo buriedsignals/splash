@@ -155,6 +155,73 @@ describe("export-code CLI — export-completeness gate", () => {
     }
   });
 
+  it("packages a dw-chart INTERACTIVE (hosted DW embed, no local html, <slug>.png static) into a complete -export: static.html a11y fallback + EMBED.md that references the hosted URL", () => {
+    // A Datawrapper interactive: the producer emits NO local interactive.html (the
+    // interactive form IS the hosted DW embed) and names its static export "<id>.png"
+    // (adapters.ts dispatches with `${p.id}.png`), NOT "static.png". This is the exact
+    // shape that crashed export-code with embedSnippet(undefined) and left an EMPTY
+    // -export folder. The report carries the producer's hosted publicUrl + declared
+    // outputs, so export-code can recognise the static image and reference the embed.
+    const outDir = mkdtempSync(join(tmpdir(), "atelier-export-code-dw-"));
+    const pngName = "wage-price-gap.png";
+    writeFileSync(join(outDir, pngName), Buffer.from("fake-dw-png-bytes"));
+    const hostedUrl = "https://www.datawrapper.de/_/AbCdE/";
+    const resultsPath = join(outDir, "report.json");
+    writeFileSync(
+      resultsPath,
+      JSON.stringify({
+        results: [
+          {
+            id: "wage-price-gap",
+            producer: "dw-chart",
+            format: "interactive",
+            status: "produced",
+            reviewed: true,
+            renderApproved: true,
+            publicUrl: hostedUrl,
+            outputs: [join(outDir, pngName)],
+          },
+        ],
+      }),
+    );
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-code-fixture-dw-"),
+    );
+    try {
+      const out = execFileSync(
+        "bun",
+        [
+          scriptPath,
+          outDir,
+          exportDir,
+          "--results",
+          resultsPath,
+          "--id",
+          "wage-price-gap",
+        ],
+        { encoding: "utf8" },
+      );
+      // No crash; assertDelivered passed (export-code prints its result last).
+      expect(out).toContain("EXPORT_CODE_RESULT");
+      // The owned no-JS a11y fallback ships, with the DW static image inlined.
+      expect(existsSync(join(exportDir, "static.html"))).toBe(true);
+      const staticHtmlContent = readFileSync(
+        join(exportDir, "static.html"),
+        "utf8",
+      );
+      expect(staticHtmlContent).toContain("data:image/png;base64");
+      expect(staticHtmlContent).not.toContain("<script");
+      // EMBED.md references the LIVE hosted DW embed (there is no local html to self-host).
+      const embedMd = readFileSync(join(exportDir, "EMBED.md"), "utf8");
+      expect(embedMd).toContain(hostedUrl);
+      // The raw <slug>.png is never copied in standalone — only inlined into static.html.
+      expect(existsSync(join(exportDir, pngName))).toBe(false);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+
   it("refuses (non-zero exit) an interactive export whose build has no static.png — the a11y fallback would be missing", () => {
     // A produced + render-approved interactive.html but NO static.png byproduct: the no-JS
     // static.html a11y fallback cannot be built, so the delivery gate (assertDelivered)

@@ -1,11 +1,21 @@
-// EXPORT (code path): bundle a producer's artifacts into a hand-over folder covering the three
+// EXPORT (code path): bundle a producer's artifacts into a hand-over folder covering the
 // delivery forms — (1) CODE SOURCE: all the built files, self-host + customise; (2) HTML STATIQUE:
 // a single self-contained static.html (the image inlined, no JS, embeds anywhere); (3) COMPOSANT
-// EMBED: run deploy-embed on interactive.html for a hosted link. Homogeneous across producers now
-// that every interactive producer emits a self-contained interactive.html.
+// EMBED: run deploy-embed on interactive.html for a hosted link.
 // An interactive delivery has NO standalone image form: the producer's raw "static.png" byproduct
 // (chart-native/map-native always build one regardless of the requested format) is used ONLY to
 // build the static.html fallback below and is never copied into the export folder as its own file.
+//
+// TWO producer shapes, both must yield a COMPLETE folder (never crash / never empty):
+//   • FILE-BASED (chart-native / map-native / scrolly): emit a self-contained interactive.html
+//     (or scrolly.html) + a canonically-named "static.png" byproduct. Forms 1 (code source) +
+//     2 (static.html) + 3 (deploy-embed on the local html).
+//   • HOSTED DW (dw-chart / map-dw): emit NO local html — the interactive form IS the already-
+//     published Datawrapper embed (the report's `publicUrl`) — and name their static export
+//     "<id>.png" (adapters.ts: `${p.id}.png`), NOT "static.png". Detected here via the report
+//     (publicUrl present + no local html); the static image is recognised via the producer's
+//     OWN declared `outputs` (authoritative, never a stray screenshot). Forms: hosted embed +
+//     static.html a11y fallback. Never calls embedSnippet on a missing local file.
 //   bun export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId>
 import {
   readdirSync,
@@ -79,13 +89,21 @@ if (import.meta.main) {
   }
   // The one mechanical gate, before any copy/write: refuse unless this exact proposal was
   // actually produced AND the human approved the render.
+  let result;
   try {
     const report = JSON.parse(readFileSync(resultsPath, "utf8"));
     assertShippable(report, id);
+    // assertShippable guarantees this proposal exists in the report.
+    result = report.results.find((x) => x.id === id);
   } catch (e) {
     console.error(e.message);
     process.exit(1);
   }
+  // Cloud/hosted producers (dw-chart / map-dw) record a hosted `publicUrl` — that hosted
+  // Datawrapper embed IS their "interactive" form; they emit NO local interactive.html and
+  // name their static export "<id>.png" (adapters.ts dispatches with `${p.id}.png`), not
+  // "static.png". File-based producers (chart-native / map-native / scrolly) never set it.
+  const hostedUrl = result?.publicUrl ?? null;
   mkdirSync(exportDir, { recursive: true });
   const candidates = readdirSync(outDir).filter((f) =>
     [".html", ".png", ".jpg", ".mp4"].includes(extname(f).toLowerCase()),
@@ -95,13 +113,29 @@ if (import.meta.main) {
     process.exit(1);
   }
 
-  // The interactive (embeddable) artifact — a self-contained .html when present.
+  // The interactive (embeddable) artifact — a self-contained .html when present. A hosted
+  // DW producer emits none: its interactive form is the hosted embed (hostedUrl), so this
+  // stays null and the delivery is driven by hostedUrl below.
   const interactive = candidates.find((f) => f.endsWith(".html")) ?? null;
-  // The producer's raw static-image byproduct — named "static.png"/"static.jpg" by both
-  // chart-native and map-native — used ONLY to build the self-contained static.html fallback
-  // below. Matched by name (not "any png/jpg") so a stray review screenshot like
-  // "interactive.png" is never picked up by mistake.
-  const png = candidates.find((f) => /^static\.(png|jpg)$/i.test(f)) ?? null;
+  // A hosted-embed delivery: a cloud producer published a hosted URL AND left no local html
+  // to self-host. This is the dw-chart / map-dw shape — its owned deliverable is the
+  // static.html a11y fallback + an EMBED.md pointing at the already-live hosted embed.
+  const isHostedEmbed = hostedUrl != null && interactive == null;
+  // The producer's raw static-image byproduct — used ONLY to build the self-contained
+  // static.html fallback below. chart-native / map-native canonically name it
+  // "static.png"/"static.jpg"; matched by name (not "any png/jpg") so a stray review
+  // screenshot like "interactive.png" is never picked up by mistake. A hosted DW producer
+  // instead names it "<id>.png", so when there is no canonical "static.*" AND this is a
+  // hosted delivery, recognise it via the producer's OWN declared output (`result.outputs`
+  // from the report) — the authoritative record of what it wrote, which by construction can
+  // never be a stray screenshot (screenshots are not in `outputs`).
+  let png = candidates.find((f) => /^static\.(png|jpg)$/i.test(f)) ?? null;
+  if (!png && isHostedEmbed) {
+    const declared = (result.outputs ?? [])
+      .map((p) => basename(p))
+      .find((f) => /\.(png|jpg)$/i.test(f) && candidates.includes(f));
+    png = declared ?? null;
+  }
 
   // Copy every artifact EXCEPT raw images (.png/.jpg) — an interactive/scrolly delivery has no
   // standalone image form; the three forms are code source, static HTML (no JS), and the hosted
@@ -118,9 +152,18 @@ if (import.meta.main) {
   }
 
   const forms = [];
-  forms.push(
-    `## 1. Code source (self-host + customise)\nAll files in this folder. Upload them together; embed the ${interactive ? "interactive" : "static"} visual with:\n\n\`\`\`html\n${embedSnippet(interactive ?? artifacts[0])}\n\`\`\``,
-  );
+  if (isHostedEmbed) {
+    // Hosted DW producer (dw-chart / map-dw): the interactive form is the ALREADY-LIVE
+    // hosted Datawrapper embed — there is no local file to self-host, so no "code source"
+    // form; the owned deliverable is the no-JS static.html a11y fallback below.
+    forms.push(
+      `## 1. Composant en lien embed (hosted, already live)\nThe interactive visual is hosted on Datawrapper — embed it directly (no deploy step, it is already published):\n\n\`\`\`html\n<iframe title="visual" src="${hostedUrl}" scrolling="no" frameborder="0" style="width:0;min-width:100%;border:none;" height="400"></iframe>\n\`\`\`\n\nHosted URL: ${hostedUrl}`,
+    );
+  } else {
+    forms.push(
+      `## 1. Code source (self-host + customise)\nAll files in this folder. Upload them together; embed the ${interactive ? "interactive" : "static"} visual with:\n\n\`\`\`html\n${embedSnippet(interactive ?? artifacts[0])}\n\`\`\``,
+    );
+  }
   if (staticFile)
     forms.push(
       `## 2. HTML statique (one self-contained file, no JS)\n\`${staticFile}\` — the image is inlined; it embeds anywhere with no dependencies:\n\n\`\`\`html\n<iframe src="${staticFile}" style="width:100%;border:0" title="visual"></iframe>\n\`\`\``,
@@ -131,11 +174,12 @@ if (import.meta.main) {
     );
   writeFileSync(
     join(exportDir, "EMBED.md"),
-    `# Export — three delivery forms\n\n${forms.join("\n\n")}\n`,
+    `# Export — ${forms.length} delivery form${forms.length > 1 ? "s" : ""}\n\n${forms.join("\n\n")}\n`,
   );
+  const deliveredFiles = [...artifacts, staticFile].filter(Boolean);
   writeFileSync(
     join(exportDir, "README.txt"),
-    `Atelier export — files: ${artifacts.join(", ")}${staticFile ? ", " + staticFile : ""}.\ninteractive: ${interactive ?? "none"} · static: ${staticFile ?? "none"}. See EMBED.md for the three delivery forms.\n`,
+    `Atelier export — files: ${deliveredFiles.join(", ") || "(none — hosted embed only)"}.\ninteractive: ${interactive ?? (isHostedEmbed ? `hosted embed (${hostedUrl})` : "none")} · static: ${staticFile ?? "none"}. See EMBED.md for the delivery forms.\n`,
   );
   // Mechanical teeth: self-verify this folder IS a real delivery before reporting success —
   // the a11y static.html fallback must be present for an interactive (a scrolly is exempt).

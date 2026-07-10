@@ -362,6 +362,14 @@ article-web is the one channel that can host it**:
     **No `static.png`** is copied standalone — `export-code` only inlines it into `static.html`. This one run
     GUARANTEES the accessibility fallback exists and that there IS a delivered artifact before the flow may
     call the visual delivered.
+    - **Hosted Datawrapper producers (`dw-chart` / `map-dw`) have NO local `interactive.html`** — a DW
+      interactive IS the already-published hosted embed (the report's `publicUrl`), and its static export is
+      named `<id>.png` (not `static.png`). `export-code` handles this shape from the report: it detects the
+      hosted delivery (a `publicUrl` with no local html), recognises the static image via the producer's own
+      declared `outputs`, and writes a COMPLETE folder anyway — `static.html` (no-JS a11y fallback, the DW
+      image inlined) + an `EMBED.md` whose embed form points at the LIVE hosted URL (no `deploy-embed` step —
+      it is already published). So a dw-chart/map-dw interactive delivers `static.html` + `EMBED.md` (hosted
+      embed), never an empty folder. `deploy-embed` is only for the file-based producers' local html.
   - **THEN present what the journalist already has** — the code-source folder (`interactive.html` +
     `static.html`, embed with `<iframe src="interactive.html">`) and the no-JS `static.html` — and offer the
     ONE opt-in extra, the hosted embed (it is the only outward-facing form, so it stays a choice):
