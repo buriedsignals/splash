@@ -7,6 +7,7 @@
     "name": "Riverton finance office projections",
     "url": "https://example.org/riverton-debt"
   },
+  "altInsight": "Riverton's debt is on track to top £300m by 2030, though the plausible range is wide.",
   "rows": [
     { "year": 2015, "actual": 120 },
     { "year": 2016, "actual": 130 },

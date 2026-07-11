@@ -34,6 +34,7 @@ import {
   checkFanConformance,
   checkBumpConformance,
   reconcileBrandViolations,
+  requireAltInsight,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -216,8 +217,18 @@ export function runProduceConformance(
 ): ConformanceRunResult {
   const raw = computeRawConformance(type, config);
   if (!raw.checked) return { checked: false, violations: [], concerns: [] };
+  // WCAG 1.1.1 — the produce boundary REQUIRES a non-empty altInsight on EVERY
+  // produced chart, parity with dw-chart/map-dw whose spec validation hard-requires
+  // it. checkGlobalConformance keeps its opt-in gate ("altInsight" in input) for
+  // other callers; the unconditional requirement is pinned HERE, where a deliverable
+  // is actually built. Appended BEFORE brand reconciliation, but never downgradable:
+  // reconcileBrandViolations only relaxes colour a11y (CVD/contrast), nothing else.
+  const rawViolations = [
+    ...raw.violations,
+    ...requireAltInsight(config.altInsight),
+  ];
   const { violations, concerns } = reconcileBrandViolations(
-    raw.violations,
+    rawViolations,
     brandExplicitColors(config),
   );
   return { checked: true, violations, concerns };

@@ -5,6 +5,7 @@ import { runProduceConformance } from "../src/core/produce-conformance";
 const pie = (rows: Record<string, string | number>[]) => ({
   title: "Hydro still supplies most of the country's clean power",
   source: { name: "Ember 2025", url: "https://ourworldindata.org/x" },
+  altInsight: "Hydro still supplies most of the country's clean power.",
   unit: "share of clean generation",
   labelField: "source",
   valueField: "gwh",

@@ -10,6 +10,8 @@ const cfg = (rows: Record<string, string | number>[]) => ({
     name: "Riverton cycle-share telemetry",
     url: "https://example.org/riverton-cycle-share",
   },
+  altInsight:
+    "Hire-bike trips peak twice a day, around the commute rush hours.",
   unit: "trips per hour (weekday average)",
   categoryField: "hour",
   valueField: "trips",

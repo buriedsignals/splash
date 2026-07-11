@@ -27,6 +27,28 @@ describe("specToNativeConfig — lang threading", () => {
   });
 });
 
+describe("specToNativeConfig — altInsight threading (WCAG 1.1.1)", () => {
+  const spec: NativeSpec = {
+    ...base,
+    nativeType: "bar",
+    data: "country,share\nBrazil,87.3\nIndia,19.8",
+  };
+  it("threads spec.altInsight onto the produced config (any type, single injection point)", () => {
+    const { config } = specToNativeConfig({
+      ...spec,
+      altInsight:
+        "Brazil runs on renewables while most big economies still lag.",
+    });
+    expect(config.altInsight).toBe(
+      "Brazil runs on renewables while most big economies still lag.",
+    );
+  });
+  it("omits altInsight when not supplied (the produce gate then fails hard)", () => {
+    const { config } = specToNativeConfig(spec);
+    expect("altInsight" in config).toBe(false);
+  });
+});
+
 describe("specToNativeConfig — bar", () => {
   const spec: NativeSpec = {
     ...base,

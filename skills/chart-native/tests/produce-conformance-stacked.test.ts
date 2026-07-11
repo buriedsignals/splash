@@ -14,6 +14,7 @@ const cfg = (
 ) => ({
   title: "Renewables now supply the biggest slice of the grid",
   source: { name: "Ember 2025", url: "https://ember.org/x" },
+  altInsight: "Renewables now supply the biggest slice of the grid.",
   unit: "TWh",
   catField: "year",
   seriesFields,

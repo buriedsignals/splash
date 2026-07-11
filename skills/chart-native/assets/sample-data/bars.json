@@ -4,6 +4,7 @@
     "name": "Riverton city open data",
     "url": "https://data.riverton.gov/libraries"
   },
+  "altInsight": "The Central branch draws more monthly visitors than the next three branches combined.",
   "unit": "monthly visits",
   "catField": "branch",
   "valField": "visits",

@@ -120,6 +120,53 @@ describe("runProduceConformance — catches real violations on the config being 
   });
 });
 
+// WCAG 1.1.1 parity with dw-chart/map-dw (whose spec validation hard-requires
+// altInsight): the produce gate must REQUIRE a non-empty altInsight on EVERY
+// produced chart. checkGlobalConformance's check is opt-in ("altInsight" in input)
+// and the produce-time callers never passed the key — so a chart-native deliverable
+// could ship with no enforced insight-alt at all. The requirement is pinned at the
+// produce boundary, where a deliverable is actually built.
+describe("runProduceConformance — altInsight is REQUIRED at produce (WCAG 1.1.1)", () => {
+  const without = (obj: object, key: string): Record<string, unknown> => {
+    const copy: Record<string, unknown> = { ...obj };
+    delete copy[key];
+    return copy;
+  };
+
+  it("flags a config with NO altInsight key (the silent-skip gap)", () => {
+    const r = runProduceConformance("bar", without(barsSample, "altInsight"));
+    expect(r.checked).toBe(true);
+    expect(r.violations.some((v) => v.includes("altInsight"))).toBe(true);
+  });
+
+  it("flags an empty-string altInsight", () => {
+    const r = runProduceConformance("line", {
+      ...seriesSample,
+      altInsight: "   ",
+    });
+    expect(r.violations.some((v) => v.includes("altInsight"))).toBe(true);
+  });
+
+  it("passes with a non-empty altInsight", () => {
+    const r = runProduceConformance("bar", {
+      ...barsSample,
+      altInsight:
+        "The Central branch draws more visitors than the next three combined.",
+    });
+    expect(r.violations.some((v) => v.includes("altInsight"))).toBe(false);
+  });
+
+  it("stays a HARD violation on a brand-explicit config (never downgraded to a concern)", () => {
+    const r = runProduceConformance("bar", {
+      ...without(barsSample, "altInsight"),
+      baseColor: "#0072B2",
+      brandExplicit: true,
+    });
+    expect(r.violations.some((v) => v.includes("altInsight"))).toBe(true);
+    expect(r.concerns.some((c) => c.includes("altInsight"))).toBe(false);
+  });
+});
+
 describe("runProduceConformance — an unwired type is reported, not silently skipped", () => {
   it("returns checked:false for a type without a produce-time guard yet", () => {
     // "heatmap" (not "violin" — now guarded, see violin-conformance.test.ts and

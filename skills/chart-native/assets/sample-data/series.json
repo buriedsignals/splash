@@ -1,6 +1,7 @@
 {
   "title": "Library visits climbed back above pre-closure levels in 2024",
   "source": { "name": "Riverton city open data", "url": "https://data.riverton.gov/libraries" },
+  "altInsight": "Library visits climbed back above pre-closure levels in 2024.",
   "unit": "monthly visits",
   "xField": "date",
   "yField": "value",

@@ -10,6 +10,7 @@ const cfg = (items: { label: string; value: number }[]) => ({
     name: "Riverton travel-to-work survey",
     url: "https://example.org/riverton-commute",
   },
+  altInsight: "Half of Riverton still commutes by car.",
   unit: "share of commuters (each square = 1%)",
   items,
 });

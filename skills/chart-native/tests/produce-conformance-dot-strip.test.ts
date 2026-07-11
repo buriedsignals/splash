@@ -7,6 +7,7 @@ import {
 const cfg = (rows: Record<string, string | number>[]) => ({
   title: "Wait times vary far more between clinics than within them",
   source: { name: "NHS 2025", url: "https://nhs.uk/x" },
+  altInsight: "Wait times vary far more between clinics than within them.",
   unit: "wait (days)",
   categoryField: "clinic",
   valueField: "days",
