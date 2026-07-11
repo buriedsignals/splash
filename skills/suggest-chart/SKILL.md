@@ -238,9 +238,10 @@ comment marks `baseColor` optional-with-a-default:**
   non-water/cold subject — the same subject-fit enforcement `ChartSpec` has. It is the belt-and-braces
   for the `baseColor` rule (today wired for `beeswarm`; other types can adopt it).
 - **`altInsight`**: the WCAG alt text — the insight, not the chart's structure — same requirement and
-  wording discipline as `ChartSpec.altInsight` above. Always include it, even though it is a plain extra
-  JSON key today (passed through untouched) rather than yet enforced by every produce path — found
-  missing entirely on a shipped beeswarm spec, leaving the visual with no accessible description at all.
+  wording discipline as `ChartSpec.altInsight` above. Always include it: chart-native's produce gate now
+  HARD-REQUIRES a non-empty `altInsight` on every produced chart (fail-hard, like dw-chart/map-dw spec
+  validation) — a spec without it refuses to produce. Originally found missing entirely on a shipped
+  beeswarm spec, leaving the visual with no accessible description at all.
 
 The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,

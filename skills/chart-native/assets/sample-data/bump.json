@@ -5,6 +5,7 @@
     "name": "UK media viewing panel",
     "url": "https://example.org/uk-media-panel"
   },
+  "altInsight": "Streaming rose from third place in 2019 to Britons' most-watched screen by 2023, while linear TV slid from first to third.",
   "periods": ["2019", "2021", "2023", "2025"],
   "highlight": ["Streaming", "Linear TV"],
   "items": [

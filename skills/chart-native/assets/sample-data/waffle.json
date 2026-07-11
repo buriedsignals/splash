@@ -5,6 +5,7 @@
     "name": "Riverton travel-to-work survey",
     "url": "https://example.org/riverton-commute"
   },
+  "altInsight": "Just over half of Riverton's commuters (52%) still drive to work — more than all other modes combined.",
   "items": [
     { "label": "Car", "value": 52 },
     { "label": "Bus", "value": 18 },

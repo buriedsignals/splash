@@ -5,6 +5,7 @@
     "name": "Riverton city budget 2025",
     "url": "https://example.org/riverton-budget"
   },
+  "altInsight": "Adult social care (£600m) and schools (£460m) together take nearly half of Riverton's £2.4bn city budget.",
   "categories": ["People", "Place", "Corporate"],
   "items": [
     { "label": "Adult social care", "value": 600, "category": "People" },
