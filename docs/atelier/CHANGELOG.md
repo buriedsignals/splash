@@ -9,8 +9,11 @@
 Sweep post-redesign sur 7 nouveaux sujets couvrant la matrice de formats (heatmap, slope, streamgraph,
 dumbbell, dw-interactive, mapdw, line-video). **Flow solide** : 5/7 livrés en single-format propre
 (static→media seul, interactif→html+still, vidéo→mp4+stills, dw-interactif→`EMBED_URL.txt`) ; les 2
-closed-early (`er-wait-heatmap`, `gdp-growth-dw-interactive`, tous deux interactif/dw) sont le cutoff
-**harness a/b/c-capture** connu (backlog), pas une régression produit. **2 fixes produit** (branche
+closed-early : `gdp-growth-dw-interactive` = cutoff **harness a/b/c-capture** connu (l'`EMBED_URL.txt` a bien
+été écrit — livraison réelle, juste non-enregistrée par le harness) ; `er-wait-heatmap` = **gap
+heatmap-non-atteignable** reconfirmé (demande explicite de heatmap interactif → dégradé en `dw-chart
+grouped-column`, car le composant heatmap chart-native n'est pas câblé dans les MAPPERS — le juge a
+correctement noté le grouped-column comme vecteur plus faible). Aucun des deux = régression produit. **2 fixes produit** (branche
 `fix/wave7-stacked-label-and-format-pin-doc`, chart-native 911/911, gate 17/18 — le 18e = flake réseau
 map-native MapLibre, cf. ci-dessous) :
 
