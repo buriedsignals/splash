@@ -4,7 +4,7 @@ import type {
   ProposalResult,
 } from "./producer-spec";
 import { validateAccepted, type ValidationOutcome } from "./validate-gate";
-import { assertFormatAllowed, type Channel } from "./channel";
+import { assertFormatAllowed, normalizeChannel, type Channel } from "./channel";
 import { producerMismatchReason } from "./producer-guard";
 
 // Produce ONE proposal → its outcome (bookkeeping fields are added by produceAll).
@@ -43,12 +43,15 @@ export async function produceAll(
     // Channel/format gate — the hard rule: not-embed ⇒ never interactive/scrolly. The
     // single VisualFormat pinned on the accepted spec (single-format-produce-export,
     // Task 1) must belong to its channel's allowed set (skills/atelier/src/channel.ts).
-    // A proposal without a channel defaults to "article-web" (the permissive default,
-    // matching normalizeChannel's own default) so legacy proposals are unaffected.
-    // assertFormatAllowed throws on a violation — caught here and turned into a
-    // fail-hard recorded result, never a silent ship.
-    const channel: Channel = p.channel ?? "article-web";
+    // A proposal without a channel defaults to "article-web" (normalizeChannel's own
+    // absent-input default) so legacy proposals are unaffected. p.channel is typed
+    // Channel but arrives via untyped JSON.parse at the CLI seam, so it is resolved
+    // through normalizeChannel INSIDE the try: a garbled non-empty channel string
+    // throws there (fail-closed — it must never silently widen to the permissive
+    // article-web) and, like an assertFormatAllowed violation, is caught here and
+    // turned into a fail-hard recorded result, never a silent ship.
     try {
+      const channel: Channel = normalizeChannel(p.channel);
       assertFormatAllowed(channel, p.format);
     } catch (e) {
       results.push({

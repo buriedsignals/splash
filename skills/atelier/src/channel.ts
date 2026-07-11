@@ -163,20 +163,28 @@ const CHANNEL_KEYWORDS: Record<string, Channel> = {
 const DEFAULT_CHANNEL: Channel = "article-web";
 
 // Maps free-text channel input (the journalist's own words) to the canonical enum.
-// Trim + lowercase; unknown / undefined / empty → the article-web default (the most
-// common embed target). Pure.
+// Trim + lowercase. ABSENT input (undefined / empty / whitespace-only) → the
+// article-web default (the most common embed target, back-compat for legacy callers
+// with no channel at all). A NON-EMPTY input that matches no canonical value and no
+// alias rule THROWS (fail-closed): article-web is the MOST PERMISSIVE channel
+// (interactive + scrolly allowed), so silently defaulting a typo'd / hallucinated
+// channel would WIDEN the allowed format set — the one direction a guard must never
+// fail. Pure (audit 2026-07-11 P2).
 export function normalizeChannel(freeText?: string): Channel {
   const key = (freeText ?? "").trim().toLowerCase();
   if (!key) return DEFAULT_CHANNEL;
   // A canonical channel value maps to itself. The suggester emits these verbatim
   // (atelier/SKILL.md §5b requires `channel: social-vertical|social-feed|article-web`),
   // and they are NOT all present in the alias table below — without this a canonical
-  // "social-feed" would fall through to the article-web default and size a feed post
-  // as landscape.
+  // "social-feed" would fall through and mis-handle a feed post.
   if ((ALL_CHANNELS as readonly string[]).includes(key)) return key as Channel;
   if (key in CHANNEL_KEYWORDS) return CHANNEL_KEYWORDS[key];
   for (const word of key.split(/\s+/)) {
     if (word in CHANNEL_KEYWORDS) return CHANNEL_KEYWORDS[word];
   }
-  return DEFAULT_CHANNEL;
+  throw new Error(
+    `unknown channel "${freeText}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
+      `(or a known alias like "stories", "feed", "web"); ` +
+      `an absent/empty channel defaults to ${DEFAULT_CHANNEL}`,
+  );
 }

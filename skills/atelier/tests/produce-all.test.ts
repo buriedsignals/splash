@@ -181,6 +181,51 @@ describe("produceAll — channel/format gate", () => {
     );
     expect(results[0].status).toBe("produced");
   });
+
+  it("fails-hard a GARBLED channel string instead of widening it to article-web (fail-closed)", async () => {
+    // accepted.json is untyped JSON.parse at the CLI seam, so a typo'd channel can
+    // reach the loop despite the Channel type. It used to default to article-web —
+    // the MOST PERMISSIVE channel — silently allowing interactive/scrolly.
+    let dispatched = false;
+    const dispatch: Dispatch = async () => {
+      dispatched = true;
+      return { status: "produced" };
+    };
+    const { results } = await produceAll(
+      [
+        p("p1", {
+          channel: "social-vertica" as never, // the typo
+          format: "interactive",
+        }),
+      ],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(dispatched).toBe(false); // never shipped
+    expect(results[0].status).toBe("failed");
+    expect(results[0].error).toContain('unknown channel "social-vertica"');
+    expect(results[0].error).toContain("social-feed"); // lists the valid channels
+  });
+
+  it("keeps the loop drop-proof when one proposal carries a garbled channel", async () => {
+    const dispatch: Dispatch = async () => ({ status: "produced" });
+    const { results } = await produceAll(
+      [
+        p("p1", { channel: "article-web", format: "static" }),
+        p("p2", { channel: "newsleter" as never, format: "static" }),
+        p("p3", { channel: "social-feed", format: "video" }),
+      ],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(results.map((r) => r.status)).toEqual([
+      "produced",
+      "failed",
+      "produced",
+    ]);
+  });
 });
 
 // GUARD 1 — producer-match. The producer that ACTUALLY ran (reported by the dispatch as

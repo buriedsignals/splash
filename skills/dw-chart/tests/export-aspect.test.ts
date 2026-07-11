@@ -48,13 +48,19 @@ describe("channelToExportSize (FINDING 2: static export aspect follows the CADRA
     }
   });
 
-  it("defaults an absent or unrecognized channel to the web/landscape aspect", () => {
+  it("defaults an ABSENT channel to the web/landscape aspect (back-compat)", () => {
     expect(channelToExportSize(undefined)).toEqual(EXPORT_SIZES.landscape);
     expect(channelToExportSize("")).toEqual(EXPORT_SIZES.landscape);
-    expect(channelToExportSize("something-new")).toEqual(
-      EXPORT_SIZES.landscape,
-    );
     expect(channelToAspect(undefined)).toBe("landscape");
+  });
+
+  it("throws on an UNRECOGNIZED non-empty channel (fail-closed via normalizeChannel — no silent landscape default)", () => {
+    expect(() => channelToExportSize("something-new")).toThrow(
+      'unknown channel "something-new"',
+    );
+    expect(() => channelToAspect("something-new")).toThrow(
+      /social-vertical.*social-feed.*article-web/,
+    );
   });
 });
 
@@ -134,15 +140,9 @@ describe("channelToAspect / channelToExportSize now delegate to the shared ateli
   });
 
   it("channelToAspect(x) always equals CHANNELS[normalizeChannel(x)].aspect (no local duplicate keyword table)", () => {
-    for (const ch of [
-      undefined,
-      "",
-      "Stories",
-      "feed",
-      "web",
-      "tiktok",
-      "something-new",
-    ]) {
+    // Unknown non-empty strings are excluded here: normalizeChannel is fail-closed
+    // and THROWS on them (covered by the dedicated fail-closed test above).
+    for (const ch of [undefined, "", "Stories", "feed", "web", "tiktok"]) {
       expect(channelToAspect(ch)).toBe(CHANNELS[normalizeChannel(ch)].aspect);
     }
   });

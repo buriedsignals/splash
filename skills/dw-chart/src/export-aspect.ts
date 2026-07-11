@@ -37,9 +37,10 @@ export const EXPORT_SIZES = {
 
 export type ExportAspect = keyof typeof EXPORT_SIZES;
 
-// The web/article aspect is the default when no channel (or an unrecognized one) is
-// given — it is the most common embed target and matches the finding's "web/article
-// → 16:9".
+// The web/article aspect is the default when NO channel is given — it is the most
+// common embed target and matches the finding's "web/article → 16:9". An
+// unrecognized non-empty channel no longer defaults here: normalizeChannel is
+// fail-closed and throws (see channelToAspect below).
 export const DEFAULT_EXPORT_ASPECT: ExportAspect = "landscape";
 
 // Every CADRAGE channel answer we recognize → one canonical aspect. The keyword
@@ -49,8 +50,10 @@ export const DEFAULT_EXPORT_ASPECT: ExportAspect = "landscape";
 // produce-all's conformance check can't drift from each other. Resolve the
 // free-text channel string to the canonical enum there, then read its aspect.
 //
-// Resolve the export aspect for a CADRAGE channel string. Unknown / absent → the
-// web/article default (16:9, via normalizeChannel's default). Pure.
+// Resolve the export aspect for a CADRAGE channel string. Absent → the web/article
+// default (16:9, via normalizeChannel's absent-input default); an UNKNOWN non-empty
+// channel THROWS (normalizeChannel is fail-closed — a typo must not silently ship
+// the landscape box). Pure.
 export function channelToAspect(channel?: string): ExportAspect {
   const aspect = CHANNELS[normalizeChannel(channel)].aspect;
   // CHANNELS' base `aspect` is always "portrait" | "square" | "landscape" for the
