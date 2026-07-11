@@ -434,6 +434,13 @@ article-web is the one channel that can host it**:
   automated run, put `FLY_API_TOKEN` (and `ATELIER_EMBED_APP`) in `.env` — Bun loads them into the
   environment and `flyctl` picks them up. See `.env.example`.
 
+**Session close — after the handover.** Once the deliverable is handed over and the journalist signals
+completion — a pure thanks/goodbye with no new request ("Merci, tout est en ordre", "That is everything,
+thanks") — send AT MOST ONE brief closing message and treat the session as ENDED: no new questions, no
+re-engagement, no repeated farewells, and no echoing further goodbyes back (trading "Parfait, à bientôt."
+/ "À bientôt !" variants turn after turn is noise, not service). A message that carries ANY new request
+alongside the thanks is NOT a close — handle the request instead.
+
 ## Gates
 
 | Gate | Phase | Stop condition | Failure mode if skipped |
@@ -484,3 +491,4 @@ article-web is the one channel that can host it**:
 - Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1b) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic") that excludes an entity the visual actually shows. If the data supports more than the title states, widen the title or flag it at Gate 3.
 - Never silently substitute a value from a prior/stale export when it disagrees with the journalist's current article/data — the values used (and shown at Gate 2b) MUST always be the ones the journalist provided in the current session.
 - Never offer the journalist an element/format (or sub-format) option before confirming — via `suggest-chart`'s reachability, not from memory — that it is actually producible. Retracting an offered option as infeasible forces the journalist to re-answer the same decision multiple times; check first, propose only what's confirmed.
+- Never keep the conversation going after the journalist signs off. Once the deliverable is handed over and the journalist signals completion (a pure thanks/goodbye with no new request), send AT MOST ONE brief closing message and treat the session as ENDED — no new questions, no repeated farewells, no re-engagement, no echoing further goodbyes back.
