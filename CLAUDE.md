@@ -9,6 +9,7 @@
 ## Quoi / pourquoi (la bourse)
 
 - Financé par la **bourse FJM** (juin 2026). Nom public : « Atelier — storytelling visuel open source pour chaque rédaction ».
+- **Renommage public en cours : « Splash »** (2026-07-11) — premier jet d'explication : `splash.buriedsignals.com` (Buried Signals). Tagline « Visual journalism for every newsroom ». Le repo/code garde `atelier` jusqu'à décision de release. **La page publique PROMET** : chart-scrolly live · map-scrolly live · motion graphics **code-rendered** (Remotion/Cesium, « pas du screen recording ») · 4 formats via une pipeline unique · open source CMS-agnostic. Conséquence qualité : **vidéo + scrolly = promesses de vitrine publiques**, pas seulement livrable bourse — leur garde mécanique est prioritaire. (Gap promis-vs-codebase : Cesium flyover pas encore intégré aux moteurs — skill Tom séparé.)
 - **But** : une petite rédaction non-équipée (pas d'équipe data/graphique) produit des visuels narratifs de qualité, juste en fournissant son article. Atelier orchestre la production — il ne génère ni texte ni illustration ; l'intention éditoriale reste au journaliste.
 - **Livrable Sept-Oct 2026** : enquête Heidi.news « Annemasse, capitale du n'importe quoi » publiée + sortie **GitHub MIT** + extension We.Publish + rapport d'apprentissage.
 - **Équipe** : Yvan Pandelé (Heidi.news, lead édito), Rinny Gremaud (Heidi.news, narratif), Tom Vaillant / Buried Signals (dev sous-traitant) → **Rémy fait le dev**.
