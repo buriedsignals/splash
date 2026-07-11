@@ -79,6 +79,18 @@ describe("bundleMainTsx", () => {
       'import { INTERACTIVE_REGISTRY } from "./src/component-registry"',
     );
   });
+
+  it("wraps the render in AltInsightContext.Provider fed from config.altInsight (WCAG 1.1.1)", () => {
+    // The producer's mount.tsx (which provides the context) is DELETED from the
+    // bundle, so the generated entry must provide it itself — otherwise a newsroom
+    // rebuilding from source ships an interactive with no accessible description.
+    const main = bundleMainTsx("bar");
+    expect(main).toContain(
+      'import { AltInsightContext } from "./src/core/ChartFrame"',
+    );
+    expect(main).toContain("<AltInsightContext.Provider");
+    expect(main).toContain("altInsight");
+  });
 });
 
 describe("bundleIndexHtml", () => {
@@ -131,6 +143,43 @@ describe("export-source CLI — full bundle assembly", () => {
       const pkg = JSON.parse(readFileSync(join(dest, "package.json"), "utf8"));
       expect(pkg.dependencies.react).toBeDefined();
       expect(pkg.scripts.build).toBe("vite build");
+    } finally {
+      rmSync(work, { recursive: true, force: true });
+    }
+  });
+
+  it("emits the altInsight description path: provider wired in main.tsx to a file present in the bundle", () => {
+    const work = mkdtempSync(join(tmpdir(), "export-source-cli-alt-"));
+    const configPath = join(work, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        title: "Power mix",
+        altInsight: "Wind and solar now supply most of the power mix.",
+        rows: [{ x: "A", y: 1 }],
+      }),
+    );
+    const dest = join(work, "power-mix-source");
+    try {
+      execFileSync("bun", [scriptPath, "bar", configPath, dest], {
+        encoding: "utf8",
+      });
+      const main = readFileSync(join(dest, "main.tsx"), "utf8");
+      // The provider must be wired in the generated entry…
+      expect(main).toContain("<AltInsightContext.Provider");
+      expect(main).toContain(
+        'import { AltInsightContext } from "./src/core/ChartFrame"',
+      );
+      // …and its import target must actually exist in the copied src tree
+      // (mount.tsx, the producer's provider, is deleted — ChartFrame is not).
+      expect(existsSync(join(dest, "src", "core", "ChartFrame.tsx"))).toBe(
+        true,
+      );
+      // The config the provider reads carries the insight verbatim.
+      const cfg = JSON.parse(readFileSync(join(dest, "config.json"), "utf8"));
+      expect(cfg.altInsight).toBe(
+        "Wind and solar now supply most of the power mix.",
+      );
     } finally {
       rmSync(work, { recursive: true, force: true });
     }

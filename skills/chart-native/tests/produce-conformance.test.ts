@@ -11,6 +11,11 @@ import histogramSample from "../assets/sample-data/histogram.json";
 import beeswarmSample from "../assets/sample-data/beeswarm.json";
 import connectedScatterSample from "../assets/sample-data/connected-scatter.json";
 import lollipopSample from "../assets/sample-data/lollipop.json";
+import waffleSample from "../assets/sample-data/waffle.json";
+import treemapSample from "../assets/sample-data/treemap.json";
+import boxplotSample from "../assets/sample-data/boxplot.json";
+import divergingStackedSample from "../assets/sample-data/diverging-stacked.json";
+import bumpSample from "../assets/sample-data/bump.json";
 
 describe("runProduceConformance — the 7 wired types pass on their shipped sample", () => {
   const cases: [string, Record<string, unknown>][] = [
@@ -118,6 +123,74 @@ describe("runProduceConformance — catches real violations on the config being 
     const r = runProduceConformance("lollipop", bad);
     expect(r.violations.some((v) => v.includes("too short"))).toBe(true);
   });
+});
+
+// WCAG 1.1.1 parity with dw-chart/map-dw (whose spec validation hard-requires
+// altInsight): the produce gate must REQUIRE a non-empty altInsight on EVERY
+// produced chart. checkGlobalConformance's check is opt-in ("altInsight" in input)
+// and the produce-time callers never passed the key — so a chart-native deliverable
+// could ship with no enforced insight-alt at all. The requirement is pinned at the
+// produce boundary, where a deliverable is actually built.
+describe("runProduceConformance — altInsight is REQUIRED at produce (WCAG 1.1.1)", () => {
+  const without = (obj: object, key: string): Record<string, unknown> => {
+    const copy: Record<string, unknown> = { ...obj };
+    delete copy[key];
+    return copy;
+  };
+
+  it("flags a config with NO altInsight key (the silent-skip gap)", () => {
+    const r = runProduceConformance("bar", without(barsSample, "altInsight"));
+    expect(r.checked).toBe(true);
+    expect(r.violations.some((v) => v.includes("altInsight"))).toBe(true);
+  });
+
+  it("flags an empty-string altInsight", () => {
+    const r = runProduceConformance("line", {
+      ...seriesSample,
+      altInsight: "   ",
+    });
+    expect(r.violations.some((v) => v.includes("altInsight"))).toBe(true);
+  });
+
+  it("passes with a non-empty altInsight", () => {
+    const r = runProduceConformance("bar", {
+      ...barsSample,
+      altInsight:
+        "The Central branch draws more visitors than the next three combined.",
+    });
+    expect(r.violations.some((v) => v.includes("altInsight"))).toBe(false);
+  });
+
+  it("stays a HARD violation on a brand-explicit config (never downgraded to a concern)", () => {
+    const r = runProduceConformance("bar", {
+      ...without(barsSample, "altInsight"),
+      baseColor: "#0072B2",
+      brandExplicit: true,
+    });
+    expect(r.violations.some((v) => v.includes("altInsight"))).toBe(true);
+    expect(r.concerns.some((c) => c.includes("altInsight"))).toBe(false);
+  });
+});
+
+// scripts/backfill-proofs.mjs shells produce.mjs for each committed sample, and
+// produce.mjs runs this exact gate on the raw sample JSON — so every sample of a
+// produce-guarded type must pass with 0 violations (altInsight included), or the
+// backfill fails. This pins that invariant without running the (heavy) backfill.
+describe("runProduceConformance — guarded backfill samples pass the produce gate", () => {
+  const cases: [string, Record<string, unknown>][] = [
+    ["waffle", waffleSample],
+    ["treemap", treemapSample],
+    ["boxplot", boxplotSample],
+    ["diverging-stacked", divergingStackedSample],
+    ["bump", bumpSample],
+  ];
+  for (const [type, sample] of cases) {
+    it(`${type}: the shipped sample config is conformant (altInsight included)`, () => {
+      const r = runProduceConformance(type, sample);
+      expect(r.checked).toBe(true);
+      expect(r.violations).toEqual([]);
+    });
+  }
 });
 
 describe("runProduceConformance — an unwired type is reported, not silently skipped", () => {

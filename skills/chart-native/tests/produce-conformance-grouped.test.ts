@@ -10,6 +10,7 @@ const grouped = (
 ) => ({
   title: "Urban wages pulled ahead of rural pay across every region",
   source: { name: "INSEE 2025", url: "https://insee.fr/x" },
+  altInsight: "Urban wages pulled ahead of rural pay across every region.",
   unit: "median monthly wage (€)",
   catField: "region",
   seriesFields,

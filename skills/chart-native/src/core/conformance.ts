@@ -133,6 +133,22 @@ export function reconcileBrandViolations(
 }
 
 /**
+ * WCAG 1.1.1 — a produced chart must carry a non-empty `altInsight` (alt text that
+ * states the INSIGHT, not the chart's structure), matching dw-chart's
+ * `validateChartSpec` / map-dw's map-spec which hard-require it. Shared by
+ * checkGlobalConformance's opt-in rule 6 below AND the produce gate
+ * (produce-conformance.ts), which requires it UNCONDITIONALLY for every produced
+ * chart — one function so the violation message stays identical in both.
+ */
+export function requireAltInsight(altInsight: unknown): string[] {
+  return typeof altInsight === "string" && altInsight.trim()
+    ? []
+    : [
+        "missing altInsight (WCAG 1.1.1: alt text must state the insight, not the chart's structure)",
+      ];
+}
+
+/**
  * Check a chart's config + colours against design-conformance.md. Returns the
  * list of violations (empty = conformant). The component bakes these in; this
  * is the guard that proves it for every chart we ship.
@@ -208,11 +224,9 @@ export function checkGlobalConformance(input: {
 
   // 6. Alt text = the insight (WCAG 1.1.1), mirroring dw-chart's altInsight
   // requirement (chart-spec.ts). Opt-in — see the field's doc comment above: only
-  // enforced when the caller declares the key.
-  if ("altInsight" in input && !input.altInsight?.trim())
-    v.push(
-      "missing altInsight (WCAG 1.1.1: alt text must state the insight, not the chart's structure)",
-    );
+  // enforced when the caller declares the key. The produce gate does NOT rely on
+  // this opt-in — it calls requireAltInsight directly (produce-conformance.ts).
+  if ("altInsight" in input) v.push(...requireAltInsight(input.altInsight));
 
   // 7. Contrast ≥ 4.5:1 for every text colour. Decorative gridlines are exempt.
   for (const t of colors.text) {

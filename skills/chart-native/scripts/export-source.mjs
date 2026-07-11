@@ -106,15 +106,30 @@ export function bundleMainTsx(type) {
 // (no env, no orchestrator) produces the interactive.
 import { createRoot } from "react-dom/client";
 import { INTERACTIVE_REGISTRY } from "./src/component-registry";
+import { AltInsightContext } from "./src/core/ChartFrame";
 import config from "./config.json";
 
 const CHART_TYPE = ${JSON.stringify(type)};
 const Interactive = INTERACTIVE_REGISTRY[CHART_TYPE];
 if (!Interactive) throw new Error(\`unknown chart type: \${CHART_TYPE}\`);
 
+// WCAG 1.1.1 — provide config.altInsight once here (the producer's mount.tsx, which
+// normally provides it, is not part of this bundle) so ChartFrame emits the
+// visually-hidden accessible description. Read defensively: a rebuilt bundle must
+// keep compiling even if a hand-edited config.json drops the key.
+const rawAltInsight = (config as { altInsight?: unknown }).altInsight;
+const altInsight =
+  typeof rawAltInsight === "string" && rawAltInsight.trim()
+    ? rawAltInsight
+    : undefined;
+
 const el = document.getElementById("root");
 if (!el) throw new Error("missing #root element");
-createRoot(el).render(<Interactive config={config} animateOn="load" />);
+createRoot(el).render(
+  <AltInsightContext.Provider value={altInsight}>
+    <Interactive config={config} animateOn="load" />
+  </AltInsightContext.Provider>,
+);
 `;
 }
 

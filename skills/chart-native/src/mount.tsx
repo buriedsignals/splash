@@ -98,6 +98,7 @@ import { InteractiveComboChart } from "./InteractiveComboChart";
 import { PictogramChart, type PictogramConfig } from "./PictogramChart";
 import { InteractivePictogramChart } from "./InteractivePictogramChart";
 import { AUDIT_REGISTRY, INTERACTIVE_REGISTRY } from "./component-registry";
+import { AltInsightContext } from "./core/ChartFrame";
 import lineSample from "../assets/sample-data/series.json";
 import barSample from "../assets/sample-data/bars.json";
 import scatterSample from "../assets/sample-data/scatter.json";
@@ -163,22 +164,32 @@ const ANIMATE_ON: AnimateOn = "scroll";
 const el = document.getElementById("root")!;
 const root = createRoot(el);
 
+// WCAG 1.1.1 — the config's altInsight, provided ONCE here so ChartFrame (shared by
+// every chart type) emits the visually-hidden accessible description without any
+// per-component prop wiring. undefined (samples/legacy configs) → no emit.
+const altInsightOf = (cfg: unknown): string | undefined => {
+  const v = (cfg as { altInsight?: unknown } | null)?.altInsight;
+  return typeof v === "string" && v.trim() ? v : undefined;
+};
+
 if (injectedConfig && chart !== "audit") {
   // produce() path: render the injected config for ANY type via the registries
   const Comp = AUDIT_REGISTRY[chart];
   const Inter = INTERACTIVE_REGISTRY[chart];
   if (!Comp) throw new Error(`mount: unknown chart "${chart}"`);
   root.render(
-    interactive && Inter ? (
-      <Inter config={injectedConfig} animateOn={ANIMATE_ON} />
-    ) : (
-      <Comp
-        config={injectedConfig}
-        progress={1}
-        width={mediaW}
-        height={mediaH}
-      />
-    ),
+    <AltInsightContext.Provider value={altInsightOf(injectedConfig)}>
+      {interactive && Inter ? (
+        <Inter config={injectedConfig} animateOn={ANIMATE_ON} />
+      ) : (
+        <Comp
+          config={injectedConfig}
+          progress={1}
+          width={mediaW}
+          height={mediaH}
+        />
+      )}
+    </AltInsightContext.Provider>,
   );
 } else if (chart === "audit") {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -195,15 +206,17 @@ if (injectedConfig && chart !== "audit") {
     const Comp = AUDIT_REGISTRY[type];
     if (!Comp) throw new Error(`audit: unknown chart "${type}"`);
     root.render(
-      <Comp
-        config={config}
-        progress={progress}
-        width={w}
-        height={h}
-        responsive={responsive}
-        scale={scaleProp}
-        interactive={interactive}
-      />,
+      <AltInsightContext.Provider value={altInsightOf(config)}>
+        <Comp
+          config={config}
+          progress={progress}
+          width={w}
+          height={h}
+          responsive={responsive}
+          scale={scaleProp}
+          interactive={interactive}
+        />
+      </AltInsightContext.Provider>,
     );
   };
 } else if (chart === "parallel") {

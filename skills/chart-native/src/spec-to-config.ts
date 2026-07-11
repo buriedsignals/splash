@@ -25,6 +25,16 @@ export interface NativeSpec {
    *  every produced config so the produce-time subject-fit guard can catch a chart left
    *  on a blue-family hue for a non-water/cold subject (design-conformance.md). */
   subject?: string;
+  /**
+   * WCAG 1.1.1 alt text — the INSIGHT, not the chart's structure (same requirement as
+   * dw-chart's `ChartSpec.altInsight`, which its validateChartSpec hard-requires).
+   * Optional in the type for backward compatibility with existing spec fixtures, but
+   * suggest-chart MUST always emit it (SKILL.md) and the produce-time conformance gate
+   * (core/produce-conformance.ts) hard-fails a produced chart without one. Injected
+   * onto every produced config in specToNativeConfig; ChartFrame emits it as the
+   * visually-hidden accessible description (AltInsightContext).
+   */
+  altInsight?: string;
   /** Okabe-Ito hex for the primary series (e.g. "#009E73"). Absent → component default. */
   baseColor?: string;
   /** BCP-47 language of the deliverable (e.g. "fr", "en"). Localizes number
@@ -761,5 +771,10 @@ export function specToNativeConfig(spec: NativeSpec): {
   // beeswarm reads it today; other types can opt in). Only set when present, so specs
   // without a subject produce byte-identical configs.
   if (spec.subject) out.config.subject = spec.subject;
+  // WCAG 1.1.1 — thread the alt text onto EVERY produced config (single injection
+  // point, like lang) so the produce gate can require it (produce-conformance.ts)
+  // and the shared frame can emit it (ChartFrame's AltInsightContext). Only set when
+  // present — a missing altInsight is caught hard at produce, not silently defaulted.
+  if (spec.altInsight) out.config.altInsight = spec.altInsight;
   return out;
 }

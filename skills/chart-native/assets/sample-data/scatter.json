@@ -4,6 +4,7 @@
     "name": "Riverton city open data",
     "url": "https://data.riverton.gov/libraries"
   },
+  "altInsight": "Branches with longer opening hours draw far more visitors.",
   "xField": "hours",
   "yField": "visits",
   "sizeField": "staff",

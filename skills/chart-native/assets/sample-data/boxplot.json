@@ -5,6 +5,7 @@
     "name": "Riverton city travel survey",
     "url": "https://example.org/riverton-travel"
   },
+  "altInsight": "Riverside commutes all fall between 18 and 28 minutes, while Eastgate's range from 22 to 95 minutes.",
   "categories": [
     {
       "label": "Riverside",

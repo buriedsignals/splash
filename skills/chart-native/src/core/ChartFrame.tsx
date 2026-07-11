@@ -10,10 +10,40 @@
 // Header-height safety: chart components call resolveFrameWithHeader() which
 // pre-computes padding.top ≥ estimated header height so a 2-line title never
 // overlaps the subtitle or the first data row on the first (and only) render.
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { COLORS, FONT, TYPE } from "./tokens";
 import { sourceLabel, type Lang } from "./locale";
 import { clampOffset } from "./tooltip-clamp";
+
+// WCAG 1.1.1 — the fuller accessible DESCRIPTION of the chart (the insight; the
+// accessible NAME is already the title via each <svg role="img" aria-label>).
+// A context rather than a prop so it is provided ONCE at the shared mount/entry
+// level from config.altInsight (mount.tsx) and every chart type inherits the
+// visually-hidden description with zero per-component wiring. Default undefined →
+// no emit (sample/legacy renders without an altInsight are byte-identical).
+export const AltInsightContext = createContext<string | undefined>(undefined);
+
+// The standard visually-hidden pattern (CSS clip) — NOT display:none, which would
+// remove the node from the accessibility tree; this stays screen-reader-reachable.
+const VISUALLY_HIDDEN: CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+};
 
 // Keep any interactive tooltip inside the plot box. Each *Chart.tsx positions its
 // `.tooltip` div to the right of / above the hovered mark with `whiteSpace: nowrap`
@@ -103,6 +133,13 @@ export function ChartFrame({
   lang,
 }: ChartFrameProps) {
   const srcLabel = sourceLabel(lang);
+  // WCAG 1.1.1 — emit the altInsight (when provided) as a visually-hidden
+  // description ONCE, in whichever layout branch renders. Sibling of the <svg>
+  // (role="img" subtrees can be opaque to assistive tech), inside the frame div.
+  const altInsight = useContext(AltInsightContext);
+  const altDescription = altInsight?.trim() ? (
+    <p style={VISUALLY_HIDDEN}>{altInsight}</p>
+  ) : null;
   const PAD = 24 * scale; // header / source left-right inset
   const titleSize = TYPE.title * scale;
   const axisSize = TYPE.axis * scale;
@@ -111,6 +148,7 @@ export function ChartFrame({
   if (responsive) {
     return (
       <div style={{ width, background: COLORS.bg, fontFamily: FONT }}>
+        {altDescription}
         {/* Header: the standalone chart shows title + unit; an EMBEDDED chart shows
             only the unit (the host scaffold owns the title). */}
         {(!embedded || subtitle) && (
@@ -187,6 +225,7 @@ export function ChartFrame({
         boxSizing: "border-box",
       }}
     >
+      {altDescription}
       {/* title + subtitle in ONE flow block so a multi-line title never overlaps
           the subtitle (the plot sits below via padding.top / centred band).
           padding.top in the SVG children is pre-computed by resolveFrameWithHeader

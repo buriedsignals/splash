@@ -8,6 +8,7 @@
     "name": "Riverton library service",
     "url": "https://example.org/riverton-libraries"
   },
+  "altInsight": "Library loans per resident vary three-fold across Riverton's branches.",
   "rows": [
     { "branch": "Riverside", "loans": 14.2 },
     { "branch": "Northgate", "loans": 11.8 },

@@ -5,6 +5,7 @@
     "name": "Riverton schools inspectorate",
     "url": "https://example.org/riverton-schools"
   },
+  "altInsight": "Most Riverton schools score well, but a tail of nine schools sit below 40.",
   "categories": ["Primary", "Secondary"],
   "points": [
     { "value": 72, "category": "Primary" },

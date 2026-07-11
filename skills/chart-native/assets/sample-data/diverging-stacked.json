@@ -5,6 +5,7 @@
     "name": "Riverton resident satisfaction survey",
     "url": "https://example.org/riverton-satisfaction"
   },
+  "altInsight": "Three quarters of residents rate parks good or very good, while over half rate roads and pavements poor or very poor.",
   "responses": ["Very poor", "Poor", "Neutral", "Good", "Very good"],
   "neutralIndex": 2,
   "items": [

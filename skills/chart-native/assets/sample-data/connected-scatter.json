@@ -10,6 +10,7 @@
     "name": "Riverton housing monitor",
     "url": "https://example.org/riverton-housing"
   },
+  "altInsight": "As Riverton's rents climbed, rental vacancies dried up.",
   "rows": [
     { "year": 2016, "rent": 720, "vacancy": 6.2 },
     { "year": 2017, "rent": 760, "vacancy": 5.5 },
