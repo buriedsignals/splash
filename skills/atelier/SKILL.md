@@ -127,14 +127,16 @@ new gate, the check reuses PROPOSITION's own decision.
   `suggest-chart` (see "Only offer what is confirmed producible" below) — never offer a named sub-format
   that turns out not to be producible.
 
-**Article/web defaults to interactive — with a static HTML (no-JS) fallback ALWAYS produced (a11y
-invariant).** For the article-web channel, `suggest-chart` routing DEFAULTS to interactive — it wins
-unless there is a concrete reason not to — but whenever interactive is chosen, a self-contained static
-HTML file (no JS) that carries the claim ON ITS OWN is ALSO produced alongside it, as part of the EXPORT
-delivery (§6) — NOT a separate static PNG image (≈85% of readers never touch hover/click; interactive is
-additive, never load-bearing). Never present an interactive-only proposal for article/web — the
-static-HTML fallback is part of the SAME accept decision, not a separate ask, and interactive delivery
-never offers or ships a standalone image.
+**Article/web has NO static fallback — the pinned format is the ONLY artifact, so pin the one the
+journalist actually wants.** For the article-web channel, `suggest-chart` routing DEFAULTS to interactive
+(`interactiveDefault`, `skills/atelier/src/channel.ts`) — it wins ONLY absent a concrete reason otherwise.
+That default is NOT a mandate: an explicit journalist format signal ("a static image", "a static chart",
+"just an image", "pour le print") WINS over it — pin `static`, never interactive. Since the single-format
+redesign there is NO auto no-JS `static.html` produced alongside an interactive (a11y = choosing the
+`static` FORMAT, see §6 and the export guardrail below) — whichever ONE format is pinned is the ONLY
+artifact the journalist gets, so a wrong default is NOT backstopped by a byproduct. Announce that pinned
+`{format}` explicitly for veto (Gate 2, above) — never silently default to interactive and jump straight
+to production as if a static image still tagged along.
 
 **★ One opportunity = one accept decision = one `suggest-chart` call.** Each DISTINCT `suggest-article`
 opportunity is routed and accepted INDEPENDENTLY — never fold a second opportunity's series/claim into
