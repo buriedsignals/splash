@@ -23,7 +23,7 @@ import { COLORS, TYPE, GROUPED_SERIES_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
-import { truncate } from "./core/text";
+import { verticalCatLines, verticalCatMaxLines, bandStepPx } from "./core/text";
 import { layoutLegend } from "./core/legend";
 
 export interface GroupedConfig {
@@ -81,11 +81,24 @@ export function GroupedBarChart({
     charW,
     legendRowUnscaled * s,
   );
+  // A group's category label is centred under the group and WRAPS onto ≤2 lines
+  // (verticalCatLines, shared bar-family rule) rather than truncating to a stub on a
+  // narrow/portrait canvas. Reserve the extra row(s) here, above the legend, using
+  // the band step the layout will use (innerWidth is exact — left/right scale
+  // straight through resolveFrame). 0 extra when every label fits on one line.
+  const catExtraRows =
+    verticalCatMaxLines(
+      config.rows.map((r) => String(r[config.catField])),
+      bandStepPx(width - (leftAxis + sideRight) * s, config.rows.length),
+      TYPE.axis * s,
+    ) - 1;
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: sideRight,
-    // category labels + legend rows (source band reserved in resolveFrameWithHeader)
-    bottom: 44 + legendRows * legendRowUnscaled,
+    // category labels (+ wrapped rows) + legend rows (source band reserved in
+    // resolveFrameWithHeader)
+    bottom:
+      44 + legendRows * legendRowUnscaled + catExtraRows * TYPE.axis * 1.15,
     left: leftAxis,
   };
   const frame = resolveFrameWithHeader(
@@ -185,7 +198,17 @@ function GroupedSvg({
   // stagger across GROUPS (reading order); series within a group rise together.
   const groupP = (ci: number) => stagger(p, ci, nCols, 0.18, 0.5 / nCols, 0.35);
 
-  const legendTop = innerHeight + 40 * sc;
+  // band step (centre-to-centre) → wrap budget for a centred category label.
+  const colStep =
+    nCols > 1 ? columns[1].center - columns[0].center : innerWidth;
+  const catLineH = ts.axis * 1.15;
+  const catLinesByCol = columns.map((c) =>
+    verticalCatLines(String(c.rawCat), colStep, ts.axis),
+  );
+  const catExtraRows = Math.max(0, ...catLinesByCol.map((l) => l.length - 1));
+  // legend sits below the (possibly wrapped) category labels so it never overlaps a
+  // 2-line name.
+  const legendTop = innerHeight + 40 * sc + catExtraRows * catLineH;
   const legend = layoutLegend(
     config.seriesFields,
     GROUP_COLORS,
@@ -265,21 +288,27 @@ function GroupedSvg({
           );
         })}
 
-        {/* category labels under each group centre */}
+        {/* category labels under each group centre — wrapped onto ≤2 lines (never a
+            truncated stub), stacked downward from just below the axis */}
         {columns.map((c, ci) => {
           const op = clamp01(groupP(ci) * 1.6);
           return (
-            <text
-              key={`c${ci}`}
-              x={c.center}
-              y={innerHeight + 20 * sc}
-              textAnchor="middle"
-              fontSize={ts.axis}
-              fill={COLORS.ink}
-              opacity={op}
-            >
-              {truncate(String(c.rawCat), (innerWidth / nCols) * 0.94, ts.axis)}
-            </text>
+            <g key={`c${ci}`}>
+              {catLinesByCol[ci].map((ln, li) => (
+                <text
+                  key={li}
+                  className="cat-label"
+                  x={c.center}
+                  y={innerHeight + 20 * sc + li * catLineH}
+                  textAnchor="middle"
+                  fontSize={ts.axis}
+                  fill={COLORS.ink}
+                  opacity={op}
+                >
+                  {ln}
+                </text>
+              ))}
+            </g>
           );
         })}
 

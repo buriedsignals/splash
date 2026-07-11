@@ -1,10 +1,15 @@
 import { describe, it, expect } from "bun:test";
+import { scaleBand } from "d3-scale";
 import {
   wrapLabel,
   textWidth,
   rotatedLabelDescentPx,
   rotatedLabelFitPx,
   ROTATED_TICK_ANGLE_DEG,
+  bandStepPx,
+  verticalCatBudgetPx,
+  verticalCatLines,
+  verticalCatMaxLines,
 } from "../src/core/text";
 
 const F = 13; // base axis font
@@ -88,5 +93,88 @@ describe("wrapLabel — fit long labels onto ≤2 lines", () => {
     expect(
       wrapLabel("Supercalifragilisticexpialidocious", 60, F)[0].endsWith("…"),
     ).toBe(true);
+  });
+});
+
+describe("bandStepPx — d3 scaleBand centre-to-centre step", () => {
+  it("matches d3's scaleBand.step() at the shared 0.28 padding", () => {
+    for (const [range, n] of [
+      [944, 5],
+      [760, 8],
+      [500, 3],
+    ] as const) {
+      const d3step = scaleBand<number>()
+        .domain([...Array(n).keys()])
+        .range([0, range])
+        .padding(0.28)
+        .step();
+      expect(bandStepPx(range, n)).toBeCloseTo(d3step, 5);
+    }
+  });
+
+  it("equals the centre-to-centre distance of adjacent bands", () => {
+    const s = scaleBand<number>()
+      .domain([0, 1, 2, 3, 4])
+      .range([0, 944])
+      .padding(0.28);
+    const centre = (i: number) => (s(i) ?? 0) + s.bandwidth() / 2;
+    expect(bandStepPx(944, 5)).toBeCloseTo(centre(1) - centre(0), 5);
+  });
+
+  it("never divides by less than one band", () => {
+    expect(bandStepPx(300, 0)).toBe(300); // n=0 → denominator clamped to 1
+  });
+});
+
+describe("verticalCatBudgetPx — wrap budget for a centred column label", () => {
+  it("is the band step less a one-character gutter", () => {
+    expect(verticalCatBudgetPx(178, 22)).toBe(156);
+  });
+  it("is never negative", () => {
+    expect(verticalCatBudgetPx(10, 22)).toBe(0);
+  });
+});
+
+describe("verticalCatLines — wrap a column label, never a clipped stub", () => {
+  const STEP = bandStepPx(944, 5); // portrait 9:16 inner width, 5 columns ≈ 178.8px
+  const FONT = 22.1; // TYPE.axis * 1.7 (portrait scale)
+
+  it("keeps a short name on one line, unchanged", () => {
+    expect(verticalCatLines("Spotify", STEP, FONT)).toEqual(["Spotify"]);
+  });
+
+  it("wraps a long two-word name onto two lines instead of truncating", () => {
+    const lines = verticalCatLines("YouTube Music", STEP, FONT);
+    expect(lines.length).toBe(2);
+    expect(lines.join(" ")).toBe("YouTube Music"); // nothing dropped
+    expect(lines.some((l) => l.includes("…"))).toBe(false); // no ellipsis
+  });
+
+  it("never emits a single truncated stub while a 2nd line is available", () => {
+    for (const name of [
+      "Apple Music",
+      "Amazon Music",
+      "Tencent Music",
+      "YouTube Music",
+    ]) {
+      const lines = verticalCatLines(name, STEP, FONT);
+      expect(lines.join(" ")).toBe(name);
+      expect(lines.some((l) => l.endsWith("…"))).toBe(false);
+    }
+  });
+});
+
+describe("verticalCatMaxLines — rows a column-label block needs", () => {
+  const STEP = bandStepPx(944, 5);
+  const FONT = 22.1;
+
+  it("is 1 when every label fits on one line (no reserve, no regression)", () => {
+    expect(verticalCatMaxLines(["USA", "JAM", "GBR"], STEP, FONT)).toBe(1);
+  });
+
+  it("is 2 when at least one label must wrap", () => {
+    expect(verticalCatMaxLines(["Spotify", "YouTube Music"], STEP, FONT)).toBe(
+      2,
+    );
   });
 });

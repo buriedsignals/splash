@@ -25,6 +25,7 @@ import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
+import { verticalCatLines, verticalCatMaxLines, bandStepPx } from "./core/text";
 
 export interface StackedConfig {
   title: string; // = the insight (sentence case)
@@ -91,13 +92,25 @@ export function StackedBarChart({
     charW,
     legendRowUnscaled * s,
   );
-  // unscaled bottom padding (resolveFrame multiplies by scale): the legend sits
-  // 40 below the plot, then every legend row. The source-footer band is reserved
-  // once in resolveFrameWithHeader, so the legend never collides with the source.
+  // A column's category label is centred under the column and WRAPS onto ≤2 lines
+  // (verticalCatLines, shared bar-family rule) rather than truncating/overflowing on
+  // a narrow/portrait canvas. Reserve the extra row(s) above the legend, using the
+  // band step the layout will use. 0 extra when every label fits on one line.
+  const catExtraRows =
+    verticalCatMaxLines(
+      config.rows.map((r) => String(r[config.catField])),
+      bandStepPx(width - (leftAxis + sideRight) * s, config.rows.length),
+      TYPE.axis * s,
+    ) - 1;
+  // unscaled bottom padding (resolveFrame multiplies by scale): the wrapped category
+  // labels, then the legend 40 below the plot, then every legend row. The
+  // source-footer band is reserved once in resolveFrameWithHeader, so the legend
+  // never collides with the source.
   const basePad = {
     top: baseTop,
     right: sideRight,
-    bottom: 44 + legendRows * legendRowUnscaled,
+    bottom:
+      44 + legendRows * legendRowUnscaled + catExtraRows * TYPE.axis * 1.15,
     left: leftAxis,
   };
   const frame = resolveFrameWithHeader(
@@ -201,9 +214,18 @@ function StackedSvg({
   const totals = columns.map((c) => c.total);
   const totalsVary = Math.max(...totals) - Math.min(...totals) > 0.5;
 
+  // band step (centre-to-centre) → wrap budget for a centred category label.
+  const colStep =
+    columns.length > 1 ? columns[1].bandX - columns[0].bandX : innerWidth;
+  const catLineH = ts.axis * 1.15;
+  const catLinesByCol = columns.map((c) =>
+    verticalCatLines(String(c.rawCat), colStep, ts.axis),
+  );
+  const catExtraRows = Math.max(0, ...catLinesByCol.map((l) => l.length - 1));
   // legend UNDER the plot, in plot-g coords (so it tracks the centred band on
-  // tall canvases). Wrapped to the plot width; rows match the reserved padding.
-  const legendTop = innerHeight + 40 * sc;
+  // tall canvases). Sits below the (possibly wrapped) category labels so it never
+  // overlaps a 2-line name. Wrapped to the plot width; rows match the reserved padding.
+  const legendTop = innerHeight + 40 * sc + catExtraRows * catLineH;
   const legend = layoutLegend(
     config.seriesFields,
     SERIES_COLORS,
@@ -298,17 +320,22 @@ function StackedSvg({
                   />
                 );
               })}
-              {/* category (e.g. year) label under the column */}
-              <text
-                x={col.bandX + col.bandW / 2}
-                y={innerHeight + 20 * sc}
-                textAnchor="middle"
-                fontSize={ts.axis}
-                fill={COLORS.ink}
-                opacity={catOp}
-              >
-                {String(col.rawCat)}
-              </text>
+              {/* category (e.g. year) label under the column — wrapped onto ≤2 lines
+                  (never a truncated/overflowing stub), stacked downward */}
+              {catLinesByCol[ci].map((ln, li) => (
+                <text
+                  key={`cat${li}`}
+                  className="cat-label"
+                  x={col.bandX + col.bandW / 2}
+                  y={innerHeight + 20 * sc + li * catLineH}
+                  textAnchor="middle"
+                  fontSize={ts.axis}
+                  fill={COLORS.ink}
+                  opacity={catOp}
+                >
+                  {ln}
+                </text>
+              ))}
               {/* column total on top (only when totals carry meaning) */}
               {totalsVary && (
                 <text
