@@ -4,6 +4,46 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-11 — Wave 7 « tour d'horizon » (7 cas) : 2 fixes produit, 1 faux positif démasqué, redesign validé
+
+Sweep post-redesign sur 7 nouveaux sujets couvrant la matrice de formats (heatmap, slope, streamgraph,
+dumbbell, dw-interactive, mapdw, line-video). **Flow solide** : 5/7 livrés en single-format propre
+(static→media seul, interactif→html+still, vidéo→mp4+stills, dw-interactif→`EMBED_URL.txt`) ; les 2
+closed-early (`er-wait-heatmap`, `gdp-growth-dw-interactive`, tous deux interactif/dw) sont le cutoff
+**harness a/b/c-capture** connu (backlog), pas une régression produit. **2 fixes produit** (branche
+`fix/wave7-stacked-label-and-format-pin-doc`, chart-native 911/911, gate 17/18 — le 18e = flake réseau
+map-native MapLibre, cf. ci-dessous) :
+
+- **chart-native stacked-area : label de bande de droite tronqué.** La gouttière droite était un `right:
+  116` en dur — OK pour l'échantillon, mais un nom+valeur long (« Renouvelables 280 », 17 car. ≈ 143px
+  gras) débordait et rendait « Renouvelables 28 » (render-confirmé sur le mix électrique allemand). Fix :
+  gouttière dimensionnée sur le label le PLUS LARGE via un helper partagé `endLabelGutterPx()`
+  (`core/text.ts`), plancher à 116 pour ne pas changer les charts à labels courts. Couvre le static ET
+  l'interactif (ce dernier réutilise `StackedAreaChart`). Render-vérifié : « Renouvelables 280 » complet.
+- **atelier SKILL.md : contradiction interne PROPOSITION vs single-format.** Le redesign avait retiré le
+  fallback no-JS `static.html` auto et mis à jour §6 + le garde-fou export, mais la section PROPOSITION
+  (choix de format article/web) promettait encore le fallback « ALWAYS produced » — contradiction qui a
+  causé un miss Wave 7 : un dumbbell dont le journaliste voulait EXPLICITEMENT du static a été pinné
+  interactif, parce que le texte périmé disait « défaut interactif, ne jamais présenter interactif-seul »
+  (sûr seulement quand un fallback static était garanti). Corrigé : le format pinné est le SEUL artefact,
+  un signal de format explicite du journaliste (« image statique », « pour le print ») GAGNE sur
+  `interactiveDefault`, et le format pinné est annoncé pour veto — plus de fallback fantôme.
+
+**1 faux positif démasqué (corollaire « le juge peut mentir »)** : `unemployment-mapdw` — le juge a flaggé
+`numberFormat: "0.0%"` sur des valeurs déjà en points de pourcentage (2,9…11,3) comme rendant « 290 % »
+sous d3-format. **Faux** : Datawrapper APPEND le « % » sans multiplier (documenté `map-spec.ts:235`,
+vérifié par export rendu) — le PNG livré affiche « 2,7 % » / « 11,3 % » correctement, avec groupage locale
+FR et « Source : » i18n OK. Aucun fix.
+
+**1 fix antérieur validé au rendu** : `temp-anomaly-line-video` — le point-label de fin du line chart vidéo
+est EXACTEMENT au bout de la ligne (2023, +1,5 °C), sans décalage en avant. Le fix end-label mergé tient.
+
+**Notes (non-fixes)** : `energy-mix` palette « pas subject-fit » = soft (renouvelables=vert déjà
+subject-fit ; palette sémantique-carburant = décision design vs invariant CVD-safe global → backlog) ;
+type stacked-area + format interactif = CORRECTS (persona demandait « stacked-area (ou streamgraph)…
+interactif »). Le miss format (life-exp) reste attrapé par le filet QA (le finding l'a surfacé) —
+discipline d'annonce-de-format doc-enforced (classe titre/takeaway, pas de levier mécanique propre).
+
 ## Session 2026-07-10 (nuit) — REDESIGN single-format produce→export (7 tâches) + 2 décisions renversées
 
 Constat post-Wave 5 (cf. sessions ci-dessous) : le pipeline `produce → export` sur-produisait sur **deux
