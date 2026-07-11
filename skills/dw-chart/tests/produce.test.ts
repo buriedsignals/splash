@@ -108,6 +108,31 @@ d("produceChart (real API)", () => {
   }, 60000);
 });
 
+// NOT token-gated — this must hold precisely when no API access exists at all. The
+// adversarial-review finding: produceChart resolved the export size (channelToExportSize,
+// which is fail-closed on a garbled spec.channel) only AFTER createChart/setData/
+// patchChart/publishChart, so a garbled channel threw after a live Datawrapper chart was
+// already created and published (an orphaned hosted chart). The ordering witness needs no
+// mock: with DATAWRAPPER_API_TOKEN unset, the FIRST API-client call (createChart's
+// token()) throws "DATAWRAPPER_API_TOKEN is not set" — so seeing the unknown-channel
+// error instead PROVES the channel resolution now runs before any API-touching code.
+describe("produceChart fails fast on a garbled channel BEFORE any API call", () => {
+  it("rejects with the unknown-channel error (not the missing-token error) when no token is set", async () => {
+    const saved = process.env.DATAWRAPPER_API_TOKEN;
+    delete process.env.DATAWRAPPER_API_TOKEN;
+    try {
+      const out = join(tmpdir(), "atelier-garbled-channel.png");
+      const garbled = { ...spec, channel: "instagramz" };
+      await expect(produceChart(garbled, out)).rejects.toThrow(
+        /unknown channel "instagramz"/,
+      );
+      expect(existsSync(out)).toBe(false);
+    } finally {
+      if (saved !== undefined) process.env.DATAWRAPPER_API_TOKEN = saved;
+    }
+  });
+});
+
 afterAll(async () => {
   if (id) await deleteChart(id);
   if (msId) await deleteChart(msId);
