@@ -4,6 +4,47 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-11 (suite) — Tranche 1 post-audit : 4 fixes qualité mergés (workflow parallèle + review adversariale)
+
+Suite directe de l'audit (`docs/atelier/audit-2026-07-11.md`, 71/100 B-) et du renommage public **Splash**
+(`splash.buriedsignals.com` — vidéo/scrolly = promesses de vitrine). Rémy a donné mandat qualité large.
+Exécution : workflow 4 implémenteurs parallèles en worktrees isolés + 1 reviewer adversarial par branche →
+2 branches UNSAFE (findings réels attrapés) → agents correctifs → merges. Un agent (signoff) mort mi-course
+(API) — travail repris et complété par un agent successeur. Gate final vert.
+
+- **channel fail-closed de bout en bout** (P2 audit, était fail-OPEN) : `normalizeChannel` throw sur un
+  canal inconnu non-vide (liste les canaux valides) ; absent/vide garde le défaut `article-web` documenté.
+  **La review adversariale a attrapé une VRAIE régression dans le premier jet** : le gate acceptait les
+  alias (« feed »→social-feed) mais le dispatch threadait le canal BRUT vers `ATELIER_CHANNEL`, que le
+  parsing exact-match de chart-native re-défaultait silencieusement en article-web → **ship paysage
+  1200×675 pour un carré résolu au gate, reproduit mécaniquement** (sur main ce chemin fail-hardait). Fix :
+  normalisation UNIQUE au gate + dispatch reçoit `{...p, channel}` canonique + parsing `ATELIER_CHANNEL`
+  fail-closed dans les producteurs (chart-native produce+vite, map-native — qui crashait aussi sur env
+  VIDE, bug bonus corrigé) + dw-chart résout la taille d'export AVANT tout appel API (plus de chart DW
+  orphelin publié sur canal invalide). RED proofs mécaniques, suites vertes (atelier 254, chart-native 920,
+  dw-chart 169 API réelle, map-native), tsc ×3.
+- **dw-chart « Source : » localisé** (gap i18n backlog, le défaut FR le plus visible à haute fréquence) :
+  miroir octet-pour-octet du pattern map-dw (`annotate.notes`, champs natifs blanked hors-EN, comment
+  cross-ref). Review SAFE — le reviewer a re-runné l'e2e API réelle lui-même et inspecté les rendus FR/EN
+  (« Source : Insee », zéro doublon, EN inchangé). Trade-offs disclosed : URL non-cliquable hors-EN (même
+  choix que map-dw) ; quirk espace ASCII vs fine insécable hérité volontairement (fix = ticket 2-skills).
+- **altInsight enforced + émis partout (WCAG 1.1.1)** (audit R3 : « opt-in de fait OFF ») : threadé
+  spec→config au mapper central (jamais fabriqué depuis le titre), gate produce **fail-hard** (exit 1 si
+  absent — parité avec dw-chart/map-dw), émis via `AltInsightContext` (mount partagé → ChartFrame, nœud
+  visually-hidden clip-pattern, jamais display:none). **La review a attrapé le trou du bundle React
+  exporté** (form 1 « code source » : mount.tsx supprimé du bundle → aucun provider → l'interactif rebuilddé
+  re-perdait l'alt) → `main.tsx` généré wrappe le render dans le Provider (lu défensivement), **prouvé sur
+  bundle réel** : vite build vert + dist inspecté headless (1 nœud caché, clip rect, 1×1px). +5 samples
+  backfill avec insights data-accurate, doc suggest-chart mise à jour. chart-native 930/0.
+- **Discipline de clôture de session** (bruit « À bientôt ! » ×4, vu 2× en QA) : SKILL.md §6 EXPORT + liste
+  Never — après handover + signal de complétion du journaliste (merci/au revoir PUR, sans requête), AU PLUS
+  UN message de clôture puis session TERMINÉE. Côté harness (`23c7543`) : détecteur pure-close conservateur
+  (`close-detection.ts`, whole-match normalisé, marqueurs de requête disqualifiants, ≤80 car.) câblé dans
+  le driver avec gate situationnel (deliverable enregistré OU tour atelier lui-même une clôture, jamais en
+  réponse à une question de gate) → coupe en `closed-early` + `personaSignoffClose:true` dans meta.json
+  (pas de nouveau exitReason, métriques QA non-skewées). 214/0 harness.
+- **Renommage public Splash gravé** (CLAUDE.md « Quoi/pourquoi ») + fixtures Wave 7 committées au harness.
+
 ## Session 2026-07-11 — Wave 7 « tour d'horizon » (7 cas) : 2 fixes produit, 1 faux positif démasqué, redesign validé
 
 Sweep post-redesign sur 7 nouveaux sujets couvrant la matrice de formats (heatmap, slope, streamgraph,
