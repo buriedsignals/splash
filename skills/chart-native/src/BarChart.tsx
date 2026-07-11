@@ -30,7 +30,13 @@ import type { Lang } from "./core/locale";
 import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrameWithHeader } from "./core/format";
-import { truncate, textWidth, wrapLabel } from "./core/text";
+import {
+  textWidth,
+  wrapLabel,
+  verticalCatLines,
+  verticalCatMaxLines,
+  bandStepPx,
+} from "./core/text";
 
 export interface BarConfig {
   title: string; // = the insight (sentence case)
@@ -94,6 +100,23 @@ export function BarChart({
       0,
     );
     basePad.left = Math.max(basePad.left, Math.min(width * 0.5, longest + 18));
+  } else {
+    // Vertical columns: a category label that is wider than its (narrow) column
+    // WRAPS onto ≤2 lines (verticalCatLines) rather than truncating to a stub — the
+    // portrait/9:16 bug. Reserve the extra line(s) in the bottom margin BEFORE the
+    // frame is resolved, using the exact band step the layout will use. innerWidth
+    // is exact here: resolveFrame only ever adds to top/bottom (tall-canvas
+    // centring), never to left/right, so basePad.left/right scale straight through.
+    const innerW = width - (basePad.left + basePad.right) * scale;
+    const step = bandStepPx(innerW, config.rows.length);
+    const lines = verticalCatMaxLines(
+      config.rows.map((r) => String(r[config.catField])),
+      step,
+      TYPE.axis * scale,
+    );
+    // pre-scale extra rows (resolveFrame multiplies basePad by scale); one label row
+    // is already budgeted in paddingFor's bottom, so reserve (lines − 1) more.
+    basePad.bottom += (lines - 1) * TYPE.axis * 1.15;
   }
   const frame = resolveFrameWithHeader(
     config.title,
@@ -200,6 +223,9 @@ function BarSvg({
   const { innerWidth, innerHeight, orientation, bars } = layout;
   const horizontal = orientation === "horizontal";
   const n = bars.length;
+  // vertical band step (centre-to-centre) — the wrap budget for a centered category
+  // label. Read from the laid-out bars so it matches the geometry exactly.
+  const bandStep = n > 1 ? bars[1].x - bars[0].x : innerWidth;
 
   // chrome wipe (gridlines + baseline) over the first ~18% of the timeline
   const chrome = easeOutCubic(p / 0.18);
@@ -292,14 +318,18 @@ function BarSvg({
               };
           // category label: horizontal labels live in the (widened) left gutter and
           // WRAP onto ≤2 lines if the longest still exceeds the capped gutter — never a
-          // single clipped line. Vertical labels keep the single-line truncate at the
-          // bar width (unchanged).
-          const catMaxPx = horizontal ? padding.left - 14 * sc : b.w;
+          // single clipped line. Vertical labels WRAP onto ≤2 lines to the band step
+          // (verticalCatLines) so a long name under a narrow column is never truncated
+          // to a stub on a portrait/9:16 canvas — the same never-truncate rule.
           const catLines = horizontal
-            ? wrapLabel(String(b.rawCat), catMaxPx, ts.axis, 2)
-            : [truncate(String(b.rawCat), catMaxPx, ts.axis)];
+            ? wrapLabel(String(b.rawCat), padding.left - 14 * sc, ts.axis, 2)
+            : verticalCatLines(String(b.rawCat), bandStep, ts.axis);
           const catLineH = ts.axis * 1.15;
-          const catY0 = cat.y - ((catLines.length - 1) * catLineH) / 2;
+          // horizontal: centre the wrapped block on the band. vertical: stack DOWN
+          // from the first row (just below the axis).
+          const catY0 = horizontal
+            ? cat.y - ((catLines.length - 1) * catLineH) / 2
+            : cat.y;
           // value label at the ANIMATED end of the bar (rides the growing edge, so it is
           // always OUTSIDE the bar — never clipped inside a too-short bar — and "rises as
           // its bar lands"). Uses `g` (the drawn rect at this frame), not the final `b`;
@@ -344,8 +374,9 @@ function BarSvg({
               {catLines.map((ln, li) => (
                 <text
                   key={`cat${i}-${li}`}
+                  className="cat-label"
                   x={cat.x}
-                  y={horizontal ? catY0 + li * catLineH : cat.y}
+                  y={catY0 + li * catLineH}
                   dy={horizontal ? "0.32em" : cat.dy}
                   textAnchor={cat.anchor}
                   fontSize={ts.axis}

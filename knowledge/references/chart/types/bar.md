@@ -59,6 +59,19 @@ baseline. Length is near the top of the perception hierarchy → bars are the sa
   The gutter is capped at ~45% of the width so it can't starve the plot — only past that cap does a
   pathologically long label fall back to an ellipsis (`core/text.ts` `truncate`). A short-label chart
   keeps the default gutter, so its layout is unchanged. (Verified by `tests/bar-longlabels.test.tsx`.)
+- **A vertical column's category label WRAPS — never truncates to a stub.** A column's label is centred
+  under its (narrow) bar; on a portrait / 9:16 canvas a long name is wider than its column and a fixed
+  single-line `truncate` clipped it to an ellipsis stub ("Apple Mu…", "Amazon M…", "Tencent…",
+  "YouTube…" — render-confirmed on a music-streaming ranking). The rule: a long vertical label **wraps
+  onto ≤2 lines** to the band STEP (centre-to-centre spacing, the real collision limit — not the bar
+  width), stacked downward below the axis; the extra row is reserved in the bottom margin so it clears
+  the source line (and, for grouped/stacked, pushes the legend down). This is the vertical twin of the
+  horizontal gutter rule and lives ONCE in the shared bar layout (`core/text.ts` `verticalCatLines` /
+  `bandStepPx` / `verticalCatMaxLines`), so **every** vertical bar-family type (bar, grouped, stacked)
+  and **every** channel (landscape / square / portrait) inherits it. A short label that already fits is
+  returned unchanged (one line) → landscape/square layouts are not regressed. Only a pathologically long
+  single word (no wrap point) falls back to an ellipsis, as a last resort. (Verified by
+  `tests/bar-portrait-labels.test.tsx`; mechanically netted at portrait by the layout audit.)
 
 ## data-to-viz caveats (credited)
 

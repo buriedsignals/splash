@@ -111,3 +111,76 @@ export function wrapLabel(
   if (cur) lines.push(cur);
   return lines;
 }
+
+// A VERTICAL bar/column carries its category label CENTERED under the bar. The
+// widest a centered label can grow before it collides with the neighbouring label
+// is the band STEP (centre-to-centre spacing) less a small gutter — NOT the bar
+// width. A fixed single-line `truncate(label, bar.w)` clipped any name wider than
+// its own (narrow) column to an ellipsis stub on a portrait/9:16 canvas
+// ("Apple Mu…", "Amazon M…", "Tencent…", "YouTube…") — render-confirmed on a
+// music-streaming ranking. These helpers WRAP a long category label onto ≤2 lines
+// (the vertical analogue of the horizontal bar's widened, wrapped left gutter) so a
+// name is never truncated to a stub. They are the ONE shared source of the rule so
+// every vertical bar-family renderer (bar, grouped, stacked) inherits it at every
+// channel; a short label that already fits is returned unchanged (one line), so
+// landscape/square layouts are not regressed.
+export const VERTICAL_CAT_MAX_LINES = 2;
+
+/**
+ * Wrap budget (px) for a centered vertical category label: the band step less a
+ * ~one-character gutter on each side, so two adjacent centered labels never touch.
+ */
+export function verticalCatBudgetPx(
+  bandStepPx: number,
+  fontSize: number,
+): number {
+  return Math.max(0, bandStepPx - fontSize);
+}
+
+/**
+ * Category-label lines for one vertical bar, wrapped to fit the band step over at
+ * most `maxLines` lines (never a single clipped/truncated stub while a second line
+ * is available). Returns `[text]` unchanged when the label already fits.
+ */
+export function verticalCatLines(
+  text: string,
+  bandStepPx: number,
+  fontSize: number,
+  maxLines = VERTICAL_CAT_MAX_LINES,
+): string[] {
+  return wrapLabel(
+    text,
+    verticalCatBudgetPx(bandStepPx, fontSize),
+    fontSize,
+    maxLines,
+  );
+}
+
+/**
+ * The d3 `scaleBand` centre-to-centre STEP for `n` bands spanning `rangePx` at the
+ * shared 0.28 inner+outer padding (matches bar-geometry's `.padding(0.28)`). Lets a
+ * renderer reserve bottom-margin for wrapped category lines BEFORE the layout is
+ * computed, using the exact step the layout will use.
+ */
+export function bandStepPx(rangePx: number, n: number, padding = 0.28): number {
+  // d3: step = range / (n - paddingInner + 2·paddingOuter); padding() sets both.
+  return rangePx / Math.max(1, n - padding + 2 * padding);
+}
+
+/**
+ * The MOST lines any of `labels` needs when wrapped to the band step — so a
+ * vertical bar renderer can reserve (maxLines − 1) extra label rows in its bottom
+ * margin. 1 when every label fits on one line (no reserve, layout unchanged).
+ */
+export function verticalCatMaxLines(
+  labels: string[],
+  bandStepPx: number,
+  fontSize: number,
+  maxLines = VERTICAL_CAT_MAX_LINES,
+): number {
+  let m = 1;
+  for (const l of labels) {
+    m = Math.max(m, verticalCatLines(l, bandStepPx, fontSize, maxLines).length);
+  }
+  return m;
+}
