@@ -54,6 +54,70 @@ describe("specToMetadata — locale / language", () => {
   });
 });
 
+// SOURCE-LABEL i18n — mirrors map-dw (skills/map-dw/src/spec-to-map-metadata.ts +
+// its spec-to-map-metadata.test.ts source cases): DW's own auto-rendered "Source:"
+// caption prefix does NOT localize via the chart `language`, so a non-English
+// deliverable must build its OWN "Source : X" line via `annotate.notes` and blank
+// the native describe fields (else the footer shows BOTH captions).
+describe("specToMetadata — source i18n", () => {
+  it("routes the source through annotate.notes with a localized prefix when lang is non-English", () => {
+    const p = specToMetadata({ ...spec, lang: "fr" });
+    const d = p.metadata.describe as Record<string, unknown>;
+    // The native caption can't be relocalized — suppress it so "Source:" never ships in
+    // English on a French chart (else the footer would show BOTH captions).
+    expect(d["source-name"]).toBe("");
+    expect(d["source-url"]).toBe("");
+    const a = p.metadata.annotate as Record<string, unknown>;
+    expect(a.notes).toBe("Source : ONS"); // narrow space before the colon (French typography)
+  });
+
+  it("keeps the native source-name/source-url (with its working hyperlink) for English/absent lang", () => {
+    const p = specToMetadata(spec);
+    const d = p.metadata.describe as Record<string, unknown>;
+    // English is DW's own default — its native "Source:" caption already reads correctly,
+    // so keep the native field (preserves the clickable hyperlink in the interactive embed).
+    expect(d["source-name"]).toBe("ONS");
+    expect(d["source-url"]).toBe("https://ons.gov.uk");
+    const a = p.metadata.annotate as Record<string, unknown>;
+    expect(a.notes).toBe("");
+
+    const en = specToMetadata({ ...spec, lang: "en" });
+    expect(en.metadata.describe["source-name"]).toBe("ONS");
+    expect((en.metadata.annotate as Record<string, unknown>).notes).toBe("");
+  });
+
+  it("localizes the source prefix for German and Italian too (Quelle: / Fonte:)", () => {
+    const de = specToMetadata({
+      ...spec,
+      lang: "de",
+      source: { name: "Destatis" },
+    }).metadata.annotate as Record<string, unknown>;
+    expect(de.notes).toBe("Quelle: Destatis");
+
+    const it_ = specToMetadata({
+      ...spec,
+      lang: "it",
+      source: { name: "Istat" },
+    }).metadata.annotate as Record<string, unknown>;
+    expect(it_.notes).toBe("Fonte: Istat");
+  });
+
+  it("resolves a regional tag to its base language (fr-CH → French label)", () => {
+    const p = specToMetadata({ ...spec, lang: "fr-CH" });
+    expect(p.metadata.describe["source-name"]).toBe("");
+    expect((p.metadata.annotate as Record<string, unknown>).notes).toBe(
+      "Source : ONS",
+    );
+  });
+
+  it("no source ⇒ empty notes, regardless of lang", () => {
+    const { source, ...noSource } = spec;
+    const p = specToMetadata({ ...noSource, lang: "fr" });
+    expect((p.metadata.annotate as Record<string, unknown>).notes).toBe("");
+    expect(p.metadata.describe["source-name"]).toBe("");
+  });
+});
+
 describe("placeAnnotation (width-invariant, data-space)", () => {
   it("places a PEAK label above the point and asks for top headroom (never on the curve)", () => {
     // 2022-Q4 is the max (yFrac 0). Only the 'up' quadrants clear the descending arms.
