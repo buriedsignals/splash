@@ -60,8 +60,11 @@ export function aspectTypeViolation(
 // The effective channel for the aspect gate. The CADRAGE channel lives on the proposal
 // (AcceptedProposal.channel, §5b), but a hand-authored bypass might carry it ONLY on the
 // spec's own free-text `channel` field (ChartSpec.channel) — read that as a fallback so
-// the guard is not sidestepped by moving the channel down onto the spec. Unknown / absent
-// → article-web (landscape), matching produce-all's own default. Pure.
+// the guard is not sidestepped by moving the channel down onto the spec. Absent →
+// article-web (landscape), matching produce-all's own default; an UNKNOWN non-empty
+// channel THROWS (normalizeChannel is fail-closed — it must never silently widen to
+// the permissive article-web). guardrailParityViolations converts that throw into a
+// returned violation so the drop-proof batch loop is preserved. Pure.
 export function resolveGuardChannel(
   p: Pick<AcceptedProposal, "channel" | "spec">,
 ): Channel {
@@ -120,9 +123,19 @@ export function nativeSubjectFitViolation(spec: unknown): string | null {
 // every re-applied deterministic guardrail. Pure.
 export function guardrailParityViolations(p: AcceptedProposal): string[] {
   const out: string[] = [];
-  const channel = resolveGuardChannel(p);
-  const aspect = aspectTypeViolation(channel, p.spec);
-  if (aspect) out.push(aspect);
+  // resolveGuardChannel throws on an unknown non-empty channel (fail-closed). This
+  // composer is reached via validateAccepted, which produceAll calls OUTSIDE its
+  // dispatch try/catch — so the throw is converted into a violation here (a failed
+  // validation for THIS proposal) rather than propagated, preserving the drop-proof
+  // batch invariant. The producer-specific checks below don't need a channel and
+  // still run, so the report stays as complete as possible.
+  try {
+    const channel = resolveGuardChannel(p);
+    const aspect = aspectTypeViolation(channel, p.spec);
+    if (aspect) out.push(aspect);
+  } catch (e) {
+    out.push(e instanceof Error ? e.message : String(e));
+  }
   if (p.producer === "chart-native") {
     out.push(...nativeFurnitureViolations(p.spec));
     const subjectFit = nativeSubjectFitViolation(p.spec);

@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import { readFileSync } from "node:fs";
 import { chartDistSub } from "./src/build-paths";
-import { renderSize, type Channel } from "../atelier/src/channel";
+import { ALL_CHANNELS, renderSize, type Channel } from "../atelier/src/channel";
 
 // INTERACTIVE=1 -> single-file embeddable HTML with hover tooltip.
 // otherwise     -> a plain static page (final frame), screenshotted to PNG.
@@ -23,13 +23,20 @@ const injectedConfig = process.env.CONFIG
   ? JSON.parse(readFileSync(process.env.CONFIG, "utf8"))
   : null;
 
-const rawChannel = process.env.ATELIER_CHANNEL ?? "article-web";
+// FAIL-CLOSED (defense in depth, mirrors scripts/produce.mjs): an unrecognized
+// NON-EMPTY ATELIER_CHANNEL must never silently size the build as article-web —
+// that ships the wrong aspect with a clean exit. Only CANONICAL values are accepted
+// (the spine's normalizeChannel resolves aliases before threading; no alias table
+// here). Absent/EMPTY keeps the article-web default (legacy/manual callers).
+const rawChannel = (process.env.ATELIER_CHANNEL ?? "").trim();
+if (rawChannel !== "" && !(ALL_CHANNELS as readonly string[]).includes(rawChannel)) {
+  throw new Error(
+    `unknown ATELIER_CHANNEL "${rawChannel}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
+      "(absent/empty defaults to article-web); refusing to default an unrecognized channel to article-web.",
+  );
+}
 const channel: Channel =
-  rawChannel === "social-vertical" ||
-  rawChannel === "social-feed" ||
-  rawChannel === "article-web"
-    ? rawChannel
-    : "article-web";
+  rawChannel === "" ? "article-web" : (rawChannel as Channel);
 const media = renderSize(channel);
 // scripts/snap-proof.mjs screenshots the static build's rendered element at
 // deviceScaleFactor:2 (retina) — whatever CSS canvas size the chart component

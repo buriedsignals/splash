@@ -142,7 +142,6 @@ describe("normalizeChannel", () => {
     [undefined, "article-web"],
     ["", "article-web"],
     ["   ", "article-web"],
-    ["something-unknown", "article-web"],
   ];
 
   for (const [input, expected] of cases) {
@@ -163,6 +162,35 @@ describe("normalizeChannel", () => {
     expect(normalizeChannel("social-feed")).toBe("social-feed");
     expect(normalizeChannel("article-web")).toBe("article-web");
     expect(normalizeChannel("SOCIAL-FEED")).toBe("social-feed");
+  });
+});
+
+// FAIL-CLOSED (audit 2026-07-11 P2): a NON-EMPTY channel string that matches no
+// canonical value and no alias rule must THROW — never silently default to
+// article-web, the MOST PERMISSIVE channel (interactive + scrolly allowed). A typo
+// or a hallucinated channel would otherwise WIDEN the allowed format set. Absent /
+// empty input keeps the documented article-web default (back-compat, tested above).
+describe("normalizeChannel — fail-closed on unknown non-empty input", () => {
+  it("throws on an unknown non-empty string instead of defaulting to article-web", () => {
+    expect(() => normalizeChannel("something-unknown")).toThrow();
+  });
+
+  it("names the offending input and lists the valid canonical channels in the error", () => {
+    expect(() => normalizeChannel("newsleter")).toThrow(
+      /unknown channel "newsleter".*social-vertical.*social-feed.*article-web/,
+    );
+  });
+
+  it("throws on a garbled multi-word input with no known keyword", () => {
+    expect(() => normalizeChannel("sociall verticale")).toThrow(
+      'unknown channel "sociall verticale"',
+    );
+  });
+
+  it("throws on a typo'd canonical value (the exact silent-widening bug)", () => {
+    // "social-vertica" (typo) used to resolve to article-web and thereby ALLOW
+    // interactive/scrolly on what the journalist meant as a social channel.
+    expect(() => normalizeChannel("social-vertica")).toThrow();
   });
 });
 

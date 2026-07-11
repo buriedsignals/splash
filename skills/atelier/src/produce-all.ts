@@ -4,7 +4,7 @@ import type {
   ProposalResult,
 } from "./producer-spec";
 import { validateAccepted, type ValidationOutcome } from "./validate-gate";
-import { assertFormatAllowed, type Channel } from "./channel";
+import { assertFormatAllowed, normalizeChannel, type Channel } from "./channel";
 import { producerMismatchReason } from "./producer-guard";
 
 // Produce ONE proposal → its outcome (bookkeeping fields are added by produceAll).
@@ -43,12 +43,25 @@ export async function produceAll(
     // Channel/format gate — the hard rule: not-embed ⇒ never interactive/scrolly. The
     // single VisualFormat pinned on the accepted spec (single-format-produce-export,
     // Task 1) must belong to its channel's allowed set (skills/atelier/src/channel.ts).
-    // A proposal without a channel defaults to "article-web" (the permissive default,
-    // matching normalizeChannel's own default) so legacy proposals are unaffected.
-    // assertFormatAllowed throws on a violation — caught here and turned into a
-    // fail-hard recorded result, never a silent ship.
-    const channel: Channel = p.channel ?? "article-web";
+    // A proposal without a channel defaults to "article-web" (normalizeChannel's own
+    // absent-input default) so legacy proposals are unaffected. p.channel is typed
+    // Channel but arrives via untyped JSON.parse at the CLI seam, so it is resolved
+    // through normalizeChannel INSIDE the try: a garbled non-empty channel string
+    // throws there (fail-closed — it must never silently widen to the permissive
+    // article-web) and, like an assertFormatAllowed violation, is caught here and
+    // turned into a fail-hard recorded result, never a silent ship.
+    //
+    // Normalize ONCE, thread the CANONICAL value: the resolved channel (not the raw
+    // p.channel) is what dispatch receives below. Otherwise the gate would accept an
+    // alias/case-variant ("feed" → social-feed) while dispatch threads the RAW string
+    // into ATELIER_CHANNEL, where the producers' exact-match env parsing cannot
+    // recognize it — a silent wrong-aspect ship (chart-native used to default it to
+    // landscape article-web) or an opaque crash (map-native). Producers deliberately
+    // accept ONLY canonical values (fail-closed, no alias table duplicated there), so
+    // the spine must hand them canonical input.
+    let channel: Channel;
     try {
+      channel = normalizeChannel(p.channel);
       assertFormatAllowed(channel, p.format);
     } catch (e) {
       results.push({
@@ -83,7 +96,10 @@ export async function produceAll(
       continue;
     }
     try {
-      const r = await dispatch(p, `${outDir}/${p.id}`);
+      // Dispatch sees the NORMALIZED canonical channel (see the gate comment above) —
+      // adapters' channelEnvFor and every other p.channel reader downstream of the
+      // spine consume the canonical value, never the journalist's raw free text.
+      const r = await dispatch({ ...p, channel }, `${outDir}/${p.id}`);
       const warned = validation.warnings.length
         ? { warnings: validation.warnings }
         : {};

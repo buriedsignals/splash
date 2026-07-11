@@ -18,7 +18,7 @@ import { chartDistSub } from "../src/build-paths.ts";
 import { runProduceConformance } from "../src/core/produce-conformance.ts";
 import { REMOTION_PREFIX } from "../src/native-types.ts";
 import { snapCommand } from "../src/platform-runners.ts";
-import { channelAspect, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
+import { ALL_CHANNELS, channelAspect, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -67,9 +67,23 @@ if (!type || !configPath || !outDir || !VALID_FORMATS.has(format)) {
 // for legacy callers with no channel). Threaded in by adapters.ts as an env var
 // (see skills/atelier/src/adapters.ts channelEnvFor). Sizes the static/interactive
 // Vite build (vite.config.ts) and selects the video aspect below.
-const VALID_CHANNELS = new Set(["social-vertical", "social-feed", "article-web"]);
-const rawChannel = process.env.ATELIER_CHANNEL ?? "article-web";
-const channel = VALID_CHANNELS.has(rawChannel) ? rawChannel : "article-web";
+//
+// FAIL-CLOSED (defense in depth below the produce-all gate): an unrecognized
+// NON-EMPTY value must never silently default to article-web — that ships the wrong
+// aspect (landscape 1200x675 for a square/portrait proposal) with a clean exit.
+// Only the CANONICAL values are accepted: the spine normalizes aliases/case-variants
+// ("feed", "Stories") to canonical BEFORE threading (produce-all's gate), so the
+// alias table lives once in normalizeChannel and is never duplicated here.
+// Absent/EMPTY keeps the article-web default (legacy/manual callers).
+const rawChannel = (process.env.ATELIER_CHANNEL ?? "").trim();
+const channel = rawChannel === "" ? "article-web" : rawChannel;
+if (!ALL_CHANNELS.includes(channel)) {
+  console.error(
+    `produce: unknown ATELIER_CHANNEL "${rawChannel}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
+      "(absent/empty defaults to article-web); refusing to default an unrecognized channel to article-web.",
+  );
+  process.exit(1);
+}
 
 // Channel-gated interactive (fix/channel-gated-produce, kept under the single-format
 // redesign): the "interactive" format is only buildable when the channel actually
@@ -149,8 +163,9 @@ if (brandConcerns.length > 0) {
     JSON.stringify({ type, concerns: brandConcerns }, null, 2),
   );
 }
-// Re-assert the canonicalized channel (rawChannel may have been invalid/absent)
-// so vite.config.ts and render-video.mjs never have to re-derive the fallback.
+// Re-assert the validated channel (rawChannel may have been absent/empty — an
+// invalid one already exited above) so vite.config.ts and render-video.mjs never
+// have to re-derive the fallback.
 const env = { ...process.env, CHART: type, CONFIG: configPath, ATELIER_CHANNEL: channel };
 const run = (cmd, args, extraEnv = {}) =>
   execFileSync(cmd, args, { stdio: "inherit", cwd: root, env: { ...env, ...extraEnv }, shell: isWin });

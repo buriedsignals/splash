@@ -144,6 +144,15 @@ describe("resolveGuardChannel — effective channel for the aspect gate", () => 
   it("defaults to article-web when neither carries a channel", () => {
     expect(resolveGuardChannel({ spec: {} })).toBe("article-web");
   });
+
+  it("THROWS on an unknown non-empty channel (fail-closed — no silent article-web widening)", () => {
+    expect(() =>
+      resolveGuardChannel({ channel: "newsleter" as never, spec: {} }),
+    ).toThrow('unknown channel "newsleter"');
+    expect(() => resolveGuardChannel({ spec: { channel: "sociall" } })).toThrow(
+      /social-vertical.*social-feed.*article-web/,
+    );
+  });
 });
 
 describe("guardrailParityViolations — the composed produce-boundary gate", () => {
@@ -224,5 +233,30 @@ describe("guardrailParityViolations — the composed produce-boundary gate", () 
         }),
       ),
     ).toEqual([]);
+  });
+
+  // Drop-proof invariant: validateAccepted (and thus this composer) is called by
+  // produceAll OUTSIDE its dispatch try/catch — a throw here would kill the whole
+  // batch. An unknown channel must therefore surface as a returned VIOLATION (a
+  // failed validation for THIS proposal), never a thrown exception.
+  it("surfaces an unknown spec channel as a violation, not a throw (drop-proof)", () => {
+    const r = guardrailParityViolations(
+      proposal({ spec: { type: "d3-bars", channel: "sociall verticale" } }),
+    );
+    expect(
+      r.some((v) => v.includes('unknown channel "sociall verticale"')),
+    ).toBe(true);
+  });
+
+  it("still runs the producer-specific checks when the channel is unknown", () => {
+    const r = guardrailParityViolations(
+      proposal({
+        producer: "chart-native",
+        channel: "newsleter" as never,
+        spec: { nativeType: "bar", data: "a,b\n1,2" }, // missing title + source
+      }),
+    );
+    expect(r.some((v) => v.includes("unknown channel"))).toBe(true);
+    expect(r.some((v) => v.includes("title"))).toBe(true);
   });
 });

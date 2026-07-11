@@ -38,7 +38,7 @@ import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { snapCommand, remotionCommand } from "../src/platform-runners.ts";
-import { channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
+import { ALL_CHANNELS, channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -94,7 +94,23 @@ function readCompDims(rootTsxSrc, compId) {
 // (legacy proposals, manual runs) defaults to "article-web" — matches normalizeChannel's
 // default and today's landscape-first behavior, so produce.mjs still works with no
 // channel arg at all.
-const channel = process.env.ATELIER_CHANNEL ?? "article-web";
+//
+// FAIL-CLOSED (defense in depth below the produce-all gate, mirrors chart-native's
+// produce.mjs): an unrecognized NON-EMPTY value used to crash later inside
+// channelAspect() with an opaque TypeError — refuse it here with a clear message
+// instead, and never default it to article-web. Only the CANONICAL values are
+// accepted: the spine normalizes aliases/case-variants ("feed", "Stories") to
+// canonical BEFORE threading, so the alias table lives once in normalizeChannel and
+// is never duplicated here. Absent/EMPTY keeps the article-web default.
+const rawChannel = (process.env.ATELIER_CHANNEL ?? "").trim();
+const channel = rawChannel === "" ? "article-web" : rawChannel;
+if (!ALL_CHANNELS.includes(channel)) {
+  console.error(
+    `produce: unknown ATELIER_CHANNEL "${rawChannel}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
+      "(absent/empty defaults to article-web); refusing to default an unrecognized channel to article-web.",
+  );
+  process.exit(1);
+}
 const aspect = channelAspect(channel); // "portrait" | "square" | "landscape"
 const mediaSize = renderSize(channel); // { width, height } — the channel's exact pixels
 

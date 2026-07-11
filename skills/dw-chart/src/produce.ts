@@ -52,6 +52,26 @@ export async function produceChart(
   const v = validateChartSpec(spec);
   if (!v.ok) throw new Error(`invalid chart spec: ${v.errors.join("; ")}`);
 
+  // EXPORT ASPECT (FINDING 2): size the static PNG to the CADRAGE channel — feed →
+  // square, social/vertical → portrait, web/article → landscape (default). TYPE-AWARE
+  // (export-aspect.ts): row-count-driven horizontal types (bars/dot/arrow/range/tables)
+  // get the channel WIDTH but a content-driven height (no pinned height) so DW never
+  // CROPS overflowing rows; fixed-aspect types get the full channel box. The resulting
+  // aspect is fed to the responsive guardrail below so annotation placement is validated
+  // at the aspect the reader actually receives — when the height is natural we leave the
+  // aspect undefined so the guardrail falls back to its default landscape aspect.
+  //
+  // Resolved HERE, before createChart — channelToExportSize is fail-closed on a garbled
+  // spec.channel (normalizeChannel throws), and it used to run only AFTER createChart/
+  // setData/patchChart/publishChart, so the throw left an ORPHANED live Datawrapper
+  // chart behind. Its inputs (spec.channel, spec.type) are read-only from this point
+  // on, so hoisting is behavior-preserving for every valid channel; a garbled one now
+  // fails with zero API side effects.
+  const exportSize = channelToExportSize(spec.channel, spec.type);
+  const exportAspect = exportSize.height
+    ? exportSize.height / exportSize.width
+    : undefined;
+
   const patch = specToMetadata(spec);
   // Fail loud BEFORE any API call if the metadata would ship a value label below
   // WCAG 4.5:1 (a white label inside a coloured bar/column). The safe mapper never
@@ -82,19 +102,6 @@ export async function produceChart(
     ...(patch.language ? { language: patch.language } : {}),
   });
   let publicUrl = await publishChart(id);
-
-  // EXPORT ASPECT (FINDING 2): size the static PNG to the CADRAGE channel — feed →
-  // square, social/vertical → portrait, web/article → landscape (default). TYPE-AWARE
-  // (export-aspect.ts): row-count-driven horizontal types (bars/dot/arrow/range/tables)
-  // get the channel WIDTH but a content-driven height (no pinned height) so DW never
-  // CROPS overflowing rows; fixed-aspect types get the full channel box. The resulting
-  // aspect is fed to the responsive guardrail below so annotation placement is validated
-  // at the aspect the reader actually receives — when the height is natural we leave the
-  // aspect undefined so the guardrail falls back to its default landscape aspect.
-  const exportSize = channelToExportSize(spec.channel, spec.type);
-  const exportAspect = exportSize.height
-    ? exportSize.height / exportSize.width
-    : undefined;
 
   // RESPONSIVE LABEL-SAFETY. `specToMetadata` places every annotation in DATA space
   // (anchor at x,y; align picks a curve-clear quadrant; axis headroom gives it

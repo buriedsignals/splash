@@ -221,8 +221,10 @@ never set it true on a table-provenance proposal just because it looks accepted>
 is REQUIRED — it is the CADRAGE Q3 confirmed pick (§3, the structured audience & channel question),
 copied verbatim onto every proposal it applies to.** `produce-all`'s channel/format gate (5c) reads this
 field to enforce "not-embed ⇒ never interactive/scrolly"; **omitting it silently defeats that guard** —
-it falls back to `"article-web"` (the permissive default, matching `normalizeChannel`), so a social-only
-visual with a dropped `channel` would ship an interactive nobody asked for. Never omit it.
+an ABSENT channel falls back to `"article-web"` (the permissive default, matching `normalizeChannel`'s
+absent-input default), so a social-only visual with a dropped `channel` would ship an interactive nobody
+asked for. Never omit it. (A GARBLED non-empty channel string does NOT widen that way: `normalizeChannel`
+is fail-closed and the gate records it as a failed result naming the valid channels.)
 
 **5c. Produce everything at once** — report to a FILE (the gates and EXPORT read it back):
 ```bash
