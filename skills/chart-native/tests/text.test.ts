@@ -10,6 +10,7 @@ import {
   verticalCatBudgetPx,
   verticalCatLines,
   verticalCatMaxLines,
+  endLabelGutterPx,
 } from "../src/core/text";
 
 const F = 13; // base axis font
@@ -176,5 +177,46 @@ describe("verticalCatMaxLines — rows a column-label block needs", () => {
     expect(verticalCatMaxLines(["Spotify", "YouTube Music"], STEP, FONT)).toBe(
       2,
     );
+  });
+});
+
+describe("endLabelGutterPx — right-edge band-label gutter fits the widest", () => {
+  const AXIS = 13; // TYPE.axis, unscaled
+
+  it("keeps the floor for short labels (no regression on existing layouts)", () => {
+    // "Gaz 110" etc. all measure well under 116px → gutter stays at the sample's 116
+    expect(
+      endLabelGutterPx(["Gaz 110", "Nucléaire 30", "Charbon 180"], AXIS, {
+        gapPx: 8,
+        floorPx: 116,
+        bold: true,
+      }),
+    ).toBe(116);
+  });
+
+  it("grows past the floor so a long series name+value never clips", () => {
+    // "Renouvelables 280" is 17 chars → 17·13·0.6·1.08 ≈ 143px + 8 gap ≈ 152 > 116
+    const g = endLabelGutterPx(["Renouvelables 280"], AXIS, {
+      gapPx: 8,
+      floorPx: 116,
+      bold: true,
+    });
+    expect(g).toBeGreaterThan(116);
+    // the widest label + its gap must fit inside the reserved gutter
+    expect(g).toBeGreaterThanOrEqual(8 + textWidth("Renouvelables 280", AXIS));
+  });
+
+  it("sizes to the WIDEST label, not the last", () => {
+    const wide = endLabelGutterPx(["A 1", "Renouvelables 280", "B 2"], AXIS, {
+      gapPx: 8,
+      floorPx: 116,
+      bold: true,
+    });
+    const narrow = endLabelGutterPx(["A 1", "B 2", "C 3"], AXIS, {
+      gapPx: 8,
+      floorPx: 116,
+      bold: true,
+    });
+    expect(wide).toBeGreaterThan(narrow);
   });
 });

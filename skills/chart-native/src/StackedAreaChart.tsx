@@ -22,6 +22,7 @@ import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { spreadLabels } from "./core/labels";
+import { endLabelGutterPx } from "./core/text";
 
 export interface StackedAreaConfig {
   title: string;
@@ -65,9 +66,19 @@ export function StackedAreaChart({
   const titleLines = responsive
     ? 1
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
+  // Right-edge band labels are "name value" (bold). Reserve the gutter from the
+  // WIDEST actual label so a long series name never clips (the "Renouvelables 280"
+  // → "Renouvelables 28" bug); floor at the sample's 116 so short-label charts keep
+  // their layout. UNSCALED font/gap — resolveFrame scales the whole basePad.
+  const lastRow = config.rows[config.rows.length - 1] ?? {};
+  const bandLabels = config.seriesFields.map((f) => `${f} ${lastRow[f] ?? ""}`);
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
-    right: 116, // right-edge band labels (name + value)
+    right: endLabelGutterPx(bandLabels, TYPE.axis, {
+      gapPx: 8,
+      floorPx: 116,
+      bold: true,
+    }),
     bottom: 32, // year axis (source band reserved in resolveFrameWithHeader)
     left: 44, // % axis
   };

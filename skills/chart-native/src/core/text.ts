@@ -184,3 +184,27 @@ export function verticalCatMaxLines(
   }
   return m;
 }
+
+/**
+ * Right/left GUTTER reserve (px) for a strip of direct end-labels (e.g. the
+ * stacked-area right-edge "name value" labels), sized to the WIDEST label so
+ * none clips. A hardcoded gutter is the recurring failure: it fits the sample's
+ * labels, then overflows once the data's are longer — the stacked-area
+ * "Renouvelables 280" rendering as "Renouvelables 28". `floorPx` keeps the
+ * sample's layout for short labels (only GROW, never shrink existing renders);
+ * `gapPx` is the plot-edge→text gap; `bold` inflates the 0.6 char-width estimate
+ * for 700-weight labels. Pass UNSCALED font + gap: resolveFrame multiplies the
+ * whole basePad (and the label font) by `scale`, so the factor cancels.
+ */
+export function endLabelGutterPx(
+  labels: string[],
+  fontSize: number,
+  opts: { gapPx: number; floorPx: number; bold?: boolean },
+): number {
+  const factor = opts.bold ? 1.08 : 1;
+  const widest = labels.reduce(
+    (m, s) => Math.max(m, textWidth(s, fontSize) * factor),
+    0,
+  );
+  return Math.max(opts.floorPx, Math.ceil(opts.gapPx + widest));
+}
