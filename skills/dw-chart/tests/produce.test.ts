@@ -15,6 +15,7 @@ const spec = JSON.parse(
 let id = "";
 let msId = "";
 let annId = "";
+let frId = "";
 let interactiveId = "";
 
 // Real Datawrapper API round-trips. Requires DATAWRAPPER_API_TOKEN; skipped without it
@@ -92,6 +93,39 @@ d("produceChart (real API)", () => {
     rmSync(out, { force: true });
   }, 60000);
 
+  // SOURCE-LABEL i18n (mirrors map-dw, see spec-to-metadata.ts): a non-English chart
+  // ships its OWN localized source line via annotate.notes and blanks the native
+  // describe.source-name/source-url (DW's "Source:" caption prefix never localizes).
+  it("publishes a FRENCH chart whose source line is localized via annotate.notes (native caption blanked)", async () => {
+    const frSpec: ChartSpec = {
+      type: "column-chart",
+      title: "Le chômage recule depuis 2021",
+      data: "année,taux\n2021,7.9\n2022,7.3\n2023,7.1",
+      lang: "fr",
+      source: { name: "Insee", url: "https://insee.fr" },
+      altInsight:
+        "Le taux de chômage est passé de 7,9 % en 2021 à 7,1 % en 2023",
+    };
+    const out = join(tmpdir(), "atelier-fr-source.png");
+    const res = await produceChart(frSpec, out);
+    frId = res.chartId;
+    // The existing e2e pattern exports the render — keep it (static default).
+    expect(existsSync(out)).toBe(true);
+    const r = await fetch(`https://api.datawrapper.de/v3/charts/${frId}`, {
+      headers: { Authorization: `Bearer ${process.env.DATAWRAPPER_API_TOKEN}` },
+    });
+    const chart = await r.json();
+    // The localized line landed on the LIVE chart…
+    expect(chart.metadata.annotate.notes).toBe("Source : Insee");
+    // …and the native (untranslatable "Source:"-prefixed) caption is blanked, so the
+    // footer never shows BOTH captions — the map-dw decision, mirrored.
+    expect(chart.metadata.describe["source-name"]).toBe("");
+    expect(chart.metadata.describe["source-url"]).toBe("");
+    // DW still localizes numbers/dates from the chart language.
+    expect(chart.language).toBe("fr-FR");
+    rmSync(out, { force: true });
+  }, 60000);
+
   // Single-format-produce-export (Task 3): "interactive" delivers the hosted embed
   // alone — dw-chart must NOT export/write a PNG for it (the old unconditional
   // exportPng call after every publish). "static" (the default, tested above) is
@@ -112,5 +146,6 @@ afterAll(async () => {
   if (id) await deleteChart(id);
   if (msId) await deleteChart(msId);
   if (annId) await deleteChart(annId);
+  if (frId) await deleteChart(frId);
   if (interactiveId) await deleteChart(interactiveId);
 });
