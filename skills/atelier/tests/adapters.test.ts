@@ -1,9 +1,9 @@
 import { describe, it, expect } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { formatFlag, channelEnvFor } from "../src/adapters";
+import { formatFlag, channelEnvFor, freshOutDir } from "../src/adapters";
 
 // Single-format-produce-export (Tasks 2-3): chart-native's produce-from-spec.mjs/
 // produce.mjs and map-native's produce.mjs now read the SAME static|interactive|
@@ -255,5 +255,75 @@ describe("runProducerScript — never lets a producer's stdout reach the parent'
     const parsed = JSON.parse(out);
     expect(parsed.outcome.status).toBe("failed");
     expect(parsed.outcome.error).toContain("boom: something broke");
+  });
+});
+
+// Fallback-cleanup regression (delivery-hygiene bug): a re-produce that switches
+// producer/format for the SAME proposal id (the sanctioned native→dw fallback, a source
+// fix, a retry) dispatches into the exact same `<outDir>/<id>` directory as the
+// superseded attempt (produce-all.ts computes it purely from `p.id`, unaware of prior
+// runs). None of the 5 producers ever read pre-existing outDir contents before writing
+// (verified: no incremental/cached build reads an old file first) — so wiping the
+// directory immediately before a dispatch writes into it is always safe, and is the one
+// hook common to every producer (both dispatchFileBased and realDispatch's cloud
+// branch call it). This is what SKILL.md's "every re-produce writes a WHOLLY FRESH ..."
+// invariant (5c) should have meant for the artifact directory too, not just report.json.
+describe("freshOutDir — wipes a re-produce's outDir clean before the next dispatch writes into it", () => {
+  it("removes a superseded attempt's stray artifacts, leaving only what the next dispatch writes", () => {
+    // Reproduces the verified bug: a failed interactive map-native attempt left these
+    // artifacts behind (interactive.html, its ephemeral review still, and the
+    // interaction guard snapshots) in `exports/<slug>/<id>/` before the journalist fell
+    // back to a static map-dw delivery for the same id.
+    const dir = mkdtempSync(join(tmpdir(), "atelier-freshoutdir-"));
+    writeFileSync(
+      join(dir, "interactive.html"),
+      "<html>stale interactive</html>",
+    );
+    writeFileSync(join(dir, "interactive.png"), "stale ephemeral review still");
+    writeFileSync(join(dir, "a11y.png"), "stale a11y guard snapshot");
+    writeFileSync(
+      join(dir, "responsive-360.png"),
+      "stale responsive guard snapshot",
+    );
+    writeFileSync(
+      join(dir, "responsive-1600.png"),
+      "stale responsive guard snapshot",
+    );
+
+    freshOutDir(dir);
+    expect(readdirSync(dir)).toEqual([]);
+
+    // The fallback dispatch (map-dw, format "static") then writes its own delivery —
+    // exactly what dispatchFileBased/realDispatch do right after calling freshOutDir.
+    writeFileSync(
+      join(dir, "parite-parlement.png"),
+      "the delivered static image",
+    );
+
+    expect(readdirSync(dir)).toEqual(["parite-parlement.png"]);
+  });
+
+  it("does not disturb a same-format re-produce's own outputs (no unrelated stray files survive it either)", () => {
+    // A retry with the SAME producer/format (e.g. a source-fix re-run) also gets a
+    // clean slate — proving this isn't special-cased to producer/format switches only.
+    const dir = mkdtempSync(join(tmpdir(), "atelier-freshoutdir-retry-"));
+    writeFileSync(
+      join(dir, "static.png"),
+      "the OLD render, about to be superseded",
+    );
+
+    freshOutDir(dir);
+    expect(readdirSync(dir)).toEqual([]);
+
+    writeFileSync(join(dir, "static.png"), "the NEW, corrected render");
+    expect(readdirSync(dir)).toEqual(["static.png"]);
+  });
+
+  it("is safe on a directory that doesn't exist yet (first-ever produce for this id)", () => {
+    const parent = mkdtempSync(join(tmpdir(), "atelier-freshoutdir-first-"));
+    const dir = join(parent, "never-created-yet");
+    const abs = freshOutDir(dir);
+    expect(existsSync(abs)).toBe(true);
+    expect(readdirSync(abs)).toEqual([]);
   });
 });

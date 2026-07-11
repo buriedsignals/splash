@@ -54,6 +54,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -221,6 +222,25 @@ export function runProducerScript(
   }
 }
 
+// Wipes `dir` clean (if it exists) and recreates it empty — a WHOLLY FRESH outDir for
+// the dispatch about to write into it. Every proposal's `<outDir>/<id>` directory is
+// keyed purely by `id` (produce-all.ts), so a re-produce that swaps producer/format for
+// the same id (the sanctioned native→dw fallback, a source fix, a retry) would otherwise
+// dispatch into the SAME directory the superseded attempt already wrote into — leaving
+// its stray artifacts (e.g. a failed interactive map-native attempt's `interactive.html`
+// / `a11y.png` / `responsive-*.png`) sitting next to the new delivery. None of the 5
+// producers ever read pre-existing outDir contents before writing (no incremental/cached
+// build depends on a prior run's files), so clearing first — before EVERY dispatch, not
+// only a producer/format switch — is always safe and matches SKILL.md's own "every
+// re-produce writes a WHOLLY FRESH ..." invariant (5c), extended from `report.json` to
+// the artifact directory itself.
+export function freshOutDir(dir: string): string {
+  const abs = resolve(dir);
+  rmSync(abs, { recursive: true, force: true });
+  mkdirSync(abs, { recursive: true });
+  return abs;
+}
+
 function dispatchFileBased(
   producer: FileBasedProducer,
   spec: NativeSpec | Record<string, unknown>,
@@ -228,8 +248,7 @@ function dispatchFileBased(
   format: VisualFormat,
   channel: Channel | undefined,
 ): FileDispatchOutcome {
-  const absOutDir = resolve(outDir);
-  mkdirSync(absOutDir, { recursive: true });
+  const absOutDir = freshOutDir(outDir);
 
   const tmpDir = mkdtempSync(join(tmpdir(), "atelier-dispatch-"));
   const configPath = join(tmpDir, "config.json");
@@ -267,8 +286,7 @@ export const realDispatch: Dispatch = async (
     return dispatchFileBased(p.producer, spec, outDir, p.format, p.channel);
   }
 
-  const absOutDir = resolve(outDir);
-  mkdirSync(absOutDir, { recursive: true });
+  const absOutDir = freshOutDir(outDir);
   const pngPath = join(absOutDir, `${p.id}.png`);
 
   if (p.producer === "dw-chart") {
