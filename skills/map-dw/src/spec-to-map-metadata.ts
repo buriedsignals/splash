@@ -24,6 +24,9 @@ export interface MapPatch {
     // against the published d3-maps-choropleth renderer (its label formatter reads
     // `data.column-format[valueColumn]`). Omitted for map types that carry no value column.
     data?: Record<string, unknown>;
+    // The self-built, localized "Source : X" line for non-English deliverables (see
+    // sourceNotes below) — DW's own "Source:" caption cannot be relocalized.
+    annotate: { notes: string };
   };
 }
 
@@ -45,6 +48,57 @@ const CIRCLE_ICON = {
   height: 700,
 };
 
+// SOURCE-LABEL i18n (verified-bug fix). Datawrapper's own auto-rendered "Source:" caption
+// prefix does NOT localize via the chart `language` field — verified LIVE against the real
+// API (3 independently created charts, 2 chart types, both created-with and patched-after
+// language:"fr-FR"/"fr"): the SAME chart correctly localized its OTHER auto-captions
+// ("Created with Datawrapper" → "Créé avec Datawrapper"; the byline caption "Chart:" →
+// "Graphique:") but kept rendering the literal English word "Source:" every time. This is
+// a narrow, Datawrapper-side translation-key gap with no documented metadata override
+// (confirmed against the full v3 OpenAPI chart schema: `language` — "Visualization language
+// (output locale)" — is the ONLY locale field on a chart or its metadata; no export-time
+// query param or nested field exists either). So for any language whose localized prefix
+// differs from DW's own English default, we build the WHOLE "Source : X" line ourselves —
+// the same fr/de/it table chart-native and map-native already use (their own
+// src/core/locale.ts) — and ship it via `annotate.notes`, the one DW field that renders
+// text verbatim with no auto-caption, instead of `describe.source-name` (whose
+// un-relocalizable "Source:" prefix would otherwise still show in English ahead of it,
+// duplicating the caption). English (DW's own default, where the native caption already
+// reads correctly) keeps the native source-name/source-url path, so its clickable
+// hyperlink in the interactive embed survives — only the genuinely-broken non-English
+// case pays the "notes, no hyperlink" trade-off notes can't render.
+const SOURCE_LABELS: Record<string, string> = {
+  fr: "Source :", // narrow no-break space before the colon (French typography)
+  de: "Quelle:",
+  it: "Fonte:",
+  en: "Source:",
+};
+
+function sourceLabel(lang?: string): string {
+  if (!lang) return SOURCE_LABELS.en;
+  const base = lang.toLowerCase().split(/[-_]/)[0];
+  return SOURCE_LABELS[base] ?? SOURCE_LABELS.en;
+}
+
+// True when DW's own native "Source:" caption already reads correctly for `lang` (i.e.
+// there is nothing to relocalize) — English or an unrecognised tag, which falls back to
+// English furniture anyway.
+function usesNativeSourceCaption(lang?: string): boolean {
+  return sourceLabel(lang) === SOURCE_LABELS.en;
+}
+
+// The self-built localized source line for `annotate.notes` — used ONLY when the DW
+// native caption is unlocalizable (see the note above). Empty when there is no source, or
+// when the native caption already covers it (English/absent lang).
+function sourceNotes(spec: {
+  source?: { name: string; url?: string };
+  lang?: string;
+}): string {
+  if (usesNativeSourceCaption(spec.lang)) return "";
+  if (!spec.source?.name) return "";
+  return `${sourceLabel(spec.lang)} ${spec.source.name}`;
+}
+
 // Normalise `numberFormat` the same way dw-chart does for value labels/axes (see
 // dw-chart/src/chart-spec.ts normalizeNumberFormat): a printf/Python-style mistake
 // (".0f%") is NOT recognised by Datawrapper's numeral.js parser — it silently falls
@@ -57,11 +111,13 @@ function describeBlock(spec: {
   altInsight: string;
   numberFormat?: string;
   unit?: string;
+  lang?: string;
 }): Record<string, unknown> {
+  const nativeSource = usesNativeSourceCaption(spec.lang);
   const block: Record<string, unknown> = {
     intro: spec.intro ?? "",
-    "source-name": spec.source?.name ?? "",
-    "source-url": spec.source?.url ?? "",
+    "source-name": nativeSource ? (spec.source?.name ?? "") : "",
+    "source-url": nativeSource ? (spec.source?.url ?? "") : "",
     "aria-description": spec.altInsight,
     "number-format": resolveNumberFormat(spec.numberFormat),
   };
@@ -127,6 +183,7 @@ function choroplethMetadata(spec: ChoroplethMapSpec): MapPatch {
           [spec.valueColumn]: valueColumnFormat(numberFormat, spec.unit),
         },
       },
+      annotate: { notes: sourceNotes(spec) },
     },
   };
 }
@@ -201,6 +258,7 @@ function symbolMetadata(spec: SymbolMapSpec): MapPatch {
         },
       },
       describe: describeBlock(spec),
+      annotate: { notes: sourceNotes(spec) },
     },
   };
 }
@@ -275,6 +333,7 @@ function locatorMetadata(spec: LocatorMapSpec): MapPatch {
       axes: {},
       visualize,
       describe: describeBlock({ ...spec, numberFormat: undefined }),
+      annotate: { notes: sourceNotes(spec) },
     },
   };
 }

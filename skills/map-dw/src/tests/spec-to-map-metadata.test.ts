@@ -162,6 +162,69 @@ describe("specToMapMetadata", () => {
     // Absent lang ⇒ no language (DW default en-US) — not sent by produce.
     expect(specToMapMetadata(base).language).toBeUndefined();
   });
+
+  // SOURCE-LABEL i18n (verified-bug fix). A French map-dw choropleth shipped an English
+  // "Source:" footer caption on an otherwise French map. Root cause (verified live against
+  // the real Datawrapper API, 3 independently created charts, 2 chart types): the chart
+  // `language` field DOES localize DW's OTHER auto-captions on the exact same chart
+  // ("Created with Datawrapper" → "Créé avec Datawrapper"; the byline caption "Chart:" →
+  // "Graphique:") but does NOT localize the "Source:" caption specifically — a narrow,
+  // Datawrapper-side translation-key gap with no documented metadata override (confirmed
+  // against the full v3 OpenAPI chart schema: `language` is the only locale field). So a
+  // non-English deliverable must build its OWN "Source : X" line (the same fr/de/it table
+  // chart-native and map-native already use) and ship it via `annotate.notes` — the one DW
+  // field that renders verbatim with no auto-caption — instead of `describe.source-name`,
+  // whose un-relocalizable "Source:" prefix would otherwise still show in English.
+  it("routes the source through annotate.notes with a localized prefix when lang is non-English", () => {
+    const p = specToMapMetadata({
+      ...base,
+      lang: "fr",
+      source: { name: "Insee", url: "https://insee.fr" },
+    });
+    const d = p.metadata.describe as Record<string, unknown>;
+    // The native caption can't be relocalized — suppress it so "Source:" never ships in
+    // English on a French map (else the footer would show BOTH captions).
+    expect(d["source-name"]).toBe("");
+    expect(d["source-url"]).toBe("");
+    const a = p.metadata.annotate as Record<string, unknown>;
+    expect(a.notes).toBe("Source : Insee"); // narrow space before the colon (French typography)
+  });
+
+  it("keeps the native source-name/source-url (with its working hyperlink) for English/absent lang", () => {
+    const p = specToMapMetadata({
+      ...base,
+      source: { name: "Insee", url: "https://insee.fr" },
+    });
+    const d = p.metadata.describe as Record<string, unknown>;
+    // English is DW's own default — its native "Source:" caption already reads correctly,
+    // so keep the native field (preserves the clickable hyperlink in the interactive embed).
+    expect(d["source-name"]).toBe("Insee");
+    expect(d["source-url"]).toBe("https://insee.fr");
+    const a = p.metadata.annotate as Record<string, unknown>;
+    expect(a.notes).toBe("");
+  });
+
+  it("localizes the source prefix for German and Italian too (Quelle: / Fonte:)", () => {
+    const de = specToMapMetadata({
+      ...base,
+      lang: "de",
+      source: { name: "Destatis" },
+    }).metadata.annotate as Record<string, unknown>;
+    expect(de.notes).toBe("Quelle: Destatis");
+
+    const it_ = specToMapMetadata({
+      ...base,
+      lang: "it",
+      source: { name: "Istat" },
+    }).metadata.annotate as Record<string, unknown>;
+    expect(it_.notes).toBe("Fonte: Istat");
+  });
+
+  it("no source ⇒ empty notes, regardless of lang", () => {
+    const a = specToMapMetadata({ ...base, lang: "fr" }).metadata
+      .annotate as Record<string, unknown>;
+    expect(a.notes).toBe("");
+  });
 });
 
 const symbol: SymbolMapSpec = {
@@ -309,6 +372,22 @@ describe("specToMapMetadata — symbol", () => {
     expect("number-append" in d).toBe(false);
     expect(t.body).toBe('{{ FORMAT(population, "0,0.[00]") }}');
   });
+
+  // SOURCE-LABEL i18n — systemic check: symbol maps share describeBlock with choropleth,
+  // so the fix must cover them too, even though validateMapSpec currently routes symbol
+  // maps to map-native (this exercises specToMapMetadata directly, same as every other
+  // test in this block).
+  it("localizes the source for symbol maps too (systemic — shares describeBlock)", () => {
+    const p = specToMapMetadata({
+      ...symbol,
+      lang: "fr",
+      source: { name: "Insee" },
+    });
+    const d = p.metadata.describe as Record<string, unknown>;
+    expect(d["source-name"]).toBe("");
+    const a = p.metadata.annotate as Record<string, unknown>;
+    expect(a.notes).toBe("Source : Insee");
+  });
 });
 
 const locator: LocatorMapSpec = {
@@ -374,6 +453,19 @@ describe("specToMapMetadata — locator", () => {
       unknown
     >;
     expect(d["aria-description"]).toBe("Annemasse, Geneva, Chamonix");
+  });
+
+  // SOURCE-LABEL i18n — systemic check: locator maps share describeBlock too.
+  it("localizes the source for locator maps too (systemic — shares describeBlock)", () => {
+    const p = specToMapMetadata({
+      ...locator,
+      lang: "fr",
+      source: { name: "IGN" },
+    });
+    const d = p.metadata.describe as Record<string, unknown>;
+    expect(d["source-name"]).toBe("");
+    const a = p.metadata.annotate as Record<string, unknown>;
+    expect(a.notes).toBe("Source : IGN");
   });
 
   it("enables the per-marker hover tooltip so the title shows on hover", () => {
