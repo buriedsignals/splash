@@ -273,8 +273,14 @@ function ChartSvg({
     staticAxes
       ? 1
       : Math.max(clamp01((head.x - tickX) / 28), clamp01((p - 0.9) / 0.05));
-  // direct label slides in from the point just after the line completes.
-  const labelOpacity = clamp01((p - 0.92) / 0.08);
+  // direct label slides in from the point just after the LINE ITSELF completes —
+  // gated on `lp` (the line's own reveal fraction), not the master `p`. Embedded/
+  // scrolly holds `p` at its default (1) while `lp` tracks the scroll-driven
+  // `revealTo`; gating on `p` there made the label visible from the first frame,
+  // regardless of how much line was actually drawn. Video shares the same window
+  // as the line's own draw ([0.30, 0.95] via lp), so the label now finishes
+  // fading in exactly as the line lands, instead of racing ahead of it.
+  const labelOpacity = clamp01((lp - 0.92) / 0.08);
 
   return (
     <svg
@@ -379,14 +385,17 @@ function ChartSvg({
           </>
         )}
 
+        {/* end-point dot + name/value label — anchored at `head`, the line's OWN
+            current tip (identical to `lastPoint` once lp reaches 1), so it can
+            never sit ahead of where the line has actually drawn to. */}
         <g
           opacity={labelOpacity}
           transform={`translate(${(1 - labelOpacity) * -12},0)`}
         >
-          <circle cx={lastPoint.x} cy={lastPoint.y} r={4} fill={lineColor} />
+          <circle cx={head.x} cy={head.y} r={4} fill={lineColor} />
           <text
-            x={lastPoint.x + 10 * sc}
-            y={lastPoint.y}
+            x={head.x + 10 * sc}
+            y={head.y}
             dy="0.32em"
             fontSize={ts.label}
             fontWeight={600}
@@ -399,8 +408,8 @@ function ChartSvg({
             {config.directLabel}
           </text>
           <text
-            x={lastPoint.x + 10 * sc}
-            y={lastPoint.y + 16 * sc}
+            x={head.x + 10 * sc}
+            y={head.y + 16 * sc}
             dy="0.32em"
             fontSize={ts.axis}
             fill={COLORS.muted}
