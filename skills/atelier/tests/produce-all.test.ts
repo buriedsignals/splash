@@ -226,6 +226,53 @@ describe("produceAll — channel/format gate", () => {
       "produced",
     ]);
   });
+
+  // Normalize ONCE at the gate, thread the CANONICAL value to dispatch. The regression
+  // this locks: the gate resolved an alias/case-variant channel ("feed" → social-feed)
+  // and accepted the proposal, but dispatch still received the RAW p.channel — adapters'
+  // channelEnvFor put the raw string into ATELIER_CHANNEL and chart-native's env parsing
+  // silently defaulted it to article-web, shipping a landscape 1200x675 render for a
+  // square social-feed proposal with status "produced" (a silent wrong-aspect ship).
+  it('threads the NORMALIZED canonical channel to dispatch — alias "feed" arrives as "social-feed"', async () => {
+    let seen: string | undefined;
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.channel;
+      return { status: "produced" };
+    };
+    const { results } = await produceAll(
+      [p("p1", { channel: "feed" as never, format: "static" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(results[0].status).toBe("produced");
+    expect(seen).toBe("social-feed");
+  });
+
+  it('threads the canonical channel for a case-variant too — "Social-Feed" arrives as "social-feed"', async () => {
+    let seen: string | undefined;
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.channel;
+      return { status: "produced" };
+    };
+    await produceAll(
+      [p("p1", { channel: "Social-Feed" as never, format: "static" })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(seen).toBe("social-feed");
+  });
+
+  it("threads the resolved article-web default to dispatch when the proposal has no channel", async () => {
+    let seen: string | undefined;
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.channel;
+      return { status: "produced" };
+    };
+    await produceAll([p("p1", { format: "static" })], "out", dispatch, PASS);
+    expect(seen).toBe("article-web");
+  });
 });
 
 // GUARD 1 — producer-match. The producer that ACTUALLY ran (reported by the dispatch as

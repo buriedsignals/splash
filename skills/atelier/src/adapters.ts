@@ -97,8 +97,13 @@ const DEFAULT_CHANNEL: Channel = "article-web";
 // Builds the extra env for a file-based dispatch: {} for a producer that doesn't
 // consume a channel (scrolly, and any future non-native file-based producer);
 // otherwise ATELIER_CHANNEL, defaulting an absent proposal.channel to article-web
-// (back-compat — legacy proposals with no channel still dispatch fine). Exported for
-// unit testing (the "argv/env builder").
+// (back-compat — legacy proposals with no channel still dispatch fine). The channel
+// received here is CANONICAL: produce-all's gate normalizes the journalist's free
+// text (aliases, case variants) via normalizeChannel BEFORE dispatch and threads the
+// resolved value — required because both native producers' own ATELIER_CHANNEL
+// parsing is exact-match and fail-closed (they reject any non-canonical value rather
+// than defaulting it to article-web). Exported for unit testing (the "argv/env
+// builder").
 export function channelEnvFor(
   producer: FileBasedProducer,
   channel: Channel | undefined,

@@ -50,8 +50,18 @@ export async function produceAll(
     // throws there (fail-closed — it must never silently widen to the permissive
     // article-web) and, like an assertFormatAllowed violation, is caught here and
     // turned into a fail-hard recorded result, never a silent ship.
+    //
+    // Normalize ONCE, thread the CANONICAL value: the resolved channel (not the raw
+    // p.channel) is what dispatch receives below. Otherwise the gate would accept an
+    // alias/case-variant ("feed" → social-feed) while dispatch threads the RAW string
+    // into ATELIER_CHANNEL, where the producers' exact-match env parsing cannot
+    // recognize it — a silent wrong-aspect ship (chart-native used to default it to
+    // landscape article-web) or an opaque crash (map-native). Producers deliberately
+    // accept ONLY canonical values (fail-closed, no alias table duplicated there), so
+    // the spine must hand them canonical input.
+    let channel: Channel;
     try {
-      const channel: Channel = normalizeChannel(p.channel);
+      channel = normalizeChannel(p.channel);
       assertFormatAllowed(channel, p.format);
     } catch (e) {
       results.push({
@@ -86,7 +96,10 @@ export async function produceAll(
       continue;
     }
     try {
-      const r = await dispatch(p, `${outDir}/${p.id}`);
+      // Dispatch sees the NORMALIZED canonical channel (see the gate comment above) —
+      // adapters' channelEnvFor and every other p.channel reader downstream of the
+      // spine consume the canonical value, never the journalist's raw free text.
+      const r = await dispatch({ ...p, channel }, `${outDir}/${p.id}`);
       const warned = validation.warnings.length
         ? { warnings: validation.warnings }
         : {};
