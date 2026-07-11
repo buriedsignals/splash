@@ -22,7 +22,7 @@ import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { spreadLabels } from "./core/labels";
-import { endLabelGutterPx } from "./core/text";
+import { endLabelGutterPx, truncate, textWidth } from "./core/text";
 
 export interface StackedAreaConfig {
   title: string;
@@ -69,16 +69,26 @@ export function StackedAreaChart({
   // Right-edge band labels are "name value" (bold). Reserve the gutter from the
   // WIDEST actual label so a long series name never clips (the "Renouvelables 280"
   // → "Renouvelables 28" bug); floor at the sample's 116 so short-label charts keep
-  // their layout. UNSCALED font/gap — resolveFrame scales the whole basePad.
-  const lastRow = config.rows[config.rows.length - 1] ?? {};
+  // their layout. Measure from the x-SORTED last row (matching the geometry's
+  // rendered lastValue, parsed.sort by x) so a newest-first CSV can't undersize it.
+  // Cap at ~42% of the canvas (never below the floor) so a pathological series name
+  // can't collapse the plot; over-cap labels are truncated at render (value kept).
+  // UNSCALED font/gap — resolveFrame scales the whole basePad by `s`.
+  const sortedRows = [...config.rows].sort(
+    (a, b) => Number(a[config.xField]) - Number(b[config.xField]),
+  );
+  const lastRow = sortedRows[sortedRows.length - 1] ?? {};
   const bandLabels = config.seriesFields.map((f) => `${f} ${lastRow[f] ?? ""}`);
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
-    right: endLabelGutterPx(bandLabels, TYPE.axis, {
-      gapPx: 8,
-      floorPx: 116,
-      bold: true,
-    }),
+    right: Math.min(
+      endLabelGutterPx(bandLabels, TYPE.axis, {
+        gapPx: 8,
+        floorPx: 116,
+        bold: true,
+      }),
+      Math.max(116, (width * 0.42) / s),
+    ),
     bottom: 32, // year axis (source band reserved in resolveFrameWithHeader)
     left: 44, // % axis
   };
@@ -313,22 +323,38 @@ function StackedAreaSvg({
 
         {/* right-edge direct band labels (name + latest value), fade in last.
             TEXT is always COLORS.ink (WCAG-safe) — the label carries the value,
-            the band's fill carries the hue (same rule as the vermillion fix). */}
+            the band's fill carries the hue (same rule as the vermillion fix).
+            The gutter is sized to fit these labels (basePad.right); only a capped
+            pathological name truncates — the NAME clips (ellipsis), value kept. */}
         <g opacity={labelOp}>
-          {bands.map((b) => (
-            <text
-              key={`l${b.seriesIndex}`}
-              x={innerWidth + 8 * sc}
-              y={labelYs.get(b.seriesIndex) ?? b.labelY}
-              dy="0.32em"
-              textAnchor="start"
-              fontSize={ts.axis}
-              fontWeight={700}
-              fill={COLORS.ink}
-            >
-              {b.seriesKey} {b.lastValue}
-            </text>
-          ))}
+          {bands.map((b) => {
+            // bold-aware widths (matches the 1.08 factor endLabelGutterPx reserved
+            // with) so the gutter that fits a label never truncates it, and a capped
+            // pathological name truncates to the actual bold width, value kept.
+            const boldFont = ts.axis * 1.08;
+            const valueStr = ` ${b.lastValue}`;
+            const availPx = padding.right - 8 * sc;
+            const name = truncate(
+              b.seriesKey,
+              availPx - textWidth(valueStr, boldFont),
+              boldFont,
+            );
+            return (
+              <text
+                key={`l${b.seriesIndex}`}
+                x={innerWidth + 8 * sc}
+                y={labelYs.get(b.seriesIndex) ?? b.labelY}
+                dy="0.32em"
+                textAnchor="start"
+                fontSize={ts.axis}
+                fontWeight={700}
+                fill={COLORS.ink}
+              >
+                {name}
+                {valueStr}
+              </text>
+            );
+          })}
         </g>
       </g>
     </svg>

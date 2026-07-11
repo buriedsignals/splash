@@ -95,4 +95,71 @@ describe("StackedAreaChart — right-edge band labels never clip", () => {
       expect(rightEdge).toBeLessThanOrEqual(W);
     }
   });
+
+  // The geometry sorts rows ascending by x and labels each band with the MAX-x
+  // value (parsed.sort + parsed[last]). A newest-first CSV (rows descending by
+  // year) must therefore still be measured from the 2023 row, not row[last]=2005
+  // — else the gutter is sized from "Renouvelables 60" (16 chars) while the render
+  // draws "Renouvelables 280" (17 chars) and clips again.
+  it("sizes from the max-x row even when input rows are newest-first (600×338)", () => {
+    const W = 600;
+    const DESC: StackedAreaConfig = {
+      ...MIX,
+      rows: [...MIX.rows].reverse(), // 2023 first, 2005 last
+    };
+    const svg = renderToStaticMarkup(
+      <StackedAreaChart
+        config={DESC}
+        responsive={false}
+        width={W}
+        height={338}
+      />,
+    );
+    const labels = bandLabels(svg);
+    // the rendered value is still the 2023 value, in full
+    expect(labels.some((l) => l.text === "Renouvelables 280")).toBe(true);
+    const [padLeft] = plotOrigin(svg);
+    for (const l of labels) {
+      const rightEdge = padLeft + l.x + estWidth(l.text, l.font);
+      expect(rightEdge).toBeLessThanOrEqual(W);
+    }
+  });
+
+  // A pathological 60+ char series name must NOT collapse/crash the plot: the
+  // gutter is capped at ~42% of the canvas and the name is truncated (ellipsis)
+  // to fit, with the value kept. Before the cap this threw "padding exceeds
+  // dimensions" in the geometry (negative innerWidth).
+  it("caps the gutter and truncates a pathological long series name (600×338)", () => {
+    const W = 600;
+    const LONG =
+      "Production d'électricité d'origine renouvelable hors hydraulique";
+    const cfg: StackedAreaConfig = {
+      ...MIX,
+      seriesFields: ["Charbon", LONG],
+      rows: [
+        { annee: 2005, Charbon: 300, [LONG]: 60 },
+        { annee: 2023, Charbon: 180, [LONG]: 280 },
+      ],
+    };
+    // must not throw
+    const svg = renderToStaticMarkup(
+      <StackedAreaChart
+        config={cfg}
+        responsive={false}
+        width={W}
+        height={338}
+      />,
+    );
+    const labels = bandLabels(svg);
+    // the long name is truncated (ellipsis) but its VALUE survives at the end
+    const long = labels.find((l) => l.text.endsWith(" 280"));
+    expect(long).toBeDefined();
+    expect(long!.text).toContain("…");
+    // and the plot did not collapse — every label still fits the canvas
+    const [padLeft] = plotOrigin(svg);
+    for (const l of labels) {
+      const rightEdge = padLeft + l.x + estWidth(l.text, l.font);
+      expect(rightEdge).toBeLessThanOrEqual(W);
+    }
+  });
 });
