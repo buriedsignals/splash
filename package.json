@@ -7,5 +7,9 @@
   "scripts": {
     "check": "bun scripts/check.mjs",
     "release:check": "bun scripts/preflight-release.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.1",
+    "bun-types": "1.3.14"
   }
 }
