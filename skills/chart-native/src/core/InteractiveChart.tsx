@@ -90,8 +90,13 @@ export function InteractiveChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [animateOn, reduced]);
 
+  // minWidth on the wrapper too: the chart lays out at max(minWidth, container),
+  // so when the container is NARROWER than minWidth the wrapper must honestly
+  // overflow it (host scrolls/crops) rather than report a box the svg paints
+  // past — measured: a 264px container floored to a 280px layout left the
+  // right-gutter band labels 7.3px outside the card (snap-label-fit @360px).
   return (
-    <div ref={ref} style={{ width: "100%" }}>
+    <div ref={ref} style={{ width: "100%", minWidth }}>
       {width != null && render(width, progress)}
     </div>
   );

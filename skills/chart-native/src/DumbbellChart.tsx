@@ -23,7 +23,7 @@ import { COLORS, TYPE, DUMBBELL_DOT_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
-import { layoutLegend } from "./core/legend";
+import { layoutLegend, legendRowCount } from "./core/legend";
 
 export interface DumbbellConfig {
   title: string;
@@ -72,11 +72,24 @@ export function DumbbellChart({
     ? 1
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
   const legendRowUnscaled = 22;
+  const PAD_RIGHT = 60; // outer value label of the rightmost dot
+  const PAD_LEFT = 124; // category labels
+  // The below-plot legend WRAPS on a narrow embed (layoutLegend, same charW/
+  // availWidth as the render below) — reserve a bottom row per wrapped line, or
+  // the extra row paints past the card ("Men" bottom-clipped 11.16px at 360px,
+  // caught by snap-label-fit). Same shared pre-reserve every legend-bearing
+  // type uses (legendRowCount, cf. DotStripChart / ArcChart).
+  const legendRows = legendRowCount(
+    [config.leftLabel, config.rightLabel],
+    width - (PAD_LEFT + PAD_RIGHT) * s,
+    TYPE.axis * s * 0.6,
+    legendRowUnscaled * s,
+  );
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
-    right: 60, // outer value label of the rightmost dot
-    bottom: 28 + legendRowUnscaled, // legend (source band reserved in resolveFrameWithHeader)
-    left: 124, // category labels
+    right: PAD_RIGHT,
+    bottom: 28 + legendRows * legendRowUnscaled, // legend rows (source band reserved in resolveFrameWithHeader)
+    left: PAD_LEFT,
   };
   const frame = resolveFrameWithHeader(
     config.title,

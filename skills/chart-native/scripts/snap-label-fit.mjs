@@ -19,7 +19,9 @@
 // (module scripts get crossorigin → blocked over file://, same as
 // snap-contrast.mjs). TARGET=interactive opens the self-contained interactive
 // dist over file:// and waits out the intro reveal (same loading model as
-// snap-interactive-contrast.mjs). DIST overrides the dist dir (tests).
+// snap-interactive-contrast.mjs), and asserts at a NARROW and a WIDE viewport
+// width (the responsive re-layout can clip at 380px what fits at 1100px — see
+// WIDTHS below). DIST overrides the dist dir (tests).
 //
 // OUT OF SCOPE v1:
 //   - label-vs-label overlap: intentional overlays and legends make it
@@ -56,11 +58,19 @@ const dist = process.env.DIST ?? join(root, chartDistSub(chart, target));
 // static.png, and the interactive embed is width-bounded by it.
 const CANVAS_SELECTOR = "#root > div";
 
+// The interactive dist is RESPONSIVE: each *Chart.tsx re-lays out from the
+// measured container width, so a label that fits at a desktop width can clip at
+// a phone width (the stacked-area right-gutter band labels and the dumbbell
+// wrapped legend both shipped green at 900px while clipping at 360px). Assert at
+// a narrow AND a wide delivery width — same convention as snap-tooltip-viewport's
+// [380, 1100] pair, but narrow is pinned to 360 = the narrowest width in
+// snap-responsive's documented proof set (360/768/1100/1600): the real
+// stacked-area band-label clip reproduced at 360 while hiding at 380 by ~1px.
+// The static dist is a fixed-size card (layout independent of the viewport), so
+// one viewport suffices there.
+const WIDTHS = target === "interactive" ? [360, 1100] : [900]; // narrow (worst overflow) + a standard embed width
+
 const browser = await chromium.launch();
-const page = await browser.newPage({
-  viewport: { width: 900, height: 560 },
-  deviceScaleFactor: 2,
-});
 
 let server;
 if (target === "static") {
@@ -78,54 +88,70 @@ if (target === "static") {
     }
   });
   await new Promise((r) => server.listen(0, r));
-  await page.goto(`http://localhost:${server.address().port}/`);
-  await page.waitForSelector("svg");
-  await page.waitForTimeout(2100); // let the reveal settle to progress=1 (as snap-contrast)
-} else {
-  // single self-contained file (vite-plugin-singlefile) → opens over file://
-  await page.goto(pathToFileURL(join(dist, "index.html")).href);
-  await page.waitForSelector("svg");
-  // wait past the slowest intro reveal (2200ms + margin, as snap-interactive-contrast)
-  await page.waitForTimeout(2500);
 }
 
-const { canvas, items } = await page.evaluate(collectTextBoxes, CANVAS_SELECTOR);
+const violations = [];
+let checked = 0;
+let worst = 0;
+
+for (const width of WIDTHS) {
+  const page = await browser.newPage({
+    viewport: { width, height: 560 },
+    deviceScaleFactor: 2,
+  });
+
+  if (target === "static") {
+    await page.goto(`http://localhost:${server.address().port}/`);
+    await page.waitForSelector("svg");
+    await page.waitForTimeout(2100); // let the reveal settle to progress=1 (as snap-contrast)
+  } else {
+    // single self-contained file (vite-plugin-singlefile) → opens over file://
+    await page.goto(pathToFileURL(join(dist, "index.html")).href);
+    await page.waitForSelector("svg");
+    // wait past the slowest intro reveal (2200ms + margin, as snap-interactive-contrast)
+    await page.waitForTimeout(2500);
+  }
+
+  const { canvas, items } = await page.evaluate(collectTextBoxes, CANVAS_SELECTOR);
+  await page.close();
+
+  // VACUITY GUARDS — a broken selector or an empty render must not pass silently
+  // (same convention as snap-proof's "no focusable data element found" throw).
+  if (!canvas) {
+    console.error(`[snap-label-fit ${chart}/${target}@${width}px] no chart card matches "${CANVAS_SELECTOR}" — nothing was checked`);
+    process.exit(1);
+  }
+  if (items.length === 0) {
+    console.error(`[snap-label-fit ${chart}/${target}@${width}px] ZERO text nodes found — a chart always has furniture text; refusing to pass an empty check`);
+    process.exit(1);
+  }
+
+  checked += items.length;
+  for (const it of items) {
+    // clip bounds = the card ∩ every clipping ancestor (svg roots,
+    // overflow:hidden, ancestor <clipPath> rects)
+    const bounds = it.clips.reduce(intersectBoxes, canvas);
+    const over = worstOverflowPx(it.box, bounds);
+    worst = Math.max(worst, over);
+    if (isFitViolation(it.box, bounds, LABEL_FIT_TOLERANCE_PX)) {
+      violations.push({
+        width,
+        kind: it.kind,
+        text: it.text,
+        overflowPx: Object.fromEntries(
+          Object.entries(overflowPx(it.box, bounds)).map(([k, v]) => [k, Number(v.toFixed(2))]),
+        ),
+      });
+    }
+  }
+}
 
 await browser.close();
 server?.close();
 
-// VACUITY GUARDS — a broken selector or an empty render must not pass silently
-// (same convention as snap-proof's "no focusable data element found" throw).
-if (!canvas) {
-  console.error(`[snap-label-fit ${chart}/${target}] no chart card matches "${CANVAS_SELECTOR}" — nothing was checked`);
-  process.exit(1);
-}
-if (items.length === 0) {
-  console.error(`[snap-label-fit ${chart}/${target}] ZERO text nodes found — a chart always has furniture text; refusing to pass an empty check`);
-  process.exit(1);
-}
-
-const violations = [];
-let worst = 0;
-for (const it of items) {
-  // clip bounds = the card ∩ every clipping ancestor (svg roots, overflow:hidden)
-  const bounds = it.clips.reduce(intersectBoxes, canvas);
-  const over = worstOverflowPx(it.box, bounds);
-  worst = Math.max(worst, over);
-  if (isFitViolation(it.box, bounds, LABEL_FIT_TOLERANCE_PX)) {
-    violations.push({
-      kind: it.kind,
-      text: it.text,
-      overflowPx: Object.fromEntries(
-        Object.entries(overflowPx(it.box, bounds)).map(([k, v]) => [k, Number(v.toFixed(2))]),
-      ),
-    });
-  }
-}
-
 console.log(
   JSON.stringify(
-    { chart, target, checked: items.length, tolerancePx: LABEL_FIT_TOLERANCE_PX, worstOverflowPx: Number(worst.toFixed(2)), violations },
+    { chart, target, widths: WIDTHS, checked, tolerancePx: LABEL_FIT_TOLERANCE_PX, worstOverflowPx: Number(worst.toFixed(2)), violations },
     null,
     2,
   ),
@@ -137,5 +163,5 @@ if (violations.length) {
   process.exit(1);
 }
 console.log(
-  `[snap-label-fit ${chart}/${target}] OK — ${items.length} text nodes fit their clip bounds (worst overflow ${worst.toFixed(2)}px ≤ ${LABEL_FIT_TOLERANCE_PX}px).`,
+  `[snap-label-fit ${chart}/${target}] OK — ${checked} text nodes fit their clip bounds across ${WIDTHS.join("/")}px (worst overflow ${worst.toFixed(2)}px ≤ ${LABEL_FIT_TOLERANCE_PX}px).`,
 );

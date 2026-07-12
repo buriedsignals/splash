@@ -123,6 +123,41 @@ describe("snap-label-fit — RED: the crafted clip case fails", () => {
   );
 });
 
+describe("snap-label-fit — interactive target asserts a narrow AND a wide width", () => {
+  it(
+    "should exit 1 when a responsive re-layout clips text ONLY at the narrow delivery width",
+    () => {
+      // A width-dependent clip: the card tracks the viewport (width:100%), the
+      // caption is a fixed ~700px nowrap run. At 1100px it fits; at 360px it
+      // overflows the card by ~300px — the responsive stacked-area/dumbbell
+      // class a single 900px viewport measurement ships green.
+      const caption =
+        "A fixed-width caption of about seven hundred pixels that fits a desktop embed but clips badly on a phone";
+      const dist = fixtureDist(
+        `<div id="root"><div style="width:100%;position:relative;background:#fff;overflow:hidden">
+        <svg width="100%" height="200" xmlns="http://www.w3.org/2000/svg">
+          <text x="16" y="30" font-size="13" fill="#333">In bounds</text>
+        </svg>
+        <div style="position:absolute;top:60px;left:0;white-space:nowrap;font-size:13px">${caption}</div>
+      </div></div>`,
+      );
+      const { code, out } = runSnap({
+        CHART: "fixture",
+        TARGET: "interactive",
+        DIST: dist,
+      });
+      expect(code).toBe(1);
+      expect(out).toContain(caption.slice(0, 80));
+      // the report names the width pair (narrow+wide, as snap-tooltip-viewport)
+      // and the violation carries the width it was measured at
+      expect(out).toContain("360");
+      expect(out).toContain("1100");
+      expect(out).toContain('"width": 360');
+    },
+    BUILD_AND_SNAP_TIMEOUT,
+  );
+});
+
 describe("snap-label-fit — vacuity guards", () => {
   it(
     "should fail when the page renders ZERO text nodes",
@@ -207,6 +242,43 @@ describe("snap-label-fit — healthy renders pass as-is (calibration invariant)"
     () => {
       buildInteractive("bar", join(root, "assets", "sample-data", "bars.json"));
       const { code, out } = runSnap({ CHART: "bar", TARGET: "interactive" });
+      expect(code).toBe(0);
+      expect(out).toContain('"violations": []');
+    },
+    BUILD_AND_SNAP_TIMEOUT,
+  );
+
+  it(
+    "should pass the stacked-area interactive embed at 360px AND 1100px (the narrow band-label clip class)",
+    () => {
+      // Pre-fix RED (measured through this snap): at a 360px viewport the page's
+      // doubled 48px/side inset left the container at 264px < the 280px minWidth
+      // floor — the svg painted 16px past the card and the right-gutter band
+      // labels shipped clipped ("Renouvel… 280" +7.32px, "Conventi… 250" +5.09px).
+      buildInteractive(
+        "stacked-area",
+        join(here, "fixtures", "stacked-area-longlabels.json"),
+      );
+      const { code, out } = runSnap({
+        CHART: "stacked-area",
+        TARGET: "interactive",
+      });
+      expect(code).toBe(0);
+      expect(out).toContain('"violations": []');
+    },
+    BUILD_AND_SNAP_TIMEOUT,
+  );
+
+  it(
+    "should pass the dumbbell sample interactive embed at 360px AND 1100px (the wrapped-legend bottom clip class)",
+    () => {
+      // Pre-fix RED (measured through this snap): the wrapped second legend row
+      // ("Men") painted 11.16px past the card bottom at a 360px viewport.
+      buildInteractive(
+        "dumbbell",
+        join(root, "assets", "sample-data", "dumbbell.json"),
+      );
+      const { code, out } = runSnap({ CHART: "dumbbell", TARGET: "interactive" });
       expect(code).toBe(0);
       expect(out).toContain('"violations": []');
     },
