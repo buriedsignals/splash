@@ -4,6 +4,39 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-12 (suite 4) — Wave 12 : CONVERGENCE — 6/6 livrés, 0 critical, 0 major, toutes les confirmations tiennent
+
+**Première wave entièrement propre** (2 re-runs de confirmation Wave 11 + 2 fraîches, + legit-abc/wealth-health)
+: 6/6 livrés, **0 critical, 0 major**. Les fixes Wave 11 CONFIRMÉS au flow/rendu :
+- **aging → 0 finding** (était 1 crit + 2 maj) : la carte scrolly non-réalisable (pas de fond départements
+  FR) est **surfacée honnêtement** puis bascule map-dw statique — plus de script fabriqué, plus de faux
+  « delivered ». L'improvisation guard tient exactement comme voulu.
+- **source-correction → majors éliminés** (re-produce propre, plus de contournement) · **legit-abc →
+  scatter dégagé** (occlusion Copenhague corrigée) · **wealth-health → capture propre** · **takeaway-reframe
+  (fraîche) → le reframe mid-flow marche** : atelier re-confirme le takeaway changé + re-produit + re-review
+  sur le nouveau rendu, titre final porte le trade-off · **long-title (fraîche) → titre 78 car. rendu sans
+  clip**.
+
+**Résiduel = minors uniquement** (polish/préférence, pas de défaut flow/résultat) — laissés au backlog :
+- **abréviation grands nombres sur value-labels** (wealth-health : PIB 1 000–89 000 non abrégé « 42k » ;
+  best-practice FT #4/#7) + décision suffixe-unité par-label vs sous-titre (chart-native met déjà l'unité
+  au sous-titre — arbitrage clutter) — la classe result-quality la plus actionnable.
+- **CADRAGE Q3 canal/format** re-flaggé malgré le fix wording : le juge lit l'énumération des formats dans
+  l'option canal comme un « choix de format plié dans le canal » ; mais le canal héberge vraiment plusieurs
+  formats et le journaliste doit le savoir — pas de wording qui satisfait sans perdre l'info (préférence juge).
+- **indépendance Gate-3a** : les probes de render-review restent LLM-authored (le filet mécanique indépendant
+  = deep-verify + snaps produce ; la review éditoriale reste attestée-LLM — limite architecturale connue).
+- mineurs : stray `echo noop` · série dérivée non distinguée visuellement (source-correction).
+
+**★ Bilan de la boucle QA (Waves 8→12, 2026-07-12) : convergence atteinte.** 5 waves, ~40 cas, personas
+variés (DE/IT/FR · pressé/pointilleux/sceptique/girouette/insistant/coopératif) : **0 critical produit sur
+les 5 waves, 0 major sur la dernière, toutes les confirmations tiennent au rendu.** Chaque classe récurrente
+mécanisée en garde permanente (validation stricte · beats · comptabilité par-probe · provenance gate-render ·
+unité une-source · WAIT a/b/c · **improvisation** · embed/fly · scatter-occlusion). Flake de gate le plus
+fréquent éliminé (map-native produce). Gate 20/20. Le filet QA (checks sandbox + deep-verify) a prouvé sa
+valeur en attrapant les improvisations. Régime « propre » : les nouveaux findings sont désormais des minors
+de polish, plus des défauts de flow ou de résultat.
+
 ## Session 2026-07-12 (suite 3) — Wave 11 : 3 confirmations OK + classe « improvisation » mécanisée (5 fixes), flake map-native éliminé
 
 **Wave 11 (2 re-runs de confirmation + 3 probes neuves qui stressent les gardes fraîches) : 5/5 livrés.**
