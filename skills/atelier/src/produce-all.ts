@@ -146,5 +146,8 @@ export async function produceAll(
       });
     }
   }
-  return { results };
+  // Stamped AFTER every dispatch returned: every artifact this generation emitted has
+  // an mtime <= generatedAt (see producer-spec.ts) — gate-render's provenance check
+  // anchors on it to refuse hand-planted files and stale-report approvals.
+  return { generatedAt: new Date().toISOString(), results };
 }

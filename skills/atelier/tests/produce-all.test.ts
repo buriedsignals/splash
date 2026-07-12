@@ -84,6 +84,16 @@ describe("produceAll — loop mechanics", () => {
     expect(results[0].status).toBe("needs-fallback");
     expect(results[0].reason).toContain("sankey");
   });
+
+  it("stamps generatedAt AFTER all dispatches (the produce-generation anchor for gate-render provenance)", async () => {
+    const before = Date.now();
+    const dispatch: Dispatch = async () => ({ status: "produced" });
+    const report = await produceAll([p("p1")], "out", dispatch, PASS);
+    expect(report.generatedAt).toBeString();
+    const stamped = Date.parse(report.generatedAt ?? "");
+    expect(stamped).toBeGreaterThanOrEqual(before);
+    expect(stamped).toBeLessThanOrEqual(Date.now());
+  });
 });
 
 // Gate 3 reset (the re-produce invalidation invariant): a fresh produce is ALWAYS an

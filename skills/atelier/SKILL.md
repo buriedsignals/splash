@@ -379,9 +379,15 @@ name/value) is allowed only by citing the pass of the producer's interaction sna
 fail-hard inside `produce-all` — or re-running it: chart-native `snap-tooltip-contrast.mjs` /
 `snap-tooltip-viewport.mjs`, map-native `snap-proof.mjs` (see `references/render-review.md`, "Interaction
 claims require an interaction test"). No cited run → record "not interaction-tested", never a pass. Record
-it (export is refused without a review record):
+it (export is refused without a review record) — **`--probes` is REQUIRED: the ledger of every check the
+review actually ran** (`[{check, outcome: pass|concern|resolved, note?}, ...]`, inline JSON or a file path;
+see `references/render-review.md`, "Record it"). The gate refuses an empty ledger, a probed concern the
+review silently drops, and a failure keyword (404/absent/missing/mismatch…) no probe outcome reflects —
+a probed failure is either surfaced as a concern (advisory) or explicitly resolved with evidence, never
+narrated away. (A fresh DW publish may 404 its `dataset.csv` briefly — retry once after
+`DW_DATASET_PROPAGATION_RETRY_MS` before recording a data defect.)
 ```bash
-bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> [concern...]
+bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> --probes '[...]' [concern...]
 ```
 
 **3b. Show + approve.** Show the ACTUAL render (open it / a screenshot) TOGETHER WITH the review's
@@ -403,6 +409,15 @@ bun skills/atelier/scripts/gate-render.mjs exports/<slug>/report.json <id> expor
 ```
 (swap `static.png` for whichever local file the journalist approved — e.g. `interactive.html`,
 `scrolly.html`, or the rendered `.mp4` — always the path under `exports/<slug>/<id>/`, never a URL.)
+**PROVENANCE is enforced mechanically** (`src/render-provenance.ts`): the approved file must be an
+output the pipeline emitted for the CURRENT produce generation — listed in this report's `outputs`
+and no newer than the report's `generatedAt` stamp. A file hand-authored into the build subdir, or an
+artifact from a later produce approved against a stale report, is a hard refusal — save the fresh
+`report.json` and redo 3a → 3b. **Hosted-DW interactive (a `publicUrl`, NO local render):** never
+write a stand-in file into `exports/<slug>/<id>/` (it would leak into export-code's hosted-embed
+detection) — capture the reviewed live embed (screenshot or saved page) into the sanctioned
+`exports/<slug>/_review-artifacts/<id>/` directory and approve THAT file; the gate accepts it only
+for a hosted result and only if captured AFTER the current produce generation.
 `gate-render` is the ONLY writer of the render approval; EXPORT refuses any visual not render-reviewed
 (3a) AND not approved (3b) — so an unreviewed, unseen, or unapproved render can never ship.
 
@@ -553,7 +568,7 @@ alongside the thanks is NOT a close — handle the request instead.
 - Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate. This means actually INVOKING `suggest-article` (ANALYSE) and `suggest-chart` (PROPOSITION routing) as real Skill calls, not hand-authoring their output from memory/inspection — their eval-hardened guardrails and KB grounding only fire when they genuinely run. This holds for the FIRST routing AND for any LATER change to the chosen element/format (a journalist request mid-flow, a fallback, a retry after a failed gate): re-invoke `suggest-chart` again with the new signal — never re-decide it yourself by grepping producer source and hand-authoring/`Write`-ing a `spec.json`; only `suggest-chart`'s own re-run re-validates the choice and re-applies its guardrails.
 - Never name a chart type in the intent passed to suggest-article or suggest-chart (on the guided path).
 - Never ship a visual without the mandatory render-review (Gate 3a) — `assertShippable` refuses a visual with no review record; the review's concerns are advisory but running it is not optional.
-- Never call `gate-render` (Gate 3b) right after a re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) without first re-running `review-gate` (Gate 3a) on the NEW render. `produce-all` always writes a WHOLLY FRESH `report.json` — every proposal in that run comes back unreviewed and unapproved (`renderApproved:false`), even one that was already signed off before the correction — so the review MUST run again on what actually changed. Do not treat the script's hard refusal ("not render-reviewed") as the safety net to rely on; redo Gate 3a → 3b in order every time, and never hand-edit `report.json` to restore a prior review/approval onto a new artifact.
+- Never call `gate-render` (Gate 3b) right after a re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) without first re-running `review-gate` (Gate 3a) on the NEW render. `produce-all` always writes a WHOLLY FRESH `report.json` — every proposal in that run comes back unreviewed and unapproved (`renderApproved:false`), even one that was already signed off before the correction — so the review MUST run again on what actually changed. Do not treat the script's hard refusal ("not render-reviewed") as the safety net to rely on; redo Gate 3a → 3b in order every time, and never hand-edit `report.json` to restore a prior review/approval onto a new artifact. Likewise never hand-author a file into the producer's build subdir `exports/<slug>/<id>/` to give `gate-render` something to approve — its provenance check refuses any file the pipeline did not emit for the CURRENT produce generation; a hosted-DW interactive (no local render) is approved via a fresh capture under `exports/<slug>/_review-artifacts/<id>/`, never a stand-in file next to the producer outputs.
 - Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow. This holds with NO exception for making a produce/conformance gate pass: never edit a producer/component's source code (`skills/*/src`, any `.tsx`/`.ts` producer file) mid-PRODUCTION to turn a failing gate green — a real newsroom journalist cannot patch the engine, so atelier must not either. If a produce or conformance gate fails because of a genuine engine bug (not a spec/data problem), SURFACE the bug to the journalist, do NOT ship that visual, and do NOT patch the code — the bug is reported, never worked around.
 - Never silently mutate the ACCEPTED SPEC (`baseColor`, format, etc.) mid-PRODUCTION to route around a conformance-gate failure — this is the spec analogue of the rule above ("never edit product code" → "never silently edit the accepted spec to bypass a gate"). A conformance failure is SURFACED to the journalist as-is; if the spec must change to fix it, GATE 2 is re-opened for re-acceptance of the changed spec. The produce-time conformance guards exist precisely so a non-conformant visual never ships unseen.
 - Never hand over an INTERACTIVE/SCROLLY visual without running `export-code.mjs` (two-phase): phase 1 (no `--form`) EMITS the a/b/c proposal building NOTHING; phase 2 (`--form <html|code-source|embed>`) builds + delivers ONLY the chosen form, gated by `assertDelivered`. Never build all forms unconditionally, and never fabricate a no-JS `static.html` fallback — that fallback is GONE (accessibility is the `static` FORMAT choice at CADRAGE). Never mark an interactive/scrolly delivered on produce-time outputs alone — a Gate-3 review PNG / `interactive.png` / a build byproduct is NOT a delivery; only the `export-code --form <chosen>` artifact is (enforced mechanically by `assertDelivered`). A hosted-DW interactive delivers ONLY via `--form embed` (its live `publicUrl`) — it has no React source and no standalone local html.

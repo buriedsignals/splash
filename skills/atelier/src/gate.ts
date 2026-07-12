@@ -32,5 +32,7 @@ export function applyRenderGate(
   });
   if (!results.some((r) => r.id === id))
     throw new Error(`unknown proposal ${id}`);
-  return { results };
+  // Spread the incoming report so top-level fields (generatedAt — the provenance
+  // anchor gate-render checks artifacts against) survive the approval write.
+  return { ...report, results };
 }

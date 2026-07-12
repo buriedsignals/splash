@@ -29,6 +29,20 @@ export interface AcceptedProposal {
 export type ProduceStatus =
   "produced" | "failed" | "needs-fallback" | "needs-confirmation";
 
+// One line of the render-review's probes LEDGER (Gate 3a): every check the review
+// actually RAN, with its outcome. "pass" = probed and clean; "concern" = probed and
+// failing — MUST also be surfaced in reviewConcerns (advisory to the journalist, but
+// never silently dropped); "resolved" = probed, initially failing, then explicitly
+// resolved — `note` records HOW (the evidence). The ledger is what makes the review
+// record mechanical instead of narrative: review-gate refuses an empty ledger, and a
+// failure keyword in the narrative that no non-pass probe reflects.
+export type ReviewProbeOutcome = "pass" | "concern" | "resolved";
+export interface ReviewProbe {
+  check: string; // what was probed (e.g. "GET dataset.csv on the published chart")
+  outcome: ReviewProbeOutcome;
+  note?: string; // required for concern (what failed) and resolved (how, with evidence)
+}
+
 export interface ProposalResult {
   id: string;
   producer: Producer; // the producer the accepted proposal COMMITTED to (declared)
@@ -44,10 +58,18 @@ export interface ProposalResult {
   warnings?: string[]; // non-blocking validation warnings, surfaced at the render gate
   reviewed?: boolean; // render-review ran (Layer 2); export is refused until it has
   reviewConcerns?: string[]; // advisory editorial concerns from the review, shown at Gate 3
+  reviewProbes?: ReviewProbe[]; // the review's probes ledger (Gate 3a), set by review-gate
   renderApproved: boolean; // Gate 3, default false
   approvedHash?: string; // sha256 of the approved artifact, set by the render gate
 }
 
 export interface ProduceReport {
+  // ISO timestamp stamped by produceAll AFTER every dispatch returned — the produce
+  // GENERATION anchor. gate-render's provenance check (render-provenance.ts) compares
+  // the approved file's mtime against it: every pipeline-emitted artifact predates it,
+  // so a file newer than this stamp was NOT emitted by the produce this report records
+  // (hand-planted, or a later produce whose fresh report was never saved). Optional
+  // only for legacy reports; produce-all always writes it.
+  generatedAt?: string;
   results: ProposalResult[];
 }
