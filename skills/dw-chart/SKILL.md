@@ -84,6 +84,7 @@ Full field mapping + endpoints → `references/api-flow.md`.
 
 - `src/{chart-spec,spec-to-metadata,datawrapper,produce}.ts` — the four layers.
 - `src/{contrast,value-label-safety}.ts` — WCAG contrast math + the per-engine, contrast-safe value-label mapper and its produce-time guard.
+- `src/furniture-i18n.ts` — i18n furniture gate (fail-hard in `produceChart`, before any API call): a non-English spec's outgoing metadata must carry the localized "Source : X" line in `annotate.notes` and blank `describe.source-name`/`source-url` (mirrored in map-dw).
 - `assets/sample-data/` — runnable sample CSV + spec.
 - `output-proof/` — the proven published chart (PNG + embed + result).
 - `references/api-flow.md` — endpoints + field mapping.

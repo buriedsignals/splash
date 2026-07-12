@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { validateMapSpec, type MapSpec } from "./map-spec";
 import { specToMapMetadata } from "./spec-to-map-metadata";
+import { assertLocalizedSourceMetadata } from "./furniture-i18n";
 import {
   createChart,
   setData,
@@ -139,6 +140,12 @@ export async function produceMap(
   }
 
   const patch = specToMapMetadata(spec);
+  // i18n FURNITURE GATE (P5) — fail loud BEFORE any API call if a non-English map's
+  // outgoing metadata would ship the English/double "Source:" caption: annotate.notes
+  // must carry the localized "Source : X" line and describe.source-name/source-url
+  // must be blank (see src/furniture-i18n.ts; the invariant the localized-source fix
+  // established, now asserted so a regression fails the produce instead of shipping).
+  assertLocalizedSourceMetadata(patch, spec);
   const id = await createChart(spec.title, patch.type);
   // Locator maps carry no data table; markers live in metadata.visualize.markers.
   if (spec.mapType !== "locator") await setData(id, spec.data);

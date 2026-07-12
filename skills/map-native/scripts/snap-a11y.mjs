@@ -3,8 +3,14 @@
 // is N/A on a GL canvas — region-level a11y is the map standard.) Mirrors chart-native's
 // snap-a11y, adapted for the MapTiler canvas.
 import { chromium } from "playwright";
+import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+  checkFurnitureI18n,
+  collectFurnitureI18n,
+  furnitureGateApplies,
+} from "./lib/furniture-i18n.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -301,6 +307,20 @@ const controlsNotOccluded = await page.evaluate(() => {
   return ctrl !== null;
 });
 
+// i18n FURNITURE GATE (P5) — reuses THIS already-loaded page (no extra browser
+// session): when the produced config's lang renders non-English furniture, the
+// HTML furniture (MapFrame title/source, legend, filter bar) must actually carry
+// it. GL-internal canvas text is not DOM-reachable and stays out of scope (see
+// scripts/lib/furniture-i18n.mjs). CONFIG is what produce.mjs threads to every
+// snap; manual runs without it skip the gate (English furniture is correct then).
+const configPath = process.env.CONFIG;
+const lang = configPath
+  ? JSON.parse(await readFile(configPath, "utf8")).lang
+  : undefined;
+const i18nViolations = furnitureGateApplies(lang)
+  ? checkFurnitureI18n(await page.evaluate(collectFurnitureI18n), lang)
+  : [];
+
 await page.locator("#root > div").first().screenshot({ path: join(outDir, "a11y.png") });
 await browser.close();
 
@@ -323,6 +343,7 @@ if (!result.allButtons) failures.push("a control is not a <button> (not keyboard
 if (!result.tooltipOk) failures.push("no popup appeared on hovering a feature");
 if (!result.boundedNavOk) failures.push("bounded nav: centre escaped maxBounds or zoom < minZoom after panBy+zoomTo");
 if (result.controlsNotOccluded === false) failures.push("controls occluded: title pill or other furniture rendered above the zoom/reset controls");
+for (const v of i18nViolations) failures.push(`i18n furniture (lang "${lang}"): ${v}`);
 if (failures.length) {
   console.error("A11Y FAILURES:\n" + failures.join("\n"));
   process.exit(1);

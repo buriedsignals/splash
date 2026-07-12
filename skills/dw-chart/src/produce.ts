@@ -1,5 +1,6 @@
 import { validateChartSpec, type ChartSpec } from "./chart-spec";
 import { specToMetadata, resolveData } from "./spec-to-metadata";
+import { assertLocalizedSourceMetadata } from "./furniture-i18n";
 import {
   createChart,
   setData,
@@ -73,6 +74,12 @@ export async function produceChart(
     : undefined;
 
   const patch = specToMetadata(spec);
+  // i18n FURNITURE GATE (P5) — fail loud BEFORE any API call if a non-English chart's
+  // outgoing metadata would ship the English/double "Source:" caption: annotate.notes
+  // must carry the localized "Source : X" line and describe.source-name/source-url
+  // must be blank (see src/furniture-i18n.ts; the invariant the localized-source fix
+  // established, now asserted so a regression fails the produce instead of shipping).
+  assertLocalizedSourceMetadata(patch, spec);
   // Fail loud BEFORE any API call if the metadata would ship a value label below
   // WCAG 4.5:1 (a white label inside a coloured bar/column). The safe mapper never
   // trips this; it guards against a future regression re-enabling inside labels.
