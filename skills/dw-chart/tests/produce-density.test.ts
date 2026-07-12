@@ -102,6 +102,7 @@ const d = hasToken ? describe : describe.skip;
 
 let webId = "";
 let feedId = "";
+let barsId = "";
 
 d(
   "produceChart delivered static density (real API) — the shared render-size floor",
@@ -142,10 +143,35 @@ d(
       expect(Math.abs(dims.height - 1080)).toBeLessThanOrEqual(2);
       rmSync(out, { force: true });
     }, 120000);
+
+    // The row-driven branch requests a HALVED WIDTH ONLY (height omitted so DW never
+    // crops rows) — this proves live that DW's 2x rasterization also applies to a
+    // width-only export, i.e. the delivered width lands back on the channel width
+    // and the produce-time width-leg floor holds (height content-driven, unasserted).
+    it("row-driven (d3-bars) static delivers the channel WIDTH (1200 ±2px) at a content-driven height", async () => {
+      const spec = {
+        type: "d3-bars",
+        title: "Paris dwarfs the other cities by population",
+        data: "city,population\nParis,2100\nMarseille,870\nLyon,520\nToulouse,490\nNice,340",
+        baseColor: "#0072B2",
+        channel: "article-web",
+        altInsight:
+          "Paris (2.1M) is more than twice Marseille (0.87M), the second city",
+      } as ChartSpec;
+      const out = join(tmpdir(), `dw-density-bars-${Date.now()}.png`);
+      const res = await produceChart(spec, out);
+      barsId = res.chartId;
+      const dims = readPngSize(out);
+      expect(Math.abs(dims.width - 1200)).toBeLessThanOrEqual(2);
+      // Height follows the row count by design — just confirm a real render.
+      expect(dims.height).toBeGreaterThan(0);
+      rmSync(out, { force: true });
+    }, 120000);
   },
 );
 
 afterAll(async () => {
   if (webId) await deleteChart(webId);
   if (feedId) await deleteChart(feedId);
+  if (barsId) await deleteChart(barsId);
 });
