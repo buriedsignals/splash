@@ -27,6 +27,14 @@ NOT a transform of the whole article. So (grounded in `docs/atelier/embeddable-m
   context and must stand alone). Reveal captions add the rank that matters
   ("Norway — 99%, the highest of the 8 shown" / "Poland — 21%, the lowest"), generated from the
   `mapStory` max→min order in `mapStoryToChapters`; the journalist edits them downstream.
+- **Comparative/rank claims in a caption MUST match the data ordering.** Any step caption asserting a
+  rank or comparison — "devant" / "ahead of", "top 3", "the highest", "the lowest" — is checked against
+  the ACTUAL sorted values BEFORE production: the named entity must really hold the asserted position
+  relative to EVERY entity it is compared to (a shipped beat caption claimed a value ranked "devant"
+  two others while it was LOWER than both — the caption inverted the on-screen order). Auto-generated
+  rank captions derive from the real sort; a journalist-edited caption or an explicit-`beats` `text`
+  gets the SAME check, and the orchestrator's render-review (atelier Gate 3a) re-verifies each step
+  caption against what the step visually shows.
 - **Each furniture element appears once**: the **insight title** in a persistent header, the
   **description** (what/when/where) as the intro step caption, the **source** in the footer. The on-map
   text label is dropped — the map is visual feedback (zoom + highlight), the captions carry the words.
