@@ -28,7 +28,7 @@ analysis inline instead of invoking the skill skips its provenance discipline an
 cost observed in practice, not a theoretical one. For a bare topic (no article/data), instead NAME the
 real dataset the topic needs (the honest sans-rien path) and carry that forward.
 
-### 3. CADRAGE — GATE 1 (questionnaire, journalist's language, ≤4 questions, one at a time)
+### 3. CADRAGE — GATE 1 (questionnaire, journalist's language, ≤3 numbered questions, one at a time)
 
 Ask each question as ONE well-formed single-select prompt (a short header, 2–4 concrete options) and
 wait for the answer before the next — never batch several into one call, which is what malforms the
@@ -36,9 +36,34 @@ question tool. **Exception:** a question that must capture free-form data — mo
 SOURCE (its label and URL) — is NEVER single-select; a fixed menu of options cannot carry a URL. Ask
 it as a free-text prompt instead (see GATE 2/3 source handling below).
 
-1. Branch: "Do you already have a visual in mind, or should I guide you?"
-2. **Takeaway — GATE 1b (un-skippable, both branches):** "What is the one thing a reader should leave
-   with?" → the insight/angle. This is a DISTINCT, mandatory step — it is NEVER collapsed into Q3, and it
+**What counts toward the ≤3 cap.** CADRAGE has exactly THREE numbered questions — **Q1 (branch)**,
+**Q2 (audience & channel)**, **Q3 (constraint, only if relevant)** — asked in that order. Everything else
+in this phase is a SEPARATE gate, not a numbered question, and must NEVER be counted or announced as one:
+**Gate 1b (takeaway) runs between Q1 and Q2 but is NOT a numbered CADRAGE question** (it is an
+un-skippable confirm-back that never consumes the cap — miscounting it as "Q2" and then announcing the
+channel as "Q3" is exactly the running-count bug this rules out; with Gate 1b uncounted, the channel is
+**Q2**). The single visual **FORMAT is likewise NOT a CADRAGE question**: it is pinned at PROPOSITION
+(announced-vetoable, Gate 2) on the GUIDED branch, or named by the journalist inside Q1 on the DIRECT
+branch — never re-asked as its own CADRAGE turn (see Q2 and PROPOSITION). Never announce a fixed question
+number the flow did not actually reach: when no constraint applies, the journalist answered TWO questions
+(Q1 + Q2), not three — announce the real count, not a hardcoded "Q3".
+
+**Q1 — Branch (DIRECT vs GUIDED).** This is an EXPLICIT journalist-facing turn — never a branch you
+   pick silently from their opening message and merely announce as decided. Two shapes:
+   - **Ambiguous opening** (no specific visual named): ask it openly — "Do you already have a visual in
+     mind, or should I guide you?"
+   - **DIRECT signal** (the journalist NAMED a specific visual in their opening, e.g. "a scrolly map"):
+     inferring DIRECT from that naming is legitimate, but CONFIRM the inference back rather than deciding
+     it silently — « tu as déjà une idée précise (une carte scrolly) — on part là-dessus, ou tu préfères
+     que je te guide ? ». The journalist must be able to SEE the branch decision and veto it into GUIDED.
+   Either shape is ONE counted question (Q1); the branch is never set without the journalist's visible
+   answer.
+
+**GATE 1b — Takeaway (un-skippable, both branches — a SEPARATE gate, NOT one of the numbered CADRAGE
+   questions: it runs between Q1 and Q2, never consumes the ≤3 cap, and is never announced or counted as a
+   numbered question).** "What is the one thing a reader should leave
+   with?" → the insight/angle. This is a DISTINCT, mandatory step — it is NEVER collapsed into Q2 (the
+   channel question), and it
    is NEVER satisfied by inferring the takeaway from the article and moving on. Even when the article
    plainly implies a takeaway, you MUST state your inferred takeaway back to the journalist in one plain
    sentence and get their EXPLICIT confirmation (or correction) before leaving CADRAGE. On GUIDED, ask it
@@ -72,7 +97,8 @@ it as a free-text prompt instead (see GATE 2/3 source handling below).
    spatial-pattern framing when the data is not geographic. Offering an unsupported framing forces a
    later retraction and tempts a fabricated series to "back it up". If the journalist genuinely wants a
    trend, say the current data can't show it and ask for the time series — never invent one.
-3. Audience & channel: a STRUCTURED single-select, journalist's language, exactly three options —
+
+**Q2 — Audience & channel:** a STRUCTURED single-select, journalist's language, exactly three options —
    **Social vertical (Stories/Reels)** · **Social feed (Instagram/Facebook post)** · **Article web /
    embed — interactif, image ou vidéo (destination print ⇒ image statique)**.
    This is not a free-text prompt (never ask it as one) — the pick maps 1:1 onto
@@ -98,23 +124,31 @@ it as a free-text prompt instead (see GATE 2/3 source handling below).
    EITHER branch, never skipped.** A DIRECT-named visual still needs a channel: a journalist-naming "a bar
    chart" doesn't by itself say feed→square vs web→landscape, and downstream, `suggest-chart`'s routing
    cannot even restrict its format set without it (see `knowledge/references/formats/format-selection.md`).
-   Skipping Q3 is exactly the failure mode that let a visual escalate to interactive/video/scrolly with
-   none of the channel constraints established — never skip it.
-4. Constraint (only if relevant): mobile-first, deadline, house palette.
+   Skipping the channel question (Q2) is exactly the failure mode that let a visual escalate to
+   interactive/video/scrolly with none of the channel constraints established — never skip it.
+   **The formats named in option (c) describe the channel's ALLOWED SET — they are NOT a menu to pick
+   from here, and NOT a second question.** "Interactif, image ou vidéo" tells the journalist what the
+   article-web channel CAN host; atelier must NEVER follow the channel pick with a separate CADRAGE turn
+   re-offering static / interactive / video — that double-ask is redundant with this label and inflates
+   the question count. The single format is decided later, exactly once: pinned at PROPOSITION and
+   announced-vetoable on GUIDED (Gate 2), or named by the journalist inside Q1 on DIRECT. Q2 fixes the
+   allowed SET; the format pin is surfaced ONCE, at PROPOSITION — the two never double-ask.
+
+**Q3 — Constraint (only if relevant):** mobile-first, deadline, house palette.
    - **House palette (F2 brand profile):** if the project has a `brand.json` (loadBrandProfile → `palette` + optional `accent`), OFFER "use your house palette?" here. On yes, seed the producer spec's colour from the palette and mark it `brandExplicit` (seedBrandColor) — the brand colour is applied AS CHOSEN (policy b, brand-first). A non-CVD-safe / low-contrast house colour is NOT rewritten; the produce-time a11y guards downgrade it to a render-review concern (surfaced at Gate 3), the editor decides. No brand.json → auto subject-fit colour, unchanged. Colours only in this cut (fonts/logo deferred).
 
 Branch:
-- **DIRECT** (journalist names the visual, e.g. "a scrolly map"): skip PROPOSITION. Still ask Q3
+- **DIRECT** (journalist names the visual, e.g. "a scrolly map"): skip PROPOSITION. Still ask Q2
   (audience & channel) before PRODUCTION — it is REQUIRED on both branches. Go to PRODUCTION,
   passing suggest-chart the (data, intent, channel) PLUS the forced element/format — suggest-chart still
   emits a VALIDATED spec and applies its guardrails (obey the choice, but if it violates a hard
   guardrail, surface the warning to the journalist rather than shipping a broken visual). On DIRECT, the
-  branch fires at Q1. **Q2 (takeaway, GATE 1b) is NOT skipped either** — its open-ended asking is simply
+  branch fires at Q1. **Gate 1b (takeaway) is NOT skipped either** — its open-ended asking is simply
   replaced by a confirm-back: state the takeaway inferred from the article + the named visual and get the
   journalist's explicit confirmation before PRODUCTION (a named visual carries a chart TYPE, not a
-  confirmed CLAIM). **Q3 (channel) is likewise always asked, on both branches**, because the format/aspect
+  confirmed CLAIM). **Q2 (channel) is likewise always asked, on both branches**, because the format/aspect
   routing downstream (PRODUCTION's aspect defaulting, `suggest-chart`'s Gate 1–4 ladder) depends on it.
-  Q4 stays conditional, as above.
+  Q3 (constraint) stays conditional, as above.
   If DIRECT names a visual whose exact sub-format is still open (e.g. "a scrolly" — bars vs line
   reveal), do not float multiple sub-format options to the journalist before checking each one's
   reachability via `suggest-chart` — confirm producibility first, then offer only what's reachable
@@ -129,13 +163,15 @@ KB-grounded guardrails) to get its routing decision. Present the ProposalSet × 
 as plain-language lines — for each opportunity: what it shows, which visual, why.
 
 **Announce the reconciled `{format, size, sub-format}` — vetoable.** After routing, state in plain
-language what the CADRAGE Q3 channel + `suggest-chart`'s routing land on for THIS opportunity, and let
+language what the CADRAGE Q2 channel + `suggest-chart`'s routing land on for THIS opportunity, and let
 the journalist veto or change it before moving on — e.g. « un chart INTERACTIF, responsive,
 explore-libre — calé sur ton article web ; on part là-dessus ou tu changes ? » or « une image PORTRAIT
 (9:16) pour ta Story — ok ? ». This is a statement of the already-routed decision offered for veto, not
-a fresh options menu. **Hard rule surfaced here too:** a non-article/embed channel can only land on
+a fresh options menu — and since the CADRAGE channel question (Q2) set only the ALLOWED SET (never a
+format), this announce is the FIRST and ONLY place the single format is surfaced, so channel and format
+never double-ask. **Hard rule surfaced here too:** a non-article/embed channel can only land on
 image or video — never interactive or scrolly; if the journalist asks for an interactive on a social
-channel, say so and point back to the CADRAGE Q3 channel pick rather than silently escalating.
+channel, say so and point back to the CADRAGE Q2 channel pick rather than silently escalating.
 
 **The accepted spec pins exactly ONE `format`.** `suggest-chart` commits to a single `VisualFormat`
 (`static|interactive|video|scrolly`) from `allowedFormats(channel)` — never the whole allowed set — and
@@ -195,7 +231,7 @@ journalist actually wants.** For the article-web channel, `suggest-chart` routin
 That default is NOT a mandate: an explicit journalist format signal ("a static image", "a static chart",
 "just an image", "pour le print") WINS over it — pin `static`, never interactive. **Print is the
 strongest such signal**: when the STATED destination is print (the journalist answered (c) at CADRAGE
-Q3 NAMING the print destination — print is a sub-case of that channel, the pick alone does not imply
+Q2 NAMING the print destination — print is a sub-case of that channel, the pick alone does not imply
 it — or says the piece is print-bound at any point), pin `static` — a printed page cannot run
 an interactive or a video, so `interactiveDefault` never applies to it. Since the single-format
 redesign there is NO auto no-JS `static.html` produced alongside an interactive (a11y = choosing the
@@ -314,7 +350,7 @@ element's OWN confirmed claim — two accepted elements never carry the same com
 fois…" takeaway, so each title was checked against a claim half of which belonged to the other
 visual). This is mechanically enforced: the same validation gate FAILS any two proposals of a batch
 carrying the byte-identical `confirmedTakeaway` string (GUARD 3b). **`channel`
-is REQUIRED — it is the CADRAGE Q3 confirmed pick (§3, the structured audience & channel question),
+is REQUIRED — it is the CADRAGE Q2 confirmed pick (§3, the structured audience & channel question),
 copied verbatim onto every proposal it applies to.** `produce-all`'s channel/format gate (5c) reads this
 field to enforce "not-embed ⇒ never interactive/scrolly"; **omitting it silently defeats that guard** —
 an ABSENT channel falls back to `"article-web"` (the permissive default, matching `normalizeChannel`'s
@@ -587,7 +623,7 @@ alongside the thanks is NOT a close — handle the request instead.
 
 | Gate | Phase | Stop condition | Failure mode if skipped |
 |------|-------|---------------|------------------------|
-| 1 | CADRAGE | Journalist answers the ≤4 questions + branch chosen | Wrong format, misread intent |
+| 1 | CADRAGE | Journalist answers the ≤3 numbered questions (Q1 branch, Q2 channel, Q3 constraint-if-relevant) + branch explicitly chosen or confirmed back | Wrong format, misread intent |
 | 1b | CADRAGE (+PROPOSITION per element) | Takeaway stated back and EXPLICITLY confirmed by the journalist — never inferred-and-skipped; asked openly on GUIDED, confirmed via confirm-back on DIRECT (both branches) — and recorded VERBATIM as `confirmedTakeaway` on every accepted proposal (5b; the spine's validation gate fails a proposal without it). On a multi-element article, ONE takeaway PER accepted element — never a shared combined string; each element's own claim is confirmed at PROPOSITION if CADRAGE only confirmed a combined framing | Visual carries an unconfirmed/guessed claim; title diverges from the journalist's intent (or silently drops one part of a multi-part takeaway); a combined takeaway stamped on several elements dilutes each title check |
 | 2b | PROPOSITION | Journalist confirms prose-extracted data table (fires BEFORE Gate 2 for prose proposals) | Fabricated data attribution |
 | 2 | PROPOSITION | Journalist accepts / edits / rejects each proposal | Wrong claim visualised |
