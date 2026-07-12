@@ -395,6 +395,18 @@ describe("specToMetadata", () => {
     expect(ann.y).toBe("442600");
   });
 
+  it("derives annotation y at a quoted, comma-containing x label (RFC 4180 end-to-end)", () => {
+    const p = specToMetadata({
+      type: "d3-lines",
+      title: "T",
+      data: 'period,price\n"Q1, 2020",322600\n"Q4, 2022",442600',
+      altInsight: "x",
+      annotations: [{ text: "Peak", x: "Q4, 2022" }],
+    } as any);
+    const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
+    expect(ann.y).toBe("442600");
+  });
+
   it("derives annotation y against the RENAMED series column", () => {
     const p = specToMetadata({
       type: "d3-lines",

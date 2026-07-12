@@ -142,6 +142,15 @@ describe("validateChartSpec", () => {
     });
     expect(r.ok && r.warnings.some((w) => /annotation x/i.test(w))).toBe(false);
   });
+  it("accepts an annotation x that is a quoted, comma-containing row label (RFC 4180)", () => {
+    const r = validateChartSpec({
+      ...base,
+      type: "d3-bars",
+      data: 'region,sales\n"Falls, slips",8.1\nEurope,3.2',
+      annotations: [{ text: "outlier", x: "Falls, slips", y: 8.1 }],
+    });
+    expect(r.ok && r.warnings.some((w) => /annotation x/i.test(w))).toBe(false);
+  });
   it("warns (never silently drops) when annotations are set on a pie chart — DW has no text-annotation layer there", () => {
     const r = validateChartSpec({
       ...base,
@@ -430,6 +439,10 @@ describe("numericValuesOf", () => {
   });
   it("ignores unknown columns and non-numeric cells", () => {
     expect(numericValuesOf("region,v\nX,10", ["nope"])).toEqual([]);
+  });
+  it("reads the RIGHT cells past a quoted-comma neighbor (RFC 4180 — a naive split reads the torn ' 42' fragment)", () => {
+    const csv = 'label,share\n"Falls, 42, slips",7\nRoad,3';
+    expect(numericValuesOf(csv, ["share"])).toEqual([7, 3]);
   });
 });
 

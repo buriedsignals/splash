@@ -327,6 +327,17 @@ describe("label safety — clearVerticalSide (off-line placement)", () => {
     expect(a.v).toBe(b.v);
     expect(a.dySign).toBe(b.dySign);
   });
+
+  it("walks EVERY row of a quoted-comma-label series (RFC 4180 — a naive split tears the row and drops its point)", () => {
+    const quotedCsv = 'x,v\n"A, first",10\n"B, second",90\nC,50';
+    const quotedDom = { labels: [], yMin: 10, yMax: 90 } as any;
+    const poly = seriesPolyline(quotedCsv, quotedDom);
+    expect(poly).toEqual([
+      { xFrac: 0, yFrac: 1 },
+      { xFrac: 0.5, yFrac: 0 },
+      { xFrac: 1, yFrac: 0.5 },
+    ]);
+  });
 });
 
 // ── Delivered-width placement: measured, anchor-aware, collision-free ─────────

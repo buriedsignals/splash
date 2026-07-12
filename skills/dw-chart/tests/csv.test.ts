@@ -2,8 +2,11 @@ import { describe, it, expect } from "bun:test";
 import {
   dataShape,
   labelColumnValues,
+  numericColumnIndexes,
   parseCsvRecords,
   renameColumns,
+  scatterColumns,
+  scatterPointAt,
   sortCsv,
   valueAt,
 } from "../src/csv";
@@ -72,6 +75,89 @@ describe("parseCsvRecords (RFC 4180)", () => {
       ["a", "b"],
       ["plain", " padded "],
     ]);
+  });
+});
+
+// ── RFC 4180 across EVERY parsing site (systemic migration) ──────────────────
+// A quoted, comma-containing cell must never tear: sortCsv reads the sort key from
+// the torn wrong cell (NaN → ranking left unsorted), dataShape miscounts columns/rows,
+// valueAt/scatter lookups miss the row, numericColumnIndexes shifts value columns.
+
+describe("sortCsv — RFC 4180", () => {
+  it("sorts a ranking with quoted-comma categories by value, preserving the original quoting", () => {
+    const out = sortCsv(
+      'cause,count\n"Falls, slips",3100\nRoad,4200\n"Fire, smoke",1800',
+      "desc",
+    );
+    expect(out).toBe(
+      'cause,count\nRoad,4200\n"Falls, slips",3100\n"Fire, smoke",1800',
+    );
+  });
+  it("keeps a quoted newline inside a record intact while reordering", () => {
+    const out = sortCsv('label,v\n"two\nlines",1\nplain,9', "desc");
+    expect(out).toBe('label,v\nplain,9\n"two\nlines",1');
+  });
+});
+
+describe("dataShape — RFC 4180", () => {
+  it("counts a quoted-comma header cell as ONE column", () => {
+    const s = dataShape('"Region, north",v\nA,1');
+    expect(s.columns).toEqual(["Region, north", "v"]);
+    expect(s.rows).toBe(1);
+  });
+  it("does not count a quoted newline as an extra data row", () => {
+    const s = dataShape('label,v\n"two\nlines",5');
+    expect(s.rows).toBe(1);
+  });
+});
+
+describe("valueAt — RFC 4180", () => {
+  it("finds the row by a quoted-comma x label", () => {
+    const csv = 'city,pop\n"Basel, BS",180000\nBern,144000';
+    expect(valueAt(csv, "Basel, BS")).toBe(180000);
+  });
+});
+
+describe("numericColumnIndexes — RFC 4180", () => {
+  it("does not let a quoted-comma label cell shift the value columns", () => {
+    const csv = 'label,x,y\n"Basel, BS",5,7\nBern,3,4';
+    expect(numericColumnIndexes(csv)).toEqual([1, 2]);
+  });
+});
+
+describe("scatterColumns / scatterPointAt — RFC 4180", () => {
+  const csv = 'label,gdp,life\n"Korea, South",35000,83\nJapan,40000,85';
+  it("detects the scatter x/y columns despite a quoted-comma label column", () => {
+    const cols = scatterColumns(csv);
+    expect(cols).toEqual({
+      xIdx: 1,
+      yIdx: 2,
+      xCol: "gdp",
+      yCol: "life",
+      labelIdx: 0,
+    });
+  });
+  it("resolves a point by its quoted-comma label", () => {
+    const cols = scatterColumns(csv);
+    expect(cols && scatterPointAt(csv, "Korea, South", cols)).toEqual({
+      x: 35000,
+      y: 83,
+    });
+  });
+});
+
+describe("renameColumns — RFC 4180", () => {
+  it("preserves a quoted-comma header cell verbatim while renaming a sibling", () => {
+    const out = renameColumns('"median, USD",period\n322600,2020-Q1', {
+      period: "Période",
+    });
+    expect(out).toBe('"median, USD",Période\n322600,2020-Q1');
+  });
+  it("renames a quoted-comma header cell by its UNQUOTED content", () => {
+    const out = renameColumns('period,"median, USD"\n2020-Q1,322600', {
+      "median, USD": "Prix médian",
+    });
+    expect(out).toBe("period,Prix médian\n2020-Q1,322600");
   });
 });
 

@@ -44,6 +44,28 @@ export const BASEMAP_JOIN_KEYS: Record<string, readonly string[]> = {
   "us-states-continental": ["NAME", "id", "NAME_ABBR"],
   "us-counties-2023": ["GEOID", "NAME_ABR"],
   "france-metropolitan-departments": ["name", "fips", "postal", "code_hasc"],
+  "switzerland-2026-cantons": ["Name", "Code"],
+  "italy-provinces-2025": ["COD_PROV", "DEN_UTS", "SIGLA"],
+};
+
+// Approximate region count per registered basemap — the denominator of the sparse-subset
+// guard (validateMapSpec): data covering only a sliver of the basemap's regions renders an
+// illegible micro-cluster on a mostly-empty map (the Veneto-on-full-Italy case). Sourced
+// from the LIVE basemap API (GET /v3/basemaps/{id}, count of content.objects[*].geometries,
+// probed 2026-07-12) and pinned here so validation stays network-free — same pattern as the
+// join keys above. "Approximate" because DW re-cuts vintages (a county merge shifts the
+// count by a few units); the guard compares against a coarse fraction, so drift of a few
+// regions never flips it. Keep new entries in sync with BASEMAP_JOIN_KEYS.
+export const BASEMAP_REGION_COUNTS: Record<string, number> = {
+  "world-2019": 212,
+  europe: 54,
+  "europe-sovereign-states": 47,
+  "us-states": 51,
+  "us-states-continental": 49,
+  "us-counties-2023": 3291,
+  "france-metropolitan-departments": 96,
+  "switzerland-2026-cantons": 26,
+  "italy-provinces-2025": 127,
 };
 
 // The valid join keys for a basemap, or undefined when the basemap is not in the registry
@@ -52,4 +74,10 @@ export function validJoinKeysFor(
   basemap: string,
 ): readonly string[] | undefined {
   return BASEMAP_JOIN_KEYS[basemap];
+}
+
+// The basemap's approximate region count, or undefined when unrecorded (the validator then
+// skips the sparse-subset check — mirrors validJoinKeysFor's unknown-basemap behavior).
+export function regionCountFor(basemap: string): number | undefined {
+  return BASEMAP_REGION_COUNTS[basemap];
 }

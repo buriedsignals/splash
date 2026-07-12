@@ -4,6 +4,9 @@ import { scoreSpec } from "../score";
 // A valid world choropleth: ISO-A3 country codes join world-2019 on its DW_STATE_CODE key
 // (world-2019 has NO ISO_A3 key — verified live, DW_STATE_CODE carries the alpha-3 codes and
 // joins ~all rows). validateMapSpec checks this against map-dw/src/basemap-keys.ts.
+// 22 countries (≥ 20 rows, ≈ 10% of world-2019's 212 regions): broad enough that the
+// sparse-basemap-subset guardrail stays silent — this fixture tests routing/join-key
+// machinery, and its old 2-row data was itself the sparse anti-pattern the guard flags.
 const validMap = {
   producer: "map-dw",
   mapType: "choropleth",
@@ -14,7 +17,9 @@ const validMap = {
   title: "Renewables form a clear north–south gradient across Europe",
   altInsight: "Norway leads at 99%, France at 27%",
   source: { name: "Ember", url: "https://example.org" },
-  data: "code,share\nNOR,99\nFRA,27",
+  data:
+    "code,share\nNOR,99\nSWE,68\nFIN,54\nDNK,61\nISL,100\nFRA,27\nDEU,59\nESP,42\nITA,36\nPOL,21\n" +
+    "NLD,33\nBEL,28\nAUT,58\nCHE,55\nPRT,47\nGRC,35\nIRL,39\nCZE,22\nHUN,19\nROU,31\nBGR,24\nHRV,44",
 };
 
 describe("scoreSpec — map routing", () => {

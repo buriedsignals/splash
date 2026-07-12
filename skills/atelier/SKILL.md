@@ -54,6 +54,15 @@ it as a free-text prompt instead (see GATE 2/3 source handling below).
    riser") is recorded WHOLE — every part, never just the half the chosen chart type happens to
    foreground. The render-review (Gate 3a) then quotes this field back against the produced
    title/insight, part by part.
+   **★ One element = one confirmedTakeaway.** The multi-part rule above is about ONE element whose
+   single claim has several parts. It is NOT a licence to share: when a session accepts SEVERAL
+   elements (a multi-opportunity article), each element carries ITS OWN confirmed takeaway — the one
+   sentence the journalist confirmed FOR THAT element — never one combined string ("both at once: the
+   price cooldown AND the plateau") copied onto every entry. Confirm one takeaway PER accepted
+   element before it reaches `accepted.json` (5b); if only a combined framing was confirmed at
+   CADRAGE, split it and confirm each element's own claim at PROPOSITION. A shared combined string
+   DILUTES the Gate-3a title check: element A's title (showing only prices) gets compared against a
+   two-part claim half of which belongs to element B — the check can neither pass nor fail honestly.
    **★ Every takeaway option you offer MUST be supported by the supplied data (use the ANALYSE data
    shape).** Never float a framing the data cannot substantiate: do NOT offer a temporal / trend framing
    ("the gap is widening", "growth since 2015", "rising", "over time") when the data is a **single
@@ -64,19 +73,25 @@ it as a free-text prompt instead (see GATE 2/3 source handling below).
    trend, say the current data can't show it and ask for the time series — never invent one.
 3. Audience & channel: a STRUCTURED single-select, journalist's language, exactly three options —
    **Social vertical (Stories/Reels)** · **Social feed (Instagram/Facebook post)** · **Article web /
-   print (image statique) / embed**.
+   embed — interactif, image ou vidéo (destination print ⇒ image statique)**.
    This is not a free-text prompt (never ask it as one) — the pick maps 1:1 onto
    `skills/atelier/src/channel.ts`'s `Channel` enum, which deterministically fixes both the media SIZE and
    the ALLOWED FORMAT SET for everything downstream:
    - **Social vertical** → portrait **9:16** · formats {image, video}.
    - **Social feed** → square **1:1** · formats {image, video}.
-   - **Article web / print / embed** → media **landscape 16:9** / component **responsive** · formats
-     {image, video, interactive}. **PRINT lives HERE — the channel model needs no 4th channel**: a paper
+   - **Article web / embed** → media **landscape 16:9** / component **responsive** · formats
+     {image, video, interactive}. This is the FULL-CAPABILITY channel: interactive is the default
+     (`interactiveDefault`), and image, video and scrolly (a kind of interactive) are all available.
+     **PRINT lives HERE as a SUB-CASE — the channel model needs no 4th channel**: a paper
      page is a static-image deliverable, so a print-destined piece answers (c), and a STATED print
      destination steers the format pin to `static` at PROPOSITION (see "Article/web has NO static
-     fallback" below) — never interactive/video, which no printed page can host. Word option (c) so
-     print is visibly covered ("article web / print (image statique)"); never force a print piece into
-     an off-fit social answer or leave it unable to answer.
+     fallback" below) — never interactive/video, which no printed page can host. **Word option (c) so
+     the channel reads full-capability with print as the parenthesised sub-case** — "article web /
+     embed — interactif, image ou vidéo (destination print ⇒ image statique)" — NEVER as "article
+     web / print (image statique) / embed", which reads as if the WHOLE channel were static-only and
+     primes the journalist (and any later reviewer) toward the wrong expectation when the pinned
+     format is interactive; never force a print piece into an off-fit social answer or leave it
+     unable to answer.
    **Hard rule: not article/embed ⇒ image or video only — NEVER interactive or scrolly.** Only the
    article/web channel can host an interactive (scrolly is a kind of interactive). **Always asked — on
    EITHER branch, never skipped.** A DIRECT-named visual still needs a channel: a journalist-naming "a bar
@@ -160,6 +175,15 @@ surfaced only at Gate 3 AFTER production. So:
 - **Fail-loud tripwire:** every beat anchor is validated against the data at the spine gate (5a,
   `narrativeBeatErrors`) and again at derive — a typo'd year/category fails the proposal loud BEFORE
   production, never a silently shifted or dropped beat.
+- **★ Comparative/rank captions MUST match the data ordering.** Every beat caption that makes a
+  COMPARATIVE or RANK claim — « devant » / "ahead of", « top 3 », "the highest", « le plus bas » — is
+  checked against the ACTUAL sorted data BEFORE production: the named entity's value must really sit
+  in the asserted position relative to EVERY entity it is compared to. This is a real shipped error,
+  not a hypothetical: a beat caption asserted a département ranks « devant » two others while its
+  value (27.2) was LOWER than both (30.6, 28.4) — the caption inverted the sorted order visible on
+  screen. A caption the data contradicts is corrected (or its claim dropped) before the spec is
+  produced; the render-review (Gate 3a) then re-verifies each step caption against what that step
+  visually shows (see 3a).
 - **Map scrolly** steps stay derived from the data (temporal sequence / magnitude ranks — no explicit
   override exists on that track; a `beats` field there is mechanically rejected); if the journalist
   needs named-step control on a map story, say that limitation at PROPOSITION, not after production.
@@ -169,8 +193,9 @@ journalist actually wants.** For the article-web channel, `suggest-chart` routin
 (`interactiveDefault`, `skills/atelier/src/channel.ts`) — it wins ONLY absent a concrete reason otherwise.
 That default is NOT a mandate: an explicit journalist format signal ("a static image", "a static chart",
 "just an image", "pour le print") WINS over it — pin `static`, never interactive. **Print is the
-strongest such signal**: when the STATED destination is print (the journalist picked (c) at CADRAGE Q3
-for the paper, or says the piece is print-bound at any point), pin `static` — a printed page cannot run
+strongest such signal**: when the STATED destination is print (the journalist answered (c) at CADRAGE
+Q3 NAMING the print destination — print is a sub-case of that channel, the pick alone does not imply
+it — or says the piece is print-bound at any point), pin `static` — a printed page cannot run
 an interactive or a video, so `interactiveDefault` never applies to it. Since the single-format
 redesign there is NO auto no-JS `static.html` produced alongside an interactive (a11y = choosing the
 `static` FORMAT, see §6 and the export guardrail below) — whichever ONE format is pinned is the ONLY
@@ -185,7 +210,9 @@ inflation series), that is TWO proposals, TWO Gate-2 accept decisions, and TWO `
 even when both trend over time and could be stapled onto one chart. Combining them silently drops the
 second opportunity from the journalist's sight (they never got to accept/reject it) and it never reaches
 its own routing. Surface EVERY opportunity as its own line; the journalist decides which to keep, and
-each kept one becomes its own `accepted.json` entry (5b) that `produce-all` renders separately.
+each kept one becomes its own `accepted.json` entry (5b) that `produce-all` renders separately. Each
+kept opportunity also carries its OWN Gate-1b `confirmedTakeaway` — that element's confirmed claim,
+never one combined multi-element string stamped onto every entry (see CADRAGE Gate 1b).
 
 **Only offer what is confirmed producible.** Before presenting an element/format (or sub-format —
 e.g. which scrolly reveal style) to the journalist, it must already have been checked as reachable via
@@ -267,8 +294,9 @@ produced; a name-only prose source with no URL still passes.**
 **5b. Assemble `exports/<slug>/accepted.json`** — an array, one entry per accepted proposal:
 `{ "id": "<stable-id>", "producer": "dw-chart|chart-native|map-dw|map-native|scrolly",
 "format": "static|interactive|video|scrolly", "spec": <the validated producer spec>,
-"confirmedTakeaway": "<the takeaway the journalist EXPLICITLY confirmed at CADRAGE Gate 1b, VERBATIM —
-every part of a multi-part takeaway, never a paraphrase>",
+"confirmedTakeaway": "<the takeaway the journalist EXPLICITLY confirmed FOR THIS ELEMENT (Gate 1b),
+VERBATIM — every part of that element's multi-part takeaway, never a paraphrase, and never a combined
+multi-element string shared across entries>",
 "provenance": "table|prose|none", "confirmedTable": <true ONLY after an actual Gate 2b prose-table
 confirmation — stays false/absent for "table" (and "none") provenance, which never go through 2b;
 never set it true on a table-provenance proposal just because it looks accepted>,
@@ -279,7 +307,11 @@ never set it true on a table-provenance proposal just because it looks accepted>
 branches (Gate 1b is un-skippable on guided AND direct, so no proposal legitimately lacks one). It is
 the Gate-1b presence lever: the render-review (3a) quotes it VERBATIM against the produced
 title/insight, part by part — copy the confirmed wording exactly, never a paraphrase that drops a
-part. **`channel`
+part. **Per-element, never shared:** in a multi-element run each entry's `confirmedTakeaway` is that
+element's OWN confirmed claim — two accepted elements never carry the same combined takeaway string
+(an observed miss: a two-opportunity run shipped BOTH elements with one combined "les deux à la
+fois…" takeaway, so each title was checked against a claim half of which belonged to the other
+visual). **`channel`
 is REQUIRED — it is the CADRAGE Q3 confirmed pick (§3, the structured audience & channel question),
 copied verbatim onto every proposal it applies to.** `produce-all`'s channel/format gate (5c) reads this
 field to enforce "not-embed ⇒ never interactive/scrolly"; **omitting it silently defeats that guard** —
@@ -366,7 +398,13 @@ recorded as a concern; a review that never quotes the confirmed takeaway, or quo
 part-by-part statement, is NOT a valid render-review (this omission is itself a review failure —
 re-run 3a properly). This is the recurring miss this lever exists to close: a chart type that
 foregrounds one half of the confirmed claim (a slope showing the fall but not the one riser) silently
-drops the other half unless the review names it. These catch what the spine's
+drops the other half unless the review names it. **For a SCROLLY, the review MUST likewise verify EACH
+step caption against what that step visually shows** — in particular any COMPARATIVE or RANK claim in
+a caption (« devant » / "ahead of", « top 3 », "the highest") is checked against the actual data
+ordering the step renders; a caption asserting an order the sorted values contradict is a concern (a
+shipped beat caption claimed a value ranked « devant » two others while it was lower than both — see
+the beat-model rule at PROPOSITION). A scrolly review that never states this per-step caption check is
+not a valid render-review either. These catch what the spine's
 code gates cannot — a title that misstates the metric, a fabricated or incomplete source, a misleading
 encoding. **Never spawn an Agent/Task sub-agent to do this review** — during the atelier flow you ONLY
 sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing
@@ -533,7 +571,7 @@ alongside the thanks is NOT a close — handle the request instead.
 | Gate | Phase | Stop condition | Failure mode if skipped |
 |------|-------|---------------|------------------------|
 | 1 | CADRAGE | Journalist answers the ≤4 questions + branch chosen | Wrong format, misread intent |
-| 1b | CADRAGE | Takeaway stated back and EXPLICITLY confirmed by the journalist — never inferred-and-skipped; asked openly on GUIDED, confirmed via confirm-back on DIRECT (both branches) — and recorded VERBATIM as `confirmedTakeaway` on every accepted proposal (5b; the spine's validation gate fails a proposal without it) | Visual carries an unconfirmed/guessed claim; title diverges from the journalist's intent (or silently drops one part of a multi-part takeaway) |
+| 1b | CADRAGE | Takeaway stated back and EXPLICITLY confirmed by the journalist — never inferred-and-skipped; asked openly on GUIDED, confirmed via confirm-back on DIRECT (both branches) — and recorded VERBATIM as `confirmedTakeaway` on every accepted proposal (5b; the spine's validation gate fails a proposal without it), ONE takeaway PER accepted element on a multi-element article — never a shared combined string | Visual carries an unconfirmed/guessed claim; title diverges from the journalist's intent (or silently drops one part of a multi-part takeaway); a combined takeaway stamped on several elements dilutes each title check |
 | 2b | PROPOSITION | Journalist confirms prose-extracted data table (fires BEFORE Gate 2 for prose proposals) | Fabricated data attribution |
 | 2 | PROPOSITION | Journalist accepts / edits / rejects each proposal | Wrong claim visualised |
 | 2c | PROPOSITION | Source established: name + a specific traceable URL, or the honest prose fallback (genuine no-dataset case, or a hedged/uncertain source left unconfirmed — never a confident citation over « je crois »/« de mémoire »), for every accepted proposal | Weak/generic/name-only source ships, or admitted uncertainty ships dressed as a verified citation — caught only late (after a full produce→review cycle) by the render-review |
@@ -558,7 +596,10 @@ alongside the thanks is NOT a close — handle the request instead.
 - Never fold two distinct opportunities into one visual. Each `suggest-article` opportunity gets its OWN
   Gate-2 accept decision and its OWN `suggest-chart` routing call (PROPOSITION); stapling a second
   series/claim onto an already-routed chart silently drops that opportunity from the journalist's view
-  and skips its routing — surface and route each one separately.
+  and skips its routing — surface and route each one separately. The same per-element rule holds for the
+  takeaway: never stamp one combined takeaway string onto several elements' `confirmedTakeaway` — each
+  accepted element carries its OWN confirmed claim (Gate 1b), or the Gate-3a title check compares every
+  title against a claim that partly belongs to another visual.
 - Never offer the journalist a CADRAGE takeaway framing the supplied data cannot support (a temporal /
   "widening gap" framing on single-snapshot data, a per-capita framing on absolute counts). Constrain the
   offered options to the ANALYSE data shape; if the wanted framing needs data you don't have, say so and
@@ -570,6 +611,14 @@ alongside the thanks is NOT a close — handle the request instead.
 - Never ship a visual without the mandatory render-review (Gate 3a) — `assertShippable` refuses a visual with no review record; the review's concerns are advisory but running it is not optional.
 - Never call `gate-render` (Gate 3b) right after a re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) without first re-running `review-gate` (Gate 3a) on the NEW render. `produce-all` always writes a WHOLLY FRESH `report.json` — every proposal in that run comes back unreviewed and unapproved (`renderApproved:false`), even one that was already signed off before the correction — so the review MUST run again on what actually changed. Do not treat the script's hard refusal ("not render-reviewed") as the safety net to rely on; redo Gate 3a → 3b in order every time, and never hand-edit `report.json` to restore a prior review/approval onto a new artifact. Likewise never hand-author a file into the producer's build subdir `exports/<slug>/<id>/` to give `gate-render` something to approve — its provenance check refuses any file the pipeline did not emit for the CURRENT produce generation; a hosted-DW interactive (no local render) is approved via a fresh capture under `exports/<slug>/_review-artifacts/<id>/`, never a stand-in file next to the producer outputs.
 - Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow. This holds with NO exception for making a produce/conformance gate pass: never edit a producer/component's source code (`skills/*/src`, any `.tsx`/`.ts` producer file) mid-PRODUCTION to turn a failing gate green — a real newsroom journalist cannot patch the engine, so atelier must not either. If a produce or conformance gate fails because of a genuine engine bug (not a spec/data problem), SURFACE the bug to the journalist, do NOT ship that visual, and do NOT patch the code — the bug is reported, never worked around.
+- Never hand-author or copy files into a producer's output directory (`exports/<slug>/<id>/` or any
+  build subdir) to satisfy a gate. The file-based gates (`gate-render`, `assertDelivered`,
+  `export-code.mjs`'s hosted-DW detection) read those directories as PRODUCTION'S OWN record — a
+  hand-planted artifact (e.g. a `hosted-embed.html` written by hand so `gate-render` has a file to
+  hash, an observed real case) poisons every downstream detection that keys off the directory's
+  contents and forces manual mid-flow cleanup. If a gate needs an artifact that production did not
+  emit, the FLOW is wrong upstream — re-produce properly (re-run 5c) or fix the gate invocation (point
+  it at the file production actually emitted) — never fabricate the file the gate expects.
 - Never silently mutate the ACCEPTED SPEC (`baseColor`, format, etc.) mid-PRODUCTION to route around a conformance-gate failure — this is the spec analogue of the rule above ("never edit product code" → "never silently edit the accepted spec to bypass a gate"). A conformance failure is SURFACED to the journalist as-is; if the spec must change to fix it, GATE 2 is re-opened for re-acceptance of the changed spec. The produce-time conformance guards exist precisely so a non-conformant visual never ships unseen.
 - Never hand over an INTERACTIVE/SCROLLY visual without running `export-code.mjs` (two-phase): phase 1 (no `--form`) EMITS the a/b/c proposal building NOTHING; phase 2 (`--form <html|code-source|embed>`) builds + delivers ONLY the chosen form, gated by `assertDelivered`. Never build all forms unconditionally, and never fabricate a no-JS `static.html` fallback — that fallback is GONE (accessibility is the `static` FORMAT choice at CADRAGE). Never mark an interactive/scrolly delivered on produce-time outputs alone — a Gate-3 review PNG / `interactive.png` / a build byproduct is NOT a delivery; only the `export-code --form <chosen>` artifact is (enforced mechanically by `assertDelivered`). A hosted-DW interactive delivers ONLY via `--form embed` (its live `publicUrl`) — it has no React source and no standalone local html.
 - Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.

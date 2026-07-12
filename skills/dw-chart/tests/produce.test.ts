@@ -167,10 +167,12 @@ describe("produceChart fails fast on a garbled channel BEFORE any API call", () 
   });
 });
 
+// Real-API cleanup: the DELETE round-trips can exceed bun's 5s default hook
+// timeout under load — give the hook the same generous budget as the tests.
 afterAll(async () => {
   if (id) await deleteChart(id);
   if (msId) await deleteChart(msId);
   if (annId) await deleteChart(annId);
   if (frId) await deleteChart(frId);
   if (interactiveId) await deleteChart(interactiveId);
-});
+}, 60000);

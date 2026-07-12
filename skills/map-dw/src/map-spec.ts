@@ -4,7 +4,8 @@ import {
   isPercentScaleMismatch,
   numericValuesOf,
 } from "../../dw-chart/src/chart-spec";
-import { validJoinKeysFor } from "./basemap-keys";
+import { validJoinKeysFor, regionCountFor } from "./basemap-keys";
+import { columnValues } from "./join-match";
 
 export interface GradientStop {
   color: string; // hex
@@ -16,6 +17,25 @@ export interface GradientStop {
 // offshore at that zoom, so map-native (MapTiler, auto-fit, accurate coast) is the
 // correct producer. Mirrors suggest-chart's sub-national point-map rule.
 export const REGIONAL_EXTENT_DEG = 12;
+
+// SPARSE BASEMAP SUBSET (choropleth routing guardrail — QA case: the 7 provinces of
+// Veneto mapped on the FULL-Italy provinces basemap rendered an illegible micro-cluster
+// in one corner, the rest of the country grey). Signal: unique data regions vs the
+// basemap's recorded region count (BASEMAP_REGION_COUNTS). Both bounds must hold to warn:
+// - Fraction < 0.1: below one filled region in ten the map reads as an empty basemap
+//   with a data speck. Calibrated on real cases — the Veneto bug (7 of 127 Italian
+//   provinces ≈ 5.5%) must warn; the verified-legit floor must NOT: 6 of 47 European
+//   sovereign states ≈ 12.8% (eu-renewables eval case) and 6 of 51 US states ≈ 11.8%
+//   (us-broadband eval case), both curated with maxWarnings:0, and 8 of 26 swiss cantons
+//   ≈ 31% (Wave 4 deficit-cantons, render-verified legitimate).
+// - Rows < 20: a subset this small reads as hand-picked; at ≥ 20 rows the dataset is
+//   deliberate broad coverage even on a huge basemap (300 of 3291 US counties is a real
+//   county dataset, not a mis-fit micro-cluster).
+// A WARNING, never an error — a sparse choropleth is sometimes intended; the fix is a
+// ROUTING preference (fitted/region-scoped basemap, or map-native's auto-fit), enforced
+// editorially by suggest-chart's basemap-fit rule, not mechanically here.
+export const SPARSE_REGION_FRACTION = 0.1;
+export const SPARSE_MAX_ROWS = 20;
 
 // Light → Okabe-Ito blue, colorblind-safe sequential. Used when no colorScale is given.
 export const DEFAULT_BLUE: GradientStop[] = [
@@ -45,9 +65,11 @@ export interface ChoroplethMapSpec {
   colorScale?: GradientStop[]; // sequential light→dark stops
   numberFormat?: string;
   // A literal value UNIT suffix, e.g. "%" / " M" / " people". Emitted as Datawrapper's
-  // `describe.number-append` — a suffix that shows on the legend + %REGION_VALUE% tooltip
-  // WITHOUT multiplying (unlike a "%" numberFormat token). So a percentage-point value 9.8
-  // renders "9.8%" with unit:"%" and a plain numberFormat, not the "0%" a "%" token gives 0.098.
+  // `describe.number-append` (a suffix that shows on the LEGEND without multiplying — unlike
+  // a "%" numberFormat token, so a percentage-point value 9.8 renders "9.8%" with unit:"%"
+  // and a plain numberFormat, not the "0%" a "%" token gives 0.098) AND baked into the hover
+  // tooltip body template (`%REGION_VALUE%<unit>`) — probed live: number-append never
+  // reaches the tooltip, which otherwise showed a bare unitless value.
   unit?: string;
   source?: { name: string; url?: string };
   altInsight: string; // WCAG: alt = the insight
@@ -207,6 +229,34 @@ function validateJoinKey(s: Record<string, unknown>, errors: string[]): void {
     );
 }
 
+// SPARSE-SUBSET WARNING (see the SPARSE_REGION_FRACTION rationale above). Counts UNIQUE
+// region values so duplicate rows never inflate coverage. Skipped when the basemap has no
+// recorded region count (same defer-to-produce posture as the join-key check) or when the
+// regionKey resolves no values (the column-binding error is already flagged).
+function warnSparseBasemapSubset(
+  s: Record<string, unknown>,
+  warnings: string[],
+): void {
+  const basemap = typeof s.basemap === "string" ? s.basemap.trim() : "";
+  const totalRegions = regionCountFor(basemap);
+  if (!totalRegions) return;
+  if (typeof s.data !== "string" || typeof s.regionKey !== "string") return;
+  const covered = new Set(columnValues(s.data, s.regionKey)).size;
+  if (covered === 0) return;
+  if (
+    covered / totalRegions < SPARSE_REGION_FRACTION &&
+    covered < SPARSE_MAX_ROWS
+  )
+    warnings.push(
+      `data covers ${covered} of ~${totalRegions} regions of basemap "${basemap}" ` +
+        `(${Math.round((covered / totalRegions) * 100)}%) — a sub-national subset renders as an ` +
+        `illegible micro-cluster on the full basemap. Prefer a basemap fitted to the covered ` +
+        `region (a region-scoped DW basemap) or escalate to map-native, which auto-fits the ` +
+        `viewport to the data extent. A deliberately sparse national map may keep this basemap ` +
+        `(warning only).`,
+    );
+}
+
 function warnLabelTitle(
   s: Record<string, unknown>,
   columns: string[],
@@ -296,6 +346,7 @@ export function validateMapSpec(
     requireColumn(s, "valueColumn", columns, errors);
     validateJoinKey(s, errors);
     validateColorScale(s.colorScale, errors);
+    warnSparseBasemapSubset(s, warnings);
     warnLabelTitle(s, columns, warnings);
     validateNumberFormat(
       s,
