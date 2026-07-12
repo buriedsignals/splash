@@ -64,12 +64,16 @@ export interface ChoroplethMapSpec {
   intro?: string;
   colorScale?: GradientStop[]; // sequential light→dark stops
   numberFormat?: string;
-  // A literal value UNIT suffix, e.g. "%" / " M" / " people". Emitted as Datawrapper's
-  // `describe.number-append` (a suffix that shows on the LEGEND without multiplying — unlike
-  // a "%" numberFormat token, so a percentage-point value 9.8 renders "9.8%" with unit:"%"
-  // and a plain numberFormat, not the "0%" a "%" token gives 0.098) AND baked into the hover
-  // tooltip body template (`%REGION_VALUE%<unit>`) — probed live: number-append never
-  // reaches the tooltip, which otherwise showed a bare unitless value.
+  // A literal value UNIT suffix, appended VERBATIM (include a leading space unless it
+  // should hug the number: " mm" → "624 mm", "%" → "70%"). It shows on the LEGEND without
+  // multiplying — unlike a "%" numberFormat token, so a percentage-point value 9.8 renders
+  // "9.8%" with unit:"%" and a plain numberFormat, not the "0%" a "%" token gives 0.098.
+  // ONE source per surface (probe matrix 2026-07-12): the legend takes it from the value
+  // column's `data.column-format` append — suppressed when the numberFormat token already
+  // renders the same "%" (emitting both shipped a doubled "10% %" legend) — and the hover
+  // tooltip takes it from the baked body template (`%REGION_VALUE%<unit>`; %REGION_VALUE%
+  // is substituted raw and never applies any append/format). Do NOT double-declare the
+  // percent: either unit:"%" or a "%" numberFormat token is enough on its own.
   unit?: string;
   source?: { name: string; url?: string };
   altInsight: string; // WCAG: alt = the insight
@@ -102,9 +106,10 @@ export interface SymbolMapSpec {
   colorScale?: GradientStop[]; // sequential light→dark stops (same colorscale field as choropleth)
   numberFormat?: string;
   // Literal value UNIT suffix (e.g. "M" / "%"). For symbol maps it is baked into the hover
-  // tooltip body (which uses raw `{{ column }}` mustache tokens Datawrapper does NOT auto-format)
-  // AND emitted as `describe.number-append` for the size legend. Fixes the tooltip showing a
-  // bare "85" with no "M".
+  // tooltip body template after the FORMAT() expression — suppressed when the numberFormat
+  // token already renders the same "%" (single-source rule, see ChoroplethMapSpec.unit).
+  // Fixes the tooltip showing a bare "85" with no "M". (`describe.number-append` is dead on
+  // maps — probed live 2026-07-12 — and is not emitted.)
   unit?: string;
   source?: { name: string; url?: string };
   altInsight: string;
