@@ -1,13 +1,21 @@
 import { describe, it, expect } from "bun:test";
 import { validateMapSpec } from "../map-spec";
 
+// 24 countries on the 212-region world basemap: representative NATIONAL-coverage data —
+// wide enough (24 ≥ SPARSE_MAX_ROWS, 24/212 ≈ 11% ≥ SPARSE_REGION_FRACTION) that the
+// sparse-basemap-subset guardrail stays silent, so the zero-warning assertions below keep
+// testing exactly the field each one targets. (The old 3-row fixture was itself the sparse
+// anti-pattern: 3 filled countries lost on a world map.)
 const valid = {
   mapType: "choropleth",
   basemap: "world-2019",
   mapKeyAttr: "DW_STATE_CODE",
   regionKey: "code",
   valueColumn: "value",
-  data: "code,value\nFRA,10\nDEU,40\nSWE,70",
+  data:
+    "code,value\nFRA,10\nDEU,40\nSWE,70\nESP,42\nITA,36\nPOL,16\nNOR,68\nFIN,54\nDNK,61\nNLD,33\n" +
+    "BEL,28\nAUT,58\nCHE,55\nPRT,47\nGRC,35\nIRL,39\nCZE,22\nHUN,19\nROU,31\nBGR,24\nHRV,44\n" +
+    "SVK,26\nSVN,41\nEST,38",
   title: "Sweden leads renewable adoption in western Europe",
   altInsight: "Sweden has the highest value (70); France the lowest (10)",
 };
@@ -171,6 +179,111 @@ describe("validateMapSpec — choropleth", () => {
       mapKeyAttr: "WHATEVER",
     });
     expect(r.ok).toBe(true);
+  });
+});
+
+// SPARSE BASEMAP SUBSET (routing guardrail — QA case: 7 Veneto provinces mapped on the
+// FULL-Italy provinces basemap rendered an illegible micro-cluster in the country's
+// north-east corner, the rest of Italy grey). The signal is data-region-count vs the
+// basemap's recorded region count (basemap-keys.ts BASEMAP_REGION_COUNTS). A WARNING, not
+// an error: a sparse choropleth is sometimes intended (verified legit: 8 cantons on the
+// 26-canton swiss basemap, Wave 4 deficit-cantons case) — the threshold is tuned so the
+// known-legit cases stay silent (see SPARSE_REGION_FRACTION rationale in map-spec.ts).
+describe("validateMapSpec — sparse basemap subset (choropleth)", () => {
+  // The 7 provinces of Veneto on the 127-province full-Italy basemap ≈ 5.5% coverage.
+  const veneto = {
+    mapType: "choropleth",
+    basemap: "italy-provinces-2025",
+    mapKeyAttr: "SIGLA",
+    regionKey: "prov",
+    valueColumn: "rate",
+    data: "prov,rate\nVE,5.9\nPD,4.8\nVR,4.2\nVI,3.9\nTV,4.5\nRO,6.3\nBL,3.4",
+    title: "Unemployment splits Veneto between Rovigo and Belluno",
+    altInsight:
+      "Unemployment ranges from 3.4% in Belluno to 6.3% in Rovigo across Veneto's provinces",
+  };
+
+  it("warns when the data covers a small fraction of the basemap's regions (Veneto on full Italy)", () => {
+    const r = validateMapSpec(veneto);
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(r.warnings.join()).toMatch(/covers 7 of .*127|micro-cluster/);
+  });
+
+  it("stays a WARNING, never an error — a sparse choropleth can be intended", () => {
+    const r = validateMapSpec(veneto);
+    expect(r.ok).toBe(true);
+  });
+
+  it("advises a fitted basemap or the map-native escalation", () => {
+    const r = validateMapSpec(veneto);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.warnings.join()).toMatch(/fitted|region-scoped/);
+      expect(r.warnings.join()).toMatch(/map-native/);
+    }
+  });
+
+  it("does NOT warn for the known-legit 8-cantons subset (8 of 26 is a real share of the basemap)", () => {
+    const r = validateMapSpec({
+      mapType: "choropleth",
+      basemap: "switzerland-2026-cantons",
+      mapKeyAttr: "Name",
+      regionKey: "canton",
+      valueColumn: "deficit",
+      data: "canton,deficit\nZürich,-120\nBern,85\nVaud,42\nAargau,-15\nGenève,96\nLuzern,-8\nTicino,31\nFribourg,8",
+      title: "Half these cantons run a deficit, led by Zürich",
+      altInsight:
+        "Zürich has the largest deficit (-120M); Genève the largest surplus (96M)",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings).toEqual([]);
+  });
+
+  it("does NOT warn for national coverage (24 of 212 world countries)", () => {
+    const r = validateMapSpec(valid);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings).toEqual([]);
+  });
+
+  it("does NOT warn for a big dataset even on a huge basemap (≥20 rows reads as deliberate coverage)", () => {
+    // 21 counties of the 3291-county US basemap ≈ 0.6% — but 21 rows is a real dataset,
+    // not a hand-picked micro-subset; the row cap (SPARSE_MAX_ROWS) keeps it silent.
+    const rows = Array.from(
+      { length: 21 },
+      (_, i) => `010${String(i + 10).padStart(2, "0")},${50 + i}`,
+    ).join("\n");
+    const r = validateMapSpec({
+      mapType: "choropleth",
+      basemap: "us-counties-2023",
+      mapKeyAttr: "GEOID",
+      regionKey: "geoid",
+      valueColumn: "pct",
+      data: `geoid,pct\n${rows}`,
+      title: "Broadband coverage varies widely across these counties",
+      altInsight: "County broadband coverage ranges from 50% to 70%",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings).toEqual([]);
+  });
+
+  it("skips the check for a basemap with no recorded region count (like the join-key check)", () => {
+    const r = validateMapSpec({
+      ...veneto,
+      basemap: "narnia-2030",
+      mapKeyAttr: "WHATEVER",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings).toEqual([]);
+  });
+
+  it("counts UNIQUE regions (duplicate rows do not inflate coverage)", () => {
+    // 7 unique provinces duplicated to 14 rows — still the same 5.5% coverage, still warns.
+    const dup =
+      veneto.data + "\nVE,5.9\nPD,4.8\nVR,4.2\nVI,3.9\nTV,4.5\nRO,6.3\nBL,3.4";
+    const r = validateMapSpec({ ...veneto, data: dup });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings.join()).toMatch(/covers 7 of/);
   });
 });
 

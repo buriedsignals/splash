@@ -99,7 +99,7 @@ describe("specToMapMetadata", () => {
     );
   });
 
-  it("#1b — emits the declared unit as describe.number-append (legend + %REGION_VALUE% tooltip)", () => {
+  it("#1b — emits the declared unit as describe.number-append (the legend suffix)", () => {
     // With a plain numberFormat + unit:"%", a percentage-point value 9.8 renders "9.8%"
     // WITHOUT the 100× a "%" token would risk — the append is a literal suffix.
     const d = specToMapMetadata({ ...base, unit: "%" }).metadata
@@ -113,6 +113,27 @@ describe("specToMapMetadata", () => {
       unknown
     >;
     expect("number-append" in d).toBe(false);
+  });
+
+  // TOOLTIP UNIT (verified-bug fix, probed LIVE 2026-07-12): a published choropleth with
+  // unit " mm" stored `describe.number-append` AND `data.column-format[value].number-append`
+  // correctly, yet the rendered hover tooltip showed a BARE "624" — %REGION_VALUE% does NOT
+  // apply number-append (only the legend endpoints do). So the unit must be baked into the
+  // tooltip body TEMPLATE, exactly like the symbol map already bakes it after its FORMAT()
+  // token. Appending cannot double the unit: the live probe proves number-append never
+  // reaches the tooltip.
+  it("#tooltip-unit — bakes the declared unit into the choropleth tooltip body after %REGION_VALUE%", () => {
+    const t = specToMapMetadata({ ...base, unit: " mm" }).metadata.visualize
+      .tooltip as Record<string, unknown>;
+    expect(t.body).toBe("%REGION_VALUE% mm");
+  });
+
+  it("#tooltip-unit — no unit ⇒ the tooltip body stays the bare %REGION_VALUE% (back-compat)", () => {
+    const t = specToMapMetadata(base).metadata.visualize.tooltip as Record<
+      string,
+      unknown
+    >;
+    expect(t.body).toBe("%REGION_VALUE%");
   });
 
   // Legend number grouping (verified-bug fix). Datawrapper's continuous choropleth legend
@@ -140,7 +161,7 @@ describe("specToMapMetadata", () => {
     expect(cf.value).toBeDefined();
     expect(cf.value.type).toBe("number");
     expect(cf.value["number-format"]).toBe("0,0.[00]"); // grouped
-    expect(cf.value["number-append"]).toBe(" €"); // unit on legend + %REGION_VALUE% tooltip
+    expect(cf.value["number-append"]).toBe(" €"); // unit on the legend endpoints (not the tooltip — see #tooltip-unit)
   });
 
   it("mirrors an explicit numberFormat into the legend + column format", () => {

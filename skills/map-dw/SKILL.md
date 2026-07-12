@@ -120,7 +120,10 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
 2. **Map** spec → DW `metadata`, dispatched on `mapType`:
    - **choropleth** (`d3-maps-choropleth`): `axes.keys`=region col, `axes.values`=value col;
      `visualize.basemap`, `visualize["map-key-attr"]`=basemap join key (e.g. `DW_STATE_CODE`),
-     `visualize.colorscale` (light→`#0072B2`, no `stops` string), tooltip.
+     `visualize.colorscale` (light→`#0072B2`, no `stops` string), tooltip. The `spec.unit`
+     suffix is BAKED into the tooltip body template (`%REGION_VALUE%<unit>`) — probed live:
+     `describe.number-append` reaches the legend endpoints but NEVER the hover tooltip, which
+     otherwise ships a bare unitless number.
    - **symbol** (`d3-maps-symbols`) — RETIRED: `validateMapSpec` rejects a symbol spec (hover-only, no
      static labels → route to `map-native`). The mapper (`symbolMetadata`) is kept only to document the
      historical DW binding (`axes.area`=size, `axes.values`=colour); it is never reached in production.
@@ -141,10 +144,16 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
 `europe-sovereign-states`; US states → `us-states`; French points → a France basemap; only use
 `world-2019` for genuinely global data. A regional story on the world basemap is a *valid* spec but a
 *poor* map — a tiny cluster lost in empty grey. Pick the smallest basemap that contains all the data.
+A **sub-national subset** (e.g. one region's provinces on the full-country basemap — the Veneto case)
+now trips a mechanical WARNING at validation: `validateMapSpec` flags data covering < 10% of the
+basemap's recorded regions with < 20 rows (`SPARSE_REGION_FRACTION` / `SPARSE_MAX_ROWS` in
+`src/map-spec.ts`, counts in `src/basemap-keys.ts` BASEMAP_REGION_COUNTS) and advises a region-scoped
+basemap or the `map-native` escalation — advisory only, a deliberately sparse national map may pass.
 For continental-US data prefer **`us-states-continental`** (not `us-states`): some basemap ids pass
 `validateMapSpec` but **500 on publish** (`us-states` does) — if a publish 500s, switch to the safe
 variant (`-continental`, or another id of the same extent).
-(Caught only by looking at the render, never by `validateMapSpec`.)
+(The 500-on-publish and general "smallest basemap" fit are still caught only by looking at the
+render — only the sparse-subset fraction is checked mechanically.)
 
 ## Quick start
 
@@ -172,6 +181,8 @@ variant (`-continental`, or another id of the same extent).
 | Explicit locator framing | `spec.view` (`{center,zoom}`; else auto from markers) | MapSpec |
 | Colour gradient (choropleth) | `spec.colorScale` (default light→`#0072B2`) | MapSpec |
 | Number format | `spec.numberFormat` | MapSpec |
+| Value unit suffix (legend + hover tooltip) | `spec.unit` (e.g. `" mm"`, `"%"`) | MapSpec |
+| Sparse-subset warning bounds | `SPARSE_REGION_FRACTION` (0.1) / `SPARSE_MAX_ROWS` (20) | `src/map-spec.ts` |
 | Built format (static PNG / hosted embed) | `opts.format` (`"static"` default \| `"interactive"`) | `produceMap` |
 | Static export box (channel-derived) | `spec.channel` (feed→1:1, social→9:16, web→16:9 default) | MapSpec |
 
@@ -180,8 +191,9 @@ variant (`-continental`, or another id of the same extent).
 - `src/{map-spec,spec-to-map-metadata,produce}.ts` — contract (choropleth + locator produced; symbol
   rejected → `map-native`), mapper, orchestrator (single-format: static PNG at the channel box with
   the render-size floor, or hosted embed alone; video/scrolly fail hard pre-API).
-- `src/basemap-keys.ts` — per-basemap valid join keys (offline registry) for the `validateMapSpec`
-  join-key check; `src/join-match.ts` — produce-time dataless-join guard (live match rate, fail-hard).
+- `src/basemap-keys.ts` — per-basemap valid join keys + approximate region counts (offline registry,
+  both live-sourced) for the `validateMapSpec` join-key check and sparse-subset warning;
+  `src/join-match.ts` — produce-time dataless-join guard (live match rate, fail-hard).
 - `src/furniture-i18n.ts` — i18n furniture gate (fail-hard in `produceMap`, before any API call): a
   non-English spec's outgoing metadata must carry the localized "Source : X" line in `annotate.notes`
   and blank `describe.source-name`/`source-url` (mirrored from dw-chart).
