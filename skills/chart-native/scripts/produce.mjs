@@ -48,6 +48,22 @@ function readCompDims(rootTsxSrc, compId) {
   return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
 }
 
+// Same trick for a comp's registered timing (all chart-native comps register LITERAL
+// durationInFrames/fps — 240 @ 30). Feeds snap-video's duration-vs-registered check;
+// null (a future non-literal registration) just skips that one check there.
+function readCompTiming(rootTsxSrc, compId) {
+  const re = new RegExp(
+    `id=["']${compId}["'][\\s\\S]*?durationInFrames=\\{(\\d+)\\}[\\s\\S]*?fps=\\{(\\d+)\\}`,
+  );
+  const m = rootTsxSrc.match(re);
+  return m ? { frames: Number(m[1]), fps: Number(m[2]) } : null;
+}
+
+// Mid-reveal frame the review still is rendered at — threaded to render-video.mjs
+// AND snap-video.mjs so the still the Gate-3 review approves and the mp4 frame the
+// snap diffs against it are the SAME frame (the load-bearing still≈mp4 transfer).
+const VIDEO_STILL_FRAME = 140;
+
 // The single-format-produce-export redesign's vocabulary (mirrors ../../atelier/src/
 // channel.ts's VisualFormat — kept as a plain runtime Set here since this is a .mjs,
 // not imported, to avoid a type-only import needing a bundler step).
@@ -322,13 +338,33 @@ switch (format) {
     }
 
     console.log(`[produce ${type}] rendering ${name} (${comp}) for channel "${channel}"…`);
-    run(
-      "bun",
-      ["scripts/render-video.mjs", join(outDir, `video-${name}-still.png`), join(outDir, `${name}.mp4`)],
-      { COMP: comp },
-    );
-    result[name] = join(outDir, `${name}.mp4`);
-    result.reviewStill = join(outDir, `video-${name}-still.png`); // the still IS the review, not a separate deliverable
+    const stillPath = join(outDir, `video-${name}-still.png`);
+    const mp4Path = join(outDir, `${name}.mp4`);
+    run("bun", ["scripts/render-video.mjs", stillPath, mp4Path], {
+      COMP: comp,
+      STILL_FRAME: String(VIDEO_STILL_FRAME),
+    });
+
+    // Video snap guard (fail-hard, like snap-contrast): mechanical assertions on the
+    // ACTUAL mp4 — container sanity (size/dims/registered duration), the reveal
+    // really animates (first≠mid≠final sampled frames, none blank), and the mp4
+    // frame at VIDEO_STILL_FRAME matches the review still the Gate-3 human approves.
+    // A violation exits 1 here, BEFORE the outputs are declared.
+    console.log(`[produce ${type}] verifying the rendered mp4 (snap-video)…`);
+    const timing = readCompTiming(rootTsxSrc, comp);
+    run("bun", ["scripts/snap-video.mjs"], {
+      MP4: mp4Path,
+      STILL: stillPath,
+      STILL_FRAME: String(VIDEO_STILL_FRAME),
+      FPS: String(timing?.fps ?? 30),
+      ...(timing ? { EXPECTED_FRAMES: String(timing.frames) } : {}),
+      EXPECTED_WIDTH: String(compDims.width),
+      EXPECTED_HEIGHT: String(compDims.height),
+      OUTDIR: outDir,
+    });
+
+    result[name] = mp4Path;
+    result.reviewStill = stillPath; // the still IS the review, not a separate deliverable
     console.log(`[produce ${type}] done rendering ${name}.`);
     break;
   }

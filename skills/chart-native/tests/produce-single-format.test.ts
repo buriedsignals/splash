@@ -57,6 +57,10 @@ describe("produce.mjs single-format dispatch", () => {
     expect(existsSync(`${out}/static.png`)).toBe(false);
     expect(existsSync(`${out}/interactive.html`)).toBe(false);
     expect(existsSync(`${out}/interactive.png`)).toBe(false);
+    // the video snap guard RAN inside produce (fail-hard) and left its report:
+    // produce exiting 0 + this file existing = the real mp4 passed container sanity,
+    // reveal-animates, and mp4-matches-reviewed-still on a real Remotion encode.
+    expect(existsSync(`${out}/video-verify.json`)).toBe(true);
   }, 180_000);
 
   it("produce scrolly fails hard — chart-native does not build scrolly directly (owned by the scrolly producer)", () => {

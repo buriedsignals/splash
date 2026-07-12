@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "types": ["react", "react-dom"],
+    "types": ["react", "react-dom", "node"],
     "noEmit": true,
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true
