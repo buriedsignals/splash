@@ -7,6 +7,11 @@ import { readFileSync, statSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { dirname, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  checkFurnitureI18n,
+  collectFurnitureI18n,
+  furnitureGateApplies,
+} from "./lib/furniture-i18n.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -128,6 +133,33 @@ if (ctrlButtons > 0) {
   process.exit(1);
 }
 console.log("static: no interactive controls");
+
+// i18n FURNITURE GATE (P5) — reuses THIS already-loaded page (no extra browser
+// session): when the produced config's lang renders non-English furniture, the
+// HTML furniture (MapFrame title/source, legend) must actually carry it. GL-internal
+// canvas text is not DOM-reachable and stays out of scope (see scripts/lib/
+// furniture-i18n.mjs). CONFIG is what produce.mjs threads to every snap; manual
+// runs without it skip the gate (English furniture is correct then).
+const configPath = process.env.CONFIG;
+const lang = configPath
+  ? JSON.parse(readFileSync(configPath, "utf8")).lang
+  : undefined;
+if (furnitureGateApplies(lang)) {
+  const i18nViolations = checkFurnitureI18n(
+    await page.evaluate(collectFurnitureI18n),
+    lang,
+  );
+  if (i18nViolations.length) {
+    console.error(
+      `STATIC FAILURE: i18n furniture gate (lang "${lang}") — ${i18nViolations.length} violation(s):`,
+    );
+    for (const v of i18nViolations) console.error(`  - ${v}`);
+    await browser.close();
+    server.close();
+    process.exit(1);
+  }
+  console.log(`static: i18n furniture OK (lang "${lang}")`);
+}
 
 await browser.close();
 server.close();
