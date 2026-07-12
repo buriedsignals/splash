@@ -363,7 +363,7 @@ best practices live in `knowledge/references/map/formats/video-reveal.md`.
 | Viewport padding on fitBounds | `padding: 48` | `ChoroplethMap.tsx` / `ChoroplethStory.tsx` |
 | Min data fill fraction (audit) | `MIN_DATA_FILL_FRACTION` (0.7) | `scripts/audit.mjs` |
 | Render watchdog ceiling | `DEFAULT_VIDEO_TIMEOUT_MS` (900000 = 15 min; env `ATELIER_VIDEO_TIMEOUT_MS`) | `src/video-watchdog.ts` |
-| Video snap sensitivity | `REVEAL_MIN_MEAN_DIFF` (0.5) / `MIN_LUMA_VARIANCE` (10) / `STILL_MATCH_CHANNEL_TOLERANCE` (40) / `STILL_MATCH_MAX_DIFF_RATIO` (0.01) | `src/core/video-verify.ts` |
+| Video snap sensitivity | `REVEAL_MIN_MEAN_DIFF` (0.5) / `PROGRESSION_MIN_MEAN_DIFF` (0.15) / `MIN_LUMA_VARIANCE` (10) / `STILL_MATCH_CHANNEL_TOLERANCE` (40) / `STILL_MATCH_MAX_DIFF_RATIO` (0.01) | `src/core/video-verify.ts` |
 
 ## Files
 

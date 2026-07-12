@@ -197,7 +197,7 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 | Interactive reveal duration | `durationMs` (1200) | `src/InteractiveLineChart.tsx` |
 | Interactive chart height / min width | `height` (480) / `minWidth` (280) | `src/InteractiveLineChart.tsx` |
 | Render watchdog ceiling | `DEFAULT_VIDEO_TIMEOUT_MS` (900000 = 15 min; env `ATELIER_VIDEO_TIMEOUT_MS`) | `src/video-watchdog.ts` |
-| Video snap sensitivity | `REVEAL_MIN_MEAN_DIFF` (0.5) / `MIN_LUMA_VARIANCE` (10) / `STILL_MATCH_CHANNEL_TOLERANCE` (40) / `STILL_MATCH_MAX_DIFF_RATIO` (0.01) | `src/core/video-verify.ts` |
+| Video snap sensitivity | `REVEAL_MIN_MEAN_DIFF` (0.5) / `PROGRESSION_MIN_MEAN_DIFF` (0.15) / `MIN_LUMA_VARIANCE` (10) / `STILL_MATCH_CHANNEL_TOLERANCE` (40) / `STILL_MATCH_MAX_DIFF_RATIO` (0.01) | `src/core/video-verify.ts` |
 
 ## Files
 
