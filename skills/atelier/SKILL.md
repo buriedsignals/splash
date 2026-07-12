@@ -47,8 +47,9 @@ it as a free-text prompt instead (see GATE 2/3 source handling below).
    is NEVER skipped. Do not advance to PROPOSITION/PRODUCTION on an unconfirmed, silently-inferred
    takeaway — that is exactly the miss this gate exists to close.
    **★ Record the confirmed takeaway VERBATIM.** The exact sentence the journalist confirmed (or the
-   corrected wording they gave back) becomes every accepted proposal's REQUIRED `confirmedTakeaway`
-   field in `accepted.json` (5b) — the spine's validation gate (`src/validate-gate.ts`) FAILS any
+   corrected wording they gave back) becomes each accepted proposal's OWN confirmed sentence — its
+   REQUIRED `confirmedTakeaway` field in `accepted.json` (5b, one per element; see ★ One element =
+   one confirmedTakeaway below) — the spine's validation gate (`src/validate-gate.ts`) FAILS any
    proposal missing it or carrying an empty string, on BOTH branches (there is no path on which a
    takeaway was never confirmed). A MULTI-PART takeaway ("X is falling everywhere AND Italy is the only
    riser") is recorded WHOLE — every part, never just the half the chosen chart type happens to
@@ -311,7 +312,8 @@ part. **Per-element, never shared:** in a multi-element run each entry's `confir
 element's OWN confirmed claim — two accepted elements never carry the same combined takeaway string
 (an observed miss: a two-opportunity run shipped BOTH elements with one combined "les deux à la
 fois…" takeaway, so each title was checked against a claim half of which belonged to the other
-visual). **`channel`
+visual). This is mechanically enforced: the same validation gate FAILS any two proposals of a batch
+carrying the byte-identical `confirmedTakeaway` string (GUARD 3b). **`channel`
 is REQUIRED — it is the CADRAGE Q3 confirmed pick (§3, the structured audience & channel question),
 copied verbatim onto every proposal it applies to.** `produce-all`'s channel/format gate (5c) reads this
 field to enforce "not-embed ⇒ never interactive/scrolly"; **omitting it silently defeats that guard** —
@@ -573,7 +575,7 @@ alongside the thanks is NOT a close — handle the request instead.
 | Gate | Phase | Stop condition | Failure mode if skipped |
 |------|-------|---------------|------------------------|
 | 1 | CADRAGE | Journalist answers the ≤4 questions + branch chosen | Wrong format, misread intent |
-| 1b | CADRAGE | Takeaway stated back and EXPLICITLY confirmed by the journalist — never inferred-and-skipped; asked openly on GUIDED, confirmed via confirm-back on DIRECT (both branches) — and recorded VERBATIM as `confirmedTakeaway` on every accepted proposal (5b; the spine's validation gate fails a proposal without it), ONE takeaway PER accepted element on a multi-element article — never a shared combined string | Visual carries an unconfirmed/guessed claim; title diverges from the journalist's intent (or silently drops one part of a multi-part takeaway); a combined takeaway stamped on several elements dilutes each title check |
+| 1b | CADRAGE (+PROPOSITION per element) | Takeaway stated back and EXPLICITLY confirmed by the journalist — never inferred-and-skipped; asked openly on GUIDED, confirmed via confirm-back on DIRECT (both branches) — and recorded VERBATIM as `confirmedTakeaway` on every accepted proposal (5b; the spine's validation gate fails a proposal without it). On a multi-element article, ONE takeaway PER accepted element — never a shared combined string; each element's own claim is confirmed at PROPOSITION if CADRAGE only confirmed a combined framing | Visual carries an unconfirmed/guessed claim; title diverges from the journalist's intent (or silently drops one part of a multi-part takeaway); a combined takeaway stamped on several elements dilutes each title check |
 | 2b | PROPOSITION | Journalist confirms prose-extracted data table (fires BEFORE Gate 2 for prose proposals) | Fabricated data attribution |
 | 2 | PROPOSITION | Journalist accepts / edits / rejects each proposal | Wrong claim visualised |
 | 2c | PROPOSITION | Source established: name + a specific traceable URL, or the honest prose fallback (genuine no-dataset case, or a hedged/uncertain source left unconfirmed — never a confident citation over « je crois »/« de mémoire »), for every accepted proposal | Weak/generic/name-only source ships, or admitted uncertainty ships dressed as a verified citation — caught only late (after a full produce→review cycle) by the render-review |

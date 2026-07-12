@@ -5,9 +5,10 @@
 > sources. **The confirmed distribution channel is applied FIRST** (GATE -1 below): it hard-restricts
 > which formats are even eligible before any of the reasoning below runs. Within the channel's allowed
 > set, the governing fact is: **most readers do not interact** (Archie Tse / NYT, Malofiej 2016: ~85%
-> ignore rollovers/tooltips), so on the channels where it's available, interactive still must justify
-> shipping a static fallback alongside it. GATE 0→5 below is an ordered ladder within the channel's
-> allowed set — first match wins.
+> ignore rollovers/tooltips), so interactive must never be load-bearing — and under the single-format
+> contract there is NO auto-produced fallback: the ONE format pinned at PROPOSITION is the only
+> artifact. A piece that needs the no-JS guarantee pins the `static` FORMAT. GATE 0→5 below is an
+> ordered ladder within the channel's allowed set — first match wins.
 
 ## GATE -1 — CHANNEL FIRST (constrains the allowed-format set, before anything else)
 
@@ -35,7 +36,7 @@ Classify the claim against the FT Visual Vocabulary BEFORE choosing format
 · distribution→histogram/box/dot · part-to-whole→stacked/pie(≤3) · correlation→scatter · ranking→sorted
 bar · flow→sankey · geographic→map (subject to Gate 5).
 
-## GATE 1 — STATIC-FIRST GROUNDING (the a11y-fallback baseline)
+## GATE 1 — STATIC-FIRST GROUNDING (when to pin the static format)
 
 A static image is the right default for most journalistic data points, and the empirical grounding
 (Archie Tse / NYT, Malofiej 2016) is why. Static reaches everyone, has zero interaction cost, embeds
@@ -45,13 +46,15 @@ the insight can be annotated directly on the chart · general audience · tight 
 **Channel scoping (post GATE -1):** on the two **social** channels, this gate is the primary decision —
 "static wins" in full, and the only escalation available is to video (GATE 4). On **article-web**, the
 channel default is now interactive (GATE -1) as a deliberate product choice, so this grounding no longer
-functions as a gate you must pass to reach interactive — instead it is the **reason a static HTML (no-JS)
-fallback that carries the core claim is always produced alongside the interactive** (see GATE 2's
-non-negotiable invariant). The fallback is a self-contained no-JS HTML document, NOT a separate static
-image export — interactive delivery has no standalone PNG/image form. The reach argument doesn't
-disappear when interactive wins the channel default; it moves to guaranteeing the fallback.
+functions as a gate you must pass to reach interactive — instead it is the **reason to PIN the `static`
+FORMAT when the piece needs reach / no-JS accessibility** (see GATE 2). Under the single-format contract
+(single-format redesign, `skills/atelier/SKILL.md`) there is **NO fallback auto-produced alongside an
+interactive**: the ONE format pinned at PROPOSITION is the ONLY artifact produced and delivered.
+Accessibility without JavaScript = choosing the `static` format — never an automatic byproduct of
+interactive. The reach argument doesn't disappear when interactive wins the channel default; it becomes
+a concrete reason to pin `static` instead.
 
-## GATE 2 — INTERACTIVE: signal + the non-negotiable fallback
+## GATE 2 — INTERACTIVE: signal, and the no-auto-fallback rule
 
 On **article-web**, interactive is already the channel default (GATE -1) — it does NOT need to earn its
 way in via an AND-gate the way it used to. The three conditions below are no longer a blanket
@@ -67,12 +70,13 @@ interactive):
 On the **social** channels these conditions are moot — interactive isn't in the allowed set (GATE -1),
 so this gate never applies there regardless of signal strength.
 
-**Non-negotiable (the a11y-fallback invariant — GATE 1's grounding made concrete):** whenever interactive
-is chosen, the static HTML (no-JS) fallback must carry the core claim WITHOUT interaction — the
-interactive layer is additive, never load-bearing (85% never see hover/click state, Archie Tse / NYT,
-Malofiej 2016). The fallback ships as one of the interactive delivery's three forms (code source / static
-HTML no-JS / hosted embed link) — never as a separate static image export. This is why defaulting
-article-web to interactive is safe: the reach guarantee ships either way.
+**No auto fallback (single-format contract):** when interactive is pinned, interactive is ALL that is
+produced and delivered — NO no-JS static HTML ships alongside it. The 85%-don't-interact grounding
+(Archie Tse / NYT, Malofiej 2016) therefore acts BEFORE the pin, in two ways: (1) the interactive's
+resting (no-hover) state must carry the core claim — the interactive layer is additive, never
+load-bearing; (2) if the piece NEEDS a no-JS / reach guarantee, that is a concrete reason to pin the
+`static` format instead of the interactive default. Announce the pinned format explicitly for veto
+(Gate 2) — a wrong default is not backstopped by a byproduct.
 
 ## GATE 3 — escalate to SCROLLYTELLING (only if ALL)
 
@@ -130,10 +134,11 @@ CLAIM + DATA
             social-vertical/social-feed → {static, video} only, NEVER interactive/scrolly
             article-web                → {static, interactive, video, scrolly}, DEFAULT interactive
   GATE 0  → chart family from intent
-  GATE 1  → static-first grounding: full gate on social · a11y-fallback baseline on article-web
+  GATE 1  → static-first grounding: full gate on social · on article-web, the reason to pin the
+            `static` format (reach / no-JS a11y) instead of the interactive default
   GATE 2  → article-web: interactive is already default; these 3 are signal, not an AND-gate
-            (large/multi-series + personal-hook + web-only) — static HTML (no-JS) fallback ALWAYS
-            ships alongside (never a separate image export)
+            (large/multi-series + personal-hook + web-only) — NO auto no-JS fallback: the pinned
+            format is the ONLY artifact (a11y without JS = pin static)
   GATE 3  → sequential + single-chart 4+ states + long-form + resources?  ALL YES → SCROLLY
   GATE 4  → motion-is-the-encoding OR social/vertical?           YES → VIDEO
   GATE 5  (geo only) spatial pattern IS the story + map-safe value (rate OR categorical/temporal, not raw
@@ -143,10 +148,10 @@ CLAIM + DATA
 Static-first is not conservatism — it is empirically grounded. On the social channels every escalation
 (to video) still must buy a specific capability static cannot provide. On article-web, interactive is now
 the deliberate channel default rather than an earned escalation — but the same grounding still governs
-the non-negotiable static HTML (no-JS) fallback that ships alongside it (as one of the interactive
-delivery's three forms, never as a separate image export), so the reach guarantee is never lost. Never
-drop the fallback invariant, and never pick interactive on a social channel because "interactive =
-sophisticated" — it simply isn't in that channel's allowed set.
+the choice: under the single-format contract nothing ships alongside the pinned format, so a piece that
+needs the no-JS / reach guarantee must PIN `static` (and an interactive must carry its claim in the
+resting state). Never assume a fallback will backstop a wrong pin, and never pick interactive on a
+social channel because "interactive = sophisticated" — it simply isn't in that channel's allowed set.
 
 ## Sources
 
