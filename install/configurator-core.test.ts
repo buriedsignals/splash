@@ -113,6 +113,8 @@ test.skipIf(!MT)(
     expect(await verifyMapTiler(MT!)).toBe(true);
     expect(await verifyMapTiler("not-a-real-key")).toBe(false);
   },
+
+  60000, // real-API round-trips flake past the 5s default under gate contention
 );
 
 test.skipIf(!DW)(
@@ -121,6 +123,8 @@ test.skipIf(!DW)(
     expect(await verifyDatawrapper(DW!)).toBe(true);
     expect(await verifyDatawrapper("not-a-real-token")).toBe(false);
   },
+
+  60000, // real-API round-trips flake past the 5s default under gate contention
 );
 
 test.skipIf(!AN)(
@@ -129,6 +133,8 @@ test.skipIf(!AN)(
     expect(await verifyAnthropic(AN!)).toBe(true);
     expect(await verifyAnthropic("sk-ant-not-real")).toBe(false);
   },
+
+  60000, // real-API round-trips flake past the 5s default under gate contention
 );
 
 test("verify* returns null (unreachable), NOT false, when the provider can't be reached", async () => {
