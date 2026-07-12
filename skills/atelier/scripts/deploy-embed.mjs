@@ -40,6 +40,13 @@ export function embedUrl(app, slug) {
   return `https://${app}.fly.dev/${slug}/`;
 }
 
+// Whether a fly.io deploy is even POSSIBLE here: flyctl authenticates via FLY_API_TOKEN. Without
+// it the upload stalls, so a self-hosted embed cannot be delivered — the caller must refuse up
+// front rather than half-deploy or hand back a placeholder URL that fakes "delivered".
+export function flyTokenConfigured(env = process.env) {
+  return (env.FLY_API_TOKEN ?? "").trim() !== "";
+}
+
 if (import.meta.main) {
   const { positional, flags } = parseArgs(process.argv.slice(2));
   const [htmlFile, rawSlug, argApp] = positional;
@@ -52,11 +59,22 @@ if (import.meta.main) {
   }
   // The one mechanical gate, before any upload: refuse unless this exact proposal was
   // actually produced AND the human approved the render.
+  let hostedUrl = null;
   try {
     const report = JSON.parse(readFileSync(resultsPath, "utf8"));
     assertShippable(report, id);
+    hostedUrl = report.results.find((x) => x.id === id)?.publicUrl ?? null;
   } catch (e) {
     console.error(e.message);
+    process.exit(1);
+  }
+  // FAIL-FAST, before any flyctl call: a self-hosted embed needs FLY_API_TOKEN to deploy. Without
+  // it (and with no already-live hosted publicUrl to fall back to), refuse now with an actionable
+  // message — never let the upload stall mid-deploy or hand back a placeholder that fakes delivery.
+  if (!flyTokenConfigured() && !hostedUrl) {
+    console.error(
+      "embed delivery needs FLY_API_TOKEN — set it, or choose the standalone HTML form (b) instead",
+    );
     process.exit(1);
   }
   let APP;

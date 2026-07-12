@@ -19,24 +19,50 @@ const root = join(here, "..");
 const PRODUCE = join(root, "scripts", "produce.mjs");
 const CHOROPLETH_CONFIG = "assets/sample-data/choropleth.json";
 
-describe("produce.mjs single-format dispatch", () => {
-  it("produce interactive builds interactive.html and NOT the static/video artifacts", async () => {
-    const out = await runProduce(CHOROPLETH_CONFIG, "interactive");
-    expect(existsSync(`${out}/interactive.html`)).toBe(true);
-    expect(existsSync(`${out}/static.png`)).toBe(false);
-    expect(existsSync(`${out}/landscape.mp4`)).toBe(false);
-    expect(existsSync(`${out}/portrait.mp4`)).toBe(false);
-    // the review still IS produced (ephemeral Gate-3 byproduct) — never dropped.
-    expect(existsSync(`${out}/interactive.png`)).toBe(true);
-  }, 120_000);
+// Gate-contention flake class (the single most frequent root-gate failure this week).
+// These e2e tests shell the REAL produce.mjs, which drives live headless MapLibre renders
+// that each fetch vector tiles from api.maptiler.com — no mocks, per this repo's testing
+// convention. Run in isolation the full map-native suite is ~115 s; but under the
+// SEQUENTIAL root gate (scripts/check.mjs) map-native runs AFTER dw-chart's ~15 live
+// Datawrapper publishes and chart-native's Remotion renders, and a flapping network plus
+// accumulated load stretches a healthy ~86 s "interactive" run past the old 120 s per-test
+// ceiling — bun kills the test and the whole gate has to be re-run. The "interactive"
+// format is the heaviest: produce.mjs drives SIX live browser renders for it (snap-proof +
+// four responsive widths + snap-a11y), each fetching tiles, vs the "static" format's one.
+// Give the live-render produce e2e tests generous, bounded headroom (~2.8x the healthy
+// baseline) so contention slowness fails-slow-then-passes rather than tripping the timeout;
+// a genuine hang still fails cleanly, far under the video watchdog's 15-min ceiling. Mirrors
+// the timeout bumps that just fixed the same flake class in install/configurator-core.test.ts
+// (real-API round-trips) and skills/map-dw (live e2e). The "video" test below keeps its own
+// 180_000 — a single Remotion render on a different engine, already tuned + watchdog-guarded.
+const LIVE_RENDER_PRODUCE_TIMEOUT_MS = 240_000;
 
-  it("produce static builds only the image, no html, no video", async () => {
-    const out = await runProduce(CHOROPLETH_CONFIG, "static");
-    expect(existsSync(`${out}/static.png`)).toBe(true);
-    expect(existsSync(`${out}/interactive.html`)).toBe(false);
-    expect(existsSync(`${out}/interactive.png`)).toBe(false);
-    expect(existsSync(`${out}/landscape.mp4`)).toBe(false);
-  }, 120_000);
+describe("produce.mjs single-format dispatch", () => {
+  it(
+    "produce interactive builds interactive.html and NOT the static/video artifacts",
+    async () => {
+      const out = await runProduce(CHOROPLETH_CONFIG, "interactive");
+      expect(existsSync(`${out}/interactive.html`)).toBe(true);
+      expect(existsSync(`${out}/static.png`)).toBe(false);
+      expect(existsSync(`${out}/landscape.mp4`)).toBe(false);
+      expect(existsSync(`${out}/portrait.mp4`)).toBe(false);
+      // the review still IS produced (ephemeral Gate-3 byproduct) — never dropped.
+      expect(existsSync(`${out}/interactive.png`)).toBe(true);
+    },
+    LIVE_RENDER_PRODUCE_TIMEOUT_MS,
+  );
+
+  it(
+    "produce static builds only the image, no html, no video",
+    async () => {
+      const out = await runProduce(CHOROPLETH_CONFIG, "static");
+      expect(existsSync(`${out}/static.png`)).toBe(true);
+      expect(existsSync(`${out}/interactive.html`)).toBe(false);
+      expect(existsSync(`${out}/interactive.png`)).toBe(false);
+      expect(existsSync(`${out}/landscape.mp4`)).toBe(false);
+    },
+    LIVE_RENDER_PRODUCE_TIMEOUT_MS,
+  );
 
   it("produce video builds only the mp4 + its review still, no static/interactive artifacts", async () => {
     const out = await runProduce(CHOROPLETH_CONFIG, "video");

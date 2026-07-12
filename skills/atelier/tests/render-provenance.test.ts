@@ -264,4 +264,72 @@ describe("assertArtifactProvenance — sanctioned hosted-review location", () =>
       }),
     ).toThrow(/not an output of the current produce generation/);
   });
+
+  // Observation (3): a hosted-DW review capture landed under skills/dw-chart/exports
+  // because a bare relative `exports/...` path resolved against an earlier `cd
+  // skills/dw-chart`. The refusal MUST name the ABSOLUTE sanctioned capture dir and
+  // instruct a fresh re-capture there — never an ad-hoc mv of the mis-pathed file into
+  // place (the improvisation the mechanical fix exists to kill).
+  it("names the ABSOLUTE sanctioned capture dir (and forbids an mv) when a hosted capture landed in the wrong directory", () => {
+    const dir = slugDir();
+    // The mis-pathed capture: a bare relative `exports/...` resolved against an earlier
+    // `cd skills/dw-chart`, so it landed under skills/dw-chart/exports/... instead.
+    const wrongDir = join(
+      dir,
+      "skills",
+      "dw-chart",
+      "exports",
+      REVIEW_ARTIFACTS_DIR,
+      "p1",
+    );
+    mkdirSync(wrongDir, { recursive: true });
+    const capture = join(wrongDir, "hosted-embed-reviewed.html");
+    writeFileSync(capture, "<html>captured to the WRONG dir</html>");
+    const { report, reportPath } = writeReport(
+      dir,
+      hostedResult(),
+      new Date(Date.now() - 60_000).toISOString(),
+    );
+    const sanctioned = join(dir, REVIEW_ARTIFACTS_DIR, "p1");
+    let message = "";
+    try {
+      assertArtifactProvenance({
+        report,
+        result: report.results[0],
+        reportPath,
+        artifactPath: capture,
+      });
+    } catch (e) {
+      message = e instanceof Error ? e.message : String(e);
+    }
+    expect(message).toContain(sanctioned);
+    expect(message).toMatch(/re-capture|never (move|mv)|do not (move|mv)/i);
+  });
+
+  it("names the ABSOLUTE sanctioned capture dir (and forbids an mv) in the STALE-capture refusal", () => {
+    const dir = slugDir();
+    const reviewDir = join(dir, REVIEW_ARTIFACTS_DIR, "p1");
+    mkdirSync(reviewDir, { recursive: true });
+    const capture = join(reviewDir, "hosted-embed-reviewed.html");
+    writeFileSync(capture, "<html>captured for a PRIOR generation</html>");
+    backdate(capture, 60_000);
+    const { report, reportPath } = writeReport(
+      dir,
+      hostedResult(),
+      new Date().toISOString(),
+    );
+    let message = "";
+    try {
+      assertArtifactProvenance({
+        report,
+        result: report.results[0],
+        reportPath,
+        artifactPath: capture,
+      });
+    } catch (e) {
+      message = e instanceof Error ? e.message : String(e);
+    }
+    expect(message).toContain(reviewDir);
+    expect(message).toMatch(/re-capture|never (move|mv)|do not (move|mv)/i);
+  });
 });
