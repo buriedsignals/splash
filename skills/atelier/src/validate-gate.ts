@@ -98,6 +98,24 @@ function placeholderSourceError(spec: unknown): string | null {
   return placeholderSourceReason(url);
 }
 
+// GUARD 3 — Gate 1b presence lever. Every accepted proposal must carry the takeaway the
+// journalist EXPLICITLY confirmed at CADRAGE Gate 1b, VERBATIM, as `confirmedTakeaway`.
+// Whether the title semantically MATCHES that takeaway is not mechanizable (render-review's
+// job, Gate 3a) — but its PRESENCE is: a proposal without one cannot prove Gate 1b ever
+// fired, and the render-review has nothing authoritative to quote the title against.
+// Required on ALL proposals (no guided/direct flag exists on the contract, and Gate 1b is
+// un-skippable on both branches anyway). `confirmedTakeaway` is typed `string` but arrives
+// via untyped JSON.parse at the CLI seam, so non-string/empty are both checked here.
+function missingConfirmedTakeawayError(p: AcceptedProposal): string | null {
+  const takeaway: unknown = p.confirmedTakeaway;
+  if (typeof takeaway === "string" && takeaway.trim() !== "") return null;
+  return (
+    "missing confirmedTakeaway — every accepted proposal must record, VERBATIM, the " +
+    "takeaway the journalist explicitly confirmed at CADRAGE Gate 1b (un-skippable on " +
+    "both branches); confirm the takeaway with the journalist and set it before producing"
+  );
+}
+
 // Run the producer-appropriate validator on an accepted proposal's spec, then the
 // cross-producer source-URL guard (GUARD 2), then the deterministic guardrail-parity gate
 // (ENFORCEMENT SLICE 2 — the deterministic guardrails that lived only in suggest-chart's
@@ -107,6 +125,8 @@ function placeholderSourceError(spec: unknown): string | null {
 export function validateAccepted(p: AcceptedProposal): ValidationOutcome {
   const outcome = validateByProducer(p);
   const extraErrors: string[] = [];
+  const missingTakeaway = missingConfirmedTakeawayError(p);
+  if (missingTakeaway) extraErrors.push(missingTakeaway);
   const placeholder = placeholderSourceError(p.spec);
   if (placeholder) extraErrors.push(placeholder);
   extraErrors.push(...guardrailParityViolations(p));

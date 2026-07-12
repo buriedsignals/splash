@@ -161,6 +161,7 @@ describe("guardrailParityViolations — the composed produce-boundary gate", () 
     producer: "dw-chart",
     format: "static",
     spec: {},
+    confirmedTakeaway: "The confirmed takeaway for this fixture",
     ...extra,
   });
 

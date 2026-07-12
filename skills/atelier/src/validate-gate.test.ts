@@ -2,7 +2,14 @@ import { describe, expect, it } from "bun:test";
 import { validateAccepted } from "./validate-gate";
 import type { AcceptedProposal } from "./producer-spec";
 
-const base = { id: "x", format: "static" as const };
+const base = {
+  id: "x",
+  format: "static" as const,
+  // Gate 1b presence lever: the journalist-confirmed takeaway, required on EVERY
+  // proposal — fixtures carry a plausible one so only the dedicated tests exercise
+  // its absence.
+  confirmedTakeaway: "The confirmed takeaway for this fixture",
+};
 
 function accept(
   producer: AcceptedProposal["producer"],
@@ -302,5 +309,60 @@ describe("validateAccepted — the spine validation gate", () => {
       }),
     );
     expect(r.ok).toBe(true);
+  });
+
+  // GATE 1b PRESENCE LEVER — every accepted proposal must carry the takeaway the
+  // journalist confirmed at CADRAGE Gate 1b, VERBATIM, as `confirmedTakeaway`. The
+  // semantic match (does the title really carry it?) is the render-review's job, but the
+  // PRESENCE of a confirmed takeaway is mechanical: a proposal without one cannot prove
+  // Gate 1b ever fired — and Gate 1b is un-skippable on BOTH branches (guided AND direct),
+  // so the field is required on ALL proposals.
+  describe("confirmedTakeaway (Gate 1b presence lever)", () => {
+    const validNativeSpec = {
+      nativeType: "bar",
+      title: "Cross-border commuting keeps rising",
+      source: { name: "OFS" },
+      subject: "cross-border commuting",
+      baseColor: "#D55E00",
+      unit: "commuters",
+      data: "year,commuters\n2019,63\n2024,90",
+    };
+
+    it("REJECTS a proposal with NO confirmedTakeaway (Gate 1b never proven)", () => {
+      const { confirmedTakeaway: _omitted, ...rest } = accept(
+        "chart-native",
+        validNativeSpec,
+      );
+      const r = validateAccepted(rest as AcceptedProposal);
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.errors.join(" ")).toContain("confirmedTakeaway");
+    });
+
+    it("REJECTS a proposal whose confirmedTakeaway is whitespace-only", () => {
+      const r = validateAccepted({
+        ...accept("chart-native", validNativeSpec),
+        confirmedTakeaway: "   ",
+      });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.errors.join(" ")).toContain("confirmedTakeaway");
+    });
+
+    it("REJECTS a non-string confirmedTakeaway smuggled through untyped JSON", () => {
+      const r = validateAccepted({
+        ...accept("chart-native", validNativeSpec),
+        confirmedTakeaway: true as unknown as string, // hand-authored accepted.json
+      });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.errors.join(" ")).toContain("confirmedTakeaway");
+    });
+
+    it("ACCEPTS the same proposal once confirmedTakeaway carries the confirmed claim", () => {
+      const r = validateAccepted({
+        ...accept("chart-native", validNativeSpec),
+        confirmedTakeaway:
+          "Cross-border commuting keeps rising, and Geneva absorbs most of it",
+      });
+      expect(r.ok).toBe(true);
+    });
   });
 });

@@ -46,6 +46,14 @@ it as a free-text prompt instead (see GATE 2/3 source handling below).
    confirm-back of the takeaway inferred from the article + the named visual — but the confirmation itself
    is NEVER skipped. Do not advance to PROPOSITION/PRODUCTION on an unconfirmed, silently-inferred
    takeaway — that is exactly the miss this gate exists to close.
+   **★ Record the confirmed takeaway VERBATIM.** The exact sentence the journalist confirmed (or the
+   corrected wording they gave back) becomes every accepted proposal's REQUIRED `confirmedTakeaway`
+   field in `accepted.json` (5b) — the spine's validation gate (`src/validate-gate.ts`) FAILS any
+   proposal missing it or carrying an empty string, on BOTH branches (there is no path on which a
+   takeaway was never confirmed). A MULTI-PART takeaway ("X is falling everywhere AND Italy is the only
+   riser") is recorded WHOLE — every part, never just the half the chosen chart type happens to
+   foreground. The render-review (Gate 3a) then quotes this field back against the produced
+   title/insight, part by part.
    **★ Every takeaway option you offer MUST be supported by the supplied data (use the ANALYSE data
    shape).** Never float a framing the data cannot substantiate: do NOT offer a temporal / trend framing
    ("the gap is widening", "growth since 2015", "rising", "over time") when the data is a **single
@@ -55,14 +63,20 @@ it as a free-text prompt instead (see GATE 2/3 source handling below).
    later retraction and tempts a fabricated series to "back it up". If the journalist genuinely wants a
    trend, say the current data can't show it and ask for the time series — never invent one.
 3. Audience & channel: a STRUCTURED single-select, journalist's language, exactly three options —
-   **Social vertical (Stories/Reels)** · **Social feed (Instagram/Facebook post)** · **Article web / embed**.
+   **Social vertical (Stories/Reels)** · **Social feed (Instagram/Facebook post)** · **Article web /
+   print (image statique) / embed**.
    This is not a free-text prompt (never ask it as one) — the pick maps 1:1 onto
    `skills/atelier/src/channel.ts`'s `Channel` enum, which deterministically fixes both the media SIZE and
    the ALLOWED FORMAT SET for everything downstream:
    - **Social vertical** → portrait **9:16** · formats {image, video}.
    - **Social feed** → square **1:1** · formats {image, video}.
-   - **Article web / embed** → media **landscape 16:9** / component **responsive** · formats {image, video,
-     interactive}.
+   - **Article web / print / embed** → media **landscape 16:9** / component **responsive** · formats
+     {image, video, interactive}. **PRINT lives HERE — the channel model needs no 4th channel**: a paper
+     page is a static-image deliverable, so a print-destined piece answers (c), and a STATED print
+     destination steers the format pin to `static` at PROPOSITION (see "Article/web has NO static
+     fallback" below) — never interactive/video, which no printed page can host. Word option (c) so
+     print is visibly covered ("article web / print (image statique)"); never force a print piece into
+     an off-fit social answer or leave it unable to answer.
    **Hard rule: not article/embed ⇒ image or video only — NEVER interactive or scrolly.** Only the
    article/web channel can host an interactive (scrolly is a kind of interactive). **Always asked — on
    EITHER branch, never skipped.** A DIRECT-named visual still needs a channel: a journalist-naming "a bar
@@ -131,7 +145,10 @@ new gate, the check reuses PROPOSITION's own decision.
 journalist actually wants.** For the article-web channel, `suggest-chart` routing DEFAULTS to interactive
 (`interactiveDefault`, `skills/atelier/src/channel.ts`) — it wins ONLY absent a concrete reason otherwise.
 That default is NOT a mandate: an explicit journalist format signal ("a static image", "a static chart",
-"just an image", "pour le print") WINS over it — pin `static`, never interactive. Since the single-format
+"just an image", "pour le print") WINS over it — pin `static`, never interactive. **Print is the
+strongest such signal**: when the STATED destination is print (the journalist picked (c) at CADRAGE Q3
+for the paper, or says the piece is print-bound at any point), pin `static` — a printed page cannot run
+an interactive or a video, so `interactiveDefault` never applies to it. Since the single-format
 redesign there is NO auto no-JS `static.html` produced alongside an interactive (a11y = choosing the
 `static` FORMAT, see §6 and the export guardrail below) — whichever ONE format is pinned is the ONLY
 artifact the journalist gets, so a wrong default is NOT backstopped by a byproduct. Announce that pinned
@@ -179,12 +196,25 @@ citable source now, for each proposal that just cleared Gate 2 (and 2b where it 
   (`eurostat.ec.europa.eu`, `insee.fr`) standing in for the specific dataset/page, is incomplete — say
   so and ask again for the specific page. Never ship it as-is and never quietly downgrade to the
   "reported in this article" fallback just to avoid asking again.
+- **Journalist UNCERTAINTY is not a source.** When the answer comes hedged — « je crois », « de
+  mémoire », "I think it was the 2023 report", the journalist cannot name the exact report/dataset —
+  do NOT ship a flat, confident-looking citation built on that admission: a reader cannot tell a hedged
+  recollection from a verified reference, so a confident citation over admitted uncertainty is a
+  DEFECT, even when the guess happens to be right. Exactly two honest moves: **(1)** get the
+  journalist's EXPLICIT confirmation of the exact source — the confirmed name + the specific
+  dataset/page URL (offer to wait while they check); or **(2)** use the honest prose fallback —
+  "Chiffres tels que rapportés dans cet article" / "Figures as reported in this article" (or name-only
+  with the OUTLET's own name) — which claims no more than what is actually known. Never dress the
+  uncertain recollection up as a confirmed dataset citation, and never invent a URL to firm it up.
 - The honest prose fallback ("Figures as reported in this article" / the outlet's own name) is
-  legitimate ONLY when the data genuinely has no separate cited dataset (`provenance:"prose"` or
-  `"none"`) — never use it merely because the journalist has not yet answered, and never use it as a
-  shortcut out of this gate.
-- Only once the proposal's source is a name + a specific traceable URL (or the genuine no-dataset
-  prose case) does it go into `accepted.json`'s spec (5b). This does not replace Gate 3a's render-review
+  legitimate in exactly TWO cases: when the data genuinely has no separate cited dataset
+  (`provenance:"prose"` or `"none"`), and when the journalist's recollection of a source stays
+  UNCONFIRMED after the uncertainty rule above (they cannot confirm the exact report/dataset and choose
+  not to hold for it). Never use it merely because the journalist has not yet answered, and never use
+  it as a shortcut out of this gate.
+- Only once the proposal's source is a name + a specific traceable URL (or the honest prose
+  fallback — the genuine no-dataset case, or a hedged source left unconfirmed per the uncertainty rule
+  above) does it go into `accepted.json`'s spec (5b). This does not replace Gate 3a's render-review
   source check — that stays the safety net if the URL turns out unreachable once the actual render is
   seen — but it should rarely have anything left to catch.
 
@@ -203,8 +233,9 @@ producer spec yourself (see Never).
 (`validateChartSpec` for charts; `validateChoroplethConfig` / `validateLocatorConfig` /
 `validateSymbolConfig` / `validateMapSpec` for maps) and fix any warning — in particular a title that
 reads as a label rather than the insight — so a weak spec never reaches GATE 3. The spec's `source`
-must be the one already established at Gate 2c (name + a specific traceable URL, or the genuine
-no-dataset prose case) — never a placeholder, never the `suggest-article` `dataSource.table` filename
+must be the one already established at Gate 2c (name + a specific traceable URL, or the honest prose
+fallback per 2c — the genuine no-dataset case, or a hedged source left unconfirmed; never a confident
+citation over a « je crois ») — never a placeholder, never the `suggest-article` `dataSource.table` filename
 slipped in as the label (see suggest-article's Gotcha (4)). **A reserved placeholder URL
 (`…example.com`, `.test`, `.invalid`, `localhost`, RFC 2606/6761) is MECHANICALLY rejected by the spine's
 validation gate (GUARD 2, `src/source-guard.ts`) — the proposal comes back `status:"failed"`, never
@@ -213,11 +244,19 @@ produced; a name-only prose source with no URL still passes.**
 **5b. Assemble `exports/<slug>/accepted.json`** — an array, one entry per accepted proposal:
 `{ "id": "<stable-id>", "producer": "dw-chart|chart-native|map-dw|map-native|scrolly",
 "format": "static|interactive|video|scrolly", "spec": <the validated producer spec>,
+"confirmedTakeaway": "<the takeaway the journalist EXPLICITLY confirmed at CADRAGE Gate 1b, VERBATIM —
+every part of a multi-part takeaway, never a paraphrase>",
 "provenance": "table|prose|none", "confirmedTable": <true ONLY after an actual Gate 2b prose-table
 confirmation — stays false/absent for "table" (and "none") provenance, which never go through 2b;
 never set it true on a table-provenance proposal just because it looks accepted>,
 "channel": "social-vertical|social-feed|article-web" }`.
-`producer` + `format` are what suggest-chart routed; `provenance` comes from suggest-article. **`channel`
+`producer` + `format` are what suggest-chart routed; `provenance` comes from suggest-article.
+**`confirmedTakeaway` is REQUIRED — the spine's validation gate (`src/validate-gate.ts`,
+`validateAccepted`) FAILS any proposal whose `confirmedTakeaway` is missing or empty**, on both
+branches (Gate 1b is un-skippable on guided AND direct, so no proposal legitimately lacks one). It is
+the Gate-1b presence lever: the render-review (3a) quotes it VERBATIM against the produced
+title/insight, part by part — copy the confirmed wording exactly, never a paraphrase that drops a
+part. **`channel`
 is REQUIRED — it is the CADRAGE Q3 confirmed pick (§3, the structured audience & channel question),
 copied verbatim onto every proposal it applies to.** `produce-all`'s channel/format gate (5c) reads this
 field to enforce "not-embed ⇒ never interactive/scrolly"; **omitting it silently defeats that guard** —
@@ -296,7 +335,15 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
 produced visual through an INDEPENDENT editorial pass per `references/render-review.md`: read the ACTUAL
 render + the article + data against the six criteria (title honesty — including that the title matches
 the takeaway the journalist confirmed at CADRAGE Gate 1b, not a narrower or different claim — source
-traceability, honest encoding, earns-its-place, legibility/a11y, fidelity). These catch what the spine's
+traceability, honest encoding, earns-its-place, legibility/a11y, fidelity). **The review MUST QUOTE the
+proposal's `confirmedTakeaway` (from `accepted.json`, 5b) VERBATIM and state EXPLICITLY whether the
+produced title/insight carries ALL its parts** — a two-part takeaway ("X is falling everywhere AND
+Italy is the only riser") needs BOTH parts carried by the visual's title/framing, or the dropped part
+recorded as a concern; a review that never quotes the confirmed takeaway, or quotes it without the
+part-by-part statement, is NOT a valid render-review (this omission is itself a review failure —
+re-run 3a properly). This is the recurring miss this lever exists to close: a chart type that
+foregrounds one half of the confirmed claim (a slope showing the fall but not the one riser) silently
+drops the other half unless the review names it. These catch what the spine's
 code gates cannot — a title that misstates the metric, a fabricated or incomplete source, a misleading
 encoding. **Never spawn an Agent/Task sub-agent to do this review** — during the atelier flow you ONLY
 sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing
@@ -448,10 +495,10 @@ alongside the thanks is NOT a close — handle the request instead.
 | Gate | Phase | Stop condition | Failure mode if skipped |
 |------|-------|---------------|------------------------|
 | 1 | CADRAGE | Journalist answers the ≤4 questions + branch chosen | Wrong format, misread intent |
-| 1b | CADRAGE | Takeaway stated back and EXPLICITLY confirmed by the journalist — never inferred-and-skipped; asked openly on GUIDED, confirmed via confirm-back on DIRECT (both branches) | Visual carries an unconfirmed/guessed claim; title diverges from the journalist's intent |
+| 1b | CADRAGE | Takeaway stated back and EXPLICITLY confirmed by the journalist — never inferred-and-skipped; asked openly on GUIDED, confirmed via confirm-back on DIRECT (both branches) — and recorded VERBATIM as `confirmedTakeaway` on every accepted proposal (5b; the spine's validation gate fails a proposal without it) | Visual carries an unconfirmed/guessed claim; title diverges from the journalist's intent (or silently drops one part of a multi-part takeaway) |
 | 2b | PROPOSITION | Journalist confirms prose-extracted data table (fires BEFORE Gate 2 for prose proposals) | Fabricated data attribution |
 | 2 | PROPOSITION | Journalist accepts / edits / rejects each proposal | Wrong claim visualised |
-| 2c | PROPOSITION | Source established: name + a specific traceable URL (or the genuine no-dataset prose case), for every accepted proposal | Weak/generic/name-only source ships, caught only late (after a full produce→review cycle) by the render-review |
+| 2c | PROPOSITION | Source established: name + a specific traceable URL, or the honest prose fallback (genuine no-dataset case, or a hedged/uncertain source left unconfirmed — never a confident citation over « je crois »/« de mémoire »), for every accepted proposal | Weak/generic/name-only source ships, or admitted uncertainty ships dressed as a verified citation — caught only late (after a full produce→review cycle) by the render-review |
 | 3 | PRODUCTION | Journalist says "ship it" after seeing the ACTUAL render (re-run in full — 3a then 3b — after every re-produce, never reused from a prior render) | Visual quality not verified; a re-produced render ships on a stale sign-off |
 | 4 | EXPORT | Video/static → give the media file directly; interactive/scrolly → relay the emitted three-form proposal and the journalist chooses ONE: code source (chart-native → runnable `<id>-source/` React bundle; else built-files folder) / HTML autonome (single self-contained file) / embed (hosted link) | Wrong delivery format; or the proposal collapsed to a bare "Livré." with nothing handed over |
 
@@ -488,9 +535,9 @@ alongside the thanks is NOT a close — handle the request instead.
 - Never silently mutate the ACCEPTED SPEC (`baseColor`, format, etc.) mid-PRODUCTION to route around a conformance-gate failure — this is the spec analogue of the rule above ("never edit product code" → "never silently edit the accepted spec to bypass a gate"). A conformance failure is SURFACED to the journalist as-is; if the spec must change to fix it, GATE 2 is re-opened for re-acceptance of the changed spec. The produce-time conformance guards exist precisely so a non-conformant visual never ships unseen.
 - Never hand over an INTERACTIVE/SCROLLY visual without running `export-code.mjs` (two-phase): phase 1 (no `--form`) EMITS the a/b/c proposal building NOTHING; phase 2 (`--form <html|code-source|embed>`) builds + delivers ONLY the chosen form, gated by `assertDelivered`. Never build all forms unconditionally, and never fabricate a no-JS `static.html` fallback — that fallback is GONE (accessibility is the `static` FORMAT choice at CADRAGE). Never mark an interactive/scrolly delivered on produce-time outputs alone — a Gate-3 review PNG / `interactive.png` / a build byproduct is NOT a delivery; only the `export-code --form <chosen>` artifact is (enforced mechanically by `assertDelivered`). A hosted-DW interactive delivers ONLY via `--form embed` (its live `publicUrl`) — it has no React source and no standalone local html.
 - Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.
-- Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the one legitimate name-only case, since it names no separate dataset to link.) Establish this proactively at Gate 2c (PROPOSITION), before PRODUCTION — never wait for the render-review to be the first thing that catches it, and never reach for the prose fallback just because the journalist has not answered yet. A *fabricated* placeholder URL is worse than none and is now MECHANICALLY refused: the spine's validation gate (GUARD 2, `src/source-guard.ts`) rejects any source URL on a reserved placeholder domain (`example.com`/`.org`/`.net`, or the `.example`/`.test`/`.invalid`/`.localhost` TLDs, RFC 2606/6761) — the proposal fails to produce rather than shipping a fake citation.
+- Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the legitimate name-only case: when the data names no separate dataset to link, or when the journalist's hedged recollection of a source stays unconfirmed, per Gate 2c's uncertainty rule.) Establish this proactively at Gate 2c (PROPOSITION), before PRODUCTION — never wait for the render-review to be the first thing that catches it, and never reach for the prose fallback just because the journalist has not answered yet. And never ship a flat, confident-looking citation over a source the journalist only HEDGED at (« je crois », « de mémoire ») — confirmed exactly, or the honest fallback (Gate 2c). A *fabricated* placeholder URL is worse than none and is now MECHANICALLY refused: the spine's validation gate (GUARD 2, `src/source-guard.ts`) rejects any source URL on a reserved placeholder domain (`example.com`/`.org`/`.net`, or the `.example`/`.test`/`.invalid`/`.localhost` TLDs, RFC 2606/6761) — the proposal fails to produce rather than shipping a fake citation.
 - Never accept a generic organisation homepage (e.g. `eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 URL as the source — it must be treated exactly like a missing URL. The source MUST point to the SPECIFIC, traceable dataset/page the figures come from (the Eurostat dataset page for the exact table, the Insee series page, …). If the journalist only gives an organisation name or its homepage, ASK for the specific dataset/page reference rather than shipping the generic one (see Gate 2c) — in the SAME free-text turn, never as a separate follow-up question.
-- Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1b) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, or a scope word ("Nordic") that excludes an entity the visual actually shows. If the data supports more than the title states, widen the title or flag it at Gate 3.
+- Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1b) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, a scope word ("Nordic") that excludes an entity the visual actually shows, or ONE HALF of a two-part takeaway standing in for the whole (the fall without the confirmed "only riser", a regrouping that contradicts the confirmed grouping). If the data supports more than the title states, widen the title or flag it at Gate 3. The confirmed wording lives VERBATIM in each proposal's `confirmedTakeaway` (5b) precisely so Gate 3a can quote it and check every part — a render-review that skips that quote is invalid (see 3a).
 - Never silently substitute a value from a prior/stale export when it disagrees with the journalist's current article/data — the values used (and shown at Gate 2b) MUST always be the ones the journalist provided in the current session.
 - Never offer the journalist an element/format (or sub-format) option before confirming — via `suggest-chart`'s reachability, not from memory — that it is actually producible. Retracting an offered option as infeasible forces the journalist to re-answer the same decision multiple times; check first, propose only what's confirmed.
 - Never keep the conversation going after the journalist signs off. Once the deliverable is handed over and the journalist signals completion (a pure thanks/goodbye with no new request), send AT MOST ONE brief closing message and treat the session as ENDED — no new questions, no repeated farewells, no re-engagement, no echoing further goodbyes back.

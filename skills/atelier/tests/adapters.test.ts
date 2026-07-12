@@ -280,6 +280,7 @@ describe("realDispatch — map-dw single-format gate (video/scrolly fail hard be
         id: "gate-check",
         producer: "map-dw",
         format,
+        confirmedTakeaway: "The confirmed takeaway for this fixture",
         // Deliberately NOT a valid MapSpec: if the gate were missing, produceMap would
         // reject this spec ("invalid map spec") and the dispatch would throw instead of
         // returning the failed outcome asserted here.
