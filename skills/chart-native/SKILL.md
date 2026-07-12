@@ -47,7 +47,10 @@ For each new FT type, in order:
    - **Global invariant** (label in-bounds, no overlap, contrast, palette, title=insight, source) →
      **reuse** the shared mechanism (`placeLabels`, `conformance`, `ChartFrame`, `resolveFrame`) and
      **enforce** it with a test (e.g. `tests/labels.test.ts`). Never re-solve a global invariant
-     inside one component.
+     inside one component. Label in-bounds is ALSO render-asserted at produce time on the journalist's
+     REAL config (`scripts/snap-label-fit.mjs`, fail-hard on the static + interactive paths): the
+     `core/text.ts` fitters only prevent clipping IF a renderer calls them, and a missed call shipped
+     the stacked-area right-gutter clip green — the snap catches that class mechanically.
    - **Type-specific** (the geometry, the motion gesture, *where* labels naturally go, type data
      rules) → lives in the type module.
    If you find yourself re-coding a global invariant per type (as the label-overflow guard was), stop
@@ -198,6 +201,7 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 | Interactive chart height / min width | `height` (480) / `minWidth` (280) | `src/InteractiveLineChart.tsx` |
 | Render watchdog ceiling | `DEFAULT_VIDEO_TIMEOUT_MS` (900000 = 15 min; env `ATELIER_VIDEO_TIMEOUT_MS`) | `src/video-watchdog.ts` |
 | Video snap sensitivity | `REVEAL_MIN_MEAN_DIFF` (0.5) / `PROGRESSION_MIN_MEAN_DIFF` (0.15) / `MIN_LUMA_VARIANCE` (10) / `STILL_MATCH_CHANNEL_TOLERANCE` (40) / `STILL_MATCH_MAX_DIFF_RATIO` (0.01) | `src/core/video-verify.ts` |
+| Label-fit slack (render guard) | `LABEL_FIT_TOLERANCE_PX` (4 — measured 3px healthy em-box ascent overhang at the responsive svg top edge + 1px sub-pixel) | `src/core/label-fit.ts` |
 
 ## Files
 
@@ -210,6 +214,7 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 - `scripts/{build-all,snap-static,snap-interactive,render-video}.mjs` — the three renderers.
 - `scripts/snap-video.mjs` — video snap guard (fail-hard after the mp4 render): container sanity + reveal-animates + mp4-matches-reviewed-still + final-frame-matches-final-still, via the bundled ffmpeg (`scripts/lib/ffbin.mjs`); pure pixel math in `src/core/video-verify.ts`.
 - `src/video-watchdog.ts` — bounds every Remotion render/still subprocess (default 15 min, `ATELIER_VIDEO_TIMEOUT_MS`); kills a hung process tree instead of burning the run.
+- `scripts/snap-label-fit.mjs` — render-time label-fit guard (fail-hard in `produce.mjs`, static + interactive paths): every rendered text (svg labels — rotated included, the AABB is what must fit — plus the ChartFrame title/subtitle/source) must sit inside the chart card ∩ its svg viewport (svg overflow is hidden by default, so the svg rect IS the clip box) within `LABEL_FIT_TOLERANCE_PX`; ZERO text found = fail (vacuity guard). Pure containment math in `src/core/label-fit.ts` (unit-tested); box measurement in `scripts/lib/collect-text-boxes.mjs`. Out of scope v1: label-vs-label overlap (`bun run audit` covers it at test time), contrast (the contrast snaps own it), video frames + map-native GL canvas text (no built page / no DOM to measure — indirect coverage only).
 - `scripts/snap-responsive.mjs` — proof harness: screenshots the interactive build at 360/768/1100px (responsive) + an early frame (reveal from 0).
 - `assets/sample-data/series.json` — runnable sample (generic small-newsroom time series).
 - `tests/{chart-geometry,reveal-contract}.test.ts` — `bun:test` (geometry + the 3-format determinism contract).

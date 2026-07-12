@@ -202,6 +202,14 @@ switch (format) {
     console.log(`[produce ${type}] checking text contrast (snap-contrast)…`);
     snap("scripts/snap-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",") });
 
+    // render-time label-fit guard — every rendered text (svg labels + frame
+    // furniture) must sit inside its clip bounds (card / svg viewport). The
+    // core/text.ts fitters only prevent clipping IF a renderer calls them; this
+    // asserts the RENDER, so a missed call (the stacked-area right-gutter clip
+    // class) fails the run before export instead of shipping truncated labels.
+    console.log(`[produce ${type}] checking label fit (snap-label-fit)…`);
+    snap("scripts/snap-label-fit.mjs", { TARGET: "static" });
+
     // render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
     // dimensions must equal the channel's exact media size. Fail-hard before export.
     // No render: static.png already exists on disk (the snap above); this just reads
@@ -253,6 +261,12 @@ switch (format) {
       // interactive path (the most common delivery). Fails the run before export.
       console.log(`[produce ${type}] checking text contrast (snap-interactive-contrast)…`);
       snap("scripts/snap-interactive-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",") });
+
+      // render-time label-fit guard for the interactive dist (same guard as the
+      // static path, post-reveal boxes) — a clipped label is exactly as real a
+      // bug on the interactive delivery as on the static one. Fails before export.
+      console.log(`[produce ${type}] checking label fit (snap-label-fit)…`);
+      snap("scripts/snap-label-fit.mjs", { TARGET: "interactive" });
 
       // render-time WCAG contrast guard for the INTERACTIVE hover/focus tooltip — a
       // static-build check can't see this (the tooltip only exists on hover, in

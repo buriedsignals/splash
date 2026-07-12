@@ -1,0 +1,21 @@
+{
+  "title": "Salaries and upkeep swallowed the council's new income",
+  "altInsight": "Of the council's 800 thousand pounds of new income, salaries took 900 and upkeep 350, leaving the closing balance 450 below the opening one.",
+  "unit": "running balance (£000s)",
+  "source": {
+    "name": "Riverton council accounts",
+    "url": "https://example.org/riverton-budget"
+  },
+  "rows": [
+    {
+      "label": "Opening balance carried forward",
+      "value": 1200,
+      "total": true
+    },
+    { "label": "Government support grants received", "value": 600 },
+    { "label": "Planning and licensing fees", "value": 200 },
+    { "label": "Staff salaries and pension costs", "value": -900 },
+    { "label": "Building upkeep and maintenance", "value": -350 },
+    { "label": "Closing balance at year end", "value": 750, "total": true }
+  ]
+}
