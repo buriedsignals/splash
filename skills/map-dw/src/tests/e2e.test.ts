@@ -1,75 +1,30 @@
 import { describe, it, expect } from "bun:test";
-import { readFileSync, existsSync } from "node:fs";
 import { produceMap } from "../produce";
 import type { MapSpec } from "../map-spec";
-import { deleteChart } from "../../../dw-chart/src/datawrapper";
 
-// Same render-free IHDR probe the native producers use (chart-native/scripts/
-// produce.mjs readPngSize): width/height as big-endian uint32 at bytes 16-19/20-23.
-function pngSize(path: string): { width: number; height: number } {
-  const buf = readFileSync(path);
-  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
-}
-
-// Live e2e against the real Datawrapper API. Requires DATAWRAPPER_API_TOKEN.
-// Run with: `set -a; source /atelier/.env; set +a; bun test src/tests/e2e.test.ts`
-// A passing assertion does NOT prove the map looks right — see output-proof/eu-renewables.png
-// (the human gate: data bound, light→blue gradient, not black).
+// Live refusal guards — real API knowledge, ZERO published charts.
+//
+// PUBLISH-VOLUME RULE (recurring root-gate failure, 2026-07-12): the sequential gate
+// runs the dw-chart suites first (~15 live publishes) and Datawrapper throttling/CDN
+// lag then stalls any publish→render→hover chain map-dw adds on top — the suite
+// repeatedly timed out in the full gate while passing in isolation. So the WHOLE
+// map-dw suite keeps AT MOST TWO published-chart e2e, each guarding a conclusion
+// end-to-end (never re-deriving probe work):
+// - legend-unit-e2e.test.ts — the colliding percent case ("0%" + " %" → a single % on
+//   legend AND tooltip) + the "interactive" embed-alone single-format floor.
+// - tooltip-unit-e2e.test.ts — the plain-unit case (' mm' on legend AND hover) + the
+//   "static" publish→exportPng→IHDR render-size floor.
+// The three publishes this file used to make are retired: the static choropleth and
+// interactive locator floors moved onto those two charts; locator MAPPING stays covered
+// pure (spec-to-map-metadata.test.ts's locator block), the pre-API gates token-free
+// (produce-format.test.ts), and output-proof/ keeps the published locator as the human
+// gate. Both remaining tests refuse BEFORE createChart, so nothing is ever published.
+// Requires DATAWRAPPER_API_TOKEN (the dataless-join guard reads the live basemap
+// geometry); skipped without it.
 const hasToken = !!process.env.DATAWRAPPER_API_TOKEN;
 const d = hasToken ? describe : describe.skip;
 
-d("produceMap (live)", () => {
-  it("publishes a real choropleth and exports a non-empty PNG", async () => {
-    const spec: MapSpec = {
-      mapType: "choropleth",
-      basemap: "world-2019",
-      mapKeyAttr: "DW_STATE_CODE",
-      regionKey: "code",
-      valueColumn: "value",
-      data: "code,value\nFRA,25\nDEU,46\nESP,42\nSWE,66",
-      title: "Sweden leads this group on renewable share",
-      altInsight: "Renewable share ranges from 25% in France to 66% in Sweden",
-      source: { name: "Eurostat" },
-    };
-    const png = `/tmp/map-dw-e2e-${Date.now()}.png`;
-    const r = await produceMap(spec, png);
-    expect(r.publicUrl).toMatch(/datawrapper/);
-    expect(r.pngPath).toBe(png);
-    expect((await Bun.file(png).arrayBuffer()).byteLength).toBeGreaterThan(0);
-    // RENDER-SIZE FLOOR: the delivered PNG's real dims must equal the channel's
-    // mediaSize ±2px (article-web default: 1200x675; DW's 2x export of the halved
-    // 600x338 request box lands 1200x676 — the odd-height rounding the shared
-    // assertRenderedSize tolerance exists for).
-    const dims = pngSize(png);
-    expect(Math.abs(dims.width - 1200)).toBeLessThanOrEqual(2);
-    expect(Math.abs(dims.height - 675)).toBeLessThanOrEqual(2);
-    // throwaway: this test chart is deleted; the kept proof is the eu-renewables chart in output-proof/
-    await deleteChart(r.chartId);
-  }, 60000);
-
-  // Single-format floor: "interactive" delivers the hosted embed ALONE — no PNG is
-  // exported or written for it (mirrors dw-chart's interactive contract).
-  it('publishes the hosted embed and writes NO png when format is "interactive"', async () => {
-    const spec: MapSpec = {
-      mapType: "locator",
-      title: "Three sites along the Arve valley",
-      altInsight: "Annemasse, Geneva and Chamonix marked along the Arve",
-      markers: [
-        { lng: 6.2347, lat: 46.1939, label: "Annemasse" },
-        { lng: 6.1432, lat: 46.2044, label: "Geneva" },
-        { lng: 6.8694, lat: 45.9237, label: "Chamonix" },
-      ],
-      source: { name: "OpenStreetMap" },
-    };
-    const png = `/tmp/map-dw-interactive-e2e-${Date.now()}.png`;
-    const r = await produceMap(spec, png, { format: "interactive" });
-    expect(r.publicUrl).toMatch(/datawrapper/);
-    expect(r.embed).toContain(r.publicUrl);
-    expect(r.pngPath).toBeUndefined();
-    expect(existsSync(png)).toBe(false);
-    await deleteChart(r.chartId);
-  }, 60000);
-
+d("produceMap (live) — refusal guards, zero publishes", () => {
   it("REFUSES to produce a symbol map (hover-only, unlabeled static) and routes to map-native", async () => {
     // #2 — map-dw symbol maps are retired: the owned static PNG ships mute, unlabeled circles
     // (values are hover-only). produceMap must reject the spec before touching the API and steer
@@ -109,24 +64,5 @@ d("produceMap (live)", () => {
     } as unknown as MapSpec;
     const png = `/tmp/map-dw-dataless-e2e-${Date.now()}.png`;
     await expect(produceMap(spec, png)).rejects.toThrow(/dataless choropleth/);
-  }, 60000);
-
-  it("publishes a real locator map and exports a non-empty PNG", async () => {
-    const spec: MapSpec = {
-      mapType: "locator",
-      title: "Three sites along the Arve valley",
-      altInsight: "Annemasse, Geneva and Chamonix marked along the Arve",
-      markers: [
-        { lng: 6.2347, lat: 46.1939, label: "Annemasse" },
-        { lng: 6.1432, lat: 46.2044, label: "Geneva" },
-        { lng: 6.8694, lat: 45.9237, label: "Chamonix" },
-      ],
-      source: { name: "OpenStreetMap" },
-    };
-    const png = `/tmp/map-dw-locator-e2e-${Date.now()}.png`;
-    const r = await produceMap(spec, png);
-    expect(r.publicUrl).toMatch(/datawrapper/);
-    expect((await Bun.file(png).arrayBuffer()).byteLength).toBeGreaterThan(0);
-    await deleteChart(r.chartId);
   }, 60000);
 });

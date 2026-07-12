@@ -201,11 +201,16 @@ render — only the sparse-subset fraction is checked mechanically.)
 - `src/furniture-i18n.ts` — i18n furniture gate (fail-hard in `produceMap`, before any API call): a
   non-English spec's outgoing metadata must carry the localized "Source : X" line in `annotate.notes`
   and blank `describe.source-name`/`source-url` (mirrored from dw-chart).
-- `src/tests/` — pure unit tests + live e2e (choropleth + locator; symbol asserts rejection; join-key
-  mismatch asserts validation error + a dataless join asserts a produce refusal; static asserts the
-  delivered PNG dims == channel mediaSize ±2px; interactive asserts embed-alone/no PNG) (live tests
-  skip without token). `produce-format.test.ts` — token-free: format gate + channel resolution beat
-  the missing-token error (proof both run before any API call) + `mapExportSize` derivation.
+- `src/tests/` — pure unit tests + live e2e capped at TWO published charts for the whole suite
+  (DW throttling/CDN lag stalls the sequential root gate after dw-chart's earlier publishes):
+  `tooltip-unit-e2e` (static choropleth, unit " mm": PNG dims == channel mediaSize ±2px + live
+  legend/hover carry the unit once) and `legend-unit-e2e` (interactive choropleth, colliding
+  "0%" + " %": embed-alone/no PNG + live legend/tooltip carry a single %). Both read the live
+  render via `src/tests/live-render.ts` (ONE bounded retry after `DW_CDN_RETRY_DELAY_MS`, the
+  render-review propagation-lag rule applied to tests). `e2e.test.ts` — zero-publish refusal
+  guards (symbol rejection; dataless-join produce refusal). `produce-format.test.ts` —
+  token-free: format gate + channel resolution beat the missing-token error (proof both run
+  before any API call) + `mapExportSize` derivation. (Live tests skip without token.)
 - `eval/` — `scoreMapSpec` (pure gate, per-type) + `basemaps.ts` allowlist + generic cases
   (choropleth, locator) + live basemap check.
 - `output-proof/` — the real published choropleth and locator maps (PNG + publicUrl), left published;

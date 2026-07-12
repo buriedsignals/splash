@@ -1,29 +1,29 @@
 import { describe, it, expect, afterAll } from "bun:test";
-// map-dw deliberately ships no node_modules of its own — it rides dw-chart's API client
-// (`../../dw-chart/src/datawrapper`), so the headless browser comes from the SAME sibling
-// install (pinned by dw-chart's package.json). A bare "playwright" import would fall back
-// to bun's auto-install cache here (no node_modules anywhere up-tree), which is
-// network-dependent and not version-pinned — the explicit sibling path is deterministic.
-import { chromium } from "../../../dw-chart/node_modules/playwright/index.mjs";
-import { produceMap } from "../produce";
+import { produceMap, readPngSize } from "../produce";
 import type { MapSpec } from "../map-spec";
 import { deleteChart } from "../../../dw-chart/src/datawrapper";
+import { readLiveRenderWithRetry } from "./live-render";
 
-// REAL-API e2e for the choropleth TOOLTIP UNIT (probed live 2026-07-12): a published
-// rainfall choropleth with unit " mm" stored `describe.number-append` and
-// `data.column-format[value].number-append` correctly, yet its rendered hover tooltip
-// showed a BARE "624" — %REGION_VALUE% never applies number-append (only the legend
-// endpoints do). The fix bakes the unit into the tooltip body TEMPLATE. This test
-// confirms BOTH what Datawrapper stored AND what a reader hovering the LIVE map sees,
-// because the original bug was precisely metadata that "passed" while shipping unitless
-// hover pixels. Requires DATAWRAPPER_API_TOKEN; skipped without it (mirrors e2e.test.ts).
+// REAL-API e2e, PLAIN-UNIT survivor — one of the suite's AT MOST TWO published charts
+// (see e2e.test.ts's header for the publish-volume rule). This ONE chart carries:
+// - the tooltip unit conclusion (probed live 2026-07-12): a rainfall choropleth with
+//   unit " mm" stored `describe.number-append`/`column-format` correctly yet hovered a
+//   BARE "624" — %REGION_VALUE% never applies number-append, so the unit must be baked
+//   into the tooltip body TEMPLATE (rawTooltipUnit). The original bug was precisely
+//   metadata that "passed" while shipping unitless hover pixels, hence the live read.
+// - the legend's plain-unit mechanism on the SAME render: the value column's
+//   `column-format` number-append is the endpoints' unit source (" mm" once per label).
+// - the "static" single-format floor (folded from the retired publish in e2e.test.ts):
+//   publish → exportPng → delivered PNG dims == channel mediaSize ±2px, read back from
+//   the file's own IHDR.
+// Requires DATAWRAPPER_API_TOKEN; skipped without it (mirrors e2e.test.ts).
 const hasToken = !!process.env.DATAWRAPPER_API_TOKEN;
 const d = hasToken ? describe : describe.skip;
 
 let chartId = "";
 
-d("choropleth tooltip unit (real API e2e)", () => {
-  it("publishes a choropleth with unit ' mm' whose LIVE hover tooltip carries the unit", async () => {
+d("choropleth plain unit ' mm' — legend + LIVE hover + static floor (real API e2e)", () => {
+  it("publishes ONE static choropleth whose PNG hits the channel box and whose LIVE legend + hover tooltip carry ' mm' once", async () => {
     const spec: MapSpec = {
       mapType: "choropleth",
       basemap: "world-2019",
@@ -37,13 +37,27 @@ d("choropleth tooltip unit (real API e2e)", () => {
       unit: " mm",
       source: { name: "World Bank" },
     };
-    // "interactive": the deliverable under test IS the hosted embed (no PNG on disk).
-    const r = await produceMap(spec, "/tmp/map-dw-tooltip-unit-unused.png", {
-      format: "interactive",
-    });
+    // "static": the owned PNG is the deliverable — and map-dw is HOSTED, so the PNG can
+    // only be exported FROM a published map, which means the SAME chart also exposes
+    // the live embed (publicUrl) this test hovers. One publish, both surfaces + floor.
+    const png = `/tmp/map-dw-tooltip-unit-e2e-${Date.now()}.png`;
+    const r = await produceMap(spec, png, { format: "static" });
+    // id captured BEFORE any assertion — afterAll must delete the chart even when an
+    // assertion below fails.
     chartId = r.chartId;
 
-    // 1. The stored chart metadata bakes the unit into the tooltip body template
+    // 1. Static single-format floor (folded from the retired e2e.test.ts publish):
+    //    the PNG exists, non-empty, and its REAL dims equal the channel mediaSize ±2px
+    //    (article-web default 1200x675; DW's 2x export of the halved 600x338 request
+    //    box lands 1200x676 — inside the shared assertRenderedSize tolerance).
+    expect(r.publicUrl).toMatch(/datawrapper/);
+    expect(r.pngPath).toBe(png);
+    expect((await Bun.file(png).arrayBuffer()).byteLength).toBeGreaterThan(0);
+    const dims = readPngSize(png);
+    expect(Math.abs(dims.width - 1200)).toBeLessThanOrEqual(2);
+    expect(Math.abs(dims.height - 675)).toBeLessThanOrEqual(2);
+
+    // 2. The stored chart metadata bakes the unit into the tooltip body template
     //    (number-append alone never reaches %REGION_VALUE% — the probed bug).
     const cr = await fetch(`https://api.datawrapper.de/v3/charts/${chartId}`, {
       headers: { Authorization: `Bearer ${process.env.DATAWRAPPER_API_TOKEN}` },
@@ -53,50 +67,28 @@ d("choropleth tooltip unit (real API e2e)", () => {
     };
     expect(chart.metadata.visualize.tooltip?.body).toBe("%REGION_VALUE% mm");
 
-    // 2. The LIVE RENDER: hovering a data-bearing region shows "<value> mm", not a bare
-    //    number. Regions are canvas-drawn (no per-region DOM), so sweep the map area until
-    //    the .dw-tooltip appears — the same live-render discipline as dw-chart's
-    //    highlight e2e (the metadata can "pass" while the pixels ship wrong).
-    const browser = await chromium.launch();
-    try {
-      const page = await browser.newPage({
-        viewport: { width: 900, height: 700 },
-      });
-      await page.goto(r.publicUrl, {
-        waitUntil: "networkidle",
-        timeout: 60000,
-      });
-      await page.waitForTimeout(4000);
+    // 3. The LIVE RENDER (one bounded CDN retry inside — see live-render.ts): content
+    //    assertions stay OUT here so a wrong-content read fails immediately.
+    const { legendText, tooltipText } = await readLiveRenderWithRetry(
+      r.publicUrl,
+    );
 
-      let tooltipText = "";
-      outer: for (let y = 120; y <= 520; y += 40) {
-        for (let x = 80; x <= 820; x += 40) {
-          await page.mouse.move(x, y);
-          await page.waitForTimeout(120);
-          const tip = await page.evaluate(() => {
-            for (const el of Array.from(
-              document.querySelectorAll(".dw-tooltip"),
-            )) {
-              const t = (el as HTMLElement).innerText?.trim();
-              const st = getComputedStyle(el as HTMLElement);
-              if (t && st.display !== "none" && st.visibility !== "hidden")
-                return t;
-            }
-            return null;
-          });
-          if (tip) {
-            tooltipText = tip;
-            break outer;
-          }
-        }
-      }
-      expect(tooltipText).not.toBe(""); // a region was hovered and a tooltip appeared
-      // the value line reads "<number> mm" — the unit the bug dropped
-      expect(tooltipText).toMatch(/\d\s?mm/);
-    } finally {
-      await browser.close();
-    }
-  }, 180000);
+    // Legend: every endpoint label reads "<number> mm" — the column-format append
+    // mechanism, unit exactly once. Splitting on the " mm" separator must leave only
+    // bare numbers ("624 mm 867 mm" → ["624","867"]); a dropped unit ("624 867") or a
+    // doubled one ("624 mm mm") both fail.
+    expect(legendText).not.toMatch(/mm\s*mm/);
+    const nums = legendText
+      .split(" mm")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    expect(nums.length).toBeGreaterThanOrEqual(2);
+    for (const n of nums) expect(n).toMatch(/^\d[\d.,]*$/);
+
+    // Hover: the value line reads "<number> mm" — the unit the bug dropped — once.
+    expect(tooltipText).toMatch(/\d\s?mm/);
+    expect(tooltipText).not.toMatch(/mm\s*mm/);
+  }, 300000);
 });
 
 afterAll(async () => {
