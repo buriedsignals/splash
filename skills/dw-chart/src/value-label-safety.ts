@@ -1,5 +1,5 @@
 import type { ChartType } from "./chart-spec";
-import { contrastRatio, WHITE, MIN_CONTRAST } from "./contrast";
+import { contrastRatio, WHITE, INK, MIN_CONTRAST } from "./contrast";
 
 // VALUE-LABEL CONTRAST SAFETY.
 //
@@ -11,16 +11,21 @@ import { contrastRatio, WHITE, MIN_CONTRAST } from "./contrast";
 //    `placement:"outside", show:"always"` prints them ABOVE the column in dark ink
 //    on the white canvas — always ≥4.5:1, and readable on the static export.
 //
-//  • Horizontal BAR family (d3-bars*): value labels are drawn INSIDE the bar with a
-//    crude white/black auto-pick that Datawrapper offers NO override for (no colour
-//    field, no outside placement — confirmed by dumping every d3-bars metadata key
-//    and by the Academy docs). For darker Okabe-Ito subject hues that auto-pick is
-//    WHITE and fails WCAG (white on #009E73 = 3.42:1, on #D55E00 = 3.87:1). Because
-//    the inside label cannot be made safe, we turn it OFF and show the numeric value
-//    axis instead: the bar keeps its hue, the axis carries the value in black ink.
-//
-// This is the dw-chart equivalent of chart-native's rule "the label carries the
-// value, the mark carries the hue".
+//  • Horizontal BAR family (d3-bars*): direct value labels are ON by default (FT/
+//    data-to-viz best-practice #3 — label the magnitude on the mark, don't make the
+//    reader estimate off the gridlines; matches chart-native's labelled bars).
+//    Datawrapper draws the label at the bar END (inside long bars, outside short ones)
+//    with a crude luminance-threshold white/black auto-pick it offers NO placement or
+//    colour override for (verified live — the only value-label keys are show-value-labels
+//    / value-label-format / value-label-alignment / value-label-visibility). On darker
+//    Okabe-Ito subject hues that auto-pick is WHITE below AA (white on #009E73 = 3.42:1,
+//    on #D55E00 = 3.87:1). Since the inside label can't be recoloured, we ALSO keep the
+//    value axis on (force-grid) as the contrast-clean redundant reading path — the direct
+//    label reads for everyone else, the black-ink axis carries the value when the inside
+//    label is marginal. checkValueLabelContrast records that marginal case as a render-
+//    review concern (the axis fallback is present), never a hard failure that would strip
+//    the direct labels. A cluttered chart can opt the direct labels out (valueLabels:false)
+//    and fall back to the axis alone.
 
 // Newer d3-column engine: value labels live in a `valueLabels` object.
 export const COLUMN_TYPES = new Set<ChartType>([
@@ -29,9 +34,11 @@ export const COLUMN_TYPES = new Set<ChartType>([
   "multiple-columns",
 ]);
 
-// d3-bars engine: value labels are inside-only via `show-value-labels`. Stacked
-// bars are excluded — their per-segment inside labels are a distinct concern the
-// value axis cannot recover, left at Datawrapper's default for now.
+// d3-bars engine: direct value labels via `show-value-labels` (ON by default), the axis
+// via `force-grid`. Stacked bars are EXCLUDED — their per-segment inside labels are a
+// distinct concern (each segment is a different fill, so the auto white/black pick and the
+// "which value goes where" question are per-segment; the single value axis can't recover a
+// stacked breakdown), left at Datawrapper's default for now.
 export const HORIZONTAL_BAR_TYPES = new Set<ChartType>([
   "d3-bars",
   "d3-bars-grouped",
@@ -69,12 +76,56 @@ export function applyValueLabels(
   }
 
   if (HORIZONTAL_BAR_TYPES.has(type)) {
-    // Datawrapper cannot render a contrast-safe INSIDE label on a coloured bar, so
-    // never ship one: kill the inside auto-white label and show the value axis
-    // (black tick labels + gridlines) whenever the numbers are wanted.
-    visualize["show-value-labels"] = false;
-    if (show) visualize["force-grid"] = true;
+    // DIRECT VALUE LABELS ON by default (FT/data-to-viz best-practice #3: label the
+    // magnitude ON the mark — don't leave the reader estimating off the gridlines). This
+    // matches chart-native's labelled bars. Datawrapper draws the label at the bar END:
+    // INSIDE long bars, OUTSIDE short ones — auto-picking dark-on-light / white-on-dark by
+    // a crude luminance threshold (VERIFIED live: grey/amber bars → dark labels, green/blue
+    // bars → white labels), and it exposes NO placement or colour override (the only
+    // value-label keys in the d3-bars schema are show-value-labels / value-label-format /
+    // value-label-alignment / value-label-visibility — none control inside/outside or
+    // colour). On a few mid-tone subject hues (green #009E73 → white 3.42:1, vermilion
+    // #D55E00 → white 3.87:1) that auto-pick is white below WCAG AA — so we ALSO keep the
+    // value axis on (force-grid) as the contrast-clean redundant reading path for exactly
+    // that case: the direct label reads for everyone else, the axis carries the value in
+    // black ink (17.8:1) when the inside label is marginal. checkValueLabelContrast records
+    // the marginal inside label as a render-review CONCERN (not a hard failure) precisely
+    // because this axis fallback is present. `value-label-format` is set by specToMetadata
+    // from spec.numberFormat (and localizes via the chart language — verified: fr → "10 600").
+    visualize["show-value-labels"] = show; // default ON; valueLabels:false opts out
+    // The value axis is ALWAYS kept for a bar family (a value chart must carry a value
+    // scale): the accessible fallback when labels are on, the sole reading path when the
+    // journalist opts the direct labels out (valueLabels:false) for a cluttered chart.
+    visualize["force-grid"] = true;
   }
+}
+
+// DATAWRAPPER'S INSIDE VALUE-LABEL COLOUR AUTO-PICK (verified live across the full
+// Okabe-Ito palette — see the probes recorded in SKILL.md). DW chooses WHITE label text on
+// darker fills and DARK ink on lighter ones by a PERCEIVED-BRIGHTNESS (YIQ) threshold — NOT
+// WCAG relative luminance. The proof is sky #56B4E9 vs amber #E69F00: near-identical WCAG
+// relative luminance (0.405 vs 0.416), yet DW renders WHITE on sky and DARK on amber — their
+// YIQ brightness (158 vs 162) straddles the boundary. Modelling the ACTUAL metric is what
+// lets checkValueLabelContrast flag only the genuinely marginal white-on-mid-tone labels
+// (green 3.42:1, vermilion 3.87:1, pink 3.06:1, sky 2.31:1) WITHOUT false-flagging the light
+// fills DW renders in safe dark ink (amber 7.9:1, grey 10:1, yellow 13:1). DW exposes no
+// override for either the colour or the placement.
+export const DW_WHITE_LABEL_YIQ_THRESHOLD = 160;
+
+function yiqBrightness(hex: string): number {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return 255; // unparseable → treat as light (safe dark ink) — never false-flag
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return (r * 299 + g * 587 + b * 114) / 1000;
+}
+
+// True when Datawrapper renders the INSIDE value label WHITE on a mark of this fill (dark
+// fill); false when it renders DARK ink (light fill). Exported for tests.
+export function dwInsideLabelIsWhite(fill: string): boolean {
+  return yiqBrightness(fill) < DW_WHITE_LABEL_YIQ_THRESHOLD;
 }
 
 export interface ValueLabelViolation {
@@ -122,6 +173,12 @@ export function checkValueLabelContrast(
 
   // A horizontal-bar inside label is unsafe unless it has been turned off.
   const insideBarLabel = isHorizontalBar && vis["show-value-labels"] !== false;
+  // The value AXIS (force-grid) is the contrast-clean fallback the mapper keeps on for the
+  // bar family. When it is present, a sub-AA white inside label — which Datawrapper draws
+  // with NO colour/placement override — is a recorded render-review CONCERN, not a hard
+  // failure (the axis carries the value in black ink). Without it, the inside label is the
+  // only reading path, so an unreadable one stays a HARD violation.
+  const barAxisFallback = insideBarLabel && vis["force-grid"] === true;
 
   // A column value label is unsafe only when placed INSIDE (outside = dark on white).
   const vl = vis["valueLabels"] as
@@ -135,23 +192,39 @@ export function checkValueLabelContrast(
   if (!insideBarLabel && !insideColumnLabel) return out;
 
   for (const fill of fills) {
-    const ratio = contrastRatio(WHITE, fill);
+    // The contrast of the label colour DW ACTUALLY renders inside a mark of this fill:
+    // white on dark fills, dark ink on light ones (its YIQ auto-pick, above). Checking the
+    // real rendered colour — instead of an always-white assumption — is what stops the guard
+    // false-flagging light fills (grey/amber/yellow) where DW's dark ink clears AA easily.
+    const isWhite = dwInsideLabelIsWhite(fill);
+    const ratio = isWhite
+      ? contrastRatio(WHITE, fill)
+      : contrastRatio(INK, fill);
     if (ratio < MIN_CONTRAST) {
       const isBrand = brand.has(fill.toUpperCase());
+      // A failure is a recorded CONCERN (kept, not thrown) when either the colour is a
+      // journalist-chosen brand hue (policy b) OR it is a horizontal-bar inside label with
+      // the value axis kept on as the accessible fallback. Everything else is hard.
+      const isConcern = isBrand || barAxisFallback;
       out.push({
         type: patch.type,
         color: fill,
         ratio,
-        ...(isBrand ? { concern: true } : {}),
+        ...(isConcern ? { concern: true } : {}),
         message: isBrand
           ? `${patch.type}: a value label inside the ${fill} brand mark is ` +
             `${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA) — kept per the ` +
             `newsroom's house style (render-review concern).`
-          : `${patch.type}: a white value label inside a ${fill} mark is ` +
-            `${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA). ` +
-            (isHorizontalBar
-              ? "Set visualize['show-value-labels']=false and show the value axis (force-grid)."
-              : "Set visualize.valueLabels.placement='outside' so the label sits in dark ink."),
+          : barAxisFallback
+            ? `${patch.type}: Datawrapper auto-draws a white value label inside the ${fill} ` +
+              `bar at ${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA) and offers no ` +
+              `colour/placement override — kept because the value axis (force-grid) carries ` +
+              `the value in black ink as the accessible fallback (render-review concern).`
+            : `${patch.type}: a white value label inside a ${fill} mark is ` +
+              `${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA). ` +
+              (isHorizontalBar
+                ? "Keep the value axis on (visualize['force-grid']=true) as the accessible fallback."
+                : "Set visualize.valueLabels.placement='outside' so the label sits in dark ink."),
       });
     }
   }

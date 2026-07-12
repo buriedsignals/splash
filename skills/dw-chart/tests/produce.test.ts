@@ -17,6 +17,7 @@ let msId = "";
 let annId = "";
 let frId = "";
 let interactiveId = "";
+let barId = "";
 
 // Real Datawrapper API round-trips. Requires DATAWRAPPER_API_TOKEN; skipped without it
 // so a clean checkout / CI stays green (mirrors map-dw's live-test gating).
@@ -126,6 +127,41 @@ d("produceChart (real API)", () => {
     rmSync(out, { force: true });
   }, 60000);
 
+  // DIRECT VALUE LABELS ON BAR-FAMILY CHARTS (FT/data-to-viz best-practice #3, QA Wave
+  // 13 gap). A ranked d3-bars must ship with the value printed ON/beside each bar, not
+  // leave the reader estimating off the gridlines. The metadata lever is verified LIVE
+  // here (show-value-labels + value-label-format round-trip on the published chart, and
+  // force-grid keeps the value axis as the accessible fallback); the PNG is exported to a
+  // stable path for a human render-verify (the numbers must actually appear on the bars).
+  it("publishes a ranked d3-bars whose value labels + axis land on the live chart, and renders the numbers", async () => {
+    const barSpec: ChartSpec = {
+      type: "d3-bars",
+      title: "Steak is the most expensive item on the menu",
+      data: "product,price\nCoffee,4.20\nSandwich,8.50\nSalad,11.00\nSteak,32.00\nWater,2.10",
+      baseColor: "#0072B2",
+      numberFormat: "$0,0.00",
+      altInsight: "Steak at $32 is roughly eight times the price of coffee",
+    };
+    const out = join(tmpdir(), "atelier-dwbar-value-labels.png");
+    rmSync(out, { force: true });
+    const res = await produceChart(barSpec, out);
+    barId = res.chartId;
+    expect(existsSync(out)).toBe(true);
+    // The PNG must be a real PNG (IHDR probe would throw otherwise) — read the signature.
+    const png = readFileSync(out);
+    expect(png.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
+    const r = await fetch(`https://api.datawrapper.de/v3/charts/${barId}`, {
+      headers: { Authorization: `Bearer ${process.env.DATAWRAPPER_API_TOKEN}` },
+    });
+    const chart = await r.json();
+    // The direct labels are ON, formatted, and the axis fallback is kept — all live.
+    expect(chart.metadata.visualize["show-value-labels"]).toBe(true);
+    expect(chart.metadata.visualize["value-label-format"]).toBe("$0,0.00");
+    expect(chart.metadata.visualize["force-grid"]).toBe(true);
+  }, 60000);
+
   // Single-format-produce-export (Task 3): "interactive" delivers the hosted embed
   // alone — dw-chart must NOT export/write a PNG for it (the old unconditional
   // exportPng call after every publish). "static" (the default, tested above) is
@@ -175,4 +211,5 @@ afterAll(async () => {
   if (annId) await deleteChart(annId);
   if (frId) await deleteChart(frId);
   if (interactiveId) await deleteChart(interactiveId);
+  if (barId) await deleteChart(barId);
 }, 60000);

@@ -1,8 +1,5 @@
 import { dataShape, labelColumnValues, parseCsvRecords } from "./csv";
-import {
-  hasValueLabelControl,
-  HORIZONTAL_BAR_TYPES,
-} from "./value-label-safety";
+import { hasValueLabelControl } from "./value-label-safety";
 
 export const OKABE_ITO = [
   "#0072B2",
@@ -427,16 +424,12 @@ export function validateChartSpec(
     warnings.push(
       `valueLabels is only honoured on bar/column charts; ignored for ${s.type} (use the chart-native path for direct labelling on line/scatter/pie)`,
     );
-  // #4 — HORIZONTAL bars DO have value-label control (so the warning above skips them), but
-  // that control is not what the caller asked for: Datawrapper draws the label INSIDE the bar
-  // in an auto white/black it offers no override for, which fails WCAG on darker subject hues.
-  // `applyValueLabels` therefore turns the inside label OFF and shows the value axis instead —
-  // a substitution that was previously SILENT (valueLabels:true → no numbers on the bars, no
-  // warning). Surface it so it is never a silent no-op.
-  if (s.valueLabels === true && HORIZONTAL_BAR_TYPES.has(s.type as ChartType))
-    warnings.push(
-      `valueLabels can't render contrast-safe INSIDE horizontal bars (${s.type}) — Datawrapper offers no colour/placement override, so the value axis is shown instead of on-bar labels. Use a column chart (e.g. column-chart) if you need outside value labels.`,
-    );
+  // #4 — HORIZONTAL bars now render DIRECT on-bar value labels by default (ON unless
+  // valueLabels:false), matching chart-native and FT best-practice #3, with the value axis
+  // kept as the accessible fallback (see applyValueLabels in value-label-safety.ts). The old
+  // silent substitution — valueLabels:true → no numbers on the bars — no longer happens, so
+  // there is nothing to warn about here; the marginal-contrast inside label DW gives no
+  // override for is surfaced at produce time (checkValueLabelContrast) as a render concern.
   // F2 — a brand-explicit house colour is kept even when it isn't CVD-safe (policy
   // b): the failure is recorded as a warning for the render-review, not a hard error.
   const brandExplicit = s.brandExplicit === true;
