@@ -4,6 +4,56 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-12 — Wave 8 QA (9 cas, personas variés) → 5 chantiers de fixes + 3 systémiques pour classes répétées
+
+Reprise de la boucle QA sur le main durci (mandat Rémy : boucler jusqu'à parfait, solutions concrètes
+quand les erreurs se répètent). 9 cas neufs : dialogue 100% ALLEMAND (jamais testé) · vidéos carré+portrait
+(premières productions sous le snap vidéo) · map+chart scrolly · interactif noms-longs mobile · map-dw
+embed-only · slope print + persona girouette · piège stories-interactif. Personas : pressé, pointilleux,
+sceptique, girouette, insistant. **8/9 livrés, 0 critical produit réel.**
+
+**Passes remarquables (gardes des tranches 1-3 validées en vrai flow)** : le TRAP stories-interactif =
+refus net avec explication technique + 2 alternatives honnêtes (2 pushbacks tenus, jamais cédé) · la
+girouette re-pinne static proprement (re-route suggest-chart) · le snap vidéo tourne en production
+(`video-verify.json` : portrait sparse line midVsEarly 0.276 — passe le seuil recalibré 0.15 que l'ancien
+0.5 aurait bloqué à tort ; reveal 1.01 ; still-match 0.0003) · map-dw embed-only propre · sign-off coupé
+par le driver.
+
+**5 chantiers de fixes (workflow + review adversariale, 2 UNSAFE corrigés) :**
+- **barColor jette baseColor sur highlight** (render-confirmé : pink #CC79A7 spec → orange hardcodé) :
+  highlighted = primary (baseColor ?? défaut), contexte = muted ; sweep famille (seul BarChart avait le
+  pattern — vérifié par grep reviewer) ; + value-labels scrolly embarqués suffixés unité courte
+  (locale-aware, `SHORT_UNIT_MAX_CHARS`). Review SAFE, pixel-exact vérifié (#CC79A7, zéro orange).
+- **dw-chart : validation STRICTE + vrai highlight** (systémique — l'orchestrateur avait halluciné
+  `highlight`/`highlightColor`, avalés silencieusement → cycle de production gâché) : champs inconnus
+  rejetés fail-loud (liste canonique compile-lockée, suggestion near-miss) + champ `highlight` RÉEL
+  (par valeur de catégorie, DW custom-colors, e2e API+pixels). **La review a attrapé un important** :
+  membership check en `split(",")` naïf → catégorie RFC4180 à virgule faussement rejetée (« Ministère de
+  l'Économie, des Finances… ») → scanner RFC4180 porté dans dw-chart (convention sibling). Le fixer a
+  révélé la classe entière : sortCsv/dataShape/numericValuesOf toujours naïfs → **migration systémique
+  dispatchée** (branche `fix/dw-chart-csv-rfc4180-migration`).
+- **Contrôle narratif scrolly** (répété 2× cette wave : plan 3-temps confirmé aplati en auto-pick ;
+  Alpes-Maritimes résolu par cherry-picking) : `beats` explicites dans la spec (line : ancres x + textes ;
+  bar-walk : liste ordonnée de catégories, longueur libre), validés contre les données (typo = fail loud),
+  auto-pick par défaut byte-identique (diffé sur 8 fixtures par le reviewer) ; PROPOSITION annonce
+  honnêtement contrôlable vs auto. Review SAFE.
+- **Harness : registration hosted-embed** (3e occurrence du faux critical « deliverable not reached ») :
+  `EMBED_URL.txt` frais + publicUrl matché = livrable réel ; + le driver RÉPOND au choix a/b/c (détection
+  de la proposition + dérivation du choix depuis la persona). **La review a attrapé un important** : le
+  détecteur ne connaissait que FR/EN — la proposition ALLEMANDE (« Welche Lieferform möchtest du? », run
+  krankenhaus réel) passait au travers → bras STRUCTUREL langue-indépendant (3 kinds classifiés = signature)
+  + vocabulaire de/it. 240/0.
+- **Discipline de flow** (SAFE) : `confirmedTakeaway` REQUIS dans accepted.json (3e occurrence de la
+  divergence titre↔takeaway — levier de présence mécanique + instruction review « citer et vérifier
+  toutes les parties ») · Q3 couvre le print (→ article-web + format static) · règle d'incertitude de
+  source (« de mémoire » ⇒ fallback prose honnête, jamais citation confiante).
+
+**Backlog légué (mineurs reviews)** : valueUnit pas threadé au suffixe embarqué (forme canonique
+long-unit+valueUnit) · `fmt()` chart-story vs `unitSuffix` divergent (fr sans espace vs U+202F) ·
+séparateur unitSuffix hors table LOCALES · gutter vertical embedded non-géré · dw narrow-width review
+(long labels sur dw interactif : seul le 1200px inspecté au Gate 3 — la classe label-safety à étendre) ·
+vermillon sur sujet cyber (palette sémantique, connu) · 2-form proposal 4e langue (détecteur conservateur).
+
 ## Session 2026-07-11 (suite 3) — Tranche 3 : clôture de la P-list mécanique de l'audit (P3 + P5 + densité) — 4 clips produit réels débusqués et corrigés
 
 Même dispositif (3 implémenteurs worktrees + reviewers qui **exécutent** les gardes). La review label-fit
