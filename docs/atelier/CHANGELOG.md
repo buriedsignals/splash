@@ -4,6 +4,43 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-11 (suite 2) — Tranche 2 : les 2 gardes structurantes (P1 vidéo + P4 map-dw) mergées
+
+Même dispositif que la Tranche 1 (workflow 2 implémenteurs worktrees + review adversariale par branche →
+2 UNSAFE avec findings réels → agents correctifs → merge). Les reviews de cette tranche ont **exécuté les
+gardes elles-mêmes contre des rendus réels** (pas lu le diff seulement) — les 2 findings majeurs viennent
+de là.
+
+- **P1 — snap vidéo + watchdog (`feat/video-snap-guard`)** — la promesse vitrine Splash (« motion graphics
+  code-rendered ») passait de zéro garde à une vérification mécanique fail-hard du **mp4 réel** dans les
+  2 producteurs natifs : sanité conteneur (ffmpeg bundlé Remotion, dims==canal, durée==comp ±1 frame) ·
+  frames 2/50/98 % (reveal anime ≥0.5 mean-diff · progression mid ≥0.15 · jamais blank) · **frame du still
+  ≈ mp4 à la même frame** (transfère l'approbation Gate 3 à l'artefact livré) · **vrai still FINAL**
+  (`remotion still --frame=-1`, capacité neuve — l'ancienne « last-frame.png » des exports était un
+  artefact ad-hoc circulaire tiré du mp4 ; le snap diffe maintenant la fin réelle → ferme la classe
+  « end-labels n'apparaissent jamais ») · **watchdog** qui borne le rendu (ATELIER_VIDEO_TIMEOUT_MS,
+  kill du process-group, SIGINT/SIGTERM forwardés) — le hang seismes devient un échec propre (root-cause
+  du hang = ticket séparé, inchangé). **Le critical attrapé par la review** : le premier jet réutilisait le
+  seuil 0.5 (calibré dense-BarReveal) pour les jambes mid → **bloquait des vidéos line saines au produce**
+  (LinePortrait 0.383 mesuré, LineSquare 0.485 — les 2 canaux sociaux) ; fix = seuil séparé
+  `PROGRESSION_MIN_MEAN_DIFF` 0.15 calibré des deux côtés (bruit frozen ≤0.04 ; mid sain le plus faible
+  0.383), calibration gravée dans le commentaire du knob, RED→GREEN sur les 3 comps réels. chart-native
+  988/988, map-native 622/622. Limites documentées : still final map-native déféré (chemin still =
+  seismes-prone) ; troncature map story après frame 140 non-détectée sans EXPECTED_FRAMES.
+- **P4 — plancher map-dw (`feat/map-dw-floor`)** — le producteur le plus faible : format pinné threadé
+  (static→PNG seul, interactive→embed seul, video/scrolly→reject **avant tout appel API** — le seam
+  anti-chart-orphelin de dw-chart mirroré + testé token-free) · taille d'export dérivée du canal
+  (`mapExportSize`, moitié du mediaSize car DW rasterise à 2×) · **IHDR readback fail-hard** du PNG livré
+  (±2px, pattern chart-native + signature PNG 8-octets ajoutée aux 3 twins). **L'important attrapé par la
+  review** : sur le chemin routé, la spec émise par suggest-chart n'a **pas de champ channel** →
+  produceMap validait contre le défaut article-web et passait (RED live : social-feed livré 1200px
+  article-web) ; fix = `withProposalChannel` au dispatch (adapters) — le canal canonique de la PROPOSITION
+  est injecté dans la spec des 2 producteurs cloud (dw-chart avait le même gap de classe), précédence
+  proposal-first documentée (miroir `resolveGuardChannel`), template MapSpec suggest-chart complété.
+  map-dw 120/120 (API réelle), atelier 262/262. **Follow-ups loggés** : dw-chart static ship du 2×-mediaSize
+  sans assertion (incohérence de densité — décision à prendre) · judge.md:161-163 périmé (dw-chart
+  « owned fallback » + map-dw catalogué symbol).
+
 ## Session 2026-07-11 (suite) — Tranche 1 post-audit : 4 fixes qualité mergés (workflow parallèle + review adversariale)
 
 Suite directe de l'audit (`docs/atelier/audit-2026-07-11.md`, 71/100 B-) et du renommage public **Splash**
