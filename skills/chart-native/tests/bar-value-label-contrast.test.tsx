@@ -3,10 +3,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { BarChart, type BarConfig } from "../src/BarChart";
 import { COLORS, OKABE_ITO } from "../src/core/tokens";
 
-// A highlighted bar's MARK is OKABE_ITO.orange (#E69F00 = 2.25:1 on white). Painting
-// the value LABEL in that same colour is a WCAG failure the snap-contrast produce guard
-// rejects (whole run exits 1 → the journalist gets nothing). The label must carry the
-// value in ink; only the mark carries the hue. Emphasis stays on the bar fill + weight.
+// A highlighted bar's MARK keeps the PRIMARY hue (baseColor ?? COLORS.line) while the
+// context bars mute (see barColor). Painting the value LABEL in the mark colour is a
+// WCAG failure the snap-contrast produce guard rejects (whole run exits 1 → the
+// journalist gets nothing). The label must carry the value in ink; only the mark
+// carries the hue. Emphasis stays on the bar fill + weight.
 const config: BarConfig = {
   title: "Brazil leads big economies on renewable electricity",
   source: { name: "Ember 2025", url: "https://example.org/x" },
@@ -15,7 +16,7 @@ const config: BarConfig = {
   valField: "share",
   orientation: "horizontal",
   sort: "desc",
-  highlightIndex: 0, // the top bar is accented (orange mark)
+  highlightIndex: 0, // the top bar is accented (primary mark, context muted)
   rows: [
     { country: "Brazil", share: 87.3 },
     { country: "Canada", share: 64.3 },
@@ -49,11 +50,13 @@ describe("BarChart — value-label contrast", () => {
     for (const f of fills) expect(f).toBe(COLORS.ink.toLowerCase());
   });
 
-  it("keeps the highlighted bar's MARK orange (emphasis stays on the fill)", () => {
+  it("keeps the highlighted bar's MARK in the primary hue (emphasis stays on the fill)", () => {
     const markup = renderToStaticMarkup(
       <BarChart config={config} progress={1} />,
     );
-    // the <rect> bar fill still carries the accent hue
-    expect(markup).toContain(`fill="${OKABE_ITO.orange}"`);
+    // the <rect> bar fill carries the primary hue (no baseColor → COLORS.line);
+    // the highlight must never swap in a hardcoded accent (QA Wave 8 regression)
+    expect(markup).toContain(`fill="${COLORS.line}"`);
+    expect(markup).not.toContain(`fill="${OKABE_ITO.orange}"`);
   });
 });

@@ -26,8 +26,8 @@ import {
   labelReveal,
   stagger,
 } from "./core/math";
-import type { Lang } from "./core/locale";
-import { COLORS, TYPE, OKABE_ITO } from "./core/tokens";
+import { unitSuffix, type Lang } from "./core/locale";
+import { COLORS, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrameWithHeader } from "./core/format";
 import {
@@ -87,6 +87,11 @@ export function BarChart({
 }: BarChartProps) {
   const p = clamp01(progress);
   const basePad = paddingFor(config.orientation, responsive);
+  // Scrolly host (embedded): each walked bar's direct value label must read
+  // complete on its own, so a SHORT unit is appended ("34,2 %"); the standalone
+  // static/video/interactive renders keep bare numbers — their frame states the
+  // unit once in the subtitle right above the plot (QA Wave 8, aging scrolly).
+  const valueSuffix = embedded ? unitSuffix(config.unit, config.lang) : "";
   // Horizontal category labels sit in the LEFT gutter; the fixed 124px default clips
   // long names ("Administration générale et finances…"). Widen the gutter to fit the
   // LONGEST label (measured at the pre-scale base axis font, since basePad is scaled by
@@ -100,6 +105,26 @@ export function BarChart({
       0,
     );
     basePad.left = Math.max(basePad.left, Math.min(width * 0.5, longest + 18));
+    // The value label rides the bar end into the RIGHT gutter; a unit-suffixed
+    // label ("34,2 %") is wider than the bare number the fixed 64px default was
+    // sized for. Widen the gutter to the widest suffixed label (measured at the
+    // pre-scale base axis font, like the left gutter above). Suffix-less renders
+    // keep the 64px default — their layout is unchanged.
+    if (valueSuffix) {
+      const widestVal = config.rows.reduce(
+        (m, r) =>
+          Math.max(
+            m,
+            textWidth(
+              formatNumber(Number(r[config.valField]), config.lang) +
+                valueSuffix,
+              TYPE.axis,
+            ),
+          ),
+        0,
+      );
+      basePad.right = Math.max(basePad.right, widestVal + 12);
+    }
   } else {
     // Vertical columns: a category label that is wider than its (narrow) column
     // WRAPS onto ≤2 lines (verticalCatLines) rather than truncating to a stub — the
@@ -158,6 +183,7 @@ export function BarChart({
       setHover={setHover}
       ts={ts}
       sc={sc}
+      valueSuffix={valueSuffix}
     />
   );
 
@@ -192,7 +218,11 @@ export function BarChart({
 function barColor(i: number, highlight?: number, baseColor?: string): string {
   const primary = baseColor ?? COLORS.line;
   if (highlight === undefined) return primary;
-  return i === highlight ? OKABE_ITO.orange : COLORS.muted;
+  // The highlight NEVER overrides the subject hue: the highlighted bar keeps the
+  // PRIMARY (the spec's subject-fit baseColor, or the default), and the emphasis
+  // comes from MUTING the context bars. Hardcoding an accent here discarded the
+  // approved baseColor — a tourism story's #CC79A7 shipped orange (QA Wave 8).
+  return i === highlight ? primary : COLORS.muted;
 }
 
 function BarSvg({
@@ -207,6 +237,7 @@ function BarSvg({
   setHover,
   ts,
   sc,
+  valueSuffix,
 }: {
   layout: BarLayout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -219,6 +250,9 @@ function BarSvg({
   setHover: (i: number | null) => void;
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
+  /** short-unit suffix appended to each direct value label ("" outside the
+   *  embedded scrolly host / for long units) — see BarChart body. */
+  valueSuffix: string;
 }) {
   const { innerWidth, innerHeight, orientation, bars } = layout;
   const horizontal = orientation === "horizontal";
@@ -399,7 +433,7 @@ function BarSvg({
                 fill={COLORS.ink}
                 opacity={labelOp}
               >
-                {formatNumber(b.rawVal, config.lang)}
+                {formatNumber(b.rawVal, config.lang) + valueSuffix}
               </text>
             </g>
           );

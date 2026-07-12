@@ -40,9 +40,13 @@ baseline. Length is near the top of the perception hierarchy → bars are the sa
    bars included. (Regression: an Olympic-medals ranking video shipped its GER/NGR bars unlabelled
    because the label was gated to the last 35 % of each bar's growth; the still froze before that.
    Guarded by `tests/bar-value-label-reveal.test.tsx`.)
-5. **Highlight at most one bar.** A single accent colour on the key bar (the subject of the
-   headline) is a strong editorial move; everything else stays the neutral series colour. Stay
-   within ≤2 colours (global rule). Default: no highlight, single series colour.
+5. **Highlight at most one bar.** Highlighting the key bar (the subject of the headline) is a
+   strong editorial move — the highlighted bar keeps the PRIMARY series colour (the spec's
+   subject-fit `baseColor`, or the default) and the emphasis comes from MUTING the context bars
+   to grey. The highlight must never swap in a different accent hue: that discards the approved
+   subject colour (regression: a tourism story's #CC79A7 shipped orange because the highlight
+   branch hardcoded an accent). Stay within ≤2 colours (global rule). Default: no highlight,
+   single series colour.
 
 ## Orientation — vertical columns vs horizontal bars
 
