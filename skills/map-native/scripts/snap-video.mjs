@@ -14,13 +14,20 @@
 //      noise tolerance. The still is what the Gate-3 review approves; this transfers
 //      that approval to the artifact actually delivered (labels present in the still
 //      ⟹ present in the video).
+//   4. MP4 FINAL FRAME == RENDERED FINAL STILL (optional, FINAL_STILL) — the final
+//      frame is the most-read frame of a chart video and check 3's mid-reveal still
+//      never covers it; when the producer renders a separate final still
+//      (video-<aspect>-final.png — chart-native does), the mp4's final frame must
+//      match it within the same tolerance, or the "end-state value labels never
+//      appear" bug class ships.
 // All decoding is done by the ffmpeg/ffprobe Remotion already ships (scripts/lib/
 // ffbin.mjs) — frames land as packed RGB24 buffers and the pure verdict lives in
 // src/core/video-verify.ts (unit-tested without rendering). Writes video-verify.json
 // (measurements + thresholds) next to the outputs, then exits 1 on any violation.
 //
 // Env: MP4, STILL, STILL_FRAME (required) · FPS (default 30) · EXPECTED_FRAMES,
-//      EXPECTED_WIDTH, EXPECTED_HEIGHT (optional) · OUTDIR (default dirname(MP4)).
+//      EXPECTED_WIDTH, EXPECTED_HEIGHT, FINAL_STILL (optional) ·
+//      OUTDIR (default dirname(MP4)).
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -44,13 +51,14 @@ function fail(message) {
 
 const mp4Path = process.env.MP4 ? resolve(process.env.MP4) : null;
 const stillPath = process.env.STILL ? resolve(process.env.STILL) : null;
+const finalStillPath = process.env.FINAL_STILL ? resolve(process.env.FINAL_STILL) : null;
 const stillFrame = Number(process.env.STILL_FRAME);
 const fps = Number(process.env.FPS ?? "30");
 const expectedFrames = process.env.EXPECTED_FRAMES ? Number(process.env.EXPECTED_FRAMES) : undefined;
 const expectedWidth = process.env.EXPECTED_WIDTH ? Number(process.env.EXPECTED_WIDTH) : undefined;
 const expectedHeight = process.env.EXPECTED_HEIGHT ? Number(process.env.EXPECTED_HEIGHT) : undefined;
 if (!mp4Path || !stillPath || !Number.isInteger(stillFrame) || stillFrame < 0 || !Number.isFinite(fps) || fps <= 0) {
-  fail("usage: MP4=<file.mp4> STILL=<still.png> STILL_FRAME=<int> [FPS=30] [EXPECTED_FRAMES=N] [EXPECTED_WIDTH=W EXPECTED_HEIGHT=H] [OUTDIR=dir] bun scripts/snap-video.mjs");
+  fail("usage: MP4=<file.mp4> STILL=<still.png> STILL_FRAME=<int> [FPS=30] [EXPECTED_FRAMES=N] [EXPECTED_WIDTH=W EXPECTED_HEIGHT=H] [FINAL_STILL=final.png] [OUTDIR=dir] bun scripts/snap-video.mjs");
 }
 const outDir = process.env.OUTDIR ? resolve(process.env.OUTDIR) : dirname(mp4Path);
 
@@ -74,6 +82,13 @@ try {
   statSync(stillPath);
 } catch {
   fail(`review still not found: ${stillPath}`);
+}
+if (finalStillPath) {
+  try {
+    statSync(finalStillPath);
+  } catch {
+    fail(`final still not found: ${finalStillPath}`);
+  }
 }
 
 const probeOut = runFf(
@@ -129,18 +144,18 @@ function extractFrame(label, timeSeconds) {
   return { width, height, data: new Uint8Array(data) };
 }
 
-// Decode the review still to raw RGB24 at the mp4's pixel size (scales when the
-// still was rendered at a different size, per the tolerant-diff contract).
-function decodeStill() {
-  const out = join(tmp, "still.raw");
+// Decode a rendered still (png) to raw RGB24 at the mp4's pixel size (scales when
+// the still was rendered at a different size, per the tolerant-diff contract).
+function decodeStill(pngPath, what) {
+  const out = join(tmp, `${what}.raw`);
   runFf(
     ff.ffmpeg,
-    ["-v", "error", "-i", stillPath, "-vf", `scale=${width}:${height}`, "-frames:v", "1", "-c:v", "rawvideo", "-pix_fmt", "rgb24", "-f", "image2pipe", "-y", out],
-    "review-still decode",
+    ["-v", "error", "-i", pngPath, "-vf", `scale=${width}:${height}`, "-frames:v", "1", "-c:v", "rawvideo", "-pix_fmt", "rgb24", "-f", "image2pipe", "-y", out],
+    `${what} decode`,
   );
   const data = readFileSync(out);
   if (data.length !== rawBytes) {
-    fail(`review-still decode produced ${data.length} bytes, expected ${rawBytes}`);
+    fail(`${what} decode produced ${data.length} bytes, expected ${rawBytes}`);
   }
   return { width, height, data: new Uint8Array(data) };
 }
@@ -155,10 +170,15 @@ try {
     final: extractFrame("final", frameTime(lastFrame)),
   };
   const still = {
-    frame: decodeStill(),
+    frame: decodeStill(stillPath, "review-still"),
     mp4Frame: extractFrame("at-still", frameTime(stillFrame)),
     frameIndex: stillFrame,
   };
+  // The final still (when the producer renders one) is compared against the mp4's
+  // final sampled frame — already extracted above as samples.final.
+  const finalStill = finalStillPath
+    ? { frame: decodeStill(finalStillPath, "final-still") }
+    : undefined;
 
   // --- 3. the pure verdict ------------------------------------------------------
   result = verifyVideo({
@@ -166,6 +186,7 @@ try {
     expected: { fps, width: expectedWidth, height: expectedHeight, frames: expectedFrames },
     samples,
     still,
+    finalStill,
   });
 } finally {
   rmSync(tmp, { recursive: true, force: true });
@@ -181,6 +202,7 @@ if (expectedFrames === undefined) {
 const report = {
   mp4: mp4Path,
   still: stillPath,
+  finalStill: finalStillPath,
   stillFrame,
   probe: { sizeBytes, width, height, durationSeconds, nbFrames, fps },
   expected: { frames: expectedFrames ?? null, width: expectedWidth ?? null, height: expectedHeight ?? null },
@@ -206,5 +228,8 @@ if (result.violations.length > 0) {
 console.log(
   `[snap-video] OK — mp4 animates (reveal ${result.measurements.revealMeanDiff.toFixed(1)} mean diff), ` +
     `all sampled frames non-blank, frame ${stillFrame} matches the reviewed still ` +
-    `(${((result.measurements.stillDiffRatio ?? 0) * 100).toFixed(2)}% pixels beyond tolerance).`,
+    `(${((result.measurements.stillDiffRatio ?? 0) * 100).toFixed(2)}% pixels beyond tolerance)` +
+    (finalStillPath
+      ? `, final frame matches the rendered final still (${((result.measurements.finalStillDiffRatio ?? 0) * 100).toFixed(2)}%).`
+      : "."),
 );

@@ -149,6 +149,13 @@ export interface VideoVerifyInput {
   samples: { early: RawFrame; mid: RawFrame; late: RawFrame; final: RawFrame };
   /** The mp4 frame at the review still's frame index vs the still itself. */
   still?: { frame: RawFrame; mp4Frame: RawFrame; frameIndex: number };
+  /** A SEPARATELY-rendered still of the composition's LAST frame, when the producer
+   * renders one (chart-native does; map-native does not — see its produce.mjs).
+   * Compared against samples.final: the final frame is the most-read frame of a
+   * chart video (the end state readers pause on), so it must match what the
+   * deterministic still render shows — the "end-state value labels never appear"
+   * bug class fails here instead of shipping. */
+  finalStill?: { frame: RawFrame };
 }
 
 export interface VideoVerifyResult {
@@ -160,7 +167,7 @@ export interface VideoVerifyResult {
 
 /** The full verdict. Pure: probe/frames in, violations + measurements out. */
 export function verifyVideo(input: VideoVerifyInput): VideoVerifyResult {
-  const { probe, expected, samples, still } = input;
+  const { probe, expected, samples, still, finalStill } = input;
   const violations: string[] = [];
   const measurements: Record<string, number> = { mp4Bytes: probe.sizeBytes };
 
@@ -249,6 +256,33 @@ export function verifyVideo(input: VideoVerifyInput): VideoVerifyResult {
       if (ratio > STILL_MATCH_MAX_DIFF_RATIO) {
         violations.push(
           `mp4 frame ${still.frameIndex} does not match the reviewed still: ${(ratio * 100).toFixed(2)}% of pixels differ beyond ±${STILL_MATCH_CHANNEL_TOLERANCE} (allowed ${(STILL_MATCH_MAX_DIFF_RATIO * 100).toFixed(2)}%) — the delivered video is not the frame the review approved`,
+        );
+      }
+    }
+  }
+
+  // 6 — mp4 final frame == rendered final still (when the producer renders one):
+  // the FINAL frame is the most-read frame of a chart video, and the mid-reveal
+  // still (check 5) never covers it — without this, the "end-state value labels
+  // never appear" bug class ships. Same tolerant thresholds as check 5.
+  if (finalStill) {
+    if (
+      finalStill.frame.width !== samples.final.width ||
+      finalStill.frame.height !== samples.final.height
+    ) {
+      violations.push(
+        `final still dimensions ${finalStill.frame.width}x${finalStill.frame.height} do not match the mp4 frame ${samples.final.width}x${samples.final.height} — scale before diffing`,
+      );
+    } else {
+      const ratio = diffRatio(
+        samples.final,
+        finalStill.frame,
+        STILL_MATCH_CHANNEL_TOLERANCE,
+      );
+      measurements.finalStillDiffRatio = ratio;
+      if (ratio > STILL_MATCH_MAX_DIFF_RATIO) {
+        violations.push(
+          `mp4 final frame does not match the rendered final still: ${(ratio * 100).toFixed(2)}% of pixels differ beyond ±${STILL_MATCH_CHANNEL_TOLERANCE} (allowed ${(STILL_MATCH_MAX_DIFF_RATIO * 100).toFixed(2)}%) — the delivered end state is not the end state the still render shows`,
         );
       }
     }

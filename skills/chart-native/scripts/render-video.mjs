@@ -14,6 +14,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const remotion = join(here, "..", "remotion", "index.ts");
 const stillOut = process.argv[2] ?? "/tmp/native-still.png";
 const mp4Out = process.argv[3] ?? "/tmp/native-line-reveal.mp4";
+const finalOut = process.argv[4] ?? "/tmp/native-final-still.png";
 const comp = process.env.COMP ?? "LineReveal"; // LineReveal | BarReveal
 
 // Mid-reveal frame the review still is rendered at (of the 240-frame comps). Kept in
@@ -38,11 +39,18 @@ const run = (args) =>
     shell: process.platform === "win32",
   });
 
-console.log(`1/2 validating a still frame (frame ${STILL_FRAME}) of ${comp} before the mp4…`);
+console.log(`1/3 validating a still frame (frame ${STILL_FRAME}) of ${comp} before the mp4…`);
 await run(["remotion", "still", remotion, comp, stillOut, `--frame=${STILL_FRAME}`, "--gl=angle", ...propsArgs]);
 
-console.log("2/2 rendering the mp4…");
+// The END state, rendered separately (--frame=-1 = the composition's last frame):
+// the most-read frame of a chart video. snap-video.mjs diffs the mp4's final frame
+// against this, so an "end-state value labels never appear" regression fails hard
+// instead of shipping — the mid-reveal still above never covers the end state.
+console.log(`2/3 rendering the final-frame still of ${comp}…`);
+await run(["remotion", "still", remotion, comp, finalOut, "--frame=-1", "--gl=angle", ...propsArgs]);
+
+console.log("3/3 rendering the mp4…");
 await run(["remotion", "render", remotion, comp, mp4Out,
   "--gl=angle", "--concurrency=1", "--timeout=120000", ...propsArgs]);
 
-console.log("Wrote", stillOut, "and", mp4Out);
+console.log("Wrote", stillOut, ",", finalOut, "and", mp4Out);

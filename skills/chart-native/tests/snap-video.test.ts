@@ -144,6 +144,7 @@ let sparseMp4: string;
 let correctStill: string;
 let wrongStill: string;
 let sparseStill: string;
+let correctFinalStill: string;
 
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), "snap-video-e2e-"));
@@ -161,6 +162,9 @@ beforeAll(() => {
   // the adversarial still = an EARLY frame passed off as the review still
   writeStill(wrongStill, makeFrame(1 / (FRAMES - 1)));
   writeStill(sparseStill, makeSparseFrame(STILL_FRAME / (FRAMES - 1)));
+  // the separately-rendered end state (what `remotion still --frame=-1` produces)
+  correctFinalStill = join(dir, "final-still.png");
+  writeStill(correctFinalStill, makeFrame(1));
 });
 
 const baseEnv = () => ({
@@ -218,6 +222,25 @@ describe("snap-video.mjs — e2e on real (synthetic) mp4s", () => {
     expect(midVsEarlyMeanDiff).toBeGreaterThan(PROGRESSION_MIN_MEAN_DIFF);
     expect(midVsEarlyMeanDiff).toBeLessThan(REVEAL_MIN_MEAN_DIFF);
     expect(revealMeanDiff).toBeGreaterThan(REVEAL_MIN_MEAN_DIFF);
+  }, 120_000);
+
+  it("should PASS with a FINAL_STILL that matches the mp4's true end state, and record the measurement", () => {
+    const res = runSnap({ ...baseEnv(), FINAL_STILL: correctFinalStill });
+    expect(res.stderr).toBe("");
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain("final frame matches the rendered final still");
+    const report = JSON.parse(
+      readFileSync(join(dir, "video-verify.json"), "utf8"),
+    );
+    expect(report.measurements.finalStillDiffRatio).toBeDefined();
+  }, 120_000);
+
+  it("should FAIL when the mp4's final frame does not match the rendered final still (end state never reached)", () => {
+    // an early frame passed off as the final still — the deterministic render's end
+    // state and the delivered mp4's end state disagree
+    const res = runSnap({ ...baseEnv(), FINAL_STILL: wrongStill });
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toContain("final frame does not match");
   }, 120_000);
 
   it("should FAIL when the duration does not match the registered composition", () => {

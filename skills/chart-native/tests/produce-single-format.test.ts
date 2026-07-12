@@ -54,6 +54,8 @@ describe("produce.mjs single-format dispatch", () => {
     // default channel is article-web -> landscape aspect
     expect(existsSync(`${out}/landscape.mp4`)).toBe(true);
     expect(existsSync(`${out}/video-landscape-still.png`)).toBe(true);
+    // the separately-rendered end state the snap diffs the mp4's final frame against
+    expect(existsSync(`${out}/video-landscape-final.png`)).toBe(true);
     expect(existsSync(`${out}/static.png`)).toBe(false);
     expect(existsSync(`${out}/interactive.html`)).toBe(false);
     expect(existsSync(`${out}/interactive.png`)).toBe(false);

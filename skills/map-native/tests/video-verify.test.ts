@@ -320,4 +320,42 @@ describe("verifyVideo — the full verdict over probe + sampled frames + still",
     const { violations } = verifyVideo(input);
     expect(violations.some((v) => v.includes("dimensions"))).toBe(true);
   });
+
+  // The final frame is the most-read frame of a chart video (the end state readers
+  // pause on) — when a separately-rendered final still exists, the mp4's final frame
+  // must match it, or the "end-state value labels never appear" bug class ships.
+  describe("final still (optional)", () => {
+    it("should pass when the mp4 final frame matches the rendered final still within codec noise", () => {
+      const input = {
+        ...goodInput(),
+        finalStill: { frame: nudged(gradient(11), 4) },
+      };
+      const { violations, measurements } = verifyVideo(input);
+      expect(violations).toEqual([]);
+      expect(measurements.finalStillDiffRatio).toBeLessThanOrEqual(
+        STILL_MATCH_MAX_DIFF_RATIO,
+      );
+    });
+
+    it("should flag an mp4 final frame that does not match the rendered final still (end state never reached)", () => {
+      // the delivered mp4 ends on a mid-reveal state, not the rendered end state
+      const input = { ...goodInput(), finalStill: { frame: gradient(3) } };
+      const { violations } = verifyVideo(input);
+      expect(violations.some((v) => v.includes("final"))).toBe(true);
+    });
+
+    it("should flag mismatched final-still dimensions instead of comparing garbage", () => {
+      const input = {
+        ...goodInput(),
+        finalStill: { frame: gradient(11, W + 4, H) },
+      };
+      const { violations } = verifyVideo(input);
+      expect(violations.some((v) => v.includes("dimensions"))).toBe(true);
+    });
+
+    it("should not run the final-still check when no final still is provided", () => {
+      const { measurements } = verifyVideo(goodInput());
+      expect(measurements.finalStillDiffRatio).toBeUndefined();
+    });
+  });
 });

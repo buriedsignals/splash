@@ -339,22 +339,25 @@ switch (format) {
 
     console.log(`[produce ${type}] rendering ${name} (${comp}) for channel "${channel}"…`);
     const stillPath = join(outDir, `video-${name}-still.png`);
+    const finalStillPath = join(outDir, `video-${name}-final.png`);
     const mp4Path = join(outDir, `${name}.mp4`);
-    run("bun", ["scripts/render-video.mjs", stillPath, mp4Path], {
+    run("bun", ["scripts/render-video.mjs", stillPath, mp4Path, finalStillPath], {
       COMP: comp,
       STILL_FRAME: String(VIDEO_STILL_FRAME),
     });
 
     // Video snap guard (fail-hard, like snap-contrast): mechanical assertions on the
     // ACTUAL mp4 — container sanity (size/dims/registered duration), the reveal
-    // really animates (first≠mid≠final sampled frames, none blank), and the mp4
-    // frame at VIDEO_STILL_FRAME matches the review still the Gate-3 human approves.
-    // A violation exits 1 here, BEFORE the outputs are declared.
+    // really animates (first≠mid≠final sampled frames, none blank), the mp4 frame at
+    // VIDEO_STILL_FRAME matches the review still the Gate-3 human approves, AND the
+    // mp4's FINAL frame (the most-read frame — the end state) matches the separately
+    // rendered final still. A violation exits 1 here, BEFORE outputs are declared.
     console.log(`[produce ${type}] verifying the rendered mp4 (snap-video)…`);
     const timing = readCompTiming(rootTsxSrc, comp);
     run("bun", ["scripts/snap-video.mjs"], {
       MP4: mp4Path,
       STILL: stillPath,
+      FINAL_STILL: finalStillPath,
       STILL_FRAME: String(VIDEO_STILL_FRAME),
       FPS: String(timing?.fps ?? 30),
       ...(timing ? { EXPECTED_FRAMES: String(timing.frames) } : {}),
@@ -365,6 +368,7 @@ switch (format) {
 
     result[name] = mp4Path;
     result.reviewStill = stillPath; // the still IS the review, not a separate deliverable
+    result.finalStill = finalStillPath; // end-state review artifact, same status as reviewStill
     console.log(`[produce ${type}] done rendering ${name}.`);
     break;
   }

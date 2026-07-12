@@ -382,6 +382,14 @@ switch (format) {
       // (buildTimeline over sample-derived beats in remotion/src/Root.tsx), not
       // literals — snap-video logs that skip; its still-frame containment check
       // still bounds truncation. A violation exits 1 BEFORE outputs are declared.
+      // ASYMMETRY vs chart-native: no FINAL_STILL here. chart-native also renders
+      // the composition's last frame as a separate still and has snap-video diff
+      // the mp4's final frame against it (the end-state check). map-native's still
+      // renders go through the hang-prone Remotion+MapLibre per-frame path (the
+      // seismes-class hang, see CLAUDE.md backlog) — a second still render per
+      // video doubles that exposure, so the end-state check is deferred until the
+      // hang is root-caused. snap-video.mjs already supports FINAL_STILL (mirror,
+      // lockstep) — wiring it is one env var when that day comes.
       console.log(`[produce map] verifying the rendered mp4 (snap-video)…`);
       run("bun", ["scripts/snap-video.mjs"], {
         MP4: mp4Out,

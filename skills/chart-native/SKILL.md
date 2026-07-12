@@ -114,10 +114,12 @@ Two more plumbing musts for the video: render with **`--gl=angle`** and **valida
 before the full mp4** (a half-reveal still catches framing/easing bugs the tests can't). After the mp4,
 `produce.mjs` runs **`scripts/snap-video.mjs` fail-hard**: it probes the ACTUAL mp4 (Remotion's bundled
 ffprobe/ffmpeg), asserts container sanity (size / dims / registered duration ±1 frame), that the reveal
-really animates (2%/50%/98%/final sampled frames: first≠final, midpoint≠both endpoints, none blank), and
-that the mp4 frame at the review-still's frame index **matches the approved still** within codec
-tolerance — so the frame Gate-3 approves is the frame that ships (measurements + thresholds land in
-`video-verify.json`). The render itself is bounded by a **watchdog** (`src/video-watchdog.ts`, default
+really animates (2%/50%/98%/final sampled frames: first≠final, midpoint≠both endpoints, none blank), that
+the mp4 frame at the review-still's frame index **matches the approved still** within codec tolerance —
+so the frame Gate-3 approves is the frame that ships — and that the mp4's **final frame matches a
+separately-rendered final still** (`video-<aspect>-final.png`, `--frame=-1`): the end state is the
+most-read frame, so "end-state value labels never appear" fails hard instead of shipping (measurements +
+thresholds land in `video-verify.json`). The render itself is bounded by a **watchdog** (`src/video-watchdog.ts`, default
 15 min, `ATELIER_VIDEO_TIMEOUT_MS` override) that kills a hung Remotion process tree — a clean fail-hard
 instead of a burned run. The static and
 interactive web builds need relative asset paths (`base:"./"`); the static page is served over a tiny
@@ -205,7 +207,7 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 - `src/mount.tsx` — browser entry for the static + interactive builds.
 - `remotion/src/{Root,LineReveal}.tsx` + `remotion/index.ts` — the Remotion composition (video).
 - `scripts/{build-all,snap-static,snap-interactive,render-video}.mjs` — the three renderers.
-- `scripts/snap-video.mjs` — video snap guard (fail-hard after the mp4 render): container sanity + reveal-animates + mp4-matches-reviewed-still, via the bundled ffmpeg (`scripts/lib/ffbin.mjs`); pure pixel math in `src/core/video-verify.ts`.
+- `scripts/snap-video.mjs` — video snap guard (fail-hard after the mp4 render): container sanity + reveal-animates + mp4-matches-reviewed-still + final-frame-matches-final-still, via the bundled ffmpeg (`scripts/lib/ffbin.mjs`); pure pixel math in `src/core/video-verify.ts`.
 - `src/video-watchdog.ts` — bounds every Remotion render/still subprocess (default 15 min, `ATELIER_VIDEO_TIMEOUT_MS`); kills a hung process tree instead of burning the run.
 - `scripts/snap-responsive.mjs` — proof harness: screenshots the interactive build at 360/768/1100px (responsive) + an early frame (reveal from 0).
 - `assets/sample-data/series.json` — runnable sample (generic small-newsroom time series).
