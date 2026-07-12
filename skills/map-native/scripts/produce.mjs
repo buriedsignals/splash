@@ -38,6 +38,8 @@ import { basename, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { snapCommand, remotionCommand } from "../src/platform-runners.ts";
+import { runWithVideoWatchdog } from "../src/video-watchdog.ts";
+import { readCompDims } from "./lib/comp-registry.mjs";
 import { ALL_CHANNELS, channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -76,18 +78,10 @@ function readPngSize(pngPath) {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
-// Reads a named Remotion <Composition>'s registered width/height straight out of
-// Root.tsx's source text — "known constants" read at produce-time with no render (no
-// React/Remotion runtime needed). Used to fail-hard if a future edit regresses a
-// comp's dims (e.g. re-introducing the 4:5 1350 bug this slice fixed) without having
-// to actually render the video.
-function readCompDims(rootTsxSrc, compId) {
-  const re = new RegExp(
-    `id=["']${compId}["'][\\s\\S]*?width=\\{(\\d+)\\}[\\s\\S]*?height=\\{(\\d+)\\}`,
-  );
-  const m = rootTsxSrc.match(re);
-  return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
-}
+// readCompDims — a comp's registered width/height literals read straight out of
+// Root.tsx at produce-time (no render), to fail-hard if a future edit regresses a
+// comp's dims (e.g. re-introducing the 4:5 1350 bug this slice fixed). The scan is
+// bounded to the comp's own tag — see scripts/lib/comp-registry.mjs (mirrored).
 
 // Channel-driven format (Slice 2): the confirmed CADRAGE Q3 channel, forwarded by
 // adapters.ts as `ATELIER_CHANNEL` (see adapters.ts's CHANNEL THREADING note). Absent
@@ -361,12 +355,44 @@ switch (format) {
 
       const stillOut = join(outDir, `video-${name}-still.png`);
       const mp4Out = join(outDir, `${name}.mp4`);
+      // Both Remotion invocations run under the render watchdog (src/video-watchdog.ts):
+      // the seismes-class hang (Remotion+MapLibre per-frame render) is killed after
+      // ATELIER_VIDEO_TIMEOUT_MS (default 15 min) and fails the run cleanly instead of
+      // burning it — root-causing the hang itself stays a separate ticket.
+      const renderEnv = { ...env, COMP: comp };
       console.log(`[produce map] video ${name} (${comp}) — still…`);
-      run(REMOTION[0], [...REMOTION.slice(1), "still", remotionEntry, comp, stillOut,
-        `--frame=${STORY_STILL_FRAME}`, "--gl=angle", `--props=${propsPath}`], { COMP: comp });
+      await runWithVideoWatchdog(REMOTION[0], [...REMOTION.slice(1), "still", remotionEntry, comp, stillOut,
+        `--frame=${STORY_STILL_FRAME}`, "--gl=angle", `--props=${propsPath}`], { cwd: root, env: renderEnv, shell: isWin });
       console.log(`[produce map] video ${name} (${comp}) — mp4…`);
-      run(REMOTION[0], [...REMOTION.slice(1), "render", remotionEntry, comp, mp4Out,
-        "--gl=angle", "--concurrency=1", "--timeout=120000", `--props=${propsPath}`], { COMP: comp });
+      await runWithVideoWatchdog(REMOTION[0], [...REMOTION.slice(1), "render", remotionEntry, comp, mp4Out,
+        "--gl=angle", "--concurrency=1", "--timeout=120000", `--props=${propsPath}`], { cwd: root, env: renderEnv, shell: isWin });
+
+      // Video snap guard (fail-hard, like snap-a11y): mechanical assertions on the
+      // ACTUAL mp4 — container sanity (size/dims), the story really animates
+      // (first≠mid≠final sampled frames, none blank), and the mp4 frame at
+      // STORY_STILL_FRAME matches the review still the Gate-3 human approves. No
+      // EXPECTED_FRAMES: map story durations are bundle-time computed constants
+      // (buildTimeline over sample-derived beats in remotion/src/Root.tsx), not
+      // literals — snap-video logs that skip; its still-frame containment check
+      // still bounds truncation. A violation exits 1 BEFORE outputs are declared.
+      // ASYMMETRY vs chart-native: no FINAL_STILL here. chart-native also renders
+      // the composition's last frame as a separate still and has snap-video diff
+      // the mp4's final frame against it (the end-state check). map-native's still
+      // renders go through the hang-prone Remotion+MapLibre per-frame path (the
+      // seismes-class hang, see CLAUDE.md backlog) — a second still render per
+      // video doubles that exposure, so the end-state check is deferred until the
+      // hang is root-caused. snap-video.mjs already supports FINAL_STILL (mirror,
+      // lockstep) — wiring it is one env var when that day comes.
+      console.log(`[produce map] verifying the rendered mp4 (snap-video)…`);
+      run("bun", ["scripts/snap-video.mjs"], {
+        MP4: mp4Out,
+        STILL: stillOut,
+        STILL_FRAME: String(STORY_STILL_FRAME),
+        FPS: "30",
+        EXPECTED_WIDTH: String(compDims.width),
+        EXPECTED_HEIGHT: String(compDims.height),
+        OUTDIR: outDir,
+      });
 
       result[name] = mp4Out;
       result.reviewStill = stillOut; // the still IS the review, not a separate deliverable

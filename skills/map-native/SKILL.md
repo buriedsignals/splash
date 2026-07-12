@@ -161,8 +161,17 @@ each frame reproducible, but only if the MapTiler mutations (setPaintProperty, s
 also deterministic given `frame`. Two more plumbing musts for the video: render with **`--gl=angle`**
 and **`--concurrency=1`** (a second Remotion worker racing on the same map instance corrupts frames),
 and **validate ONE still frame before the full mp4** (a half-reveal still catches framing/easing bugs
-the tests can't). The static and interactive web builds need `VITE_MAPTILER_KEY` in `.env`; the
-Remotion build needs `REMOTION_MAPTILER_KEY` — both free-tier keys, gitignored.
+the tests can't). After the mp4, `produce.mjs` runs **`scripts/snap-video.mjs` fail-hard**: it probes
+the ACTUAL mp4 (Remotion's bundled ffprobe/ffmpeg), asserts container sanity (size / dims), that the
+story really animates (2%/50%/98%/final sampled frames: first≠final, midpoint≠both endpoints, none
+blank — catches the "still succeeds but the mp4 is frozen/blank" class mechanically), and that the mp4
+frame at `STORY_STILL_FRAME` **matches the approved review still** within codec tolerance — so the frame
+Gate-3 approves is the frame that ships (measurements + thresholds land in `video-verify.json`). Both
+Remotion invocations are bounded by a **watchdog** (`src/video-watchdog.ts`, default 15 min,
+`ATELIER_VIDEO_TIMEOUT_MS` override) that kills a hung render process tree — the seismes-class
+Remotion+MapLibre per-frame hang becomes a clean fail-hard instead of a burned run (root-causing that
+hang stays a separate ticket). The static and interactive web builds need `VITE_MAPTILER_KEY` in `.env`;
+the Remotion build needs `REMOTION_MAPTILER_KEY` — both free-tier keys, gitignored.
 
 One more Remotion footgun: the component fetches the basemap geo via `staticFile("geo/world.geojson")`
 at render time, so the file MUST live under the Remotion **public dir**. `remotion.config.ts` sets the
@@ -353,6 +362,8 @@ best practices live in `knowledge/references/map/formats/video-reveal.md`.
 | Basemap style | `MapStyle.DATAVIZ.LIGHT` | `ChoroplethMap.tsx` |
 | Viewport padding on fitBounds | `padding: 48` | `ChoroplethMap.tsx` / `ChoroplethStory.tsx` |
 | Min data fill fraction (audit) | `MIN_DATA_FILL_FRACTION` (0.7) | `scripts/audit.mjs` |
+| Render watchdog ceiling | `DEFAULT_VIDEO_TIMEOUT_MS` (900000 = 15 min; env `ATELIER_VIDEO_TIMEOUT_MS`) | `src/video-watchdog.ts` |
+| Video snap sensitivity | `REVEAL_MIN_MEAN_DIFF` (0.5) / `PROGRESSION_MIN_MEAN_DIFF` (0.15) / `MIN_LUMA_VARIANCE` (10) / `STILL_MATCH_CHANNEL_TOLERANCE` (40) / `STILL_MATCH_MAX_DIFF_RATIO` (0.01) | `src/core/video-verify.ts` |
 
 ## Files
 
@@ -383,6 +394,8 @@ best practices live in `knowledge/references/map/formats/video-reveal.md`.
 - `scripts/snap-static.mjs` — Playwright: waits for `map.once('idle')`, screenshots static build.
 - `scripts/snap-proof.mjs` — Playwright: loads interactive build, hovers a region, screenshots popup.
 - `scripts/produce.mjs` — `produce(configPath, outDir)`: all three formats from an arbitrary config.
+- `scripts/snap-video.mjs` — video snap guard (fail-hard after the mp4 render): container sanity + reveal-animates + mp4-matches-reviewed-still, via the bundled ffmpeg (`scripts/lib/ffbin.mjs`); pure pixel math in `src/core/video-verify.ts`.
+- `src/video-watchdog.ts` — bounds every Remotion render/still subprocess (default 15 min, `ATELIER_VIDEO_TIMEOUT_MS`); kills the hung process tree (seismes-class hang → clean fail-hard).
 - `src/route-geo.ts` — `computeRoute` / `computeRouteReveal`: runtime route geometry (auto-detect crossed territories + stops + borders); superseded the build-time `prep-geo.mjs` bake.
 - `assets/geo/world.geojson` — Natural Earth admin-0 boundaries (simplified).
 - `assets/sample-data/choropleth.json` — runnable sample (EU renewable energy share by country).

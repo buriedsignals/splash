@@ -18,6 +18,7 @@ import { chartDistSub } from "../src/build-paths.ts";
 import { runProduceConformance } from "../src/core/produce-conformance.ts";
 import { REMOTION_PREFIX } from "../src/native-types.ts";
 import { snapCommand } from "../src/platform-runners.ts";
+import { readCompDims, readCompTiming } from "./lib/comp-registry.mjs";
 import { ALL_CHANNELS, channelAspect, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -35,18 +36,16 @@ function readPngSize(pngPath) {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
-// Reads a named Remotion <Composition>'s registered width/height straight out of
-// Root.tsx's source text — "known constants" read at produce-time with no render
-// (no React/Remotion runtime needed). Used to fail-hard if a future edit regresses a
-// comp's dims (e.g. re-introducing the 4:5 1350 bug this slice fixed) without having
-// to actually render the video.
-function readCompDims(rootTsxSrc, compId) {
-  const re = new RegExp(
-    `id=["']${compId}["'][\\s\\S]*?width=\\{(\\d+)\\}[\\s\\S]*?height=\\{(\\d+)\\}`,
-  );
-  const m = rootTsxSrc.match(re);
-  return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
-}
+// readCompDims / readCompTiming — a comp's registered literals read straight out of
+// Root.tsx at produce-time (no render). Dims fail-hard on regression (e.g. the 4:5
+// 1350 bug); timing feeds snap-video's duration-vs-registered check (null = a
+// non-literal registration, which just skips that one check there). The scan is
+// bounded to the comp's own tag — see scripts/lib/comp-registry.mjs (mirrored).
+
+// Mid-reveal frame the review still is rendered at — threaded to render-video.mjs
+// AND snap-video.mjs so the still the Gate-3 review approves and the mp4 frame the
+// snap diffs against it are the SAME frame (the load-bearing still≈mp4 transfer).
+const VIDEO_STILL_FRAME = 140;
 
 // The single-format-produce-export redesign's vocabulary (mirrors ../../atelier/src/
 // channel.ts's VisualFormat — kept as a plain runtime Set here since this is a .mjs,
@@ -322,13 +321,37 @@ switch (format) {
     }
 
     console.log(`[produce ${type}] rendering ${name} (${comp}) for channel "${channel}"…`);
-    run(
-      "bun",
-      ["scripts/render-video.mjs", join(outDir, `video-${name}-still.png`), join(outDir, `${name}.mp4`)],
-      { COMP: comp },
-    );
-    result[name] = join(outDir, `${name}.mp4`);
-    result.reviewStill = join(outDir, `video-${name}-still.png`); // the still IS the review, not a separate deliverable
+    const stillPath = join(outDir, `video-${name}-still.png`);
+    const finalStillPath = join(outDir, `video-${name}-final.png`);
+    const mp4Path = join(outDir, `${name}.mp4`);
+    run("bun", ["scripts/render-video.mjs", stillPath, mp4Path, finalStillPath], {
+      COMP: comp,
+      STILL_FRAME: String(VIDEO_STILL_FRAME),
+    });
+
+    // Video snap guard (fail-hard, like snap-contrast): mechanical assertions on the
+    // ACTUAL mp4 — container sanity (size/dims/registered duration), the reveal
+    // really animates (first≠mid≠final sampled frames, none blank), the mp4 frame at
+    // VIDEO_STILL_FRAME matches the review still the Gate-3 human approves, AND the
+    // mp4's FINAL frame (the most-read frame — the end state) matches the separately
+    // rendered final still. A violation exits 1 here, BEFORE outputs are declared.
+    console.log(`[produce ${type}] verifying the rendered mp4 (snap-video)…`);
+    const timing = readCompTiming(rootTsxSrc, comp);
+    run("bun", ["scripts/snap-video.mjs"], {
+      MP4: mp4Path,
+      STILL: stillPath,
+      FINAL_STILL: finalStillPath,
+      STILL_FRAME: String(VIDEO_STILL_FRAME),
+      FPS: String(timing?.fps ?? 30),
+      ...(timing ? { EXPECTED_FRAMES: String(timing.frames) } : {}),
+      EXPECTED_WIDTH: String(compDims.width),
+      EXPECTED_HEIGHT: String(compDims.height),
+      OUTDIR: outDir,
+    });
+
+    result[name] = mp4Path;
+    result.reviewStill = stillPath; // the still IS the review, not a separate deliverable
+    result.finalStill = finalStillPath; // end-state review artifact, same status as reviewStill
     console.log(`[produce ${type}] done rendering ${name}.`);
     break;
   }
