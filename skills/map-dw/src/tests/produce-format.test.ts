@@ -1,8 +1,13 @@
 import { describe, it, expect } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { produceMap, mapExportSize, type DwMapFormat } from "../produce";
+import {
+  produceMap,
+  mapExportSize,
+  readPngSize,
+  type DwMapFormat,
+} from "../produce";
 import type { MapSpec } from "../map-spec";
 
 // Single-format floor for map-dw (mirrors dw-chart's produce.test.ts ordering seam):
@@ -121,5 +126,36 @@ describe("mapExportSize — the requested DW export box derives from the channel
 
   it("a garbled channel fails hard (normalizeChannel is fail-closed)", () => {
     expect(() => mapExportSize("instagramz")).toThrow(/unknown channel/);
+  });
+});
+
+describe("readPngSize — IHDR readback refuses a non-PNG file", () => {
+  // Without the signature check, garbage bytes at offsets 16/20 read back as absurd
+  // "dimensions" and the render-size floor fails with a confusing size mismatch
+  // instead of naming the real problem (the export handed back something not a PNG).
+  it('throws a clear "not a PNG" error on a file without the PNG signature', () => {
+    const p = join(tmpdir(), `map-dw-not-a-png-${Date.now()}.png`);
+    writeFileSync(p, "<html>an error page, not an image</html>");
+    expect(() => readPngSize(p)).toThrow(/not a PNG/);
+  });
+
+  it('throws "not a PNG" on a file too short to hold an IHDR chunk', () => {
+    const p = join(tmpdir(), `map-dw-short-png-${Date.now()}.png`);
+    writeFileSync(p, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    expect(() => readPngSize(p)).toThrow(/not a PNG/);
+  });
+
+  it("reads width/height from a well-formed PNG header", () => {
+    // Minimal on-disk PNG head: 8-byte signature + IHDR length + "IHDR" tag +
+    // width/height as big-endian uint32 — exactly the bytes the probe consumes.
+    const head = Buffer.alloc(24);
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(head, 0);
+    head.writeUInt32BE(13, 8); // IHDR data length
+    head.write("IHDR", 12, "ascii");
+    head.writeUInt32BE(1080, 16); // width
+    head.writeUInt32BE(1920, 20); // height
+    const p = join(tmpdir(), `map-dw-real-png-head-${Date.now()}.png`);
+    writeFileSync(p, head);
+    expect(readPngSize(p)).toEqual({ width: 1080, height: 1920 });
   });
 });

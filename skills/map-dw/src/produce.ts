@@ -54,13 +54,30 @@ export function mapExportSize(channel?: string): {
   };
 }
 
+// The fixed 8-byte PNG file signature (RFC 2083 / ISO 15948 §5.2) — every PNG starts
+// with exactly these bytes; anything else is not a PNG.
+const PNG_SIGNATURE = Buffer.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+]);
+
 // Render-size readback — the same render-free IHDR probe the native producers use
 // (skills/chart-native/scripts/produce.mjs readPngSize): PNG signature 8 bytes +
 // 4-byte chunk length + 4-byte "IHDR" tag, then width/height as big-endian uint32 at
 // bytes 16-19/20-23. Read from the delivered file itself, never trusted from the
-// request.
-function readPngSize(pngPath: string): { width: number; height: number } {
+// request. The signature is CHECKED first: reading fixed offsets off a non-PNG (an
+// API error page saved as .png, a truncated download) yields garbage "dimensions"
+// and a confusing size-mismatch error — fail with the real problem instead.
+// Exported for unit tests.
+export function readPngSize(pngPath: string): {
+  width: number;
+  height: number;
+} {
   const buf = readFileSync(pngPath);
+  if (buf.length < 24 || !buf.subarray(0, 8).equals(PNG_SIGNATURE)) {
+    throw new Error(
+      `"${pngPath}" is not a PNG (bad or missing 8-byte PNG signature) — cannot read IHDR dimensions`,
+    );
+  }
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
