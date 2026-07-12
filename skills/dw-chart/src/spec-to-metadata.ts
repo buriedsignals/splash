@@ -2,6 +2,7 @@ import type { ChartSpec } from "./chart-spec";
 import {
   ANNOTATION_UNSUPPORTED_TYPES,
   ANNOTATION_UNMAPPED_BAR_TYPES,
+  DEFAULT_BASE_COLOR,
   MULTI_SERIES_TYPES,
   SCATTER_ANNOTATION_TYPES,
   normalizeNumberFormat,
@@ -488,6 +489,13 @@ export function dwLocale(lang: string): string {
   return map[lang.toLowerCase()] ?? lang;
 }
 
+// The de-emphasis grey for `spec.highlight`: every non-highlighted bar drops to the
+// muted grey Datawrapper's OWN default-theme palette carries — read live from
+// GET /v3/themes/datawrapper (colors.palette[6] = "#c4c4c4"), so a highlighted chart
+// reads exactly like a native Datawrapper "grey context + one accent" chart. A single
+// named constant (one value): change it here and every highlighted bar family follows.
+export const HIGHLIGHT_MUTED_GREY = "#c4c4c4";
+
 // The single source of truth for the CSV that reaches Datawrapper: apply the
 // human column labels first, then the ranking sort. Both the data upload and
 // the metadata mapping (annotation y-derivation) must see the SAME CSV, so
@@ -553,6 +561,22 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
           ]),
         )
       : spec.seriesColors;
+  }
+  // HIGHLIGHT (single-series bar family — HIGHLIGHT_TYPES, validated upstream): the
+  // highlighted CATEGORY takes the accent (spec.baseColor when chosen, else the
+  // library default) and every OTHER bar drops to the muted DW palette grey, painted
+  // via base-color. custom-colors is keyed by the CATEGORY VALUE, never a row index:
+  // resolveData may re-sort the rows (spec.sort), so an index would silently accent a
+  // different bar after the re-sort — the value survives any ordering (verified live:
+  // d3-bars + column-chart both honour the category key at render). This deliberately
+  // overrides the base-color set from spec.baseColor above — with a highlight, the
+  // baseColor IS the accent of the one highlighted bar, not the colour of them all.
+  // seriesColors can't collide here (validateChartSpec rejects the combination).
+  if (spec.highlight) {
+    visualize["base-color"] = HIGHLIGHT_MUTED_GREY;
+    visualize["custom-colors"] = {
+      [spec.highlight.trim()]: spec.baseColor ?? DEFAULT_BASE_COLOR,
+    };
   }
   // VALUE LABELS (contrast-safe). Datawrapper's bar/column value labels have two
   // traps: vertical columns default to hover-only (invisible on the static PNG),

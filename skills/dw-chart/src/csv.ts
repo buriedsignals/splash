@@ -4,6 +4,93 @@ export function dataShape(csv: string): { columns: string[]; rows: number } {
   return { columns, rows: Math.max(0, lines.length - 1) };
 }
 
+// RFC 4180 quote-aware scan of CSV text into records of raw cells: a comma or
+// newline INSIDE a double-quoted field is literal (the field is not torn into
+// extra cells / records), a doubled quote ("") is an escaped ", and the
+// surrounding quotes are stripped. Unquoted cells are whitespace-trimmed; a
+// quoted cell's interior is preserved verbatim. Sibling of the identical scanner
+// in skills/chart-native/src/csv.ts (skills stay self-contained — no cross-skill
+// imports), which itself mirrors skills/atelier/src/map-data.ts.
+export function parseCsvRecords(text: string): string[][] {
+  const records: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false; // cursor is inside the quoted section
+  let quotedField = false; // this field opened with a quote → preserve verbatim
+  let closed = false; // the quoted section has ended → ignore trailing chars
+  let started = false; // a non-space char (or the opening quote) has begun the field
+
+  const endField = () => {
+    row.push(quotedField ? field : field.trim());
+    field = "";
+    inQuotes = false;
+    quotedField = false;
+    closed = false;
+    started = false;
+  };
+  const endRow = () => {
+    endField();
+    records.push(row);
+    row = [];
+  };
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+          closed = true;
+        }
+      } else {
+        field += ch;
+      }
+      continue;
+    }
+    if (ch === '"' && !started) {
+      inQuotes = true;
+      quotedField = true;
+      started = true;
+      field = ""; // discard any leading whitespace accumulated before the quote
+      continue;
+    }
+    if (ch === ",") {
+      endField();
+      continue;
+    }
+    if (ch === "\n") {
+      endRow();
+      continue;
+    }
+    if (ch === "\r") {
+      // Bare \r is kept; a \r\n record break is handled by the \n above.
+      if (text[i + 1] !== "\n") field += ch;
+      continue;
+    }
+    if (closed) continue; // stray char after a closed quoted field — ignore
+    field += ch;
+    if (ch !== " " && ch !== "\t") started = true;
+  }
+  endRow();
+  return records;
+}
+
+// The label-column (first-cell) values of the DATA rows (header skipped), RFC
+// 4180-parsed and trimmed, empties dropped. Membership checks (highlight,
+// annotation x) must compare against THESE: a quoted, comma-containing category
+// (e.g. "Ministère de l'Économie, des Finances et de la Souveraineté industrielle
+// et numérique") is ONE label — a naive split(",") tears it into fragments and
+// falsely rejects the legitimate value. Never throws; [] when there are no rows.
+export function labelColumnValues(csv: string): string[] {
+  return parseCsvRecords(csv.trim())
+    .slice(1)
+    .map((cells) => (cells[0] ?? "").trim())
+    .filter(Boolean);
+}
+
 // Rename CSV column headers by key. Datawrapper's direct label on a line/area
 // series is the column header — a raw column key (e.g. `median_home_price_usd`)
 // must never reach the reader. Renaming the header is the one place that fixes
