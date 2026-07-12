@@ -36,7 +36,21 @@ question tool. **Exception:** a question that must capture free-form data — mo
 SOURCE (its label and URL) — is NEVER single-select; a fixed menu of options cannot carry a URL. Ask
 it as a free-text prompt instead (see GATE 2/3 source handling below).
 
-1. Branch: "Do you already have a visual in mind, or should I guide you?"
+**Announce the REAL running count — never a hardcoded question number the flow did not reach.** The
+Q-labels below are STABLE positions (Q1 branch · Q2 takeaway/Gate 1b · Q3 channel · Q4 constraint), not a
+promise that every one is a fresh single-select turn: Q2's takeaway is asked openly on GUIDED but folded
+into a confirm-back on DIRECT, Q4 is conditional, and DIRECT fires at Q1 then skips Q2–Q4. So the number
+of turns a journalist actually answers VARIES — announce the count that actually happened, never a canned
+"Q3, toujours posée" when the flow did not reach it.
+
+1. **Branch (DIRECT vs GUIDED) — an EXPLICIT journalist-facing turn, never a branch you pick silently
+   from their opening message and merely announce as decided.** When the opening names no specific
+   visual, ask it openly — "Do you already have a visual in mind, or should I guide you?". When the
+   journalist NAMED a specific visual in their opening (e.g. "a scrolly map"), inferring DIRECT from that
+   naming is legitimate, but CONFIRM the inference back rather than deciding it silently — « tu as déjà
+   une idée précise (une carte scrolly) — on part là-dessus, ou tu préfères que je te guide ? ». The
+   journalist must be able to SEE the branch decision and veto it into GUIDED; the branch is never set
+   without their visible answer.
 2. **Takeaway — GATE 1b (un-skippable, both branches):** "What is the one thing a reader should leave
    with?" → the insight/angle. This is a DISTINCT, mandatory step — it is NEVER collapsed into Q3, and it
    is NEVER satisfied by inferring the takeaway from the article and moving on. Even when the article
@@ -100,6 +114,13 @@ it as a free-text prompt instead (see GATE 2/3 source handling below).
    cannot even restrict its format set without it (see `knowledge/references/formats/format-selection.md`).
    Skipping Q3 is exactly the failure mode that let a visual escalate to interactive/video/scrolly with
    none of the channel constraints established — never skip it.
+   **The formats named in option (c) describe the channel's ALLOWED SET — they are NOT a menu to pick
+   from here, and NOT a second question.** "Interactif, image ou vidéo" tells the journalist what the
+   article-web channel CAN host; atelier must NEVER follow the channel pick with a separate CADRAGE turn
+   re-offering static / interactive / video — that double-ask is redundant with this label and inflates
+   the question count. The single format is decided later, exactly once: pinned at PROPOSITION and
+   announced-vetoable on GUIDED (Gate 2), or named by the journalist inside Q1 on DIRECT. Q3 fixes the
+   allowed SET; the format pin is surfaced ONCE, at PROPOSITION — the two never double-ask.
 4. Constraint (only if relevant): mobile-first, deadline, house palette.
    - **House palette (F2 brand profile):** if the project has a `brand.json` (loadBrandProfile → `palette` + optional `accent`), OFFER "use your house palette?" here. On yes, seed the producer spec's colour from the palette and mark it `brandExplicit` (seedBrandColor) — the brand colour is applied AS CHOSEN (policy b, brand-first). A non-CVD-safe / low-contrast house colour is NOT rewritten; the produce-time a11y guards downgrade it to a render-review concern (surfaced at Gate 3), the editor decides. No brand.json → auto subject-fit colour, unchanged. Colours only in this cut (fonts/logo deferred).
 
@@ -133,7 +154,9 @@ language what the CADRAGE Q3 channel + `suggest-chart`'s routing land on for THI
 the journalist veto or change it before moving on — e.g. « un chart INTERACTIF, responsive,
 explore-libre — calé sur ton article web ; on part là-dessus ou tu changes ? » or « une image PORTRAIT
 (9:16) pour ta Story — ok ? ». This is a statement of the already-routed decision offered for veto, not
-a fresh options menu. **Hard rule surfaced here too:** a non-article/embed channel can only land on
+a fresh options menu — and since the CADRAGE channel question (Q3) set only the ALLOWED SET (never a
+format), this announce is the FIRST and ONLY place the single format is surfaced, so channel and format
+never double-ask. **Hard rule surfaced here too:** a non-article/embed channel can only land on
 image or video — never interactive or scrolly; if the journalist asks for an interactive on a social
 channel, say so and point back to the CADRAGE Q3 channel pick rather than silently escalating.
 
@@ -613,7 +636,7 @@ alongside the thanks is NOT a close — handle the request instead.
 
 | Gate | Phase | Stop condition | Failure mode if skipped |
 |------|-------|---------------|------------------------|
-| 1 | CADRAGE | Journalist answers the ≤4 questions + branch chosen | Wrong format, misread intent |
+| 1 | CADRAGE | Journalist answers the ≤4 questions + branch explicitly chosen or confirmed back | Wrong format, misread intent |
 | 1b | CADRAGE (+PROPOSITION per element) | Takeaway stated back and EXPLICITLY confirmed by the journalist — never inferred-and-skipped; asked openly on GUIDED, confirmed via confirm-back on DIRECT (both branches) — and recorded VERBATIM as `confirmedTakeaway` on every accepted proposal (5b; the spine's validation gate fails a proposal without it). On a multi-element article, ONE takeaway PER accepted element — never a shared combined string; each element's own claim is confirmed at PROPOSITION if CADRAGE only confirmed a combined framing | Visual carries an unconfirmed/guessed claim; title diverges from the journalist's intent (or silently drops one part of a multi-part takeaway); a combined takeaway stamped on several elements dilutes each title check |
 | 2b | PROPOSITION | Journalist confirms prose-extracted data table (fires BEFORE Gate 2 for prose proposals) | Fabricated data attribution |
 | 2 | PROPOSITION | Journalist accepts / edits / rejects each proposal | Wrong claim visualised |
