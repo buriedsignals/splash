@@ -3,7 +3,13 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { formatFlag, channelEnvFor, freshOutDir } from "../src/adapters";
+import {
+  formatFlag,
+  channelEnvFor,
+  freshOutDir,
+  realDispatch,
+} from "../src/adapters";
+import type { AcceptedProposal, VisualFormat } from "../src/producer-spec";
 
 // Single-format-produce-export (Tasks 2-3): chart-native's produce-from-spec.mjs/
 // produce.mjs and map-native's produce.mjs now read the SAME static|interactive|
@@ -256,6 +262,35 @@ describe("runProducerScript — never lets a producer's stdout reach the parent'
     expect(parsed.outcome.status).toBe("failed");
     expect(parsed.outcome.error).toContain("boom: something broke");
   });
+});
+
+// map-dw floor: the dispatch used to IGNORE p.format entirely for map-dw and always
+// build PNG+embed (the last un-single-formatted producer). It now mirrors dw-chart's
+// gate — a format outside {static, interactive} fails hard BEFORE produceMap (and thus
+// before any Datawrapper API call): the outcome must be a clean "failed" result naming
+// the correct producer (map-native owns animated maps), never a thrown invalid-spec
+// error from a produceMap that should not have run at all.
+describe("realDispatch — map-dw single-format gate (video/scrolly fail hard before any API call)", () => {
+  const BAD_FORMATS: VisualFormat[] = ["video", "scrolly"];
+
+  for (const format of BAD_FORMATS) {
+    it(`fails a map-dw proposal pinned to "${format}" with the map-dw message`, async () => {
+      const dir = mkdtempSync(join(tmpdir(), "atelier-mapdw-gate-"));
+      const p: AcceptedProposal = {
+        id: "gate-check",
+        producer: "map-dw",
+        format,
+        // Deliberately NOT a valid MapSpec: if the gate were missing, produceMap would
+        // reject this spec ("invalid map spec") and the dispatch would throw instead of
+        // returning the failed outcome asserted here.
+        spec: { not: "a real map spec" },
+      };
+      const r = await realDispatch(p, join(dir, "out"));
+      expect(r.status).toBe("failed");
+      expect(r.error).toContain(`map-dw cannot build format "${format}"`);
+      expect(r.error).toContain("map-native");
+    });
+  }
 });
 
 // Fallback-cleanup regression (delivery-hygiene bug): a re-produce that switches

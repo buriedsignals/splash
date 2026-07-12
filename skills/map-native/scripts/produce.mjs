@@ -68,13 +68,26 @@ if (!process.env.VITE_MAPTILER_KEY || !process.env.REMOTION_MAPTILER_KEY) {
   }
 }
 
+// The fixed 8-byte PNG file signature (RFC 2083 / ISO 15948 §5.2).
+const PNG_SIGNATURE = Buffer.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+]);
+
 // Render-size conformance (Slice 2, Task 4) — a cheap, render-free PNG-dimension
 // probe: reads the IHDR chunk directly (PNG signature 8 bytes + 4-byte chunk length +
 // 4-byte "IHDR" tag, then width/height as big-endian uint32 at bytes 16-19/20-23). No
 // new dependency, cross-platform, no browser/Playwright needed — the file already
-// exists on disk by the time this runs.
+// exists on disk by the time this runs. The signature is CHECKED first: fixed offsets
+// off a non-PNG yield garbage "dimensions" and a confusing size-mismatch error — fail
+// with the real problem instead (kept in lockstep with chart-native's twin and
+// map-dw's src/produce.ts readPngSize).
 function readPngSize(pngPath) {
   const buf = readFileSync(pngPath);
+  if (buf.length < 24 || !buf.subarray(0, 8).equals(PNG_SIGNATURE)) {
+    throw new Error(
+      `"${pngPath}" is not a PNG (bad or missing 8-byte PNG signature) — cannot read IHDR dimensions`,
+    );
+  }
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 

@@ -372,7 +372,8 @@ identify the path).
   "title": "<the insight — sentence case, never a column label>",
   "intro": "<description of the map for context>",
   "altInsight": "<the insight — WCAG alt, same wording as title>",
-  "source": { "name": "<honest source>", "url": "<its real URL>" }
+  "source": { "name": "<honest source>", "url": "<its real URL>" },
+  "channel": "<the CADRAGE Q3 channel — social-vertical | social-feed | article-web>"
 }
 ```
 
@@ -405,6 +406,13 @@ Field notes:
   for the specific dataset/page reference (free text, collecting name + the specific URL together) rather
   than shipping it generic or incomplete. The only legitimate name-only case is the honest prose fallback
   below, which names no separate dataset to link.
+- `channel`: the CADRAGE Q3 answer — the same structured channels as `ChartSpec.channel`
+  (`social-vertical | social-feed | article-web`, `skills/atelier/src/channel.ts`). It sizes the static
+  PNG export box (social-feed→1080x1080 square, social-vertical→1080x1920 9:16, article-web→1200x675)
+  and the render-size floor verifies the delivered PNG against it. Emit it explicitly: the spine also
+  injects the proposal's confirmed channel at dispatch (`withProposalChannel` in
+  `skills/atelier/src/adapters.ts`, proposal wins), but a spec run directly against `produceMap` has no
+  proposal to inherit from and would otherwise silently size against the article-web default.
 - `colorScale` (optional): an array of `{color: hex, position: 0..1}` stops, ascending. If omitted,
   `map-dw` applies the default blue sequential scale. Choose the stops from a subject-fit ramp per the
   **Map colour** rule below — do NOT leave every map blue.

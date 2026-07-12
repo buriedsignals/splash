@@ -44,9 +44,13 @@
 //               Task 4 threads `p.format` here; a format outside {static, interactive}
 //               (video/scrolly — dw-chart has no such renderer) fails hard before any
 //               API call rather than silently building "static".
-//     map-dw    produceMap(spec: MapSpec, pngPath)     → { chartId, embed, pngPath, publicUrl }
-//               Unchanged by the single-format redesign — always builds both the PNG
-//               and the hosted embed regardless of `p.format` (out of Tasks 1-4's scope).
+//     map-dw    produceMap(spec: MapSpec, pngPath, opts?) → { chartId, embed, pngPath?, publicUrl }
+//               opts.format ("static" default | "interactive") — the same single-format
+//               contract as dw-chart (map-dw floor): "static" exports the owned PNG at
+//               the channel's box (render-size fail-hard, IHDR readback); "interactive"
+//               delivers the hosted embed alone (pngPath undefined). A format outside
+//               {static, interactive} (video/scrolly — animated maps are map-native's)
+//               fails hard here BEFORE any API call, mirroring the dw-chart gate below.
 //   Both ChartSpec.data and MapSpec.data are already CSV text set by the upstream
 //   suggester — no toCsv (Task 2) conversion is needed here.
 import { execFileSync } from "node:child_process";
@@ -128,6 +132,30 @@ const SKILL_DIR: Record<FileBasedProducer, string> = {
   "map-native": join(SKILLS_ROOT, "map-native"),
   scrolly: join(SKILLS_ROOT, "scrolly"),
 };
+
+// CHANNEL INJECTION (cloud producers) — the spine's truth flows in MECHANICALLY.
+// dw-chart and map-dw size (and render-size-verify) their DW export against their own
+// spec.channel, but on the routed path the canonical channel lives on the PROPOSAL
+// (CADRAGE Q3, normalized fail-closed by produce-all's gate before dispatch): a spec
+// whose emitter forgot the field (suggest-chart's MapSpec template historically had
+// none) would silently size against the article-web default and PASS its own floor
+// against the wrong channel. So the dispatch injects the proposal's channel into the
+// spec handed to the producer. Precedence: the PROPOSAL value WINS over any spec-level
+// value — the same proposal-first order resolveGuardChannel (guardrail-parity.ts)
+// already applies at the validate gate — chosen over a mismatch-throw because the spec
+// field is legacy free text (aliases like "feed") while the proposal is canonical:
+// throwing on a raw-string mismatch would reject specs that AGREE after normalization.
+// An absent proposal channel leaves the spec untouched (legacy/hand-authored specs and
+// their spec-level channel keep working; producers still default absent → article-web).
+// Pure — returns a new object, never mutates the accepted proposal's spec. Exported
+// for unit testing.
+export function withProposalChannel<T extends { channel?: string }>(
+  spec: T,
+  channel: Channel | undefined,
+): T {
+  if (channel === undefined) return spec;
+  return { ...spec, channel };
+}
 
 // The orchestrator's generic VisualFormat now maps 1:1 onto every file-based
 // producer's own CLI vocabulary — chart-native, map-native, and scrolly all read the
@@ -309,10 +337,14 @@ export const realDispatch: Dispatch = async (
       };
     }
     // `result.pngPath` is typed optional because dw-chart's own single-format contract
-    // omits it for "interactive" (no PNG is exported for that format).
-    const result = await produceChart(p.spec as ChartSpec, pngPath, {
-      format: p.format,
-    });
+    // omits it for "interactive" (no PNG is exported for that format). The proposal's
+    // canonical channel is injected so produceChart sizes against the spine's truth
+    // (see withProposalChannel above), never against a spec that forgot the field.
+    const result = await produceChart(
+      withProposalChannel(p.spec as ChartSpec, p.channel),
+      pngPath,
+      { format: p.format },
+    );
     return {
       status: "produced",
       outputs: result.pngPath ? [result.pngPath] : [],
@@ -323,10 +355,32 @@ export const realDispatch: Dispatch = async (
 
   // Exhaustive by Producer's 5-member union: chart-native/map-native/scrolly handled
   // above (isFileBased), dw-chart just above — only map-dw remains.
-  const result = await produceMap(p.spec as MapSpec, pngPath);
+  // Same single-format gate as dw-chart's: map-dw builds "static" (owned PNG at the
+  // channel box) or "interactive" (hosted embed alone) — it has no video/scrolly
+  // renderer (animated maps are map-native's). Fail hard BEFORE any API call rather
+  // than silently over-producing PNG+embed for a pinned format it cannot honor
+  // (map-dw floor: the dispatch used to ignore p.format entirely here).
+  if (p.format !== "static" && p.format !== "interactive") {
+    return {
+      status: "failed",
+      error:
+        `map-dw cannot build format "${p.format}" — it supports "static" or ` +
+        `"interactive" only (video/scrolly require map-native)`,
+    };
+  }
+  // `result.pngPath` is typed optional because map-dw's single-format contract omits
+  // it for "interactive" (no PNG is exported for that format) — same as dw-chart. The
+  // proposal's canonical channel is injected so produceMap sizes AND render-size-
+  // verifies against the spine's truth (see withProposalChannel above) — this is the
+  // path where suggest-chart's emitted MapSpec historically carried no channel at all.
+  const result = await produceMap(
+    withProposalChannel(p.spec as MapSpec, p.channel),
+    pngPath,
+    { format: p.format },
+  );
   return {
     status: "produced",
-    outputs: [result.pngPath],
+    outputs: result.pngPath ? [result.pngPath] : [],
     publicUrl: result.publicUrl,
     actualProducer: "map-dw",
   };
