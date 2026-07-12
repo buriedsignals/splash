@@ -63,7 +63,8 @@ Non-negotiables (why the 4 classic invisible bugs don't happen here):
 - **No `Date.now` / `Math.random` / wall-clock.** Progress is `f(frame)` only → frame N is reproducible.
 - **`HOLD_IN` / `HOLD_OUT`** give readable first/last stills (the last frame == the static PNG exactly).
 - **Render `--gl=angle`** — Chromium's GL backend Remotion expects headless.
-- **Validate ONE still before the mp4** (`render-video.mjs` renders frame `STILL_FRAME`, default 140, first). A half-reveal still
+- **Validate ONE still before the mp4** (`render-video.mjs` renders frame `STILL_FRAME`, default 140, first,
+  plus the final frame via `--frame=-1` — snap-video diffs the mp4's end against it). A half-reveal still
   catches framing, easing, and draw-head bugs that a green unit test cannot — you must LOOK at it.
 - This is a pure SVG/DOM chart (no WebGL canvas), so `preserveDrawingBuffer` and the Cesium headless
   dead-end don't apply; the still-before-mp4 and frame-purity disciplines still do.

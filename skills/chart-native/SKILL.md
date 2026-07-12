@@ -160,8 +160,9 @@ a tooltip. See `knowledge/references/formats/interactive.md`.
 4. **Interactive** — `INTERACTIVE=1` Vite build (single file) → `scripts/snap-interactive.mjs` loads it,
    hovers a point, asserts the tooltip, screenshots.
 5. **Video** — `remotion/src/LineReveal.tsx` maps `frame/(N-1)` → `Easing.inOut(Easing.cubic)` →
-   `progress` → `LineChart`. `scripts/render-video.mjs` renders a still (frame `STILL_FRAME`, default 140)
-   first, then the mp4 — both bounded by the render watchdog (`src/video-watchdog.ts`).
+   `progress` → `LineChart`. `scripts/render-video.mjs` renders a mid-reveal still (frame `STILL_FRAME`,
+   default 140) and a final-frame still (`--frame=-1`) first, then the mp4 — all bounded by the render
+   watchdog (`src/video-watchdog.ts`).
 
 Full reveal math + the Remotion frame-determinism rules → `references/architecture.md`.
 
@@ -174,7 +175,7 @@ bun install
 node scripts/build-all.mjs                                   # web bundles
 node scripts/snap-static.mjs        /tmp/native-static.png   # static PNG
 node scripts/snap-interactive.mjs   /tmp/native-interactive.png  # hover proof
-bun scripts/render-video.mjs /tmp/native-still.png /tmp/native-line-reveal.mp4   # still THEN mp4 (bun: imports src/video-watchdog.ts)
+bun scripts/render-video.mjs /tmp/native-still.png /tmp/native-line-reveal.mp4 /tmp/native-final-still.png   # stills THEN mp4 (bun: imports src/video-watchdog.ts)
 bun test                                                     # geometry + reveal contract
 ```
 
