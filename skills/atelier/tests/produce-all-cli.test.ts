@@ -16,6 +16,7 @@ describe("produce-all CLI", () => {
           producer: "chart-native",
           format: "static",
           spec: {},
+          confirmedTakeaway: "The confirmed takeaway for this fixture",
           provenance: "prose",
         },
       ]),

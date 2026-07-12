@@ -86,6 +86,15 @@ apart in the record so a reader can tell what was eyeballed from what was exerci
    excludes an entity the visual actually shows (e.g. an Alpine country on the same map), are both false
    even if each number is individually correct. If the data supports more than the title states, widen
    the title rather than shipping the narrower claim.
+   **Mandatory step — QUOTE `confirmedTakeaway` and check EVERY part.** The review must (a) quote the
+   proposal's `confirmedTakeaway` (`accepted.json`) VERBATIM, and (b) state EXPLICITLY whether the
+   produced title/insight carries ALL its parts — a two-part takeaway ("punctuality is falling
+   everywhere AND Italy is the only riser") needs BOTH parts carried, or the dropped part flagged as a
+   concern; a confirmed grouping/classification must not be silently re-cut by the visual. A review
+   that never quotes the confirmed takeaway, or quotes it without the part-by-part statement, is NOT a
+   valid render-review — that omission is itself a review failure (re-run 3a properly). This is the
+   recurring miss the step exists to close: the chosen chart type tends to foreground ONE half of the
+   confirmed claim and silently drop the other.
 2. **Source traceability.** The displayed source is supported by the article/data, and is COMPLETE — a
    NAMED dataset/publication (e.g. "Eurostat") MUST carry both its label AND a real, verifiable URL; a
    bare name with no URL is incomplete and must be flagged even when the name itself is genuine. The URL
@@ -99,7 +108,11 @@ apart in the record so a reader can tell what was eyeballed from what was exerci
    a fabricated dataset. If the source is missing, incomplete, generic (a homepage standing in for the
    dataset page), or unclear, it must be corrected by asking the journalist directly for the SPECIFIC
    dataset/page reference — as ONE free-text prompt collecting the label and that specific URL together,
-   never a single-select (a URL cannot be one of a few fixed menu options) — before shipping.
+   never a single-select (a URL cannot be one of a few fixed menu options) — before shipping. A
+   confident-looking citation built on the journalist's ADMITTED UNCERTAINTY (« je crois », « de
+   mémoire », could not name the exact report) is a defect too: per Gate 2c it must have been either
+   explicitly confirmed or downgraded to the honest prose fallback ("Chiffres tels que rapportés dans
+   cet article" / the outlet's own name) — flag a hedged source dressed up as a verified reference.
 3. **Honest encoding.** No two differently-denominated series sharing one axis; a majority/threshold that
    carries the story is drawn (a 50% line for a yes/no); a two-point change is a slope/dumbbell, not a
    line; a ranking is a bar, not a map.

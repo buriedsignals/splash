@@ -28,6 +28,7 @@ const proposal = (
   producer: "chart-native",
   format: "static",
   spec: {},
+  confirmedTakeaway: "The confirmed takeaway for this fixture",
   ...extra,
 });
 

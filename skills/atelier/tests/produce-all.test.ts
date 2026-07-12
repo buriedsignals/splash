@@ -14,6 +14,7 @@ const p = (
   producer: "chart-native",
   format: "static",
   spec: {},
+  confirmedTakeaway: "The confirmed takeaway for this fixture",
   ...extra,
 });
 
@@ -390,6 +391,7 @@ describe("produceAll — validation gate (real validator)", () => {
           producer: "dw-chart",
           format: "static",
           spec: { type: "d3-bars" },
+          confirmedTakeaway: "The confirmed takeaway for this fixture",
         },
       ],
       "out",
@@ -403,7 +405,15 @@ describe("produceAll — validation gate (real validator)", () => {
   it("produces a valid spec (dispatch runs)", async () => {
     const { dispatch, produced } = spy();
     const { results } = await produceAll(
-      [{ id: "ok", producer: "dw-chart", format: "static", spec: validDwSpec }],
+      [
+        {
+          id: "ok",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: "The confirmed takeaway for this fixture",
+        },
+      ],
       "out",
       dispatch,
     );
@@ -415,12 +425,19 @@ describe("produceAll — validation gate (real validator)", () => {
     const { dispatch } = spy();
     const { results } = await produceAll(
       [
-        { id: "a", producer: "dw-chart", format: "static", spec: validDwSpec },
+        {
+          id: "a",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: "The confirmed takeaway for this fixture",
+        },
         {
           id: "b",
           producer: "dw-chart",
           format: "static",
           spec: { type: "d3-bars" },
+          confirmedTakeaway: "The confirmed takeaway for this fixture",
         },
       ],
       "out",
@@ -444,6 +461,7 @@ describe("produceAll — validation gate (real validator)", () => {
           format: "static",
           channel: "social-vertical",
           spec: validDwSpec,
+          confirmedTakeaway: "The confirmed takeaway for this fixture",
         },
       ],
       "out",
@@ -458,14 +476,27 @@ describe("produceAll — validation gate (real validator)", () => {
     const { dispatch, produced } = spy();
     const { results } = await produceAll(
       [
-        { id: "a", producer: "dw-chart", format: "static", spec: validDwSpec },
+        {
+          id: "a",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: "The confirmed takeaway for this fixture",
+        },
         {
           id: "x",
           producer: "sankey-native" as never,
           format: "static",
           spec: {},
+          confirmedTakeaway: "The confirmed takeaway for this fixture",
         },
-        { id: "c", producer: "dw-chart", format: "static", spec: validDwSpec },
+        {
+          id: "c",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: "The confirmed takeaway for this fixture",
+        },
       ],
       "out",
       dispatch,

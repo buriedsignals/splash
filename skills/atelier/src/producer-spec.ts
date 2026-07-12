@@ -10,6 +10,14 @@ export interface AcceptedProposal {
   producer: Producer;
   format: VisualFormat;
   spec: unknown; // the producer-specific, already-validated spec
+  // Gate 1b (CADRAGE): the takeaway the journalist EXPLICITLY confirmed, recorded
+  // VERBATIM. REQUIRED on every proposal — Gate 1b is un-skippable on BOTH branches
+  // (asked openly on GUIDED, confirm-backed on DIRECT), so there is no proposal that
+  // legitimately lacks one. The spine's validation gate (validate-gate.ts) fails a
+  // proposal whose confirmedTakeaway is missing/empty: a title↔takeaway divergence is
+  // semantic (render-review's job, Gate 3a), but the PRESENCE of the confirmed claim
+  // is mechanical — without it the review has nothing authoritative to quote against.
+  confirmedTakeaway: string;
   provenance?: "table" | "prose" | "none";
   confirmedTable?: boolean; // Gate 2b: set true only after the human confirms the prose table
   // CADRAGE Q3's confirmed distribution channel (skills/atelier/src/channel.ts). Absent
