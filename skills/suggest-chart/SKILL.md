@@ -677,12 +677,33 @@ engine to the chart track), plus an `insight` for the closing takeaway:
   "directLabel": "<line only: the y series column>",
   "orientation": "horizontal",
   "source": { "name": "<honest source>", "url": "<URL>" },
-  "data": "col1,col2\\n<CSV rows — line: x,y · bar: category,value · scatter: label,x,y>"
+  "data": "col1,col2\\n<CSV rows — line: x,y · bar: category,value · scatter: label,x,y>",
+  "beats": [{ "x": "<line: x value>", "xEnd": "<line, optional: range end>", "category": "<bar: category value>", "text": "<the confirmed step caption>" }, "… (OPTIONAL — only when the journalist confirmed an explicit beat plan; omit for the auto narrative)"]
 }
 ```
 
+**Narrative control — explicit `beats` (optional, line/bar only).** DEFAULT (field absent): the engine
+auto-picks the steps — line: first + last + the 2 biggest step-to-step moves; bar: top-3 leaders + the
+tail (a fixed 4-step walk); scatter: 3 outliers. When the journalist **confirmed an explicit beat plan**
+(a named sequence of narrative steps, or specific categories that must each get a step), EMIT it as
+`beats` — never keep the plan in prose and let the auto-pick override it:
+- **line**: each beat = `{ "x": <an x value from the data>, "xEnd": <optional range end>, "text": <the
+  confirmed caption> }`. A range beat (`x`..`xEnd`) draws the line to `xEnd` and captions the span.
+- **bar**: each beat = `{ "category": <a category value from the data>, "text": <optional caption> }` —
+  the highlight walk follows the LIST (its length and its order), not the fixed leaders+tail pick, so a
+  5-entry list is a 5-step walk and « Alpes-Maritimes » listed = its own step, guaranteed.
+- **Order is the narrative**: beats are rendered exactly as given — the journalist's confirmed order
+  wins, even non-chronological (a line scrolly scrubs back to an earlier point).
+- **Anchors must exist in the data VERBATIM** (string-compared against the x/category column). A typo
+  fails loud at the spine validation gate (`narrativeBeatErrors`) and again at derive — same tripwire
+  philosophy as dw-chart's annotation-domain guard. Never "fix" an anchor silently; go back to the
+  journalist.
+- **`text` is optional per beat** — absent, the step falls back to the auto data-tied caption for that
+  anchor. Scatter and the MAP scrolly track have NO override (a `beats` field there is rejected).
+
 **Self-check:** the emitted spec MUST pass `validateChartSpec` (run it via the dw-chart skill) — title +
 insight state the insight, not column names. Confirm `nativeType` ∈ {line, bar, scatter} before emitting.
+If `beats` is present, confirm every `x`/`xEnd`/`category` appears verbatim in the emitted CSV.
 
 **Produce:** same as the map track — `bun scripts/produce.mjs <config.json> <outDir>` from
 `skills/scrolly/`. No MapTiler key needed for a chart config (the map modules load but never render).

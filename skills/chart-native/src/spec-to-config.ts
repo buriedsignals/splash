@@ -7,6 +7,25 @@
 import { parseCsv, type ParsedCsv } from "./csv";
 import { validateShape } from "./shape-validation";
 
+/**
+ * One journalist-confirmed narrative beat for a chart SCROLLY (NativeSpec.beats).
+ * LINE: anchor on `x` (a value of the x column, compared as strings), optionally a
+ * range `x`..`xEnd` — the reveal draws the line to `xEnd`. BAR: anchor on `category`
+ * (a value of the category column) — the walk highlights that bar. `text` is the
+ * confirmed step caption; absent → the auto data-tied caption for that anchor.
+ * ORDER IS THE NARRATIVE: beats are emitted exactly as given — the journalist's
+ * order wins, even non-chronological (a line scrolly simply scrubs back).
+ * An anchor that does not exist in the data FAILS LOUD (same philosophy as
+ * dw-chart's annotation-domain tripwire): at the spine validation gate
+ * (validate-gate → narrativeBeatErrors) and again in deriveChartStory.
+ */
+export interface NarrativeBeat {
+  x?: string | number;
+  xEnd?: string | number;
+  category?: string;
+  text?: string;
+}
+
 export interface NativeSpec {
   nativeType: string;
   title: string;
@@ -48,6 +67,15 @@ export interface NativeSpec {
    * on this colour to a render-review concern instead of hard-failing (policy b).
    */
   brandExplicit?: boolean;
+  /**
+   * SCROLLY narrative control — the journalist-confirmed, ORDERED beat plan
+   * (line beats / bar highlight-walk). Absent ⇒ the engine auto-picks the beats
+   * (line: first + last + 2 biggest moves; bar: top-3 leaders + the tail) —
+   * unchanged default behavior. Consumed by deriveChartStory (chart-story.ts);
+   * only meaningful for the scrolly format (line/bar), ignored by every other
+   * renderer. See NarrativeBeat for anchor semantics + the fail-loud tripwire.
+   */
+  beats?: NarrativeBeat[];
 }
 
 export class UnsupportedNativeType extends Error {

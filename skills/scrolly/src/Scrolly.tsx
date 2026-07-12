@@ -266,7 +266,11 @@ export const Scrolly: React.FC<{
       if (i > 0 && s.prose === story.steps[i - 1].prose) return; // collapsed — not rendered
       const beat = typeof s.ref === "number" ? beats[s.ref] : undefined;
       if (beat?.kind === "reveal") targets.push(beat.dataIndex ?? 0);
-      else if (beat?.kind === "takeaway") targets.push(lastIndex);
+      else if (beat?.kind === "takeaway")
+        // Explicit journalist beats set the takeaway's own dataIndex (the FULL
+        // line — the last data point); the auto path leaves it unset and closes
+        // on the furthest reveal (which IS the last point for auto stories).
+        targets.push(beat.dataIndex ?? lastIndex);
       else targets.push(0); // title / establish
     });
     return targets;

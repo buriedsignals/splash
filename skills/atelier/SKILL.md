@@ -127,6 +127,29 @@ new gate, the check reuses PROPOSITION's own decision.
   `suggest-chart` (see "Only offer what is confirmed producible" below) — never offer a named sub-format
   that turns out not to be producible.
 
+**★ Chart-scrolly BEAT MODEL — announce it honestly HERE, and carry a confirmed plan into the spec.**
+When the routed sub-format is a chart scrolly (line/bar/scatter), the PROPOSITION must state, up front,
+what is auto and what the journalist controls — the observed failure was a FLOW failure: the journalist
+confirmed a 3-beat narrative plan, the engine silently auto-picked its own beats, and the mismatch
+surfaced only at Gate 3 AFTER production. So:
+- **Default (auto):** absent an explicit plan, the engine picks the steps itself — line: first + last +
+  the 2 biggest moves; bar: the top-3 leaders + the lowest (a fixed 4-step walk); scatter: 3 outliers.
+  Say this — never imply the steps will follow a plan that was only discussed in prose.
+- **Controllable (explicit `beats`):** for a LINE, an ordered list of beats each anchored on an x-value
+  (or an x..xEnd range) from the data + the confirmed step caption; for a BAR, the exact ordered list of
+  categories to walk — the walk length follows the list (5 confirmed steps = 5 walk steps), and a named
+  entity the journalist wants in its own step (e.g. « Alpes-Maritimes ») is simply listed. Scatter has
+  no override (auto outliers only) — say so instead of promising one.
+- **A confirmed plan MUST land in the spec** as the chart-scrolly `beats` field (see suggest-chart's
+  Chart scrolly section) — never acknowledged in dialogue then dropped on the floor. The journalist's
+  order is the emitted order (narrative order wins, even non-chronological).
+- **Fail-loud tripwire:** every beat anchor is validated against the data at the spine gate (5a,
+  `narrativeBeatErrors`) and again at derive — a typo'd year/category fails the proposal loud BEFORE
+  production, never a silently shifted or dropped beat.
+- **Map scrolly** steps stay derived from the data (temporal sequence / magnitude ranks — no explicit
+  override exists on that track; a `beats` field there is mechanically rejected); if the journalist
+  needs named-step control on a map story, say that limitation at PROPOSITION, not after production.
+
 **Article/web has NO static fallback — the pinned format is the ONLY artifact, so pin the one the
 journalist actually wants.** For the article-web channel, `suggest-chart` routing DEFAULTS to interactive
 (`interactiveDefault`, `skills/atelier/src/channel.ts`) — it wins ONLY absent a concrete reason otherwise.

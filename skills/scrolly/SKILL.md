@@ -47,6 +47,26 @@ dispatcher cases, not a rewrite. `mapStoryToChapters(beats, meta) → ScrollySto
 `mapStory` into one scroll step per beat (`ref` = beat index, `prose` = the beat copy, falling back to
 the title when a beat is caption-less).
 
+## Chart track — beat model + explicit narrative control (`beats`)
+
+A chart-track config (carries `nativeType`: line/bar/scatter) derives its steps via chart-native's
+`deriveChartStory` + `chartStoryToChapters`. **Default (auto-pick):** line = first + last + the 2
+biggest step-to-step moves (progressive draw); bar = top-3 leaders + the tail (ranked highlight walk);
+scatter = 3 outliers (label walk). **Explicit override — the journalist-confirmed plan wins:** the
+config's optional `beats` array (`NativeSpec.beats`, chart-native `spec-to-config.ts`) replaces the
+auto-pick for line and bar:
+
+- **line**: `{ x, xEnd?, text? }` per beat — anchored on x values from the data; a range beat draws to
+  `xEnd` and captions the span; the takeaway then closes on the FULL line.
+- **bar**: `{ category, text? }` per beat — the walk follows the LIST (length and order), so 5 confirmed
+  categories = a 5-step walk and a listed category is guaranteed its own step.
+- **Order is the narrative**: beats render exactly as given, even non-chronological (the line scrubs
+  back). `text` absent → the auto data-tied caption for that anchor.
+- **Fail-loud tripwire**: an anchor that does not exist in the data throws (`narrativeBeatErrors`,
+  chart-native `chart-story.ts`) — surfaced at the orchestrator's spine validation gate before
+  production, and again at derive. Scatter and the MAP track have no override (`beats` on a map-track
+  config is rejected at the gate; map steps come from `deriveMapStory`'s temporal/magnitude ordering).
+
 ## Architecture
 
 ```
