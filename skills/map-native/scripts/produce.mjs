@@ -39,6 +39,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { snapCommand, remotionCommand } from "../src/platform-runners.ts";
 import { runWithVideoWatchdog } from "../src/video-watchdog.ts";
+import { readCompDims } from "./lib/comp-registry.mjs";
 import { ALL_CHANNELS, channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -77,18 +78,10 @@ function readPngSize(pngPath) {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
-// Reads a named Remotion <Composition>'s registered width/height straight out of
-// Root.tsx's source text — "known constants" read at produce-time with no render (no
-// React/Remotion runtime needed). Used to fail-hard if a future edit regresses a
-// comp's dims (e.g. re-introducing the 4:5 1350 bug this slice fixed) without having
-// to actually render the video.
-function readCompDims(rootTsxSrc, compId) {
-  const re = new RegExp(
-    `id=["']${compId}["'][\\s\\S]*?width=\\{(\\d+)\\}[\\s\\S]*?height=\\{(\\d+)\\}`,
-  );
-  const m = rootTsxSrc.match(re);
-  return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
-}
+// readCompDims — a comp's registered width/height literals read straight out of
+// Root.tsx at produce-time (no render), to fail-hard if a future edit regresses a
+// comp's dims (e.g. re-introducing the 4:5 1350 bug this slice fixed). The scan is
+// bounded to the comp's own tag — see scripts/lib/comp-registry.mjs (mirrored).
 
 // Channel-driven format (Slice 2): the confirmed CADRAGE Q3 channel, forwarded by
 // adapters.ts as `ATELIER_CHANNEL` (see adapters.ts's CHANNEL THREADING note). Absent

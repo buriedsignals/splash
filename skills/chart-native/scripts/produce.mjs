@@ -18,6 +18,7 @@ import { chartDistSub } from "../src/build-paths.ts";
 import { runProduceConformance } from "../src/core/produce-conformance.ts";
 import { REMOTION_PREFIX } from "../src/native-types.ts";
 import { snapCommand } from "../src/platform-runners.ts";
+import { readCompDims, readCompTiming } from "./lib/comp-registry.mjs";
 import { ALL_CHANNELS, channelAspect, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -35,29 +36,11 @@ function readPngSize(pngPath) {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
-// Reads a named Remotion <Composition>'s registered width/height straight out of
-// Root.tsx's source text — "known constants" read at produce-time with no render
-// (no React/Remotion runtime needed). Used to fail-hard if a future edit regresses a
-// comp's dims (e.g. re-introducing the 4:5 1350 bug this slice fixed) without having
-// to actually render the video.
-function readCompDims(rootTsxSrc, compId) {
-  const re = new RegExp(
-    `id=["']${compId}["'][\\s\\S]*?width=\\{(\\d+)\\}[\\s\\S]*?height=\\{(\\d+)\\}`,
-  );
-  const m = rootTsxSrc.match(re);
-  return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
-}
-
-// Same trick for a comp's registered timing (all chart-native comps register LITERAL
-// durationInFrames/fps — 240 @ 30). Feeds snap-video's duration-vs-registered check;
-// null (a future non-literal registration) just skips that one check there.
-function readCompTiming(rootTsxSrc, compId) {
-  const re = new RegExp(
-    `id=["']${compId}["'][\\s\\S]*?durationInFrames=\\{(\\d+)\\}[\\s\\S]*?fps=\\{(\\d+)\\}`,
-  );
-  const m = rootTsxSrc.match(re);
-  return m ? { frames: Number(m[1]), fps: Number(m[2]) } : null;
-}
+// readCompDims / readCompTiming — a comp's registered literals read straight out of
+// Root.tsx at produce-time (no render). Dims fail-hard on regression (e.g. the 4:5
+// 1350 bug); timing feeds snap-video's duration-vs-registered check (null = a
+// non-literal registration, which just skips that one check there). The scan is
+// bounded to the comp's own tag — see scripts/lib/comp-registry.mjs (mirrored).
 
 // Mid-reveal frame the review still is rendered at — threaded to render-video.mjs
 // AND snap-video.mjs so the still the Gate-3 review approves and the mp4 frame the
