@@ -4,6 +4,45 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-12 (suite) — Wave 9/9b : fixes validés au rendu, 0 critical, longue traîne mécanisée
+
+**Wave 9 (4 re-runs des cas mordus + 3 probes neuves) : 7/7 livrés, 0 critical.** Les fixes Wave 8
+**validés au rendu** : krankenhaus → Basel HIGHLIGHTED accent/muted + titre allemand portant les 2 parties
+du takeaway + « Quelle: » localisé ; tourism → vert subject-fit (plus d'orange hardcodé) sur le
+`video-square-final.png` ; farm scrolly → plan 3-temps tenu (1 minor de bruit) ; aging → beats explicites
+tenus (Alpes-Maritimes inclus). **Règles structurantes validées** : deux-opportunités (2 éléments, 2
+accepts, 2 exports séparés, `confirmedTakeaway` présent) · prose-only Gate 2b (table exacte confirmée
+avant production, source name-only honnête) · italien e2e livré. **« Vérifier le livré » a re-payé** : le
+[major] « 142 absent + dataset 404 » = lag de propagation CDN mi-flow — le chart publié PORTE le 142
+(curl vérifié) ; le vrai résidu = la review avait silencieusement abandonné le concern de sa propre probe.
+
+**Ronde 9b (3 clusters + reviews exécutantes, 1 UNSAFE corrigé) :**
+- **Doc-cluster (SAFE)** : libellé Q3 re-précisé (3× flaggé — ma propre correction print avait sur-corrigé :
+  « (image statique) » lisait tout article-web comme statique) → « Article web / embed — interactif, image
+  ou vidéo (destination print ⇒ image statique) » · règle caption-de-beat à claim comparatif vérifiée
+  contre l'ordre réel (un beat livré disait « devant » pour une valeur INFÉRIEURE) · un `confirmedTakeaway`
+  PAR élément · never-do artefacts plantés à la main dans les output dirs.
+- **map-dw (SAFE, merged-tree vérifié)** : tooltip choroplèthe porte l'UNITÉ (« 1480 » → « 1480 mm » —
+  hover live vérifié headless ; la classe %REGION_VALUE% qui ignorait number-append) · warning
+  sparse-subset (7 provinces sur l'Italie entière = micro-cluster illisible ; seuillé pour que les
+  8-cantons légitimes passent) · préférence routing map-native auto-fit pour les subsets sub-nationaux.
+- **Intégrité de spine (UNSAFE→fixé)** : gate-render refuse un fichier non-traçable au produce courant
+  (tue le hack du fichier planté + l'approbation périmée, chemin hosted-DW sanctionné préservé) ·
+  review-gate : ledger de probes obligatoire + **comptabilité par-probe** (le reviewer a prouvé le drop
+  PARTIEL : une probe `concern` passait dès qu'un concern quelconque existait → chaque concern-probe doit
+  être citée verbatim ou résolue avec preuve) · **tripwire GUARD 3b duplicate-confirmedTakeaway**
+  (le reviewer a démontré trivial ce que l'implémenteur croyait non-mécanisable — 2 éléments au takeaway
+  byte-identique = validation failure) · `format-selection.md` purgé du fallback aboli (doc-rot que le
+  fix Wave 7 avait raté).
+- **Migration CSV RFC4180 dw-chart (SAFE)** : les 12 sites naïfs migrés, byte-fidélité **fuzzée 300 000
+  cas** (sortCsv réordonne les strings brutes, jamais de re-sérialisation), 4 hooks de cleanup à 60s
+  (la classe flake). Le reviewer a diffé main-vs-branch sur 13 fixtures : zéro divergence.
+- **Gate renforcé : 20 checks** — dw-chart + map-dw jamais directement typecheckés (note de review :
+  couverture transitive seule via les imports d'atelier) → tsconfigs + deps + `TSC_DIRS`, 0 erreur surfacée.
+
+**Environnement** : 5 runs Wave 9 tués par une panne réseau (ConnectionRefused, même flap que les gates
+17/18 de la veille) — relancés propres ; 2 agents tués par la même panne, repris par SendMessage.
+
 ## Session 2026-07-12 — Wave 8 QA (9 cas, personas variés) → 5 chantiers de fixes + 3 systémiques pour classes répétées
 
 Reprise de la boucle QA sur le main durci (mandat Rémy : boucler jusqu'à parfait, solutions concrètes
