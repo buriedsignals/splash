@@ -43,6 +43,12 @@ export const BASEMAP_JOIN_KEYS: Record<string, readonly string[]> = {
   "us-states": ["NAME", "id", "NAME_ABBR"],
   "us-states-continental": ["NAME", "id", "NAME_ABBR"],
   "us-counties-2023": ["GEOID", "NAME_ABR"],
+  // VALUE SHAPES (probed live 2026-07-12 — a registered key can still be the WRONG key for
+  // the data's columns; the QA "postal" miss joined 0 INSEE codes): `name` = accent-exact
+  // department names ("Ain", "Haute-Savoie") — the join key for French data; `fips` =
+  // "FRB9"-style FIPS codes; `postal` = two-letter postal ABBREVIATIONS ("FF", "CY"), NOT
+  // INSEE numbers; `code_hasc` = "FR.AI"-style HASC codes. No key carries INSEE department
+  // codes ("01"…"95") — convert them to names and join on `name`.
   "france-metropolitan-departments": ["name", "fips", "postal", "code_hasc"],
   "switzerland-2026-cantons": ["Name", "Code"],
   "italy-provinces-2025": ["COD_PROV", "DEN_UTS", "SIGLA"],
