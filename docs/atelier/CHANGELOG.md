@@ -4,6 +4,49 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-11 (suite 3) — Tranche 3 : clôture de la P-list mécanique de l'audit (P3 + P5 + densité) — 4 clips produit réels débusqués et corrigés
+
+Même dispositif (3 implémenteurs worktrees + reviewers qui **exécutent** les gardes). La review label-fit
+est le sommet de la méthode : elle a couru la garde à 360px (largeur de livraison documentée que le 1er
+jet ne mesurait pas) et découvert que **le bug stacked-area corrigé en début de session vivait encore sur
+le chemin responsive narrow** (« 280 »→« 28| » à l'écran) — puis le fixer a invalidé l'hypothèse du
+reviewer par la mesure (vrai root-cause : `padding` html+body empilé 48px affamait un téléphone 360px sous
+le plancher `minWidth` 280px → le svg peignait hors carte).
+
+- **P3 — snap label-fit générique (`feat/label-fit-snap`)** : Playwright, chaque nœud texte rendu doit
+  tenir dans ses bornes de clip ±4px (tolérance calibrée : em-box ascent 3.00px mesuré zéro-encre-coupée ;
+  vrais clips ≥5px, classe historique 15px+) · static@900 + **interactif@360 ET 1100** · résout les
+  ancêtres `clipPath` (userSpaceOnUse/rect, boundary documentée fail-open) · gardes de vacuité · RED
+  mécanique sur le bug historique (StackedAreaChart pré-fix → exit 1 à 15.4px). Câblé fail-hard dans
+  produce (static+interactif) après snap-contrast. **4 clips produit RÉELS trouvés par la garde et
+  corrigés au niveau layout** (jamais en élargissant la tolérance) : (1) inset de page responsive —
+  body-only + contrat `minWidth` honnête sur le wrapper (synché dans le template `export-source`) ;
+  (2) légende dumbbell « Men » coupée en bas à 360 (réserve `legendRowCount` partagée) ; (3) annotation
+  « projection → » du FanChart coupée par son clipPath (36.92px, produce-reachable — flip côté historique
+  quand la zone forecast est étroite) ; (4) légende dot-strip jamais wrappée (18.72px — `legendWrapsAt`
+  unique pilote réserve ET wrap rendu). chart-native 1034/1034.
+- **P5 — gate i18n furniture (`feat/i18n-furniture-gate`, SAFE)** : deliverable non-EN ⟹ vérifié localisé,
+  aux bons seams — DOM furniture pour les natifs (dans les page-loads de snaps EXISTANTS, zéro session
+  browser en plus : préfixe source == table locale importée single-source · blocklist EN scoped furniture,
+  data-labels exclus — testé adversarial « Software Republic », catégories « Note: » · spot-check groupage
+  nombres conservateur, patterns non-ambigus seuls) — et **assertion de métadonnées** pour les 2
+  producteurs DW (invariant `annotate.notes`+champs-natifs-blanked assertés AVANT tout appel API : une
+  régression future échoue au produce au lieu de shipper la caption anglaise). 4 suites vertes API réelle.
+  Follow-ups loggés : chemin vidéo non-gaté (indirect) · `sourceLabel` map-native ne localise que le FR
+  (gap de/it vs les 3 autres).
+- **Densité dw-chart harmonisée (`fix/dw-chart-density-floor`, SAFE)** : **un canal = une taille livrée
+  pour les 4 producteurs** — dw-chart static demandait la boîte pleine (DW rasterise à 2× → 2400×1350
+  livrés, jamais assertés) ; requête halvée comme map-dw + plancher IHDR fail-hard (±2px ; jambe largeur
+  seule pour les types row-driven à hauteur contenu). Vérifié live des deux côtés du fix (RED 2400 → GREEN
+  1200×675 / 1080×1080). Le reviewer a re-prouvé live que le 2× DW tient pour les charts sur les 2 jambes.
+  Follow-ups : `zoom` non-pinné dans la requête export (le plancher échoue fort si DW change le défaut) ·
+  `output-proof` PNG à re-générer (densité pré-fix).
+
+**★ P-list mécanique de l'audit 2026-07-11 : FERMÉE** (P1 vidéo · P2 channel · P3 label-fit · P4 map-dw ·
+P5 i18n + alt-text + sign-off + source-i18n dw + densité). Restent les non-mécaniques (palette sémantique,
+`confirmedTakeaway`, flags attestés-LLM/`approvedHash`) + les follow-ups ci-dessus — et les deux chantiers
+à input Rémy : **dry-run Annemasse** (vrais brouillons) et **release MIT**.
+
 ## Session 2026-07-11 (suite 2) — Tranche 2 : les 2 gardes structurantes (P1 vidéo + P4 map-dw) mergées
 
 Même dispositif que la Tranche 1 (workflow 2 implémenteurs worktrees + review adversariale par branche →
