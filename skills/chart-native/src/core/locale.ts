@@ -105,3 +105,34 @@ export function localizeDecimal(s: string, lang?: Lang): string {
 export function sourceLabel(lang?: Lang): string {
   return localeFor(lang).source;
 }
+
+// A direct value label only carries its unit when the unit is SHORT ("%", "€",
+// "km") — a walked/highlighted value must read complete on its own ("34,2 %",
+// the rule map-native's conformance already enforces for symbol labels). A LONG
+// unit ("millions de nuitées") stays in the subtitle: repeating it on every
+// label is noise. 3 chars covers the symbol and short-abbreviation units
+// (%, €, $, km, kg, °C) without letting word units through.
+export const SHORT_UNIT_MAX_CHARS = 3;
+
+// Units that are typographic SYMBOLS rather than words/abbreviations — in
+// English (and Italian) these attach directly to the number ("34.2%"), while
+// word units take a space ("34.2 km").
+const SYMBOL_UNIT = /^[%‰]/;
+
+/**
+ * The locale-aware suffix (separator + unit) a direct value label appends for a
+ * SHORT unit, or "" when the unit is long/blank (the label stays a bare number).
+ *   fr/de → narrow no-break space (U+202F) before every unit, "%" included
+ *           ("34,2 %") — French typography / DIN 5008, the same convention as
+ *           the FR thousands separator above.
+ *   en/it (and fallback) → "%"-type symbols attach directly ("34.2%"); word
+ *           units take a regular space ("34.2 km").
+ */
+export function unitSuffix(unit: string | undefined, lang?: Lang): string {
+  const u = unit?.trim();
+  if (!u || u.length > SHORT_UNIT_MAX_CHARS) return "";
+  const base =
+    typeof lang === "string" ? lang.toLowerCase().split("-")[0] : "en";
+  if (base === "fr" || base === "de") return `${FR_GROUP}${u}`;
+  return SYMBOL_UNIT.test(u) ? u : ` ${u}`;
+}

@@ -63,8 +63,11 @@ export function resolveConformanceColors(
     }
 
     case "bar": {
-      // BarChart.tsx `barColor()`: `baseColor ?? COLORS.line` fills the bars (mark). BOTH the
-      // category and value labels render in `COLORS.ink` (BarChart.tsx:309,328) — the mark
+      // BarChart.tsx `barColor()`: `baseColor ?? COLORS.line` fills the bars (mark) — and
+      // when `highlightIndex` is set, the HIGHLIGHTED bar keeps this same primary while the
+      // context bars mute to `COLORS.muted` (a neutral non-text mark, exempt like a
+      // gridline), so this resolved hue is the painted accent in both modes. BOTH the
+      // category and value labels render in `COLORS.ink` (BarChart.tsx) — the mark
       // carries the hue, the label carries the value. So the data colour is not a text colour.
       const data = readString(config.baseColor) ?? COLORS.line;
       return { data, text: [COLORS.ink, COLORS.muted], bg };
