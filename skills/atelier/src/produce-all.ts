@@ -22,7 +22,12 @@ export type Dispatch = (
 
 // The spec validator is injected (like dispatch) so loop-mechanics tests can pass a
 // pass-through; the real CLI uses validateAccepted, which cannot be skipped in production.
-export type ProposalValidator = (p: AcceptedProposal) => ValidationOutcome;
+// The full accepted batch rides along as the second argument so cross-proposal guards
+// (GUARD 3b duplicate-takeaway) can see the proposal's siblings.
+export type ProposalValidator = (
+  p: AcceptedProposal,
+  batch: AcceptedProposal[],
+) => ValidationOutcome;
 
 // The reliability win: this loop lives in CODE, not in the agent's diligence. Every
 // accepted proposal appears in results with a status — a secondary proposal cannot drop.
@@ -86,7 +91,7 @@ export async function produceAll(
     // hand-rolled a spec and skipped the suggest-chart self-check (observed in 4/5 manual
     // sessions) cannot ship an invalid or weak spec. An invalid spec fails loud with the
     // errors; warnings ride on the result for the render gate to surface.
-    const validation = validate(p);
+    const validation = validate(p, accepted);
     if (!validation.ok) {
       results.push({
         ...base,

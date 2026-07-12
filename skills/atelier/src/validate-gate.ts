@@ -143,17 +143,51 @@ function missingConfirmedTakeawayError(p: AcceptedProposal): string | null {
   );
 }
 
+// GUARD 3b — Gate 1b duplicate tripwire. One element = one confirmedTakeaway: on a
+// multi-element batch, two proposals carrying the byte-identical confirmedTakeaway
+// string mean one combined takeaway was stamped onto several elements (the Wave-9
+// shipped miss) — Gate 1b never confirmed a claim FOR THIS element, and the Gate-3a
+// title check would compare each title against a claim that partly belongs to another
+// visual. Exact (byte-identical) match only — semantic overlap is not mechanizable.
+// Absence/emptiness is GUARD 3's finding; this guard only compares present takeaways.
+// Single-element batches are unaffected by construction.
+function duplicateConfirmedTakeawayError(
+  p: AcceptedProposal,
+  batch: AcceptedProposal[],
+): string | null {
+  const takeaway: unknown = p.confirmedTakeaway;
+  if (typeof takeaway !== "string" || takeaway.trim() === "") return null;
+  const twin = batch.find(
+    (other) => other !== p && other.confirmedTakeaway === takeaway,
+  );
+  if (!twin) return null;
+  return (
+    `duplicate confirmedTakeaway — proposals "${p.id}" and "${twin.id}" carry the ` +
+    "byte-identical confirmed takeaway; Gate 1b confirms ONE takeaway PER accepted " +
+    "element (never a shared combined string). Confirm and record THIS element's OWN " +
+    "claim before producing"
+  );
+}
+
 // Run the producer-appropriate validator on an accepted proposal's spec, then the
 // cross-producer source-URL guard (GUARD 2), then the deterministic guardrail-parity gate
 // (ENFORCEMENT SLICE 2 — the deterministic guardrails that lived only in suggest-chart's
 // eval, re-applied here so a hand-authored bypass must clear the same bar). A spec is
 // accepted only when it clears the producer validator AND every re-applied deterministic
 // guardrail; any violation fails validation before the producer ever runs.
-export function validateAccepted(p: AcceptedProposal): ValidationOutcome {
+// `batch` is the FULL accepted batch the proposal belongs to (produceAll passes it) —
+// it powers the cross-proposal GUARD 3b duplicate-takeaway tripwire; single-proposal
+// callers may omit it (defaults to no siblings, so 3b never fires).
+export function validateAccepted(
+  p: AcceptedProposal,
+  batch: AcceptedProposal[] = [],
+): ValidationOutcome {
   const outcome = validateByProducer(p);
   const extraErrors: string[] = [];
   const missingTakeaway = missingConfirmedTakeawayError(p);
   if (missingTakeaway) extraErrors.push(missingTakeaway);
+  const duplicateTakeaway = duplicateConfirmedTakeawayError(p, batch);
+  if (duplicateTakeaway) extraErrors.push(duplicateTakeaway);
   const placeholder = placeholderSourceError(p.spec);
   if (placeholder) extraErrors.push(placeholder);
   extraErrors.push(...guardrailParityViolations(p));
