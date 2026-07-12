@@ -94,7 +94,18 @@ apart in the record so a reader can tell what was eyeballed from what was exerci
    that never quotes the confirmed takeaway, or quotes it without the part-by-part statement, is NOT a
    valid render-review — that omission is itself a review failure (re-run 3a properly). This is the
    recurring miss the step exists to close: the chosen chart type tends to foreground ONE half of the
-   confirmed claim and silently drop the other.
+   confirmed claim and silently drop the other. (`confirmedTakeaway` is PER ELEMENT — the quoted string
+   must be THIS element's own confirmed claim; the same combined multi-element string stamped across
+   several proposals is itself a concern, because it means Gate 1b never confirmed a takeaway for this
+   element and the title check is being run against a claim that partly belongs to another visual.)
+   **Mandatory step (scrolly) — check EVERY step caption against the data ordering it shows.** For a
+   scrolly deliverable the honesty criterion extends to each step caption: any COMPARATIVE or RANK
+   claim in a caption (« devant » / "ahead of", « top 3 », "the highest", "the lowest") must match the
+   ACTUAL data ordering the step renders — verify the named entity's value really sits in the asserted
+   position relative to EVERY entity it is compared to. A shipped beat caption asserted a département
+   ranks « devant » two others while its value (27.2) was LOWER than both (30.6, 28.4) — the caption
+   inverted the sorted order visible on screen. A review of a scrolly that does not state it checked
+   each step caption against what the step shows is not a valid render-review.
 2. **Source traceability.** The displayed source is supported by the article/data, and is COMPLETE — a
    NAMED dataset/publication (e.g. "Eurostat") MUST carry both its label AND a real, verifiable URL; a
    bare name with no URL is incomplete and must be flagged even when the name itself is genuine. The URL
