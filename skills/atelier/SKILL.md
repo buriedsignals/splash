@@ -375,7 +375,11 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
   for that claim via suggest-chart, replace that proposal's `producer`/`spec` in `accepted.json`, re-run
   5c. Do not hand-translate. This native→dw direction is the ONE producer switch GUARD 1 sanctions; the
   reverse (dw→native) or any other switch is refused (see 5c).
-- **`failed`** → surface the `error`; fix the spec or drop the proposal. Never ship a failed visual. If the
+- **`failed`** → surface the `error`; fix the spec or drop the proposal. Never ship a failed visual.
+  **A non-zero `produce-all` exit (or any gate refusal) is a HARD STOP surfaced to the journalist AS-IS
+  — never worked around** by re-authoring code, hand-editing outputs, an ad-hoc script, or a silent retry
+  with hidden changes (see Never; the harness `check:conformance-no-fabrication` catches a produce exit=1
+  the run continued past). If the
   failure is a **conformance gate** rejecting the accepted spec (e.g. a colour/contrast/format
   violation) — do NOT silently mutate the accepted spec (`baseColor`, format, etc.) to make the gate
   pass without saying so: SURFACE the conformance issue to the journalist as-is, and if the spec
@@ -383,7 +387,8 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
   never edit-and-reship a spec the journalist never saw (see Never). If the
   failure traces to the PRODUCER/COMPONENT'S own source code rather than the spec — a genuine engine bug,
   not a data/shape problem — do NOT edit that code (`skills/*/src`, any `.tsx`/`.ts` producer file) to force
-  the gate green: REPORT the bug to the journalist (this visual cannot ship yet) and drop or route around
+  the gate green, and do NOT author a NEW ad-hoc script (a case-named `verify-*.mjs`) to stand in for a
+  pipeline step: REPORT the bug to the journalist (this visual cannot ship yet) and drop or route around
   the proposal instead (see Never).
 
 **GATE 3 (render) — per produced visual.**
@@ -458,8 +463,16 @@ artifact from a later produce approved against a stale report, is a hard refusal
 `report.json` and redo 3a → 3b. **Hosted-DW interactive (a `publicUrl`, NO local render):** never
 write a stand-in file into `exports/<slug>/<id>/` (it would leak into export-code's hosted-embed
 detection) — capture the reviewed live embed (screenshot or saved page) into the sanctioned
-`exports/<slug>/_review-artifacts/<id>/` directory and approve THAT file; the gate accepts it only
-for a hosted result and only if captured AFTER the current produce generation.
+`_review-artifacts/<id>/` directory (SIBLING of the build subdir) and approve THAT file; the gate
+accepts it only for a hosted result and only if captured AFTER the current produce generation.
+**★ Capture to an ABSOLUTE, run-scoped path — never a bare relative `exports/...`.** Verifying an
+interactive means you may have `cd skills/<producer>/` earlier to run an interaction snap, so a
+relative `exports/<slug>/_review-artifacts/<id>/` resolves against THAT cwd and the screenshot lands
+under `skills/<producer>/exports/…` (an observed miss on a dw-chart run, then papered over with a
+manual `mv`). Resolve the absolute capture dir FIRST — anchored on where `report.json` lives, e.g.
+`CAP="$(cd exports/<slug> && pwd)/_review-artifacts/<id>"; mkdir -p "$CAP"` — and capture into `$CAP`
+(then approve `$CAP/<file>`). If a capture ever lands in the wrong place, that is a mis-path to RE-CAPTURE
+at the absolute path (the provenance refusal names it), never to `mv` into position (see Never).
 `gate-render` is the ONLY writer of the render approval; EXPORT refuses any visual not render-reviewed
 (3a) AND not approved (3b) — so an unreviewed, unseen, or unapproved render can never ship.
 
@@ -475,7 +488,11 @@ the full video set.)_
 scratchpad — the scratchpad is temporary and gets cleaned, so the journalist would lose the deliverable
 (and cannot find it). After delivering, print the file/folder's ABSOLUTE path. `export-code.mjs` refuses
 (non-zero) if the export path looks ephemeral. The ship scripts also refuse unless the proposal is
-`produced` AND render-approved (GATE 3 done) — pass the report + id so the gate can check.
+`produced` AND render-approved (GATE 3 done) — pass the report + id so the gate can check. **If a ship
+script exits non-zero (an ephemeral path, an unmet `assertDelivered` shape, a missing prerequisite), that
+is a HARD STOP surfaced to the journalist — never worked around** by `mv`/`cp`-ing files into the shape a
+gate expects, by hand-editing the export folder, or by a silent retry; fix the actual cause (re-run the
+correct `--form` build, point the script at the file production emitted) and re-run the script (see Never).
 
 Branch EXACTLY on the channel/format model (`skills/atelier/src/channel.ts`) — **image and video hand
 over the media directly, no delivery menu; only interactive gets a delivery choice, and only because
@@ -627,7 +644,7 @@ alongside the thanks is NOT a close — handle the request instead.
 - Never name a chart type in the intent passed to suggest-article or suggest-chart (on the guided path).
 - Never ship a visual without the mandatory render-review (Gate 3a) — `assertShippable` refuses a visual with no review record; the review's concerns are advisory but running it is not optional.
 - Never call `gate-render` (Gate 3b) right after a re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) without first re-running `review-gate` (Gate 3a) on the NEW render. `produce-all` always writes a WHOLLY FRESH `report.json` — every proposal in that run comes back unreviewed and unapproved (`renderApproved:false`), even one that was already signed off before the correction — so the review MUST run again on what actually changed. Do not treat the script's hard refusal ("not render-reviewed") as the safety net to rely on; redo Gate 3a → 3b in order every time, and never hand-edit `report.json` to restore a prior review/approval onto a new artifact. Likewise never hand-author a file into the producer's build subdir `exports/<slug>/<id>/` to give `gate-render` something to approve — its provenance check refuses any file the pipeline did not emit for the CURRENT produce generation; a hosted-DW interactive (no local render) is approved via a fresh capture under `exports/<slug>/_review-artifacts/<id>/`, never a stand-in file next to the producer outputs.
-- Never edit the engine source (anything under `skills/`) during a journalist run — a bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow. This holds with NO exception for making a produce/conformance gate pass: never edit a producer/component's source code (`skills/*/src`, any `.tsx`/`.ts` producer file) mid-PRODUCTION to turn a failing gate green — a real newsroom journalist cannot patch the engine, so atelier must not either. If a produce or conformance gate fails because of a genuine engine bug (not a spec/data problem), SURFACE the bug to the journalist, do NOT ship that visual, and do NOT patch the code — the bug is reported, never worked around.
+- Never CREATE or edit ANY product source file (anything under `skills/` — a producer/component `src/*.ts`/`.tsx`, a `scripts/*.mjs`, a reference) during a journalist run — atelier ORCHESTRATES and GATES; it does not author engine code. A bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow. This holds with NO exception for making a produce/conformance gate pass: never edit a producer/component's source code (`skills/*/src`, any `.tsx`/`.ts` producer file) mid-PRODUCTION to turn a failing gate green — a real newsroom journalist cannot patch the engine, so atelier must not either. If a produce or conformance gate fails because of a genuine engine bug (not a spec/data problem), SURFACE the bug to the journalist, do NOT ship that visual, and do NOT patch the code — the bug is reported, never worked around. **The "create" half is not hypothetical: never AUTHOR a NEW ad-hoc script** — a case-named `verify-<case>.mjs` written into a skill's `scripts/` to satisfy a gate is the same violation as editing existing code (an observed real case: a `skills/scrolly/scripts/verify-aging.mjs`, a script that does NOT exist in the product). atelier runs ONLY the scripts the pipeline ships (`produce-all` / `review-gate` / `gate-render` / `export-code` and the producers' own snaps); a gate that needs a script the pipeline does not provide means the FLOW is wrong — STOP and surface, never write the missing script yourself. (The QA harness `check:product-source-hot-patch` flags any Edit/Write under a skill's `src/`/`scripts/`; the rule is the product contract, that check is the net.)
 - Never hand-author or copy files into a producer's output directory (`exports/<slug>/<id>/` or any
   build subdir) to satisfy a gate. The file-based gates (`gate-render`, `assertDelivered`,
   `export-code.mjs`'s hosted-DW detection) read those directories as PRODUCTION'S OWN record — a
@@ -636,6 +653,8 @@ alongside the thanks is NOT a close — handle the request instead.
   contents and forces manual mid-flow cleanup. If a gate needs an artifact that production did not
   emit, the FLOW is wrong upstream — re-produce properly (re-run 5c) or fix the gate invocation (point
   it at the file production actually emitted) — never fabricate the file the gate expects.
+- Never work around a NON-ZERO produce/exit or a FAILING gate by any means — not by re-authoring code, not by hand-editing outputs, not by an ad-hoc script, not by silently retrying with hidden changes. A non-zero exit from `produce-all` (or any gate refusal) is a HARD STOP that is SURFACED to the journalist AS-IS, never quietly papered over so the run can continue. This is the exit-code analogue of the spec/code rules above: a conformance violation that surfaced, a `produce-all` that exited 1 during a legitimate re-produce (an observed real case — the failing exit was worked around instead of reported), a snap that failed — each is reported to the journalist and the visual does NOT ship, not massaged until the command returns 0. If the failure is a genuine spec/data problem, fix the spec through the proper gate (re-open GATE 2 for a changed spec, 5d) and re-run; if it is an engine bug, report it and route around — but the non-zero result itself is never hidden. (The QA harness `check:conformance-no-fabrication` flags a conformance violation or a produce exit=1 that the run continued past instead of surfacing.)
+- Never do ad-hoc file operations (`mv`/`cp`/`mkdir`/`find`-and-move) to RELOCATE a mis-pathed artifact. If a script (or a manual capture) wrote to the wrong place, that is a BUG to surface and fix at the source — not to paper over by shuffling the file into the position a gate expects. The observed real case: a Gate-3 render capture landed under `skills/dw-chart/exports/…` because a bare relative `exports/…` path resolved against an earlier `cd skills/dw-chart`, and the run manually `mv`'d it into the sanctioned dir. The correct move is to RE-CAPTURE at the absolute run-scoped path (Gate 3b's provenance refusal names that absolute path, `src/render-provenance.ts`; the capture instruction now specifies it — see 3b), never to move a stray file into place. Relocating a mis-pathed artifact is the same class of improvisation as hand-planting one: it makes a gate pass on something production did not honestly put there.
 - Never silently mutate the ACCEPTED SPEC (`baseColor`, format, etc.) mid-PRODUCTION to route around a conformance-gate failure — this is the spec analogue of the rule above ("never edit product code" → "never silently edit the accepted spec to bypass a gate"). A conformance failure is SURFACED to the journalist as-is; if the spec must change to fix it, GATE 2 is re-opened for re-acceptance of the changed spec. The produce-time conformance guards exist precisely so a non-conformant visual never ships unseen.
 - Never hand over an INTERACTIVE/SCROLLY visual without running `export-code.mjs` (two-phase): phase 1 (no `--form`) EMITS the a/b/c proposal building NOTHING; phase 2 (`--form <html|code-source|embed>`) builds + delivers ONLY the chosen form, gated by `assertDelivered`. Never run phase 2 — for ANY element — before the journalist's message answering THAT delivery-form proposal exists: « la seule forme possible est c, je finalise (pour les deux) » is auto-deciding, the named violation. A single-offered-form (hosted-DW) proposal still waits for the journalist's confirmation; on a multi-element delivery the choice is per element (forms may differ), and a grouped answer (« embed pour les deux ») is only ever GIVEN by the journalist, never presumed by atelier. Never build all forms unconditionally, and never fabricate a no-JS `static.html` fallback — that fallback is GONE (accessibility is the `static` FORMAT choice at CADRAGE). Never mark an interactive/scrolly delivered on produce-time outputs alone — a Gate-3 review PNG / `interactive.png` / a build byproduct is NOT a delivery; only the `export-code --form <chosen>` artifact is (enforced mechanically by `assertDelivered`). A hosted-DW interactive delivers ONLY via `--form embed` (its live `publicUrl`) — it has no React source and no standalone local html.
 - Never spawn an Agent/Task sub-agent mid-flow — during the atelier flow you ONLY sequence, gate, and invoke producer scripts/sub-skills; a stray Agent/Task call leaks internal plumbing (e.g. an agentId) into the journalist-facing conversation.
