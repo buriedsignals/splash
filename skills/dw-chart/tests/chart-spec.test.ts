@@ -366,16 +366,17 @@ describe("validateChartSpec — #5 valueLabels only on bar/column", () => {
   });
 });
 
-describe("validateChartSpec — #4 valueLabels on horizontal bars is not a silent no-op", () => {
+describe("validateChartSpec — #4 valueLabels on horizontal bars renders direct labels (no silent-substitution warning)", () => {
   const base = {
     title: "Something clear about the data",
     data: "region,value\nNorth,10\nSouth,11",
     altInsight: "Something clear about the data.",
   };
-  it("warns that inside value labels can't be contrast-safe on d3-bars (axis shown instead)", () => {
-    // The prior gap: hasValueLabelControl('d3-bars') is true, so the 'only honoured'
-    // warning skipped it, yet applyValueLabels() turns the on-bar labels OFF → the
-    // journalist asked for value labels and silently got none. This warning surfaces it.
+  it("does NOT warn about inside labels being unrenderable — d3-bars now show direct on-bar value labels", () => {
+    // Superseded gap: the old mapper turned the on-bar labels OFF (axis-only) and warned
+    // that "value labels can't render contrast-safe INSIDE horizontal bars". The mapper
+    // now renders the direct labels (+ keeps the axis as the accessible fallback), so the
+    // journalist gets exactly what they asked for and the warning must be gone.
     const r = validateChartSpec({
       ...base,
       type: "d3-bars",
@@ -384,30 +385,20 @@ describe("validateChartSpec — #4 valueLabels on horizontal bars is not a silen
     expect(r.ok).toBe(true);
     if (r.ok)
       expect(
-        r.warnings.some((w) =>
-          /can't render contrast-safe INSIDE horizontal bars/.test(w),
-        ),
-      ).toBe(true);
+        r.warnings.some((w) => /INSIDE horizontal bars/.test(w)),
+      ).toBe(false);
   });
-  it("does NOT warn when valueLabels is not requested on a horizontal bar", () => {
-    const r = validateChartSpec({ ...base, type: "d3-bars" });
-    expect(r.ok).toBe(true);
-    if (r.ok)
-      expect(r.warnings.some((w) => /INSIDE horizontal bars/.test(w))).toBe(
-        false,
-      );
-  });
-  it("does NOT warn for valueLabels on a vertical column chart (outside labels render fine)", () => {
+  it("does NOT emit the 'only honoured' warning for a horizontal bar (bars carry value labels)", () => {
     const r = validateChartSpec({
       ...base,
-      type: "column-chart",
+      type: "d3-bars",
       valueLabels: true,
     });
     expect(r.ok).toBe(true);
     if (r.ok)
-      expect(r.warnings.some((w) => /INSIDE horizontal bars/.test(w))).toBe(
-        false,
-      );
+      expect(
+        r.warnings.some((w) => /valueLabels is only honoured/.test(w)),
+      ).toBe(false);
   });
 });
 
