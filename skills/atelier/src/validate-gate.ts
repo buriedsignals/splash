@@ -20,6 +20,7 @@ import {
   UnsupportedNativeType,
   type NativeSpec,
 } from "../../chart-native/src/spec-to-config";
+import { narrativeBeatErrors } from "../../chart-native/src/chart-story";
 import { placeholderSourceReason } from "./source-guard";
 import { guardrailParityViolations } from "./guardrail-parity";
 
@@ -79,10 +80,36 @@ function validateNative(spec: unknown): ValidationOutcome {
 // map-track config is one of the map-native family (dispatch by `type`, choropleth
 // default). Anything else here silently blocked valid symbol/hex-grid/dot-density/
 // locator/cartogram and chart scrollies.
+// The chart track ALSO validates any explicit journalist beat plan (`spec.beats`,
+// narrative control) against the data HERE — same fail-loud philosophy as dw-chart's
+// annotation-domain tripwire: a typo'd x/category must fail at the spine gate (5a),
+// never surface after production.
 function validateScrolly(spec: unknown): ValidationOutcome {
   const hasNativeType =
     typeof (spec as { nativeType?: unknown } | null)?.nativeType === "string";
-  return hasNativeType ? validateNative(spec) : validateMapNative(spec);
+  if (hasNativeType) {
+    const outcome = validateNative(spec);
+    const beatErrors = narrativeBeatErrors(spec as NativeSpec);
+    if (beatErrors.length)
+      return {
+        ok: false,
+        errors: [...(outcome.ok ? [] : outcome.errors), ...beatErrors],
+      };
+    return outcome;
+  }
+  // The explicit `beats` override is CHART-track narrative control. The map track
+  // derives its own story (deriveMapStory) and would silently IGNORE the field —
+  // the exact flow failure the override exists to close — so reject it loud.
+  if ((spec as { beats?: unknown } | null)?.beats !== undefined)
+    return {
+      ok: false,
+      errors: [
+        "explicit `beats` override is not supported on the map scrolly track " +
+          "(chart-track line/bar narrative control only) — remove it; map scrolly " +
+          "steps are derived from the data (deriveMapStory)",
+      ],
+    };
+  return validateMapNative(spec);
 }
 
 // GUARD 2 — placeholder source URL. Every producer spec carries `source: { name, url? }`

@@ -102,6 +102,53 @@ describe("validateAccepted — the spine validation gate", () => {
     expect(r.ok).toBe(true);
   });
 
+  it("accepts a CHART scrolly whose explicit beats anchor on real data values", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        nativeType: "line",
+        title: "How emissions per capita diverged since 1990",
+        source: { name: "X" },
+        unit: "t CO2",
+        data: "year,value\n1990,9\n2005,8\n2020,6",
+        beats: [
+          { x: "1990", xEnd: "2005", text: "The plateau years" },
+          { x: "2020", text: "The drop" },
+        ],
+      }),
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  it("REJECTS a CHART scrolly whose explicit beat anchors a value absent from the data (typo tripwire)", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        nativeType: "line",
+        title: "How emissions per capita diverged since 1990",
+        source: { name: "X" },
+        unit: "t CO2",
+        data: "year,value\n1990,9\n2020,6",
+        beats: [{ x: "2019", text: "no such point" }],
+      }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("2019");
+  });
+
+  it("REJECTS explicit beats on a MAP scrolly track (chart-track override only — never silently ignored)", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        type: "symbol",
+        points: [{ lon: 2.35, lat: 48.85, value: 100, label: "Paris" }],
+        basemap: "world",
+        title: "Where the closures hit hardest across France",
+        source: { name: "X", url: "https://x" },
+        beats: [{ category: "Paris" }],
+      }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toMatch(/map/i);
+  });
+
   it("returns a FAILURE (never a crash) for a producer outside the union", () => {
     const r = validateAccepted({
       ...base,

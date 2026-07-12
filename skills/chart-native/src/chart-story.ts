@@ -1,5 +1,5 @@
 import { specToNativeConfig } from "./spec-to-config";
-import type { NativeSpec } from "./spec-to-config";
+import type { NarrativeBeat, NativeSpec } from "./spec-to-config";
 import { computeChartLayout } from "./chart-geometry";
 import type { Dims } from "./chart-geometry";
 import { isFrench, localizeDecimal } from "./core/locale";
@@ -85,6 +85,103 @@ export function scatterNotableIndices(xs: number[], ys: number[]): number[] {
   return [...new Set([argmax(xs), argmax(ys), argmin(ys)])];
 }
 
+// ---------------------------------------------------------------------------
+// Explicit narrative beats — the journalist-confirmed override (spec.beats).
+// Default (absent) = the auto-pick above (lineNotableIndices / barRankedReveals),
+// byte-identical. When present, the confirmed plan is emitted EXACTLY as given:
+// the journalist's narrative order wins, even non-chronological (a line scrolly
+// simply scrubs back to an earlier point). An anchor that does not exist in the
+// data FAILS LOUD — the same philosophy as dw-chart's annotation-domain tripwire:
+// a typo must never silently drop or shift a confirmed beat.
+// ---------------------------------------------------------------------------
+
+// How many valid anchor values a fail-loud message lists before truncating —
+// enough to spot the typo at a glance, bounded so a 1 000-row CSV cannot flood
+// the produce log/report with its whole x column.
+const BEAT_ERROR_VALUE_SAMPLE = 20;
+
+function listValidAnchors(values: string[]): string {
+  const shown = values.slice(0, BEAT_ERROR_VALUE_SAMPLE);
+  const more = values.length - shown.length;
+  return shown.join(", ") + (more > 0 ? `, … (+${more} more)` : "");
+}
+
+// Validate an explicit beat plan against the chart type + the data's own anchor
+// values (line: the x column; bar: the category column). Returns human-readable
+// errors ([] = valid). Pure and throw-free so the spine validation gate
+// (skills/atelier/src/validate-gate.ts) can surface a typo BEFORE production;
+// deriveChartStory throws on the same errors at derive time (defense in depth
+// for a bypassed gate).
+export function narrativeBeatErrors(spec: NativeSpec): string[] {
+  const beats = spec.beats;
+  if (beats === undefined) return [];
+  let parsed: ReturnType<typeof specToNativeConfig>;
+  try {
+    parsed = specToNativeConfig(spec);
+  } catch {
+    // A malformed/unmapped spec is the producer validator's report (or the
+    // FALLBACK_TO_DW path) — the beat check simply cannot run on it.
+    return [];
+  }
+  if (!Array.isArray(beats)) {
+    return [
+      "explicit `beats` override must be an ARRAY of beat objects (see NarrativeBeat)",
+    ];
+  }
+  if (beats.length === 0) {
+    return [
+      "explicit `beats` override is empty — omit the field to use the auto-picked narrative",
+    ];
+  }
+  const { type, config } = parsed;
+  if (type !== "line" && type !== "bar") {
+    return [
+      `explicit \`beats\` override supports line and bar chart scrollies only (got "${type}")`,
+    ];
+  }
+  const errors: string[] = [];
+  if (type === "line") {
+    const xField = config.xField as string;
+    const points = config.points as Record<string, string | number>[];
+    const xValues = points.map((p) => String(p[xField]));
+    beats.forEach((b, i) => {
+      if (b.x === undefined) {
+        errors.push(
+          `beat ${i + 1}: a line beat must anchor on an \`x\` value from the data`,
+        );
+        return;
+      }
+      for (const [field, v] of [
+        ["x", b.x],
+        ["xEnd", b.xEnd],
+      ] as const) {
+        if (v === undefined) continue;
+        if (!xValues.includes(String(v)))
+          errors.push(
+            `beat ${i + 1}: ${field} "${v}" not found in the data — valid x values: ${listValidAnchors(xValues)}`,
+          );
+      }
+    });
+    return errors;
+  }
+  const catField = config.catField as string;
+  const rows = config.rows as Record<string, string | number>[];
+  const categories = rows.map((r) => String(r[catField]));
+  beats.forEach((b, i) => {
+    if (b.category === undefined) {
+      errors.push(
+        `beat ${i + 1}: a bar walk beat must anchor on a \`category\` value from the data`,
+      );
+      return;
+    }
+    if (!categories.includes(b.category))
+      errors.push(
+        `beat ${i + 1}: category "${b.category}" not found in the data — valid categories: ${listValidAnchors(categories)}`,
+      );
+  });
+  return errors;
+}
+
 // English ordinal: 1st, 2nd, 3rd, 4th…
 function ordinalEn(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -118,6 +215,21 @@ export function deriveChartStory(
   insight?: string,
 ): ChartBeat[] {
   const { type, config } = specToNativeConfig(spec);
+  // Explicit journalist-confirmed beats (spec.beats): validated FAIL-LOUD here even
+  // when the spine gate was bypassed — a typo'd anchor must never silently drop or
+  // shift a confirmed beat. Absent ⇒ the auto-pick below, byte-identical.
+  const explicitBeats: NarrativeBeat[] | undefined = spec.beats;
+  if (explicitBeats !== undefined) {
+    const beatErrors = narrativeBeatErrors(spec);
+    if (beatErrors.length)
+      throw new Error(
+        `invalid explicit narrative beats: ${beatErrors.join("; ")}`,
+      );
+  }
+  // Line + explicit beats: the takeaway closes on the FULL line (all the data — the
+  // same semantics as the map takeaway), so it carries the last data index for the
+  // scrolly host's card targets. Left undefined on the auto path (byte-identical).
+  let takeawayDataIndex: number | undefined;
   // Caption unit = the SHORT callout unit, NOT the long axis label. `unit` is the axis
   // subtitle (e.g. "Share of global CO₂ (%)"); repeating it in every caption is clumsy and
   // duplicates furniture the chart already shows. Prefer an explicit `valueUnit` ("%", "t");
@@ -156,16 +268,44 @@ export function deriveChartStory(
     );
     const cum = layout.cumLength;
     const total = layout.totalLength || 1;
-    for (const i of lineNotableIndices(ys)) {
-      const name = String(points[i][xField]);
-      const value = fmt(ys[i]);
-      beats.push({
-        kind: "reveal",
-        progress: cum[i] / total, // CHART_DIMS fallback; the host prefers dataIndex
-        dataIndex: i, // resolved to a path fraction at render width by the host
-        callout: { name, value, text: `${name} — ${value}` },
-        copy: `${name} — ${value}`,
-      });
+    if (explicitBeats) {
+      // Journalist-confirmed line beats, emitted EXACTLY as given (narrative order
+      // wins — a non-chronological plan scrubs the line back). A range beat
+      // (x..xEnd) draws to xEnd and captions the span.
+      for (const nb of explicitBeats) {
+        const anchor = nb.xEnd ?? nb.x;
+        const i = points.findIndex((p) => String(p[xField]) === String(anchor));
+        if (anchor === undefined || i < 0)
+          throw new Error(
+            `invalid explicit narrative beats: anchor "${String(anchor)}" not found`,
+          ); // unreachable — narrativeBeatErrors already validated above
+        const name =
+          nb.xEnd !== undefined
+            ? `${String(nb.x)}–${String(nb.xEnd)}`
+            : String(points[i][xField]);
+        const value = fmt(ys[i]);
+        const autoCopy = `${name} — ${value}`;
+        beats.push({
+          kind: "reveal",
+          progress: cum[i] / total, // CHART_DIMS fallback; the host prefers dataIndex
+          dataIndex: i, // resolved to a path fraction at render width by the host
+          callout: { name, value, text: autoCopy },
+          copy: nb.text?.trim() ? nb.text : autoCopy,
+        });
+      }
+      takeawayDataIndex = points.length - 1; // takeaway = the full line (all the data)
+    } else {
+      for (const i of lineNotableIndices(ys)) {
+        const name = String(points[i][xField]);
+        const value = fmt(ys[i]);
+        beats.push({
+          kind: "reveal",
+          progress: cum[i] / total, // CHART_DIMS fallback; the host prefers dataIndex
+          dataIndex: i, // resolved to a path fraction at render width by the host
+          callout: { name, value, text: `${name} — ${value}` },
+          copy: `${name} — ${value}`,
+        });
+      }
     }
   } else if (type === "bar") {
     const catField = config.catField as string;
@@ -178,14 +318,41 @@ export function deriveChartStory(
     // Same value-only stable sort as computeBarLayout — this IS the chart's display
     // order, so `sortedIndex` (== highlightIndex) fetches the row the accented bar shows.
     const displayOrder = [...labelled].sort((a, b) => b.value - a.value);
+    // The walk: journalist-confirmed categories in the confirmed order (walk length
+    // follows the list, not the fixed leaders+tail 4) — or the auto ranked reveals.
+    // Explicit entries resolve their category to its post-sort display index (the
+    // same index the chart accents), with the display rank + role derived from that
+    // position so the auto caption wording stays rank-aware when no text is given.
+    const walk = explicitBeats
+      ? explicitBeats.map((nb) => {
+          const sortedIndex = displayOrder.findIndex(
+            (row) => row.label === nb.category,
+          );
+          if (nb.category === undefined || sortedIndex < 0)
+            throw new Error(
+              `invalid explicit narrative beats: category "${String(nb.category)}" not found`,
+            ); // unreachable — narrativeBeatErrors already validated above
+          return {
+            sortedIndex,
+            rank: sortedIndex + 1,
+            role: (sortedIndex === displayOrder.length - 1
+              ? "tail"
+              : "leader") as "leader" | "tail",
+            text: nb.text,
+          };
+        })
+      : barRankedReveals(labelled).map((r) => ({
+          ...r,
+          text: undefined as string | undefined,
+        }));
     // Connective wording is French/English-branched here — same locale as `ordinal`
     // and `fmt` above, sourced from `spec.lang` (never hardcode English for every
     // deliverable language).
     const fr = isFrench(spec.lang);
-    for (const r of barRankedReveals(labelled)) {
+    for (const r of walk) {
       const row = displayOrder[r.sortedIndex];
       const value = fmt(row.value);
-      const copy =
+      const autoCopy =
         r.role === "tail"
           ? fr
             ? `Le plus bas — ${row.label}, ${value}`
@@ -201,7 +368,7 @@ export function deriveChartStory(
         rank: r.rank,
         rankRole: r.role,
         callout: { name: row.label, value, text: `${row.label} — ${value}` },
-        copy,
+        copy: r.text?.trim() ? r.text : autoCopy,
       });
     }
   } else if (type === "scatter") {
@@ -229,6 +396,11 @@ export function deriveChartStory(
 
   beats.push({
     kind: "takeaway",
+    // Only set on the explicit-beats line path (spread keeps the auto path
+    // byte-identical): the takeaway card draws the line to its LAST data point.
+    ...(takeawayDataIndex !== undefined
+      ? { dataIndex: takeawayDataIndex }
+      : {}),
     callout: null,
     copy: insight && insight !== spec.title ? insight : "",
   });
