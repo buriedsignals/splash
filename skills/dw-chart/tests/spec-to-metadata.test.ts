@@ -3,8 +3,9 @@ import {
   specToMetadata,
   resolveData,
   placeAnnotation,
+  HIGHLIGHT_MUTED_GREY,
 } from "../src/spec-to-metadata";
-import type { ChartSpec } from "../src/chart-spec";
+import { DEFAULT_BASE_COLOR, type ChartSpec } from "../src/chart-spec";
 
 // case2 median-home-price series in fractional plot coords (y=0 top=max value).
 // max 442600, min 275200, span 167400. Indices 0..7 over xFrac i/7.
@@ -697,5 +698,45 @@ describe("specToMetadata — scatter annotations (x and y are DIFFERENT columns)
     } as any);
     const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
     expect(ann.y).toBe("8.1"); // the single value column, as before
+  });
+});
+
+describe("specToMetadata — highlight → category-keyed custom-colors", () => {
+  const rankedBar: ChartSpec = {
+    type: "d3-bars",
+    title: "Basel has the most hospital beds per capita",
+    data: "city,beds\nBern,431\nBasel,812\nZurich,745",
+    altInsight: "Basel tops the ranking with 812 beds per 100k residents",
+    baseColor: "#E69F00",
+    highlight: "Basel",
+  };
+
+  it("keys the accent by the CATEGORY VALUE and mutes every other bar to the DW palette grey", () => {
+    const patch = specToMetadata(rankedBar);
+    expect(patch.metadata.visualize["custom-colors"]).toEqual({
+      Basel: "#E69F00",
+    });
+    expect(patch.metadata.visualize["base-color"]).toBe(HIGHLIGHT_MUTED_GREY);
+  });
+
+  it("falls back to the library default accent when no baseColor is set", () => {
+    const { baseColor, ...noBase } = rankedBar;
+    void baseColor;
+    const patch = specToMetadata(noBase);
+    expect(patch.metadata.visualize["custom-colors"]).toEqual({
+      Basel: DEFAULT_BASE_COLOR,
+    });
+  });
+
+  it("survives a ranking re-sort — the key is the value, not a row index", () => {
+    // sort:"desc" re-orders the rows before upload; a row-index key would now point
+    // at a different bar, the category value still points at Basel.
+    const patch = specToMetadata({ ...rankedBar, sort: "desc" });
+    expect(patch.metadata.visualize["custom-colors"]).toEqual({
+      Basel: "#E69F00",
+    });
+    expect(
+      resolveData({ ...rankedBar, sort: "desc" }).split("\n")[1],
+    ).toContain("Basel");
   });
 });

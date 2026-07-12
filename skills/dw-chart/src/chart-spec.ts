@@ -136,12 +136,32 @@ export const ANNOTATION_UNMAPPED_BAR_TYPES = new Set<ChartType>([
   "d3-range-plot",
 ]);
 
+// Chart types whose Datawrapper engine keys `visualize.custom-colors` by the CATEGORY
+// value of a single-series dataset — the set `spec.highlight` is allowed on. VERIFIED
+// LIVE against the real API (2026-07-12): charts of both types created via POST
+// /v3/charts, patched with {"custom-colors":{"Basel":"#E69F00"},"base-color":"#cccccc"},
+// PATCH→GET round-trip kept the map verbatim, and the PUBLISHED RENDER painted exactly
+// the Basel bar amber and the other bars grey (d3-bars renders HTML divs, column-chart
+// SVG rects — both engines honour the category key). The multi-series siblings
+// (grouped/stacked/split/multiple-*) key custom-colors by SERIES name instead — that is
+// `spec.seriesColors`' contract — and the remaining row-driven types (dot/range/arrow/
+// bullet) use per-column colour models; none of them accept a category-keyed accent, so
+// validateChartSpec REJECTS `highlight` for them rather than let it die silently.
+export const HIGHLIGHT_TYPES = new Set<ChartType>(["d3-bars", "column-chart"]);
+
 export interface ChartSpec {
   type: ChartType;
   title: string; // the insight, sentence case
   intro?: string; // subtitle / insight elaboration
   data: string; // CSV text
   baseColor?: string; // single-series colour (Okabe-Ito), CHOSEN per subject — not left at the default blue
+  // The CATEGORY VALUE (a first-column cell, e.g. "Basel") to accent on a single-series
+  // bar/column ranking (HIGHLIGHT_TYPES only). A VALUE, never a row index: `sort`
+  // re-orders the rows before upload, so an index would silently point at a different
+  // bar after every re-sort — the category value survives any ordering. The highlighted
+  // bar takes the accent (baseColor if present, else the library default); every other
+  // bar drops to the muted DW palette grey (see spec-to-metadata.ts).
+  highlight?: string;
   // F2 — set true when baseColor / seriesColors were SEEDED from the newsroom's brand
   // profile (a conscious house-style choice). Policy (b): a non-CVD-safe brand colour
   // is then KEPT (validation records it as a warning, not a hard error) — the auto
@@ -181,6 +201,101 @@ export interface ChartSpec {
     dx?: number; // px nudge (right +); use negative to pull a near-edge label inward
     dy?: number; // px nudge (down +)
   }[];
+}
+
+// THE canonical top-level ChartSpec field list — the single source the strict
+// unknown-field check derives from. Kept next to the interface and DOUBLY
+// compile-time-checked against it (below): `satisfies` rejects any entry that is not
+// a ChartSpec key, and the Exclude assertion refuses to compile when a ChartSpec key
+// is missing from the list — so the two can never drift.
+export const CHART_SPEC_FIELDS = [
+  "type",
+  "title",
+  "intro",
+  "data",
+  "baseColor",
+  "highlight",
+  "brandExplicit",
+  "subject",
+  "seriesColors",
+  "transpose",
+  "valueLabels",
+  "numberFormat",
+  "valueFormat",
+  "seriesLabels",
+  "sort",
+  "channel",
+  "lang",
+  "source",
+  "altInsight",
+  "annotations",
+] as const satisfies readonly (keyof ChartSpec)[];
+
+// Compile-time completeness: adding a field to ChartSpec without listing it above
+// makes this assignment fail to compile (Exclude is then non-never).
+type UnlistedChartSpecField = Exclude<
+  keyof ChartSpec,
+  (typeof CHART_SPEC_FIELDS)[number]
+>;
+const _everyChartSpecFieldIsListed: UnlistedChartSpecField extends never
+  ? true
+  : never = true;
+void _everyChartSpecFieldIsListed;
+
+// Routing-envelope fields real flows legitimately carry ON the same JSON object the
+// spec travels in (verified against the emitters, not invented): `producer` —
+// suggest-chart emits it on routed specs (present on the workflow-test fixtures;
+// eval/score.ts discriminates on it) — and `format` — the single pinned VisualFormat
+// the suggest-chart SKILL.md requires on the emitted spec (read by impliedFormat() in
+// eval/score.ts). They are TOLERATED by the strict check but are not ChartSpec fields:
+// dw-chart itself never reads them.
+export const CHART_SPEC_ENVELOPE_FIELDS = ["producer", "format"] as const;
+
+// Dependency-free Levenshtein for the near-miss suggestion below. Field names are
+// short (≤ 20 chars), so the O(n·m) DP is trivially cheap.
+function editDistance(a: string, b: string): number {
+  const row = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0];
+    row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = row[j];
+      row[j] = Math.min(
+        row[j] + 1,
+        row[j - 1] + 1,
+        prev + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+      prev = tmp;
+    }
+  }
+  return row[b.length];
+}
+
+// The closest valid ChartSpec field for a near-miss, or undefined when nothing is
+// close. Two signals, in order: (1) containment — a hallucinated compound like
+// "highlightColor" STARTS WITH the real field "highlight" (or a truncation like
+// "chan" is a prefix of "channel"); (2) a small edit distance (≤ 2, e.g. "titel" →
+// "title") for plain typos. Case-insensitive; containment requires ≥ 4 shared chars
+// so short fields never match noise. Exported for tests.
+export function closestChartSpecField(name: string): string | undefined {
+  const n = name.toLowerCase();
+  let best: string | undefined;
+  for (const f of CHART_SPEC_FIELDS) {
+    const c = f.toLowerCase();
+    const contained =
+      (c.length >= 4 && n.startsWith(c)) || (n.length >= 4 && c.startsWith(n));
+    if (contained && (!best || f.length > best.length)) best = f;
+  }
+  if (best) return best;
+  let bestDist = 3; // suggestions stop at distance 2 — beyond that it's a different word
+  for (const f of CHART_SPEC_FIELDS) {
+    const dist = editDistance(n, f.toLowerCase());
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = f;
+    }
+  }
+  return best;
 }
 
 // A valid Datawrapper/numeral.js number token (what value-label-format + y-grid-format expect):
@@ -276,6 +391,25 @@ export function validateChartSpec(
   if (!input || typeof input !== "object")
     return { ok: false, errors: ["spec must be an object"] };
   const s = input as Record<string, unknown>;
+  // STRICT TOP-LEVEL FIELDS (fail-closed, same philosophy as normalizeChannel in
+  // skills/atelier/src/channel.ts: an unknown input must fail LOUD, never silently
+  // pass through). The QA Wave 8 German-hospital case shipped an UNhighlighted chart
+  // because the emitter's hallucinated `highlight`/`highlightColor` fields were
+  // silently ignored here — only manual pixel inspection caught it. Any field outside
+  // the canonical CHART_SPEC_FIELDS list (plus the tolerated routing envelope) is now
+  // an error naming the field, suggesting the nearest valid one for a near-miss.
+  const knownFields = new Set<string>([
+    ...CHART_SPEC_FIELDS,
+    ...CHART_SPEC_ENVELOPE_FIELDS,
+  ]);
+  for (const key of Object.keys(s)) {
+    if (knownFields.has(key)) continue;
+    const suggestion = closestChartSpecField(key);
+    errors.push(
+      `unknown field "${key}"${suggestion ? ` — did you mean "${suggestion}"?` : ""} ` +
+        `(valid fields: ${CHART_SPEC_FIELDS.join(", ")})`,
+    );
+  }
   if (!CHART_TYPES.includes(s.type as ChartType))
     errors.push(`type must be one of: ${CHART_TYPES.join(", ")}`);
   if (typeof s.title !== "string" || !s.title.trim())
@@ -370,6 +504,55 @@ export function validateChartSpec(
         errors.push(
           "seriesColors: a single-series chart should use at most 2 colours",
         );
+    }
+  }
+  // HIGHLIGHT — the CATEGORY VALUE to accent on a single-series bar/column ranking.
+  // Only HIGHLIGHT_TYPES key custom-colors by category (verified live — see the set's
+  // comment); everywhere else the field would die silently, so it is rejected loudly.
+  if (s.highlight !== undefined) {
+    if (typeof s.highlight !== "string" || !s.highlight.trim()) {
+      errors.push(
+        "highlight must be a non-empty CATEGORY VALUE (a first-column cell, e.g. " +
+          '"Basel") — never a row index: sort re-orders the rows, an index would ' +
+          "silently accent a different bar",
+      );
+    } else {
+      if (
+        CHART_TYPES.includes(s.type as ChartType) &&
+        !HIGHLIGHT_TYPES.has(s.type as ChartType)
+      )
+        errors.push(
+          `highlight is not supported on ${s.type} — only ${[
+            ...HIGHLIGHT_TYPES,
+          ].join(
+            ", ",
+          )} key per-bar custom-colors by category (verified live); for multi-series ` +
+            `types use seriesColors, or move the emphasis into the title/annotations`,
+        );
+      if (s.seriesColors !== undefined)
+        errors.push(
+          "highlight and seriesColors are mutually exclusive — both write " +
+            "visualize.custom-colors (highlight keys by CATEGORY on a single-series " +
+            "bar; seriesColors keys by SERIES name)",
+        );
+      // The highlighted category must exist in the data, else Datawrapper keeps the
+      // custom-colors entry but paints nothing — the chart would ship UNhighlighted,
+      // exactly the silent failure this validation exists to kill.
+      if (typeof s.data === "string" && s.data.includes(",")) {
+        const rowLabels = new Set(
+          (s.data as string)
+            .trim()
+            .split("\n")
+            .slice(1)
+            .map((l) => l.split(",")[0]?.trim())
+            .filter(Boolean),
+        );
+        if (rowLabels.size > 0 && !rowLabels.has(s.highlight.trim()))
+          errors.push(
+            `highlight "${s.highlight}" does not match any data row label — ` +
+              `Datawrapper would silently paint nothing; use one of: ${[...rowLabels].join(", ")}`,
+          );
+      }
     }
   }
   if (s.transpose !== undefined && typeof s.transpose !== "boolean")

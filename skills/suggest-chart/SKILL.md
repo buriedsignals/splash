@@ -172,12 +172,22 @@ base `de` / `it` today.)
 3. Emit a **ChartSpec** (the exact shape `dw-chart/src/chart-spec.ts` validates):
    `{ type, title (the insight, sentence case), intro?, data (CSV), subject (the topic hint, e.g. "solar"),
    baseColor (a subject-fit Okabe-Ito hue — see Colour below), seriesColors? (multi-series: series → hue),
-   seriesLabels? (machine column → human name), valueLabels?, numberFormat?, source?,
+   highlight? (bar-family accent — see below), seriesLabels? (machine column → human name), valueLabels?,
+   numberFormat?, source?,
    channel (the CADRAGE Q3 answer — one of the structured channels `social-vertical | social-feed |
    article-web` from `skills/atelier/src/channel.ts`; sizes the static export: social-feed→square,
    social-vertical→9:16, article-web→16:9. `normalizeChannel` still accepts legacy free text, e.g. "feed"
    or "stories", and maps it to the same enum),
    altInsight (WCAG: the insight, not the structure) }`.
+   **`highlight`** (optional) = the CATEGORY VALUE (a first-column cell, e.g. `"Basel"`) to accent on a
+   single-series ranked bar — **`d3-bars` and `column-chart` ONLY** (the two DW engines that key per-bar
+   `custom-colors` by category, verified live; every other type REJECTS the field). The highlighted bar
+   takes the accent (`baseColor` if set, else the library default); every other bar drops to the muted DW
+   palette grey. A VALUE, never a row index (`sort` re-orders the rows — an index would accent the wrong
+   bar). The same CADRAGE-framing discipline as the native `highlight` applies: only accent a category the
+   confirmed insight singles out; omit it for a neutral overview. There is NO `highlightColor` field —
+   the accent IS `baseColor`; `validateChartSpec` is STRICT and rejects any unknown top-level field
+   (a hallucinated field once shipped a silently-unhighlighted chart).
 4. Guardrails: **≤2 colours**; **CHOOSE `baseColor` by subject — NEVER leave a chart on a blue-family hue
    for a subject that is not water/cold/sky/marine** (the validator FAILS a declared `subject` whose
    `baseColor` is absent or the default `#0072B2`); if the data is too complex for a clean chart, return

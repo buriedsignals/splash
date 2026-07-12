@@ -561,3 +561,137 @@ describe("validateChartSpec — #5 annotations dropped on horizontal value-x/cat
       ).toBe(true);
   });
 });
+
+// STRICT TOP-LEVEL FIELDS — the QA Wave 8 German-hospital regression class: the
+// orchestrator emitted `highlight`/`highlightColor` on a ChartSpec, the validator
+// silently ignored the unknown fields, and the chart shipped UNhighlighted (only
+// manual pixel inspection caught it). Unknown top-level fields must fail LOUD.
+describe("validateChartSpec — strict top-level fields (fail-closed)", () => {
+  const rankedBar = {
+    type: "d3-bars",
+    title: "Basel has the most hospital beds per capita",
+    data: "city,beds\nBasel,812\nZurich,745\nBern,431",
+    altInsight: "Basel tops the ranking with 812 beds per 100k residents",
+    baseColor: "#E69F00",
+    sort: "desc",
+  };
+
+  it("rejects the hallucinated `highlightColor` field, naming it and suggesting `highlight` (the QA Wave 8 case)", () => {
+    const r = validateChartSpec({
+      ...rankedBar,
+      highlight: "Basel",
+      highlightColor: "#E69F00",
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      const msg = r.errors.join(" | ");
+      expect(msg).toContain('"highlightColor"');
+      expect(msg).toMatch(/did you mean "highlight"/);
+    }
+  });
+
+  it("lists the valid fields in the unknown-field error", () => {
+    const r = validateChartSpec({ ...rankedBar, frobnicate: true });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      const msg = r.errors.join(" | ");
+      expect(msg).toContain('"frobnicate"');
+      // spot-check the list names real fields, not prose
+      expect(msg).toContain("baseColor");
+      expect(msg).toContain("altInsight");
+      expect(msg).toContain("annotations");
+    }
+  });
+
+  it("suggests the closest field for a small typo (titel → title)", () => {
+    const r = validateChartSpec({ ...rankedBar, titel: "a typo" });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.join(" | ")).toMatch(/did you mean "title"/);
+  });
+
+  it("offers no suggestion for a field nothing is close to", () => {
+    const r = validateChartSpec({ ...rankedBar, frobnicate: true });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      const err = r.errors.find((e) => e.includes('"frobnicate"'));
+      expect(err).toBeDefined();
+      expect(err).not.toMatch(/did you mean/);
+    }
+  });
+
+  it("tolerates the routing-envelope fields real flows carry on the same object (producer, format)", () => {
+    const r = validateChartSpec({
+      ...rankedBar,
+      producer: "dw-chart",
+      format: "static",
+    });
+    expect(r.ok).toBe(true);
+  });
+});
+
+// REAL HIGHLIGHT — the journalist need behind the Wave 8 bug was legitimate
+// (accent Basel in a ranked bar). `highlight` names the CATEGORY VALUE to accent
+// on the single-series bar family; every other type rejects it loudly.
+describe("validateChartSpec — highlight (bar-family category accent)", () => {
+  const rankedBar = {
+    type: "d3-bars",
+    title: "Basel has the most hospital beds per capita",
+    data: "city,beds\nBasel,812\nZurich,745\nBern,431",
+    altInsight: "Basel tops the ranking with 812 beds per 100k residents",
+    baseColor: "#E69F00",
+    sort: "desc",
+  };
+
+  it("accepts a highlight naming a data category on d3-bars", () => {
+    const r = validateChartSpec({ ...rankedBar, highlight: "Basel" });
+    expect(r.ok).toBe(true);
+  });
+
+  it("accepts a highlight on column-chart (the other verified category-keyed engine)", () => {
+    const r = validateChartSpec({
+      ...rankedBar,
+      type: "column-chart",
+      highlight: "Zurich",
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects a highlight on a non-bar type (d3-lines) with a clear message", () => {
+    const r = validateChartSpec({
+      type: "d3-lines",
+      title: "Unemployment is at a five-year low",
+      data: "year,value\n2018,5.1\n2023,3.7",
+      altInsight: "Unemployment fell from 5.1% to 3.7%",
+      highlight: "2023",
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.join(" | ")).toMatch(/highlight.*(d3-bars|column-chart)/);
+  });
+
+  it("rejects a highlight that names no data category (it would die silently in Datawrapper)", () => {
+    const r = validateChartSpec({ ...rankedBar, highlight: "Lausanne" });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.join(" | ")).toMatch(/Lausanne.*does not match any/i);
+  });
+
+  it("rejects highlight combined with seriesColors (both write custom-colors)", () => {
+    const r = validateChartSpec({
+      ...rankedBar,
+      highlight: "Basel",
+      seriesColors: { beds: "#009E73" },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.join(" | ")).toMatch(/highlight.*seriesColors/);
+  });
+
+  it("rejects a non-string highlight (an index breaks on re-sort — the value is the contract)", () => {
+    const r = validateChartSpec({ ...rankedBar, highlight: 0 });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.join(" | ")).toMatch(/highlight must be/);
+  });
+});
