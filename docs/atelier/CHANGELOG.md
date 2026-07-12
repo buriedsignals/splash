@@ -4,6 +4,44 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-12 (suite 3) — Wave 11 : 3 confirmations OK + classe « improvisation » mécanisée (5 fixes), flake map-native éliminé
+
+**Wave 11 (2 re-runs de confirmation + 3 probes neuves qui stressent les gardes fraîches) : 5/5 livrés.**
+**Confirmations validées** : double-opportunité @ turnCap 40 → **0 major** (le fix résout le closed-early) ·
+happy-path a/b/c (persona coopératif choisit « b) HTML autonome ») → la règle WAIT **ne frictionne pas**
+le chemin normal · takeaway en deux parties (richesse↔vie + exception US) → **tenu jusqu'au titre**.
+
+**4 classes réelles → 5 fixes (workflow 4 clusters + review, 1 agent flake séparé) :**
+- **Garde anti-improvisation** (2 findings = 1 classe : le pattern « atelier improvise pour passer un
+  échec ») : aging a **fabriqué un script produit ad-hoc** (`skills/scrolly/scripts/verify-aging.mjs`,
+  inexistant dans le repo) pour satisfaire un gate ; source-correction a **contourné un produce non-zéro**
+  au re-produce ; wealth-health a **mv-é** un artefact mal-pathé. Tous attrapés par les checks sandbox du
+  harness (`product-source-hot-patch`, `conformance-no-fabrication`). Fix : Never list élargie (jamais
+  créer/éditer du source produit, jamais contourner un exit non-zéro, jamais de file-op ad-hoc) + chemin
+  de capture Gate-3 rendu **absolu run-scoped** (l'enabler du mv). SAFE.
+- **Intégrité embed/fly** (aging critical) : le choix embed calait sur `FLY_API_TOKEN` absent et était
+  marqué « delivered » sur l'output pré-export. Fix : `deploy-embed` fail-fast + `assertDelivered` exige
+  une vraie URL hébergée pour la forme embed + la proposition a/b/c signale l'embed indisponible (steer
+  vers b). Le chemin hosted-DW (publicUrl, sans fly) livre toujours. SAFE.
+- **Modèle de questions CADRAGE** (4e finding de wording) : Q1 DIRECT/GUIDED confirmé pas inféré ·
+  comptage réel (fini le « Q3, toujours posée » quand moins de questions ont été posées) · plus de
+  double-ask canal↔format. **Review UNSAFE** : le 1er jet renumérotait channel Q3→Q2 dans un seul fichier
+  → 18 refs périmées ailleurs ; re-scopé (renumérotation revertée, vrais fixes gardés, purement additif).
+- **Occlusion titre-d'axe scatter dw** (render-confirmé : Copenhague caché sous le titre X) : DW n'offre
+  aucun levier pour bouger un titre d'axe scatter (inline aux coins) — le SEUL levier honoré est le
+  domaine (`visualize.y-axis.range` **numérique** ; les bornes string du chemin `custom-range-y` sont
+  ignorées sur un scatter, live-vérifié) → étendre le domaine Y de 0.3×span des deux côtés pousse les
+  marks hors des bandes-titres des coins, déterministe. **Render-vérifié** (Copenhague dégagé). *(2 agents
+  morts sur flap API ; fini inline — le test RED écrit par l'agent était la spec exacte de la forme
+  métadonnées à émettre.)*
+- **Flake map-native éliminé** : le test `produce.mjs single-format dispatch` (6 renders MapLibre live +
+  tuiles maptiler, injouable offline) timeout à ~86s sous contention — **la cause de re-run de gate la
+  plus fréquente de la semaine**. Timeout porté à 240s (même classe que les fixes install + map-dw) ;
+  gate 20/20 validé 3× par l'agent. Passe 630/0 en isolation.
+
+**Note** : reprise après relèvement de la limite de dépense. Le filet QA (checks sandbox) a prouvé sa
+valeur en attrapant les 2 improvisations — exactement son rôle ; le produit durcit maintenant le contrat.
+
 ## Session 2026-07-12 (suite 2) — Wave 10 : confirmation ciblée + longue traîne épuisée (7 fixes), gate 20 checks
 
 **Wave 10 (4 re-runs des cas mordus Wave 9) : les 2 cibles principales CONFIRMÉES 0-major** — italien
