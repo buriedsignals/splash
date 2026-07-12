@@ -405,6 +405,12 @@ function emitProposal(ctx) {
     );
   relay.push(
     `Quelle forme souhaitez-vous ? (${Object.keys(forms).join(" / ")}) — puis relancer export-code avec --form <html|code-source|embed>.`,
+    // The explicit WAIT instruction, at the point of temptation. Observed violation (QA wave 10,
+    // w9-double-opportunite-energie): the orchestrator emitted this proposal for two hosted-DW
+    // elements, announced "Je finalise la livraison sous cette forme pour les deux", and ran
+    // --form embed for both without a single journalist turn in between. The choice is the
+    // journalist's — even when only one form is offered, and never presumed across elements.
+    "ATTENDRE la réponse du journaliste à CETTE proposition avant tout --form : ne jamais choisir à sa place — même quand une seule forme est possible, c'est le journaliste qui la confirme, et sur plusieurs éléments jamais de « pour les deux » présumé (une réponse groupée n'est valable que si c'est LUI qui la donne).",
     "END_EXPORT_FORMS_PROPOSAL",
   );
   console.log(relay.join("\n"));
