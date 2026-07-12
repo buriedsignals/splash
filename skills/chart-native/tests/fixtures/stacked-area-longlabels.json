@@ -1,0 +1,16 @@
+{
+  "title": "Renewables overtook every fossil source in the electricity mix",
+  "altInsight": "Renewables grew from 160 to 280 TWh between 2014 and 2024 while conventional thermal generation fell from 420 to 250 TWh.",
+  "unit": "TWh generated",
+  "xField": "year",
+  "seriesFields": ["Conventionnel thermique", "Renouvelables"],
+  "source": {
+    "name": "Grid operator annual report",
+    "url": "https://example.org/grid-mix"
+  },
+  "rows": [
+    { "year": 2014, "Conventionnel thermique": 420, "Renouvelables": 160 },
+    { "year": 2018, "Conventionnel thermique": 360, "Renouvelables": 220 },
+    { "year": 2024, "Conventionnel thermique": 250, "Renouvelables": 280 }
+  ]
+}

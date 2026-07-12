@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Chart</title>
     <style>
-      html,body{margin:0;padding:24px;background:#f4f4f4}
+      /* page inset ONCE, on body only — `html,body{padding:24px}` stacked to
+         48px/side and starved a 360px phone to 264px, below the interactive
+         minWidth floor (280): the chart then painted 16px past its container
+         and the right-gutter labels shipped clipped (snap-label-fit @360px). */
+      html{margin:0;padding:0;background:#f4f4f4}
+      body{margin:0;padding:24px;background:#f4f4f4}
       /* #root fills the width so the responsive chart can measure its container.
          The static build mounts a fixed-size chart, centered by margin auto. */
       #root{width:100%;box-sizing:border-box}

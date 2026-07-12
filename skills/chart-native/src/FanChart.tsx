@@ -23,6 +23,7 @@ import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
+import { textWidth, truncate } from "./core/text";
 
 export interface FanConfig {
   title: string;
@@ -179,6 +180,30 @@ function FanSvg({
   const clipW = innerWidth * reveal + 1;
   const clipId = "fan-wipe";
 
+  // The "projection →" annotation lives INSIDE the reveal-wipe clip group
+  // (intent: it appears as the wipe passes the now rule), whose rect ends at
+  // innerWidth+1 at p=1 — ink past that edge ships PERMANENTLY cut (the
+  // ancestor-clipPath blindspot snap-label-fit now measures; a long-history /
+  // short-forecast series at a 360px embed measured 36.92px of it cut). nowX is
+  // data-driven, so fit the label mechanically: keep it on the forecast side
+  // when it fits, otherwise flip it END-anchored to the history side of the
+  // rule (still reading toward the forecast); if even the wider side cannot
+  // hold it (degenerate tiny plot), truncate via the shared core/text fallback
+  // rather than clip. 1.08 = the shared 600+-weight width inflation
+  // (endLabelGutterPx's bold factor) over the 0.6em base estimate.
+  const NOW_LABEL = "projection →";
+  const NOW_LABEL_GAP = 5;
+  const nowLabelW = textWidth(NOW_LABEL, ts.source) * 1.08;
+  const nowRightRoom = innerWidth - (nowX + NOW_LABEL_GAP * sc);
+  const nowLeftRoom = nowX - NOW_LABEL_GAP * sc;
+  const nowLabelOnRight =
+    nowRightRoom >= nowLabelW || nowRightRoom >= nowLeftRoom;
+  const nowLabelBudget = Math.max(0, nowLabelOnRight ? nowRightRoom : nowLeftRoom);
+  const nowLabelText =
+    nowLabelW <= nowLabelBudget
+      ? NOW_LABEL
+      : truncate(NOW_LABEL, nowLabelBudget / 1.08, ts.source);
+
   const bandArea = area<{ x: number; loY: number; hiY: number }>()
     .x((d) => d.x)
     .y0((d) => d.loY)
@@ -274,13 +299,14 @@ function FanSvg({
             strokeDasharray="3 3"
           />
           <text
-            x={nowX + 5 * sc}
+            x={nowLabelOnRight ? nowX + NOW_LABEL_GAP * sc : nowX - NOW_LABEL_GAP * sc}
             y={9 * sc}
+            textAnchor={nowLabelOnRight ? "start" : "end"}
             fontSize={ts.source}
             fontWeight={600}
             fill={COLORS.muted}
           >
-            projection →
+            {nowLabelText}
           </text>
 
           {/* central forecast (dashed, subordinate) */}

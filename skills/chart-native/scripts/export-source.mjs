@@ -142,7 +142,12 @@ export function bundleIndexHtml(title) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${t}</title>
     <style>
-      html,body{margin:0;padding:24px;background:#f4f4f4}
+      /* page inset ONCE, on body only — html+body both carrying 24px doubled
+         the inset to 48px/side and starved a 360px phone below the 280px
+         interactive minWidth (labels then painted past the card — same fix as
+         the skill's own index.html, kept in sync). */
+      html{margin:0;padding:0;background:#f4f4f4}
+      body{margin:0;padding:24px;background:#f4f4f4}
       #root{width:100%;box-sizing:border-box}
       #root > div{margin:0 auto}
     </style>
