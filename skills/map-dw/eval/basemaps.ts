@@ -9,4 +9,8 @@ export const KNOWN_BASEMAPS = new Set<string>([
   "us-counties-2023",
   // Symbol-map backdrops (verified live to exist + expose join keys).
   "france-metropolitan-departments",
+  // Country-subdivision basemaps (verified live 2026-07-12; keys + region counts pinned
+  // in src/basemap-keys.ts — the sparse-subset guard's calibration cases).
+  "switzerland-2026-cantons",
+  "italy-provinces-2025",
 ]);

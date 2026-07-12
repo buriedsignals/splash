@@ -1,13 +1,18 @@
 import { describe, it, expect } from "bun:test";
 import { scoreMapSpec } from "../score";
 
+// 22 countries (≥ 20 rows, ≈ 10% of world-2019's 212 regions): broad enough that the
+// sparse-basemap-subset guardrail stays silent — this fixture exercises the scoring
+// machinery, and its old 2-row data was itself the sparse anti-pattern the guard flags.
 const good = {
   mapType: "choropleth",
   basemap: "world-2019",
   mapKeyAttr: "DW_STATE_CODE",
   regionKey: "code",
   valueColumn: "value",
-  data: "code,value\nFRA,10\nSWE,70",
+  data:
+    "code,value\nFRA,10\nSWE,70\nDEU,40\nESP,42\nITA,36\nPOL,16\nNOR,68\nFIN,54\nDNK,61\nNLD,33\n" +
+    "BEL,28\nAUT,58\nCHE,55\nPRT,47\nGRC,35\nIRL,39\nCZE,22\nHUN,19\nROU,31\nBGR,24\nHRV,44\nSVK,26",
   title: "Sweden leads western Europe on this measure",
   altInsight: "Sweden highest at 70, France lowest at 10",
 };

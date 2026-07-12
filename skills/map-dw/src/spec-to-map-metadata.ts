@@ -19,10 +19,12 @@ export interface MapPatch {
     axes: Record<string, unknown>;
     visualize: Record<string, unknown>;
     describe: Record<string, unknown>;
-    // Per-column format table. The choropleth legend + %REGION_VALUE% tooltip read the value
-    // column's `number-format` / `number-append` from HERE, not from `describe` — verified
-    // against the published d3-maps-choropleth renderer (its label formatter reads
-    // `data.column-format[valueColumn]`). Omitted for map types that carry no value column.
+    // Per-column format table. The choropleth LEGEND reads the value column's
+    // `number-format` / `number-append` from HERE, not from `describe` — verified against
+    // the published d3-maps-choropleth renderer (its label formatter reads
+    // `data.column-format[valueColumn]`). NOT the hover tooltip: probed live, the
+    // %REGION_VALUE% tooltip ignores number-append entirely (the unit is baked into the
+    // tooltip template instead). Omitted for map types that carry no value column.
     data?: Record<string, unknown>;
     // The self-built, localized "Source : X" line for non-English deliverables (see
     // sourceNotes below) — DW's own "Source:" caption cannot be relocalized.
@@ -124,9 +126,10 @@ function describeBlock(spec: {
     "number-format": resolveNumberFormat(spec.numberFormat),
   };
   // The value unit is a literal SUFFIX Datawrapper appends to auto-formatted numbers (the
-  // legend + %REGION_VALUE% choropleth tooltip) WITHOUT multiplying — the same mechanism the
-  // Academy recommends for showing "%" on already-percentage data. Verified: number-append
-  // is a real describe field.
+  // LEGEND) WITHOUT multiplying — the same mechanism the Academy recommends for showing "%"
+  // on already-percentage data. Verified: number-append is a real describe field. It does
+  // NOT reach the %REGION_VALUE% hover tooltip (probed live) — choroplethMetadata bakes the
+  // unit into the tooltip template for that.
   if (spec.unit) block["number-append"] = spec.unit;
   return block;
 }
@@ -136,10 +139,11 @@ function describeBlock(spec: {
 // `colors` makes the renderer paint every region + the legend BLACK. So we deliberately
 // emit `mode` + `interpolation` + `colors` and NEVER a `stops` string. Verified via real
 // exported PNGs (see output-proof/).
-// The per-column format the choropleth LEGEND + %REGION_VALUE% tooltip read (verified against
-// the published renderer): the grouped number-format + the literal unit suffix. This is what
-// puts a thousands separator (and the unit) on the legend endpoints — `describe.number-format`
-// alone never reaches them.
+// The per-column format the choropleth LEGEND reads (verified against the published
+// renderer): the grouped number-format + the literal unit suffix. This is what puts a
+// thousands separator (and the unit) on the legend endpoints — `describe.number-format`
+// alone never reaches them. The hover tooltip reads NEITHER (probed live): its unit is
+// baked into the tooltip body template in choroplethMetadata.
 function valueColumnFormat(
   numberFormat: string,
   unit?: string,
@@ -173,10 +177,15 @@ function choroplethMetadata(spec: ChoroplethMapSpec): MapPatch {
         // bare-"17600" bug). Set the grouped token; the chart `language` localizes the group
         // separator (fr → narrow no-break space "17 600", en → comma "17,600").
         legends: { color: { labelFormat: numberFormat } },
+        // TOOLTIP UNIT (verified-bug fix, probed LIVE): `number-append` reaches the legend
+        // endpoints but NOT the %REGION_VALUE% hover tooltip — a published rainfall map with
+        // unit " mm" stored the append in describe + column-format yet hovered a bare "624".
+        // So the unit is baked into the tooltip body TEMPLATE, the same mechanism the symbol
+        // map uses after its FORMAT() token. No double-unit risk: the append never renders here.
         tooltip: {
           enabled: true,
           title: "%REGION_NAME%",
-          body: "%REGION_VALUE%",
+          body: `%REGION_VALUE%${spec.unit ?? ""}`,
         },
       },
       describe: describeBlock(spec),

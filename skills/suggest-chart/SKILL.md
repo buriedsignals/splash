@@ -131,6 +131,19 @@ base `de` / `it` today.)
      national / continental / global point maps (extent ≥ ~12°), where the pins carry their own title labels;
      `validateMapSpec` warns if you route a tighter locator to `map-dw`.
    - **Choropleth data** (region fills) → apply the format ladder below.
+   - **Choropleth BASEMAP FIT — sub-national subsets** (routing PREFERENCE, not a hard rule): when the
+     data clearly covers ONE region of a country (e.g. the 7 provinces of Veneto, one canton's
+     districts), do NOT put it on the full-country basemap — the filled regions render as an illegible
+     micro-cluster in one corner, the rest of the country grey. Prefer, in order: (1) a **region-scoped
+     DW basemap** when one exists (DW carries per-region cuts, e.g. `italy-veneto-municipalities`,
+     `switzerland-bern-2026-municipalities` — discover via `GET /v3/basemaps`); (2) **`map-native`**,
+     whose viewport auto-fits the data extent (when the needed type/format is reachable there — it may
+     not be, which is why this stays a preference). The **full-country basemap is for national-coverage
+     data**. Mechanical net: `validateMapSpec` WARNS (advisory, never a hard fail) when the data covers
+     < 10% of the chosen basemap's regions with < 20 rows (`SPARSE_REGION_FRACTION` / `SPARSE_MAX_ROWS`,
+     `map-dw/src/map-spec.ts`) — a deliberately sparse national map (few values SPREAD across the
+     country, like 8 of 26 swiss cantons ≈ 31% of the basemap's regions) is legitimate and does not
+     trip the warning.
 
    **Map format ladder** (choropleth; applied after Gate 5 routes to a map — the SAME channel-first rule
    as charts: the channel sets the format default, the producer follows the format):
@@ -398,7 +411,10 @@ Field notes:
   names the valid keys. Country *names* (English) join on `DW_NAME`; ISO-A2 codes on `ISO_2`. For any other
   basemap, confirm the exact `mapKeyAttr` via the basemap-key discovery `map-dw` documents (`GET
   /v3/basemaps/{id}` → `meta.keys`, mirrored in `basemap-keys.ts`) — never assume `ISO_A3` exists on a
-  basemap; check its declared keys first.
+  basemap; check its declared keys first. **Basemap SCOPE must match the data's coverage**: a
+  sub-national subset (one region's provinces/districts) prefers a region-scoped basemap or `map-native`
+  over the full-country cut — see the Choropleth BASEMAP FIT rule in Gate 4 (`validateMapSpec` warns on
+  a sparse subset).
 - `regionKey`: the data column holding the region codes (ISO-A2/A3, country name, …).
 - `valueColumn` (NOT `valueField`): the numeric column with the normalised rate per Gate 5.
 - `title`: the spatial finding as a sentence ("Nordic countries generate most of their electricity from
