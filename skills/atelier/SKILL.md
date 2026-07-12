@@ -538,7 +538,10 @@ article-web is the one channel that can host it**:
        (`scrolly.html` for a scrolly). One file, drops into any CMS/email/offline.
      - **c) Embed (hébergé)** — deploy the html to the journalist's own fly.io host and share the returned URL
        (for a **hosted-DW** producer, whose interactive IS the already-published embed, this is the live
-       `publicUrl` — no deploy step).
+       `publicUrl` — no deploy step). **A SELF-HOSTED embed (no live `publicUrl`) needs `FLY_API_TOKEN`** to
+       deploy: when it is unconfigured, the emitted proposal FLAGS form c `available:false` (with a `reason`)
+       and the relay text marks it « INDISPONIBLE ici » steering to **b) HTML autonome** — do NOT offer /
+       run form c in that environment (a hosted-DW form c stays available — it needs no fly deploy).
   3. **THEN build + deliver ONLY the chosen form** — re-run `export-code.mjs` with `--form <html|code-source|embed>`
      (the `deliver` command from the proposal is exactly this):
      - `--form html` → copies the standalone `interactive.html`/`scrolly.html` into the export folder; print its
@@ -547,9 +550,15 @@ article-web is the one channel that can host it**:
        else copies the built html (map-native/scrolly); print its ABSOLUTE path.
      - `--form embed` → runs `deploy-embed.mjs` NOW to upload to the journalist's OWN fly.io app (name via the
        3rd arg or `$ATELIER_EMBED_APP`) and records the hosted URL in `EMBED_URL.txt` (a hosted-DW producer
-       records its already-live `publicUrl`, no deploy). Share the URL.
+       records its already-live `publicUrl`, no deploy). Share the URL. **Integrity: `deploy-embed.mjs`
+       FAIL-FASTS (non-zero, before any flyctl call) if `FLY_API_TOKEN` is unset and there is no live
+       `publicUrl` — it never half-deploys or writes a placeholder; `export-code` surfaces that message and
+       refuses.** The URL recorded must pass `isHostedUrl` (a real https origin) or the export fails.
      Each run ends with the `assertDelivered(files, { format, form })` gate — the folder must match the
-     `(format, chosen form)` shape or the export fails loudly. **Hosted Datawrapper interactives** (`publicUrl`,
+     `(format, chosen form)` shape or the export fails loudly. For **form embed** that gate is strict like
+     static/video: the folder must be EXACTLY `EMBED_URL.txt` holding a resolvable https URL — the pre-export
+     PRODUCTION output (the produced `interactive.html`/`static.png`) is NOT an embed deliverable, so handing
+     it over cannot fake `delivered`. **Hosted Datawrapper interactives** (`publicUrl`,
      no local html) offer ONLY form c (the live embed) — there is no React source and no standalone local html
      to hand over.
 

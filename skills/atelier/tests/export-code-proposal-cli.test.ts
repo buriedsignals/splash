@@ -17,10 +17,7 @@ const WORK = join(import.meta.dir, ".export-code-proposal-cli-work");
 
 afterEach(() => rmSync(WORK, { recursive: true, force: true }));
 
-function writeReport(
-  dir: string,
-  result: Record<string, unknown>,
-): string {
+function writeReport(dir: string, result: Record<string, unknown>): string {
   const reportPath = join(dir, "report.json");
   writeFileSync(
     reportPath,
@@ -34,7 +31,13 @@ function writeReport(
 }
 
 /** Runs the REAL export-code CLI in phase 1 (no --form); returns captured stdout. */
-function runPhase1(outDir: string, exportDir: string, reportPath: string, id: string): string {
+function runPhase1(
+  outDir: string,
+  exportDir: string,
+  reportPath: string,
+  id: string,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
   return execFileSync(
     "bun",
     [
@@ -46,8 +49,25 @@ function runPhase1(outDir: string, exportDir: string, reportPath: string, id: st
       "--id",
       id,
     ],
-    { cwd: CWD, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    { cwd: CWD, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env },
   );
+}
+
+/** Pulls the machine-relayable EXPORT_FORMS_JSON payload out of phase-1 stdout. */
+function parseFormsJson(stdout: string): {
+  forms: Record<string, Record<string, unknown>>;
+  [k: string]: unknown;
+} {
+  const marker = "EXPORT_FORMS_JSON ";
+  const line = stdout.split("\n").find((l) => l.startsWith(marker));
+  if (!line) throw new Error("no EXPORT_FORMS_JSON in stdout:\n" + stdout);
+  return JSON.parse(line.slice(marker.length));
+}
+
+function envWithoutFlyToken(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  delete env.FLY_API_TOKEN;
+  return env;
 }
 
 /** The wait instruction the emitted block must carry, split into its load-bearing parts. */
@@ -100,5 +120,93 @@ describe("export-code phase 1 — emitted proposal carries the WAIT instruction"
     const stdout = runPhase1(outDir, exportDir, reportPath, "el2");
     expect(stdout).toContain("EXPORT_FORMS_PROPOSAL");
     expectWaitInstruction(stdout);
+  });
+});
+
+// Lever 3 of the embed-delivery-integrity fix: a SELF-HOSTED interactive/scrolly (no live DW
+// publicUrl) can only ship form c (embed) by deploying to fly.io — which needs FLY_API_TOKEN.
+// When the token is unconfigured, the a/b/c proposal must FLAG form c unavailable and steer the
+// journalist to the standalone-HTML form (b), rather than offering a form that cannot deliver.
+describe("export-code phase 1 — embed availability reflects fly.io configuration", () => {
+  function writeNativeInteractive(name: string): {
+    outDir: string;
+    exportDir: string;
+    reportPath: string;
+  } {
+    const outDir = join(WORK, name, "el");
+    const exportDir = join(WORK, name, "el-export");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "interactive.html"), "<html></html>");
+    const reportPath = writeReport(join(WORK, name), {
+      id: "el",
+      producer: "chart-native",
+      format: "interactive",
+      status: "produced",
+      reviewed: true,
+      renderApproved: true,
+    });
+    return { outDir, exportDir, reportPath };
+  }
+
+  it("flags form c (embed) UNAVAILABLE for a self-hosted interactive when FLY_API_TOKEN is unset, steering to b", () => {
+    const { outDir, exportDir, reportPath } =
+      writeNativeInteractive("no-token");
+    const stdout = runPhase1(
+      outDir,
+      exportDir,
+      reportPath,
+      "el",
+      envWithoutFlyToken(),
+    );
+    const payload = parseFormsJson(stdout);
+    expect(payload.forms.c.available).toBe(false);
+    expect(String(payload.forms.c.reason)).toMatch(/FLY_API_TOKEN|fly/i);
+    // form b (standalone HTML) is still offered as the deliverable alternative
+    expect(payload.forms.b).toBeDefined();
+    // the human relay block warns and points to b
+    const block = stdout.slice(
+      stdout.indexOf("EXPORT_FORMS_PROPOSAL"),
+      stdout.indexOf("END_EXPORT_FORMS_PROPOSAL"),
+    );
+    expect(block).toMatch(/indisponible/i);
+    expect(block).toMatch(/\bb\)/);
+  });
+
+  it("keeps form c (embed) available for a self-hosted interactive when FLY_API_TOKEN is configured", () => {
+    const { outDir, exportDir, reportPath } =
+      writeNativeInteractive("with-token");
+    const stdout = runPhase1(outDir, exportDir, reportPath, "el", {
+      ...process.env,
+      FLY_API_TOKEN: "dummy-token-not-real",
+    });
+    const payload = parseFormsJson(stdout);
+    expect(payload.forms.c.available).toBe(true);
+    expect(payload.forms.c.reason).toBeUndefined();
+  });
+
+  it("leaves a hosted-DW embed (already-live publicUrl) available with no FLY_API_TOKEN — no fly deploy needed", () => {
+    const outDir = join(WORK, "hosted-dw", "el");
+    const exportDir = join(WORK, "hosted-dw", "el-export");
+    mkdirSync(outDir, { recursive: true });
+    const reportPath = writeReport(join(WORK, "hosted-dw"), {
+      id: "el",
+      producer: "dw-chart",
+      format: "interactive",
+      status: "produced",
+      reviewed: true,
+      renderApproved: true,
+      publicUrl: "https://datawrapper.dwcdn.net/XXXXX/1/",
+    });
+    const stdout = runPhase1(
+      outDir,
+      exportDir,
+      reportPath,
+      "el",
+      envWithoutFlyToken(),
+    );
+    const payload = parseFormsJson(stdout);
+    expect(payload.forms.c.url).toBe("https://datawrapper.dwcdn.net/XXXXX/1/");
+    // a live hosted embed is fly-independent — never flagged unavailable
+    expect(payload.forms.c.available).not.toBe(false);
   });
 });

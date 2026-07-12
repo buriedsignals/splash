@@ -35,7 +35,12 @@ import {
 import { execFileSync } from "node:child_process";
 import { dirname, join, basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { assertShippable, assertDelivered } from "../src/export-guard.ts";
+import {
+  assertShippable,
+  assertDelivered,
+  isHostedUrl,
+} from "../src/export-guard.ts";
+import { flyTokenConfigured } from "./deploy-embed.mjs";
 
 const SELF = fileURLToPath(import.meta.url);
 // The chart-native source-bundle generator — form "code-source" for chart-native is a
@@ -283,25 +288,43 @@ function main() {
     } else {
       if (!interactive)
         fail(`${format} form=embed found no html to deploy in ${outDir}`);
-      const out = execFileSync(
-        "bun",
-        [
-          DEPLOY_EMBED_SCRIPT,
-          join(outDir, interactive),
-          id,
-          "--results",
-          resolve(resultsPath),
-          "--id",
-          id,
-        ],
-        { encoding: "utf8" },
-      );
+      let out;
+      try {
+        out = execFileSync(
+          "bun",
+          [
+            DEPLOY_EMBED_SCRIPT,
+            join(outDir, interactive),
+            id,
+            "--results",
+            resolve(resultsPath),
+            "--id",
+            id,
+          ],
+          { encoding: "utf8" },
+        );
+      } catch (e) {
+        // deploy-embed fail-fasts (e.g. missing FLY_API_TOKEN) or the upload fails — surface its
+        // actionable message and refuse. Never fall through to write a placeholder EMBED_URL.txt.
+        const msg = (e.stderr || e.stdout || e.message || "").toString().trim();
+        fail(msg || `${format} form=embed deploy failed`);
+      }
       const line = out.split("\n").find((l) => l.startsWith("EMBED_URL "));
       if (!line) fail("deploy-embed did not return an EMBED_URL");
       url = line.slice("EMBED_URL ".length).trim();
     }
+    // The URL must look like a resolvable hosted https link before we record it as delivered —
+    // a stalled deploy or a malformed publicUrl must not be written out as a real embed.
+    if (!isHostedUrl(url))
+      fail(
+        `${format} form=embed did not resolve a hosted https URL (got ${JSON.stringify(url)})`,
+      );
     writeFileSync(join(exportDir, "EMBED_URL.txt"), url + "\n");
-    assertDelivered(readdirSync(exportDir), { format, form: "embed" });
+    assertDelivered(readdirSync(exportDir), {
+      format,
+      form: "embed",
+      dir: exportDir,
+    });
     done({ format, form: "embed", url, exportDir: absExportDir });
     return;
   }
@@ -362,8 +385,19 @@ function emitProposal(ctx) {
       path: join(absExportDir, interactive),
       deliver: `${deliverBase} --form html`,
     };
+    // A self-hosted embed can only ship by deploying to the journalist's fly.io host, which needs
+    // FLY_API_TOKEN. If it is unconfigured, form c CANNOT be delivered here — flag it unavailable
+    // (with a reason) and steer to form b, rather than offering a form that would stall/fail.
+    const flyReady = flyTokenConfigured();
     forms.c = {
       label: "Embed (hébergé)",
+      available: flyReady,
+      ...(flyReady
+        ? {}
+        : {
+            reason:
+              "FLY_API_TOKEN non configuré — le déploiement fly.io est indisponible dans cet environnement. Choisissez b) (HTML autonome), ou configurez fly.io puis réessayez.",
+          }),
       command: `bun ${DEPLOY_EMBED_SCRIPT} ${join(absExportDir, interactive)} ${id} --results ${resolve(resultsPath)} --id ${id}`,
       deliver: `${deliverBase} --form embed`,
     };
@@ -401,7 +435,9 @@ function emitProposal(ctx) {
     relay.push(
       forms.c.url
         ? `  c) Embed (hébergé) — lien déjà en ligne, réutilisable partout : ${forms.c.url}`
-        : `  c) Embed (hébergé) — publier sur votre hôte fly.io pour obtenir un lien à réutiliser`,
+        : forms.c.available === false
+          ? `  c) Embed (hébergé) — INDISPONIBLE ici : nécessite la configuration fly.io (FLY_API_TOKEN). Prenez plutôt b) (fichier HTML autonome équivalent), ou configurez fly.io puis réessayez.`
+          : `  c) Embed (hébergé) — publier sur votre hôte fly.io pour obtenir un lien à réutiliser`,
     );
   relay.push(
     `Quelle forme souhaitez-vous ? (${Object.keys(forms).join(" / ")}) — puis relancer export-code avec --form <html|code-source|embed>.`,
