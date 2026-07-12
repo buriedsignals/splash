@@ -75,8 +75,18 @@ export function assertArtifactProvenance(opts: {
   }
 
   // Sanctioned hosted-review capture: ONLY for a hosted embed with no local render.
-  const sanctionedDir =
-    join(dirname(resolve(reportPath)), REVIEW_ARTIFACTS_DIR, result.id) + sep;
+  // sanctionedAbs is the ABSOLUTE run-scoped capture dir — anchored on report.json's own
+  // resolved directory, so it is deterministic regardless of the orchestrator's cwd. It is
+  // surfaced VERBATIM in every refusal below so a mis-pathed capture (observed: a bare
+  // relative `exports/...` that resolved against an earlier `cd skills/dw-chart`, landing
+  // the screenshot under skills/dw-chart/exports/…) is re-captured at the right absolute
+  // place, never papered over with an ad-hoc mv of the stray file into position.
+  const sanctionedAbs = join(
+    dirname(resolve(reportPath)),
+    REVIEW_ARTIFACTS_DIR,
+    result.id,
+  );
+  const sanctionedDir = sanctionedAbs + sep;
   const isHostedNoLocalRender =
     result.publicUrl != null && (result.outputs ?? []).length === 0;
   if (abs.startsWith(sanctionedDir)) {
@@ -90,7 +100,9 @@ export function assertArtifactProvenance(opts: {
       throw new Error(
         `refusing to approve ${abs}: this review capture predates the current produce ` +
           `generation (${new Date(anchorMs).toISOString()}) — it is stale. Re-open the live ` +
-          `embed, capture it fresh under ${REVIEW_ARTIFACTS_DIR}/${result.id}/, and re-review.`,
+          `embed and re-capture it FRESH into ${sanctionedAbs}${sep} (the absolute ` +
+          `run-scoped capture dir), then re-review. Never move/mv an existing file into ` +
+          `place — re-capture it.`,
       );
     return;
   }
@@ -98,10 +110,13 @@ export function assertArtifactProvenance(opts: {
   throw new Error(
     `refusing to approve ${abs}: not an output of the current produce generation for ` +
       `proposal ${result.id}. The render gate only approves files the pipeline emitted ` +
-      `(this result's outputs: ${outputs.length ? outputs.join(", ") : "none"}) or, for a ` +
-      `hosted embed with no local render, a fresh capture under ` +
-      `${REVIEW_ARTIFACTS_DIR}/${result.id}/ next to report.json. A hand-authored or ` +
-      `stale file cannot be approved — and never write extra files into the producer's ` +
-      `build subdir.`,
+      `(this result's outputs: ${outputs.length ? outputs.join(", ") : "none"})` +
+      (isHostedNoLocalRender
+        ? ` or, for this hosted embed with no local render, a fresh capture INSIDE the ` +
+          `absolute run-scoped dir ${sanctionedAbs}${sep} (not a cwd-relative ` +
+          `exports/… path — that resolves against any earlier cd). Re-capture the live ` +
+          `embed there; never move/mv a mis-pathed capture into place.`
+        : `. A hand-authored or stale file cannot be approved — and never write extra ` +
+          `files into the producer's build subdir.`),
   );
 }
