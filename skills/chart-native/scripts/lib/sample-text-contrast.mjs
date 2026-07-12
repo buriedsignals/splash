@@ -47,12 +47,18 @@ export function sampleTextContrast() {
     if (!fill) continue;
     const r = t.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) continue;
+    // font size (CSS px) + bold flag — the node side applies the WCAG SC 1.4.3
+    // large-text 3:1 provision (large bold ≥ 18.66px / large normal ≥ 24px). `bold`
+    // is font-weight ≥ 700 (numeric) or the keyword "bold".
+    const fontPx = parseFloat(cs.fontSize) || 0;
+    const fw = cs.fontWeight;
+    const bold = fw === "bold" || Number(fw) >= 700;
     const y = r.top + r.height / 2;
     const prev = t.style.visibility;
     t.style.visibility = "hidden"; // remove glyph + its halo before sampling
     const bgs = [0.2, 0.5, 0.8].map((f) => bgAt(r.left + r.width * f, y, t));
     t.style.visibility = prev;
-    out.push({ text: s, fill, bgs });
+    out.push({ text: s, fill, bgs, fontPx, bold });
   }
   return out;
 }

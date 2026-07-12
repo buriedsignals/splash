@@ -285,6 +285,29 @@ export const MAPPERS: Record<
       },
     };
   },
+  heatmap(parsed, spec) {
+    // wide MATRIX convention: the first column is the ROW dimension (e.g. day),
+    // every following numeric column is a value of the COLUMN dimension (e.g. an
+    // hour band). Each cell is rows[i][colField] — colour encodes that value via
+    // the component's sequential CVD-safe ramp (heatmap-geometry.ts BLUES); this is
+    // the first reachable type where COLOUR is the quantitative channel. Mirrors the
+    // grouped/stacked wide-CSV shape, but the config field names are rowField/colFields.
+    const rowField = parsed.columns[0];
+    const colFields = parsed.columns
+      .slice(1)
+      .filter((c) => parsed.numericColumns.includes(c));
+    return {
+      type: "heatmap",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        rowField,
+        colFields,
+        rows: parsed.rows,
+      },
+    };
+  },
   histogram(parsed, spec) {
     const { columns, numericColumns, rows } = parsed;
     const valueField =

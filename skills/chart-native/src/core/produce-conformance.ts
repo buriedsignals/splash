@@ -33,6 +33,7 @@ import {
   checkPopulationPyramidConformance,
   checkFanConformance,
   checkBumpConformance,
+  checkHeatmapConformance,
   reconcileBrandViolations,
   requireAltInsight,
 } from "./conformance";
@@ -68,6 +69,7 @@ import { computeStackedLayout } from "../stacked-bar-geometry";
 import { computeStackedAreaLayout } from "../stacked-area-geometry";
 import { computeRadialBarLayout } from "../radial-bar-geometry";
 import { computeWaterfallLayout } from "../waterfall-geometry";
+import { computeHeatmapLayout } from "../heatmap-geometry";
 import type { ChartConfig } from "../LineChart";
 import type { BarConfig } from "../BarChart";
 import type { ScatterConfig } from "../ScatterChart";
@@ -94,6 +96,7 @@ import type { DivergingStackedConfig } from "../DivergingStackedChart";
 import type { PopulationPyramidConfig } from "../PopulationPyramidChart";
 import type { FanConfig } from "../FanChart";
 import type { BumpConfig } from "../BumpChart";
+import type { HeatmapConfig } from "../HeatmapChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -178,6 +181,14 @@ const WATERFALL_DIMS = {
   height: 460,
   padding: { top: 64, right: 24, bottom: 72, left: 52 },
 };
+// computeHeatmapLayout derives valueDomain (min/max of the cell values) + the fixed
+// BLUES rampStops from the data alone, never from these dims — any valid dims (padding
+// fits inside width/height) yield the same domain/ramp the real render checks.
+const HEATMAP_DIMS = {
+  width: 840,
+  height: 480,
+  padding: { top: 90, right: 16, bottom: 76, left: 52 },
+};
 
 // Every type with a produce-time guard wired (flat-triple resolver types + the
 // bespoke-signature types resolved inline below). The completeness test asserts
@@ -203,6 +214,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "pyramid",
   "fan",
   "bump",
+  "heatmap",
 ];
 
 /**
@@ -782,6 +794,30 @@ function computeRawConformance(
             maxRank,
             highlightCount,
             accentColors,
+          },
+          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+        ),
+      };
+    }
+
+    case "heatmap": {
+      // the FIRST value→colour type — its guard validates the SEQUENTIAL ramp
+      // (monotonic luminance = CVD-safe/greyscale-readable) + a non-empty value
+      // range, on top of the global title/source/contrast checks. The rampStops
+      // and valueDomain come from the same geometry the component renders.
+      const cfg = config as unknown as HeatmapConfig;
+      const layout = computeHeatmapLayout(
+        { rowField: cfg.rowField, colFields: cfg.colFields, rows: cfg.rows },
+        HEATMAP_DIMS,
+      );
+      return {
+        checked: true,
+        violations: checkHeatmapConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            rampStops: layout.rampStops,
+            valueDomain: layout.valueDomain,
           },
           { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
         ),

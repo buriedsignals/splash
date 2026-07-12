@@ -60,13 +60,14 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   { id: "dot-strip", family: "A", shape: "single" },
   { id: "violin", family: "A", shape: "distribution" },
   { id: "radial-bar", family: "A", shape: "single" },
+  // heatmap — the FIRST type where COLOUR is the quantitative channel (continuous
+  // value→colour). A wide matrix CSV: first column = the row dimension, every
+  // following numeric column = the column dimension; each cell's value paints a
+  // sequential CVD-safe ramp (heatmap-geometry.ts). Reachable via the wide shape
+  // (a grid needs ≥2 columns) — QA Wave 7 er-wait proved a small newsroom does
+  // supply day×hour matrices, so it is article-realistic (family A), not deferred.
+  { id: "heatmap", family: "A", shape: "wide" },
   // --- Family B, deferred by design (structural/specialist data an article rarely yields) ---
-  {
-    id: "heatmap",
-    family: "B",
-    shape: "structural",
-    deferred: "family-B: needs an x×y×value matrix",
-  },
   {
     id: "marimekko",
     family: "B",
