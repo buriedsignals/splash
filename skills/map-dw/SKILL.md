@@ -1,18 +1,32 @@
 ---
 name: map-dw
-description: Use when you need a Datawrapper map — choropleth (regions shaded by a value) or locator (point markers/pins) — published as an embed AND an owned static PNG, with colorblind-safe colours. Symbol / proportional / dot maps (valued circles) route to map-native, not map-dw (see below). Keywords map, choropleth, symbol, bubble, locator, marker, pin, datawrapper, region, country, state, geography, embed, png, journalism, dataviz.
-output_mode: interactive+static
+description: Use when you need a Datawrapper map — choropleth (regions shaded by a value) or locator (point markers/pins) — as an owned static PNG (format "static") or a hosted embed (format "interactive"), one pinned format per element, with colorblind-safe colours. Symbol / proportional / dot maps (valued circles) route to map-native, not map-dw (see below). Keywords map, choropleth, symbol, bubble, locator, marker, pin, datawrapper, region, country, state, geography, embed, png, journalism, dataviz.
+output_mode: single-format (static | interactive)
 ---
 
-# map-dw — Datawrapper maps (choropleth · locator), with an owned PNG fallback
+# map-dw — Datawrapper maps (choropleth · locator), single-format
 
 ## Overview
 
-Turns a validated `MapSpec` into a published Datawrapper map — **choropleth** or **locator** (point
-markers) — (embed) **and** an owned PNG. Datawrapper renders the geography; we apply best-practice
-(colorblind-safe sequential scale, WCAG alt = the insight) via its real config fields. The PNG means
-the visual survives even if Datawrapper changes — no archive rot. Reuses the proven dw-chart REST
-client; only the contract, mapper and orchestration are map-specific.
+Turns a validated `MapSpec` into a Datawrapper map — **choropleth** or **locator** (point
+markers) — building ONLY the element's pinned format (single-format-produce-export):
+
+- **`static`** (the default) → the owned PNG alone, exported at the CADRAGE channel's box
+  (`spec.channel`: feed → 1:1, social/vertical → 9:16, web/article → 16:9 default) and
+  **render-size-verified fail-hard** (the PNG's real IHDR dims must equal the channel's mediaSize
+  ±2px — the same floor chart-native/map-native enforce). The owned file survives even if
+  Datawrapper changes — no archive rot.
+- **`interactive`** → the hosted embed (`publicUrl`) alone — no PNG is exported for it.
+- **`video` / `scrolly`** → **fail hard BEFORE any API call** (`map-dw cannot build format …` —
+  animated maps are map-native's), both in `produceMap` itself and at the orchestrator dispatch
+  (`skills/atelier/src/adapters.ts`). Format/channel resolution runs before `createChart`, so a
+  bad pin or garbled channel never leaves an orphaned published map behind.
+
+Datawrapper renders the geography; we apply best-practice (colorblind-safe sequential scale, WCAG
+alt = the insight) via its real config fields. Reuses the proven dw-chart REST client; only the
+contract, mapper and orchestration are map-specific. **Known limitation:** no rendered-contrast
+check runs on the DW-exported raster (the native producers snap-contrast their own renders);
+contrast is enforced at the spec level only (CVD-safe `colorScale` stops).
 
 **Symbol / proportional / dot maps (valued circles) are NOT produced here — route them to `map-native`.**
 Datawrapper draws proportional circles with values on HOVER only and offers no "label symbols by column"
@@ -29,7 +43,8 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
 - **Locator** — a handful of point markers/pins calling out specific places in a story (no value
   per point). Wide extent (≥ ~12°) only; a sub-national locator routes to `map-native` (coastline
   accuracy).
-- You want it embeddable now AND archived as a file the newsroom owns.
+- You want ONE of: an archived file the newsroom owns (format `static`) or a hosted embed
+  (format `interactive`) — the element's pinned format decides which single artifact is built.
 - **Not** for: **symbol / proportional / dot maps** (points carrying a VALUE mapped to circle size) —
   those route to `map-native`, which ships a statically-labeled PNG (`map-dw` symbol maps are hover-only
   and `validateMapSpec` rejects them). Also **not** for routes/line markers, area markers, or non-map
@@ -83,13 +98,21 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
 | Mapping | `src/spec-to-map-metadata.ts` | MapSpec → DW metadata (colorscale-without-`stops` fix) |
 | Client | `../dw-chart/src/datawrapper.ts` | REUSED generic REST client (create/data/patch/publish/png) |
 | Dataless guard | `src/join-match.ts` | produce-time real join-match rate from live geometry; fails hard on a dataless join |
-| Orchestrator | `src/produce.ts` | `produceMap` → `{chartId, embed, pngPath, publicUrl}` (runs the dataless-join guard before publishing) |
+| Orchestrator | `src/produce.ts` | `produceMap(spec, pngPath, {format?})` → `{chartId, embed, pngPath?, publicUrl}` — single-format (`static` default \| `interactive`; video/scrolly fail hard pre-API); channel-derived export box + render-size floor (shared `skills/atelier/src/channel.ts`) |
 
 ## How it works (the shape)
 
+0. **Format gate** — FIRST. `format` outside {`static`, `interactive`} throws
+   (`video/scrolly require map-native`) before anything else runs.
 1. **Validate** the `MapSpec` (fail loud on missing bindings/alt, bad colour stop, and confirm the
    geo/value columns are real CSV columns — the data↔map binding; markers carry valid lng/lat; and
    for a choropleth on a **known** basemap, that `mapKeyAttr` is one of its real join keys).
+1.2. **Channel → export box, resolved BEFORE any API call** (the dw-chart orphaned-published-chart
+   lesson, mirrored): `spec.channel` resolves fail-closed (`normalizeChannel` throws on a garbled
+   value; absent → article-web) to HALF the channel's mediaSize (`mapExportSize`) — DW's PNG export
+   rasterizes at 2×, so the halved request doubles back onto the channel size, the same halving
+   chart-native applies at deviceScaleFactor:2. Maps are always fixed-aspect (DW scales the
+   geography into the box), so the height is always pinned — no row-cropping concern here.
 1.5. **Dataless-join guard** (choropleth): fetch the live basemap geometry and confirm the data's
    `regionKey` values actually join to regions. Below `MIN_JOIN_MATCH_RATE` (50% matched) the join
    has failed — the map would be fully grey — so `produceMap` **throws before publishing** rather
@@ -104,8 +127,15 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
    - **locator** (`locator-map`): `visualize.markers`=array of `{type:"point", coordinates:[lng,lat],
      title, markerColor (Okabe-Ito cycle), icon}`; computed `visualize.view.center`+`zoom`. No data table.
    - All carry `describe.aria-description` (alt = the insight).
-3. **Drive** the API: create → setData (CSV; skipped for locator) → patch → publish → export PNG.
-4. **Return** the embed iframe + the owned PNG path.
+3. **Drive** the API: create → setData (CSV; skipped for locator) → patch → publish. The publish is
+   unconditional infrastructure (hosted producer: even the static PNG can only be exported FROM a
+   published map) — it is not a deliverable of its own.
+4. **Build ONLY the pinned format**: `static` → export the PNG at the channel box, then read the
+   file's own IHDR dims back and `assertRenderedSize` against the channel's mediaSize (±2px,
+   fail-hard — the shared render-size floor). `interactive` → skip the export entirely; the hosted
+   embed IS the deliverable. (No rendered-contrast check runs on the DW raster — known limitation;
+   the CVD-safe scale is enforced at the spec level.)
+5. **Return** `{chartId, embed, pngPath?, publicUrl}` — `pngPath` present only for `static`.
 
 **Basemap must fit the data's geographic extent (choropleth).** EU countries →
 `europe-sovereign-states`; US states → `us-states`; French points → a France basemap; only use
@@ -125,7 +155,8 @@ variant (`-continental`, or another id of the same extent).
    map. Known basemaps' keys are recorded in `src/basemap-keys.ts` (validated offline); add a basemap
    there when you introduce it.
 2. `set -a; source /atelier/.env; set +a` (token).
-3. `produceMap(spec, 'out.png')`.
+3. `produceMap(spec, 'out.png')` — static by default (owned PNG at the channel box);
+   `produceMap(spec, 'out.png', { format: 'interactive' })` for the hosted embed alone.
 
 ## Tuning knobs (each is one value)
 
@@ -141,16 +172,21 @@ variant (`-continental`, or another id of the same extent).
 | Explicit locator framing | `spec.view` (`{center,zoom}`; else auto from markers) | MapSpec |
 | Colour gradient (choropleth) | `spec.colorScale` (default light→`#0072B2`) | MapSpec |
 | Number format | `spec.numberFormat` | MapSpec |
-| PNG width | `exportPng(id, path, width)` | `dw-chart/src/datawrapper.ts` |
+| Built format (static PNG / hosted embed) | `opts.format` (`"static"` default \| `"interactive"`) | `produceMap` |
+| Static export box (channel-derived) | `spec.channel` (feed→1:1, social→9:16, web→16:9 default) | MapSpec |
 
 ## Files
 
 - `src/{map-spec,spec-to-map-metadata,produce}.ts` — contract (choropleth + locator produced; symbol
-  rejected → `map-native`), mapper, orchestrator.
+  rejected → `map-native`), mapper, orchestrator (single-format: static PNG at the channel box with
+  the render-size floor, or hosted embed alone; video/scrolly fail hard pre-API).
 - `src/basemap-keys.ts` — per-basemap valid join keys (offline registry) for the `validateMapSpec`
   join-key check; `src/join-match.ts` — produce-time dataless-join guard (live match rate, fail-hard).
 - `src/tests/` — pure unit tests + live e2e (choropleth + locator; symbol asserts rejection; join-key
-  mismatch asserts validation error + a dataless join asserts a produce refusal) (skips without token).
+  mismatch asserts validation error + a dataless join asserts a produce refusal; static asserts the
+  delivered PNG dims == channel mediaSize ±2px; interactive asserts embed-alone/no PNG) (live tests
+  skip without token). `produce-format.test.ts` — token-free: format gate + channel resolution beat
+  the missing-token error (proof both run before any API call) + `mapExportSize` derivation.
 - `eval/` — `scoreMapSpec` (pure gate, per-type) + `basemaps.ts` allowlist + generic cases
   (choropleth, locator) + live basemap check.
 - `output-proof/` — the real published choropleth and locator maps (PNG + publicUrl), left published;

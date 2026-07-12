@@ -44,9 +44,13 @@
 //               Task 4 threads `p.format` here; a format outside {static, interactive}
 //               (video/scrolly — dw-chart has no such renderer) fails hard before any
 //               API call rather than silently building "static".
-//     map-dw    produceMap(spec: MapSpec, pngPath)     → { chartId, embed, pngPath, publicUrl }
-//               Unchanged by the single-format redesign — always builds both the PNG
-//               and the hosted embed regardless of `p.format` (out of Tasks 1-4's scope).
+//     map-dw    produceMap(spec: MapSpec, pngPath, opts?) → { chartId, embed, pngPath?, publicUrl }
+//               opts.format ("static" default | "interactive") — the same single-format
+//               contract as dw-chart (map-dw floor): "static" exports the owned PNG at
+//               the channel's box (render-size fail-hard, IHDR readback); "interactive"
+//               delivers the hosted embed alone (pngPath undefined). A format outside
+//               {static, interactive} (video/scrolly — animated maps are map-native's)
+//               fails hard here BEFORE any API call, mirroring the dw-chart gate below.
 //   Both ChartSpec.data and MapSpec.data are already CSV text set by the upstream
 //   suggester — no toCsv (Task 2) conversion is needed here.
 import { execFileSync } from "node:child_process";
@@ -323,10 +327,27 @@ export const realDispatch: Dispatch = async (
 
   // Exhaustive by Producer's 5-member union: chart-native/map-native/scrolly handled
   // above (isFileBased), dw-chart just above — only map-dw remains.
-  const result = await produceMap(p.spec as MapSpec, pngPath);
+  // Same single-format gate as dw-chart's: map-dw builds "static" (owned PNG at the
+  // channel box) or "interactive" (hosted embed alone) — it has no video/scrolly
+  // renderer (animated maps are map-native's). Fail hard BEFORE any API call rather
+  // than silently over-producing PNG+embed for a pinned format it cannot honor
+  // (map-dw floor: the dispatch used to ignore p.format entirely here).
+  if (p.format !== "static" && p.format !== "interactive") {
+    return {
+      status: "failed",
+      error:
+        `map-dw cannot build format "${p.format}" — it supports "static" or ` +
+        `"interactive" only (video/scrolly require map-native)`,
+    };
+  }
+  // `result.pngPath` is typed optional because map-dw's single-format contract omits
+  // it for "interactive" (no PNG is exported for that format) — same as dw-chart.
+  const result = await produceMap(p.spec as MapSpec, pngPath, {
+    format: p.format,
+  });
   return {
     status: "produced",
-    outputs: [result.pngPath],
+    outputs: result.pngPath ? [result.pngPath] : [],
     publicUrl: result.publicUrl,
     actualProducer: "map-dw",
   };

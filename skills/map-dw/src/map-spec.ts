@@ -51,6 +51,12 @@ export interface ChoroplethMapSpec {
   unit?: string;
   source?: { name: string; url?: string };
   altInsight: string; // WCAG: alt = the insight
+  /** CADRAGE delivery channel (Gate 1, Q3), same free-form field as ChartSpec.channel:
+   *  fixes the static PNG export box (feed/square → 1:1, social/vertical → 9:16,
+   *  web/article → 16:9, the default). Resolved fail-closed via the shared channel
+   *  model (skills/atelier/src/channel.ts); absent → article-web. Does not affect the
+   *  interactive embed (that stays fluid). */
+  channel?: string;
   /** Deliverable language (BCP-47, e.g. "fr", "fr-CH"). Sets the DW chart `language`, so
    *  Datawrapper localizes the legend + tooltip numbers — French groups thousands with a
    *  narrow no-break space ("17 600"), not the English comma. Absent → DW default (en-US). */
@@ -80,6 +86,8 @@ export interface SymbolMapSpec {
   unit?: string;
   source?: { name: string; url?: string };
   altInsight: string;
+  /** CADRAGE delivery channel (Gate 1, Q3) — see ChoroplethMapSpec.channel. */
+  channel?: string;
   /** Deliverable language (BCP-47) — localizes the DW chart's legend + tooltip numbers. */
   lang?: string;
 }
@@ -101,6 +109,8 @@ export interface LocatorMapSpec {
   view?: { center: [number, number]; zoom: number }; // optional explicit framing; else auto-fit
   source?: { name: string; url?: string };
   altInsight: string;
+  /** CADRAGE delivery channel (Gate 1, Q3) — see ChoroplethMapSpec.channel. */
+  channel?: string;
   /** Deliverable language (BCP-47) — localizes the DW chart furniture ("Source", attribution). */
   lang?: string;
 }
