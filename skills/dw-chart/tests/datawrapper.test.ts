@@ -37,6 +37,8 @@ d("datawrapper client (real API)", () => {
   }, 60000);
 });
 
+// Real-API cleanup: the DELETE round-trip can exceed bun's 5s default hook
+// timeout under load — give the hook the same generous budget as the tests.
 afterAll(async () => {
   if (createdId) await deleteChart(createdId);
-});
+}, 60000);

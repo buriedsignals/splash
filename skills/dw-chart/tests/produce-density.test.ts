@@ -170,8 +170,10 @@ d(
   },
 );
 
+// Real-API cleanup: the DELETE round-trips can exceed bun's 5s default hook
+// timeout under load — give the hook the same generous budget as the tests.
 afterAll(async () => {
   if (webId) await deleteChart(webId);
   if (feedId) await deleteChart(feedId);
   if (barsId) await deleteChart(barsId);
-});
+}, 60000);

@@ -1,7 +1,7 @@
 export function dataShape(csv: string): { columns: string[]; rows: number } {
-  const lines = csv.trim().split("\n");
-  const columns = lines[0].split(",").map((c) => c.trim());
-  return { columns, rows: Math.max(0, lines.length - 1) };
+  const records = parseCsvRecords(csv.trim());
+  const columns = (records[0] ?? []).map((c) => c.trim());
+  return { columns, rows: Math.max(0, records.length - 1) };
 }
 
 // RFC 4180 quote-aware scan of CSV text into records of raw cells: a comma or
@@ -78,6 +78,54 @@ export function parseCsvRecords(text: string): string[][] {
   return records;
 }
 
+// The RAW record strings of the CSV text — the byte-verbatim slices between
+// UNQUOTED newlines (a newline inside a quoted field stays inside its record;
+// quoting, padding and bare \r are untouched). Mirrors parseCsvRecords' quote
+// state machine so both cut records at exactly the same offsets: index i here is
+// the raw form of parseCsvRecords(text)[i]. Used where records must be REORDERED
+// or REASSEMBLED without re-serializing cells — the bytes Datawrapper receives
+// stay the author's bytes.
+function splitCsvRecordStrings(text: string): string[] {
+  const records: string[] = [];
+  let start = 0;
+  let inQuotes = false;
+  let started = false; // a non-space char (or the opening quote) has begun the field
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') i++;
+        else inQuotes = false;
+      }
+      continue;
+    }
+    if (ch === '"' && !started) {
+      inQuotes = true;
+      started = true;
+      continue;
+    }
+    if (ch === ",") {
+      started = false;
+      continue;
+    }
+    if (ch === "\n") {
+      records.push(text.slice(start, i));
+      start = i + 1;
+      started = false;
+      continue;
+    }
+    if (ch !== " " && ch !== "\t" && ch !== "\r") started = true;
+  }
+  records.push(text.slice(start));
+  return records;
+}
+
+// Serialize one cell back to CSV: quote it only when RFC 4180 requires (a comma,
+// quote, or line break inside) — a plain cell round-trips byte-identical.
+function serializeCsvCell(cell: string): string {
+  return /[",\n\r]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
+}
+
 // The label-column (first-cell) values of the DATA rows (header skipped), RFC
 // 4180-parsed and trimmed, empties dropped. Membership checks (highlight,
 // annotation x) must compare against THESE: a quoted, comma-containing category
@@ -99,10 +147,14 @@ export function renameColumns(
   csv: string,
   labels: Record<string, string>,
 ): string {
-  const lines = csv.trim().split("\n");
-  const header = lines[0].split(",").map((c) => c.trim());
-  const renamed = header.map((c) => labels[c] ?? c);
-  return [renamed.join(","), ...lines.slice(1)].join("\n");
+  const records = splitCsvRecordStrings(csv.trim());
+  const header = (parseCsvRecords(records[0] ?? "")[0] ?? []).map((c) =>
+    c.trim(),
+  );
+  const renamed = header.map((c) => serializeCsvCell(labels[c] ?? c));
+  // Only the header record is re-serialized; the data records pass through as
+  // the author's raw bytes.
+  return [renamed.join(","), ...records.slice(1)].join("\n");
 }
 
 // Look up a series value at a given x (first-column) label. Datawrapper drops a
@@ -113,12 +165,11 @@ export function valueAt(
   xLabel: string | number,
   column?: string,
 ): number | undefined {
-  const lines = csv.trim().split("\n");
-  const header = lines[0].split(",").map((c) => c.trim());
+  const records = parseCsvRecords(csv.trim());
+  const header = (records[0] ?? []).map((c) => c.trim());
   const colIdx = column ? header.indexOf(column) : 1;
   if (colIdx < 1) return undefined;
-  for (const line of lines.slice(1)) {
-    const cells = line.split(",");
+  for (const cells of records.slice(1)) {
     if (cells[0]?.trim() === String(xLabel).trim()) {
       const n = Number(cells[colIdx]);
       return Number.isFinite(n) ? n : undefined;
@@ -131,15 +182,15 @@ export function valueAt(
 // opposed to a text/label column. Used to tell a scatter's x/y value columns apart from
 // a leading label column (Datawrapper plots numeric columns; a text column is a label).
 export function numericColumnIndexes(csv: string): number[] {
-  const lines = csv.trim().split("\n");
-  if (lines.length < 2) return [];
-  const width = lines[0].split(",").length;
+  const records = parseCsvRecords(csv.trim());
+  if (records.length < 2) return [];
+  const width = (records[0] ?? []).length;
   const out: number[] = [];
   for (let c = 0; c < width; c++) {
     let anyNumeric = false;
     let allNumeric = true;
-    for (const line of lines.slice(1)) {
-      const cell = line.split(",")[c]?.trim() ?? "";
+    for (const cells of records.slice(1)) {
+      const cell = cells[c]?.trim() ?? "";
       if (cell === "") continue; // a gap does not decide the column's type
       if (Number.isFinite(Number(cell))) anyNumeric = true;
       else {
@@ -165,11 +216,7 @@ export interface ScatterColumns {
 // point label. Returns undefined when the data has fewer than two numeric columns (not a
 // well-formed scatter), so the caller falls back to the category-x/value-y model.
 export function scatterColumns(csv: string): ScatterColumns | undefined {
-  const header = csv
-    .trim()
-    .split("\n")[0]
-    .split(",")
-    .map((c) => c.trim());
+  const header = (parseCsvRecords(csv.trim())[0] ?? []).map((c) => c.trim());
   const nums = numericColumnIndexes(csv);
   if (nums.length < 2) return undefined;
   const xIdx = nums[0];
@@ -195,13 +242,12 @@ export function scatterPointAt(
   column?: string,
 ): { x: number; y: number } | undefined {
   if (key === undefined) return undefined;
-  const lines = csv.trim().split("\n");
-  const header = lines[0].split(",").map((c) => c.trim());
+  const records = parseCsvRecords(csv.trim());
+  const header = (records[0] ?? []).map((c) => c.trim());
   const yIdx = column ? header.indexOf(column) : cols.yIdx;
   if (yIdx < 0) return undefined;
   const k = String(key).trim();
-  for (const line of lines.slice(1)) {
-    const cells = line.split(",");
+  for (const cells of records.slice(1)) {
     const label =
       cols.labelIdx !== undefined ? cells[cols.labelIdx]?.trim() : undefined;
     const xCell = cells[cols.xIdx]?.trim();
@@ -214,14 +260,22 @@ export function scatterPointAt(
   return undefined;
 }
 
+// Sort the DATA records by their last-column numeric value. The records are
+// reordered as RAW strings (splitCsvRecordStrings) with the sort key read from the
+// aligned PARSED records — cells are never re-serialized, so a quoted-comma
+// category keeps its author bytes AND sorts by its true value (a naive split read
+// the torn wrong cell → NaN → the ranking shipped unsorted).
 export function sortCsv(csv: string, dir: "asc" | "desc"): string {
-  const lines = csv.trim().split("\n");
-  const header = lines[0];
-  const rows = lines.slice(1).map((l) => l.split(","));
-  const lastIdx = header.split(",").length - 1;
+  const text = csv.trim();
+  const raw = splitCsvRecordStrings(text);
+  const parsed = parseCsvRecords(text);
+  const lastIdx = (parsed[0] ?? []).length - 1;
+  const rows = raw
+    .slice(1)
+    .map((line, i) => ({ line, key: Number(parsed[i + 1]?.[lastIdx]) }));
   rows.sort((a, b) => {
-    const d = Number(a[lastIdx]) - Number(b[lastIdx]);
+    const d = a.key - b.key;
     return dir === "desc" ? -d : d;
   });
-  return [header, ...rows.map((r) => r.join(","))].join("\n");
+  return [raw[0], ...rows.map((r) => r.line)].join("\n");
 }
