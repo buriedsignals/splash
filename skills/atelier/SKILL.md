@@ -420,9 +420,11 @@ claims require an interaction test"). No cited run → record "not interaction-t
 it (export is refused without a review record) — **`--probes` is REQUIRED: the ledger of every check the
 review actually ran** (`[{check, outcome: pass|concern|resolved, note?}, ...]`, inline JSON or a file path;
 see `references/render-review.md`, "Record it"). The gate refuses an empty ledger, a probed concern the
-review silently drops, and a failure keyword (404/absent/missing/mismatch…) no probe outcome reflects —
-a probed failure is either surfaced as a concern (advisory) or explicitly resolved with evidence, never
-narrated away. (A fresh DW publish may 404 its `dataset.csv` briefly — retry once after
+review silently drops (EACH concern-outcome probe must be referenced by a surfaced concern quoting its
+`check` verbatim — `"<check>: <what failed>"`; an unrelated concern never accounts for it), and a
+failure keyword (404/absent/missing/mismatch…) no probe outcome reflects —
+a probed failure is either surfaced as its own concern (advisory) or explicitly resolved with evidence,
+never narrated away. (A fresh DW publish may 404 its `dataset.csv` briefly — retry once after
 `DW_DATASET_PROPAGATION_RETRY_MS` before recording a data defect.)
 ```bash
 bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> --probes '[...]' [concern...]

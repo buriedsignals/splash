@@ -13,10 +13,14 @@ import type { ProduceReport, ReviewProbe } from "./producer-spec";
 // outcome (pass | concern | resolved). This gate refuses:
 //   - an EMPTY ledger (a review that lists nothing it ran proved nothing);
 //   - a probe with outcome "concern"/"resolved" and no `note` (evidence required);
-//   - a probe with outcome "concern" on a review submitted with NO concerns — the
-//     observed failure this closes: probing FOUND a value absent from the published
+//   - a probe with outcome "concern" that no surfaced concern ACCOUNTS FOR — every
+//     concern-probe must be individually referenced by at least one concerns[] entry
+//     that quotes the probe's `check` verbatim (case/whitespace-insensitive), or be
+//     re-run to outcome "resolved" with the resolution evidence in its note. The
+//     observed failures this closes: probing FOUND a value absent from the published
 //     chart HTML and a dataset.csv 404, yet the summary silently dropped both and
-//     asserted full data fidelity;
+//     asserted full data fidelity; and (adversarial repro) a 404 concern-probe was
+//     still droppable as long as ANY unrelated concern text existed;
 //   - a FAILURE KEYWORD (FAILURE_KEYWORDS below) in the recorded narrative (concerns,
 //     or a pass-probe's own text) that no concern/resolved probe reflects — the
 //     tripwire is deliberately CONSERVATIVE: it may over-ask (e.g. a pass-probe worded
@@ -65,6 +69,12 @@ function probeText(p: ReviewProbe): string {
   return `${p.check} ${p.note ?? ""}`;
 }
 
+// Concern↔probe matching is mechanical, not semantic: lowercase + collapse whitespace,
+// then substring containment of the probe's `check` in the concern text.
+function normalizeForMatch(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 // Shape + integrity of the probes ledger; throws with a reviewer-actionable message.
 function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
   if (!Array.isArray(probes) || probes.length === 0)
@@ -100,6 +110,24 @@ function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
         `review was submitted with no concerns — a probed failure is never silently ` +
         `dropped: surface it as a concern (it stays advisory; the journalist decides) ` +
         `or resolve it explicitly with evidence (outcome "resolved").`,
+    );
+  }
+  // Per-probe accounting: EACH concern-probe must be referenced by at least one
+  // surfaced concern that quotes the probe's `check` verbatim — an unrelated concern
+  // ("the title is slightly long") never accounts for a probed 404. Matching is
+  // mechanical: case-insensitive, whitespace-collapsed containment of the check text.
+  const normalizedConcerns = concerns.map(normalizeForMatch);
+  for (const p of probes) {
+    if (p.outcome !== "concern") continue;
+    const check = normalizeForMatch(p.check);
+    if (normalizedConcerns.some((c) => c.includes(check))) continue;
+    throw new Error(
+      `review rejected: probe "${p.check}" recorded outcome "concern" but no surfaced ` +
+        `concern references it (an unrelated concern does not account for a probed ` +
+        `failure). Surface it as its own concern QUOTING the probe's check verbatim — ` +
+        `e.g. "${p.check}: <what failed>" (it stays advisory; the journalist decides) — ` +
+        `or re-run the probe and record outcome "resolved" with the resolution ` +
+        `evidence in its note.`,
     );
   }
   // Keyword tripwire: a failure keyword in the recorded narrative (a concern, or a
