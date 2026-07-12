@@ -8,6 +8,7 @@ import {
   patchChart,
   publishChart,
   exportPng,
+  deleteChart,
 } from "../../dw-chart/src/datawrapper";
 import {
   assessJoinMatch,
@@ -147,40 +148,55 @@ export async function produceMap(
   // established, now asserted so a regression fails the produce instead of shipping).
   assertLocalizedSourceMetadata(patch, spec);
   const id = await createChart(spec.title, patch.type);
-  // Locator maps carry no data table; markers live in metadata.visualize.markers.
-  if (spec.mapType !== "locator") await setData(id, spec.data);
-  // `language` localizes DW's own legend + tooltip number formatting (fr-FR → "17 600");
-  // include it only when the spec set a language, else DW keeps its default (en-US).
-  await patchChart(id, {
-    type: patch.type,
-    metadata: patch.metadata,
-    ...(patch.language ? { language: patch.language } : {}),
-  });
-  const publicUrl = await publishChart(id);
+  try {
+    // Locator maps carry no data table; markers live in metadata.visualize.markers.
+    if (spec.mapType !== "locator") await setData(id, spec.data);
+    // `language` localizes DW's own legend + tooltip number formatting (fr-FR → "17 600");
+    // include it only when the spec set a language, else DW keeps its default (en-US).
+    await patchChart(id, {
+      type: patch.type,
+      metadata: patch.metadata,
+      ...(patch.language ? { language: patch.language } : {}),
+    });
+    const publicUrl = await publishChart(id);
 
-  // Build ONLY what the format needs (single-format-produce-export): "static" exports
-  // the owned media file at the channel's box; "interactive" delivers the hosted embed
-  // alone — no PNG is exported/written for it. The publish above is unconditional
-  // either way: map-dw is HOSTED, so even the "static" PNG can only be exported FROM a
-  // published map — unavoidable infrastructure, not a produced deliverable of its own.
-  const builtPngPath = format === "static" ? pngPath : undefined;
-  if (builtPngPath) {
-    await exportPng(id, builtPngPath, requestBox.width, requestBox.height);
-    // RENDER-SIZE FLOOR (fail-hard): the delivered PNG's real pixel dims must equal
-    // the channel's mediaSize ±2px — the same produce-time conformance chart-native/
-    // map-native enforce on their static renders (Slice 2), read back from the file's
-    // own IHDR.
-    const dims = readPngSize(builtPngPath);
-    assertRenderedSize(dims.width, dims.height, channel);
-    // KNOWN LIMITATION — no raster contrast check on this PNG: the native producers
-    // run a rendered snap-contrast guard on their own renders, but map-dw delegates
-    // rendering to Datawrapper, so contrast is enforced upstream at the spec level
-    // only (CVD-safe colorScale stops, validateMapSpec). A rendered-contrast check on
-    // the DW-exported raster is a known gap, deliberately out of scope here.
+    // Build ONLY what the format needs (single-format-produce-export): "static" exports
+    // the owned media file at the channel's box; "interactive" delivers the hosted embed
+    // alone — no PNG is exported/written for it. The publish above is unconditional
+    // either way: map-dw is HOSTED, so even the "static" PNG can only be exported FROM a
+    // published map — unavoidable infrastructure, not a produced deliverable of its own.
+    const builtPngPath = format === "static" ? pngPath : undefined;
+    if (builtPngPath) {
+      await exportPng(id, builtPngPath, requestBox.width, requestBox.height);
+      // RENDER-SIZE FLOOR (fail-hard): the delivered PNG's real pixel dims must equal
+      // the channel's mediaSize ±2px — the same produce-time conformance chart-native/
+      // map-native enforce on their static renders (Slice 2), read back from the file's
+      // own IHDR.
+      const dims = readPngSize(builtPngPath);
+      assertRenderedSize(dims.width, dims.height, channel);
+      // KNOWN LIMITATION — no raster contrast check on this PNG: the native producers
+      // run a rendered snap-contrast guard on their own renders, but map-dw delegates
+      // rendering to Datawrapper, so contrast is enforced upstream at the spec level
+      // only (CVD-safe colorScale stops, validateMapSpec). A rendered-contrast check on
+      // the DW-exported raster is a known gap, deliberately out of scope here.
+    }
+
+    const embed =
+      `<iframe title="${spec.title}" src="${publicUrl}" scrolling="no" frameborder="0" ` +
+      `style="width:0;min-width:100%;border:none;" height="400"></iframe>`;
+    return { chartId: id, embed, pngPath: builtPngPath, publicUrl };
+  } catch (err) {
+    // ORPHAN GUARD (companion of the hoisting lesson above): a failure AFTER
+    // createChart — a throttled setData/patch/publish, a CDN-lagged export failing
+    // the render-size floor — would otherwise leave a live, possibly published chart
+    // behind that NO caller can clean up (produceMap throws before returning the id;
+    // a test's afterAll can only delete ids it was handed). Best-effort delete, then
+    // rethrow the ORIGINAL failure — cleanup must never mask it.
+    try {
+      await deleteChart(id);
+    } catch {
+      // best-effort only: the original `err` is the failure that matters
+    }
+    throw err;
   }
-
-  const embed =
-    `<iframe title="${spec.title}" src="${publicUrl}" scrolling="no" frameborder="0" ` +
-    `style="width:0;min-width:100%;border:none;" height="400"></iframe>`;
-  return { chartId: id, embed, pngPath: builtPngPath, publicUrl };
 }
