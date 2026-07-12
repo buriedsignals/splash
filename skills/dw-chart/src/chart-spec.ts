@@ -1,4 +1,4 @@
-import { dataShape } from "./csv";
+import { dataShape, labelColumnValues } from "./csv";
 import {
   hasValueLabelControl,
   HORIZONTAL_BAR_TYPES,
@@ -537,16 +537,13 @@ export function validateChartSpec(
         );
       // The highlighted category must exist in the data, else Datawrapper keeps the
       // custom-colors entry but paints nothing — the chart would ship UNhighlighted,
-      // exactly the silent failure this validation exists to kill.
+      // exactly the silent failure this validation exists to kill. The labels are
+      // RFC 4180-PARSED (labelColumnValues), never split(","): a quoted,
+      // comma-containing category (real run data: "Ministère de l'Économie, des
+      // Finances et de la Souveraineté industrielle et numérique") is ONE label —
+      // the naive split falsely rejected it and mangled the suggestion list.
       if (typeof s.data === "string" && s.data.includes(",")) {
-        const rowLabels = new Set(
-          (s.data as string)
-            .trim()
-            .split("\n")
-            .slice(1)
-            .map((l) => l.split(",")[0]?.trim())
-            .filter(Boolean),
-        );
+        const rowLabels = new Set(labelColumnValues(s.data as string));
         if (rowLabels.size > 0 && !rowLabels.has(s.highlight.trim()))
           errors.push(
             `highlight "${s.highlight}" does not match any data row label — ` +

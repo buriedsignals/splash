@@ -1,5 +1,12 @@
 import { describe, it, expect } from "bun:test";
-import { dataShape, sortCsv, renameColumns, valueAt } from "../src/csv";
+import {
+  dataShape,
+  labelColumnValues,
+  parseCsvRecords,
+  renameColumns,
+  sortCsv,
+  valueAt,
+} from "../src/csv";
 
 describe("dataShape", () => {
   it("counts columns and data rows", () => {
@@ -44,5 +51,49 @@ describe("valueAt", () => {
   });
   it("returns undefined when the x label is absent", () => {
     expect(valueAt("year,v\n2020,5", "1999")).toBeUndefined();
+  });
+});
+
+describe("parseCsvRecords (RFC 4180)", () => {
+  it("keeps a comma inside a quoted field literal and strips the quotes", () => {
+    expect(parseCsvRecords('a,b\n"x, y",1')).toEqual([
+      ["a", "b"],
+      ["x, y", "1"],
+    ]);
+  });
+  it("unescapes a doubled quote and keeps a newline inside quotes literal", () => {
+    expect(parseCsvRecords('a,b\n"He said ""hi""\ntwice",2')).toEqual([
+      ["a", "b"],
+      ['He said "hi"\ntwice', "2"],
+    ]);
+  });
+  it("trims unquoted cells but preserves a quoted interior verbatim", () => {
+    expect(parseCsvRecords('a,b\n  plain  ," padded "')).toEqual([
+      ["a", "b"],
+      ["plain", " padded "],
+    ]);
+  });
+});
+
+describe("labelColumnValues", () => {
+  it("returns the first-column data values, header skipped", () => {
+    expect(labelColumnValues("city,beds\nBasel,812\nBern,431")).toEqual([
+      "Basel",
+      "Bern",
+    ]);
+  });
+  it("keeps an RFC4180-quoted, comma-containing category as ONE label", () => {
+    const ministry =
+      "Ministère de l'Économie, des Finances et de la Souveraineté industrielle et numérique";
+    expect(
+      labelColumnValues(
+        `ministère,budget\n"${ministry}",320\nMinistère des Armées,47`,
+      ),
+    ).toEqual([ministry, "Ministère des Armées"]);
+  });
+  it("drops empty labels and never throws on headerless/empty text", () => {
+    expect(labelColumnValues("a,b\n,1\nx,2")).toEqual(["x"]);
+    expect(labelColumnValues("")).toEqual([]);
+    expect(labelColumnValues("a,b")).toEqual([]);
   });
 });

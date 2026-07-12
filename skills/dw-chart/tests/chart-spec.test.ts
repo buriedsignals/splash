@@ -694,4 +694,39 @@ describe("validateChartSpec — highlight (bar-family category accent)", () => {
     if (!r.ok)
       expect(r.errors.join(" | ")).toMatch(/highlight must be/);
   });
+
+  // RFC 4180 — the membership check must PARSE the CSV, never split(","). Real repro
+  // from run data: a French ministry category that contains commas, quoted in the CSV.
+  // A naive split tore it into fragments, FALSELY rejected the legitimate highlight,
+  // and printed a mangled suggestion list.
+  const MINISTRY =
+    "Ministère de l'Économie, des Finances et de la Souveraineté industrielle et numérique";
+  const quotedBar = {
+    type: "d3-bars",
+    title: "Bercy dwarfs the other ministries' budgets",
+    data: `ministère,budget\n"${MINISTRY}",320\nMinistère des Armées,47\nMinistère de la Justice,12`,
+    altInsight: "Bercy's 320bn budget dwarfs every other ministry's",
+    baseColor: "#E69F00",
+  };
+
+  it("accepts a highlight naming an RFC4180-quoted, comma-containing category", () => {
+    const r = validateChartSpec({ ...quotedBar, highlight: MINISTRY });
+    expect(r.ok).toBe(true);
+  });
+
+  it("suggests the PARSED (unquoted, comma-intact) categories when the highlight matches no row", () => {
+    const r = validateChartSpec({
+      ...quotedBar,
+      highlight: "Ministère du Budget",
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      const err = r.errors.find((e) => e.includes("does not match"));
+      expect(err).toBeDefined();
+      // the full category — comma intact, no surrounding quote, no torn fragment
+      expect(err).toContain(MINISTRY);
+      expect(err).not.toContain(`"${MINISTRY}`);
+      expect(err).not.toMatch(/Ministère de l'Économie(?!,)/);
+    }
+  });
 });

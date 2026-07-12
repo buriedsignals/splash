@@ -739,4 +739,24 @@ describe("specToMetadata — highlight → category-keyed custom-colors", () => 
       resolveData({ ...rankedBar, sort: "desc" }).split("\n")[1],
     ).toContain("Basel");
   });
+
+  it("keys an RFC4180-quoted, comma-containing category by the exact UNQUOTED value", () => {
+    // Datawrapper parses the uploaded CSV, so its category value is the unquoted
+    // interior (comma intact) — the custom-colors key must be that exact string, never
+    // a quoted/torn fragment, or the accent silently paints nothing.
+    const ministry =
+      "Ministère de l'Économie, des Finances et de la Souveraineté industrielle et numérique";
+    const patch = specToMetadata({
+      type: "d3-bars",
+      title: "Bercy dwarfs the other ministries' budgets",
+      data: `ministère,budget\n"${ministry}",320\nMinistère des Armées,47`,
+      altInsight: "Bercy's 320bn budget dwarfs every other ministry's",
+      baseColor: "#E69F00",
+      highlight: ministry,
+    });
+    expect(patch.metadata.visualize["custom-colors"]).toEqual({
+      [ministry]: "#E69F00",
+    });
+    expect(patch.metadata.visualize["base-color"]).toBe(HIGHLIGHT_MUTED_GREY);
+  });
 });
