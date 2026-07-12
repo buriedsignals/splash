@@ -1,4 +1,4 @@
-import { dataShape, labelColumnValues } from "./csv";
+import { dataShape, labelColumnValues, parseCsvRecords } from "./csv";
 import {
   hasValueLabelControl,
   HORIZONTAL_BAR_TYPES,
@@ -366,13 +366,12 @@ export function isPercentScaleMismatch(
 // Pull the numeric cells of the given data columns (by header name) out of CSV text. Used by
 // the percent-scale guard to inspect the values a "%" format would be applied to.
 export function numericValuesOf(csv: string, columns: string[]): number[] {
-  const lines = csv.trim().split("\n");
-  if (lines.length < 2) return [];
-  const header = lines[0].split(",").map((c) => c.trim());
+  const records = parseCsvRecords(csv.trim());
+  if (records.length < 2) return [];
+  const header = (records[0] ?? []).map((c) => c.trim());
   const idxs = columns.map((c) => header.indexOf(c)).filter((i) => i >= 0);
   const out: number[] = [];
-  for (const line of lines.slice(1)) {
-    const cells = line.split(",");
+  for (const cells of records.slice(1)) {
     for (const i of idxs) {
       const n = Number(cells[i]);
       if (Number.isFinite(n)) out.push(n);
@@ -669,19 +668,15 @@ export function validateChartSpec(
       `annotations on ${s.type} (a horizontal, value-x/category-y chart) are dropped by this pipeline — its placement uses a column/line coordinate model (category-x, value-y) that Datawrapper's horizontal annotation layer (value-x, category-y) ignores; use a column-chart (annotations place correctly there), or move the callout into the title/intro`,
     );
   // An annotation's `x` should reference an actual data row label, else
-  // Datawrapper silently misplaces (or drops) it.
+  // Datawrapper silently misplaces (or drops) it. Labels are RFC 4180-parsed
+  // (labelColumnValues, same as the highlight check above) so a quoted,
+  // comma-containing label is ONE label — never torn and falsely warned.
   if (
     Array.isArray(s.annotations) &&
     typeof s.data === "string" &&
     s.data.includes(",")
   ) {
-    const lines = (s.data as string).trim().split("\n");
-    const labels = new Set(
-      lines
-        .slice(1)
-        .map((l) => l.split(",")[0]?.trim())
-        .filter(Boolean),
-    );
+    const labels = new Set(labelColumnValues(s.data as string));
     for (const a of s.annotations as { x?: string | number }[]) {
       if (
         typeof a?.x === "string" &&

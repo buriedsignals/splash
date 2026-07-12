@@ -10,6 +10,7 @@ import {
 } from "./chart-spec";
 import {
   dataShape,
+  parseCsvRecords,
   renameColumns,
   scatterColumns,
   scatterPointAt,
@@ -46,9 +47,9 @@ interface PlotDomain {
   yMax: number;
 }
 function plotDomain(csv: string, yColumn?: string): PlotDomain {
-  const lines = csv.trim().split("\n");
-  const header = lines[0].split(",").map((c) => c.trim());
-  const rows = lines.slice(1).map((l) => l.split(","));
+  const records = parseCsvRecords(csv.trim());
+  const header = (records[0] ?? []).map((c) => c.trim());
+  const rows = records.slice(1);
   const labels = rows.map((r) => r[0]?.trim() ?? "");
   // Scatter passes its Y column so the domain is the y-axis ALONE — its x and y are
   // DIFFERENT numeric columns, so slurping every column (below) would fold the x range
@@ -95,14 +96,13 @@ export function seriesPolyline(
   dom: PlotDomain,
   column?: string,
 ): { xFrac: number; yFrac: number }[] {
-  const lines = csv.trim().split("\n");
-  const header = lines[0].split(",").map((c) => c.trim());
+  const records = parseCsvRecords(csv.trim());
+  const header = (records[0] ?? []).map((c) => c.trim());
   const colIdx = column ? Math.max(1, header.indexOf(column)) : 1;
   const span = dom.yMax - dom.yMin;
   const pts: { xFrac: number; yFrac: number }[] = [];
-  const rows = lines.slice(1);
-  rows.forEach((line, i) => {
-    const cells = line.split(",");
+  const rows = records.slice(1);
+  rows.forEach((cells, i) => {
     const v = Number(cells[colIdx]);
     if (!Number.isFinite(v)) return;
     const xFrac = rows.length > 1 ? i / (rows.length - 1) : 0.5;
@@ -625,11 +625,7 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
     // chart the label would otherwise sit on a sibling line (F6). Built once. A scatter
     // has no connecting line to clear (points are discrete; DW draws the connector), so
     // it passes NO series to the placement.
-    const header = csv
-      .trim()
-      .split("\n")[0]
-      .split(",")
-      .map((c) => c.trim());
+    const header = (parseCsvRecords(csv.trim())[0] ?? []).map((c) => c.trim());
     const allPolys = scatterCols
       ? []
       : header

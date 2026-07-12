@@ -94,6 +94,8 @@ d("highlight (real API e2e)", () => {
   }, 180000);
 });
 
+// Real-API cleanup: the DELETE round-trip can exceed bun's 5s default hook
+// timeout under load — give the hook the same generous budget as the tests.
 afterAll(async () => {
   if (chartId) await deleteChart(chartId);
-});
+}, 60000);
