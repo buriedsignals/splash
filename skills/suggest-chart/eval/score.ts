@@ -36,6 +36,14 @@ export interface Expectation {
   // channel gate above (via impliedFormat) is what's actually checked; this
   // field is for case-authoring clarity and future consumers.
   format?: VisualFormat;
+  // UNIT EMISSION gate (QA Wave 10, Italian case): the article measured mm of
+  // rainfall, the journalist explicitly wanted the hover to show the exact
+  // millimetres — and ② emitted `unit: undefined`, so map-dw's (working)
+  // tooltip-unit mechanism had nothing to append. When the case's intent
+  // measures a quantity with a short unit (mm, %, €, t, hab.), set this: the
+  // emitted map spec must carry a non-blank `unit` (both map-dw MapSpec and
+  // map-native configs have the field) or the case fails.
+  requireUnit?: boolean;
 }
 
 // Derives the format a spec implies, for the channel gate. Prefers an explicit
@@ -159,9 +167,23 @@ export function scoreSpec(spec: unknown, expect: Expectation): Score {
     const v = isNative ? validateChoroplethConfig(spec) : validateMapSpec(spec);
     if (!v.ok) notes.push(...v.errors);
     const warns = v.ok ? v.warnings.length : Infinity;
-    const guardrailsOk = warns <= (expect.maxWarnings ?? 0);
+    let guardrailsOk = warns <= (expect.maxWarnings ?? 0);
     if (!guardrailsOk)
       notes.push(`map: ${warns} warnings > ${expect.maxWarnings ?? 0}`);
+    // UNIT EMISSION gate (see Expectation.requireUnit): a unit-ful intent must
+    // yield a spec whose `unit` is a non-blank string — the unit is part of
+    // faithful data representation (it feeds the legend + hover tooltip), not
+    // decoration.
+    if (expect.requireUnit) {
+      const unit = (spec as Record<string, unknown>)["unit"];
+      if (typeof unit !== "string" || !unit.trim()) {
+        guardrailsOk = false;
+        notes.push(
+          "the intent measures a quantity with a unit but the emitted spec carries no `unit` — " +
+            "emit it (short literal suffix, leading-space semantics per map-dw/src/map-spec.ts)",
+        );
+      }
+    }
     return withChannelGate(
       {
         validates: v.ok,

@@ -120,10 +120,14 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
 2. **Map** spec → DW `metadata`, dispatched on `mapType`:
    - **choropleth** (`d3-maps-choropleth`): `axes.keys`=region col, `axes.values`=value col;
      `visualize.basemap`, `visualize["map-key-attr"]`=basemap join key (e.g. `DW_STATE_CODE`),
-     `visualize.colorscale` (light→`#0072B2`, no `stops` string), tooltip. The `spec.unit`
-     suffix is BAKED into the tooltip body template (`%REGION_VALUE%<unit>`) — probed live:
-     `describe.number-append` reaches the legend endpoints but NEVER the hover tooltip, which
-     otherwise ships a bare unitless number.
+     `visualize.colorscale` (light→`#0072B2`, no `stops` string), tooltip. **Unit = ONE source
+     per surface** (probe matrix 2026-07-12, six live charts): the LEGEND takes `spec.unit` from
+     the value column's `data.column-format` append — suppressed when the `numberFormat` token
+     already renders the same "%" (emitting both shipped the doubled "10% %" legend, QA Wave 10);
+     the hover TOOLTIP takes it from the baked body template (`%REGION_VALUE%<unit>` —
+     %REGION_VALUE% is substituted RAW, no format/append ever applies, else it ships a bare
+     unitless number). `describe.number-append` reaches NO map surface (the legend stayed bare
+     when only it carried the unit) and is never emitted.
    - **symbol** (`d3-maps-symbols`) — RETIRED: `validateMapSpec` rejects a symbol spec (hover-only, no
      static labels → route to `map-native`). The mapper (`symbolMetadata`) is kept only to document the
      historical DW binding (`axes.area`=size, `axes.values`=colour); it is never reached in production.

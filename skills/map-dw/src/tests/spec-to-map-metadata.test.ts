@@ -99,20 +99,23 @@ describe("specToMapMetadata", () => {
     );
   });
 
-  it("#1b — emits the declared unit as describe.number-append (the legend suffix)", () => {
-    // With a plain numberFormat + unit:"%", a percentage-point value 9.8 renders "9.8%"
-    // WITHOUT the 100× a "%" token would risk — the append is a literal suffix.
-    const d = specToMapMetadata({ ...base, unit: "%" }).metadata
-      .describe as Record<string, unknown>;
-    expect(d["number-append"]).toBe("%");
-  });
-
-  it("#1b — no unit ⇒ no number-append key (back-compat)", () => {
-    const d = specToMapMetadata(base).metadata.describe as Record<
-      string,
-      unknown
-    >;
-    expect("number-append" in d).toBe(false);
+  // UNIT SINGLE-SOURCE (QA Wave 10 "%%" fix — probe matrix 2026-07-12, 6 published
+  // variants read back headless): `describe.number-append` reaches NO map surface at
+  // all — the legend stayed BARE ("10 70") when only it carried the unit, and the
+  // %REGION_VALUE% tooltip ignores it too. It was a phantom second source of the same
+  // unit; it must never be emitted, so each surface has exactly one unit mechanism.
+  it("never emits describe.number-append — probe-proven dead on every map surface", () => {
+    for (const s of [
+      base,
+      { ...base, unit: " %" },
+      { ...base, numberFormat: "0%", unit: "%" },
+    ]) {
+      const d = specToMapMetadata(s).metadata.describe as Record<
+        string,
+        unknown
+      >;
+      expect("number-append" in d).toBe(false);
+    }
   });
 
   // TOOLTIP UNIT (verified-bug fix, probed LIVE 2026-07-12): a published choropleth with
@@ -174,7 +177,88 @@ describe("specToMapMetadata", () => {
     expect(legends.color.labelFormat).toBe("0,0");
     expect(cf.value["number-format"]).toBe("0,0");
   });
+});
 
+// UNIT × NUMBERFORMAT SINGLE-SOURCE MATRIX (QA Wave 10, live-shipped "%%" legend).
+// Ground truth probed live 2026-07-12 (6 published charts, legend + tooltip read back
+// headless from the rendered page):
+// - LEGEND endpoints = format(`visualize.legends.color.labelFormat`) + the value column's
+//   `data.column-format[...].number-append` suffix. A percent TOKEN ("0%") in labelFormat
+//   AND a percent unit in the append BOTH print → the shipped "10% % … 70% %" legend.
+// - TOOLTIP %REGION_VALUE% is substituted RAW — no number-format, no grouping, no appends
+//   (a grouped column-format still hovered "7000"): its ONLY unit source is the baked
+//   template suffix — and with a percent token alone it hovered a bare "70" under a "70%"
+//   legend.
+// Contract: the unit appears EXACTLY ONCE per surface, whatever unit/numberFormat combo
+// the spec carries — one mechanism per surface, the other suppressed.
+describe("specToMapMetadata — unit single-source matrix (choropleth)", () => {
+  const cf = (p: ReturnType<typeof specToMapMetadata>) =>
+    (
+      (p.metadata.data as Record<string, unknown>)["column-format"] as Record<
+        string,
+        Record<string, unknown>
+      >
+    ).value;
+  const tooltip = (p: ReturnType<typeof specToMapMetadata>) =>
+    p.metadata.visualize.tooltip as Record<string, unknown>;
+  const labelFormat = (p: ReturnType<typeof specToMapMetadata>) =>
+    (p.metadata.visualize.legends as { color: { labelFormat: string } }).color
+      .labelFormat;
+
+  it("unit alone: column-format append feeds the legend, template suffix feeds the tooltip — once each", () => {
+    const p = specToMapMetadata({ ...base, unit: " mm" });
+    expect(cf(p)["number-append"]).toBe(" mm");
+    expect(labelFormat(p)).toBe("0,0.[00]"); // no % in the token — no collision
+    expect(tooltip(p).body).toBe("%REGION_VALUE% mm");
+  });
+
+  it("numberFormat alone (percent token): the token is the legend's unit; the RAW tooltip gets one baked %", () => {
+    const p = specToMapMetadata({ ...base, numberFormat: "0%" });
+    expect(labelFormat(p)).toBe("0%");
+    expect("number-append" in cf(p)).toBe(false);
+    // Probed live: %REGION_VALUE% ignores the token — without a baked suffix the
+    // tooltip hovered a bare "70" under a "70%" legend.
+    expect(tooltip(p).body).toBe("%REGION_VALUE%%");
+  });
+
+  it('both (percent token + unit " %"): the shipped "%%" case — the append is suppressed, the token is the single legend source', () => {
+    const p = specToMapMetadata({ ...base, numberFormat: "0%", unit: " %" });
+    expect(labelFormat(p)).toBe("0%");
+    // The doubled legend came exactly from here: labelFormat already renders "10%",
+    // and this append added the second " %" → "10% %".
+    expect("number-append" in cf(p)).toBe(false);
+    // The raw tooltip keeps the author's unit (its one source), spacing preserved.
+    expect(tooltip(p).body).toBe("%REGION_VALUE% %");
+  });
+
+  it("neither: no unit anywhere — bare value on both surfaces", () => {
+    const p = specToMapMetadata(base);
+    expect("number-append" in cf(p)).toBe(false);
+    expect(tooltip(p).body).toBe("%REGION_VALUE%");
+  });
+
+  it('unit with leading space (" €") is appended verbatim on both surfaces', () => {
+    const p = specToMapMetadata({ ...base, unit: " €" });
+    expect(cf(p)["number-append"]).toBe(" €");
+    expect(tooltip(p).body).toBe("%REGION_VALUE% €");
+  });
+
+  it('percent-style unit ("%") without a percent token: appended once on each surface', () => {
+    const p = specToMapMetadata({ ...base, unit: "%" });
+    expect(labelFormat(p)).toBe("0,0.[00]");
+    expect(cf(p)["number-append"]).toBe("%");
+    expect(tooltip(p).body).toBe("%REGION_VALUE%%");
+  });
+
+  it('non-percent numberFormat + unit do not collide ("0,0" + " mm")', () => {
+    const p = specToMapMetadata({ ...base, numberFormat: "0,0", unit: " mm" });
+    expect(labelFormat(p)).toBe("0,0");
+    expect(cf(p)["number-append"]).toBe(" mm");
+    expect(tooltip(p).body).toBe("%REGION_VALUE% mm");
+  });
+});
+
+describe("specToMapMetadata — language & source furniture", () => {
   it("sets the DW chart language (regional locale) from spec.lang, so fr groups with a space", () => {
     expect(specToMapMetadata({ ...base, lang: "fr" }).language).toBe("fr-FR");
     expect(specToMapMetadata({ ...base, lang: "fr-CH" }).language).toBe(
@@ -380,17 +464,30 @@ describe("specToMapMetadata — symbol", () => {
     expect(t.body).toBe('{{ FORMAT(population, "0,0.[00]") }}M');
   });
 
-  it("#1b — also emits the unit as describe.number-append (for the size legend)", () => {
-    const d = specToMapMetadata({ ...symbol, unit: "M" }).metadata
-      .describe as Record<string, unknown>;
-    expect(d["number-append"]).toBe("M");
+  // UNIT SINGLE-SOURCE (same probe matrix as the choropleth block above): the symbol
+  // tooltip's FORMAT() token is a FORMATTED surface — with a percent token it already
+  // renders the "%", so appending a percent unit after it is the same doubled-"%%" class
+  // the choropleth legend shipped. And describe.number-append is probe-proven dead on
+  // every map surface — never emitted.
+  it("percent token + percent unit: FORMAT() already renders the %, the template suffix is suppressed", () => {
+    const t = specToMapMetadata({ ...symbol, numberFormat: "0%", unit: "%" })
+      .metadata.visualize.tooltip as Record<string, unknown>;
+    expect(t.body).toBe('{{ FORMAT(population, "0%") }}');
   });
 
-  it("#1b — no unit ⇒ no number-append key and no unit suffix on the tooltip body (back-compat)", () => {
+  it("never emits describe.number-append for symbol maps either (probe-proven dead)", () => {
+    for (const s of [symbol, { ...symbol, unit: "M" }]) {
+      const d = specToMapMetadata(s).metadata.describe as Record<
+        string,
+        unknown
+      >;
+      expect("number-append" in d).toBe(false);
+    }
+  });
+
+  it("#1b — no unit ⇒ no unit suffix on the tooltip body (back-compat)", () => {
     const p = specToMapMetadata(symbol);
-    const d = p.metadata.describe as Record<string, unknown>;
     const t = p.metadata.visualize.tooltip as Record<string, unknown>;
-    expect("number-append" in d).toBe(false);
     expect(t.body).toBe('{{ FORMAT(population, "0,0.[00]") }}');
   });
 

@@ -43,6 +43,33 @@ describe("scoreSpec — map routing", () => {
     expect(r.pass).toBe(false);
     expect(r.notes.some((n) => /map|gate 5/i.test(n))).toBe(true);
   });
+  // UNIT EMISSION (QA Wave 10, Italian case): the journalist explicitly wanted the hover
+  // to show the exact millimetres, the article measured mm of rainfall — and ② emitted
+  // `unit: undefined`, so map-dw's (working) tooltip-unit mechanism had nothing to append.
+  // `expect.requireUnit` makes a unit-ful intent mechanically fail a unit-less map spec.
+  it("requireUnit: fails a map spec that omits the unit when the intent measures one", () => {
+    const r = scoreSpec(validMap, {
+      family: "geographic",
+      element: "map",
+      requireUnit: true,
+    });
+    expect(r.pass).toBe(false);
+    expect(r.notes.some((n) => /unit/i.test(n))).toBe(true);
+  });
+  it("requireUnit: passes when the emitted map spec carries the unit", () => {
+    const r = scoreSpec(
+      { ...validMap, unit: " %" },
+      { family: "geographic", element: "map", requireUnit: true },
+    );
+    expect(r.pass).toBe(true);
+  });
+  it("requireUnit: a blank unit does not satisfy it", () => {
+    const r = scoreSpec(
+      { ...validMap, unit: "  " },
+      { family: "geographic", element: "map", requireUnit: true },
+    );
+    expect(r.pass).toBe(false);
+  });
   it("Gate 5: a ranking framing over non-contiguous geographic blocs must route to a bar, not a choropleth", () => {
     // Finding 6 (eu-renewables-ranking): a hand-picked, non-contiguous set of countries
     // framed as a ranking ("which leads / which lags") has no adjacency to read → bar.

@@ -22,7 +22,8 @@ export interface MapPatch {
     // Per-column format table. The choropleth LEGEND reads the value column's
     // `number-format` / `number-append` from HERE, not from `describe` — verified against
     // the published d3-maps-choropleth renderer (its label formatter reads
-    // `data.column-format[valueColumn]`). NOT the hover tooltip: probed live, the
+    // `data.column-format[valueColumn]`) AND re-probed live 2026-07-12 (a unit set ONLY
+    // in describe left the legend bare). NOT the hover tooltip: probed live, the
     // %REGION_VALUE% tooltip ignores number-append entirely (the unit is baked into the
     // tooltip template instead). Omitted for map types that carry no value column.
     data?: Record<string, unknown>;
@@ -103,35 +104,73 @@ function sourceNotes(spec: {
   return `${sourceLabel(spec.lang)} ${spec.source.name}`;
 }
 
+// ── UNIT SINGLE-SOURCE (QA Wave 10 "%%" fix — probe matrix 2026-07-12, six published
+// charts, legend + tooltip read back headless from the rendered page). Ground truth per
+// SURFACE:
+// - LEGEND endpoints = format(`visualize.legends.color.labelFormat`) + the value column's
+//   `data.column-format[...].number-append` suffix. When the labelFormat token itself
+//   renders "%" (e.g. "0%") AND the append carries a percent unit, BOTH print — the
+//   live-shipped "10% % … 70% %" legend.
+// - TOOLTIP %REGION_VALUE% is substituted RAW: no number-format, no grouping, no appends
+//   (a grouped column-format still hovered "7000"). Its ONLY unit source is the baked
+//   template suffix — and with a percent token alone it hovered a bare "70" under a
+//   "70%" legend.
+// - `describe.number-append` reaches NO map surface at all (a unit set only there left
+//   the legend bare and the tooltip raw) — it was a phantom second source of the same
+//   unit and is never emitted anymore.
+// Contract: the unit appears EXACTLY ONCE per surface, whatever unit/numberFormat combo
+// the spec carries — one mechanism per surface, the redundant one suppressed.
+
+function isPercentToken(numberFormat: string): boolean {
+  return numberFormat.includes("%");
+}
+
+// The unit append for a surface Datawrapper FORMATS with the numberFormat token (the
+// color-legend endpoints via column-format, the symbol tooltip's FORMAT() value): the
+// declared unit — unless the token itself already renders that same "%", where appending
+// it again is exactly the doubled-"%%" bug.
+function formattedSurfaceUnit(
+  numberFormat: string,
+  unit?: string,
+): string | undefined {
+  if (!unit) return undefined;
+  if (isPercentToken(numberFormat) && unit.trim() === "%") return undefined;
+  return unit;
+}
+
+// The unit suffix for the RAW choropleth tooltip (%REGION_VALUE% is substituted verbatim
+// — probed live: no format, no appends). The declared unit wins (the author's spacing);
+// with a percent token and no unit, bake the "%" the token prints elsewhere, so the
+// tooltip does not read bare ("70") under a "70%" legend.
+function rawTooltipUnit(numberFormat: string, unit?: string): string {
+  if (unit) return unit;
+  return isPercentToken(numberFormat) ? "%" : "";
+}
+
 // Normalise `numberFormat` the same way dw-chart does for value labels/axes (see
 // dw-chart/src/chart-spec.ts normalizeNumberFormat): a printf/Python-style mistake
 // (".0f%") is NOT recognised by Datawrapper's numeral.js parser — it silently falls
 // back to a plain unformatted number, so the legend renders "15…70" instead of
 // "15%…70%". Indistinguishable from the field having been dropped along the way.
 // Fixing it here (once) closes the gap for every mapType that carries numberFormat.
+// NOTE: no `number-append` here — probe-proven dead on maps (see the single-source
+// block above); the unit's real carriers are column-format (legend) and the tooltip
+// template.
 function describeBlock(spec: {
   intro?: string;
   source?: { name: string; url?: string };
   altInsight: string;
   numberFormat?: string;
-  unit?: string;
   lang?: string;
 }): Record<string, unknown> {
   const nativeSource = usesNativeSourceCaption(spec.lang);
-  const block: Record<string, unknown> = {
+  return {
     intro: spec.intro ?? "",
     "source-name": nativeSource ? (spec.source?.name ?? "") : "",
     "source-url": nativeSource ? (spec.source?.url ?? "") : "",
     "aria-description": spec.altInsight,
     "number-format": resolveNumberFormat(spec.numberFormat),
   };
-  // The value unit is a literal SUFFIX Datawrapper appends to auto-formatted numbers (the
-  // LEGEND) WITHOUT multiplying — the same mechanism the Academy recommends for showing "%"
-  // on already-percentage data. Verified: number-append is a real describe field. It does
-  // NOT reach the %REGION_VALUE% hover tooltip (probed live) — choroplethMetadata bakes the
-  // unit into the tooltip template for that.
-  if (spec.unit) block["number-append"] = spec.unit;
-  return block;
 }
 
 // NOTE (load-bearing, choropleth): the gradient lives in `visualize.colorscale.colors`
@@ -143,7 +182,9 @@ function describeBlock(spec: {
 // renderer): the grouped number-format + the literal unit suffix. This is what puts a
 // thousands separator (and the unit) on the legend endpoints — `describe.number-format`
 // alone never reaches them. The hover tooltip reads NEITHER (probed live): its unit is
-// baked into the tooltip body template in choroplethMetadata.
+// baked into the tooltip body template in choroplethMetadata. The unit passed in must
+// already be collision-resolved (formattedSurfaceUnit) — a percent labelFormat token
+// plus a percent append here is the doubled-"%%" legend.
 function valueColumnFormat(
   numberFormat: string,
   unit?: string,
@@ -177,21 +218,27 @@ function choroplethMetadata(spec: ChoroplethMapSpec): MapPatch {
         // bare-"17600" bug). Set the grouped token; the chart `language` localizes the group
         // separator (fr → narrow no-break space "17 600", en → comma "17,600").
         legends: { color: { labelFormat: numberFormat } },
-        // TOOLTIP UNIT (verified-bug fix, probed LIVE): `number-append` reaches the legend
-        // endpoints but NOT the %REGION_VALUE% hover tooltip — a published rainfall map with
-        // unit " mm" stored the append in describe + column-format yet hovered a bare "624".
-        // So the unit is baked into the tooltip body TEMPLATE, the same mechanism the symbol
-        // map uses after its FORMAT() token. No double-unit risk: the append never renders here.
+        // TOOLTIP UNIT (verified-bug fix, probed LIVE): %REGION_VALUE% is substituted RAW
+        // — a published rainfall map with unit " mm" stored the append in describe +
+        // column-format yet hovered a bare "624". So the unit is baked into the tooltip
+        // body TEMPLATE (rawTooltipUnit): the declared unit, or the "%" a percent
+        // numberFormat token prints on the legend (else the tooltip reads bare under a
+        // "70%" legend). No double-unit risk: no append ever renders here.
         tooltip: {
           enabled: true,
           title: "%REGION_NAME%",
-          body: `%REGION_VALUE%${spec.unit ?? ""}`,
+          body: `%REGION_VALUE%${rawTooltipUnit(numberFormat, spec.unit)}`,
         },
       },
       describe: describeBlock(spec),
       data: {
         "column-format": {
-          [spec.valueColumn]: valueColumnFormat(numberFormat, spec.unit),
+          [spec.valueColumn]: valueColumnFormat(
+            numberFormat,
+            // Collision-resolved: with a percent labelFormat token and a percent unit,
+            // the token is the legend's single unit source — no second append.
+            formattedSurfaceUnit(numberFormat, spec.unit),
+          ),
         },
       },
       annotate: { notes: sourceNotes(spec) },
@@ -229,8 +276,10 @@ function symbolMetadata(spec: SymbolMapSpec): MapPatch {
   // token second — Datawrapper Academy "How to customize tooltips"), which applies the grouped
   // token; the chart `language` (set from spec.lang) then localizes the group separator
   // (fr → "2 100"). RENDER-VERIFIED against a live export. The unit is baked as a literal suffix
-  // AFTER the value — `number-append` only touches auto-formatted numbers, never a mustache token.
-  const unitSuffix = spec.unit ?? "";
+  // AFTER the value — collision-resolved (formattedSurfaceUnit): FORMAT() applies the numeral
+  // token, so a percent token already renders the "%" and a percent unit after it would be the
+  // same doubled-"%%" class the choropleth legend shipped.
+  const unitSuffix = formattedSurfaceUnit(numberFormat, spec.unit) ?? "";
   const sizeToken = `{{ FORMAT(${spec.sizeColumn}, "${numberFormat}") }}`;
   // The title is the place label. When it falls back to the numeric SIZE column (no labelColumn),
   // group it too (else the title reads a bare number). A real label column is non-numeric text —

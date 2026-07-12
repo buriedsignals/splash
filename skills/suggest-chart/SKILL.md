@@ -395,6 +395,7 @@ identify the path).
   "title": "<the insight — sentence case, never a column label>",
   "intro": "<description of the map for context>",
   "altInsight": "<the insight — WCAG alt, same wording as title>",
+  "unit": "<the value's short unit as a literal suffix, e.g. ' mm' / '%' / ' €' — see the unit rule below>",
   "source": { "name": "<honest source>", "url": "<its real URL>" },
   "channel": "<the CADRAGE Q3 channel — social-vertical | social-feed | article-web>"
 }
@@ -408,9 +409,18 @@ Field notes:
   emit `mapKeyAttr: "ISO_A3"` on `world-2019`** — world-2019 has no `ISO_A3` join key (its keys are
   `DW_NAME`, `NAME_SHORT`, `DW_STATE_CODE`, `ISO_2`, …), so that combo joins 0 rows and ships a fully grey,
   dataless map. `validateMapSpec` now HARD-rejects it against the `map-dw/src/basemap-keys.ts` registry and
-  names the valid keys. Country *names* (English) join on `DW_NAME`; ISO-A2 codes on `ISO_2`. For any other
-  basemap, confirm the exact `mapKeyAttr` via the basemap-key discovery `map-dw` documents (`GET
-  /v3/basemaps/{id}` → `meta.keys`, mirrored in `basemap-keys.ts`) — never assume `ISO_A3` exists on a
+  names the valid keys. Country *names* (English) join on `DW_NAME`; ISO-A2 codes on `ISO_2`. **French
+  départements → basemap `"france-metropolitan-departments"`, key `mapKeyAttr: "name"`** (accent-exact
+  department names: `"Ain"`, `"Haute-Savoie"`). Its other registered keys do NOT carry what their names
+  suggest (probed live): `postal` holds two-letter POSTAL ABBREVIATIONS (`"FF"`, `"CY"`) — **NOT INSEE
+  department numbers**, so joining `"01"…"95"` codes on `postal` matches 0 rows (a registered key can
+  still be the WRONG key for your columns — the registry only lists which keys exist; QA: this cost a full
+  corrective pass, caught only by the dataless-join guard); `fips` is `"FRB9"`-style; `code_hasc` is
+  `"FR.AI"`-style. **No key on this basemap carries INSEE codes** — convert INSEE codes to department
+  names first and join on `name`. For any registered basemap, read the valid keys off
+  `map-dw/src/basemap-keys.ts` verbatim; for an unregistered one, confirm the exact `mapKeyAttr` via the
+  basemap-key discovery `map-dw` documents (`GET /v3/basemaps/{id}` → `meta.keys`, and check the sample
+  `keys` VALUES match your data column, not just the key's name) — never assume `ISO_A3` exists on a
   basemap; check its declared keys first. **Basemap SCOPE must match the data's coverage**: a
   sub-national subset (one region's provinces/districts) prefers a region-scoped basemap or `map-native`
   over the full-country cut — see the Choropleth BASEMAP FIT rule in Gate 4 (`validateMapSpec` warns on
@@ -464,6 +474,15 @@ FITTING choice passes; the rule is the choice must FIT the subject — **NEVER t
 non-water subject.** The produce guard (`checkPaletteConformance`) FAILS a declared `subject` sitting on the
 default blue, so an energy/electricity map MUST carry `palette:"oranges"` — the exact recurrence guarded.
 - `numberFormat` (optional): format string to strip noise from the value labels.
+- `unit` — **EMIT IT whenever the measured quantity has a short unit (mm, %, €, t, hab.)**; omit only
+  when the quantity truly has none (a count of people, an index). The unit is part of faithful data
+  representation, not decoration: it feeds the legend endpoints AND the hover tooltip — a reader hovering
+  a rainfall map must read "624 mm", never a bare "624" (QA Wave 10: the journalist explicitly asked for
+  the exact millimetres on hover, and an emitted `unit: undefined` left map-dw's tooltip-unit mechanism
+  with nothing to append). It is a LITERAL suffix with the leading-space semantics `map-dw/src/map-spec.ts`
+  documents: include a leading space unless the unit hugs the number (`" mm"` → "624 mm", `" €"` →
+  "17 600 €", `"%"` → "70%"). Do not double-declare a percent — either `unit:"%"` or a `"%"` `numberFormat`
+  token is enough on its own (map-dw suppresses the collision, but one declaration is the honest spec).
 
 **Basemap fallback rule:** if no known DW basemap matches the region identifiers in the data → do NOT
 force a map. Fall back to a **sorted bar chart** (`d3-bars`, `sort:"desc"`) and state why in the decision
@@ -521,7 +540,11 @@ Field notes:
   `subject` left on the default blue ramp — so a warm subject (energy) MUST carry `palette:"oranges"`, water
   keeps `"blues"`, vegetation `"greens"`. Emitting `subject` without a subject-fit `palette` blocks produce.
 - `source.name` + `source.url`: required (furniture standard; missing is a warning).
-- `unit` / `valueUnit`: optional but fill them when the data has a clear unit.
+- `unit` / `valueUnit`: **EMIT them whenever the measured quantity has a short unit (mm, %, €, t,
+  hab.)** — the unit feeds the legend and the hover/caption surfaces and is part of faithful data
+  representation, not decoration (same rule as the map-dw `unit` field note above; QA Wave 10: a
+  rainfall map emitted without a unit hovered a bare number where the journalist asked for exact
+  millimetres). Omit only when the quantity truly has none.
 
 **Filters (INTERACTIVE maps only — reader exploration).** When the format is **interactive** (Gate 2
 fired) AND the data shape supports it, add a `filters` array so the reader can explore. Emit a filter
