@@ -44,4 +44,12 @@ describe("applyRenderGate", () => {
       /not render-reviewed/,
     );
   });
+  it("preserves the report's generatedAt across the approval write (the provenance anchor)", () => {
+    const r: ProduceReport = {
+      generatedAt: "2026-07-12T08:00:00.000Z",
+      ...report(),
+    };
+    const out = applyRenderGate(r, "p1", new TextEncoder().encode("PNGDATA"));
+    expect(out.generatedAt).toBe("2026-07-12T08:00:00.000Z");
+  });
 });

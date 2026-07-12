@@ -144,13 +144,47 @@ apart in the record so a reader can tell what was eyeballed from what was exerci
    the `static.png` / video frame + article + spec. Only the hover surface of criterion 5 is
    **[interaction-tested]**.
 
+## Probing a published Datawrapper chart — propagation lag is not a data defect
+A freshly published DW chart can 404 its `dataset.csv` (and lag its published HTML) for a short
+CDN-propagation window right after publish. A probe that hits a 404 there MUST **retry once after
+`DW_DATASET_PROPAGATION_RETRY_MS` (30 000 ms, `src/review-gate.ts`)** before treating it as a data
+defect. Only a 404 that SURVIVES the retry is a real fidelity/source concern — record it as a
+`concern` probe and surface it as its own concern quoting the probe's `check` (see "Record it",
+below); a 404 that clears on retry is recorded as a `resolved` probe with
+that evidence ("first GET 404, retried after the propagation delay, 200 OK").
+
 ## Record it (this is what makes export possible)
 ```bash
-bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> [concern...]
+bun skills/atelier/scripts/review-gate.mjs exports/<slug>/report.json <id> \
+  --probes '[{"check":"...","outcome":"pass"}, ...]' [concern...]
 ```
-Each trailing arg is one concern; no args = a clean review. Then show the render to the journalist
-**together with** these concerns, and proceed to the "ship it" approval (`gate-render.mjs`). The concerns
-never hard-block — the journalist is the editor.
+Each trailing arg is one concern; no concern args = a clean review. **`--probes` is REQUIRED — the
+LEDGER of every probe/check the review actually RAN**, as a JSON array (inline, or a path to a
+`.json` file): each entry is `{check, outcome, note?}` with `outcome` one of
+- `pass` — probed and clean;
+- `concern` — probed and failing; `note` says WHAT failed, and the same finding MUST also be one of
+  the surfaced concern args, worded so it **quotes the probe's `check` verbatim** — write it as
+  `"<check>: <what failed>"` (e.g. `"dataset.csv on the published chart: GET returned 404 twice,
+  survives the propagation retry"`). The gate matches MECHANICALLY (case/whitespace-insensitive
+  containment of the check text), per probe: a probed failure is never silently dropped, and an
+  UNRELATED concern ("the title is slightly long") never accounts for it — every concern-outcome
+  probe must be referenced by its own concern, or re-run to `resolved` with evidence;
+- `resolved` — probed, initially failing, explicitly resolved; `note` says HOW, with evidence (e.g.
+  the propagation retry above).
+
+The gate mechanically refuses: an EMPTY ledger; a `concern`/`resolved` probe without a `note`; a
+`concern` probe that no surfaced concern references by quoting its `check` (per probe — unrelated
+concern text does not account for it); and a
+**failure keyword** (`404`, `absent`, `missing`, `mismatch`, `not found` + FR equivalents — see
+`FAILURE_KEYWORDS` in `src/review-gate.ts`) appearing in the recorded narrative (a concern, or a
+pass-probe's own text) that no `concern`/`resolved` probe reflects. The tripwire is deliberately
+CONSERVATIVE — it may over-ask, never under-ask: a pass-probe worded "no value is missing" trips it.
+That false positive costs one rewording ("all values present"), or an explicit `resolved` probe
+quoting the keyword with its evidence — an accepted tolerance, because the failure mode it kills
+(probing FOUND a missing value and a dataset 404, and the summary silently asserted full fidelity)
+shipped for real. Then show the render to the journalist **together with** these concerns, and
+proceed to the "ship it" approval (`gate-render.mjs`). The concerns never hard-block — the
+journalist is the editor.
 
 Keep the record honest about METHOD: a clean review of an interactive/scrolly deliverable means the
 interaction test actually ran (its produce-time pass, or a re-run) — not that a still looked fine. If you

@@ -84,6 +84,16 @@ describe("produceAll — loop mechanics", () => {
     expect(results[0].status).toBe("needs-fallback");
     expect(results[0].reason).toContain("sankey");
   });
+
+  it("stamps generatedAt AFTER all dispatches (the produce-generation anchor for gate-render provenance)", async () => {
+    const before = Date.now();
+    const dispatch: Dispatch = async () => ({ status: "produced" });
+    const report = await produceAll([p("p1")], "out", dispatch, PASS);
+    expect(report.generatedAt).toBeString();
+    const stamped = Date.parse(report.generatedAt ?? "");
+    expect(stamped).toBeGreaterThanOrEqual(before);
+    expect(stamped).toBeLessThanOrEqual(Date.now());
+  });
 });
 
 // Gate 3 reset (the re-produce invalidation invariant): a fresh produce is ALWAYS an
@@ -430,14 +440,14 @@ describe("produceAll — validation gate (real validator)", () => {
           producer: "dw-chart",
           format: "static",
           spec: validDwSpec,
-          confirmedTakeaway: "The confirmed takeaway for this fixture",
+          confirmedTakeaway: "The confirmed takeaway for element a",
         },
         {
           id: "b",
           producer: "dw-chart",
           format: "static",
           spec: { type: "d3-bars" },
-          confirmedTakeaway: "The confirmed takeaway for this fixture",
+          confirmedTakeaway: "The confirmed takeaway for element b",
         },
       ],
       "out",
@@ -445,6 +455,47 @@ describe("produceAll — validation gate (real validator)", () => {
     );
     expect(results.map((r) => r.id).sort()).toEqual(["a", "b"]);
     expect(results.find((r) => r.id === "b")?.status).toBe("failed");
+  });
+
+  it("BLOCKS two proposals stamped with the byte-identical confirmedTakeaway (GUARD 3b)", async () => {
+    // The Wave-9 shipped miss: one combined takeaway copied onto every accepted
+    // element. Both carriers fail validation; the distinctly-confirmed one produces.
+    const { dispatch, produced } = spy();
+    const stamped = "Both at once: the price cooldown AND the plateau";
+    const { results } = await produceAll(
+      [
+        {
+          id: "a",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: stamped,
+        },
+        {
+          id: "b",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: stamped,
+        },
+        {
+          id: "c",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: "Element c's own confirmed claim",
+        },
+      ],
+      "out",
+      dispatch,
+    );
+    expect(results.map((r) => r.status)).toEqual([
+      "failed",
+      "failed",
+      "produced",
+    ]);
+    expect(results[0].error).toContain("confirmedTakeaway");
+    expect(produced).toEqual(["c"]);
   });
 
   it("fails-hard a hand-authored row-driven bar on a portrait channel (guardrail parity, dispatch never runs)", async () => {
@@ -481,21 +532,21 @@ describe("produceAll — validation gate (real validator)", () => {
           producer: "dw-chart",
           format: "static",
           spec: validDwSpec,
-          confirmedTakeaway: "The confirmed takeaway for this fixture",
+          confirmedTakeaway: "The confirmed takeaway for element a",
         },
         {
           id: "x",
           producer: "sankey-native" as never,
           format: "static",
           spec: {},
-          confirmedTakeaway: "The confirmed takeaway for this fixture",
+          confirmedTakeaway: "The confirmed takeaway for element x",
         },
         {
           id: "c",
           producer: "dw-chart",
           format: "static",
           spec: validDwSpec,
-          confirmedTakeaway: "The confirmed takeaway for this fixture",
+          confirmedTakeaway: "The confirmed takeaway for element c",
         },
       ],
       "out",

@@ -411,5 +411,58 @@ describe("validateAccepted — the spine validation gate", () => {
       });
       expect(r.ok).toBe(true);
     });
+
+    // GUARD 3b — duplicate tripwire. The Wave-9 shipped miss: one combined takeaway
+    // string stamped byte-identically onto several accepted elements, diluting each
+    // Gate-3a title check. Byte-identical `confirmedTakeaway` across two proposals of
+    // a multi-element batch is a validation failure; a single element is unaffected.
+    describe("duplicate confirmedTakeaway across a multi-element batch", () => {
+      const el = (id: string, takeaway: string) => ({
+        ...accept("chart-native", validNativeSpec),
+        id,
+        confirmedTakeaway: takeaway,
+      });
+
+      it("REJECTS two proposals carrying the byte-identical confirmedTakeaway", () => {
+        const stamped =
+          "Both at once: the price cooldown AND the commuting plateau";
+        const batch = [el("a", stamped), el("b", stamped)];
+        const r = validateAccepted(batch[0], batch);
+        expect(r.ok).toBe(false);
+        if (!r.ok) {
+          expect(r.errors.join(" ")).toContain("confirmedTakeaway");
+          expect(r.errors.join(" ")).toContain('"b"');
+        }
+      });
+
+      it("ACCEPTS a multi-element batch whose takeaways are each element's OWN claim", () => {
+        const batch = [
+          el("a", "The price cooldown is real"),
+          el("b", "Cross-border commuting has plateaued"),
+        ];
+        expect(validateAccepted(batch[0], batch).ok).toBe(true);
+        expect(validateAccepted(batch[1], batch).ok).toBe(true);
+      });
+
+      it("leaves a single-element batch unaffected", () => {
+        const batch = [el("only", "The price cooldown is real")];
+        expect(validateAccepted(batch[0], batch).ok).toBe(true);
+      });
+
+      it("does not double-report when the takeaway is MISSING (GUARD 3 owns absence)", () => {
+        const { confirmedTakeaway: _omitted, ...rest } = accept(
+          "chart-native",
+          validNativeSpec,
+        );
+        const one = rest as AcceptedProposal;
+        const two = { ...one, id: "y" };
+        const r = validateAccepted(one, [one, two]);
+        expect(r.ok).toBe(false);
+        if (!r.ok)
+          expect(
+            r.errors.filter((e) => e.includes("confirmedTakeaway")),
+          ).toHaveLength(1);
+      });
+    });
   });
 });
