@@ -8,6 +8,7 @@ import {
   diffRatio,
   verifyVideo,
   REVEAL_MIN_MEAN_DIFF,
+  PROGRESSION_MIN_MEAN_DIFF,
   MIN_LUMA_VARIANCE,
   STILL_MATCH_CHANNEL_TOLERANCE,
   STILL_MATCH_MAX_DIFF_RATIO,
@@ -57,6 +58,18 @@ function nudged(f: RawFrame, delta: number): RawFrame {
   const data = new Uint8Array(f.data.length);
   for (let i = 0; i < data.length; i++) {
     data[i] = Math.max(0, Math.min(255, f.data[i] + delta));
+  }
+  return { width: f.width, height: f.height, data };
+}
+
+// Copy of `f` with only the first `nPixels` pixels shifted by `delta` on every
+// channel — stands in for a SPARSE reveal (a thin line drawing over a static
+// background: only the line's pixels move). meanAbsDiff(f, sparse(f, n, d))
+// = n*d / (width*height), so target mean diffs can be dialed in exactly.
+function sparse(f: RawFrame, nPixels: number, delta: number): RawFrame {
+  const data = new Uint8Array(f.data);
+  for (let i = 0; i < nPixels * 3; i++) {
+    data[i] = Math.max(0, Math.min(255, data[i] + delta));
   }
   return { width: f.width, height: f.height, data };
 }
@@ -196,6 +209,40 @@ describe("verifyVideo — the full verdict over probe + sampled frames + still",
     const { violations } = verifyVideo(input);
     expect(violations.some((v) => v.includes("progression"))).toBe(true);
     expect(violations.some((v) => v.includes("does not animate"))).toBe(false);
+  });
+
+  // Regression for the LinePortrait/LineSquare false positive: a sparse line reveal's
+  // mid legs (mid-vs-early / mid-vs-final) intrinsically measure ~half or less of the
+  // full early-vs-final motion — a real LinePortrait render measured midVsEarly 0.38
+  // (< the 0.5 full-motion threshold) while genuinely animating (reveal 1.39). The
+  // synthetic frames below reproduce that measured shape: mids ≈ 0.375, reveal ≈ 0.75.
+  it("should pass a healthy SPARSE reveal whose mid legs sit between PROGRESSION_MIN_MEAN_DIFF and REVEAL_MIN_MEAN_DIFF (LinePortrait-class)", () => {
+    const input = goodInput();
+    const early = gradient(0);
+    const mid = sparse(early, 2, 36); // 2*36/192 = 0.375 vs early
+    const late = sparse(early, 3, 36);
+    const final = sparse(early, 4, 36); // 4*36/192 = 0.75 vs early; 0.375 vs mid
+    input.samples = { early, mid, late, final };
+    input.still = { frame: mid, mp4Frame: mid, frameIndex: 140 };
+    const { violations, measurements } = verifyVideo(input);
+    // the contested band: this exact input FAILED under the old single-threshold logic
+    expect(measurements.midVsEarlyMeanDiff).toBeGreaterThan(
+      PROGRESSION_MIN_MEAN_DIFF,
+    );
+    expect(measurements.midVsEarlyMeanDiff).toBeLessThan(REVEAL_MIN_MEAN_DIFF);
+    expect(measurements.midVsFinalMeanDiff).toBeLessThan(REVEAL_MIN_MEAN_DIFF);
+    expect(violations).toEqual([]);
+  });
+
+  it("should still flag a stalled mid whose motion is at frozen-noise level (~0.04) even when the endpoints animate", () => {
+    const input = goodInput();
+    const early = gradient(0);
+    const mid = sparse(early, 8, 1); // 8*1/192 ≈ 0.042 — the measured h264 noise scale
+    const final = sparse(early, 4, 36); // endpoints genuinely differ (0.75)
+    input.samples = { early, mid, late: final, final };
+    input.still = { frame: mid, mp4Frame: mid, frameIndex: 140 };
+    const { violations } = verifyVideo(input);
+    expect(violations.some((v) => v.includes("progression"))).toBe(true);
   });
 
   it("should flag a blank sampled frame", () => {

@@ -23,12 +23,27 @@ export interface RawFrame {
 // frames measure < 3 luma variance vs hundreds for any frame with furniture text.
 // ---------------------------------------------------------------------------------
 
-/** Mean |Δ| per channel (0-255) below which two sampled frames count as "the same
- * image" — a frozen h264 re-encode measures ≈ 0.04 even on a busy frame (measured
- * with the bundled ffmpeg at crf 18), while the sparsest real reveal (small scatter
- * dots popping in) moves ≥ 1 and a bar reveal measures ≈ 4-24. 0.5 sits ~14x above
- * the noise and ~2x under the sparsest legitimate motion. */
+/** Mean |Δ| per channel (0-255) below which the early and final sampled frames count
+ * as "the same image" — the FULL-motion leg only. A frozen h264 re-encode measures
+ * ≈ 0.04 even on a busy frame (measured with the bundled ffmpeg at crf 18), while the
+ * sparsest real reveal (small scatter dots popping in) moves ≥ 1 and a bar reveal
+ * measures ≈ 4-24. 0.5 sits ~14x above the noise and ~2x under the sparsest
+ * legitimate motion. The mid legs use PROGRESSION_MIN_MEAN_DIFF below — they
+ * intrinsically measure only part of this motion. */
 export const REVEAL_MIN_MEAN_DIFF = 0.5;
+
+/** Mean |Δ| per channel (0-255) below which the 50% frame counts as "stuck on an
+ * endpoint". The mid legs (mid-vs-early / mid-vs-final) measure ~half or less of the
+ * full early-vs-final motion BY DESIGN on sparse comps — a line chart's first
+ * timeline half is mostly the light-gray axes wipe (the line's ease window is
+ * [0.30, 0.95]) — so reusing REVEAL_MIN_MEAN_DIFF here false-failed healthy videos.
+ * Calibrated on real renders (2026-07-11, bundled ffmpeg, crf 18): frozen noise
+ * measures ≤ 0.04 (a dense BarReveal frozen re-encode ≈ 0.04; a LinePortrait
+ * frame-140 still-loop ≈ 0.0003, its second-generation re-encode ≈ 0.0007), while
+ * the weakest healthy sparse mids are LinePortrait midVsEarly ≈ 0.383, LineSquare
+ * midVsEarly ≈ 0.485, SlopePortrait midVsFinal ≈ 0.661. 0.15 sits ~3.7x above the
+ * worst measured noise and ~2.5x under the weakest healthy mid. */
+export const PROGRESSION_MIN_MEAN_DIFF = 0.15;
 
 /** BT.601 luma variance below which a frame counts as blank: a flat background is
  * ≈ 0-2 even with encode noise; any frame carrying furniture text or marks measures
@@ -196,17 +211,20 @@ export function verifyVideo(input: VideoVerifyInput): VideoVerifyResult {
   } else {
     // 4 — progression: the midpoint must differ from BOTH endpoints (catches a
     // two-state pop where nothing animates in between). Only meaningful when the
-    // endpoints themselves differ — a frozen video is already flagged above.
+    // endpoints themselves differ — a frozen video is already flagged above. The
+    // mid legs get their OWN lower threshold (see PROGRESSION_MIN_MEAN_DIFF): they
+    // measure ~half or less of the full motion, so the full-motion threshold
+    // false-failed healthy sparse reveals (LinePortrait midVsEarly ≈ 0.38).
     const midVsEarly = meanAbsDiff(samples.mid, samples.early);
     const midVsFinal = meanAbsDiff(samples.mid, samples.final);
     measurements.midVsEarlyMeanDiff = midVsEarly;
     measurements.midVsFinalMeanDiff = midVsFinal;
     if (
-      midVsEarly <= REVEAL_MIN_MEAN_DIFF ||
-      midVsFinal <= REVEAL_MIN_MEAN_DIFF
+      midVsEarly <= PROGRESSION_MIN_MEAN_DIFF ||
+      midVsFinal <= PROGRESSION_MIN_MEAN_DIFF
     ) {
       violations.push(
-        `video has no progression: the 50% frame matches an endpoint (vs first ${midVsEarly.toFixed(2)}, vs final ${midVsFinal.toFixed(2)}, threshold ${REVEAL_MIN_MEAN_DIFF}) — two-state pop, nothing animates in between`,
+        `video has no progression: the 50% frame matches an endpoint (vs first ${midVsEarly.toFixed(2)}, vs final ${midVsFinal.toFixed(2)}, threshold ${PROGRESSION_MIN_MEAN_DIFF}) — two-state pop, nothing animates in between`,
       );
     }
   }

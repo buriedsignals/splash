@@ -16,6 +16,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveFfBinaries } from "../scripts/lib/ffbin.mjs";
 import { encodePng } from "./helpers/png.ts";
+import {
+  REVEAL_MIN_MEAN_DIFF,
+  PROGRESSION_MIN_MEAN_DIFF,
+} from "../src/core/video-verify";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -88,6 +92,27 @@ function encodeMp4(outPath: string, frameAt: (n: number) => Uint8Array): void {
   ]);
 }
 
+// A SPARSE reveal (the LinePortrait class): a static gradient background where only
+// a thin 2-row line strip draws in over time — the mid legs measure ~half of the
+// full early-vs-final motion, landing between PROGRESSION_MIN_MEAN_DIFF and
+// REVEAL_MIN_MEAN_DIFF exactly like the real LinePortrait render this guard
+// false-failed (measured midVsEarly 0.383 there; ≈ 0.4 here).
+function makeSparseFrame(t: number): Uint8Array {
+  const data = new Uint8Array(W * H * 3);
+  const lineEnd = 10 + Math.round(t * 288);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 3;
+      const v = Math.round((x / (W - 1)) * 80);
+      const onLine = (y === 90 || y === 91) && x >= 10 && x < lineEnd;
+      data[i] = onLine ? Math.min(255, v + 110) : v;
+      data[i + 1] = onLine ? Math.min(255, v + 60) : v;
+      data[i + 2] = onLine ? 40 : v;
+    }
+  }
+  return data;
+}
+
 function writeStill(outPath: string, frame: Uint8Array): void {
   writeFileSync(outPath, encodePng(W, H, frame));
 }
@@ -118,21 +143,27 @@ function runSnap(env: Record<string, string>): {
 let dir: string;
 let animatedMp4: string;
 let frozenMp4: string;
+let sparseMp4: string;
 let correctStill: string;
 let wrongStill: string;
+let sparseStill: string;
 
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), "snap-video-e2e-"));
   animatedMp4 = join(dir, "animated.mp4");
   frozenMp4 = join(dir, "frozen.mp4");
+  sparseMp4 = join(dir, "sparse.mp4");
   correctStill = join(dir, "still.png");
   wrongStill = join(dir, "wrong-still.png");
+  sparseStill = join(dir, "sparse-still.png");
   encodeMp4(animatedMp4, (n) => makeFrame(n / (FRAMES - 1)));
   encodeMp4(frozenMp4, () => makeFrame(STILL_FRAME / (FRAMES - 1)));
+  encodeMp4(sparseMp4, (n) => makeSparseFrame(n / (FRAMES - 1)));
   // the "reviewed" still = the frame the producer renders separately at STILL_FRAME
   writeStill(correctStill, makeFrame(STILL_FRAME / (FRAMES - 1)));
   // the adversarial still = an EARLY frame passed off as the review still
   writeStill(wrongStill, makeFrame(1 / (FRAMES - 1)));
+  writeStill(sparseStill, makeSparseFrame(STILL_FRAME / (FRAMES - 1)));
 });
 
 const baseEnv = () => ({
@@ -169,6 +200,27 @@ describe("snap-video.mjs — e2e on real (synthetic) mp4s", () => {
     const res = runSnap({ ...baseEnv(), MP4: frozenMp4 });
     expect(res.status).not.toBe(0);
     expect(res.stderr).toContain("does not animate");
+  }, 120_000);
+
+  it("should PASS a sparse reveal whose mid legs measure under REVEAL_MIN_MEAN_DIFF (the LinePortrait false-positive regression)", () => {
+    const res = runSnap({
+      ...baseEnv(),
+      MP4: sparseMp4,
+      STILL: sparseStill,
+      OUTDIR: dir,
+    });
+    expect(res.stderr).toBe("");
+    expect(res.status).toBe(0);
+    const report = JSON.parse(
+      readFileSync(join(dir, "video-verify.json"), "utf8"),
+    );
+    // prove the case is REALLY in the contested band: it would have failed under the
+    // old single-threshold logic (mid legs < REVEAL_MIN_MEAN_DIFF) but is healthy
+    // (mid legs > PROGRESSION_MIN_MEAN_DIFF, full motion > REVEAL_MIN_MEAN_DIFF).
+    const { midVsEarlyMeanDiff, revealMeanDiff } = report.measurements;
+    expect(midVsEarlyMeanDiff).toBeGreaterThan(PROGRESSION_MIN_MEAN_DIFF);
+    expect(midVsEarlyMeanDiff).toBeLessThan(REVEAL_MIN_MEAN_DIFF);
+    expect(revealMeanDiff).toBeGreaterThan(REVEAL_MIN_MEAN_DIFF);
   }, 120_000);
 
   it("should FAIL when the duration does not match the registered composition", () => {

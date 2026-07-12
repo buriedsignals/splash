@@ -29,6 +29,7 @@ import { resolveFfBinaries } from "./lib/ffbin.mjs";
 import {
   verifyVideo,
   REVEAL_MIN_MEAN_DIFF,
+  PROGRESSION_MIN_MEAN_DIFF,
   MIN_LUMA_VARIANCE,
   STILL_MATCH_CHANNEL_TOLERANCE,
   STILL_MATCH_MAX_DIFF_RATIO,
@@ -185,6 +186,7 @@ const report = {
   expected: { frames: expectedFrames ?? null, width: expectedWidth ?? null, height: expectedHeight ?? null },
   thresholds: {
     REVEAL_MIN_MEAN_DIFF,
+    PROGRESSION_MIN_MEAN_DIFF,
     MIN_LUMA_VARIANCE,
     STILL_MATCH_CHANNEL_TOLERANCE,
     STILL_MATCH_MAX_DIFF_RATIO,
