@@ -4,6 +4,43 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-12 (suite 5) — Wave 13 : breadth (types/personas sous-testés) + 2 gaps de capacité fermés
+
+Post-convergence, la boucle passe en **breadth + fermeture de gaps** (les chemins communs ayant convergé).
+Wave 13 = 4 cas sur des combos sous-testés + persona adversarial : **4/4 livrés, 0 critical**.
+- **Types render-vérifiés haute qualité** : **waterfall** (cascade 12,4→8,5, palette de rôle inc/dec
+  intacte — le fix highlight ne l'a PAS cassée, totaux ancrés, value-labels) · **bump** (rangs streaming,
+  croisements nets, tooltip fonctionnel « Spotify 2021 #1·2022 #1·2023 #1·2025 #2 ») · **diverging**
+  (balance ±, garde value-axis-zéro + sign colors) · **adversarial-contradictory** (pie→refusé→bar,
+  takeaway changé, correction de donnée réclamée puis rétractée) **géré de façon cohérente sans major** —
+  robustesse confirmée sous pression indécise (Lyon 5400 rétracté correct au rendu).
+- **1 major = improvisation qui revient** (bump `conformance-no-fabrication` : echo fabriqué + contournement
+  d'un non-zéro transitoire) — classe **comportementale-LLM récurrente**, QA-attrapée, **livraison propre**
+  (le bump livré est excellent) ; discipline déjà élargie 2×, pas de levier mécanique produit propre (même
+  classe que titre↔takeaway) — le filet reste la garde.
+
+**2 gaps de capacité/qualité fermés (agents + review) :**
+- **★ Heatmap atteignable de bout en bout** (`feat/wire-heatmap`, review SAFE) — ferme le gap Wave 7
+  (une demande de grille jour×heure dégradait en grouped-column). Le moteur existait (HeatmapChart +
+  géométrie + comps vidéo, registered) ; manquaient le MAPPER (`spec-to-config.ts` : matrice-large →
+  config, **1er type atteignable à faire valeur-continue→couleur** via ramp Blues CVD-safe), le routing
+  suggest-chart (famille magnitude), l'un-defer `native-types`, et la garde produce (`checkHeatmapConformance`
+  ramp monotone). Static+interactif+vidéo live ; scrolly fail-hard. **A débusqué + corrigé un vrai défaut
+  WCAG latent** (`cellTextColor` seuil cassé, blanc sur mid-tone ~2.4:1) via **WCAG SC 1.4.3** : labels
+  in-cell en grand gras (≥18.66px conformes à 3:1), la garde contraste PARTAGÉE apprend la provision
+  large-text — **étroitement bornée** (review : 15 cas-frontière WCAG-corrects, fail-closed, n'affecte QUE
+  les cellules mid-tone heatmap, les 40+ autres types inchangés). Render-vérifié (grille d'intensité +
+  colourbar). chart-native 1072/0.
+- **Value-labels directs dw-chart** (`fix/dw-chart-bar-value-labels`, live-vérifié) — FT best-practice #3 :
+  les barres dw-chart shippaient sans labels de valeur (le lecteur estimait sur la grille). L'agent a
+  **renversé la prémisse du code par vérif live** : DW choisit la couleur du label inside par seuil **YIQ
+  (~160), PAS luminance WCAG** (sky et amber, même luminance, couleur DW opposée) → les fills clairs
+  reçoivent de l'encre foncée sûre, seuls quelques mid-tone ont un blanc sub-AA. Fix : `show-value-labels`
+  ON par défaut + format locale (« 10 600 » groupé) + `force-grid` (axe) comme fallback a11y toujours
+  présent ; la garde modélise le YIQ (plus de faux flag sur fills clairs), mid-tone-inside-avec-fallback =
+  concern (pas throw), throw dur conservé si pas de fallback. Render-vérifié (nombres sur les barres).
+  dw-chart 247/0. (stacked bars exclus — concern distinct.)
+
 ## Session 2026-07-12 (suite 4) — Wave 12 : CONVERGENCE — 6/6 livrés, 0 critical, 0 major, toutes les confirmations tiennent
 
 **Première wave entièrement propre** (2 re-runs de confirmation Wave 11 + 2 fraîches, + legit-abc/wealth-health)
