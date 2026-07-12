@@ -346,6 +346,30 @@ describe("scoreSpec — chart-native producer", () => {
     );
     expect(r.pass).toBe(true);
   });
+
+  // A grid/matrix intent — a value over TWO categorical dimensions (day × hour),
+  // colour = value intensity — must route to the (now-wired) native heatmap, not
+  // degrade to a grouped-column fallback (QA Wave 7 er-wait). The wide matrix CSV is
+  // rows=first dimension, remaining numeric columns=second dimension.
+  it("routes a day×hour matrix intent to a native heatmap in the magnitude family", () => {
+    const r = scoreSpec(
+      {
+        producer: "chart-native",
+        nativeType: "heatmap",
+        title: "Emergency-room waits peak on Monday mornings",
+        source: { name: "County health authority", url: "https://example.org/er" },
+        unit: "median wait (minutes)",
+        altInsight: "Waits are longest on weekday mornings and shortest overnight.",
+        data:
+          "day,06-10,10-14,14-18,18-22\n" +
+          "Mon,52,38,41,60\nTue,44,33,39,55\nWed,40,31,37,50",
+      },
+      { family: "magnitude", element: "chart", producer: "chart-native" },
+    );
+    expect(r.pass).toBe(true);
+    expect(r.familyMatch).toBe(true);
+    expect(r.validates).toBe(true);
+  });
 });
 
 describe("scoreSpec — chart-native line/scatter/pie routing + validation", () => {

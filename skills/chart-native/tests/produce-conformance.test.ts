@@ -16,6 +16,7 @@ import treemapSample from "../assets/sample-data/treemap.json";
 import boxplotSample from "../assets/sample-data/boxplot.json";
 import divergingStackedSample from "../assets/sample-data/diverging-stacked.json";
 import bumpSample from "../assets/sample-data/bump.json";
+import heatmapSample from "../assets/sample-data/heatmap.json";
 
 describe("runProduceConformance — the 7 wired types pass on their shipped sample", () => {
   const cases: [string, Record<string, unknown>][] = [
@@ -183,6 +184,7 @@ describe("runProduceConformance — guarded backfill samples pass the produce ga
     ["boxplot", boxplotSample],
     ["diverging-stacked", divergingStackedSample],
     ["bump", bumpSample],
+    ["heatmap", heatmapSample],
   ];
   for (const [type, sample] of cases) {
     it(`${type}: the shipped sample config is conformant (altInsight included)`, () => {
@@ -195,10 +197,11 @@ describe("runProduceConformance — guarded backfill samples pass the produce ga
 
 describe("runProduceConformance — an unwired type is reported, not silently skipped", () => {
   it("returns checked:false for a type without a produce-time guard yet", () => {
-    // "heatmap" (not "violin" — now guarded, see violin-conformance.test.ts and
-    // its own produce-conformance-*.test.ts) is Family B, deferred by design
-    // (needs an x×y×value matrix), so it stays the unwired-type witness here.
-    const r = runProduceConformance("heatmap", { title: "irrelevant" });
+    // "marimekko" (not "heatmap" — now wired, see heatmap-conformance.test.ts and
+    // the "heatmap" case in produce-conformance.ts) is Family B, deferred by design
+    // (a 2D width×height encoding an article rarely yields), so it is the unwired-type
+    // witness here. When it too is wired, swap in another still-deferred type.
+    const r = runProduceConformance("marimekko", { title: "irrelevant" });
     expect(r.checked).toBe(false);
     expect(r.violations).toEqual([]);
   });

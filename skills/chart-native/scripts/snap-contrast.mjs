@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { worstContrast, MIN_CONTRAST } from "../src/core/contrast-scan.ts";
+import { worstContrast, MIN_CONTRAST, wcagMinContrast } from "../src/core/contrast-scan.ts";
 import { chartDistSub } from "../src/build-paths.ts";
 import { sampleTextContrast } from "./lib/sample-text-contrast.mjs";
 import {
@@ -84,8 +84,12 @@ const violations = [];
 const concerns = [];
 for (const s of samples) {
   const worst = worstContrast(s.fill, s.bgs);
-  if (worst >= MIN_CONTRAST) continue;
-  const flagged = { ...s, worst: Number(worst.toFixed(2)) };
+  // WCAG SC 1.4.3: large text (≥24px, or ≥18.66px bold) is conformant at 3:1, not
+  // 4.5:1 — the heatmap's in-cell value labels are large bold numbers on a continuous
+  // ramp whose mid-tones have no 4.5:1 text colour but always clear 3:1.
+  const min = wcagMinContrast(s.fontPx ?? 0, s.bold ?? false);
+  if (worst >= min) continue;
+  const flagged = { ...s, worst: Number(worst.toFixed(2)), min };
   // A failing label in a brand-explicit fill is downgraded to a concern (policy b).
   if (brandColors.has(s.fill.toUpperCase())) concerns.push(flagged);
   else violations.push(flagged);
@@ -106,4 +110,4 @@ if (i18nViolations.length) {
   for (const v of i18nViolations) console.error(`  - ${v}`);
   process.exit(1);
 }
-console.log(`[snap-contrast ${chart}] OK — ${samples.length} labels clear ${MIN_CONTRAST}:1${concerns.length ? ` (${concerns.length} brand concern[s] kept)` : ""}${furnitureGateApplies(lang) ? `; i18n furniture OK (lang "${lang}")` : ""}.`);
+console.log(`[snap-contrast ${chart}] OK — ${samples.length} labels clear their WCAG floor (${MIN_CONTRAST}:1, or 3:1 for large-scale text)${concerns.length ? ` (${concerns.length} brand concern[s] kept)` : ""}${furnitureGateApplies(lang) ? `; i18n furniture OK (lang "${lang}")` : ""}.`);

@@ -18,7 +18,7 @@ import {
 } from "./heatmap-geometry";
 import { clamp01, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE } from "./core/tokens";
-import { relativeLuminance } from "./core/conformance";
+import { contrastRatio } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -44,10 +44,27 @@ export interface HeatmapChartProps {
   scale?: number;
 }
 
-// white on dark cells, ink on light — the global contrast rule, per cell.
+// The in-cell value label takes whichever of white / ink actually wins by REAL
+// contrast against the cell colour — the same max-contrast rule TreemapChart /
+// DivergingStackedChart use for in-mark labels. A fixed luminance threshold (the old
+// `< 0.4 ? white : ink`) mis-picks white on mid-tone ramp cells where ink is far more
+// legible (e.g. #70b0d7: white 2.4:1 vs ink 7.3:1), which snap-contrast fail-hards on.
 function cellTextColor(hex: string): string {
-  return relativeLuminance(hex) < 0.4 ? "#FFFFFF" : COLORS.ink;
+  return contrastRatio(hex, "#FFFFFF") >= contrastRatio(hex, COLORS.ink)
+    ? "#FFFFFF"
+    : COLORS.ink;
 }
+
+// In-cell value labels are the ONE place a chart prints text directly on the data
+// colour, and colour here spans a full sequential ramp — so a mid-tone cell has NO
+// text colour that clears 4.5:1 (neither white nor ink; max-contrast tops out at
+// ~4.16:1). WCAG SC 1.4.3 resolves it: LARGE BOLD text (≥14pt = 18.66px, weight ≥700)
+// is conformant at 3:1, which the max-contrast fill always clears. So the value labels
+// render at ≥18.66px BOLD — legible AND WCAG-conformant across the whole ramp. Knob.
+const VALUE_LABEL_MIN_PX = 19; // ≥ WCAG 14pt-bold large-text floor (18.66px)
+// A cell narrower than this hides its value label, so the larger bold number never
+// clips its cell (snap-label-fit would otherwise fail-hard). Knob.
+const VALUE_LABEL_MIN_CELL_PX = 44;
 
 export function HeatmapChart({
   config,
@@ -169,7 +186,9 @@ function HeatmapSvg({
   const maxWave = Math.max(1, nRows - 1 + (nCols - 1));
 
   const chrome = easeOutCubic(p / 0.18);
-  const showValues = layout.cellW > 34 * sc; // only if cells are wide enough
+  // only label cells wide enough to hold the (large, bold, WCAG-conformant) number
+  const showValues = layout.cellW > VALUE_LABEL_MIN_CELL_PX * sc;
+  const valueFontPx = Math.max(ts.axis, VALUE_LABEL_MIN_PX * sc);
 
   // colourbar geometry — RIGHT-aligned under the grid so it clears the source
   // line (which sits bottom-left).
@@ -242,8 +261,8 @@ function HeatmapSvg({
                   y={cell.y + cell.h / 2}
                   dy="0.32em"
                   textAnchor="middle"
-                  fontSize={ts.axis}
-                  fontWeight={600}
+                  fontSize={valueFontPx}
+                  fontWeight={700}
                   fill={cellTextColor(cell.color)}
                   pointerEvents="none"
                 >

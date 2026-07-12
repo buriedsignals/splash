@@ -268,11 +268,11 @@ comment marks `baseColor` optional-with-a-default:**
 
 The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
-waterfall, dumbbell, slope, bullet, treemap, boxplot, violin, diverging-stacked, pyramid, fan, bump** (`spec-to-config.ts`);
+waterfall, dumbbell, slope, bullet, treemap, boxplot, violin, diverging-stacked, pyramid, fan, bump, heatmap** (`spec-to-config.ts`);
 for any type NOT in this list the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead.
 Produce with `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `violin`, `diverging-stacked`, `pyramid`, `fan`, `bump`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `violin`, `diverging-stacked`, `pyramid`, `fan`, `bump`, `heatmap`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 **`highlight` MUST match the confirmed CADRAGE framing — omit it when the framing is a NEUTRAL overview.**
 Only accent a category when the confirmed insight singles that category out ("education dominates", "one
@@ -374,6 +374,17 @@ value trend over time, prefer `line`; for a single before/after comparison, pref
 names the ONE item to accent (others render as neutral grey context); at most a few highlights keep the
 tangle of lines readable. A `highlight` is **effectively required** — without it every line renders the
 same colour (all-blue) and the chart is an indistinguishable tangle.
+`heatmap` expects a **wide MATRIX CSV**: the first column is the ROW dimension, and every following
+numeric column is a value of the COLUMN dimension — a value over TWO categorical/temporal dimensions
+where **colour encodes the value** (e.g. `day,06-10,10-14,14-18,18-22` then `Mon,52,38,41,60`). Route it
+when the story is a PATTERN over two dimensions — activity by day×hour, intensity over region×year, a
+correlation matrix — and the eye should scan the grid for hot/cold clusters. This is the ONE native type
+where colour is the quantitative channel: it paints a **sequential CVD-safe ramp** (single-hue Blues,
+monotonic luminance), NOT the Okabe-Ito categorical palette, so do NOT set `baseColor` (it is ignored —
+the ramp is the encoding); a colourbar legend + optional in-cell value labels come built in. For a value
+over ONE dimension prefer `bar` (length reads more precisely than colour); for too-fine grids, aggregate
+the bins first. `unit` names the value the colour encodes (e.g. "median wait (minutes)"). Ships static +
+interactive (per-cell hover/focus) + video (a diagonal fade-in reveal).
 
 ### map-dw (static choropleth map) — default map path
 
