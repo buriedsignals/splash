@@ -44,7 +44,15 @@ export interface WatchdogOptions {
 /** Runs `cmd args…` with inherited stdio, killing the whole process tree and
  * rejecting if it outlives the watchdog. Off Windows the child is spawned detached
  * (its own process group) so `kill(-pid)` reaps grandchildren (the Chromium a
- * remotion CLI leaves behind); on Windows `taskkill /T /F` does the same. */
+ * remotion CLI leaves behind); on Windows `taskkill /T /F` does the same.
+ *
+ * Because `detached` removes the child from the terminal's FOREGROUND process group,
+ * a user Ctrl-C (SIGINT to the foreground group) would no longer reach the render
+ * tree — it would linger orphaned, and a HUNG one would linger forever (the watchdog
+ * timer dies with the parent). So while a render is in flight, SIGINT/SIGTERM on the
+ * parent are forwarded to the child's process group; the child's exit then settles
+ * the promise (rejecting with the signal), and the handlers are removed on settle so
+ * the parent's default die-on-signal behavior returns between renders. */
 export function runWithVideoWatchdog(
   cmd: string,
   args: string[],
@@ -75,12 +83,36 @@ export function runWithVideoWatchdog(
         // already dead — the exit handler below settles the promise
       }
     }, timeoutMs);
-    child.on("error", (err) => {
+    // Forward the user's interrupt to the detached render tree (POSIX only: on
+    // Windows the child is NOT detached, so the console already delivers Ctrl-C to
+    // it). The same signal is forwarded — not SIGKILL — so the remotion CLI gets its
+    // normal graceful-shutdown path; the exit handler below settles the promise.
+    const forwardSignal = (signal: NodeJS.Signals) => {
+      try {
+        if (!isWin && child.pid !== undefined) process.kill(-child.pid, signal);
+      } catch {
+        // already dead — the exit handler below settles the promise
+      }
+    };
+    const onSigint = () => forwardSignal("SIGINT");
+    const onSigterm = () => forwardSignal("SIGTERM");
+    if (!isWin) {
+      process.on("SIGINT", onSigint);
+      process.on("SIGTERM", onSigterm);
+    }
+    const settle = () => {
       clearTimeout(timer);
+      if (!isWin) {
+        process.off("SIGINT", onSigint);
+        process.off("SIGTERM", onSigterm);
+      }
+    };
+    child.on("error", (err) => {
+      settle();
       reject(err);
     });
     child.on("exit", (code, signal) => {
-      clearTimeout(timer);
+      settle();
       if (timedOut) {
         reject(
           new Error(
