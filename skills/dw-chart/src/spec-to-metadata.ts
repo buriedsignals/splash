@@ -496,6 +496,27 @@ export function dwLocale(lang: string): string {
 // named constant (one value): change it here and every highlighted bar family follows.
 export const HIGHLIGHT_MUTED_GREY = "#c4c4c4";
 
+// SCATTER AXIS-TITLE CLEARANCE (QA Wave 11 — the Copenhagen occlusion, render-confirmed on a
+// live published chart). Datawrapper's d3-scatter-plot draws the x- AND y-axis titles INLINE
+// at the plot CORNERS — x-title bottom-right, y-title top-left — derived from the column
+// headers and anchored INSIDE the plot area with a fixed 115px width (all verified live
+// against the real API). With corner-clustered data a mark in that corner is HIDDEN behind
+// the title (the rightmost point, Copenhagen, vanished under the x-axis title). DW exposes
+// NO lever to move a scatter axis title outside the plot, and none to hide the title while
+// keeping the tick scale — `x-pos`/`y-pos:"off"` drops the tick LABELS too, and the title
+// text is bound to the column header with no metadata override (every one of these verified
+// live: extreme metadata patches left the render unchanged). The ONE lever the scatter
+// renderer honours is the axis DOMAIN: `visualize.y-axis.range`, which MUST be NUMERIC —
+// the renderer's calculateDomain() reads each bound through Number.isFinite, so STRING
+// bounds (what the line/column `custom-range-y` path emits) are silently ignored on a
+// scatter. Extending the Y domain past the data on BOTH ends pushes every mark out of the
+// top/bottom corner title bands. Because each title is a horizontal strip at a corner,
+// clearing the vertical band clears it for ANY horizontal data distribution — deterministic,
+// not per-case. 0.3 of the y-span each side clears a 1–2 line title down to ~360px wide
+// (live-measured: title↔mark overlap = 0 at 900px AND 360px, vs 1–2 before), and a scatter
+// axis padded ~30% reads naturally — DW's own auto-domain already pads 10%.
+export const SCATTER_AXIS_TITLE_CLEARANCE_FRAC = 0.3;
+
 // The single source of truth for the CSV that reaches Datawrapper: apply the
 // human column labels first, then the ranking sort. Both the data upload and
 // the metadata mapping (annotation y-derivation) must see the SAME CSV, so
@@ -597,6 +618,13 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
   if (LINE_LIKE_TYPES.has(spec.type))
     visualize["labeling"] = isSingleSeries(spec) ? "off" : "right";
 
+  // Axis headroom (fraction of the y-span) the annotations need above/below the data —
+  // hoisted to function scope so the SCATTER axis-title clearance below can fold it into the
+  // one range key the scatter renderer honours (a near-extreme annotation label needs at
+  // least as much headroom as the title clearance).
+  let headTopFrac = 0;
+  let headBotFrac = 0;
+
   // Skip the annotation mapping for types this pipeline can't annotate (validateChartSpec
   // warns about both), rather than build metadata Datawrapper ignores at render:
   //  • pie/donut/table — no text-annotation layer in Datawrapper at all;
@@ -635,8 +663,8 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
     // Accumulate the axis headroom every annotation needs, as a fraction of the
     // y-span, so a near-extreme label (a peak at the max) has real whitespace to sit
     // in — the extension is in DATA space, therefore identical at every render width.
-    let headTopFrac = 0;
-    let headBotFrac = 0;
+    // (headTopFrac/headBotFrac are hoisted to function scope above so the SCATTER
+    // axis-title clearance below folds in this same annotation headroom.)
     visualize["text-annotations"] = spec.annotations.map((a) => {
       // Resolve the series column name AFTER renaming, so an annotation pinned
       // to a machine-named column still finds its (renamed) series.
@@ -739,6 +767,26 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
       String(Math.round(rangeMin)),
       String(Math.round(rangeMax)),
     ];
+  }
+
+  // SCATTER axis-title clearance — pin a NUMERIC y-axis.range (the ONE lever the scatter
+  // renderer honours; the string custom-range-y above is silently ignored on a scatter) that
+  // extends the Y-COLUMN domain past the data on both ends, pushing every mark clear of the
+  // inline corner titles (see SCATTER_AXIS_TITLE_CLEARANCE_FRAC). Folds in any annotation
+  // headroom already accumulated so a near-extreme label keeps its whitespace too. Runs for
+  // EVERY scatter (annotations optional) — the occlusion is a title-vs-mark collision, not an
+  // annotation concern.
+  if (SCATTER_ANNOTATION_TYPES.has(spec.type)) {
+    const sCols = scatterColumns(csv);
+    const sDom = plotDomain(csv, sCols?.yCol);
+    const sSpan = sDom.yMax - sDom.yMin || 1;
+    const k = SCATTER_AXIS_TITLE_CLEARANCE_FRAC;
+    visualize["y-axis"] = {
+      range: [
+        sDom.yMin - Math.max(k, headBotFrac) * sSpan,
+        sDom.yMax + Math.max(k, headTopFrac) * sSpan,
+      ],
+    };
   }
 
   const patch: DwPatch = {

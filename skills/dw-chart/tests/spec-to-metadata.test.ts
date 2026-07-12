@@ -4,6 +4,7 @@ import {
   resolveData,
   placeAnnotation,
   HIGHLIGHT_MUTED_GREY,
+  SCATTER_AXIS_TITLE_CLEARANCE_FRAC,
 } from "../src/spec-to-metadata";
 import { DEFAULT_BASE_COLOR, type ChartSpec } from "../src/chart-spec";
 
@@ -710,6 +711,79 @@ describe("specToMetadata — scatter annotations (x and y are DIFFERENT columns)
     } as any);
     const ann = (p.metadata.visualize["text-annotations"] as any[])[0];
     expect(ann.y).toBe("8.1"); // the single value column, as before
+  });
+});
+
+describe("specToMetadata — scatter axis-title clearance (QA Wave 11: the Copenhagen occlusion)", () => {
+  // Datawrapper's d3-scatter-plot draws the x/y axis titles INLINE at the plot corners
+  // (x-title bottom-right, y-title top-left) — a corner-clustered mark ends up HIDDEN behind
+  // the title. The one lever the scatter renderer honours is the axis DOMAIN
+  // (visualize.y-axis.range, NUMERIC): extending the Y domain past the data on both ends
+  // pushes every mark out of the top/bottom corner title bands, for any horizontal
+  // distribution. This is the metadata-shape assertion (the standing guard); the live render was
+  // manually occlusion-verified (Copenhagen 4.8/0.9 clears the x-title after the fix).
+  const CYCLE =
+    "city,Cycle lanes per capita,Daily bike trips (m)\n" +
+    "Copenhagen,4.8,0.9\nAmsterdam,4.5,1.2\nUtrecht,4.2,1.5\n" +
+    "Malmo,3.0,4.0\nBerlin,1.5,7.0\nParis,0.8,10.0\nLondon,0.3,12.9";
+
+  it("pins a NUMERIC y-axis.range that extends the y-column domain on BOTH ends (clears the inline corner titles)", () => {
+    const p = specToMetadata({
+      type: "d3-scatter-plot",
+      title: "Copenhagen leads on cycle lanes",
+      data: CYCLE,
+      altInsight: "x",
+    } as any);
+    const yAxis = p.metadata.visualize["y-axis"] as { range: [number, number] };
+    expect(yAxis).toBeDefined();
+    expect(yAxis.range).toHaveLength(2);
+    // NUMERIC, not strings — calculateDomain() reads the bounds via Number.isFinite, so
+    // string bounds are silently ignored by the scatter renderer (verified live).
+    expect(typeof yAxis.range[0]).toBe("number");
+    expect(typeof yAxis.range[1]).toBe("number");
+    // y-column (trips) domain is 0.9..12.9 (span 12); the range must extend BELOW 0.9 (to
+    // clear the bottom-right x-title) and ABOVE 12.9 (to clear the top-left y-title), by at
+    // least the clearance fraction each side.
+    const k = SCATTER_AXIS_TITLE_CLEARANCE_FRAC;
+    expect(yAxis.range[0]).toBeLessThanOrEqual(0.9 - k * 12 + 1e-6);
+    expect(yAxis.range[1]).toBeGreaterThanOrEqual(12.9 + k * 12 - 1e-6);
+  });
+
+  it("does NOT read the x-column (cycle lanes) into the y-axis range — the domain is the Y column alone", () => {
+    const p = specToMetadata({
+      type: "d3-scatter-plot",
+      title: "T",
+      data: CYCLE,
+      altInsight: "x",
+    } as any);
+    const yAxis = p.metadata.visualize["y-axis"] as { range: [number, number] };
+    // x-column (cycle lanes) tops out at 4.8; the y-range must be about the trips column
+    // (0.9..12.9 padded), never collapsed onto the x column.
+    expect(yAxis.range[1]).toBeGreaterThan(12.9);
+  });
+
+  it("sets no y-axis.range on a non-scatter type (the clearance is scatter-specific)", () => {
+    const p = specToMetadata({
+      type: "d3-lines",
+      title: "T",
+      data: "year,v\n2020,5\n2023,7",
+      altInsight: "x",
+    } as any);
+    expect(p.metadata.visualize["y-axis"]).toBeUndefined();
+  });
+
+  it("preserves a tiny-valued y axis without collapsing it to integers", () => {
+    const p = specToMetadata({
+      type: "d3-scatter-plot",
+      title: "T",
+      data: "pt,x,y\nA,1,0.01\nB,2,0.05\nC,3,0.09",
+      altInsight: "x",
+    } as any);
+    const yAxis = p.metadata.visualize["y-axis"] as { range: [number, number] };
+    // A 0.01..0.09 axis must NOT round to [0,0]; the padded range stays sub-unit.
+    expect(yAxis.range[0]).toBeLessThan(0.01);
+    expect(yAxis.range[1]).toBeGreaterThan(0.09);
+    expect(yAxis.range[1]).toBeLessThan(1);
   });
 });
 
