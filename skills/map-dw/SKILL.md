@@ -182,6 +182,9 @@ variant (`-continental`, or another id of the same extent).
   the render-size floor, or hosted embed alone; video/scrolly fail hard pre-API).
 - `src/basemap-keys.ts` — per-basemap valid join keys (offline registry) for the `validateMapSpec`
   join-key check; `src/join-match.ts` — produce-time dataless-join guard (live match rate, fail-hard).
+- `src/furniture-i18n.ts` — i18n furniture gate (fail-hard in `produceMap`, before any API call): a
+  non-English spec's outgoing metadata must carry the localized "Source : X" line in `annotate.notes`
+  and blank `describe.source-name`/`source-url` (mirrored from dw-chart).
 - `src/tests/` — pure unit tests + live e2e (choropleth + locator; symbol asserts rejection; join-key
   mismatch asserts validation error + a dataless join asserts a produce refusal; static asserts the
   delivered PNG dims == channel mediaSize ±2px; interactive asserts embed-alone/no PNG) (live tests

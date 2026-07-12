@@ -23,11 +23,17 @@
 // opens directly over file://, the same way snap-tooltip-contrast.mjs and
 // snap-tooltip-viewport.mjs already do for this dist.
 import { chromium } from "playwright";
+import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { worstContrast, MIN_CONTRAST } from "../src/core/contrast-scan.ts";
 import { chartDistSub } from "../src/build-paths.ts";
 import { sampleTextContrast } from "./lib/sample-text-contrast.mjs";
+import {
+  checkFurnitureI18n,
+  collectFurnitureI18n,
+  furnitureGateApplies,
+} from "./lib/furniture-i18n.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -63,6 +69,19 @@ await page.waitForTimeout(2500);
 // points, worst-case. Contrast is computed in node below.
 const samples = await page.evaluate(sampleTextContrast);
 
+// i18n FURNITURE GATE (P5) — same engine as snap-contrast.mjs, on THIS already-
+// loaded interactive page (the most common delivery path): a non-English config's
+// rendered furniture must carry the localized "Source" label, no English caption,
+// no English-grouped numbers. CONFIG is what produce.mjs threads to every snap;
+// manual runs without it skip the gate (English furniture is correct then).
+const configPath = process.env.CONFIG;
+const lang = configPath
+  ? JSON.parse(await readFile(configPath, "utf8")).lang
+  : undefined;
+const i18nViolations = furnitureGateApplies(lang)
+  ? checkFurnitureI18n(await page.evaluate(collectFurnitureI18n), lang)
+  : [];
+
 await browser.close();
 
 const violations = [];
@@ -86,4 +105,9 @@ if (violations.length) {
   console.error(`[snap-interactive-contrast ${chart}] ${violations.length} text label(s) below ${MIN_CONTRAST}:1 WCAG contrast`);
   process.exit(1);
 }
-console.log(`[snap-interactive-contrast ${chart}] OK — ${samples.length} labels clear ${MIN_CONTRAST}:1${concerns.length ? ` (${concerns.length} brand concern[s] kept)` : ""}.`);
+if (i18nViolations.length) {
+  console.error(`[snap-interactive-contrast ${chart}] i18n furniture gate (lang "${lang}") — ${i18nViolations.length} violation(s):`);
+  for (const v of i18nViolations) console.error(`  - ${v}`);
+  process.exit(1);
+}
+console.log(`[snap-interactive-contrast ${chart}] OK — ${samples.length} labels clear ${MIN_CONTRAST}:1${concerns.length ? ` (${concerns.length} brand concern[s] kept)` : ""}${furnitureGateApplies(lang) ? `; i18n furniture OK (lang "${lang}")` : ""}.`);

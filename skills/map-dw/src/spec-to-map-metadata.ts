@@ -67,8 +67,10 @@ const CIRCLE_ICON = {
 // reads correctly) keeps the native source-name/source-url path, so its clickable
 // hyperlink in the interactive embed survives — only the genuinely-broken non-English
 // case pays the "notes, no hyperlink" trade-off notes can't render.
-const SOURCE_LABELS: Record<string, string> = {
-  fr: "Source :", // narrow no-break space before the colon (French typography)
+// Exported: src/furniture-i18n.ts (the produce-time i18n gate) asserts the outgoing
+// metadata against THESE exact label bytes — one table, never a re-typed literal.
+export const SOURCE_LABELS: Record<string, string> = {
+  fr: "Source :", // spaced colon (French typography)
   de: "Quelle:",
   it: "Fonte:",
   en: "Source:",

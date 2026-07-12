@@ -393,6 +393,7 @@ best practices live in `knowledge/references/map/formats/video-reveal.md`.
 - `scripts/audit-cases.mjs` — sample + stress cases registry for the audit.
 - `scripts/snap-static.mjs` — Playwright: waits for `map.once('idle')`, screenshots static build.
 - `scripts/snap-proof.mjs` — Playwright: loads interactive build, hovers a region, screenshots popup.
+- `scripts/lib/furniture-i18n.mjs` — i18n furniture gate (fail-hard, runs inside `snap-static.mjs` + `snap-a11y.mjs`'s existing page loads): a non-English config's rendered HTML furniture (MapFrame title/source, legend, filter bar) must carry the localized "Source" label from `src/core/locale.ts`, no English caption, no unambiguously English-grouped number; GL-canvas text is not DOM-reachable and stays out of scope.
 - `scripts/produce.mjs` — `produce(configPath, outDir)`: all three formats from an arbitrary config.
 - `scripts/snap-video.mjs` — video snap guard (fail-hard after the mp4 render): container sanity + reveal-animates + mp4-matches-reviewed-still, via the bundled ffmpeg (`scripts/lib/ffbin.mjs`); pure pixel math in `src/core/video-verify.ts`.
 - `src/video-watchdog.ts` — bounds every Remotion render/still subprocess (default 15 min, `ATELIER_VIDEO_TIMEOUT_MS`); kills the hung process tree (seismes-class hang → clean fail-hard).
