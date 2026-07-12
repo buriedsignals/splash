@@ -4,6 +4,38 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-12 (suite 2) — Wave 10 : confirmation ciblée + longue traîne épuisée (7 fixes), gate 20 checks
+
+**Wave 10 (4 re-runs des cas mordus Wave 9) : les 2 cibles principales CONFIRMÉES 0-major** — italien
+(tooltip carto + fit sub-national) et startup prose-only (provenance gate-render + Gate 2b) tiennent. Les
+2 cas restants ont donné des findings précis, tous mécanisés :
+- **map-dw unité — une source par surface (`fix/map-dw-unit-single-source`)** : le « %% » doublé était la
+  collision **unit × token-pourcent** (le fixer a RÉFUTÉ l'hypothèse `number-append` par 6 probes live —
+  ce mécanisme n'atteint AUCUNE surface carte, phantom) → `formattedSurfaceUnit`/`rawTooltipUnit`, l'unité
+  apparaît exactement une fois par surface, matrice unit×numberFormat testée + e2e live. **+ émission** :
+  suggest-chart émet le champ `unit` pour les unités courtes (le tooltip italien était nu car spec sans
+  `unit:"mm"`) + garde eval `requireUnit`. **+ jointure France** : `postal` = abréviations, pas d'INSEE →
+  join sur `name` (probé live ; classe world-2019/DW_STATE_CODE).
+- **a/b/c : WAIT means WAIT (`fix/abc-wait-discipline`)** : atelier auto-décidait le choix de forme
+  (« Je finalise… pour les deux ») sans attendre — SKILL.md durci + ligne « attends le choix » dans le bloc
+  émis PAR export-code + **check mécanique harness** (proposition sans tour-réponse journaliste avant
+  `--form` = [major]). Sweep corpus : **3 instances réelles** de la classe attrapées, 0 faux positif.
+- **Infra de test — la classe flake sous contention, mécanisée** : `install` verify-tests à 60s ·
+  **map-dw e2e live plafonné à 2 charts publiés** + retry CDN borné (`live-render` partagé, matrice
+  déplacée en assertions métadonnées pures ; 60s→37s) · **override `turnCap` par-cas via expect.json**
+  (le cap global 24 coupait un run CORRECT à 2 éléments dont les gates par-élément doublent le dialogue —
+  double-opportunité passé à 40).
+- **Gate à 20 checks** : dw-chart + map-dw enfin typecheckés (tsconfigs + deps ; 0 erreur — code déjà
+  propre sous la discipline no-any).
+
+**Note honnête** : le re-run final double-opportunité @ turnCap 40 et le chantier e2e-slim ont été
+**interrompus par la limite de dépense mensuelle** (les waves harness et les agents lancent des
+sous-process `claude` → API Anthropic ; `bun test`/`bun run check` frappent Datawrapper/MapTiler, non
+bloqués). e2e-slim était commité avant la mort de l'agent → validé et mergé inline (suite 145/0, 37s).
+La confirmation du turnCap-40 sur double-opportunité reste à re-runner quand la limite est relevée.
+Aging timeout Wave 10 = symptôme des 3 passes correctives (join/unit/%%) — supprimées à la source par le
+fix unité ; à re-confirmer.
+
 ## Session 2026-07-12 (suite) — Wave 9/9b : fixes validés au rendu, 0 critical, longue traîne mécanisée
 
 **Wave 9 (4 re-runs des cas mordus + 3 probes neuves) : 7/7 livrés, 0 critical.** Les fixes Wave 8
