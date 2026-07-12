@@ -92,10 +92,12 @@ export function isRowDriven(type?: ChartType): boolean {
   return !!type && ROW_DRIVEN_TYPES.has(type);
 }
 
-// Resolve the export pixel box for a CADRAGE channel string and chart type. This is
-// the single source of truth the producer threads into the Datawrapper PNG export.
-// For a row-driven type the height is omitted (width follows the channel, height
-// follows the content); for a fixed-aspect type the full channel box is returned. Pure.
+// Resolve the DELIVERED export pixel box for a CADRAGE channel string and chart type
+// — the physical size the reader receives (== the channel's mediaSize). For a
+// row-driven type the height is omitted (width follows the channel, height follows
+// the content); for a fixed-aspect type the full channel box is returned. Pure.
+// NOTE: this is NOT the box to REQUEST from the DW export API — DW rasterizes at 2x,
+// so the request must be halved (channelToExportRequestSize below).
 export function channelToExportSize(
   channel?: string,
   type?: ChartType,
@@ -103,4 +105,36 @@ export function channelToExportSize(
   const box = EXPORT_SIZES[channelToAspect(channel)];
   if (isRowDriven(type)) return { width: box.width };
   return box;
+}
+
+// Datawrapper's PNG export rasterizes at 2x (its default zoom, "retina") — the
+// returned PNG is exactly TWICE the requested pixel box (probed live 2026-07-11 on
+// this same export endpoint by map-dw: width=1200&height=675 → a 2400x1350 PNG).
+// This is DW's export default, not a knob we tuned; it is named so the halving below
+// reads as what it is. Kept in sync by hand with the map-dw sibling
+// (skills/map-dw/src/produce.ts DW_EXPORT_PIXEL_RATIO) — map-dw already imports
+// dw-chart's API client, so importing back from map-dw would create a package cycle.
+export const DW_EXPORT_PIXEL_RATIO = 2;
+
+// The pixel box dw-chart REQUESTS from the DW export API, derived from the delivered
+// channel box (channelToExportSize above): request HALF the channel's mediaSize so
+// DW's 2x rasterization doubles it back onto the channel size — the same halving
+// map-dw applies (skills/map-dw/src/produce.ts mapExportSize) and chart-native's
+// static path applies (deviceScaleFactor:2, CSS canvas = round(mediaSize/2)).
+// article-web's odd height (675) rounds to 338 → a 676px PNG, 1px off, inside
+// assertRenderedSize's ±2px tolerance. Row-driven types keep the height OMITTED
+// (content-driven — pinning it makes DW CROP rows, see ROW_DRIVEN_TYPES): only their
+// width is halved, so the delivered width still lands on the channel width while the
+// height follows the row count. Pure; exported for unit tests.
+export function channelToExportRequestSize(
+  channel?: string,
+  type?: ChartType,
+): ExportSize {
+  const box = channelToExportSize(channel, type);
+  return {
+    width: Math.round(box.width / DW_EXPORT_PIXEL_RATIO),
+    ...(box.height !== undefined
+      ? { height: Math.round(box.height / DW_EXPORT_PIXEL_RATIO) }
+      : {}),
+  };
 }
