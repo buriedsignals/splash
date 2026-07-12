@@ -101,6 +101,36 @@ describe("snap-label-fit — RED: the crafted clip case fails", () => {
   );
 
   it(
+    "should catch svg text truncated by an ANCESTOR <clipPath>, not only by the svg viewport",
+    () => {
+      // The FanChart class: a reveal-wipe <clipPath> whose rect ends INSIDE the
+      // svg — text in the clipped group can be cut mid-word ("projection horizon
+      // 2035" → "project…") while sitting fully inside the svg viewport, so the
+      // svg-root/overflow:hidden clip chain alone passes it at 0.00px.
+      const dist = fixtureDist(
+        `<div id="root"><div style="width:600px;height:338px;position:relative;background:#fff">
+        <svg width="600" height="338" xmlns="http://www.w3.org/2000/svg">
+          <defs><clipPath id="wipe"><rect x="0" y="0" width="60" height="338"/></clipPath></defs>
+          <text x="16" y="30" font-size="13" fill="#333">In bounds</text>
+          <g clip-path="url(#wipe)">
+            <text x="10" y="150" font-size="13" fill="#111">projection horizon 2035</text>
+          </g>
+        </svg>
+      </div></div>`,
+      );
+      const { code, out } = runSnap({
+        CHART: "fixture",
+        TARGET: "static",
+        DIST: dist,
+      });
+      expect(code).toBe(1);
+      expect(out).toContain("projection horizon 2035");
+      expect(out).toContain("clipped");
+    },
+    BUILD_AND_SNAP_TIMEOUT,
+  );
+
+  it(
     "should catch HTML furniture text escaping the card (absolute overflow), not just svg text",
     () => {
       const dist = fixtureDist(
@@ -263,6 +293,25 @@ describe("snap-label-fit — healthy renders pass as-is (calibration invariant)"
         CHART: "stacked-area",
         TARGET: "interactive",
       });
+      expect(code).toBe(0);
+      expect(out).toContain('"violations": []');
+    },
+    BUILD_AND_SNAP_TIMEOUT,
+  );
+
+  it(
+    "should pass the fan chart with a SHORT forecast horizon at both widths (annotation inside the reveal-wipe clipPath)",
+    () => {
+      // Pre-fix RED (measured through this snap, post-clipPath-support): a long
+      // actuals series + 2 forecast years pushes nowX near the right edge — the
+      // "projection →" annotation, INSIDE the wipe clip group whose rect ends at
+      // innerWidth+1, shipped cut by 36.92px at a 360px viewport. The fix flips
+      // it end-anchored to the history side when the forecast zone is too narrow.
+      buildInteractive(
+        "fan",
+        join(here, "fixtures", "fan-short-forecast.json"),
+      );
+      const { code, out } = runSnap({ CHART: "fan", TARGET: "interactive" });
       expect(code).toBe(0);
       expect(out).toContain('"violations": []');
     },
