@@ -43,6 +43,7 @@ import {
 import { scrollyFrames } from "../route-story";
 import { stepSlide } from "./ChoroplethScrolly";
 import { resolveMapStyle } from "../route-geo";
+import { labelWithUnit } from "../core/locale";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -121,8 +122,8 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
           radius: s.radius,
           label: s.label ?? "",
           labelText: labels[i]?.name
-            ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
-            : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
+            ? `${labels[i].name}\n${labelWithUnit(labels[i].valueText, config.valueUnit, config.lang)}`
+            : labelWithUnit(labels[i]?.valueText ?? "", config.valueUnit, config.lang),
           labelOffset: labelRadialOffset(s.radius, textSize),
           anchor: "left",
         },

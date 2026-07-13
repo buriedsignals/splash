@@ -25,13 +25,25 @@ describe("formatLabelValue", () => {
     expect(formatLabelValue(296)).toBe("296");
     expect(formatLabelValue(5)).toBe("5");
   });
-  it("rounds to the nearest integer below 1000", () => {
-    expect(formatLabelValue(123.4)).toBe("123");
+  it("keeps 1 decimal for a non-integer below 1000 (magnitude 7.4 → '7.4', not '7')", () => {
+    // The reported seismes bug: integer rounding collapsed every magnitude to "7"/"6".
+    expect(formatLabelValue(7.4)).toBe("7.4");
+    expect(formatLabelValue(6.1)).toBe("6.1");
+    expect(formatLabelValue(123.4)).toBe("123.4");
+  });
+  it("keeps an integer count clean below 1000 — no spurious '.0'", () => {
+    expect(formatLabelValue(181)).toBe("181");
+    expect(formatLabelValue(12)).toBe("12");
   });
   it("compacts thousands and millions, trimming a trailing .0", () => {
     expect(formatLabelValue(1500)).toBe("1.5k");
     expect(formatLabelValue(2000)).toBe("2k");
     expect(formatLabelValue(2_300_000)).toBe("2.3M");
+    expect(formatLabelValue(4_000_000)).toBe("4M"); // large-count abbreviation intact
+  });
+  it("preserves the French comma decimal for a non-integer below 1000", () => {
+    expect(formatLabelValue(7.4, "fr")).toBe("7,4");
+    expect(formatLabelValue(6.1, "fr")).toBe("6,1");
   });
   it("uses the French comma decimal when lang is fr, English unchanged", () => {
     expect(formatLabelValue(1500, "fr")).toBe("1,5k");

@@ -4,6 +4,7 @@ import {
   formatLocaleNumber,
   localizeNumberString,
   sourceLabel,
+  labelWithUnit,
 } from "../src/core/locale";
 import { fmtBin } from "../src/core/legend-format";
 
@@ -35,6 +36,44 @@ describe("sourceLabel", () => {
   it("localizes the Source furniture", () => {
     expect(sourceLabel("fr")).toBe("Source :");
     expect(sourceLabel("en")).toBe("Source:");
+  });
+});
+
+describe("labelWithUnit — locale-aware value+unit spacing", () => {
+  it("gives a WORD unit a regular space so the value reads complete", () => {
+    // The reported seismes bug: "7,4magnitude" must read "7,4 magnitude".
+    expect(labelWithUnit("7,4", "magnitude", "fr")).toBe("7,4 magnitude");
+    expect(labelWithUnit("7.4", "magnitude", "en")).toBe("7.4 magnitude");
+    expect(labelWithUnit("4M", "habitants", "fr")).toBe("4M habitants");
+  });
+
+  it("attaches a SHORT symbol unit (%, currency) with no space in English", () => {
+    expect(labelWithUnit("70", "%", "en")).toBe("70%");
+    expect(labelWithUnit("296", "$bn", "en")).toBe("296$bn");
+    expect(labelWithUnit("4M", "€", "en")).toBe("4M€");
+  });
+
+  it("uses the French narrow no-break space before EVERY short unit", () => {
+    expect(labelWithUnit("70", "%", "fr")).toBe(`70${NBSP}%`);
+    expect(labelWithUnit("296", "$bn", "fr")).toBe(`296${NBSP}$bn`);
+  });
+
+  it("spaces a short NON-symbol unit (km, kg) in English", () => {
+    expect(labelWithUnit("34", "km", "en")).toBe("34 km");
+  });
+
+  it("returns the bare value when the unit is absent or blank", () => {
+    expect(labelWithUnit("181", undefined)).toBe("181");
+    expect(labelWithUnit("181", "")).toBe("181");
+    expect(labelWithUnit("181", "  ")).toBe("181");
+  });
+
+  it("normalizes a caller-supplied leading space (callout robustness)", () => {
+    // The story callout historically pre-spaced its unit (" voyageurs/j"); the
+    // helper trims then re-applies the correct spacing so either form is stable.
+    expect(labelWithUnit("34 000", " voyageurs/j", "fr")).toBe(
+      "34 000 voyageurs/j",
+    );
   });
 });
 

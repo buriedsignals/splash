@@ -74,3 +74,44 @@ export function localizeDecimal(s: string, lang?: Lang): string {
 export function sourceLabel(lang?: Lang): string {
   return isFrench(lang) ? "Source :" : "Source:";
 }
+
+// A directly-labelled value must read complete on its own ("7,4 magnitude"), so the unit
+// is appended at the label-assembly site with locale-aware spacing. Mirrors
+// chart-native/src/core/locale.ts's `unitSuffix` rule + threshold, with one deliberate
+// difference: a symbol map's direct label KEEPS a word unit (attaching a space) instead of
+// dropping it to the subtitle — the whole point of a symbol callout is the value+unit pair.
+// 3 chars covers the symbol/short-abbreviation units (%, €, $bn, km, kg) without letting a
+// word unit ("magnitude", "habitants") through as "short".
+export const SHORT_UNIT_MAX_CHARS = 3;
+
+// Units that are typographic SYMBOLS (percent, per-mille, currency) rather than
+// words/abbreviations — in English these attach directly to the number ("70%", "296$bn").
+// chart-native's rule only lists %/‰; symbol maps additionally carry currency suffixes
+// ("$bn", "€m"), and the existing sample + its locked test ("296$bn") depend on those
+// attaching, so the currency glyphs are included here.
+const SYMBOL_UNIT = /^[%‰$€£¥]/;
+
+/**
+ * Assemble a value label with its unit, spaced per locale convention.
+ *   - no/blank unit → the bare value ("181").
+ *   - French → a narrow no-break space (U+202F) before every SHORT unit ("70 %",
+ *     "296 $bn") — the same DIN/French convention as the FR thousands separator.
+ *   - English (and fallback) → a SHORT symbol/currency unit attaches ("70%", "296$bn");
+ *     a short NON-symbol unit ("km") takes a regular space ("34 km").
+ *   - a WORD unit ("magnitude", "habitants", any length > SHORT_UNIT_MAX_CHARS) always
+ *     takes a regular space, in every language ("7,4 magnitude") — the fix for the
+ *     reported "7magnitude" defect. A caller-supplied leading space is normalized away
+ *     first so the story-callout path (which historically pre-spaced its unit) is stable.
+ */
+export function labelWithUnit(
+  valueText: string,
+  unit: string | undefined,
+  lang?: Lang,
+): string {
+  const u = unit?.trim();
+  if (!u) return valueText;
+  const short = u.length <= SHORT_UNIT_MAX_CHARS;
+  if (short && isFrench(lang)) return `${valueText}${FR_GROUP}${u}`;
+  if (short && SYMBOL_UNIT.test(u)) return `${valueText}${u}`;
+  return `${valueText} ${u}`;
+}

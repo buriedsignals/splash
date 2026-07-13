@@ -29,6 +29,7 @@ import type { SymbolConfig } from "../SymbolMap";
 import { resolveMapStyle } from "../route-geo";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
+import { labelWithUnit } from "../core/locale";
 import { easedRevealProgress, revealCameraPlan } from "../reveal";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
 import { TitleCard } from "./StoryCards";
@@ -111,8 +112,8 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
         properties: {
           radius: s.radius,
           labelText: labels[i]?.name
-            ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
-            : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
+            ? `${labels[i].name}\n${labelWithUnit(labels[i].valueText, config.valueUnit, config.lang)}`
+            : labelWithUnit(labels[i]?.valueText ?? "", config.valueUnit, config.lang),
           labelOffset: labelRadialOffset(s.radius, textSize),
           anchor: "left",
         },
