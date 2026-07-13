@@ -6,6 +6,7 @@ import type {
 import { validateAccepted, type ValidationOutcome } from "./validate-gate";
 import { assertFormatAllowed, normalizeChannel, type Channel } from "./channel";
 import { producerMismatchReason } from "./producer-guard";
+import { mergeProfileDefaults, type BrandProfile } from "./brand-profile";
 
 // Produce ONE proposal → its outcome (bookkeeping fields are added by produceAll).
 // `actualProducer` is the producer the dispatch actually ran (GUARD 1) — the real
@@ -36,9 +37,37 @@ export async function produceAll(
   outDir: string,
   dispatch: Dispatch,
   validate: ProposalValidator = validateAccepted,
+  // The newsroom's reusable house-style defaults (skills/atelier/src/brand-profile.ts), loaded
+  // by the CLI from NEWSROOM-PROFILE.md / brand.json. Merged onto each element's spec as DEFAULTS
+  // (the per-element value always wins). null → today's behaviour, unchanged.
+  profile: BrandProfile | null = null,
 ): Promise<ProduceReport> {
+  // Merge the newsroom profile's defaults onto every element's spec ONCE, up front —
+  // source/lang universal, brand colour only for the colour-consuming producers — the
+  // per-element spec value always wins. Building the batch here (not a per-iteration clone
+  // validated against the ORIGINAL batch) keeps object identities consistent, so the
+  // cross-proposal duplicate-takeaway guard cannot mistake a proposal's own pre-merge original
+  // for a twin. mergeProfileDefaults is non-throwing on a null/non-object spec, so a malformed
+  // spec still falls through to the validation gate below rather than crashing the batch.
+  // Null profile → batch === accepted (unchanged behaviour, no clone).
+  const batch: AcceptedProposal[] = profile
+    ? accepted.map((p) => ({
+        ...p,
+        spec: mergeProfileDefaults(
+          p.spec as {
+            baseColor?: string;
+            brandExplicit?: boolean;
+            source?: { name: string; url?: string };
+            lang?: string;
+          },
+          profile,
+          { producer: p.producer },
+        ),
+      }))
+    : accepted;
+
   const results: ProposalResult[] = [];
-  for (const p of accepted) {
+  for (const p of batch) {
     const base = {
       id: p.id,
       producer: p.producer,
@@ -90,8 +119,9 @@ export async function produceAll(
     // Floor gate #1 — VALIDATION. Run the producer's own validator HERE, so a host that
     // hand-rolled a spec and skipped the suggest-chart self-check (observed in 4/5 manual
     // sessions) cannot ship an invalid or weak spec. An invalid spec fails loud with the
-    // errors; warnings ride on the result for the render gate to surface.
-    const validation = validate(p, accepted);
+    // errors; warnings ride on the result for the render gate to surface. Validated against the
+    // MERGED batch (same identities) so the cross-proposal guards see consistent objects.
+    const validation = validate(p, batch);
     if (!validation.ok) {
       results.push({
         ...base,

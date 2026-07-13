@@ -5,6 +5,8 @@ import {
   type ProposalValidator,
 } from "../src/produce-all";
 import type { AcceptedProposal } from "../src/producer-spec";
+import { validateAccepted } from "../src/validate-gate";
+import type { BrandProfile } from "../src/brand-profile";
 
 const p = (
   id: string,
@@ -555,5 +557,169 @@ describe("produceAll — validation gate (real validator)", () => {
     expect(results.map((r) => r.id).sort()).toEqual(["a", "c", "x"]);
     expect(results.find((r) => r.id === "x")?.status).toBe("failed");
     expect(produced.sort()).toEqual(["a", "c"]); // the good ones still produced
+  });
+});
+
+describe("produceAll — newsroom profile defaults", () => {
+  const profile = {
+    palette: ["#0A5C36"],
+    source: { name: "Heidi.news" },
+    lang: "fr",
+  };
+
+  it("merges profile source/lang/colour onto a spec that omits them, before dispatch", async () => {
+    let seen: Record<string, unknown> = {};
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.spec as Record<string, unknown>;
+      return { status: "produced" };
+    };
+    await produceAll([p("p1")], "out", dispatch, PASS, profile);
+    expect(seen.source).toEqual({ name: "Heidi.news" });
+    expect(seen.lang).toBe("fr");
+    expect(seen.baseColor).toBe("#0A5C36"); // chart-native consumes colour
+    expect(seen.brandExplicit).toBe(true);
+  });
+
+  it("keeps the per-element spec value over the profile default", async () => {
+    let seen: Record<string, unknown> = {};
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.spec as Record<string, unknown>;
+      return { status: "produced" };
+    };
+    await produceAll(
+      [p("p1", { spec: { source: { name: "AP" }, lang: "en" } })],
+      "out",
+      dispatch,
+      PASS,
+      profile,
+    );
+    expect(seen.source).toEqual({ name: "AP" });
+    expect(seen.lang).toBe("en");
+  });
+
+  it("does NOT seed brand colour onto a map-native spec (source/lang still merge)", async () => {
+    let seen: Record<string, unknown> = {};
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.spec as Record<string, unknown>;
+      return { status: "produced" };
+    };
+    await produceAll(
+      [p("m1", { producer: "map-native", format: "static" })],
+      "out",
+      dispatch,
+      PASS,
+      profile,
+    );
+    expect(seen.baseColor).toBeUndefined();
+    expect(seen.source).toEqual({ name: "Heidi.news" });
+    expect(seen.lang).toBe("fr");
+  });
+
+  it("leaves specs untouched when no profile is passed (unchanged behaviour)", async () => {
+    let seen: Record<string, unknown> = {};
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.spec as Record<string, unknown>;
+      return { status: "produced" };
+    };
+    await produceAll([p("p1")], "out", dispatch, PASS);
+    expect(seen).toEqual({});
+  });
+});
+
+describe("produceAll — newsroom profile with the REAL validator (regression: false duplicate)", () => {
+  const profile: BrandProfile = {
+    palette: ["#0A5C36"],
+    source: { name: "Heidi.news" },
+    lang: "fr",
+  };
+
+  it("still PRODUCES a single valid proposal when a profile is present (no false duplicate-takeaway)", async () => {
+    const produced: string[] = [];
+    const dispatch: Dispatch = async (prop) => {
+      produced.push(prop.id);
+      return { status: "produced", outputs: [`out/${prop.id}.png`] };
+    };
+    const { results } = await produceAll(
+      [
+        {
+          id: "ok",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: "Estonia recycles the most packaging waste in Europe",
+        },
+      ],
+      "out",
+      dispatch,
+      validateAccepted, // the REAL validator — this is where the merge-clone identity bug bit
+      profile,
+    );
+    expect(results[0].status).toBe("produced");
+    expect(produced).toEqual(["ok"]);
+  });
+
+  it("produces two sibling proposals with distinct takeaways under a profile", async () => {
+    const produced: string[] = [];
+    const dispatch: Dispatch = async (prop) => {
+      produced.push(prop.id);
+      return { status: "produced", outputs: [`out/${prop.id}.png`] };
+    };
+    const { results } = await produceAll(
+      [
+        {
+          id: "a",
+          producer: "dw-chart",
+          format: "static",
+          spec: { ...validDwSpec, title: "Estonia leads packaging recycling" },
+          confirmedTakeaway: "Estonia leads packaging recycling in Europe",
+        },
+        {
+          id: "b",
+          producer: "dw-chart",
+          format: "static",
+          spec: { ...validDwSpec, title: "Malta lags on packaging recycling" },
+          confirmedTakeaway: "Malta lags far behind on packaging recycling",
+        },
+      ],
+      "out",
+      dispatch,
+      validateAccepted,
+      profile,
+    );
+    expect(results.map((r) => r.status)).toEqual(["produced", "produced"]);
+    expect(produced.sort()).toEqual(["a", "b"]);
+  });
+
+  it("stays drop-proof: a null spec + profile fails gracefully, the sibling still produces", async () => {
+    const produced: string[] = [];
+    const dispatch: Dispatch = async (prop) => {
+      produced.push(prop.id);
+      return { status: "produced", outputs: [`out/${prop.id}.png`] };
+    };
+    const { results } = await produceAll(
+      [
+        {
+          id: "bad",
+          producer: "dw-chart",
+          format: "static",
+          spec: null as unknown,
+          confirmedTakeaway: "A takeaway for the malformed element",
+        },
+        {
+          id: "good",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: "Estonia recycles the most packaging waste in Europe",
+        },
+      ],
+      "out",
+      dispatch,
+      validateAccepted,
+      profile,
+    );
+    expect(results.map((r) => r.id)).toEqual(["bad", "good"]); // both reported (no crash)
+    expect(results.find((r) => r.id === "bad")?.status).toBe("failed");
+    expect(results.find((r) => r.id === "good")?.status).toBe("produced");
   });
 });
