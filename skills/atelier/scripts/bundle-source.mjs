@@ -34,13 +34,25 @@ export function stripQuery(spec) {
   return i === -1 ? spec : spec.slice(0, i);
 }
 
+// Strip `/* … */` block comments then `//` line comments so commented-out imports don't
+// pollute the closure. Block first, then line — a `//` preceded by `:` is left alone so a
+// `https://…` URL string is never mangled (TS/TSX source never has a bare `//` line comment
+// immediately after a `:`).
+function stripComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+}
+
 // All import/export specifiers in a source file. map-native/scrolly use only STATIC imports
 // (no dynamic import() — verified), so two regexes over `… from "x"` and side-effect
-// `import "x"` cover every edge (import/import type/export-from/side-effect css).
+// `import "x"` cover every edge (import/import type/export-from/side-effect css). Comments are
+// stripped first so a commented-out import is not traced.
 export function importSpecifiers(src) {
+  const code = stripComments(src);
   const specs = new Set();
-  for (const m of src.matchAll(/\bfrom\s*["']([^"']+)["']/g)) specs.add(m[1]);
-  for (const m of src.matchAll(/(?:^|[;\n{}(]|\s)import\s*["']([^"']+)["']/g))
+  for (const m of code.matchAll(/\bfrom\s*["']([^"']+)["']/g)) specs.add(m[1]);
+  for (const m of code.matchAll(/(?:^|[;\n{}(]|\s)import\s*["']([^"']+)["']/g))
     specs.add(m[1]);
   return [...specs];
 }

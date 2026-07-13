@@ -35,6 +35,22 @@ describe("importSpecifiers", () => {
     expect(specs).toContain("@maptiler/sdk/dist/maptiler-sdk.css");
     expect(specs).toContain("./z");
   });
+  it("ignores commented-out imports (// line and /* */ block)", () => {
+    const src = [
+      `// import { foo } from "./bar";`,
+      `/* import { baz } from "./qux"; */`,
+      `import { real } from "./real";`,
+    ].join("\n");
+    const specs = importSpecifiers(src);
+    expect(specs).not.toContain("./bar");
+    expect(specs).not.toContain("./qux");
+    expect(specs).toContain("./real");
+  });
+  it("does not mistake a :// URL for a line comment", () => {
+    const src = `import x from "./a"; const u = "https://example.com";`;
+    const specs = importSpecifiers(src);
+    expect(specs).toContain("./a");
+  });
 });
 
 describe("resolveRelative", () => {
@@ -60,6 +76,10 @@ describe("traceClosure — map-native interactive entry", () => {
     expect(rel).toContain("skills/map-native/src/ChoroplethMap.tsx");
     expect(rel).toContain("skills/map-native/src/SymbolMap.tsx");
     expect(rel).toContain("skills/map-native/src/CartogramMap.tsx");
+    expect(rel).toContain("skills/map-native/src/DotDensityMap.tsx");
+    expect(rel).toContain("skills/map-native/src/HexGridMap.tsx");
+    expect(rel).toContain("skills/map-native/src/LocatorMap.tsx");
+    expect(rel).toContain("skills/map-native/src/RouteMap.tsx");
   });
   it("stays entirely within skills/map-native (no scrolly/chart-native)", () => {
     expect(rel.every((r) => r.startsWith("skills/map-native/"))).toBe(true);
