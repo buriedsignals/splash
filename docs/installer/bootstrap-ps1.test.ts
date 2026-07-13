@@ -6,14 +6,39 @@ const ps = readFileSync(
   join(import.meta.dir, "../../install/bootstrap.ps1"),
   "utf8",
 );
+const claudeModule = readFileSync(
+  join(import.meta.dir, "../../install/runtimes/claude.ps1"),
+  "utf8",
+);
 
-test("installs Bun, Node (for Playwright), and Claude via native installers; no git", () => {
+test("installs Bun and Node (for Playwright) via native installers; no git", () => {
   expect(ps).toContain("bun.sh/install.ps1");
   expect(ps).toContain("OpenJS.NodeJS");
-  expect(ps).toContain("https://claude.ai/install.ps1");
   expect(ps).not.toContain("git clone");
+});
+
+test("dispatches runtime install + launch to a per-runtime module, never a hardcoded runtime", () => {
+  expect(ps).toContain(". $runtimeModule");
+  expect(ps).toContain("Runtime-Install");
+  expect(ps).toContain("Runtime-LaunchCmd");
+  expect(ps).not.toContain("claude.ai/install.ps1");
+  expect(ps).not.toContain("claude --plugin-dir");
+});
+
+test("claude module installs Claude, guards the install, and launches with --plugin-dir", () => {
+  expect(claudeModule).toContain("https://claude.ai/install.ps1");
   // Existence-throw guard: a failed native Claude installer must not fall through silently.
-  expect(ps).toContain("Claude Code could not be installed");
+  expect(claudeModule).toContain("Claude Code could not be installed");
+  expect(claudeModule).toContain("claude --plugin-dir .");
+  // claude.ai/install.ps1 updates only the PERSISTENT PATH; without this the very next
+  // Get-Command claude fails in-session and the script throws before creating the launcher.
+  expect(claudeModule).toContain('$env:PATH = "$HOME\\.local\\bin;$env:PATH"');
+});
+
+test("shares an ~\\.agents\\skills junction helper for Codex/Gemini discovery", () => {
+  expect(ps).toContain("Link-AgentsSkills");
+  expect(ps).toContain(".agents\\skills");
+  expect(ps).toContain("mklink /J");
 });
 
 test("runs the local configurator and does NOT write .env from caller env vars", () => {
@@ -30,12 +55,6 @@ test("acquires the repo by zip (glob-safe) and makes a .cmd launcher (never a .p
   expect(ps).toContain("Invoke-WebRequest");
   expect(ps).toMatch(/Get-ChildItem .*-Filter "atelier-\*"/);
   expect(ps).toContain("Launch Atelier.cmd");
-});
-
-test("prepends claude's bin dir to the session PATH after install (no false 'could not be installed')", () => {
-  // claude.ai/install.ps1 updates only the PERSISTENT PATH; without this the very next
-  // Get-Command claude fails in-session and the script throws before creating the launcher.
-  expect(ps).toContain('$env:PATH = "$HOME\\.local\\bin;$env:PATH"');
 });
 
 test("guards winget so an absent winget falls through to the friendly Node guidance", () => {

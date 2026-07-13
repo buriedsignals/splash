@@ -4,10 +4,20 @@
 # keys — they are written straight to ~/Atelier/.env, never passed on the command line.
 set -euo pipefail
 
-REPO="https://github.com/buriedsignals/atelier"   # confirm before public release (preflight-release.mjs)
+REPO="${ATELIER_REPO:-https://github.com/buriedsignals/atelier}"   # confirm before public release (preflight-release.mjs)
 REF="${ATELIER_REF:-main}"
 DEST="$HOME/Atelier"
 NATIVE_SKILLS=("skills/chart-native" "skills/map-native")
+
+# Shared skill-discovery helper for runtimes that read ~/.agents/skills/ (Codex, Gemini native
+# skills). Symlinks every skill dir there by name; globs skills/*/ so a skill added later is
+# covered automatically. Claude Code uses --plugin-dir instead and does not call this.
+link_agents_skills() {
+  mkdir -p "$HOME/.agents/skills"
+  for skill_dir in "$DEST"/skills/*/; do
+    ln -sfn "$skill_dir" "$HOME/.agents/skills/$(basename "$skill_dir")"
+  done
+}
 
 echo "-> Installing Atelier (a few minutes)…"
 
@@ -40,13 +50,17 @@ if [ ! -f "$DEST/.env" ] || [ "${ATELIER_RECONFIGURE:-0}" = "1" ]; then
   fi
 fi
 
-# 4. Runtime — install the one the configurator recorded (Claude Code today)
+# 4. Runtime — install the one the configurator recorded, via its module in install/runtimes/.
+# Adding a runtime is a new install/runtimes/<name>.sh (see that dir's README), never a change here.
 runtime="$(cat "$DEST/.atelier-runtime" 2>/dev/null || echo claude)"
-if [ "$runtime" = "claude" ] && ! command -v claude >/dev/null 2>&1; then
-  echo "-> Installing Claude Code…"
-  curl -fsSL https://claude.ai/install.sh | bash
+runtime_module="$DEST/install/runtimes/$runtime.sh"
+if [ ! -f "$runtime_module" ]; then
+  echo "No runtime module for '$runtime' (expected install/runtimes/$runtime.sh) — re-run the configurator and pick a supported runtime." >&2
+  exit 1
 fi
-export PATH="$HOME/.local/bin:$PATH"
+# shellcheck source=/dev/null
+. "$runtime_module"
+runtime_install
 
 # 5. Producer deps + render engine (Playwright Chromium, shared cache). Keep stderr visible and
 # guard each step: a failed install here (flaky wifi, proxy, full disk) must report its cause and
@@ -63,11 +77,13 @@ if ! ( cd "$DEST/skills/chart-native" && bunx playwright install chromium ); the
   exit 1
 fi
 
-# 6. Local double-click launcher (created locally → no quarantine → clean re-launch)
+# 6. Local double-click launcher (created locally → no quarantine → clean re-launch).
+# The runtime module supplies the launch command for the recorded runtime.
+launch_cmd="$(runtime_launch_cmd)"
 launcher="$DEST/Launch Atelier.command"
-cat > "$launcher" <<'LAUNCH'
+cat > "$launcher" <<LAUNCH
 #!/usr/bin/env bash
-cd "$(dirname "$0")" && set -a && . ./.env && set +a && claude --plugin-dir .
+cd "\$(dirname "\$0")" && set -a && . ./.env && set +a && $launch_cmd
 LAUNCH
 chmod +x "$launcher"
 
