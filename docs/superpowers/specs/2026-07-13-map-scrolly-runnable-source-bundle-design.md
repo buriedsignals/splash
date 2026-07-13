@@ -105,13 +105,15 @@ Steps:
    (`__CONFIG__` read from `config.json` at `vite.config` eval time, `__INTERACTIVE__ = true`)
    — the exact mechanism `mount.tsx` already expects (`map-native/src/mount.tsx:28-37`,
    `map-native/vite.config.ts:18`).
-3. **Compute the module closure** via esbuild metafile:
-   `esbuild <mount.tsx> --bundle --metafile --platform=browser` with npm packages marked
-   external. esbuild is present in each skill's `node_modules` (via vite 8.x). Output:
-   - local input files → the exact copy set;
-   - external bare specifiers → the dep set.
-   Following `?raw` and static `.json`/`.geojson` imports (the only asset styles used — no
-   `?url`) yields the asset copy set.
+3. **Compute the module closure** with a small **custom static-import tracer** (not esbuild):
+   plain `esbuild --metafile` cannot resolve Vite's `?raw` / `.css` query imports
+   (`world.geojson?raw`, `@maptiler/sdk/dist/maptiler-sdk.css`) without a plugin, and
+   map-native/scrolly src has **no dynamic `import()`** (verified), so a static tracer is both
+   simpler and correct. It walks `import … from "…"` / side-effect `import "…"` / `export …
+   from "…"` from the entry, resolving relative specifiers (trying `.ts/.tsx/.js/.jsx/.json/
+   .geojson` + `/index.*`, stripping `?raw`/`?url`) into the file copy set (assets are just
+   leaf files in this set), and collecting bare specifiers into the dep set. The from-zero
+   build+render test is the backstop.
 4. **Copy the closure preserving repo-relative layout**: each file under
    `<destDir>/skills/<name>/…`, assets at their relative paths. Relative + `?raw` imports
    resolve unchanged. (map = one tree ~39 files; scrolly = three trees, all supplied by the
