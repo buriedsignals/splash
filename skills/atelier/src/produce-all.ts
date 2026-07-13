@@ -57,6 +57,7 @@ export async function produceAll(
           p.spec as {
             baseColor?: string;
             brandExplicit?: boolean;
+            baseColorExplicit?: boolean;
             source?: { name: string; url?: string };
             lang?: string;
           },

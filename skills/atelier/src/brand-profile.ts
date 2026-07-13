@@ -280,18 +280,24 @@ export function loadNewsroomProfile(projectDir: string): BrandProfile | null {
 const BRAND_COLOUR_PRODUCERS = new Set(["chart-native", "dw-chart"]);
 
 /**
- * Merge a newsroom profile's fields onto a producer spec as DEFAULTS — the per-element spec value
- * ALWAYS wins. `source` and `lang` fill only the gaps (universal). Colour goes through
- * seedBrandColor (keeping brandExplicit / policy b) but ONLY for producers that consume it
- * (`opts.producer` in BRAND_COLOUR_PRODUCERS; when producer is omitted, colour IS seeded — the
- * direct-use default). `credit` is carried on the profile for the producer to consume (the
- * lang-derived label already gives the right format per language); its custom-template application
- * is a producer-side follow-up. Null profile → spec unchanged. Pure.
+ * Merge a newsroom profile's fields onto a producer spec — the newsroom DEFAULTS, with the
+ * per-element EXPLICIT choice always winning. `source` and `lang` fill only the gaps (universal;
+ * an absent value takes the profile's). Colour (only for the colour-consuming producers; when
+ * `opts.producer` is omitted, colour applies — the direct-use default): the house `palette[0]`
+ * is the newsroom default and OVERRIDES the suggester's AUTO subject-fit `baseColor`, because an
+ * auto pick is not an editorial choice — the whole point of a house palette is to replace it. It
+ * DEFERS only to a journalist's EXPLICIT per-element colour, flagged `baseColorExplicit`, which is
+ * kept (and marked brandExplicit if it happens to be a house hue). An overridden house colour is
+ * always brandExplicit (policy b: kept as chosen, a11y downgraded to a render-review concern).
+ * `credit` is carried on the profile for the producer to consume (the lang-derived label already
+ * gives the right format per language); a custom-template application is a producer-side
+ * follow-up. Null profile → spec unchanged. Pure.
  */
 export function mergeProfileDefaults<
   T extends {
     baseColor?: string;
     brandExplicit?: boolean;
+    baseColorExplicit?: boolean;
     source?: { name: string; url?: string };
     lang?: string;
   },
@@ -303,8 +309,16 @@ export function mergeProfileDefaults<
   let out = spec;
   const colourOk =
     opts?.producer === undefined || BRAND_COLOUR_PRODUCERS.has(opts.producer);
-  if (profile.palette.length > 0 && colourOk)
-    out = seedBrandColor(out, profile);
+  if (profile.palette.length > 0 && colourOk) {
+    if (out.baseColorExplicit === true) {
+      // The journalist named a colour for THIS element — keep it (brandExplicit if it is a house
+      // hue, so a11y stays strict on a non-house explicit colour). seedBrandColor defers to it.
+      out = seedBrandColor(out, profile);
+    } else {
+      // Auto subject-fit colour (or none) → the house palette is the default and overrides it.
+      out = { ...out, baseColor: profile.palette[0], brandExplicit: true };
+    }
+  }
   if (out.source === undefined && profile.source)
     out = { ...out, source: profile.source };
   if (out.lang === undefined && profile.lang)
