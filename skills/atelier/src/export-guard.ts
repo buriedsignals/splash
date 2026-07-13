@@ -124,6 +124,12 @@ export function assertDelivered(
       throw new Error(
         `not a delivery: ${format} form=code-source requires a non-empty source-bundle directory`,
       );
+    // A runnable bundle carries a Vite project at its root — package.json + vite.config.ts.
+    // This stops a regression back to a lone interactive.html copy from passing as code-source.
+    if (!files.includes("package.json") || !files.includes("vite.config.ts"))
+      throw new Error(
+        `not a delivery: ${format} form=code-source must be a runnable source bundle (package.json + vite.config.ts at its root), got ${JSON.stringify(files)}`,
+      );
     return;
   }
   if (form === "embed") {
