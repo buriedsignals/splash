@@ -241,19 +241,19 @@ const STOPWORDS = new Set<string>([
   "aussi",
   "encore",
   "chaque",
-  "leurs",
   "cela",
 ]);
 
-// The caption's content words IN ORDER: lowercase, Unicode-tokenized (so accented French words
-// stay whole — Heidi.news is French-first), ≥2 chars, function words (STOPWORDS) removed.
-// Numbers are kept (a copied date sequence is verbatim reuse). Order is preserved because the
-// tripwire compares adjacent-word PAIRS, not a bag of words.
+// The caption's content words IN ORDER: lowercase, curly apostrophes normalized to straight (so
+// a hand-typed caption `l'usine` and a pasted passage `l’usine` compare equal — elision is the
+// commonest French orthographic feature and Heidi.news is French-first), Unicode-tokenized (so
+// accented French words stay whole), ≥2 chars, function words (STOPWORDS) removed. Numbers are
+// kept (a copied date sequence is verbatim reuse). Order is preserved because the tripwire
+// compares adjacent-word PAIRS, not a bag of words.
 function contentSequence(text: string): string[] {
   const seq: string[] = [];
-  for (const m of text
-    .toLowerCase()
-    .matchAll(/[\p{L}\p{N}][\p{L}\p{N}'-]*/gu)) {
+  const normalized = text.toLowerCase().replace(/[‘’ʼ]/g, "'");
+  for (const m of normalized.matchAll(/[\p{L}\p{N}][\p{L}\p{N}'-]*/gu)) {
     const t = m[0];
     if (t.length < 2 || STOPWORDS.has(t)) continue;
     seq.push(t);

@@ -342,6 +342,24 @@ describe("captionOverlapRatio", () => {
     expect(captionOverlapRatio(caption, passage)).toBeLessThan(0.6);
   });
 
+  it("should flag a verbatim French copy despite mismatched apostrophe glyphs", () => {
+    // A hand-typed caption uses a straight apostrophe, a pasted passage a curly one. Normalizing
+    // ’→' before tokenizing keeps l'usine === l’usine, so the verbatim French lift still flags
+    // (was a 0.33 miss). Accented words tokenize whole under the Unicode tokenizer.
+    const caption =
+      "les habitants d'Annemasse ont fui lorsque l'usine a pris feu";
+    const passage =
+      "les habitants d’Annemasse ont fui lorsque l’usine a pris feu dans la nuit";
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
+  });
+
+  it("should not flag an independent French caption on the same topic", () => {
+    const caption = "La rivière déborde après l’orage";
+    const passage =
+      "les pompiers ont sauvé trois familles piégées par la crue soudaine";
+    expect(captionOverlapRatio(caption, passage)).toBeLessThan(0.6);
+  });
+
   it("should return 0 for disjoint content", () => {
     expect(captionOverlapRatio("alpha beta gamma", "delta epsilon zeta")).toBe(
       0,
