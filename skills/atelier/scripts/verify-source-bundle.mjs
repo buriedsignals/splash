@@ -27,7 +27,7 @@
 // simply outside the representative set below) are explicitly logged as skipped — never
 // just absent from the output.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -84,44 +84,78 @@ const INSTALL_TIMEOUT_MS = 10 * 60_000;
 const BUILD_TIMEOUT_MS = 5 * 60_000;
 const RENDER_WAIT_TIMEOUT_MS = 60_000;
 
-// The representative set (from the Task 9 plan): map-native choropleth, map-native symbol,
-// one geo-heavy map-native type (route — polygons + a long line, dark basemap), and one
-// map-scrolly (exercises the 3-tree closure: scrolly + map-native + chart-native all copied
-// into one bundle). All four get the FULL treatment (produce → bundle → install → build →
-// Playwright render) — none of them are structural-only.
+// The representative set (from the Task 9 plan). Two tiers:
+//
+//   render: true  — the FULL treatment (produce → bundle → install → build → Playwright
+//                   render + assert the map paints). Covers map choropleth + symbol (the two
+//                   most common types), route (geo-heavy: polygons + a long line, dark
+//                   basemap), and the map-scrolly 3-tree closure (scrolly + map-native +
+//                   chart-native copied into one bundle).
+//   render: false — STRUCTURAL-ONLY (steps 1-4: produce → bundle → clean install → build →
+//                   assert dist/index.html). Proves the bundle actually BUILDS from clean, but
+//                   skips the slow live-tile Playwright render. Covers the remaining 4 map
+//                   types (locator, dot-density, hex-grid, cartogram) so ALL 7 map-native
+//                   types' bundles are build-verified, not just the 3 rendered ones (Task 9
+//                   Step 1 explicitly asked for structural-only coverage of the rest).
 const CASES = [
   {
     id: "map-native-choropleth",
     label: "map-native / choropleth",
     engine: "map-native",
     config: join(MAP_NATIVE_ROOT, "assets", "sample-data", "choropleth.json"),
+    render: true,
   },
   {
     id: "map-native-symbol",
     label: "map-native / symbol",
     engine: "map-native",
     config: join(MAP_NATIVE_ROOT, "assets", "sample-data", "symbol.json"),
+    render: true,
   },
   {
     id: "map-native-route",
     label: "map-native / route (geo-heavy: polygons + long line, dark basemap)",
     engine: "map-native",
     config: join(MAP_NATIVE_ROOT, "assets", "sample-data", "route.json"),
+    render: true,
   },
   {
     id: "scrolly-map",
     label: "scrolly / map (3-tree closure: scrolly + map-native + chart-native)",
     engine: "scrolly",
     config: join(SCROLLY_ROOT, "assets", "sample-data", "scrolly.json"),
+    render: true,
+  },
+  {
+    id: "map-native-locator",
+    label: "map-native / locator (structural-only: build, no render)",
+    engine: "map-native",
+    config: join(MAP_NATIVE_ROOT, "assets", "sample-data", "locator-few.json"),
+    render: false,
+  },
+  {
+    id: "map-native-dot-density",
+    label: "map-native / dot-density (structural-only: build, no render)",
+    engine: "map-native",
+    config: join(MAP_NATIVE_ROOT, "assets", "sample-data", "dot-density-uni.json"),
+    render: false,
+  },
+  {
+    id: "map-native-hex-grid",
+    label: "map-native / hex-grid (structural-only: build, no render)",
+    engine: "map-native",
+    config: join(MAP_NATIVE_ROOT, "assets", "sample-data", "hex-grid-count.json"),
+    render: false,
+  },
+  {
+    id: "map-native-cartogram",
+    label: "map-native / cartogram (structural-only: build, no render)",
+    engine: "map-native",
+    config: join(MAP_NATIVE_ROOT, "assets", "sample-data", "cartogram-scaled.json"),
+    render: false,
   },
 ];
 const REPRESENTATIVE_IDS = CASES.map((c) => c.id);
-
-// The remaining map-native types (locator, dot-density, hex-grid, cartogram) share the exact
-// same source-manifest.json / bundle-source.mjs mechanism as choropleth/symbol/route, but are
-// NOT independently proven by this harness — logged explicitly (never silently absent) rather
-// than presented as covered.
-const OUT_OF_SCOPE_TYPES = ["locator", "dot-density", "hex-grid", "cartogram"];
 
 async function produce(def, outDir) {
   if (def.engine === "map-native") {
@@ -161,7 +195,32 @@ async function renderAndAssert(distIndexPath, proofPngPath) {
     });
 
     await page.goto(fileUrl);
-    await page.waitForSelector(".maplibregl-canvas", { timeout: RENDER_WAIT_TIMEOUT_MS });
+
+    // The map components throw "VITE_MAPTILER_KEY missing" at MODULE LOAD when the key never
+    // made it into the build — in that case the canvas is never created, so a bare
+    // waitForSelector would burn the full RENDER_WAIT_TIMEOUT_MS before failing with a generic
+    // "selector not found" even though pageErrors already holds the real cause. Race the
+    // selector wait against a poll of pageErrors so we fail FAST with the precise reason. The
+    // poll only ever REJECTS (on a captured missing-key error) — it never resolves or self-
+    // times-out, so if the canvas simply loads slowly, canvasReady wins and its own timeout is
+    // the failure of record. The interval is cleared no matter which branch settles the race.
+    const canvasReady = page.waitForSelector(".maplibregl-canvas", {
+      timeout: RENDER_WAIT_TIMEOUT_MS,
+    });
+    let keyPoll;
+    const keyMissingRace = new Promise((_, reject) => {
+      keyPoll = setInterval(() => {
+        const km = pageErrors.find((m) => m.includes("VITE_MAPTILER_KEY missing"));
+        if (km) reject(new Error(`page error at load: ${km}`));
+      }, 200);
+      if (typeof keyPoll.unref === "function") keyPoll.unref();
+    });
+    try {
+      await Promise.race([canvasReady, keyMissingRace]);
+    } finally {
+      clearInterval(keyPoll);
+    }
+
     await page.waitForFunction(
       () => {
         const m = window.__map__;
@@ -184,13 +243,15 @@ async function renderAndAssert(distIndexPath, proofPngPath) {
 }
 
 async function runCase(def, proofRoot) {
+  const doRender = def.render !== false;
+  const nSteps = doRender ? 5 : 4;
   console.log(`\n=== ${def.label} (${def.id}) ===`);
   const workDir = mkdtempSync(join(tmpdir(), `verify-source-bundle-${def.id}-`));
   const produceOutDir = join(workDir, "produce-out");
   const bundleDir = join(workDir, `${def.id}-source`);
 
   try {
-    console.log(`[${def.id}] 1/5 produce (interactive/scrolly, real network + render)…`);
+    console.log(`[${def.id}] 1/${nSteps} produce (interactive/scrolly, real network + render)…`);
     await produce(def, produceOutDir);
 
     const manifestPath = join(produceOutDir, "source-manifest.json");
@@ -201,21 +262,21 @@ async function runCase(def, proofRoot) {
       );
     }
 
-    console.log(`[${def.id}] 2/5 bundle-source (closure copy)…`);
+    console.log(`[${def.id}] 2/${nSteps} bundle-source (closure copy)…`);
     execFileSync("bun", [BUNDLE_SOURCE, manifestPath, configOutPath, bundleDir], {
       cwd: REPO_ROOT,
       stdio: "inherit",
       timeout: BUNDLE_TIMEOUT_MS,
     });
 
-    console.log(`[${def.id}] 3/5 bun install (from clean, real network)…`);
+    console.log(`[${def.id}] 3/${nSteps} bun install (from clean, real network)…`);
     execFileSync("bun", ["install"], {
       cwd: bundleDir,
       stdio: "inherit",
       timeout: INSTALL_TIMEOUT_MS,
     });
 
-    console.log(`[${def.id}] 4/5 bun run build…`);
+    console.log(`[${def.id}] 4/${nSteps} bun run build…`);
     execFileSync("bun", ["run", "build"], {
       cwd: bundleDir,
       env: { ...process.env },
@@ -228,7 +289,17 @@ async function runCase(def, proofRoot) {
       throw new Error(`bundle build did not produce dist/index.html at ${distIndexPath}`);
     }
 
-    console.log(`[${def.id}] 5/5 headless render + assert (Playwright)…`);
+    // Structural-only case: the bundle BUILT from clean (steps 1-4). Skip the slow live-tile
+    // Playwright render — its own PASS tier ("PASS (structural-only)") is reported distinctly
+    // so partial coverage is never presented as a full render pass.
+    if (!doRender) {
+      console.log(
+        `PASS (structural-only)  ${def.id}  — clean install + build produced dist/index.html (render SKIPPED by design for this type).`,
+      );
+      return { id: def.id, status: "PASS (structural-only)" };
+    }
+
+    console.log(`[${def.id}] 5/${nSteps} headless render + assert (Playwright)…`);
     const proofPngPath = join(proofRoot, `${def.id}.png`);
     const render = await renderAndAssert(distIndexPath, proofPngPath);
 
@@ -240,6 +311,11 @@ async function runCase(def, proofRoot) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`FAIL  ${def.id}  — ${msg}`);
     return { id: def.id, status: "FAIL", error: msg };
+  } finally {
+    // Each case leaves a full node_modules install under workDir/bundleDir — heavy, and
+    // repeated runs would accumulate them under the OS temp dir. Remove the whole workDir;
+    // the proof PNGs live under the separate proofRoot (logged) and survive.
+    rmSync(workDir, { recursive: true, force: true });
   }
 }
 
@@ -255,11 +331,13 @@ async function main() {
   const selected = requestedIds.length > 0 ? CASES.filter((c) => requestedIds.includes(c.id)) : CASES;
   const skippedByFilter = requestedIds.length > 0 ? CASES.filter((c) => !requestedIds.includes(c.id)) : [];
 
+  const renderedIds = CASES.filter((c) => c.render !== false).map((c) => c.id);
+  const structuralIds = CASES.filter((c) => c.render === false).map((c) => c.id);
   console.log(`verify-source-bundle: representative set = ${REPRESENTATIVE_IDS.join(", ")}`);
+  console.log(`verify-source-bundle: full render (produce→bundle→install→build→render): ${renderedIds.join(", ")}`);
   console.log(
-    `verify-source-bundle: NOTE — map-native's remaining types (${OUT_OF_SCOPE_TYPES.join(", ")}) ` +
-      "share the identical source-manifest/bundle-source mechanism but are OUT OF SCOPE for this " +
-      "harness — not independently proven here.",
+    `verify-source-bundle: structural-only (produce→bundle→install→build, NO render): ${structuralIds.join(", ")} ` +
+      "— these build-verify the remaining map types' bundles so all 7 are covered.",
   );
   if (requestedIds.length > 0) {
     console.log(`verify-source-bundle: CLI filter — running: ${selected.map((c) => c.id).join(", ") || "(none)"}`);
@@ -289,7 +367,12 @@ async function main() {
     console.error(`\nverify-source-bundle: ${failed.length}/${results.length} case(s) FAILED.`);
     process.exit(1);
   }
-  console.log(`\nverify-source-bundle: all ${results.length} run case(s) PASSED. Proof PNGs under ${proofRoot}`);
+  const rendered = results.filter((r) => r.status === "PASS").length;
+  const structural = results.filter((r) => r.status === "PASS (structural-only)").length;
+  console.log(
+    `\nverify-source-bundle: all ${results.length} run case(s) PASSED ` +
+      `(${rendered} full-render, ${structural} structural-only). Proof PNGs under ${proofRoot}`,
+  );
 }
 
 await main();
