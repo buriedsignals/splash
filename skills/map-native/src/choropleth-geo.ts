@@ -1,5 +1,6 @@
 import { bbox, area, polygon } from "@turf/turf";
 import { resolvePalette, type PaletteRequest } from "./theme/scale";
+import { houseRamp } from "./theme/house-ramp";
 
 // Reduce a feature to its largest-area polygon — the "mainland". Natural Earth
 // admin-0 features are MultiPolygons that bundle far-flung overseas territories
@@ -37,6 +38,10 @@ export interface ChoroplethData {
   regionKey: string;
   valueField: string;
   rows: Record<string, string | number>[];
+  // Newsroom house hue (set by the profile merge, skills/atelier/src/brand-profile.ts). When
+  // present and no explicit `palette` is chosen, the ramp is a derived house luminance ramp
+  // (houseRamp) — CVD-safe by construction. An explicit palette always wins.
+  brandHue?: string;
 }
 export interface ChoroplethOptions {
   bins?: number;
@@ -72,7 +77,12 @@ export function computeChoropleth(
 ): ChoroplethLayout {
   const nBins = options.bins ?? 5;
   const scaleType = options.scaleType ?? "sequential";
-  const ramp = resolvePalette(scaleType, options.palette).ramp;
+  // House hue → a derived sequential luminance ramp, unless an explicit palette is chosen (which
+  // always wins). A house ramp is CVD-safe by construction, so it validates without a waiver.
+  const ramp =
+    options.palette === undefined && data.brandHue
+      ? houseRamp(data.brandHue, nBins)
+      : resolvePalette(scaleType, options.palette).ramp;
 
   const byKey = new Map<string, number>();
   // Data-supplied display names, keyed by the join key — only when labelField is set

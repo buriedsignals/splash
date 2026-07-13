@@ -58,6 +58,10 @@ export async function produceAll(
             baseColor?: string;
             brandExplicit?: boolean;
             baseColorExplicit?: boolean;
+            brandHue?: string;
+            brandPalette?: string[];
+            nativeType?: string;
+            type?: string;
             source?: { name: string; url?: string };
             lang?: string;
           },
