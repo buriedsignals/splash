@@ -9,6 +9,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -72,7 +73,7 @@ export const HarnessCheck: React.FC = () => {
         paint: { "fill-color": "#4FC3F7", "fill-opacity": 0 },
       });
       m.jumpTo({ center: [8.2, 46.8], zoom: 6 });
-      m.once("idle", () => {
+      continueWhenMapSettles(m, () => {
         setMap(m);
         continueRender(handle);
       });
@@ -88,7 +89,7 @@ export const HarnessCheck: React.FC = () => {
       extrapolateRight: "clamp",
     });
     map.setPaintProperty("harness-fill", "fill-opacity", progress);
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [map, frame, durationInFrames]);
 

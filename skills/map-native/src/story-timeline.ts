@@ -1,3 +1,5 @@
+import { lerpLongitude } from "./core/longitude";
+
 export interface CameraSolution {
   center: [number, number];
   zoom: number;
@@ -103,7 +105,11 @@ export function cameraForFrame(
       fillReveal,
       camera: {
         center: [
-          lerp(from.center[0], to.center[0], t),
+          // Wrap-aware: pan longitude along the SHORTER arc so an antimeridian-crossing
+          // move (e.g. Japan +142° → Chile −73°) sweeps the ~145° of Pacific between
+          // them, not the ~215° the long way across Asia/Africa (which fetched high-zoom
+          // tiles for the opposite side of the globe — the video-hang trigger).
+          lerpLongitude(from.center[0], to.center[0], t),
           lerp(from.center[1], to.center[1], t),
         ],
         zoom: lerp(from.zoom, to.zoom, t),

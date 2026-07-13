@@ -2,6 +2,7 @@
 // Unlike symbol-geo, markers are UNIFORM size (no value encoding); the only per-marker
 // visual variable is category → colour. Mirrors the choropleth/symbol geo-core shape.
 import { QUALITATIVE } from "./route-geo";
+import { shortWayLongitudeExtent } from "./core/longitude";
 
 export interface LocatorMarker {
   lon: number;
@@ -69,10 +70,15 @@ export function locatorGeometry(config: {
 
   const lons = markers.map((m) => m.lon);
   const lats = markers.map((m) => m.lat);
+  // Antimeridian-aware west/east (see core/longitude.ts): reduces to {min,max} for data
+  // that does not straddle the dateline, but for Pacific-spanning markers `east` may
+  // exceed +180 (unwrapped) so fitBounds/cameraForBounds centre on the true midpoint
+  // instead of the empty back-side of the globe. Mirrors deriveSymbolStory.
+  const { west, east } = shortWayLongitudeExtent(lons);
   const bounds: [number, number, number, number] = [
-    Math.min(...lons),
+    west,
     clampLat(Math.min(...lats)),
-    Math.max(...lons),
+    east,
     clampLat(Math.max(...lats)),
   ];
 

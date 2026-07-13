@@ -26,6 +26,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { computeHexGrid } from "../hex-grid-geo";
 import { deriveHexGridStory } from "../hex-grid-story";
 import { resolveMapStyle } from "../route-geo";
@@ -212,7 +213,7 @@ export const HexGridStory: React.FC<{ config: HexGridConfigShape }> = ({
         aggregateLabel: layout.aggregateLabel,
       });
 
-      m.once("idle", () => {
+      continueWhenMapSettles(m, () => {
         setMapState({ map: m, beats, phases, solutions });
         continueRender(handle);
       });
@@ -266,7 +267,7 @@ export const HexGridStory: React.FC<{ config: HexGridConfigShape }> = ({
 
     setOverlay({ beatIndex, captionReveal });
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 

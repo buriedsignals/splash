@@ -15,6 +15,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { locatorGeometry } from "../locator-geo";
 import { deriveLocatorStory } from "../locator-story";
 import {
@@ -241,7 +242,7 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
         zoom: stepSolutions[0].zoom,
       });
 
-      m.once("idle", () => {
+      continueWhenMapSettles(m, () => {
         setMapState({ map: m, beats, story, phases, stepSolutions });
         continueRender(handle);
       });
@@ -345,7 +346,7 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
       MARKER_STROKE,
     ] as never);
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 

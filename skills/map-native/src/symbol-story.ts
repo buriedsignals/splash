@@ -6,6 +6,7 @@
 import type { SymbolPoint } from "./symbol-geo";
 import type { Beat } from "./map-story";
 import { formatLocaleNumber, type Lang } from "./core/locale";
+import { shortWayLongitudeExtent } from "./core/longitude";
 
 export interface SymbolStoryMeta {
   title: string;
@@ -34,10 +35,17 @@ export function deriveSymbolStory(
 
   const lons = points.map((p) => p.lon);
   const lats = points.map((p) => p.lat);
+  // Antimeridian-aware west/east (see core/longitude.ts): a naive min/max box tears a
+  // Pacific-spanning dataset (Alaska −176.6° … Japan +142.4° … Chile −73.2°) into a
+  // 343°-wide, Africa-centred view with the data split at both frame edges — which then
+  // makes every reveal→reveal camera flight cross the whole globe fetching high-zoom
+  // tiles for empty territory (the video-hang trigger) and clips edge labels. `east`
+  // may exceed +180 (unwrapped) so cameraForBounds centres on the true Pacific midpoint.
+  const { west, east } = shortWayLongitudeExtent(lons);
   const bounds: [number, number, number, number] = [
-    Math.min(...lons),
+    west,
     Math.min(...lats),
-    Math.max(...lons),
+    east,
     Math.max(...lats),
   ];
 

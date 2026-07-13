@@ -10,6 +10,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import * as turf from "@turf/turf";
 import worldGeoJsonImport from "../../assets/geo/world.geojson";
 import type {
@@ -378,7 +379,7 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
         },
       });
 
-      m.once("idle", () => {
+      continueWhenMapSettles(m, () => {
         setMap(m);
         continueRender(handle);
       });
@@ -486,7 +487,7 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
       });
     }
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [map, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 

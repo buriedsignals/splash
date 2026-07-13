@@ -4,8 +4,8 @@
 //   1. progress comes from easedRevealProgress() (holds at both ends, eased cubic in-out)
 //   2. camera fit goes through revealCameraPlan() (latitude-clamped bounds)
 // Harness:
-//   delayRender at mount → on load add source/layer + fitBounds → map.once('idle', continueRender)
-//   per-frame: delayRender → setPaintProperty → map.once('idle', continueRender) → triggerRepaint
+//   delayRender at mount → on load add source/layer + fitBounds → continueWhenMapSettles → continueRender
+//   per-frame: delayRender → setPaintProperty → continueWhenMapSettles → continueRender → triggerRepaint
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -17,6 +17,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { symbolGeometry } from "../symbol-geo";
 import {
   symbolLabels,
@@ -161,7 +162,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
         },
       });
       map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
-      map.once("idle", () => {
+      continueWhenMapSettles(map, () => {
         // INVARIANT: a symbol label never renders outside the map viewport. Fixed camera →
         // compute the in-viewport anchors ONCE here (mirrors SymbolMap) via the shared clamp,
         // then setData so the layer picks them up. The `changed` guard means a no-op pass
@@ -193,7 +194,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
             // Wait for the setData-driven repaint to settle BEFORE continuing the render,
             // else the still is captured mid-reload and the symbol layer paints blank
             // (mirrors LocatorReveal's nested-idle after its declutter setData).
-            map.once("idle", finish);
+            continueWhenMapSettles(map, finish);
             return;
           }
         }
@@ -221,7 +222,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
     if (map.getLayer("symbol-labels")) {
       map.setPaintProperty("symbol-labels", "text-opacity", progress);
     }
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapReady, frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps
 

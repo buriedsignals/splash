@@ -10,7 +10,7 @@
 //      swatches; fixed camera via revealCameraPlan(layout.bounds); title scene + MapFrame furniture.
 // Harness:
 //   delayRender at mount → on load fetch world → build dots + region outline + fitBounds → idle → continueRender
-//   per-frame: delayRender → setPaintProperty (opacity ramped by progress) → map.once('idle') → continueRender
+//   per-frame: delayRender → setPaintProperty (opacity ramped by progress) → continueWhenMapSettles → continueRender
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -23,6 +23,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { computeDotDensity } from "../dot-density-geo";
 import { scatterInPolygon } from "../dot-scatter";
 import { resolveMapStyle } from "../route-geo";
@@ -195,7 +196,7 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
             legend: layout.legend,
           });
 
-          map.once("idle", () => {
+          continueWhenMapSettles(map, () => {
             setMapReady(true);
             continueRender(handle);
           });
@@ -215,7 +216,7 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
     const h = delayRender(`dot-density-reveal-frame-${frame}`);
     map.setPaintProperty(DOT_LAYER, "circle-opacity", progress);
     map.setPaintProperty(DOT_LAYER, "circle-stroke-opacity", progress);
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapReady, frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps
 

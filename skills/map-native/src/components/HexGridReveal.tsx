@@ -10,7 +10,7 @@
 //      sequential bin legend + aggregate label; title scene + MapFrame — like DotDensityReveal.
 // Harness:
 //   delayRender at mount → build cells + fitBounds → idle → continueRender
-//   per-frame: delayRender → setPaintProperty (fill-opacity by progress) → map.once('idle') → continueRender
+//   per-frame: delayRender → setPaintProperty (fill-opacity by progress) → continueWhenMapSettles → continueRender
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -22,6 +22,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { computeHexGrid } from "../hex-grid-geo";
 import { resolveMapStyle } from "../route-geo";
 import type { HexGridConfigShape } from "../validate-config";
@@ -168,7 +169,7 @@ export const HexGridReveal: React.FC<{ config: HexGridConfigShape }> = ({
         aggregateLabel: layout.aggregateLabel,
       });
 
-      map.once("idle", () => {
+      continueWhenMapSettles(map, () => {
         setMapReady(true);
         continueRender(handle);
       });
@@ -182,7 +183,7 @@ export const HexGridReveal: React.FC<{ config: HexGridConfigShape }> = ({
       return;
     const h = delayRender(`hex-grid-reveal-frame-${frame}`);
     map.setPaintProperty(CELL_LAYER, "fill-opacity", fillOpacity);
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapReady, frame, fillOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
 

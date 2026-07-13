@@ -20,6 +20,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { locatorGeometry } from "../locator-geo";
 import { deriveLocatorStory } from "../locator-story";
 import {
@@ -228,7 +229,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
 
       m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
 
-      m.once("idle", () => {
+      continueWhenMapSettles(m, () => {
         setMapState({ map: m, beats, phases, solutions });
         continueRender(handle);
       });
@@ -318,7 +319,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
 
     setOverlay({ beatIndex, captionReveal });
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 

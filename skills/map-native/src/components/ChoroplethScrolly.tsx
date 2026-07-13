@@ -16,6 +16,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { computeChoropleth, type ChoroplethData } from "../choropleth-geo";
 import { NO_DATA_COLOR } from "../theme/colors";
 import { deriveMapStory, type Beat } from "../map-story";
@@ -308,7 +309,7 @@ export const ChoroplethScrolly: React.FC<{
             zoom: stepSolutions[0].zoom,
           });
 
-          m.once("idle", () => {
+          continueWhenMapSettles(m, () => {
             setMapState({
               map: m,
               beats,
@@ -407,7 +408,7 @@ export const ChoroplethScrolly: React.FC<{
       0.9 * dataReveal,
     );
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 
