@@ -20,7 +20,7 @@ import {
   existsSync,
   statSync,
 } from "node:fs";
-import { dirname, join, resolve, relative, extname } from "node:path";
+import { dirname, join, resolve, relative, extname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -265,4 +265,94 @@ key before building.
 - **Data & options:** edit \`config.json\`, then \`bun run build\` again.
 - **The visual itself:** edit the components under \`skills/${engine}/src/\`.
 `;
+}
+
+const ENGINE_ENTRY = {
+  "map-native": "skills/map-native/src/mount.tsx",
+  scrolly: "skills/scrolly/src/mount.tsx",
+};
+
+// Which skills a copy set spans (for the version union).
+function touchedSkills(files) {
+  const set = new Set();
+  for (const f of files) {
+    const m = relative(REPO_ROOT, f).match(/^skills\/([^/]+)\//);
+    if (m) set.add(m[1]);
+  }
+  return [...set];
+}
+
+if (import.meta.main) {
+  const [manifestPath, configPath, destDir] = process.argv.slice(2);
+  if (!manifestPath || !configPath || !destDir) {
+    console.error("usage: bundle-source.mjs <source-manifest.json> <config.json> <destDir>");
+    process.exit(1);
+  }
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  } catch (e) {
+    console.error(`bundle-source: cannot read manifest ${manifestPath}: ${e.message}`);
+    process.exit(1);
+  }
+  const engine = manifest.engine;
+  const entryRel = ENGINE_ENTRY[engine];
+  if (!entryRel) {
+    console.error(`bundle-source: unknown engine "${engine}" (expected map-native | scrolly)`);
+    process.exit(1);
+  }
+  let config;
+  try {
+    config = JSON.parse(readFileSync(configPath, "utf8"));
+  } catch (e) {
+    console.error(`bundle-source: cannot read config ${configPath}: ${e.message}`);
+    process.exit(1);
+  }
+
+  const entryAbs = join(REPO_ROOT, entryRel);
+  const { files, bareSpecifiers } = traceClosure(entryAbs);
+
+  const abs = resolve(destDir);
+  mkdirSync(abs, { recursive: true });
+
+  // Copy the closure preserving repo-relative layout so every relative import resolves unchanged.
+  for (const f of files) {
+    const relPath = relative(REPO_ROOT, f);
+    const dest = join(abs, relPath);
+    mkdirSync(dirname(dest), { recursive: true });
+    copyFileSync(f, dest);
+  }
+  // Copy the engine's vite-env.d.ts (declares ?raw modules + VITE_MAPTILER_KEY) if present —
+  // not import-reached, but the journalist's editor wants it.
+  const envDts = join(REPO_ROOT, "skills", engine, "src", "vite-env.d.ts");
+  if (existsSync(envDts)) {
+    const dest = join(abs, "skills", engine, "src", "vite-env.d.ts");
+    mkdirSync(dirname(dest), { recursive: true });
+    copyFileSync(envDts, dest);
+  }
+
+  // Deps from the traced specifiers, versions from the union of touched skills' package.json.
+  const skillPkgs = touchedSkills(files).map((s) =>
+    JSON.parse(readFileSync(join(REPO_ROOT, "skills", s, "package.json"), "utf8")),
+  );
+  const { dependencies, devDependencies } = deriveDeps(bareSpecifiers, skillPkgs);
+
+  const title = config.title ?? config.story?.title ?? "Visuel";
+  const id = basename(abs).replace(/-source$/, "") || engine;
+  writeFileSync(join(abs, "config.json"), JSON.stringify(config, null, 2) + "\n");
+  writeFileSync(
+    join(abs, "package.json"),
+    JSON.stringify(
+      { name: `${id}-source`, private: true, type: "module", scripts: { dev: "vite", build: "vite build" }, dependencies, devDependencies },
+      null,
+      2,
+    ) + "\n",
+  );
+  writeFileSync(join(abs, "vite.config.ts"), bundleViteConfig(engine));
+  writeFileSync(join(abs, "index.html"), bundleIndexHtml(engine, title));
+  writeFileSync(join(abs, "tsconfig.json"), bundleTsconfig());
+  writeFileSync(join(abs, "README.md"), bundleReadme(engine, title));
+  writeFileSync(join(abs, ".env.example"), bundleEnvExample());
+
+  console.log("BUNDLE_SOURCE_RESULT " + JSON.stringify({ dir: abs, engine, files: files.length }));
 }

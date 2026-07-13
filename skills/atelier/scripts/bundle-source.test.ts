@@ -1,5 +1,15 @@
 import { describe, it, expect } from "bun:test";
+import { execFileSync } from "node:child_process";
+import {
+  mkdtempSync,
+  writeFileSync,
+  existsSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+} from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import {
   stripQuery,
   importSpecifiers,
@@ -199,3 +209,92 @@ describe("scaffold emitters", () => {
     expect(r).toContain("VITE_MAPTILER_KEY");
   });
 });
+
+describe("bundle-source CLI — map-native assembly", () => {
+  const scriptPath = join(import.meta.dir, "bundle-source.mjs");
+  const sampleConfig = join(
+    REPO,
+    "skills",
+    "map-native",
+    "assets",
+    "sample-data",
+    "choropleth.json",
+  );
+
+  it("assembles a runnable, layout-preserving map bundle", () => {
+    const work = mkdtempSync(join(tmpdir(), "bundle-source-map-"));
+    const manifestPath = join(work, "source-manifest.json");
+    writeFileSync(
+      manifestPath,
+      JSON.stringify({ engine: "map-native", type: "choropleth" }),
+    );
+    const dest = join(work, "carte-source");
+    try {
+      const out = execFileSync(
+        "bun",
+        [scriptPath, manifestPath, sampleConfig, dest],
+        { encoding: "utf8" },
+      );
+      expect(out).toContain("BUNDLE_SOURCE_RESULT");
+      // Layout preserved — the engine mount + a reached component live under skills/map-native/src.
+      expect(
+        existsSync(join(dest, "skills", "map-native", "src", "mount.tsx")),
+      ).toBe(true);
+      expect(
+        existsSync(
+          join(dest, "skills", "map-native", "src", "ChoroplethMap.tsx"),
+        ),
+      ).toBe(true);
+      // Off-path cross-skill importers are NOT copied.
+      expect(
+        existsSync(join(dest, "skills", "map-native", "src", "conformance.ts")),
+      ).toBe(false);
+      // Scaffold pieces present.
+      for (const f of [
+        "package.json",
+        "vite.config.ts",
+        "index.html",
+        "tsconfig.json",
+        "config.json",
+        "README.md",
+        ".env.example",
+      ])
+        expect(existsSync(join(dest, f))).toBe(true);
+      // Deps complete AND include remotion (the trap the metafile/tracer self-corrects).
+      const pkg = JSON.parse(readFileSync(join(dest, "package.json"), "utf8"));
+      expect(pkg.dependencies["@maptiler/sdk"]).toBe("3.6.0");
+      expect(pkg.dependencies.remotion).toBe("4.0.482");
+      expect(pkg.scripts.build).toBe("vite build");
+      // No copied file has a DANGLING cross-skill relative import (would break a rebuild).
+      const allTs = walk(join(dest, "skills")).filter((f) =>
+        /\.(ts|tsx)$/.test(f),
+      );
+      for (const f of allTs) {
+        const src = readFileSync(f, "utf8");
+        for (const m of src.matchAll(/\bfrom\s*["'](\.[^"']+)["']/g)) {
+          const target = require("node:path").resolve(
+            require("node:path").dirname(f),
+            m[1].replace(/\?.*$/, ""),
+          );
+          const exts = ["", ".ts", ".tsx", ".js", ".jsx", ".json", ".geojson"];
+          const ok =
+            exts.some((e) => existsSync(target + e)) ||
+            exts.some((e) => existsSync(join(target, "index" + e)));
+          expect(ok).toBe(true);
+        }
+      }
+    } finally {
+      rmSync(work, { recursive: true, force: true });
+    }
+  });
+});
+
+function walk(dir) {
+  const out = [];
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) out.push(...walk(p));
+    else out.push(p);
+  }
+  return out;
+}
