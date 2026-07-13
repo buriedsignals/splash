@@ -3,10 +3,22 @@
 # written straight to %USERPROFILE%\Atelier\.env, never passed on the command line.
 $ErrorActionPreference = "Stop"
 
-$Repo = "https://github.com/buriedsignals/atelier"   # confirm before public release
+$Repo = if ($env:ATELIER_REPO) { $env:ATELIER_REPO } else { "https://github.com/buriedsignals/atelier" }   # confirm before public release
 $Ref  = if ($env:ATELIER_REF) { $env:ATELIER_REF } else { "main" }
 $Dest = Join-Path $HOME "Atelier"
 $NativeSkills = @("skills\chart-native", "skills\map-native")
+
+# Shared skill-discovery helper for runtimes that read ~\.agents\skills\ (Codex, Gemini native
+# skills). Junctions every skill dir there by name. Claude Code uses --plugin-dir instead.
+function Link-AgentsSkills {
+  $agentsSkills = Join-Path $HOME ".agents\skills"
+  New-Item -ItemType Directory -Force -Path $agentsSkills | Out-Null
+  foreach ($skillDir in Get-ChildItem (Join-Path $Dest "skills") -Directory) {
+    $link = Join-Path $agentsSkills $skillDir.Name
+    if (Test-Path $link) { Remove-Item $link -Recurse -Force }
+    cmd /c mklink /J "`"$link`"" "`"$($skillDir.FullName)`"" | Out-Null
+  }
+}
 
 Write-Host "-> Installing Atelier (a few minutes)…"
 
@@ -62,20 +74,15 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $Dest ".env"))) {
   throw "Configuration was not completed — re-run this installer."
 }
 
-# 5. Runtime — install the one the configurator recorded (Claude Code today)
+# 5. Runtime — install the one the configurator recorded, via its module in install\runtimes\.
+# Adding a runtime is a new install\runtimes\<name>.ps1 (see that dir's README), never a change here.
 $runtime = if (Test-Path (Join-Path $Dest ".atelier-runtime")) { (Get-Content (Join-Path $Dest ".atelier-runtime") -Raw).Trim() } else { "claude" }
-if ($runtime -eq "claude" -and -not (Get-Command claude -ErrorAction SilentlyContinue)) {
-  Write-Host "-> Installing Claude Code…"
-  irm https://claude.ai/install.ps1 | iex
-  # claude.ai/install.ps1 updates the PERSISTENT user PATH (effective only in a NEW session),
-  # not this process's $env:PATH — so the existence check below would throw a false "could not
-  # be installed" on a fresh machine and abort before the launcher is created. Prepend claude's
-  # bin dir for THIS session (mirror of bootstrap.sh's `export PATH="$HOME/.local/bin:$PATH"`).
-  $env:PATH = "$HOME\.local\bin;$env:PATH"
+$runtimeModule = Join-Path $Dest "install\runtimes\$runtime.ps1"
+if (-not (Test-Path $runtimeModule)) {
+  throw "No runtime module for '$runtime' (expected install\runtimes\$runtime.ps1) — re-run the configurator and pick a supported runtime."
 }
-if ($runtime -eq "claude" -and -not (Get-Command claude -ErrorAction SilentlyContinue)) {
-  throw "Claude Code could not be installed. See https://claude.ai, then re-run this installer."
-}
+. $runtimeModule
+Runtime-Install
 
 # 6. Producer deps + render engine
 Write-Host "-> Installing render dependencies…"
@@ -92,13 +99,14 @@ Pop-Location
 
 # 7. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
 $launcher = Join-Path $Dest "Launch Atelier.cmd"
-@'
+$launchCmd = Runtime-LaunchCmd
+@"
 @echo off
 cd /d "%~dp0"
 rem .env values are double-quoted so spaces (e.g. fly tokens "FlyV1 fm2_…") survive; %%~b strips the quotes.
 for /f "usebackq tokens=1,* delims==" %%a in (".env") do set "%%a=%%~b"
-claude --plugin-dir .
-'@ | Set-Content -Path $launcher -Encoding ascii
+$launchCmd
+"@ | Set-Content -Path $launcher -Encoding ascii
 
 Write-Host ""
 Write-Host "Done! Double-click 'Launch Atelier.cmd' in $Dest to start."
