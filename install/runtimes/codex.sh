@@ -30,6 +30,15 @@ TOML
 # instead we print the exact stanza to add when the network key is missing (the limitation).
 seed_codex_config() {
   codex_home="${CODEX_HOME:-$HOME/.codex}"
+  # A pre-existing ~/.codex owned by another user (e.g. created by an earlier sudo run) makes Codex
+  # itself fail later with a cryptic "app-server client: Permission denied (os error 13)". Surface
+  # the real cause + the one-line fix now, instead of leaving the user to decode os error 13.
+  if [ -d "$codex_home" ] && [ ! -w "$codex_home" ]; then
+    echo "Warning: $codex_home exists but is not writable by $(whoami) — Codex needs to write there" >&2
+    echo "and will fail to start. Fix it, then re-run this installer:" >&2
+    echo "  sudo chown -R \"\$(whoami)\" \"$codex_home\"" >&2
+    return
+  fi
   config="$codex_home/config.toml"
   if [ ! -f "$config" ]; then
     mkdir -p "$codex_home"

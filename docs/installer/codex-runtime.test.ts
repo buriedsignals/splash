@@ -118,6 +118,40 @@ runtime_install`;
   }
 });
 
+test("an unwritable ~/.codex is reported with the chown fix, not a cryptic os error 13", () => {
+  const tmp = mkdtempSync(join(tmpdir(), "codex-rt-"));
+  try {
+    const fakeHome = join(tmp, "home");
+    const dest = join(tmp, "dest");
+    const fakeBin = join(tmp, "bin");
+    const modulePath = join(runtimesDir, "codex.sh");
+    // Reproduce the real failure: ~/.codex exists but the user cannot write it (a root-owned dir
+    // left by an earlier sudo run). runtime_install must surface the cause + the one-line fix,
+    // not let Codex fail later with "app-server client: Permission denied (os error 13)".
+    const script = `set +e
+export HOME="${fakeHome}"
+DEST="${dest}"
+mkdir -p "$DEST/skills/a" "${fakeBin}" "$HOME/.codex"
+chmod 500 "$HOME/.codex"
+printf '#!/bin/sh\\n' > "${fakeBin}/codex"
+chmod +x "${fakeBin}/codex"
+export PATH="${fakeBin}:$PATH"
+${realLinkAgentsSkills()}
+. "${modulePath}"
+runtime_install
+echo "EXIT=$?"
+test -f "$HOME/.codex/config.toml" && echo CONFIG_EXISTS || echo NO_CONFIG`;
+    const { out, err } = runBash(script);
+    expect(err).toContain("not writable");
+    expect(err).toContain("chown -R");
+    expect(out).toContain("EXIT=0"); // warns and continues — never crashes on os error 13
+    expect(out).toContain("NO_CONFIG"); // no write attempted into the unwritable dir
+  } finally {
+    Bun.spawnSync(["chmod", "700", join(tmp, "home/.codex")]);
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test("codex.sh installs the pinned @openai/codex CLI and wires ~/.agents/skills discovery", () => {
   expect(codexSh).toContain("@openai/codex@");
   expect(codexSh).toMatch(/CODEX_VERSION="\d+\.\d+\.\d+"/); // pinned, not @latest
