@@ -195,8 +195,8 @@ function main() {
   // chart-native drops config.json + native-source.json so export-source.mjs can assemble a
   // runnable React bundle (its src is a straight-copy project). map-native / scrolly instead
   // drop config.json + source-manifest.json (see hasSourceManifest below) so bundle-source.mjs
-  // can closure-copy their entangled src into a runnable bundle. Only when NEITHER marker exists
-  // does code-source fall back to the built-files folder.
+  // can closure-copy their entangled src into a runnable bundle. When NEITHER marker exists a
+  // code-source delivery fails loudly (a lone html is not a runnable bundle) — see the fail() below.
   const hasNativeSource =
     existsSync(join(outDir, "native-source.json")) &&
     existsSync(join(outDir, "config.json"));
