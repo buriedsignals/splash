@@ -39,6 +39,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { snapCommand, remotionCommand } from "../src/platform-runners.ts";
 import { runWithVideoWatchdog } from "../src/video-watchdog.ts";
+import { mapSourceManifest } from "../src/source-manifest.ts";
 import { readCompDims } from "./lib/comp-registry.mjs";
 import { ALL_CHANNELS, channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
 
@@ -298,6 +299,16 @@ switch (format) {
     const interactiveHtmlDest = join(outDir, "interactive.html");
     copyFileSync(interactiveHtmlSrc, interactiveHtmlDest);
     console.log(`[produce map] interactive.html → ${interactiveHtmlDest}`);
+
+    // Drop the entry marker + the exact rendered config next to the outputs so EXPORT
+    // (form 1 — "Code source") can assemble a runnable source bundle (bundle-source.mjs).
+    // Both are .json — ignored by export-code's artifact glob and by assert-selfcontained.
+    writeFileSync(
+      join(outDir, "source-manifest.json"),
+      JSON.stringify(mapSourceManifest(parsedConfig), null, 2) + "\n",
+    );
+    copyFileSync(configPath, join(outDir, "config.json"));
+
     run("bun", ["scripts/assert-selfcontained.mjs", interactiveHtmlDest]);
 
     console.log(`[produce map] snapping responsive…`);
