@@ -29,14 +29,16 @@ The three layers below are what only a live Codex can prove.
 
 ## Layer A — discovery (skills load)
 
-**Goal:** Codex sees all nine skills through native `~/.agents/skills/<name>/SKILL.md` discovery.
+**Goal:** Codex sees every skill through native `~/.agents/skills/<name>/SKILL.md` discovery.
 
 1. `codex` from `~/Atelier`.
 2. Run `/skills`.
-3. **PASS:** the list contains all nine —
-   `atelier`, `chart-native`, `dw-chart`, `image-native`, `map-dw`, `map-native`, `scrolly`,
+3. **PASS:** the list contains the eight skills that ship a `SKILL.md` —
+   `atelier`, `chart-native`, `dw-chart`, `map-dw`, `map-native`, `scrolly`,
    `suggest-article`, `suggest-chart`.
-4. Sanity: `ls -la ~/.agents/skills` shows nine symlinks (junctions on Windows) into
+   (`skills/image-native/` is scaffolded without a `SKILL.md` yet, so it does not appear; the
+   `link_agents_skills` glob picks it up automatically the moment its `SKILL.md` lands.)
+4. Sanity: `ls -la ~/.agents/skills` shows one symlink (junction on Windows) per skill into
    `~/Atelier/skills/*`.
 
 **Fail modes to note:** a skill missing from `/skills` ⇒ its `SKILL.md` frontmatter (`name` +

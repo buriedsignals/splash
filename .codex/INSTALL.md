@@ -7,8 +7,8 @@ for you by `install/runtimes/codex.sh` — skip to [Verify](#verify).
 
 ## Prerequisites
 
-- **Codex CLI** — `npm install -g @openai/codex` (needs Node.js 22+), or the Node-free standalone
-  installer: `curl -fsSL https://chatgpt.com/codex/install.sh | sh`. Pinned/known-good: `0.144.1`.
+- **Codex CLI** — `bun add -g @openai/codex` (Bun-first), or the Node-free standalone installer:
+  `curl -fsSL https://chatgpt.com/codex/install.sh | sh`. Pinned/known-good: `0.144.1`.
 - **[Bun](https://bun.sh)** — Atelier's producers run under Bun (`bun scripts/produce.mjs …`).
 - **Git**.
 

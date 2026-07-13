@@ -45,17 +45,18 @@ seed_codex_config() {
 runtime_install() {
   if ! command -v codex >/dev/null 2>&1; then
     echo "-> Installing Codex CLI…"
-    if command -v npm >/dev/null 2>&1; then
-      npm install -g "@openai/codex@${CODEX_VERSION}"
-    else
-      # bootstrap.sh installs Bun, not Node — so npm may be absent on a fresh machine. OpenAI's
-      # standalone installer drops a native binary (no Node dependency) and symlinks
-      # ~/.local/bin/codex. It tracks the current release channel rather than the pinned version.
+    # Bun-first (the installer already guarantees Bun; never npm): install the pinned package and
+    # link its bin into ~/.bun/bin. `|| true` so a Bun failure falls through to the standalone path.
+    bun add -g "@openai/codex@${CODEX_VERSION}" || true
+    export PATH="${BUN_INSTALL:-$HOME/.bun}/bin:$PATH"
+    if ! command -v codex >/dev/null 2>&1; then
+      # Bun didn't yield a runnable codex (e.g. a blocked native postinstall) — fall back to
+      # OpenAI's Node-free standalone installer (symlinks ~/.local/bin/codex; unpinned channel).
       curl -fsSL https://chatgpt.com/codex/install.sh | sh
     fi
   fi
-  # npm's global bin and the standalone installer's symlink both land here on a default setup.
-  export PATH="$HOME/.local/bin:$PATH"
+  # Bun's global bin and the standalone installer's symlink both land on PATH here.
+  export PATH="${BUN_INSTALL:-$HOME/.bun}/bin:$HOME/.local/bin:$PATH"
   if ! command -v codex >/dev/null 2>&1; then
     echo "Codex CLI could not be installed. See https://developers.openai.com/codex, then re-run this installer." >&2
     exit 1

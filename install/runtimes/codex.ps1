@@ -37,14 +37,13 @@ network_access = true
 function Runtime-Install {
   if (-not (Get-Command codex -ErrorAction SilentlyContinue)) {
     Write-Host "-> Installing Codex CLI…"
-    # bootstrap.ps1 already installs Node (it drives Playwright/Remotion), so npm is available here.
-    npm install -g "@openai/codex@$CodexVersion"
-    # npm's global bin (%APPDATA%\npm) is not necessarily on THIS session's PATH on a fresh machine —
-    # prepend it so the existence check below doesn't throw a false "could not be installed".
-    $env:PATH = "$env:APPDATA\npm;$env:PATH"
+    # Bun-first (the installer already guarantees Bun; never npm): install the pinned package and
+    # link its bin into ~\.bun\bin (prepended below so the existence check sees it this session).
+    bun add -g "@openai/codex@$CodexVersion"
+    $env:PATH = "$HOME\.bun\bin;$env:PATH"
   }
   if (-not (Get-Command codex -ErrorAction SilentlyContinue)) {
-    throw "Codex CLI could not be installed. See https://developers.openai.com/codex, then re-run this installer."
+    throw "Codex CLI could not be installed via 'bun add -g @openai/codex'. See https://developers.openai.com/codex, then re-run this installer."
   }
   # Wire native skill discovery (~\.agents\skills\<name>\SKILL.md) for all skills.
   Link-AgentsSkills
