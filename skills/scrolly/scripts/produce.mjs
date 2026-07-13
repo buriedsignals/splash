@@ -4,6 +4,8 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, copyFileSync, readFileSync as readFS } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeFileSync } from "node:fs";
+import { scrollySourceManifest } from "../src/source-manifest.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -40,4 +42,7 @@ execFileSync("bunx", ["vite", "build"], {
 });
 const out = join(outDir, "scrolly.html");
 copyFileSync(join(root, "dist", "index.html"), out);
+const parsedConfig = JSON.parse(readFS(configPath, "utf8"));
+writeFileSync(join(outDir, "source-manifest.json"), JSON.stringify(scrollySourceManifest(parsedConfig), null, 2) + "\n");
+copyFileSync(configPath, join(outDir, "config.json"));
 console.log("PRODUCE_RESULT " + JSON.stringify({ scrolly: out }));
