@@ -299,19 +299,16 @@ function main() {
       });
       return;
     }
-    // Built-files folder (last-resort fallback): neither marker was found (no
-    // native-source.json/source-manifest.json) — hand over the self-contained html as-is.
-    if (!interactive)
-      fail(`${format} form=code-source found no built html in ${outDir}`);
-    copyFileSync(join(outDir, interactive), join(exportDir, interactive));
-    assertDelivered(readdirSync(exportDir), { format, form: "code-source" });
-    done({
-      format,
-      form: "code-source",
-      kind: "built-files-folder",
-      path: absExportDir,
-      exportDir: absExportDir,
-    });
+    // No source marker at all: a runnable code-source bundle cannot be assembled (there is no
+    // native-source.json / source-manifest.json to drive export-source.mjs / bundle-source.mjs),
+    // and a lone interactive.html is NOT a valid code-source delivery (assertDelivered requires a
+    // runnable Vite project). This is unreachable from a real producer (chart-native emits
+    // native-source.json, map-native / scrolly emit source-manifest.json, hosted-DW is handled
+    // above) — only a stale / hand-made outDir lands here. Fail loudly with an actionable path
+    // instead of copying an html the code-source gate would reject.
+    fail(
+      `${format} form=code-source: no source marker (native-source.json / source-manifest.json) found in ${outDir} — re-produce this element to generate a runnable code-source bundle, or deliver it with --form html / --form embed.`,
+    );
     return;
   }
 
@@ -371,7 +368,8 @@ function main() {
 // script with --form <chosen> to build ONLY that form. Nothing is built here.
 //   a — Code source: a runnable React source bundle (built on --form code-source) — via
 //       export-source.mjs for chart-native, via bundle-source.mjs for map-native / scrolly
-//       with a source-manifest; only when NEITHER source marker exists, the built-files folder.
+//       with a source-manifest. Omitted entirely when NEITHER source marker is present (a
+//       markerless outDir has no code-source deliverable — only b / c are offered).
 //   b — HTML autonome: the single self-contained interactive.html / scrolly.html.
 //   c — Embed (hébergé): deploy the html to the journalist's fly.io host (or, for a hosted
 //       DW producer, the already-live publicUrl — no deploy step).
@@ -402,22 +400,20 @@ function emitProposal(ctx) {
       deliver: `${deliverBase} --form embed`,
     };
   } else {
-    forms.a =
-      hasNativeSource || hasSourceManifest
-        ? {
-            kind: "react-source-bundle",
-            label: "Code source (bundle React)",
-            path: join(absExportDir, `${id}-source`),
-            pending: true,
-            deliver: `${deliverBase} --form code-source`,
-          }
-        : {
-            kind: "built-files-folder",
-            label: "Code source (fichiers construits)",
-            path: absExportDir,
-            pending: true,
-            deliver: `${deliverBase} --form code-source`,
-          };
+    // Form a (Code source = a runnable React bundle) is only offered when a source marker is
+    // present — export-source.mjs (chart-native) or bundle-source.mjs (map-native / scrolly) can
+    // then assemble it on --form code-source. A markerless non-hosted outDir (only reachable by
+    // re-exporting a stale / hand-made folder) has no code-source deliverable — do NOT advertise
+    // one the delivery gate would reject; the journalist takes form b (HTML) or form c (Embed).
+    if (hasNativeSource || hasSourceManifest) {
+      forms.a = {
+        kind: "react-source-bundle",
+        label: "Code source (bundle React)",
+        path: join(absExportDir, `${id}-source`),
+        pending: true,
+        deliver: `${deliverBase} --form code-source`,
+      };
+    }
     forms.b = {
       label: "HTML autonome",
       path: join(absExportDir, interactive),
@@ -459,11 +455,11 @@ function emitProposal(ctx) {
     "EXPORT_FORMS_PROPOSAL",
     "Le visuel est produit. Choisissez la forme de livraison (rien n'est encore construit — la forme choisie est générée à la demande) :",
   ];
+  // forms.a, when present, is always the runnable React source bundle (a markerless outDir has
+  // no code-source deliverable, so form a is simply omitted — see above).
   if (forms.a)
     relay.push(
-      forms.a.kind === "react-source-bundle"
-        ? `  a) Code source — projet React autonome à rebuilder/personnaliser (bun install && bun run build) : ${forms.a.path}`
-        : `  a) Code source — le dossier complet des fichiers construits à héberger vous-même : ${forms.a.path}`,
+      `  a) Code source — projet React autonome à rebuilder/personnaliser (bun install && bun run build) : ${forms.a.path}`,
     );
   if (forms.b)
     relay.push(

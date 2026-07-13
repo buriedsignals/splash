@@ -283,28 +283,36 @@ describe("export-code CLI — INTERACTIVE phase 1 (proposal, builds nothing)", (
   });
 });
 
-describe("export-code CLI — SCROLLY (built-files code source, no static.html)", () => {
-  function setupScrolly() {
-    const outDir = mkdtempSync(join(tmpdir(), "atelier-export-scrolly-"));
+describe("export-code CLI — markerless outDir (no code-source bundle possible)", () => {
+  // A markerless interactive / scrolly outDir: only the built html, NO native-source.json and
+  // NO source-manifest.json. Unreachable from a real producer (chart-native emits
+  // native-source.json, map-native / scrolly emit source-manifest.json, hosted-DW is handled via
+  // isHostedEmbed) — only a stale / hand-made outDir lands here. There is no runnable code-source
+  // bundle to assemble, and a lone html is NOT a valid code-source delivery, so form a must NOT be
+  // advertised and a --form code-source request must fail loudly with an actionable message.
+  function setupMarkerless() {
+    const outDir = mkdtempSync(join(tmpdir(), "atelier-export-markerless-"));
     writeFileSync(join(outDir, "scrolly.html"), "<html>scrolly</html>");
     const resultsPath = join(outDir, "report.json");
     writeFileSync(resultsPath, JSON.stringify(report("p1", "scrolly")));
     return { outDir, resultsPath };
   }
 
-  it("phase 1 emits code source (built-files) + scrolly.html HTML autonome + embed", () => {
-    const { outDir, resultsPath } = setupScrolly();
-    const exportDir = mkdtempSync(join(import.meta.dir, "export-scrolly-p1-"));
+  it("phase 1 OMITS form a (no code-source deliverable) but still offers HTML autonome + embed", () => {
+    const { outDir, resultsPath } = setupMarkerless();
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-markerless-p1-"),
+    );
     try {
       const out = run(outDir, exportDir, resultsPath, "p1");
       const proposal = parseFormsProposal(out);
       expect(proposal.scrolly).toBe(true);
-      // No chart-native source inputs → form A is the built-files folder.
-      expect(proposal.forms.a.kind).toBe("built-files-folder");
-      expect(proposal.forms.a.pending).toBe(true);
+      // No source marker → NO runnable bundle → form a is absent (never built-files-folder).
+      expect(proposal.forms.a).toBeUndefined();
       expect(proposal.forms.b.path).toBe(
         join(resolve(exportDir), "scrolly.html"),
       );
+      expect(proposal.forms.b.deliver).toContain("--form html");
       expect(proposal.forms.c.deliver).toContain("--form embed");
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
@@ -312,10 +320,43 @@ describe("export-code CLI — SCROLLY (built-files code source, no static.html)"
     }
   });
 
-  it("with --form html delivers ONLY scrolly.html", () => {
-    const { outDir, resultsPath } = setupScrolly();
+  it("--form code-source fails loudly with an actionable marker message (never a lone-html copy)", () => {
+    const { outDir, resultsPath } = setupMarkerless();
     const exportDir = mkdtempSync(
-      join(import.meta.dir, "export-scrolly-html-"),
+      join(import.meta.dir, "export-markerless-code-"),
+    );
+    try {
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          outDir,
+          exportDir,
+          "--results",
+          resultsPath,
+          "--id",
+          "p1",
+          "--form",
+          "code-source",
+        ],
+        { stdout: "pipe", stderr: "pipe" },
+      );
+      expect(proc.exitCode).not.toBe(0);
+      const err = proc.stderr.toString();
+      expect(err).toMatch(/no source marker/);
+      expect(err).toMatch(/native-source\.json|source-manifest\.json/);
+      // It must NOT have copied the lone html as a (gate-rejected) code-source delivery.
+      expect(existsSync(join(exportDir, "scrolly.html"))).toBe(false);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it("with --form html delivers ONLY scrolly.html", () => {
+    const { outDir, resultsPath } = setupMarkerless();
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-markerless-html-"),
     );
     try {
       run(outDir, exportDir, resultsPath, "p1", "html");
