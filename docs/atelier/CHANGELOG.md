@@ -4,6 +4,33 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-13 — Chantier déféré #1 : le hang vidéo seismes ROOT-CAUSÉ + fix universel (le seul vrai échec du corpus, éliminé)
+
+Le hang du rendu vidéo symbole animé (map-native + Remotion) — **le seul `status=failed` restant du corpus QA**,
+et la zone vitrine vidéo de Splash — root-causé en discipline systematic-debugging (reproduire → instrumenter
+→ prouver → corriger → re-render). **DEUX causes racines prouvées, corrigées au root :**
+1. **Frame-gating non-borné** : chaque frame attendait `map.on("idle")` MapLibre — qui ne se déclenche que
+   quand TOUTE tuile demandée est chargée ; une seule tuile bloquée/jamais-arrivée pendant un survol caméra
+   large laissait le handle `delayRender` de la frame jamais continué → Remotion bloquait sur cette frame à
+   jamais. Fix : `core/frame-ready.ts` `continueWhenMapSettles` continue sur `idle` OU après un settle borné
+   (`FRAME_MAP_SETTLE_MS=6000`, entre un settle sain <1s et le timeout delayRender de Remotion), exactement
+   une fois — une tuile bloquée dégrade en frame légèrement-moins-tuilée, **jamais un hang**. C'est l'invariant.
+2. **Bounds caméra antiméridien** : les points Ring of Fire straddlent la dateline (Japon +142 → Alaska −176
+   → Chili −73) ; les bounds naïfs `{west:min, east:max}` donnaient un span ~360° → la caméra survolait le
+   globe entier en chargeant chaque tuile. Fix : `core/longitude.ts` `shortWayLongitudeExtent` (arc minimal,
+   `east` non-wrappé >180 pour `cameraForBounds` en Mercator continu) → caméra centrée Pacifique.
+- **Propagé à TOUTE la classe** (feedback→système) : 42 sites idle-continue sur **20 composants** vidéo-carte
+  (Cartogram/Choropleth/DotDensity/HexGrid/Locator/Route × Reveal/Story/Scrolly + Symbol Reveal/Scrolly +
+  HarnessCheck) convertis au helper borné ; les interactifs `*Map.tsx` laissés (ne gatent pas delayRender).
+  Antiméridien propagé à Locator (même mécanisme point-lon ; region-family turf-bbox = follow-up noté).
+  **Drift-guard test non-vacuous** (`components-frame-ready-invariant.test.ts` : aucun composant ne garde le
+  pattern hangable ; tout delayRender-continue passe par le helper) → le hang est **structurellement
+  impossible pour les 21 compositions vidéo-carte**, un futur composant hérite la règle.
+- **Render-vérifié de bout en bout** : le seismes symbole rend **927/927 frames** → mp4 4,7 Mo (était : hang
+  indéfini), still = carte **Pacifique-centrée** correcte (séismes en cercles autour du rim, taille=magnitude,
+  du Japon au Chili) ; une vidéo choroplèthe non-symbol rend **801/801 frames** (la propagation marche
+  au-delà de symbol). map-native 646/0, tsc clean.
+
 ## Session 2026-07-12 (suite 5) — Wave 13 : breadth (types/personas sous-testés) + 2 gaps de capacité fermés
 
 Post-convergence, la boucle passe en **breadth + fermeture de gaps** (les chemins communs ayant convergé).
