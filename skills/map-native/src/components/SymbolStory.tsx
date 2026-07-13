@@ -36,6 +36,7 @@ import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { resolveScene } from "../video-scene";
+import { continueWhenMapSettles } from "../core/frame-ready";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -216,7 +217,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
 
       m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
 
-      m.once("idle", () => {
+      continueWhenMapSettles(m, () => {
         setMapState({
           map: m,
           beats,
@@ -342,7 +343,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
       captionReveal,
     });
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 
