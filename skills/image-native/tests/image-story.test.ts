@@ -231,12 +231,12 @@ describe("checkImageConformance", () => {
   });
 
   it("should honour a custom overlapThreshold that FLIPS the outcome", () => {
-    // This caption/passage pair overlaps at ratio 0.5 (see captionOverlapRatio tests).
+    // This caption reuses 2 of its 4 content words from the passage → containment 0.5.
     // It must NOT flag at the 0.6 default, and MUST flag at a 0.4 override — proving the
     // override actually changes the verdict (not merely re-confirming the default).
     const s = validStory();
-    s.frames[0]!.sourcePassage = "walkers crossed the paved towpath yesterday";
-    s.frames[0]!.caption = "walkers crossed the muddy towpath daily";
+    s.frames[0]!.sourcePassage = "walkers crossed the paved towpath";
+    s.frames[0]!.caption = "walkers crossed muddy paths";
     const flagged = (out: string[]) =>
       out.some((m) => m.includes("too close to its source passage"));
     expect(flagged(checkImageConformance(s))).toBe(false); // default 0.6
@@ -262,7 +262,8 @@ describe("checkImageConformance", () => {
 
 describe("captionOverlapRatio", () => {
   it("should score a self-contained rephrase low even when it shares a place name and year", () => {
-    // Shared tokens are the proper noun "Annemasse" and the number "2019" — both excluded.
+    // The caption reuses only "as"/"workers" from the passage (2 of its 7 content words);
+    // the number "2019" never tokenizes, and "Annemasse" isn't reused by the caption at all.
     const caption = "The frontier town swelled as workers arrived.";
     const passage =
       "Annemasse grew fast after 2019 as cross-border workers poured in.";
@@ -280,26 +281,40 @@ describe("captionOverlapRatio", () => {
   it("should count a word capitalized only at a sentence start, not treat it as a proper noun", () => {
     // "Towpath" is sentence-initial in the caption (capitalized by position). The old
     // 'capitalized anywhere ⇒ proper noun' rule excluded it from the caption but kept the
-    // lowercase "towpath" in the passage, suppressing the overlap to 0.5 (< 0.6 → a copy
-    // SLIPPED). The sentence-aware rule counts it, catching the copy.
+    // lowercase "towpath" in the passage, undercounting the overlap and letting a copy SLIP.
+    // The sentence-aware rule counts it → containment 0.8, catching the copy.
     const caption = "Towpath families once walked here";
     const passage = "families once walked the towpath";
     expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
   });
 
-  it("should still exclude a genuine proper noun that appears mid-sentence", () => {
-    // "Sundays" appears mid-sentence capitalized → a real proper noun, excluded from both.
+  it("should still exclude a genuine proper noun classified over BOTH texts (symmetric)", () => {
+    // "Annemasse" is mid-sentence in the passage (proper noun) but sentence-initial in the
+    // caption. Classifying proper nouns over the union of both texts excludes it symmetrically,
+    // so it doesn't spuriously match; the descriptive tail that IS copied still counts.
+    const caption = "Annemasse burned through the night.";
+    const passage = "Residents fled as Annemasse burned through the night.";
+    // Verbatim tail ("burned through the night") = 100% of the caption's content → must flag.
+    // Jaccard would dilute this to ~0.57 (passage is longer); directed containment gives 1.0.
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
+  });
+
+  it("should still exclude a genuine proper noun that appears mid-sentence in both", () => {
+    // "Sundays" is mid-sentence capitalized in both → a real proper noun, excluded.
     const a = "families walked on Sundays";
     const b = "on Sundays the crews rested";
-    // Only "on" is shared content; "sundays" is excluded, "the/crews/rested/families/walked" differ.
+    // Only "on" of the caption's 3 content words is reused → containment 0.33.
     expect(captionOverlapRatio(a, b)).toBeLessThan(0.4);
   });
 
-  it("should be symmetric for overlapping content", () => {
-    const a = "walkers crossed the muddy towpath daily";
-    const b = "walkers crossed the paved towpath yesterday";
-    expect(captionOverlapRatio(a, b)).toBe(captionOverlapRatio(b, a));
-    expect(captionOverlapRatio(a, b)).toBeCloseTo(0.5, 5);
+  it("should measure the caption side (directed containment), not a symmetric ratio", () => {
+    // A 3-word caption fully contained in a long passage scores 1.0; the reverse (long text
+    // vs short) scores much lower — the tripwire asks "is the CAPTION lifted", not vice-versa.
+    const caption = "families once walked";
+    const passage =
+      "families once walked the quiet towpath every single sunday";
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.9);
+    expect(captionOverlapRatio(passage, caption)).toBeLessThan(0.6);
   });
 
   it("should return 0 for disjoint content", () => {

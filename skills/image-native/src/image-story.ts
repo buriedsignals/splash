@@ -63,34 +63,40 @@ function properNouns(text: string): Set<string> {
   return proper;
 }
 
-// Content tokens for the overlap tripwire: lowercase word tokens (≥2 chars), MINUS proper
-// nouns (see properNouns) and MINUS pure numbers. A self-contained caption legitimately reuses
-// place names, people, and dates from the passage it describes — those must NOT count as
-// "copying the article". What we flag is reuse of the passage's ordinary descriptive prose.
-function contentTokens(text: string): Set<string> {
-  const proper = properNouns(text);
-  const numbers = new Set<string>();
-  for (const m of text.matchAll(/\b\d[\d.,]*\b/g))
-    numbers.add(m[0].toLowerCase());
+// Content tokens for the overlap tripwire: lowercase word tokens (≥2 chars; the tokenizer
+// admits only letters/`'`/`-`, so pure numbers never appear as tokens), MINUS the shared
+// proper-noun set. A self-contained caption legitimately reuses place names, people, and dates
+// from the passage it describes — those must NOT count as "copying the article". What we flag
+// is reuse of the passage's ordinary descriptive prose. The proper-noun set is computed over
+// BOTH texts together (see captionOverlapRatio), so a name is excluded symmetrically whether it
+// lands sentence-initially in one text and mid-sentence in the other.
+function contentTokens(text: string, proper: Set<string>): Set<string> {
   const tokens = new Set<string>();
   for (const m of text.toLowerCase().matchAll(/[a-z][a-z'-]+/g)) {
     const t = m[0];
-    if (proper.has(t) || numbers.has(t)) continue;
-    tokens.add(t);
+    if (!proper.has(t)) tokens.add(t);
   }
   return tokens;
 }
 
-// Jaccard overlap (|A∩B| / |A∪B|) of the two token sets. 0 = disjoint, 1 = identical set.
-// Symmetric by construction.
+// How much of the CAPTION's descriptive prose is lifted from its source passage: the fraction
+// of the caption's content tokens that also appear in the passage — directed containment
+// |A∩B| / |A|, A = caption. Containment, NOT Jaccard: a short caption that is a verbatim
+// excerpt of a LONGER passage is still plagiarism, and Jaccard's union denominator would wrongly
+// dilute that by the passage's extra words (letting a copied tail slip under the threshold). The
+// proper-noun exclusion set is built from BOTH texts so a reused name is dropped symmetrically.
+// 0 = the caption reuses none of the passage's prose; 1 = every content word is lifted.
 export function captionOverlapRatio(caption: string, passage: string): number {
-  const a = contentTokens(caption);
-  const b = contentTokens(passage);
-  if (a.size === 0 || b.size === 0) return 0;
+  const proper = new Set<string>([
+    ...properNouns(caption),
+    ...properNouns(passage),
+  ]);
+  const a = contentTokens(caption, proper);
+  const b = contentTokens(passage, proper);
+  if (a.size === 0) return 0;
   let inter = 0;
   for (const t of a) if (b.has(t)) inter++;
-  const union = a.size + b.size - inter;
-  return union === 0 ? 0 : inter / union;
+  return inter / a.size;
 }
 
 export function checkImageConformance(
