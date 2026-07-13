@@ -6,6 +6,7 @@ import type {
 import { validateAccepted, type ValidationOutcome } from "./validate-gate";
 import { assertFormatAllowed, normalizeChannel, type Channel } from "./channel";
 import { producerMismatchReason } from "./producer-guard";
+import { mergeProfileDefaults, type BrandProfile } from "./brand-profile";
 
 // Produce ONE proposal → its outcome (bookkeeping fields are added by produceAll).
 // `actualProducer` is the producer the dispatch actually ran (GUARD 1) — the real
@@ -36,6 +37,10 @@ export async function produceAll(
   outDir: string,
   dispatch: Dispatch,
   validate: ProposalValidator = validateAccepted,
+  // The newsroom's reusable house-style defaults (skills/atelier/src/brand-profile.ts), loaded
+  // by the CLI from NEWSROOM-PROFILE.md / brand.json. Merged onto each element's spec as DEFAULTS
+  // (the per-element value always wins). null → today's behaviour, unchanged.
+  profile: BrandProfile | null = null,
 ): Promise<ProduceReport> {
   const results: ProposalResult[] = [];
   for (const p of accepted) {
@@ -87,11 +92,30 @@ export async function produceAll(
       });
       continue;
     }
+    // Merge the newsroom profile's defaults onto THIS element's spec — source/lang universal,
+    // brand colour only for the colour-consuming producers — the per-element spec value always
+    // wins. Done BEFORE validation so a profile-supplied default source satisfies the spec's own
+    // requirement. Null profile → pm === p (unchanged behaviour).
+    const pm: AcceptedProposal = profile
+      ? {
+          ...p,
+          spec: mergeProfileDefaults(
+            p.spec as {
+              baseColor?: string;
+              brandExplicit?: boolean;
+              source?: { name: string; url?: string };
+              lang?: string;
+            },
+            profile,
+            { producer: p.producer },
+          ),
+        }
+      : p;
     // Floor gate #1 — VALIDATION. Run the producer's own validator HERE, so a host that
     // hand-rolled a spec and skipped the suggest-chart self-check (observed in 4/5 manual
     // sessions) cannot ship an invalid or weak spec. An invalid spec fails loud with the
     // errors; warnings ride on the result for the render gate to surface.
-    const validation = validate(p, accepted);
+    const validation = validate(pm, accepted);
     if (!validation.ok) {
       results.push({
         ...base,
@@ -104,7 +128,7 @@ export async function produceAll(
       // Dispatch sees the NORMALIZED canonical channel (see the gate comment above) —
       // adapters' channelEnvFor and every other p.channel reader downstream of the
       // spine consume the canonical value, never the journalist's raw free text.
-      const r = await dispatch({ ...p, channel }, `${outDir}/${p.id}`);
+      const r = await dispatch({ ...pm, channel }, `${outDir}/${p.id}`);
       const warned = validation.warnings.length
         ? { warnings: validation.warnings }
         : {};

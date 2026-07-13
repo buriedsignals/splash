@@ -557,3 +557,69 @@ describe("produceAll — validation gate (real validator)", () => {
     expect(produced.sort()).toEqual(["a", "c"]); // the good ones still produced
   });
 });
+
+describe("produceAll — newsroom profile defaults", () => {
+  const profile = {
+    palette: ["#0A5C36"],
+    source: { name: "Heidi.news" },
+    lang: "fr",
+  };
+
+  it("merges profile source/lang/colour onto a spec that omits them, before dispatch", async () => {
+    let seen: Record<string, unknown> = {};
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.spec as Record<string, unknown>;
+      return { status: "produced" };
+    };
+    await produceAll([p("p1")], "out", dispatch, PASS, profile);
+    expect(seen.source).toEqual({ name: "Heidi.news" });
+    expect(seen.lang).toBe("fr");
+    expect(seen.baseColor).toBe("#0A5C36"); // chart-native consumes colour
+    expect(seen.brandExplicit).toBe(true);
+  });
+
+  it("keeps the per-element spec value over the profile default", async () => {
+    let seen: Record<string, unknown> = {};
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.spec as Record<string, unknown>;
+      return { status: "produced" };
+    };
+    await produceAll(
+      [p("p1", { spec: { source: { name: "AP" }, lang: "en" } })],
+      "out",
+      dispatch,
+      PASS,
+      profile,
+    );
+    expect(seen.source).toEqual({ name: "AP" });
+    expect(seen.lang).toBe("en");
+  });
+
+  it("does NOT seed brand colour onto a map-native spec (source/lang still merge)", async () => {
+    let seen: Record<string, unknown> = {};
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.spec as Record<string, unknown>;
+      return { status: "produced" };
+    };
+    await produceAll(
+      [p("m1", { producer: "map-native", format: "static" })],
+      "out",
+      dispatch,
+      PASS,
+      profile,
+    );
+    expect(seen.baseColor).toBeUndefined();
+    expect(seen.source).toEqual({ name: "Heidi.news" });
+    expect(seen.lang).toBe("fr");
+  });
+
+  it("leaves specs untouched when no profile is passed (unchanged behaviour)", async () => {
+    let seen: Record<string, unknown> = {};
+    const dispatch: Dispatch = async (prop) => {
+      seen = prop.spec as Record<string, unknown>;
+      return { status: "produced" };
+    };
+    await produceAll([p("p1")], "out", dispatch, PASS);
+    expect(seen).toEqual({});
+  });
+});
