@@ -143,7 +143,12 @@ function stripComment(line: string): string {
     const c = line[i];
     if (inQuote) {
       if (c === inQuote) inQuote = null;
-    } else if (c === '"' || c === "'") {
+    } else if (
+      (c === '"' || c === "'") &&
+      (i === 0 || /[\s:-]/.test(line[i - 1]))
+    ) {
+      // A quote OPENS a span only at value-start (line-start or after whitespace / `:` / a list
+      // `-`). A quote mid-token (an apostrophe in "L'Observatoire") is a literal, not a delimiter.
       inQuote = c;
     } else if (c === "#" && (i === 0 || /\s/.test(line[i - 1]))) {
       return line.slice(0, i);
@@ -293,7 +298,8 @@ export function mergeProfileDefaults<
 >(spec: T, profile: BrandProfile | null, opts?: { producer?: string }): T {
   // Non-throwing on a null/non-object spec: a malformed spec must fall through to the validation
   // gate (which fails it loud), never crash the batch (drop-proof) when a profile is present.
-  if (!profile || !spec || typeof spec !== "object") return spec;
+  if (!profile || !spec || typeof spec !== "object" || Array.isArray(spec))
+    return spec;
   let out = spec;
   const colourOk =
     opts?.producer === undefined || BRAND_COLOUR_PRODUCERS.has(opts.producer);

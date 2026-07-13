@@ -130,6 +130,15 @@ credit: "Source : {name}"   # gabarit
     );
     expect(p?.source).toEqual({ name: "RTS", url: "https://x.com/a#frag" });
   });
+
+  it("keeps an apostrophe in an unquoted French/Italian name + strips its trailing comment", () => {
+    // A mid-token quote is a literal, not a scalar delimiter — so "L'Observatoire  # note" keeps
+    // the apostrophe and drops the comment (the target audience's names: L'Équipe, Dell'Umbria).
+    const p = parseNewsroomMarkdown(
+      `---\nsource:\n  name: L'Observatoire  # notre nom\n---`,
+    );
+    expect(p?.source).toEqual({ name: "L'Observatoire" });
+  });
 });
 
 describe("loadNewsroomProfile", () => {
