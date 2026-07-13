@@ -5,8 +5,8 @@ import {
   type ImageStory,
 } from "../src/image-story";
 
-// A minimal, fully-valid story reused across tests. Two frames, distinct alt/caption,
-// per-frame credit, a sourcePassage that the caption does NOT copy.
+// A minimal, fully-valid story reused across tests. Three frames (the scrolly floor),
+// distinct alt/caption, per-frame credit, a sourcePassage that the caption does NOT copy.
 function validStory(): ImageStory {
   return {
     title: "The canal that split a village",
@@ -27,6 +27,15 @@ function validStory(): ImageStory {
       },
       {
         id: "f1",
+        frameRef: "during.jpg",
+        caption: "Machinery moves in as the embankment takes shape.",
+        alt: "An excavator on bare earth beside steel piling.",
+        credit: { name: "Jane Doe / Agence Photo" },
+        sourcePassage:
+          "Construction crews arrived in spring and worked through the summer of 2022.",
+      },
+      {
+        id: "f2",
         frameRef: "after.jpg",
         caption: "The same bank, now a concrete embankment.",
         alt: "A concrete embankment with construction fencing and a crane.",
@@ -65,12 +74,62 @@ describe("checkImageConformance", () => {
     );
   });
 
-  it("should flag fewer than 2 frames (no crossfade possible)", () => {
+  // --- Frame-count floor is scoped by format (spec §6.3) ---
+
+  it("should NOT flag a single frame when no format is given (degrades to static, not an error)", () => {
     const s = validStory();
     s.frames = [s.frames[0]!];
     s.keyFrame = 0;
-    expect(checkImageConformance(s)).toContain(
-      "only 1 frame — an image sequence needs at least 2",
+    expect(checkImageConformance(s).some((m) => m.includes("frame"))).toBe(
+      false,
+    );
+  });
+
+  it("should NOT flag a single frame for a static format (static uses the key frame)", () => {
+    const s = validStory();
+    s.frames = [s.frames[0]!];
+    s.keyFrame = 0;
+    expect(checkImageConformance(s, { format: "static" })).toEqual([]);
+  });
+
+  it("should flag a single frame for a video format (a crossfade needs 2)", () => {
+    const s = validStory();
+    s.frames = [s.frames[0]!];
+    s.keyFrame = 0;
+    expect(checkImageConformance(s, { format: "video" })).toContain(
+      "only 1 frame — a video needs at least 2",
+    );
+  });
+
+  it("should flag two frames for a scrolly format (the embedded scrolly floor is 3)", () => {
+    const s = validStory();
+    s.frames = s.frames.slice(0, 2);
+    s.keyFrame = 0;
+    expect(checkImageConformance(s, { format: "scrolly" })).toContain(
+      "only 2 frames — a scrolly needs at least 3",
+    );
+  });
+
+  it("should accept exactly 3 frames for a scrolly (boundary)", () => {
+    expect(checkImageConformance(validStory(), { format: "scrolly" })).toEqual(
+      [],
+    );
+  });
+
+  it("should flag an empty frames array with no crash", () => {
+    const s = validStory();
+    s.frames = [];
+    s.keyFrame = 0;
+    const out = checkImageConformance(s);
+    expect(out.some((m) => m.includes("frame"))).toBe(true);
+  });
+
+  it("should not throw when frames is missing entirely (no stack trace, spec §7)", () => {
+    const s = validStory() as unknown as { frames?: unknown };
+    delete s.frames;
+    expect(() => checkImageConformance(s as ImageStory)).not.toThrow();
+    expect(checkImageConformance(s as ImageStory)).toContain(
+      "missing frames — an image story needs a frames array",
     );
   });
 
@@ -86,7 +145,15 @@ describe("checkImageConformance", () => {
   it("should flag a keyFrame index out of range", () => {
     const s = validStory();
     s.keyFrame = 5;
-    expect(checkImageConformance(s)).toContain("keyFrame 5 out of range [0,2)");
+    expect(checkImageConformance(s)).toContain("keyFrame 5 out of range [0,3)");
+  });
+
+  it("should flag a non-integer keyFrame", () => {
+    const s = validStory();
+    s.keyFrame = 1.5;
+    expect(checkImageConformance(s)).toContain(
+      "keyFrame 1.5 out of range [0,3)",
+    );
   });
 
   it("should flag a frame with empty alt (WCAG 1.1.1)", () => {
@@ -119,6 +186,22 @@ describe("checkImageConformance", () => {
     expect(checkImageConformance(s)).toContain('frame "f1" has empty caption');
   });
 
+  it("should flag an empty frame id", () => {
+    const s = validStory();
+    s.frames[1]!.id = "  ";
+    expect(checkImageConformance(s)).toContain(
+      "frame at index 1 has an empty id",
+    );
+  });
+
+  it("should flag an empty frameRef", () => {
+    const s = validStory();
+    s.frames[0]!.frameRef = "";
+    expect(checkImageConformance(s)).toContain(
+      'frame "f0" has an empty frameRef — every frame references a raw image',
+    );
+  });
+
   it("should flag a duplicate frame id", () => {
     const s = validStory();
     s.frames[1]!.id = "f0";
@@ -147,16 +230,33 @@ describe("checkImageConformance", () => {
     ).toBe(true);
   });
 
-  it("should respect a custom overlapThreshold", () => {
+  it("should honour a custom overlapThreshold that FLIPS the outcome", () => {
+    // This caption/passage pair overlaps at ratio 0.5 (see captionOverlapRatio tests).
+    // It must NOT flag at the 0.6 default, and MUST flag at a 0.4 override — proving the
+    // override actually changes the verdict (not merely re-confirming the default).
     const s = validStory();
-    s.frames[0]!.sourcePassage = "the eastern bank before the works began";
-    s.frames[0]!.caption = "The eastern bank before the works began.";
-    // Identical content → ratio 1.0; a threshold of 0.99 still flags it, 1.01 never would.
-    expect(
-      checkImageConformance(s, { overlapThreshold: 0.5 }).some((m) =>
-        m.includes("too close to its source passage"),
-      ),
-    ).toBe(true);
+    s.frames[0]!.sourcePassage = "walkers crossed the paved towpath yesterday";
+    s.frames[0]!.caption = "walkers crossed the muddy towpath daily";
+    const flagged = (out: string[]) =>
+      out.some((m) => m.includes("too close to its source passage"));
+    expect(flagged(checkImageConformance(s))).toBe(false); // default 0.6
+    expect(flagged(checkImageConformance(s, { overlapThreshold: 0.4 }))).toBe(
+      true,
+    );
+  });
+
+  it("should report every violation of a multiply-broken story at once", () => {
+    const s = validStory();
+    s.title = "";
+    s.frames[0]!.alt = "";
+    s.frames[1]!.credit = { name: "" };
+    const out = checkImageConformance(s);
+    expect(out).toContain("missing story title");
+    expect(out.some((m) => m.includes('frame "f0" has empty alt'))).toBe(true);
+    expect(out.some((m) => m.includes('frame "f1" has no photo credit'))).toBe(
+      true,
+    );
+    expect(out.length).toBeGreaterThanOrEqual(3);
   });
 });
 
@@ -177,7 +277,32 @@ describe("captionOverlapRatio", () => {
     expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
   });
 
-  it("should be symmetric and return 0 for disjoint content", () => {
+  it("should count a word capitalized only at a sentence start, not treat it as a proper noun", () => {
+    // "Towpath" is sentence-initial in the caption (capitalized by position). The old
+    // 'capitalized anywhere ⇒ proper noun' rule excluded it from the caption but kept the
+    // lowercase "towpath" in the passage, suppressing the overlap to 0.5 (< 0.6 → a copy
+    // SLIPPED). The sentence-aware rule counts it, catching the copy.
+    const caption = "Towpath families once walked here";
+    const passage = "families once walked the towpath";
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
+  });
+
+  it("should still exclude a genuine proper noun that appears mid-sentence", () => {
+    // "Sundays" appears mid-sentence capitalized → a real proper noun, excluded from both.
+    const a = "families walked on Sundays";
+    const b = "on Sundays the crews rested";
+    // Only "on" is shared content; "sundays" is excluded, "the/crews/rested/families/walked" differ.
+    expect(captionOverlapRatio(a, b)).toBeLessThan(0.4);
+  });
+
+  it("should be symmetric for overlapping content", () => {
+    const a = "walkers crossed the muddy towpath daily";
+    const b = "walkers crossed the paved towpath yesterday";
+    expect(captionOverlapRatio(a, b)).toBe(captionOverlapRatio(b, a));
+    expect(captionOverlapRatio(a, b)).toBeCloseTo(0.5, 5);
+  });
+
+  it("should return 0 for disjoint content", () => {
     expect(captionOverlapRatio("alpha beta gamma", "delta epsilon zeta")).toBe(
       0,
     );
