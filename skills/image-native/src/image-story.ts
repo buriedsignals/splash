@@ -45,25 +45,7 @@ const FRAME_FLOOR: Record<ImageFormat, number> = {
 };
 const FRAME_CAP = 6; // embedded-module cap (spec §6.4); the cull (§7) enforces it upstream.
 
-// The proper nouns of a text: tokens capitalized in a NON-sentence-initial position. A word
-// capitalized only because it starts a sentence is NOT a proper noun — the earlier rule
-// ("capitalized anywhere ⇒ proper noun") mis-read sentence-initial common words as proper and
-// excluded them asymmetrically (excluded on the sentence-start side, kept on the lowercase
-// side), undercounting the intersection and letting a near-copy slip under the overlap
-// threshold. Sentence starts = text start or the first word after a `.`/`!`/`?` boundary.
-function properNouns(text: string): Set<string> {
-  const proper = new Set<string>();
-  for (const sentence of text.split(/(?<=[.!?])\s+/)) {
-    const words = [...sentence.matchAll(/[A-Za-z][\w'-]*/g)];
-    words.forEach((w, idx) => {
-      if (idx === 0) return; // sentence-initial: capitalization carries no proper-noun signal
-      if (/^[A-Z]/.test(w[0])) proper.add(w[0].toLowerCase());
-    });
-  }
-  return proper;
-}
-
-// Function words (EN + FR, ASCII forms — the tokenizer is ASCII-only) that carry no
+// Function words (EN + FR) that carry no
 // plagiarism signal. Excluded so a terse caption that merely shares "the/over/on/as" with its
 // topically-matched passage is not counted as copying: directed containment (see below) has a
 // small denominator, so a shared preposition + article would otherwise trip the threshold. The
@@ -211,42 +193,100 @@ const STOPWORDS = new Set<string>([
   "ici",
   "sont",
   "ont",
+  // EN determiners / quantifiers / high-frequency adverbs (no descriptive signal)
+  "all",
+  "any",
+  "some",
+  "more",
+  "most",
+  "other",
+  "another",
+  "each",
+  "both",
+  "many",
+  "much",
+  "few",
+  "such",
+  "same",
+  "own",
+  "only",
+  "also",
+  "just",
+  "very",
+  "what",
+  "how",
+  "why",
+  "one",
+  "two",
+  // FR (accented forms now tokenize under the Unicode tokenizer)
+  "à",
+  "au",
+  "aux",
+  "été",
+  "être",
+  "était",
+  "étaient",
+  "où",
+  "déjà",
+  "très",
+  "ça",
+  "tout",
+  "tous",
+  "toute",
+  "toutes",
+  "autre",
+  "autres",
+  "même",
+  "mêmes",
+  "aussi",
+  "encore",
+  "chaque",
+  "leurs",
+  "cela",
 ]);
 
-// Content tokens for the overlap tripwire: lowercase word tokens (≥2 chars; the tokenizer
-// admits only letters/`'`/`-`, so pure numbers never appear as tokens), MINUS the shared
-// proper-noun set and MINUS function words (STOPWORDS). A self-contained caption legitimately
-// reuses place names, people, and dates from the passage it describes — those must NOT count as
-// "copying the article". What we flag is reuse of the passage's ordinary DESCRIPTIVE prose. The
-// proper-noun set is computed over BOTH texts together (see captionOverlapRatio), so a name is
-// excluded symmetrically whether it lands sentence-initially in one text and mid-sentence in the
-// other.
-function contentTokens(text: string, proper: Set<string>): Set<string> {
-  const tokens = new Set<string>();
-  for (const m of text.toLowerCase().matchAll(/[a-z][a-z'-]+/g)) {
+// The caption's content words IN ORDER: lowercase, Unicode-tokenized (so accented French words
+// stay whole — Heidi.news is French-first), ≥2 chars, function words (STOPWORDS) removed.
+// Numbers are kept (a copied date sequence is verbatim reuse). Order is preserved because the
+// tripwire compares adjacent-word PAIRS, not a bag of words.
+function contentSequence(text: string): string[] {
+  const seq: string[] = [];
+  for (const m of text
+    .toLowerCase()
+    .matchAll(/[\p{L}\p{N}][\p{L}\p{N}'-]*/gu)) {
     const t = m[0];
-    if (!proper.has(t) && !STOPWORDS.has(t)) tokens.add(t);
+    if (t.length < 2 || STOPWORDS.has(t)) continue;
+    seq.push(t);
   }
-  return tokens;
+  return seq;
 }
 
-// How much of the CAPTION's descriptive prose is lifted from its source passage: the fraction
-// of the caption's content tokens that also appear in the passage — directed containment
-// |A∩B| / |A|, A = caption. Containment, NOT Jaccard: a short caption that is a verbatim
-// excerpt of a LONGER passage is still plagiarism, and Jaccard's union denominator would wrongly
-// dilute that by the passage's extra words (letting a copied tail slip under the threshold). The
-// proper-noun exclusion set is built from BOTH texts so a reused name is dropped symmetrically.
-// 0 = the caption reuses none of the passage's prose; 1 = every content word is lifted.
+// The set of adjacent content-word pairs ("content bigrams") of a token sequence.
+function contentBigrams(seq: string[]): Set<string> {
+  const grams = new Set<string>();
+  for (let i = 0; i + 1 < seq.length; i++) grams.add(`${seq[i]} ${seq[i + 1]}`);
+  return grams;
+}
+
+// The anti-copy tripwire: what fraction of the caption's adjacent content-word pairs (bigrams)
+// also occur in the passage — directed containment over CONTENT BIGRAMS, not a bag of words. A
+// verbatim / near-verbatim excerpt reuses the passage's word RUNS; a legitimate terse caption
+// merely reuses the subject's unavoidable topic nouns in ISOLATION (a photo of a protest has to
+// say "protesters"), which shares tokens but not runs. Because it is case-insensitive and works
+// on runs, Title-Case / ALL-CAPS captions and reused proper names no longer distort the score —
+// a shared name alone is one token, never a shared bigram — so no proper-noun heuristic is
+// needed. 0 = no shared content phrase; 1 = every caption bigram is lifted. A caption with fewer
+// than two content words has no bigram → 0 (too short to be a passage excerpt). Tradeoff: a
+// DELIBERATE full word-shuffle of a short passage evades (bigrams need adjacency), but that is
+// contrived for a photo caption, whereas the bag-of-words alternative false-flagged the common
+// terse caption — a guard that cries wolf on every ordinary caption gets ignored. The guard's
+// force still rests on ② supplying a tightly-scoped sourcePassage (spec §6.5).
 export function captionOverlapRatio(caption: string, passage: string): number {
-  const proper = new Set<string>([
-    ...properNouns(caption),
-    ...properNouns(passage),
-  ]);
-  const a = contentTokens(caption, proper);
-  const b = contentTokens(passage, proper);
+  const a = contentBigrams(contentSequence(caption));
   if (a.size === 0) return 0;
+  const b = contentBigrams(contentSequence(passage));
   let inter = 0;
-  for (const t of a) if (b.has(t)) inter++;
+  for (const g of a) if (b.has(g)) inter++;
   return inter / a.size;
 }
 

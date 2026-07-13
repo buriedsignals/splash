@@ -231,12 +231,12 @@ describe("checkImageConformance", () => {
   });
 
   it("should honour a custom overlapThreshold that FLIPS the outcome", () => {
-    // This caption reuses 2 of its 4 content words from the passage → containment 0.5.
+    // The caption shares 1 of its 2 content bigrams ("old bridge") with the passage → 0.5.
     // It must NOT flag at the 0.6 default, and MUST flag at a 0.4 override — proving the
     // override actually changes the verdict (not merely re-confirming the default).
     const s = validStory();
-    s.frames[0]!.sourcePassage = "walkers crossed the paved towpath";
-    s.frames[0]!.caption = "walkers crossed muddy paths";
+    s.frames[0]!.sourcePassage = "old bridge still stands";
+    s.frames[0]!.caption = "old bridge collapsed";
     const flagged = (out: string[]) =>
       out.some((m) => m.includes("too close to its source passage"));
     expect(flagged(checkImageConformance(s))).toBe(false); // default 0.6
@@ -278,33 +278,49 @@ describe("captionOverlapRatio", () => {
     expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
   });
 
-  it("should count a word capitalized only at a sentence start, not treat it as a proper noun", () => {
-    // "Towpath" is sentence-initial in the caption (capitalized by position). The old
-    // 'capitalized anywhere ⇒ proper noun' rule excluded it from the caption but kept the
-    // lowercase "towpath" in the passage, undercounting the overlap and letting a copy SLIP.
-    // The sentence-aware rule counts it → containment 0.8, catching the copy.
-    const caption = "Towpath families once walked here";
-    const passage = "families once walked the towpath";
+  it("should flag a reorder that keeps verbatim content runs intact", () => {
+    // The two lifted runs ("families once walked" and "quiet towpath") are reordered but intact,
+    // so most of the caption's content bigrams are shared → 0.67, caught. (A full shuffle that
+    // broke every adjacency would not — an accepted tradeoff for not crying wolf on terse captions.)
+    const caption = "families once walked the quiet towpath";
+    const passage = "the quiet towpath where families once walked on sundays";
     expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
   });
 
-  it("should still exclude a genuine proper noun classified over BOTH texts (symmetric)", () => {
-    // "Annemasse" is mid-sentence in the passage (proper noun) but sentence-initial in the
-    // caption. Classifying proper nouns over the union of both texts excludes it symmetrically,
-    // so it doesn't spuriously match; the descriptive tail that IS copied still counts.
+  it("should flag a verbatim tail excerpt of a LONGER passage (containment, not Jaccard)", () => {
+    // The caption is a verbatim tail of the passage; a shared proper name ("Annemasse") does not
+    // distort the bigram score, and the longer passage does not dilute containment the way
+    // Jaccard's union would. Both content bigrams are lifted → 1.0.
     const caption = "Annemasse burned through the night.";
     const passage = "Residents fled as Annemasse burned through the night.";
-    // Verbatim tail ("burned through the night") = 100% of the caption's content → must flag.
-    // Jaccard would dilute this to ~0.57 (passage is longer); directed containment gives 1.0.
     expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
   });
 
-  it("should still exclude a genuine proper noun that appears mid-sentence in both", () => {
-    // "Sundays" is mid-sentence capitalized in both → a real proper noun, excluded.
-    const a = "families walked on Sundays";
-    const b = "on Sundays the crews rested";
-    // Only "on" of the caption's 3 content words is reused → containment 0.33.
-    expect(captionOverlapRatio(a, b)).toBeLessThan(0.4);
+  it("should flag a verbatim copy written in Title Case / ALL CAPS", () => {
+    // A word-for-word copy typeset in a caption house style (Title Case) must still flag — the
+    // measure is case-insensitive and phrase-based, so casing cannot hide a copy (this was a
+    // 0.000 false negative when capitalization was read as a proper-noun signal).
+    const caption = "The Machinery Moved In As The Embankment Took Shape";
+    const passage =
+      "the machinery moved in as the embankment took shape over months";
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
+  });
+
+  it("should NOT flag a terse caption that only reuses the subject's unavoidable topic nouns", () => {
+    // A photo of a protest must say "protesters"/"march"/"downtown"; those isolated topic nouns
+    // appear scattered in the passage but never as a shared run → 0, not a copy.
+    const caption = "Protesters march downtown";
+    const passage =
+      "Thousands of protesters filled the streets as the march reached downtown.";
+    expect(captionOverlapRatio(caption, passage)).toBeLessThan(0.6);
+  });
+
+  it("should NOT flag a caption that names the subject with a different word", () => {
+    // The caption says "Firefighters" where the passage says "Crews" — it cannot be a copy; only
+    // the domain pair "battled blaze" is shared (1 of 2 bigrams) → 0.5, under threshold.
+    const caption = "Firefighters battled the blaze";
+    const passage = "Crews battled the blaze for hours before dawn.";
+    expect(captionOverlapRatio(caption, passage)).toBeLessThan(0.6);
   });
 
   it("should measure the caption side (directed containment), not a symmetric ratio", () => {
