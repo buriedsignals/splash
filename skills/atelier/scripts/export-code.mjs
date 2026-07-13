@@ -13,8 +13,9 @@
 //       phase 2 (--form <html|code-source|embed>): materialise + deliver ONLY that form:
 //           html        → copy the interactive.html / scrolly.html file.
 //           code-source → run export-source.mjs NOW → the runnable `<id>-source` React
-//                         bundle (chart-native), else the built-files folder (map-native /
-//                         scrolly, whose src is not a straight-copy React project).
+//                         bundle (chart-native, a straight-copy project), else run
+//                         bundle-source.mjs NOW → the runnable `<id>-source` bundle assembled
+//                         by closure-tracing the entangled map-native / scrolly src.
 //           embed       → run deploy-embed.mjs NOW (fly.io) and record the hosted URL in
 //                         EMBED_URL.txt (a hosted-DW producer records its already-live
 //                         publicUrl — no deploy step).
@@ -54,6 +55,9 @@ const EXPORT_SOURCE_SCRIPT = join(
   "scripts",
   "export-source.mjs",
 );
+// The engine-agnostic runnable-bundle generator for map-native / scrolly (their src is
+// entangled, so bundle-source.mjs closure-copies it; chart-native keeps export-source.mjs).
+const BUNDLE_SOURCE_SCRIPT = join(dirname(SELF), "bundle-source.mjs");
 const DEPLOY_EMBED_SCRIPT = join(dirname(SELF), "deploy-embed.mjs");
 
 const IMAGE_RE = /\.(png|svg|jpe?g)$/i;
@@ -194,6 +198,12 @@ function main() {
   const hasNativeSource =
     existsSync(join(outDir, "native-source.json")) &&
     existsSync(join(outDir, "config.json"));
+  // map-native / scrolly drop source-manifest.json + config.json → their code-source form is a
+  // runnable bundle assembled by bundle-source.mjs (NOT the old lone-html copy).
+  const hasSourceManifest =
+    existsSync(join(outDir, "source-manifest.json")) &&
+    existsSync(join(outDir, "config.json")) &&
+    !hasNativeSource;
 
   // ---- Phase 1: emit the proposal, build NOTHING. ----
   if (form === null) {
@@ -208,6 +218,7 @@ function main() {
       hostedUrl,
       interactive,
       hasNativeSource,
+      hasSourceManifest,
       absExportDir,
     });
     return;
@@ -264,8 +275,30 @@ function main() {
       });
       return;
     }
-    // Built-files folder (map-native / scrolly): the self-contained html IS the built
-    // deliverable to self-host.
+    if (hasSourceManifest) {
+      const bundleDir = join(absExportDir, `${id}-source`);
+      execFileSync(
+        "bun",
+        [
+          BUNDLE_SOURCE_SCRIPT,
+          join(outDir, "source-manifest.json"),
+          join(outDir, "config.json"),
+          bundleDir,
+        ],
+        { stdio: "inherit" },
+      );
+      assertDelivered(readdirSync(bundleDir), { format, form: "code-source" });
+      done({
+        format,
+        form: "code-source",
+        kind: "react-source-bundle",
+        path: bundleDir,
+        exportDir: absExportDir,
+      });
+      return;
+    }
+    // Built-files folder (last-resort fallback): neither marker was found (no
+    // native-source.json/source-manifest.json) — hand over the self-contained html as-is.
     if (!interactive)
       fail(`${format} form=code-source found no built html in ${outDir}`);
     copyFileSync(join(outDir, interactive), join(exportDir, interactive));
@@ -351,6 +384,7 @@ function emitProposal(ctx) {
     hostedUrl,
     interactive,
     hasNativeSource,
+    hasSourceManifest,
     absExportDir,
   } = ctx;
   const deliverBase = `bun ${SELF} ${outDir} ${exportDir} --results ${resolve(resultsPath)} --id ${id}`;
@@ -365,21 +399,22 @@ function emitProposal(ctx) {
       deliver: `${deliverBase} --form embed`,
     };
   } else {
-    forms.a = hasNativeSource
-      ? {
-          kind: "react-source-bundle",
-          label: "Code source (bundle React)",
-          path: join(absExportDir, `${id}-source`),
-          pending: true,
-          deliver: `${deliverBase} --form code-source`,
-        }
-      : {
-          kind: "built-files-folder",
-          label: "Code source (fichiers construits)",
-          path: absExportDir,
-          pending: true,
-          deliver: `${deliverBase} --form code-source`,
-        };
+    forms.a =
+      hasNativeSource || hasSourceManifest
+        ? {
+            kind: "react-source-bundle",
+            label: "Code source (bundle React)",
+            path: join(absExportDir, `${id}-source`),
+            pending: true,
+            deliver: `${deliverBase} --form code-source`,
+          }
+        : {
+            kind: "built-files-folder",
+            label: "Code source (fichiers construits)",
+            path: absExportDir,
+            pending: true,
+            deliver: `${deliverBase} --form code-source`,
+          };
     forms.b = {
       label: "HTML autonome",
       path: join(absExportDir, interactive),

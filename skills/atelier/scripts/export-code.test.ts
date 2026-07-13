@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import {
   mkdtempSync,
   writeFileSync,
+  mkdirSync,
   existsSync,
   readFileSync,
   readdirSync,
@@ -446,6 +447,88 @@ describe("export-code CLI — the mechanical shippability gate", () => {
     } finally {
       rmSync(outDir, { recursive: true, force: true });
       rmSync(exportDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("export-code — map-native code-source builds a runnable bundle", () => {
+  const script = join(import.meta.dir, "export-code.mjs");
+  it("assembles <id>-source with a Vite project when a source-manifest is present", () => {
+    const work = mkdtempSync(join(tmpdir(), "export-code-map-"));
+    const outDir = join(work, "out");
+    mkdirSync(outDir, { recursive: true });
+    // Minimal produced outDir for an interactive map element.
+    writeFileSync(join(outDir, "interactive.html"), "<html></html>");
+    writeFileSync(
+      join(outDir, "source-manifest.json"),
+      JSON.stringify({ engine: "map-native", type: "choropleth" }),
+    );
+    // Reuse the committed sample config as this element's config.
+    const sample = join(
+      import.meta.dir,
+      "..",
+      "..",
+      "map-native",
+      "assets",
+      "sample-data",
+      "choropleth.json",
+    );
+    execFileSync("cp", [sample, join(outDir, "config.json")]);
+    // A minimal shippable report for id "m1".
+    const report = {
+      results: [
+        {
+          id: "m1",
+          format: "interactive",
+          status: "produced",
+          reviewed: true,
+          renderApproved: true,
+        },
+      ],
+    };
+    const reportPath = join(work, "report.json");
+    writeFileSync(reportPath, JSON.stringify(report));
+    // exportDir must NOT resolve under the OS tmpdir (isEphemeralPath refuses it) — mirror the
+    // other tests in this file and place it under this scripts/ directory instead.
+    const exportDir = mkdtempSync(join(import.meta.dir, "export-map-source-"));
+    try {
+      const out = execFileSync(
+        "bun",
+        [
+          script,
+          outDir,
+          exportDir,
+          "--results",
+          reportPath,
+          "--id",
+          "m1",
+          "--form",
+          "code-source",
+        ],
+        { encoding: "utf8" },
+      );
+      expect(out).toContain("EXPORT_CODE_RESULT");
+      expect(existsSync(join(exportDir, "m1-source", "package.json"))).toBe(
+        true,
+      );
+      expect(existsSync(join(exportDir, "m1-source", "vite.config.ts"))).toBe(
+        true,
+      );
+      expect(
+        existsSync(
+          join(
+            exportDir,
+            "m1-source",
+            "skills",
+            "map-native",
+            "src",
+            "mount.tsx",
+          ),
+        ),
+      ).toBe(true);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(work, { recursive: true, force: true });
     }
   });
 });
