@@ -124,12 +124,29 @@ inherits the environment AND the network config so a producer's provider API cal
   `approval_policy = "never"` gives the smoothest double-click UX (no prompts); we seed `on-request`
   as the safer default.
 
+## Proof result (2026-07-13)
+
+Run on a real machine with a free OpenAI account. **Layer A PASSED** — `codex` lists all eight
+skills (`atelier:*`). **Layer B — the nested-invocation risk is RETIRED:** a full `codex exec` run
+of the `atelier` skill invoked `atelier:suggest-article` → `atelier:suggest-chart` → `atelier:dw-chart`
+as real nested skill calls and wrote a correct `accepted.json` (right producer/format/channel/
+confirmedTakeaway/spec). `seed_codex_config` verified live (`sandbox: workspace-write … network
+access enabled`). On the strength of this, `configurator-core.ts` marks `codex.verified = true`.
+
+**Known constraint — produce needs write access beyond the workspace-write sandbox.** The producers
+spawn Playwright/Chromium, which writes to system cache/temp dirs outside `[workdir, /tmp, $TMPDIR]`.
+Under an UNATTENDED `codex exec --sandbox workspace-write -c approval_policy=never`, those writes are
+denied and produce cannot finish. This is NOT an adapter defect: the shipped launcher runs
+**interactive `codex`** with `approval_policy = on-request`, where the journalist approves the write
+and produce completes. For a scripted/CI produce, widen the sandbox (or run the producer step outside
+it). Codex handles its own auth on first launch (`codex login`); the configurator does not seed an
+OpenAI credential.
+
 ## Open questions / risks
 
-- **Nested skill-from-within-a-skill (Layer B, primary risk):** unverified whether Codex fires
-  `suggest-article` / `suggest-chart` as nested invocations mid-`atelier`-flow. Fallback is an
-  orchestrator-prose reword ("read `skills/<subskill>/SKILL.md` and follow it") — out of scope for
-  this adapter; documented, not applied.
+- **Nested skill-from-within-a-skill (Layer B, primary risk):** RETIRED — Codex fires the nested
+  `suggest-article` / `suggest-chart` invocations natively (see Proof result above); the
+  orchestrator-prose fallback was not needed.
 - **Install command not runnable here:** the pinned `0.144.1` and the config keys are from official
   docs, not a live install on this machine. Confirm `codex --version` on the proof machine.
 - **`approval_policy` UX:** `on-request` may prompt during a producer's network call; if that

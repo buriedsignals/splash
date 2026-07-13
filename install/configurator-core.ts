@@ -2,7 +2,7 @@
 // verify* functions (Task 4), which hit real provider APIs.
 export const RUNTIMES: Record<string, { label: string; verified: boolean }> = {
   claude: { label: "Claude Code", verified: true },
-  codex: { label: "Codex", verified: false },
+  codex: { label: "Codex", verified: true },
   gemini: { label: "Gemini CLI", verified: false },
   goose: { label: "Goose", verified: false },
 };
