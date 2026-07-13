@@ -5,8 +5,8 @@ import {
   type ImageStory,
 } from "../src/image-story";
 
-// A minimal, fully-valid story reused across tests. Two frames, distinct alt/caption,
-// per-frame credit, a sourcePassage that the caption does NOT copy.
+// A minimal, fully-valid story reused across tests. Three frames (the scrolly floor),
+// distinct alt/caption, per-frame credit, a sourcePassage that the caption does NOT copy.
 function validStory(): ImageStory {
   return {
     title: "The canal that split a village",
@@ -27,6 +27,15 @@ function validStory(): ImageStory {
       },
       {
         id: "f1",
+        frameRef: "during.jpg",
+        caption: "Machinery moves in as the embankment takes shape.",
+        alt: "An excavator on bare earth beside steel piling.",
+        credit: { name: "Jane Doe / Agence Photo" },
+        sourcePassage:
+          "Construction crews arrived in spring and worked through the summer of 2022.",
+      },
+      {
+        id: "f2",
         frameRef: "after.jpg",
         caption: "The same bank, now a concrete embankment.",
         alt: "A concrete embankment with construction fencing and a crane.",
@@ -65,12 +74,62 @@ describe("checkImageConformance", () => {
     );
   });
 
-  it("should flag fewer than 2 frames (no crossfade possible)", () => {
+  // --- Frame-count floor is scoped by format (spec §6.3) ---
+
+  it("should NOT flag a single frame when no format is given (degrades to static, not an error)", () => {
     const s = validStory();
     s.frames = [s.frames[0]!];
     s.keyFrame = 0;
-    expect(checkImageConformance(s)).toContain(
-      "only 1 frame — an image sequence needs at least 2",
+    expect(checkImageConformance(s).some((m) => m.includes("frame"))).toBe(
+      false,
+    );
+  });
+
+  it("should NOT flag a single frame for a static format (static uses the key frame)", () => {
+    const s = validStory();
+    s.frames = [s.frames[0]!];
+    s.keyFrame = 0;
+    expect(checkImageConformance(s, { format: "static" })).toEqual([]);
+  });
+
+  it("should flag a single frame for a video format (a crossfade needs 2)", () => {
+    const s = validStory();
+    s.frames = [s.frames[0]!];
+    s.keyFrame = 0;
+    expect(checkImageConformance(s, { format: "video" })).toContain(
+      "only 1 frame — a video needs at least 2",
+    );
+  });
+
+  it("should flag two frames for a scrolly format (the embedded scrolly floor is 3)", () => {
+    const s = validStory();
+    s.frames = s.frames.slice(0, 2);
+    s.keyFrame = 0;
+    expect(checkImageConformance(s, { format: "scrolly" })).toContain(
+      "only 2 frames — a scrolly needs at least 3",
+    );
+  });
+
+  it("should accept exactly 3 frames for a scrolly (boundary)", () => {
+    expect(checkImageConformance(validStory(), { format: "scrolly" })).toEqual(
+      [],
+    );
+  });
+
+  it("should flag an empty frames array with no crash", () => {
+    const s = validStory();
+    s.frames = [];
+    s.keyFrame = 0;
+    const out = checkImageConformance(s);
+    expect(out.some((m) => m.includes("frame"))).toBe(true);
+  });
+
+  it("should not throw when frames is missing entirely (no stack trace, spec §7)", () => {
+    const s = validStory() as unknown as { frames?: unknown };
+    delete s.frames;
+    expect(() => checkImageConformance(s as ImageStory)).not.toThrow();
+    expect(checkImageConformance(s as ImageStory)).toContain(
+      "missing frames — an image story needs a frames array",
     );
   });
 
@@ -86,7 +145,15 @@ describe("checkImageConformance", () => {
   it("should flag a keyFrame index out of range", () => {
     const s = validStory();
     s.keyFrame = 5;
-    expect(checkImageConformance(s)).toContain("keyFrame 5 out of range [0,2)");
+    expect(checkImageConformance(s)).toContain("keyFrame 5 out of range [0,3)");
+  });
+
+  it("should flag a non-integer keyFrame", () => {
+    const s = validStory();
+    s.keyFrame = 1.5;
+    expect(checkImageConformance(s)).toContain(
+      "keyFrame 1.5 out of range [0,3)",
+    );
   });
 
   it("should flag a frame with empty alt (WCAG 1.1.1)", () => {
@@ -119,6 +186,22 @@ describe("checkImageConformance", () => {
     expect(checkImageConformance(s)).toContain('frame "f1" has empty caption');
   });
 
+  it("should flag an empty frame id", () => {
+    const s = validStory();
+    s.frames[1]!.id = "  ";
+    expect(checkImageConformance(s)).toContain(
+      "frame at index 1 has an empty id",
+    );
+  });
+
+  it("should flag an empty frameRef", () => {
+    const s = validStory();
+    s.frames[0]!.frameRef = "";
+    expect(checkImageConformance(s)).toContain(
+      'frame "f0" has an empty frameRef — every frame references a raw image',
+    );
+  });
+
   it("should flag a duplicate frame id", () => {
     const s = validStory();
     s.frames[1]!.id = "f0";
@@ -147,22 +230,40 @@ describe("checkImageConformance", () => {
     ).toBe(true);
   });
 
-  it("should respect a custom overlapThreshold", () => {
+  it("should honour a custom overlapThreshold that FLIPS the outcome", () => {
+    // The caption shares 1 of its 2 content bigrams ("old bridge") with the passage → 0.5.
+    // It must NOT flag at the 0.6 default, and MUST flag at a 0.4 override — proving the
+    // override actually changes the verdict (not merely re-confirming the default).
     const s = validStory();
-    s.frames[0]!.sourcePassage = "the eastern bank before the works began";
-    s.frames[0]!.caption = "The eastern bank before the works began.";
-    // Identical content → ratio 1.0; a threshold of 0.99 still flags it, 1.01 never would.
-    expect(
-      checkImageConformance(s, { overlapThreshold: 0.5 }).some((m) =>
-        m.includes("too close to its source passage"),
-      ),
-    ).toBe(true);
+    s.frames[0]!.sourcePassage = "old bridge still stands";
+    s.frames[0]!.caption = "old bridge collapsed";
+    const flagged = (out: string[]) =>
+      out.some((m) => m.includes("too close to its source passage"));
+    expect(flagged(checkImageConformance(s))).toBe(false); // default 0.6
+    expect(flagged(checkImageConformance(s, { overlapThreshold: 0.4 }))).toBe(
+      true,
+    );
+  });
+
+  it("should report every violation of a multiply-broken story at once", () => {
+    const s = validStory();
+    s.title = "";
+    s.frames[0]!.alt = "";
+    s.frames[1]!.credit = { name: "" };
+    const out = checkImageConformance(s);
+    expect(out).toContain("missing story title");
+    expect(out.some((m) => m.includes('frame "f0" has empty alt'))).toBe(true);
+    expect(out.some((m) => m.includes('frame "f1" has no photo credit'))).toBe(
+      true,
+    );
+    expect(out.length).toBeGreaterThanOrEqual(3);
   });
 });
 
 describe("captionOverlapRatio", () => {
   it("should score a self-contained rephrase low even when it shares a place name and year", () => {
-    // Shared tokens are the proper noun "Annemasse" and the number "2019" — both excluded.
+    // The caption reuses only "as"/"workers" from the passage (2 of its 7 content words);
+    // the number "2019" never tokenizes, and "Annemasse" isn't reused by the caption at all.
     const caption = "The frontier town swelled as workers arrived.";
     const passage =
       "Annemasse grew fast after 2019 as cross-border workers poured in.";
@@ -177,7 +278,89 @@ describe("captionOverlapRatio", () => {
     expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
   });
 
-  it("should be symmetric and return 0 for disjoint content", () => {
+  it("should flag a reorder that keeps verbatim content runs intact", () => {
+    // The two lifted runs ("families once walked" and "quiet towpath") are reordered but intact,
+    // so most of the caption's content bigrams are shared → 0.67, caught. (A full shuffle that
+    // broke every adjacency would not — an accepted tradeoff for not crying wolf on terse captions.)
+    const caption = "families once walked the quiet towpath";
+    const passage = "the quiet towpath where families once walked on sundays";
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
+  });
+
+  it("should flag a verbatim tail excerpt of a LONGER passage (containment, not Jaccard)", () => {
+    // The caption is a verbatim tail of the passage; a shared proper name ("Annemasse") does not
+    // distort the bigram score, and the longer passage does not dilute containment the way
+    // Jaccard's union would. Both content bigrams are lifted → 1.0.
+    const caption = "Annemasse burned through the night.";
+    const passage = "Residents fled as Annemasse burned through the night.";
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
+  });
+
+  it("should flag a verbatim copy written in Title Case / ALL CAPS", () => {
+    // A word-for-word copy typeset in a caption house style (Title Case) must still flag — the
+    // measure is case-insensitive and phrase-based, so casing cannot hide a copy (this was a
+    // 0.000 false negative when capitalization was read as a proper-noun signal).
+    const caption = "The Machinery Moved In As The Embankment Took Shape";
+    const passage =
+      "the machinery moved in as the embankment took shape over months";
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
+  });
+
+  it("should NOT flag a terse caption that only reuses the subject's unavoidable topic nouns", () => {
+    // A photo of a protest must say "protesters"/"march"/"downtown"; those isolated topic nouns
+    // appear scattered in the passage but never as a shared run → 0, not a copy.
+    const caption = "Protesters march downtown";
+    const passage =
+      "Thousands of protesters filled the streets as the march reached downtown.";
+    expect(captionOverlapRatio(caption, passage)).toBeLessThan(0.6);
+  });
+
+  it("should NOT flag a caption that names the subject with a different word", () => {
+    // The caption says "Firefighters" where the passage says "Crews" — it cannot be a copy; only
+    // the domain pair "battled blaze" is shared (1 of 2 bigrams) → 0.5, under threshold.
+    const caption = "Firefighters battled the blaze";
+    const passage = "Crews battled the blaze for hours before dawn.";
+    expect(captionOverlapRatio(caption, passage)).toBeLessThan(0.6);
+  });
+
+  it("should measure the caption side (directed containment), not a symmetric ratio", () => {
+    // A 3-word caption fully contained in a long passage scores 1.0; the reverse (long text
+    // vs short) scores much lower — the tripwire asks "is the CAPTION lifted", not vice-versa.
+    const caption = "families once walked";
+    const passage =
+      "families once walked the quiet towpath every single sunday";
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.9);
+    expect(captionOverlapRatio(passage, caption)).toBeLessThan(0.6);
+  });
+
+  it("should NOT flag a terse independent caption sharing only stopwords + one common noun", () => {
+    // Function words ("over", "the") carry no plagiarism signal. A 2-content-word caption that
+    // shares only "harbour" with its topically-matched passage must stay under threshold — this
+    // was a 0.75 false positive back when stopwords counted toward the containment denominator.
+    const caption = "Dawn over the harbour";
+    const passage = "trade over the harbour has collapsed";
+    expect(captionOverlapRatio(caption, passage)).toBeLessThan(0.6);
+  });
+
+  it("should flag a verbatim French copy despite mismatched apostrophe glyphs", () => {
+    // A hand-typed caption uses a straight apostrophe, a pasted passage a curly one. Normalizing
+    // ’→' before tokenizing keeps l'usine === l’usine, so the verbatim French lift still flags
+    // (was a 0.33 miss). Accented words tokenize whole under the Unicode tokenizer.
+    const caption =
+      "les habitants d'Annemasse ont fui lorsque l'usine a pris feu";
+    const passage =
+      "les habitants d’Annemasse ont fui lorsque l’usine a pris feu dans la nuit";
+    expect(captionOverlapRatio(caption, passage)).toBeGreaterThan(0.6);
+  });
+
+  it("should not flag an independent French caption on the same topic", () => {
+    const caption = "La rivière déborde après l’orage";
+    const passage =
+      "les pompiers ont sauvé trois familles piégées par la crue soudaine";
+    expect(captionOverlapRatio(caption, passage)).toBeLessThan(0.6);
+  });
+
+  it("should return 0 for disjoint content", () => {
     expect(captionOverlapRatio("alpha beta gamma", "delta epsilon zeta")).toBe(
       0,
     );

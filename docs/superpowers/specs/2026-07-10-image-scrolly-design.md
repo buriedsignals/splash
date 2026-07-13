@@ -122,8 +122,10 @@ nécessité des garde-fous de §6/§7 en amont.
 
 1. `title` + `description` + `source.name` présents (module tient seul hors-contexte).
 2. Chaque frame a `alt` **non vide** et **≠ `caption`** (sinon throw). Idem pour `credit.name`.
-3. `frames.length ≥ 2` (un crossfade a besoin de 2 images) — **plancher scopé par format** : `< 2` ⇒
-   dégrade en `static` seul, pas d'erreur.
+3. **Plancher de frames scopé par format** — `checkImageConformance(story, { format })` : `static` ≥ 1
+   (key-frame), `video` ≥ 2 (un crossfade a besoin de 2 images), `scrolly` **3**–6 (§6.4). Sans `format`,
+   le plancher est ≥ 1 : `< 2` n'est PAS une violation mais une décision orchestrateur de **dégrader en
+   `static` seul** (spec §13), jamais une erreur de conformance. Plafond embarqué = **6** (universel).
 4. Scrolly embarqué : **3–6 frames** (règle courte, alignée sur map/chart). Le cull (§7) garantit ce
    plafond en amont.
 5. **Tripwire anti-copie (corrigé)** : pour toute frame article-dérivée, `sourcePassage` est **requis**
@@ -233,7 +235,7 @@ chart-native lit son `config.json`.
 
 `fit` (défaut `canvas-frame`) · `cropDiscardThreshold` (ex. 0.30) · `webpQuality` (~82) ·
 `maxInputDimension` · `holdFrames` · `crossfadeFrames` · `fps` · `captionOverlapThreshold` (tripwire
-Jaccard) · plancher/plafond frames scrolly (2 / 6).
+Jaccard) · plancher/plafond frames scrolly (**3 / 6** — aligné sur §6.4).
 
 ## 13. Tests (bun:test, TDD)
 
