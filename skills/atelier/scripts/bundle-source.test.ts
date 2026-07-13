@@ -8,7 +8,7 @@ import {
   readdirSync,
   rmSync,
 } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import {
   stripQuery,
@@ -266,28 +266,97 @@ describe("bundle-source CLI — map-native assembly", () => {
       expect(pkg.dependencies.remotion).toBe("4.0.482");
       expect(pkg.scripts.build).toBe("vite build");
       // No copied file has a DANGLING cross-skill relative import (would break a rebuild).
-      const allTs = walk(join(dest, "skills")).filter((f) =>
-        /\.(ts|tsx)$/.test(f),
-      );
-      for (const f of allTs) {
-        const src = readFileSync(f, "utf8");
-        for (const m of src.matchAll(/\bfrom\s*["'](\.[^"']+)["']/g)) {
-          const target = require("node:path").resolve(
-            require("node:path").dirname(f),
-            m[1].replace(/\?.*$/, ""),
-          );
-          const exts = ["", ".ts", ".tsx", ".js", ".jsx", ".json", ".geojson"];
-          const ok =
-            exts.some((e) => existsSync(target + e)) ||
-            exts.some((e) => existsSync(join(target, "index" + e)));
-          expect(ok).toBe(true);
-        }
-      }
+      assertNoDanglingRelativeImports(join(dest, "skills"));
     } finally {
       rmSync(work, { recursive: true, force: true });
     }
   });
 });
+
+describe("bundle-source CLI — scrolly assembly (3-tree closure)", () => {
+  const scriptPath = join(import.meta.dir, "bundle-source.mjs");
+  // traceClosure walks mount.tsx's static imports, not the config — any real scrolly config
+  // works here. Scrolly.tsx imports both ScrollyChart and ScrollyMap, so its closure spans
+  // THREE skills (scrolly + map-native + chart-native); this proves all three get copied.
+  const sampleConfig = join(
+    REPO,
+    "skills",
+    "scrolly",
+    "assets",
+    "sample-data",
+    "scrolly.json",
+  );
+
+  it("assembles a runnable bundle spanning scrolly + map-native + chart-native", () => {
+    const work = mkdtempSync(join(tmpdir(), "bundle-source-scrolly-"));
+    const manifestPath = join(work, "source-manifest.json");
+    writeFileSync(
+      manifestPath,
+      JSON.stringify({ engine: "scrolly", kind: "map" }),
+    );
+    const dest = join(work, "story-source");
+    try {
+      const out = execFileSync(
+        "bun",
+        [scriptPath, manifestPath, sampleConfig, dest],
+        { encoding: "utf8" },
+      );
+      expect(out).toContain("BUNDLE_SOURCE_RESULT");
+      // The scrolly entry itself.
+      expect(
+        existsSync(join(dest, "skills", "scrolly", "src", "mount.tsx")),
+      ).toBe(true);
+      // Proves all 3 trees were copied — scrolly pulls map-native geometry/story modules and
+      // chart-native's chart geometry/story modules directly (Scrolly.tsx imports both
+      // ScrollyChart and ScrollyMap).
+      const mapNativeFiles = readdirSync(
+        join(dest, "skills", "map-native", "src"),
+      ).filter((f) => /\.(ts|tsx)$/.test(f));
+      expect(mapNativeFiles.length).toBeGreaterThan(0);
+      const chartNativeFiles = readdirSync(
+        join(dest, "skills", "chart-native", "src"),
+      ).filter((f) => /\.(ts|tsx)$/.test(f));
+      expect(chartNativeFiles.length).toBeGreaterThan(0);
+      // Scaffold pieces present.
+      for (const f of [
+        "package.json",
+        "vite.config.ts",
+        "index.html",
+        "tsconfig.json",
+        "config.json",
+        "README.md",
+        ".env.example",
+      ])
+        expect(existsSync(join(dest, f))).toBe(true);
+      // Deps derived from the traced specifiers span all 3 skills' package.json.
+      const pkg = JSON.parse(readFileSync(join(dest, "package.json"), "utf8"));
+      expect(pkg.dependencies["@maptiler/sdk"]).toBeTruthy();
+      expect(pkg.dependencies["@turf/turf"]).toBeTruthy();
+      expect(pkg.dependencies.react).toBeTruthy();
+      // No copied file has a DANGLING cross-skill relative import (would break a rebuild).
+      assertNoDanglingRelativeImports(join(dest, "skills"));
+    } finally {
+      rmSync(work, { recursive: true, force: true });
+    }
+  });
+});
+
+// Asserts no copied .ts/.tsx file under `dir` has an unresolvable relative import — a copy-set
+// completeness check shared by every engine's assembly test.
+function assertNoDanglingRelativeImports(dir) {
+  const allTs = walk(dir).filter((f) => /\.(ts|tsx)$/.test(f));
+  for (const f of allTs) {
+    const src = readFileSync(f, "utf8");
+    for (const m of src.matchAll(/\bfrom\s*["'](\.[^"']+)["']/g)) {
+      const target = resolve(dirname(f), m[1].replace(/\?.*$/, ""));
+      const exts = ["", ".ts", ".tsx", ".js", ".jsx", ".json", ".geojson"];
+      const ok =
+        exts.some((e) => existsSync(target + e)) ||
+        exts.some((e) => existsSync(join(target, "index" + e)));
+      expect(ok).toBe(true);
+    }
+  }
+}
 
 function walk(dir) {
   const out = [];
