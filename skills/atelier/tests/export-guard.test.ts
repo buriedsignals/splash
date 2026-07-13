@@ -110,13 +110,21 @@ describe("assertDelivered", () => {
       }),
     ).toThrow(/scrolly\.html/);
   });
-  it("accepts an interactive code-source delivery of a non-empty bundle dir listing", () => {
+  it("accepts an interactive code-source delivery of a runnable bundle dir listing", () => {
+    expect(() =>
+      assertDelivered(["package.json", "vite.config.ts", "src/App.tsx"], {
+        format: "interactive",
+        form: "code-source",
+      }),
+    ).not.toThrow();
+  });
+  it("refuses an interactive code-source delivery missing vite.config.ts", () => {
     expect(() =>
       assertDelivered(["package.json", "src/App.tsx"], {
         format: "interactive",
         form: "code-source",
       }),
-    ).not.toThrow();
+    ).toThrow(/runnable source bundle/);
   });
   it("refuses an interactive code-source delivery that is an empty folder", () => {
     expect(() =>

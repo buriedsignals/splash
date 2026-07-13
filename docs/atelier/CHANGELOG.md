@@ -4,6 +4,58 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-13 (suite) — Option 3 item 3 : bundle source React RUNNABLE pour map-native/scrolly (10 tâches, branche `feat/map-scrolly-source-bundle`)
+
+La forme « Code source » de l'EXPORT (décision verrouillée 2026-07-10) n'était réellement runnable
+QUE pour chart-native (`export-source.mjs` copie `chart-native/src`, self-contenu) — map-native et
+scrolly livraient un dossier de fichiers déjà buildés, byte-identique à la forme « HTML autonome »,
+rien à reconstruire. Fermé (spec `docs/superpowers/specs/2026-07-13-map-scrolly-runnable-source-
+bundle-design.md`, plan `docs/superpowers/plans/2026-07-13-map-scrolly-runnable-source-bundle.md`,
+10 tâches, chaque tâche review clean) :
+
+- **Générateur `skills/atelier/scripts/bundle-source.mjs`.** map-native/scrolly ont un `src`
+  ENTRELACÉ (scrolly importe chart-native+map-native ; map-native importe scrolly depuis 2 fichiers
+  hors du chemin interactif) donc ni un `cpSync` brut du dossier ni un metafile esbuild ne
+  suffisent (les imports Vite `?raw`/`.css` ne se résolvent pas sans plugin — la spec a été mise à
+  jour en conséquence, esbuild n'était qu'un choix de départ). À la place : un **tracer d'imports
+  statiques maison** (`traceClosure`) qui parcourt le graphe depuis `mount.tsx`, résout les imports
+  relatifs, s'arrête aux bare-specifiers ; la copie **préserve le layout repo-relatif**
+  `skills/<engine>/{src,assets}` (chaque import relatif existant résout sans réécriture) ; les deps
+  du `package.json` généré sont **DÉRIVÉES de la closure tracée**, jamais écrites à la main —
+  `remotion` y apparaît automatiquement car il est réellement sur le chemin interactif carte
+  (`mount.tsx → composant → route-geo.ts → video-scene.ts → remotion`).
+- **Deux marqueurs producteurs.** `skills/map-native/scripts/produce.mjs` et
+  `skills/scrolly/scripts/produce.mjs` déposent désormais `source-manifest.json` (+ `config.json`,
+  déjà existant) en sortie interactive/scrolly — le signal que `bundle-source.mjs` peut assembler un
+  bundle pour cet élément.
+- **Routing `export-code.mjs` + `assertDelivered` resserré.** La forme `code-source` détecte
+  `source-manifest.json` (map-native/scrolly, en l'absence de `native-source.json` chart-native) et
+  route vers `bundle-source.mjs` au lieu de copier les fichiers déjà buildés — le dossier de
+  fichiers reste un dernier recours si NI l'un NI l'autre marqueur n'existe.
+  `assertDelivered(files, { format, form: "code-source" })` exige maintenant `package.json` +
+  `vite.config.ts` à la racine (pas juste un dossier non-vide) — bloque une régression vers une
+  simple copie d'`interactive.html` qui passerait pour un bundle runnable.
+- **Preuve from-zero (harness opt-in `skills/atelier/scripts/verify-source-bundle.mjs`, délibérément
+  PAS dans `bun run check`** — réseau réel + `bun install`/`bun run build` réels + rendu Playwright
+  réel, trop lourd pour tourner à chaque commit) : **4 types rendus de bout en bout depuis zéro** —
+  choropleth, symbol, route (le cas géo-dense : polygones + longue ligne, basemap sombre) et un
+  map-scrolly (la closure à 3 arbres scrolly+map-native+chart-native) — chacun `bun install && bun
+  run build` dans un dossier temp SANS `node_modules` partagé, puis rendu headless asserte un canvas
+  MapLibre peint, les tuiles chargées, aucune erreur `VITE_MAPTILER_KEY missing`. **Les 7 types
+  map-native** sont build-vérifiés structurellement depuis zéro (les 4 restants — locator,
+  dot-density, hex-grid, cartogram — sautent le rendu Playwright par design : juste `bun install &&
+  bun run build` → `dist/index.html`). Un flake d'environnement (contention Chromium après ~6
+  lancements Playwright séquentiels dans le même run) a fait échouer `map-native-route` une fois ;
+  PASS au retry isolé avec un `bun install` à froid réel — aucun bug de bundle trouvé.
+- **Caveat MapTiler documenté, jamais contourné.** La carte fetch ses tuiles basemap à l'exécution —
+  le bundle est *rebuildable*, pas *offline* (inhérent au design basemap hébergé). La clé atelier
+  n'est jamais embarquée (secret privé, révocable, à quota) ; le bundle documente
+  `VITE_MAPTILER_KEY` dans `.env.example` + `README.md` — le journaliste met la sienne.
+
+`bun run check` reste **20/20** — les nouveaux tests d'assemblage vivent dans les `TEST_DIRS` déjà
+couverts (`skills/atelier`, `skills/map-native`, `skills/scrolly`), pas de nouvelle ligne de gate,
+pas de réseau dans le gate.
+
 ## Session 2026-07-13 — Chantier déféré #1 : le hang vidéo seismes ROOT-CAUSÉ + fix universel (le seul vrai échec du corpus, éliminé)
 
 Le hang du rendu vidéo symbole animé (map-native + Remotion) — **le seul `status=failed` restant du corpus QA**,

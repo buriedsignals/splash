@@ -60,7 +60,8 @@ export function isHostedUrl(url: unknown): boolean {
 //   - video   → exactly one .mp4 file.
 //   - interactive / scrolly → the CHOSEN form:
 //       "html"        → the self-contained interactive.html / scrolly.html file present.
-//       "code-source" → a non-empty source-bundle directory listing.
+//       "code-source" → a non-empty source-bundle directory listing that is actually runnable:
+//                       `package.json` + `vite.config.ts` at its root (see below).
 //       "embed"       → EXACTLY an EMBED_URL.txt holding the hosted link — never the pre-export
 //                       production output. When `opts.dir` is given the URL's shape is verified
 //                       too (isHostedUrl), so a blank / stalled-deploy file cannot fake delivery.
@@ -123,6 +124,12 @@ export function assertDelivered(
     if (files.length === 0)
       throw new Error(
         `not a delivery: ${format} form=code-source requires a non-empty source-bundle directory`,
+      );
+    // A runnable bundle carries a Vite project at its root — package.json + vite.config.ts.
+    // This stops a regression back to a lone interactive.html copy from passing as code-source.
+    if (!files.includes("package.json") || !files.includes("vite.config.ts"))
+      throw new Error(
+        `not a delivery: ${format} form=code-source must be a runnable source bundle (package.json + vite.config.ts at its root), got ${JSON.stringify(files)}`,
       );
     return;
   }

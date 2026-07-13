@@ -571,9 +571,15 @@ article-web is the one channel that can host it**:
          statically, `package.json` with the interactive deps only — no remotion, `vite.config.ts`,
          `tsconfig.json`, `README.md`). The journalist runs `bun install && bun run build` → `dist/index.html`
          (the interactive). THIS is the headline form-1 capability.
-       - **map-native / scrolly** (`kind: "built-files-folder"`) → the built self-contained html (their `src/` is
-         NOT a straight-copy React project — map-native imports scrolly; scrolly imports chart-native +
-         map-native + maptiler/turf — so no rebuildable bundle; they hand over the built file).
+       - **map-native / scrolly** (`kind: "react-source-bundle"` too) → a `<id>-source/` **runnable Vite
+         project**, assembled ON DEMAND by `skills/atelier/scripts/bundle-source.mjs`, which closure-traces
+         from the `source-manifest.json` + `config.json` the producer drops (their `src/` is entangled —
+         map-native imports scrolly; scrolly imports chart-native + map-native + maptiler/turf — so the copy
+         PRESERVES the repo-relative `skills/<engine>/{src,assets}` layout and deps are DERIVED from the
+         traced closure, remotion included on the map path). `bun install && bun run build` → `dist/index.html`
+         — but the map fetches basemap tiles from MapTiler at runtime, so this bundle is **online-only** and
+         needs the journalist's OWN `VITE_MAPTILER_KEY` (never baked in; documented in the bundle's
+         `.env.example` + `README.md`).
      - **b) HTML autonome** — JUST the single self-contained file: the JS-inlined `interactive.html`
        (`scrolly.html` for a scrolly). One file, drops into any CMS/email/offline.
      - **c) Embed (hébergé)** — deploy the html to the journalist's own fly.io host and share the returned URL
@@ -586,8 +592,8 @@ article-web is the one channel that can host it**:
      (the `deliver` command from the proposal is exactly this):
      - `--form html` → copies the standalone `interactive.html`/`scrolly.html` into the export folder; print its
        ABSOLUTE path (that single file IS the delivery).
-     - `--form code-source` → runs `export-source.mjs` NOW to assemble the `<id>-source/` bundle (chart-native),
-       else copies the built html (map-native/scrolly); print its ABSOLUTE path.
+     - `--form code-source` → runs `export-source.mjs` NOW (chart-native) or `bundle-source.mjs` NOW
+       (map-native/scrolly) to assemble the runnable `<id>-source/` bundle; print its ABSOLUTE path.
      - `--form embed` → runs `deploy-embed.mjs` NOW to upload to the journalist's OWN fly.io app (name via the
        3rd arg or `$ATELIER_EMBED_APP`) and records the hosted URL in `EMBED_URL.txt` (a hosted-DW producer
        records its already-live `publicUrl`, no deploy). Share the URL. **Integrity: `deploy-embed.mjs`
@@ -642,7 +648,7 @@ alongside the thanks is NOT a close — handle the request instead.
 | 2 | PROPOSITION | Journalist accepts / edits / rejects each proposal | Wrong claim visualised |
 | 2c | PROPOSITION | Source established: name + a specific traceable URL, or the honest prose fallback (genuine no-dataset case, or a hedged/uncertain source left unconfirmed — never a confident citation over « je crois »/« de mémoire »), for every accepted proposal | Weak/generic/name-only source ships, or admitted uncertainty ships dressed as a verified citation — caught only late (after a full produce→review cycle) by the render-review |
 | 3 | PRODUCTION | Journalist says "ship it" after seeing the ACTUAL render (re-run in full — 3a then 3b — after every re-produce, never reused from a prior render) | Visual quality not verified; a re-produced render ships on a stale sign-off |
-| 4 | EXPORT | Video/static → give the media file directly; interactive/scrolly → relay the emitted three-form proposal and the journalist chooses ONE: code source (chart-native → runnable `<id>-source/` React bundle; else built-files folder) / HTML autonome (single self-contained file) / embed (hosted link) — `--form` only runs AFTER their answer; per element on a multi-element delivery (a grouped answer like « embed pour les deux » is accepted from the journalist, never presumed) | Wrong delivery format; or the proposal collapsed to a bare "Livré." with nothing handed over; or the form auto-decided — `--form` ran (« je finalise pour les deux ») with no journalist answer to the proposal |
+| 4 | EXPORT | Video/static → give the media file directly; interactive/scrolly → relay the emitted three-form proposal and the journalist chooses ONE: code source (runnable `<id>-source/` React bundle — chart-native, map-native, scrolly) / HTML autonome (single self-contained file) / embed (hosted link) — `--form` only runs AFTER their answer; per element on a multi-element delivery (a grouped answer like « embed pour les deux » is accepted from the journalist, never presumed) | Wrong delivery format; or the proposal collapsed to a bare "Livré." with nothing handed over; or the form auto-decided — `--form` ran (« je finalise pour les deux ») with no journalist answer to the proposal |
 
 ## Never
 
