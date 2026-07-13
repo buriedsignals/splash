@@ -317,6 +317,15 @@ describe("captionOverlapRatio", () => {
     expect(captionOverlapRatio(passage, caption)).toBeLessThan(0.6);
   });
 
+  it("should NOT flag a terse independent caption sharing only stopwords + one common noun", () => {
+    // Function words ("over", "the") carry no plagiarism signal. A 2-content-word caption that
+    // shares only "harbour" with its topically-matched passage must stay under threshold — this
+    // was a 0.75 false positive back when stopwords counted toward the containment denominator.
+    const caption = "Dawn over the harbour";
+    const passage = "trade over the harbour has collapsed";
+    expect(captionOverlapRatio(caption, passage)).toBeLessThan(0.6);
+  });
+
   it("should return 0 for disjoint content", () => {
     expect(captionOverlapRatio("alpha beta gamma", "delta epsilon zeta")).toBe(
       0,

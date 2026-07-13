@@ -63,18 +63,169 @@ function properNouns(text: string): Set<string> {
   return proper;
 }
 
+// Function words (EN + FR, ASCII forms — the tokenizer is ASCII-only) that carry no
+// plagiarism signal. Excluded so a terse caption that merely shares "the/over/on/as" with its
+// topically-matched passage is not counted as copying: directed containment (see below) has a
+// small denominator, so a shared preposition + article would otherwise trip the threshold. The
+// tripwire measures reuse of DESCRIPTIVE prose, not shared grammar.
+const STOPWORDS = new Set<string>([
+  // EN
+  "the",
+  "an",
+  "and",
+  "or",
+  "but",
+  "of",
+  "to",
+  "in",
+  "on",
+  "at",
+  "by",
+  "for",
+  "with",
+  "from",
+  "into",
+  "onto",
+  "over",
+  "under",
+  "as",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "has",
+  "have",
+  "had",
+  "this",
+  "that",
+  "these",
+  "those",
+  "it",
+  "its",
+  "he",
+  "she",
+  "they",
+  "we",
+  "you",
+  "his",
+  "her",
+  "their",
+  "our",
+  "your",
+  "not",
+  "no",
+  "than",
+  "then",
+  "so",
+  "up",
+  "out",
+  "off",
+  "down",
+  "about",
+  "after",
+  "before",
+  "once",
+  "here",
+  "there",
+  "where",
+  "when",
+  "while",
+  "which",
+  "who",
+  "whom",
+  "whose",
+  "will",
+  "would",
+  "can",
+  "could",
+  "may",
+  "might",
+  "must",
+  "should",
+  "do",
+  "does",
+  "did",
+  "through",
+  "along",
+  "across",
+  "between",
+  "against",
+  "during",
+  "without",
+  "within",
+  "last",
+  "every",
+  // FR
+  "le",
+  "la",
+  "les",
+  "un",
+  "une",
+  "des",
+  "du",
+  "de",
+  "et",
+  "ou",
+  "mais",
+  "en",
+  "dans",
+  "sur",
+  "sous",
+  "par",
+  "pour",
+  "avec",
+  "sans",
+  "vers",
+  "chez",
+  "ce",
+  "cet",
+  "cette",
+  "ces",
+  "il",
+  "elle",
+  "ils",
+  "elles",
+  "on",
+  "nous",
+  "vous",
+  "se",
+  "sa",
+  "son",
+  "ses",
+  "leur",
+  "leurs",
+  "ne",
+  "pas",
+  "plus",
+  "que",
+  "qui",
+  "quoi",
+  "dont",
+  "comme",
+  "si",
+  "alors",
+  "puis",
+  "ici",
+  "sont",
+  "ont",
+]);
+
 // Content tokens for the overlap tripwire: lowercase word tokens (≥2 chars; the tokenizer
 // admits only letters/`'`/`-`, so pure numbers never appear as tokens), MINUS the shared
-// proper-noun set. A self-contained caption legitimately reuses place names, people, and dates
-// from the passage it describes — those must NOT count as "copying the article". What we flag
-// is reuse of the passage's ordinary descriptive prose. The proper-noun set is computed over
-// BOTH texts together (see captionOverlapRatio), so a name is excluded symmetrically whether it
-// lands sentence-initially in one text and mid-sentence in the other.
+// proper-noun set and MINUS function words (STOPWORDS). A self-contained caption legitimately
+// reuses place names, people, and dates from the passage it describes — those must NOT count as
+// "copying the article". What we flag is reuse of the passage's ordinary DESCRIPTIVE prose. The
+// proper-noun set is computed over BOTH texts together (see captionOverlapRatio), so a name is
+// excluded symmetrically whether it lands sentence-initially in one text and mid-sentence in the
+// other.
 function contentTokens(text: string, proper: Set<string>): Set<string> {
   const tokens = new Set<string>();
   for (const m of text.toLowerCase().matchAll(/[a-z][a-z'-]+/g)) {
     const t = m[0];
-    if (!proper.has(t)) tokens.add(t);
+    if (!proper.has(t) && !STOPWORDS.has(t)) tokens.add(t);
   }
   return tokens;
 }
