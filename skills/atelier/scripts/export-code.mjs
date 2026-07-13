@@ -193,8 +193,10 @@ function main() {
   if (!isHostedEmbed && !interactive)
     fail(`no interactive .html found in ${outDir} for a ${format} delivery`);
   // chart-native drops config.json + native-source.json so export-source.mjs can assemble a
-  // runnable React bundle; map-native / scrolly do not (their src is not a straight-copy
-  // project) → their code-source form is the built-files folder.
+  // runnable React bundle (its src is a straight-copy project). map-native / scrolly instead
+  // drop config.json + source-manifest.json (see hasSourceManifest below) so bundle-source.mjs
+  // can closure-copy their entangled src into a runnable bundle. Only when NEITHER marker exists
+  // does code-source fall back to the built-files folder.
   const hasNativeSource =
     existsSync(join(outDir, "native-source.json")) &&
     existsSync(join(outDir, "config.json"));
@@ -367,8 +369,9 @@ function main() {
 // machine-relayable block so the orchestrator relays THIS message verbatim (killing the
 // "Livré." with-nothing failure mode) and gets the a/b/c answer — THEN re-invokes this
 // script with --form <chosen> to build ONLY that form. Nothing is built here.
-//   a — Code source: for chart-native a runnable React source bundle (built on --form
-//       code-source); for map-native / scrolly the built-files folder.
+//   a — Code source: a runnable React source bundle (built on --form code-source) — via
+//       export-source.mjs for chart-native, via bundle-source.mjs for map-native / scrolly
+//       with a source-manifest; only when NEITHER source marker exists, the built-files folder.
 //   b — HTML autonome: the single self-contained interactive.html / scrolly.html.
 //   c — Embed (hébergé): deploy the html to the journalist's fly.io host (or, for a hosted
 //       DW producer, the already-live publicUrl — no deploy step).

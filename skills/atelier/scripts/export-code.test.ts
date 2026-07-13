@@ -452,12 +452,14 @@ describe("export-code CLI — the mechanical shippability gate", () => {
 });
 
 describe("export-code — map-native code-source builds a runnable bundle", () => {
-  const script = join(import.meta.dir, "export-code.mjs");
-  it("assembles <id>-source with a Vite project when a source-manifest is present", () => {
+  // A produced interactive map outDir: interactive.html (deliverable) + source-manifest.json +
+  // config.json (the inputs bundle-source.mjs needs to closure-copy the entangled map-native src
+  // into a runnable bundle LATER, on demand). Mirrors setupChartNativeInteractive above, but with
+  // the source-manifest marker instead of native-source.json.
+  function setupMapNativeInteractive() {
     const work = mkdtempSync(join(tmpdir(), "export-code-map-"));
     const outDir = join(work, "out");
     mkdirSync(outDir, { recursive: true });
-    // Minimal produced outDir for an interactive map element.
     writeFileSync(join(outDir, "interactive.html"), "<html></html>");
     writeFileSync(
       join(outDir, "source-manifest.json"),
@@ -474,39 +476,18 @@ describe("export-code — map-native code-source builds a runnable bundle", () =
       "choropleth.json",
     );
     execFileSync("cp", [sample, join(outDir, "config.json")]);
-    // A minimal shippable report for id "m1".
-    const report = {
-      results: [
-        {
-          id: "m1",
-          format: "interactive",
-          status: "produced",
-          reviewed: true,
-          renderApproved: true,
-        },
-      ],
-    };
     const reportPath = join(work, "report.json");
-    writeFileSync(reportPath, JSON.stringify(report));
+    writeFileSync(reportPath, JSON.stringify(report("m1", "interactive")));
+    return { work, outDir, resultsPath: reportPath };
+  }
+
+  it("assembles <id>-source with a Vite project when a source-manifest is present", () => {
+    const { work, outDir, resultsPath } = setupMapNativeInteractive();
     // exportDir must NOT resolve under the OS tmpdir (isEphemeralPath refuses it) — mirror the
     // other tests in this file and place it under this scripts/ directory instead.
     const exportDir = mkdtempSync(join(import.meta.dir, "export-map-source-"));
     try {
-      const out = execFileSync(
-        "bun",
-        [
-          script,
-          outDir,
-          exportDir,
-          "--results",
-          reportPath,
-          "--id",
-          "m1",
-          "--form",
-          "code-source",
-        ],
-        { encoding: "utf8" },
-      );
+      const out = run(outDir, exportDir, resultsPath, "m1", "code-source");
       expect(out).toContain("EXPORT_CODE_RESULT");
       expect(existsSync(join(exportDir, "m1-source", "package.json"))).toBe(
         true,
@@ -526,6 +507,31 @@ describe("export-code — map-native code-source builds a runnable bundle", () =
           ),
         ),
       ).toBe(true);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(work, { recursive: true, force: true });
+    }
+  });
+
+  it("Phase 1 (no --form) advertises form a as the runnable react-source-bundle, not built-files", () => {
+    const { work, outDir, resultsPath } = setupMapNativeInteractive();
+    const exportDir = mkdtempSync(join(import.meta.dir, "export-map-p1-"));
+    try {
+      const out = run(outDir, exportDir, resultsPath, "m1");
+      expect(out).toContain("EXPORT_FORMS_PROPOSAL");
+      const proposal = parseFormsProposal(out);
+      expect(proposal.format).toBe("interactive");
+      // The relabel: a source-manifest element must advertise the runnable bundle (via
+      // bundle-source.mjs), NOT the old built-files folder. Locks emitProposal against a
+      // silent regression back to "built-files-folder" for map-native / scrolly.
+      expect(proposal.forms.a.kind).toBe("react-source-bundle");
+      expect(proposal.forms.a.label).toBe("Code source (bundle React)");
+      expect(proposal.forms.a.pending).toBe(true);
+      expect(proposal.forms.a.path).toBe(join(resolve(exportDir), "m1-source"));
+      expect(proposal.forms.a.deliver).toContain("--form code-source");
+      // Phase 1 builds nothing.
+      expect(existsSync(join(exportDir, "m1-source"))).toBe(false);
+      expect(out).not.toContain("EXPORT_CODE_RESULT");
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
       rmSync(work, { recursive: true, force: true });
