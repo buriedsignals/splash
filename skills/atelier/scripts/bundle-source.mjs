@@ -97,3 +97,60 @@ export function traceClosure(entryAbs) {
   }
   return { files: [...files], bareSpecifiers: [...bare] };
 }
+
+// The bundle always needs these dev deps (Vite scaffold + types), version-resolved from the
+// same skills so the lockfile-resolved pins never drift.
+const FIXED_DEV_DEPS = [
+  "vite",
+  "@vitejs/plugin-react",
+  "vite-plugin-singlefile",
+  "typescript",
+  "@types/react",
+  "@types/react-dom",
+];
+
+// The npm PACKAGE name for a bare specifier: keep @scope/name, drop any subpath.
+export function packageName(spec) {
+  const s = stripQuery(spec);
+  if (s.startsWith("@")) return s.split("/").slice(0, 2).join("/");
+  return s.split("/")[0];
+}
+
+// Build the bundle's package.json dep maps from the traced bare specifiers, resolving each to a
+// single pinned version drawn from the UNION of the involved skills' package.json. Fails loudly
+// on a missing or conflicting version rather than guessing.
+export function deriveDeps(bareSpecifiers, skillPkgs) {
+  const versions = {};
+  for (const p of skillPkgs) {
+    for (const [k, v] of Object.entries({
+      ...(p.dependencies ?? {}),
+      ...(p.devDependencies ?? {}),
+    })) {
+      if (versions[k] && versions[k] !== v)
+        throw new Error(
+          `bundle-source: version conflict for "${k}" across skills: ${versions[k]} vs ${v}`,
+        );
+      versions[k] = v;
+    }
+  }
+  const dependencies = {};
+  for (const spec of bareSpecifiers) {
+    const name = packageName(spec);
+    if (name.startsWith("node:")) continue;
+    if (dependencies[name]) continue;
+    const v = versions[name];
+    if (!v)
+      throw new Error(
+        `bundle-source: no version for dependency "${name}" in the involved skills' package.json`,
+      );
+    dependencies[name] = v;
+  }
+  const devDependencies = {};
+  for (const name of FIXED_DEV_DEPS) {
+    const v = versions[name];
+    if (!v)
+      throw new Error(`bundle-source: no version for devDependency "${name}"`);
+    devDependencies[name] = v;
+  }
+  return { dependencies, devDependencies };
+}
