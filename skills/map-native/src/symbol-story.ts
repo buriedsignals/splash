@@ -5,7 +5,7 @@
 // around the city) → takeaway (points bbox).
 import type { SymbolPoint } from "./symbol-geo";
 import type { Beat } from "./map-story";
-import { formatLocaleNumber, type Lang } from "./core/locale";
+import { formatLocaleNumber, labelWithUnit, type Lang } from "./core/locale";
 import { shortWayLongitudeExtent } from "./core/longitude";
 
 export interface SymbolStoryMeta {
@@ -27,11 +27,13 @@ export function deriveSymbolStory(
   opts: { maxReveals?: number } = {},
 ): Beat[] {
   const unit = meta.unit ?? "";
-  // Mirrors deriveMapStory's fmt (map-story.ts) — same helper, same convention: the
-  // caller's `unit` string carries its own leading space when one is needed ("$bn" vs
-  // " nights"), the localizer only handles thousands-grouping/decimal per `meta.lang`.
+  // The callout shows the FULL grouped number (not the direct label's k/M abbreviation),
+  // localized per `meta.lang`. It must NOT integer-round — a magnitude 7.4 stays "7,4"
+  // (the reported "7magnitude" bug was Math.round + no unit spacing). labelWithUnit adds
+  // the locale-aware spacing (a word unit like "magnitude" gets a space; a symbol unit
+  // like "$bn" attaches) and normalizes any caller-supplied leading space on `unit`.
   const fmt = (v: number) =>
-    `${formatLocaleNumber(Math.round(v), meta.lang)}${unit}`;
+    labelWithUnit(formatLocaleNumber(v, meta.lang), unit, meta.lang);
 
   const lons = points.map((p) => p.lon);
   const lats = points.map((p) => p.lat);

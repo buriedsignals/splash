@@ -94,6 +94,31 @@ describe("deriveSymbolStory — lang", () => {
   });
 });
 
+describe("deriveSymbolStory — decimal value + word unit (the seismes case)", () => {
+  const quakes: SymbolPoint[] = [
+    { lon: 142.4, lat: 38.3, value: 7.4, label: "Tohoku" },
+    { lon: -73.2, lat: -35.8, value: 6.1, label: "Maule" },
+  ];
+
+  it("keeps the decimal (no integer rounding) and spaces a word unit", () => {
+    const beats = deriveSymbolStory(quakes, {
+      title: "T",
+      unit: "magnitude",
+      lang: "fr",
+    });
+    const tohoku = beats.find((b) => b.callout?.name === "Tohoku")!;
+    // Was "7magnitude" (Math.round + no space); must read "7,4 magnitude".
+    expect(tohoku.callout!.value).toBe("7,4 magnitude");
+    expect(tohoku.copy).toBe("Tohoku — 7,4 magnitude");
+  });
+
+  it("keeps the English dot decimal and the word-unit space", () => {
+    const beats = deriveSymbolStory(quakes, { title: "T", unit: "magnitude" });
+    const tohoku = beats.find((b) => b.callout?.name === "Tohoku")!;
+    expect(tohoku.callout!.value).toBe("7.4 magnitude");
+  });
+});
+
 describe("deriveSymbolStory maxReveals", () => {
   const pts: SymbolPoint[] = [
     { lon: 0, lat: 51, value: 300, label: "London", radius: 40 },

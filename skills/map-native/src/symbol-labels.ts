@@ -13,15 +13,18 @@ export interface SymbolLabel {
   radius: number; // the symbol radius, for the component's offset math
 }
 
-// Compact numeric format for a direct label: integers below 1000, else k / M with a
-// trimmed trailing ".0". The unit is NOT included (it belongs in the legend/description).
+// Compact numeric format for a direct label: below 1000 the value keeps up to one
+// decimal (a magnitude 7.4 must stay "7,4", NOT round to "7" — the reported seismes bug),
+// while an integer count trims clean ("181", never "181.0"); at/above 1000 it abbreviates
+// to k / M with a trimmed trailing ".0". The unit is NOT included here — it is appended at
+// the label-assembly site via labelWithUnit so the spacing stays locale-aware.
 export function formatLabelValue(value: number, lang?: Lang): string {
   const abs = Math.abs(value);
   let s: string;
   if (abs >= 1_000_000) s = trimDot((value / 1_000_000).toFixed(1)) + "M";
   else if (abs >= 1_000) s = trimDot((value / 1_000).toFixed(1)) + "k";
-  else s = String(Math.round(value));
-  return localizeDecimal(s, lang); // FR: "1.2M" → "1,2M"
+  else s = trimDot(value.toFixed(1)); // 7.4 → "7.4"; 181 → "181.0" → "181"
+  return localizeDecimal(s, lang); // FR: "1.2M" → "1,2M", "7.4" → "7,4"
 }
 
 function trimDot(s: string): string {

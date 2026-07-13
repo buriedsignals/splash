@@ -25,7 +25,7 @@ import { MapFrame } from "./core/MapFrame";
 import { MapFilterBar } from "./core/MapFilterBar";
 import { resolveMapStyle } from "./route-geo";
 import { legendTheme } from "./theme/legend-theme";
-import { formatLocaleNumber } from "./core/locale";
+import { formatLocaleNumber, labelWithUnit } from "./core/locale";
 import {
   deriveFilterOptions,
   filterStateToExpression,
@@ -259,8 +259,8 @@ export const SymbolMap: React.FC<Props> = ({
           label: s.label ?? "",
           radius: s.radius,
           labelText: labels[i]?.name
-            ? `${labels[i].name}\n${labels[i].valueText}${config.valueUnit ?? ""}`
-            : `${labels[i]?.valueText ?? ""}${config.valueUnit ?? ""}`,
+            ? `${labels[i].name}\n${labelWithUnit(labels[i].valueText, config.valueUnit, config.lang)}`
+            : labelWithUnit(labels[i]?.valueText ?? "", config.valueUnit, config.lang),
           labelOffset: labelRadialOffset(s.radius, textSize),
           anchor: "left",
         },
@@ -399,7 +399,7 @@ export const SymbolMap: React.FC<Props> = ({
             .setHTML(
               // Locale-group the hover value, like every sibling map tooltip
               // (Choropleth/Cartogram/HexGrid) — never a bare ${p.value}.
-              `<strong>${p.label}</strong><br/>${formatLocaleNumber(p.value, config.lang)}${config.valueUnit ?? ""}`,
+              `<strong>${p.label}</strong><br/>${labelWithUnit(formatLocaleNumber(p.value, config.lang), config.valueUnit, config.lang)}`,
             )
             .addTo(map);
         });
@@ -500,7 +500,7 @@ export const SymbolMap: React.FC<Props> = ({
           // Locale-group the reference value ("17 600" fr / "17,600" en) — an un-formatted
           // interpolation shipped the un-grouped "17600" the other map legends
           // (Choropleth/Cartogram/…) never did. Single-sourced through core/locale.
-          `<text x="${max * 2 + 10}" y="${h - s.radius * 2 - 2 + 4}" font-size="11" fill="${theme.ink}">${formatLocaleNumber(s.value, config.lang)}${config.valueUnit ?? ""}</text>`,
+          `<text x="${max * 2 + 10}" y="${h - s.radius * 2 - 2 + 4}" font-size="11" fill="${theme.ink}">${labelWithUnit(formatLocaleNumber(s.value, config.lang), config.valueUnit, config.lang)}</text>`,
       )
       .join("");
     el.innerHTML = `<svg width="${max * 2 + 70}" height="${h}">${rows}</svg>`;
