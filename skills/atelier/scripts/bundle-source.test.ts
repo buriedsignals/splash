@@ -7,6 +7,11 @@ import {
   traceClosure,
   packageName,
   deriveDeps,
+  bundleViteConfig,
+  bundleIndexHtml,
+  bundleTsconfig,
+  bundleReadme,
+  bundleEnvExample,
 } from "./bundle-source.mjs";
 
 const REPO = join(import.meta.dir, "..", "..", ".."); // skills/atelier/scripts → repo root
@@ -162,5 +167,35 @@ describe("deriveDeps", () => {
     expect(() => deriveDeps(["react"], conflicting)).toThrow(
       /version conflict/,
     );
+  });
+});
+
+describe("scaffold emitters", () => {
+  it("map vite.config bakes ./config.json into __CONFIG__ and forces interactive", () => {
+    const cfg = bundleViteConfig("map-native");
+    expect(cfg).toContain('readFileSync(new URL("./config.json"');
+    expect(cfg).toContain("__INTERACTIVE__: JSON.stringify(true)");
+    expect(cfg).toContain("viteSingleFile()");
+  });
+  it("scrolly vite.config dedupes react (single copy) and bakes __CONFIG__", () => {
+    const cfg = bundleViteConfig("scrolly");
+    expect(cfg).toContain('dedupe: ["react", "react-dom"]');
+    expect(cfg).toContain("__CONFIG__");
+  });
+  it("index.html points its module script at the engine mount", () => {
+    expect(bundleIndexHtml("map-native", "Ma carte")).toContain(
+      'src="/skills/map-native/src/mount.tsx"',
+    );
+    expect(bundleIndexHtml("map-native", "Ma carte")).toContain(
+      "<title>Ma carte</title>",
+    );
+  });
+  it("env example declares the MapTiler key, empty", () => {
+    expect(bundleEnvExample()).toContain("VITE_MAPTILER_KEY=");
+  });
+  it("README documents the key + build and the online-only caveat", () => {
+    const r = bundleReadme("map-native", "Ma carte");
+    expect(r).toContain("bun install");
+    expect(r).toContain("VITE_MAPTILER_KEY");
   });
 });

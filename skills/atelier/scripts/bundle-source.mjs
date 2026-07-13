@@ -154,3 +154,115 @@ export function deriveDeps(bareSpecifiers, skillPkgs) {
   }
   return { dependencies, devDependencies };
 }
+
+// The bundle's Vite config. Reuses each engine's real behaviour but sources the baked config
+// from ./config.json (NOT process.env.CONFIG), so `vite build` alone rebuilds the visual.
+export function bundleViteConfig(engine) {
+  const isScrolly = engine === "scrolly";
+  const defineBlock = isScrolly
+    ? `  define: { __CONFIG__: JSON.stringify(injectedConfig) },`
+    : `  define: {\n    __INTERACTIVE__: JSON.stringify(true),\n    __CONFIG__: JSON.stringify(injectedConfig),\n  },`;
+  // Scrolly builds pull chart-native + map-native React copies too; dedupe to one React or hooks
+  // throw (mirrors skills/scrolly/vite.config.ts).
+  const resolveBlock = isScrolly
+    ? `  resolve: {\n    dedupe: ["react", "react-dom"],\n    alias: {\n      react: resolve(here, "node_modules/react"),\n      "react-dom": resolve(here, "node_modules/react-dom"),\n    },\n  },\n`
+    : "";
+  const header = isScrolly
+    ? `import { defineConfig } from "vite";\nimport react from "@vitejs/plugin-react";\nimport { viteSingleFile } from "vite-plugin-singlefile";\nimport { readFileSync } from "node:fs";\nimport { resolve } from "node:path";\nimport { fileURLToPath } from "node:url";\n\nconst here = fileURLToPath(new URL(".", import.meta.url));\n`
+    : `import { defineConfig } from "vite";\nimport react from "@vitejs/plugin-react";\nimport { viteSingleFile } from "vite-plugin-singlefile";\nimport { readFileSync } from "node:fs";\n`;
+  return `${header}
+const injectedConfig = JSON.parse(
+  readFileSync(new URL("./config.json", import.meta.url), "utf8"),
+);
+
+export default defineConfig({
+  base: "./",
+  plugins: [react(), viteSingleFile()],
+${defineBlock}
+${resolveBlock}  build: {
+    outDir: "dist",
+    emptyOutDir: true,
+    assetsInlineLimit: 100_000_000,
+    rollupOptions: { input: "index.html" },
+  },
+});
+`;
+}
+
+export function bundleIndexHtml(engine, title) {
+  const t = String(title ?? "Visuel").replace(/[<>&]/g, "");
+  return `<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${t}</title>
+    <style>html,body{margin:0;padding:0}#root{width:100%}</style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/skills/${engine}/src/mount.tsx"></script>
+  </body>
+</html>
+`;
+}
+
+export function bundleTsconfig() {
+  return (
+    JSON.stringify(
+      {
+        compilerOptions: {
+          target: "ES2020",
+          module: "ESNext",
+          moduleResolution: "bundler",
+          jsx: "react-jsx",
+          strict: true,
+          esModuleInterop: true,
+          skipLibCheck: true,
+          lib: ["ES2020", "DOM", "DOM.Iterable"],
+          resolveJsonModule: true,
+          allowImportingTsExtensions: true,
+          noEmit: true,
+          types: ["vite/client"],
+        },
+        include: ["skills"],
+      },
+      null,
+      2,
+    ) + "\n"
+  );
+}
+
+export function bundleEnvExample() {
+  return `# Your own MapTiler SDK key — required to fetch basemap tiles at runtime.
+# Get one free at https://www.maptiler.com/ , then: cp .env.example .env and fill it in.
+VITE_MAPTILER_KEY=
+`;
+}
+
+export function bundleReadme(engine, title) {
+  return `# ${title ?? "Visuel"} — interactive source bundle
+
+Self-contained Vite project for this ${engine} element. Rebuild or customise it from source.
+
+## Rebuild
+
+    cp .env.example .env      # then paste your own VITE_MAPTILER_KEY
+    bun install
+    bun run build
+
+The built file is \`dist/index.html\` — a single self-contained HTML you can open or embed.
+
+## Note — online basemap
+
+The map fetches its basemap tiles from MapTiler at runtime, so this bundle needs network
+access and **your own** \`VITE_MAPTILER_KEY\` (free tier works). \`bun run build\` succeeds even
+without a key, but the page then throws \`VITE_MAPTILER_KEY missing\` in the browser — set the
+key before building.
+
+## Customise
+
+- **Data & options:** edit \`config.json\`, then \`bun run build\` again.
+- **The visual itself:** edit the components under \`skills/${engine}/src/\`.
+`;
+}
