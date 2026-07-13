@@ -144,3 +144,31 @@ mac the CLI installs but won't launch; the module's guidance names the Node requ
 inherent property of the Gemini runtime (not a bug in this adapter) and is the reason
 `configurator-core.ts` keeps `gemini.verified = false` until this proof passes on a real machine —
 **do not flip it here.**
+
+## Proof result (2026-07-13) — Layer A PASS, Layer B blocked by the free tier
+
+Run on a real mac (Node v20.19.0 present).
+
+- **Layer A PASSED, auth-free:** `gemini skills list` shows all 8 skills `[Enabled]` from
+  `~/.agents/skills`. This also RETIRES the `output_mode` risk — `dw-chart` and `map-dw` (which carry
+  that non-standard frontmatter key) are both `[Enabled]`, so Gemini's parser tolerates unknown keys.
+- **Auth is high-friction on a free Google account** (vs Codex, which just worked):
+  1. The OAuth "Login with Google" is **dead for individuals** — `IneligibleTierError: … migrate to
+     the Antigravity suite` (Google deprecated Code Assist for individuals).
+  2. A free **AI Studio API key** works (new format `AQ.…`, not `AIza…`) but the Gemini API must be
+     **enabled on its GCP project** first (`console.developers.google.com/apis/api/generativelanguage`).
+  3. **Gotcha:** a stale `selectedType: "oauth-personal"` left in `~/.gemini/settings.json` by the
+     failed login forces the deprecated Code Assist path even when `GEMINI_API_KEY` is set. Fix:
+     `~/.gemini/settings.json` → `security.auth.selectedType = "gemini-api-key"` (+ `GEMINI_API_KEY`,
+     `GOOGLE_CLOUD_PROJECT`). Only then does `gemini -p` authenticate (verified with a `PONG` probe).
+- **Layer B BLOCKED — free-tier quota, not an adapter defect:** driving the full `atelier` flow via
+  `gemini -p … -y` died immediately with `TerminalQuotaError` — the free tier caps at **20
+  requests/day** and 250k input tokens, and the atelier flow (large SKILL.md + sub-skill bodies over
+  many turns) needs far more. It never reached nested skill invocation. Proving Gemini's orchestration
+  therefore needs a **paid Gemini API tier**.
+
+**Verdict:** the adapter MECHANICS are proven (discovery + auth path), but Gemini stays
+`verified = false` — its orchestration is unprovable on a free account, unlike Codex (proven
+end-to-end incl. nested invocation). For Atelier's small-newsroom target, Codex is the working free
+runtime; Gemini needs Node + a painful auth setup + a paid tier. To flip `verified` later, re-run
+Layer B on a paid key and confirm nested `suggest-article`→`suggest-chart` invocation fires.
