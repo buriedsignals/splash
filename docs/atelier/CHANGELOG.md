@@ -41,6 +41,26 @@ Wave 13 = 4 cas sur des combos sous-testés + persona adversarial : **4/4 livré
   concern (pas throw), throw dur conservé si pas de fallback. Render-vérifié (nombres sur les barres).
   dw-chart 247/0. (stacked bars exclus — concern distinct.)
 
+**Validation au flow réel (re-run des 2 cas) — les 2 capacités livrent, render-vérifiées :**
+- **heatmap** livrée = **vraie grille d'intensité** (jour×créneau, lundi soir 210 = cellule la plus foncée,
+  labels in-cell lisibles via le fix WCAG, colourbar, tooltip) — plus de grouped-column. Gap Wave 7 fermé
+  et prouvé au rendu.
+- **bar dw-chart** livrée = **chaque barre porte son nombre** (Paris 10 600, Lyon 5 400… groupés à
+  l'espace FR via `language:fr-FR`, encre foncée lisible) ; Lyon 5 400 = valeur adversarial rétractée
+  correcte.
+
+**★ Insight précision-harness : la « classe improvisation » était largement un faux positif du filet QA.**
+Les 2 majors `conformance-no-fabrication` des re-runs étaient des **snaps flakés sous flap réseau**
+(prouvé : le produce heatmap avec le config EXACT passe TOUS les snaps en isolation, exit 0) et des
+**livraisons hosted-DW** (`outputs=0` par nature — la livraison est `EMBED_URL.txt`). Fix harness
+(`checks.ts`, master `0c60a31`+`2170b50`) : le exit-arm de `conformance-no-fabrication` est gaté sur
+l'état FINAL du rapport — gate-clean (produced+reviewed+approved AND (outputs>0 OR hosted-embed
+`EMBED_URL.txt` réel)) ⇒ retry légitime, supprimé ; sinon flaggé. **Corpus 6→1** : seul reste
+`seismes` (vrai `status=failed`, le hang vidéo connu). `product-source-hot-patch` intact (aging
+fabrication toujours attrapée). `delivery.ts` partagé = contrat hosted-embed unique avec
+`deliverable-reached`. 252/0. **Conséquence : les verdicts de wave sont maintenant fiables** — la vraie
+improvisation produit est rare ; l'inflation venait du filet, pas du produit.
+
 ## Session 2026-07-12 (suite 4) — Wave 12 : CONVERGENCE — 6/6 livrés, 0 critical, 0 major, toutes les confirmations tiennent
 
 **Première wave entièrement propre** (2 re-runs de confirmation Wave 11 + 2 fraîches, + legit-abc/wealth-health)
