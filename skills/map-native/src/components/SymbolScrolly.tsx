@@ -14,6 +14,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { symbolGeometry } from "../symbol-geo";
 import {
   symbolLabels,
@@ -217,7 +218,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
         zoom: stepSolutions[0].zoom,
       });
 
-      m.once("idle", () => {
+      continueWhenMapSettles(m, () => {
         setMapState({
           map: m,
           beats,
@@ -322,7 +323,7 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
       ] as never);
     }
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 

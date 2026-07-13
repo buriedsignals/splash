@@ -26,6 +26,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { computeDotDensity } from "../dot-density-geo";
 import { scatterInPolygon } from "../dot-scatter";
 import { deriveDotDensityStory } from "../dot-density-story";
@@ -238,7 +239,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
             legend: layout.legend,
           });
 
-          m.once("idle", () => {
+          continueWhenMapSettles(m, () => {
             setMapState({ map: m, beats, phases, solutions });
             continueRender(handle);
           });
@@ -302,7 +303,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
 
     setOverlay({ beatIndex, captionReveal });
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 

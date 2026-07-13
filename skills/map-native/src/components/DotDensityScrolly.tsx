@@ -20,6 +20,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { computeDotDensity } from "../dot-density-geo";
 import { scatterInPolygon } from "../dot-scatter";
 import { deriveDotDensityStory } from "../dot-density-story";
@@ -252,7 +253,7 @@ export const DotDensityScrolly: React.FC<{ config: DotDensityConfigShape }> = ({
             legend: layout.legend,
           });
 
-          m.once("idle", () => {
+          continueWhenMapSettles(m, () => {
             setMapState({ map: m, beats, story, phases, stepSolutions });
             continueRender(handle);
           });
@@ -318,7 +319,7 @@ export const DotDensityScrolly: React.FC<{ config: DotDensityConfigShape }> = ({
       map.setPaintProperty(DOT_LAYER, "circle-stroke-opacity", 1);
     }
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 

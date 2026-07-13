@@ -26,6 +26,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { computeCartogram } from "../cartogram-geo";
 import { deriveCartogramStory } from "../cartogram-story";
 import { applyCartogramBasemap } from "../theme/cartogram-basemap";
@@ -216,7 +217,7 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
             valueLabel: layout.valueLabel,
           });
 
-          m.once("idle", () => {
+          continueWhenMapSettles(m, () => {
             setMapState({ map: m, beats, phases, solutions });
             continueRender(handle);
           });
@@ -275,7 +276,7 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
 
     setOverlay({ beatIndex, captionReveal });
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 

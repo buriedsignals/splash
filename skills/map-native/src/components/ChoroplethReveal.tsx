@@ -1,5 +1,5 @@
 // ChoroplethReveal — Remotion composition for choropleth reveal.
-// Follows the HarnessCheck harness: per-frame delayRender → setPaintProperty → map.once('idle') → continueRender.
+// Follows the HarnessCheck harness: per-frame delayRender → setPaintProperty → continueWhenMapSettles → continueRender.
 // Regions reveal in ascending-value order (stagger by bin index), blank at frame 0.
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -13,6 +13,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { computeChoropleth, type ChoroplethData } from "../choropleth-geo";
 import {
   easedRevealProgress,
@@ -179,7 +180,7 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
           );
           m.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
 
-          m.once("idle", () => {
+          continueWhenMapSettles(m, () => {
             setMapState({ map: m, bins: sortedBins, numBins: NUM_BINS });
             continueRender(handle);
           });
@@ -241,7 +242,7 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
       0, // no-data: unpainted → default basemap
       revealFillOpacity(progress), // data: ramps 0 → 0.85
     ] as never);
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapState, frame, durationInFrames]);
 

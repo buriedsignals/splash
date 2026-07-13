@@ -4,6 +4,7 @@
 // title → establish (all markers) → reveals → takeaway. Same Beat shape as choropleth/symbol.
 import type { Beat } from "./map-story";
 import type { LocatorMarker } from "./locator-geo";
+import { shortWayLongitudeExtent } from "./core/longitude";
 
 export interface LocatorStoryMeta {
   title: string;
@@ -17,12 +18,11 @@ const DEFAULT_MAX_REVEALS = 5;
 function bboxOf(ms: LocatorMarker[]): [number, number, number, number] {
   const lons = ms.map((m) => m.lon);
   const lats = ms.map((m) => m.lat);
-  return [
-    Math.min(...lons),
-    Math.min(...lats),
-    Math.max(...lons),
-    Math.max(...lats),
-  ];
+  // Antimeridian-aware west/east (see core/longitude.ts): identity for non-straddling
+  // data, but `east` may exceed +180 (unwrapped) for Pacific-spanning markers so the
+  // camera frames the true midpoint, not the empty far side. Mirrors deriveSymbolStory.
+  const { west, east } = shortWayLongitudeExtent(lons);
+  return [west, Math.min(...lats), east, Math.max(...lats)];
 }
 
 // Guarantee a minimum extent so a single-marker (or all-coincident) category does not collapse

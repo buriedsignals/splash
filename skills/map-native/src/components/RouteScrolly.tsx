@@ -5,7 +5,7 @@
 // phase, and each territory's border/fill/label is triggered off the step that reveals it.
 // Renders a pinned ScrollyPanel per content step plus the title scene, instead of the continuous
 // clock overlays.
-// Harness pattern: delayRender → jumpTo/setData → map.once("idle") → continueRender.
+// Harness pattern: delayRender → jumpTo/setData → continueWhenMapSettles → continueRender.
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -17,6 +17,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import * as turf from "@turf/turf";
 import worldGeoJsonImport from "../../assets/geo/world.geojson";
 import type {
@@ -451,7 +452,7 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         },
       });
 
-      m.once("idle", () => {
+      continueWhenMapSettles(m, () => {
         setModel({ map: m, story, phases, stepSolutions });
         continueRender(handle);
       });
@@ -607,7 +608,7 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       );
     }
 
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [model, frame]); // eslint-disable-line react-hooks/exhaustive-deps
 

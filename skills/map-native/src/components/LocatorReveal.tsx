@@ -6,8 +6,8 @@
 //   3. labels via placeLabels (Slice A declutter): project markers, build boxes, set __showLabel,
 //      filter the label layer on it — no MapLibre text-optional silent culling.
 // Harness:
-//   delayRender at mount → on load add source/layers + declutter + fitBounds → map.once('idle', continueRender)
-//   per-frame: delayRender → setPaintProperty (radius/opacity ramped by progress) → map.once('idle', continueRender)
+//   delayRender at mount → on load add source/layers + declutter + fitBounds → continueWhenMapSettles → continueRender
+//   per-frame: delayRender → setPaintProperty (radius/opacity ramped by progress) → continueWhenMapSettles → continueRender
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -19,6 +19,7 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { continueWhenMapSettles } from "../core/frame-ready";
 import { locatorGeometry } from "../locator-geo";
 import {
   placeLabels,
@@ -174,7 +175,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
 
       map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
 
-      map.once("idle", () => {
+      continueWhenMapSettles(map, () => {
         // Deterministic declutter: project each marker, build LabelBoxes, place by
         // priority, then mark only `shown` features with __showLabel = true.
         const boxes: LabelBox[] = geo.markers.map((mk, i) => {
@@ -199,7 +200,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
           type: "FeatureCollection",
           features,
         });
-        map.once("idle", () => {
+        continueWhenMapSettles(map, () => {
           setMapReady(true);
           continueRender(handle);
         });
@@ -223,7 +224,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
     if (map.getLayer(LABEL_LAYER)) {
       map.setPaintProperty(LABEL_LAYER, "text-opacity", progress);
     }
-    map.once("idle", () => continueRender(h));
+    continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapReady, frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps
 
