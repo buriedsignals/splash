@@ -105,6 +105,31 @@ credit: "Source : {name}"   # gabarit
     const p = parseNewsroomMarkdown(`---\nsource:\n  name: "RTS"\n---\n`);
     expect(p).toEqual({ palette: [], source: { name: "RTS" } });
   });
+
+  it("accepts single-quoted values (name and hex) like double-quoted", () => {
+    const p = parseNewsroomMarkdown(
+      `---\npalette:\n  - '#0A5C36'\naccent: '#C8102E'\nsource:\n  name: 'Le Temps'\n---`,
+    );
+    expect(p).toEqual({
+      palette: ["#0A5C36"],
+      accent: "#C8102E",
+      source: { name: "Le Temps" },
+    });
+  });
+
+  it("keeps every palette colour despite a comment or blank line between items", () => {
+    const p = parseNewsroomMarkdown(
+      `---\npalette:\n  - "#0A5C36"   # principal\n  # une note\n\n  - "#C8102E"\naccent: "#C8102E"\n---`,
+    );
+    expect(p?.palette).toEqual(["#0A5C36", "#C8102E"]);
+  });
+
+  it("keeps a '#' inside an unquoted value (only a whitespace-preceded '#' is a comment)", () => {
+    const p = parseNewsroomMarkdown(
+      `---\nsource:\n  name: RTS\n  url: https://x.com/a#frag\n---`,
+    );
+    expect(p?.source).toEqual({ name: "RTS", url: "https://x.com/a#frag" });
+  });
 });
 
 describe("loadNewsroomProfile", () => {
@@ -189,6 +214,12 @@ describe("mergeProfileDefaults", () => {
   it("a null profile leaves the spec unchanged", () => {
     const spec = { title: "t" };
     expect(mergeProfileDefaults(spec, null)).toBe(spec);
+  });
+
+  it("does not throw on a null / non-object spec (drop-proof: falls through to validation)", () => {
+    expect(mergeProfileDefaults(null as never, profile)).toBeNull();
+    expect(mergeProfileDefaults(undefined as never, profile)).toBeUndefined();
+    expect(mergeProfileDefaults("nope" as never, profile)).toBe("nope");
   });
 
   it("seeds colour only for colour-consuming producers (source/lang stay universal)", () => {

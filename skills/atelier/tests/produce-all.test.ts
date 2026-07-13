@@ -5,6 +5,8 @@ import {
   type ProposalValidator,
 } from "../src/produce-all";
 import type { AcceptedProposal } from "../src/producer-spec";
+import { validateAccepted } from "../src/validate-gate";
+import type { BrandProfile } from "../src/brand-profile";
 
 const p = (
   id: string,
@@ -621,5 +623,103 @@ describe("produceAll — newsroom profile defaults", () => {
     };
     await produceAll([p("p1")], "out", dispatch, PASS);
     expect(seen).toEqual({});
+  });
+});
+
+describe("produceAll — newsroom profile with the REAL validator (regression: false duplicate)", () => {
+  const profile: BrandProfile = {
+    palette: ["#0A5C36"],
+    source: { name: "Heidi.news" },
+    lang: "fr",
+  };
+
+  it("still PRODUCES a single valid proposal when a profile is present (no false duplicate-takeaway)", async () => {
+    const produced: string[] = [];
+    const dispatch: Dispatch = async (prop) => {
+      produced.push(prop.id);
+      return { status: "produced", outputs: [`out/${prop.id}.png`] };
+    };
+    const { results } = await produceAll(
+      [
+        {
+          id: "ok",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: "Estonia recycles the most packaging waste in Europe",
+        },
+      ],
+      "out",
+      dispatch,
+      validateAccepted, // the REAL validator — this is where the merge-clone identity bug bit
+      profile,
+    );
+    expect(results[0].status).toBe("produced");
+    expect(produced).toEqual(["ok"]);
+  });
+
+  it("produces two sibling proposals with distinct takeaways under a profile", async () => {
+    const produced: string[] = [];
+    const dispatch: Dispatch = async (prop) => {
+      produced.push(prop.id);
+      return { status: "produced", outputs: [`out/${prop.id}.png`] };
+    };
+    const { results } = await produceAll(
+      [
+        {
+          id: "a",
+          producer: "dw-chart",
+          format: "static",
+          spec: { ...validDwSpec, title: "Estonia leads packaging recycling" },
+          confirmedTakeaway: "Estonia leads packaging recycling in Europe",
+        },
+        {
+          id: "b",
+          producer: "dw-chart",
+          format: "static",
+          spec: { ...validDwSpec, title: "Malta lags on packaging recycling" },
+          confirmedTakeaway: "Malta lags far behind on packaging recycling",
+        },
+      ],
+      "out",
+      dispatch,
+      validateAccepted,
+      profile,
+    );
+    expect(results.map((r) => r.status)).toEqual(["produced", "produced"]);
+    expect(produced.sort()).toEqual(["a", "b"]);
+  });
+
+  it("stays drop-proof: a null spec + profile fails gracefully, the sibling still produces", async () => {
+    const produced: string[] = [];
+    const dispatch: Dispatch = async (prop) => {
+      produced.push(prop.id);
+      return { status: "produced", outputs: [`out/${prop.id}.png`] };
+    };
+    const { results } = await produceAll(
+      [
+        {
+          id: "bad",
+          producer: "dw-chart",
+          format: "static",
+          spec: null as unknown,
+          confirmedTakeaway: "A takeaway for the malformed element",
+        },
+        {
+          id: "good",
+          producer: "dw-chart",
+          format: "static",
+          spec: validDwSpec,
+          confirmedTakeaway: "Estonia recycles the most packaging waste in Europe",
+        },
+      ],
+      "out",
+      dispatch,
+      validateAccepted,
+      profile,
+    );
+    expect(results.map((r) => r.id)).toEqual(["bad", "good"]); // both reported (no crash)
+    expect(results.find((r) => r.id === "bad")?.status).toBe("failed");
+    expect(results.find((r) => r.id === "good")?.status).toBe("produced");
   });
 });

@@ -134,21 +134,34 @@ export function seedBrandColor<
 // over the KNOWN, constrained schema (no general YAML). Comments are stripped quote-aware, so a
 // quoted hex `"#0A5C36"` survives while a trailing `# note` is dropped.
 
+// Strip a YAML line comment: a `#` that is NOT inside a quoted span AND is at line-start or
+// preceded by whitespace (so an unquoted `http://x#frag` and a quoted `"#0A5C36"` both survive,
+// while a trailing `  # note` is dropped). Handles both single and double quotes.
 function stripComment(line: string): string {
-  let inQuote = false;
+  let inQuote: '"' | "'" | null = null;
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
-    if (c === '"') inQuote = !inQuote;
-    else if (c === "#" && !inQuote) return line.slice(0, i);
+    if (inQuote) {
+      if (c === inQuote) inQuote = null;
+    } else if (c === '"' || c === "'") {
+      inQuote = c;
+    } else if (c === "#" && (i === 0 || /\s/.test(line[i - 1]))) {
+      return line.slice(0, i);
+    }
   }
   return line;
 }
 
+// Strip a surrounding pair of matching single or double quotes (YAML scalars accept both).
 function unquote(v: string): string {
   const t = v.trim();
-  return t.length >= 2 && t.startsWith('"') && t.endsWith('"')
-    ? t.slice(1, -1)
-    : t;
+  if (
+    t.length >= 2 &&
+    ((t.startsWith('"') && t.endsWith('"')) ||
+      (t.startsWith("'") && t.endsWith("'")))
+  )
+    return t.slice(1, -1);
+  return t;
 }
 
 /**
@@ -179,8 +192,16 @@ export function parseNewsroomMarkdown(md: string): BrandProfile | null {
     if (key === "palette" && val === "") {
       const items: string[] = [];
       i++;
-      while (i < lines.length && /^[ \t]+-[ \t]*/.test(lines[i])) {
-        items.push(unquote(lines[i].replace(/^[ \t]*-[ \t]*/, "")));
+      // Collect indented `- item` entries; SKIP blank / comment-only lines (they became "" after
+      // stripComment) rather than ending the list on them; stop at the next dedented key.
+      while (i < lines.length) {
+        if (lines[i].trim() === "") {
+          i++;
+          continue;
+        }
+        const m = lines[i].match(/^[ \t]+-[ \t]*(.*)$/);
+        if (!m) break;
+        items.push(unquote(m[1]));
         i++;
       }
       fields.palette = items;
@@ -189,7 +210,13 @@ export function parseNewsroomMarkdown(md: string): BrandProfile | null {
     if (key === "source" && val === "") {
       const src: { name?: string; url?: string } = {};
       i++;
-      while (i < lines.length && /^[ \t]+[A-Za-z_]+:/.test(lines[i])) {
+      // Indented `name:`/`url:` lines; skip blanks + unknown indented keys; stop at a dedent.
+      while (i < lines.length) {
+        if (lines[i].trim() === "") {
+          i++;
+          continue;
+        }
+        if (!/^[ \t]/.test(lines[i])) break;
         const sm = lines[i].trim().match(/^([A-Za-z_]+):[ \t]*(.*)$/);
         if (sm && (sm[1] === "name" || sm[1] === "url"))
           src[sm[1]] = unquote(sm[2]);
@@ -229,6 +256,12 @@ export function loadNewsroomProfile(projectDir: string): BrandProfile | null {
       } catch {
         // best-effort cache; the in-memory profile is authoritative
       }
+    } else {
+      // A present-but-unparseable profile is silent branding loss — warn (never throw) so the
+      // journalist can fix it, instead of shipping unbranded output with no diagnostic.
+      console.warn(
+        `[atelier] NEWSROOM-PROFILE.md present but no usable profile parsed — house style NOT applied. Check the frontmatter in ${mdPath}.`,
+      );
     }
     return profile;
   }
@@ -258,7 +291,9 @@ export function mergeProfileDefaults<
     lang?: string;
   },
 >(spec: T, profile: BrandProfile | null, opts?: { producer?: string }): T {
-  if (!profile) return spec;
+  // Non-throwing on a null/non-object spec: a malformed spec must fall through to the validation
+  // gate (which fails it loud), never crash the batch (drop-proof) when a profile is present.
+  if (!profile || !spec || typeof spec !== "object") return spec;
   let out = spec;
   const colourOk =
     opts?.producer === undefined || BRAND_COLOUR_PRODUCERS.has(opts.producer);

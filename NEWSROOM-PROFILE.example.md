@@ -15,8 +15,7 @@ source:                       # attribution par défaut sous chaque visuel
   url: "https://heidi.news"   # lien optionnel
 
 lang: "fr"                    # langue par défaut des livrables (fr, en, de, it…)
-
-credit: "Source : {name}"     # gabarit du crédit ; laissez vide = auto selon la langue
+                              # le crédit suit automatiquement la langue (« Source : » en fr)
 ---
 
 # Comment remplir ce profil
@@ -36,11 +35,8 @@ par cas — ce que vous mettez ici sert de **défaut**.
 - **source** — le nom de votre rédaction (ou de la source de données) affiché sous le visuel, et
   un lien optionnel. Si un article cite une autre source, celle-ci **prend le dessus**.
 
-- **lang** — la langue par défaut de vos publications (`fr`, `en`, `de`, `it`…). Elle règle aussi
+- **lang** — la langue par défaut de vos publications (`fr`, `en`, `de`, `it`…). Elle règle
   automatiquement le format du crédit (« Source : » en français, « Source: » en anglais).
 
-- **credit** — laissez vide pour le format automatique selon la langue. Pour le personnaliser,
-  écrivez le gabarit avec `{name}` là où le nom de la source doit apparaître.
-
-_Couleurs, source et langue sont pris en charge aujourd'hui. Logo et police de caractères
-arriveront plus tard._
+_Couleurs, source et langue sont pris en charge aujourd'hui. Un gabarit de crédit personnalisé,
+le logo et la police de caractères arriveront plus tard._

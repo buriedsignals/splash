@@ -42,8 +42,32 @@ export async function produceAll(
   // (the per-element value always wins). null → today's behaviour, unchanged.
   profile: BrandProfile | null = null,
 ): Promise<ProduceReport> {
+  // Merge the newsroom profile's defaults onto every element's spec ONCE, up front —
+  // source/lang universal, brand colour only for the colour-consuming producers — the
+  // per-element spec value always wins. Building the batch here (not a per-iteration clone
+  // validated against the ORIGINAL batch) keeps object identities consistent, so the
+  // cross-proposal duplicate-takeaway guard cannot mistake a proposal's own pre-merge original
+  // for a twin. mergeProfileDefaults is non-throwing on a null/non-object spec, so a malformed
+  // spec still falls through to the validation gate below rather than crashing the batch.
+  // Null profile → batch === accepted (unchanged behaviour, no clone).
+  const batch: AcceptedProposal[] = profile
+    ? accepted.map((p) => ({
+        ...p,
+        spec: mergeProfileDefaults(
+          p.spec as {
+            baseColor?: string;
+            brandExplicit?: boolean;
+            source?: { name: string; url?: string };
+            lang?: string;
+          },
+          profile,
+          { producer: p.producer },
+        ),
+      }))
+    : accepted;
+
   const results: ProposalResult[] = [];
-  for (const p of accepted) {
+  for (const p of batch) {
     const base = {
       id: p.id,
       producer: p.producer,
@@ -92,30 +116,12 @@ export async function produceAll(
       });
       continue;
     }
-    // Merge the newsroom profile's defaults onto THIS element's spec — source/lang universal,
-    // brand colour only for the colour-consuming producers — the per-element spec value always
-    // wins. Done BEFORE validation so a profile-supplied default source satisfies the spec's own
-    // requirement. Null profile → pm === p (unchanged behaviour).
-    const pm: AcceptedProposal = profile
-      ? {
-          ...p,
-          spec: mergeProfileDefaults(
-            p.spec as {
-              baseColor?: string;
-              brandExplicit?: boolean;
-              source?: { name: string; url?: string };
-              lang?: string;
-            },
-            profile,
-            { producer: p.producer },
-          ),
-        }
-      : p;
     // Floor gate #1 — VALIDATION. Run the producer's own validator HERE, so a host that
     // hand-rolled a spec and skipped the suggest-chart self-check (observed in 4/5 manual
     // sessions) cannot ship an invalid or weak spec. An invalid spec fails loud with the
-    // errors; warnings ride on the result for the render gate to surface.
-    const validation = validate(pm, accepted);
+    // errors; warnings ride on the result for the render gate to surface. Validated against the
+    // MERGED batch (same identities) so the cross-proposal guards see consistent objects.
+    const validation = validate(p, batch);
     if (!validation.ok) {
       results.push({
         ...base,
@@ -128,7 +134,7 @@ export async function produceAll(
       // Dispatch sees the NORMALIZED canonical channel (see the gate comment above) —
       // adapters' channelEnvFor and every other p.channel reader downstream of the
       // spine consume the canonical value, never the journalist's raw free text.
-      const r = await dispatch({ ...pm, channel }, `${outDir}/${p.id}`);
+      const r = await dispatch({ ...p, channel }, `${outDir}/${p.id}`);
       const warned = validation.warnings.length
         ? { warnings: validation.warnings }
         : {};
