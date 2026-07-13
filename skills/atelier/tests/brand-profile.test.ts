@@ -198,14 +198,37 @@ describe("mergeProfileDefaults", () => {
     expect(out.lang).toBe("fr");
   });
 
-  it("the per-element spec value ALWAYS wins over the profile", () => {
+  it("source/lang: the per-element spec value ALWAYS wins over the profile", () => {
     const out = mergeProfileDefaults(
       { baseColor: "#123456", source: { name: "AP" }, lang: "en" },
       profile,
     );
-    expect(out.baseColor).toBe("#123456");
     expect(out.source).toEqual({ name: "AP" });
     expect(out.lang).toBe("en");
+  });
+
+  it("colour: the house palette OVERRIDES an AUTO subject-fit baseColor (not an editorial choice)", () => {
+    const out = mergeProfileDefaults({ baseColor: "#D55E00" }, profile);
+    expect(out.baseColor).toBe("#0A5C36"); // house palette wins over the suggester's auto pick
+    expect(out.brandExplicit).toBe(true);
+  });
+
+  it("colour: an EXPLICIT per-element colour (baseColorExplicit) is kept over the house palette", () => {
+    const out = mergeProfileDefaults(
+      { baseColor: "#D55E00", baseColorExplicit: true },
+      profile,
+    );
+    expect(out.baseColor).toBe("#D55E00"); // the journalist named it — kept
+    expect(out.brandExplicit).toBe(false); // not a house hue → a11y stays strict on it
+  });
+
+  it("colour: an explicit colour that IS a house hue is kept and marked brandExplicit", () => {
+    const out = mergeProfileDefaults(
+      { baseColor: "#0A5C36", baseColorExplicit: true },
+      profile,
+    );
+    expect(out.baseColor).toBe("#0A5C36");
+    expect(out.brandExplicit).toBe(true);
   });
 
   it("does not seed a colour when the profile has no palette", () => {

@@ -206,6 +206,14 @@ base `de` / `it` today.)
    `baseColor` is absent or the default `#0072B2`); if the data is too complex for a clean chart, return
    `{ "decision": "no-chart", "reason": "..." }` instead of forcing one.
 
+**Colour — newsroom house palette FIRST, else subject-fit.** If the project has a newsroom profile with a
+`palette` (NEWSROOM-PROFILE.md / brand.json — the F2 house style), the **house colour IS the `baseColor`**:
+set `baseColor = palette[0]` and do NOT pick a subject-fit hue — the house palette is the newsroom's
+default and replaces the auto pick (the profile merge enforces this at produce time regardless, so match
+it here for a truthful proposal). The ONE exception: if the journalist EXPLICITLY names a colour for THIS
+chart, honour their choice AND set `baseColorExplicit: true` (that flag shields it from the house palette).
+No profile → choose by subject, as below.
+
 **Colour — choose by subject, free but quality-guarded** (palette-freedom principle: the system CHOOSES a
 colour that FITS the subject, guarded by CVD-safety + contrast — it does NOT default everything to blue).
 Set `subject` to the topic and pick the Okabe-Ito hue whose meaning fits:

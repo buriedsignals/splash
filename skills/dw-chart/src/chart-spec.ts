@@ -164,6 +164,11 @@ export interface ChartSpec {
   // is then KEPT (validation records it as a warning, not a hard error) — the auto
   // path (brandExplicit absent) stays hard-guarded.
   brandExplicit?: boolean;
+  // F2 — set true by the suggester ONLY when the journalist EXPLICITLY named a colour for this
+  // chart. It shields that choice from the newsroom profile's house palette (which otherwise
+  // overrides the auto subject-fit baseColor as the house default). Absent → the house palette
+  // wins over the auto pick.
+  baseColorExplicit?: boolean;
   // The chart's subject hint (e.g. "solar", "temperature", "marriage"). When set,
   // the guardrail requires baseColor to be an explicit subject-fit choice, not the
   // library default blue — this is what stops every chart rendering the same blue.
@@ -213,6 +218,7 @@ export const CHART_SPEC_FIELDS = [
   "baseColor",
   "highlight",
   "brandExplicit",
+  "baseColorExplicit",
   "subject",
   "seriesColors",
   "transpose",

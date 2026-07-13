@@ -68,6 +68,13 @@ export interface NativeSpec {
    */
   brandExplicit?: boolean;
   /**
+   * F2 — set true by the suggester ONLY when the journalist EXPLICITLY named a colour for this
+   * chart, shielding it from the newsroom profile's house palette (which otherwise overrides the
+   * auto subject-fit baseColor as the house default). Absent → the house palette wins over the
+   * auto pick. Consumed by the profile merge (produce-all), not by the producer.
+   */
+  baseColorExplicit?: boolean;
+  /**
    * SCROLLY narrative control — the journalist-confirmed, ORDERED beat plan
    * (line beats / bar highlight-walk). Absent ⇒ the engine auto-picks the beats
    * (line: first + last + 2 biggest moves; bar: top-3 leaders + the tail) —
