@@ -60,7 +60,8 @@ export function isHostedUrl(url: unknown): boolean {
 //   - video   → exactly one .mp4 file.
 //   - interactive / scrolly → the CHOSEN form:
 //       "html"        → the self-contained interactive.html / scrolly.html file present.
-//       "code-source" → a non-empty source-bundle directory listing.
+//       "code-source" → a non-empty source-bundle directory listing that is actually runnable:
+//                       `package.json` + `vite.config.ts` at its root (see below).
 //       "embed"       → EXACTLY an EMBED_URL.txt holding the hosted link — never the pre-export
 //                       production output. When `opts.dir` is given the URL's shape is verified
 //                       too (isHostedUrl), so a blank / stalled-deploy file cannot fake delivery.

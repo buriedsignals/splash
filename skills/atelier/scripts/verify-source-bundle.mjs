@@ -1,19 +1,26 @@
 // OPT-IN from-zero proof that a map-native / scrolly EXPORT "code source" bundle actually
 // rebuilds and renders — the Task 9 definition-of-done harness for the runnable source-bundle
-// feature (skills/atelier/scripts/bundle-source.mjs). For each representative case it drives
-// the REAL pipeline end to end, no mocks, no shortcuts:
+// feature (skills/atelier/scripts/bundle-source.mjs). Two tiers of representative case, both
+// driving the REAL pipeline end to end, no mocks, no shortcuts:
 //
-//   1. the engine's real scripts/produce.mjs (interactive / scrolly format) — real network,
-//      real headless renders, drops source-manifest.json + config.json as a side effect;
-//   2. bundle-source.mjs <source-manifest.json> <config.json> <bundleDir> — closure-copies a
-//      runnable Vite project into a FRESH temp dir (no shared node_modules with the repo);
-//   3. `bun install` then `bun run build` in that fresh bundleDir — the actual "does a
-//      journalist's clean checkout rebuild this" proof;
-//   4. assert dist/index.html exists;
-//   5. headless-render dist/index.html via Playwright, asserting the map actually painted
-//      (no "VITE_MAPTILER_KEY missing" page error, a maplibre canvas node present, tiles
-//      loaded) and writes a proof PNG;
-//   6. prints one PASS/FAIL line per case.
+//   render: true  cases (choropleth, symbol, route, the map-scrolly 3-tree closure) get the
+//                 FULL 5-step treatment:
+//     1. the engine's real scripts/produce.mjs (interactive / scrolly format) — real network,
+//        real headless renders, drops source-manifest.json + config.json as a side effect;
+//     2. bundle-source.mjs <source-manifest.json> <config.json> <bundleDir> — closure-copies a
+//        runnable Vite project into a FRESH temp dir (no shared node_modules with the repo);
+//     3. `bun install` then `bun run build` in that fresh bundleDir — the actual "does a
+//        journalist's clean checkout rebuild this" proof;
+//     4. assert dist/index.html exists;
+//     5. headless-render dist/index.html via Playwright, asserting the map actually painted
+//        (no "VITE_MAPTILER_KEY missing" page error, a maplibre canvas node present, tiles
+//        loaded) and writes a proof PNG.
+//   render: false cases (the remaining 4 map-native types: locator, dot-density, hex-grid,
+//                 cartogram) run STRUCTURAL-ONLY — steps 1-4 above, skipping the slow live-tile
+//                 Playwright render — so all 7 map-native types are build-verified from zero
+//                 without paying the full render cost on every one.
+//
+// Each case prints one PASS / PASS (structural-only) / FAIL line.
 //
 // This is slow BY DESIGN (real `bun install` from a cold temp dir + live MapTiler tile
 // fetch) — that latency IS the proof. It is intentionally NOT wired into `bun run check`
