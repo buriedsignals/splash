@@ -212,7 +212,6 @@ function BumpSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <g transform={`translate(${padding.left},${padding.top})`}>
         {/* chrome: rank rows (light) + rank numbers + period captions */}
         <g opacity={chrome}>

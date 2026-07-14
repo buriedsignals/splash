@@ -204,7 +204,6 @@ function RadialBarSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <g transform={`translate(${ox},${oy})`}>
         {/* tick rings + the baseline circle (radial value axis) */}
         <g opacity={chrome}>

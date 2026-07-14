@@ -210,7 +210,6 @@ function ViolinSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <g transform={`translate(${padding.left},${padding.top})`}>
         {/* faint vertical gridlines + value-axis labels */}
         <g opacity={chrome}>

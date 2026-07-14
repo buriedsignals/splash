@@ -221,7 +221,6 @@ function PieSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       {/* wedges (swept) — centred at (cx, cy) */}
       <g transform={`translate(${cx},${cy})`}>
         {slices.map((s, i) => {

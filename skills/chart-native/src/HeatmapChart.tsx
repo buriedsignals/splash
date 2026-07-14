@@ -206,7 +206,6 @@ function HeatmapSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <defs>
         <linearGradient id="heat-grad" x1="0" x2="1" y1="0" y2="0">
           {layout.rampStops.map((c, i) => (

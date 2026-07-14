@@ -215,7 +215,6 @@ function ParallelSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <defs>
         <clipPath id={clipId}>
           <rect x={0} y={-padding.top} width={clipW} height={height} />
