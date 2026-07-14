@@ -299,11 +299,16 @@ function colourKind(
  * per-element EXPLICIT choice always winning. `source` and `lang` fill only the gaps (universal;
  * an absent value takes the profile's). Colour (only for the colour-consuming producers; when
  * `opts.producer` is omitted, colour applies — the direct-use default): the house `palette[0]`
- * is the newsroom default and OVERRIDES the suggester's AUTO subject-fit `baseColor`, because an
- * auto pick is not an editorial choice — the whole point of a house palette is to replace it. It
- * DEFERS only to a journalist's EXPLICIT per-element colour, flagged `baseColorExplicit`, which is
- * kept (and marked brandExplicit if it happens to be a house hue). An overridden house colour is
- * always brandExplicit (policy b: kept as chosen, a11y downgraded to a render-review concern).
+ * is the newsroom default and OVERRIDES the suggester's AUTO subject-fit colour, because an auto
+ * pick is not an editorial choice — the whole point of a house palette is to replace it. For a
+ * CHART that means overriding the auto `baseColor`; for a MAP it means overriding the auto ramp
+ * `palette` (carried as brandHue/brandPalette AND the auto `palette` CLEARED, since the map colour
+ * paths only derive a house ramp/fill when no explicit palette is set). It DEFERS only to a
+ * journalist's EXPLICIT per-element colour, flagged `baseColorExplicit`, which is kept (and marked
+ * brandExplicit if it happens to be a house hue). An overridden house colour is always brandExplicit
+ * (policy b: kept as chosen, a11y downgraded to a render-review concern). A DIVERGING map scale is
+ * the one exception: its registry palette is kept and the house colour is not applied (a sequential
+ * house luminance ramp cannot encode a signed midpoint — a house diverging ramp is a follow-up).
  * `credit` is carried on the profile for the producer to consume (the lang-derived label already
  * gives the right format per language); a custom-template application is a producer-side
  * follow-up. Null profile → spec unchanged. Pure.
@@ -337,14 +342,27 @@ export function mergeProfileDefaults<
       // Auto subject-fit colour (or none) → the house palette is the default and overrides it.
       out = { ...out, baseColor: profile.palette[0], brandExplicit: true };
     } else {
-      // Map: carry the house hue + palette; the map colour paths derive a luminance ramp (value
-      // types) or a fill (single-hue types) from brandHue and cycle brandPalette (categorical).
-      out = {
-        ...out,
-        brandHue: profile.palette[0],
-        brandPalette: profile.palette,
-        brandExplicit: true,
-      };
+      // Map. The house hue/palette OVERRIDES the suggester's AUTO subject-fit `palette` — an auto
+      // pick is not an editorial choice (mirrors the chart branch overriding the auto baseColor).
+      // The map colour paths only derive a house ramp/fill when `palette` is UNSET (an explicit
+      // palette always wins downstream), so we must CLEAR that auto palette here, otherwise the
+      // house colour silently never applies (proven: a live run shipped a purple choropleth despite
+      // a green house profile).
+      // EXCEPTION — DIVERGING: a diverging scale encodes a signed midpoint (warm↔cool) that a
+      // single-hue house LUMINANCE ramp cannot represent. Keep the registry diverging palette and
+      // do NOT apply the house colour (a house diverging ramp built from two house hues is a
+      // follow-up). scaleType lives on ramp specs; single-hue types have none → never diverging.
+      const diverging =
+        (out as { scaleType?: string }).scaleType === "diverging";
+      if (!diverging) {
+        out = {
+          ...out,
+          brandHue: profile.palette[0],
+          brandPalette: profile.palette,
+          brandExplicit: true,
+        };
+        delete (out as { palette?: unknown }).palette;
+      }
     }
   }
   if (out.source === undefined && profile.source)

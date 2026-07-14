@@ -16,6 +16,8 @@ import {
   type BrandProfile,
 } from "../src/brand-profile";
 import { existsSync, readFileSync } from "node:fs";
+import { computeChoropleth } from "../../map-native/src/choropleth-geo";
+import { houseRamp } from "../../map-native/src/theme/house-ramp";
 
 function tmpProject(brandJson?: string): string {
   const dir = mkdtempSync(join(tmpdir(), "atelier-brand-"));
@@ -286,6 +288,121 @@ describe("mergeProfileDefaults", () => {
     });
     expect((mapScrolly as { brandHue?: string }).brandHue).toBe("#0A5C36");
     expect(mapScrolly.baseColor).toBeUndefined();
+  });
+
+  // The bug a live harness run caught: the real suggester ALWAYS emits a subject-fit `palette`
+  // for a map (e.g. "purples" for a social subject). Since the map colour paths prefer an explicit
+  // palette over brandHue, the house ramp silently never fired. The house colour must WIN over the
+  // suggester's AUTO palette — mirror the chart branch overriding the auto baseColor — by clearing
+  // that auto palette so brandHue drives the ramp.
+  it("map: the house ramp OVERRIDES the suggester's AUTO subject palette (clears it so houseRamp fires)", () => {
+    const out = mergeProfileDefaults(
+      { title: "t", palette: "purples", scaleType: "sequential" } as never,
+      profile,
+      { producer: "map-native" },
+    );
+    expect((out as { palette?: unknown }).palette).toBeUndefined(); // auto palette cleared
+    expect((out as { brandHue?: string }).brandHue).toBe("#0A5C36");
+    expect(out.brandExplicit).toBe(true);
+  });
+
+  it("map: a DIVERGING registry palette is KEPT (a sequential house ramp can't encode a signed midpoint)", () => {
+    const out = mergeProfileDefaults(
+      { title: "t", palette: "rdbu", scaleType: "diverging" } as never,
+      profile,
+      { producer: "map-native" },
+    );
+    expect((out as { palette?: unknown }).palette).toBe("rdbu"); // registry diverging palette kept
+    expect((out as { brandHue?: string }).brandHue).toBeUndefined(); // house sequential ramp not applied
+  });
+
+  it("map: a journalist's EXPLICIT palette (baseColorExplicit) is kept, house not applied", () => {
+    const out = mergeProfileDefaults(
+      { title: "t", palette: "oranges", baseColorExplicit: true } as never,
+      profile,
+      { producer: "map-native" },
+    );
+    expect((out as { palette?: unknown }).palette).toBe("oranges"); // the journalist named it — kept
+    expect((out as { brandHue?: string }).brandHue).toBeUndefined();
+  });
+
+  it("map: a single-hue type (no palette) still gets brandHue, and clearing is a safe no-op", () => {
+    const out = mergeProfileDefaults(
+      { title: "t", type: "symbol" } as never,
+      profile,
+      {
+        producer: "map-native",
+      },
+    );
+    expect((out as { brandHue?: string }).brandHue).toBe("#0A5C36");
+    expect((out as { palette?: unknown }).palette).toBeUndefined();
+  });
+
+  // END-TO-END regression for the live-harness bug: the suggester's auto `palette: "purples"`
+  // merged with a green house profile must produce the GREEN house ramp in the real geometry core,
+  // not the purple registry ramp. Wires the merge to computeChoropleth exactly as the map producer
+  // does — the chain that shipped purple before the fix.
+  it("map END-TO-END: an auto subject palette + house profile yields the HOUSE ramp from computeChoropleth", () => {
+    const merged = mergeProfileDefaults(
+      { title: "t", palette: "purples", scaleType: "sequential" } as never,
+      profile,
+      { producer: "map-native" },
+    );
+    const features: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { iso3: "CHE" },
+          geometry: {
+            type: "Polygon",
+            coordinates: [
+              [
+                [6, 46],
+                [7, 46],
+                [7, 47],
+                [6, 47],
+                [6, 46],
+              ],
+            ],
+          },
+        },
+        {
+          type: "Feature",
+          properties: { iso3: "FRA" },
+          geometry: {
+            type: "Polygon",
+            coordinates: [
+              [
+                [1, 44],
+                [3, 44],
+                [3, 46],
+                [1, 46],
+                [1, 44],
+              ],
+            ],
+          },
+        },
+      ],
+    };
+    const layout = computeChoropleth(
+      {
+        regionKey: "iso3",
+        valueField: "v",
+        rows: [
+          { iso3: "CHE", v: 97 },
+          { iso3: "FRA", v: 60 },
+        ],
+        brandHue: (merged as { brandHue?: string }).brandHue,
+      },
+      features,
+      "iso3",
+      {
+        palette: (merged as { palette?: string }).palette,
+        scaleType: "sequential",
+      },
+    );
+    expect(layout.bins.map((b) => b.color)).toEqual(houseRamp("#0A5C36", 5));
   });
 });
 

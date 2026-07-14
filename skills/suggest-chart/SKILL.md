@@ -472,6 +472,22 @@ Field notes:
   `map-dw` applies the default blue sequential scale. Choose the stops from a subject-fit ramp per the
   **Map colour** rule below — do NOT leave every map blue.
 
+**Map colour — newsroom house palette FIRST, else subject-fit.** Same rule as the chart `baseColor`, for
+maps. If the project has a newsroom profile with a `palette` (NEWSROOM-PROFILE.md / brand.json — the F2
+house style), the **house colour drives the map** and you do NOT pick a subject-fit ramp:
+- **sequential** map (magnitude): still emit `subject` + `scaleType:"sequential"`, but do **NOT** emit a
+  `palette` (native) or `colorScale` stops (map-dw) — leave the colour UNSET so the produce merge derives
+  the house luminance ramp / fill from the house hue. (The merge enforces this regardless — it clears an
+  auto palette — but omitting it makes a truthful proposal, and it is the ONLY way map-dw becomes
+  house-coloured, since map-dw reads `colorScale`, not `palette`.)
+- **diverging** map (a signed anomaly around a midpoint): a single-hue house luminance ramp cannot encode a
+  signed divergence — so KEEP the subject-fit diverging `palette`/`colorScale` (the house colour is not
+  applied to diverging maps; a house diverging ramp is a follow-up).
+- The ONE exception (either scale): if the journalist EXPLICITLY names a colour/ramp for THIS map, honour it
+  AND set `baseColorExplicit: true` — that flag shields it from the house palette (mirrors the chart rule).
+
+No profile → choose the ramp by subject, as below.
+
 **Map colour — scaleType by semantic, palette by subject** (palette-freedom principle: free choice guarded
 by CVD-safety; the conformance guard FAILS a semantic↔scaleType mismatch, a non-CVD-safe ramp, and a clear
 subject left on the library default). Two decisions:
