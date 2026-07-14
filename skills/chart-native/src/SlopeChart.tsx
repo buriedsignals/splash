@@ -24,6 +24,7 @@ import { COLORS, FONT, TYPE, SLOPE_LINE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
+import { leftLabelGutterPx, endLabelGutterPx, wrapLabel } from "./core/text";
 
 export interface SlopeConfig {
   title: string;
@@ -74,11 +75,43 @@ export function SlopeChart({
   const titleLines = responsive
     ? 1
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
+  // Left labels are END-anchored "name value" (e.g. "Cadres 38.0"); the right labels
+  // are the bare value ("52.0"). The SAME toFixed(1) the SVG renders with, so the
+  // gutters are sized from the exact strings drawn.
+  const fmtVal = (v: number) => Number(v).toFixed(1);
+  const leftLabelStrings = config.rows.map(
+    (r) =>
+      `${String(r[config.labelField])} ${fmtVal(Number(r[config.leftField]))}`,
+  );
+  const rightLabelStrings = config.rows.map((r) =>
+    fmtVal(Number(r[config.rightField])),
+  );
+  // Size the left gutter to the WIDEST "name value" label so a long category name
+  // renders in FULL — the fixed basePad.left:138 clipped "Professions intermédiaires 22"
+  // off the frame's left edge, and the pipeline's fallback was to SHORTEN the data field
+  // ("Interm.") to fit, mutilating the data. Floor at the sample's 138 (short-label
+  // charts keep their layout), cap at ~42% of the canvas (a pathological name WRAPS to 2
+  // lines at render, never truncates the data). bold:true so even the highlighted (700)
+  // line's label fits. Size the right gutter from the actual value strings the same way
+  // (floored at the sample's 86) so a large value can't clip either. UNSCALED font/gap +
+  // scale — resolveFrame multiplies the whole basePad by scale, cancelling the factor.
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
-    right: 86, // right value labels
+    right: Math.min(
+      endLabelGutterPx(rightLabelStrings, TYPE.axis, {
+        gapPx: 10,
+        floorPx: 86,
+      }),
+      Math.max(86, (width * 0.3) / s),
+    ),
     bottom: 32, // period captions (source band reserved in resolveFrameWithHeader)
-    left: 138, // category name + left value labels
+    left: leftLabelGutterPx(leftLabelStrings, TYPE.axis, {
+      gapPx: 10,
+      floorPx: 138,
+      width,
+      scale: s,
+      bold: true,
+    }),
   };
   const frame = resolveFrameWithHeader(
     config.title,
@@ -312,6 +345,20 @@ function SlopeSvg({
             const leftOp = clamp01(lp / 0.18);
             const ly = leftYs.get(l.index) ?? l.y1;
             const ry = rightYs.get(l.index) ?? l.y2;
+            // Left "name value" label: the gutter (padding.left) is sized to fit the
+            // widest label; only a capped pathological name exceeds it and WRAPS onto
+            // ≤2 lines (never a truncated stub, never by shortening the data). Bold
+            // labels are ~8% wider than the 0.6 estimate, so measure at 1.08·font.
+            const leftFull = `${l.rawLabel} ${fmt(l.leftVal)}`;
+            const leftWrapFont = hi ? ts.axis * 1.08 : ts.axis;
+            const leftLines = wrapLabel(
+              leftFull,
+              padding.left - 10 * sc,
+              leftWrapFont,
+              2,
+            );
+            const leftLineH = ts.axis * 1.15;
+            const leftY0 = ly - ((leftLines.length - 1) * leftLineH) / 2;
             return (
               <g
                 key={`l${l.index}`}
@@ -339,7 +386,7 @@ function SlopeSvg({
                   strokeWidth={(hi ? 3 : 2) * sc}
                   opacity={leftOp}
                 />
-                {/* left endpoint + "name value" — fades in from nothing */}
+                {/* left endpoint + wrapped "name value" label — fades in from nothing */}
                 <g opacity={leftOp}>
                   <circle
                     cx={l.x1}
@@ -347,17 +394,20 @@ function SlopeSvg({
                     r={(hi ? 4 : 3) * sc}
                     fill={color}
                   />
-                  <text
-                    x={l.x1 - 10 * sc}
-                    y={ly}
-                    dy="0.32em"
-                    textAnchor="end"
-                    fontSize={ts.axis}
-                    fontWeight={hi ? 700 : 400}
-                    fill={COLORS.ink}
-                  >
-                    {l.rawLabel} {fmt(l.leftVal)}
-                  </text>
+                  {leftLines.map((ln, li) => (
+                    <text
+                      key={`ll${l.index}-${li}`}
+                      x={l.x1 - 10 * sc}
+                      y={leftY0 + li * leftLineH}
+                      dy="0.32em"
+                      textAnchor="end"
+                      fontSize={ts.axis}
+                      fontWeight={hi ? 700 : 400}
+                      fill={COLORS.ink}
+                    >
+                      {ln}
+                    </text>
+                  ))}
                 </g>
                 {/* right endpoint (appears as the line lands) + value */}
                 <g opacity={labelOp}>
