@@ -262,14 +262,30 @@ citable source now, for each proposal that just cleared Gate 2 (and 2b where it 
 - Start from what `suggest-article` already surfaced (its `sourceHint`, set only when the article
   itself names where the figures come from, or quotes an actual URL). If that already gives BOTH a
   name and a specific, traceable dataset/page URL, use it verbatim — never invent or embellish it.
+- **A source resolves to exactly ONE of THREE states — and a NAMED org is never thrown away:**
+  - **(a) name + specific, traceable dataset/page URL** — the goal; ship both verbatim.
+  - **(b) named org kept NAME-ONLY** — when the article named an org (or the journalist confirms one)
+    but no precise dataset/page URL can be obtained, ship `source.name` = that org, `url` omitted.
+    Name-only is a legitimate, honest citation; it is NOT a reason to fall back to the generic prose.
+  - **(c) generic prose fallback** ("Chiffres tels que rapportés dans cet article" / "Figures as
+    reported in this article") — legitimate ONLY when the article names **no** org at all (the genuine
+    no-dataset case), or when a hedged recollection stays unconfirmed (uncertainty rule below).
+  Collapsing a named org (state b) into the generic fallback (state c) DISCARDS a real, verifiable
+  attribution — a shipped defect (real cases: INSEE, REN/DGEG). The spine enforces this mechanically:
+  carry `suggest-article`'s `sourceHint` onto each accepted proposal's `sourceHint` field (5b) so the
+  source guards (`sourceNamePreservedReason`, `sourceUrlFidelityReason` in `src/source-guard.ts`, wired
+  in `validate-gate.ts`) fail the produce for EVERY producer if a named org is dropped for the fallback,
+  or if a shipped URL diverges from the one the journalist provided.
 - Otherwise, ask the journalist ONE free-text question that collects the label AND the specific URL
   TOGETHER, in the SAME turn — never split it into "what's the source?" then a follow-up "and the
   URL?"; that two-step pattern is exactly the multi-turn back-and-forth this gate exists to close.
 - Apply the same rejection rule used at Gate 3 (see Never, below) to the answer BEFORE accepting it: a
-  name with no URL for a named dataset/publication, or a bare organisation homepage
-  (`eurostat.ec.europa.eu`, `insee.fr`) standing in for the specific dataset/page, is incomplete — say
-  so and ask again for the specific page. Never ship it as-is and never quietly downgrade to the
-  "reported in this article" fallback just to avoid asking again.
+  bare organisation homepage (`eurostat.ec.europa.eu`, `insee.fr`) standing in for the specific
+  dataset/page is not a URL you should promote to state (a) — ask once for the specific page; if none
+  comes, keep the org NAME-ONLY (state b), never quietly downgrade to the "reported in this article"
+  fallback. **And never do the inverse:** do NOT UPGRADE a homepage (or any journalist-provided URL) to
+  a deeper `…/path/file.pdf` you cannot confirm — cite only the exact URL the journalist gave or one
+  they explicitly confirm in-turn (Defect D: a fabricated-deeper `dares…/sites/…pdf` shipped as fact).
 - **Journalist UNCERTAINTY is not a source.** When the answer comes hedged — « je crois », « de
   mémoire », "I think it was the 2023 report", the journalist cannot name the exact report/dataset —
   do NOT ship a flat, confident-looking citation built on that admission: a reader cannot tell a hedged
@@ -286,11 +302,14 @@ citable source now, for each proposal that just cleared Gate 2 (and 2b where it 
   UNCONFIRMED after the uncertainty rule above (they cannot confirm the exact report/dataset and choose
   not to hold for it). Never use it merely because the journalist has not yet answered, and never use
   it as a shortcut out of this gate.
-- Only once the proposal's source is a name + a specific traceable URL (or the honest prose
-  fallback — the genuine no-dataset case, or a hedged source left unconfirmed per the uncertainty rule
-  above) does it go into `accepted.json`'s spec (5b). This does not replace Gate 3a's render-review
-  source check — that stays the safety net if the URL turns out unreachable once the actual render is
-  seen — but it should rarely have anything left to catch.
+- Only once the proposal's source is resolved to one of the three states above — (a) name + specific
+  traceable URL, (b) named org kept name-only, or (c) the honest prose fallback (genuine no-dataset
+  case, or a hedged source left unconfirmed per the uncertainty rule above) — does it go into
+  `accepted.json`'s spec (5b). Also copy `suggest-article`'s `sourceHint` verbatim onto the accepted
+  proposal's `sourceHint` field so the spine's source guards can enforce states (a)/(b)/(c)
+  mechanically. This does not replace Gate 3a's render-review source check — that stays the safety net
+  if the URL turns out unreachable once the actual render is seen — but it should rarely have anything
+  left to catch.
 
 Only accepted proposals continue.
 
@@ -324,8 +343,15 @@ multi-element string shared across entries>",
 "provenance": "table|prose|none", "confirmedTable": <true ONLY after an actual Gate 2b prose-table
 confirmation — stays false/absent for "table" (and "none") provenance, which never go through 2b;
 never set it true on a table-provenance proposal just because it looks accepted>,
-"channel": "social-vertical|social-feed|article-web" }`.
+"channel": "social-vertical|social-feed|article-web",
+"sourceHint": <OPTIONAL — `suggest-article`'s `sourceHint` verbatim, `{ "name"?, "url"? }`, set ONLY
+when the ARTICLE itself named a source/URL; omit entirely when it named none> }`.
 `producer` + `format` are what suggest-chart routed; `provenance` comes from suggest-article.
+**`sourceHint`, when the article named a source, MUST be carried onto the accepted proposal** — the
+spine's source guards (`validateAccepted` → `sourceNamePreservedReason` / `sourceUrlFidelityReason`)
+consume it to FAIL (B) a named org collapsed to the generic "reported in this article" fallback, and
+(D) a shipped URL that diverges from the journalist-provided one. Dropping `sourceHint` silently
+disarms those guards, exactly like dropping `channel` disarms the format gate.
 **`confirmedTakeaway` is REQUIRED — the spine's validation gate (`src/validate-gate.ts`,
 `validateAccepted`) FAILS any proposal whose `confirmedTakeaway` is missing or empty**, on both
 branches (Gate 1b is un-skippable on guided AND direct, so no proposal legitimately lacks one). It is

@@ -24,7 +24,11 @@ import {
   narrativeBeatErrors,
   narrativeBeatWarnings,
 } from "../../chart-native/src/chart-story";
-import { placeholderSourceReason } from "./source-guard";
+import {
+  placeholderSourceReason,
+  sourceNamePreservedReason,
+  sourceUrlFidelityReason,
+} from "./source-guard";
 import { guardrailParityViolations } from "./guardrail-parity";
 
 export type ValidationOutcome =
@@ -180,6 +184,198 @@ function duplicateConfirmedTakeawayError(
   );
 }
 
+// GUARD 4 — claim-grounding tripwire (Gate 1b/3a, mechanical leg). The confirmedTakeaway/title
+// can embed a numeric or temporal CLAIM the spec never encodes (the energie case: a "70% target
+// by 2035" while the data tops out at 48% and ends in 2023). The title↔takeaway TEXT-agreement
+// probe passes vacuously — neither is checked against the DATA domain. This is the same fail-loud
+// stance as dw-chart's annotation-y-domain tripwire (spec-to-metadata.ts): a number the chart
+// cannot possibly show, and that no annotation/reference line pins, is a defect, not a caption.
+//
+// NARROW by design (only numeric-out-of-domain; qualitative divergence stays for human review):
+//   - 4-digit years are checked against the x-axis ONLY when the x-axis is time (its header names
+//     a time field, or every x value is a calendar year) — a year outside [xMin, xMax] fires.
+//   - other values (%, value+unit, plain numbers) are checked against the plotted y-domain and
+//     fire ONLY when they EXCEED yMax — the over-claim / projection direction. Below-min values
+//     are NOT flagged, so a legitimate delta ("+14 Prozentpunkte", 14 < the 34% floor) never
+//     false-fires. A number matching an annotation / reference-line value is treated as backed.
+// The guard no-ops (returns []) for any spec without a parseable CSV `data` + numeric domain
+// (e.g. map producers), so it only bites the chart producers whose domain it can actually read.
+
+// Strip typographic grouping separators (regular/no-break/narrow spaces) and resolve the
+// decimal separator (fr/de "1,5" → 1.5; "17.600"/"17,600" grouping → 17600). Returns NaN when
+// the token is not a clean number (caller filters).
+function parseLocaleNumber(raw: string): number {
+  let s = raw.trim().replace(/\s/g, "");
+  const hasDot = s.includes(".");
+  const hasComma = s.includes(",");
+  if (hasDot && hasComma) {
+    // the rightmost separator is the decimal point; the other groups thousands
+    if (s.lastIndexOf(",") > s.lastIndexOf("."))
+      s = s.replace(/\./g, "").replace(/,/g, ".");
+    else s = s.replace(/,/g, "");
+  } else if (hasComma) {
+    s = /^\d{1,3}(,\d{3})+$/.test(s)
+      ? s.replace(/,/g, "")
+      : s.replace(/,/g, ".");
+  } else if (hasDot) {
+    if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+  }
+  return Number(s);
+}
+
+// A calendar year we would check against a time x-axis. Kept narrow (1900–2099) so a 2-digit
+// percentage or a small count is never misread as a year.
+function looksLikeYear(v: number): boolean {
+  return Number.isInteger(v) && v >= 1900 && v <= 2099;
+}
+
+interface NumberToken {
+  raw: string;
+  value: number;
+}
+
+// Extract number-like tokens from prose. Internal separators are '.'/',' and the typographic
+// thin/no-break spaces used for grouping — NOT a regular space, so two space-separated years
+// ("2015 2016") never merge into one bogus 8-digit value.
+function extractNumberTokens(text: string): NumberToken[] {
+  const out: NumberToken[] = [];
+  const re = /\d[\d.,   ]*\d|\d/g;
+  for (const m of text.matchAll(re)) {
+    const value = parseLocaleNumber(m[0]);
+    if (Number.isFinite(value)) out.push({ raw: m[0], value });
+  }
+  return out;
+}
+
+// Numbers a spec ENCODES via annotations / reference lines — a takeaway number matching one of
+// these is grounded (the chart shows it), so it is exempt from the domain check. Reads the
+// numeric x/y/value of each annotation and any numbers embedded in its text/label, defensively.
+function encodedBackingNumbers(spec: Record<string, unknown>): Set<number> {
+  const backed = new Set<number>();
+  const add = (v: unknown) => {
+    if (typeof v === "number" && Number.isFinite(v)) backed.add(v);
+  };
+  const addFromText = (v: unknown) => {
+    if (typeof v === "string")
+      for (const t of extractNumberTokens(v)) backed.add(t.value);
+  };
+  for (const key of [
+    "annotations",
+    "referenceLines",
+    "refLines",
+    "reference",
+  ]) {
+    const arr = spec[key];
+    if (!Array.isArray(arr)) continue;
+    for (const a of arr) {
+      if (!a || typeof a !== "object") continue;
+      const o = a as Record<string, unknown>;
+      add(o.x);
+      add(o.y);
+      add(o.value);
+      addFromText(o.text);
+      addFromText(o.label);
+    }
+  }
+  return backed;
+}
+
+// Parse the spec's CSV `data` into an x-domain (+ whether it is time) and a y-max across every
+// numeric non-x column. Returns null when there is nothing groundable (no CSV / no numeric data).
+function csvDomain(csv: string): {
+  xIsTime: boolean;
+  xMin?: number;
+  xMax?: number;
+  yMax?: number;
+} | null {
+  const trimmed = csv.trim();
+  // A JSON / GeoJSON blob (map producers) is not a groundable CSV table — bail so the guard
+  // stays a strict no-op there rather than mining coordinates as a bogus value domain.
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) return null;
+  const rows = trimmed.split(/\r?\n/).map((r) => r.split(","));
+  if (rows.length < 2) return null;
+  const header = rows[0].map((c) => c.trim());
+  const body = rows.slice(1).map((r) => r.map((c) => c.trim()));
+  const xRaw = body.map((r) => r[0] ?? "");
+  const xNums = xRaw.map(parseLocaleNumber).filter(Number.isFinite);
+  const headerIsTime =
+    /^(year|annee|année|jahr|anno|ano|date|time|periode|période|mois|month|jour|day)/i.test(
+      header[0] ?? "",
+    );
+  const allXAreYears =
+    xNums.length === xRaw.length &&
+    xNums.length > 0 &&
+    xNums.every(looksLikeYear);
+  const xIsTime = headerIsTime || allXAreYears;
+  const yNums: number[] = [];
+  for (const r of body)
+    for (let i = 1; i < r.length; i++) {
+      const n = parseLocaleNumber(r[i] ?? "");
+      if (Number.isFinite(n)) yNums.push(n);
+    }
+  if (xNums.length === 0 && yNums.length === 0) return null;
+  return {
+    xIsTime,
+    xMin: xNums.length ? Math.min(...xNums) : undefined,
+    xMax: xNums.length ? Math.max(...xNums) : undefined,
+    yMax: yNums.length ? Math.max(...yNums) : undefined,
+  };
+}
+
+const CLAIM_EPS = 1e-9;
+
+function claimGroundingErrors(p: AcceptedProposal): string[] {
+  const spec = p.spec;
+  if (!spec || typeof spec !== "object") return [];
+  const s = spec as Record<string, unknown>;
+  const csv = typeof s.data === "string" ? s.data : undefined;
+  if (!csv) return [];
+  const domain = csvDomain(csv);
+  if (!domain) return [];
+  const backed = encodedBackingNumbers(s);
+  const title = typeof s.title === "string" ? s.title : "";
+  const takeaway =
+    typeof p.confirmedTakeaway === "string" ? p.confirmedTakeaway : "";
+  const errors: string[] = [];
+  const seen = new Set<number>();
+  for (const tok of extractNumberTokens(`${title}\n${takeaway}`)) {
+    if (seen.has(tok.value)) continue;
+    if (backed.has(tok.value)) continue;
+    if (looksLikeYear(tok.value)) {
+      // Years are only checked against a TIME x-axis (Gate scope: years vs x-domain).
+      if (
+        !domain.xIsTime ||
+        domain.xMin === undefined ||
+        domain.xMax === undefined
+      )
+        continue;
+      if (
+        tok.value < domain.xMin - CLAIM_EPS ||
+        tok.value > domain.xMax + CLAIM_EPS
+      ) {
+        seen.add(tok.value);
+        errors.push(
+          `claim-grounding: the confirmed takeaway/title cites the year ${tok.raw}, OUTSIDE the ` +
+            `chart's time axis [${domain.xMin}, ${domain.xMax}] and not encoded by any annotation ` +
+            `or reference line — encode it (annotation / reference line) or drop the claim`,
+        );
+      }
+      continue;
+    }
+    // A value: flag only when it EXCEEDS the plotted maximum (the over-claim / projection
+    // direction) — below-min numbers (deltas, sub-shares) stay for human review.
+    if (domain.yMax !== undefined && tok.value > domain.yMax + CLAIM_EPS) {
+      seen.add(tok.value);
+      errors.push(
+        `claim-grounding: the confirmed takeaway/title cites the value ${tok.raw}, which EXCEEDS ` +
+          `the plotted data maximum (${domain.yMax}) and is not encoded by any annotation, ` +
+          `reference line or target marker — encode it or drop the projection`,
+      );
+    }
+  }
+  return errors;
+}
+
 // Run the producer-appropriate validator on an accepted proposal's spec, then the
 // cross-producer source-URL guard (GUARD 2), then the deterministic guardrail-parity gate
 // (ENFORCEMENT SLICE 2 — the deterministic guardrails that lived only in suggest-chart's
@@ -201,6 +397,18 @@ export function validateAccepted(
   if (duplicateTakeaway) extraErrors.push(duplicateTakeaway);
   const placeholder = placeholderSourceError(p.spec);
   if (placeholder) extraErrors.push(placeholder);
+  // GUARD 2b/2c — source attribution fidelity (Defects B & D). Consume the article's captured
+  // citation (`p.sourceHint`, from suggest-article) so a named org is never discarded for the
+  // generic prose fallback, and a journalist-provided URL is never silently upgraded. Dormant
+  // until sourceHint is threaded onto the accepted proposal (see producer-spec.ts) — absent hint
+  // ⇒ both return null.
+  const namePreserved = sourceNamePreservedReason(p.spec, p.sourceHint);
+  if (namePreserved) extraErrors.push(namePreserved);
+  const urlFidelity = sourceUrlFidelityReason(p.spec, p.sourceHint);
+  if (urlFidelity) extraErrors.push(urlFidelity);
+  // GUARD 4 — claim-grounding (Defect C): a numeric/temporal claim in the title/takeaway that
+  // the data domain does not encode (and no annotation/reference line backs) fails hard.
+  extraErrors.push(...claimGroundingErrors(p));
   extraErrors.push(...guardrailParityViolations(p));
   if (extraErrors.length) {
     return {
