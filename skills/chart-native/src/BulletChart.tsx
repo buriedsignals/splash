@@ -18,7 +18,13 @@ import {
   type BulletLayout,
 } from "./bullet-geometry";
 import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, BULLET_MEASURE_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  BULLET_MEASURE_COLORS,
+  themeColors,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -30,6 +36,8 @@ export interface BulletConfig {
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
   unit: string;
+  /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
+  dark?: boolean;
   rows: {
     label: string;
     unit: string;
@@ -140,6 +148,7 @@ export function BulletChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -173,6 +182,7 @@ function BulletSvg({
 }) {
   const { rows } = layout;
   const n = rows.length;
+  const C = themeColors(!!config.dark);
 
   const chrome = easeOutCubic(p / 0.18);
   const rowP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
@@ -246,7 +256,7 @@ function BulletSvg({
                 x2={r.targetX}
                 y1={r.y + r.h * 0.12}
                 y2={r.y + r.h * 0.88}
-                stroke={COLORS.ink}
+                stroke={C.ink}
                 strokeWidth={2.5 * sc}
                 opacity={chrome}
               />
@@ -259,7 +269,7 @@ function BulletSvg({
                 textAnchor="end"
                 fontSize={ts.axis}
                 fontWeight={700}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={chrome}
               >
                 {truncate(r.label, padding.left - 16 * sc, ts.axis)}
@@ -270,7 +280,7 @@ function BulletSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.source}
-                fill={COLORS.muted}
+                fill={C.muted}
                 opacity={chrome}
               >
                 {truncate(r.unit, padding.left - 16 * sc, ts.source)}
@@ -285,8 +295,8 @@ function BulletSvg({
                 textAnchor="start"
                 fontSize={ts.axis}
                 fontWeight={700}
-                fill={COLORS.ink}
-                stroke="#fff"
+                fill={C.ink}
+                stroke={C.bg}
                 strokeWidth={3 * sc}
                 style={{ paintOrder: "stroke" }}
                 opacity={labelOp}

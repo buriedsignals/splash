@@ -19,7 +19,7 @@ import {
   type BumpLayout,
 } from "./bump-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE } from "./core/tokens";
+import { COLORS, themeColors, FONT, TYPE } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -30,6 +30,8 @@ export interface BumpConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
+  dark?: boolean;
   valueLabel: string; // subtitle (what the rank means)
   periods: string[];
   highlight?: string[];
@@ -63,6 +65,7 @@ export function BumpChart({
   scale = 1,
 }: BumpChartProps) {
   const p = clamp01(progress);
+  const C = themeColors(!!config.dark);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
     8,
@@ -85,7 +88,7 @@ export function BumpChart({
     accentOf.set(label, accents[i]),
   );
   const colorOf = (label: string, highlighted: boolean) =>
-    highlighted ? (accentOf.get(label) ?? accents[0]) : COLORS.muted;
+    highlighted ? (accentOf.get(label) ?? accents[0]) : C.muted;
 
   // right gutter = the widest END label (capped) + the dot + a gap.
   const labelWBase = Math.max(
@@ -138,6 +141,7 @@ export function BumpChart({
       setHover={setHover}
       ts={ts}
       sc={sc}
+      C={C}
     />
   );
 
@@ -163,6 +167,7 @@ export function BumpChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -182,6 +187,7 @@ function BumpSvg({
   setHover,
   ts,
   sc,
+  C,
 }: {
   layout: BumpLayout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -195,6 +201,7 @@ function BumpSvg({
   setHover: (i: number | null) => void;
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
+  C: ReturnType<typeof themeColors>;
 }) {
   const { innerWidth, innerHeight, lines, periodsX, rankAxis } = layout;
   const chrome = easeOutCubic(p / 0.16);
@@ -222,7 +229,7 @@ function BumpSvg({
               x2={innerWidth}
               y1={r.y}
               y2={r.y}
-              stroke={COLORS.grid}
+              stroke={C.grid}
               strokeWidth={1}
             />
           ))}
@@ -234,7 +241,7 @@ function BumpSvg({
               dy="0.32em"
               textAnchor="end"
               fontSize={ts.source}
-              fill={COLORS.muted}
+              fill={C.muted}
             >
               {r.rank}
             </text>
@@ -249,7 +256,7 @@ function BumpSvg({
               }
               fontSize={ts.axis}
               fontWeight={600}
-              fill={COLORS.ink}
+              fill={C.ink}
             >
               {pp.label}
             </text>
@@ -310,7 +317,7 @@ function BumpSvg({
                   textAnchor="start"
                   fontSize={ts.axis}
                   fontWeight={ln.highlighted ? 700 : 400}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={labelOp}
                 >
                   {truncate(ln.label, padding.right - 14 * sc, ts.axis)}

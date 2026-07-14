@@ -17,7 +17,13 @@ import {
   type DivergingLayout,
 } from "./diverging-bar-geometry";
 import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, DIVERGING_SIGN_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  DIVERGING_SIGN_COLORS,
+  themeColors,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -31,6 +37,8 @@ export interface DivergingBarConfig {
   unit: string;
   catField: string;
   valField: string;
+  /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
+  dark?: boolean;
   rows: Record<string, string | number>[];
 }
 
@@ -143,6 +151,7 @@ export function DivergingBarChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -176,6 +185,7 @@ function DivergingSvg({
 }) {
   const { innerWidth, innerHeight, zeroX, bars } = layout;
   const n = bars.length;
+  const C = themeColors(!!config.dark);
 
   const chrome = easeOutCubic(p / 0.18);
   const barP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
@@ -239,7 +249,7 @@ function DivergingSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={catOp}
               >
                 {truncate(b.rawCat, padding.left - 16 * sc, ts.axis)}
@@ -252,7 +262,7 @@ function DivergingSvg({
                 textAnchor={vAnchor}
                 fontSize={ts.axis}
                 fontWeight={700}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={labelOp}
               >
                 {signed(b.value)}
@@ -267,7 +277,7 @@ function DivergingSvg({
           x2={zeroX}
           y1={-4 * sc}
           y2={innerHeight + 4 * sc}
-          stroke={COLORS.ink}
+          stroke={C.ink}
           strokeWidth={1.5 * sc}
           opacity={chrome}
         />

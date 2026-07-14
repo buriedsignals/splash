@@ -16,7 +16,13 @@ import {
   type PieLayout,
 } from "./pie-geometry";
 import { formatNumber, clamp01, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, PIE_SLICE_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  PIE_SLICE_COLORS,
+  themeColors,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -31,6 +37,8 @@ export interface PieConfig {
   labelField: string;
   valueField: string;
   donut?: boolean;
+  /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
+  dark?: boolean;
   rows: Record<string, string | number>[];
 }
 
@@ -124,6 +132,7 @@ export function PieChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -156,6 +165,7 @@ function PieSvg({
   sc: number;
 }) {
   const { cx, cy, radius, innerRadius, total, slices } = layout;
+  const C = themeColors(!!config.dark);
 
   // Radial label placement (type-specific) + the GLOBAL invariant check.
   // Only the FIXED layout uses radial labels; responsive renders a legend below.
@@ -233,7 +243,7 @@ function PieSvg({
               className="pie-slice"
               d={d}
               fill={SLICE_COLORS[i % SLICE_COLORS.length]}
-              stroke="#fff"
+              stroke={C.bg}
               strokeWidth={2 * sc}
               opacity={interactive && hover !== null && !focused ? 0.65 : 1}
               tabIndex={interactive ? 0 : undefined}
@@ -254,15 +264,10 @@ function PieSvg({
         {/* donut centre = the total, fades in last */}
         {config.donut && (
           <g opacity={centerNumber} textAnchor="middle">
-            <text
-              y={-2 * sc}
-              fontSize={ts.title}
-              fontWeight={700}
-              fill={COLORS.ink}
-            >
+            <text y={-2 * sc} fontSize={ts.title} fontWeight={700} fill={C.ink}>
               {formatNumber(total, config.lang)}
             </text>
-            <text y={18 * sc} fontSize={ts.axis} fill={COLORS.muted}>
+            <text y={18 * sc} fontSize={ts.axis} fill={C.muted}>
               {config.unit}
             </text>
           </g>
@@ -278,7 +283,7 @@ function PieSvg({
           textAnchor={l.anchor}
           fontSize={ts.axis}
           fontWeight={600}
-          fill={COLORS.ink}
+          fill={C.ink}
           opacity={l.fade}
         >
           {l.text}
@@ -301,7 +306,7 @@ function PieSvg({
             dy="0.32em"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             {it.text}
           </text>
@@ -344,7 +349,9 @@ function Tooltip({
       }}
     >
       <strong>{s.rawLabel}</strong> {Math.round(s.share * 100)}%
-      <div style={{ opacity: 0.7, fontSize: 11 }}>{formatNumber(s.value, config.lang)}</div>
+      <div style={{ opacity: 0.7, fontSize: 11 }}>
+        {formatNumber(s.value, config.lang)}
+      </div>
     </div>
   );
 }

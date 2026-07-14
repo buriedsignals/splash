@@ -18,7 +18,7 @@ import {
   type HistogramLayout,
 } from "./histogram-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, themeColors, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -28,6 +28,8 @@ export interface HistogramConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
+  dark?: boolean;
   unit: string;
   valueField: string;
   binWidth?: number;
@@ -44,7 +46,6 @@ export interface HistogramChartProps {
   scale?: number;
 }
 
-const BAR = COLORS.line; // single distribution colour (Okabe-Ito blue)
 const MEDIAN = OKABE_ITO.vermillion; // the one accent
 
 export function HistogramChart({
@@ -133,6 +134,7 @@ export function HistogramChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -164,6 +166,8 @@ function HistogramSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  const C = themeColors(!!config.dark);
+  const BAR = C.line; // single distribution colour (Okabe-Ito blue; skyblue on dark)
   const { innerWidth, innerHeight, base, bars, median, medianX } = layout;
   const n = bars.length;
 
@@ -192,7 +196,7 @@ function HistogramSvg({
                 x2={innerWidth}
                 y1={t.pos}
                 y2={t.pos}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -201,7 +205,7 @@ function HistogramSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -247,7 +251,7 @@ function HistogramSvg({
           x2={innerWidth}
           y1={base}
           y2={base}
-          stroke={COLORS.axis}
+          stroke={C.axis}
           strokeWidth={1}
           opacity={chrome}
         />
@@ -262,7 +266,7 @@ function HistogramSvg({
                 y={innerHeight + 20 * sc}
                 textAnchor="middle"
                 fontSize={ts.axis}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {t.label}
               </text>
@@ -287,8 +291,8 @@ function HistogramSvg({
             textAnchor="middle"
             fontSize={ts.axis}
             fontWeight={700}
-            fill={COLORS.ink}
-            stroke="#fff"
+            fill={C.ink}
+            stroke={C.bg}
             strokeWidth={3 * sc}
             style={{ paintOrder: "stroke" }}
           >

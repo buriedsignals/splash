@@ -25,7 +25,13 @@ import {
   labelReveal,
   stagger,
 } from "./core/math";
-import { COLORS, FONT, TYPE, WATERFALL_ROLE_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  themeColors,
+  themeWaterfallColors,
+} from "./core/tokens";
 import {
   truncate,
   rotatedLabelDescentPx,
@@ -44,6 +50,9 @@ export interface WaterfallConfig {
   lang?: Lang;
   unit: string;
   rows: { label: string; value: number; total?: boolean }[];
+  /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture + swaps the
+   *  role palette's black TOTAL for a light neutral (themeWaterfallColors). */
+  dark?: boolean;
 }
 
 export interface WaterfallChartProps {
@@ -56,9 +65,9 @@ export interface WaterfallChartProps {
   scale?: number;
 }
 
-const UP = WATERFALL_ROLE_COLORS[0]; // increase
-const DOWN = WATERFALL_ROLE_COLORS[1]; // decrease
-const TOTAL = WATERFALL_ROLE_COLORS[2]; // a total (neutral)
+// role palette order: [increase, decrease, total]. Resolved per-render via
+// themeWaterfallColors(config.dark) so the black TOTAL flips to a light neutral on
+// the dark theme (it would vanish on the near-black bg otherwise).
 
 // Rotated (−40°) category-label furniture, shared by the margin reservation
 // (WaterfallChart) and the per-tick truncation (WaterfallSvg) so the two can't
@@ -78,8 +87,10 @@ const SAFE_LEFT = 4; // keep a rotated label's START ≥ this many px from the e
 // ("Ministère de l'Éduc…" vs "…l'Écon…") instead of an identical "Ministère d…".
 const ROTATED_LABEL_FONT_SCALE = 0.8;
 
-const barColor = (b: { isTotal: boolean; sign: 1 | -1 }) =>
-  b.isTotal ? TOTAL : b.sign < 0 ? DOWN : UP;
+const barColor = (
+  b: { isTotal: boolean; sign: 1 | -1 },
+  roleColors: readonly string[],
+) => (b.isTotal ? roleColors[2] : b.sign < 0 ? roleColors[1] : roleColors[0]);
 const labelOf = (b: { isTotal: boolean; value: number }, lang?: Lang) =>
   b.isTotal
     ? formatNumber(b.value, lang)
@@ -193,6 +204,7 @@ export function WaterfallChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -226,6 +238,8 @@ function WaterfallSvg({
 }) {
   const { innerWidth, innerHeight, base, bars } = layout;
   const n = bars.length;
+  const C = themeColors(!!config.dark);
+  const roleColors = themeWaterfallColors(!!config.dark);
 
   const chrome = easeOutCubic(p / 0.18);
   const barP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
@@ -270,7 +284,7 @@ function WaterfallSvg({
                 x2={innerWidth}
                 y1={t.pos}
                 y2={t.pos}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -279,7 +293,7 @@ function WaterfallSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -298,7 +312,7 @@ function WaterfallSvg({
               x2={next.x}
               y1={b.connectorY}
               y2={b.connectorY}
-              stroke={COLORS.muted}
+              stroke={C.muted}
               strokeWidth={1}
               strokeDasharray={`${3 * sc} ${3 * sc}`}
               opacity={op * 0.8}
@@ -309,7 +323,7 @@ function WaterfallSvg({
         {/* floating bars + category + signed value labels */}
         {bars.map((b, i) => {
           const g = growWaterfallBar(b, barP(i), 2.5 * sc);
-          const fill = barColor(b);
+          const fill = barColor(b, roleColors);
           const grown = barP(i);
           // waterfall.md rule 4 — EVERY step carries its value label at EVERY frame.
           // It fades in early with the bar (shared `labelReveal` knob) and rides the
@@ -386,7 +400,7 @@ function WaterfallSvg({
                   textAnchor="start"
                   fontSize={ts.axis * 0.9}
                   fontWeight={700}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={labelOp}
                 >
                   {labelOf(b, config.lang)}
@@ -398,7 +412,7 @@ function WaterfallSvg({
                   textAnchor="middle"
                   fontSize={ts.axis}
                   fontWeight={700}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={labelOp}
                 >
                   {labelOf(b, config.lang)}
@@ -415,7 +429,7 @@ function WaterfallSvg({
                   y={innerHeight + ROTATED_TICK_OFFSET * sc}
                   textAnchor="end"
                   fontSize={catFont}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={catOp}
                 >
                   {catLabel}
@@ -426,7 +440,7 @@ function WaterfallSvg({
                   y={innerHeight + 20 * sc}
                   textAnchor="middle"
                   fontSize={ts.axis}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={catOp}
                 >
                   {catLabel}
@@ -442,7 +456,7 @@ function WaterfallSvg({
           x2={innerWidth}
           y1={base}
           y2={base}
-          stroke={COLORS.axis}
+          stroke={C.axis}
           strokeWidth={1}
           opacity={chrome}
         />

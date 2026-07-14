@@ -20,7 +20,13 @@ import {
   type DivergingStackedLayout,
 } from "./diverging-stacked-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, DIVERGING_STACKED_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  DIVERGING_STACKED_COLORS,
+  themeColors,
+} from "./core/tokens";
 import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -37,6 +43,10 @@ export interface DivergingStackedConfig {
   responses: string[];
   neutralIndex?: number;
   items: { label: string; values: number[] }[];
+  /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture. The
+   *  sentiment ramp has no black (its neutral is #BFBFBF, light-visible) and in-bar
+   *  labels are picked per-fill by labelInkOnFill, so both are theme-independent. */
+  dark?: boolean;
 }
 
 export interface DivergingStackedChartProps {
@@ -175,6 +185,7 @@ export function DivergingStackedChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -210,6 +221,7 @@ function DSSvg({
 }) {
   const { innerWidth, innerHeight, centerX, rows, pctTicks } = layout;
   const n = rows.length;
+  const C = themeColors(!!config.dark);
   const chrome = easeOutCubic(p / 0.16);
   const rowP = (i: number) =>
     easeOutCubic(stagger(p, i, n, 0.16, 0.5 / n, 0.4));
@@ -243,7 +255,7 @@ function DSSvg({
               x2={t.pos}
               y1={0}
               y2={innerHeight}
-              stroke={t.label === "0%" ? COLORS.axis : COLORS.grid}
+              stroke={t.label === "0%" ? C.axis : C.grid}
               strokeWidth={t.label === "0%" ? 1.5 : 1}
             />
           ))}
@@ -256,7 +268,7 @@ function DSSvg({
               y={innerHeight + 16 * sc}
               textAnchor="middle"
               fontSize={ts.source}
-              fill={COLORS.muted}
+              fill={C.muted}
             >
               {t.label}
             </text>
@@ -276,7 +288,7 @@ function DSSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={catOp}
               >
                 {truncate(r.label, padding.left - 16 * sc, ts.axis)}
@@ -366,7 +378,7 @@ function DSSvg({
                 dy="0.32em"
                 fontSize={ts.source}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>

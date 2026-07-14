@@ -27,7 +27,7 @@ import {
   easeOutCubic,
   stagger,
 } from "./core/math";
-import { COLORS, TYPE } from "./core/tokens";
+import { COLORS, TYPE, themeColors } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -44,6 +44,8 @@ export interface ChartConfig {
   xType: "time" | "linear";
   /** Okabe-Ito hex for the primary series colour. Absent → COLORS.line default. */
   baseColor?: string;
+  /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
+  dark?: boolean;
   points: Record<string, string | number>[];
 }
 
@@ -214,6 +216,7 @@ export function LineChart({
       scale={sc}
       lang={config.lang}
       embedded={embedded}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -252,12 +255,13 @@ function ChartSvg({
    *  scroll host: the frame is present before the line draws). Default false = wipe-in. */
   staticAxes?: boolean;
 }) {
+  const C = themeColors(!!config.dark);
   const lp = lineProgress;
   const revealed = revealLine(layout, lp);
   const head = revealHead(layout, lp);
   const lastPoint = layout.points[layout.points.length - 1];
   const { innerWidth, innerHeight } = layout;
-  const lineColor = config.baseColor ?? COLORS.line;
+  const lineColor = config.baseColor ?? C.line;
 
   // --- motion build (all pure functions of the master progress `p`) ---
   // baseline draws left→right first; gridlines wipe in, staggered top→bottom.
@@ -306,7 +310,7 @@ function ChartSvg({
                 x2={innerWidth * w}
                 y1={t.y}
                 y2={t.y}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -315,7 +319,7 @@ function ChartSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.muted}
+                fill={C.muted}
                 opacity={lo}
                 transform={`translate(${-(1 - lo) * 8},0)`}
               >
@@ -334,7 +338,7 @@ function ChartSvg({
               y={innerHeight + 22 * sc}
               textAnchor="middle"
               fontSize={ts.axis}
-              fill={COLORS.muted}
+              fill={C.muted}
               opacity={o}
               transform={`translate(0,${(1 - o) * 8})`}
             >
@@ -348,7 +352,7 @@ function ChartSvg({
           x2={baseW}
           y1={innerHeight}
           y2={innerHeight}
-          stroke={COLORS.axis}
+          stroke={C.axis}
           strokeWidth={1}
         />
 
@@ -370,14 +374,14 @@ function ChartSvg({
               cx={head.x}
               cy={head.y}
               r={9}
-              fill={COLORS.headGlow}
+              fill={C.headGlow}
               opacity={0.25}
             />
             <circle
               cx={head.x}
               cy={head.y}
               r={4.5}
-              fill={COLORS.head}
+              fill={C.head}
               stroke={lineColor}
               strokeWidth={2}
             />
@@ -402,7 +406,7 @@ function ChartSvg({
             // line-end DOT (above) carries the hue. Painting this text in `lineColor` failed
             // WCAG for a subject-fit hue (vermillion 3.87:1, green 3.42:1) — which forced the
             // producer back to the default blue, the one hue the KB warns against defaulting to.
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             {config.directLabel}
           </text>
@@ -411,7 +415,7 @@ function ChartSvg({
             y={head.y + 16 * sc}
             dy="0.32em"
             fontSize={ts.axis}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {formatNumber(lastPoint.rawY, config.lang)}
           </text>

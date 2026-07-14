@@ -17,7 +17,13 @@ import {
   type StackedAreaLayout,
 } from "./stacked-area-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, STACKED_AREA_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  STACKED_AREA_COLORS,
+  themeColors,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -33,6 +39,9 @@ export interface StackedAreaConfig {
   xField: string;
   seriesFields: string[]; // stacking order, bottom → top
   rows: Record<string, string | number>[];
+  /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture. The band
+   *  palette (STACKED_AREA_COLORS) has no black, so it is theme-independent. */
+  dark?: boolean;
 }
 
 export interface StackedAreaChartProps {
@@ -158,6 +167,7 @@ export function StackedAreaChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -190,6 +200,7 @@ function StackedAreaSvg({
   sc: number;
 }) {
   const { innerWidth, innerHeight, bands } = layout;
+  const C = themeColors(!!config.dark);
 
   const chrome = easeOutCubic(p / 0.18);
   const wipe = easeInOutCubic(p); // left→right reveal of the whole stack
@@ -227,7 +238,7 @@ function StackedAreaSvg({
                 x2={innerWidth}
                 y1={t.pos}
                 y2={t.pos}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -236,7 +247,7 @@ function StackedAreaSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -313,7 +324,7 @@ function StackedAreaSvg({
               y={innerHeight + 22 * sc}
               textAnchor="middle"
               fontSize={ts.axis}
-              fill={COLORS.ink}
+              fill={C.ink}
             >
               {t.label}
             </text>
@@ -347,7 +358,7 @@ function StackedAreaSvg({
                 textAnchor="start"
                 fontSize={ts.axis}
                 fontWeight={700}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {name}
                 {valueStr}

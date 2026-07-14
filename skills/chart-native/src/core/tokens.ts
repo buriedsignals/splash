@@ -41,6 +41,14 @@ export const COLORS_DARK = {
   bg: "#18181B",
 } as const;
 
+// On the dark furniture bg (#18181B) the Okabe-Ito BLACK entry of a DATA palette
+// vanishes (near-0 contrast — a black mark on a near-black ground). Every other
+// Okabe-Ito hue stays CVD-safe and reads acceptably on dark, so ONLY black is
+// swapped, for a light neutral that plays the same "neutral / total" role black
+// plays on white: #E4E4E7 (WCAG ~13.5:1 on #18181B — a clearly visible light-grey
+// mark). See themeStackedColors / themeWaterfallColors below.
+export const DARK_PALETTE_BLACK_SUB = "#E4E4E7";
+
 // Widened (string, not the light literals) so BOTH COLORS and COLORS_DARK satisfy it.
 export type ColorTokens = { readonly [K in keyof typeof COLORS]: string };
 
@@ -202,3 +210,29 @@ export const BUMP_ACCENT_COLORS = [
   OKABE_ITO.orange,
   OKABE_ITO.green,
 ] as const;
+
+// Dark-variant resolvers for the DATA palettes that contain OKABE_ITO.black
+// (STACKED_SERIES_COLORS, WATERFALL_ROLE_COLORS) — the two palettes whose black
+// entry would disappear on the dark bg. On the light (default) theme each returns
+// the palette VERBATIM (byte-identical, back-compat); on dark it swaps ONLY the
+// black slot for DARK_PALETTE_BLACK_SUB, leaving every CVD-safe hue untouched. The
+// SINGLE path a component paints through, mirroring themeColors for furniture. The
+// treemap (TREEMAP_GROUP_COLORS) and diverging-stacked (DIVERGING_STACKED_COLORS)
+// palettes contain NO black (their neutral is #BFBFBF, already light-visible), so
+// they need no resolver — their marks are theme-independent.
+function swapBlackForDark(
+  palette: readonly string[],
+  dark?: boolean,
+): readonly string[] {
+  return dark
+    ? palette.map((c) => (c === OKABE_ITO.black ? DARK_PALETTE_BLACK_SUB : c))
+    : palette;
+}
+
+export function themeStackedColors(dark?: boolean): readonly string[] {
+  return swapBlackForDark(STACKED_SERIES_COLORS, dark);
+}
+
+export function themeWaterfallColors(dark?: boolean): readonly string[] {
+  return swapBlackForDark(WATERFALL_ROLE_COLORS, dark);
+}

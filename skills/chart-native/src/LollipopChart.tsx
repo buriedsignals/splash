@@ -18,7 +18,7 @@ import {
   type LollipopLayout,
 } from "./lollipop-geometry";
 import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, themeColors, FONT, TYPE, OKABE_ITO } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -29,6 +29,8 @@ export interface LollipopConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
+  dark?: boolean;
   unit: string;
   catField: string;
   valField: string;
@@ -145,6 +147,7 @@ export function LollipopChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -176,6 +179,7 @@ function LollipopSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  const C = themeColors(!!config.dark);
   const { innerWidth, innerHeight, rows } = layout;
   const n = rows.length;
 
@@ -202,7 +206,7 @@ function LollipopSvg({
               x2={t.pos}
               y1={0}
               y2={innerHeight}
-              stroke={COLORS.grid}
+              stroke={C.grid}
               strokeWidth={1}
             />
           ))}
@@ -253,7 +257,7 @@ function LollipopSvg({
                 textAnchor="end"
                 fontSize={ts.axis}
                 fontWeight={hi ? 700 : 400}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={catOp}
               >
                 {truncate(r.rawCat, padding.left - 16 * sc, ts.axis)}
@@ -286,7 +290,7 @@ function LollipopSvg({
                 textAnchor="start"
                 fontSize={ts.axis}
                 fontWeight={700}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={labelOp}
               >
                 {fmt(r.value)}

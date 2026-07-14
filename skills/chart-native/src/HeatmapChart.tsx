@@ -17,7 +17,7 @@ import {
   type HeatmapLayout,
 } from "./heatmap-geometry";
 import { clamp01, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE } from "./core/tokens";
+import { COLORS, themeColors, FONT, TYPE } from "./core/tokens";
 import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -28,6 +28,8 @@ export interface HeatmapConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
+  dark?: boolean;
   unit: string;
   rowField: string;
   colFields: string[];
@@ -74,6 +76,7 @@ export function HeatmapChart({
   scale = 1,
 }: HeatmapChartProps) {
   const p = clamp01(progress);
+  const C = themeColors(!!config.dark);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
     8,
@@ -123,6 +126,7 @@ export function HeatmapChart({
       setHover={setHover}
       ts={ts}
       sc={sc}
+      C={C}
     />
   );
 
@@ -147,6 +151,7 @@ export function HeatmapChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -165,6 +170,7 @@ function HeatmapSvg({
   setHover,
   ts,
   sc,
+  C,
 }: {
   layout: HeatmapLayout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -177,6 +183,7 @@ function HeatmapSvg({
   setHover: (i: number | null) => void;
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
+  C: ReturnType<typeof themeColors>;
 }) {
   const { innerWidth, innerHeight, cells, rowLabels, colLabels } = layout;
   const nRows = rowLabels.length;
@@ -237,7 +244,7 @@ function HeatmapSvg({
                 height={ch}
                 rx={2 * sc}
                 fill={cell.color}
-                stroke={focused ? COLORS.ink : "none"}
+                stroke={focused ? C.ink : "none"}
                 strokeWidth={focused ? 2 * sc : 0}
                 tabIndex={interactive ? 0 : undefined}
                 role={interactive ? "img" : undefined}
@@ -280,7 +287,7 @@ function HeatmapSvg({
               dy="0.32em"
               textAnchor="end"
               fontSize={ts.axis}
-              fill={COLORS.ink}
+              fill={C.ink}
             >
               {lab}
             </text>
@@ -294,7 +301,7 @@ function HeatmapSvg({
               y={innerHeight + 18 * sc}
               textAnchor="middle"
               fontSize={ts.axis}
-              fill={COLORS.ink}
+              fill={C.ink}
             >
               {layout.cellW < 64 * sc ? lab.split("-")[0] : lab}
             </text>
@@ -310,7 +317,7 @@ function HeatmapSvg({
             dy="0.32em"
             textAnchor="end"
             fontSize={ts.source}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {config.unit}
           </text>
@@ -327,7 +334,7 @@ function HeatmapSvg({
             y={barY + barH + 13 * sc}
             textAnchor="start"
             fontSize={ts.source}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {lo}
           </text>
@@ -336,7 +343,7 @@ function HeatmapSvg({
             y={barY + barH + 13 * sc}
             textAnchor="end"
             fontSize={ts.source}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {hi}
           </text>

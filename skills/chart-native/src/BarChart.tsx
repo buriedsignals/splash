@@ -27,7 +27,7 @@ import {
   stagger,
 } from "./core/math";
 import { unitSuffix, type Lang } from "./core/locale";
-import { COLORS, TYPE } from "./core/tokens";
+import { COLORS, TYPE, themeColors, type ColorTokens } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrameWithHeader } from "./core/format";
 import {
@@ -52,6 +52,8 @@ export interface BarConfig {
   baseColor?: string;
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
+  dark?: boolean;
   rows: Record<string, string | number>[];
 }
 
@@ -209,20 +211,26 @@ export function BarChart({
       scale={sc}
       embedded={embedded}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
   );
 }
 
-function barColor(i: number, highlight?: number, baseColor?: string): string {
-  const primary = baseColor ?? COLORS.line;
+function barColor(
+  i: number,
+  C: ColorTokens,
+  highlight?: number,
+  baseColor?: string,
+): string {
+  const primary = baseColor ?? C.line;
   if (highlight === undefined) return primary;
   // The highlight NEVER overrides the subject hue: the highlighted bar keeps the
   // PRIMARY (the spec's subject-fit baseColor, or the default), and the emphasis
   // comes from MUTING the context bars. Hardcoding an accent here discarded the
   // approved baseColor — a tourism story's #CC79A7 shipped orange (QA Wave 8).
-  return i === highlight ? primary : COLORS.muted;
+  return i === highlight ? primary : C.muted;
 }
 
 function BarSvg({
@@ -254,6 +262,7 @@ function BarSvg({
    *  embedded scrolly host / for long units) — see BarChart body. */
   valueSuffix: string;
 }) {
+  const C = themeColors(!!config.dark);
   const { innerWidth, innerHeight, orientation, bars } = layout;
   const horizontal = orientation === "horizontal";
   const n = bars.length;
@@ -285,7 +294,7 @@ function BarSvg({
                 x2={t.pos}
                 y1={0}
                 y2={innerHeight}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
             ) : (
@@ -295,7 +304,7 @@ function BarSvg({
                 x2={innerWidth}
                 y1={t.pos}
                 y2={t.pos}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
             ),
@@ -312,7 +321,7 @@ function BarSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -323,7 +332,7 @@ function BarSvg({
         {/* bars + category labels + value labels */}
         {bars.map((b, i) => {
           const g = growBar(b, barP(i), orientation);
-          const fill = barColor(i, config.highlightIndex, config.baseColor);
+          const fill = barColor(i, C, config.highlightIndex, config.baseColor);
           const grown = barP(i);
           // bar.md rule 4 — EVERY bar carries its direct value label, at EVERY frame it
           // is drawn (not just the p=1 hold). The label rides the bar's ANIMATED end
@@ -413,7 +422,7 @@ function BarSvg({
                   dy={horizontal ? "0.32em" : cat.dy}
                   textAnchor={cat.anchor}
                   fontSize={ts.axis}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={catOp}
                 >
                   {ln}
@@ -429,7 +438,7 @@ function BarSvg({
                 // the label carries the VALUE (always ink for WCAG contrast); the
                 // MARK carries the hue. Emphasis on a highlighted bar stays on the
                 // bar fill + the bold weight, never on a low-contrast text colour.
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={labelOp}
               >
                 {formatNumber(b.rawVal, config.lang) + valueSuffix}
@@ -446,7 +455,7 @@ function BarSvg({
               x2={bars[0]?.base ?? 0}
               y1={0}
               y2={innerHeight}
-              stroke={COLORS.axis}
+              stroke={C.axis}
               strokeWidth={1}
             />
           ) : (
@@ -455,7 +464,7 @@ function BarSvg({
               x2={innerWidth}
               y1={bars[0]?.base ?? innerHeight}
               y2={bars[0]?.base ?? innerHeight}
-              stroke={COLORS.axis}
+              stroke={C.axis}
               strokeWidth={1}
             />
           )}

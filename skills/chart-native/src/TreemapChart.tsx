@@ -26,6 +26,7 @@ import {
   TYPE,
   OKABE_ITO,
   TREEMAP_GROUP_COLORS,
+  themeColors,
 } from "./core/tokens";
 import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
@@ -42,6 +43,10 @@ export interface TreemapConfig {
   unit: string; // subtitle (what the area measures)
   categories?: string[];
   items: { label: string; value: number; category?: string }[];
+  /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture. The group
+   *  palette (TREEMAP_GROUP_COLORS) has no black; in-cell text is picked per-fill by
+   *  labelInkOnFill, so both are theme-independent. */
+  dark?: boolean;
 }
 
 export interface TreemapChartProps {
@@ -152,6 +157,7 @@ export function TreemapChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -187,6 +193,7 @@ function TreemapSvg({
 }) {
   const { innerWidth, innerHeight, cells, total } = layout;
   const n = cells.length;
+  const C = themeColors(!!config.dark);
   const chrome = easeOutCubic(p / 0.16);
   const cellP = (order: number) =>
     easeOutCubic(stagger(p, order, n, 0.1, 0.5 / n, 0.4));
@@ -306,7 +313,7 @@ function TreemapSvg({
                 dy="0.32em"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>

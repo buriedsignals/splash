@@ -17,7 +17,13 @@ import {
   type PyramidLayout,
 } from "./population-pyramid-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, PYRAMID_SIDE_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  themeColors,
+  FONT,
+  TYPE,
+  PYRAMID_SIDE_COLORS,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -28,6 +34,8 @@ export interface PopulationPyramidConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
+  dark?: boolean;
   unit: string;
   bandField: string;
   leftField: string;
@@ -59,6 +67,7 @@ export function PopulationPyramidChart({
   scale = 1,
 }: PopulationPyramidChartProps) {
   const p = clamp01(progress);
+  const C = themeColors(!!config.dark);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
     8,
@@ -116,6 +125,7 @@ export function PopulationPyramidChart({
       setHover={setHover}
       ts={ts}
       sc={sc}
+      C={C}
     />
   );
 
@@ -140,6 +150,7 @@ export function PopulationPyramidChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      dark={!!config.dark}
     >
       {svg}
     </ChartFrame>
@@ -158,6 +169,7 @@ function PyramidSvg({
   setHover,
   ts,
   sc,
+  C,
 }: {
   layout: PyramidLayout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -170,6 +182,7 @@ function PyramidSvg({
   setHover: (h: { band: number; side: "left" | "right" } | null) => void;
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
+  C: ReturnType<typeof themeColors>;
 }) {
   const { innerWidth, innerHeight, leftEdge, rightEdge, bands } = layout;
   const n = bands.length;
@@ -244,7 +257,7 @@ function PyramidSvg({
                 x2={t.leftPos}
                 y1={0}
                 y2={innerHeight}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <line
@@ -252,7 +265,7 @@ function PyramidSvg({
                 x2={t.rightPos}
                 y1={0}
                 y2={innerHeight}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
             </g>
@@ -272,7 +285,7 @@ function PyramidSvg({
               textAnchor="middle"
               fontSize={ts.axis}
               fontWeight={600}
-              fill={COLORS.ink}
+              fill={C.ink}
               opacity={clamp01(bandP(i) * 1.5)}
             >
               {b.bandLabel}
@@ -298,7 +311,7 @@ function PyramidSvg({
                     y={innerHeight + 18 * sc}
                     textAnchor="middle"
                     fontSize={ts.source}
-                    fill={COLORS.muted}
+                    fill={C.muted}
                   >
                     {t.mag}
                   </text>
@@ -307,7 +320,7 @@ function PyramidSvg({
                     y={innerHeight + 18 * sc}
                     textAnchor="middle"
                     fontSize={ts.source}
-                    fill={COLORS.muted}
+                    fill={C.muted}
                   >
                     {t.mag}
                   </text>
@@ -335,7 +348,7 @@ function PyramidSvg({
                 dy="0.32em"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>
