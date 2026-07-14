@@ -1,4 +1,4 @@
-import { specToNativeConfig } from "./spec-to-config";
+import { resolveBarSort, specToNativeConfig } from "./spec-to-config";
 import type { NarrativeBeat, NativeSpec } from "./spec-to-config";
 import { computeChartLayout } from "./chart-geometry";
 import type { Dims } from "./chart-geometry";
@@ -182,6 +182,59 @@ export function narrativeBeatErrors(spec: NativeSpec): string[] {
   return errors;
 }
 
+// ADVISORY (never a hard fail) companion to narrativeBeatErrors: for a bars-with-beats
+// scrolly, does the chart's RENDERED bar order actually follow the confirmed beat walk?
+// The mapper pins config.sort to "none" when beats are present with no explicit sort, so
+// after that fix the beat walk advances monotonically through the rendered bars. This
+// tripwire makes the OPPOSITE visible: an explicit `sort` that contradicts the beat order
+// (bars value-sorted while captions walk a geographic order → the highlight jumps around),
+// or a future regression that re-introduces the value-desc default. Returned as a WARNING
+// (surfaced at the render gate), not thrown — the journalist may have deliberately paired a
+// value sort with a subset walk, and a warning is enough to flag it for review.
+// Line beats are anchored by x and a line scrolly may legitimately scrub backwards, so
+// only bar walks are checked.
+export function narrativeBeatWarnings(spec: NativeSpec): string[] {
+  const beats = spec.beats;
+  if (!Array.isArray(beats) || beats.length === 0) return [];
+  let parsed: ReturnType<typeof specToNativeConfig>;
+  try {
+    parsed = specToNativeConfig(spec);
+  } catch {
+    return []; // unmapped/malformed → the producer validator's job, not this check
+  }
+  const { type, config } = parsed;
+  if (type !== "bar") return [];
+  const catField = config.catField as string;
+  const valField = config.valField as string;
+  const rows = config.rows as Record<string, string | number>[];
+  const sort = resolveBarSort(spec);
+  const ordered =
+    sort === "none"
+      ? rows
+      : [...rows].sort((a, b) => {
+          const d = Number(a[valField]) - Number(b[valField]);
+          return sort === "asc" ? d : -d;
+        });
+  const renderIndex = (cat: string) =>
+    ordered.findIndex((r) => String(r[catField]) === cat);
+  // Positions the beat categories land at in the rendered chart (skip anything not in
+  // the data — a typo is narrativeBeatErrors' hard-fail path, not this advisory one).
+  const positions = beats
+    .map((b) => b.category)
+    .filter((c): c is string => typeof c === "string")
+    .map(renderIndex)
+    .filter((i) => i >= 0);
+  const monotonic = positions.every((p, i) => i === 0 || p > positions[i - 1]);
+  if (!monotonic)
+    return [
+      `bar scrolly: the rendered bar order (sort "${sort}") does not follow the explicit ` +
+        `narrative beat order — the highlight walk will jump around the chart. Drop the ` +
+        `explicit \`sort\` to render bars in the beat order, or reorder the beats to match ` +
+        `the value sort.`,
+    ];
+  return [];
+}
+
 // English ordinal: 1st, 2nd, 3rd, 4th…
 function ordinalEn(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -315,14 +368,28 @@ export function deriveChartStory(
       label: String(r[catField]),
       value: Number(r[valField]),
     }));
-    // Same value-only stable sort as computeBarLayout — this IS the chart's display
-    // order, so `sortedIndex` (== highlightIndex) fetches the row the accented bar shows.
-    const displayOrder = [...labelled].sort((a, b) => b.value - a.value);
+    // The chart's ACTUAL display order — driven by the SAME resolved sort the mapper
+    // pinned onto config.sort, so `sortedIndex` (== highlightIndex) fetches the row the
+    // accented bar shows. When the journalist pinned an explicit narrative beat walk
+    // (beats present, no explicit sort → sort "none"), the bars render in data/beat row
+    // order, so the story index MUST agree — NOT value-desc (the electrification bug:
+    // captions walked the geographic order while the chart re-sorted to value-desc).
+    const sort = resolveBarSort(spec);
+    const displayOrder =
+      sort === "none"
+        ? labelled // data/beat row order, matching computeBarLayout's "none"
+        : [...labelled].sort((a, b) =>
+            sort === "asc" ? a.value - b.value : b.value - a.value,
+          );
+    // The rank + role that drive the auto-caption wording ("… leads", "The lowest …")
+    // stay VALUE-meaningful regardless of the display order: derive them from the value
+    // ranking, not the display position, so a beat walk in a non-value order still gets
+    // sensible fallback captions when a beat has no text.
+    const valueRanked = [...labelled].sort((a, b) => b.value - a.value);
     // The walk: journalist-confirmed categories in the confirmed order (walk length
     // follows the list, not the fixed leaders+tail 4) — or the auto ranked reveals.
-    // Explicit entries resolve their category to its post-sort display index (the
-    // same index the chart accents), with the display rank + role derived from that
-    // position so the auto caption wording stays rank-aware when no text is given.
+    // Explicit entries resolve their category to its DISPLAY index (the same index the
+    // chart accents) for the highlight, and to its VALUE rank/role for the wording.
     const walk = explicitBeats
       ? explicitBeats.map((nb) => {
           const sortedIndex = displayOrder.findIndex(
@@ -332,12 +399,14 @@ export function deriveChartStory(
             throw new Error(
               `invalid explicit narrative beats: category "${String(nb.category)}" not found`,
             ); // unreachable — narrativeBeatErrors already validated above
+          const valueRank = valueRanked.findIndex(
+            (row) => row.label === nb.category,
+          );
           return {
             sortedIndex,
-            rank: sortedIndex + 1,
-            role: (sortedIndex === displayOrder.length - 1
-              ? "tail"
-              : "leader") as "leader" | "tail",
+            rank: valueRank + 1,
+            role: (valueRank === valueRanked.length - 1 ? "tail" : "leader") as
+              "leader" | "tail",
             text: nb.text,
           };
         })

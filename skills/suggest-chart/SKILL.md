@@ -775,7 +775,10 @@ tail (a fixed 4-step walk); scatter: 3 outliers. When the journalist **confirmed
   confirmed caption> }`. A range beat (`x`..`xEnd`) draws the line to `xEnd` and captions the span.
 - **bar**: each beat = `{ "category": <a category value from the data>, "text": <optional caption> }` —
   the highlight walk follows the LIST (its length and its order), not the fixed leaders+tail pick, so a
-  5-entry list is a 5-step walk and « Alpes-Maritimes » listed = its own step, guaranteed.
+  5-entry list is a 5-step walk and « Alpes-Maritimes » listed = its own step, guaranteed. When `beats`
+  are present with NO explicit `sort`, the BARS also render in the beat/data row order (effective sort
+  `none`) so the highlight walks them in place — do NOT emit `sort` to keep a chosen order (e.g. a
+  geographic north→south walk); an explicit `sort` overrides it and makes the highlight jump around.
 - **Order is the narrative**: beats are rendered exactly as given — the journalist's confirmed order
   wins, even non-chronological (a line scrolly scrubs back to an earlier point).
 - **Anchors must exist in the data VERBATIM** (string-compared against the x/category column). A typo
