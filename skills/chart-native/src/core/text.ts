@@ -208,3 +208,48 @@ export function endLabelGutterPx(
   );
   return Math.max(opts.floorPx, Math.ceil(opts.gapPx + widest));
 }
+
+/**
+ * LEFT GUTTER reserve (UNSCALED px) for a strip of END-anchored "name value" side
+ * labels — the slope chart's left category labels. It is `endLabelGutterPx` (widest
+ * label + gap, floored) with a CAP folded in, because the failure this closes is
+ * different from a right-edge value label: a fixed `basePad.left:138` clipped a long
+ * category name ("Professions intermédiaires 22" ≈ 242px) off the frame's LEFT edge,
+ * and the pipeline's fallback was to SHORTEN the data field ("Interm.") to fit —
+ * mutilating the data to fit the layout. Sizing the gutter to the WIDEST actual label
+ * makes the FULL name render, so the overflow guard never fires and the data is never
+ * touched.
+ *
+ * - `floorPx` keeps short-label charts at their existing layout (only GROW, never
+ *   shrink an existing render — the sample's 138).
+ * - the gutter is CAPPED at `capFrac` (default ~42%) of the canvas so a pathological
+ *   name can't starve the plot; the renderer WRAPS any over-cap label onto ≤2 lines
+ *   (wrapLabel) rather than truncating — the name is never lost.
+ * - `bold` inflates the 0.6 char-width estimate by 8% (the highlighted line's label is
+ *   700-weight), so even a bold widest label fits the reserved gutter.
+ *
+ * Pass UNSCALED font/gap + the render `scale`: the cap is divided by `scale` so that
+ * once resolveFrame multiplies the whole basePad by `scale` the actual pad lands at
+ * `capFrac·width` (the factor on the label-driven part cancels the same way).
+ */
+export function leftLabelGutterPx(
+  labels: string[],
+  fontSize: number,
+  opts: {
+    gapPx: number;
+    floorPx: number;
+    width: number;
+    scale: number;
+    bold?: boolean;
+    capFrac?: number;
+  },
+): number {
+  const capFrac = opts.capFrac ?? 0.42;
+  const raw = endLabelGutterPx(labels, fontSize, {
+    gapPx: opts.gapPx,
+    floorPx: opts.floorPx,
+    bold: opts.bold,
+  });
+  const cap = Math.max(opts.floorPx, (opts.width * capFrac) / opts.scale);
+  return Math.min(raw, cap);
+}

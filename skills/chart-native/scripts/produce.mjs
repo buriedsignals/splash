@@ -148,7 +148,7 @@ let brandConcerns = [];
     // recorded for the render-review instead of failing the run.
     brandConcerns = result.concerns;
     console.log(
-      `[produce ${type}] conformance: OK — kept the newsroom's house colour with ${result.concerns.length} render-review concern(s) (policy b, brand-first):`,
+      `[produce ${type}] conformance: OK — surfaced ${result.concerns.length} non-fatal render-review concern(s) (e.g. a kept house colour, or a possible label-fit data-integrity flag):`,
     );
     for (const c of result.concerns) console.log(`  ~ ${c}`);
   } else {

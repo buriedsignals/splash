@@ -148,6 +148,70 @@ export function requireAltInsight(altInsight: unknown): string[] {
       ];
 }
 
+/** Strip combining diacritics so an ASCII abbreviation stem ("interm") matches its
+ *  accented expansion ("intermédiaires"). */
+function deaccent(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** The shortest abbreviation stem the tripwire will consider a truncated data field.
+ *  ≥5 letters catches the real "Interm." (stem "Interm", 6) while exempting the common
+ *  legitimate short abbreviations ("St.", "Dr.", "Jan.", "Prof.", "Sept.") that would
+ *  otherwise false-positive against an expansion in the prose. */
+const ABBREV_STEM_MIN_LEN = 5;
+
+/**
+ * Data-immutability tripwire — belt-and-suspenders to the slope's label-driven left
+ * gutter (leftLabelGutterPx). Label-fit is a LAYOUT concern and must NEVER be paid for
+ * by mutating the underlying data field. The real incident: a shipped slope config had
+ * `rows[1].categorie = "Interm."` while every other row kept its full name and the
+ * SAME file's `altInsight` still said "professions intermédiaires" in full — the true
+ * category was truncated only in the chart's data field to fit a fixed gutter. That is
+ * data mutilation in an owned deliverable.
+ *
+ * A precise cross-check would need the pre-mutation value, which produce-time does not
+ * have; absent that, this is a MEDIUM-CONFIDENCE heuristic (advisory, not a hard fail —
+ * the gutter fix in leftLabelGutterPx is the real cure). It flags a labelField value
+ * that is a SINGLE abbreviation token ending in "." whose stem (≥5 letters) reappears
+ * as the prefix of a STRICTLY longer word in the title or altInsight — i.e. the author
+ * wrote the name out in full elsewhere but the data field carries only the stub.
+ * Accent-insensitive. A legitimate abbreviation that is NOT expanded elsewhere (months
+ * "Jan.", a genuinely-abbreviated code) is never flagged.
+ */
+export function checkLabelDataIntegrity(input: {
+  labels: string[];
+  title?: string;
+  altInsight?: string;
+}): string[] {
+  const findings: string[] = [];
+  const haystack = deaccent(
+    `${input.title ?? ""} ${input.altInsight ?? ""}`,
+  ).toLowerCase();
+  if (!haystack.trim()) return findings;
+  for (const raw of input.labels) {
+    const label = (raw ?? "").trim();
+    // a single word ending in a period ("Interm.") — a truncation stub, not a phrase
+    const m = new RegExp(`^(\\p{L}{${ABBREV_STEM_MIN_LEN},})\\.$`, "u").exec(
+      label,
+    );
+    if (!m) continue;
+    const stem = deaccent(m[1]).toLowerCase();
+    // the stem reappears as the prefix of a STRICTLY longer word in the prose
+    const expanded = new RegExp(`\\b${escapeRegExp(stem)}\\p{L}+`, "u").test(
+      haystack,
+    );
+    if (expanded)
+      findings.push(
+        `labelField value "${label}" looks like a truncated data field — its expansion appears in full in the title/alt-text; label-fit must widen the gutter or wrap, never shorten the data`,
+      );
+  }
+  return findings;
+}
+
 /**
  * Check a chart's config + colours against design-conformance.md. Returns the
  * list of violations (empty = conformant). The component bakes these in; this

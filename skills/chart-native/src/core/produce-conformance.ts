@@ -36,6 +36,7 @@ import {
   checkHeatmapConformance,
   reconcileBrandViolations,
   requireAltInsight,
+  checkLabelDataIntegrity,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -103,9 +104,13 @@ export interface ConformanceRunResult {
   checked: boolean;
   violations: string[];
   /**
-   * F2 — render-review concerns: CVD/contrast issues DOWNGRADED from hard
-   * violations because the failing colour was set explicitly via the newsroom's
-   * brand profile (policy b, brand-first + warning). Empty on the auto path.
+   * Render-review concerns — surfaced, non-fatal advisories (never block produce):
+   *  (1) F2 — CVD/contrast issues DOWNGRADED from hard violations because the failing
+   *      colour was set explicitly via the newsroom's brand profile (policy b), and
+   *  (2) the data-immutability tripwire (checkLabelDataIntegrity) — a labelField value
+   *      that looks like it was SHORTENED to fit the layout (its expansion still appears
+   *      in the title/alt-text), the "Interm." ⟶ "professions intermédiaires" class.
+   * Empty on the clean auto path.
    */
   concerns: string[];
 }
@@ -243,7 +248,37 @@ export function runProduceConformance(
     rawViolations,
     brandExplicitColors(config),
   );
-  return { checked: true, violations, concerns };
+  // Data-immutability tripwire (advisory) — flag a labelField value that was shortened
+  // to fit the layout (its expansion still appears in the title/alt-text), the class of
+  // the slope "Interm." incident. A render-review CONCERN, never a hard fail: the
+  // layout-driven gutter (leftLabelGutterPx) is the actual cure; a false positive must
+  // never block produce. No-op for label-less types (configLabels returns []).
+  const integrity = checkLabelDataIntegrity({
+    labels: configLabels(config),
+    title: typeof config.title === "string" ? config.title : undefined,
+    altInsight:
+      typeof config.altInsight === "string" ? config.altInsight : undefined,
+  });
+  return { checked: true, violations, concerns: [...concerns, ...integrity] };
+}
+
+// The category/label field values a config carries, for the data-immutability tripwire
+// (checkLabelDataIntegrity). Covers the label-field names used across the native types
+// (slope/dumbbell `labelField`, bar `catField`, dot-strip `categoryField`, heatmap
+// `rowField`); returns [] when the type carries none, so the tripwire is a no-op for
+// label-less types (line/scatter/…).
+function configLabels(config: Record<string, unknown>): string[] {
+  const field =
+    (typeof config.labelField === "string" && config.labelField) ||
+    (typeof config.catField === "string" && config.catField) ||
+    (typeof config.categoryField === "string" && config.categoryField) ||
+    (typeof config.rowField === "string" && config.rowField) ||
+    "";
+  const rows = config.rows;
+  if (!field || !Array.isArray(rows)) return [];
+  return rows
+    .map((r) => String((r as Record<string, unknown>)[field] ?? "").trim())
+    .filter(Boolean);
 }
 
 function computeRawConformance(
