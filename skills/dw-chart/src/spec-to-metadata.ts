@@ -602,10 +602,13 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
   // VALUE LABELS (contrast-safe). Datawrapper's bar/column value labels have two
   // traps: vertical columns default to hover-only (invisible on the static PNG),
   // and horizontal bars draw a white inside label that fails WCAG on darker subject
-  // hues (no colour/placement override exists). Route both through the safe mapper:
-  // columns → outside dark ink + always-on; horizontal bars → the value axis (the
-  // bar keeps its hue, the axis carries the value in black ink). Other chart types
-  // (line/scatter/pie) keep Datawrapper's own labelling — see value-label-safety.ts.
+  // hues (no colour/placement override exists — DW owns the label colour). Route both
+  // through the safe mapper: columns → outside dark ink + always-on; horizontal bars →
+  // the value axis stays on (force-grid) as a redundant reading path. Since dw-chart
+  // cannot recolour a DW label, a sub-AA white inside label is caught at produce as a
+  // HARD failure (checkValueLabelContrast) unless the colour is brand-explicit — never
+  // shipped silently. Other chart types (line/scatter/pie) keep Datawrapper's own
+  // labelling — see value-label-safety.ts.
   if (hasValueLabelControl(spec.type))
     applyValueLabels(spec.type, visualize, spec.valueLabels, numberFormat);
 

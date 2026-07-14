@@ -117,11 +117,19 @@ describe("specToMetadata routes bar/column value labels safely", () => {
 });
 
 describe("checkValueLabelContrast — the regression guard", () => {
-  it("records a mid-tone bar inside label as a CONCERN (not hard) when the axis fallback is present", () => {
-    // The mapper now ships direct on-bar labels + the value axis (force-grid). A mid-tone
-    // subject hue (vermilion, white 3.87:1) is below AA and DW offers no colour/placement
-    // override — but the axis carries the value in black ink, so it is a recorded
-    // render-review concern, never a hard failure that would strip the direct labels.
+  // KRANKENHAUS REGRESSION (w8-krankenhaus-wartezeit-de): a d3-bars with a green
+  // #009E73 highlight + value labels SHIPPED a white "118" inside the highlight bar at
+  // 3.42:1 (below WCAG AA) as an advisory "concern". Datawrapper owns the inside-label
+  // colour (its YIQ auto-pick — verified against the live d3-bars option schema: the
+  // value-label keys are show-value-labels / value-label-visibility / value-label-
+  // alignment / value-label-format, NONE control colour or inside/outside), so atelier
+  // cannot recolour it. The value axis (force-grid) being present does NOT cure the
+  // label's own 1.4.3 contrast failure — so a sub-AA white inside label is now a HARD
+  // failure (fail-loud) on the auto path, caught before publish instead of shipped
+  // silently. The ONLY keep-and-ship path is a journalist-chosen brand colour (policy b).
+  it("hard-fails a mid-tone bar inside label even WITH the value axis on (real shipping metadata)", () => {
+    // specToMetadata emits the exact metadata produce ships: show-value-labels + force-grid.
+    // The axis being on must NOT downgrade the sub-AA label to an advisory concern anymore.
     const p = specToMetadata({
       type: "d3-bars",
       title: "Heat is highest in the south",
@@ -130,10 +138,65 @@ describe("checkValueLabelContrast — the regression guard", () => {
       subject: "heat",
       altInsight: "hottest in the south",
     });
+    expect(p.metadata.visualize["force-grid"]).toBe(true); // axis fallback IS present
     const v = checkValueLabelContrast(p);
+    expect(v).toHaveLength(1);
+    expect(v[0].color).toBe("#D55E00");
+    expect(v[0].ratio).toBeLessThan(4.5);
+    expect(v[0].concern).toBeUndefined(); // HARD, not an advisory concern
+  });
+
+  it("hard-fails the exact krankenhaus green #009E73 highlight bar (does not ship white-on-green silently)", () => {
+    // The real defect: highlight → grey base-color + custom-colors {highlight:#009E73}.
+    // DW auto-draws a white label inside the green bar (3.42:1). It must be CAUGHT, not
+    // shipped as advisory — either dark ink (impossible in DW) or fail. Here: fail-loud.
+    const p = specToMetadata({
+      type: "d3-bars",
+      title: "Wait times rise in most cantons",
+      data: "kanton,wartezeit_min\nZürich,187\nBasel-Stadt,118",
+      baseColor: "#009E73",
+      highlight: "Basel-Stadt",
+      subject: "emergency room wait times",
+      altInsight: "wait times rise in most cantons",
+    });
+    const v = checkValueLabelContrast(p);
+    expect(v).toHaveLength(1);
+    expect(v[0].color).toBe("#009E73");
+    expect(v[0].ratio).toBeCloseTo(3.42, 1);
+    expect(v[0].concern).toBeUndefined(); // HARD — produceChart throws before publish
+  });
+
+  it("keeps a mid-tone label as a policy-b CONCERN only when the fill is a journalist brand colour", () => {
+    // The one keep-and-ship path: the newsroom explicitly chose this house colour.
+    const p = specToMetadata({
+      type: "d3-bars",
+      title: "Heat is highest in the south",
+      data: "region,value\nSouth,72\nWest,21",
+      baseColor: "#D55E00",
+      subject: "heat",
+      altInsight: "hottest in the south",
+    });
+    const v = checkValueLabelContrast(p, { brandColors: ["#D55E00"] });
     expect(v).toHaveLength(1);
     expect(v[0].concern).toBe(true);
     expect(v[0].color).toBe("#D55E00");
+  });
+
+  it("keeps WHITE on a genuinely dark fill where it clears AA (no false flag)", () => {
+    // A dark navy the value label reads white on at ≥4.5:1 must NOT be flagged — the
+    // guard fires only on the mid-tone hues where DW's white pick is actually sub-AA.
+    const patch = {
+      type: "d3-bars",
+      metadata: {
+        visualize: {
+          "base-color": "#0a2540",
+          "show-value-labels": true,
+          "force-grid": true,
+        },
+      },
+    };
+    expect(contrastRatio(WHITE, "#0a2540")).toBeGreaterThan(4.5);
+    expect(checkValueLabelContrast(patch)).toEqual([]);
   });
 
   it("catches a white inside label on a coloured horizontal bar with NO axis fallback (hard)", () => {
@@ -207,7 +270,14 @@ describe("checkValueLabelContrast — the regression guard", () => {
 describe("dwInsideLabelIsWhite — DW's YIQ-brightness auto-pick (live-verified)", () => {
   it("picks WHITE on dark/mid-tone fills DW renders white on", () => {
     // Live-observed white inside labels (YIQ < 160).
-    for (const dark of ["#0072B2", "#009E73", "#D55E00", "#CC79A7", "#56B4E9", "#000000"])
+    for (const dark of [
+      "#0072B2",
+      "#009E73",
+      "#D55E00",
+      "#CC79A7",
+      "#56B4E9",
+      "#000000",
+    ])
       expect(dwInsideLabelIsWhite(dark)).toBe(true);
   });
   it("picks DARK ink on light fills DW renders dark on", () => {

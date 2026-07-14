@@ -132,10 +132,13 @@ export async function produceChart(
   // established, now asserted so a regression fails the produce instead of shipping).
   assertLocalizedSourceMetadata(patch, spec);
   // Fail loud BEFORE any API call if the metadata would ship a value label below
-  // WCAG 4.5:1 (a white label inside a coloured bar/column). The safe mapper never
-  // trips this; it guards against a future regression re-enabling inside labels.
-  // F2 (policy b): a failure in a journalist-chosen brand colour is KEPT and recorded
-  // as a concern (never a hard failure); every other failure still throws.
+  // WCAG 4.5:1 (a white label inside a coloured bar/column). Datawrapper owns the
+  // inside-label colour and offers no override, so dw-chart cannot recolour a sub-AA
+  // label to readable ink — a mid-tone bar fill (green/vermilion/pink/sky) with value
+  // labels ON trips this on the auto path and must be resolved (safe hue, valueLabels:
+  // false, or brand-explicit), never shipped silently. F2 (policy b): a failure in a
+  // journalist-chosen brand colour is KEPT and recorded as a concern (never a hard
+  // failure); every other failure still throws.
   const brandColors =
     spec.brandExplicit && spec.baseColor ? [spec.baseColor] : [];
   const contrast = checkValueLabelContrast(patch, { brandColors });
