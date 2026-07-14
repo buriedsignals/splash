@@ -406,6 +406,100 @@ describe("mergeProfileDefaults", () => {
   });
 });
 
+describe("newsroom theme (house dark basemap)", () => {
+  it("parses `theme: dark` from the markdown frontmatter", () => {
+    const p = parseNewsroomMarkdown(
+      `---\npalette:\n  - "#E8A33D"\ntheme: dark\n---\n`,
+    );
+    expect(p?.theme).toBe("dark");
+  });
+
+  it("parses theme from brand.json and drops an unknown theme value", () => {
+    expect(
+      parseBrandProfile('{"palette":["#E8A33D"],"theme":"dark"}')?.theme,
+    ).toBe("dark");
+    expect(
+      parseBrandProfile('{"palette":["#E8A33D"],"theme":"midnight"}')?.theme,
+    ).toBeUndefined();
+  });
+
+  it("theme alone (no palette) is still a valid profile", () => {
+    expect(parseBrandProfile('{"theme":"dark"}')).toEqual({
+      palette: [],
+      theme: "dark",
+    });
+  });
+
+  it("trims a padded theme value (like the other scalars)", () => {
+    expect(
+      parseBrandProfile('{"palette":["#E8A33D"],"theme":"dark "}')?.theme,
+    ).toBe("dark");
+  });
+
+  const darkProfile: BrandProfile = { palette: ["#E8A33D"], theme: "dark" };
+
+  it("map-native map: theme dark → mapStyle dataviz-dark", () => {
+    const out = mergeProfileDefaults({ type: "symbol" } as never, darkProfile, {
+      producer: "map-native",
+    });
+    expect((out as { mapStyle?: string }).mapStyle).toBe("dataviz-dark");
+  });
+
+  it("map-scrolly: theme dark → mapStyle dataviz-dark", () => {
+    const out = mergeProfileDefaults(
+      { type: "choropleth" } as never,
+      darkProfile,
+      { producer: "scrolly" },
+    );
+    expect((out as { mapStyle?: string }).mapStyle).toBe("dataviz-dark");
+  });
+
+  it("a per-element mapStyle always wins over the house theme", () => {
+    const out = mergeProfileDefaults(
+      { type: "symbol", mapStyle: "dataviz-light" } as never,
+      darkProfile,
+      { producer: "map-native" },
+    );
+    expect((out as { mapStyle?: string }).mapStyle).toBe("dataviz-light");
+  });
+
+  it("map-dw is EXCLUDED (its dark basemap is a Datawrapper-side mechanism)", () => {
+    const out = mergeProfileDefaults(
+      { type: "choropleth" } as never,
+      darkProfile,
+      { producer: "map-dw" },
+    );
+    expect((out as { mapStyle?: string }).mapStyle).toBeUndefined();
+  });
+
+  it("a chart never gets a mapStyle", () => {
+    const out = mergeProfileDefaults({ title: "t" }, darkProfile, {
+      producer: "chart-native",
+    });
+    expect((out as { mapStyle?: string }).mapStyle).toBeUndefined();
+  });
+
+  it("theme light → explicit dataviz-light; no theme → no mapStyle", () => {
+    const light = mergeProfileDefaults(
+      { type: "symbol" } as never,
+      {
+        palette: ["#E8A33D"],
+        theme: "light",
+      },
+      { producer: "map-native" },
+    );
+    expect((light as { mapStyle?: string }).mapStyle).toBe("dataviz-light");
+    const none = mergeProfileDefaults(
+      { type: "symbol" } as never,
+      {
+        palette: ["#E8A33D"],
+      },
+      { producer: "map-native" },
+    );
+    expect((none as { mapStyle?: string }).mapStyle).toBeUndefined();
+  });
+});
+
 describe("loadBrandProfile", () => {
   it("reads brand.json when present", () => {
     const dir = tmpProject('{"palette":["#E30613"]}');

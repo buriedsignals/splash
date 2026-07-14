@@ -24,6 +24,10 @@ export interface BrandProfile {
   lang?: string;
   /** credit label template ("{name}" placeholder); empty = derived from lang by the producer */
   credit?: string;
+  /** house basemap theme for MAPS. "dark" → every map sits on the dark basemap (dataviz-dark);
+   * "light" is the default. Applied to map-native + map-scrolly (map-dw's dark basemap is a
+   * Datawrapper-side mechanism — follow-up). A per-element mapStyle always overrides it. */
+  theme?: "dark" | "light";
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -40,6 +44,7 @@ function buildProfile(fields: {
   source?: unknown;
   lang?: unknown;
   credit?: unknown;
+  theme?: unknown;
 }): BrandProfile | null {
   const palette = Array.isArray(fields.palette)
     ? fields.palette.filter(
@@ -66,12 +71,22 @@ function buildProfile(fields: {
     typeof fields.credit === "string" && fields.credit.trim()
       ? fields.credit.trim()
       : undefined;
-  if (palette.length === 0 && !source && !lang && !credit) return null;
+  // Only the two known basemap themes are accepted; anything else is dropped (never a silent
+  // arbitrary mapStyle). Trimmed like the other scalars so a `"dark "` typo still resolves.
+  // "light" is the default, but it is kept when declared so a newsroom can pin an explicit light
+  // house theme too.
+  const themeRaw =
+    typeof fields.theme === "string" ? fields.theme.trim() : fields.theme;
+  const theme =
+    themeRaw === "dark" || themeRaw === "light" ? themeRaw : undefined;
+  if (palette.length === 0 && !source && !lang && !credit && !theme)
+    return null;
   const p: BrandProfile = { palette };
   if (accent) p.accent = accent;
   if (source) p.source = source;
   if (lang) p.lang = lang;
   if (credit) p.credit = credit;
+  if (theme) p.theme = theme;
   return p;
 }
 
@@ -94,6 +109,7 @@ export function parseBrandProfile(text: string): BrandProfile | null {
     source: o.source,
     lang: o.lang,
     credit: o.credit,
+    theme: o.theme,
   });
 }
 
@@ -184,6 +200,7 @@ export function parseNewsroomMarkdown(md: string): BrandProfile | null {
     source?: { name?: string; url?: string };
     lang?: string;
     credit?: string;
+    theme?: string;
   } = {};
   let i = 0;
   while (i < lines.length) {
@@ -230,7 +247,13 @@ export function parseNewsroomMarkdown(md: string): BrandProfile | null {
       fields.source = src;
       continue;
     }
-    if (val !== "" && (key === "accent" || key === "lang" || key === "credit"))
+    if (
+      val !== "" &&
+      (key === "accent" ||
+        key === "lang" ||
+        key === "credit" ||
+        key === "theme")
+    )
       fields[key] = unquote(val);
     i++;
   }
@@ -322,6 +345,7 @@ export function mergeProfileDefaults<
     brandPalette?: string[];
     nativeType?: string;
     type?: string;
+    mapStyle?: string;
     source?: { name: string; url?: string };
     lang?: string;
   },
@@ -364,6 +388,21 @@ export function mergeProfileDefaults<
         delete (out as { palette?: unknown }).palette;
       }
     }
+  }
+  // Newsroom basemap theme (house default): a dark-themed newsroom sets `theme: dark` ONCE → every
+  // map sits on the dark basemap. Applies to the map producers that render from a `mapStyle` token
+  // (map-native + map-scrolly); map-dw's dark basemap is a Datawrapper-side mechanism the token does
+  // not drive (follow-up), so it is deliberately excluded. A per-element `mapStyle` always wins.
+  if (
+    profile.theme &&
+    kind === "map" &&
+    (opts?.producer === "map-native" || opts?.producer === "scrolly") &&
+    out.mapStyle === undefined
+  ) {
+    out = {
+      ...out,
+      mapStyle: profile.theme === "dark" ? "dataviz-dark" : "dataviz-light",
+    };
   }
   if (out.source === undefined && profile.source)
     out = { ...out, source: profile.source };

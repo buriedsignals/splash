@@ -16,6 +16,10 @@ source:                       # attribution par défaut sous chaque visuel
 
 lang: "fr"                    # langue par défaut des livrables (fr, en, de, it…)
                               # le crédit suit automatiquement la langue (« Source : » en fr)
+
+# theme: "dark"              # thème des CARTES : décommentez pour un fond sombre sur chaque carte
+                              # (rédaction au thème sombre). Absent = fond clair (défaut).
+                              # Un choix par-carte prime toujours.
 ---
 
 # Comment remplir ce profil
@@ -38,5 +42,10 @@ par cas — ce que vous mettez ici sert de **défaut**.
 - **lang** — la langue par défaut de vos publications (`fr`, `en`, `de`, `it`…). Elle règle
   automatiquement le format du crédit (« Source : » en français, « Source: » en anglais).
 
-_Couleurs, source et langue sont pris en charge aujourd'hui. Un gabarit de crédit personnalisé,
-le logo et la police de caractères arriveront plus tard._
+- **theme** — le fond de vos **cartes** : `dark` pour un fond sombre sur chaque carte (une rédaction
+  au thème sombre le règle une fois), `light` (défaut) pour un fond clair. Un choix par-carte prime
+  toujours. _(S'applique aux cartes map-native et map-scrolly ; le fond sombre Datawrapper arrivera
+  plus tard.)_
+
+_Couleurs, source, langue et thème de carte sont pris en charge aujourd'hui. Un gabarit de crédit
+personnalisé, le logo et la police de caractères arriveront plus tard._
