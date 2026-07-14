@@ -4,6 +4,44 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-14 — La couleur maison sur les CARTES ne marchait PAS en vrai (bug e2e attrapé par le harness, corrigé)
+
+Rémy : « Tu dis que tu as testé mais je ne vois aucun nouveau atelier-harness. » Juste. Le chantier
+« couleur maison sur tous les producteurs » (session 2026-07-13) était unit-testé + render-prouvé à la
+main, mais **jamais passé de bout en bout dans le harness**. Cause : le harness pilote atelier dans un
+worktree détaché de HEAD committé, donc le `NEWSROOM-PROFILE.md` non-tracké à la racine n'y était jamais
+→ le chemin mécanique du profil ne se déclenchait pas (le run ad-hoc `newsroom-house-style` tombait sur
+le chemin par défaut, dw-chart non-brandé).
+
+- **Harness réparé** (repo `atelier-harness`, commit `4e636da`) : `injectNewsroomProfileFixture`
+  (`src/driver.ts`) copie un `newsroom-profile.md` par-cas dans la racine du worktree sandbox comme
+  `NEWSROOM-PROFILE.md` avant le run (gardé au worktree sandbox SEUL — jamais l'arbre partagé, qui
+  l'auto-appliquerait à tout produce). `meta.json` note `newsroomProfileInjected`. 3 cas ajoutés :
+  `newsroom-house-choropleth` (rampe, clair), `newsroom-house-symbol-dark` (fill, fond sombre),
+  `newsroom-house-scrolly` (pass-through).
+- **Le bug que le run live a révélé (unit-tests aveugles dessus).** Le suggesteur émet TOUJOURS un
+  `palette` subject-fit pour une carte (ici `"purples"` pour un sujet internet). Les chemins couleur
+  carte préfèrent un palette explicite à `brandHue`, donc `houseRamp` ne se déclenchait JAMAIS →
+  l'`interactive.html` livré peignait la rampe VIOLETTE sous un profil maison vert. Les charts
+  marchaient (le merge écrase le `baseColor` auto) ; les cartes n'avaient pas d'équivalent — le merge
+  ajoutait `brandHue` mais laissait le palette auto en place.
+- **Corrigé au niveau système** (atelier `main`, merge `f2db360`) : `mergeProfileDefaults` **efface**
+  désormais le palette auto d'une carte (mécanique, map-native) → la rampe maison gagne ; la règle
+  Map-colour de `suggest-chart` gagne le « maison d'abord + bouclier explicite » (répare map-dw via
+  l'omission du `colorScale`, protège un ramp explicitement nommé par le journaliste via
+  `baseColorExplicit`) ; une échelle **divergente** garde sa palette registry (une rampe maison
+  séquentielle ne peut pas encoder un point milieu signé — rampe divergente maison = follow-up). Test
+  de régression merge→computeChoropleth.
+- **Review adversariale (opus) : cœur du fix SAIN** (pas de mutation, houseRamp se déclenche, garde
+  cohérente, map-dw non-cassé, tests non-vacants) + 2 findings (régression palette explicite, over-claim
+  map-dw) adressés par la règle suggesteur + docs honnêtes.
+- **Prouvé au RENDU (pixels, méthode définitive)** : produce.mjs déterministe → PNG **choroplèthe rampe
+  verte maison** (fond clair) + PNG **symbole fill ambre maison** (fond sombre). ⚠️ Leçon gravée : grep
+  de comptes-hex dans l'`interactive.html` est INVALIDE — c'est un bundle JS single-file qui inline TOUTE
+  la registry de palettes ; vérifier au PNG rendu ou au cœur géométrique, jamais au grep du bundle (une
+  fausse alerte « toujours violet » a coûté une investigation avant correction). Gate 19/20 (le seul échec
+  = `docs/installer` gemini, session concurrente, hors-scope). Détail : ci-dessus.
+
 ## Session 2026-07-13 (suite) — Option 3 item 3 : bundle source React RUNNABLE pour map-native/scrolly (10 tâches, branche `feat/map-scrolly-source-bundle`)
 
 La forme « Code source » de l'EXPORT (décision verrouillée 2026-07-10) n'était réellement runnable
