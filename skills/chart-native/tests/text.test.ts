@@ -12,6 +12,7 @@ import {
   verticalCatMaxLines,
   endLabelGutterPx,
   humanizeColumn,
+  seriesLabelFromColumn,
   wrapLineCount,
   fitSideLabels,
   SIDE_LABEL_LINE_HEIGHT,
@@ -217,6 +218,28 @@ describe("humanizeColumn — raw CSV header → reader-facing axis label", () =>
     expect(humanizeColumn("inflation")).toBe("inflation");
     expect(humanizeColumn("GDP")).toBe("GDP");
     expect(humanizeColumn("score")).toBe("score");
+  });
+});
+
+describe("seriesLabelFromColumn — a column as a SERIES/LEGEND/direct label (always capitalised)", () => {
+  it("capitalises a bare token (a series label reads better title-cased) — the 'shops' leak fix", () => {
+    // humanizeColumn leaves "shops" verbatim (axis-label flexibility); a SERIES/legend/direct label
+    // should be "Shops" — this is what the line directLabel + the wide-CSV legends now use.
+    expect(seriesLabelFromColumn("shops")).toBe("Shops");
+    expect(seriesLabelFromColumn("score")).toBe("Score");
+  });
+
+  it("humanises a raw identifier AND capitalises it", () => {
+    expect(seriesLabelFromColumn("coal_share")).toBe("Coal share");
+    expect(seriesLabelFromColumn("over65_pct")).toBe("Over65 pct");
+  });
+
+  it("is idempotent on an already-human label (never mangles a proper series name)", () => {
+    expect(seriesLabelFromColumn("Charbon")).toBe("Charbon");
+    expect(seriesLabelFromColumn("GDP")).toBe("GDP");
+    expect(seriesLabelFromColumn("Énergies renouvelables")).toBe(
+      "Énergies renouvelables",
+    );
   });
 });
 

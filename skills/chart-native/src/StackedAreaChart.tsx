@@ -27,7 +27,7 @@ import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { spreadLabels } from "./core/labels";
-import { endLabelGutterPx, truncate, textWidth } from "./core/text";
+import { endLabelGutterPx, truncate, textWidth , seriesLabelFromColumn } from "./core/text";
 
 export interface StackedAreaConfig {
   title: string;
@@ -86,7 +86,7 @@ export function StackedAreaChart({
     (a, b) => Number(a[config.xField]) - Number(b[config.xField]),
   );
   const lastRow = sortedRows[sortedRows.length - 1] ?? {};
-  const bandLabels = config.seriesFields.map((f) => `${f} ${lastRow[f] ?? ""}`);
+  const bandLabels = config.seriesFields.map((f) => `${seriesLabelFromColumn(f)} ${lastRow[f] ?? ""}`);
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: Math.min(

@@ -22,6 +22,7 @@ import { deriveCartogramStory } from "../../map-native/src/cartogram-story";
 import { mapStoryToChapters } from "./chapters";
 import { chartStoryToChapters } from "./chart-chapters";
 import { deriveChartStory } from "../../chart-native/src/chart-story";
+import { deriveFurniture, bgIsDark } from "../../chart-native/src/core/tokens";
 import { ScrollyChart, type ChartScrollyConfig } from "./ScrollyChart";
 import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
 import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
@@ -63,6 +64,31 @@ export const Scrolly: React.FC<{
     | ScrollyLocatorConfig
     | ScrollyCartogramConfig;
 }> = ({ config }) => {
+  // Themed scaffold surfaces derived from the newsroom house ground (config.themeBg): on a DARK
+  // ground the whole scrolly goes dark — the GLOBAL page background, the prose cards and the header
+  // all follow the theme, so it is never a white page with a themed chart ISLAND (the exact gap:
+  // only the chart graphic was themed). On a light ground the legacy white cards are kept; the light
+  // default (themeBg undefined) → deriveFurniture returns the light COLORS, so pageBg = "#FFFFFF" and
+  // the scaffold is byte-identical to before.
+  const themeBg = (config as { themeBg?: string }).themeBg;
+  const F = deriveFurniture(themeBg);
+  const dark = bgIsDark(themeBg);
+  const pageBg = F.bg;
+  const cardBg = dark ? "rgba(32,35,44,0.94)" : "rgba(255,255,255,0.92)";
+  const cardInk = dark ? "#F4F4F5" : "#111111";
+  const cardSub = dark ? "rgba(244,244,245,0.66)" : "rgba(0,0,0,0.55)";
+  const cardBorder = dark ? "1px solid rgba(244,244,245,0.16)" : "none";
+
+  // Theme the GLOBAL page background (the body behind the sticky graphic + prose column) so the
+  // whole scrolly is themed, not just the chart. Restores the previous value on unmount.
+  useEffect(() => {
+    const prev = document.body.style.background;
+    document.body.style.background = pageBg;
+    return () => {
+      document.body.style.background = prev;
+    };
+  }, [pageBg]);
+
   // -------------------------------------------------------------------------
   // Build the story once at mount — deterministic from config.
   // Dispatches on type: symbol → hex-grid → dot-density → locator → cartogram,
@@ -359,6 +385,10 @@ export const Scrolly: React.FC<{
     // The wrapper must be tall enough for all steps so the sticky graphic
     // stays pinned from the first step to the last.
     minHeight: "100vh",
+    // The house ground fills the WHOLE scroll area (not just the chart box), so the sticky graphic
+    // and every prose card sit on the themed ground — no white margins above/below the chart. The
+    // body-background effect above is belt-and-braces for the html/body behind this wrapper.
+    background: pageBg,
   };
 
   const stickyGraphicStyle: React.CSSProperties = {
@@ -394,16 +424,17 @@ export const Scrolly: React.FC<{
 
   const cardBase: React.CSSProperties = {
     pointerEvents: "auto",
-    background: "rgba(255,255,255,0.92)",
+    background: cardBg,
     backdropFilter: "blur(4px)",
     borderRadius: 8,
+    border: cardBorder,
     // Generous internal padding so the text breathes on the sides.
     padding: "1.15rem 1.6rem",
     // Capped at 360px (desktop); on mobile the step gutters (above) bound it.
     maxWidth: 360,
     boxShadow: "0 2px 16px rgba(0,0,0,0.12)",
-    // WCAG-contrasting text on the semi-opaque white card.
-    color: "#111111",
+    // WCAG-contrasting text on the (light or dark) card.
+    color: cardInk,
     fontFamily: "sans-serif",
     fontSize: "clamp(14px, 3.6vw, 16px)",
     lineHeight: 1.5,
@@ -427,9 +458,10 @@ export const Scrolly: React.FC<{
     zIndex: 50,
     // Never overflow a narrow screen: cap at 420px, keep a 20px gutter each side.
     maxWidth: "min(420px, calc(100vw - 40px))",
-    background: "rgba(255,255,255,0.9)",
+    background: cardBg,
     backdropFilter: "blur(4px)",
     borderRadius: 8,
+    border: cardBorder,
     padding: "11px 16px",
     boxShadow: "0 2px 12px rgba(0,0,0,0.12)",
     pointerEvents: "none",
@@ -442,8 +474,8 @@ export const Scrolly: React.FC<{
     zIndex: 100,
     fontFamily: "sans-serif",
     fontSize: 11,
-    color: "rgba(0,0,0,0.55)",
-    background: "rgba(255,255,255,0.7)",
+    color: cardSub,
+    background: dark ? "rgba(32,35,44,0.72)" : "rgba(255,255,255,0.7)",
     borderRadius: 4,
     padding: "2px 6px",
     pointerEvents: "auto",
@@ -462,7 +494,8 @@ export const Scrolly: React.FC<{
           padding: 24,
           boxSizing: "border-box",
           fontFamily: "sans-serif",
-          color: "#111",
+          background: pageBg,
+          color: cardInk,
           textAlign: "center",
         }}
       >
@@ -472,7 +505,7 @@ export const Scrolly: React.FC<{
               {story.title}
             </div>
           )}
-          <div style={{ color: "#555", fontSize: 14, lineHeight: 1.5 }}>
+          <div style={{ color: cardSub, fontSize: 14, lineHeight: 1.5 }}>
             A &ldquo;{unsupportedChart}&rdquo; chart is not supported in a
             scrolly (only line, bar and scatter). Render it as a static chart
             instead.
@@ -493,7 +526,7 @@ export const Scrolly: React.FC<{
               fontWeight: 700,
               fontSize: "clamp(13px, 3.8vw, 15px)",
               lineHeight: 1.3,
-              color: "#111",
+              color: cardInk,
             }}
           >
             {story.title}

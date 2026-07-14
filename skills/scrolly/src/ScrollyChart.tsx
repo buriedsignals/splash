@@ -1,4 +1,5 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { deriveFurniture } from "../../chart-native/src/core/tokens";
 import { LineChart } from "../../chart-native/src/LineChart";
 import { BarChart } from "../../chart-native/src/BarChart";
 import { ScatterChart } from "../../chart-native/src/ScatterChart";
@@ -145,7 +146,10 @@ export const ScrollyChart: React.FC<{
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#ffffff",
+        // Derive the centring box background from the newsroom house ground (config.themeBg) so the
+        // area around the chart matches the theme — NOT a hardcoded white that broke the dark theme
+        // (a white box behind a themed chart). Light default → deriveFurniture returns #FFFFFF.
+        background: deriveFurniture(config.themeBg).bg,
       }}
     >
       {chart}

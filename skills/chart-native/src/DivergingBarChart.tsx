@@ -22,11 +22,13 @@ import {
   FONT,
   TYPE,
   DIVERGING_SIGN_COLORS,
-  themeColors, tooltipBorder } from "./core/tokens";
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
-import { truncate } from "./core/text";
+import { truncate, leftLabelGutterPx } from "./core/text";
 
 export interface DivergingBarConfig {
   title: string;
@@ -74,11 +76,21 @@ export function DivergingBarChart({
   const titleLines = responsive
     ? Math.max(1, Math.ceil(config.title.length / Math.floor(width / 11)))
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
+  // Size the left gutter to the WIDEST category name (leftLabelGutterPx, like slope/dumbbell) so a
+  // long name is shown in full instead of truncated to the fixed 124; floor at 124, cap at ~42% of
+  // the canvas; an over-cap name is truncated at render.
+  const catLabels = config.rows.map((r) => String(r[config.catField]));
+  const PAD_LEFT = leftLabelGutterPx(catLabels, TYPE.axis, {
+    gapPx: 16,
+    floorPx: 124,
+    width,
+    scale: s,
+  });
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: 18,
     bottom: 28,
-    left: 124, // category labels in the gutter
+    left: PAD_LEFT, // category labels — measured to the widest, floored at 124
   };
   const frame = resolveFrameWithHeader(
     config.title,

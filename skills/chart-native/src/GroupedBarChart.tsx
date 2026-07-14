@@ -27,7 +27,7 @@ import {
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
-import { verticalCatLines, verticalCatMaxLines, bandStepPx } from "./core/text";
+import { verticalCatLines, verticalCatMaxLines, bandStepPx , seriesLabelFromColumn } from "./core/text";
 import { layoutLegend } from "./core/legend";
 
 export interface GroupedConfig {
@@ -79,7 +79,7 @@ export function GroupedBarChart({
   const legendRowUnscaled = 22;
   const charW = TYPE.axis * s * 0.6;
   const { rows: legendRows } = layoutLegend(
-    config.seriesFields,
+    config.seriesFields.map(seriesLabelFromColumn),
     GROUP_COLORS,
     width - (leftAxis + sideRight) * s,
     0,
@@ -218,7 +218,7 @@ function GroupedSvg({
   // 2-line name.
   const legendTop = innerHeight + 40 * sc + catExtraRows * catLineH;
   const legend = layoutLegend(
-    config.seriesFields,
+    config.seriesFields.map(seriesLabelFromColumn),
     GROUP_COLORS,
     innerWidth,
     0,
