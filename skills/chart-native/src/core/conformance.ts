@@ -5,6 +5,7 @@
 // Source: knowledge/references/design-conformance.md (Okabe-Ito, WCAG, FT).
 
 import type { ChartConfig } from "../LineChart";
+import { COLORS } from "./tokens";
 
 export const OKABE_ITO_SET = new Set([
   "#0072B2",
@@ -45,6 +46,24 @@ export function contrastRatio(a: string, b: string): number {
 
 export function isOkabeIto(hex: string): boolean {
   return OKABE_ITO_SET.has(hex.toUpperCase());
+}
+
+/**
+ * The text colour — white or the dark ink token — for a value/label printed
+ * DIRECTLY ON a coloured mark (marimekko / streamgraph / sunburst / treemap /
+ * heatmap cells): whichever of {white, ink} has the HIGHER real WCAG contrast
+ * against `fill`. This is the max-contrast rule, NOT a luminance threshold — a
+ * fixed `luminance < 0.45 → white` cutoff mis-picks white on mid-luminance
+ * Okabe-Ito hues (e.g. green #009E73: white is 3.42:1, FAILS AA; ink is ~5:1,
+ * passes). Single source of truth so every in-fill label picker stays in sync.
+ * For the categorical Okabe-Ito palettes the chosen option clears 4.5:1; a
+ * continuous ramp cell may top out below 4.5:1 with either colour, in which case
+ * the caller relies on large-bold text (WCAG SC 1.4.3, e.g. HeatmapChart).
+ */
+export function labelInkOnFill(fill: string): string {
+  return contrastRatio(fill, "#FFFFFF") >= contrastRatio(fill, COLORS.ink)
+    ? "#FFFFFF"
+    : COLORS.ink;
 }
 
 // Subjects for which blue — either shade — IS the subject-fit choice (water, cold,

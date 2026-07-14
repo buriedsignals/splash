@@ -18,7 +18,7 @@ import {
 } from "./heatmap-geometry";
 import { clamp01, easeOutCubic } from "./core/math";
 import { COLORS, FONT, TYPE } from "./core/tokens";
-import { contrastRatio } from "./core/conformance";
+import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -44,16 +44,14 @@ export interface HeatmapChartProps {
   scale?: number;
 }
 
-// The in-cell value label takes whichever of white / ink actually wins by REAL
-// contrast against the cell colour — the same max-contrast rule TreemapChart /
-// DivergingStackedChart use for in-mark labels. A fixed luminance threshold (the old
-// `< 0.4 ? white : ink`) mis-picks white on mid-tone ramp cells where ink is far more
-// legible (e.g. #70b0d7: white 2.4:1 vs ink 7.3:1), which snap-contrast fail-hards on.
-function cellTextColor(hex: string): string {
-  return contrastRatio(hex, "#FFFFFF") >= contrastRatio(hex, COLORS.ink)
-    ? "#FFFFFF"
-    : COLORS.ink;
-}
+// The in-cell value label takes the shared max-contrast pick (labelInkOnFill):
+// whichever of white / ink actually wins by REAL contrast against the cell colour —
+// the same rule TreemapChart / DivergingStackedChart use for in-mark labels. A fixed
+// luminance threshold (the old `< 0.4 ? white : ink`) mis-picks white on mid-tone
+// ramp cells where ink is far more legible (e.g. #70b0d7: white 2.4:1 vs ink 7.3:1),
+// which snap-contrast fail-hards on. A continuous ramp's mid-tone cell may top out
+// below 4.5:1 with EITHER colour — that residue is covered by the large-bold text
+// (WCAG SC 1.4.3) below, not by this colour choice.
 
 // In-cell value labels are the ONE place a chart prints text directly on the data
 // colour, and colour here spans a full sequential ramp — so a mid-tone cell has NO
@@ -262,7 +260,7 @@ function HeatmapSvg({
                   textAnchor="middle"
                   fontSize={valueFontPx}
                   fontWeight={700}
-                  fill={cellTextColor(cell.color)}
+                  fill={labelInkOnFill(cell.color)}
                   pointerEvents="none"
                 >
                   {cell.value}
