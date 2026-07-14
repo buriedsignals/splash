@@ -20,7 +20,7 @@ import {
   type RadialBarLayout,
 } from "./radial-bar-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, OKABE_ITO, themeColors, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -33,6 +33,8 @@ export interface RadialBarConfig {
   unit: string; // subtitle + value meaning
   categoryField: string;
   valueField: string;
+  /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -142,6 +144,7 @@ export function RadialBarChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -175,6 +178,7 @@ function RadialBarSvg({
 }) {
   const { cx, cy, innerR, outerR, bars, ticks } = layout;
   const n = bars.length;
+  const C = themeColors(config.themeBg);
   const chrome = easeOutCubic(p / 0.18);
   const ox = padding.left + cx;
   const oy = padding.top + cy;
@@ -191,7 +195,7 @@ function RadialBarSvg({
   const step = Math.max(1, Math.ceil(n / 8));
   const halo = {
     paintOrder: "stroke" as const,
-    stroke: "#FFFFFF",
+    stroke: C.bg,
     strokeWidth: 3 * sc,
     strokeLinejoin: "round" as const,
   };
@@ -207,13 +211,13 @@ function RadialBarSvg({
       <g transform={`translate(${ox},${oy})`}>
         {/* tick rings + the baseline circle (radial value axis) */}
         <g opacity={chrome}>
-          <circle r={innerR} fill="none" stroke={COLORS.axis} strokeWidth={1} />
+          <circle r={innerR} fill="none" stroke={C.axis} strokeWidth={1} />
           {ticks.map((t, i) => (
             <circle
               key={`ring${i}`}
               r={t.r}
               fill="none"
-              stroke={COLORS.grid}
+              stroke={C.grid}
               strokeWidth={1}
             />
           ))}
@@ -263,7 +267,7 @@ function RadialBarSvg({
               dy="0.32em"
               textAnchor="middle"
               fontSize={ts.source}
-              fill={COLORS.muted}
+              fill={C.muted}
               style={halo}
             >
               {t.label}
@@ -283,7 +287,7 @@ function RadialBarSvg({
                 textAnchor="middle"
                 fontSize={ts.source}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {b.category}
               </text>
@@ -323,6 +327,7 @@ function Tooltip({
         top: tip.y,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

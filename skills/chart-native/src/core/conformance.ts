@@ -5,7 +5,7 @@
 // Source: knowledge/references/design-conformance.md (Okabe-Ito, WCAG, FT).
 
 import type { ChartConfig } from "../LineChart";
-import { COLORS } from "./tokens";
+import { COLORS, deriveFurniture } from "./tokens";
 
 export const OKABE_ITO_SET = new Set([
   "#0072B2",
@@ -149,6 +149,71 @@ export function reconcileBrandViolations(
     violations.push(raw);
   }
   return { violations, concerns };
+}
+
+// F2 (mark contrast on the theme ground) — the MARK-side companion to the text-side
+// downgrade in reconcileBrandViolations. Every DATA MARK colour the newsroom set BY
+// HAND (a house/subject baseColor, an accent, an explicit series colour) must still
+// READ against the background the newsroom ALSO chose. This checks each mark's WCAG
+// contrast on `deriveFurniture(themeBg).bg` — the NON-TEXT floor (3:1, SC 1.4.11) for a
+// fill / line / dot, the TEXT floor (4.5:1, SC 1.4.3) for a mark rendered as a label.
+// A mark below its floor is KEPT AS CHOSEN (brand-first, policy b — the newsroom owns
+// both the hue AND the ground) and returned as a render-review CONCERN, mirroring the
+// map single-house-fill concern (map-native/…/map-produce-conformance.ts). NEVER a hard
+// fail — the newsroom deliberately picked the colour and the ground.
+//
+// Scope note: the produce boundary passes ONLY the HOUSE-SET marks here, NOT the default
+// Okabe-Ito categorical palettes. Those palette slots are tuned for inter-hue CVD
+// distinction, not each-vs-bg ≥3:1 (orange/purple/skyblue sit ~2–3:1 on white BY
+// DESIGN), so screening them would flood every multi-series chart on the vetted light
+// baseline with false concerns. A house hue is the case where bg-contrast is the
+// operative relationship (a green house fill vanishing on a dark-green ground) — and it
+// is deliberately set, so surfacing it is low-volume and meaningful. Pure; dedupes by
+// hex; skips a non-#rrggbb entry.
+export const MARK_CONTRAST_MIN = 3; // WCAG SC 1.4.11 — non-text graphical object
+export const TEXT_MARK_CONTRAST_MIN = 4.5; // WCAG SC 1.4.3 — text/label
+
+export interface MarkOnBg {
+  /** the mark's #rrggbb hue */
+  color: string;
+  /** what the mark is, for the concern message (e.g. "baseColor", "series #2") */
+  role?: string;
+  /** the mark renders as TEXT/label (4.5:1 floor) rather than a fill/line/dot (3:1) */
+  isText?: boolean;
+}
+
+/**
+ * Screen a set of DATA MARK colours against the chart's theme background (derived via
+ * `deriveFurniture(themeBg).bg`, so `undefined`/light → #FFFFFF, a dark/arbitrary hex →
+ * that ground). Returns a render-review CONCERN for every mark below its WCAG floor
+ * (3:1 non-text, 4.5:1 when `isText`). Empty when every mark clears — and empty by
+ * construction when `marks` is empty (the produce boundary passes [] on the non-house
+ * auto path, keeping the clean auto path concern-free). Pure — no rewrite, no hard fail.
+ */
+export function checkMarkContrastOnBg(
+  marks: readonly MarkOnBg[],
+  themeBg: string | undefined,
+): string[] {
+  const bg = deriveFurniture(themeBg).bg;
+  const concerns: string[] = [];
+  const seen = new Set<string>();
+  for (const m of marks) {
+    if (!/^#[0-9a-fA-F]{6}$/.test(m.color)) continue;
+    const key = m.color.toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const min = m.isText ? TEXT_MARK_CONTRAST_MIN : MARK_CONTRAST_MIN;
+    const r = contrastRatio(m.color, bg);
+    if (r < min)
+      concerns.push(
+        `data mark ${m.color}${m.role ? ` (${m.role})` : ""} is ${r.toFixed(
+          2,
+        )}:1 on the ${bg} theme background, below the WCAG ${min}:1 ${
+          m.isText ? "text" : "non-text"
+        } floor — kept per the newsroom's house style (render-review concern)`,
+      );
+  }
+  return concerns;
 }
 
 /**
@@ -1796,14 +1861,31 @@ export function checkHeatmapConformance(
   });
   if (input.rampStops.length < 3)
     v.push("heatmap ramp needs ≥ 3 stops for a readable sequential scale");
+  // Monotonic luminance in EITHER direction is CVD-safe / greyscale-readable. The light
+  // ramp runs pale→deep (strictly DECREASING); the dark-theme ramp inverts to mid→bright
+  // (strictly INCREASING) so high values read bright on #18181B. Flag only a ramp that is
+  // neither (a luminance that reverses mid-scale is not a sequential scale).
   const lums = input.rampStops.map(relativeLuminance);
-  for (let i = 1; i < lums.length; i++)
-    if (lums[i] >= lums[i - 1]) {
+  const strictlyDown = lums.every((l, i) => i === 0 || l < lums[i - 1]);
+  const strictlyUp = lums.every((l, i) => i === 0 || l > lums[i - 1]);
+  if (!strictlyDown && !strictlyUp)
+    v.push(
+      "heatmap ramp luminance is not monotonic — use a sequential CVD-safe ramp (single-hue / viridis)",
+    );
+  // On a clearly-DARK ground the low-value end must still read as a cell (not vanish into the
+  // near-black ground): every stop clears the 3:1 non-text floor vs the ground. (On a light ground
+  // the pale low end intentionally approaches white — the sequential convention — so this floor is
+  // dark-ground-only, the a11y guarantee the old hand-tuned dark ramp held. Now enforced for ANY
+  // subject/house-derived ramp, not just the removed fixed one.)
+  if (relativeLuminance(textColors.bg) < 0.2) {
+    const worst = Math.min(
+      ...input.rampStops.map((s) => contrastRatio(s, textColors.bg)),
+    );
+    if (worst < 3)
       v.push(
-        "heatmap ramp luminance is not monotonic — use a sequential CVD-safe ramp (single-hue / viridis)",
+        `heatmap dark-ground ramp: a stop is ${worst.toFixed(2)}:1 vs the ground (< 3:1) — low-value cells vanish`,
       );
-      break;
-    }
+  }
   const [lo, hi] = input.valueDomain;
   if (!(hi > lo)) v.push(`heatmap value range is empty — [${lo}, ${hi}]`);
   return v;

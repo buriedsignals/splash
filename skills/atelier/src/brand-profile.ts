@@ -12,6 +12,7 @@
 // or invalid brand.json → null → today's auto path, unchanged.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { resolveThemeBg, bgIsDark } from "../../chart-native/src/core/tokens";
 
 export interface BrandProfile {
   /** ordered brand hues (#rrggbb); palette[0] is the primary house colour (may be empty) */
@@ -24,10 +25,13 @@ export interface BrandProfile {
   lang?: string;
   /** credit label template ("{name}" placeholder); empty = derived from lang by the producer */
   credit?: string;
-  /** house basemap theme for MAPS. "dark" → every map sits on the dark basemap (dataviz-dark);
-   * "light" is the default. Applied to map-native + map-scrolly (map-dw's dark basemap is a
-   * Datawrapper-side mechanism — follow-up). A per-element mapStyle always overrides it. */
-  theme?: "dark" | "light";
+  /** house theme, generalized to an ARBITRARY ground: "light" (default) · "dark" · or any
+   * #rrggbb background (grey, navy, house pink…). Charts DERIVE their furniture + heatmap ramp
+   * from the resolved ground (themeColors/heatmapRamp); MAPS snap it to a basemap by luminance
+   * (dark-ish → dataviz-dark, else dataviz-light) AND carry the resolved ground for map furniture.
+   * Applied to chart-native + map-native + map-scrolly (map-dw + dw-chart have their own theming
+   * — follow-up). A per-element mapStyle / themeBg always overrides it. */
+  theme?: string;
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -71,14 +75,18 @@ function buildProfile(fields: {
     typeof fields.credit === "string" && fields.credit.trim()
       ? fields.credit.trim()
       : undefined;
-  // Only the two known basemap themes are accepted; anything else is dropped (never a silent
-  // arbitrary mapStyle). Trimmed like the other scalars so a `"dark "` typo still resolves.
-  // "light" is the default, but it is kept when declared so a newsroom can pin an explicit light
-  // house theme too.
+  // Accepted theme values: the "dark"/"light" presets OR any #rrggbb ground (an arbitrary house
+  // background — grey, navy, pink…); anything else is dropped (never a silent arbitrary theme).
+  // Trimmed like the other scalars so a `"dark "` typo still resolves. "light" is the default, but
+  // it is kept when declared so a newsroom can pin an explicit light house theme too.
   const themeRaw =
     typeof fields.theme === "string" ? fields.theme.trim() : fields.theme;
   const theme =
-    themeRaw === "dark" || themeRaw === "light" ? themeRaw : undefined;
+    themeRaw === "dark" ||
+    themeRaw === "light" ||
+    (typeof themeRaw === "string" && HEX.test(themeRaw))
+      ? themeRaw
+      : undefined;
   if (palette.length === 0 && !source && !lang && !credit && !theme)
     return null;
   const p: BrandProfile = { palette };
@@ -346,6 +354,7 @@ export function mergeProfileDefaults<
     nativeType?: string;
     type?: string;
     mapStyle?: string;
+    themeBg?: string;
     source?: { name: string; url?: string };
     lang?: string;
   },
@@ -389,20 +398,42 @@ export function mergeProfileDefaults<
       }
     }
   }
-  // Newsroom basemap theme (house default): a dark-themed newsroom sets `theme: dark` ONCE → every
-  // map sits on the dark basemap. Applies to the map producers that render from a `mapStyle` token
-  // (map-native + map-scrolly); map-dw's dark basemap is a Datawrapper-side mechanism the token does
-  // not drive (follow-up), so it is deliberately excluded. A per-element `mapStyle` always wins.
+  // Newsroom theme (house default): a newsroom pins `theme` ONCE (a "dark" preset or any #rrggbb
+  // ground) → every visual inherits it. The resolved GROUND hex (null for the light default) drives
+  // both branches; the ground's luminance snaps a map to its light/dark basemap.
+  const themeBg = resolveThemeBg(profile.theme);
+  // MAP basemap: applies to the map producers that render from a `mapStyle` token (map-native +
+  // map-scrolly); map-dw's dark basemap is a Datawrapper-side mechanism the token does not drive
+  // (follow-up), so it is excluded. Snap the arbitrary ground to the only two basemaps MapTiler
+  // ships (light/dark) BY LUMINANCE. Also carry the resolved ground on the spec so map FURNITURE
+  // can derive from it (a later agent wires the map furniture). A per-element override always wins.
   if (
     profile.theme &&
     kind === "map" &&
-    (opts?.producer === "map-native" || opts?.producer === "scrolly") &&
-    out.mapStyle === undefined
+    (opts?.producer === "map-native" || opts?.producer === "scrolly")
   ) {
-    out = {
-      ...out,
-      mapStyle: profile.theme === "dark" ? "dataviz-dark" : "dataviz-light",
-    };
+    if (out.mapStyle === undefined) {
+      out = {
+        ...out,
+        mapStyle: bgIsDark(profile.theme) ? "dataviz-dark" : "dataviz-light",
+      };
+    }
+    if (themeBg && out.themeBg === undefined) {
+      out = { ...out, themeBg };
+    }
+  }
+  // CHART theme: a non-light `theme` → chart-native (and a chart-scrolly track) derive their
+  // furniture + heatmap ramp from the resolved ground (ChartFrame + each component via
+  // themeColors(config.themeBg)). dw-chart is excluded (Datawrapper has its own theming — follow-up,
+  // like map-dw). A per-element `themeBg` always wins. Only set when the ground is non-light (a
+  // "light" theme resolves to null → no themeBg → byte-identical light default).
+  if (
+    themeBg &&
+    kind === "chart" &&
+    (opts?.producer === "chart-native" || opts?.producer === "scrolly") &&
+    out.themeBg === undefined
+  ) {
+    out = { ...out, themeBg };
   }
   if (out.source === undefined && profile.source)
     out = { ...out, source: profile.source };

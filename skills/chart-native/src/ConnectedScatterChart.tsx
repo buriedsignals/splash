@@ -18,7 +18,7 @@ import {
   type ConnectedScatterLayout,
 } from "./connected-scatter-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, FONT, TYPE, OKABE_ITO, themeColors, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -34,6 +34,8 @@ export interface ConnectedScatterConfig {
   yField: string;
   xLabel: string;
   yLabel: string;
+  /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -73,7 +75,16 @@ export function ConnectedScatterChart({
     bottom: 56, // x axis + x title
     left: 64, // y axis + y title
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -128,6 +139,7 @@ export function ConnectedScatterChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -159,6 +171,7 @@ function ConnectedScatterSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  const C = themeColors(config.themeBg);
   const { innerWidth, innerHeight, points, totalLen } = layout;
 
   const chrome = easeOutCubic(p / 0.18);
@@ -195,7 +208,7 @@ function ConnectedScatterSvg({
               x2={innerWidth}
               y1={t.pos}
               y2={t.pos}
-              stroke={COLORS.grid}
+              stroke={C.grid}
               strokeWidth={1}
             />
           ))}
@@ -209,7 +222,7 @@ function ConnectedScatterSvg({
               dy="0.32em"
               textAnchor="end"
               fontSize={ts.axis}
-              fill={COLORS.muted}
+              fill={C.muted}
             >
               {t.label}
             </text>
@@ -221,7 +234,7 @@ function ConnectedScatterSvg({
               y={innerHeight + 20 * sc}
               textAnchor="middle"
               fontSize={ts.axis}
-              fill={COLORS.muted}
+              fill={C.muted}
             >
               {t.label}
             </text>
@@ -233,7 +246,7 @@ function ConnectedScatterSvg({
             textAnchor="middle"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             {config.xLabel}
           </text>
@@ -242,7 +255,7 @@ function ConnectedScatterSvg({
             textAnchor="middle"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             {config.yLabel}
           </text>
@@ -267,7 +280,7 @@ function ConnectedScatterSvg({
           cx={head.x}
           cy={head.y}
           r={4 * sc}
-          fill={COLORS.head}
+          fill={C.head}
           stroke={ACCENT}
           strokeWidth={2 * sc}
           opacity={clamp01((draw - 0.005) / 0.03) * clamp01((1 - draw) / 0.025)}
@@ -308,8 +321,8 @@ function ConnectedScatterSvg({
           textAnchor="start"
           fontSize={ts.axis}
           fontWeight={700}
-          fill={COLORS.ink}
-          stroke="#fff"
+          fill={C.ink}
+          stroke={C.bg}
           strokeWidth={3 * sc}
           style={{ paintOrder: "stroke" }}
           opacity={startLabelOp}
@@ -323,8 +336,8 @@ function ConnectedScatterSvg({
           textAnchor="end"
           fontSize={ts.axis}
           fontWeight={700}
-          fill={COLORS.ink}
-          stroke="#fff"
+          fill={C.ink}
+          stroke={C.bg}
           strokeWidth={3 * sc}
           style={{ paintOrder: "stroke" }}
           opacity={endLabelOp}
@@ -359,6 +372,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

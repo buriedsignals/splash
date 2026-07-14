@@ -6,9 +6,10 @@
 // a text-shadow.
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import {
-  FRAME_COLORS,
-  FRAME_COLORS_DARK,
+  DARK_FRAME_BG,
   FRAME_FONT,
+  frameBgIsDark,
+  resolveFrameColors,
 } from "../theme/map-tokens";
 import type { ResolvedMapFrame } from "./map-format";
 import { sourceLabel, type Lang } from "./locale";
@@ -26,6 +27,10 @@ export interface MapFrameProps {
   furnitureOpacity?: number;
   /** Follow the basemap theme: dark pill + light ink when true. Defaults false (light). */
   dark?: boolean;
+  /** Newsroom house ground (arbitrary #rrggbb) — themes the furniture pill/ink/muted off that
+   * ground. Falls back to the `dark` binary (dark preset ground / light default) when unset, so
+   * a map that only sets a dark `mapStyle` (no house theme) keeps its existing dark furniture. */
+  themeBg?: string;
   /** Optional node rendered directly below the title/description block, inside the title band. */
   belowTitle?: ReactNode;
   /** deliverable language — localizes the "Source" furniture label. Default English. */
@@ -44,6 +49,7 @@ export function MapFrame({
   onTitleHeight,
   furnitureOpacity = 1,
   dark = false,
+  themeBg,
   belowTitle,
   lang,
 }: MapFrameProps) {
@@ -74,7 +80,13 @@ export function MapFrame({
     return () => ro.disconnect();
   }, [onTitleHeight]);
 
-  const colors = dark ? FRAME_COLORS_DARK : FRAME_COLORS;
+  // Effective furniture ground: the newsroom house `themeBg` when set, else the `dark` binary
+  // (dark preset ground / light default). resolveFrameColors keeps light byte-identical.
+  const furnitureBg = themeBg ?? (dark ? DARK_FRAME_BG : undefined);
+  const colors = resolveFrameColors(furnitureBg);
+  // Video/no-pill mode uses a text-shadow; key its halo on whether the furniture ink is light
+  // (dark ground → dark halo under light text) or dark (light ground → light halo).
+  const furnitureDark = frameBgIsDark(furnitureBg);
   const m = Math.round(16 * frame.scale); // furniture gutter: 16px at 1× scale
   const pillStyle = responsive
     ? {
@@ -83,7 +95,7 @@ export function MapFrame({
         padding: `${Math.round(6 * frame.scale)}px ${Math.round(10 * frame.scale)}px`,
       }
     : {
-        textShadow: dark
+        textShadow: furnitureDark
           ? "0 1px 6px rgba(0,0,0,0.9)"
           : "0 1px 6px rgba(255,255,255,0.9)",
       };
@@ -154,7 +166,7 @@ export function MapFrame({
           ...(responsive
             ? {}
             : {
-                textShadow: dark
+                textShadow: furnitureDark
                   ? "0 1px 4px rgba(0,0,0,0.9)"
                   : "0 1px 4px rgba(255,255,255,0.9)",
               }),

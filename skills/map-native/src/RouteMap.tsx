@@ -53,7 +53,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
   const [titleHeightPx, setTitleHeightPx] = useState(0);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-  const theme = legendTheme(dark);
+  const theme = legendTheme(dark, config.themeBg);
 
   // Measure the root element size before map init.
   useEffect(() => {
@@ -593,6 +593,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        themeBg={config.themeBg}
         lang={config.lang}
       >
         {inner}

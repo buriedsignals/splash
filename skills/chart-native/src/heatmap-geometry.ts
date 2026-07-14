@@ -5,6 +5,7 @@
 // fades/scales them, so frame N stays a pure function of the frame.
 
 import { scaleLinear } from "d3-scale";
+import { HEATMAP_RAMP_LIGHT, heatmapRamp } from "./core/tokens";
 
 export interface HeatmapData {
   rowField: string;
@@ -46,17 +47,11 @@ export interface HeatmapLayout {
   ramp: (t: number) => string;
 }
 
-// ColorBrewer single-hue "Blues" (light → dark), luminance strictly decreasing.
-// Light end trimmed so the lowest cells stay visible on a white background.
-export const BLUES = [
-  "#deebf7",
-  "#c6dbef",
-  "#9ecae1",
-  "#6baed6",
-  "#4292c6",
-  "#2171b5",
-  "#08306b",
-];
+// ColorBrewer single-hue "Blues" (light → dark), luminance strictly decreasing. The
+// light-theme ramp lives in core/tokens (HEATMAP_RAMP_LIGHT) now — the SAME stops, kept
+// here as a named re-export because the calendar heatmap (calendar-geometry.ts) still
+// binds its ramp to BLUES directly. Byte-identical to the original literal.
+export const BLUES = HEATMAP_RAMP_LIGHT;
 
 function lerpHex(a: string, b: string, t: number): string {
   const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
@@ -76,6 +71,7 @@ export function sampleRamp(stops: string[], t: number): string {
 export function computeHeatmapLayout(
   data: HeatmapData,
   dims: HeatmapDims,
+  opts?: { baseColor?: string; themeBg?: string },
 ): HeatmapLayout {
   if (!data.rows.length)
     throw new Error("computeHeatmapLayout: data.rows is empty");
@@ -103,8 +99,13 @@ export function computeHeatmapLayout(
   const lo = Math.min(...flat);
   const hi = Math.max(...flat);
 
+  // The sequential ramp DERIVED from the subject/house baseColor (heatmapRamp) and oriented for
+  // the theme background: on a light ground pale→deep, on a dark ground visible-mid→bright so high
+  // values read on the dark ground. Falls back to the Okabe-Ito blue default when no baseColor.
+  // Cells, colourbar and the produce-time guard all read `stops` / rampStops → they never drift.
+  const stops = heatmapRamp(opts?.baseColor, opts?.themeBg);
   const color = scaleLinear().domain([lo, hi]).range([0, 1]);
-  const ramp = (t: number) => sampleRamp(BLUES, t);
+  const ramp = (t: number) => sampleRamp(stops, t);
 
   const nRows = rowLabels.length;
   const nCols = colLabels.length;
@@ -139,7 +140,7 @@ export function computeHeatmapLayout(
     rowLabels,
     colLabels,
     valueDomain: [lo, hi],
-    rampStops: BLUES,
+    rampStops: stops,
     ramp,
   };
 }

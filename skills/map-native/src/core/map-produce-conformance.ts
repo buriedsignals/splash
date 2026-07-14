@@ -20,7 +20,11 @@
 //     not a live paint check.
 import { MAP_TYPES, type MapType } from "../map-types";
 import { resolveMapStyle } from "../route-geo";
-import { FRAME_COLORS, FRAME_COLORS_DARK } from "../theme/map-tokens";
+import {
+  DARK_FRAME_BG,
+  resolveFrameColors,
+  resolveThemeBg,
+} from "../theme/map-tokens";
 import { resolvePalette } from "../theme/scale";
 import { contrastOk, houseRamp } from "../theme/house-ramp";
 import { HEX_GRID_SCALE_TYPE } from "../hex-grid-geo";
@@ -74,13 +78,17 @@ function paintsSingleHouseFill(
   return false;
 }
 
-// Opaque solid equivalents of the (translucent) FRAME_COLORS(_DARK).pill — the same
-// convention `tests/conformance.test.ts` already uses for the WCAG-contrast assertions on
-// these exact tokens. `contrastRatio` requires a #rrggbb hex, and the pill itself is an
-// `rgba(...)` string, so the opaque backdrop it visually reads as (over the page / over the
-// dark basemap) is what gets checked — not a literal CSS value.
-const LIGHT_PILL_SOLID = "#ffffff";
-const DARK_PILL_SOLID = "#18181b";
+// Opaque solid equivalent of the (translucent) resolveFrameColors().pill — the same convention
+// `tests/conformance.test.ts` uses for the WCAG-contrast assertions on these tokens. `contrastRatio`
+// requires a #rrggbb hex, and the pill is an `rgba(...)` string, so the opaque backdrop it visually
+// reads as (the ground itself) is what gets checked — not a literal CSS value. Resolved from the
+// SAME `furnitureBg` that resolveFrameColors derives the pill/ink from (NOT `themeBg` alone), so the
+// guard always measures the ink against the ground it is ACTUALLY painted on. A truthy-but-null-
+// resolving furnitureBg (a per-element "#FFFFFF"/"light"/malformed override) → the white light pill,
+// matching MapFrame — never a divergent dark ground that would spuriously fail a legible render.
+function furnitureGround(furnitureBg: string | undefined): string {
+  return resolveThemeBg(furnitureBg) ?? "#ffffff";
+}
 
 // Best-effort numeric-column extraction for the palette semantic check (diverging vs
 // sequential). `values` is optional in `checkPaletteConformance` — when a numeric column
@@ -134,10 +142,17 @@ export function runProduceMapConformance(
     resolveMapStyle(
       typeof config.mapStyle === "string" ? config.mapStyle : undefined,
     ) === "dataviz-dark";
-  const fc = dark ? FRAME_COLORS_DARK : FRAME_COLORS;
+  // Validate the REAL furniture the components paint: a newsroom house `themeBg` derives the
+  // pill/ink/muted off that ground (resolveFrameColors), else the dark preset / light default.
+  // `furnitureBg` is the SINGLE ground both the derived furniture AND its WCAG backdrop resolve
+  // from — mirrors MapFrame's `furnitureBg = themeBg ?? (dark ? DARK_FRAME_BG : undefined)` exactly.
+  const themeBg =
+    typeof config.themeBg === "string" ? config.themeBg : undefined;
+  const furnitureBg = themeBg ?? (dark ? DARK_FRAME_BG : undefined);
+  const fc = resolveFrameColors(furnitureBg);
   const textColors = {
     text: [fc.ink, fc.muted],
-    bg: dark ? DARK_PILL_SOLID : LIGHT_PILL_SOLID,
+    bg: furnitureGround(furnitureBg),
   };
 
   const title = typeof config.title === "string" ? config.title : "";

@@ -46,6 +46,8 @@ maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 export interface ChoroplethConfig extends ChoroplethData {
   basemap?: string;
   mapStyle?: string;
+  /** Newsroom house ground — themes the frame + legend furniture. Basemap stays light/dark. */
+  themeBg?: string;
   title?: string;
   description?: string;
   unit?: string; // the long legend label, e.g. "share of electricity… (%)"
@@ -110,7 +112,7 @@ export const ChoroplethMap: React.FC<Props> = ({
   const [barHeightPx, setBarHeightPx] = useState(0);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-  const theme = legendTheme(dark);
+  const theme = legendTheme(dark, config.themeBg);
 
   // Measure the root element size before map init.
   useEffect(() => {
@@ -564,6 +566,7 @@ export const ChoroplethMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        themeBg={config.themeBg}
         lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
@@ -573,6 +576,7 @@ export const ChoroplethMap: React.FC<Props> = ({
               onChange={setFilterState}
               onHeight={handleBarHeight}
               dark={dark}
+              themeBg={config.themeBg}
             />
           ) : undefined
         }

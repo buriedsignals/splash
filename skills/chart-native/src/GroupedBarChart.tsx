@@ -19,7 +19,11 @@ import {
 } from "./grouped-bar-geometry";
 import { growBar } from "./bar-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, TYPE, GROUPED_SERIES_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  TYPE,
+  GROUPED_SERIES_COLORS,
+  themeColors, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -34,6 +38,8 @@ export interface GroupedConfig {
   unit: string;
   catField: string;
   seriesFields: string[];
+  /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -160,6 +166,7 @@ export function GroupedBarChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -193,6 +200,7 @@ function GroupedSvg({
 }) {
   const { innerWidth, innerHeight, base, bars, columns } = layout;
   const nCols = columns.length;
+  const C = themeColors(config.themeBg);
 
   const chrome = easeOutCubic(p / 0.18);
   // stagger across GROUPS (reading order); series within a group rise together.
@@ -237,7 +245,7 @@ function GroupedSvg({
                 x2={innerWidth}
                 y1={t.pos}
                 y2={t.pos}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -246,7 +254,7 @@ function GroupedSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -301,7 +309,7 @@ function GroupedSvg({
                   y={innerHeight + 20 * sc + li * catLineH}
                   textAnchor="middle"
                   fontSize={ts.axis}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={op}
                 >
                   {ln}
@@ -317,7 +325,7 @@ function GroupedSvg({
           x2={innerWidth}
           y1={base}
           y2={base}
-          stroke={COLORS.axis}
+          stroke={C.axis}
           strokeWidth={1}
           opacity={chrome}
         />
@@ -340,7 +348,7 @@ function GroupedSvg({
                 dy="0.32em"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>
@@ -374,6 +382,7 @@ function Tooltip({
         left,
         top,
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

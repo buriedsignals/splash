@@ -263,3 +263,43 @@ describe("MAP_PRODUCE_GUARDED_TYPES / RAMP_TYPES", () => {
     );
   });
 });
+
+// The furniture WCAG ground and the derived furniture must resolve `themeBg` IDENTICALLY (both from
+// `furnitureBg = themeBg ?? (dark ? DARK_FRAME_BG : undefined)`), so a truthy-but-null-resolving
+// per-element override ("#FFFFFF" / "light" / malformed) on a DARK basemap validates the LIGHT pill
+// MapFrame actually renders — never a divergent dark ground that would spuriously fail a legible map.
+describe("runProduceMapConformance — themeBg ground resolution matches the rendered furniture", () => {
+  const base = {
+    title: cleanTitle,
+    description: cleanDescription,
+    source,
+    rows: [
+      { name: "A", value: 1 },
+      { name: "B", value: 2 },
+      { name: "C", value: 3 },
+    ],
+    valueField: "value",
+    basemap: "x",
+  };
+  const furnitureFail = (v: string[]) => v.some((m) => /4\.5:1|contrast/.test(m));
+
+  it("a light/invalid themeBg on a dark basemap does NOT spuriously fail (renders the light pill)", () => {
+    for (const themeBg of ["#FFFFFF", "light", "not-a-hex"]) {
+      const r = runProduceMapConformance("choropleth", {
+        ...base,
+        themeBg,
+        mapStyle: "dataviz-dark",
+      });
+      expect(furnitureFail(r.violations)).toBe(false);
+    }
+  });
+
+  it("a genuine branded ground (navy) on a dark basemap still passes", () => {
+    const r = runProduceMapConformance("choropleth", {
+      ...base,
+      themeBg: "#1B2A4A",
+      mapStyle: "dataviz-dark",
+    });
+    expect(furnitureFail(r.violations)).toBe(false);
+  });
+});

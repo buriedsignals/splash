@@ -19,7 +19,7 @@ import {
   type DumbbellLayout,
 } from "./dumbbell-geometry";
 import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
-import { COLORS, TYPE, DUMBBELL_DOT_COLORS } from "./core/tokens";
+import { COLORS, TYPE, DUMBBELL_DOT_COLORS, themeColors, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -37,6 +37,8 @@ export interface DumbbellConfig {
   rightField: string;
   leftLabel: string; // series A name (legend)
   rightLabel: string; // series B name (legend)
+  /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -52,7 +54,6 @@ export interface DumbbellChartProps {
 
 const LEFT_COLOR = DUMBBELL_DOT_COLORS[0]; // series A dot
 const RIGHT_COLOR = DUMBBELL_DOT_COLORS[1]; // series B dot
-const CONNECTOR = COLORS.muted; // neutral gap line
 
 export function DumbbellChart({
   config,
@@ -179,6 +180,7 @@ export function DumbbellChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -210,6 +212,11 @@ function DumbbellSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  const C = themeColors(config.themeBg);
+  // neutral gap CONNECTOR — furniture-grade scaffolding (the guard exempts it from
+  // palette membership), so it flips with the theme's muted furniture: near-invisible
+  // as #6B6B6B on the dark bg, so use the lighter dark muted.
+  const CONNECTOR = C.muted;
   const { innerWidth, innerHeight, rows } = layout;
   const n = rows.length;
 
@@ -263,7 +270,7 @@ function DumbbellSvg({
               x2={t.pos}
               y1={0}
               y2={innerHeight}
-              stroke={COLORS.grid}
+              stroke={C.grid}
               strokeWidth={1}
             />
           ))}
@@ -324,7 +331,7 @@ function DumbbellSvg({
                     dy="0.32em"
                     textAnchor="end"
                     fontSize={catFit.font}
-                    fill={COLORS.ink}
+                    fill={C.ink}
                     opacity={leftOp}
                   >
                     {ln}
@@ -371,7 +378,7 @@ function DumbbellSvg({
                 textAnchor="end"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={labelOp}
               >
                 {fmt(leftIsMin ? r.leftVal : r.rightVal)}
@@ -383,7 +390,7 @@ function DumbbellSvg({
                 textAnchor="start"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={labelOp}
               >
                 {fmt(leftIsMin ? r.rightVal : r.leftVal)}
@@ -403,7 +410,7 @@ function DumbbellSvg({
                 dy="0.32em"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>
@@ -439,6 +446,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

@@ -4,6 +4,64 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-14 (suite 2) — Thème à FOND ARBITRAIRE : chaque chart ET carte dérive sa furniture de la couleur maison (n'importe quelle couleur)
+
+Rémy : « le theme devrait s'adapter aussi aux newsroom style… light ou dark mais un newsroom pourrait
+l'avoir gris, rose, ou tout autre couleur… Pas que se focus sur heatmap mais sur tous les charts et
+maps car c'est complet et global. » Puis (challenge maps) : « les maps… il y a le ground ET il y a
+les éléments visuels dessus et les deux doivent être adaptés. »
+
+**Ce qui a été construit (branche `feat/chart-dark-theme`, gate 20/20, review adversariale opus 5 axes).**
+Généralisation du système de thème d'un binaire light/dark vers un **fond arbitraire** (`themeBg` = un
+hex #rrggbb quelconque, ou les presets "light"/"dark") dont TOUTE la furniture dérive par contraste —
+plus aucune couleur en dur.
+
+- **chart-native** : `config.dark:boolean` → `config.themeBg:string` (33 composants re-threadés,
+  migration mécanique). `themeColors(themeBg)` = `deriveFurniture(themeBg)` : **ink = pôle
+  max-contraste** (near-black/near-white selon le fond, escalade au pôle PUR #000/#FFF sur la bande
+  mid-grise ≈ #71–#81 où les extrêmes adoucis tombent à ~4.0:1) ; muted = ink mixé 30 % vers le fond
+  (≥ 4.5:1 avec marge sur tout fond réel) ; axis/grid hairlines. **Rampe heatmap DÉRIVÉE du
+  `baseColor`** (sujet/maison) via `hueRamp`/`heatmapRamp`, plus de Blues en dur — sur fond sombre le
+  bas de rampe est un **mid visible** (chaque palier ≥ 3:1 vs le fond), garde `checkHeatmapConformance`
+  neuve (plancher 3:1 dark-ground). Défaut light (`themeBg` undefined) = `COLORS`, byte-identique.
+- **map-native** (le ground ET les éléments dessus, les deux adaptés) : **basemap** snappé light/dark
+  par la luminance du fond maison (les tuiles MapTiler n'existent qu'en 2 styles — contrainte assumée) ·
+  **marks** dérivent déjà de la teinte maison (house-ramp) · **furniture** (pill titre/source +
+  panneau légende) = `resolveFrameColors(themeBg)` : pill = le fond maison à 0.82 opacité, ink
+  max-contraste (même escalade que les charts), muted 22 %. `MapFrame`/`MapFilterBar`/`legendTheme`
+  threadés `config.themeBg` sur les 7 composants ; `validate-config`/`route-geo` gagnent `themeBg`.
+- **atelier** `brand-profile` : `theme` élargi à `string` (arbitraire) ; `resolveThemeBg(theme)` →
+  `themeBg` posé sur les specs chart-native/scrolly ET map-native/scrolly ; `mapStyle` snappé par
+  luminance ; dw-chart/map-dw exclus (follow-up) ; override par-élément gagne ; "light" → null →
+  byte-identique.
+
+**Prouvé au PNG rendu (méthode définitive, jamais le grep de bundle).** Chart fond rose (#F7E8EE),
+navy (#1B2A4A), charbon (#2B2B2B) ; heatmap rampe verte dérivée du baseColor (#2E7D32) + heatmap fond
+sombre (bas de rampe lisible) ; carte pill rose (basemap clair) + carte navy réelle (basemap sombre +
+pill navy + ink blanc). Furniture + marks + rampe dérivent tous de la couleur sujet/maison.
+
+**Review adversariale (Workflow, 5 axes, verify par finding) → 3 findings mineurs confirmés + 1 faux
+positif réfuté** (les strokes #fff de StackedArea = séparateurs de bande intentionnels, pas de la
+furniture). Les 3 corrigés + gravés au système (feedback→système) :
+1. `deriveFurniture` ink : les extrêmes adoucis tombaient sous 4.5:1 sur la bande mid-grise → **escalade
+   au pôle pur** (garanti ≥ 4.5:1 à toute luminance ; presets byte-identiques). Même correctif appliqué
+   à `resolveFrameColors` (maps).
+2. La garde produce-conformance ne validait la furniture que pour la heatmap ; **les ~19 autres
+   branches + `resolveConformanceColors` validaient #1A1A1A sur BLANC** (fiction) → toutes threadées sur
+   `deriveFurniture(themeBg)` : un fond mid-gris illisible **FAIL désormais loud** au produce (au lieu de
+   ship silencieux), les fonds clairs/sombres restent byte-identiques.
+3. Garde map : `fc` et le fond WCAG résolvaient `themeBg` différemment → **échec spurieux** pour un
+   override `#FFFFFF`/"light"/malformé sur basemap sombre → unifié sur le même `furnitureBg`.
+   (+ garde `mark-contrast` : muted 0.38→0.30 pour clear 4.5:1 sur les bleus/verts saturés sombres.)
+
+Locks de test ajoutés partout (bande mid-grise escalade, garde qui flag le mid-gris, garde map
+non-spurieuse, rampe heatmap dark ≥ 3:1). Note honnête : un fond **mid-gris pathologique** (#71–#81)
+FAIL le produce (aucune couleur de texte ne clear 4.5:1 dessus — physique WCAG) — c'est le comportement
+correct : les gris que les rédactions utilisent (charbon, gris clair chaud) marchent ; seul le gris-
+milieu illisible est bloqué, loud. Détail migration : la review a tourné concurremment avec un Workflow
+de re-thread → les deux ont édité le même arbre (d'où des dup transitoires convergées) ; gate final vert
+sur l'arbre fusionné.
+
 ## Session 2026-07-14 (suite) — Sweep QA rigoureux : harness parallèle + suite 80 cas + 6 fixes produit
 
 Rémy : « lance atelier-harness pour tous les types et format… check les flows, la conformité, les

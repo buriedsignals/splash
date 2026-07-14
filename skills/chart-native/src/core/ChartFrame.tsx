@@ -19,7 +19,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { COLORS, FONT, TYPE } from "./tokens";
+import { themeColors, FONT, TYPE } from "./tokens";
 import { sourceLabel, type Lang } from "./locale";
 import { clampOffset } from "./tooltip-clamp";
 
@@ -117,6 +117,10 @@ export interface ChartFrameProps {
   embedded?: boolean;
   /** deliverable language — localizes the "Source" furniture label. Default English. */
   lang?: Lang;
+  /** newsroom house theme BACKGROUND (F2 house `theme`): the resolved ground hex the chrome
+   *  (bg/ink/muted/axis/grid) is DERIVED from. The plot's own marks are themed by each component.
+   *  Undefined = the light default (byte-identical legacy path). */
+  themeBg?: string;
 }
 
 export function ChartFrame({
@@ -131,7 +135,9 @@ export function ChartFrame({
   scale = 1,
   embedded = false,
   lang,
+  themeBg,
 }: ChartFrameProps) {
+  const C = themeColors(themeBg);
   const srcLabel = sourceLabel(lang);
   // WCAG 1.1.1 — emit the altInsight (when provided) as a visually-hidden
   // description ONCE, in whichever layout branch renders. Sibling of the <svg>
@@ -147,7 +153,7 @@ export function ChartFrame({
   const topPad = 18 * scale;
   if (responsive) {
     return (
-      <div style={{ width, background: COLORS.bg, fontFamily: FONT }}>
+      <div style={{ width, background: C.bg, fontFamily: FONT }}>
         {altDescription}
         {/* Header: the standalone chart shows title + unit; an EMBEDDED chart shows
             only the unit (the host scaffold owns the title). */}
@@ -158,7 +164,7 @@ export function ChartFrame({
                 style={{
                   fontSize: titleSize,
                   fontWeight: 700,
-                  color: COLORS.ink,
+                  color: C.ink,
                   lineHeight: 1.2,
                 }}
               >
@@ -169,7 +175,7 @@ export function ChartFrame({
               <div
                 style={{
                   fontSize: axisSize,
-                  color: COLORS.muted,
+                  color: C.muted,
                   marginTop: embedded ? 0 : 4,
                 }}
               >
@@ -191,7 +197,7 @@ export function ChartFrame({
           <div
             style={{
               fontSize: sourceSize,
-              color: COLORS.muted,
+              color: C.muted,
               padding: `4px ${PAD}px 8px`,
             }}
           >
@@ -201,7 +207,7 @@ export function ChartFrame({
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: COLORS.muted }}
+                style={{ color: C.muted }}
               >
                 {source.name}
               </a>
@@ -219,7 +225,7 @@ export function ChartFrame({
       style={{
         width,
         height,
-        background: COLORS.bg,
+        background: C.bg,
         fontFamily: FONT,
         position: "relative",
         boxSizing: "border-box",
@@ -235,16 +241,14 @@ export function ChartFrame({
           style={{
             fontSize: titleSize,
             fontWeight: 700,
-            color: COLORS.ink,
+            color: C.ink,
             lineHeight: 1.2,
           }}
         >
           {title}
         </div>
         {subtitle && (
-          <div
-            style={{ fontSize: axisSize, color: COLORS.muted, marginTop: 4 }}
-          >
+          <div style={{ fontSize: axisSize, color: C.muted, marginTop: 4 }}>
             {subtitle}
           </div>
         )}
@@ -261,7 +265,7 @@ export function ChartFrame({
           bottom: 12 * scale,
           left: PAD,
           fontSize: sourceSize,
-          color: COLORS.muted,
+          color: C.muted,
         }}
       >
         {srcLabel} {source.name}

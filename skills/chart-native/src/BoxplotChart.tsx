@@ -19,7 +19,7 @@ import {
   type BoxplotLayout,
 } from "./boxplot-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, themeColors, FONT, TYPE, OKABE_ITO, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -30,6 +30,8 @@ export interface BoxplotConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
+  themeBg?: string;
   valueLabel: string; // subtitle / units
   categories: { label: string; values: number[] }[];
 }
@@ -132,6 +134,7 @@ export function BoxplotChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -163,6 +166,7 @@ function BoxplotSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  const C = themeColors(config.themeBg);
   const { innerWidth, innerHeight, rows } = layout;
   const n = rows.length;
 
@@ -187,7 +191,7 @@ function BoxplotSvg({
               x2={t.pos}
               y1={0}
               y2={innerHeight}
-              stroke={COLORS.grid}
+              stroke={C.grid}
               strokeWidth={1}
             />
           ))}
@@ -200,7 +204,7 @@ function BoxplotSvg({
               y={innerHeight + 18 * sc}
               textAnchor="middle"
               fontSize={ts.source}
-              fill={COLORS.muted}
+              fill={C.muted}
             >
               {t.label}
             </text>
@@ -230,7 +234,7 @@ function BoxplotSvg({
                 textAnchor="end"
                 fontSize={ts.axis}
                 fontWeight={focused ? 700 : 400}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={catOp}
               >
                 {truncate(r.label, padding.left - 16 * sc, ts.axis)}
@@ -280,7 +284,7 @@ function BoxplotSvg({
                   x2={r.medianX}
                   y1={r.y - half}
                   y2={r.y + half}
-                  stroke={COLORS.ink}
+                  stroke={C.ink}
                   strokeWidth={2.5 * sc}
                 />
                 {/* individual outliers — plotted as their own dots, and (when
@@ -298,7 +302,7 @@ function BoxplotSvg({
                         cx={o.x}
                         cy={r.y}
                         r={dotR}
-                        fill="#fff"
+                        fill={C.bg}
                         stroke={BOX}
                         strokeWidth={1.5 * sc}
                         opacity={outlierOp}
@@ -311,9 +315,9 @@ function BoxplotSvg({
                           textAnchor={near ? "end" : "start"}
                           fontSize={ts.source}
                           fontWeight={600}
-                          fill={COLORS.ink}
+                          fill={C.ink}
                           paintOrder="stroke"
-                          stroke="#fff"
+                          stroke={C.bg}
                           strokeWidth={3 * sc}
                           strokeLinejoin="round"
                           opacity={outlierOp}
@@ -381,6 +385,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

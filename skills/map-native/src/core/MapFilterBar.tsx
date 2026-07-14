@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import {
-  FRAME_COLORS,
-  FRAME_COLORS_DARK,
+  DARK_FRAME_BG,
   FRAME_FONT,
+  resolveFrameColors,
 } from "../theme/map-tokens";
 import { toggleCategory } from "./map-filter";
 import type { FilterOption, FilterState } from "./map-filter";
@@ -12,6 +12,8 @@ export interface MapFilterBarProps {
   state: FilterState;
   onChange: (s: FilterState) => void;
   dark?: boolean;
+  /** Newsroom house ground — themes the bar off that ground; falls back to the `dark` binary. */
+  themeBg?: string;
   onHeight?: (px: number) => void;
 }
 
@@ -20,12 +22,15 @@ export function MapFilterBar({
   state,
   onChange,
   dark = false,
+  themeBg,
   onHeight,
 }: MapFilterBarProps) {
   const ref = useRef<HTMLDivElement>(null);
   const onHeightRef = useRef(onHeight);
   onHeightRef.current = onHeight;
-  const colors = dark ? FRAME_COLORS_DARK : FRAME_COLORS;
+  const colors = resolveFrameColors(
+    themeBg ?? (dark ? DARK_FRAME_BG : undefined),
+  );
 
   useEffect(() => {
     const el = ref.current;

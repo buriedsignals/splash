@@ -20,7 +20,12 @@ import {
   type StackedLayout,
 } from "./stacked-bar-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, TYPE, STACKED_SERIES_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  TYPE,
+  STACKED_SERIES_COLORS,
+  themeColors,
+  themeStackedColors, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -36,6 +41,9 @@ export interface StackedConfig {
   catField: string;
   seriesFields: string[]; // stacking order, bottom → top
   rows: Record<string, string | number>[];
+  /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture + swaps the
+   *  palette's black series for a light neutral (themeStackedColors). Default light. */
+  themeBg?: string;
 }
 
 export interface StackedBarChartProps {
@@ -172,6 +180,7 @@ export function StackedBarChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -205,6 +214,8 @@ function StackedSvg({
 }) {
   const { innerWidth, innerHeight, base, columns } = layout;
   const n = columns.length;
+  const C = themeColors(config.themeBg);
+  const seriesColors = themeStackedColors(config.themeBg);
 
   const chrome = easeOutCubic(p / 0.18);
   const colP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
@@ -228,7 +239,7 @@ function StackedSvg({
   const legendTop = innerHeight + 40 * sc + catExtraRows * catLineH;
   const legend = layoutLegend(
     config.seriesFields,
-    SERIES_COLORS,
+    seriesColors,
     innerWidth,
     0,
     legendTop,
@@ -254,7 +265,7 @@ function StackedSvg({
                 x2={innerWidth}
                 y1={t.pos}
                 y2={t.pos}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -263,7 +274,7 @@ function StackedSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -292,7 +303,7 @@ function StackedSvg({
                     y={r.y}
                     width={r.w}
                     height={r.h}
-                    fill={SERIES_COLORS[seg.seriesIndex % SERIES_COLORS.length]}
+                    fill={seriesColors[seg.seriesIndex % seriesColors.length]}
                     opacity={dim ? 0.6 : 1}
                     tabIndex={interactive ? 0 : undefined}
                     role={interactive ? "img" : undefined}
@@ -329,7 +340,7 @@ function StackedSvg({
                   y={innerHeight + 20 * sc + li * catLineH}
                   textAnchor="middle"
                   fontSize={ts.axis}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={catOp}
                 >
                   {ln}
@@ -347,7 +358,7 @@ function StackedSvg({
                   textAnchor="middle"
                   fontSize={ts.axis}
                   fontWeight={700}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={totalOp}
                 >
                   {formatNumber(col.total, config.lang)}
@@ -363,7 +374,7 @@ function StackedSvg({
           x2={innerWidth}
           y1={base}
           y2={base}
-          stroke={COLORS.axis}
+          stroke={C.axis}
           strokeWidth={1}
           opacity={chrome}
         />
@@ -386,7 +397,7 @@ function StackedSvg({
                 dy="0.32em"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>
@@ -422,6 +433,7 @@ function Tooltip({
         left,
         top,
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

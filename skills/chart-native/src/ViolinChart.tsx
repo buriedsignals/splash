@@ -20,7 +20,7 @@ import {
 } from "./violin-geometry";
 import { area, curveCatmullRom } from "d3-shape";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, themeColors, FONT, TYPE, OKABE_ITO, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -31,6 +31,8 @@ export interface ViolinConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
+  themeBg?: string;
   unit: string; // subtitle + value-axis meaning
   summaryLabel?: string; // legend text for the median tick
   categories: { label: string; values: number[] }[];
@@ -47,7 +49,6 @@ export interface ViolinChartProps {
 }
 
 const FILL = OKABE_ITO.blue;
-const MEDIAN = "#FFFFFF";
 
 const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
@@ -91,7 +92,16 @@ export function ViolinChart({
     bottom: 18 + legendRows * LEG_ROW + 38,
     left: PAD_LEFT, // category labels
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -143,6 +153,7 @@ export function ViolinChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -184,6 +195,11 @@ function ViolinSvg({
   legendTwoRows: boolean;
   legRow: number;
 }) {
+  const C = themeColors(config.themeBg);
+  // the inner median tick punches the BACKGROUND colour through the (dark→light on
+  // dark theme) IQR bar, so it flips with the theme — a fixed white would vanish on
+  // the light IQR bar the dark theme produces, and its legend swatch would too.
+  const MEDIAN = C.bg;
   const { innerWidth, innerHeight, rows } = layout;
   const chrome = easeOutCubic(p / 0.18);
   const inflate = easeInOutCubic(p); // half-width grows from the spine
@@ -220,7 +236,7 @@ function ViolinSvg({
                 x2={t.pos}
                 y1={0}
                 y2={innerHeight}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -228,7 +244,7 @@ function ViolinSvg({
                 y={innerHeight + 16 * sc}
                 textAnchor="middle"
                 fontSize={ts.source}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -247,7 +263,7 @@ function ViolinSvg({
               textAnchor="end"
               fontSize={ts.axis}
               fontWeight={600}
-              fill={COLORS.ink}
+              fill={C.ink}
             >
               {truncate(r.label, labelW, ts.axis)}
             </text>
@@ -293,7 +309,7 @@ function ViolinSvg({
                   y={r.y - iqrH}
                   width={Math.max(0, r.q3X - r.q1X)}
                   height={iqrH * 2}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={0.85}
                 />
                 {/* white median tick */}
@@ -319,7 +335,7 @@ function ViolinSvg({
             y={legY - 7 * sc}
             width={4 * sc}
             height={14 * sc}
-            fill={COLORS.ink}
+            fill={C.ink}
             opacity={0.85}
           />
           <line
@@ -336,7 +352,7 @@ function ViolinSvg({
             dy="0.32em"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             {legLabelA}
           </text>
@@ -355,7 +371,7 @@ function ViolinSvg({
             dy="0.32em"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             {legLabelB}
           </text>
@@ -389,6 +405,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

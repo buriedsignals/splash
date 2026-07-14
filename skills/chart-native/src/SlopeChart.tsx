@@ -21,7 +21,12 @@ import {
   type SlopeLayout,
 } from "./slope-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, SLOPE_LINE_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  SLOPE_LINE_COLORS,
+  themeColors, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -45,6 +50,8 @@ export interface SlopeConfig {
   rightPeriod: string;
   /** the one category to accent (the line that bucks the trend) */
   highlightLabel?: string;
+  /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -58,7 +65,6 @@ export interface SlopeChartProps {
   scale?: number;
 }
 
-const CONTEXT = SLOPE_LINE_COLORS[0]; // neutral context line (slope.md rule 4)
 const ACCENT = SLOPE_LINE_COLORS[1]; // the one editorial line
 
 export function SlopeChart({
@@ -179,6 +185,7 @@ export function SlopeChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -211,6 +218,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,
@@ -258,6 +266,11 @@ function SlopeSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  const C = themeColors(config.themeBg);
+  // neutral CONTEXT line (slope.md rule 4) — furniture-grade scaffolding (the guard
+  // calls it "exempt like the axis"), so it flips with the theme's muted furniture:
+  // #6B6B6B on white → the lighter dark muted on the dark bg (else near-invisible).
+  const CONTEXT = C.muted;
   const { innerWidth, innerHeight, leftX, rightX, lines } = layout;
   const n = lines.length;
 
@@ -327,7 +340,7 @@ function SlopeSvg({
               x2={innerWidth}
               y1={t.pos}
               y2={t.pos}
-              stroke={COLORS.grid}
+              stroke={C.grid}
               strokeWidth={1}
             />
           ))}
@@ -345,7 +358,7 @@ function SlopeSvg({
                 x2={c.x}
                 y1={0}
                 y2={innerHeight}
-                stroke={COLORS.axis}
+                stroke={C.axis}
                 strokeWidth={1}
               />
               <text
@@ -354,7 +367,7 @@ function SlopeSvg({
                 textAnchor="middle"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {c.label}
               </text>
@@ -437,7 +450,7 @@ function SlopeSvg({
                       textAnchor="end"
                       fontSize={leftFit.font}
                       fontWeight={hi ? 700 : 400}
-                      fill={COLORS.ink}
+                      fill={C.ink}
                     >
                       {ln}
                     </text>
@@ -458,7 +471,7 @@ function SlopeSvg({
                     textAnchor="start"
                     fontSize={ts.axis}
                     fontWeight={hi ? 700 : 600}
-                    fill={COLORS.ink}
+                    fill={C.ink}
                   >
                     {fmt(l.rightVal)}
                   </text>

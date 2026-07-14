@@ -16,7 +16,7 @@ import {
   type ScatterLayout,
 } from "./scatter-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, TYPE } from "./core/tokens";
+import { COLORS, TYPE, themeColors, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -41,6 +41,8 @@ export interface ScatterConfig {
   labelPoints?: "default" | "all" | "none";
   /** Okabe-Ito hex for the primary dot colour. Absent → COLORS.line default. */
   baseColor?: string;
+  /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -141,6 +143,7 @@ export function ScatterChart({
       scale={sc}
       lang={config.lang}
       embedded={embedded}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -172,8 +175,9 @@ function ScatterSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  const C = themeColors(config.themeBg);
   const { innerWidth, innerHeight, points } = layout;
-  const dotColor = config.baseColor ?? COLORS.line;
+  const dotColor = config.baseColor ?? C.line;
   const n = points.length;
   const chrome = easeOutCubic(p / 0.18);
   // dots pop in, staggered LEFT→RIGHT along x (the eye reads the spread building
@@ -258,7 +262,7 @@ function ScatterSvg({
                 x2={innerWidth}
                 y1={t.pos}
                 y2={t.pos}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -267,7 +271,7 @@ function ScatterSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -280,7 +284,7 @@ function ScatterSvg({
               y={innerHeight + 20}
               textAnchor="middle"
               fontSize={ts.axis}
-              fill={COLORS.muted}
+              fill={C.muted}
             >
               {t.label}
             </text>
@@ -292,7 +296,7 @@ function ScatterSvg({
             textAnchor="middle"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {config.xLabel}
           </text>
@@ -302,7 +306,7 @@ function ScatterSvg({
             textAnchor="start"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {config.yLabel}
           </text>
@@ -311,7 +315,7 @@ function ScatterSvg({
             x2={0}
             y1={0}
             y2={innerHeight}
-            stroke={COLORS.axis}
+            stroke={C.axis}
             strokeWidth={1}
           />
           <line
@@ -319,7 +323,7 @@ function ScatterSvg({
             x2={innerWidth}
             y1={innerHeight}
             y2={innerHeight}
-            stroke={COLORS.axis}
+            stroke={C.axis}
             strokeWidth={1}
           />
         </g>
@@ -377,7 +381,7 @@ function ScatterSvg({
               // #3 — the point-label TEXT is ink for WCAG contrast; the coloured DOT (and its
               // leader line) carry the hue. Painting labels in `dotColor` failed contrast for a
               // subject-fit hue and forced the producer back to the default blue.
-              fill={COLORS.ink}
+              fill={C.ink}
             >
               {points[Number(id)].label}
             </text>
@@ -418,6 +422,7 @@ function Tooltip({
         left: padding.left + pt.x + 12,
         top: padding.top + pt.y - 8,
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

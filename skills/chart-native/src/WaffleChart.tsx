@@ -17,7 +17,12 @@ import {
   type WaffleLayout,
 } from "./waffle-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, WAFFLE_CATEGORY_COLORS } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  WAFFLE_CATEGORY_COLORS,
+  themeColors, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -30,6 +35,8 @@ export interface WaffleConfig {
   lang?: Lang;
   unit: string; // subtitle / what one square is
   gridN?: number;
+  /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
+  themeBg?: string;
   items: { label: string; value: number }[];
 }
 
@@ -138,6 +145,7 @@ export function WaffleChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -174,6 +182,7 @@ function WaffleSvg({
   const { cells, categories, gridN, gridX, gridY, cellStep } = layout;
   const n = cells.length;
   const chrome = easeOutCubic(p / 0.16);
+  const C = themeColors(config.themeBg);
 
   const legend = layoutLegend(
     categories.map((c) => `${c.label} ${fmt(c.value)}`),
@@ -194,7 +203,6 @@ function WaffleSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-
       {/* cells fill in order (the container fills) */}
       {cells.map((c) => {
         const ap = easeOutCubic(stagger(p, c.index, n, 0.1, 0.55 / n, 0.25));
@@ -255,7 +263,7 @@ function WaffleSvg({
               dy="0.32em"
               fontSize={ts.axis}
               fontWeight={600}
-              fill={COLORS.ink}
+              fill={C.ink}
               opacity={hover !== null && hover !== i ? 0.4 : 1}
             >
               {it.text}
@@ -294,6 +302,7 @@ function Tooltip({
         top: cy,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

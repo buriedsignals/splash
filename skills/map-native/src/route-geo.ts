@@ -39,6 +39,8 @@ export interface RouteConfig {
   route: [number, number][];
   basemap?: string;
   mapStyle?: string;
+  /** Newsroom house ground — themes the frame + legend furniture. Basemap stays light/dark. */
+  themeBg?: string;
   title?: string;
   description?: string;
   source?: { name: string; url?: string };

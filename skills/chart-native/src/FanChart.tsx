@@ -19,7 +19,7 @@ import {
   easeOutCubic,
   formatNumber,
 } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, themeColors, FONT, TYPE, OKABE_ITO, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -30,6 +30,8 @@ export interface FanConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
+  themeBg?: string;
   unit: string; // subtitle / value-axis caption
   xField: string;
   levels: number[];
@@ -60,6 +62,7 @@ export function FanChart({
   scale = 1,
 }: FanChartProps) {
   const p = clamp01(progress);
+  const C = themeColors(config.themeBg);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
     8,
@@ -110,6 +113,7 @@ export function FanChart({
       setHover={setHover}
       ts={ts}
       sc={sc}
+      C={C}
     />
   );
 
@@ -134,6 +138,7 @@ export function FanChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -152,6 +157,7 @@ function FanSvg({
   setHover,
   ts,
   sc,
+  C,
 }: {
   layout: FanLayout;
   padding: { top: number; right: number; bottom: number; left: number };
@@ -164,6 +170,7 @@ function FanSvg({
   setHover: (i: number | null) => void;
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
+  C: ReturnType<typeof themeColors>;
 }) {
   const {
     innerWidth,
@@ -198,7 +205,10 @@ function FanSvg({
   const nowLeftRoom = nowX - NOW_LABEL_GAP * sc;
   const nowLabelOnRight =
     nowRightRoom >= nowLabelW || nowRightRoom >= nowLeftRoom;
-  const nowLabelBudget = Math.max(0, nowLabelOnRight ? nowRightRoom : nowLeftRoom);
+  const nowLabelBudget = Math.max(
+    0,
+    nowLabelOnRight ? nowRightRoom : nowLeftRoom,
+  );
   const nowLabelText =
     nowLabelW <= nowLabelBudget
       ? NOW_LABEL
@@ -259,7 +269,7 @@ function FanSvg({
                 x2={innerWidth}
                 y1={t.pos}
                 y2={t.pos}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -268,7 +278,7 @@ function FanSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.source}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {formatNumber(Number(t.label), config.lang)}
               </text>
@@ -293,17 +303,21 @@ function FanSvg({
             x2={nowX}
             y1={0}
             y2={innerHeight}
-            stroke={COLORS.muted}
+            stroke={C.muted}
             strokeWidth={1}
             strokeDasharray="3 3"
           />
           <text
-            x={nowLabelOnRight ? nowX + NOW_LABEL_GAP * sc : nowX - NOW_LABEL_GAP * sc}
+            x={
+              nowLabelOnRight
+                ? nowX + NOW_LABEL_GAP * sc
+                : nowX - NOW_LABEL_GAP * sc
+            }
             y={9 * sc}
             textAnchor={nowLabelOnRight ? "start" : "end"}
             fontSize={ts.source}
             fontWeight={600}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {nowLabelText}
           </text>
@@ -336,7 +350,7 @@ function FanSvg({
                   i === xTicks.length - 1 ? "end" : i === 0 ? "start" : "middle"
                 }
                 fontSize={ts.source}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -356,7 +370,7 @@ function FanSvg({
                     x2={t.pos}
                     y1={0}
                     y2={innerHeight}
-                    stroke={COLORS.ink}
+                    stroke={C.ink}
                     strokeWidth={1}
                     opacity={0.3}
                   />
@@ -419,6 +433,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,0)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

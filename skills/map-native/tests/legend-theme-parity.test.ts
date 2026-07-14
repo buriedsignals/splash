@@ -35,7 +35,7 @@ function consumesLegendTheme(source: string): boolean {
   return (
     /import\s*\{[^}]*\blegendTheme\b[^}]*\}\s*from\s*["']\.\/theme\/legend-theme["']/.test(
       source,
-    ) && /legendTheme\(\s*dark\s*\)/.test(source)
+    ) && /legendTheme\(\s*dark\s*(?:,[^)]*)?\)/.test(source)
   );
 }
 
@@ -61,10 +61,11 @@ describe("legendTheme-consumption parity: every legend-bearing map renderer hono
     );
     expect(consumesLegendTheme(importStripped)).toBe(false);
 
-    // Drop the `const theme = legendTheme(dark);` call and re-inline the literal values
-    // it replaced (the exact pre-fix RouteMap shape) — must still be caught.
+    // Drop the `const theme = legendTheme(dark[, config.themeBg]);` call and re-inline the literal
+    // values it replaced (the exact pre-fix RouteMap shape) — must still be caught. The optional
+    // second arg (the newsroom house `themeBg`) is matched so the drop works post-generalization.
     const reinlined = source
-      .replace(/const theme = legendTheme\(\s*dark\s*\);\n/, "")
+      .replace(/const theme = legendTheme\(\s*dark\s*(?:,[^)]*)?\);\n/, "")
       .replace(/theme\.ink/g, '(dark ? "#f4f4f5" : "#444")')
       .replace(/theme\.sub/g, '(dark ? "#c8c8cf" : "#555")')
       .replace(/theme\.stroke/g, '"rgba(0,0,0,.15)"')

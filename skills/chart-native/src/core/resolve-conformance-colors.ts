@@ -13,7 +13,12 @@
 // palette-assignment scheme that isn't resolved here yet — see
 // scripts/produce.mjs's dispatch table and conformance-report.md for the deferred
 // follow-on.
-import { COLORS, OKABE_ITO, BEESWARM_CATEGORY_COLORS } from "./tokens";
+import {
+  COLORS,
+  OKABE_ITO,
+  BEESWARM_CATEGORY_COLORS,
+  deriveFurniture,
+} from "./tokens";
 import type { ConformanceColors } from "./conformance";
 
 export type ProduceConformanceType =
@@ -49,7 +54,12 @@ export function resolveConformanceColors(
   type: ProduceConformanceType,
   config: Record<string, unknown>,
 ): ConformanceColors {
-  const bg = COLORS.bg;
+  // The FURNITURE text (ink/muted) + ground the component actually paints derive from the
+  // newsroom house `themeBg` (deriveFurniture) — so the produce-time text-contrast check validates
+  // the REAL render, not #1A1A1A on white. Light default (themeBg undefined) → COLORS, byte-identical.
+  const furniture = deriveFurniture(readString(config.themeBg));
+  const bg = furniture.bg;
+  const text: [string, string] = [furniture.ink, furniture.muted];
 
   switch (type) {
     case "line": {
@@ -59,7 +69,7 @@ export function resolveConformanceColors(
       // the data colour is NEVER a text colour — a subject-fit hue (vermillion, green) can
       // ship as the mark without failing the 4.5:1 text check that used to force blue.
       const data = readString(config.baseColor) ?? COLORS.line;
-      return { data, text: [COLORS.ink, COLORS.muted], bg };
+      return { data, text, bg };
     }
 
     case "bar": {
@@ -70,7 +80,7 @@ export function resolveConformanceColors(
       // category and value labels render in `COLORS.ink` (BarChart.tsx) — the mark
       // carries the hue, the label carries the value. So the data colour is not a text colour.
       const data = readString(config.baseColor) ?? COLORS.line;
-      return { data, text: [COLORS.ink, COLORS.muted], bg };
+      return { data, text, bg };
     }
 
     case "scatter": {
@@ -78,7 +88,7 @@ export function resolveConformanceColors(
       // their leader lines (marks). The point-label TEXT is `COLORS.ink` (#3 decoupling), so
       // the data colour is never a text colour regardless of which points are labelled.
       const data = readString(config.baseColor) ?? COLORS.line;
-      return { data, text: [COLORS.ink, COLORS.muted], bg };
+      return { data, text, bg };
     }
 
     case "histogram": {
@@ -89,7 +99,7 @@ export function resolveConformanceColors(
       // the bars by a white halo.
       return {
         data: COLORS.line,
-        text: [COLORS.ink, COLORS.muted],
+        text,
         bg,
       };
     }
@@ -109,7 +119,7 @@ export function resolveConformanceColors(
         : (readString(config.baseColor) ?? BEESWARM_CATEGORY_COLORS[0]);
       return {
         data,
-        text: [COLORS.ink, COLORS.muted],
+        text,
         bg,
       };
     }
@@ -117,7 +127,7 @@ export function resolveConformanceColors(
     case "connected-scatter": {
       // ConnectedScatterChart.tsx: fixed `ACCENT = OKABE_ITO.blue` for the line +
       // dots only (no baseColor field) — never rendered as text.
-      return { data: OKABE_ITO.blue, text: [COLORS.ink, COLORS.muted], bg };
+      return { data: OKABE_ITO.blue, text, bg };
     }
 
     case "lollipop": {
@@ -125,7 +135,7 @@ export function resolveConformanceColors(
       // baseColor field). ALL category/value label TEXT is `COLORS.ink` — the
       // highlighted row is emphasised by the vermillion MARK (stem/dot) + bold
       // weight, NOT by colouring the label text (which fails WCAG contrast).
-      return { data: OKABE_ITO.blue, text: [COLORS.ink, COLORS.muted], bg };
+      return { data: OKABE_ITO.blue, text, bg };
     }
   }
 }

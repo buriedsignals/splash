@@ -19,11 +19,11 @@ import {
 import { clamp01, easeOutCubic, stagger } from "./core/math";
 import {
   COLORS,
+  themeColors,
   FONT,
   TYPE,
   OKABE_ITO,
-  BEESWARM_CATEGORY_COLORS,
-} from "./core/tokens";
+  BEESWARM_CATEGORY_COLORS, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { formatLocaleNumber, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -34,6 +34,8 @@ export interface BeeswarmConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
+  themeBg?: string;
   valueLabel: string; // subtitle / units
   categories?: string[];
   /** Okabe-Ito hex for a SINGLE-HUE swarm (no categories) — the subject-fit colour.
@@ -164,6 +166,7 @@ export function BeeswarmChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -197,6 +200,7 @@ function BeeswarmSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  const C = themeColors(config.themeBg);
   const { innerWidth, innerHeight, nodes, valueTicks, radius } = layout;
   const n = nodes.length;
   const chrome = easeOutCubic(p / 0.16);
@@ -239,7 +243,7 @@ function BeeswarmSvg({
               x2={t.pos}
               y1={0}
               y2={innerHeight}
-              stroke={COLORS.grid}
+              stroke={C.grid}
               strokeWidth={1}
             />
           ))}
@@ -252,7 +256,7 @@ function BeeswarmSvg({
               y={innerHeight + 18 * sc}
               textAnchor="middle"
               fontSize={ts.source}
-              fill={COLORS.muted}
+              fill={C.muted}
             >
               {t.label}
             </text>
@@ -276,7 +280,7 @@ function BeeswarmSvg({
               r={radius * ap * (focused ? 1.35 : isHi ? 1.55 : 1)}
               fill={color}
               fillOpacity={dim ? 0.35 : isHi ? 1 : 0.9}
-              stroke={isHi ? COLORS.ink : "#fff"}
+              stroke={isHi ? C.ink : C.bg}
               strokeWidth={(isHi ? 1.4 : 0.8) * sc}
               tabIndex={interactive ? 0 : undefined}
               role={interactive ? "img" : undefined}
@@ -323,8 +327,8 @@ function BeeswarmSvg({
                 textAnchor={anchor}
                 fontSize={ts.axis}
                 fontWeight={700}
-                fill={COLORS.ink}
-                stroke="#fff"
+                fill={C.ink}
+                stroke={C.bg}
                 strokeWidth={3 * sc}
                 paintOrder="stroke"
                 opacity={lap}
@@ -349,7 +353,7 @@ function BeeswarmSvg({
                 y={it.y}
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>
@@ -388,6 +392,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

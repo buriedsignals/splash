@@ -307,6 +307,7 @@ export function checkRouteConformance(input: {
   routePoints: number;
   territoryColors: string[];
   mapStyle?: string;
+  themeBg?: string;
   title?: string;
   source?: { name?: string; url?: string };
 }): { violations: string[] } {
@@ -431,6 +432,7 @@ export function checkDotDensityConformance(
     totalDots: number;
     capped: boolean;
     mapStyle?: string;
+    themeBg?: string;
     // Univariate-only single-source check (multivariate colours come from the QUALITATIVE
     // per-category palette, not this token — see below). Both optional so existing callers
     // that don't supply them are unaffected; when both are present the assertion applies.
@@ -490,6 +492,7 @@ export function checkLocatorConformance(
     hasLegend: boolean;
     boundsNonEmpty: boolean;
     mapStyle?: string;
+    themeBg?: string;
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -528,6 +531,7 @@ export function checkHexGridConformance(
     cellCount: number;
     boundsNonEmpty: boolean;
     mapStyle?: string;
+    themeBg?: string;
     // Threaded so the CVD-safety guardrail can validate the ramp the component
     // actually paints (hex-grid-geo.ts) — mirrors the choropleth call below. No
     // `scaleType` input: hex-grid always paints `HEX_GRID_SCALE_TYPE` ("sequential") — it
@@ -595,6 +599,7 @@ export function checkCartogramConformance(
     variant?: "scaled" | "grid";
     valueLabel?: string;
     mapStyle?: string;
+    themeBg?: string;
     features: GeoJSON.FeatureCollection;
     bins?: number;
     scaleType?: "sequential" | "diverging";

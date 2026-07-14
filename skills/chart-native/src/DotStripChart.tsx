@@ -20,7 +20,7 @@ import {
   type DotStripLayout,
 } from "./dot-strip-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import { COLORS, themeColors, FONT, TYPE, OKABE_ITO, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -31,6 +31,8 @@ export interface DotStripConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
+  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
+  themeBg?: string;
   unit: string; // subtitle + value-axis meaning
   categoryField: string;
   valueField: string;
@@ -49,7 +51,6 @@ export interface DotStripChartProps {
 }
 
 const DOT_COLOR = OKABE_ITO.blue; // the single data colour
-const MEAN_COLOR = COLORS.ink; // neutral reference marker
 
 const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
@@ -62,7 +63,11 @@ const LEG_ROW = 20; // legend row height (unscaled px)
 
 /** Where the second legend item's TEXT starts on a one-row legend (px, plot
  *  space) — must equal the render's `x` for that <text> exactly. */
-function legendItem2TextX(meanText: string, axisPx: number, sc: number): number {
+function legendItem2TextX(
+  meanText: string,
+  axisPx: number,
+  sc: number,
+): number {
   return (meanText.length * axisPx * 0.62 + 42) * sc;
 }
 
@@ -123,7 +128,16 @@ export function DotStripChart({
     bottom: 18 + legendRows * LEG_ROW + 38,
     left: PAD_LEFT,
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -175,6 +189,7 @@ export function DotStripChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -208,6 +223,8 @@ function DotStripSvg({
   sc: number;
   legendWraps: boolean;
 }) {
+  const C = themeColors(config.themeBg);
+  const MEAN_COLOR = C.ink; // neutral reference marker
   const { innerWidth, innerHeight, rows } = layout;
   const chrome = easeOutCubic(p / 0.18);
   const reveal = easeInOutCubic(p);
@@ -244,7 +261,7 @@ function DotStripSvg({
                 x2={t.pos}
                 y1={0}
                 y2={innerHeight}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -252,7 +269,7 @@ function DotStripSvg({
                 y={innerHeight + 16 * sc}
                 textAnchor="middle"
                 fontSize={ts.source}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -271,7 +288,7 @@ function DotStripSvg({
               textAnchor="end"
               fontSize={ts.axis}
               fontWeight={600}
-              fill={COLORS.ink}
+              fill={C.ink}
             >
               {truncate(r.category, labelW, ts.axis)}
             </text>
@@ -309,7 +326,7 @@ function DotStripSvg({
                     r={dotR}
                     fill={DOT_COLOR}
                     fillOpacity={0.55}
-                    stroke="#FFFFFF"
+                    stroke={C.bg}
                     strokeWidth={0.75 * sc}
                   />
                 ))}
@@ -346,17 +363,21 @@ function DotStripSvg({
             dy="0.32em"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             {meanText}
           </text>
           <circle
-            cx={legendWraps ? 6 * sc : (meanText.length * ts.axis * 0.62 + 30) * sc}
+            cx={
+              legendWraps
+                ? 6 * sc
+                : (meanText.length * ts.axis * 0.62 + 30) * sc
+            }
             cy={legendWraps ? legY + LEG_ROW * sc : legY}
             r={dotR}
             fill={DOT_COLOR}
             fillOpacity={0.55}
-            stroke="#FFFFFF"
+            stroke={C.bg}
             strokeWidth={0.75 * sc}
           />
           <text
@@ -365,7 +386,7 @@ function DotStripSvg({
             dy="0.32em"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             {INDIV_LABEL}
           </text>
@@ -399,6 +420,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,
