@@ -16,16 +16,22 @@ import { contrastRatio, WHITE, INK, MIN_CONTRAST } from "./contrast";
 //    reader estimate off the gridlines; matches chart-native's labelled bars).
 //    Datawrapper draws the label at the bar END (inside long bars, outside short ones)
 //    with a crude luminance-threshold white/black auto-pick it offers NO placement or
-//    colour override for (verified live — the only value-label keys are show-value-labels
-//    / value-label-format / value-label-alignment / value-label-visibility). On darker
-//    Okabe-Ito subject hues that auto-pick is WHITE below AA (white on #009E73 = 3.42:1,
-//    on #D55E00 = 3.87:1). Since the inside label can't be recoloured, we ALSO keep the
-//    value axis on (force-grid) as the contrast-clean redundant reading path — the direct
-//    label reads for everyone else, the black-ink axis carries the value when the inside
-//    label is marginal. checkValueLabelContrast records that marginal case as a render-
-//    review concern (the axis fallback is present), never a hard failure that would strip
-//    the direct labels. A cluttered chart can opt the direct labels out (valueLabels:false)
-//    and fall back to the axis alone.
+//    colour override for (verified against the live d3-bars option schema — the only
+//    value-label keys are show-value-labels / value-label-format / value-label-alignment
+//    / value-label-visibility; none control colour or inside/outside). On darker Okabe-Ito
+//    subject hues that auto-pick is WHITE below AA (white on #009E73 = 3.42:1, on
+//    #D55E00 = 3.87:1). Unlike chart-native (which renders its own marks and so recolours
+//    the label to max-contrast ink — labelInkOnFill), dw-chart CANNOT recolour a DW label,
+//    so it cannot make a sub-AA inside label readable. We keep the value axis on
+//    (force-grid) as a redundant reading path for the VALUE, but a redundant axis does NOT
+//    cure the label text's own WCAG 1.4.3 contrast failure — so checkValueLabelContrast
+//    treats a sub-AA white inside label as a HARD failure (fail-loud) on the auto path,
+//    caught before publish instead of shipped silently as advisory. The ONLY keep-and-ship
+//    path is a journalist-chosen brand colour (policy b): the newsroom's own house-style
+//    call, downgraded to a recorded render-review concern. A chart that hits the hard
+//    failure resolves it by picking a fill DW renders a safe label on (Okabe-Ito blue/
+//    amber/grey/yellow), by opting the direct labels out (valueLabels:false → the value
+//    reads off the axis alone), or by declaring the colour brand-explicit.
 
 // Newer d3-column engine: value labels live in a `valueLabels` object.
 export const COLUMN_TYPES = new Set<ChartType>([
@@ -85,13 +91,13 @@ export function applyValueLabels(
     // value-label keys in the d3-bars schema are show-value-labels / value-label-format /
     // value-label-alignment / value-label-visibility — none control inside/outside or
     // colour). On a few mid-tone subject hues (green #009E73 → white 3.42:1, vermilion
-    // #D55E00 → white 3.87:1) that auto-pick is white below WCAG AA — so we ALSO keep the
-    // value axis on (force-grid) as the contrast-clean redundant reading path for exactly
-    // that case: the direct label reads for everyone else, the axis carries the value in
-    // black ink (17.8:1) when the inside label is marginal. checkValueLabelContrast records
-    // the marginal inside label as a render-review CONCERN (not a hard failure) precisely
-    // because this axis fallback is present. `value-label-format` is set by specToMetadata
-    // from spec.numberFormat (and localizes via the chart language — verified: fr → "10 600").
+    // #D55E00 → white 3.87:1) that auto-pick is white below WCAG AA. We keep the value axis
+    // on (force-grid) as a redundant reading path for the VALUE (black ink, 17.8:1), but the
+    // axis does NOT cure the label text's own 1.4.3 contrast failure — so on the auto path a
+    // sub-AA white inside label is a HARD failure (checkValueLabelContrast throws before
+    // publish), not shipped silently; only a brand-explicit colour keeps it as a concern.
+    // `value-label-format` is set by specToMetadata from spec.numberFormat (and localizes via
+    // the chart language — verified: fr → "10 600").
     visualize["show-value-labels"] = show; // default ON; valueLabels:false opts out
     // The value axis is ALWAYS kept for a bar family (a value chart must carry a value
     // scale): the accessible fallback when labels are on, the sole reading path when the
@@ -173,12 +179,6 @@ export function checkValueLabelContrast(
 
   // A horizontal-bar inside label is unsafe unless it has been turned off.
   const insideBarLabel = isHorizontalBar && vis["show-value-labels"] !== false;
-  // The value AXIS (force-grid) is the contrast-clean fallback the mapper keeps on for the
-  // bar family. When it is present, a sub-AA white inside label — which Datawrapper draws
-  // with NO colour/placement override — is a recorded render-review CONCERN, not a hard
-  // failure (the axis carries the value in black ink). Without it, the inside label is the
-  // only reading path, so an unreadable one stays a HARD violation.
-  const barAxisFallback = insideBarLabel && vis["force-grid"] === true;
 
   // A column value label is unsafe only when placed INSIDE (outside = dark on white).
   const vl = vis["valueLabels"] as
@@ -202,10 +202,15 @@ export function checkValueLabelContrast(
       : contrastRatio(INK, fill);
     if (ratio < MIN_CONTRAST) {
       const isBrand = brand.has(fill.toUpperCase());
-      // A failure is a recorded CONCERN (kept, not thrown) when either the colour is a
-      // journalist-chosen brand hue (policy b) OR it is a horizontal-bar inside label with
-      // the value axis kept on as the accessible fallback. Everything else is hard.
-      const isConcern = isBrand || barAxisFallback;
+      // A failure is a recorded CONCERN (kept, not thrown) ONLY when the colour is a
+      // journalist-chosen brand hue (policy b) — the newsroom's own house-style call.
+      // Everything else is HARD: Datawrapper owns the inside-label colour and offers no
+      // override (verified against the live d3-bars option schema), so the pipeline can
+      // neither recolour the label nor place it in dark ink. Keeping the value axis on
+      // (force-grid) makes the VALUE readable elsewhere, but it does NOT cure the label
+      // text's own WCAG 1.4.3 contrast failure — so an auto-path sub-AA label must be
+      // caught before publish (fail-loud), never shipped silently as advisory.
+      const isConcern = isBrand;
       out.push({
         type: patch.type,
         color: fill,
@@ -215,16 +220,17 @@ export function checkValueLabelContrast(
           ? `${patch.type}: a value label inside the ${fill} brand mark is ` +
             `${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA) — kept per the ` +
             `newsroom's house style (render-review concern).`
-          : barAxisFallback
-            ? `${patch.type}: Datawrapper auto-draws a white value label inside the ${fill} ` +
-              `bar at ${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA) and offers no ` +
-              `colour/placement override — kept because the value axis (force-grid) carries ` +
-              `the value in black ink as the accessible fallback (render-review concern).`
+          : isHorizontalBar
+            ? `${patch.type}: Datawrapper auto-draws a WHITE value label inside the ${fill} ` +
+              `bar at ${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA) and exposes no ` +
+              `colour/placement override, so the label cannot be made readable. Fix by one ` +
+              `of: pick a fill Datawrapper renders a safe label on (e.g. Okabe-Ito blue/` +
+              `amber/grey/yellow), set valueLabels:false so the value reads off the axis ` +
+              `(force-grid) alone, or set the colour as the newsroom's house style ` +
+              `(brand-explicit) to accept the trade-off.`
             : `${patch.type}: a white value label inside a ${fill} mark is ` +
               `${ratio.toFixed(2)}:1 (< ${MIN_CONTRAST}:1, WCAG AA). ` +
-              (isHorizontalBar
-                ? "Keep the value axis on (visualize['force-grid']=true) as the accessible fallback."
-                : "Set visualize.valueLabels.placement='outside' so the label sits in dark ink."),
+              "Set visualize.valueLabels.placement='outside' so the label sits in dark ink.",
       });
     }
   }
