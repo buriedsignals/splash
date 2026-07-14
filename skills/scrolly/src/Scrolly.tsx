@@ -74,10 +74,25 @@ export const Scrolly: React.FC<{
   const F = deriveFurniture(themeBg);
   const dark = bgIsDark(themeBg);
   const pageBg = F.bg;
-  const cardBg = dark ? "rgba(32,35,44,0.94)" : "rgba(255,255,255,0.92)";
-  const cardInk = dark ? "#F4F4F5" : "#111111";
-  const cardSub = dark ? "rgba(244,244,245,0.66)" : "rgba(0,0,0,0.55)";
-  const cardBorder = dark ? "1px solid rgba(244,244,245,0.16)" : "none";
+  // The prose card / header surface is DERIVED from the EXACT house ground (F.bg), not a binary
+  // slate/white that ignored the exact colour: the ground LIFTED toward white — a raised, harmonised
+  // surface (a dark navy/charcoal ground → a lighter tint OF that ground; a light ground → a
+  // near-white tint of it). ink/muted come straight from deriveFurniture. Light default → F.bg is
+  // "#FFFFFF" so the lift stays near-white (byte-identical look to the legacy white card).
+  const _rgb = (hex: string): [number, number, number] => [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+  const [cr, cg, cb] = _rgb(F.bg).map((v) =>
+    Math.round(v + (255 - v) * (dark ? 0.12 : 0.55)),
+  );
+  const cardBg = `rgba(${cr},${cg},${cb},0.94)`;
+  const cardInk = F.ink;
+  const cardSub = F.muted;
+  const cardBorder = dark
+    ? `1px solid rgba(255,255,255,0.14)`
+    : "1px solid rgba(0,0,0,0.06)";
 
   // Theme the GLOBAL page background (the body behind the sticky graphic + prose column) so the
   // whole scrolly is themed, not just the chart. Restores the previous value on unmount.
@@ -475,7 +490,7 @@ export const Scrolly: React.FC<{
     fontFamily: "sans-serif",
     fontSize: 11,
     color: cardSub,
-    background: dark ? "rgba(32,35,44,0.72)" : "rgba(255,255,255,0.7)",
+    background: `rgba(${cr},${cg},${cb},0.72)`,
     borderRadius: 4,
     padding: "2px 6px",
     pointerEvents: "auto",
