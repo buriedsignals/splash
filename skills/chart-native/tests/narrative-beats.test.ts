@@ -1,5 +1,11 @@
 import { describe, it, expect } from "bun:test";
-import { deriveChartStory, narrativeBeatErrors } from "../src/chart-story";
+import {
+  deriveChartStory,
+  narrativeBeatErrors,
+  narrativeBeatWarnings,
+} from "../src/chart-story";
+import { specToNativeConfig } from "../src/spec-to-config";
+import { computeBarLayout } from "../src/bar-geometry";
 
 // ---------------------------------------------------------------------------
 // Explicit narrative beats — the journalist-confirmed override (spec.beats).
@@ -326,5 +332,169 @@ describe("narrative beats — absent override pins the auto path byte-identical"
       },
       { kind: "takeaway", callout: null, copy: "The gap is vast" },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bar scrolly BEAT ORDER wins over the value-desc default (electrification bug).
+// Real shipped case: a bar spec carries an explicit `beats` walk in a NON-value
+// (geographic north→south) order but no explicit `sort`. The mapper used to
+// hard-default sort="desc", so the bars rendered value-descending while the
+// captions walked the beat order — the highlight jumped non-monotonically and the
+// full-list order contradicted the journalist's "garder l'ordre géographique".
+// Fix: beats present + no explicit sort ⇒ effective sort "none" (data/beat row
+// order). Explicit sort still wins; a no-beats auto scrolly still defaults desc.
+// ---------------------------------------------------------------------------
+describe("bar scrolly — explicit beats pin the render order over value-desc", () => {
+  // Éthiopie 51, Soudan du Sud 8, Ouganda 45, Kenya 75, Rwanda 52, Tanzanie 40 —
+  // data rows in geographic (north→south) order, NOT value order. Beats walk the
+  // same order. Value-desc would be Kenya, Rwanda, Éthiopie, Ouganda, Tanzanie,
+  // Soudan du Sud.
+  const geoOrder = [
+    "Éthiopie",
+    "Soudan du Sud",
+    "Ouganda",
+    "Kenya",
+    "Rwanda",
+    "Tanzanie",
+  ];
+  const valueDescOrder = [
+    "Kenya",
+    "Rwanda",
+    "Éthiopie",
+    "Ouganda",
+    "Tanzanie",
+    "Soudan du Sud",
+  ];
+  const electrificationSpec = {
+    nativeType: "bar",
+    title:
+      "L'accès à l'électricité varie fortement d'un pays d'Afrique de l'Est à l'autre",
+    unit: "Part de la population ayant accès à l'électricité (%)",
+    valueUnit: "%",
+    orientation: "horizontal",
+    lang: "fr",
+    source: { name: "Banque mondiale" },
+    data:
+      "pays,acces_electricite_pct\nÉthiopie,51\nSoudan du Sud,8\nOuganda,45\n" +
+      "Kenya,75\nRwanda,52\nTanzanie,40",
+    beats: [
+      {
+        category: "Éthiopie",
+        text: "Éthiopie : 51 % de la population raccordée.",
+      },
+      { category: "Soudan du Sud", text: "Soudan du Sud : seulement 8 %." },
+      {
+        category: "Ouganda",
+        text: "Ouganda : 45 %, une progression plus lente.",
+      },
+      { category: "Kenya", text: "Kenya : 75 % — le taux le plus élevé." },
+      {
+        category: "Rwanda",
+        text: "Rwanda : 52 %, une trajectoire volontariste.",
+      },
+      {
+        category: "Tanzanie",
+        text: "Tanzanie : 40 %, en progression plus lente.",
+      },
+    ],
+  };
+
+  const layoutFor = (config: {
+    catField: string;
+    valField: string;
+    rows: Record<string, string | number>[];
+    orientation?: "horizontal" | "vertical";
+    sort?: "asc" | "desc" | "none";
+  }) =>
+    computeBarLayout(
+      {
+        catField: config.catField,
+        valField: config.valField,
+        rows: config.rows,
+      },
+      {
+        width: 840,
+        height: 460,
+        padding: { top: 64, right: 64, bottom: 40, left: 180 },
+      },
+      { orientation: config.orientation ?? "horizontal", sort: config.sort },
+    );
+
+  it("resolves the produced config sort to 'none' (beats present, no explicit sort)", () => {
+    const { config } = specToNativeConfig(electrificationSpec as never);
+    expect(config.sort).toBe("none");
+  });
+
+  it("renders the bars in the beat/data order, NOT value-desc", () => {
+    const { config } = specToNativeConfig(electrificationSpec as never);
+    const layout = layoutFor(config as never);
+    expect(layout.bars.map((b) => String(b.rawCat))).toEqual(geoOrder);
+    expect(layout.bars.map((b) => String(b.rawCat))).not.toEqual(
+      valueDescOrder,
+    );
+  });
+
+  it("walks the highlight monotonically in render order (no value-desc jumping)", () => {
+    const beats = deriveChartStory(
+      electrificationSpec as never,
+      "regional gap",
+    );
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    // one reveal per beat, captions in the confirmed geographic order
+    expect(reveals.map((b) => b.callout?.name)).toEqual(geoOrder);
+    // the highlight advances 0,1,2,3,4,5 — the render order — instead of the
+    // pre-fix value-desc jumble [2,5,3,0,1,4].
+    expect(reveals.map((b) => b.highlightIndex)).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it("keeps the chart's bar at each highlightIndex in sync with its caption", () => {
+    const { config } = specToNativeConfig(electrificationSpec as never);
+    const layout = layoutFor(config as never);
+    const reveals = deriveChartStory(electrificationSpec as never).filter(
+      (b) => b.kind === "reveal",
+    );
+    for (const b of reveals)
+      expect(String(layout.bars[b.highlightIndex!].rawCat)).toBe(
+        b.callout!.name,
+      );
+  });
+
+  it("REGRESSION: the same spec with NO beats still defaults to value-desc", () => {
+    const { beats: _drop, ...noBeats } = electrificationSpec;
+    const { config } = specToNativeConfig(noBeats as never);
+    expect(config.sort).toBe("desc");
+    const layout = layoutFor(config as never);
+    expect(layout.bars.map((b) => String(b.rawCat))).toEqual(valueDescOrder);
+  });
+
+  it("an EXPLICIT sort always wins over the beats default", () => {
+    const asc = specToNativeConfig({
+      ...electrificationSpec,
+      sort: "asc",
+    } as never);
+    expect(asc.config.sort).toBe("asc");
+    const desc = specToNativeConfig({
+      ...electrificationSpec,
+      sort: "desc",
+    } as never);
+    expect(desc.config.sort).toBe("desc");
+    // asc renders lowest-first (Soudan du Sud 8 leads)
+    expect(
+      layoutFor(asc.config as never).bars.map((b) => String(b.rawCat))[0],
+    ).toBe("Soudan du Sud");
+  });
+
+  it("narrativeBeatWarnings flags a render order that diverges from the beats", () => {
+    // No divergence when the sort resolves to the beat order.
+    expect(narrativeBeatWarnings(electrificationSpec as never)).toEqual([]);
+    // An explicit sort:"desc" contradicts the geographic beat walk → warn (advisory,
+    // never a hard fail) so a future regression / contradictory instruction is visible.
+    const warns = narrativeBeatWarnings({
+      ...electrificationSpec,
+      sort: "desc",
+    } as never);
+    expect(warns.length).toBe(1);
+    expect(warns[0]).toMatch(/order/i);
   });
 });

@@ -104,6 +104,22 @@ function looksTemporal(values: (string | number)[]): boolean {
 
 const src = (s: NativeSpec["source"]) => ({ name: s.name, url: s.url ?? "" });
 
+// Resolve the EFFECTIVE bar sort (config-level, so "none" is reachable even though a
+// journalist can only type "asc"|"desc"). Precedence:
+//   1. an EXPLICIT `spec.sort` always wins (the journalist asked for a value order);
+//   2. else, when the spec carries an ordered narrative `beats` walk (a scrolly whose
+//      captions walk a journalist-chosen order — e.g. geographic north→south), the bars
+//      MUST render in that same data/beat row order, so resolve to "none"
+//      (computeBarLayout leaves "none" unsorted — bar-geometry.ts);
+//   3. else the auto-pick default stays value-descending ("desc") — unchanged.
+// Shared by the mapper (which pins config.sort) and deriveChartStory (whose story index
+// must agree with the chart), so the two can never drift.
+export function resolveBarSort(spec: NativeSpec): "asc" | "desc" | "none" {
+  if (spec.sort) return spec.sort;
+  if (Array.isArray(spec.beats) && spec.beats.length > 0) return "none";
+  return "desc";
+}
+
 // One mapper per reachable native type: (parsed CSV, spec) → the concrete
 // {type, config} produce() renders. Each function body is the former `case` in
 // specToNativeConfig's switch, moved verbatim so output stays byte-identical.
@@ -119,15 +135,22 @@ export const MAPPERS: Record<
     const catCol = columns[0];
     const valCol =
       numericColumns[numericColumns.length - 1] ?? columns[columns.length - 1];
-    const sort = spec.sort ?? "desc";
-    // resolve highlight (a category) to the index it lands at AFTER the sort
+    const sort = resolveBarSort(spec);
+    // resolve highlight (a category) to the index it lands at AFTER the display sort —
+    // mirror computeBarLayout: "none" keeps the data/beat row order untouched, so the
+    // highlight index is just the row position (never re-sorted to value order).
     let highlightIndex: number | undefined;
     if (spec.highlight) {
-      const sorted = [...rows].sort((a, b) => {
-        const d = Number(a[valCol]) - Number(b[valCol]);
-        return sort === "desc" ? -d : d;
-      });
-      const idx = sorted.findIndex((r) => String(r[catCol]) === spec.highlight);
+      const ordered =
+        sort === "none"
+          ? rows
+          : [...rows].sort((a, b) => {
+              const d = Number(a[valCol]) - Number(b[valCol]);
+              return sort === "desc" ? -d : d;
+            });
+      const idx = ordered.findIndex(
+        (r) => String(r[catCol]) === spec.highlight,
+      );
       if (idx >= 0) highlightIndex = idx;
     }
     return {

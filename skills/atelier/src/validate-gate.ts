@@ -20,7 +20,10 @@ import {
   UnsupportedNativeType,
   type NativeSpec,
 } from "../../chart-native/src/spec-to-config";
-import { narrativeBeatErrors } from "../../chart-native/src/chart-story";
+import {
+  narrativeBeatErrors,
+  narrativeBeatWarnings,
+} from "../../chart-native/src/chart-story";
 import { placeholderSourceReason } from "./source-guard";
 import { guardrailParityViolations } from "./guardrail-parity";
 
@@ -95,6 +98,14 @@ function validateScrolly(spec: unknown): ValidationOutcome {
         ok: false,
         errors: [...(outcome.ok ? [] : outcome.errors), ...beatErrors],
       };
+    // Advisory: flag a bar walk whose rendered order does not follow the beats (an
+    // explicit sort contradicting the geographic beat order, or a regression) — a
+    // warning surfaced at the render gate, never a hard fail.
+    if (outcome.ok) {
+      const beatWarnings = narrativeBeatWarnings(spec as NativeSpec);
+      if (beatWarnings.length)
+        return { ok: true, warnings: [...outcome.warnings, ...beatWarnings] };
+    }
     return outcome;
   }
   // The explicit `beats` override is CHART-track narrative control. The map track
