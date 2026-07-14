@@ -68,3 +68,40 @@ describe("ramp map types consume brandHue → a derived house ramp", () => {
     for (const c of used) expect(ramp.has(c)).toBe(true);
   });
 });
+
+import { runProduceMapConformance } from "../src/core/map-produce-conformance";
+
+describe("produce guard validates the HOUSE ramp, not the default, when brandHue is set", () => {
+  const base = {
+    title: "Solar capacity is highest in the sunbelt",
+    description: "Installed solar capacity per capita by country, 2024.",
+    source: { name: "Heidi.news" },
+    regionKey: "code",
+    valueField: "share",
+    rows: [
+      { code: "NOR", share: 99 },
+      { code: "FRA", share: 27 },
+    ],
+  };
+
+  it("does NOT false-fire the subject-default rule for a house-ramp choropleth", () => {
+    const r = runProduceMapConformance("choropleth", {
+      ...base,
+      subject: "solar energy capacity",
+      brandHue: "#E69F00",
+    });
+    expect(r.violations.some((v) => v.includes("no explicit palette"))).toBe(
+      false,
+    );
+  });
+
+  it("still fires the subject-default rule when NO palette AND NO brandHue is set", () => {
+    const r = runProduceMapConformance("choropleth", {
+      ...base,
+      subject: "solar energy capacity",
+    });
+    expect(r.violations.some((v) => v.includes("no explicit palette"))).toBe(
+      true,
+    );
+  });
+});

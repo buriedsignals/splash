@@ -22,7 +22,7 @@ import { MAP_TYPES, type MapType } from "../map-types";
 import { resolveMapStyle } from "../route-geo";
 import { FRAME_COLORS, FRAME_COLORS_DARK } from "../theme/map-tokens";
 import { resolvePalette } from "../theme/scale";
-import { contrastOk } from "../theme/house-ramp";
+import { contrastOk, houseRamp } from "../theme/house-ramp";
 import { HEX_GRID_SCALE_TYPE } from "../hex-grid-geo";
 import {
   checkGlobalMapConformance,
@@ -153,17 +153,33 @@ export function runProduceMapConformance(
   if ((RAMP_TYPES as readonly string[]).includes(type)) {
     try {
       const scaleType = resolveRampScaleType(type, config);
-      const ramp = resolvePalette(
-        scaleType,
-        config.palette as string | string[] | undefined,
-      ).ramp;
+      // When the renderer paints a derived HOUSE ramp (brandHue set, no explicit palette),
+      // validate THAT ramp — not resolvePalette's library default, which is not what ships — and
+      // treat it as a deliberate newsroom choice (paletteName "house") so the subject-default rule
+      // (c) is satisfied. An explicit `palette` always takes the resolvePalette path and wins.
+      const brandHue =
+        typeof config.brandHue === "string" ? config.brandHue : undefined;
+      const houseRampInEffect =
+        brandHue !== undefined && config.palette === undefined;
+      const ramp = houseRampInEffect
+        ? houseRamp(
+            brandHue!,
+            typeof config.bins === "number" ? config.bins : 5,
+          )
+        : resolvePalette(
+            scaleType,
+            config.palette as string | string[] | undefined,
+          ).ramp;
       violations.push(
         ...checkPaletteConformance({
           scaleType,
           scaleColors: ramp,
           values: extractValues(config),
-          paletteName:
-            typeof config.palette === "string" ? config.palette : undefined,
+          paletteName: houseRampInEffect
+            ? "house"
+            : typeof config.palette === "string"
+              ? config.palette
+              : undefined,
           subject:
             typeof config.subject === "string" ? config.subject : undefined,
         }),
