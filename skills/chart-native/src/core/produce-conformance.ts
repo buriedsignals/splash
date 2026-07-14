@@ -50,6 +50,7 @@ import {
   STACKED_AREA_COLORS,
   WAFFLE_CATEGORY_COLORS,
   COLORS,
+  COLORS_DARK,
   OKABE_ITO,
   DIVERGING_SIGN_COLORS,
   WATERFALL_ROLE_COLORS,
@@ -841,10 +842,16 @@ function computeRawConformance(
       // range, on top of the global title/source/contrast checks. The rampStops
       // and valueDomain come from the same geometry the component renders.
       const cfg = config as unknown as HeatmapConfig;
+      // derive the ramp through the SAME theme flag the component renders with, so the
+      // guard validates the ACTUAL stops (the dark ramp's luminance runs the other way).
       const layout = computeHeatmapLayout(
         { rowField: cfg.rowField, colFields: cfg.colFields, rows: cfg.rows },
         HEATMAP_DIMS,
+        !!cfg.dark,
       );
+      const furniture = cfg.dark
+        ? { text: [COLORS_DARK.ink, COLORS_DARK.muted], bg: COLORS_DARK.bg }
+        : { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg };
       return {
         checked: true,
         violations: checkHeatmapConformance(
@@ -854,7 +861,7 @@ function computeRawConformance(
             rampStops: layout.rampStops,
             valueDomain: layout.valueDomain,
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furniture,
         ),
       };
     }

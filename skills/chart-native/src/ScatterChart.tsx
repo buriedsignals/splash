@@ -16,7 +16,7 @@ import {
   type ScatterLayout,
 } from "./scatter-geometry";
 import { formatNumber, clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, TYPE, themeColors } from "./core/tokens";
+import { COLORS, TYPE, themeColors, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -422,6 +422,7 @@ function Tooltip({
         left: padding.left + pt.x + 12,
         top: padding.top + pt.y - 8,
         background: COLORS.ink,
+        border: tooltipBorder(config.dark),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

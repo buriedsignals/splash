@@ -1796,14 +1796,17 @@ export function checkHeatmapConformance(
   });
   if (input.rampStops.length < 3)
     v.push("heatmap ramp needs ≥ 3 stops for a readable sequential scale");
+  // Monotonic luminance in EITHER direction is CVD-safe / greyscale-readable. The light
+  // ramp runs pale→deep (strictly DECREASING); the dark-theme ramp inverts to mid→bright
+  // (strictly INCREASING) so high values read bright on #18181B. Flag only a ramp that is
+  // neither (a luminance that reverses mid-scale is not a sequential scale).
   const lums = input.rampStops.map(relativeLuminance);
-  for (let i = 1; i < lums.length; i++)
-    if (lums[i] >= lums[i - 1]) {
-      v.push(
-        "heatmap ramp luminance is not monotonic — use a sequential CVD-safe ramp (single-hue / viridis)",
-      );
-      break;
-    }
+  const strictlyDown = lums.every((l, i) => i === 0 || l < lums[i - 1]);
+  const strictlyUp = lums.every((l, i) => i === 0 || l > lums[i - 1]);
+  if (!strictlyDown && !strictlyUp)
+    v.push(
+      "heatmap ramp luminance is not monotonic — use a sequential CVD-safe ramp (single-hue / viridis)",
+    );
   const [lo, hi] = input.valueDomain;
   if (!(hi > lo)) v.push(`heatmap value range is empty — [${lo}, ${hi}]`);
   return v;

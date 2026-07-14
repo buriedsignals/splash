@@ -25,8 +25,7 @@ import {
   FONT,
   TYPE,
   DIVERGING_STACKED_COLORS,
-  themeColors,
-} from "./core/tokens";
+  themeColors, tooltipBorder } from "./core/tokens";
 import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -418,6 +417,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.dark),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

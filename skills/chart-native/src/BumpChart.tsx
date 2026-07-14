@@ -19,7 +19,7 @@ import {
   type BumpLayout,
 } from "./bump-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, themeColors, FONT, TYPE } from "./core/tokens";
+import { COLORS, themeColors, FONT, TYPE, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -379,6 +379,7 @@ function Tooltip({
         top,
         transform: `translate(-100%,${nearTop ? "0%" : "-100%"})`,
         background: COLORS.ink,
+        border: tooltipBorder(config.dark),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

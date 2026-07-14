@@ -49,6 +49,18 @@ export const COLORS_DARK = {
 // mark). See themeStackedColors / themeWaterfallColors below.
 export const DARK_PALETTE_BLACK_SUB = "#E4E4E7";
 
+// Interactive tooltip panel keeps its dark #1A1A1A background + light text in BOTH
+// themes (max legibility). On the dark furniture frame (#18181B) that near-black box
+// sits at ~1.03:1 against the ground — no visible edge, and its dark drop-shadow
+// vanishes too. A dark render adds a 1px hairline in the dark AXIS token (#52525B, the
+// same "subtle line on #18181B" the charts already use) to restore the panel boundary.
+// tooltipBorder mirrors themeColors: the SINGLE path every *Chart.tsx tooltip keys its
+// border on. Light theme gets `undefined` → React omits the property → BYTE-identical.
+export const DARK_TOOLTIP_BORDER = `1px solid ${COLORS_DARK.axis}`;
+export function tooltipBorder(dark?: boolean): string | undefined {
+  return dark ? DARK_TOOLTIP_BORDER : undefined;
+}
+
 // Widened (string, not the light literals) so BOTH COLORS and COLORS_DARK satisfy it.
 export type ColorTokens = { readonly [K in keyof typeof COLORS]: string };
 
@@ -235,4 +247,38 @@ export function themeStackedColors(dark?: boolean): readonly string[] {
 
 export function themeWaterfallColors(dark?: boolean): readonly string[] {
   return swapBlackForDark(WATERFALL_ROLE_COLORS, dark);
+}
+
+// HEATMAP sequential ramp — the ONE type where COLOUR is the quantitative channel, so
+// it uses a single-hue ramp (monotonic luminance = CVD-safe / greyscale-readable), NOT
+// the Okabe-Ito categorical palette. LIGHT is ColorBrewer "Blues", luminance strictly
+// DECREASING (pale low value → deep-blue high value) — the stops the heatmap has shipped
+// since it landed (kept VERBATIM: back-compat + light byte-identity). On the dark
+// furniture bg (#18181B) that light ramp's deep end goes near-invisible (#08306b =
+// 1.39:1), so the DARK ramp INVERTS the luminance direction: a single-hue blue whose
+// luminance strictly INCREASES (a visible mid-blue low value → a bright light-blue high
+// value), so HIGH values read BRIGHT on dark. Every dark stop clears ≥ 3:1 against
+// #18181B (darkest #2f7ebe = 4.09:1). themeHeatmapRamp mirrors themeStackedColors — the
+// SINGLE path the geometry, the colourbar-legend gradient, and the produce-time guard
+// all derive the stops through, so cells + colourbar + guard never drift by theme.
+export const HEATMAP_RAMP_LIGHT: string[] = [
+  "#deebf7",
+  "#c6dbef",
+  "#9ecae1",
+  "#6baed6",
+  "#4292c6",
+  "#2171b5",
+  "#08306b",
+];
+export const HEATMAP_RAMP_DARK: string[] = [
+  "#2f7ebe",
+  "#4a97cc",
+  "#6aaed6",
+  "#8fc1e0",
+  "#b3d3ec",
+  "#d4e6f6",
+  "#eef6fc",
+];
+export function themeHeatmapRamp(dark?: boolean): string[] {
+  return dark ? HEATMAP_RAMP_DARK : HEATMAP_RAMP_LIGHT;
 }

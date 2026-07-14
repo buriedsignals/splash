@@ -27,7 +27,7 @@ import {
   stagger,
 } from "./core/math";
 import { unitSuffix, type Lang } from "./core/locale";
-import { COLORS, TYPE, themeColors, type ColorTokens } from "./core/tokens";
+import { COLORS, TYPE, themeColors, type ColorTokens, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrameWithHeader } from "./core/format";
 import {
@@ -497,6 +497,7 @@ function Tooltip({
         left,
         top,
         background: COLORS.ink,
+        border: tooltipBorder(config.dark),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

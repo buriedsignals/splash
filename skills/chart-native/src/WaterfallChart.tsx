@@ -30,8 +30,7 @@ import {
   FONT,
   TYPE,
   themeColors,
-  themeWaterfallColors,
-} from "./core/tokens";
+  themeWaterfallColors, tooltipBorder } from "./core/tokens";
 import {
   truncate,
   rotatedLabelDescentPx,
@@ -488,6 +487,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.dark),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,
