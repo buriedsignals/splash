@@ -17,6 +17,7 @@ import {
 import { deriveSymbolStory } from "../../map-native/src/symbol-story";
 import type { Beat } from "../../map-native/src/map-story";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
+import { houseFill } from "../../map-native/src/theme/house-ramp";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -26,9 +27,10 @@ if (!import.meta.env.VITE_MAPTILER_KEY)
 maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 // ---------------------------------------------------------------------------
-// Constants — mirror SymbolMap exactly.
+// Constants — mirror SymbolMap exactly. The single-hue fill default is NOT re-declared here;
+// it lives once in house-ramp.ts (DEFAULT_MAP_FILL) and is resolved via houseFill so the hex
+// can't drift across the symbol renderers.
 // ---------------------------------------------------------------------------
-const SYMBOL_FILL = "#2171b5";
 const LABEL_TEXT_SIZE = 13;
 const SYMBOL_STROKE = "#ffffff";
 const MAX_RADIUS_PX = 40;
@@ -81,9 +83,10 @@ export const ScrollySymbolMap: React.FC<{
   const [mapState, setMapState] = useState<SymbolMapState | null>(null);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-  // House hue wins over the neutral default fill; an explicit colour on the spec always wins
-  // over the house value (none is modelled on this config yet, so brandHue is the only override).
-  const fillColor = config.brandHue ?? SYMBOL_FILL;
+  // House hue wins over the neutral default fill (houseFill = brandHue ?? DEFAULT_MAP_FILL, the
+  // one place the default hex lives). An explicit colour on the spec would win over the house
+  // value, but none is modelled on this config yet, so brandHue is the only override path today.
+  const fillColor = houseFill(config.brandHue);
 
   // Precompute geometry and labels outside the effect (pure, stable).
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
