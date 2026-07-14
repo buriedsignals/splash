@@ -4,6 +4,47 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-14 (suite 3) — Vérif harness du thème arbitraire (scrolly/story) + fixes de trous, dont le scaffold scrolly blanc
+
+Rémy : « lance 2-3 tests harness avec persona/sujets neufs pour m'assurer que tout est correct » →
+puis « produis le scrolly et le story pour me le prouver » → puis « t'es sûr que le scrolly rend
+correctement ? il n'y a que le chart qui a un fond coloré, le reste est blanc » → « et le fond
+global » → « fais un check-up complet pour éviter les trucs hardcodés qui cassent ce qu'on
+implémente ».
+
+**Harness sur le thème arbitraire (5 cas neufs committés, `atelier-harness`).** 3 cas fond-arbitraire
+(chart rose #F7E8EE · carte choroplèthe charbon #26262B · heatmap teal #12232E) + 2 preuves de format
+(chart-scrolly navy · map-story vidéo charbon). Tous `delivered`. **Prouvé au PNG rendu** : chart rose
+(ligne magenta maison), carte charbon (basemap sombre + rampe teal + pill/légende charbon — config
+confirme `themeBg`+`mapStyle=dataviz-dark`+`brandHue`), heatmap teal (rampe dérivée du baseColor, plus
+le bleu en dur ; cases basses lisibles), chart-scrolly (fond navy + ligne bleu-ciel révélée au scroll),
+map-story vidéo (basemap sombre + teal + furniture blanche lisible), chart-vidéo (fond navy plein-cadre).
+
+**Trois trous produit attrapés par le harness + corrigés au système (branche
+`fix/theme-scrolly-scaffold-and-label-gutters`, gate 20/20) :**
+1. **Scaffold scrolly blanc** (le vrai bug pointé par Rémy) : `ScrollyChart.tsx` codait
+   `background:"#ffffff"` en dur sur la boîte de centrage → un scrolly sombre montrait des marges
+   blanches autour d'un chart navy. Corrigé → `deriveFurniture(config.themeBg).bg`. + scaffold
+   `Scrolly.tsx` (cartes prose, header, crédit, **fond global page/body**, wrapper) dérive tout de
+   `config.themeBg`. **Check-up complet = Workflow 45 agents + verify adversarial** : ce `#ffffff` de
+   ScrollyChart était le SEUL vrai littéral casse-thème ; les ~40 wrappers `#FFFFFF` des Reveal vidéo
+   sont MORTS (ChartFrame peint son bg dérivé plein-cadre par-dessus — render-prouvé au chart-vidéo
+   navy) et les littéraux dark/light des composants carte sont liés-au-basemap (intentionnels). Lock
+   mécanique `scaffold-theme-parity.test.ts`.
+2. **Gouttières de labels fixes → mesurées** : `HeatmapChart` gouttière de lignes fixe 52px → les noms
+   longs (« Vendredi »/« Dimanche ») débordaient le cadre (fail WCAG, forçait le raccourcissement de
+   la donnée). Mesurée via `leftLabelGutterPx` + tronquée seulement au-delà du cap ~42%. **Étendu aux
+   4 types qui tronquaient trop tôt** (boxplot, diverging-bar, diverging-stacked, lollipop) → ils
+   grandissent avant de tronquer, comme slope/dumbbell/dot-strip.
+3. **Fuite nom-de-colonne** : nouveau `seriesLabelFromColumn` (humanize + majuscule initiale) sur le
+   directLabel de la line + les légendes de séries wide-CSV (grouped/stacked/stacked-area) → « shops »
+   → « Shops », « coal_share » → « Coal share » au lieu du header brut.
+
+Réponse nette à la question format : **le thème arbitraire marche sur TOUS les formats** — chart
+statique/interactif/vidéo/scrolly (dont le scaffold désormais), carte statique/interactif/vidéo/scrolly
+(basemap+marks+furniture). Le seul résidu mineur non-render-prouvé = le pill furniture d'une carte-
+scrolly web (l'audit n'y a trouvé aucun casse-thème).
+
 ## Session 2026-07-14 (suite 2) — Thème à FOND ARBITRAIRE : chaque chart ET carte dérive sa furniture de la couleur maison (n'importe quelle couleur)
 
 Rémy : « le theme devrait s'adapter aussi aux newsroom style… light ou dark mais un newsroom pourrait
