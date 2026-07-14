@@ -254,20 +254,38 @@ describe("mergeProfileDefaults", () => {
     expect(mergeProfileDefaults("nope" as never, profile)).toBe("nope");
   });
 
-  it("seeds colour only for colour-consuming producers (source/lang stay universal)", () => {
-    // map-native ignores brand colour and validates strictly → never seed baseColor there.
+  it("seeds baseColor for charts, brandHue/brandPalette for maps (source/lang universal)", () => {
+    // A map carries the house hue + palette (NOT baseColor) — its colour paths derive a ramp/fill.
     const map = mergeProfileDefaults({ title: "t" }, profile, {
       producer: "map-native",
     });
     expect(map.baseColor).toBeUndefined();
+    expect((map as { brandHue?: string }).brandHue).toBe("#0A5C36");
+    expect((map as { brandPalette?: string[] }).brandPalette).toEqual([
+      "#0A5C36",
+    ]);
+    expect(map.brandExplicit).toBe(true);
     expect(map.source).toEqual({ name: "Heidi.news" });
     expect(map.lang).toBe("fr");
-    // chart-native consumes it.
+    // A chart takes palette[0] → baseColor.
     const chart = mergeProfileDefaults({ title: "t" }, profile, {
       producer: "chart-native",
     });
     expect(chart.baseColor).toBe("#0A5C36");
+    expect((chart as { brandHue?: string }).brandHue).toBeUndefined();
     expect(chart.brandExplicit).toBe(true);
+  });
+
+  it("a chart-scrolly colours like a chart, a map-scrolly like a map", () => {
+    const chartScrolly = mergeProfileDefaults({ nativeType: "bar" }, profile, {
+      producer: "scrolly",
+    });
+    expect(chartScrolly.baseColor).toBe("#0A5C36");
+    const mapScrolly = mergeProfileDefaults({ type: "choropleth" }, profile, {
+      producer: "scrolly",
+    });
+    expect((mapScrolly as { brandHue?: string }).brandHue).toBe("#0A5C36");
+    expect(mapScrolly.baseColor).toBeUndefined();
   });
 });
 

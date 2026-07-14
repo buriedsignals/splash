@@ -12,6 +12,7 @@ import {
   featureCollection,
 } from "@turf/turf";
 import { BLUES, resolvePalette } from "./theme/scale";
+import { houseRamp } from "./theme/house-ramp";
 
 export interface HexGridData {
   points: { lon: number; lat: number; value?: number }[];
@@ -20,6 +21,7 @@ export interface HexGridData {
   cellSizeKm?: number;
   // A named registry palette or a custom CVD-safe ramp; falls back to BLUES when absent.
   palette?: string | string[];
+  brandHue?: string; // newsroom house hue → derived sequential ramp when no palette is set
 }
 export interface HexCell {
   feature: GeoJSON.Feature;
@@ -167,7 +169,9 @@ export function computeHexGrid(data: HexGridData): HexGridLayout {
   // BLUES. Falls back to BLUES when no palette is set.
   const ramp = data.palette
     ? resolvePalette(HEX_GRID_SCALE_TYPE, data.palette).ramp
-    : BLUES;
+    : data.brandHue
+      ? houseRamp(data.brandHue) // house hue → derived sequential ramp (CVD-safe)
+      : BLUES;
   const values = raw.map((c) => c.value);
   const min = Math.min(...values),
     max = Math.max(...values);

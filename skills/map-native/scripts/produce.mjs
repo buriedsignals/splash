@@ -176,6 +176,12 @@ if (parsedConfig.mapStyle === "dataviz-dark" && format === "video") {
   } else {
     console.log("[produce map] conformance: OK (0 violations)");
   }
+  // Non-blocking review concerns (policy b — kept as produced, verify at render-review). Printed
+  // on the pass path; a hard violation above has already aborted before this.
+  if (res.concerns && res.concerns.length > 0) {
+    console.warn("[produce map] conformance CONCERNS (kept — verify at render-review):");
+    res.concerns.forEach((c) => console.warn(`  ⚠ ${c}`));
+  }
 }
 
 // Per-run build dirs: isolate so concurrent runs never contaminate each other

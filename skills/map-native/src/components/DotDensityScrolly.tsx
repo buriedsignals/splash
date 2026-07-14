@@ -21,7 +21,7 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
-import { computeDotDensity } from "../dot-density-geo";
+import { computeDotDensity, UNIVARIATE_ACCENT } from "../dot-density-geo";
 import { scatterInPolygon } from "../dot-scatter";
 import { deriveDotDensityStory } from "../dot-density-story";
 import { resolveMapStyle } from "../route-geo";
@@ -230,8 +230,8 @@ export const DotDensityScrolly: React.FC<{ config: DotDensityConfigShape }> = ({
             title: config.title ?? "",
             description: config.description,
             source: config.source
-          ? { name: config.source.name ?? "", url: config.source.url }
-          : undefined,
+              ? { name: config.source.name ?? "", url: config.source.url }
+              : undefined,
             regionsWithData: layout.regions.length,
           });
           const stepKinds = story.steps.map((_, i) =>
@@ -332,7 +332,7 @@ export const DotDensityScrolly: React.FC<{ config: DotDensityConfigShape }> = ({
     const dotN = formatLocaleNumber(legendState.dotValue, config.lang);
     const header = `
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:${legendState.hasCategories ? 8 : 0}px">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dark ? "#e8e8ec" : "#2171b5"};flex-shrink:0"></span>
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${config.brandHue ?? (dark ? "#e8e8ec" : UNIVARIATE_ACCENT.light)};flex-shrink:0"></span>
         <span style="font:600 11px/1.2 sans-serif;color:${ink}">1 dot = ${dotN}</span>
       </div>`;
     const swatches = legendState.hasCategories

@@ -50,6 +50,11 @@ export interface ScrollyLocatorConfig {
   source?: { name: string; url: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
+  // Newsroom house style (profile merge, skills/atelier/src/brand-profile.ts). brandPalette
+  // cycles the category marker colours (locatorGeometry consumes it — primary = brandPalette[0]);
+  // brandHue is the single-hue fallback. Absent → today's Okabe-Ito path, unchanged.
+  brandHue?: string;
+  brandPalette?: string[];
 }
 
 interface CameraPoint {
@@ -84,6 +89,7 @@ export const ScrollyLocatorMap: React.FC<{
   const geo = locatorGeometry({
     markers: config.markers,
     markerStyle: config.markerStyle,
+    brandPalette: config.brandPalette,
   });
   const meta = {
     title: config.title ?? "",

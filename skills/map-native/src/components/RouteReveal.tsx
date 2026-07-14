@@ -19,6 +19,7 @@ import type {
   RouteRevealLayout,
 } from "../route-geo";
 import { computeRouteReveal, resolveMapStyle } from "../route-geo";
+import { houseRouteAccent } from "../theme/house-ramp";
 import { CountryLabel } from "./CountryLabel";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
 import { TitleCard } from "./StoryCards";
@@ -177,7 +178,12 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
 
   // Map-style adaptive colours
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-  const ELECTRIC = dark ? ELECTRIC_DARK : ELECTRIC_LIGHT;
+  // Newsroom house hue → the electric route line + derived glow/head (bg stays neutral); else the
+  // hand-tuned pair. Policy b: applied as chosen (a low-contrast line is a review concern).
+  const baseElectric = dark ? ELECTRIC_DARK : ELECTRIC_LIGHT;
+  const ELECTRIC = config.brandHue
+    ? { ...baseElectric, ...houseRouteAccent(config.brandHue, dark) }
+    : baseElectric;
   const mapStyle = dark
     ? maptilersdk.MapStyle.DATAVIZ.DARK
     : maptilersdk.MapStyle.DATAVIZ.LIGHT;

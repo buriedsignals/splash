@@ -69,6 +69,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
   const geo = locatorGeometry({
     markers: config.markers,
     markerStyle: config.markerStyle,
+    brandPalette: config.brandPalette,
   });
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const labelInk = dark ? "#f4f4f5" : "#1a1a1a";

@@ -2,12 +2,17 @@ import {
   DEFAULT_BLUE,
   OKABE_ITO,
   type ChoroplethMapSpec,
+  type GradientStop,
   type LocatorMapSpec,
   type MapSpec,
   type SymbolMapSpec,
 } from "./map-spec";
 import { normalizeNumberFormat } from "../../dw-chart/src/chart-spec";
 import { dwLocale } from "../../dw-chart/src/spec-to-metadata";
+// Cross-skill import (same pattern as dw-chart/src/csv above): map-dw has no colour-ramp
+// deriver of its own, and map-native's houseRamp is pure/dependency-free (hand-rolled
+// sRGB↔OKLab, no MapTiler/Remotion deps), so it is safe to reuse rather than fork.
+import { houseRamp } from "../../map-native/src/theme/house-ramp";
 
 export interface MapPatch {
   title: string;
@@ -197,8 +202,23 @@ function valueColumnFormat(
   return col;
 }
 
+// HOUSE COLOUR (choropleth). `houseRamp` returns light→dark hex stops of the house hue —
+// monotonic-luminance, CVD-safe by construction (see house-ramp.ts). Spread evenly across
+// the gradient's 0..1 domain, same light→dark orientation as DEFAULT_BLUE.
+function houseGradient(hue: string): GradientStop[] {
+  const ramp = houseRamp(hue);
+  return ramp.map((color, i) => ({
+    color,
+    position: ramp.length === 1 ? 1 : i / (ramp.length - 1),
+  }));
+}
+
 function choroplethMetadata(spec: ChoroplethMapSpec): MapPatch {
-  const colors = spec.colorScale ?? DEFAULT_BLUE;
+  // Colour precedence: an explicit colorScale always wins; else a newsroom house hue derives
+  // a CVD-safe ramp; else the library default light→blue.
+  const colors =
+    spec.colorScale ??
+    (spec.brandHue ? houseGradient(spec.brandHue) : DEFAULT_BLUE);
   const numberFormat = resolveNumberFormat(spec.numberFormat);
   return {
     title: spec.title,
@@ -351,10 +371,24 @@ function fitView(markers: { lng: number; lat: number }[]): {
   return { center, zoom };
 }
 
+// HOUSE COLOUR (locator). No brandPalette (or an explicit marker colour) ⇒ unchanged
+// Okabe-Ito cycle. A brandPalette is cycled FIRST — the newsroom's own hues on the first
+// N markers — then falls back to cycling Okabe-Ito for any markers beyond the palette's
+// length, rather than repeating the (usually short) house palette indefinitely.
+function markerColorFor(i: number, brandPalette?: string[]): string {
+  if (brandPalette && brandPalette.length > 0) {
+    return i < brandPalette.length
+      ? brandPalette[i]
+      : OKABE_ITO[(i - brandPalette.length) % OKABE_ITO.length];
+  }
+  return OKABE_ITO[i % OKABE_ITO.length];
+}
+
 // NOTE (load-bearing, locator): markers live in `metadata.visualize.markers` as point
 // objects (type:"point", coordinates:[lng,lat], icon, markerColor, title) — there is NO
-// data table and NO value join. Colours cycle Okabe-Ito (CVD-safe) unless a marker sets
-// its own. View is computed from the markers (see fitView) unless an explicit one is given.
+// data table and NO value join. Colours cycle the newsroom brandPalette (see
+// markerColorFor), else Okabe-Ito (CVD-safe), unless a marker sets its own. View is
+// computed from the markers (see fitView) unless an explicit one is given.
 function locatorMetadata(spec: LocatorMapSpec): MapPatch {
   const markers = spec.markers.map((m, i) => ({
     id: `m${i + 1}`,
@@ -363,7 +397,7 @@ function locatorMetadata(spec: LocatorMapSpec): MapPatch {
     coordinates: [m.lng, m.lat],
     anchor: "bottom-left",
     scale: 1,
-    markerColor: m.color ?? OKABE_ITO[i % OKABE_ITO.length],
+    markerColor: m.color ?? markerColorFor(i, spec.brandPalette),
     markerSymbol: "",
     icon: CIRCLE_ICON,
     text: { color: "#333333", fontSize: 14, halo: "#ffffff" },

@@ -273,11 +273,26 @@ export function loadNewsroomProfile(projectDir: string): BrandProfile | null {
   return loadBrandProfile(projectDir);
 }
 
-// The producers that actually consume a house colour (brandExplicit → policy-b a11y guards).
-// Maps / scrolly / image ignore it AND validate their specs strictly (unknown fields fail loud),
-// so brand colour is seeded ONLY for these two — source/lang are universal and always merged.
-// Extending colour to the other producers is a noted follow-up.
-const BRAND_COLOUR_PRODUCERS = new Set(["chart-native", "dw-chart"]);
+// Producers whose colour is a single baseColor (charts). The house palette[0] → baseColor.
+const CHART_COLOUR_PRODUCERS = new Set(["chart-native", "dw-chart"]);
+// Producers whose colour is a RAMP / FILL keyed off a house hue (maps). The house palette is
+// carried as brandHue (primary) + brandPalette (for categorical) and the map colour paths derive
+// their ramp/fill from it — see skills/map-native/src/theme/house-ramp.ts.
+const MAP_COLOUR_PRODUCERS = new Set(["map-native", "map-dw"]);
+
+// How this element's colour is modelled, so the merge seeds the right field. Scrolly is a
+// pass-through: a chart-scrolly (spec carries `nativeType`) colours like a chart, a map-scrolly
+// (spec carries `type`) like a map. Producer omitted (direct/tested use) → chart default.
+function colourKind(
+  producer: string | undefined,
+  spec: { nativeType?: unknown; type?: unknown },
+): "chart" | "map" | "none" {
+  if (producer === undefined || CHART_COLOUR_PRODUCERS.has(producer))
+    return "chart";
+  if (MAP_COLOUR_PRODUCERS.has(producer)) return "map";
+  if (producer === "scrolly") return spec.nativeType != null ? "chart" : "map";
+  return "none";
+}
 
 /**
  * Merge a newsroom profile's fields onto a producer spec — the newsroom DEFAULTS, with the
@@ -298,6 +313,10 @@ export function mergeProfileDefaults<
     baseColor?: string;
     brandExplicit?: boolean;
     baseColorExplicit?: boolean;
+    brandHue?: string;
+    brandPalette?: string[];
+    nativeType?: string;
+    type?: string;
     source?: { name: string; url?: string };
     lang?: string;
   },
@@ -307,16 +326,25 @@ export function mergeProfileDefaults<
   if (!profile || !spec || typeof spec !== "object" || Array.isArray(spec))
     return spec;
   let out = spec;
-  const colourOk =
-    opts?.producer === undefined || BRAND_COLOUR_PRODUCERS.has(opts.producer);
-  if (profile.palette.length > 0 && colourOk) {
+  const kind = colourKind(opts?.producer, out);
+  if (profile.palette.length > 0 && kind !== "none") {
     if (out.baseColorExplicit === true) {
-      // The journalist named a colour for THIS element — keep it (brandExplicit if it is a house
-      // hue, so a11y stays strict on a non-house explicit colour). seedBrandColor defers to it.
-      out = seedBrandColor(out, profile);
-    } else {
+      // The journalist named a colour for THIS element — keep it. For a chart, seedBrandColor
+      // keeps the baseColor (brandExplicit if it's a house hue). For a map, the journalist's own
+      // palette is already on the spec — leave it untouched.
+      if (kind === "chart") out = seedBrandColor(out, profile);
+    } else if (kind === "chart") {
       // Auto subject-fit colour (or none) → the house palette is the default and overrides it.
       out = { ...out, baseColor: profile.palette[0], brandExplicit: true };
+    } else {
+      // Map: carry the house hue + palette; the map colour paths derive a luminance ramp (value
+      // types) or a fill (single-hue types) from brandHue and cycle brandPalette (categorical).
+      out = {
+        ...out,
+        brandHue: profile.palette[0],
+        brandPalette: profile.palette,
+        brandExplicit: true,
+      };
     }
   }
   if (out.source === undefined && profile.source)

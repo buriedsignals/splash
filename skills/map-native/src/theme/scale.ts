@@ -1,3 +1,5 @@
+import { isMonotonicLuminanceRamp } from "./house-ramp";
+
 // Monotonic-luminance sequential ramp (CVD-safe), 5 anchor steps, light→dark blue.
 export const BLUES = ["#deebf7", "#9ecae1", "#4292c6", "#2171b5", "#084594"];
 // Diverging CVD-safe (orange ↔ blue) around a midpoint.
@@ -141,5 +143,9 @@ export function resolvePalette(
 // happened when the registry was curated.
 export function isCvdSafeRamp(ramp: string[]): boolean {
   if (ramp.length < 3) return false;
-  return ramp.every((c) => VETTED_COLORS.has(c.toLowerCase()));
+  if (ramp.every((c) => VETTED_COLORS.has(c.toLowerCase()))) return true;
+  // A newsroom HOUSE ramp of arbitrary hues (derived by houseRamp) is CVD-safe when it is
+  // strictly monotonic in luminance — colour-blind readers separate sequential bins by
+  // lightness. This is a genuine algorithmic CVD criterion, not a whitelist relaxation.
+  return isMonotonicLuminanceRamp(ramp);
 }

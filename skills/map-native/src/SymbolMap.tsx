@@ -24,6 +24,7 @@ import { resolveMapFrame, labelTextSize } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 import { MapFilterBar } from "./core/MapFilterBar";
 import { resolveMapStyle } from "./route-geo";
+import { houseFill } from "./theme/house-ramp";
 import { legendTheme } from "./theme/legend-theme";
 import { formatLocaleNumber, labelWithUnit } from "./core/locale";
 import {
@@ -37,7 +38,8 @@ if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
 maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
-const SYMBOL_FILL = "#2171b5"; // single hue — size is the encoding
+// Single hue — size is the encoding. The newsroom house hue (config.brandHue) wins when set;
+// else the CVD-safe default (houseFill). Computed per-render inside the component (config scope).
 const SYMBOL_STROKE = "#ffffff"; // white halo separates symbols from the basemap
 const MAX_RADIUS_PX = 40;
 // Px clearance between a circle's edge and its label — matches labelRadialOffset's
@@ -59,6 +61,12 @@ export interface SymbolConfig extends SymbolData {
   filters?: MapFilter[];
   /** deliverable language — localizes symbol value labels + "Source". Default English. */
   lang?: string;
+  // Newsroom house style (profile merge, skills/atelier/src/brand-profile.ts). brandHue is the
+  // single symbol fill (size is the encoding); absent → the CVD-safe default. Shared across the
+  // interactive map + video (*Reveal/*Story) + scrolly renderers.
+  brandHue?: string;
+  brandPalette?: string[];
+  brandExplicit?: boolean;
 }
 
 interface Props {
@@ -260,7 +268,11 @@ export const SymbolMap: React.FC<Props> = ({
           radius: s.radius,
           labelText: labels[i]?.name
             ? `${labels[i].name}\n${labelWithUnit(labels[i].valueText, config.valueUnit, config.lang)}`
-            : labelWithUnit(labels[i]?.valueText ?? "", config.valueUnit, config.lang),
+            : labelWithUnit(
+                labels[i]?.valueText ?? "",
+                config.valueUnit,
+                config.lang,
+              ),
           labelOffset: labelRadialOffset(s.radius, textSize),
           anchor: "left",
         },
@@ -289,7 +301,7 @@ export const SymbolMap: React.FC<Props> = ({
         },
         paint: {
           "circle-radius": ["*", ["get", "radius"], progress],
-          "circle-color": SYMBOL_FILL,
+          "circle-color": houseFill(config.brandHue),
           "circle-opacity": 0.75,
           "circle-stroke-color": SYMBOL_STROKE,
           "circle-stroke-width": 1.5,

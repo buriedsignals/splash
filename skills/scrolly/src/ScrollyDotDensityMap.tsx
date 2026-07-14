@@ -11,6 +11,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { flyToBeat } from "./scrolly-camera";
 import {
   computeDotDensity,
+  UNIVARIATE_ACCENT,
   type DotDensityData,
 } from "../../map-native/src/dot-density-geo";
 import { scatterInPolygon } from "../../map-native/src/dot-scatter";
@@ -296,9 +297,15 @@ export const ScrollyDotDensityMap: React.FC<{
     const ink = dark ? "#f4f4f5" : "#444";
     const sub = dark ? "#c8c8cf" : "#555";
     const dotN = formatLocaleNumber(legendState.dotValue, config.lang);
+    // The "1 dot = N" swatch must match the DOTS. The dots render config.brandHue (via
+    // computeDotDensity's univariateAccent); mirror that here so the key doesn't stay default
+    // blue while the dots are house-coloured. brandHue wins; else the CVD-safe default (dark →
+    // a light dot on the dark basemap, light → UNIVARIATE_ACCENT.light).
+    const swatchColor =
+      config.brandHue ?? (dark ? "#e8e8ec" : UNIVARIATE_ACCENT.light);
     const header = `
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:${legendState.hasCategories ? 8 : 0}px">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dark ? "#e8e8ec" : "#2171b5"};flex-shrink:0"></span>
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${swatchColor};flex-shrink:0"></span>
         <span style="font:600 11px/1.2 sans-serif;color:${ink}">1 dot = ${dotN}</span>
       </div>`;
     const swatches = legendState.hasCategories

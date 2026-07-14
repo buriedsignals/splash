@@ -342,7 +342,7 @@ export const DotDensityMap: React.FC<Props> = ({
         const dotN = formatLocaleNumber(layout.dotValue, config.lang);
         const header = `
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:${layout.hasCategories ? 8 : 0}px">
-            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${univariateAccent(dark)};flex-shrink:0"></span>
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${univariateAccent(dark, config.brandHue)};flex-shrink:0"></span>
             <span style="font:600 11px/1.2 sans-serif;color:${theme.ink}">1 dot = ${dotN}</span>
           </div>`;
         const swatches = layout.hasCategories

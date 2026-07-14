@@ -29,6 +29,7 @@ export interface CartogramData {
   palette?: string | string[];
   bins?: number;
   valueLabel?: string;
+  brandHue?: string; // newsroom house hue → derived house ramp (via computeChoropleth)
 }
 
 // Pick the bin index whose [min,max] contains v (last bin inclusive of max).
@@ -54,6 +55,7 @@ export function computeCartogram(
       regionKey: "id",
       valueField: "value",
       rows: data.values as unknown as Record<string, string | number>[],
+      brandHue: data.brandHue, // carry the house hue → derived house ramp
     },
     features,
     joinKey,
