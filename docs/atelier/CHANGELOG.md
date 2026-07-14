@@ -4,6 +4,64 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-14 (suite) — Sweep QA rigoureux : harness parallèle + suite 80 cas + 6 fixes produit
+
+Rémy : « lance atelier-harness pour tous les types et format… check les flows, la conformité, les
+règles, la qualité réelle, l'interactif, le storytelling, les mouvements de caméra… ne laisse aucun
+trou ou truc erroné. Sois précis, vigilant, rigoureux. »
+
+**Harness durci (repo `atelier-harness`).**
+- **Résilience suite** (`d6ae827`) : un cas malformé (dossier vide → ENOENT sur article.md) abortait
+  TOUT le run de 80 cas au 2e cas. `runSuiteCases` enveloppe désormais chaque cas try/catch → outcome
+  `error`, le suite continue. Cas vide `air-quality-explorable-lyon` supprimé. **C'est probablement
+  pourquoi Rémy ne voyait jamais de nouvel index de suite** : tout `--suite` mourait au 2e cas.
+- **Parallèle borné** (`43f4f39`) : `runSuiteCases` gagne `--concurrency N` (défaut 1 = séquentiel).
+  Sûr sur le ledger (findings collectés en mémoire, mergés UNE fois à la fin — pas de course
+  read-modify-write ; le piège du parallèle naïf). Chaque cas a son worktree sandbox ; `git worktree
+  add` concurrent testé lock-safe (5/5). Résultats réécrits par index → ordre préservé. Test prouvant
+  l'overlap réel (3 lanes au pic).
+
+**Suite 80 cas (parallèle ×4) → 69 livrés, 11 did-not-converge, 173 findings (8 critical, 36 major).**
+- **LEÇON contention** : les 11 did-not-converge = `timeout`/`turn-cap` sous concurrency-4 (les
+  sous-process `claude` ralentis passent le cap wall-clock). **Re-run séquentiel : 11/11 livrés propres,
+  0 did-not-converge** → les 11 échecs + leurs **8 criticals étaient des artefacts de contention, pas
+  des bugs produit**. Un suite propre doit être séquentiel (ou concurrency ≤2).
+
+**Triage adversarial des findings récurrents (Workflow de vérificateurs — « le juge peut mentir »).**
+Écartés avec preuve : **format-aspect (9×) = comportement INTENTIONNEL** (d3-bars row-driven, hauteur
+libre pour ne pas rogner des barres — j'aurais « corrigé » un non-bug) ; **title-takeaway général =
+sémantique** (reste en revue humaine) ; timeouts = contention. Confirmés réels + mécanisables → fixes
+ci-dessous.
+
+**6 fixes produit mergés (gate 20/20, chart-native 1111/0, atelier 417/0) :**
+1. **Tooltip titre chart-native** (`8395582`) : `<title>{config.title}</title>` à la racine du `<svg>`
+   sur **41 composants** → tooltip natif qui suit le curseur et répète le titre. Supprimé partout ;
+   `aria-label` (nom accessible, gagne sur `<title>`) + tooltips de données gardés. DOM live vérifié.
+2. **Bar-scrolly ordre des beats** (`903fdda`) : `sort="desc"` écrasait l'ordre narratif explicite
+   (géographique). `resolveBarSort` (explicit → beats-sans-sort ⇒ "none" → desc), partagé mapper+story ;
+   `narrativeBeatWarnings`. Config réelle : highlightIndex [2,5,3,0,1,4]→[0..5].
+3. **Slope mutilation de donnée** (`58a84aa`) : gouttière fixe → produce hard-fail → atelier tronquait
+   la **DONNÉE** ("Interm." pour "professions intermédiaires"). `leftLabelGutterPx` (gouttière pilotée
+   par le label, wrap ≤2 lignes) + tripwire d'intégrité (advisory). Donnée intacte, overflow 0px.
+4. **Scatter en-têtes bruts** (`95a0a70`) : axes affichaient `pib_par_habitant` littéral.
+   `humanizeColumn` + `spec.xLabel ?? humanize(col)`.
+5. **Contraste value-label in-fill** (`f5927e5`) : blanc sur `#009E73` = 3,42:1 (< AA) sur
+   Marimekko/Streamgraph/Sunburst (heuristique de luminance). `labelInkOnFill` (max-contraste réel
+   white-vs-ink) sur les 6 sites. `#084594` garde blanc (pas de régression).
+6. **Claim-grounding** (C, `d63222c`) : takeaway « 70% en 2035 » jamais encodé → tripwire numérique
+   dans validate-gate (tokens hors domaine data non-annotés → throw). Énergie throw, temp-anomaly passe.
+   **Source name/URL (B/D)** : gardes `sourceNamePreservedReason`/`sourceUrlFidelityReason` construites
+   + testées avec vrais indices (INSEE, REN/DGEG), mais **dormantes jusqu'au threading de `sourceHint`**
+   dans accepted.json (SKILL.md Gate 2c/5b l'instruit — lever prose comme channel/confirmedTakeaway).
+
+**Couverture (doute de Rémy) vérifiée au rendu** : couleur maison + `theme:dark` maps en **statique +
+interactif + scrolly** (PNG verts/ambre) ; subject-fit (38 sujets) majoritairement correct (eau→bleu,
+feu→vermillon, logement→ambre, env→vert, social→violet), questionnables = vermillon transport/salaires.
+
+**Backlog honnête** : B/D threading `sourceHint` · dw-chart value-label contraste (krankenhaus = dw-chart,
+équivalent chart-native corrigé) · format-aspect prose over-spec (LOW) · subject-fit polish · render frais
+chart/dw/vidéo house-colour (friction mapper) · tripwire mutilation (E) advisory medium-confidence.
+
 ## Session 2026-07-14 — La couleur maison sur les CARTES ne marchait PAS en vrai (bug e2e attrapé par le harness, corrigé)
 
 Rémy : « Tu dis que tu as testé mais je ne vois aucun nouveau atelier-harness. » Juste. Le chantier
