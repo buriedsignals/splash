@@ -30,7 +30,7 @@ import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend } from "./core/legend";
-import { verticalCatLines, verticalCatMaxLines, bandStepPx } from "./core/text";
+import { verticalCatLines, verticalCatMaxLines, bandStepPx , seriesLabelFromColumn } from "./core/text";
 
 export interface StackedConfig {
   title: string; // = the insight (sentence case)
@@ -92,7 +92,7 @@ export function StackedBarChart({
   const charW = TYPE.axis * s * 0.6;
   const availLegendW = width - (leftAxis + sideRight) * s;
   const { rows: legendRows } = layoutLegend(
-    config.seriesFields,
+    config.seriesFields.map(seriesLabelFromColumn),
     SERIES_COLORS,
     availLegendW,
     0,
@@ -238,7 +238,7 @@ function StackedSvg({
   // overlaps a 2-line name. Wrapped to the plot width; rows match the reserved padding.
   const legendTop = innerHeight + 40 * sc + catExtraRows * catLineH;
   const legend = layoutLegend(
-    config.seriesFields,
+    config.seriesFields.map(seriesLabelFromColumn),
     seriesColors,
     innerWidth,
     0,

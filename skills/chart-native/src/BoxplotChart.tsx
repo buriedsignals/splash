@@ -19,11 +19,18 @@ import {
   type BoxplotLayout,
 } from "./boxplot-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, themeColors, FONT, TYPE, OKABE_ITO, tooltipBorder } from "./core/tokens";
+import {
+  COLORS,
+  themeColors,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
-import { truncate } from "./core/text";
+import { truncate, leftLabelGutterPx } from "./core/text";
 
 export interface BoxplotConfig {
   title: string;
@@ -69,11 +76,21 @@ export function BoxplotChart({
   const titleLines = responsive
     ? Math.max(1, Math.ceil(config.title.length / Math.floor(width / 11)))
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
+  // Size the left gutter to the WIDEST category name (leftLabelGutterPx, like slope/dumbbell) so a
+  // long name is shown in full instead of truncated to the fixed 120; floor at 120, cap at ~42% of
+  // the canvas; an over-cap name is truncated at render.
+  const catLabels = config.categories.map((c) => c.label);
+  const PAD_LEFT = leftLabelGutterPx(catLabels, TYPE.axis, {
+    gapPx: 16,
+    floorPx: 120,
+    width,
+    scale: s,
+  });
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: 20,
     bottom: 28, // value-axis tick labels (source band reserved in resolveFrameWithHeader)
-    left: 120, // category labels in the gutter
+    left: PAD_LEFT, // category labels — measured to the widest, floored at 120
   };
   const frame = resolveFrameWithHeader(
     config.title,

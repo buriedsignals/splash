@@ -38,6 +38,18 @@ export function humanizeColumn(col: string): string {
 }
 
 /**
+ * A raw CSV column → a DISPLAY label for a SERIES name / direct label / legend chip: humanize the
+ * identifier (snake_case/camelCase → words) AND ensure a leading capital. Unlike `humanizeColumn`
+ * (which preserves a bare lowercase token like "unemployment" for axis-label flexibility), a column
+ * used as a SERIES/LEGEND label reads better title-cased ("shops" → "Shops"), so this always
+ * capitalises the first letter. Idempotent on an already-human label ("Charbon" → "Charbon").
+ */
+export function seriesLabelFromColumn(col: string): string {
+  const h = humanizeColumn(col);
+  return h.length ? h.charAt(0).toUpperCase() + h.slice(1) : h;
+}
+
+/**
  * Truncate `text` (with a trailing ellipsis) so it fits within `maxPx` at the
  * given scaled `fontSize`. Returns the original when it already fits. Always
  * leaves at least one character.

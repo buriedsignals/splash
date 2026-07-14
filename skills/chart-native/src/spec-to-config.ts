@@ -6,7 +6,7 @@
 
 import { parseCsv, type ParsedCsv } from "./csv";
 import { validateShape } from "./shape-validation";
-import { humanizeColumn } from "./core/text";
+import { humanizeColumn, seriesLabelFromColumn } from "./core/text";
 
 /**
  * One journalist-confirmed narrative beat for a chart SCROLLY (NativeSpec.beats).
@@ -204,7 +204,7 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
-        directLabel: spec.directLabel ?? yCol,
+        directLabel: spec.directLabel ?? seriesLabelFromColumn(yCol),
         xField: xCol,
         yField: yCol,
         xType: looksTemporal(rows.map((r) => r[xCol])) ? "time" : "linear",

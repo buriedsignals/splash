@@ -18,6 +18,7 @@ import {
 } from "./heatmap-geometry";
 import { clamp01, easeOutCubic } from "./core/math";
 import { COLORS, themeColors, FONT, TYPE, tooltipBorder } from "./core/tokens";
+import { leftLabelGutterPx, truncate } from "./core/text";
 import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -87,11 +88,23 @@ export function HeatmapChart({
   const titleLines = responsive
     ? 1
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
+  // Size the left gutter to the WIDEST row label (leftLabelGutterPx, the same label-driven
+  // treatment slope/dumbbell/dot-strip use) — the fixed 52 clipped long row names ("Vendredi",
+  // "Dimanche") off the frame's LEFT edge into the page background (WCAG guard fail). Floor at the
+  // old 52 (short-label heatmaps keep their layout), cap at ~42% of the canvas; a pathological name
+  // is truncated at render (HeatmapSvg below), never shortened in the data.
+  const rowLabelStrings = config.rows.map((r) => String(r[config.rowField]));
+  const rowGutter = leftLabelGutterPx(rowLabelStrings, TYPE.axis, {
+    gapPx: 10,
+    floorPx: 52,
+    width,
+    scale: s,
+  });
   const basePad = {
     top: responsive ? 16 : 53 + titleLines * 27,
     right: 16,
     bottom: 68, // column labels + colourbar (source band reserved in resolveFrameWithHeader)
-    left: 52, // row labels
+    left: rowGutter, // row labels — measured to the widest, floored at 52
   };
   const frame = resolveFrameWithHeader(
     config.title,
@@ -295,7 +308,7 @@ function HeatmapSvg({
               fontSize={ts.axis}
               fill={C.ink}
             >
-              {lab}
+              {truncate(lab, padding.left - 10 * sc, ts.axis)}
             </text>
           ))}
           {/* column labels (under the grid) — shorten to the start value on

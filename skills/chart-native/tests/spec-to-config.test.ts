@@ -88,7 +88,9 @@ describe("specToNativeConfig — line", () => {
     expect(config.xField).toBe("year");
     expect(config.yField).toBe("rate");
     expect(config.xType).toBe("time");
-    expect(config.directLabel).toBe("rate");
+    // directLabel defaults to the value column as a DISPLAY label — capitalised via
+    // seriesLabelFromColumn ("rate" → "Rate"), not the raw lowercase header (the 'shops' leak fix).
+    expect(config.directLabel).toBe("Rate");
   });
   it("uses a linear x axis for non-temporal first column", () => {
     const spec: NativeSpec = {
