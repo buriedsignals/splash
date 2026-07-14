@@ -86,11 +86,11 @@ test("configurator HTML marks MapTiler/Datawrapper required and confirms on a bl
   expect(h).toContain(".trim()"); // pasted keys are trimmed client-side
 });
 
-test("Claude, Codex and Gemini are verified; Goose is coming-soon", () => {
+test("all four runtimes are verified (codex proven; gemini + goose enabled by decision)", () => {
   expect(RUNTIMES.claude.verified).toBe(true);
   expect(RUNTIMES.codex.verified).toBe(true); // proven end-to-end 2026-07-13 (discovery + nested skill invocation)
   expect(RUNTIMES.gemini.verified).toBe(true); // enabled by decision; Layer A proven, Layer B pending a paid tier
-  expect(RUNTIMES.goose.verified).toBe(false);
+  expect(RUNTIMES.goose.verified).toBe(true); // enabled by decision; Layer A proven + drove the flow, Layer B cut by Gemini quota
 });
 
 test("configurator HTML has the fields + the subscription note", () => {

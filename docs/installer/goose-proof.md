@@ -40,13 +40,25 @@ Goose with zero extra wiring. The hermetic parts (module contract + symlink wiri
   Not a blocker (all 8 real skills appear), but a journalist's `/skills` list carries 2 stray
   entries. Follow-up options: a `.gooseignore`, or keep the producers' `node_modules` out of the
   symlinked tree (relocate/ignore). Flagged, not fixed here.
-- **Layer B NOT yet run.** It needs `goose configure` with an LLM provider (Goose is model-agnostic).
-  The nested-invocation + produce proof (as done for Codex) is pending a configured provider.
+- **Layer B — partial (see the dedicated section below).** Goose activated the `atelier` skill and
+  drove the flow, but the free Gemini quota cut it before the nested invocation completed.
+
+## Layer B — partial run (2026-07-14)
+
+Configured Goose against the Google (Gemini) provider (`GOOSE_PROVIDER=google`,
+`GOOSE_MODEL=gemini-flash-latest`; note `gemini-2.5-flash` 404s for new accounts, and `goose run`
+needs a session `--name` or it panics on an uninitialised sqlite session DB). Goose **activated the
+`atelier` skill** (`# Loaded Skill: atelier`), read its full flow, and **drove the orchestration** —
+walking the skill tree toward `suggest-article`/`suggest-chart`. It was cut off by the **free Gemini
+quota** (`free_tier_requests limit: 5`, already depleted that day) BEFORE the nested invocation
+completed — a provider limit, not an adapter fault. So the mechanism works; the full nested-invoke +
+produce is unproven only for lack of quota (a fresh/paid key would finish, as Codex did).
 
 ## Verdict
 
-The adapter MECHANICS are proven (install + discovery, live). `configurator-core.ts` keeps
-`gemini`-style honesty: **`goose.verified` stays `false`** until Layer B (nested `suggest-article`→
-`suggest-chart` invocation + a produced artifact) passes on a configured Goose. Node-free install
-+ shared `~/.agents/skills` discovery make Goose the cheapest of the three non-Claude adapters on
-the discovery axis; the open item is a configured-LLM Layer-B run.
+The adapter MECHANICS are proven live (install + discovery + Goose driving the flow). **`goose.verified`
+is set to `true` by product decision (2026-07-14)** — a deliberate override ahead of a completed
+Layer-B run, NOT a claim that the full nested-invoke + produce is proven (it was quota-cut). To retire
+the gap, re-run Layer B on a fresh/paid provider key and confirm `suggest-article`→`suggest-chart`
+fires + an artifact is produced. Node-free install + shared `~/.agents/skills` discovery make Goose
+the cheapest of the three non-Claude adapters on the discovery axis.

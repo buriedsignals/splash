@@ -7,7 +7,10 @@ export const RUNTIMES: Record<string, { label: string; verified: boolean }> = {
   // (nested-invocation orchestration) is NOT yet proven — the free Gemini tier's quota
   // blocked it, so it needs a paid tier to confirm. See docs/installer/gemini-proof.md.
   gemini: { label: "Gemini CLI", verified: true },
-  goose: { label: "Goose", verified: false },
+  // Enabled by decision (2026-07-14). Layer A (skill discovery) proven live, and Goose activated the
+  // atelier skill + drove the flow — but Layer B was cut off by the free Gemini quota before the
+  // nested invocation completed, so the full end-to-end is not proven. See docs/installer/goose-proof.md.
+  goose: { label: "Goose", verified: true },
 };
 
 export type ConfiguratorConfig = {
