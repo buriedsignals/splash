@@ -198,6 +198,12 @@ export type SymbolConfigShape = {
   cameraMode?: CameraMode;
   maxReveals?: number;
   filters?: MapFilter[];
+  // Newsroom house style (profile merge, skills/atelier/src/brand-profile.ts). brandHue is the
+  // single symbol fill (else the default). An explicit choice is not modelled per-symbol, so the
+  // house hue is the only override here.
+  brandHue?: string;
+  brandPalette?: string[];
+  brandExplicit?: boolean;
 };
 
 // Framework-free structural validation of a symbol-map config (pre-render — no
@@ -290,6 +296,11 @@ export type RouteConfigShape = {
   source?: { name?: string; url?: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
+  // Newsroom house style (profile merge). brandHue → the route line; brandPalette → territory
+  // colours. An explicit `palette`/`territories[].color` (on RouteConfig) always wins.
+  brandHue?: string;
+  brandPalette?: string[];
+  brandExplicit?: boolean;
 };
 
 // Framework-free structural validation of a route-map config (pre-render — no
@@ -364,6 +375,11 @@ export type LocatorConfigShape = {
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
+  // Newsroom house style (profile merge). brandPalette cycles the category marker colours (Okabe-
+  // Ito beyond its length); the uncategorized single colour becomes the house primary.
+  brandHue?: string;
+  brandPalette?: string[];
+  brandExplicit?: boolean;
 };
 
 export function validateLocatorConfig(
@@ -465,6 +481,12 @@ export type DotDensityConfigShape = {
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
+  // Newsroom house style (profile merge). Univariate: brandHue is the single dot accent.
+  // Multivariate: brandPalette seeds the per-category colours (an explicit categories[].color
+  // wins). See dot-density-geo.ts.
+  brandHue?: string;
+  brandPalette?: string[];
+  brandExplicit?: boolean;
 };
 
 export function validateDotDensityConfig(

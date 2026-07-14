@@ -22,6 +22,7 @@ import { MAP_TYPES, type MapType } from "../map-types";
 import { resolveMapStyle } from "../route-geo";
 import { FRAME_COLORS, FRAME_COLORS_DARK } from "../theme/map-tokens";
 import { resolvePalette } from "../theme/scale";
+import { contrastOk } from "../theme/house-ramp";
 import { HEX_GRID_SCALE_TYPE } from "../hex-grid-geo";
 import {
   checkGlobalMapConformance,
@@ -53,6 +54,24 @@ export const MAP_PRODUCE_GUARDED_TYPES: readonly MapType[] = MAP_TYPES;
 export interface MapConformanceRunResult {
   checked: boolean;
   violations: string[];
+  // Non-blocking review flags: things KEPT AS PRODUCED that a human should verify at
+  // render-review. Today: a newsroom house fill (single-hue types) that fails the WCAG
+  // 1.4.11 non-text 3:1 contrast against the basemap (policy b — kept, never rejected).
+  concerns: string[];
+}
+
+// The single-hue map types that paint the newsroom house hue as ONE fill and so are subject to
+// the keep-and-review contrast concern: symbol (circle fill), route (line), and univariate
+// dot-density (dot accent). Locator and multivariate dot-density cycle a PALETTE — no single
+// fill — so no single-fill concern applies to them.
+function paintsSingleHouseFill(
+  type: string,
+  config: Record<string, unknown>,
+): boolean {
+  if (type === "symbol" || type === "route") return true;
+  if (type === "dot-density")
+    return !(Array.isArray(config.categories) && config.categories.length > 0);
+  return false;
 }
 
 // Opaque solid equivalents of the (translucent) FRAME_COLORS(_DARK).pill — the same
@@ -100,12 +119,16 @@ export function runProduceMapConformance(
   // A typo'd type still renders as choropleth via mount.tsx's default branch, so it must
   // NOT bypass the gate — return a violation, not checked:false.
   if (!(MAP_TYPES as readonly string[]).includes(type))
-    return { checked: true, violations: [`unknown map type "${type}"`] };
+    return {
+      checked: true,
+      violations: [`unknown map type "${type}"`],
+      concerns: [],
+    };
 
   // Kept as an explicit branch (even though all 7 MAP_TYPES are guarded today) — the
   // honest "no guard wired for this type" path, for when MAP_TYPES grows ahead of this file.
   if (!(MAP_PRODUCE_GUARDED_TYPES as readonly string[]).includes(type))
-    return { checked: false, violations: [] };
+    return { checked: false, violations: [], concerns: [] };
 
   const dark =
     resolveMapStyle(
@@ -152,5 +175,23 @@ export function runProduceMapConformance(
     }
   }
 
-  return { checked: true, violations };
+  // Single-hue house-fill contrast concern (policy b). A newsroom house hue applied as ONE map
+  // fill (symbol / route line / univariate dot-density) that fails WCAG 1.4.11 non-text 3:1
+  // contrast against the basemap is KEPT AS CHOSEN — never rejected — and surfaced here so a
+  // human verifies legibility at render-review. brandHue is only ever set for a genuine house
+  // colour (the merge sets it with brandExplicit), so its presence is the signal.
+  const concerns: string[] = [];
+  const houseHue =
+    typeof config.brandHue === "string" ? config.brandHue : undefined;
+  if (
+    houseHue &&
+    paintsSingleHouseFill(type, config) &&
+    !contrastOk(houseHue, dark)
+  ) {
+    concerns.push(
+      `house fill ${houseHue} does not clear 3:1 non-text contrast on the ${dark ? "dark" : "light"} basemap — kept as chosen (policy b), verify legibility at render-review`,
+    );
+  }
+
+  return { checked: true, violations, concerns };
 }

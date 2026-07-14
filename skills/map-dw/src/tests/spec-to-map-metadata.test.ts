@@ -3,10 +3,12 @@ import { specToMapMetadata } from "../spec-to-map-metadata";
 import {
   DEFAULT_BLUE,
   OKABE_ITO,
+  type GradientStop,
   type LocatorMapSpec,
   type MapSpec,
   type SymbolMapSpec,
 } from "../map-spec";
+import { houseRamp } from "../../../map-native/src/theme/house-ramp";
 
 const base: MapSpec = {
   mapType: "choropleth",
@@ -592,5 +594,93 @@ describe("specToMapMetadata — locator", () => {
     for (const m of markers) {
       expect(m.tooltip).toEqual({ enabled: true });
     }
+  });
+});
+
+// HOUSE COLOUR (newsroom brand, skills/atelier/src/brand-profile.ts). The profile merge
+// carries brandHue (primary house hue) + brandPalette (ordered house palette) onto every
+// map spec; an explicit per-element colour always wins.
+describe("specToMapMetadata — house colour (brandHue / brandPalette)", () => {
+  const HOUSE = "#0A5C36";
+
+  it("choropleth: derives the colorScale from houseRamp(brandHue) when no explicit colorScale is set", () => {
+    const cs = specToMapMetadata({ ...base, brandHue: HOUSE }).metadata
+      .visualize.colorscale as { colors: GradientStop[] };
+    const ramp = houseRamp(HOUSE);
+    expect(cs.colors.map((s) => s.color)).toEqual(ramp);
+    // Stops span the gradient's 0..1 domain, ascending, light→dark like DEFAULT_BLUE.
+    expect(cs.colors[0].position).toBe(0);
+    expect(cs.colors[cs.colors.length - 1].position).toBe(1);
+    for (let i = 1; i < cs.colors.length; i++)
+      expect(cs.colors[i].position).toBeGreaterThan(cs.colors[i - 1].position);
+  });
+
+  it("choropleth: an explicit colorScale always wins over brandHue", () => {
+    const explicit = [
+      { color: "#fee5d9", position: 0 },
+      { color: "#a50f15", position: 1 },
+    ];
+    const cs = specToMapMetadata({
+      ...base,
+      brandHue: HOUSE,
+      colorScale: explicit,
+    }).metadata.visualize.colorscale as { colors: unknown };
+    expect(cs.colors).toEqual(explicit);
+  });
+
+  it("choropleth: no brandHue ⇒ unchanged DEFAULT_BLUE (back-compat)", () => {
+    const cs = specToMapMetadata(base).metadata.visualize.colorscale as {
+      colors: unknown;
+    };
+    expect(cs.colors).toEqual(DEFAULT_BLUE);
+  });
+
+  it("locator: markers with no explicit colour cycle brandPalette first", () => {
+    const palette = ["#0A5C36", "#C9A227"];
+    const markers = specToMapMetadata({
+      ...locator,
+      brandPalette: palette,
+      markers: [
+        { lng: 6.2, lat: 46.2, label: "A" },
+        { lng: 6.3, lat: 46.3, label: "B" },
+      ],
+    }).metadata.visualize.markers as Array<Record<string, unknown>>;
+    expect(markers[0].markerColor).toBe(palette[0]);
+    expect(markers[1].markerColor).toBe(palette[1]);
+  });
+
+  it("locator: falls back to Okabe-Ito for markers beyond the brandPalette length", () => {
+    const palette = ["#0A5C36"];
+    const markers = specToMapMetadata({
+      ...locator,
+      brandPalette: palette,
+      markers: [
+        { lng: 6.2, lat: 46.2, label: "A" },
+        { lng: 6.3, lat: 46.3, label: "B" },
+        { lng: 6.4, lat: 46.4, label: "C" },
+      ],
+    }).metadata.visualize.markers as Array<Record<string, unknown>>;
+    expect(markers[0].markerColor).toBe(palette[0]); // house hue
+    expect(markers[1].markerColor).toBe(OKABE_ITO[0]); // fallback cycle restarts at 0
+    expect(markers[2].markerColor).toBe(OKABE_ITO[1]);
+  });
+
+  it("locator: a marker's own explicit colour still wins over brandPalette", () => {
+    const markers = specToMapMetadata({
+      ...locator,
+      brandPalette: ["#0A5C36", "#C9A227"],
+      markers: [
+        { lng: 6.2, lat: 46.2, label: "A", color: "#D55E00" },
+        { lng: 6.3, lat: 46.3, label: "B" },
+      ],
+    }).metadata.visualize.markers as Array<Record<string, unknown>>;
+    expect(markers[0].markerColor).toBe("#D55E00");
+    expect(markers[1].markerColor).toBe("#C9A227");
+  });
+
+  it("locator: no brandPalette ⇒ unchanged Okabe-Ito cycle (back-compat)", () => {
+    const markers = specToMapMetadata(locator).metadata.visualize
+      .markers as Array<Record<string, unknown>>;
+    expect(markers[0].markerColor).toBe(OKABE_ITO[0]);
   });
 });

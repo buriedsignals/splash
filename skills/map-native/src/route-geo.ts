@@ -45,6 +45,12 @@ export interface RouteConfig {
   /** deliverable language — localizes the "Source" furniture label. Default English. */
   lang?: string;
   palette?: string[];
+  // Newsroom house style (profile merge). brandHue → the electric route line (a lighter/darker
+  // glow derived from it); brandPalette → the territory polygon colours (when no `palette` is
+  // set). An explicit `palette` / `territories[].color` always wins.
+  brandHue?: string;
+  brandPalette?: string[];
+  brandExplicit?: boolean;
   territories?: Array<{
     key: string;
     label?: string;
@@ -127,8 +133,9 @@ export function computeRoute(
     .map((f) => ({ f, along: firstInsideAlong(f) }))
     .sort((a, b) => a.along - b.along);
 
-  // colour (qualitative CVD-safe palette, cycling) + anchor + overrides
-  const palette = config.palette ?? QUALITATIVE;
+  // colour (qualitative CVD-safe palette, cycling) + anchor + overrides. An explicit
+  // config.palette wins; else the newsroom house palette (brandPalette); else Okabe-Ito.
+  const palette = config.palette ?? config.brandPalette ?? QUALITATIVE;
   const territories: RouteTerritory[] = withStop
     .map(({ f }, i) => {
       const key = String(f.properties?.iso_a3 ?? f.properties?.name ?? i);
@@ -200,7 +207,8 @@ export function computeRouteReveal(
     .map((f) => ({ f, along: firstInsideAlong(f) }))
     .sort((a, b) => a.along - b.along);
 
-  const palette = config.palette ?? QUALITATIVE;
+  // explicit config.palette wins; else the newsroom house palette (brandPalette); else Okabe-Ito.
+  const palette = config.palette ?? config.brandPalette ?? QUALITATIVE;
   const territories: RouteRevealTerritory[] = withStop
     .map(({ f, along }, i) => {
       const key = String(f.properties?.iso_a3 ?? f.properties?.name ?? i);

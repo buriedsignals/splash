@@ -58,6 +58,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
   const geo = locatorGeometry({
     markers: config.markers,
     markerStyle: config.markerStyle,
+    brandPalette: config.brandPalette,
   });
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";

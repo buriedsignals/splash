@@ -4,6 +4,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
 const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 import { computeRoute, resolveMapStyle, type RouteConfig } from "./route-geo";
+import { houseRouteAccent } from "./theme/house-ramp";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
@@ -131,7 +132,13 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
     const mapStyle = isDark
       ? maptilersdk.MapStyle.DATAVIZ.DARK
       : maptilersdk.MapStyle.DATAVIZ.LIGHT;
-    const ELECTRIC = isDark ? ELECTRIC_DARK : ELECTRIC_LIGHT;
+    // Newsroom house hue → the route line (a lighter/darker glow derived from it); else the
+    // hand-tuned electric pair. Policy b: applied as chosen (a low-contrast line is a review
+    // concern, never swapped).
+    const baseElectric = isDark ? ELECTRIC_DARK : ELECTRIC_LIGHT;
+    const ELECTRIC = config.brandHue
+      ? { ...baseElectric, ...houseRouteAccent(config.brandHue, isDark) }
+      : baseElectric;
 
     // Halo colour for arrows and labels — contrasts with the basemap
     const labelHalo = isDark ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.85)";

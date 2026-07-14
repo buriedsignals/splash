@@ -87,6 +87,18 @@ export interface ChoroplethMapSpec {
    *  Datawrapper localizes the legend + tooltip numbers — French groups thousands with a
    *  narrow no-break space ("17 600"), not the English comma. Absent → DW default (en-US). */
   lang?: string;
+  /** Newsroom house hue (#rrggbb), set by the profile merge (skills/atelier/src/brand-profile.ts).
+   *  When present and `colorScale` is NOT given, the gradient is derived from it via `houseRamp`
+   *  (skills/map-native/src/theme/house-ramp.ts) — a monotonic-luminance, CVD-safe sequential
+   *  ramp of the house hue. An explicit colorScale always wins. */
+  brandHue?: string;
+  /** Ordered newsroom brand palette (#rrggbb); unused by choropleth (see brandHue) but carried
+   *  on every map spec by the profile merge. */
+  brandPalette?: string[];
+  /** True when the colour actually applied is a genuine house colour (set by the profile merge).
+   *  Informational only on map-dw — this producer has no rendered-contrast a11y guard to
+   *  downgrade (see produce.ts); spec-level CVD-safety already comes free from houseRamp. */
+  brandExplicit?: boolean;
 }
 
 // Symbol map (d3-maps-symbols): proportional circles placed by lat/lon.
@@ -117,6 +129,13 @@ export interface SymbolMapSpec {
   channel?: string;
   /** Deliverable language (BCP-47) — localizes the DW chart's legend + tooltip numbers. */
   lang?: string;
+  /** Newsroom house hue — see ChoroplethMapSpec.brandHue. Symbol maps are not producible by
+   *  map-dw (see the hard error below), so this field is carried but unconsumed here. */
+  brandHue?: string;
+  /** Ordered newsroom brand palette — see ChoroplethMapSpec.brandPalette. */
+  brandPalette?: string[];
+  /** See ChoroplethMapSpec.brandExplicit. */
+  brandExplicit?: boolean;
 }
 
 export interface LocatorMarker {
@@ -140,6 +159,15 @@ export interface LocatorMapSpec {
   channel?: string;
   /** Deliverable language (BCP-47) — localizes the DW chart furniture ("Source", attribution). */
   lang?: string;
+  /** Newsroom house hue — see ChoroplethMapSpec.brandHue. Unused directly by the locator (its
+   *  markers cycle brandPalette instead), but carried on every map spec by the profile merge. */
+  brandHue?: string;
+  /** Ordered newsroom brand palette (#rrggbb). A marker with no explicit `color` cycles this
+   *  palette first (falling back to OKABE_ITO beyond its length) instead of OKABE_ITO alone —
+   *  see spec-to-map-metadata.ts locatorMetadata. An explicit marker colour always wins. */
+  brandPalette?: string[];
+  /** See ChoroplethMapSpec.brandExplicit. */
+  brandExplicit?: boolean;
 }
 
 export type MapSpec = ChoroplethMapSpec | SymbolMapSpec | LocatorMapSpec;

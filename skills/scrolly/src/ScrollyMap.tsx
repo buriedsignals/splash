@@ -17,6 +17,7 @@ import {
   choroplethFillColor,
   choroplethFillOpacity,
 } from "../../map-native/src/choropleth-paint";
+import { resolveMapStyle } from "../../map-native/src/route-geo";
 import { pointOnFeature } from "@turf/turf";
 
 // ---------------------------------------------------------------------------
@@ -48,6 +49,10 @@ export interface ScrollyMapConfig extends ChoroplethData {
   source?: { name: string; url: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
+  mapStyle?: string;
+  // brandHue is already carried by ChoroplethData (drives computeChoropleth's derived house
+  // ramp) — brandPalette is added here so the profile merge can set both without a type error.
+  brandPalette?: string[];
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
   /** the topic hint (e.g. "electricity access") — drives the subject-fit ramp choice. */
@@ -113,6 +118,8 @@ export const ScrollyMap: React.FC<{
   const popupRef = useRef<maptilersdk.Popup | null>(null);
   const [mapState, setMapState] = useState<MapState | null>(null);
 
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+
   // ---------------------------------------------------------------------------
   // Init map ONCE — ref guard prevents double-init in React Strict Mode.
   // ---------------------------------------------------------------------------
@@ -120,9 +127,13 @@ export const ScrollyMap: React.FC<{
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
 
+    const style = dark
+      ? maptilersdk.MapStyle.DATAVIZ.DARK
+      : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+
     const map = new maptilersdk.Map({
       container: containerRef.current,
-      style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
+      style,
       center: [10, 20] as [number, number],
       zoom: 2,
       // Keep the event system alive so hover listeners fire, but disable all
@@ -152,9 +163,10 @@ export const ScrollyMap: React.FC<{
         if (layer.type === "symbol") map.removeLayer(layer.id);
       }
 
-      // Water is left as the plain DATAVIZ.LIGHT basemap default — no tint.
-      // Non-data areas (ocean + no-data land) must stay the default basemap,
-      // identical to map-native's ChoroplethMap. Do NOT recolour water.
+      // Water is left as the plain DATAVIZ basemap default (light or dark, per
+      // `dark` above) — no tint. Non-data areas (ocean + no-data land) must stay
+      // the default basemap, identical to map-native's ChoroplethMap. Do NOT
+      // recolour water.
 
       // Compute choropleth layout.
       const layout = computeChoropleth(config, world, "iso_a3", {
@@ -247,13 +259,13 @@ export const ScrollyMap: React.FC<{
           };
       }
 
-      // White stroke.
+      // Stroke — flips to a dark-basemap-safe tone (mirrors ChoroplethMap/ChoroplethScrolly).
       map.addLayer({
         id: "choropleth-stroke",
         type: "line",
         source: "choropleth-world",
         paint: {
-          "line-color": "#ffffff",
+          "line-color": dark ? "#1c1c1f" : "#ffffff",
           "line-width": 0.5,
           "line-opacity": 0.6,
         },
@@ -271,7 +283,7 @@ export const ScrollyMap: React.FC<{
             2.5,
             0,
           ] as never,
-          "line-color": "#1a1a1a",
+          "line-color": dark ? "#f4f4f5" : "#1a1a1a",
           "line-opacity": 0.9,
         },
       });
@@ -375,6 +387,13 @@ export const ScrollyMap: React.FC<{
           font: 13px/1.4 sans-serif;
           padding: 8px 10px;
           border-radius: 4px;
+        }
+        ${
+          dark
+            ? `.maplibregl-popup-content { background: rgba(28,28,31,0.95) !important; color: #f4f4f5 !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.14) !important; }
+        .maplibregl-popup-content strong { color: #ffffff !important; }
+        .maplibregl-popup-tip { border-top-color: rgba(28,28,31,0.95) !important; border-bottom-color: rgba(28,28,31,0.95) !important; }`
+            : ""
         }
       `}</style>
 

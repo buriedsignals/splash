@@ -126,3 +126,45 @@ export function contrastOk(fill: string, dark: boolean): boolean {
   const ref = dark ? BASEMAP_LUMINANCE.dark : BASEMAP_LUMINANCE.light;
   return contrastRatio(relativeLuminance(fill), ref) >= 3;
 }
+
+// ── Single-hue map fill (symbol maps, univariate dot-density) ──────────────────────────────
+// The default single fill when no newsroom house hue is set — a CVD-safe mid blue (the mid stop
+// of theme/scale BLUES). THE ONE place this literal lives; every single-hue renderer imports it
+// / houseFill and never re-declares the hex at a call site.
+export const DEFAULT_MAP_FILL = "#2171b5";
+
+// Resolve the single fill a single-hue map paints: the newsroom house hue when set (policy b —
+// applied AS CHOSEN; a low-contrast one is KEPT and only RAISES a produce-time review concern,
+// never rewritten), else the CVD-safe default. An EXPLICIT per-element colour is resolved by the
+// caller before this (house is the default, not an override of an explicit choice).
+export function houseFill(brandHue?: string): string {
+  return brandHue ?? DEFAULT_MAP_FILL;
+}
+
+// Derive the route line + glow (+ animated head/head-glow) from the newsroom house hue. The LINE
+// is the house hue itself; the GLOW / HEAD-GLOW are lighter tints (higher OKLab lightness, lower
+// chroma) that read as a soft halo, and the HEAD (the leading draw dot) is brightened on a dark
+// basemap / deepened on a light one — mirroring the hand-tuned ELECTRIC pairs' light/dark logic.
+// The page `bg` is NOT branded (the caller keeps its neutral value). Policy b: applied as chosen;
+// a low-contrast house line raises a review concern, it is never swapped.
+export function houseRouteAccent(
+  hex: string,
+  dark: boolean,
+): { line: string; glow: string; head: string; headGlow: string } {
+  const base = hexToOklch(hex);
+  const lift = (dL: number, cScale: number): string =>
+    oklchToHex({ L: clamp01(base.L + dL), C: base.C * cScale, h: base.h });
+  return dark
+    ? {
+        line: hex,
+        glow: lift(0.24, 0.8),
+        head: lift(0.5, 0.25),
+        headGlow: lift(0.4, 0.5),
+      }
+    : {
+        line: hex,
+        glow: lift(0.16, 0.9),
+        head: lift(-0.14, 1),
+        headGlow: lift(0.34, 0.7),
+      };
+}

@@ -31,6 +31,7 @@ import {
 import type { Beat } from "../map-story";
 import type { SymbolConfig } from "../SymbolMap";
 import { resolveMapStyle } from "../route-geo";
+import { houseFill } from "../theme/house-ramp";
 import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
@@ -41,7 +42,8 @@ import { labelWithUnit } from "../core/locale";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
-const SYMBOL_FILL = "#2171b5";
+// Single hue — the newsroom house hue (config.brandHue) wins when set, else the CVD-safe default
+// (houseFill). Resolved per-render inside the component (config scope).
 const SYMBOL_STROKE = "#ffffff";
 const MAX_RADIUS_PX = 40;
 // Px clearance between a circle's edge and its label — matches labelRadialOffset's
@@ -129,7 +131,11 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           label: s.label ?? "",
           labelText: labels[i]?.name
             ? `${labels[i].name}\n${labelWithUnit(labels[i].valueText, config.valueUnit, config.lang)}`
-            : labelWithUnit(labels[i]?.valueText ?? "", config.valueUnit, config.lang),
+            : labelWithUnit(
+                labels[i]?.valueText ?? "",
+                config.valueUnit,
+                config.lang,
+              ),
           labelOffset: labelRadialOffset(s.radius, textSize),
           anchor: "left",
         },
@@ -146,7 +152,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         source: "symbols",
         paint: {
           "circle-radius": 0,
-          "circle-color": SYMBOL_FILL,
+          "circle-color": houseFill(config.brandHue),
           "circle-opacity": 0.75,
           "circle-stroke-color": SYMBOL_STROKE,
           "circle-stroke-width": 1.5,
@@ -340,7 +346,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
       calloutPt,
       calloutReveal,
       calloutValue: beat.callout?.value ?? "",
-      calloutColor: SYMBOL_FILL,
+      calloutColor: houseFill(config.brandHue),
       captionReveal,
     });
 

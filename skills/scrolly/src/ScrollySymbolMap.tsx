@@ -16,6 +16,7 @@ import {
 } from "../../map-native/src/symbol-labels";
 import { deriveSymbolStory } from "../../map-native/src/symbol-story";
 import type { Beat } from "../../map-native/src/map-story";
+import { resolveMapStyle } from "../../map-native/src/route-geo";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -40,6 +41,7 @@ export interface ScrollySymbolConfig {
   type: "symbol";
   points: { lon: number; lat: number; value: number; label?: string }[];
   basemap?: string;
+  mapStyle?: string;
   title?: string;
   description?: string;
   insight?: string;
@@ -48,6 +50,11 @@ export interface ScrollySymbolConfig {
   source?: { name: string; url: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
+  // Newsroom house hue (set by the profile merge, skills/atelier/src/brand-profile.ts). Used
+  // as the circle fill when present — an explicit colour on the spec always wins (none exists
+  // yet for this single-hue symbol map, so brandHue is the only override path today).
+  brandHue?: string;
+  brandPalette?: string[];
 }
 
 interface CameraPoint {
@@ -73,6 +80,11 @@ export const ScrollySymbolMap: React.FC<{
   const startedRef = useRef(false);
   const [mapState, setMapState] = useState<SymbolMapState | null>(null);
 
+  const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  // House hue wins over the neutral default fill; an explicit colour on the spec always wins
+  // over the house value (none is modelled on this config yet, so brandHue is the only override).
+  const fillColor = config.brandHue ?? SYMBOL_FILL;
+
   // Precompute geometry and labels outside the effect (pure, stable).
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
   const labels = symbolLabels(geo.symbols, config.lang);
@@ -90,9 +102,13 @@ export const ScrollySymbolMap: React.FC<{
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
 
+    const style = dark
+      ? maptilersdk.MapStyle.DATAVIZ.DARK
+      : maptilersdk.MapStyle.DATAVIZ.LIGHT;
+
     const map = new maptilersdk.Map({
       container: containerRef.current,
-      style: maptilersdk.MapStyle.DATAVIZ.LIGHT,
+      style,
       center: [
         (geo.bounds[0] + geo.bounds[2]) / 2,
         (geo.bounds[1] + geo.bounds[3]) / 2,
@@ -145,7 +161,7 @@ export const ScrollySymbolMap: React.FC<{
         source: "symbols",
         paint: {
           "circle-radius": ["get", "radius"] as never,
-          "circle-color": SYMBOL_FILL,
+          "circle-color": fillColor,
           "circle-opacity": 0.75,
           "circle-stroke-color": SYMBOL_STROKE,
           "circle-stroke-width": 1.5,
@@ -170,8 +186,8 @@ export const ScrollySymbolMap: React.FC<{
           "text-max-width": 8 as never,
         },
         paint: {
-          "text-color": "#1a1a1a",
-          "text-halo-color": "#ffffff",
+          "text-color": dark ? "#f4f4f5" : "#1a1a1a",
+          "text-halo-color": dark ? "rgba(0,0,0,0.85)" : "#ffffff",
           "text-halo-width": 1.6,
         },
       });

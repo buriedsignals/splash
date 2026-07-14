@@ -38,10 +38,27 @@ function clampLat(v: number): number {
 export function locatorGeometry(config: {
   markers: LocatorMarker[];
   markerStyle?: string;
+  // Newsroom house palette (profile merge). When set, category markers cycle it FIRST and fall
+  // back to Okabe-Ito beyond its length; the uncategorized single colour becomes the house
+  // primary (brandPalette[0]). Absent → today's Okabe-Ito path, unchanged.
+  brandPalette?: string[];
 }): LocatorGeometry {
   const markers = config.markers;
   if (!markers.length)
     throw new Error("locatorGeometry: no markers — nothing to map");
+
+  const house =
+    config.brandPalette && config.brandPalette.length > 0
+      ? config.brandPalette
+      : undefined;
+  // Category i → the house palette when within its length, else Okabe-Ito (cycled) for the
+  // overflow — so a house palette shorter than the category count still assigns distinct hues.
+  const categoryColor = (i: number): string =>
+    house && i < house.length
+      ? house[i]
+      : QUALITATIVE[(house ? i - house.length : i) % QUALITATIVE.length];
+  // The single colour for a category-less map: the house primary when set, else Okabe-Ito[0].
+  const soloColor = house ? house[0] : QUALITATIVE[0];
 
   // Distinct categories, sorted for deterministic colour assignment.
   const categories = [
@@ -54,9 +71,7 @@ export function locatorGeometry(config: {
   const hasCategories = categories.length > 0;
 
   const colorOf = new Map<string, string>();
-  categories.forEach((c, i) =>
-    colorOf.set(c, QUALITATIVE[i % QUALITATIVE.length]),
-  );
+  categories.forEach((c, i) => colorOf.set(c, categoryColor(i)));
 
   const placed: PlacedMarker[] = markers.map((m) => ({
     ...m,
@@ -65,7 +80,7 @@ export function locatorGeometry(config: {
         ? (colorOf.get(m.category) as string)
         : hasCategories
           ? NEUTRAL
-          : QUALITATIVE[0],
+          : soloColor,
   }));
 
   const lons = markers.map((m) => m.lon);

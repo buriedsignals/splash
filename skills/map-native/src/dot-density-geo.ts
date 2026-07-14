@@ -13,6 +13,11 @@ export interface DotDensityData {
   categories?: { field: string; label: string; color?: string }[];
   rows: Record<string, string | number>[];
   dotValue?: number;
+  // Newsroom house style (set by the profile merge, skills/atelier/src/brand-profile.ts).
+  // Univariate: brandHue becomes the single dot accent. Multivariate: brandPalette seeds the
+  // per-category colours (cycled). An explicit `categories[].color` always wins.
+  brandHue?: string;
+  brandPalette?: string[];
 }
 export interface RegionDotSpec {
   key: string;
@@ -50,8 +55,12 @@ export const UNIVARIATE_ACCENT: { light: string; dark: string } = {
   dark: "#56B4E9",
 };
 
-export function univariateAccent(dark: boolean): string {
-  return dark ? UNIVARIATE_ACCENT.dark : UNIVARIATE_ACCENT.light;
+// The single univariate dot accent. A newsroom house hue (brandHue), when set, WINS as the
+// accent in both light and dark (policy b: applied as chosen; a low-contrast one is kept and
+// raised as a produce-time review concern, never swapped). Both the dot paint and the legend
+// swatch MUST read this — never re-declare the hex at a call site.
+export function univariateAccent(dark: boolean, brandHue?: string): string {
+  return brandHue ?? (dark ? UNIVARIATE_ACCENT.dark : UNIVARIATE_ACCENT.light);
 }
 
 // Round up to a "nice" number (1/2/5 × 10^k) ≥ raw.
@@ -69,7 +78,7 @@ export function computeDotDensity(
   joinKey: string,
   dark = false,
 ): DotDensityLayout {
-  const accent = univariateAccent(dark);
+  const accent = univariateAccent(dark, data.brandHue);
   const hasCategories = !!(data.categories && data.categories.length > 0);
   const fields = hasCategories
     ? data.categories!.map((c) => c.field)
@@ -104,13 +113,18 @@ export function computeDotDensity(
 
   const dotValue = data.dotValue ?? niceValue(totalUnits / TARGET_TOTAL_DOTS);
 
-  // Category colours: sorted category order → QUALITATIVE (override via categories[].color).
+  // Category colours: sorted category order → the newsroom house palette (brandPalette) when set,
+  // else QUALITATIVE. An explicit `categories[].color` always wins over the house palette.
   const categories = hasCategories ? data.categories!.map((c) => c.field) : [];
+  const categoryPalette =
+    data.brandPalette && data.brandPalette.length > 0
+      ? data.brandPalette
+      : QUALITATIVE;
   const colorByField = new Map<string, string>();
   const legend: { category: string; color: string }[] = [];
   if (hasCategories) {
     data.categories!.forEach((c, i) => {
-      const color = c.color ?? QUALITATIVE[i % QUALITATIVE.length];
+      const color = c.color ?? categoryPalette[i % categoryPalette.length];
       colorByField.set(c.field, color);
       legend.push({ category: c.label, color });
     });
