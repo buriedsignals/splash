@@ -646,7 +646,8 @@ describe("produceAll — newsroom profile with the REAL validator (regression: f
           producer: "dw-chart",
           format: "static",
           spec: validDwSpec,
-          confirmedTakeaway: "Estonia recycles the most packaging waste in Europe",
+          confirmedTakeaway:
+            "Estonia recycles the most packaging waste in Europe",
         },
       ],
       "out",
@@ -710,7 +711,8 @@ describe("produceAll — newsroom profile with the REAL validator (regression: f
           producer: "dw-chart",
           format: "static",
           spec: validDwSpec,
-          confirmedTakeaway: "Estonia recycles the most packaging waste in Europe",
+          confirmedTakeaway:
+            "Estonia recycles the most packaging waste in Europe",
         },
       ],
       "out",
@@ -721,5 +723,56 @@ describe("produceAll — newsroom profile with the REAL validator (regression: f
     expect(results.map((r) => r.id)).toEqual(["bad", "good"]); // both reported (no crash)
     expect(results.find((r) => r.id === "bad")?.status).toBe("failed");
     expect(results.find((r) => r.id === "good")?.status).toBe("produced");
+  });
+});
+
+// Observability, end-to-end: the dropped-hint advisory warning from validateAccepted must ride the
+// success-path result onto ProposalResult.warnings (what the render gate surfaces). Uses the REAL
+// validateAccepted (not the pass-through) so this proves the wiring through the whole spine.
+describe("produceAll — dropped source-hint warning surfaces on the result", () => {
+  const genericFallbackSpec = {
+    producer: "chart-native",
+    nativeType: "bar",
+    title: "Un titre",
+    data: "cat,val\nA,1\nB,2",
+    source: { name: "Chiffres tels que rapportés dans cet article" },
+    altInsight: "insight",
+    lang: "fr",
+  };
+  const dispatch: Dispatch = async () => ({
+    status: "produced",
+    outputs: ["out/x.png"],
+  });
+
+  it("attaches the warning when a table-backed ship uses the generic fallback with no sourceHint", async () => {
+    const { results } = await produceAll(
+      [p("x", { provenance: "table", spec: genericFallbackSpec })],
+      "out",
+      dispatch,
+      validateAccepted,
+    );
+    expect(results[0].status).toBe("produced");
+    expect(results[0].warnings?.some((w) => w.includes("sourceHint"))).toBe(
+      true,
+    );
+  });
+
+  it("does NOT attach the warning for prose provenance (generic fallback is legitimate there)", async () => {
+    const { results } = await produceAll(
+      [
+        p("x", {
+          provenance: "prose",
+          confirmedTable: true,
+          spec: genericFallbackSpec,
+        }),
+      ],
+      "out",
+      dispatch,
+      validateAccepted,
+    );
+    expect(results[0].status).toBe("produced");
+    expect(
+      (results[0].warnings ?? []).some((w) => w.includes("sourceHint")),
+    ).toBe(false);
   });
 });

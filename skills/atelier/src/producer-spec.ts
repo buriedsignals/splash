@@ -28,9 +28,12 @@ export interface AcceptedProposal {
   // suggest-article (its `sourceHint: { name?, url? }`). Threaded here so the spine's source
   // guards (source-guard.ts, wired in validate-gate.ts) can mechanically catch (B) a named org
   // discarded for the generic "reported in this article" fallback, and (D) a journalist-provided
-  // URL silently upgraded to a deeper, unconfirmed path. OPTIONAL: absent ⇒ the article named no
-  // source (or the orchestrator has not yet copied it across — see the threading follow-up in
-  // validate-gate.ts), so the guards stay dormant and the honest name-only/prose fallback passes.
+  // URL silently upgraded to a deeper, unconfirmed path. The orchestrator LLM copies it across at
+  // §5b — prose-enforced by necessity (no script transforms the in-context ProposalSet into
+  // accepted.json), exactly like `channel`/`confirmedTakeaway`. OPTIONAL: absent ⇒ the article
+  // named no source (or the orchestrator dropped it — flagged by the dropped-hint observability
+  // warning in validate-gate.ts), so the guards stay dormant and the honest name-only/prose
+  // fallback passes.
   sourceHint?: { name?: string; url?: string };
 }
 

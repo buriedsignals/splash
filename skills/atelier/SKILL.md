@@ -350,8 +350,14 @@ when the ARTICLE itself named a source/URL; omit entirely when it named none> }`
 **`sourceHint`, when the article named a source, MUST be carried onto the accepted proposal** — the
 spine's source guards (`validateAccepted` → `sourceNamePreservedReason` / `sourceUrlFidelityReason`)
 consume it to FAIL (B) a named org collapsed to the generic "reported in this article" fallback, and
-(D) a shipped URL that diverges from the journalist-provided one. Dropping `sourceHint` silently
-disarms those guards, exactly like dropping `channel` disarms the format gate.
+(D) a shipped URL that diverges from the journalist-provided one. This is prose-enforced the same way
+as `channel` and `confirmedTakeaway`: there is no script that transforms `suggest-article`'s in-context
+ProposalSet into `accepted.json` — YOU copy the hint across here, verbatim. Dropping `sourceHint`
+silently disarms those guards, exactly like dropping `channel` disarms the format gate. **Backstop:**
+when the shipped `source` is the generic fallback but no `sourceHint` was threaded (on a `table`-backed
+claim), `validateAccepted` emits a non-blocking render-gate WARNING (`ProposalResult.warnings`) so a
+dropped hint is no longer fully silent — treat that warning as "confirm the article really named no
+source; if it did, thread the hint and re-produce". It is advisory only; it never blocks the produce.
 **`confirmedTakeaway` is REQUIRED — the spine's validation gate (`src/validate-gate.ts`,
 `validateAccepted`) FAILS any proposal whose `confirmedTakeaway` is missing or empty**, on both
 branches (Gate 1b is un-skippable on guided AND direct, so no proposal legitimately lacks one). It is

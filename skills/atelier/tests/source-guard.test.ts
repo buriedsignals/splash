@@ -3,6 +3,7 @@ import {
   placeholderSourceReason,
   sourceNamePreservedReason,
   sourceUrlFidelityReason,
+  droppedSourceHintWarning,
 } from "../src/source-guard";
 
 const FR_FALLBACK = { name: "Chiffres tels que rapportés dans cet article" };
@@ -241,5 +242,88 @@ describe("sourceUrlFidelityReason", () => {
     expect(
       sourceUrlFidelityReason({ source: { name: "Dares" } }, { url: PROVIDED }),
     ).toBeNull();
+  });
+});
+
+// OBSERVABILITY (not a guard — a non-blocking render-gate warning). Threading sourceHint from
+// suggest-article's ProposalSet onto accepted.json is PROSE-ENFORCED by necessity (there is no
+// script that transforms the in-context ProposalSet into accepted.json — the orchestrator LLM
+// assembles it, exactly like `channel` / `confirmedTakeaway`). So a DROPPED hint silently disarms
+// the named-org guard: with no captured name to compare against, a named org collapsed to the
+// generic fallback sails through. This warning makes that disarm VISIBLE — it fires when the ship
+// is the generic fallback yet no org-name hint was threaded, EXCEPT for prose/none provenance
+// (where the generic fallback is documented-legitimate — SKILL.md Gate 2c — so a warning is noise).
+describe("droppedSourceHintWarning", () => {
+  it("WARNS when a table-provenance ship uses the generic fallback with no name hint", () => {
+    expect(
+      droppedSourceHintWarning({ source: FR_FALLBACK }, undefined, "table"),
+    ).not.toBeNull();
+    expect(
+      droppedSourceHintWarning({ source: EN_FALLBACK }, {}, "table"),
+    ).not.toBeNull();
+    // a URL-only hint still leaves the NAME dimension uncaptured → guard B is disarmed.
+    expect(
+      droppedSourceHintWarning(
+        { source: FR_FALLBACK },
+        { url: "https://x.gouv.fr" },
+        "table",
+      ),
+    ).not.toBeNull();
+  });
+
+  it("WARNS when provenance is ABSENT (defaults to table)", () => {
+    expect(
+      droppedSourceHintWarning({ source: FR_FALLBACK }, undefined, undefined),
+    ).not.toBeNull();
+  });
+
+  it("is SUPPRESSED for prose/none provenance (generic fallback is legitimate there)", () => {
+    expect(
+      droppedSourceHintWarning({ source: FR_FALLBACK }, undefined, "prose"),
+    ).toBeNull();
+    expect(
+      droppedSourceHintWarning({ source: FR_FALLBACK }, undefined, "none"),
+    ).toBeNull();
+  });
+
+  it("does NOT warn when a name hint WAS threaded (guard B already covers that case)", () => {
+    expect(
+      droppedSourceHintWarning(
+        { source: FR_FALLBACK },
+        { name: "INSEE" },
+        "table",
+      ),
+    ).toBeNull();
+  });
+
+  it("does NOT warn when the ship is a real named source (not the generic fallback)", () => {
+    expect(
+      droppedSourceHintWarning(
+        { source: { name: "INSEE" } },
+        undefined,
+        "table",
+      ),
+    ).toBeNull();
+  });
+
+  it("does NOT warn when there is no shippable source name at all", () => {
+    expect(droppedSourceHintWarning({}, undefined, "table")).toBeNull();
+    expect(
+      droppedSourceHintWarning(
+        { source: { url: "https://x" } },
+        undefined,
+        "table",
+      ),
+    ).toBeNull();
+  });
+
+  it("points at sourceHint + accepted.json and flags the disarmed guard in the message", () => {
+    const w = droppedSourceHintWarning(
+      { source: FR_FALLBACK },
+      undefined,
+      "table",
+    );
+    expect(w).toContain("sourceHint");
+    expect(w).toContain("accepted.json");
   });
 });
