@@ -11,6 +11,7 @@ import {
   verticalCatLines,
   verticalCatMaxLines,
   endLabelGutterPx,
+  humanizeColumn,
 } from "../src/core/text";
 
 const F = 13; // base axis font
@@ -177,6 +178,42 @@ describe("verticalCatMaxLines — rows a column-label block needs", () => {
     expect(verticalCatMaxLines(["Spotify", "YouTube Music"], STEP, FONT)).toBe(
       2,
     );
+  });
+});
+
+describe("humanizeColumn — raw CSV header → reader-facing axis label", () => {
+  it("de-snakes a snake_case column and capitalizes the first letter only", () => {
+    // the shipped-bug cases: axis titles rendered as raw headers verbatim
+    expect(humanizeColumn("pib_par_habitant")).toBe("Pib par habitant");
+    expect(humanizeColumn("esperance_vie")).toBe("Esperance vie");
+    expect(humanizeColumn("class_size")).toBe("Class size");
+    expect(humanizeColumn("pass_rate")).toBe("Pass rate");
+  });
+
+  it("de-kebabs a kebab-case column", () => {
+    expect(humanizeColumn("pass-rate")).toBe("Pass rate");
+    expect(humanizeColumn("gdp-per-capita")).toBe("Gdp per capita");
+  });
+
+  it("splits a camelCase column at the hump", () => {
+    expect(humanizeColumn("passRate")).toBe("Pass Rate");
+    expect(humanizeColumn("gdpPerCapita")).toBe("Gdp Per Capita");
+  });
+
+  it("leaves an already-spaced human label untouched (never mangles it)", () => {
+    expect(humanizeColumn("PIB par habitant")).toBe("PIB par habitant");
+    expect(humanizeColumn("Unemployment rate")).toBe("Unemployment rate");
+    expect(humanizeColumn("Espérance de vie (années)")).toBe(
+      "Espérance de vie (années)",
+    );
+  });
+
+  it("leaves a plain single token untouched (no separator / hump → not an identifier)", () => {
+    // don't force-case a bare word or an acronym — the guard only fires on a raw identifier
+    expect(humanizeColumn("unemployment")).toBe("unemployment");
+    expect(humanizeColumn("inflation")).toBe("inflation");
+    expect(humanizeColumn("GDP")).toBe("GDP");
+    expect(humanizeColumn("score")).toBe("score");
   });
 });
 

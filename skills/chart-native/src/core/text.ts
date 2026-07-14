@@ -10,6 +10,34 @@ export function textWidth(text: string, fontSize: number): number {
 }
 
 /**
+ * Turn a RAW CSV column header into a reader-facing axis label. The recurring
+ * failure was a scatter shipping its axis titles as the literal snake_case header
+ * (`pib_par_habitant`, `class_size`) because the mapper set `xLabel = xCol`. This
+ * de-snakes / de-kebabs / de-camelCases a raw identifier and capitalizes the FIRST
+ * letter only — deterministic, NO translation (so `esperance_vie` → "Esperance vie",
+ * never an invented "de").
+ *
+ * Only fires when the string LOOKS like a raw identifier (no whitespace AND a `_`,
+ * `-`, or a camelCase hump). An already-human label (any label carrying a space) or a
+ * plain single token / acronym ("unemployment", "GDP") is returned UNCHANGED — a
+ * suggester/journalist-provided label is never mangled, an acronym is never force-cased.
+ */
+export function humanizeColumn(col: string): string {
+  const s = col.trim();
+  const hasSpace = /\s/.test(s);
+  const hasSeparator = /[_-]/.test(s);
+  const hasCamelHump = /[a-z][A-Z]/.test(s);
+  // already human (has a space) or a bare single token (no separator/hump) → leave it
+  if (hasSpace || (!hasSeparator && !hasCamelHump)) return col;
+  const spaced = s
+    .replace(/[_-]+/g, " ") // snake_case / kebab-case → words
+    .replace(/([a-z])([A-Z])/g, "$1 $2") // camelCase hump → words
+    .replace(/\s+/g, " ")
+    .trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
  * Truncate `text` (with a trailing ellipsis) so it fits within `maxPx` at the
  * given scaled `fontSize`. Returns the original when it already fits. Always
  * leaves at least one character.
