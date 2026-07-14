@@ -50,6 +50,9 @@ export interface NativeSpec {
   /** several categories/points to accent (e.g. beeswarm's outlier communes). When
    *  present it takes precedence over the single `highlight`. */
   highlights?: string[];
+  /** newsroom house theme (F2 `theme: dark`): render on the dark furniture set. Threaded
+   *  onto every config by specToNativeConfig; consumed via themeColors(config.dark). */
+  dark?: boolean;
   /** the chart subject (e.g. "housing rents", "cross-border commuting"). Injected onto
    *  every produced config so the produce-time subject-fit guard can catch a chart left
    *  on a blue-family hue for a non-water/cold subject (design-conformance.md). */
@@ -869,5 +872,10 @@ export function specToNativeConfig(spec: NativeSpec): {
   // and the shared frame can emit it (ChartFrame's AltInsightContext). Only set when
   // present — a missing altInsight is caught hard at produce, not silently defaulted.
   if (spec.altInsight) out.config.altInsight = spec.altInsight;
+  // F2 house theme — thread `dark` onto EVERY produced config (single injection point,
+  // like lang/subject) so ChartFrame + each component flip to the dark furniture set via
+  // themeColors(config.dark). Only set when true, so a light (default) spec produces a
+  // byte-identical config. Set by the newsroom-profile merge from `theme: dark`.
+  if (spec.dark) out.config.dark = true;
   return out;
 }

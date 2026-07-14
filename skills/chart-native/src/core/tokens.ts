@@ -23,6 +23,36 @@ export const COLORS = {
   bg: "#FFFFFF",
 } as const;
 
+// Dark-theme furniture set — the SAME shape as COLORS, so a newsroom `theme: dark`
+// flips the chrome (bg/ink/muted/axis/grid) without touching the data palette. Every
+// value is WCAG-verified against the dark bg (#18181B): ink 15.9:1, muted 6.4:1 (both
+// ≥ 4.5:1 body-text); grid/axis are non-text hairlines. `line` brightens to skyblue —
+// Okabe-Ito blue (#0072B2) sits at only ~3.1:1 on #18181B (borderline for a 3:1 non-text
+// stroke), skyblue clears it comfortably — so a chart with NO subject-fit baseColor still
+// draws a visible default series on dark. `head` stays white (a marker dot, always visible).
+export const COLORS_DARK = {
+  line: OKABE_ITO.skyblue,
+  head: "#FFFFFF",
+  headGlow: OKABE_ITO.skyblue,
+  ink: "#F4F4F5", // WCAG 15.9:1 on #18181B
+  muted: "#A1A1AA", // WCAG 6.4:1 on #18181B
+  grid: "#3F3F46",
+  axis: "#52525B",
+  bg: "#18181B",
+} as const;
+
+// Widened (string, not the light literals) so BOTH COLORS and COLORS_DARK satisfy it.
+export type ColorTokens = { readonly [K in keyof typeof COLORS]: string };
+
+// The single resolver every component + ChartFrame routes through: `themeColors(config.dark)`
+// returns the dark set when the newsroom theme is dark, else the light default (back-compat —
+// an undefined/false `dark` is exactly today's behaviour). Keep imports of the static `COLORS`
+// only for PALETTE derivations that are theme-independent (Okabe-Ito marks); FURNITURE
+// (ink/muted/axis/grid/bg/line) must go through this.
+export function themeColors(dark?: boolean): ColorTokens {
+  return dark ? COLORS_DARK : COLORS;
+}
+
 export const FONT =
   "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 

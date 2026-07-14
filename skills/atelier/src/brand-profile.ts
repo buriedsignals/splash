@@ -346,6 +346,7 @@ export function mergeProfileDefaults<
     nativeType?: string;
     type?: string;
     mapStyle?: string;
+    dark?: boolean;
     source?: { name: string; url?: string };
     lang?: string;
   },
@@ -403,6 +404,18 @@ export function mergeProfileDefaults<
       ...out,
       mapStyle: profile.theme === "dark" ? "dataviz-dark" : "dataviz-light",
     };
+  }
+  // Newsroom CHART theme: `theme: dark` → chart-native (and a chart-scrolly track) render on the
+  // dark furniture set (ChartFrame + each component via themeColors(config.dark)). dw-chart is
+  // excluded (Datawrapper has its own dark theme, not this token — follow-up, like map-dw). A
+  // per-element `dark` always wins. Only set when the house theme is explicitly dark.
+  if (
+    profile.theme === "dark" &&
+    kind === "chart" &&
+    (opts?.producer === "chart-native" || opts?.producer === "scrolly") &&
+    (out as { dark?: unknown }).dark === undefined
+  ) {
+    out = { ...out, dark: true };
   }
   if (out.source === undefined && profile.source)
     out = { ...out, source: profile.source };
