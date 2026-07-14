@@ -205,6 +205,228 @@ describe("SlopeChart — a long left category name renders in full, never overfl
   });
 });
 
+// Fix E gave the slope a label-driven LEFT gutter + a ≤2-line wrap. A driven harness run
+// with a genuinely EXTREME 59-char occupational name ("Professions intermédiaires de la
+// santé et du travail social") surfaced two failures the ~31-char fixture above never hit:
+//   (1) the wrapped 2-line "name value" block of one row VERTICALLY OVERLAPS the next
+//       row's block — both dark ink, unreadable (the "black-on-black" collision the judge
+//       flagged); spreadLabels de-collided by a fixed 16px that only fits SINGLE-line
+//       labels, so wrapped blocks (~2×lineHeight tall) run into each other.
+//   (2) at a narrow canvas the 2-line block still can't hold "name value", so wrapLabel
+//       TRUNCATES the trailing VALUE with an ellipsis ("…social…", "…1480…") — data lost.
+// The fix keeps the full data at every width: multi-line-aware vertical de-collision + a
+// bounded label-font shrink (never a truncation). Grounded in the real case
+// fix-slope-long-labels-pro (INSEE median wages by occupational category, 2019 vs 2024).
+const OCCUPATIONS: SlopeConfig = {
+  title:
+    "Les métiers les moins payés ont le plus rattrapé leur salaire entre 2019 et 2024",
+  source: {
+    name: "INSEE, salaires nets mensuels médians par catégorie socioprofessionnelle",
+    url: "https://www.insee.fr",
+  },
+  lang: "fr",
+  unit: "€",
+  labelField: "categorie",
+  leftField: "s2019",
+  rightField: "s2024",
+  leftPeriod: "2019",
+  rightPeriod: "2024",
+  highlightLabel: "Aides-soignants et auxiliaires de puériculture",
+  rows: [
+    {
+      categorie: "Cadres administratifs et commerciaux d'entreprise",
+      s2019: 3200,
+      s2024: 3550,
+    },
+    {
+      categorie: "Techniciens de la maintenance industrielle",
+      s2019: 2350,
+      s2024: 2600,
+    },
+    {
+      categorie: "Professeurs des écoles et instituteurs",
+      s2019: 2250,
+      s2024: 2480,
+    },
+    {
+      categorie: "Professions intermédiaires de la santé et du travail social",
+      s2019: 2100,
+      s2024: 2380,
+    },
+    {
+      categorie: "Personnel administratif et technique hospitalier",
+      s2019: 1850,
+      s2024: 2050,
+    },
+    {
+      categorie: "Ouvriers qualifiés de la manutention et du magasinage",
+      s2019: 1720,
+      s2024: 1980,
+    },
+    {
+      categorie: "Aides-soignants et auxiliaires de puériculture",
+      s2019: 1650,
+      s2024: 1980,
+    },
+    {
+      categorie: "Employés de commerce et des services aux particuliers",
+      s2019: 1480,
+      s2024: 1720,
+    },
+  ],
+};
+
+const LONG_OCCUPATION =
+  "Professions intermédiaires de la santé et du travail social";
+
+/** Decode the few HTML entities React emits (an apostrophe → `&#x27;`), so a width /
+ *  content check is on the REAL glyph string. */
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"');
+}
+
+/** Left-gutter label lines WITH their y and (decoded) text — end-anchored, negative x. */
+function leftLabelLines(
+  svg: string,
+): { x: number; y: number; font: number; text: string }[] {
+  const out: { x: number; y: number; font: number; text: string }[] = [];
+  for (const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)) {
+    const attrs = m[1];
+    if (!/text-anchor="end"/.test(attrs)) continue;
+    const x = attrs.match(/\bx="(-?[\d.]+)"/);
+    const y = attrs.match(/\by="(-?[\d.]+)"/);
+    const font = attrs.match(/font-size="([\d.]+)"/);
+    if (!x || !y || !font || Number(x[1]) >= 0) continue;
+    out.push({
+      x: Number(x[1]),
+      y: Number(y[1]),
+      font: Number(font[1]),
+      text: decodeEntities(m[2].replace(/<!--.*?-->/g, "")),
+    });
+  }
+  return out;
+}
+
+function renderOcc(
+  width: number,
+  height: number,
+  scale = 1,
+  responsive = false,
+  interactive = false,
+) {
+  return renderToStaticMarkup(
+    <SlopeChart
+      config={OCCUPATIONS}
+      responsive={responsive}
+      interactive={interactive}
+      width={width}
+      height={height}
+      scale={scale}
+    />,
+  );
+}
+
+/** Assert every left-gutter label line sits inside the canvas within tolerance, using
+ *  the DECODED text width (so `d'entreprise` isn't over-measured as `d&#x27;entreprise`). */
+function expectOccLabelsInside(svg: string, W: number, H: number) {
+  const [padLeft] = plotOrigin(svg);
+  const labels = leftLabelLines(svg);
+  expect(labels.length).toBeGreaterThan(0);
+  const bounds: Box = { left: 0, top: 0, right: W, bottom: H };
+  for (const l of labels) {
+    const rightEdge = padLeft + l.x;
+    const box: Box = {
+      left: rightEdge - estWidth(l.text, l.font),
+      top: 0,
+      right: rightEdge,
+      bottom: l.font,
+    };
+    const worst = worstOverflowPx(box, bounds);
+    if (worst > LABEL_FIT_TOLERANCE_PX) {
+      const o = overflowPx(box, bounds);
+      throw new Error(
+        `left label "${l.text}" overflows by ${worst.toFixed(1)}px ` +
+          `(sides ${JSON.stringify(o)}); padLeft=${padLeft}`,
+      );
+    }
+  }
+}
+
+/** No two left-gutter label LINES overlap vertically — the black-on-black failure. */
+function expectNoLeftLabelCollision(svg: string) {
+  const [, padTop] = plotOrigin(svg);
+  const boxes = leftLabelLines(svg)
+    .map((l) => ({
+      top: padTop + l.y - l.font / 2,
+      bottom: padTop + l.y + l.font / 2,
+      text: l.text,
+    }))
+    .sort((a, b) => a.top - b.top);
+  for (let i = 1; i < boxes.length; i++) {
+    const overlap = boxes[i - 1].bottom - boxes[i].top;
+    if (overlap > 2) {
+      throw new Error(
+        `left labels collide vertically by ${overlap.toFixed(1)}px: ` +
+          `"${boxes[i - 1].text}" over "${boxes[i].text}"`,
+      );
+    }
+  }
+}
+
+function expectFullOccupationPresent(svg: string) {
+  const joined = leftLabelLines(svg)
+    .map((l) => l.text)
+    .join(" ");
+  expect(joined).toContain(LONG_OCCUPATION);
+}
+
+describe("SlopeChart — an EXTREME 59-char category name: full data, no overlap, no truncation", () => {
+  it("never emits an ellipsis (the value data is never truncated) at any tested width", () => {
+    expect(renderOcc(600, 338, 1)).not.toContain("…");
+    expect(renderOcc(840, 480, 1)).not.toContain("…");
+    expect(renderOcc(1080, 1920, 1.7)).not.toContain("…");
+    expect(renderOcc(1100, 620, 1, true, true)).not.toContain("…");
+  });
+
+  it("renders the full 59-char occupation name at article-web static (600×338)", () => {
+    expectFullOccupationPresent(renderOcc(600, 338, 1));
+  });
+
+  it("keeps every left label inside the frame at article-web static (600×338)", () => {
+    expectOccLabelsInside(renderOcc(600, 338, 1), 600, 338);
+  });
+
+  it("keeps every left label inside the frame at a wider article-web static (840×480)", () => {
+    expectOccLabelsInside(renderOcc(840, 480, 1), 840, 480);
+  });
+
+  it("keeps every left label inside the frame at social-vertical portrait (1080×1920, scale 1.7)", () => {
+    const svg = renderOcc(1080, 1920, 1.7);
+    expectFullOccupationPresent(svg);
+    expectOccLabelsInside(svg, 1080, 1920);
+  });
+
+  it("keeps the full name inside a 1100px-wide responsive interactive embed", () => {
+    const svg = renderOcc(1100, 620, 1, true, true);
+    expectFullOccupationPresent(svg);
+    expectOccLabelsInside(svg, 1100, 620);
+  });
+
+  it("no left label overlaps another vertically (no black-on-black) at any tested width", () => {
+    expectNoLeftLabelCollision(renderOcc(600, 338, 1));
+    expectNoLeftLabelCollision(renderOcc(840, 480, 1));
+    expectNoLeftLabelCollision(renderOcc(1080, 1920, 1.7));
+    expectNoLeftLabelCollision(renderOcc(1100, 620, 1, true, true));
+    expectNoLeftLabelCollision(renderOcc(360, 480, 1, true, true));
+  });
+});
+
 // Belt-and-suspenders to the layout fix: label-fit is a LAYOUT concern and must NEVER
 // mutate the underlying data field. The medium-confidence heuristic flags an
 // abbreviation-with-trailing-period labelField value whose expansion appears in the

@@ -16,6 +16,7 @@ import {
   computeSlopeLayout,
   extendLine,
   spreadLabels,
+  spreadLabelsBounded,
   type SlopeData,
   type SlopeLayout,
 } from "./slope-geometry";
@@ -24,7 +25,12 @@ import { COLORS, FONT, TYPE, SLOPE_LINE_COLORS } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
-import { leftLabelGutterPx, endLabelGutterPx, wrapLabel } from "./core/text";
+import {
+  leftLabelGutterPx,
+  endLabelGutterPx,
+  wrapLabel,
+  fitSideLabels,
+} from "./core/text";
 
 export interface SlopeConfig {
   title: string;
@@ -261,20 +267,47 @@ function SlopeSvg({
   const isHi = (l: { rawLabel: string }) =>
     config.highlightLabel != null && l.rawLabel === config.highlightLabel;
 
-  // de-collide the end labels vertically in each gutter (spreadLabels).
-  const minGap = 16 * sc;
-  const leftYs = spreadLabels(
+  const fmt = (v: number) => v.toFixed(1);
+
+  // Left "name value" labels: the gutter (padding.left) is sized to the widest label
+  // (leftLabelGutterPx) but CAPPED so the plot isn't starved, so a genuinely extreme name
+  // wraps to ≥2 lines. fitSideLabels picks the largest font at which every wrapped block
+  // fits its vertical slot (innerHeight/n) AND the full "name value" fits without
+  // truncation — so the ≤2-line block neither collides with its neighbour (the black-on-
+  // black failure the fixed 16px gap allowed) nor drops the trailing value to an ellipsis.
+  const leftBudget = padding.left - 10 * sc;
+  const leftFulls = lines.map((l) => `${l.rawLabel} ${fmt(l.leftVal)}`);
+  const leftFit = fitSideLabels(
+    leftFulls,
+    leftBudget,
+    innerHeight / Math.max(1, n),
+    ts.axis,
+    { widthFactor: config.highlightLabel != null ? 1.08 : 1 },
+  );
+
+  // de-collide the end labels vertically in each gutter (spreadLabels). The left gutter
+  // spreads by the WRAPPED-BLOCK gap (≥ its single-line 16px floor); the right value
+  // labels are always one line, so they keep the single-line 16px gap.
+  const leftMinGap = Math.max(16 * sc, leftFit.minGap);
+  const rightMinGap = 16 * sc;
+  // A 2-line block is centred on its spread-y, so an extreme-value row (the topmost /
+  // bottommost line) would push half a block ABOVE the plot into the subtitle band, or
+  // BELOW it into the period captions. Reserve half a block at each end so every wrapped
+  // block stays inside [0, innerHeight] — clear of both the header and the captions.
+  const leftHalfBlock = (leftFit.maxLines * leftFit.lineHeight) / 2;
+  const leftBandTop = Math.min(leftHalfBlock, innerHeight / 2);
+  const leftBandBot = Math.max(leftBandTop, innerHeight - leftHalfBlock);
+  const leftYs = spreadLabelsBounded(
     lines.map((l) => ({ index: l.index, y: l.y1 })),
-    minGap,
-    innerHeight,
+    leftMinGap,
+    leftBandTop,
+    leftBandBot,
   );
   const rightYs = spreadLabels(
     lines.map((l) => ({ index: l.index, y: l.y2 })),
-    minGap,
+    rightMinGap,
     innerHeight,
   );
-
-  const fmt = (v: number) => v.toFixed(1);
 
   return (
     <svg
@@ -345,19 +378,20 @@ function SlopeSvg({
             const leftOp = clamp01(lp / 0.18);
             const ly = leftYs.get(l.index) ?? l.y1;
             const ry = rightYs.get(l.index) ?? l.y2;
-            // Left "name value" label: the gutter (padding.left) is sized to fit the
-            // widest label; only a capped pathological name exceeds it and WRAPS onto
-            // ≤2 lines (never a truncated stub, never by shortening the data). Bold
-            // labels are ~8% wider than the 0.6 estimate, so measure at 1.08·font.
+            // Left "name value" label: wrap at the shared fit's font + line budget so
+            // the full string always fits (leftFit.maxLines never truncates the data) and
+            // the block is short enough for its de-collided slot (no black-on-black). Bold
+            // (highlighted) labels are ~8% wider than the 0.6 estimate, so measure at
+            // 1.08·font — leftFit already reserved that headroom in maxLines.
             const leftFull = `${l.rawLabel} ${fmt(l.leftVal)}`;
-            const leftWrapFont = hi ? ts.axis * 1.08 : ts.axis;
+            const leftWrapFont = hi ? leftFit.font * 1.08 : leftFit.font;
             const leftLines = wrapLabel(
               leftFull,
-              padding.left - 10 * sc,
+              leftBudget,
               leftWrapFont,
-              2,
+              leftFit.maxLines,
             );
-            const leftLineH = ts.axis * 1.15;
+            const leftLineH = leftFit.lineHeight;
             const leftY0 = ly - ((leftLines.length - 1) * leftLineH) / 2;
             return (
               <g
@@ -401,7 +435,7 @@ function SlopeSvg({
                       y={leftY0 + li * leftLineH}
                       dy="0.32em"
                       textAnchor="end"
-                      fontSize={ts.axis}
+                      fontSize={leftFit.font}
                       fontWeight={hi ? 700 : 400}
                       fill={COLORS.ink}
                     >

@@ -92,6 +92,44 @@ export function spreadLabels(
   return out;
 }
 
+/**
+ * De-collision like `spreadLabels`, but bounded to the closed band [minY, maxY] AND
+ * gap-filling. `spreadLabels` only pushes labels DOWN then shifts the whole stack up on
+ * bottom overflow — so an ISOLATED extreme value (a slope's lone high-earning category,
+ * far above the clustered rest) leaves a large empty gap that the lower cluster can't use,
+ * and the uniform up-shift then drags that extreme label ABOVE the plot into the header.
+ * A down-pass then an UP-pass (from the bottom, clamped to maxY) pulls labels back up into
+ * that gap, so a set that FITS the band lands entirely inside it — no label invades the
+ * subtitle above or the captions below. If the set genuinely can't fit (n·minGap > the
+ * band), the top is clamped to minY and the unavoidable overlap stays in the middle
+ * (a bounded degradation) rather than escaping the frame. Used for the slope's wrapped
+ * left "name value" blocks; the single-line `spreadLabels` is unchanged for its other
+ * callers (right value labels, stacked-area).
+ */
+export function spreadLabelsBounded(
+  ys: { index: number; y: number }[],
+  minGap: number,
+  minY: number,
+  maxY: number,
+): Map<number, number> {
+  const sorted = [...ys].sort((a, b) => a.y - b.y);
+  // down-pass: first label ≥ minY, each next ≥ prev + minGap
+  let prev = minY - minGap;
+  for (const it of sorted) {
+    it.y = Math.max(it.y, prev + minGap);
+    prev = it.y;
+  }
+  // up-pass: last label ≤ maxY, each prior ≤ next − minGap (fills the wasted gap above)
+  let next = maxY + minGap;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    sorted[i].y = Math.min(sorted[i].y, next - minGap);
+    next = sorted[i].y;
+  }
+  const out = new Map<number, number>();
+  for (const it of sorted) out.set(it.index, it.y);
+  return out;
+}
+
 export function withinBounds(b: Box, bounds: Box): boolean {
   return (
     b.x0 >= bounds.x0 &&
