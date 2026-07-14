@@ -72,12 +72,13 @@ function buildProfile(fields: {
       ? fields.credit.trim()
       : undefined;
   // Only the two known basemap themes are accepted; anything else is dropped (never a silent
-  // arbitrary mapStyle). "light" is the default, but it is kept when declared so a newsroom can
-  // pin an explicit light house theme too.
+  // arbitrary mapStyle). Trimmed like the other scalars so a `"dark "` typo still resolves.
+  // "light" is the default, but it is kept when declared so a newsroom can pin an explicit light
+  // house theme too.
+  const themeRaw =
+    typeof fields.theme === "string" ? fields.theme.trim() : fields.theme;
   const theme =
-    fields.theme === "dark" || fields.theme === "light"
-      ? fields.theme
-      : undefined;
+    themeRaw === "dark" || themeRaw === "light" ? themeRaw : undefined;
   if (palette.length === 0 && !source && !lang && !credit && !theme)
     return null;
   const p: BrandProfile = { palette };

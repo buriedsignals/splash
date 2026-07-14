@@ -430,6 +430,12 @@ describe("newsroom theme (house dark basemap)", () => {
     });
   });
 
+  it("trims a padded theme value (like the other scalars)", () => {
+    expect(
+      parseBrandProfile('{"palette":["#E8A33D"],"theme":"dark "}')?.theme,
+    ).toBe("dark");
+  });
+
   const darkProfile: BrandProfile = { palette: ["#E8A33D"], theme: "dark" };
 
   it("map-native map: theme dark → mapStyle dataviz-dark", () => {

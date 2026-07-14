@@ -17,9 +17,9 @@ source:                       # attribution par défaut sous chaque visuel
 lang: "fr"                    # langue par défaut des livrables (fr, en, de, it…)
                               # le crédit suit automatiquement la langue (« Source : » en fr)
 
-theme: "light"                # thème des CARTES : "dark" = fond sombre sur chaque carte,
-                              # "light" (défaut) = fond clair. Réglé une fois pour une
-                              # rédaction au thème sombre. (Un choix par-visuel prime.)
+# theme: "dark"              # thème des CARTES : décommentez pour un fond sombre sur chaque carte
+                              # (rédaction au thème sombre). Absent = fond clair (défaut).
+                              # Un choix par-carte prime toujours.
 ---
 
 # Comment remplir ce profil
