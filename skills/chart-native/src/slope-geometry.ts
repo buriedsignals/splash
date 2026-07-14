@@ -122,5 +122,6 @@ export function extendLine(
 }
 
 // spreadLabels (vertical de-collision) moved to core/labels — a global label
-// mechanism now shared by the slope and the stacked area.
-export { spreadLabels } from "./core/labels";
+// mechanism now shared by the slope and the stacked area. spreadLabelsBounded is its
+// gap-filling, band-clamped sibling for the slope's wrapped multi-line left labels.
+export { spreadLabels, spreadLabelsBounded } from "./core/labels";

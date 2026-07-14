@@ -281,3 +281,109 @@ export function leftLabelGutterPx(
   const cap = Math.max(opts.floorPx, (opts.width * capFrac) / opts.scale);
   return Math.min(raw, cap);
 }
+
+// Fix E gave the slope a label-driven left gutter + a ≤2-line wrap of the "name value"
+// label. On a genuinely EXTREME category name (≈50+ chars) two failures remained that a
+// wider gutter alone cannot solve, because the gutter is CAPPED (~42%) so the plot is not
+// starved: (1) once the label wraps to 2 lines the block is ~2×lineHeight tall, and the
+// fixed 16px de-collision gap (sized for a single line) let adjacent rows' blocks OVERLAP
+// — dark ink over dark ink, the "black-on-black" collision; (2) at a narrow canvas even 2
+// lines can't hold "name value" at the gutter budget, so the wrap TRUNCATES the trailing
+// data with an ellipsis. Both are closed by SHRINKING the label font just enough that the
+// wrapped block fits its vertical slot AND the full string fits without truncation — a
+// bounded degradation (floored), never a cut of the data. These helpers own that rule so
+// every end-anchored side-label strip (slope's left "name value", dumbbell's category
+// gutter) inherits it identically.
+export const SIDE_LABEL_LINE_HEIGHT = 1.15;
+
+/**
+ * How many lines `text` wraps to at `maxPx`/`fontSize`, greedily on spaces, with NO
+ * maximum (never truncates). 1 when it already fits or is a single unbreakable token.
+ * Lets a caller (a) pass wrapLabel enough `maxLines` that the data is never cut and
+ * (b) size the vertical de-collision gap to the tallest wrapped block.
+ */
+export function wrapLineCount(
+  text: string,
+  maxPx: number,
+  fontSize: number,
+): number {
+  if (maxPx <= 0 || textWidth(text, fontSize) <= maxPx) return 1;
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length <= 1) return 1; // an unbreakable token stays one (over-long) line
+  let lines = 1;
+  let cur = "";
+  for (const w of words) {
+    const cand = cur ? `${cur} ${w}` : w;
+    if (cur === "" || textWidth(cand, fontSize) <= maxPx) cur = cand;
+    else {
+      lines++;
+      cur = w;
+    }
+  }
+  return lines;
+}
+
+export interface SideLabelFit {
+  /** chosen render font (≤ startFont, ≥ the floor) */
+  font: number;
+  /** font · SIDE_LABEL_LINE_HEIGHT */
+  lineHeight: number;
+  /** lines to pass to wrapLabel so the WIDEST label never truncates at `font` */
+  maxLines: number;
+  /** vertical centre-to-centre gap so two adjacent wrapped blocks never overlap */
+  minGap: number;
+}
+
+/**
+ * Pick the LARGEST label font (≤ `startFont`) at which every end-anchored side label
+ * wraps within `budgetPx` over a block short enough to fit its vertical `slotPx`
+ * (the per-label vertical space: a slope's innerHeight/n, a dumbbell's band step),
+ * then report the wrap `maxLines` (so the data never truncates) and the `minGap`
+ * (so wrapped blocks never collide). Shrinking the font helps BOTH axes at once — more
+ * chars per line → fewer lines → a shorter block — so it is the single lever that
+ * resolves the long-label overlap and the long-label truncation together. Floored at
+ * `minFont` (default 50% of the start font, i.e. a bounded degradation, never a cut).
+ *
+ * All px are already SCALED (budget/slot/font are post-resolveFrame). `widthFactor`
+ * inflates the width estimate for a heavier weight (the slope's highlighted 700-weight
+ * row is ~8% wider) so a bold label still fits the reported `maxLines`.
+ */
+export function fitSideLabels(
+  labels: string[],
+  budgetPx: number,
+  slotPx: number,
+  startFont: number,
+  opts: { minFont?: number; lineGapPx?: number; widthFactor?: number } = {},
+): SideLabelFit {
+  const widthFactor = opts.widthFactor ?? 1;
+  // Floor at half the start font: on a genuinely cramped canvas (a 16:9 article-web
+  // static holds 8 long-named rows in ~150px of plot height) a bounded shrink to ~50%
+  // is what lets every 2-line block fit its slot WITHOUT truncating the data — and the
+  // static PNG renders at 2× device scale, so ~7px CSS lands as ~14px, still legible.
+  // Short-label charts never reach the floor: a 1-line block fits at the full start font,
+  // so the search below returns startFont immediately.
+  const minFont = Math.min(startFont, opts.minFont ?? startFont * 0.5);
+  const lineGap = opts.lineGapPx ?? startFont * 0.25;
+  const worstLinesAt = (f: number) =>
+    labels.reduce(
+      (m, s) => Math.max(m, wrapLineCount(s, budgetPx, f * widthFactor)),
+      1,
+    );
+  let font = minFont;
+  for (let f = startFont; f >= minFont - 1e-6; f -= 0.5) {
+    const block = worstLinesAt(f) * f * SIDE_LABEL_LINE_HEIGHT;
+    if (block + lineGap <= slotPx) {
+      font = f;
+      break;
+    }
+    font = Math.max(minFont, f - 0.5); // none fit yet → keep the smallest tried
+  }
+  const maxLines = worstLinesAt(font);
+  const lineHeight = font * SIDE_LABEL_LINE_HEIGHT;
+  return {
+    font,
+    lineHeight,
+    maxLines,
+    minGap: maxLines * lineHeight + lineGap,
+  };
+}

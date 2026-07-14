@@ -6,6 +6,7 @@ import {
   placeLabels,
   withinBounds,
   overlaps,
+  spreadLabelsBounded,
   type Box,
   type PlaceCandidate,
 } from "../src/core/labels";
@@ -51,6 +52,63 @@ describe("withinBounds / overlaps", () => {
         { x0: 20, x1: 30, y0: 0, y1: 10 },
       ),
     ).toBe(false);
+  });
+});
+
+describe("spreadLabelsBounded — gap-filling de-collision that never escapes [minY, maxY]", () => {
+  const minGap = 20;
+
+  it("respects the min gap between every adjacent label", () => {
+    const out = spreadLabelsBounded(
+      [
+        { index: 0, y: 10 },
+        { index: 1, y: 12 },
+        { index: 2, y: 14 },
+      ],
+      minGap,
+      0,
+      400,
+    );
+    const ys = [0, 1, 2].map((i) => out.get(i)!).sort((a, b) => a - b);
+    expect(ys[1] - ys[0]).toBeGreaterThanOrEqual(minGap - 1e-6);
+    expect(ys[2] - ys[1]).toBeGreaterThanOrEqual(minGap - 1e-6);
+  });
+
+  it("pulls an isolated top value DOWN into the wasted gap so nothing escapes the top band (the slope Cadres bug)", () => {
+    // one high value far above a tight cluster near the bottom — plain spreadLabels
+    // would shift the whole stack up past minY; the up-pass fills the gap instead.
+    const out = spreadLabelsBounded(
+      [
+        { index: 0, y: 5 }, // isolated top
+        { index: 1, y: 150 },
+        { index: 2, y: 158 },
+        { index: 3, y: 166 },
+        { index: 4, y: 174 },
+        { index: 5, y: 182 },
+      ],
+      minGap,
+      10, // minY (top reserve)
+      190, // maxY (bottom reserve)
+    );
+    const ys = [...out.values()];
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(10 - 1e-6); // never above the band
+    expect(Math.max(...ys)).toBeLessThanOrEqual(190 + 1e-6); // never below the band
+  });
+
+  it("keeps a comfortably-spaced set near its natural positions (no needless motion)", () => {
+    const out = spreadLabelsBounded(
+      [
+        { index: 0, y: 50 },
+        { index: 1, y: 150 },
+        { index: 2, y: 250 },
+      ],
+      minGap,
+      0,
+      400,
+    );
+    expect(out.get(0)).toBeCloseTo(50, 5);
+    expect(out.get(1)).toBeCloseTo(150, 5);
+    expect(out.get(2)).toBeCloseTo(250, 5);
   });
 });
 

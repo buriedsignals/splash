@@ -12,6 +12,9 @@ import {
   verticalCatMaxLines,
   endLabelGutterPx,
   humanizeColumn,
+  wrapLineCount,
+  fitSideLabels,
+  SIDE_LABEL_LINE_HEIGHT,
 } from "../src/core/text";
 
 const F = 13; // base axis font
@@ -255,5 +258,73 @@ describe("endLabelGutterPx — right-edge band-label gutter fits the widest", ()
       bold: true,
     });
     expect(wide).toBeGreaterThan(narrow);
+  });
+});
+
+describe("wrapLineCount — greedy line count with no maximum (never truncates)", () => {
+  it("is 1 when the label already fits", () => {
+    expect(wrapLineCount("Cadres 3200", 400, 13)).toBe(1);
+  });
+
+  it("counts the extra lines a long label wraps onto", () => {
+    // 59-char occupational name at a ~230px budget needs ≥ 2 lines
+    const long = "Professions intermédiaires de la santé et du travail social";
+    expect(wrapLineCount(long, 230, 13)).toBeGreaterThanOrEqual(2);
+  });
+
+  it("drops as the font shrinks (more chars per line → fewer lines)", () => {
+    const long = "Professions intermédiaires de la santé et du travail social";
+    expect(wrapLineCount(long, 230, 8)).toBeLessThanOrEqual(
+      wrapLineCount(long, 230, 13),
+    );
+  });
+
+  it("stays 1 for a single unbreakable token that overflows", () => {
+    expect(wrapLineCount("Verylongsingletokenwithnospaces", 50, 13)).toBe(1);
+  });
+});
+
+describe("fitSideLabels — largest font whose wrapped block fits its vertical slot, never truncating", () => {
+  const LONG = [
+    "Cadres administratifs et commerciaux d'entreprise 3200.0",
+    "Professions intermédiaires de la santé et du travail social 2100.0",
+    "Aides-soignants et auxiliaires de puériculture 1650.0",
+  ];
+
+  it("keeps the full start font when a 1-line block fits (short labels — no regression)", () => {
+    const fit = fitSideLabels(["Cadres 38.0", "Easton 5.2"], 200, 60, 13);
+    expect(fit.font).toBe(13);
+    expect(fit.maxLines).toBe(1);
+  });
+
+  it("shrinks the font so a tall stack of long labels fits a cramped slot", () => {
+    // 8 rows in ~150px of plot height → slot ≈ 19px; a 2-line block at 13px (≈30px)
+    // cannot fit, so the font must shrink below the start.
+    const fit = fitSideLabels(LONG, 230, 150 / 8, 13);
+    expect(fit.font).toBeLessThan(13);
+    // block + a line-gap must fit the slot (no vertical overlap)
+    const block = fit.maxLines * fit.font * SIDE_LABEL_LINE_HEIGHT;
+    expect(block).toBeLessThanOrEqual(150 / 8);
+  });
+
+  it("never returns fewer maxLines than a label needs at the chosen font (no truncation)", () => {
+    const fit = fitSideLabels(LONG, 230, 150 / 8, 13);
+    for (const s of LONG) {
+      expect(fit.maxLines).toBeGreaterThanOrEqual(
+        wrapLineCount(s, 230, fit.font),
+      );
+    }
+  });
+
+  it("floors the shrink at 50% of the start font (a bounded degradation, not a cut)", () => {
+    // an impossibly tight slot can't fit anything — the font bottoms out at the floor
+    const fit = fitSideLabels(LONG, 120, 4, 13);
+    expect(fit.font).toBeGreaterThanOrEqual(13 * 0.5 - 1e-6);
+  });
+
+  it("reserves bold headroom via widthFactor (a heavier label still fits maxLines)", () => {
+    const plain = fitSideLabels(LONG, 230, 40, 13);
+    const bold = fitSideLabels(LONG, 230, 40, 13, { widthFactor: 1.08 });
+    expect(bold.maxLines).toBeGreaterThanOrEqual(plain.maxLines);
   });
 });

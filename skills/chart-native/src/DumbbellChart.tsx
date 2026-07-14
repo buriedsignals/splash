@@ -24,6 +24,7 @@ import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
+import { leftLabelGutterPx, wrapLabel, fitSideLabels } from "./core/text";
 
 export interface DumbbellConfig {
   title: string;
@@ -73,7 +74,20 @@ export function DumbbellChart({
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
   const legendRowUnscaled = 22;
   const PAD_RIGHT = 60; // outer value label of the rightmost dot
-  const PAD_LEFT = 124; // category labels
+  const PAD_LEFT_FLOOR = 124; // category labels — the short-sample gutter (only GROW)
+  // Size the left gutter to the WIDEST category name (leftLabelGutterPx, the same
+  // label-driven treatment Fix E gave the slope) — the fixed 124 clipped a long
+  // occupational name ("Professions intermédiaires de la santé et du travail social")
+  // ~230-350px off the frame's LEFT edge at every width. Floor at the sample's 124
+  // (short-label charts keep their layout), cap at ~42% of the canvas (a pathological
+  // name WRAPS onto ≤2 lines at render — DumbbellSvg below — never truncates the data).
+  const catLabels = config.rows.map((r) => String(r[config.labelField]));
+  const PAD_LEFT = leftLabelGutterPx(catLabels, TYPE.axis, {
+    gapPx: 12,
+    floorPx: PAD_LEFT_FLOOR,
+    width,
+    scale: s,
+  });
   // The below-plot legend WRAPS on a narrow embed (layoutLegend, same charW/
   // availWidth as the render below) — reserve a bottom row per wrapped line, or
   // the extra row paints past the card ("Men" bottom-clipped 11.16px at 360px,
@@ -217,6 +231,20 @@ function DumbbellSvg({
   const fmt = (v: number) => String(v);
   const dot = (r: number) => (interactive ? 6 : 5) * sc * r;
 
+  // Category gutter labels: the gutter (padding.left) is sized to the widest name but
+  // CAPPED (~42%) so the plot isn't starved, so a genuinely extreme occupational name
+  // wraps to ≥2 lines. fitSideLabels picks the largest font at which every wrapped block
+  // fits ITS ROW (the band step) and the full name fits without truncation — so a wrapped
+  // 2-line name never overflows its row into the next (no black-on-black) and the data is
+  // never cut. Short names stay one line at the full axis font (no regression).
+  const catBudget = padding.left - 12 * sc;
+  const catFit = fitSideLabels(
+    rows.map((r) => r.rawLabel),
+    catBudget,
+    layout.bandStep,
+    ts.axis,
+  );
+
   return (
     <svg
       width={width}
@@ -276,18 +304,33 @@ function DumbbellSvg({
               onFocus={interactive ? () => setHover(r.index) : undefined}
               onBlur={interactive ? () => setHover(null) : undefined}
             >
-              {/* category label in the left gutter */}
-              <text
-                x={-12 * sc}
-                y={r.y}
-                dy="0.32em"
-                textAnchor="end"
-                fontSize={ts.axis}
-                fill={COLORS.ink}
-                opacity={leftOp}
-              >
-                {r.rawLabel}
-              </text>
+              {/* category label in the left gutter — wrapped onto ≤ catFit.maxLines lines
+                  at catFit.font so a long name renders in FULL (never truncated) and its
+                  block fits the row (never colliding with the neighbouring row's label). */}
+              {(() => {
+                const catLines = wrapLabel(
+                  r.rawLabel,
+                  catBudget,
+                  catFit.font,
+                  catFit.maxLines,
+                );
+                const catY0 =
+                  r.y - ((catLines.length - 1) * catFit.lineHeight) / 2;
+                return catLines.map((ln, li) => (
+                  <text
+                    key={`cat${r.index}-${li}`}
+                    x={-12 * sc}
+                    y={catY0 + li * catFit.lineHeight}
+                    dy="0.32em"
+                    textAnchor="end"
+                    fontSize={catFit.font}
+                    fill={COLORS.ink}
+                    opacity={leftOp}
+                  >
+                    {ln}
+                  </text>
+                ));
+              })()}
               {/* connector (the gap) — extends from the first dot */}
               <line
                 className="dumbbell-row"
