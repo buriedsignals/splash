@@ -7,10 +7,10 @@ import {
 } from "../src/heatmap-geometry";
 import { relativeLuminance, contrastRatio } from "../src/core/conformance";
 import {
-  themeHeatmapRamp,
+  heatmapRamp,
   HEATMAP_RAMP_LIGHT,
-  HEATMAP_RAMP_DARK,
   COLORS_DARK,
+  OKABE_ITO,
 } from "../src/core/tokens";
 
 const dims = {
@@ -81,40 +81,45 @@ describe("sampleRamp", () => {
   });
 });
 
-describe("themeHeatmapRamp — the theme-aware ramp resolver", () => {
-  it("light branch is the shipped Blues ramp, byte-identical (back-compat)", () => {
-    // the exact original literal, verbatim — proves the LIGHT theme never shifts.
-    expect(themeHeatmapRamp(false)).toEqual([
-      "#deebf7",
-      "#c6dbef",
-      "#9ecae1",
-      "#6baed6",
-      "#4292c6",
-      "#2171b5",
-      "#08306b",
-    ]);
-    expect(themeHeatmapRamp(undefined)).toEqual(HEATMAP_RAMP_LIGHT);
-    expect(BLUES).toEqual(HEATMAP_RAMP_LIGHT); // calendar's re-export still the same
+describe("heatmapRamp — the baseColor-derived, theme-oriented ramp", () => {
+  const DARK_BG = "#18181B";
+
+  it("light default ramp: monotonically DECREASING luminance (pale→deep, CVD-safe)", () => {
+    const lums = heatmapRamp().map(relativeLuminance);
+    for (let i = 1; i < lums.length; i++)
+      expect(lums[i]).toBeLessThan(lums[i - 1]);
   });
 
-  it("computeHeatmapLayout(dark) uses the dark ramp; default stays the light ramp", () => {
-    expect(computeHeatmapLayout(data, dims, true).rampStops).toEqual(
-      HEATMAP_RAMP_DARK,
-    );
-    // default (no flag) is byte-identical to the pre-dark behaviour
-    expect(computeHeatmapLayout(data, dims).rampStops).toEqual(
-      HEATMAP_RAMP_LIGHT,
-    );
+  it("BLUES re-export stays the ColorBrewer literal (calendar back-ref unchanged)", () => {
+    // the heatmap ramp is now baseColor-DERIVED, but the calendar still binds BLUES
+    // directly — so the fixed ColorBrewer literal is preserved for that back-ref.
+    expect(BLUES).toEqual(HEATMAP_RAMP_LIGHT);
+    expect(heatmapRamp()).not.toEqual(HEATMAP_RAMP_LIGHT); // derived, not the literal
+  });
+
+  it("derives the ramp FROM the baseColor (a green base → a green-dominant deep stop)", () => {
+    const ramp = heatmapRamp(OKABE_ITO.green);
+    const deep = ramp[ramp.length - 1];
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(deep.slice(i, i + 2), 16));
+    expect(g).toBeGreaterThan(r);
+    expect(g).toBeGreaterThan(b);
+  });
+
+  it("computeHeatmapLayout(themeBg dark) uses the dark ramp; default stays the light ramp", () => {
+    expect(
+      computeHeatmapLayout(data, dims, { themeBg: DARK_BG }).rampStops,
+    ).toEqual(heatmapRamp(undefined, DARK_BG));
+    expect(computeHeatmapLayout(data, dims).rampStops).toEqual(heatmapRamp());
   });
 
   it("dark ramp luminance strictly INCREASES → high values read bright on dark", () => {
-    const lums = themeHeatmapRamp(true).map(relativeLuminance);
+    const lums = heatmapRamp(undefined, DARK_BG).map(relativeLuminance);
     for (let i = 1; i < lums.length; i++)
       expect(lums[i]).toBeGreaterThan(lums[i - 1]);
   });
 
   it("dark: the highest value gets the BRIGHTEST cell (highest luminance)", () => {
-    const l = computeHeatmapLayout(data, dims, true);
+    const l = computeHeatmapLayout(data, dims, { themeBg: DARK_BG });
     const lowCell = l.cells.find((c) => c.value === 2)!;
     const highCell = l.cells.find((c) => c.value === 20)!;
     expect(relativeLuminance(highCell.color)).toBeGreaterThan(
@@ -122,17 +127,19 @@ describe("themeHeatmapRamp — the theme-aware ramp resolver", () => {
     );
   });
 
-  it("every dark ramp stop clears ≥ 3:1 against the dark bg (#18181B)", () => {
-    // the ship-blocker: on #18181B the light ramp's deep end is 1.39:1 (invisible);
-    // every dark stop — the darkest included — must clear the 3:1 non-text floor.
-    for (const stop of HEATMAP_RAMP_DARK)
-      expect(contrastRatio(stop, COLORS_DARK.bg)).toBeGreaterThanOrEqual(3);
-  });
-
-  it("dark: interpolated ramp samples all clear ≥ 3:1 on the dark bg", () => {
-    for (let t = 0; t <= 1.0001; t += 0.1)
-      expect(
-        contrastRatio(sampleRamp(HEATMAP_RAMP_DARK, t), COLORS_DARK.bg),
-      ).toBeGreaterThanOrEqual(3);
+  it("dark: EVERY stop clears the 3:1 non-text floor on #18181B (low cells never vanish)", () => {
+    // the low-value end is a VISIBLE MID (a tint of the base), not the base darkened — so even the
+    // lowest-value cells read against the near-black ground, the a11y guarantee the old hand-tuned
+    // dark ramp held. Enforced for any base hue, not just the default blue.
+    for (const base of [
+      undefined,
+      OKABE_ITO.green,
+      OKABE_ITO.purple,
+      OKABE_ITO.orange,
+    ]) {
+      const stops = heatmapRamp(base, DARK_BG);
+      for (const stop of stops)
+        expect(contrastRatio(stop, COLORS_DARK.bg)).toBeGreaterThanOrEqual(3);
+    }
   });
 });

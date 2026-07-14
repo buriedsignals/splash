@@ -51,7 +51,7 @@ export interface SlopeConfig {
   /** the one category to accent (the line that bucks the trend) */
   highlightLabel?: string;
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
-  dark?: boolean;
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -185,7 +185,7 @@ export function SlopeChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -218,7 +218,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,
@@ -266,7 +266,7 @@ function SlopeSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   // neutral CONTEXT line (slope.md rule 4) — furniture-grade scaffolding (the guard
   // calls it "exempt like the axis"), so it flips with the theme's muted furniture:
   // #6B6B6B on white → the lighter dark muted on the dark bg (else near-invisible).

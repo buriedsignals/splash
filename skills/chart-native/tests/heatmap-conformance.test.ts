@@ -54,6 +54,21 @@ describe("the shipped heatmap is conformant (global ++ heatmap)", () => {
     expect(v.some((m) => m.includes("range is empty"))).toBe(true);
   });
 
+  it("REJECTS a dark-ground ramp whose low stop vanishes into the ground (< 3:1)", () => {
+    // a monotonic-increasing ramp whose darkest (low-value) stop sits below the 3:1 non-text floor
+    // on #18181B — the pre-fix hueRamp regression the guard now catches (feedback→système).
+    const v = checkHeatmapConformance(
+      {
+        title: sample.title,
+        source: sample.source,
+        rampStops: ["#1f2f3a", "#2f7ebe", "#8fc0e8"], // darkest #1f2f3a ≈ 1.5:1 on #18181B
+        valueDomain: layout.valueDomain,
+      },
+      { text: [COLORS_DARK.ink, COLORS_DARK.muted], bg: COLORS_DARK.bg },
+    );
+    expect(v.some((m) => m.includes("vanish"))).toBe(true);
+  });
+
   it("ACCEPTS the dark ramp (monotonic-INCREASING luminance) on the dark furniture", () => {
     // the dark-theme ramp inverts the luminance direction; the guard must not mistake a
     // strictly-increasing sequential ramp for a non-monotonic one.
@@ -68,7 +83,7 @@ describe("the shipped heatmap is conformant (global ++ heatmap)", () => {
         height: 480,
         padding: { top: 90, right: 16, bottom: 76, left: 52 },
       },
-      true,
+      { themeBg: COLORS_DARK.bg },
     );
     const v = checkHeatmapConformance(
       {

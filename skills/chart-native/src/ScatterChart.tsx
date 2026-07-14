@@ -42,7 +42,7 @@ export interface ScatterConfig {
   /** Okabe-Ito hex for the primary dot colour. Absent → COLORS.line default. */
   baseColor?: string;
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
-  dark?: boolean;
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -143,7 +143,7 @@ export function ScatterChart({
       scale={sc}
       lang={config.lang}
       embedded={embedded}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -175,7 +175,7 @@ function ScatterSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const { innerWidth, innerHeight, points } = layout;
   const dotColor = config.baseColor ?? C.line;
   const n = points.length;
@@ -422,7 +422,7 @@ function Tooltip({
         left: padding.left + pt.x + 12,
         top: padding.top + pt.y - 8,
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

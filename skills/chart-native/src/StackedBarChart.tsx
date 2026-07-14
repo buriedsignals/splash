@@ -43,7 +43,7 @@ export interface StackedConfig {
   rows: Record<string, string | number>[];
   /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture + swaps the
    *  palette's black series for a light neutral (themeStackedColors). Default light. */
-  dark?: boolean;
+  themeBg?: string;
 }
 
 export interface StackedBarChartProps {
@@ -180,7 +180,7 @@ export function StackedBarChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -214,8 +214,8 @@ function StackedSvg({
 }) {
   const { innerWidth, innerHeight, base, columns } = layout;
   const n = columns.length;
-  const C = themeColors(!!config.dark);
-  const seriesColors = themeStackedColors(!!config.dark);
+  const C = themeColors(config.themeBg);
+  const seriesColors = themeStackedColors(config.themeBg);
 
   const chrome = easeOutCubic(p / 0.18);
   const colP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
@@ -433,7 +433,7 @@ function Tooltip({
         left,
         top,
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

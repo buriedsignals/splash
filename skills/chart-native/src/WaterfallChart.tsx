@@ -51,7 +51,7 @@ export interface WaterfallConfig {
   rows: { label: string; value: number; total?: boolean }[];
   /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture + swaps the
    *  role palette's black TOTAL for a light neutral (themeWaterfallColors). */
-  dark?: boolean;
+  themeBg?: string;
 }
 
 export interface WaterfallChartProps {
@@ -65,7 +65,7 @@ export interface WaterfallChartProps {
 }
 
 // role palette order: [increase, decrease, total]. Resolved per-render via
-// themeWaterfallColors(config.dark) so the black TOTAL flips to a light neutral on
+// themeWaterfallColors(config.themeBg) so the black TOTAL flips to a light neutral on
 // the dark theme (it would vanish on the near-black bg otherwise).
 
 // Rotated (−40°) category-label furniture, shared by the margin reservation
@@ -203,7 +203,7 @@ export function WaterfallChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -237,8 +237,8 @@ function WaterfallSvg({
 }) {
   const { innerWidth, innerHeight, base, bars } = layout;
   const n = bars.length;
-  const C = themeColors(!!config.dark);
-  const roleColors = themeWaterfallColors(!!config.dark);
+  const C = themeColors(config.themeBg);
+  const roleColors = themeWaterfallColors(config.themeBg);
 
   const chrome = easeOutCubic(p / 0.18);
   const barP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
@@ -487,7 +487,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

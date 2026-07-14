@@ -37,7 +37,7 @@ export interface DivergingBarConfig {
   catField: string;
   valField: string;
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
-  dark?: boolean;
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -150,7 +150,7 @@ export function DivergingBarChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -184,7 +184,7 @@ function DivergingSvg({
 }) {
   const { innerWidth, innerHeight, zeroX, bars } = layout;
   const n = bars.length;
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
 
   const chrome = easeOutCubic(p / 0.18);
   const barP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
@@ -308,7 +308,7 @@ function Tooltip({
         top,
         transform: "translateY(-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

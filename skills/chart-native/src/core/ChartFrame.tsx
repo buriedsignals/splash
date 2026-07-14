@@ -117,9 +117,10 @@ export interface ChartFrameProps {
   embedded?: boolean;
   /** deliverable language — localizes the "Source" furniture label. Default English. */
   lang?: Lang;
-  /** newsroom dark theme (F2 house `theme: dark`): flips the chrome (bg/ink/muted) to the
-   *  dark furniture set. The plot's own marks are themed by each component. Default light. */
-  dark?: boolean;
+  /** newsroom house theme BACKGROUND (F2 house `theme`): the resolved ground hex the chrome
+   *  (bg/ink/muted/axis/grid) is DERIVED from. The plot's own marks are themed by each component.
+   *  Undefined = the light default (byte-identical legacy path). */
+  themeBg?: string;
 }
 
 export function ChartFrame({
@@ -134,9 +135,9 @@ export function ChartFrame({
   scale = 1,
   embedded = false,
   lang,
-  dark = false,
+  themeBg,
 }: ChartFrameProps) {
-  const C = themeColors(dark);
+  const C = themeColors(themeBg);
   const srcLabel = sourceLabel(lang);
   // WCAG 1.1.1 — emit the altInsight (when provided) as a visually-hidden
   // description ONCE, in whichever layout branch renders. Sibling of the <svg>
@@ -247,9 +248,7 @@ export function ChartFrame({
           {title}
         </div>
         {subtitle && (
-          <div
-            style={{ fontSize: axisSize, color: C.muted, marginTop: 4 }}
-          >
+          <div style={{ fontSize: axisSize, color: C.muted, marginTop: 4 }}>
             {subtitle}
           </div>
         )}

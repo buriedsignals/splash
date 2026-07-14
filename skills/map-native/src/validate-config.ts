@@ -50,6 +50,9 @@ export function paletteErrors(s: Record<string, unknown>): string[] {
 export type ChoroplethConfigShape = ChoroplethData & {
   basemap: string;
   mapStyle?: string;
+  /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
+   * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
+  themeBg?: string;
   title: string;
   description?: string;
   unit?: string;
@@ -189,6 +192,9 @@ export type SymbolConfigShape = {
   points: { lon: number; lat: number; value: number; label?: string }[];
   basemap: string;
   mapStyle?: string;
+  /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
+   * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
+  themeBg?: string;
   title: string;
   description?: string;
   valueUnit?: string;
@@ -291,6 +297,9 @@ export type RouteConfigShape = {
   route: [number, number][];
   basemap: string;
   mapStyle?: string;
+  /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
+   * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
+  themeBg?: string;
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
@@ -369,6 +378,9 @@ export type LocatorConfigShape = {
   basemap: string;
   markerStyle?: string;
   mapStyle?: string;
+  /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
+   * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
+  themeBg?: string;
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
@@ -475,6 +487,9 @@ export type DotDensityConfigShape = {
   dotValue?: number;
   basemap: string;
   mapStyle?: string;
+  /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
+   * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
+  themeBg?: string;
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
@@ -574,6 +589,9 @@ export type HexGridConfigShape = {
   cellSizeKm?: number;
   basemap: string;
   mapStyle?: string;
+  /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
+   * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
+  themeBg?: string;
   // A named registry palette or a custom CVD-safe ramp (see theme/scale.ts); hex-grid is
   // always sequential, so no scaleType field — mirrors validateCartogramConfig's palette.
   palette?: string | string[];
@@ -683,6 +701,9 @@ export type CartogramConfigShape = {
   bins?: number;
   valueLabel?: string;
   mapStyle?: string;
+  /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
+   * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
+  themeBg?: string;
   title: string;
   description?: string;
   source?: { name?: string; url?: string };

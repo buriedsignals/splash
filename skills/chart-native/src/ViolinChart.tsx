@@ -32,7 +32,7 @@ export interface ViolinConfig {
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
   /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
-  dark?: boolean;
+  themeBg?: string;
   unit: string; // subtitle + value-axis meaning
   summaryLabel?: string; // legend text for the median tick
   categories: { label: string; values: number[] }[];
@@ -153,7 +153,7 @@ export function ViolinChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -195,7 +195,7 @@ function ViolinSvg({
   legendTwoRows: boolean;
   legRow: number;
 }) {
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   // the inner median tick punches the BACKGROUND colour through the (dark→light on
   // dark theme) IQR bar, so it flips with the theme — a fixed white would vanish on
   // the light IQR bar the dark theme produces, and its legend swatch would too.
@@ -405,7 +405,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

@@ -500,6 +500,91 @@ describe("newsroom theme (house dark basemap)", () => {
   });
 });
 
+describe("newsroom theme → chart/map themeBg (arbitrary ground)", () => {
+  it("chart-native: theme dark → config themeBg = the dark preset ground", () => {
+    const out = mergeProfileDefaults(
+      { title: "t" },
+      { palette: [], theme: "dark" },
+      {
+        producer: "chart-native",
+      },
+    );
+    expect((out as { themeBg?: string }).themeBg).toBe("#18181B");
+  });
+
+  it("chart-native: theme light → NO themeBg (byte-identical light default)", () => {
+    const out = mergeProfileDefaults(
+      { title: "t" },
+      { palette: [], theme: "light" },
+      {
+        producer: "chart-native",
+      },
+    );
+    expect((out as { themeBg?: string }).themeBg).toBeUndefined();
+  });
+
+  it("parses + accepts an arbitrary #rrggbb theme ground (markdown + json)", () => {
+    expect(parseNewsroomMarkdown(`---\ntheme: "#0A2540"\n---\n`)?.theme).toBe(
+      "#0A2540",
+    );
+    expect(parseBrandProfile('{"theme":"#0A2540"}')?.theme).toBe("#0A2540");
+  });
+
+  it("chart-native: a #rrggbb theme → config themeBg = that exact ground (uppercased)", () => {
+    const out = mergeProfileDefaults(
+      { title: "t" },
+      { palette: [], theme: "#0a2540" },
+      {
+        producer: "chart-native",
+      },
+    );
+    expect((out as { themeBg?: string }).themeBg).toBe("#0A2540");
+  });
+
+  it("map-native: a dark #rrggbb ground → dataviz-dark basemap AND themeBg carried", () => {
+    const out = mergeProfileDefaults(
+      { type: "symbol" } as never,
+      { palette: [], theme: "#0A2540" },
+      {
+        producer: "map-native",
+      },
+    );
+    expect((out as { mapStyle?: string }).mapStyle).toBe("dataviz-dark");
+    expect((out as { themeBg?: string }).themeBg).toBe("#0A2540");
+  });
+
+  it("map-native: a light #rrggbb ground → dataviz-light basemap", () => {
+    const out = mergeProfileDefaults(
+      { type: "symbol" } as never,
+      { palette: [], theme: "#F5F5F0" },
+      {
+        producer: "map-native",
+      },
+    );
+    expect((out as { mapStyle?: string }).mapStyle).toBe("dataviz-light");
+  });
+
+  it("a per-element themeBg always wins over the house theme (chart)", () => {
+    const out = mergeProfileDefaults(
+      { title: "t", themeBg: "#101010" },
+      { palette: [], theme: "dark" },
+      { producer: "chart-native" },
+    );
+    expect((out as { themeBg?: string }).themeBg).toBe("#101010");
+  });
+
+  it("dw-chart is EXCLUDED from the chart theme (its own theming — follow-up)", () => {
+    const out = mergeProfileDefaults(
+      { title: "t" },
+      { palette: [], theme: "dark" },
+      {
+        producer: "dw-chart",
+      },
+    );
+    expect((out as { themeBg?: string }).themeBg).toBeUndefined();
+  });
+});
+
 describe("loadBrandProfile", () => {
   it("reads brand.json when present", () => {
     const dir = tmpProject('{"palette":["#E30613"]}');

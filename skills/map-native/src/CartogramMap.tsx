@@ -78,7 +78,7 @@ export const CartogramMap: React.FC<Props> = ({
   const [barHeightPx, setBarHeightPx] = useState(0);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-  const theme = legendTheme(dark);
+  const theme = legendTheme(dark, config.themeBg);
   const legendHeight = NUM_BINS * 18 + 18;
 
   // Measure the root element size before map init.
@@ -426,6 +426,7 @@ export const CartogramMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        themeBg={config.themeBg}
         lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
@@ -435,6 +436,7 @@ export const CartogramMap: React.FC<Props> = ({
               onChange={setFilterState}
               onHeight={handleBarHeight}
               dark={dark}
+              themeBg={config.themeBg}
             />
           ) : undefined
         }

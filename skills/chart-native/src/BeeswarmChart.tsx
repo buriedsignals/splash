@@ -35,7 +35,7 @@ export interface BeeswarmConfig {
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
   /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
-  dark?: boolean;
+  themeBg?: string;
   valueLabel: string; // subtitle / units
   categories?: string[];
   /** Okabe-Ito hex for a SINGLE-HUE swarm (no categories) — the subject-fit colour.
@@ -166,7 +166,7 @@ export function BeeswarmChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -200,7 +200,7 @@ function BeeswarmSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const { innerWidth, innerHeight, nodes, valueTicks, radius } = layout;
   const n = nodes.length;
   const chrome = easeOutCubic(p / 0.16);
@@ -392,7 +392,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

@@ -28,8 +28,10 @@ export interface HeatmapConfig {
   source: { name: string; url: string };
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
-  /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
-  dark?: boolean;
+  /** newsroom house theme background hex — the ground the chart chrome + ramp derive from. */
+  themeBg?: string;
+  /** subject/house hue (#rrggbb) the SEQUENTIAL ramp is derived from; absent → Okabe-Ito blue. */
+  baseColor?: string;
   unit: string;
   rowField: string;
   colFields: string[];
@@ -76,7 +78,7 @@ export function HeatmapChart({
   scale = 1,
 }: HeatmapChartProps) {
   const p = clamp01(progress);
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
     8,
@@ -112,7 +114,7 @@ export function HeatmapChart({
   const layout = computeHeatmapLayout(
     data,
     { width, height, padding },
-    !!config.dark,
+    { baseColor: config.baseColor, themeBg: config.themeBg },
   );
 
   const [hover, setHover] = useState<number | null>(null);
@@ -155,7 +157,7 @@ export function HeatmapChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -381,7 +383,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

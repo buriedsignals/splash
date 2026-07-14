@@ -29,7 +29,7 @@ export interface HistogramConfig {
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
   /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
-  dark?: boolean;
+  themeBg?: string;
   unit: string;
   valueField: string;
   binWidth?: number;
@@ -134,7 +134,7 @@ export function HistogramChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -166,7 +166,7 @@ function HistogramSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const BAR = C.line; // single distribution colour (Okabe-Ito blue; skyblue on dark)
   const { innerWidth, innerHeight, base, bars, median, medianX } = layout;
   const n = bars.length;
@@ -327,7 +327,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

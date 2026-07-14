@@ -34,7 +34,7 @@ export interface RadialBarConfig {
   categoryField: string;
   valueField: string;
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
-  dark?: boolean;
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -144,7 +144,7 @@ export function RadialBarChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -178,7 +178,7 @@ function RadialBarSvg({
 }) {
   const { cx, cy, innerR, outerR, bars, ticks } = layout;
   const n = bars.length;
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const chrome = easeOutCubic(p / 0.18);
   const ox = padding.left + cx;
   const oy = padding.top + cy;
@@ -327,7 +327,7 @@ function Tooltip({
         top: tip.y,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

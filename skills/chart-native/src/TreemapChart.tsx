@@ -45,7 +45,7 @@ export interface TreemapConfig {
   /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture. The group
    *  palette (TREEMAP_GROUP_COLORS) has no black; in-cell text is picked per-fill by
    *  labelInkOnFill, so both are theme-independent. */
-  dark?: boolean;
+  themeBg?: string;
 }
 
 export interface TreemapChartProps {
@@ -156,7 +156,7 @@ export function TreemapChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -192,7 +192,7 @@ function TreemapSvg({
 }) {
   const { innerWidth, innerHeight, cells, total } = layout;
   const n = cells.length;
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const chrome = easeOutCubic(p / 0.16);
   const cellP = (order: number) =>
     easeOutCubic(stagger(p, order, n, 0.1, 0.5 / n, 0.4));
@@ -348,7 +348,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

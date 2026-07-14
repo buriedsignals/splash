@@ -206,3 +206,29 @@ describe("runProduceConformance — an unwired type is reported, not silently sk
     expect(r.violations).toEqual([]);
   });
 });
+
+// F2 arbitrary-ground furniture validation — the produce guard measures the REAL furniture text
+// (deriveFurniture(themeBg).ink/muted) against the REAL ground, not a hardcoded #1A1A1A on white.
+// So a genuinely-illegible house ground (a mid-luminance grey) now FAILS produce loudly instead of
+// silently shipping sub-4.5:1 furniture; clearly light/dark grounds are unchanged (byte-identical).
+describe("runProduceConformance — furniture contrast is validated on the arbitrary theme ground", () => {
+  const barCfg = (themeBg?: string) => ({
+    ...(barsSample as Record<string, unknown>),
+    ...(themeBg ? { themeBg } : {}),
+  });
+  const furnitureViolation = (v: string[]) =>
+    v.some((m) => /contrast .*< 4\.5:1|4\.5:1/.test(m));
+
+  it("a mid-luminance grey ground surfaces the sub-4.5:1 furniture it renders (non-heatmap type)", () => {
+    // #797979: derived muted ≈ 3.1:1 on the ground — the guard used to validate #6B6B6B on WHITE
+    // (pass) while the chart painted illegible muted; it now catches it.
+    const r = runProduceConformance("bar", barCfg("#797979"));
+    expect(furnitureViolation(r.violations)).toBe(true);
+  });
+
+  it("clearly light/dark grounds keep passing (no spurious furniture failure)", () => {
+    expect(furnitureViolation(runProduceConformance("bar", barCfg()).violations)).toBe(false);
+    expect(furnitureViolation(runProduceConformance("bar", barCfg("#18181B")).violations)).toBe(false);
+    expect(furnitureViolation(runProduceConformance("bar", barCfg("#F7E8EE")).violations)).toBe(false);
+  });
+});

@@ -5,7 +5,7 @@
 // fades/scales them, so frame N stays a pure function of the frame.
 
 import { scaleLinear } from "d3-scale";
-import { HEATMAP_RAMP_LIGHT, themeHeatmapRamp } from "./core/tokens";
+import { HEATMAP_RAMP_LIGHT, heatmapRamp } from "./core/tokens";
 
 export interface HeatmapData {
   rowField: string;
@@ -48,7 +48,7 @@ export interface HeatmapLayout {
 }
 
 // ColorBrewer single-hue "Blues" (light → dark), luminance strictly decreasing. The
-// light-theme ramp lives in core/tokens (themeHeatmapRamp) now — the SAME stops, kept
+// light-theme ramp lives in core/tokens (HEATMAP_RAMP_LIGHT) now — the SAME stops, kept
 // here as a named re-export because the calendar heatmap (calendar-geometry.ts) still
 // binds its ramp to BLUES directly. Byte-identical to the original literal.
 export const BLUES = HEATMAP_RAMP_LIGHT;
@@ -71,7 +71,7 @@ export function sampleRamp(stops: string[], t: number): string {
 export function computeHeatmapLayout(
   data: HeatmapData,
   dims: HeatmapDims,
-  dark?: boolean,
+  opts?: { baseColor?: string; themeBg?: string },
 ): HeatmapLayout {
   if (!data.rows.length)
     throw new Error("computeHeatmapLayout: data.rows is empty");
@@ -99,10 +99,11 @@ export function computeHeatmapLayout(
   const lo = Math.min(...flat);
   const hi = Math.max(...flat);
 
-  // theme-aware stops (light = Blues verbatim; dark = the luminance-inverted blue so
-  // high values stay BRIGHT and every stop clears ≥ 3:1 on #18181B). Cells, colourbar
-  // and the produce-time guard all read `stops` / rampStops → they never drift.
-  const stops = themeHeatmapRamp(dark);
+  // The sequential ramp DERIVED from the subject/house baseColor (heatmapRamp) and oriented for
+  // the theme background: on a light ground pale→deep, on a dark ground visible-mid→bright so high
+  // values read on the dark ground. Falls back to the Okabe-Ito blue default when no baseColor.
+  // Cells, colourbar and the produce-time guard all read `stops` / rampStops → they never drift.
+  const stops = heatmapRamp(opts?.baseColor, opts?.themeBg);
   const color = scaleLinear().domain([lo, hi]).range([0, 1]);
   const ramp = (t: number) => sampleRamp(stops, t);
 

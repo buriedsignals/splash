@@ -40,7 +40,7 @@ export interface StackedAreaConfig {
   rows: Record<string, string | number>[];
   /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture. The band
    *  palette (STACKED_AREA_COLORS) has no black, so it is theme-independent. */
-  dark?: boolean;
+  themeBg?: string;
 }
 
 export interface StackedAreaChartProps {
@@ -166,7 +166,7 @@ export function StackedAreaChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -199,7 +199,7 @@ function StackedAreaSvg({
   sc: number;
 }) {
   const { innerWidth, innerHeight, bands } = layout;
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
 
   const chrome = easeOutCubic(p / 0.18);
   const wipe = easeInOutCubic(p); // left→right reveal of the whole stack
@@ -394,7 +394,7 @@ function Tooltip({
         top,
         transform: "translateY(-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

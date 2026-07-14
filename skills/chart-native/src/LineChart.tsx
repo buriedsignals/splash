@@ -45,7 +45,7 @@ export interface ChartConfig {
   /** Okabe-Ito hex for the primary series colour. Absent → COLORS.line default. */
   baseColor?: string;
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
-  dark?: boolean;
+  themeBg?: string;
   points: Record<string, string | number>[];
 }
 
@@ -186,7 +186,7 @@ export function LineChart({
           left: padding.left + layout.points[hover].x + 12,
           top: padding.top + layout.points[hover].y - 8,
           background: COLORS.ink,
-          border: tooltipBorder(config.dark),
+          border: tooltipBorder(config.themeBg),
           color: "#fff",
           padding: "6px 10px",
           borderRadius: 6,
@@ -217,7 +217,7 @@ export function LineChart({
       scale={sc}
       lang={config.lang}
       embedded={embedded}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -256,7 +256,7 @@ function ChartSvg({
    *  scroll host: the frame is present before the line draws). Default false = wipe-in. */
   staticAxes?: boolean;
 }) {
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const lp = lineProgress;
   const revealed = revealLine(layout, lp);
   const head = revealHead(layout, lp);

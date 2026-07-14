@@ -38,7 +38,7 @@ export interface DumbbellConfig {
   leftLabel: string; // series A name (legend)
   rightLabel: string; // series B name (legend)
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
-  dark?: boolean;
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -180,7 +180,7 @@ export function DumbbellChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -212,7 +212,7 @@ function DumbbellSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   // neutral gap CONNECTOR — furniture-grade scaffolding (the guard exempts it from
   // palette membership), so it flips with the theme's muted furniture: near-invisible
   // as #6B6B6B on the dark bg, so use the lighter dark muted.
@@ -446,7 +446,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

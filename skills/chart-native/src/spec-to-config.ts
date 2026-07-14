@@ -50,9 +50,11 @@ export interface NativeSpec {
   /** several categories/points to accent (e.g. beeswarm's outlier communes). When
    *  present it takes precedence over the single `highlight`. */
   highlights?: string[];
-  /** newsroom house theme (F2 `theme: dark`): render on the dark furniture set. Threaded
-   *  onto every config by specToNativeConfig; consumed via themeColors(config.dark). */
-  dark?: boolean;
+  /** newsroom house theme BACKGROUND (F2 `theme`): the RESOLVED background hex the chart
+   *  furniture derives from — "#18181B" for the dark preset, or any newsroom #rrggbb ground.
+   *  Undefined = the light default (byte-identical legacy path). Threaded onto every config by
+   *  specToNativeConfig; consumed via themeColors(config.themeBg). */
+  themeBg?: string;
   /** the chart subject (e.g. "housing rents", "cross-border commuting"). Injected onto
    *  every produced config so the produce-time subject-fit guard can catch a chart left
    *  on a blue-family hue for a non-water/cold subject (design-conformance.md). */
@@ -349,6 +351,10 @@ export const MAPPERS: Record<
         unit: spec.unit,
         rowField,
         colFields,
+        // COLOUR is the quantitative channel here — thread the subject/house baseColor so the
+        // sequential ramp is DERIVED from it (heatmapRamp), not the fixed Blues. Absent → the
+        // component falls back to the Okabe-Ito blue default hue.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows: parsed.rows,
       },
     };
@@ -872,10 +878,10 @@ export function specToNativeConfig(spec: NativeSpec): {
   // and the shared frame can emit it (ChartFrame's AltInsightContext). Only set when
   // present — a missing altInsight is caught hard at produce, not silently defaulted.
   if (spec.altInsight) out.config.altInsight = spec.altInsight;
-  // F2 house theme — thread `dark` onto EVERY produced config (single injection point,
-  // like lang/subject) so ChartFrame + each component flip to the dark furniture set via
-  // themeColors(config.dark). Only set when true, so a light (default) spec produces a
-  // byte-identical config. Set by the newsroom-profile merge from `theme: dark`.
-  if (spec.dark) out.config.dark = true;
+  // F2 house theme — thread the resolved `themeBg` onto EVERY produced config (single injection
+  // point, like lang/subject) so ChartFrame + each component derive the furniture for the
+  // newsroom's ground via themeColors(config.themeBg). Only set when present, so a light (default)
+  // spec produces a byte-identical config. Set by the newsroom-profile merge from `theme`.
+  if (spec.themeBg) out.config.themeBg = spec.themeBg;
   return out;
 }

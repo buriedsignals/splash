@@ -37,6 +37,8 @@ import {
   reconcileBrandViolations,
   requireAltInsight,
   checkLabelDataIntegrity,
+  checkMarkContrastOnBg,
+  type MarkOnBg,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -50,7 +52,8 @@ import {
   STACKED_AREA_COLORS,
   WAFFLE_CATEGORY_COLORS,
   COLORS,
-  COLORS_DARK,
+  deriveFurniture,
+  heatmapRamp,
   OKABE_ITO,
   DIVERGING_SIGN_COLORS,
   WATERFALL_ROLE_COLORS,
@@ -110,29 +113,48 @@ export interface ConformanceRunResult {
    *      colour was set explicitly via the newsroom's brand profile (policy b), and
    *  (2) the data-immutability tripwire (checkLabelDataIntegrity) — a labelField value
    *      that looks like it was SHORTENED to fit the layout (its expansion still appears
-   *      in the title/alt-text), the "Interm." ⟶ "professions intermédiaires" class.
-   * Empty on the clean auto path.
+   *      in the title/alt-text), the "Interm." ⟶ "professions intermédiaires" class, and
+   *  (3) F2 — a HOUSE-SET data mark (baseColor/accent/explicit series) that does not
+   *      clear the WCAG non-text contrast floor (3:1) against the chart's theme ground
+   *      (checkMarkContrastOnBg), the mark-side twin of the map house-fill concern.
+   * Empty on the clean auto path (no brand-explicit colours, no shortened label).
    */
   concerns: string[];
 }
 
-// F2 — the colours a brand-explicit config declares, so the guard knows which
-// failing hues to downgrade (never a global relaxation — only the journalist's
-// own colours). Reads the first-cut colour fields (baseColor is what line/bar/
-// scatter actually paint; seriesColors/accent are threaded for completeness).
-function brandExplicitColors(config: Record<string, unknown>): string[] {
+// F2 — the DATA MARK colours a brand-explicit config declares BY HAND, so the guards
+// know which hues are the journalist's own (never a global relaxation). Reads the
+// first-cut colour fields (baseColor is what line/bar/scatter actually paint;
+// seriesColors/accent are threaded for completeness), each tagged with a role for the
+// mark-contrast concern message. The set is empty unless `brandExplicit` — the auto/
+// subject-fit path carries no house marks here, keeping both the CVD/contrast bypass
+// (reconcileBrandViolations) and the ground-contrast screen (checkMarkContrastOnBg)
+// scoped to hand-set colours only.
+function houseMarks(config: Record<string, unknown>): MarkOnBg[] {
   if (config.brandExplicit !== true) return [];
-  const out: string[] = [];
-  const push = (v: unknown) => {
-    if (typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v)) out.push(v);
-  };
-  push(config.baseColor);
-  push(config.accent);
+  const marks: MarkOnBg[] = [];
+  const isHex = (v: unknown): v is string =>
+    typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v);
+  const base = config.baseColor;
+  if (isHex(base)) marks.push({ color: base, role: "baseColor" });
+  const accent = config.accent;
+  if (isHex(accent)) marks.push({ color: accent, role: "accent" });
   const series = config.seriesColors;
-  if (Array.isArray(series)) for (const c of series) push(c);
+  if (Array.isArray(series))
+    series.forEach((c, i) => {
+      if (isHex(c)) marks.push({ color: c, role: `series #${i + 1}` });
+    });
   else if (series && typeof series === "object")
-    for (const c of Object.values(series as Record<string, unknown>)) push(c);
-  return out;
+    for (const [k, c] of Object.entries(series as Record<string, unknown>))
+      if (isHex(c)) marks.push({ color: c, role: `series ${k}` });
+  return marks;
+}
+
+// The hexes half of houseMarks — the set reconcileBrandViolations matches failing
+// colours against (it keys off the COLOUR, not the role). Derived from houseMarks so
+// the two never drift.
+function brandExplicitColors(config: Record<string, unknown>): string[] {
+  return houseMarks(config).map((m) => m.color);
 }
 
 // Placeholder pixel dims fed to the pure geometry layer purely to satisfy its
@@ -187,9 +209,9 @@ const WATERFALL_DIMS = {
   height: 460,
   padding: { top: 64, right: 24, bottom: 72, left: 52 },
 };
-// computeHeatmapLayout derives valueDomain (min/max of the cell values) + the fixed
-// BLUES rampStops from the data alone, never from these dims — any valid dims (padding
-// fits inside width/height) yield the same domain/ramp the real render checks.
+// computeHeatmapLayout derives valueDomain (min/max of the cell values) from the data alone,
+// never from these dims, and the rampStops from the config's baseColor/themeBg — any valid dims
+// (padding fits inside width/height) yield the same domain/ramp the real render checks.
 const HEATMAP_DIMS = {
   width: 840,
   height: 480,
@@ -260,7 +282,20 @@ export function runProduceConformance(
     altInsight:
       typeof config.altInsight === "string" ? config.altInsight : undefined,
   });
-  return { checked: true, violations, concerns: [...concerns, ...integrity] };
+  // F2 — mark-contrast-on-the-theme-ground concern (advisory). Screen the HOUSE-SET
+  // data marks against the chart's chosen background (deriveFurniture(themeBg).bg): a
+  // hand-set hue that does not clear the WCAG non-text floor (3:1) on that ground is
+  // KEPT (brand-first) and surfaced for render-review, mirroring the map house-fill
+  // concern. Empty on the auto path (houseMarks returns [] without brandExplicit).
+  const markContrast = checkMarkContrastOnBg(
+    houseMarks(config),
+    typeof config.themeBg === "string" ? config.themeBg : undefined,
+  );
+  return {
+    checked: true,
+    violations,
+    concerns: [...concerns, ...integrity, ...markContrast],
+  };
 }
 
 // The category/label field values a config carries, for the data-immutability tripwire
@@ -289,6 +324,19 @@ function computeRawConformance(
   if (!PRODUCE_GUARDED_TYPES.includes(type)) {
     return { checked: false, violations: [] };
   }
+
+  // The FURNITURE text (ink/muted) + ground every branch validates against derive from the newsroom
+  // house `themeBg` (deriveFurniture) — so the text-contrast check measures the REAL render on the
+  // real ground, not #1A1A1A on white. Light default (themeBg undefined) → COLORS, byte-identical to
+  // the old hardcoded literal, so clearly-light/dark grounds are unchanged and only a genuinely
+  // illegible ground (a mid-luminance house grey) now surfaces the sub-4.5:1 furniture it renders.
+  const themeBg =
+    typeof config.themeBg === "string" ? config.themeBg : undefined;
+  const furniture = deriveFurniture(themeBg);
+  const furnitureText: { text: string[]; bg: string } = {
+    text: [furniture.ink, furniture.muted],
+    bg: furniture.bg,
+  };
 
   switch (type) {
     case "line": {
@@ -437,7 +485,7 @@ function computeRawConformance(
             sliceCount: cfg.rows.length,
             sliceColors,
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -459,7 +507,7 @@ function computeRawConformance(
             hasSummaryMarker: true,
             categoryCounts: [...counts.values()],
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -479,7 +527,7 @@ function computeRawConformance(
             categoryCount: cfg.items.length,
             categoryColors,
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -504,7 +552,7 @@ function computeRawConformance(
             radialBaseline: 0,
             tickCount: layout.ticks.length,
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -532,7 +580,7 @@ function computeRawConformance(
             seriesCount: cfg.seriesFields.length,
             seriesColors,
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -560,7 +608,7 @@ function computeRawConformance(
             seriesCount: cfg.seriesFields.length,
             seriesColors,
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -588,7 +636,7 @@ function computeRawConformance(
             seriesCount: cfg.seriesFields.length,
             seriesColors,
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -609,7 +657,7 @@ function computeRawConformance(
             valueDomain: layout.valueDomain,
             signColors: [...DIVERGING_SIGN_COLORS],
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -627,7 +675,7 @@ function computeRawConformance(
             rows: cfg.rows.map((r) => ({ value: r.value, total: r.total })),
             roleColors: [...WATERFALL_ROLE_COLORS],
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -644,7 +692,7 @@ function computeRawConformance(
             rightLabel: cfg.rightLabel,
             dotColors: [...DUMBBELL_DOT_COLORS],
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -662,7 +710,7 @@ function computeRawConformance(
             accentColor: SLOPE_LINE_COLORS[1],
             lineColors: [...SLOPE_LINE_COLORS],
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -678,7 +726,7 @@ function computeRawConformance(
             measureColors: [...BULLET_MEASURE_COLORS],
             rows: cfg.rows.map((r) => ({ target: r.target })),
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -700,7 +748,7 @@ function computeRawConformance(
             values: cfg.items.map((it) => it.value),
             groupColors,
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -717,7 +765,7 @@ function computeRawConformance(
             categoryCount: cfg.categories.length,
             boxColors: [OKABE_ITO.blue],
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -734,7 +782,7 @@ function computeRawConformance(
             hasMedianMarker: true,
             categoryCounts: cfg.categories.map((c) => c.values.length),
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -754,7 +802,7 @@ function computeRawConformance(
               ...DIVERGING_STACKED_COLORS.pos,
             ],
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -771,7 +819,7 @@ function computeRawConformance(
             rightLabel: cfg.rightLabel,
             groupColors: [...PYRAMID_SIDE_COLORS],
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -804,7 +852,7 @@ function computeRawConformance(
             forecast,
             hue: OKABE_ITO.blue,
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -831,7 +879,7 @@ function computeRawConformance(
             highlightCount,
             accentColors,
           },
-          { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg },
+          furnitureText,
         ),
       };
     }
@@ -842,26 +890,25 @@ function computeRawConformance(
       // range, on top of the global title/source/contrast checks. The rampStops
       // and valueDomain come from the same geometry the component renders.
       const cfg = config as unknown as HeatmapConfig;
-      // derive the ramp through the SAME theme flag the component renders with, so the
-      // guard validates the ACTUAL stops (the dark ramp's luminance runs the other way).
+      // derive the ramp + furniture through the SAME baseColor/themeBg the component renders with,
+      // so the guard validates the ACTUAL stops + ground (a dark ground's ramp runs the other way,
+      // and the ramp is now subject/house-derived, not the fixed Blues).
       const layout = computeHeatmapLayout(
         { rowField: cfg.rowField, colFields: cfg.colFields, rows: cfg.rows },
         HEATMAP_DIMS,
-        !!cfg.dark,
+        { baseColor: cfg.baseColor, themeBg: cfg.themeBg },
       );
-      const furniture = cfg.dark
-        ? { text: [COLORS_DARK.ink, COLORS_DARK.muted], bg: COLORS_DARK.bg }
-        : { text: [COLORS.ink, COLORS.muted], bg: COLORS.bg };
+      const f = deriveFurniture(cfg.themeBg);
       return {
         checked: true,
         violations: checkHeatmapConformance(
           {
             title: cfg.title,
             source: cfg.source,
-            rampStops: layout.rampStops,
+            rampStops: heatmapRamp(cfg.baseColor, cfg.themeBg),
             valueDomain: layout.valueDomain,
           },
-          furniture,
+          { text: [f.ink, f.muted], bg: f.bg },
         ),
       };
     }

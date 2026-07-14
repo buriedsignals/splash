@@ -45,7 +45,7 @@ export interface DivergingStackedConfig {
   /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture. The
    *  sentiment ramp has no black (its neutral is #BFBFBF, light-visible) and in-bar
    *  labels are picked per-fill by labelInkOnFill, so both are theme-independent. */
-  dark?: boolean;
+  themeBg?: string;
 }
 
 export interface DivergingStackedChartProps {
@@ -184,7 +184,7 @@ export function DivergingStackedChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -220,7 +220,7 @@ function DSSvg({
 }) {
   const { innerWidth, innerHeight, centerX, rows, pctTicks } = layout;
   const n = rows.length;
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const chrome = easeOutCubic(p / 0.16);
   const rowP = (i: number) =>
     easeOutCubic(stagger(p, i, n, 0.16, 0.5 / n, 0.4));
@@ -417,7 +417,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

@@ -32,7 +32,7 @@ export interface DotStripConfig {
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
   /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
-  dark?: boolean;
+  themeBg?: string;
   unit: string; // subtitle + value-axis meaning
   categoryField: string;
   valueField: string;
@@ -189,7 +189,7 @@ export function DotStripChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -223,7 +223,7 @@ function DotStripSvg({
   sc: number;
   legendWraps: boolean;
 }) {
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const MEAN_COLOR = C.ink; // neutral reference marker
   const { innerWidth, innerHeight, rows } = layout;
   const chrome = easeOutCubic(p / 0.18);
@@ -420,7 +420,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

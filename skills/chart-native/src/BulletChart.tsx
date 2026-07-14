@@ -36,7 +36,7 @@ export interface BulletConfig {
   lang?: Lang;
   unit: string;
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
-  dark?: boolean;
+  themeBg?: string;
   rows: {
     label: string;
     unit: string;
@@ -147,7 +147,7 @@ export function BulletChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -181,7 +181,7 @@ function BulletSvg({
 }) {
   const { rows } = layout;
   const n = rows.length;
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
 
   const chrome = easeOutCubic(p / 0.18);
   const rowP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
@@ -333,7 +333,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

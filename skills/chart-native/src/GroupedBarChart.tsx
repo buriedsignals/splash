@@ -39,7 +39,7 @@ export interface GroupedConfig {
   catField: string;
   seriesFields: string[];
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
-  dark?: boolean;
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -166,7 +166,7 @@ export function GroupedBarChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -200,7 +200,7 @@ function GroupedSvg({
 }) {
   const { innerWidth, innerHeight, base, bars, columns } = layout;
   const nCols = columns.length;
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
 
   const chrome = easeOutCubic(p / 0.18);
   // stagger across GROUPS (reading order); series within a group rise together.
@@ -382,7 +382,7 @@ function Tooltip({
         left,
         top,
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

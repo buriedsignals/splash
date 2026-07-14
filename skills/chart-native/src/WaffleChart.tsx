@@ -36,7 +36,7 @@ export interface WaffleConfig {
   unit: string; // subtitle / what one square is
   gridN?: number;
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
-  dark?: boolean;
+  themeBg?: string;
   items: { label: string; value: number }[];
 }
 
@@ -145,7 +145,7 @@ export function WaffleChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -182,7 +182,7 @@ function WaffleSvg({
   const { cells, categories, gridN, gridX, gridY, cellStep } = layout;
   const n = cells.length;
   const chrome = easeOutCubic(p / 0.16);
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
 
   const legend = layoutLegend(
     categories.map((c) => `${c.label} ${fmt(c.value)}`),
@@ -302,7 +302,7 @@ function Tooltip({
         top: cy,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

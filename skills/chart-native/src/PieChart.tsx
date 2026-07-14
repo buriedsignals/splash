@@ -37,7 +37,7 @@ export interface PieConfig {
   valueField: string;
   donut?: boolean;
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
-  dark?: boolean;
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -131,7 +131,7 @@ export function PieChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -164,7 +164,7 @@ function PieSvg({
   sc: number;
 }) {
   const { cx, cy, radius, innerRadius, total, slices } = layout;
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
 
   // Radial label placement (type-specific) + the GLOBAL invariant check.
   // Only the FIXED layout uses radial labels; responsive renders a legend below.
@@ -337,7 +337,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-130%)",
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

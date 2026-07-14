@@ -51,6 +51,8 @@ export interface SymbolConfig extends SymbolData {
   type: "symbol";
   basemap: string;
   mapStyle?: string;
+  /** Newsroom house ground — themes the frame + legend furniture. Basemap stays light/dark. */
+  themeBg?: string;
   title?: string;
   description?: string;
   valueUnit?: string;
@@ -127,7 +129,7 @@ export const SymbolMap: React.FC<Props> = ({
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-  const theme = legendTheme(dark);
+  const theme = legendTheme(dark, config.themeBg);
 
   // Measure the root element size before map init.
   useEffect(() => {
@@ -596,6 +598,7 @@ export const SymbolMap: React.FC<Props> = ({
         frame={frame}
         onTitleHeight={handleTitleHeight}
         dark={dark}
+        themeBg={config.themeBg}
         lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
@@ -605,6 +608,7 @@ export const SymbolMap: React.FC<Props> = ({
               onChange={setFilterState}
               onHeight={handleBarHeight}
               dark={dark}
+              themeBg={config.themeBg}
             />
           ) : undefined
         }

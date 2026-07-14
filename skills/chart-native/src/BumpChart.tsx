@@ -31,7 +31,7 @@ export interface BumpConfig {
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
   /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
-  dark?: boolean;
+  themeBg?: string;
   valueLabel: string; // subtitle (what the rank means)
   periods: string[];
   highlight?: string[];
@@ -65,7 +65,7 @@ export function BumpChart({
   scale = 1,
 }: BumpChartProps) {
   const p = clamp01(progress);
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
     8,
@@ -167,7 +167,7 @@ export function BumpChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -379,7 +379,7 @@ function Tooltip({
         top,
         transform: `translate(-100%,${nearTop ? "0%" : "-100%"})`,
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

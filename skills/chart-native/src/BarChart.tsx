@@ -53,7 +53,7 @@ export interface BarConfig {
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
-  dark?: boolean;
+  themeBg?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -211,7 +211,7 @@ export function BarChart({
       scale={sc}
       embedded={embedded}
       lang={config.lang}
-      dark={!!config.dark}
+      themeBg={config.themeBg}
     >
       {svg}
     </ChartFrame>
@@ -262,7 +262,7 @@ function BarSvg({
    *  embedded scrolly host / for long units) — see BarChart body. */
   valueSuffix: string;
 }) {
-  const C = themeColors(!!config.dark);
+  const C = themeColors(config.themeBg);
   const { innerWidth, innerHeight, orientation, bars } = layout;
   const horizontal = orientation === "horizontal";
   const n = bars.length;
@@ -497,7 +497,7 @@ function Tooltip({
         left,
         top,
         background: COLORS.ink,
-        border: tooltipBorder(config.dark),
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,
