@@ -137,6 +137,45 @@ describe("specToNativeConfig — scatter", () => {
   });
 });
 
+describe("specToNativeConfig — scatter axis labels", () => {
+  it("humanizes raw snake_case column headers into the axis titles (never ships them verbatim)", () => {
+    // the shipped bug: xLabel/yLabel rendered literally as "pib_par_habitant" / "esperance_vie"
+    const spec: NativeSpec = {
+      ...base,
+      nativeType: "scatter",
+      data: "pays,pib_par_habitant,esperance_vie\nNigeria,2200,55\nJapon,40000,84",
+    };
+    const { config } = specToNativeConfig(spec);
+    expect(config.xLabel).toBe("Pib par habitant");
+    expect(config.yLabel).toBe("Esperance vie");
+  });
+
+  it("passes an explicit spec.xLabel / spec.yLabel through UNCHANGED (the suggester's human label wins)", () => {
+    const spec: NativeSpec = {
+      ...base,
+      nativeType: "scatter",
+      data: "pays,pib_par_habitant,esperance_vie\nNigeria,2200,55\nJapon,40000,84",
+      xLabel: "PIB par habitant (USD)",
+      yLabel: "Espérance de vie (années)",
+    };
+    const { config } = specToNativeConfig(spec);
+    expect(config.xLabel).toBe("PIB par habitant (USD)");
+    expect(config.yLabel).toBe("Espérance de vie (années)");
+  });
+
+  it("leaves an already-human (spaced) column header alone", () => {
+    const spec: NativeSpec = {
+      ...base,
+      nativeType: "scatter",
+      // header already carries a spaced, reader-facing label
+      data: "school,school spend,exam score\nNorthgate,5200,72\nEastfield,3100,58",
+    };
+    const { config } = specToNativeConfig(spec);
+    expect(config.xLabel).toBe("school spend");
+    expect(config.yLabel).toBe("exam score");
+  });
+});
+
 describe("specToNativeConfig — scatter highlights → annotate", () => {
   // The journalist/② names the story points via `highlights`; the scatter renderer
   // labels the points named in `annotate`. The mapper must carry highlights across —

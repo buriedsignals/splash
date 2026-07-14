@@ -6,6 +6,7 @@
 
 import { parseCsv, type ParsedCsv } from "./csv";
 import { validateShape } from "./shape-validation";
+import { humanizeColumn } from "./core/text";
 
 /**
  * One journalist-confirmed narrative beat for a chart SCROLLY (NativeSpec.beats).
@@ -36,6 +37,15 @@ export interface NativeSpec {
   sort?: "asc" | "desc";
   orientation?: "horizontal" | "vertical";
   directLabel?: string; // line: the series label
+  /**
+   * SCATTER / CONNECTED-SCATTER axis titles — the human, reader-facing label for
+   * each measure axis (e.g. "PIB par habitant (USD)"). When the suggester/journalist
+   * provides one it is used VERBATIM; when absent the mapper humanizes the raw CSV
+   * column header (humanizeColumn) so an axis is never labelled with a raw snake_case
+   * identifier. Ignored by every non-scatter type.
+   */
+  xLabel?: string;
+  yLabel?: string;
   highlight?: string; // bar: the category to accent
   /** several categories/points to accent (e.g. beeswarm's outlier communes). When
    *  present it takes precedence over the single `highlight`. */
@@ -225,10 +235,11 @@ export const MAPPERS: Record<
         unit: spec.unit,
         xField: xCol,
         yField: yCol,
-        // ScatterConfig requires axis titles; derive them from the CSV headers so the
-        // embedded chart's axes are never blank (the reader must know what x/y mean).
-        xLabel: xCol,
-        yLabel: yCol,
+        // ScatterConfig requires axis titles. Prefer a spec-provided human label
+        // (the suggester/journalist's own wording); otherwise humanize the raw CSV
+        // header so the axis reads "Pib par habitant", never the snake_case identifier.
+        xLabel: spec.xLabel ?? humanizeColumn(xCol),
+        yLabel: spec.yLabel ?? humanizeColumn(yCol),
         ...(hasLabel ? { labelField: catCol } : {}),
         ...(annotate ? { annotate } : {}),
         ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
@@ -251,8 +262,9 @@ export const MAPPERS: Record<
         labelField: labelCol,
         xField,
         yField,
-        xLabel: xField,
-        yLabel: yField,
+        // same rule as scatter: spec-provided human label wins, else humanize the header.
+        xLabel: spec.xLabel ?? humanizeColumn(xField),
+        yLabel: spec.yLabel ?? humanizeColumn(yField),
         rows, // pass through IN ORDER — do NOT sort (the path follows row order)
       },
     };

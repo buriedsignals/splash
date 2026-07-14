@@ -29,4 +29,24 @@ describe("specToNativeConfig — connected-scatter (paired)", () => {
     expect(config.xField).toBe("x");
     expect(config.yField).toBe("y");
   });
+  it("humanizes raw snake_case measure headers into the axis titles", () => {
+    const { config } = specToNativeConfig({
+      ...base,
+      nativeType: "connected-scatter",
+      data: "year,unemployment_rate,inflation_rate\n1980,7.1,13.5\n1990,5.6,5.4",
+    });
+    expect(config.xLabel).toBe("Unemployment rate");
+    expect(config.yLabel).toBe("Inflation rate");
+  });
+  it("passes an explicit spec.xLabel / spec.yLabel through unchanged", () => {
+    const { config } = specToNativeConfig({
+      ...base,
+      nativeType: "connected-scatter",
+      data: "year,unemployment_rate,inflation_rate\n1980,7.1,13.5\n1990,5.6,5.4",
+      xLabel: "Unemployment (%)",
+      yLabel: "Inflation (%)",
+    });
+    expect(config.xLabel).toBe("Unemployment (%)");
+    expect(config.yLabel).toBe("Inflation (%)");
+  });
 });
