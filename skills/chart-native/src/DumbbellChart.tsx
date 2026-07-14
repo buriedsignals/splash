@@ -225,7 +225,6 @@ function DumbbellSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <g transform={`translate(${padding.left},${padding.top})`}>
         {/* faint vertical gridlines for reference (no labels — dots carry values) */}
         <g opacity={chrome * 0.5}>

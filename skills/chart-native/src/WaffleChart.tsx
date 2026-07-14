@@ -194,7 +194,6 @@ function WaffleSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
 
       {/* cells fill in order (the container fills) */}
       {cells.map((c) => {

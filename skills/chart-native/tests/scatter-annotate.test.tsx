@@ -24,7 +24,7 @@ const base: ScatterConfig = {
 };
 
 // point labels render as <text ...>{name}</text> — match the text content, not the
-// (attribute-only) aria-labels or the chart <title>.
+// (attribute-only) aria-labels.
 function labelled(markup: string, names: string[]): string[] {
   return names.filter((n) => new RegExp(`>${n}<`).test(markup));
 }

@@ -212,7 +212,6 @@ function StackedAreaSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <defs>
         <clipPath id="sa-clip">
           <rect x={0} y={-4} width={clipW} height={innerHeight + 8} />

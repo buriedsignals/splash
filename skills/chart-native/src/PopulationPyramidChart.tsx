@@ -234,7 +234,6 @@ function PyramidSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <g transform={`translate(${padding.left},${padding.top})`}>
         {/* magnitude gridlines, mirrored both sides (wipe in) */}
         <g opacity={chrome * 0.6}>

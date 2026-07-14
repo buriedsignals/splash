@@ -188,7 +188,6 @@ function ChordSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       {/* bloom-from-centre: scale the arcs + ribbons group about the centre */}
       <g transform={`translate(${cx},${cy}) scale(${bloom})`} opacity={chrome}>
         {/* ribbons (behind the arcs) */}

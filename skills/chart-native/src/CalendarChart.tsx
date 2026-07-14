@@ -176,7 +176,6 @@ function CalendarSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
 
       {/* month labels along the top */}
       <g opacity={chrome}>

@@ -238,7 +238,6 @@ function SunburstSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <g transform={`translate(${cx},${cy})`}>
         {arcs.map((a, i) => {
           const end = sweepArcEnd(a, sweep(a.depth));

@@ -201,7 +201,6 @@ function GanttSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <g transform={`translate(${padding.left},${padding.top})`}>
         {/* time gridlines + bottom captions (wipe in) */}
         <g opacity={chrome * 0.6}>

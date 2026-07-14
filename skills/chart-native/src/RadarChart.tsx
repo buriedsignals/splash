@@ -216,7 +216,6 @@ function RadarSvg({
       aria-label={config.title}
       style={{ position: "absolute", inset: 0, display: "block" }}
     >
-      <title>{config.title}</title>
       <g transform={`translate(${cx},${cy})`}>
         {/* chrome: concentric rings, spokes, ring scale labels, axis labels */}
         <g opacity={chrome}>
