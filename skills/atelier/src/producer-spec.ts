@@ -24,6 +24,14 @@ export interface AcceptedProposal {
   // ⇒ produce-all's format guard defaults to "article-web" (the permissive default,
   // matching normalizeChannel), so legacy proposals without a channel are unaffected.
   channel?: Channel;
+  // Gate 2c (source attribution): the citation the ARTICLE itself named, captured verbatim by
+  // suggest-article (its `sourceHint: { name?, url? }`). Threaded here so the spine's source
+  // guards (source-guard.ts, wired in validate-gate.ts) can mechanically catch (B) a named org
+  // discarded for the generic "reported in this article" fallback, and (D) a journalist-provided
+  // URL silently upgraded to a deeper, unconfirmed path. OPTIONAL: absent ⇒ the article named no
+  // source (or the orchestrator has not yet copied it across — see the threading follow-up in
+  // validate-gate.ts), so the guards stay dormant and the honest name-only/prose fallback passes.
+  sourceHint?: { name?: string; url?: string };
 }
 
 export type ProduceStatus =
