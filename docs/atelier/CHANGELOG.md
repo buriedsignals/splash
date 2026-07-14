@@ -62,6 +62,25 @@ feu→vermillon, logement→ambre, env→vert, social→violet), questionnables 
 équivalent chart-native corrigé) · format-aspect prose over-spec (LOW) · subject-fit polish · render frais
 chart/dw/vidéo house-colour (friction mapper) · tripwire mutilation (E) advisory medium-confidence.
 
+**Suite du sweep — « tout » + 5 tests harness de couverture des fixes (gate 20/20, 9 fixes au total) :**
+- **3 fixes backlog mergés** : (H) **dw-chart value-label fail-loud** — DW POSSÈDE la couleur du label
+  (YIQ ≠ WCAG, aucune clé d'option pour l'override) ; le bug = une clause `barAxisFallback` downgradait
+  tout label < AA en concern non-bloquant dès que l'axe valeur était présent (toujours) → sub-AA shippé
+  en silence. Retiré → hard-fail avant l'appel API (fill brand-explicit = concern policy-b). (I) **source
+  drop-warning** — threading `sourceHint` = **prose-only par nécessité** (aucun script n'assemble
+  accepted.json ; verdict tracé, pas de seam inventé) ; ajout d'un `droppedSourceHintWarning` visible au
+  gate. (Fix-E-gap) **slope/dumbbell labels longs** : un label 59-car faisait ENCORE basculer chart-native
+  sur dw (slope collision black-on-black d'un bloc 2-lignes de-collidé par un gap 1-ligne + troncature de
+  la valeur ; dumbbell = zéro gouttière, Fix E était slope-only). Helpers partagés `fitSideLabels`
+  (plus grande police qui tient SANS tronquer, plancher 50%) + `spreadLabelsBounded` (de-collision
+  down-then-up bornée) ; slope + dumbbell les utilisent. **Donnée jamais tronquée** (police bornée).
+- **5 cas fix-coverage** (nouveaux persona/sujets, committés `atelier-harness`, run SÉQUENTIEL) :
+  câbles→ordre chrono (`resolveBarSort→"none"` ✅) · salaires 59-car→**trou Fix E attrapé** (puis fermé) ·
+  déserts médicaux snake_case→axes humanisés ✅ · facture élec→value-labels lisibles ✅ · renouvelables
+  cible-80%-2030→**claim grounded** (takeaway ajusté + cible flaggée « repère contextuel non représenté »
+  ✅). **4/5 fixes confirmés e2e sur du neuf ; le 5e a révélé + fait fermer un vrai trou.**
+- **Docs gravées** (CLAUDE.md État courant + ce CHANGELOG). Gate final **20/20**, 9 fixes, HEAD `350943f`.
+
 ## Session 2026-07-14 — La couleur maison sur les CARTES ne marchait PAS en vrai (bug e2e attrapé par le harness, corrigé)
 
 Rémy : « Tu dis que tu as testé mais je ne vois aucun nouveau atelier-harness. » Juste. Le chantier
