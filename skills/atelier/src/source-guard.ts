@@ -53,11 +53,17 @@ export function placeholderSourceReason(url: string): string | null {
 // What `suggest-article` captures verbatim when the ARTICLE itself names where the figures
 // come from (an outlet naming a dataset/report, or a URL quoted in the text). See
 // suggest-article/SKILL.md ("Bind data", step 3). Both fields are optional; the guards below
-// consume whichever is present. NB: this hint is NOT yet threaded onto AcceptedProposal in
-// production (it lives in suggest-article's ProposalSet output and is discarded at accept
-// time) — see validate-gate.ts + producer-spec.ts for the threading follow-up. The guards are
-// pure + tested here; they stay dormant on today's accepted.json (no sourceHint) until the
-// orchestrator copies suggest-article's sourceHint onto the accepted proposal.
+// consume whichever is present.
+//
+// THREADING IS PROSE-ENFORCED BY NECESSITY. sourceHint is an inherently LLM-captured fact — what
+// the ARTICLE named — and nothing mechanical can derive it (deriving it would defeat the guards,
+// which need an INDEPENDENT capture to compare the shipped source against). suggest-article and
+// suggest-chart are pure LLM skills (no `src/` pipeline); their ProposalSet is an in-context
+// artifact, never a structured file a script transforms into `accepted.json`. The orchestrator LLM
+// assembles `accepted.json` and copies sourceHint across (atelier/SKILL.md §5b) — exactly the way it
+// copies `channel` and `confirmedTakeaway`. There is no seam to mechanize; the guards fire when the
+// hint is threaded and stay dormant (both return null) when it is absent. `droppedSourceHintWarning`
+// (below) is the observability backstop that makes a DROPPED hint visible at the render gate.
 export interface SourceHint {
   name?: string;
   url?: string;
@@ -149,5 +155,40 @@ export function sourceUrlFidelityReason(
     `shipped source URL "${shippedUrlRaw.trim()}" does not match the journalist-provided URL ` +
     `"${hintUrl}" — cite the URL the journalist gave (or a subpath they explicitly confirmed ` +
     `in-turn), never silently upgrade a homepage to a deeper, unconfirmed path`
+  );
+}
+
+// OBSERVABILITY (not a guard — a NON-BLOCKING render-gate warning). Because threading sourceHint is
+// prose-enforced (see the SourceHint note above), a DROPPED hint silently disarms DEFECT B: with no
+// captured org name to compare against, a named org collapsed to the generic fallback sails through
+// undetected. This makes that disarm VISIBLE — it returns a warning (surfaced at the render gate via
+// ProposalResult.warnings, never a hard fail) when the shipped source IS the generic honest-fallback
+// yet NO org-name hint was threaded. Mutually exclusive with DEFECT B: when a name hint IS present it
+// returns null (guard B already fires hard on the same collapse), so a case is never double-reported.
+// SUPPRESSED for provenance "prose"/"none" — there the generic fallback is documented-legitimate
+// (the genuine no-dataset case, atelier/SKILL.md Gate 2c), so a warning would be pure noise; it fires
+// only for "table" (or absent, which defaults to table), where a cited-table claim shipping the
+// generic fallback is exactly where a nameable dataset citation plausibly existed and may have been
+// dropped. A residual blind spot (accepted, honest): a "prose"-provenance claim whose article ALSO
+// named an org that got collapsed is suppressed here — guard B still catches it IF the hint is
+// threaded; this warning only backstops the DROPPED-hint case for table-backed claims. Pure.
+export function droppedSourceHintWarning(
+  shipped: unknown,
+  hint: SourceHint | undefined,
+  provenance?: "table" | "prose" | "none",
+): string | null {
+  if (provenance === "prose" || provenance === "none") return null;
+  const hintName = typeof hint?.name === "string" ? hint.name.trim() : "";
+  // A name hint IS present → DEFECT B owns this case (fires hard on the collapse); no warning.
+  if (hintName) return null;
+  const shippedName = shippedSource(shipped).name;
+  if (typeof shippedName !== "string") return null;
+  if (!GENERIC_SOURCE_FALLBACKS.has(normalizeName(shippedName))) return null;
+  return (
+    `source-hint observability: shipped source is the generic honest-fallback ` +
+    `("${shippedName}") and NO source-name hint was threaded from suggest-article. Legitimate ` +
+    `ONLY if the ARTICLE named no source; if it DID name an org, the named-org preservation guard ` +
+    `is silently disarmed here — carry suggest-article's sourceHint onto accepted.json (§5b) so a ` +
+    `discarded org fails hard instead of shipping the "reported in this article" fallback`
   );
 }

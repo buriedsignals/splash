@@ -103,8 +103,10 @@ describe("validateAccepted — claim-grounding (Defect C)", () => {
 
 // DEFECTS B & D — spine wiring. The pure guards live in source-guard.ts and are unit-tested
 // there; these prove they are actually WIRED into validateAccepted and consume the proposal's
-// captured `sourceHint`. (Production threading of sourceHint is a separate follow-up — see the
-// guard comments — so on today's accepted.json, which carries no sourceHint, these stay dormant.)
+// captured `sourceHint`. Production threading of sourceHint is prose-enforced by necessity (the
+// orchestrator LLM copies it onto accepted.json §5b, like channel/confirmedTakeaway — no script
+// transforms the in-context ProposalSet), so the guards fire when it is threaded and stay dormant
+// when it is absent; the dropped-hint observability block below covers the absent case.
 describe("validateAccepted — source guards wired (Defects B & D)", () => {
   const base = {
     id: "x",
@@ -155,5 +157,63 @@ describe("validateAccepted — source guards wired (Defects B & D)", () => {
     expect(
       outcome.errors.some((e) => e.includes("dares.travail-emploi.gouv.fr")),
     ).toBe(true);
+  });
+});
+
+// OBSERVABILITY — dropped-hint render-gate warning. Threading sourceHint onto accepted.json is
+// prose-enforced (no script transforms the in-context ProposalSet — the orchestrator LLM assembles
+// accepted.json, like channel/confirmedTakeaway), so a dropped hint silently disarms guard B. This
+// non-blocking warning (surfaced at the render gate via ProposalResult.warnings) makes that disarm
+// VISIBLE: it fires on the SUCCESS path when the ship is the generic fallback and no name hint was
+// threaded, EXCEPT for prose/none provenance (where the generic fallback is documented-legitimate).
+describe("validateAccepted — dropped-hint observability", () => {
+  const base = {
+    id: "x",
+    producer: "chart-native" as const,
+    format: "static" as const,
+    confirmedTakeaway: "A confirmed takeaway with no numbers in it",
+  };
+  const spec = {
+    producer: "chart-native",
+    nativeType: "bar",
+    title: "Un titre",
+    data: "cat,val\nA,1\nB,2",
+    source: { name: "Chiffres tels que rapportés dans cet article" },
+    altInsight: "insight",
+    lang: "fr",
+  };
+
+  it("surfaces a non-blocking warning when a table-provenance ship uses the generic fallback with no sourceHint", () => {
+    const outcome = validateAccepted({
+      ...base,
+      provenance: "table",
+      spec,
+    } as AcceptedProposal);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) throw new Error("unreachable");
+    expect(outcome.warnings.some((w) => w.includes("sourceHint"))).toBe(true);
+  });
+
+  it("does NOT warn for prose provenance (generic fallback is legitimate there)", () => {
+    const outcome = validateAccepted({
+      ...base,
+      provenance: "prose",
+      spec,
+    } as AcceptedProposal);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) throw new Error("unreachable");
+    expect(outcome.warnings.some((w) => w.includes("sourceHint"))).toBe(false);
+  });
+
+  it("hard-fails via guard B (not the advisory warning) when the hint IS present", () => {
+    // hint present + generic-fallback ship → guard B fires on the ERROR path; the advisory
+    // warning is mutually exclusive (it only fires when NO name hint was threaded).
+    const outcome = validateAccepted({
+      ...base,
+      provenance: "table",
+      spec,
+      sourceHint: { name: "INSEE" },
+    } as AcceptedProposal);
+    expect(outcome.ok).toBe(false);
   });
 });

@@ -28,6 +28,7 @@ import {
   placeholderSourceReason,
   sourceNamePreservedReason,
   sourceUrlFidelityReason,
+  droppedSourceHintWarning,
 } from "./source-guard";
 import { guardrailParityViolations } from "./guardrail-parity";
 
@@ -399,13 +400,27 @@ export function validateAccepted(
   if (placeholder) extraErrors.push(placeholder);
   // GUARD 2b/2c — source attribution fidelity (Defects B & D). Consume the article's captured
   // citation (`p.sourceHint`, from suggest-article) so a named org is never discarded for the
-  // generic prose fallback, and a journalist-provided URL is never silently upgraded. Dormant
-  // until sourceHint is threaded onto the accepted proposal (see producer-spec.ts) — absent hint
-  // ⇒ both return null.
+  // generic prose fallback, and a journalist-provided URL is never silently upgraded. sourceHint is
+  // threaded onto the accepted proposal by the orchestrator LLM (atelier/SKILL.md §5b) — prose-
+  // enforced by necessity, like `channel`/`confirmedTakeaway`; there is no script between the
+  // ProposalSet and accepted.json to mechanize it (see source-guard.ts). Absent hint ⇒ both return
+  // null (the guards stay dormant), and the dropped-hint observability below flags the disarm.
   const namePreserved = sourceNamePreservedReason(p.spec, p.sourceHint);
   if (namePreserved) extraErrors.push(namePreserved);
   const urlFidelity = sourceUrlFidelityReason(p.spec, p.sourceHint);
   if (urlFidelity) extraErrors.push(urlFidelity);
+  // OBSERVABILITY (non-blocking). Threading sourceHint onto accepted.json is prose-enforced (no
+  // script transforms the LLM's ProposalSet — see source-guard.ts), so a dropped hint silently
+  // disarms the guard above. Surface that disarm as a render-gate WARNING (never a hard error):
+  // the ship is the generic fallback but no name hint was threaded, on a table-backed claim. It
+  // rides the success-path warnings below onto ProposalResult.warnings.
+  const extraWarnings: string[] = [];
+  const droppedHint = droppedSourceHintWarning(
+    p.spec,
+    p.sourceHint,
+    p.provenance,
+  );
+  if (droppedHint) extraWarnings.push(droppedHint);
   // GUARD 4 — claim-grounding (Defect C): a numeric/temporal claim in the title/takeaway that
   // the data domain does not encode (and no annotation/reference line backs) fails hard.
   extraErrors.push(...claimGroundingErrors(p));
@@ -416,6 +431,11 @@ export function validateAccepted(
       errors: [...(outcome.ok ? [] : outcome.errors), ...extraErrors],
     };
   }
+  // No extra errors. If the producer validator itself failed, return its failure unchanged.
+  if (!outcome.ok) return outcome;
+  // Success — attach any advisory warnings (producer warnings + the dropped-hint observability).
+  if (extraWarnings.length)
+    return { ok: true, warnings: [...outcome.warnings, ...extraWarnings] };
   return outcome;
 }
 

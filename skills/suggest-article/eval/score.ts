@@ -10,6 +10,13 @@ export interface VisualProposal {
   provenance?: "table" | "prose"; // default "table"; "prose" = figures stated in the article
   needsConfirmation?: boolean; // prose proposals MUST set true (gate before producing)
   proseEvidence?: Record<string, string>; // prose only: value -> the verbatim text snippet it came from
+  // The REAL-WORLD citation the ARTICLE itself gives for these figures (an outlet naming a
+  // dataset/report, or an actual URL quoted in the text), captured verbatim — see SKILL.md
+  // "Bind data", step 3. OPTIONAL: set ONLY when the article literally names a source; never the
+  // internal `dataSource.table` filename. The orchestrator LLM copies it onto accepted.json's
+  // `sourceHint` (atelier/SKILL.md §5b) so the spine's source guards (source-guard.ts) can catch a
+  // named org discarded for the generic fallback (B) or a provided URL silently upgraded (D).
+  sourceHint?: { name?: string; url?: string };
   confidence: "high" | "medium" | "low";
   rationale: string;
 }
