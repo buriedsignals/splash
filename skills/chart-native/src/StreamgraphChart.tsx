@@ -20,7 +20,7 @@ import {
 import { area, curveBasis } from "d3-shape";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
-import { relativeLuminance } from "./core/conformance";
+import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -46,7 +46,9 @@ export interface StreamgraphChartProps {
   scale?: number;
 }
 
-const STREAM_COLORS = [
+// Exported so the WCAG in-fill-label guard binds its max-contrast invariant to the
+// REAL painted palette (see MarimekkoChart.MK_COLORS).
+export const STREAM_COLORS = [
   OKABE_ITO.blue,
   OKABE_ITO.orange,
   OKABE_ITO.green,
@@ -55,9 +57,6 @@ const STREAM_COLORS = [
   OKABE_ITO.skyblue,
   OKABE_ITO.yellow,
 ];
-
-const labelColor = (hex: string) =>
-  relativeLuminance(hex) < 0.5 ? "#FFFFFF" : COLORS.ink;
 
 export function StreamgraphChart({
   config,
@@ -264,7 +263,7 @@ function StreamgraphSvg({
                   textAnchor="middle"
                   fontSize={ts.axis}
                   fontWeight={700}
-                  fill={labelColor(color)}
+                  fill={labelInkOnFill(color)}
                   opacity={labelOp}
                   pointerEvents="none"
                 >

@@ -27,7 +27,7 @@ import {
   OKABE_ITO,
   TREEMAP_GROUP_COLORS,
 } from "./core/tokens";
-import { contrastRatio } from "./core/conformance";
+import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -54,16 +54,10 @@ export interface TreemapChartProps {
   scale?: number;
 }
 
-// Pick whichever of white/ink clears the higher real contrast against this
-// exact cell fill — a luminance-threshold heuristic (e.g. "< 0.45 → white")
-// picks a WINNER by brightness but never checks it actually clears 4.5:1; the
-// Okabe-Ito group hues span a mid-luminance band (orange/green/purple) where
-// white alone fails WCAG against them. Both options are pre-verified ≥4.5:1
-// for every TREEMAP_GROUP_COLORS hue (see tokens.ts).
-const cellText = (hex: string) =>
-  contrastRatio(hex, "#FFFFFF") >= contrastRatio(hex, COLORS.ink)
-    ? "#FFFFFF"
-    : COLORS.ink;
+// In-cell label colour = the shared max-contrast pick (labelInkOnFill): whichever
+// of white/ink clears the higher REAL contrast against this exact cell fill, never
+// a luminance-threshold guess. Both options are pre-verified ≥4.5:1 for every
+// TREEMAP_GROUP_COLORS hue (see tokens.ts).
 
 export function TreemapChart({
   config,
@@ -233,7 +227,7 @@ function TreemapSvg({
           const labelOp = clamp01((ap - 0.6) / 0.4);
           const showName = cw > 46 * sc && ch > 24 * sc;
           const showValue = cw > 54 * sc && ch > 42 * sc;
-          const tcol = cellText(fill);
+          const tcol = labelInkOnFill(fill);
           const pad = 7 * sc;
           return (
             <g key={`c${c.index}`} opacity={dim ? 0.55 : 1}>

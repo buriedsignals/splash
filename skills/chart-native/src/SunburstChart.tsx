@@ -25,7 +25,7 @@ import {
   formatNumber,
 } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
-import { relativeLuminance } from "./core/conformance";
+import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -54,7 +54,9 @@ export interface SunburstChartProps {
   scale?: number;
 }
 
-const BRANCH_COLORS = [
+// Exported so the WCAG in-fill-label guard binds its max-contrast invariant to the
+// REAL painted palette (see MarimekkoChart.MK_COLORS).
+export const BRANCH_COLORS = [
   OKABE_ITO.blue,
   OKABE_ITO.orange,
   OKABE_ITO.green,
@@ -73,9 +75,6 @@ function lighten(hex: string, t: number): string {
   const mix = (c: number) => Math.round(c + (255 - c) * t);
   return `#${[mix(r), mix(g), mix(b)].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
-
-const labelColor = (hex: string) =>
-  relativeLuminance(hex) < 0.5 ? "#FFFFFF" : COLORS.ink;
 
 export function SunburstChart({
   config,
@@ -290,7 +289,7 @@ function SunburstSvg({
                   dy="0.32em"
                   fontSize={ts.source}
                   fontWeight={600}
-                  fill={labelColor(fill)}
+                  fill={labelInkOnFill(fill)}
                   opacity={labelOp}
                   pointerEvents="none"
                 >

@@ -18,7 +18,7 @@ import {
 } from "./marimekko-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
-import { relativeLuminance } from "./core/conformance";
+import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -44,16 +44,16 @@ export interface MarimekkoChartProps {
   scale?: number;
 }
 
-const MK_COLORS = [
+// Exported so the WCAG in-fill-label guard (label-ink-on-fill.test) binds the
+// max-contrast invariant to the REAL painted palette, catching a future hue that
+// clears neither white nor ink — mirrors tokens.ts's TREEMAP_GROUP_COLORS pattern.
+export const MK_COLORS = [
   OKABE_ITO.green,
   OKABE_ITO.orange,
   OKABE_ITO.blue,
   OKABE_ITO.purple,
   OKABE_ITO.skyblue,
 ];
-
-const cellText = (hex: string) =>
-  relativeLuminance(hex) < 0.45 ? "#FFFFFF" : COLORS.ink;
 
 export function MarimekkoChart({
   config,
@@ -258,7 +258,7 @@ function MarimekkoSvg({
                   textAnchor="middle"
                   fontSize={ts.axis}
                   fontWeight={600}
-                  fill={cellText(fill)}
+                  fill={labelInkOnFill(fill)}
                   pointerEvents="none"
                 >
                   {Math.round(cell.share * 100)}%

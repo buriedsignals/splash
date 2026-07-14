@@ -21,7 +21,7 @@ import {
 } from "./diverging-stacked-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
 import { COLORS, FONT, TYPE, DIVERGING_STACKED_COLORS } from "./core/tokens";
-import { contrastRatio } from "./core/conformance";
+import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -55,15 +55,10 @@ const NEG = DIVERGING_STACKED_COLORS.neg;
 const POS = DIVERGING_STACKED_COLORS.pos;
 const NEUTRAL = DIVERGING_STACKED_COLORS.neutral;
 
-// Pick whichever of white/ink clears the higher REAL contrast against this exact
-// segment fill — a luminance-threshold heuristic (e.g. "< 0.5 → white") picks a
-// winner by brightness but never checks it actually clears 4.5:1; the Okabe-Ito
-// sentiment hues span a mid-luminance band (orange/skyblue) where white alone
-// fails WCAG against them (same bug class fixed for treemap's cell text).
-const labelColor = (hex: string) =>
-  contrastRatio(hex, "#FFFFFF") >= contrastRatio(hex, COLORS.ink)
-    ? "#FFFFFF"
-    : COLORS.ink;
+// In-segment percent-label colour = the shared max-contrast pick (labelInkOnFill):
+// whichever of white/ink clears the higher REAL contrast against this exact segment
+// fill, never a luminance-threshold guess. Every non-neutral DIVERGING_STACKED_COLORS
+// hue is pre-verified ≥4.5:1 with its chosen option (see tokens.ts).
 
 export function DivergingStackedChart({
   config,
@@ -339,7 +334,7 @@ function DSSvg({
                         textAnchor="middle"
                         fontSize={ts.source}
                         fontWeight={600}
-                        fill={labelColor(fill)}
+                        fill={labelInkOnFill(fill)}
                         opacity={clamp01((rp - 0.6) / 0.4)}
                         pointerEvents="none"
                       >
