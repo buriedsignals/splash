@@ -96,10 +96,15 @@ exit 0
 
     // Harness: provides the shared helper exactly as bootstrap.sh defines it, sources the
     // module, and runs runtime_install with a fake HOME/DEST and the fake bun first on PATH.
+    // Hermetic PATH: only the fake bin + coreutils, so a real `gemini`/`bun` already on the
+    // dev machine's ~/.bun/bin can't be found — otherwise `command -v gemini` short-circuits
+    // the install and the mocked `bun` (which writes bun.log) never runs. unset BUN_INSTALL so
+    // the module's ${BUN_INSTALL:-$HOME/.bun}/bin resolves to the FAKE home, not the real one.
     const harness = `set -euo pipefail
 export HOME="${home}"
 DEST="${dest}"
-export PATH="${fakeBin}:$PATH"
+unset BUN_INSTALL
+export PATH="${fakeBin}:/usr/bin:/bin"
 link_agents_skills() {
   mkdir -p "$HOME/.agents/skills"
   for skill_dir in "$DEST"/skills/*/; do

@@ -141,9 +141,9 @@ so we omit `contextFileName` entirely — no GEMINI.md, no dangling include.
 requires **Node ≥20** to *run*, even when installed via `bun add -g`. `bootstrap.sh` installs only
 Bun on macOS/Linux (it installs Node only on Windows, for Playwright/Remotion). So on a Node-less
 mac the CLI installs but won't launch; the module's guidance names the Node requirement. This is an
-inherent property of the Gemini runtime (not a bug in this adapter) and is the reason
-`configurator-core.ts` keeps `gemini.verified = false` until this proof passes on a real machine —
-**do not flip it here.**
+inherent property of the Gemini runtime (not a bug in this adapter). It kept `gemini.verified`
+false through the proof; the flag was later flipped to `true` by product decision (see the Verdict
+below) — the Node requirement still holds, so a Node-less mac cannot run it.
 
 ## Proof result (2026-07-13) — Layer A PASS, Layer B blocked by the free tier
 
@@ -167,8 +167,13 @@ Run on a real mac (Node v20.19.0 present).
   many turns) needs far more. It never reached nested skill invocation. Proving Gemini's orchestration
   therefore needs a **paid Gemini API tier**.
 
-**Verdict:** the adapter MECHANICS are proven (discovery + auth path), but Gemini stays
-`verified = false` — its orchestration is unprovable on a free account, unlike Codex (proven
-end-to-end incl. nested invocation). For Atelier's small-newsroom target, Codex is the working free
-runtime; Gemini needs Node + a painful auth setup + a paid tier. To flip `verified` later, re-run
-Layer B on a paid key and confirm nested `suggest-article`→`suggest-chart` invocation fires.
+**Verdict:** the adapter MECHANICS are proven (discovery + auth path). Gemini's orchestration
+(Layer B) is NOT proven — the free tier's quota blocked it before nested invocation, unlike Codex
+(proven end-to-end). For Atelier's small-newsroom target, Codex is the working free runtime; Gemini
+needs Node + a painful auth setup + a paid tier.
+
+**`configurator-core.ts` sets `gemini.verified = true` by product decision (2026-07-13)**, ahead of
+a Layer-B pass — a deliberate override, NOT a claim that the orchestration is proven. To retire the
+gap, re-run Layer B on a paid Gemini key and confirm nested `suggest-article`→`suggest-chart`
+invocation fires; until then Gemini is selectable but its end-to-end flow is unverified on the free
+tier.
