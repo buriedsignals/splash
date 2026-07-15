@@ -24,14 +24,14 @@ lang: "fr"                    # langue par défaut des livrables (fr, en, de, it
 
 # Comment remplir ce profil
 
-Ce fichier définit le **style maison** que Atelier réutilise sur tous vos visuels, pour ne pas
+Ce fichier définit le **style maison** que Splash réutilise sur tous vos visuels, pour ne pas
 avoir à le redonner à chaque fois. Chaque visuel peut toujours **surcharger** une valeur au cas
 par cas — ce que vous mettez ici sert de **défaut**.
 
 - **palette** — les couleurs de votre charte graphique, en codes hexadécimaux (`#RRGGBB`). La
   première est la couleur **principale**. Astuce : votre graphiste ou votre charte les connaît ;
   sinon, un outil comme « pipette de couleur » vous les donne depuis votre logo.
-  > ⚠️ Si une couleur maison est difficile à distinguer pour un daltonien, Atelier la **garde
+  > ⚠️ Si une couleur maison est difficile à distinguer pour un daltonien, Splash la **garde
   > quand même** (c'est votre marque) et vous le **signale** à la relecture — à vous de trancher.
 
 - **accent** — la couleur que vous utilisez pour **mettre en avant** un élément.

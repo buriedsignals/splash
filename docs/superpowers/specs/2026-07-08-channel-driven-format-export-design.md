@@ -9,7 +9,7 @@ set and the size; within that, the AI picks the format on grounded evidence and 
 
 ## Problem (why)
 
-Today's flow (see `skills/atelier/SKILL.md` CADRAGE §3 + `knowledge/references/formats/format-selection.md`):
+Today's flow (see `skills/splash/SKILL.md` CADRAGE §3 + `knowledge/references/formats/format-selection.md`):
 - CADRAGE Q3 asks the channel as **free text** ("article embed, social, print?") — fuzzy to map downstream.
 - The **format** (static/interactive/video/scrolly) is decided **silently** by the suggest-chart Gate 0→5
   ladder — never announced, never reconciled with the channel.
@@ -74,7 +74,7 @@ The QA harness corroborates this repeatedly (batch 2026-07-08):
 
 ## What changes where (implementation surface — detail lands in the plan)
 
-- **`skills/atelier/SKILL.md`** — CADRAGE Q3 becomes a structured 3-way channel pick; PROPOSITION announces
+- **`skills/splash/SKILL.md`** — CADRAGE Q3 becomes a structured 3-way channel pick; PROPOSITION announces
   the chosen `{format, size, sub-format}` reconciled to the channel (vetoable); EXPORT §6 branches exactly on
   the model above (media = direct; interactive = the 3 deliveries); the "≤4 questions / branch order" wording
   is reconciled so Q3 stays a real gate.

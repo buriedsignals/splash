@@ -11,8 +11,8 @@
 ## Why (the gaps this closes)
 
 The F2 profile exists but is thin and unreliable:
-- **Scope**: `BrandProfile` carries `{ palette, accent }` only (`skills/atelier/src/brand-profile.ts:16-21`). Source name, language, and credit format have no profile home — they are re-supplied/re-derived every element (source on every producer spec, `chart-native/src/spec-to-config.ts:32`, `dw-chart/src/chart-spec.ts:190`; `lang` re-detected from the article each run, `suggest-chart/SKILL.md:22-41`; the "Source :" label derived from `lang` each time).
-- **Wiring**: `loadBrandProfile`/`seedBrandColor` are pure, unit-tested functions that **no pipeline code calls** — the only "invocation" is a prose instruction to the orchestrator agent (`skills/atelier/SKILL.md:125`, CADRAGE Q4). Reliability depends on the agent remembering; there is no produce-time enforcement.
+- **Scope**: `BrandProfile` carries `{ palette, accent }` only (`skills/splash/src/brand-profile.ts:16-21`). Source name, language, and credit format have no profile home — they are re-supplied/re-derived every element (source on every producer spec, `chart-native/src/spec-to-config.ts:32`, `dw-chart/src/chart-spec.ts:190`; `lang` re-detected from the article each run, `suggest-chart/SKILL.md:22-41`; the "Source :" label derived from `lang` each time).
+- **Wiring**: `loadBrandProfile`/`seedBrandColor` are pure, unit-tested functions that **no pipeline code calls** — the only "invocation" is a prose instruction to the orchestrator agent (`skills/splash/SKILL.md:125`, CADRAGE Q4). Reliability depends on the agent remembering; there is no produce-time enforcement.
 - **Discoverability**: no sample profile exists on disk anywhere — a journalist has no idea what to write.
 - **Coverage** (out of scope here, noted): brand *colour* reaches only chart-native + dw-chart. Maps, scrolly, image-native have zero brand handling. The default *source/lang* this design adds DO reach every producer (they live on the shared spec), but extending brand *colour* to maps/scrolly/image is a separate follow-up.
 
@@ -48,7 +48,7 @@ credit: "Source : {name}"   # format du crédit ; vide = auto d'après la langue
 
 ## Architecture
 
-### 1. Extended schema — `skills/atelier/src/brand-profile.ts`
+### 1. Extended schema — `skills/splash/src/brand-profile.ts`
 
 ```ts
 export interface BrandProfile {
@@ -95,7 +95,7 @@ Seeds the profile's fields onto a producer spec, **spec value always wins**:
   lang-derived "Source :"/"Source:".
 Pure, unit-testable.
 
-### 5. Mechanical wiring — `skills/atelier/scripts/produce-all.mjs`
+### 5. Mechanical wiring — `skills/splash/scripts/produce-all.mjs`
 
 Before producing each element, load the profile once and merge its defaults onto the element's
 spec: `spec = mergeProfileDefaults(spec, loadNewsroomProfile(projectDir))`. This closes the
@@ -120,7 +120,7 @@ installer.
   present → reads it; neither → null; broken file → null, no throw).
 - Integration: a `produce-all` test asserting a spec with no source/lang picks up the profile
   defaults, and a spec that sets its own source keeps it.
-- The gate (`bun run check`) stays 20/20 (new tests under `skills/atelier`, no new gate row).
+- The gate (`bun run check`) stays 20/20 (new tests under `skills/splash`, no new gate row).
 - Then a **QA wave** with a "house-style" persona (a newsroom imposing its palette + source +
   language), gated on the monthly-spend status (the harness spawns `claude` subprocesses).
 

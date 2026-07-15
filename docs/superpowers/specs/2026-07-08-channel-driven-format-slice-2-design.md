@@ -54,15 +54,15 @@ When no channel is passed (legacy / no-channel proposals), default to `article-w
 
 ## What changes where
 
-- `skills/atelier/src/channel.ts` — a `channelAspect(channel)`/`renderSize(channel)` accessor (mediaSize
+- `skills/splash/src/channel.ts` — a `channelAspect(channel)`/`renderSize(channel)` accessor (mediaSize
   exists) + `assertRenderedSize(actual, channel)` (throws/returns violation). + tests.
 - `skills/chart-native/`: `remotion/src/Root.tsx` (Portrait 1350→1920), `core/format.ts` (scale tuning),
   `scripts/produce.mjs` (channel arg, aspect gating, mount-size define), `vite.config.ts` (+2 defines),
   `src/mount.tsx:166` (read defines), `scripts/produce-from-spec.mjs` (forward channel).
 - `skills/map-native/`: mirror — `remotion/src/Root.tsx` (Portrait 1350→1920), `scripts/produce.mjs`
   (channel arg, aspect gating, static size), `core/map-format.ts` if needed.
-- `skills/atelier/src/adapters.ts` — thread `p.channel` into the dispatched argv for both native producers.
-- `skills/atelier/SKILL.md` EXPORT §6 — "produce the one channel aspect" (not "produce 3, pick 1");
+- `skills/splash/src/adapters.ts` — thread `p.channel` into the dispatched argv for both native producers.
+- `skills/splash/SKILL.md` EXPORT §6 — "produce the one channel aspect" (not "produce 3, pick 1");
   remove the Slice-1 4:5 caveat.
 - New conformance step in both `produce.mjs` (fail-hard aspect==channel).
 

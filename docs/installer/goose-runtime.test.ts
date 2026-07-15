@@ -52,7 +52,7 @@ test("installs Goose via its official Rust-binary installer, never npm", () => {
 // and a hermetic PATH (no real ~/.local/bin), runtime_install must symlink every fake skill into a
 // fake ~/.agents/skills. No network, no real goose, robust to a goose installed on the dev machine.
 test("runtime_install symlinks every skill into ~/.agents/skills (CLI install skipped)", () => {
-  const work = mkdtempSync(join(tmpdir(), "atelier-goose-"));
+  const work = mkdtempSync(join(tmpdir(), "splash-goose-"));
   try {
     const home = join(work, "home");
     const dest = join(work, "dest");

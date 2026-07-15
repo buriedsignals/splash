@@ -141,7 +141,7 @@ smoke gate (`contour-bands` present AND `choropleth-fill` absent). All three siz
 - Runtime **Bun** always (never npm/node); tests `bun test`.
 - Code, comments, commits, branch names in **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it.
 - Reuse existing building blocks (choropleth binning + `BLUES`/`DIVERGING` scale, MapFrame, reveal/story/
   scrolly pipeline, `resolveScene`, `resolveMapStyle`, the `ScrollyXMap` interactive-scrolly pattern); do
   not fork them. Use turf `interpolate`/`isobands`/`isolines`/`bbox`.

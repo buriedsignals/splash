@@ -1,11 +1,11 @@
-# Atelier bootstrap (Windows). Idempotent — safe to re-run. Contains NO keys and receives none: it
+# Splash bootstrap (Windows). Idempotent — safe to re-run. Contains NO keys and receives none: it
 # installs the toolchain, then opens a LOCAL configurator (127.0.0.1) where you enter your keys —
-# written straight to %USERPROFILE%\Atelier\.env, never passed on the command line.
+# written straight to %USERPROFILE%\Splash\.env, never passed on the command line.
 $ErrorActionPreference = "Stop"
 
-$Repo = if ($env:ATELIER_REPO) { $env:ATELIER_REPO } else { "https://github.com/buriedsignals/atelier" }   # confirm before public release
-$Ref  = if ($env:ATELIER_REF) { $env:ATELIER_REF } else { "main" }
-$Dest = Join-Path $HOME "Atelier"
+$Repo = if ($env:SPLASH_REPO) { $env:SPLASH_REPO } elseif ($env:ATELIER_REPO) { $env:ATELIER_REPO } else { "https://github.com/buriedsignals/splash" }   # confirm before public release
+$Ref  = if ($env:SPLASH_REF) { $env:SPLASH_REF } elseif ($env:ATELIER_REF) { $env:ATELIER_REF } else { "main" }
+$Dest = Join-Path $HOME "Splash"
 $NativeSkills = @("skills\chart-native", "skills\map-native")
 
 # Shared skill-discovery helper for runtimes that read ~\.agents\skills\ (Codex, Gemini native
@@ -20,7 +20,7 @@ function Link-AgentsSkills {
   }
 }
 
-Write-Host "-> Installing Atelier (a few minutes)…"
+Write-Host "-> Installing Splash (a few minutes)…"
 
 # 1. Bun (native Windows build — needed to run the configurator and the skills)
 if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
@@ -49,17 +49,17 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   throw "Node.js is required (it drives Playwright/Remotion on Windows) but could not be installed via winget. Install Node LTS from https://nodejs.org, then re-run this installer."
 }
 
-# 3. Atelier source (zip — no git; contains the configurator)
+# 3. Splash source (zip — no git; contains the configurator)
 if (-not (Test-Path $Dest)) {
-  Write-Host "-> Downloading Atelier…"
-  $tmp = Join-Path $env:TEMP "atelier-dl"
+  Write-Host "-> Downloading Splash…"
+  $tmp = Join-Path $env:TEMP "splash-dl"
   Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
   New-Item -ItemType Directory -Path $tmp | Out-Null
-  $zip = Join-Path $tmp "atelier.zip"
+  $zip = Join-Path $tmp "splash.zip"
   Invoke-WebRequest "$Repo/archive/$Ref.zip" -OutFile $zip
   Expand-Archive $zip -DestinationPath $tmp -Force
   # GitHub's archive top-dir strips a leading "v" / rewrites "/" in tags — match by glob (mirror .sh).
-  Move-Item (Get-ChildItem $tmp -Directory -Filter "atelier-*" | Select-Object -First 1).FullName $Dest
+  Move-Item (Get-ChildItem $tmp -Directory -Filter "splash-*" | Select-Object -First 1).FullName $Dest
   Remove-Item $tmp -Recurse -Force
 }
 
@@ -76,7 +76,7 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $Dest ".env"))) {
 
 # 5. Runtime — install the one the configurator recorded, via its module in install\runtimes\.
 # Adding a runtime is a new install\runtimes\<name>.ps1 (see that dir's README), never a change here.
-$runtime = if (Test-Path (Join-Path $Dest ".atelier-runtime")) { (Get-Content (Join-Path $Dest ".atelier-runtime") -Raw).Trim() } else { "claude" }
+$runtime = if (Test-Path (Join-Path $Dest ".splash-runtime")) { (Get-Content (Join-Path $Dest ".splash-runtime") -Raw).Trim() } else { "claude" }
 $runtimeModule = Join-Path $Dest "install\runtimes\$runtime.ps1"
 if (-not (Test-Path $runtimeModule)) {
   throw "No runtime module for '$runtime' (expected install\runtimes\$runtime.ps1) — re-run the configurator and pick a supported runtime."
@@ -98,7 +98,7 @@ if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download fai
 Pop-Location
 
 # 7. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
-$launcher = Join-Path $Dest "Launch Atelier.cmd"
+$launcher = Join-Path $Dest "Launch Splash.cmd"
 $launchCmd = Runtime-LaunchCmd
 @"
 @echo off
@@ -109,4 +109,4 @@ $launchCmd
 "@ | Set-Content -Path $launcher -Encoding ascii
 
 Write-Host ""
-Write-Host "Done! Double-click 'Launch Atelier.cmd' in $Dest to start."
+Write-Host "Done! Double-click 'Launch Splash.cmd' in $Dest to start."

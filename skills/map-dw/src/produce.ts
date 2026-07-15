@@ -19,12 +19,12 @@ import {
   assertRenderedSize,
   normalizeChannel,
   renderSize,
-} from "../../atelier/src/channel";
+} from "../../splash/src/channel";
 
 // The single-format-produce-export vocabulary, restricted to the two values map-dw
 // actually builds (mirrors dw-chart's DwChartFormat) — it has no video/scrolly
 // renderer (animated maps are map-native's). Kept as a plain string union so the
-// orchestrator-level VisualFormat gate (skills/atelier/src/adapters.ts) stays the one
+// orchestrator-level VisualFormat gate (skills/splash/src/adapters.ts) stays the one
 // place that knows the wider vocabulary.
 export type DwMapFormat = "static" | "interactive";
 
@@ -35,7 +35,7 @@ export type DwMapFormat = "static" | "interactive";
 export const DW_EXPORT_PIXEL_RATIO = 2;
 
 // The pixel box map-dw REQUESTS from the DW export API for a channel, derived from
-// the shared channel model (single source of truth: skills/atelier/src/channel.ts,
+// the shared channel model (single source of truth: skills/splash/src/channel.ts,
 // the established cross-skill import). Request HALF the channel's mediaSize so DW's
 // 2x rasterization doubles it back onto the channel size — the same halving
 // chart-native's static path applies (deviceScaleFactor:2, CSS canvas =
@@ -105,7 +105,7 @@ export async function produceMap(
   const format = opts.format ?? "static";
   // Fail hard FIRST on a format map-dw cannot build. A runtime guard, not just the
   // DwMapFormat type: the orchestrator's VisualFormat is wider, and the dispatch-level
-  // gate (skills/atelier/src/adapters.ts) must not be the only line of defense — a
+  // gate (skills/splash/src/adapters.ts) must not be the only line of defense — a
   // direct caller gets the same refusal, BEFORE any API call, so nothing is ever
   // created/published for a pin map-dw cannot honor.
   if (format !== "static" && format !== "interactive")

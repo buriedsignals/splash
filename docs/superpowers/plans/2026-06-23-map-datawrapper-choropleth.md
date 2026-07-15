@@ -31,7 +31,7 @@ Reuse `dw-chart/src/datawrapper.ts`. Do NOT touch dw-chart / suggest-chart / sug
 - Gate: `bun test` in eval dir green.
 
 ## Task 5 — live e2e (real API, the real gate)
-- `src/tests/e2e.test.ts` (or a runner): `set -a; source /atelier/.env; set +a`; produce one real
+- `src/tests/e2e.test.ts` (or a runner): `set -a; source /splash/.env; set +a`; produce one real
   choropleth from a generic case; assert publicUrl + png bytes > 0; **export PNG and LOOK at it**
   (data bound, light→blue, not black). Save proof to `output-proof/`. Leave the chart PUBLISHED.
 

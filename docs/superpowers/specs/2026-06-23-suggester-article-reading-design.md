@@ -181,7 +181,7 @@ opportunities it contains:
 
 **Gold-standard authorship (resolved).** We author both the sample articles **and** their gold marks
 ourselves, on **generic small-newsroom stories** (a typical local story + its data — not pilot-specific).
-Atelier is built for *all* small newsrooms; the grant's Annemasse pilot is a deliverable, not a design or
+Splash is built for *all* small newsrooms; the grant's Annemasse pilot is a deliverable, not a design or
 validation dependency, so the eval corpus must not couple to it. Each gold mark — "a visual belongs here,
 drawn from this table/columns" — is **grounded in documented journalism best-practice** (the KB references:
 `chart-selection.md` for what claims warrant a visual, `design-conformance.md`), **not personal taste**.
@@ -320,7 +320,7 @@ Vertical-slice discipline, mirroring slice-1. The smallest thing that proves the
 
 ### Resolved (this review)
 
-- **R1 — Gold-standard ownership: WE author it, on generic samples.** Atelier targets *all* small newsrooms;
+- **R1 — Gold-standard ownership: WE author it, on generic samples.** Splash targets *all* small newsrooms;
   the grant's Annemasse pilot is a deliverable, **not** a design or validation dependency. We author both the
   sample articles and their gold marks ourselves, on **generic small-newsroom stories** (not Annemasse). Marks
   are **grounded in documented journalism best-practice** (the KB references), not personal taste. The

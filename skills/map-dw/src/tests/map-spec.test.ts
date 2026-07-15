@@ -302,7 +302,7 @@ describe("validateMapSpec — symbol", () => {
   // #2 — map-dw symbol maps are RETIRED as a claim-carrying producer. Datawrapper draws
   // proportional circles with values on HOVER only and offers no "label symbols by column"
   // option (verified against the Datawrapper Academy "Customizing your symbol map" docs), so
-  // the owned static PNG — which every atelier channel requires as the claim-carrying
+  // the owned static PNG — which every splash channel requires as the claim-carrying
   // deliverable (the social static, or the article-web a11y static fallback) — ships mute,
   // unlabeled circles. A valid symbol spec is therefore REJECTED and routed to map-native,
   // whose proportional-symbol renderer directly labels the top-N circles by name + value.

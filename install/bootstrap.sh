@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Atelier bootstrap (macOS / Linux). Idempotent — safe to re-run. Contains NO keys and receives
+# Splash bootstrap (macOS / Linux). Idempotent — safe to re-run. Contains NO keys and receives
 # none: it installs the toolchain, then opens a LOCAL configurator (127.0.0.1) where you enter your
-# keys — they are written straight to ~/Atelier/.env, never passed on the command line.
+# keys — they are written straight to ~/Splash/.env, never passed on the command line.
 set -euo pipefail
 
-REPO="${ATELIER_REPO:-https://github.com/buriedsignals/atelier}"   # confirm before public release (preflight-release.mjs)
-REF="${ATELIER_REF:-main}"
-DEST="$HOME/Atelier"
+REPO="${SPLASH_REPO:-${ATELIER_REPO:-https://github.com/buriedsignals/splash}}"   # confirm before public release (preflight-release.mjs)
+REF="${SPLASH_REF:-${ATELIER_REF:-main}}"
+DEST="$HOME/Splash"
 NATIVE_SKILLS=("skills/chart-native" "skills/map-native")
 
 # Shared skill-discovery helper for runtimes that read ~/.agents/skills/ (Codex, Gemini native
@@ -19,7 +19,7 @@ link_agents_skills() {
   done
 }
 
-echo "-> Installing Atelier (a few minutes)…"
+echo "-> Installing Splash (a few minutes)…"
 
 # 1. Bun (its own installer — needed to run the configurator and the skills)
 if ! command -v bun >/dev/null 2>&1; then
@@ -29,20 +29,20 @@ fi
 export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-# 2. Atelier source (zip — no git; contains the configurator)
+# 2. Splash source (zip — no git; contains the configurator)
 if [ ! -d "$DEST" ]; then
-  echo "-> Downloading Atelier…"
+  echo "-> Downloading Splash…"
   tmp="$(mktemp -d)"
-  curl -fsSL "$REPO/archive/$REF.zip" -o "$tmp/atelier.zip"
-  unzip -q "$tmp/atelier.zip" -d "$tmp"
-  mv "$tmp"/atelier-* "$DEST"
+  curl -fsSL "$REPO/archive/$REF.zip" -o "$tmp/splash.zip"
+  unzip -q "$tmp/splash.zip" -d "$tmp"
+  mv "$tmp"/splash-* "$DEST"
   rm -rf "$tmp"
 fi
 
-# 3. Local configurator — pick runtime + enter keys (verified live); writes ~/Atelier/.env.
-# Skip it on a re-run that already has a verified .env (set ATELIER_RECONFIGURE=1 to force it),
+# 3. Local configurator — pick runtime + enter keys (verified live); writes ~/Splash/.env.
+# Skip it on a re-run that already has a verified .env (set SPLASH_RECONFIGURE=1 to force it),
 # so recovering from a later failure doesn't force re-entering and re-verifying every key.
-if [ ! -f "$DEST/.env" ] || [ "${ATELIER_RECONFIGURE:-0}" = "1" ]; then
+if [ ! -f "$DEST/.env" ] || [ "${SPLASH_RECONFIGURE:-${ATELIER_RECONFIGURE:-0}}" = "1" ]; then
   echo "-> Opening the configurator in your browser to collect your keys…"
   if ! ( cd "$DEST" && bun install/configurator.ts ) || [ ! -f "$DEST/.env" ]; then
     echo "Configuration was not completed — re-run this installer." >&2
@@ -52,7 +52,7 @@ fi
 
 # 4. Runtime — install the one the configurator recorded, via its module in install/runtimes/.
 # Adding a runtime is a new install/runtimes/<name>.sh (see that dir's README), never a change here.
-runtime="$(cat "$DEST/.atelier-runtime" 2>/dev/null || echo claude)"
+runtime="$(cat "$DEST/.splash-runtime" 2>/dev/null || echo claude)"
 runtime_module="$DEST/install/runtimes/$runtime.sh"
 if [ ! -f "$runtime_module" ]; then
   echo "No runtime module for '$runtime' (expected install/runtimes/$runtime.sh) — re-run the configurator and pick a supported runtime." >&2
@@ -80,7 +80,7 @@ fi
 # 6. Local double-click launcher (created locally → no quarantine → clean re-launch).
 # The runtime module supplies the launch command for the recorded runtime.
 launch_cmd="$(runtime_launch_cmd)"
-launcher="$DEST/Launch Atelier.command"
+launcher="$DEST/Launch Splash.command"
 cat > "$launcher" <<LAUNCH
 #!/usr/bin/env bash
 cd "\$(dirname "\$0")" && set -a && . ./.env && set +a && $launch_cmd
@@ -88,5 +88,5 @@ LAUNCH
 chmod +x "$launcher"
 
 echo ""
-echo "Done! Double-click 'Launch Atelier.command' in $DEST to start."
+echo "Done! Double-click 'Launch Splash.command' in $DEST to start."
 echo "(Your keys live only in $DEST/.env, chmod 600.)"

@@ -89,7 +89,7 @@ snap ready-gate (add `route-line`), `scripts/audit-cases.mjs`, `SKILL.md` (roadm
 
 - Runtime **Bun** always; tests `bun test`. English everywhere. **No** Claude/Anthropic mention, **no**
   `Co-Authored-By`, **no** Claude-Session trailer.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it.
 - Reuse `computeRoute`, `QUALITATIVE`, `resolveMapStyle`, `RouteReveal`'s visual vocabulary, the
   Map-component layer/hover/legend pattern; do not fork them.
 - **Render quality is a merge gate** — the controller personally verifies the static + interactive route

@@ -10,8 +10,8 @@ category, matching the type's "use ONLY for cyclical categories" rule.
 
 ```
 bun scripts/produce-from-spec.mjs \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/radial-bar/spec-native.json \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/radial-bar static
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/radial-bar/spec-native.json \
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/radial-bar static
 ```
 
 ```

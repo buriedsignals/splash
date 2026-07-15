@@ -20,10 +20,10 @@ The three layers below are what only a live Codex can prove.
 1. Install via the bootstrap (`install/bootstrap.sh`, pick **Codex** in the configurator) OR by hand
    per `.codex/INSTALL.md`. Either path runs the same wiring: per-skill symlinks in
    `~/.agents/skills/` + the seeded `~/.codex/config.toml`.
-2. `~/Atelier/.env` exists with real `VITE_MAPTILER_KEY`, `REMOTION_MAPTILER_KEY`,
-   `DATAWRAPPER_API_TOKEN` (and optional `ATELIER_EMBED_APP` / `FLY_API_TOKEN`).
-3. Launch from `~/Atelier` so the shell tool's cwd sees the repo and inherits the `.env`
-   (`Launch Atelier.command` does `set -a && . ./.env && set +a && codex`).
+2. `~/Splash/.env` exists with real `VITE_MAPTILER_KEY`, `REMOTION_MAPTILER_KEY`,
+   `DATAWRAPPER_API_TOKEN` (and optional `SPLASH_EMBED_APP` / `FLY_API_TOKEN`).
+3. Launch from `~/Splash` so the shell tool's cwd sees the repo and inherits the `.env`
+   (`Launch Splash.command` does `set -a && . ./.env && set +a && codex`).
 
 ---
 
@@ -31,15 +31,15 @@ The three layers below are what only a live Codex can prove.
 
 **Goal:** Codex sees every skill through native `~/.agents/skills/<name>/SKILL.md` discovery.
 
-1. `codex` from `~/Atelier`.
+1. `codex` from `~/Splash`.
 2. Run `/skills`.
 3. **PASS:** the list contains the eight skills that ship a `SKILL.md` —
-   `atelier`, `chart-native`, `dw-chart`, `map-dw`, `map-native`, `scrolly`,
+   `splash`, `chart-native`, `dw-chart`, `map-dw`, `map-native`, `scrolly`,
    `suggest-article`, `suggest-chart`.
    (`skills/image-native/` is scaffolded without a `SKILL.md` yet, so it does not appear; the
    `link_agents_skills` glob picks it up automatically the moment its `SKILL.md` lands.)
 4. Sanity: `ls -la ~/.agents/skills` shows one symlink (junction on Windows) per skill into
-   `~/Atelier/skills/*`.
+   `~/Splash/skills/*`.
 
 **Fail modes to note:** a skill missing from `/skills` ⇒ its `SKILL.md` frontmatter (`name` +
 `description`) is malformed, or the symlink is broken. A restart of Codex is required after linking.
@@ -49,12 +49,12 @@ The three layers below are what only a live Codex can prove.
 ## Layer B — the flow runs (THE risk layer)
 
 **Goal:** drive the real pipeline and prove the two things only a live runtime can: (1) Codex fires
-the **nested sub-skill invocations** the `atelier` orchestrator depends on, and (2) the shell tool
+the **nested sub-skill invocations** the `splash` orchestrator depends on, and (2) the shell tool
 inherits the environment AND the network config so a producer's provider API call succeeds.
 
-1. In Codex, give the `atelier` skill a real Annemasse article (paste text or a URL), e.g. the
-   Heidi.news "Annemasse, capitale du n'importe quoi" investigation. `atelier` should auto-match by
-   description; if not, invoke it explicitly with `$atelier`.
+1. In Codex, give the `splash` skill a real Annemasse article (paste text or a URL), e.g. the
+   Heidi.news "Annemasse, capitale du n'importe quoi" investigation. `splash` should auto-match by
+   description; if not, invoke it explicitly with `$splash`.
 2. Walk the flow: ANALYSE → CADRAGE (Gate 1) → PROPOSITION (Gate 2) → PRODUCTION → EXPORT.
 3. **Watch for the nested invocations (the risk to retire):**
    - ANALYSE must run **`suggest-article` as a real skill call** (SKILL.md:24 requires it — "not a
@@ -62,13 +62,13 @@ inherits the environment AND the network config so a producer's provider API cal
    - PROPOSITION must run **`suggest-chart` as a real skill call** per accepted opportunity
      (SKILL.md:147).
    - **PASS:** both fire as genuine nested skill invocations mid-flow (visible as Codex loading
-     `suggest-article` / `suggest-chart` progressively, not the `atelier` model paraphrasing their
+     `suggest-article` / `suggest-chart` progressively, not the `splash` model paraphrasing their
      output from memory).
    - **FAIL → documented fallback (do NOT apply blind):** if Codex will not fire a *skill-from-within-a-skill*
      natively, the fix is to reword the orchestrator's invocation lines from "invoke `suggest-chart`
      **as a real Skill call**" to an explicit, tool-agnostic instruction like *"read
      `skills/suggest-chart/SKILL.md` and follow it"* — which Codex's read/shell tools can always do.
-     This is an `atelier/SKILL.md` prose change and is **out of scope for this runtime adapter** — it
+     This is an `splash/SKILL.md` prose change and is **out of scope for this runtime adapter** — it
      is a shared skill file. Record the finding here and hand it to whoever owns the orchestrator; do
      not edit orchestrator prose as part of the Codex adapter.
    - This is genuinely open: I could not exercise it here (no live Codex). Codex documents
@@ -127,8 +127,8 @@ inherits the environment AND the network config so a producer's provider API cal
 ## Proof result (2026-07-13)
 
 Run on a real machine with a free OpenAI account. **Layer A PASSED** — `codex` lists all eight
-skills (`atelier:*`). **Layer B — the nested-invocation risk is RETIRED:** a full `codex exec` run
-of the `atelier` skill invoked `atelier:suggest-article` → `atelier:suggest-chart` → `atelier:dw-chart`
+skills (`splash:*`). **Layer B — the nested-invocation risk is RETIRED:** a full `codex exec` run
+of the `splash` skill invoked `splash:suggest-article` → `splash:suggest-chart` → `splash:dw-chart`
 as real nested skill calls and wrote a correct `accepted.json` (right producer/format/channel/
 confirmedTakeaway/spec). `seed_codex_config` verified live (`sandbox: workspace-write … network
 access enabled`). On the strength of this, `configurator-core.ts` marks `codex.verified = true`.

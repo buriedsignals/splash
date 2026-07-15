@@ -52,7 +52,7 @@ export interface ScrollySymbolConfig {
   source?: { name: string; url: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
-  // Newsroom house hue (set by the profile merge, skills/atelier/src/brand-profile.ts). Used
+  // Newsroom house hue (set by the profile merge, skills/splash/src/brand-profile.ts). Used
   // as the circle fill when present — an explicit colour on the spec always wins (none exists
   // yet for this single-hue symbol map, so brandHue is the only override path today).
   brandHue?: string;

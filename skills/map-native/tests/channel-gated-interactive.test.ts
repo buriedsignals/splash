@@ -14,7 +14,7 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isFormatAllowed } from "../../atelier/src/channel";
+import { isFormatAllowed } from "../../splash/src/channel";
 
 const PRODUCE = join(import.meta.dir, "..", "scripts", "produce.mjs");
 

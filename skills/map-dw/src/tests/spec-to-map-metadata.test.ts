@@ -597,7 +597,7 @@ describe("specToMapMetadata — locator", () => {
   });
 });
 
-// HOUSE COLOUR (newsroom brand, skills/atelier/src/brand-profile.ts). The profile merge
+// HOUSE COLOUR (newsroom brand, skills/splash/src/brand-profile.ts). The profile merge
 // carries brandHue (primary house hue) + brandPalette (ordered house palette) onto every
 // map spec; an explicit per-element colour always wins.
 describe("specToMapMetadata — house colour (brandHue / brandPalette)", () => {

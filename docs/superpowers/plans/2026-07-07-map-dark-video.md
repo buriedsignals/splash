@@ -8,7 +8,7 @@
 **Goal:** 6 target components honor `mapStyle:"dataviz-dark"` (basemap + legend + labels + furniture + page bg),
 so a dark map exported as video/scrolly renders dark — matching static/interactive.
 
-**Worktree:** `/Users/rmdms/Sites/Professional/.atelier-wt/darkvideo`, branch `feat/map-dark-video` (base main
+**Worktree:** `/Users/rmdms/Sites/Professional/.splash-wt/darkvideo`, branch `feat/map-dark-video` (base main
 7652ff6). Runs in parallel with the Family A lot (disjoint files). `bun run check` green in this worktree.
 
 ## Global Constraints

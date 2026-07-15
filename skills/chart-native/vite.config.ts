@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import { viteSingleFile } from "vite-plugin-singlefile";
 import { readFileSync } from "node:fs";
 import { chartDistSub } from "./src/build-paths";
-import { ALL_CHANNELS, renderSize, type Channel } from "../atelier/src/channel";
+import { ALL_CHANNELS, renderSize, type Channel } from "../splash/src/channel";
 
 // INTERACTIVE=1 -> single-file embeddable HTML with hover tooltip.
 // otherwise     -> a plain static page (final frame), screenshotted to PNG.
@@ -11,7 +11,7 @@ import { ALL_CHANNELS, renderSize, type Channel } from "../atelier/src/channel";
 // paths (dist/static, dist/interactive); other charts nest under dist/<chart>/.
 // CONFIG=path    -> inject an arbitrary config JSON (the produce() path) instead of
 //                   the committed sample; baked in as __CONFIG__ (null when unset).
-// ATELIER_CHANNEL -> the distribution channel this deliverable targets (default
+// SPLASH_CHANNEL -> the distribution channel this deliverable targets (default
 //                   article-web — back-compat, matches normalizeChannel's default).
 //                   Sizes the injected-config STATIC canvas via __MEDIA_W__/
 //                   __MEDIA_H__ (read at mount.tsx:~166).
@@ -24,14 +24,14 @@ const injectedConfig = process.env.CONFIG
   : null;
 
 // FAIL-CLOSED (defense in depth, mirrors scripts/produce.mjs): an unrecognized
-// NON-EMPTY ATELIER_CHANNEL must never silently size the build as article-web —
+// NON-EMPTY SPLASH_CHANNEL must never silently size the build as article-web —
 // that ships the wrong aspect with a clean exit. Only CANONICAL values are accepted
 // (the spine's normalizeChannel resolves aliases before threading; no alias table
 // here). Absent/EMPTY keeps the article-web default (legacy/manual callers).
-const rawChannel = (process.env.ATELIER_CHANNEL ?? "").trim();
+const rawChannel = (process.env.SPLASH_CHANNEL ?? process.env.ATELIER_CHANNEL ?? "").trim();
 if (rawChannel !== "" && !(ALL_CHANNELS as readonly string[]).includes(rawChannel)) {
   throw new Error(
-    `unknown ATELIER_CHANNEL "${rawChannel}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
+    `unknown SPLASH_CHANNEL "${rawChannel}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
       "(absent/empty defaults to article-web); refusing to default an unrecognized channel to article-web.",
   );
 }

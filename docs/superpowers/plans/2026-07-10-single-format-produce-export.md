@@ -6,7 +6,7 @@
 
 **Architecture:** Pin a single `VisualFormat` on the accepted spec at PROPOSITION; pass it down so each producer builds only that format; refactor `export-code` so static/video deliver the media file directly and interactive/scrolly propose the a/b/c form and build+deliver only the chosen one (lazy). Remove the auto no-JS `static.html` a11y fallback.
 
-**Tech Stack:** Bun, TypeScript, `bun:test`. Producers: chart-native (React+D3+Remotion via Vite), map-native (MapLibre), dw-chart (Datawrapper API). Orchestrator: `skills/atelier`.
+**Tech Stack:** Bun, TypeScript, `bun:test`. Producers: chart-native (React+D3+Remotion via Vite), map-native (MapLibre), dw-chart (Datawrapper API). Orchestrator: `skills/splash`.
 
 **Spec:** `docs/superpowers/specs/2026-07-10-single-format-produce-export-design.md`.
 
@@ -17,7 +17,7 @@
 - **No mention of Claude/Anthropic/any AI vendor** anywhere (commits, comments, docs).
 - **No `any` introduced.** `bunx tsc --noEmit` clean on touched dirs.
 - Gate `bun run check` must stay **16/16** at the end.
-- `VisualFormat = "static" | "interactive" | "video" | "scrolly"` (from `skills/atelier/src/channel.ts:12`). The chosen format MUST be a member of `allowedFormats(channel)`.
+- `VisualFormat = "static" | "interactive" | "video" | "scrolly"` (from `skills/splash/src/channel.ts:12`). The chosen format MUST be a member of `allowedFormats(channel)`.
 - Frequent commits (one per task minimum).
 
 ---
@@ -25,10 +25,10 @@
 ### Task 1: Pin a single `format` on the spec + suggester chooses one
 
 **Files:**
-- Modify: `skills/atelier/src/channel.ts` — export a `normalizeFormat`/validator if not present; confirm `VisualFormat` + `isFormatAllowed` are exported.
+- Modify: `skills/splash/src/channel.ts` — export a `normalizeFormat`/validator if not present; confirm `VisualFormat` + `isFormatAllowed` are exported.
 - Modify: `skills/suggest-chart/SKILL.md` + `skills/suggest-article/SKILL.md` — the emitted proposal/spec carries exactly ONE `format` (a `VisualFormat`) chosen within `allowedFormats(channel)`; `interactiveDefault` remains the default for article-web, but the suggester commits to ONE (not the whole set).
-- Modify: `skills/atelier/SKILL.md` — PROPOSITION (Gate 2) states the format is part of the vetoable proposal (journalist may change it); the accepted `spec.format` is the single pinned format that flows to produce.
-- Test: `skills/atelier/src/format-pin.test.ts` (new).
+- Modify: `skills/splash/SKILL.md` — PROPOSITION (Gate 2) states the format is part of the vetoable proposal (journalist may change it); the accepted `spec.format` is the single pinned format that flows to produce.
+- Test: `skills/splash/src/format-pin.test.ts` (new).
 
 **Interfaces:**
 - Produces: `spec.format: VisualFormat` present on every accepted proposal; helper `assertFormatAllowed(channel, format): void` (throws if not in the allowed set).
@@ -47,7 +47,7 @@ test("assertFormatAllowed throws when the format is not allowed for the channel"
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails** — `cd skills/atelier && bun test src/format-pin.test.ts` → FAIL (`assertFormatAllowed` not exported).
+- [ ] **Step 2: Run to verify it fails** — `cd skills/splash && bun test src/format-pin.test.ts` → FAIL (`assertFormatAllowed` not exported).
 - [ ] **Step 3: Implement `assertFormatAllowed` in `channel.ts`** (reuse existing `isFormatAllowed`):
 
 ```ts
@@ -59,7 +59,7 @@ export function assertFormatAllowed(channel: Channel, format: VisualFormat): voi
 
 - [ ] **Step 4: Run to verify it passes.**
 - [ ] **Step 5: Update the three SKILL.md files** so the proposal/spec pins ONE `format` (prose; quote `allowedFormats` + `assertFormatAllowed` as the guard the produce step will apply). No new gate — format lives in the existing PROPOSITION.
-- [ ] **Step 6: Commit** — `feat(atelier): pin a single VisualFormat on the accepted spec at PROPOSITION`.
+- [ ] **Step 6: Commit** — `feat(splash): pin a single VisualFormat on the accepted spec at PROPOSITION`.
 
 ---
 
@@ -125,8 +125,8 @@ test("produce static builds only the image, no html", async () => {
 ### Task 4: `produce-all.mjs` passes the single format
 
 **Files:**
-- Modify: `skills/atelier/scripts/produce-all.mjs` — read `spec.format`, `assertFormatAllowed(channel, spec.format)`, and invoke each producer's `produce.mjs` with that single format instead of `"all"`.
-- Test: `skills/atelier/scripts/produce-all-format.test.ts` (new) — asserts the producer is invoked with the spec's format and that a disallowed format fails hard.
+- Modify: `skills/splash/scripts/produce-all.mjs` — read `spec.format`, `assertFormatAllowed(channel, spec.format)`, and invoke each producer's `produce.mjs` with that single format instead of `"all"`.
+- Test: `skills/splash/scripts/produce-all-format.test.ts` (new) — asserts the producer is invoked with the spec's format and that a disallowed format fails hard.
 
 **Interfaces:**
 - Consumes: `spec.format` (Task 1), the single-format `produce.mjs` contract (Tasks 2–3).
@@ -136,15 +136,15 @@ test("produce static builds only the image, no html", async () => {
 - [ ] **Step 2: Run to verify it fails.**
 - [ ] **Step 3: Implement** — thread `spec.format` through `produce-all`, call `assertFormatAllowed`, pass the format arg.
 - [ ] **Step 4: Run to verify it passes.**
-- [ ] **Step 5: Commit** — `feat(atelier): produce-all builds each proposal at its single pinned format`.
+- [ ] **Step 5: Commit** — `feat(splash): produce-all builds each proposal at its single pinned format`.
 
 ---
 
 ### Task 5: `assertDelivered` — new per-format delivery rules
 
 **Files:**
-- Modify: `skills/atelier/src/export-guard.ts` — `assertDelivered` no longer requires `static.html` for an interactive. New rule: the delivery is valid iff it matches the format's shape — `static`→a single image file; `video`→a single `.mp4`; `interactive`/`scrolly`→the chosen form (a `.html` file, OR a source-bundle dir, OR a recorded hosted URL). No `EMBED.md`-lists-everything requirement.
-- Test: `skills/atelier/src/export-guard.test.ts` — replace the static.html-required assertions; add per-format-shape assertions.
+- Modify: `skills/splash/src/export-guard.ts` — `assertDelivered` no longer requires `static.html` for an interactive. New rule: the delivery is valid iff it matches the format's shape — `static`→a single image file; `video`→a single `.mp4`; `interactive`/`scrolly`→the chosen form (a `.html` file, OR a source-bundle dir, OR a recorded hosted URL). No `EMBED.md`-lists-everything requirement.
+- Test: `skills/splash/src/export-guard.test.ts` — replace the static.html-required assertions; add per-format-shape assertions.
 
 **Interfaces:**
 - Consumes: `spec.format` + the chosen delivery form.
@@ -164,19 +164,19 @@ test("assertDelivered accepts an interactive delivery of just interactive.html (
 - [ ] **Step 2: Run to verify it fails** (current assertDelivered demands static.html).
 - [ ] **Step 3: Implement the `(format, form)`-shaped rules.**
 - [ ] **Step 4: Run to verify it passes.**
-- [ ] **Step 5: Commit** — `feat(atelier): assertDelivered validates the single-format delivery shape`.
+- [ ] **Step 5: Commit** — `feat(splash): assertDelivered validates the single-format delivery shape`.
 
 ---
 
 ### Task 6: `export-code.mjs` refonte — per-format delivery + lazy form
 
 **Files:**
-- Modify: `skills/atelier/scripts/export-code.mjs` — branch on `spec.format`:
+- Modify: `skills/splash/scripts/export-code.mjs` — branch on `spec.format`:
   - `static` → copy the media file to a clean delivered path, print it. No folder, no `.html`, no EMBED.md.
   - `video` → deliver the `.mp4` directly.
   - `interactive`/`scrolly` → emit the a/b/c proposal (keep `EXPORT_FORMS_JSON` + the relayable block from the export-form-choice work), then — **only after the choice** — materialize the ONE chosen form: `html` → the `interactive.html`/`scrolly.html`; `code source` → run `export-source.mjs` NOW to build the React bundle; `embed` → run `deploy-embed.mjs` NOW. Do NOT pre-build the bundle or `static.html`.
-- Modify: `skills/atelier/SKILL.md` EXPORT §6 — the new flow (static/video = media direct; interactive/scrolly = propose→wait→build-only-chosen); remove the "produce all forms unconditionally" wording.
-- Test: `skills/atelier/scripts/export-code.test.ts` — update to the new per-format behavior (static delivers the media; interactive emits the proposal and, given a chosen form, delivers only that; the React bundle is absent unless "code source" was chosen).
+- Modify: `skills/splash/SKILL.md` EXPORT §6 — the new flow (static/video = media direct; interactive/scrolly = propose→wait→build-only-chosen); remove the "produce all forms unconditionally" wording.
+- Test: `skills/splash/scripts/export-code.test.ts` — update to the new per-format behavior (static delivers the media; interactive emits the proposal and, given a chosen form, delivers only that; the React bundle is absent unless "code source" was chosen).
 
 **Interfaces:**
 - Consumes: `spec.format` (Task 1), `assertDelivered({format, form})` (Task 5), `export-source.mjs` (bundle), `deploy-embed.mjs` (fly.io).
@@ -185,23 +185,23 @@ test("assertDelivered accepts an interactive delivery of just interactive.html (
 - [ ] **Step 1: Write the failing tests** — static format → export-code delivers the lone media file (no `-export` folder); interactive + chosen form `code source` → the `<id>-source/` bundle exists AND `static.html` does NOT; interactive + chosen form `html` → only `interactive.html`, NO bundle, NO static.html.
 - [ ] **Step 2: Run to verify it fails.**
 - [ ] **Step 3: Implement the format branch + lazy-form materialization.** Reuse the export-form-choice emit machinery; gate the bundle/embed build on the chosen form.
-- [ ] **Step 4: Run to verify it passes.** `cd skills/atelier && bun test scripts/export-code.test.ts`.
+- [ ] **Step 4: Run to verify it passes.** `cd skills/splash && bun test scripts/export-code.test.ts`.
 - [ ] **Step 5: Real e2e render-verify (chart-native interactive):** produce an interactive, run export-code with form `code source`, confirm the `-export` contains the bundle and NO `static.html`; with form `html`, confirm ONLY `interactive.html`. With a static format, confirm the lone image is delivered.
-- [ ] **Step 6: Commit** — `feat(atelier): export-code delivers one format, one lazily-built form; drop the static.html fallback`.
+- [ ] **Step 6: Commit** — `feat(splash): export-code delivers one format, one lazily-built form; drop the static.html fallback`.
 
 ---
 
 ### Task 7: judge.md rubric + locked-decision reversals in the docs
 
 **Files:**
-- Modify: `../atelier-harness/judge.md` — EXPORT/Gate 4 rubric: one format produced alone; static/video = media file directly; interactive/scrolly = the ONE chosen form (lazy); NO auto `static.html`; **"multiple formats produced" or "all delivery forms dumped" is now a DEFECT to flag**; a `static.html` is no longer expected/required.
-- Modify: `CLAUDE.md` (Décisions verrouillées + État courant + backlog) and `docs/atelier/CHANGELOG.md` — record the two reversals (auto static.html a11y fallback removed → a11y = choose `static`; export-form-choice → lazy single-form). Note the out-of-scope follow-ups (seismes video hang, harness a/b/c capture).
-- Test: none (prose). Run `bun run check` (atelier) to confirm the code changes still pass.
+- Modify: `../splash-harness/judge.md` — EXPORT/Gate 4 rubric: one format produced alone; static/video = media file directly; interactive/scrolly = the ONE chosen form (lazy); NO auto `static.html`; **"multiple formats produced" or "all delivery forms dumped" is now a DEFECT to flag**; a `static.html` is no longer expected/required.
+- Modify: `CLAUDE.md` (Décisions verrouillées + État courant + backlog) and `docs/splash/CHANGELOG.md` — record the two reversals (auto static.html a11y fallback removed → a11y = choose `static`; export-form-choice → lazy single-form). Note the out-of-scope follow-ups (seismes video hang, harness a/b/c capture).
+- Test: none (prose). Run `bun run check` (splash) to confirm the code changes still pass.
 
 - [ ] **Step 1: Update `judge.md`** EXPORT step + Gate-4 table to the single-format model; make over-produce a flagged defect.
 - [ ] **Step 2: Update `CLAUDE.md` + `CHANGELOG.md`** with the two decision reversals and the out-of-scope follow-ups.
 - [ ] **Step 3: Final gate** — `bun run check` → **16/16**; run the touched skills' suites once more.
-- [ ] **Step 4: Commit** — `docs(atelier): record single-format redesign + judge rubric; reverse static.html + produce-all-forms decisions`.
+- [ ] **Step 4: Commit** — `docs(splash): record single-format redesign + judge rubric; reverse static.html + produce-all-forms decisions`.
 
 ---
 

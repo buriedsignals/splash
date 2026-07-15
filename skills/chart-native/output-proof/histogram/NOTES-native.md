@@ -5,8 +5,8 @@ max 65 / median 22, single numeric column `minutes`. Produced via:
 
 ```
 bun skills/chart-native/scripts/produce-from-spec.mjs \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/histogram/spec-native.json \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/histogram static
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/histogram/spec-native.json \
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/histogram static
 ```
 
 ## Conformance

@@ -13,7 +13,7 @@
 - **Runtime:** Bun only — `bun`, `bunx`, `bun test`. Never `npm`/`npx`/`node`.
 - **Language:** all code, comments, commit messages, branch names in English.
 - **No attribution:** never mention Claude/Anthropic in any file, commit, or doc. No `Co-Authored-By`. Commit trailer (only if used) EXACTLY: `Claude-Session: https://claude.ai/code/session_01Paz87P3M49t27P9GksL246`
-- **Key hygiene:** MapTiler key via `import.meta.env.VITE_MAPTILER_KEY` (gitignored in `/atelier/.env`). Never hard-code or log the key value.
+- **Key hygiene:** MapTiler key via `import.meta.env.VITE_MAPTILER_KEY` (gitignored in `/splash/.env`). Never hard-code or log the key value.
 - **No jank:** stickiness is CSS `position: sticky` ONLY — no scroll-position listeners driving layout. Step changes come from an IntersectionObserver.
 - **Accessibility:** `prefers-reduced-motion` → `jumpTo` instead of `flyTo`; never steal focus to the map on step change; container `aria-label`; prose steps are real text.
 - **Reuse, don't duplicate:** import `computeChoropleth`, `deriveMapStory`, `theme/colors`, the world geojson, and the `CountryLabel` annotation from `skills/map-native` — do not re-implement them.
@@ -544,7 +544,7 @@ git commit -m "feat(scrolly): conformance + render-free audit + browser scroll s
 
 - [ ] **Step 1: Produce the sample scrolly**
 
-Run (key sourced from `/atelier/.env`, never logged):
+Run (key sourced from `/splash/.env`, never logged):
 ```bash
 cd skills/scrolly && set -a && . ../../.env && set +a \
   && bun scripts/produce.mjs assets/sample-data/scrolly.json output-proof

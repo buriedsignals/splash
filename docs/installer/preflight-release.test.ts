@@ -17,5 +17,5 @@ test("release gate scans BOTH bootstraps for the placeholder marker, not just co
 
 test("release gate fails while REF is the moving 'main' (must be a pinned release tag)", () => {
   expect(src.toLowerCase()).toContain("ref pinned");
-  expect(src).toContain("ATELIER_REF:-main");
+  expect(src).toMatch(/SPLASH_REF:-.*main/);
 });

@@ -16,7 +16,7 @@
 - **No-data** regions render neutral grey AND are named "No data" in the legend — never charted as 0.
 - **basemap-fit:** `fitBounds` to the joined-data extent (EU story → Europe, not the world). Enforced by the core's bounds + the audit.
 - Each preset declares its canonical join key (`world`→ISO-A3; `fr-departments`→dept code; `us-states`→2-letter postal). Unmatched CSV rows are REPORTED, never silently dropped.
-- MapTiler key in `/atelier/.env`: `REMOTION_MAPTILER_KEY` (video/server) + `VITE_MAPTILER_KEY` (web). Gitignored; never logged or committed.
+- MapTiler key in `/splash/.env`: `REMOTION_MAPTILER_KEY` (video/server) + `VITE_MAPTILER_KEY` (web). Gitignored; never logged or committed.
 - Code/comments/commits in English. No Claude/Anthropic mention in any artifact.
 
 ---
@@ -93,7 +93,7 @@ Fix the import paths in `Root.tsx`/`RiverReveal.tsx` so they line up with this l
 
 - [ ] **Step 3: Set the MapTiler key**
 
-Add to `/atelier/.env` (ask the operator for a free MapTiler key if absent):
+Add to `/splash/.env` (ask the operator for a free MapTiler key if absent):
 
 ```
 REMOTION_MAPTILER_KEY=<key>
@@ -104,7 +104,7 @@ VITE_MAPTILER_KEY=<key>
 
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 npx remotion render remotion/src/index.ts MapExplainer out/harness-check.mp4 --gl=angle --concurrency=1 --timeout=120000
 ```
 Expected: `out/harness-check.mp4` is written; opening it shows the Yarlung river drawing on with countries lighting up (matches Tom's `assets/preview.png`). If the map is blank, the key or `--gl=angle`/`preserveDrawingBuffer` is wrong — fix before proceeding (this is the de-risk gate).
@@ -498,7 +498,7 @@ The composition wraps `ChoroplethMap` with `progress = interpolate(frame/(durati
 - [ ] **Step 3: Render the three videos**
 
 ```bash
-cd skills/map-native && set -a; source /atelier/.env; set +a
+cd skills/map-native && set -a; source /splash/.env; set +a
 for C in ChoroplethReveal ChoroplethSquare ChoroplethPortrait; do \
   npx remotion render remotion/src/index.ts $C output-proof/choropleth/$C.mp4 --gl=angle --concurrency=1 --timeout=120000; done
 ```
@@ -576,7 +576,7 @@ git commit -m "docs(map-native): engine SKILL — foundation (Tom's harness), re
 
 ## Notes for the implementer
 
-- Paths are relative to `/Users/rmdms/Sites/Professional/atelier`.
+- Paths are relative to `/Users/rmdms/Sites/Professional/splash`.
 - Tasks 2 and 3 are pure-core TDD with complete code. Tasks 1, 4, 5, 6 are MapTiler/Remotion integration: implement against the LIVE `@maptiler/sdk` following Tom's `~/Downloads/map-animation/map-explainer/references/architecture.md` §1 (the per-frame `delayRender`/`idle` gate, `--gl=angle`, `preserveDrawingBuffer`), and VERIFY by rendering/driving the browser — not by a unit test that can't exercise WebGL.
 - The MapTiler key is a hard prerequisite for Tasks 1, 4, 5, 6 (rendering). If absent, stop and ask the operator (free tier).
 - Reuse, don't fork: copy the two WCAG functions into `src/conformance.ts` (Task 3); port the audit/snap/produce scripts from `chart-native/scripts/` rather than re-deriving them.

@@ -13,7 +13,7 @@
 - **Runtime:** Bun only — `bun`, `bunx`, `bun test`. Never `npm`/`npx`/`node`.
 - **Language:** all code, comments, commit messages in English.
 - **No attribution:** never mention Claude/Anthropic. No `Co-Authored-By`. Commit trailer (only if used) EXACTLY: `Claude-Session: https://claude.ai/code/session_01Paz87P3M49t27P9GksL246`
-- **No article text in the module:** captions are derived from the DATA + the insight only. Never pull/duplicate article prose. (Grounded in `docs/atelier/embeddable-module-best-practices.md`.)
+- **No article text in the module:** captions are derived from the DATA + the insight only. Never pull/duplicate article prose. (Grounded in `docs/splash/embeddable-module-best-practices.md`.)
 - **Each furniture element once:** title (header), description (intro caption), source (footer) — no element repeated as a step caption.
 - **Determinism:** `mapStoryToChapters` is pure — no `Date`/`Math.random`.
 - **Key hygiene:** MapTiler key via env only for the build steps; never hard-code or log it.
@@ -334,7 +334,7 @@ In `assets/sample-data/scrolly.json`, add a top-level field:
 
 - [ ] **Step 4: Typecheck + produce + scroll smoke**
 
-Run (key sourced from `/atelier/.env`, never logged):
+Run (key sourced from `/splash/.env`, never logged):
 ```bash
 cd skills/scrolly && bunx tsc --noEmit 2>&1 | grep -iE "Scrolly|ScrollyMap" || echo "no new type errors"
 set -a && . ../../.env && set +a
@@ -345,7 +345,7 @@ Expected: produce writes `output-proof/scrolly.html`; smoke is GREEN (scrollable
 
 - [ ] **Step 5: Update SKILL.md**
 
-Add a short "Embeddable module" section to `skills/scrolly/SKILL.md`: the scrolly is a self-contained module embedded into an article — its captions are data-tied (rank-aware), NEVER article excerpts; it carries title (header) + description (intro caption) + source (footer), each once; 3–6 steps. Point at `docs/atelier/embeddable-module-best-practices.md`.
+Add a short "Embeddable module" section to `skills/scrolly/SKILL.md`: the scrolly is a self-contained module embedded into an article — its captions are data-tied (rank-aware), NEVER article excerpts; it carries title (header) + description (intro caption) + source (footer), each once; 3–6 steps. Point at `docs/splash/embeddable-module-best-practices.md`.
 
 - [ ] **Step 6: Commit**
 

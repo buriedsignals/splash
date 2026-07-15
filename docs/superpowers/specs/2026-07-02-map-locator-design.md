@@ -159,7 +159,7 @@ adapting glyph/label/legend colours per style. Validated in `validateLocatorConf
 - Code, comments, commits, branch names in **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer in any
   commit / PR / file / README / doc.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log the value.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log the value.
 - Reuse existing building blocks (MapFrame, bounds/fit, reveal/story/scrolly pipeline,
   `resolveScene`, `resolveMapStyle`, `QUALITATIVE` palette); do not fork them.
 - Frame-deterministic Remotion for Slice B (no `Date.now`/`Math.random`/argless `new Date()`).

@@ -14,7 +14,7 @@
 
 The confirmed distribution channel (CADRAGE Q3) hard-restricts which formats are even eligible for a
 given piece — this gate runs BEFORE the escalation ladder in GATE 0→5, not after it. Code source of
-truth: `skills/atelier/src/channel.ts` (`CHANNELS`, `allowedFormats`, `isFormatAllowed`). Exactly three
+truth: `skills/splash/src/channel.ts` (`CHANNELS`, `allowedFormats`, `isFormatAllowed`). Exactly three
 channels:
 
 | Channel | Allowed formats | Aspect / size | Rule |
@@ -48,7 +48,7 @@ the insight can be annotated directly on the chart · general audience · tight 
 channel default is now interactive (GATE -1) as a deliberate product choice, so this grounding no longer
 functions as a gate you must pass to reach interactive — instead it is the **reason to PIN the `static`
 FORMAT when the piece needs reach / no-JS accessibility** (see GATE 2). Under the single-format contract
-(single-format redesign, `skills/atelier/SKILL.md`) there is **NO fallback auto-produced alongside an
+(single-format redesign, `skills/splash/SKILL.md`) there is **NO fallback auto-produced alongside an
 interactive**: the ONE format pinned at PROPOSITION is the ONLY artifact produced and delivered.
 Accessibility without JavaScript = choosing the `static` format — never an automatic byproduct of
 interactive. The reach argument doesn't disappear when interactive wins the channel default; it becomes

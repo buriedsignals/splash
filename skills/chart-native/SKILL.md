@@ -123,7 +123,7 @@ so the frame Gate-3 approves is the frame that ships — and that the mp4's **fi
 separately-rendered final still** (`video-<aspect>-final.png`, `--frame=-1`): the end state is the
 most-read frame, so "end-state value labels never appear" fails hard instead of shipping (measurements +
 thresholds land in `video-verify.json`). The render itself is bounded by a **watchdog** (`src/video-watchdog.ts`, default
-15 min, `ATELIER_VIDEO_TIMEOUT_MS` override) that kills a hung Remotion process tree — a clean fail-hard
+15 min, `SPLASH_VIDEO_TIMEOUT_MS` override) that kills a hung Remotion process tree — a clean fail-hard
 instead of a burned run. The static and
 interactive web builds need relative asset paths (`base:"./"`); the static page is served over a tiny
 local http server for the screenshot because module scripts get `crossorigin` and won't load over
@@ -199,7 +199,7 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 | When the interactive reveal plays | `ANIMATE_ON` (`"scroll"` \| `"load"` \| `"none"`) | `src/mount.tsx` |
 | Interactive reveal duration | `durationMs` (1200) | `src/InteractiveLineChart.tsx` |
 | Interactive chart height / min width | `height` (480) / `minWidth` (280) | `src/InteractiveLineChart.tsx` |
-| Render watchdog ceiling | `DEFAULT_VIDEO_TIMEOUT_MS` (900000 = 15 min; env `ATELIER_VIDEO_TIMEOUT_MS`) | `src/video-watchdog.ts` |
+| Render watchdog ceiling | `DEFAULT_VIDEO_TIMEOUT_MS` (900000 = 15 min; env `SPLASH_VIDEO_TIMEOUT_MS`) | `src/video-watchdog.ts` |
 | Video snap sensitivity | `REVEAL_MIN_MEAN_DIFF` (0.5) / `PROGRESSION_MIN_MEAN_DIFF` (0.15) / `MIN_LUMA_VARIANCE` (10) / `STILL_MATCH_CHANNEL_TOLERANCE` (40) / `STILL_MATCH_MAX_DIFF_RATIO` (0.01) | `src/core/video-verify.ts` |
 | Label-fit slack (render guard) | `LABEL_FIT_TOLERANCE_PX` (4 — measured 3px healthy em-box ascent overhang at the responsive svg top edge + 1px sub-pixel) | `src/core/label-fit.ts` |
 | Label-fit assert widths (interactive) | `WIDTHS` (360 + 1100 — 360 = the narrowest snap-responsive proof width, where the stacked-area band-label clip reproduced while hiding at 380px; 1100 = the standard embed width, as snap-tooltip-viewport) | `scripts/snap-label-fit.mjs` |
@@ -214,7 +214,7 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 - `remotion/src/{Root,LineReveal}.tsx` + `remotion/index.ts` — the Remotion composition (video).
 - `scripts/{build-all,snap-static,snap-interactive,render-video}.mjs` — the three renderers.
 - `scripts/snap-video.mjs` — video snap guard (fail-hard after the mp4 render): container sanity + reveal-animates + mp4-matches-reviewed-still + final-frame-matches-final-still, via the bundled ffmpeg (`scripts/lib/ffbin.mjs`); pure pixel math in `src/core/video-verify.ts`.
-- `src/video-watchdog.ts` — bounds every Remotion render/still subprocess (default 15 min, `ATELIER_VIDEO_TIMEOUT_MS`); kills a hung process tree instead of burning the run.
+- `src/video-watchdog.ts` — bounds every Remotion render/still subprocess (default 15 min, `SPLASH_VIDEO_TIMEOUT_MS`); kills a hung process tree instead of burning the run.
 - `scripts/snap-label-fit.mjs` — render-time label-fit guard (fail-hard in `produce.mjs`, static + interactive paths): every rendered text (svg labels — rotated included, the AABB is what must fit — plus the ChartFrame title/subtitle/source) must sit inside the chart card ∩ its svg viewport (svg overflow is hidden by default, so the svg rect IS the clip box) ∩ any ancestor `<clipPath>` rect (the reveal-wipe class: text cut mid-word by a clip rect ending inside the svg) within `LABEL_FIT_TOLERANCE_PX`; ZERO text found = fail (vacuity guard). The interactive (responsive) dist is asserted at a NARROW and a WIDE viewport (360 + 1100px — the responsive re-layout clipped at 360px what fit at 900px); the static dist is a fixed-size card, one viewport. Pure containment math in `src/core/label-fit.ts` (unit-tested); box measurement in `scripts/lib/collect-text-boxes.mjs` (clipPath scope: userSpaceOnUse rect-only children, anything else fails open — boundary documented there). Out of scope v1: label-vs-label overlap (`bun run audit` covers it at test time), contrast (the contrast snaps own it), video frames + map-native GL canvas text (no built page / no DOM to measure — indirect coverage only).
 - `scripts/snap-responsive.mjs` — proof harness: screenshots the interactive build at 360/768/1100px (responsive) + an early frame (reveal from 0).
 - `scripts/lib/furniture-i18n.mjs` — i18n furniture gate (fail-hard, runs inside `snap-contrast.mjs` + `snap-interactive-contrast.mjs`'s existing page load): a non-English config's rendered FURNITURE (title/subtitle/source — HTML outside the `<svg>`; data labels exempt) must carry the localized "Source" label from `src/core/locale.ts`, no `ENGLISH_FURNITURE_BLOCKLIST` caption, no unambiguously English-grouped number.

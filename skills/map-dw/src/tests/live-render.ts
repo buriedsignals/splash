@@ -10,9 +10,9 @@ import { chromium } from "../../../dw-chart/node_modules/playwright/index.mjs";
 // CDN/THROTTLE RESILIENCE. A freshly published Datawrapper chart can lag its published
 // HTML (and 404 its assets) for a short CDN-propagation window right after publish —
 // the documented review-gate rule ("Probing a published Datawrapper chart — propagation
-// lag is not a data defect", skills/atelier/references/render-review.md) already
+// lag is not a data defect", skills/splash/references/render-review.md) already
 // mandates ONE retry after `DW_DATASET_PROPAGATION_RETRY_MS` (30 000 ms,
-// skills/atelier/src/review-gate.ts) before treating a probe failure as real. The same
+// skills/splash/src/review-gate.ts) before treating a probe failure as real. The same
 // class of failure stalls THIS read chain in the sequential root gate: by the time
 // map-dw runs, the earlier dw-chart suites have published ~15 live charts and DW
 // throttling/CDN lag can leave the embed un-rendered or hover-dead on first load.

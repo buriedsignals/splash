@@ -13,7 +13,7 @@
 // data loss), so those types keep the channel WIDTH but export at their natural height.
 
 import type { ChartType } from "./chart-spec";
-import { CHANNELS, normalizeChannel } from "../../atelier/src/channel";
+import { CHANNELS, normalizeChannel } from "../../splash/src/channel";
 
 export interface ExportSize {
   width: number;
@@ -46,7 +46,7 @@ export const DEFAULT_EXPORT_ASPECT: ExportAspect = "landscape";
 // Every CADRAGE channel answer we recognize → one canonical aspect. The keyword
 // table (feed/square, social/vertical/story/reel/tiktok/shorts, web/article/embed/…)
 // now lives ONCE in the shared cross-producer channel model
-// (skills/atelier/src/channel.ts `normalizeChannel`) so dw-chart, suggest-chart, and
+// (skills/splash/src/channel.ts `normalizeChannel`) so dw-chart, suggest-chart, and
 // produce-all's conformance check can't drift from each other. Resolve the
 // free-text channel string to the canonical enum there, then read its aspect.
 //

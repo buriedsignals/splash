@@ -24,8 +24,8 @@ starts contour fresh on a new branch from `main`.
 
 - Runtime **Bun** always; tests `bun test`. English everywhere. **No** Claude/Anthropic mention, **no**
   `Co-Authored-By`, **no** Claude-Session trailer.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it;
-  `set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a`.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it;
+  `set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a`.
 - **Determinism:** pure function of config; turf isobands/isolines deterministic; no `Date.now`/`Math.random`.
 - **NO interpolation / NO IDW / NO convex-hull clip.** Bands/lines come straight from the grid values; the
   footprint follows the non-null cells (via the sentinel no-data band, dropped).
@@ -192,7 +192,7 @@ Modify `src/mount.tsx`, `scripts/produce.mjs`.
 - [ ] **Step 5: Render-verify** — COMMIT first:
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bun scripts/produce.mjs assets/sample-data/contour-bands.json /tmp/contourg/bands static
 bun scripts/produce.mjs assets/sample-data/contour-both.json /tmp/contourg/both static
 ```

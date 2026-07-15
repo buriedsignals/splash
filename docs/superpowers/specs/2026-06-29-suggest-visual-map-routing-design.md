@@ -70,7 +70,7 @@ Self-check: the emitted `MapSpec` must pass `map-dw`'s validator before producin
 
 Route the `MapSpec` to `map-dw`'s producer (the existing seam `MapSpec → spec-to-map-metadata →
 produceMap`), which returns a Datawrapper embed + an owned PNG. The Datawrapper token comes from
-`/atelier/.env` (`DATAWRAPPER_API_TOKEN`), never logged.
+`/splash/.env` (`DATAWRAPPER_API_TOKEN`), never logged.
 
 ## Eval — prove the routing (the gate)
 

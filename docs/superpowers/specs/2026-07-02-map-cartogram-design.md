@@ -139,7 +139,7 @@ interactive scrolly done right per the point-types lesson. All three sizes, `cal
 - Runtime **Bun** always (never npm/node); tests `bun test`.
 - Code, comments, commits, branch names in **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it.
 - Reuse existing building blocks (choropleth join + binning + `BLUES`/`DIVERGING` scale, hex-grid cell
   drawing, MapFrame, reveal/story/scrolly pipeline, `resolveScene`, `resolveMapStyle`, the `ScrollyXMap`
   interactive-scrolly pattern); do not fork them. Use turf `centroid`/`transformScale`/`bbox`.

@@ -7,8 +7,8 @@ coal/gas/renewables (Ember-style German power-mix data), a composition-over-time
 Command (absolute paths, `static` format):
 ```
 bun skills/chart-native/scripts/produce-from-spec.mjs \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/stacked-area/spec-native.json \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/stacked-area static
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/stacked-area/spec-native.json \
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/stacked-area static
 ```
 
 Produce output (relevant lines):

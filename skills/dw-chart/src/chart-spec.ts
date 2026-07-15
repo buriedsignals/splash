@@ -20,7 +20,7 @@ export const DEFAULT_BASE_COLOR = "#0072B2";
 
 // Subjects for which the default blue IS the subject-fit choice (water, cold, sky,
 // finance-neutral). For these the guard does not fire on the default. Everything else
-// with a subject must pick a non-default hue. Exported so the atelier spine's
+// with a subject must pick a non-default hue. Exported so the splash spine's
 // guardrail-parity gate re-applies the SAME blue-fit subject list to native specs at the
 // produce boundary (single source of truth — the two must never drift).
 export const BLUE_FIT_SUBJECT =
@@ -394,7 +394,7 @@ export function validateChartSpec(
     return { ok: false, errors: ["spec must be an object"] };
   const s = input as Record<string, unknown>;
   // STRICT TOP-LEVEL FIELDS (fail-closed, same philosophy as normalizeChannel in
-  // skills/atelier/src/channel.ts: an unknown input must fail LOUD, never silently
+  // skills/splash/src/channel.ts: an unknown input must fail LOUD, never silently
   // pass through). The QA Wave 8 German-hospital case shipped an UNhighlighted chart
   // because the emitter's hallucinated `highlight`/`highlightColor` fields were
   // silently ignored here — only manual pixel inspection caught it. Any field outside

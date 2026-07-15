@@ -6,7 +6,7 @@
 // field is not torn into extra cells / records), a doubled quote ("") is an escaped
 // ", and the surrounding quotes are stripped. Unquoted cells are whitespace-trimmed;
 // a quoted cell's interior is preserved verbatim. This mirrors the correct round-trip
-// in skills/atelier/src/map-data.ts (kept as a sibling — not imported across skills).
+// in skills/splash/src/map-data.ts (kept as a sibling — not imported across skills).
 export interface ParsedCsv {
   columns: string[];
   rows: Record<string, string | number>[];

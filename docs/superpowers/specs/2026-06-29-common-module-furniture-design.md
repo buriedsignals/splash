@@ -8,7 +8,7 @@ dw-chart already carry the furniture. This implements it where missing and docum
 
 ## The shared contract (already written)
 
-The standard lives in `docs/atelier/embeddable-module-best-practices.md`: every module carries an insight
+The standard lives in `docs/splash/embeddable-module-best-practices.md`: every module carries an insight
 title (the finding), a description (what/when/where + units), and a visible linked source — each shown
 once — and is responsive (the `min()/clamp()/vw` recipe). Engines stay **independent** (no shared
 conformance module — consistent with how they're built today); the reference is the single source of truth.

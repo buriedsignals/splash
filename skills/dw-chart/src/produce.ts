@@ -19,17 +19,17 @@ import {
   assertRenderedSize,
   normalizeChannel,
   renderSize,
-} from "../../atelier/src/channel";
+} from "../../splash/src/channel";
 
 // The single-format-produce-export redesign's vocabulary, restricted to the two
 // values dw-chart actually builds differently (it has no video/scrolly — see
 // Task 3's brief). Kept as a plain string union (not the shared VisualFormat) so the
-// orchestrator-level gate (skills/atelier/src/adapters.ts) stays the one place that
+// orchestrator-level gate (skills/splash/src/adapters.ts) stays the one place that
 // knows the wider vocabulary (mirrors map-dw's DwMapFormat).
 export type DwChartFormat = "static" | "interactive";
 
 // Width-leg tolerance for the row-driven render-size floor below — the same ±2px
-// assertRenderedSize (skills/atelier/src/channel.ts) defaults to for the pinned-box
+// assertRenderedSize (skills/splash/src/channel.ts) defaults to for the pinned-box
 // branch: absorbs the 1px sub-pixel rounding of halving an odd channel dimension,
 // still far below any real density/aspect mismatch.
 const RENDER_SIZE_TOLERANCE_PX = 2;

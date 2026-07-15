@@ -22,7 +22,7 @@ in one merge.
 - Runtime **Bun** always — never npm/node. Tests: `bun test`; dev/build: `bun`/`bunx vite`.
 - Code, comments, commits, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it. Components read
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it. Components read
   `import.meta.env.VITE_MAPTILER_KEY` and fail fast if absent (existing guard — copy it verbatim).
 - **Uniform-cell invariant** (hex-grid): cell colour encodes magnitude, never cell size; no size legend.
 - **Locator:** camera stays on the data zone (the over-zoom lesson); no double text — the caption is the
@@ -133,7 +133,7 @@ Expected: clean (apart from any pre-existing errors unrelated to this change).
 
 ```bash
 cd skills/scrolly
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('../map-native/assets/sample-data/hex-grid-count.json','utf8'));fs.writeFileSync('/tmp/isc-hex.json',JSON.stringify(c))"
 CONFIG_JSON=/tmp/isc-hex.json bun scripts/smoke.mjs 2>&1 | tail -20 || true
 ```

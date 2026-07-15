@@ -16,7 +16,7 @@
 - **Mirror the existing docs** — `knowledge/references/design-conformance.md` (terse global checklist style) and `knowledge/references/map/types/proportional-symbol.md` (type-ref structure).
 - **Pure docs** — no code, no renders, no test changes.
 
-All paths are relative to the repo root `/Users/rmdms/Sites/Professional/atelier`.
+All paths are relative to the repo root `/Users/rmdms/Sites/Professional/splash`.
 
 ---
 

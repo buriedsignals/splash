@@ -21,7 +21,7 @@ _Every task's requirements implicitly include this section._
 - Only the **`claude`** runtime is `verified`; `codex`/`gemini`/`goose` stay "coming soon".
 - The gate `bun run check` (currently 14/14) MUST stay green. **Zero new `any`.**
 - Work branch: `feat/cross-platform-installer` (already checked out).
-- Bootstraps live at repo-root `install/`, hosted via `raw.githubusercontent.com/<repo>/<ref>/install/…`. `REPO_URL` / `REF` are placeholders until the public repo is confirmed (tracked by `scripts/preflight-release.mjs`); `buriedsignals/atelier` + `main` are the working defaults.
+- Bootstraps live at repo-root `install/`, hosted via `raw.githubusercontent.com/<repo>/<ref>/install/…`. `REPO_URL` / `REF` are placeholders until the public repo is confirmed (tracked by `scripts/preflight-release.mjs`); `buriedsignals/splash` + `main` are the working defaults.
 - **★ AMENDMENT (supersedes the bare-`node` runner in Tasks 6–7):** snap steps run via **`tsx`** on Windows, not `node` — the snap scripts import `.ts` with **extensionless** specifiers that node cannot resolve (bun/tsx can), and node ≤22 can't read `.ts` at all. `tsx` runs under the Node runtime (avoids the Bun+Playwright hang) with bun-like resolution. Design: `snapCommand(p) → ["npx","tsx"] | ["bun"]`; `remotionCommand(p) → ["npx","remotion"] | ["bunx","remotion"]`. `tsx` is a pinned devDep in chart-native + map-native (esbuild already present). Validated on Mac: chart-native snap under local tsx → PNG byte-identical to bun; map-native `.ts` chain resolves under tsx. Where Tasks 6/7 below say `snapRunner`/`remotionRunner`/`node`, read `snapCommand`/`remotionCommand`/`tsx` per this amendment.
 
 ---
@@ -137,7 +137,7 @@ The core. Replace the single baked-script generator with per-OS, per-mode genera
 - Consumes: `RUNTIMES` from Task 1 (`rt.keyEnv`, `rt.verified`).
 - Produces:
   - `bootstrapUrl(os: "mac"|"windows") -> string` (raw URL to `bootstrap.sh`/`bootstrap.ps1`).
-  - `launcherFilename(os) -> "atelier-setup.command"|"atelier-setup.cmd"`.
+  - `launcherFilename(os) -> "splash-setup.command"|"splash-setup.cmd"`.
   - `generateCopyPaste({ os, runtime, keys, embed }) -> string` (bash or PowerShell one-liner).
   - `generateLauncher({ os, runtime, keys, embed }) -> { filename, contents }`.
   - `keys = { ai, maptiler, datawrapper }`, `embed = { app, flyToken }`.
@@ -191,7 +191,7 @@ test("copy-paste NEVER inlines install logic — only keys + a fetch", () => {
 
 test("mac launcher .command self-heals quarantine and is valid bash", () => {
   const { filename, contents } = generateLauncher({ ...base, os: "mac" });
-  expect(filename).toBe("atelier-setup.command");
+  expect(filename).toBe("splash-setup.command");
   expect(contents).toContain("xattr -d com.apple.quarantine");
   expect(contents.startsWith("#!/usr/bin/env bash")).toBe(true);
   const proc = Bun.spawnSync(["bash", "-n"], { stdin: Buffer.from(contents) });
@@ -200,7 +200,7 @@ test("mac launcher .command self-heals quarantine and is valid bash", () => {
 
 test("windows launcher .cmd wraps PowerShell with ExecutionPolicy Bypass, never a .ps1", () => {
   const { filename, contents } = generateLauncher({ ...base, os: "windows" });
-  expect(filename).toBe("atelier-setup.cmd");
+  expect(filename).toBe("splash-setup.cmd");
   expect(contents).toContain('set "ANTHROPIC_API_KEY=sk-ant-TEST"');
   expect(contents).toContain("powershell -ExecutionPolicy Bypass -Command");
   expect(contents).toContain("| iex");
@@ -214,7 +214,7 @@ test("bootstrapUrl points at the raw hosted bootstrap per OS", () => {
 
 test("optional embed keys are carried when provided", () => {
   const s = generateCopyPaste({ ...base, os: "mac", embed: { app: "myroom-embeds", flyToken: "FLY-TEST" } });
-  expect(s).toContain("export ATELIER_EMBED_APP='myroom-embeds'");
+  expect(s).toContain("export SPLASH_EMBED_APP='myroom-embeds'");
   expect(s).toContain("export FLY_API_TOKEN='FLY-TEST'");
 });
 ```
@@ -233,9 +233,9 @@ Expected: FAIL (old API `generateScript` gone / new exports missing).
 // keys and point at that bootstrap.
 import { RUNTIMES } from "./runtimes.js";
 
-const REPO_URL = "https://github.com/buriedsignals/atelier"; // confirm before public release
+const REPO_URL = "https://github.com/buriedsignals/splash"; // confirm before public release
 const REF = "main"; // pin to a release tag before public release
-const REPO_PATH = new URL(REPO_URL).pathname.replace(/^\//, ""); // "buriedsignals/atelier"
+const REPO_PATH = new URL(REPO_URL).pathname.replace(/^\//, ""); // "buriedsignals/splash"
 
 export function bootstrapUrl(os) {
   const file = os === "windows" ? "bootstrap.ps1" : "bootstrap.sh";
@@ -243,7 +243,7 @@ export function bootstrapUrl(os) {
 }
 
 export function launcherFilename(os) {
-  return os === "windows" ? "atelier-setup.cmd" : "atelier-setup.command";
+  return os === "windows" ? "splash-setup.cmd" : "splash-setup.command";
 }
 
 function assertRuntime(config) {
@@ -264,7 +264,7 @@ function envPairs(config) {
     ["VITE_MAPTILER_KEY", k.maptiler ?? ""],
     ["REMOTION_MAPTILER_KEY", k.maptiler ?? ""],
     ["DATAWRAPPER_API_TOKEN", k.datawrapper ?? ""],
-    ["ATELIER_EMBED_APP", e.app ?? ""],
+    ["SPLASH_EMBED_APP", e.app ?? ""],
     ["FLY_API_TOKEN", e.flyToken ?? ""],
   ];
 }
@@ -291,7 +291,7 @@ export function generateLauncher(config) {
     const sets = pairs.map(([k, v]) => `set "${k}=${v}"`).join("\r\n");
     const contents =
       "@echo off\r\n" +
-      "rem atelier-setup.cmd — generated by the Atelier installer. Has your keys; delete after a successful run.\r\n" +
+      "rem splash-setup.cmd — generated by the Splash installer. Has your keys; delete after a successful run.\r\n" +
       sets + "\r\n" +
       `powershell -ExecutionPolicy Bypass -Command "irm ${url} | iex"\r\n` +
       "pause\r\n";
@@ -300,7 +300,7 @@ export function generateLauncher(config) {
   const exports = pairs.map(([k, v]) => `export ${k}='${v}'`).join("\n");
   const contents =
     "#!/usr/bin/env bash\n" +
-    "# atelier-setup.command — generated by the Atelier installer. Has your keys; delete this file after a successful run.\n" +
+    "# splash-setup.command — generated by the Splash installer. Has your keys; delete this file after a successful run.\n" +
     'chmod +x "$0" 2>/dev/null; xattr -d com.apple.quarantine "$0" 2>/dev/null || true\n' +
     exports + "\n" +
     `curl -fsSL ${url} | bash\n`;
@@ -329,8 +329,8 @@ git commit -m "feat(installer): per-OS copy-paste + launcher generators pointing
 - Test: `docs/installer/bootstrap-sh.test.ts`
 
 **Interfaces:**
-- Consumes (env, set by caller): `ANTHROPIC_API_KEY`, `VITE_MAPTILER_KEY`, `REMOTION_MAPTILER_KEY`, `DATAWRAPPER_API_TOKEN`, `ATELIER_EMBED_APP`, `FLY_API_TOKEN`, optional `ATELIER_REF`.
-- Produces: `~/Atelier` populated, `~/Atelier/.env`, `~/Atelier/Launch Atelier.command`.
+- Consumes (env, set by caller): `ANTHROPIC_API_KEY`, `VITE_MAPTILER_KEY`, `REMOTION_MAPTILER_KEY`, `DATAWRAPPER_API_TOKEN`, `SPLASH_EMBED_APP`, `FLY_API_TOKEN`, optional `SPLASH_REF`.
+- Produces: `~/Splash` populated, `~/Splash/.env`, `~/Splash/Launch Splash.command`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -362,7 +362,7 @@ test("acquires the repo by zip and installs the render engine", () => {
 
 test("writes .env from env vars and a local double-click launcher, then scrubs secrets", () => {
   expect(sh).toContain("ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}");
-  expect(sh).toContain("Launch Atelier.command");
+  expect(sh).toContain("Launch Splash.command");
   expect(sh).toContain("unset ANTHROPIC_API_KEY");
 });
 ```
@@ -376,17 +376,17 @@ Expected: FAIL (file missing).
 
 ```bash
 #!/usr/bin/env bash
-# Atelier bootstrap (macOS / Linux). Idempotent — safe to re-run. Contains NO keys:
+# Splash bootstrap (macOS / Linux). Idempotent — safe to re-run. Contains NO keys:
 # the copy-paste one-liner and the downloaded launcher both set the key env vars BEFORE
-# invoking this, and this script writes them into ~/Atelier/.env.
+# invoking this, and this script writes them into ~/Splash/.env.
 set -euo pipefail
 
-REPO="https://github.com/buriedsignals/atelier"   # confirm before public release (preflight-release.mjs)
-REF="${ATELIER_REF:-main}"
-DEST="$HOME/Atelier"
+REPO="https://github.com/buriedsignals/splash"   # confirm before public release (preflight-release.mjs)
+REF="${SPLASH_REF:-main}"
+DEST="$HOME/Splash"
 NATIVE_SKILLS=("skills/chart-native" "skills/map-native")
 
-echo "-> Installing Atelier (a few minutes)…"
+echo "-> Installing Splash (a few minutes)…"
 
 # 1. Bun (its own installer — no Homebrew)
 if ! command -v bun >/dev/null 2>&1; then
@@ -403,13 +403,13 @@ if ! command -v claude >/dev/null 2>&1; then
 fi
 export PATH="$HOME/.local/bin:$PATH"
 
-# 3. Atelier source (zip — no git; extracts to atelier-<ref>/)
+# 3. Splash source (zip — no git; extracts to splash-<ref>/)
 if [ ! -d "$DEST" ]; then
-  echo "-> Downloading Atelier…"
+  echo "-> Downloading Splash…"
   tmp="$(mktemp -d)"
-  curl -fsSL "$REPO/archive/$REF.zip" -o "$tmp/atelier.zip"
-  unzip -q "$tmp/atelier.zip" -d "$tmp"
-  mv "$tmp"/atelier-* "$DEST"
+  curl -fsSL "$REPO/archive/$REF.zip" -o "$tmp/splash.zip"
+  unzip -q "$tmp/splash.zip" -d "$tmp"
+  mv "$tmp"/splash-* "$DEST"
   rm -rf "$tmp"
 fi
 
@@ -420,19 +420,19 @@ for skill in "${NATIVE_SKILLS[@]}"; do
 done
 ( cd "$DEST/skills/chart-native" && bunx playwright install chromium )
 
-# 5. Write ~/Atelier/.env from the env vars the caller set
+# 5. Write ~/Splash/.env from the env vars the caller set
 echo "-> Writing configuration…"
 cat > "$DEST/.env" <<ENV
 ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
 VITE_MAPTILER_KEY=${VITE_MAPTILER_KEY:-}
 REMOTION_MAPTILER_KEY=${REMOTION_MAPTILER_KEY:-}
 DATAWRAPPER_API_TOKEN=${DATAWRAPPER_API_TOKEN:-}
-ATELIER_EMBED_APP=${ATELIER_EMBED_APP:-}
+SPLASH_EMBED_APP=${SPLASH_EMBED_APP:-}
 FLY_API_TOKEN=${FLY_API_TOKEN:-}
 ENV
 
 # 6. Local double-click launcher (created locally → no quarantine → clean re-launch)
-launcher="$DEST/Launch Atelier.command"
+launcher="$DEST/Launch Splash.command"
 cat > "$launcher" <<'LAUNCH'
 #!/usr/bin/env bash
 cd "$(dirname "$0")" && set -a && . ./.env && set +a && claude --plugin-dir .
@@ -440,7 +440,7 @@ LAUNCH
 chmod +x "$launcher"
 
 echo ""
-echo "Done! Double-click 'Launch Atelier.command' in $DEST to start."
+echo "Done! Double-click 'Launch Splash.command' in $DEST to start."
 echo "(Your keys live only in $DEST/.env, git-ignored.)"
 
 # 7. Scrub the secrets from this process's environment
@@ -470,8 +470,8 @@ Same shape as Task 3, PowerShell, plus **Node.js** (needed only to drive Playwri
 - Test: `docs/installer/bootstrap-ps1.test.ts`
 
 **Interfaces:**
-- Consumes (env): same keys as Task 3, optional `ATELIER_REF`.
-- Produces: `%USERPROFILE%\Atelier` populated, `.env`, `Launch Atelier.cmd`.
+- Consumes (env): same keys as Task 3, optional `SPLASH_REF`.
+- Produces: `%USERPROFILE%\Splash` populated, `.env`, `Launch Splash.cmd`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -499,7 +499,7 @@ test("acquires the repo by zip (Invoke-WebRequest + Expand-Archive)", () => {
 
 test("writes .env from env vars, a .cmd launcher (never a .ps1), then scrubs secrets", () => {
   expect(ps).toContain("$($env:ANTHROPIC_API_KEY)");
-  expect(ps).toContain("Launch Atelier.cmd");
+  expect(ps).toContain("Launch Splash.cmd");
   expect(ps).toContain("Remove-Item Env:");
 });
 ```
@@ -512,17 +512,17 @@ Expected: FAIL (file missing).
 - [ ] **Step 3: Create `install/bootstrap.ps1`**
 
 ```powershell
-# Atelier bootstrap (Windows). Idempotent — safe to re-run. Contains NO keys: the caller
+# Splash bootstrap (Windows). Idempotent — safe to re-run. Contains NO keys: the caller
 # (copy-paste one-liner or downloaded .cmd launcher) sets the key env vars before invoking
-# this, and this script writes them into %USERPROFILE%\Atelier\.env.
+# this, and this script writes them into %USERPROFILE%\Splash\.env.
 $ErrorActionPreference = "Stop"
 
-$Repo = "https://github.com/buriedsignals/atelier"   # confirm before public release
-$Ref  = if ($env:ATELIER_REF) { $env:ATELIER_REF } else { "main" }
-$Dest = Join-Path $HOME "Atelier"
+$Repo = "https://github.com/buriedsignals/splash"   # confirm before public release
+$Ref  = if ($env:SPLASH_REF) { $env:SPLASH_REF } else { "main" }
+$Dest = Join-Path $HOME "Splash"
 $NativeSkills = @("skills\chart-native", "skills\map-native")
 
-Write-Host "-> Installing Atelier (a few minutes)…"
+Write-Host "-> Installing Splash (a few minutes)…"
 
 # 1. Bun (native Windows build)
 if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
@@ -544,13 +544,13 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
   irm https://claude.ai/install.ps1 | iex
 }
 
-# 4. Atelier source (zip — no git; extracts to atelier-<ref>\)
+# 4. Splash source (zip — no git; extracts to splash-<ref>\)
 if (-not (Test-Path $Dest)) {
-  Write-Host "-> Downloading Atelier…"
-  $zip = Join-Path $env:TEMP "atelier.zip"
+  Write-Host "-> Downloading Splash…"
+  $zip = Join-Path $env:TEMP "splash.zip"
   Invoke-WebRequest "$Repo/archive/$Ref.zip" -OutFile $zip
   Expand-Archive $zip -DestinationPath $env:TEMP -Force
-  Move-Item (Join-Path $env:TEMP "atelier-$Ref") $Dest
+  Move-Item (Join-Path $env:TEMP "splash-$Ref") $Dest
   Remove-Item $zip
 }
 
@@ -568,12 +568,12 @@ ANTHROPIC_API_KEY=$($env:ANTHROPIC_API_KEY)
 VITE_MAPTILER_KEY=$($env:VITE_MAPTILER_KEY)
 REMOTION_MAPTILER_KEY=$($env:REMOTION_MAPTILER_KEY)
 DATAWRAPPER_API_TOKEN=$($env:DATAWRAPPER_API_TOKEN)
-ATELIER_EMBED_APP=$($env:ATELIER_EMBED_APP)
+SPLASH_EMBED_APP=$($env:SPLASH_EMBED_APP)
 FLY_API_TOKEN=$($env:FLY_API_TOKEN)
 "@ | Set-Content -Path (Join-Path $Dest ".env") -Encoding ascii
 
 # 7. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
-$launcher = Join-Path $Dest "Launch Atelier.cmd"
+$launcher = Join-Path $Dest "Launch Splash.cmd"
 @'
 @echo off
 cd /d "%~dp0"
@@ -582,7 +582,7 @@ claude --plugin-dir .
 '@ | Set-Content -Path $launcher -Encoding ascii
 
 Write-Host ""
-Write-Host "Done! Double-click 'Launch Atelier.cmd' in $Dest to start."
+Write-Host "Done! Double-click 'Launch Splash.cmd' in $Dest to start."
 
 # 8. Scrub secrets from this session's environment
 Remove-Item Env:\ANTHROPIC_API_KEY, Env:\VITE_MAPTILER_KEY, Env:\REMOTION_MAPTILER_KEY, Env:\DATAWRAPPER_API_TOKEN, Env:\FLY_API_TOKEN -ErrorAction SilentlyContinue
@@ -654,7 +654,7 @@ Replace everything between `<body>` and `</body>` with:
 
 ```html
   <main>
-    <h1>Install Atelier</h1>
+    <h1>Install Splash</h1>
     <p>Fill this in, then choose one of the two ways to install. Your keys never leave this page.</p>
 
     <form id="setup">
@@ -806,7 +806,7 @@ Expected: PASS (3 tests).
 - [ ] **Step 6: Manual browser check (this task has UI that unit tests can't cover)**
 
 Run: `cd docs/installer && bunx serve . -p 8123` (or `python3 -m http.server 8123`), open `http://localhost:8123`.
-Confirm: OS auto-detected; toggling Mac/Windows swaps the one-liner between `curl…|bash` and `irm…|iex`; typing a key updates the one-liner live; **Copy** copies it; **Download** yields `atelier-setup.command` (Mac) / `atelier-setup.cmd` (Windows) with the keys baked and the right bootstrap URL; the workaround note matches the OS.
+Confirm: OS auto-detected; toggling Mac/Windows swaps the one-liner between `curl…|bash` and `irm…|iex`; typing a key updates the one-liner live; **Copy** copies it; **Download** yields `splash-setup.command` (Mac) / `splash-setup.cmd` (Windows) with the keys baked and the right bootstrap URL; the workaround note matches the OS.
 
 - [ ] **Step 7: Commit**
 
@@ -1096,7 +1096,7 @@ git commit -m "fix(map-native): drive Playwright + Remotion via Node on Windows 
 - [ ] **Step 1: Rewrite `docs/installer/README.md`**
 
 ```markdown
-# Atelier installer
+# Splash installer
 
 Static, client-side page that generates, per OS, a copy-paste one-liner AND a downloadable
 launcher — both fetch the hosted bootstrap. No backend, no keys stored.
@@ -1107,14 +1107,14 @@ launcher — both fetch the hosted bootstrap. No backend, no keys stored.
 
 ## Hosting
 - Page: GitHub Pages serves `docs/` (Settings → Pages → main branch, `/docs`), URL
-  `https://<org>.github.io/atelier/installer/`.
+  `https://<org>.github.io/splash/installer/`.
 - Bootstraps: fetched over `raw.githubusercontent.com/<repo>/<ref>/install/bootstrap.{sh,ps1}`.
   `<repo>`/`<ref>` are set in `generate.js` (page side) and hardcoded in each bootstrap. Before
   the public release, confirm the real repo and pin `<ref>` to a release tag in BOTH places
   (`scripts/preflight-release.mjs` tracks the `REPO_URL`).
 
 ## Adding a runtime
-1. Verify the Atelier plugin loads on that runtime.
+1. Verify the Splash plugin loads on that runtime.
 2. Fill claude-style fields in `runtimes.js` + set `verified: true`.
 3. Teach both bootstraps to install it.
 4. `bun test docs/installer` must pass.
@@ -1123,11 +1123,11 @@ launcher — both fetch the hosted bootstrap. No backend, no keys stored.
 On a clean macOS account AND a clean Windows VM, for BOTH modes:
 1. Open the install URL, pick Claude Code, paste real Anthropic + MapTiler + Datawrapper keys.
 2. **Copy-paste:** run the one-liner in Terminal (Mac) / PowerShell (Windows). **Download:**
-   double-click `atelier-setup.command` (Mac) / `atelier-setup.cmd` (Windows); clear the OS
+   double-click `splash-setup.command` (Mac) / `splash-setup.cmd` (Windows); clear the OS
    warning per the on-page note.
-3. Confirm: Bun (+ Node on Windows) + Claude Code install; `~/Atelier` is populated from zip;
-   `~/Atelier/.env` holds the keys; a `Launch Atelier` file is created.
-4. Double-click `Launch Atelier` → Atelier starts and reads the keys.
+3. Confirm: Bun (+ Node on Windows) + Claude Code install; `~/Splash` is populated from zip;
+   `~/Splash/.env` holds the keys; a `Launch Splash` file is created.
+4. Double-click `Launch Splash` → Splash starts and reads the keys.
 5. **Windows native render (validates the Task 6/7 guard):** produce one native chart
    (chart-native) and one native map (map-native) → they render (do NOT hang). Watch-item:
    if a username has a space (e.g. `C:\Users\Jean Dupont`), confirm the Remotion `--props`

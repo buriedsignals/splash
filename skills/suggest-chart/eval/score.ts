@@ -11,7 +11,7 @@ import {
   CHANNELS,
   type Channel,
   type VisualFormat,
-} from "../../atelier/src/channel";
+} from "../../splash/src/channel";
 import { isRowDriven, type ChartType } from "../../dw-chart/src/export-aspect";
 
 export interface Score {

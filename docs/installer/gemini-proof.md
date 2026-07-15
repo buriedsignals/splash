@@ -1,6 +1,6 @@
 # Gemini CLI runtime adapter — end-to-end proof plan
 
-This adapter surfaces Atelier to **Gemini CLI** via its **native Agent Skills** system (the same
+This adapter surfaces Splash to **Gemini CLI** via its **native Agent Skills** system (the same
 open standard Claude Code and Codex use), NOT the legacy `GEMINI.md` @-include context bridge that
 the old viznews adapter used. The real end-to-end proof cannot be run in the build sandbox (no
 Gemini CLI, no interactive TTY, no provider login), so this is the runbook to execute on a machine
@@ -54,16 +54,16 @@ so we omit `contextFileName` entirely — no GEMINI.md, no dangling include.
 
 ## Proof runbook (run on a real machine with Gemini CLI)
 
-### Layer A — discovery: `/skills list` shows Atelier's skills
+### Layer A — discovery: `/skills list` shows Splash's skills
 
 1. Run the bootstrap (or, minimally, `bun add -g @google/gemini-cli@0.50.0` then
-   `link_agents_skills` with `DEST` = the Atelier checkout).
+   `link_agents_skills` with `DEST` = the Splash checkout).
 2. Launch `gemini`; run `/skills list`.
 3. **Expect:** the following skills appear (dir name == frontmatter `name`, verified):
-   `atelier, chart-native, dw-chart, map-dw, map-native, scrolly, suggest-article, suggest-chart`
+   `splash, chart-native, dw-chart, map-dw, map-native, scrolly, suggest-article, suggest-chart`
    — **8 skills**.
 
-   > ⚠️ **9-vs-8 note.** The task brief and the Atelier CLAUDE.md reference **9** skills incl.
+   > ⚠️ **9-vs-8 note.** The task brief and the Splash CLAUDE.md reference **9** skills incl.
    > `image-native`. As of this branch (seam commit `b117007`) `skills/image-native/` is scaffolded
    > (`src/`, `tests/`, `package.json`) but has **no `SKILL.md` yet**, so Gemini will not list it.
    > `link_agents_skills` globs `skills/*/`, so it symlinks `image-native` too and the skill will
@@ -83,7 +83,7 @@ so we omit `contextFileName` entirely — no GEMINI.md, no dangling include.
 
 ### Layer B — orchestration: real Annemasse article → produced artifact
 
-1. In `gemini`, invoke the `atelier` skill on a real Annemasse article (+ data).
+1. In `gemini`, invoke the `splash` skill on a real Annemasse article (+ data).
 2. It sequences ANALYSE → CADRAGE → PROPOSITION → PRODUCTION → EXPORT, invoking `suggest-article`
    then `suggest-chart` as **nested** skill calls, then shelling out to `bun scripts/produce.mjs`.
 3. **Expect:** a provider API call succeeds; a `<id>-export/` artifact is produced.
@@ -92,9 +92,9 @@ so we omit `contextFileName` entirely — no GEMINI.md, no dangling include.
    - **RISK — nested skill invocation (THE risk to retire).** Gemini activates skills through the
      model-only `activate_skill` tool ("used exclusively by the Gemini agent. You cannot invoke
      this tool manually" — <https://geminicli.com/docs/tools/activate-skill/>). Whether the model,
-     *while inside* the `atelier` skill, fires a fresh `activate_skill` for `suggest-article` then
+     *while inside* the `splash` skill, fires a fresh `activate_skill` for `suggest-article` then
      `suggest-chart` is unproven on the real CLI. **Verify:** watch for two nested activations mid-
-     flow. If Gemini does NOT auto-nest, the fallback is that `atelier`'s SKILL.md instructs the
+     flow. If Gemini does NOT auto-nest, the fallback is that `splash`'s SKILL.md instructs the
      model to activate the sub-skills by name (prose the orchestrator owns — out of scope here).
 
    - **RISK — consent-gated activation.** `activate_skill` runs in **ASK_USER mode**: every
@@ -102,7 +102,7 @@ so we omit `contextFileName` entirely — no GEMINI.md, no dangling include.
      it will gain access to** (issue #15688 / PR #15725; docs/cli/skills). In the **interactive**
      `gemini` session the launcher opens, this is answerable in the TUI — it does **not** block a
      double-click/zero-terminal flow, but it adds one approval click **per distinct skill**
-     (`atelier`, then `suggest-article`, then `suggest-chart`, then a producer skill). **Document
+     (`splash`, then `suggest-article`, then `suggest-chart`, then a producer skill). **Document
      the count of prompts** the real flow raises. To make it truly zero-touch (or for scripted
      runs) the launcher would need an auto-approve flag (see headless below) — a follow-up decision,
      not shipped here (the launcher runs plain interactive `gemini`).
@@ -110,8 +110,8 @@ so we omit `contextFileName` entirely — no GEMINI.md, no dangling include.
    - **RISK — headless auto-activation.** Headless mode triggers on a non-TTY env or the
      `-p`/`--prompt` flag; auto-approval uses `-y` (e.g. `gemini --sandbox -y -p "…"`). Reliable
      autonomous skill activation in `-p` runs was a known gap (issue #15688, since implemented via
-     PR #15725) — **verify** a `-y -p` run actually activates `atelier` end-to-end before relying on
-     headless. The Atelier launcher uses **interactive** `gemini` (not `-p`), so this does not gate
+     PR #15725) — **verify** a `-y -p` run actually activates `splash` end-to-end before relying on
+     headless. The Splash launcher uses **interactive** `gemini` (not `-p`), so this does not gate
      the primary flow, but record the result for any future scripted/CI path.
 
 ### Layer C — the delivered artifact
@@ -131,7 +131,7 @@ so we omit `contextFileName` entirely — no GEMINI.md, no dangling include.
 | Symlink wiring populates `~/.agents/skills` | ✅ hermetic test (mocked install) | `gemini-runtime.test.ts` |
 | Manifest schema (`gemini-extension.json`) | ✅ verified fields, no dangling include | `gemini-runtime.test.ts` |
 | Unknown frontmatter key (`output_mode`) tolerated | ⏳ verify on real CLI | Layer A |
-| Nested skill invocation (`atelier` → sub-skills) | ⏳ verify on real CLI | Layer B |
+| Nested skill invocation (`splash` → sub-skills) | ⏳ verify on real CLI | Layer B |
 | Consent-gated activation blocks zero-terminal flow | ⏳ verify prompt count (interactive: non-blocking, expected) | Layer B |
 | Headless `-p` auto-activation | ⏳ verify (not on primary path) | Layer B |
 | Node 20+ runtime dependency (bootstrap.sh installs only Bun on macOS/Linux) | ⏳ document / decide | see below |
@@ -161,15 +161,15 @@ Run on a real mac (Node v20.19.0 present).
      failed login forces the deprecated Code Assist path even when `GEMINI_API_KEY` is set. Fix:
      `~/.gemini/settings.json` → `security.auth.selectedType = "gemini-api-key"` (+ `GEMINI_API_KEY`,
      `GOOGLE_CLOUD_PROJECT`). Only then does `gemini -p` authenticate (verified with a `PONG` probe).
-- **Layer B BLOCKED — free-tier quota, not an adapter defect:** driving the full `atelier` flow via
+- **Layer B BLOCKED — free-tier quota, not an adapter defect:** driving the full `splash` flow via
   `gemini -p … -y` died immediately with `TerminalQuotaError` — the free tier caps at **20
-  requests/day** and 250k input tokens, and the atelier flow (large SKILL.md + sub-skill bodies over
+  requests/day** and 250k input tokens, and the splash flow (large SKILL.md + sub-skill bodies over
   many turns) needs far more. It never reached nested skill invocation. Proving Gemini's orchestration
   therefore needs a **paid Gemini API tier**.
 
 **Verdict:** the adapter MECHANICS are proven (discovery + auth path). Gemini's orchestration
 (Layer B) is NOT proven — the free tier's quota blocked it before nested invocation, unlike Codex
-(proven end-to-end). For Atelier's small-newsroom target, Codex is the working free runtime; Gemini
+(proven end-to-end). For Splash's small-newsroom target, Codex is the working free runtime; Gemini
 needs Node + a painful auth setup + a paid tier.
 
 **`configurator-core.ts` sets `gemini.verified = true` by product decision (2026-07-13)**, ahead of

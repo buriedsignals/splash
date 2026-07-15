@@ -138,7 +138,7 @@ reverseScale), conformance, KB, two samples (one `bands`, one `both`, each a rea
 
 - Runtime **Bun** always; tests `bun test`. English everywhere. **No** Claude/Anthropic mention, **no**
   `Co-Authored-By`, **no** Claude-Session trailer.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it.
 - Reuse the choropleth binning + scale (+ the diverging `reverseScale`/`midpoint` opt-in), MapFrame, the
   reveal/story/scrolly pipeline, `resolveMapStyle`, the `ScrollyXMap` pattern; don't fork. Use turf
   `isobands`/`isolines` directly on the gridded values — NO IDW/interpolation.

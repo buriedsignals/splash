@@ -37,7 +37,7 @@ matérialise tout ce qui est *possible* au lieu de ce qui est *défini*.
 
 ### Axe 2 — FORME de livraison (interactif/scrolly UNIQUEMENT) — **paresseuse**
 
-- À « ship it » (après render-review), atelier propose a/b/c, **attend la réponse**, et ne
+- À « ship it » (après render-review), splash propose a/b/c, **attend la réponse**, et ne
   build/livre **que la forme choisie** :
   - **code source** → le bundle React est construit *à ce moment-là* (pas d'office) ;
   - **HTML autonome** → on livre simplement le fichier `interactive.html` / `scrolly.html` ;
@@ -55,7 +55,7 @@ matérialise tout ce qui est *possible* au lieu de ce qui est *défini*.
 
 ## Changements pipeline (composant par composant)
 
-- **Suggesteur / PROPOSITION** (`suggest-chart`, `suggest-article`, `atelier` SKILL.md) : la spec
+- **Suggesteur / PROPOSITION** (`suggest-chart`, `suggest-article`, `splash` SKILL.md) : la spec
   acceptée porte **un** champ format (un `VisualFormat`), pinné à la proposition. Le suggesteur
   choisit UN format dans le set du canal (réutilise `interactiveDefault` + la logique existante).
 - **`produce-all.mjs` / `produce.mjs`** (chart-native, map-native, dw-chart) : passer le format

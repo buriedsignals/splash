@@ -1,12 +1,12 @@
 # Deterministic orchestration — design
 
 > Status: design approved (post adversarial validation, 2026-07-06). Next: `writing-plans`.
-> Scope: the production-time mechanical spine of the atelier pipeline. NOT the whole pipeline —
+> Scope: the production-time mechanical spine of the splash pipeline. NOT the whole pipeline —
 > `②` (the agent) stays the host that reads, judges, dialogues, and asks the human gates.
 
 ## Problem
 
-The atelier pipeline (`skills/atelier/SKILL.md`) is entirely LLM prose. The audit + an adversarial
+The splash pipeline (`skills/splash/SKILL.md`) is entirely LLM prose. The audit + an adversarial
 design review found four concrete reliability holes, all grounded in the code:
 
 1. **Silent proposal drop** — the agent is told to "produce each accepted proposal", but the loop
@@ -14,7 +14,7 @@ design review found four concrete reliability holes, all grounded in the code:
 2. **Inert fallback** — `produce-from-spec.mjs:31` exits `2` with `FALLBACK_TO_DW`, but nothing
    downstream catches it; the graceful dw-chart recovery only happens if the agent notices stderr.
 3. **Unenforced human gates** — provenance-confirm (2b) and render-approval (3) are social
-   contracts; nothing prevents export before them (`skills/atelier/scripts/export-code.mjs:53` is
+   contracts; nothing prevents export before them (`skills/splash/scripts/export-code.mjs:53` is
    even a warn-only no-op on the ephemeral-path check).
 4. **Convention-only `producer` discriminant** — every routed spec carries `producer` by prose
    convention; no spec type declares it, so a typed round-trip drops it (backlog-flagged).
@@ -64,7 +64,7 @@ alternatives, not two views of one thing). Only the map DATA layer gets a shared
 A single stateless command:
 
 ```
-bun skills/atelier/scripts/produce-all.mjs <accepted.json> <outDir>
+bun skills/splash/scripts/produce-all.mjs <accepted.json> <outDir>
 ```
 
 `accepted.json` = the array of accepted proposals, each `{ id, producer, format, spec, provenance,

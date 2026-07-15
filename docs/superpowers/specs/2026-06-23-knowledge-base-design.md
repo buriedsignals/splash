@@ -1,7 +1,7 @@
 # ① Knowledge Base — Design (sous-chantier n°1)
 
-> Sous-chantier ① de la spec-parapluie (`2026-06-14-atelier-architecture-design.md`). Fondation : ② suggesteur
-> et ③ skills en dépendent. Sans tiers (tout gratuit). Source de vérité du *savoir* d'Atelier.
+> Sous-chantier ① de la spec-parapluie (`2026-06-14-splash-architecture-design.md`). Fondation : ② suggesteur
+> et ③ skills en dépendent. Sans tiers (tout gratuit). Source de vérité du *savoir* d'Splash.
 
 ## But
 

@@ -5,8 +5,8 @@ Spec: `spec-native.json` — 6 staff roles × median wait in days, `role,days` C
 
 ```
 bun skills/chart-native/scripts/produce-from-spec.mjs \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/lollipop/spec-native.json \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/lollipop static
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/lollipop/spec-native.json \
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/lollipop static
 ```
 
 ## Conformance

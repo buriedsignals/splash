@@ -16,7 +16,7 @@ function Runtime-Install {
   if (-not (Get-Command gemini -ErrorAction SilentlyContinue)) {
     throw "Gemini CLI could not be installed. Ensure Node 20+ is present, run 'bun add -g @google/gemini-cli' (or see https://geminicli.com/docs/get-started/installation/), then re-run this installer."
   }
-  # Surface Atelier's skills to Gemini's native Agent Skills discovery (~\.agents\skills).
+  # Surface Splash's skills to Gemini's native Agent Skills discovery (~\.agents\skills).
   Link-AgentsSkills
 }
 

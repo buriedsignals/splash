@@ -122,7 +122,7 @@ scrolly free via the shared `deriveHexGridStory → mapStoryToChapters` contract
 - Runtime **Bun** always (never npm/node); tests `bun test`.
 - Code, comments, commits, branch names in **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it.
 - Reuse existing building blocks (choropleth binning + `BLUES` scale, MapFrame, reveal/story/scrolly
   pipeline, `resolveScene`, `resolveMapStyle`); do not fork them. Use turf `hexGrid`/`squareGrid`/`collect`.
 - Frame-deterministic Remotion (Slice B): no `Date.now`/`Math.random`/argless `new Date()`; grid computed once.

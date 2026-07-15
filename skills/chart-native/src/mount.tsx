@@ -146,7 +146,7 @@ declare const __CHART__: string;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const __CONFIG__: any;
 // Channel-driven format (Slice 2) — the produce() STATIC canvas size, baked in by
-// vite.config.ts from renderSize(ATELIER_CHANNEL) (halved for the snap's
+// vite.config.ts from renderSize(SPLASH_CHANNEL) (halved for the snap's
 // deviceScaleFactor:2). Undefined in any build that doesn't define them (should
 // not happen via vite.config.ts, but guarded defensively) → the historical
 // landscape default.

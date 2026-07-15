@@ -14,7 +14,7 @@ reachable end-to-end from an article** and only **7 are guarded at produce time*
 1. **Reachability bottleneck** — `skills/chart-native/src/spec-to-config.ts:78-165` is a 4-case
    `switch` (bar/line/scatter/pie); every other `nativeType` throws `UnsupportedNativeType`, which
    `produce-from-spec.mjs:29-33` turns into `exit 2` / `FALLBACK_TO_DW` → the orchestrator silently
-   degrades to a *static Datawrapper* chart (`skills/atelier/src/adapters.ts:150-160`). So naming any
+   degrades to a *static Datawrapper* chart (`skills/splash/src/adapters.ts:150-160`). So naming any
    of the 37 unmapped native types quietly loses the format the human may have chosen at CADRAGE.
 2. **Guard gap** — `skills/chart-native/src/core/resolve-conformance-colors.ts:29-37` resolves the
    painted palette for 7 types only; the other 34 print "no produce-time guard wired yet … skipping"

@@ -1,0 +1,12 @@
+{
+  "name": "atelier-dev",
+  "owner": {
+    "name": "Remy Dumas"
+  },
+  "plugins": [
+    {
+      "name": "atelier",
+      "source": "."
+    }
+  ]
+}

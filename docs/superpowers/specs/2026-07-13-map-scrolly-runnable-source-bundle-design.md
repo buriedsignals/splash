@@ -12,7 +12,7 @@
 ## Why (the gap)
 
 `export-code.mjs` routes the `code-source` form through a `hasNativeSource` gate
-(`skills/atelier/scripts/export-code.mjs:194`) that keys **strictly** on
+(`skills/splash/scripts/export-code.mjs:194`) that keys **strictly** on
 `native-source.json` + `config.json` in `outDir`. Only the chart-native producer writes
 those (`skills/chart-native/scripts/produce.mjs:165-166`). For map-native / scrolly the gate
 is always false, so `code-source` falls into the non-native branch
@@ -47,7 +47,7 @@ that tree being self-contained: zero cross-skill relative imports, only standard
 1. **Scope**: both engines; **map-native proven first**, then scrolly, in this chantier.
 2. **"Code source" for maps = a rebuildable bundle + documented caveat.** A map interactive
    is inherently online (basemap tiles fetched from MapTiler at runtime) and needs the
-   **journalist's own** `VITE_MAPTILER_KEY`. We do **not** bake the atelier key (shipping a
+   **journalist's own** `VITE_MAPTILER_KEY`. We do **not** bake the splash key (shipping a
    private, revocable, quota'd secret in a delivered artifact is out). The bundle is
    *rebuildable*, not *offline* — inherent to the hosted-style basemap design, documented in
    the bundle README + `.env.example`.
@@ -87,7 +87,7 @@ Copying exactly the closure avoids this, keeps the bundle small, and drops the 3
 A single shared, engine-agnostic generator plus per-producer marker emission and an
 export-code wiring change.
 
-### 1. `skills/atelier/scripts/bundle-source.mjs` (new — the generator)
+### 1. `skills/splash/scripts/bundle-source.mjs` (new — the generator)
 
 Owned by the orchestrator (it already resolves engine script paths, cf.
 `export-code.mjs:49`). Signature:
@@ -163,7 +163,7 @@ Each producer drops a `source-manifest.json` into `outDir` (mirroring chart-nati
   - neither → keep the current lone-html copy as a defensive fallback (should not occur once
     producers emit markers).
 - **Tighten `assertDelivered({ format, form: "code-source" })`**
-  (`skills/atelier/src/export-guard.ts:122`, today only checks a non-empty dir): for a
+  (`skills/splash/src/export-guard.ts:122`, today only checks a non-empty dir): for a
   bundle, require `package.json` **and** `vite.config.ts` present, so a regression back to a
   lone-html copy fails loudly.
 - **`emitProposal`** (`export-code.mjs:342-453`): form `a` for map/scrolly becomes
@@ -187,7 +187,7 @@ Each producer drops a `source-manifest.json` into `outDir` (mirroring chart-nati
 
 ## Verification (definition of done)
 
-A from-zero test (new, under `skills/atelier` or a harness script), run in the gate env where
+A from-zero test (new, under `skills/splash` or a harness script), run in the gate env where
 `VITE_MAPTILER_KEY` is set (produce already relies on it):
 
 - For a representative map subset (**choropleth, symbol, one geo-heavy type — route or

@@ -7,13 +7,13 @@
 # feature is recent and fast-moving, so we pin a known-good release instead of tracking @latest.
 CODEX_VERSION="0.144.1"
 
-# The sandbox stanza Atelier seeds. A quoted (<<'TOML') heredoc keeps every char literal — the
+# The sandbox stanza Splash seeds. A quoted (<<'TOML') heredoc keeps every char literal — the
 # backticks and apostrophes below are safe. Kept in its own function (not a $()-captured var) to
 # dodge a bash 3.2 command-substitution parse bug with quotes nested in a heredoc.
 _codex_config_block() {
   cat <<'TOML'
-# Atelier — Codex sandbox settings.
-# Atelier's producers call provider APIs (MapTiler, Datawrapper, fly.io) and the runnable-source
+# Splash — Codex sandbox settings.
+# Splash's producers call provider APIs (MapTiler, Datawrapper, fly.io) and the runnable-source
 # export runs `bun install`, so the workspace-write sandbox needs outbound network access.
 sandbox_mode = "workspace-write"
 # Prompts before networked / out-of-workspace actions. Set to "never" for the smoothest
@@ -25,7 +25,7 @@ network_access = true
 TOML
 }
 
-# Seed ~/.codex/config.toml for Atelier's produce-time needs. NON-CLOBBERING: only writes when the
+# Seed ~/.codex/config.toml for Splash's produce-time needs. NON-CLOBBERING: only writes when the
 # file is ABSENT. If the user already has a config.toml, their settings win — we never rewrite it;
 # instead we print the exact stanza to add when the network key is missing (the limitation).
 seed_codex_config() {
@@ -43,9 +43,9 @@ seed_codex_config() {
   if [ ! -f "$config" ]; then
     mkdir -p "$codex_home"
     _codex_config_block >"$config"
-    echo "-> Wrote Codex sandbox config to $config (network enabled for Atelier producers)."
+    echo "-> Wrote Codex sandbox config to $config (network enabled for Splash producers)."
   elif ! grep -q 'network_access' "$config"; then
-    echo "Note: $config already exists without a 'network_access' key. Atelier's producers need" >&2
+    echo "Note: $config already exists without a 'network_access' key. Splash's producers need" >&2
     echo "outbound network under the workspace-write sandbox — add this to $config:" >&2
     _codex_config_block >&2
   fi

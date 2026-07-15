@@ -63,7 +63,7 @@ export interface SymbolConfig extends SymbolData {
   filters?: MapFilter[];
   /** deliverable language — localizes symbol value labels + "Source". Default English. */
   lang?: string;
-  // Newsroom house style (profile merge, skills/atelier/src/brand-profile.ts). brandHue is the
+  // Newsroom house style (profile merge, skills/splash/src/brand-profile.ts). brandHue is the
   // single symbol fill (size is the encoding); absent → the CVD-safe default. Shared across the
   // interactive map + video (*Reveal/*Story) + scrolly renderers.
   brandHue?: string;

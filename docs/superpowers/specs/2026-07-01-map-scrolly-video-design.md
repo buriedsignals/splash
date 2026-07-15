@@ -179,7 +179,7 @@ arc-length is fed per step instead of a single continuous sweep.
 - Code, comments, commits, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer in
   any commit / PR / file / README / doc.
-- MapTiler key + Datawrapper token live in `atelier/.env` (gitignored) — never commit/log the
+- MapTiler key + Datawrapper token live in `splash/.env` (gitignored) — never commit/log the
   value.
 - Frame-deterministic Remotion: no `Date.now` / `Math.random` / argless `new Date()`.
 - Reuse existing building blocks (camera pipeline, draw-head, title scene); do not fork them.

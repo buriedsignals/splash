@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the production→export mechanical spine so the atelier pipeline produces every accepted proposal in code (never silently drops one), catches the dw-chart fallback, and refuses to ship an unproduced/unapproved visual — while `②` stays the host agent.
+**Goal:** Build the production→export mechanical spine so the splash pipeline produces every accepted proposal in code (never silently drops one), catches the dw-chart fallback, and refuses to ship an unproduced/unapproved visual — while `②` stays the host agent.
 
-**Architecture:** A pure, injectable batch loop (`produceAll`) iterates accepted proposals and returns a structured report; real per-producer adapters do the dispatch (file-based CLIs vs cloud-publishing fns); a thin CLI wraps it; the irreversible export/deploy scripts refuse unless a proposal is `produced` and render-approved. New code lives in `skills/atelier/src` (typed, typechecked) with `.mjs` CLI entries.
+**Architecture:** A pure, injectable batch loop (`produceAll`) iterates accepted proposals and returns a structured report; real per-producer adapters do the dispatch (file-based CLIs vs cloud-publishing fns); a thin CLI wraps it; the irreversible export/deploy scripts refuse unless a proposal is `produced` and render-approved. New code lives in `skills/splash/src` (typed, typechecked) with `.mjs` CLI entries.
 
 **Tech Stack:** Bun, TypeScript, `bun:test`. No new runtime deps.
 
@@ -16,34 +16,34 @@
 - `bun run check` (root) MUST stay green after every task (tsc for the tsconfig skills + all test suites).
 - No `any`, no `@ts-ignore` (match the tsc-floor discipline just merged).
 - TDD: failing test first, minimal impl, green, commit. Frequent commits.
-- Scope: this plan is the atelier spine ONLY. Out of scope (follow-on plans): the typed `producer`/`format` discriminant on every producer spec type; the blocking-vs-advisory warning taxonomy across all validators; conformance-at-produce; the 4→41 native dispatch table. This plan reads `producer`/`format` as runtime fields on the accepted proposals (as the SKILL.md convention already emits them).
+- Scope: this plan is the splash spine ONLY. Out of scope (follow-on plans): the typed `producer`/`format` discriminant on every producer spec type; the blocking-vs-advisory warning taxonomy across all validators; conformance-at-produce; the 4→41 native dispatch table. This plan reads `producer`/`format` as runtime fields on the accepted proposals (as the SKILL.md convention already emits them).
 
 ---
 
 ## File Structure
 
-- Create `skills/atelier/src/producer-spec.ts` — the `AcceptedProposal`, `ProposalResult`, `ProduceReport` types + `Producer`/`VisualFormat` unions. One responsibility: the orchestration contract.
-- Create `skills/atelier/src/produce-all.ts` — the pure batch loop `produceAll(accepted, outDir, dispatch)`. No I/O; dispatch injected.
-- Create `skills/atelier/src/map-data.ts` — `toCsv(rows)` / `toRows(csv)`, the map DATA-layer derivation (geo binding NOT derived).
-- Create `skills/atelier/src/adapters.ts` — `realDispatch`: per-producer adapter (file-based exec vs cloud fn) + `VisualFormat`→producer-flag mapping.
-- Create `skills/atelier/src/gate.ts` — `applyRenderGate(report, id, artifactPath)`: the ONLY writer of `renderApproved` + `approvedHash`.
-- Create `skills/atelier/scripts/produce-all.mjs` — CLI: read `accepted.json`, run `produceAll` with `realDispatch`, print the report JSON.
-- Create `skills/atelier/scripts/gate-render.mjs` — CLI: `applyRenderGate` on a report file after the human says "ship it".
-- Create `skills/atelier/tsconfig.json` + `skills/atelier/package.json` — so `bunx tsc --noEmit` covers the new code.
-- Modify `skills/atelier/scripts/export-code.mjs` + `skills/atelier/scripts/deploy-embed.mjs` — refuse (non-zero) unless the shipped proposal is `produced` AND render-approved.
-- Modify `scripts/check.mjs` — add `skills/atelier` to `TSC_DIRS`.
-- Tests under `skills/atelier/tests/`.
+- Create `skills/splash/src/producer-spec.ts` — the `AcceptedProposal`, `ProposalResult`, `ProduceReport` types + `Producer`/`VisualFormat` unions. One responsibility: the orchestration contract.
+- Create `skills/splash/src/produce-all.ts` — the pure batch loop `produceAll(accepted, outDir, dispatch)`. No I/O; dispatch injected.
+- Create `skills/splash/src/map-data.ts` — `toCsv(rows)` / `toRows(csv)`, the map DATA-layer derivation (geo binding NOT derived).
+- Create `skills/splash/src/adapters.ts` — `realDispatch`: per-producer adapter (file-based exec vs cloud fn) + `VisualFormat`→producer-flag mapping.
+- Create `skills/splash/src/gate.ts` — `applyRenderGate(report, id, artifactPath)`: the ONLY writer of `renderApproved` + `approvedHash`.
+- Create `skills/splash/scripts/produce-all.mjs` — CLI: read `accepted.json`, run `produceAll` with `realDispatch`, print the report JSON.
+- Create `skills/splash/scripts/gate-render.mjs` — CLI: `applyRenderGate` on a report file after the human says "ship it".
+- Create `skills/splash/tsconfig.json` + `skills/splash/package.json` — so `bunx tsc --noEmit` covers the new code.
+- Modify `skills/splash/scripts/export-code.mjs` + `skills/splash/scripts/deploy-embed.mjs` — refuse (non-zero) unless the shipped proposal is `produced` AND render-approved.
+- Modify `scripts/check.mjs` — add `skills/splash` to `TSC_DIRS`.
+- Tests under `skills/splash/tests/`.
 
 ---
 
-## Task 1: Orchestration types + atelier typecheck wiring
+## Task 1: Orchestration types + splash typecheck wiring
 
 **Files:**
-- Create: `skills/atelier/src/producer-spec.ts`
-- Create: `skills/atelier/tsconfig.json`
-- Create: `skills/atelier/package.json`
-- Modify: `scripts/check.mjs` (add `skills/atelier` to `TSC_DIRS`)
-- Test: `skills/atelier/tests/producer-spec.test.ts`
+- Create: `skills/splash/src/producer-spec.ts`
+- Create: `skills/splash/tsconfig.json`
+- Create: `skills/splash/package.json`
+- Modify: `scripts/check.mjs` (add `skills/splash` to `TSC_DIRS`)
+- Test: `skills/splash/tests/producer-spec.test.ts`
 
 **Interfaces:**
 - Produces: the types every later task consumes — exact shapes below.
@@ -84,21 +84,21 @@ export interface ProposalResult {
 export interface ProduceReport { results: ProposalResult[]; }
 ```
 
-- [ ] **Step 2: Write `skills/atelier/package.json`**
+- [ ] **Step 2: Write `skills/splash/package.json`**
 
 ```json
 {
-  "name": "atelier-orchestration",
+  "name": "splash-orchestration",
   "private": true,
   "devDependencies": { "@types/node": "26.1.0", "typescript": "6.0.3" },
   "scripts": { "test": "bun test" }
 }
 ```
 
-Run: `cd skills/atelier && bun install`
+Run: `cd skills/splash && bun install`
 Expected: installs @types/node + typescript.
 
-- [ ] **Step 3: Write `skills/atelier/tsconfig.json`** (mirror the other skills, minus react)
+- [ ] **Step 3: Write `skills/splash/tsconfig.json`** (mirror the other skills, minus react)
 
 ```json
 {
@@ -136,21 +136,21 @@ describe("producer-spec", () => {
 
 - [ ] **Step 5: Run tests + typecheck**
 
-Run: `cd skills/atelier && bun test tests/producer-spec.test.ts && bunx tsc --noEmit`
+Run: `cd skills/splash && bun test tests/producer-spec.test.ts && bunx tsc --noEmit`
 Expected: test PASS, tsc exits 0.
 
-- [ ] **Step 6: Add atelier to the root gate**
+- [ ] **Step 6: Add splash to the root gate**
 
-In `scripts/check.mjs`, change `const TSC_DIRS = ["skills/chart-native", "skills/map-native", "skills/scrolly"];` to include `"skills/atelier"`.
+In `scripts/check.mjs`, change `const TSC_DIRS = ["skills/chart-native", "skills/map-native", "skills/scrolly"];` to include `"skills/splash"`.
 
 Run: `bun run check`
-Expected: `13/13 checks passed.` (12 previous + atelier tsc)
+Expected: `13/13 checks passed.` (12 previous + splash tsc)
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add skills/atelier/src/producer-spec.ts skills/atelier/tsconfig.json skills/atelier/package.json skills/atelier/tests/producer-spec.test.ts skills/atelier/bun.lock scripts/check.mjs
-git commit -m "feat(atelier): orchestration contract types + typecheck wiring"
+git add skills/splash/src/producer-spec.ts skills/splash/tsconfig.json skills/splash/package.json skills/splash/tests/producer-spec.test.ts skills/splash/bun.lock scripts/check.mjs
+git commit -m "feat(splash): orchestration contract types + typecheck wiring"
 ```
 
 ---
@@ -158,8 +158,8 @@ git commit -m "feat(atelier): orchestration contract types + typecheck wiring"
 ## Task 2: Map DATA-layer derivation (toCsv / toRows)
 
 **Files:**
-- Create: `skills/atelier/src/map-data.ts`
-- Test: `skills/atelier/tests/map-data.test.ts`
+- Create: `skills/splash/src/map-data.ts`
+- Test: `skills/splash/tests/map-data.test.ts`
 
 **Interfaces:**
 - Produces: `toCsv(rows: Row[]): string`, `toRows(csv: string): Row[]`, `interface Row { [col: string]: string | number }`.
@@ -189,7 +189,7 @@ describe("map-data derivation", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd skills/atelier && bun test tests/map-data.test.ts`
+Run: `cd skills/splash && bun test tests/map-data.test.ts`
 Expected: FAIL (module not found).
 
 - [ ] **Step 3: Write `src/map-data.ts`**
@@ -228,14 +228,14 @@ export function toRows(csv: string): Row[] {
 
 - [ ] **Step 4: Run test + typecheck**
 
-Run: `cd skills/atelier && bun test tests/map-data.test.ts && bunx tsc --noEmit`
+Run: `cd skills/splash && bun test tests/map-data.test.ts && bunx tsc --noEmit`
 Expected: PASS, tsc 0.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add skills/atelier/src/map-data.ts skills/atelier/tests/map-data.test.ts
-git commit -m "feat(atelier): map data-layer derivation (toCsv/toRows)"
+git add skills/splash/src/map-data.ts skills/splash/tests/map-data.test.ts
+git commit -m "feat(splash): map data-layer derivation (toCsv/toRows)"
 ```
 
 ---
@@ -243,8 +243,8 @@ git commit -m "feat(atelier): map data-layer derivation (toCsv/toRows)"
 ## Task 3: The pure batch loop (produceAll) — the drop-proof guarantee
 
 **Files:**
-- Create: `skills/atelier/src/produce-all.ts`
-- Test: `skills/atelier/tests/produce-all.test.ts`
+- Create: `skills/splash/src/produce-all.ts`
+- Test: `skills/splash/tests/produce-all.test.ts`
 
 **Interfaces:**
 - Consumes: `AcceptedProposal`, `ProposalResult`, `ProduceReport` (Task 1).
@@ -307,7 +307,7 @@ describe("produceAll", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd skills/atelier && bun test tests/produce-all.test.ts`
+Run: `cd skills/splash && bun test tests/produce-all.test.ts`
 Expected: FAIL (module not found).
 
 - [ ] **Step 3: Write `src/produce-all.ts`**
@@ -359,14 +359,14 @@ export async function produceAll(
 
 - [ ] **Step 4: Run test + typecheck**
 
-Run: `cd skills/atelier && bun test tests/produce-all.test.ts && bunx tsc --noEmit`
+Run: `cd skills/splash && bun test tests/produce-all.test.ts && bunx tsc --noEmit`
 Expected: PASS (5 tests), tsc 0.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add skills/atelier/src/produce-all.ts skills/atelier/tests/produce-all.test.ts
-git commit -m "feat(atelier): drop-proof produce-all batch loop"
+git add skills/splash/src/produce-all.ts skills/splash/tests/produce-all.test.ts
+git commit -m "feat(splash): drop-proof produce-all batch loop"
 ```
 
 ---
@@ -374,8 +374,8 @@ git commit -m "feat(atelier): drop-proof produce-all batch loop"
 ## Task 4: Real dispatch adapters (file-based vs cloud producers)
 
 **Files:**
-- Create: `skills/atelier/src/adapters.ts`
-- Test: `skills/atelier/tests/adapters.test.ts`
+- Create: `skills/splash/src/adapters.ts`
+- Test: `skills/splash/tests/adapters.test.ts`
 
 **Interfaces:**
 - Consumes: `AcceptedProposal`, the `Dispatch` shape (Task 3), `toCsv` (Task 2).
@@ -405,21 +405,21 @@ describe("formatFlag — VisualFormat → producer flag", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd skills/atelier && bun test tests/adapters.test.ts`
+Run: `cd skills/splash && bun test tests/adapters.test.ts`
 Expected: FAIL (module not found).
 
 - [ ] **Step 3: Write `src/adapters.ts`.** Implement `formatFlag(producer, format)` (the VisualFormat→producer-flag table, per the producer CLIs read above) and `realDispatch`. For file-based producers: write `p.spec` to a temp config, `execFileSync("bun", [<produce script>, config, outDir, formatFlag(...)], { cwd: <skill dir> })`; on a non-zero exit whose stderr contains `FALLBACK_TO_DW`, return `{ status: "needs-fallback", reason: <stderr line> }`; on other non-zero, return `{ status: "failed", error }`; on success, collect the written file paths under `outDir` → `{ status: "produced", outputs }`. For cloud producers: `await produceChart/produceMap(p.spec, <outDir>/<id>.png)` → `{ status: "produced", outputs: [pngPath], publicUrl }`. No `any`; type `p.spec` through the producer's exported spec type where practical, else `Record<string, unknown>`.
 
 - [ ] **Step 4: Run test + typecheck**
 
-Run: `cd skills/atelier && bun test tests/adapters.test.ts && bunx tsc --noEmit`
+Run: `cd skills/splash && bun test tests/adapters.test.ts && bunx tsc --noEmit`
 Expected: PASS, tsc 0.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add skills/atelier/src/adapters.ts skills/atelier/tests/adapters.test.ts
-git commit -m "feat(atelier): per-producer dispatch adapters + format-flag mapping"
+git add skills/splash/src/adapters.ts skills/splash/tests/adapters.test.ts
+git commit -m "feat(splash): per-producer dispatch adapters + format-flag mapping"
 ```
 
 ---
@@ -427,8 +427,8 @@ git commit -m "feat(atelier): per-producer dispatch adapters + format-flag mappi
 ## Task 5: The produce-all CLI + end-to-end smoke
 
 **Files:**
-- Create: `skills/atelier/scripts/produce-all.mjs`
-- Test: `skills/atelier/tests/produce-all-cli.test.ts`
+- Create: `skills/splash/scripts/produce-all.mjs`
+- Test: `skills/splash/tests/produce-all-cli.test.ts`
 
 **Interfaces:**
 - Consumes: `produceAll` (Task 3), `realDispatch` (Task 4).
@@ -468,7 +468,7 @@ import { join } from "node:path";
 
 describe("produce-all CLI", () => {
   it("reports needs-confirmation for an unconfirmed prose proposal without touching a producer", () => {
-    const dir = mkdtempSync(join(tmpdir(), "atelier-cli-"));
+    const dir = mkdtempSync(join(tmpdir(), "splash-cli-"));
     const accepted = join(dir, "accepted.json");
     writeFileSync(accepted, JSON.stringify([
       { id: "p1", producer: "chart-native", format: "static", spec: {}, provenance: "prose" },
@@ -483,14 +483,14 @@ describe("produce-all CLI", () => {
 
 - [ ] **Step 3: Run the smoke test + typecheck**
 
-Run: `cd skills/atelier && bun test tests/produce-all-cli.test.ts && bunx tsc --noEmit`
+Run: `cd skills/splash && bun test tests/produce-all-cli.test.ts && bunx tsc --noEmit`
 Expected: PASS, tsc 0.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add skills/atelier/scripts/produce-all.mjs skills/atelier/tests/produce-all-cli.test.ts
-git commit -m "feat(atelier): produce-all CLI + wiring smoke test"
+git add skills/splash/scripts/produce-all.mjs skills/splash/tests/produce-all-cli.test.ts
+git commit -m "feat(splash): produce-all CLI + wiring smoke test"
 ```
 
 ---
@@ -498,9 +498,9 @@ git commit -m "feat(atelier): produce-all CLI + wiring smoke test"
 ## Task 6: The render gate (the only writer of renderApproved)
 
 **Files:**
-- Create: `skills/atelier/src/gate.ts`
-- Create: `skills/atelier/scripts/gate-render.mjs`
-- Test: `skills/atelier/tests/gate.test.ts`
+- Create: `skills/splash/src/gate.ts`
+- Create: `skills/splash/scripts/gate-render.mjs`
+- Test: `skills/splash/tests/gate.test.ts`
 
 **Interfaces:**
 - Consumes: `ProduceReport`, `ProposalResult` (Task 1).
@@ -535,7 +535,7 @@ describe("applyRenderGate", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd skills/atelier && bun test tests/gate.test.ts`
+Run: `cd skills/splash && bun test tests/gate.test.ts`
 Expected: FAIL (module not found).
 
 - [ ] **Step 3: Write `src/gate.ts`**
@@ -585,14 +585,14 @@ console.log(`render approved: ${id}`);
 
 - [ ] **Step 5: Run test + typecheck**
 
-Run: `cd skills/atelier && bun test tests/gate.test.ts && bunx tsc --noEmit`
+Run: `cd skills/splash && bun test tests/gate.test.ts && bunx tsc --noEmit`
 Expected: PASS, tsc 0.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add skills/atelier/src/gate.ts skills/atelier/scripts/gate-render.mjs skills/atelier/tests/gate.test.ts
-git commit -m "feat(atelier): render gate (sole writer of renderApproved + content hash)"
+git add skills/splash/src/gate.ts skills/splash/scripts/gate-render.mjs skills/splash/tests/gate.test.ts
+git commit -m "feat(splash): render gate (sole writer of renderApproved + content hash)"
 ```
 
 ---
@@ -600,15 +600,15 @@ git commit -m "feat(atelier): render gate (sole writer of renderApproved + conte
 ## Task 7: Export-completeness gate in the irreversible scripts
 
 **Files:**
-- Create: `skills/atelier/src/export-guard.ts`
-- Modify: `skills/atelier/scripts/export-code.mjs`, `skills/atelier/scripts/deploy-embed.mjs`
-- Test: `skills/atelier/tests/export-guard.test.ts`
+- Create: `skills/splash/src/export-guard.ts`
+- Modify: `skills/splash/scripts/export-code.mjs`, `skills/splash/scripts/deploy-embed.mjs`
+- Test: `skills/splash/tests/export-guard.test.ts`
 
 **Interfaces:**
 - Consumes: `ProduceReport` (Task 1).
 - Produces: `assertShippable(report: ProduceReport, id: string): void` — throws unless that proposal is `produced` AND `renderApproved`.
 
-**Context:** read `skills/atelier/scripts/export-code.mjs` and `deploy-embed.mjs` first for their current arg parsing. The guard must live INSIDE these scripts (the irreversible action) so a lower-level call cannot bypass it.
+**Context:** read `skills/splash/scripts/export-code.mjs` and `deploy-embed.mjs` first for their current arg parsing. The guard must live INSIDE these scripts (the irreversible action) so a lower-level call cannot bypass it.
 
 - [ ] **Step 1: Write the failing test `tests/export-guard.test.ts`**
 
@@ -636,7 +636,7 @@ describe("assertShippable", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd skills/atelier && bun test tests/export-guard.test.ts`
+Run: `cd skills/splash && bun test tests/export-guard.test.ts`
 Expected: FAIL (module not found).
 
 - [ ] **Step 3: Write `src/export-guard.ts`**
@@ -659,25 +659,25 @@ export function assertShippable(report: ProduceReport, id: string): void {
 
 - [ ] **Step 4: Wire the guard into `export-code.mjs` and `deploy-embed.mjs`.** Add two required args `--results <report.json> --id <proposalId>`; near the top of each script (before any copy/upload), `import { assertShippable } from "../src/export-guard.ts"`, read+parse the report, and call `assertShippable(report, id)` — a thrown error must exit non-zero. Keep the rest of each script unchanged. Also convert the existing warn-only ephemeral-path check in `export-code.mjs` (the `isEp…`/scratchpad warning) to a hard non-zero exit.
 
-- [ ] **Step 5: Update the existing script tests.** In `skills/atelier/scripts/export-code.test.ts` and `deploy-embed.test.ts`, add a case: calling with a report whose proposal is not `produced`+`renderApproved` exits non-zero; the happy path passes a shippable report. Follow each test's existing invocation pattern.
+- [ ] **Step 5: Update the existing script tests.** In `skills/splash/scripts/export-code.test.ts` and `deploy-embed.test.ts`, add a case: calling with a report whose proposal is not `produced`+`renderApproved` exits non-zero; the happy path passes a shippable report. Follow each test's existing invocation pattern.
 
-- [ ] **Step 6: Run the atelier suite + typecheck + root gate**
+- [ ] **Step 6: Run the splash suite + typecheck + root gate**
 
-Run: `cd skills/atelier && bun test && bunx tsc --noEmit` then `cd ../.. && bun run check`
-Expected: all atelier tests PASS, tsc 0, root gate green.
+Run: `cd skills/splash && bun test && bunx tsc --noEmit` then `cd ../.. && bun run check`
+Expected: all splash tests PASS, tsc 0, root gate green.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add skills/atelier/src/export-guard.ts skills/atelier/scripts/export-code.mjs skills/atelier/scripts/deploy-embed.mjs skills/atelier/scripts/export-code.test.ts skills/atelier/scripts/deploy-embed.test.ts skills/atelier/tests/export-guard.test.ts
-git commit -m "feat(atelier): export-completeness gate in the irreversible ship scripts"
+git add skills/splash/src/export-guard.ts skills/splash/scripts/export-code.mjs skills/splash/scripts/deploy-embed.mjs skills/splash/scripts/export-code.test.ts skills/splash/scripts/deploy-embed.test.ts skills/splash/tests/export-guard.test.ts
+git commit -m "feat(splash): export-completeness gate in the irreversible ship scripts"
 ```
 
 ---
 
 ## Follow-on (out of this plan)
 
-- Wire `produce-all` into `skills/atelier/SKILL.md` as the PRODUCTION step (replace the per-producer prose commands with: emit `accepted.json`, run `produce-all`, act on the report; run `gate-render` after each "ship it"; export via the guarded scripts).
+- Wire `produce-all` into `skills/splash/SKILL.md` as the PRODUCTION step (replace the per-producer prose commands with: emit `accepted.json`, run `produce-all`, act on the report; run `gate-render` after each "ship it"; export via the guarded scripts).
 - The typed `producer`/`format` discriminant on every producer spec type (additive) — a separate small plan.
 - The blocking-vs-advisory warning taxonomy across all validators + a standalone `validate` command.
 - Conformance-at-produce (needs a shared color-resolver first); the 4→41 native dispatch table + completeness test.

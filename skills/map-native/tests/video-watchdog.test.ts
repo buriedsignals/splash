@@ -16,25 +16,25 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-describe("videoTimeoutMs — the ATELIER_VIDEO_TIMEOUT_MS knob", () => {
+describe("videoTimeoutMs — the SPLASH_VIDEO_TIMEOUT_MS knob", () => {
   it("should default to 15 minutes when the env var is absent", () => {
     expect(videoTimeoutMs({})).toBe(DEFAULT_VIDEO_TIMEOUT_MS);
     expect(DEFAULT_VIDEO_TIMEOUT_MS).toBe(900_000);
   });
 
   it("should read a positive integer override", () => {
-    expect(videoTimeoutMs({ ATELIER_VIDEO_TIMEOUT_MS: "60000" })).toBe(60_000);
+    expect(videoTimeoutMs({ SPLASH_VIDEO_TIMEOUT_MS: "60000" })).toBe(60_000);
   });
 
   it("should reject a non-numeric or non-positive override instead of silently unbounding", () => {
-    expect(() => videoTimeoutMs({ ATELIER_VIDEO_TIMEOUT_MS: "soon" })).toThrow(
-      /ATELIER_VIDEO_TIMEOUT_MS/,
+    expect(() => videoTimeoutMs({ SPLASH_VIDEO_TIMEOUT_MS: "soon" })).toThrow(
+      /SPLASH_VIDEO_TIMEOUT_MS/,
     );
-    expect(() => videoTimeoutMs({ ATELIER_VIDEO_TIMEOUT_MS: "0" })).toThrow(
-      /ATELIER_VIDEO_TIMEOUT_MS/,
+    expect(() => videoTimeoutMs({ SPLASH_VIDEO_TIMEOUT_MS: "0" })).toThrow(
+      /SPLASH_VIDEO_TIMEOUT_MS/,
     );
-    expect(() => videoTimeoutMs({ ATELIER_VIDEO_TIMEOUT_MS: "-5" })).toThrow(
-      /ATELIER_VIDEO_TIMEOUT_MS/,
+    expect(() => videoTimeoutMs({ SPLASH_VIDEO_TIMEOUT_MS: "-5" })).toThrow(
+      /SPLASH_VIDEO_TIMEOUT_MS/,
     );
   });
 });
@@ -60,7 +60,7 @@ describe("runWithVideoWatchdog — bounded subprocess execution", () => {
         ["-e", "await new Promise(() => {})"], // hangs forever — the seismes shape
         { timeoutMs: 500 },
       ),
-    ).rejects.toThrow(/500 ms.*ATELIER_VIDEO_TIMEOUT_MS/s);
+    ).rejects.toThrow(/500 ms.*SPLASH_VIDEO_TIMEOUT_MS/s);
     // the whole point: bounded, not the bun default 5s flake nor an infinite burn
     expect(Date.now() - t0).toBeLessThan(10_000);
   }, 60_000);

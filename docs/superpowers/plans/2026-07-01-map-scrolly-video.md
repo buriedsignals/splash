@@ -24,7 +24,7 @@ through the same `mapStoryToChapters` the interactive scrolly uses (choropleth/s
 - Code, comments, commit messages, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer in any
   commit, PR, file, README, or doc.
-- MapTiler key lives in `atelier/.env` (gitignored) — never commit or log its value.
+- MapTiler key lives in `splash/.env` (gitignored) — never commit or log its value.
 - Frame-deterministic Remotion: no `Date.now`, no `Math.random`, no argless `new Date()`. Map
   updates use `delayRender` → `jumpTo`/`setData` → `map.once("idle")` → `continueRender`; render
   with `--gl=angle --concurrency=1`.

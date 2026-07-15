@@ -1,6 +1,6 @@
 # ② Suggester — Runtime + Eval Harness (first cut)
 
-> Sous-chantier ② de la spec-parapluie. Le cœur neuf d'Atelier (le risque-produit). Premier cut :
+> Sous-chantier ② de la spec-parapluie. Le cœur neuf d'Splash (le risque-produit). Premier cut :
 > `données + intention → 1 ChartSpec validé → dw-chart produit`. ② = l'agent-hôte (modèle Mycroft),
 > pas un programme séparé. La valeur d'ingénierie est dans le **harness d'éval** qui rend le jugement
 > de ② mesurable et améliorable. No tiers.

@@ -362,7 +362,7 @@ git commit -m "docs(suggest-chart): 2-point comparison renders as slope/dumbbell
 
 ## Notes for the implementer
 
-- All paths are relative to the repo root `/Users/rmdms/Sites/Professional/atelier`.
+- All paths are relative to the repo root `/Users/rmdms/Sites/Professional/splash`.
 - Tasks 2 and 3 are documentation/contract changes (no unit test); their "test" is the `grep` verification that the exact terms/field-names match Task 1's code.
 - Do not change producer routing (dw-chart vs chart-native) — out of scope.
 - The confirmation gate is an orchestration contract (a prompt the caller issues), not a UI widget — out of scope to build a UI.

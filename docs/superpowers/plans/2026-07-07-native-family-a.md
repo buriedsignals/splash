@@ -8,7 +8,7 @@
 
 **Goal:** 19 → 26 reachable native chart types (add treemap, boxplot, diverging-stacked, pyramid, fan, bump, violin).
 
-**Worktree:** `/Users/rmdms/Sites/Professional/.atelier-wt/familya`, branch `feat/native-family-a` (base main
+**Worktree:** `/Users/rmdms/Sites/Professional/.splash-wt/familya`, branch `feat/native-family-a` (base main
 7652ff6). Runs in PARALLEL with the map dark-video lot (disjoint files: chart-native vs map-native). `bun run
 check` green in this worktree.
 

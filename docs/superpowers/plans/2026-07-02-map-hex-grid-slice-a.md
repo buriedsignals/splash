@@ -21,7 +21,7 @@ scrolly are Slice B (they add `deriveHexGridStory`), out of scope here.
 - Runtime **Bun** always — never npm/node. Tests: `bun test`.
 - Code, comments, commit messages, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key lives in `atelier/.env` (gitignored) — never commit or log it.
+- MapTiler key lives in `splash/.env` (gitignored) — never commit or log it.
 - Reuse: `BLUES` (`src/theme/scale.ts`), `MapFrame`/`resolveMapFrame`, `resolveMapStyle`/`MAP_STYLES`
   (`src/route-geo.ts`). Use turf `hexGrid`/`squareGrid`/`collect` — NO h3-js.
 - **Frame-determinism:** the grid + binning is deterministic (fixed bbox, no `Math.random`/`Date.now`)
@@ -527,7 +527,7 @@ Expected: clean tsc (apart from pre-existing react-dom TS2688); all tests pass.
 
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bun scripts/produce.mjs assets/sample-data/hex-grid-count.json /tmp/hg/count static
 bun scripts/produce.mjs assets/sample-data/hex-grid-mean.json /tmp/hg/mean static
 ```

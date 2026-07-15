@@ -10,8 +10,8 @@ guard enforces without tripping it.
 
 ```
 bun scripts/produce-from-spec.mjs \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/waffle/spec-native.json \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/waffle static
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/waffle/spec-native.json \
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/waffle static
 ```
 
 ```

@@ -9,7 +9,7 @@
 
 ## 1. Problème
 
-Une petite rédaction non-tech doit installer Atelier **sur Mac OU Windows**, par **l'un de deux
+Une petite rédaction non-tech doit installer Splash **sur Mac OU Windows**, par **l'un de deux
 chemins au choix** :
 
 1. un **exécutable** (fichier à double-cliquer) qui installe tout, ou
@@ -79,7 +79,7 @@ Vérifiés (recherche multi-agents + fact-check adverse, 2026-07-07 ; confiance 
     `.ps1` livré ; si PowerShell nécessaire, l'envelopper : `powershell -ExecutionPolicy Bypass …`.
   - **Un fichier créé localement (non téléchargé) n'a ni MOTW ni quarantaine** → le launcher local
     du bootstrap (§7) se double-clique proprement, sans avertissement.
-- **Dépendances système** : `git` ne ship sur **aucun** des deux OS par défaut. Le plugin Atelier
+- **Dépendances système** : `git` ne ship sur **aucun** des deux OS par défaut. Le plugin Splash
   **n'a aucun hook bash** (vérifié) → **Git Bash inutile sur Windows** → on peut **éviter git**
   entièrement via une acquisition **zip** (`Invoke-WebRequest`+`Expand-Archive` sur Win, `curl`+`unzip`
   sur Mac, tous built-in). `winget` est built-in sur Windows 10 1809+/11 (App Installer).
@@ -97,22 +97,22 @@ URL et les deux modes convergent dessus.
                           │
         ┌─────────────────┴─────────────────┐
    COPIER-COLLER                      TÉLÉCHARGER (launcher mince)
- Mac: export KEYS; curl …/bootstrap.sh | bash    Mac: atelier-setup.command
- Win: $env:KEYS;  irm …/bootstrap.ps1 | iex      Win: atelier-setup.cmd  (jamais .ps1)
+ Mac: export KEYS; curl …/bootstrap.sh | bash    Mac: splash-setup.command
+ Win: $env:KEYS;  irm …/bootstrap.ps1 | iex      Win: splash-setup.cmd  (jamais .ps1)
         └─────────────────┬─────────────────┘
                           ▼
      Bootstrap versionné, hébergé, SANS clés (repo → install/)
      install/bootstrap.sh  (Mac)      install/bootstrap.ps1 (Win)
        • installe Bun (+ Node sur Win) + le runtime (Claude Code)
-       • récupère Atelier (zip — pas de git)
+       • récupère Splash (zip — pas de git)
        • bun install + playwright install  (piloté via node sur Windows)
-       • écrit ~/Atelier/.env depuis les variables d'env
+       • écrit ~/Splash/.env depuis les variables d'env
        • crée un launcher local double-clic, imprime la commande de lancement
 ```
 
 **Hébergement** : `install/bootstrap.sh` + `install/bootstrap.ps1` vivent dans le repo, servis par la
 même **GitHub Pages** que la page installeur (ou `raw.githubusercontent` sur un **tag épinglé** pour
-la stabilité en release). `REPO_URL` (aujourd'hui `https://github.com/buriedsignals/atelier`, marqué
+la stabilité en release). `REPO_URL` (aujourd'hui `https://github.com/buriedsignals/splash`, marqué
 « confirm before public release » dans `generate.js`) doit être **verrouillé** — déjà tracké par
 `scripts/preflight-release.mjs`.
 
@@ -137,7 +137,7 @@ Chaque unité a un rôle unique, une interface claire, testable isolément.
 - `generateCopyPaste({ os, runtime, keys, embed })` → string one-liner (bash ou PowerShell) avec
   clés inline + fetch du bootstrap hébergé.
 - `generateLauncher({ os, runtime, keys, embed })` → { filename, contents } (`.command` ou `.cmd`).
-- `launcherFilename(os)` → `"atelier-setup.command"` | `"atelier-setup.cmd"`.
+- `launcherFilename(os)` → `"splash-setup.command"` | `"splash-setup.cmd"`.
 - `bootstrapUrl(os)` → l'URL hébergée du bootstrap (Pages ou raw@tag).
 
 ## 6. Le bootstrap (idempotent, re-lançable)
@@ -147,12 +147,12 @@ Chaque étape teste l'existant avant d'installer (safe re-run). En pseudo-séque
 **`bootstrap.sh` (Mac/Linux)**
 1. **Bun** : `command -v bun || curl -fsSL https://bun.sh/install | bash` ; `PATH=$HOME/.bun/bin:$PATH`.
 2. **Runtime** (Claude) : `command -v claude || curl -fsSL https://claude.ai/install.sh | bash`.
-3. **Atelier** : si `~/Atelier` absent → `curl -L <zipUrl> -o /tmp/atelier.zip && unzip` → `~/Atelier`
+3. **Splash** : si `~/Splash` absent → `curl -L <zipUrl> -o /tmp/splash.zip && unzip` → `~/Splash`
    (strip du dossier racine). *(macOS ne déclenche pas l'Xcode CLT prompt puisqu'on n'appelle pas `git`.)*
 4. **Deps** : pour chaque skill producteur natif (`chart-native`, `map-native`) → `(cd skill && bun install)` ;
    puis `bunx playwright install chromium` (une fois, cache partagé).
-5. **`.env`** : écrit `~/Atelier/.env` depuis les variables d'env (clés — voir §9).
-6. **Launcher local** : écrit `~/Atelier/"Launch Atelier.command"` (charge `.env`, `cd`, `claude --plugin-dir .`)
+5. **`.env`** : écrit `~/Splash/.env` depuis les variables d'env (clés — voir §9).
+6. **Launcher local** : écrit `~/Splash/"Launch Splash.command"` (charge `.env`, `cd`, `claude --plugin-dir .`)
    + `chmod +x`.
 7. Message de succès (double-cliquer le launcher) + **unset** des variables clés.
 
@@ -162,12 +162,12 @@ Chaque étape teste l'existant avant d'installer (safe re-run). En pseudo-séque
    winget install --id OpenJS.NodeJS.LTS -e --accept-package-agreements --accept-source-agreements`
    (fallback documenté : scoop / MSI si winget absent).
 3. **Runtime** (Claude) : `Get-Command claude -ea 0 || (irm https://claude.ai/install.ps1 | iex)`.
-4. **Atelier** : si `$HOME\Atelier` absent → `Invoke-WebRequest <zipUrl> -OutFile $env:TEMP\atelier.zip` ;
-   `Expand-Archive` → `$HOME\Atelier` (**pas de git**).
+4. **Splash** : si `$HOME\Splash` absent → `Invoke-WebRequest <zipUrl> -OutFile $env:TEMP\splash.zip` ;
+   `Expand-Archive` → `$HOME\Splash` (**pas de git**).
 5. **Deps** : `bun install` dans chaque skill natif ; `bunx playwright install chromium` (le
    *téléchargement* du binaire marche sous bun ; seul le *lancement* bascule via node au produce).
-6. **`.env`** : écrit `$HOME\Atelier\.env` depuis `$env:` (clés).
-7. **Launcher local** : écrit `Launch Atelier.cmd` (charge `.env` via `for /f`, `cd`, `claude --plugin-dir .`).
+6. **`.env`** : écrit `$HOME\Splash\.env` depuis `$env:` (clés).
+7. **Launcher local** : écrit `Launch Splash.cmd` (charge `.env` via `for /f`, `cd`, `claude --plugin-dir .`).
 8. Message de succès + `Remove-Item Env:\<clés>`.
 
 ## 7. Les deux modes de livraison (émis par la page, par OS)
@@ -176,8 +176,8 @@ Chaque étape teste l'existant avant d'installer (safe re-run). En pseudo-séque
   `$env:KEY='…' ; … ; irm …/bootstrap.ps1 | iex`. Contourne Gatekeeper/SmartScreen (pas de fichier).
   **Clés inline** (arbitrage : simplicité ; elles atterrissent dans l'historique shell → la page
   affiche « ferme le terminal après » ; clés rotables, faible enjeu). Le bootstrap unset l'env en fin.
-- **Télécharger un launcher mince** — `atelier-setup.command` (Mac ; auto-`chmod +x` + `xattr -d` en
-  tête, message « supprime ce fichier après ») · `atelier-setup.cmd` (Win ; **jamais** `.ps1`). Il
+- **Télécharger un launcher mince** — `splash-setup.command` (Mac ; auto-`chmod +x` + `xattr -d` en
+  tête, message « supprime ce fichier après ») · `splash-setup.cmd` (Win ; **jamais** `.ps1`). Il
   porte les clés en env puis appelle le **même** bootstrap hébergé. Sur Win le `.cmd` invoque
   `powershell -ExecutionPolicy Bypass -Command "irm …/bootstrap.ps1 | iex"` → contourne le mur
   execution-policy. `set "KEY=…"` en cmd est hérité par le powershell enfant.
@@ -202,14 +202,14 @@ Le choix du runner est une petite fonction pure (`snapCommand(platform)` → `["
 
 Clés collectées par le form → jamais commit, jamais dans la logique hébergée. Elles ne vivent que
 (a) dans la sortie générée par-user (one-liner ou launcher), transitoirement, puis (b) dans
-`~/Atelier/.env` (gitignored, lu au lancement). Ensemble (existant, inchangé) :
+`~/Splash/.env` (gitignored, lu au lancement). Ensemble (existant, inchangé) :
 
 | Variable | Usage | Requise |
 |---|---|---|
 | `ANTHROPIC_API_KEY` (via `runtimes.js.keyEnv`) | runtime IA | selon runtime |
 | `VITE_MAPTILER_KEY` / `REMOTION_MAPTILER_KEY` | maps / vidéo-map | maps |
 | `DATAWRAPPER_API_TOKEN` | export Datawrapper | charts DW |
-| `ATELIER_EMBED_APP` / `FLY_API_TOKEN` | export embed (fly.io) | optionnel |
+| `SPLASH_EMBED_APP` / `FLY_API_TOKEN` | export embed (fly.io) | optionnel |
 
 ## 10. Tests / vérification
 
@@ -222,14 +222,14 @@ Clés collectées par le form → jamais commit, jamais dans la logique héberg�
 - **Garde produce** : test unitaire `chromiumRunner('win32') === 'node'`, `chromiumRunner('darwin') === 'bun'`.
 - **Registre** : le générateur refuse un runtime `verified:false` (déjà le cas).
 - **Smoke manuel** (documenté dans `docs/installer/README.md`) : compte macOS propre + VM Windows
-  propre → les 2 modes × 2 OS → Atelier se lance et lit les clés ; sur Windows, **un visuel natif
+  propre → les 2 modes × 2 OS → Splash se lance et lit les clés ; sur Windows, **un visuel natif
   (chart-native) se rend** (valide le garde §8) ET le chemin Datawrapper marche.
 
 ## 11. Décisions verrouillées & suivis
 
 **Verrouillé** : zip (pas git) · clés **inline** en copier-coller · **drop Homebrew** · **zéro
 signature** (Mac non notarisé + doc ; Win jamais) · **Node sur Windows** uniquement pour
-Playwright/Remotion · launcher local dans `~/Atelier`.
+Playwright/Remotion · launcher local dans `~/Splash`.
 
 **Suivis / hors périmètre** : notarisation macOS si un jour souhaitée · traduction FR de la page
 installeur (Heidi.news = francophone) · vérif Windows des skills au-delà des producteurs natifs ·

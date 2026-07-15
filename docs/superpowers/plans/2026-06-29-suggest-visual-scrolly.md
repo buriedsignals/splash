@@ -117,7 +117,7 @@ valueField "share", rows NOR/SWE/DEU/GBR/FRA/ESP/ITA/POL, basemap "world", title
 valueUnit "%", source). Validate: `cd skills/map-native && bun -e "import {validateChoroplethConfig} from
 './src/validate-config.ts'; import cfg from '<path>'; console.log(validateChoroplethConfig(cfg))"` → ok.
 Produce: `cd skills/scrolly && set -a && . ../../.env && set +a && bun scripts/produce.mjs <config.json>
-/tmp/system-test/scrolly-routed` (key from /atelier/.env — NEVER print/log it) → `scrolly.html`. Append a
+/tmp/system-test/scrolly-routed` (key from /splash/.env — NEVER print/log it) → `scrolly.html`. Append a
 "## Scrolly (Gate 3) — slice 2" section to `eval/e2e-map-proof.md` recording the config, the validation
 result, and the produced `scrolly.html` path. Do NOT fabricate; if produce fails, report the exact error.
 

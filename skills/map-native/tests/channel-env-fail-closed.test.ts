@@ -1,6 +1,6 @@
 // Defense-in-depth for channel threading (fail-closed producer env parsing), mirroring
 // chart-native/tests/channel-env-fail-closed.test.ts. map-native's produce.mjs used to
-// read ATELIER_CHANNEL with NO validation at all: an unrecognized value crashed later
+// read SPLASH_CHANNEL with NO validation at all: an unrecognized value crashed later
 // inside channelAspect() with an opaque TypeError (CHANNELS[channel] is undefined)
 // instead of a clear refusal. The spine (produce-all's gate) normalizes aliases to the
 // canonical enum before dispatch, so this producer only ever receives canonical values
@@ -27,8 +27,8 @@ function runWithChannel(
   args: string[],
 ): { failed: boolean; stderr: string } {
   const env = { ...process.env };
-  delete env.ATELIER_CHANNEL;
-  if (channelEnv !== undefined) env.ATELIER_CHANNEL = channelEnv;
+  delete env.SPLASH_CHANNEL;
+  if (channelEnv !== undefined) env.SPLASH_CHANNEL = channelEnv;
   try {
     execFileSync("bun", [PRODUCE, ...args], { cwd: root, env, stdio: "pipe" });
     return { failed: false, stderr: "" };
@@ -38,12 +38,12 @@ function runWithChannel(
   }
 }
 
-describe("map-native produce.mjs ATELIER_CHANNEL parsing is fail-closed", () => {
-  it('fails hard with a clear message on an unrecognized non-empty ATELIER_CHANNEL ("feed") — no opaque TypeError, no article-web default', () => {
+describe("map-native produce.mjs SPLASH_CHANNEL parsing is fail-closed", () => {
+  it('fails hard with a clear message on an unrecognized non-empty SPLASH_CHANNEL ("feed") — no opaque TypeError, no article-web default', () => {
     const outDir = mkdtempSync(join(tmpdir(), "map-native-channel-closed-"));
     const r = runWithChannel("feed", [CONFIG, outDir, "static"]);
     expect(r.failed).toBe(true);
-    expect(r.stderr).toContain('unknown ATELIER_CHANNEL "feed"');
+    expect(r.stderr).toContain('unknown SPLASH_CHANNEL "feed"');
     // The message must list the canonical values the caller should have sent.
     expect(r.stderr).toContain("social-vertical");
     expect(r.stderr).toContain("social-feed");
@@ -54,26 +54,26 @@ describe("map-native produce.mjs ATELIER_CHANNEL parsing is fail-closed", () => 
     expect(readdirSync(outDir)).toEqual([]);
   });
 
-  it("still defaults an EMPTY ATELIER_CHANNEL to article-web (fails later on the missing format argv, not at the channel gate)", () => {
+  it("still defaults an EMPTY SPLASH_CHANNEL to article-web (fails later on the missing format argv, not at the channel gate)", () => {
     // No format argv → the usage error. Reaching it proves the empty channel sailed
     // through the channel gate (which sits before the argv check) — cheap probe.
     const r = runWithChannel("", [CONFIG]);
     expect(r.failed).toBe(true);
-    expect(r.stderr).not.toContain("unknown ATELIER_CHANNEL");
+    expect(r.stderr).not.toContain("unknown SPLASH_CHANNEL");
     expect(r.stderr).toContain("usage: produce.mjs");
   });
 
-  it("still defaults an ABSENT ATELIER_CHANNEL to article-web (same cheap probe)", () => {
+  it("still defaults an ABSENT SPLASH_CHANNEL to article-web (same cheap probe)", () => {
     const r = runWithChannel(undefined, [CONFIG]);
     expect(r.failed).toBe(true);
-    expect(r.stderr).not.toContain("unknown ATELIER_CHANNEL");
+    expect(r.stderr).not.toContain("unknown SPLASH_CHANNEL");
     expect(r.stderr).toContain("usage: produce.mjs");
   });
 
   it("accepts a canonical value at the channel gate (fails later on the missing format argv, not on the channel)", () => {
     const r = runWithChannel("social-vertical", [CONFIG]);
     expect(r.failed).toBe(true);
-    expect(r.stderr).not.toContain("unknown ATELIER_CHANNEL");
+    expect(r.stderr).not.toContain("unknown SPLASH_CHANNEL");
     expect(r.stderr).toContain("usage: produce.mjs");
   });
 });

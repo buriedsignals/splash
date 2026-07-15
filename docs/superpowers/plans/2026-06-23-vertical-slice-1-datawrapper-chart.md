@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
 
-**Goal:** Validate the whole Atelier loop (KB → ② suggester → skill → export) on the cheapest representative case: turn `data + intent` into a good Datawrapper chart — type fits the intent, design conforms to best-practice — published (embed) AND exported as an owned PNG.
+**Goal:** Validate the whole Splash loop (KB → ② suggester → skill → export) on the cheapest representative case: turn `data + intent` into a good Datawrapper chart — type fits the intent, design conforms to best-practice — published (embed) AND exported as an owned PNG.
 
 **Architecture:** A pure `ChartSpec` contract sits between ② and the producer. ② (an LLM skill) emits a validated `ChartSpec` grounded on 2 KB references. A pure `specToMetadata` maps the spec to Datawrapper's real `metadata` fields (applying design-conformance). A thin Datawrapper REST client drives create→data→config→publish→export-PNG. Everything is validated against the **real** Datawrapper API (`vraies clés`).
 
@@ -12,17 +12,17 @@
 
 - Runtime **Bun**. Tests `bun:test`. TDD: failing test first. All code/comments/commits in **English**.
 - **No Claude/Anthropic mention** in any committed artifact (commits, docs).
-- Token: `DATAWRAPPER_API_TOKEN` read from `/atelier/.env` (gitignored). Integration tests load it via `Bun`'s auto `.env` loading; they FAIL loudly if the token is absent (no mock — real keys, real failures).
+- Token: `DATAWRAPPER_API_TOKEN` read from `/splash/.env` (gitignored). Integration tests load it via `Bun`'s auto `.env` loading; they FAIL loudly if the token is absent (no mock — real keys, real failures).
 - **Owned static fallback = PNG** (free tier confirmed: `export/png` → 200; `svg`/`pdf` → 401 paid). Every produced chart yields a PNG file.
 - Design-conformance is applied via DW's real fields: `describe.aria-description` (alt = the insight), `describe.intro`, `describe.source-name`/`source-url`, `describe.number-format`, `visualize.base-color` (Okabe-Ito), `visualize.value-labels.show`.
 - Colors restricted to the **Okabe-Ito** colorblind-safe set; **≤2 colours** guardrail.
-- All files live under `/atelier`. The skill format follows Tom's canon (8-section SKILL.md + references + sample-data + output-proof).
+- All files live under `/splash`. The skill format follows Tom's canon (8-section SKILL.md + references + sample-data + output-proof).
 - No tiers (everything free).
 
 ## File Structure
 
 ```
-/atelier/
+/splash/
   knowledge/references/
     chart-selection.md          # intent → DW chart type (FT 9 intents + data-to-viz caveats), credited
     design-conformance.md       # pass/fail checklist, credited
@@ -54,8 +54,8 @@
 ### Task 1: KB references (chart-selection + design-conformance)
 
 **Files:**
-- Create: `/atelier/knowledge/references/chart-selection.md`
-- Create: `/atelier/knowledge/references/design-conformance.md`
+- Create: `/splash/knowledge/references/chart-selection.md`
+- Create: `/splash/knowledge/references/design-conformance.md`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -112,7 +112,7 @@ single colour→`visualize.base-color`; direct labels→`visualize.value-labels.
 
 Run:
 ```bash
-cd /atelier && for f in knowledge/references/chart-selection.md knowledge/references/design-conformance.md; do
+cd /splash && for f in knowledge/references/chart-selection.md knowledge/references/design-conformance.md; do
   echo "$f: $(wc -l < $f) lines"; grep -q "Source" "$f" && echo "  has credit ✅" || echo "  MISSING credit ❌"; done
 ```
 Expected: both files < 500 lines, both print "has credit ✅".
@@ -120,7 +120,7 @@ Expected: both files < 500 lines, both print "has credit ✅".
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /atelier && git add knowledge/references
+cd /splash && git add knowledge/references
 git commit -m "feat(kb): chart-selection + design-conformance references (credited)"
 ```
 
@@ -129,9 +129,9 @@ git commit -m "feat(kb): chart-selection + design-conformance references (credit
 ### Task 2: ChartSpec contract + validator
 
 **Files:**
-- Create: `/atelier/skills/dw-chart/package.json`
-- Create: `/atelier/skills/dw-chart/src/chart-spec.ts`
-- Test: `/atelier/skills/dw-chart/tests/chart-spec.test.ts`
+- Create: `/splash/skills/dw-chart/package.json`
+- Create: `/splash/skills/dw-chart/src/chart-spec.ts`
+- Test: `/splash/skills/dw-chart/tests/chart-spec.test.ts`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -143,7 +143,7 @@ git commit -m "feat(kb): chart-selection + design-conformance references (credit
 
 - [ ] **Step 1: Create the Bun project**
 
-`/atelier/skills/dw-chart/package.json`:
+`/splash/skills/dw-chart/package.json`:
 ```json
 {
   "name": "dw-chart",
@@ -154,12 +154,12 @@ git commit -m "feat(kb): chart-selection + design-conformance references (credit
 }
 ```
 
-Run: `cd /atelier/skills/dw-chart && bun install`
+Run: `cd /splash/skills/dw-chart && bun install`
 Expected: completes (no deps yet), creates `bun.lock`.
 
 - [ ] **Step 2: Write the failing test**
 
-`/atelier/skills/dw-chart/tests/chart-spec.test.ts`:
+`/splash/skills/dw-chart/tests/chart-spec.test.ts`:
 ```ts
 import { describe, it, expect } from 'bun:test';
 import { validateChartSpec, OKABE_ITO } from '../src/chart-spec';
@@ -199,12 +199,12 @@ describe('validateChartSpec', () => {
 
 - [ ] **Step 3: Run the test to verify it fails**
 
-Run: `cd /atelier/skills/dw-chart && bun test tests/chart-spec.test.ts`
+Run: `cd /splash/skills/dw-chart && bun test tests/chart-spec.test.ts`
 Expected: FAIL — cannot find module `../src/chart-spec`.
 
 - [ ] **Step 4: Implement `chart-spec.ts`**
 
-`/atelier/skills/dw-chart/src/chart-spec.ts`:
+`/splash/skills/dw-chart/src/chart-spec.ts`:
 ```ts
 export const OKABE_ITO = [
   '#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9', '#F0E442', '#000000'
@@ -246,13 +246,13 @@ export function validateChartSpec(
 
 - [ ] **Step 5: Run the test to verify it passes**
 
-Run: `cd /atelier/skills/dw-chart && bun test tests/chart-spec.test.ts`
+Run: `cd /splash/skills/dw-chart && bun test tests/chart-spec.test.ts`
 Expected: PASS — 5 tests green.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /atelier && printf 'node_modules/\n' > skills/dw-chart/.gitignore
+cd /splash && printf 'node_modules/\n' > skills/dw-chart/.gitignore
 git add skills/dw-chart/package.json skills/dw-chart/bun.lock skills/dw-chart/.gitignore skills/dw-chart/src/chart-spec.ts skills/dw-chart/tests/chart-spec.test.ts
 git commit -m "feat(dw-chart): ChartSpec contract + validator (Okabe-Ito, WCAG alt)"
 ```
@@ -262,8 +262,8 @@ git commit -m "feat(dw-chart): ChartSpec contract + validator (Okabe-Ito, WCAG a
 ### Task 3: spec → Datawrapper metadata mapping
 
 **Files:**
-- Create: `/atelier/skills/dw-chart/src/spec-to-metadata.ts`
-- Test: `/atelier/skills/dw-chart/tests/spec-to-metadata.test.ts`
+- Create: `/splash/skills/dw-chart/src/spec-to-metadata.ts`
+- Test: `/splash/skills/dw-chart/tests/spec-to-metadata.test.ts`
 
 **Interfaces:**
 - Consumes: `ChartSpec` (Task 2).
@@ -271,7 +271,7 @@ git commit -m "feat(dw-chart): ChartSpec contract + validator (Okabe-Ito, WCAG a
 
 - [ ] **Step 1: Write the failing test**
 
-`/atelier/skills/dw-chart/tests/spec-to-metadata.test.ts`:
+`/splash/skills/dw-chart/tests/spec-to-metadata.test.ts`:
 ```ts
 import { describe, it, expect } from 'bun:test';
 import { specToMetadata } from '../src/spec-to-metadata';
@@ -321,12 +321,12 @@ describe('specToMetadata', () => {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `cd /atelier/skills/dw-chart && bun test tests/spec-to-metadata.test.ts`
+Run: `cd /splash/skills/dw-chart && bun test tests/spec-to-metadata.test.ts`
 Expected: FAIL — cannot find module `../src/spec-to-metadata`.
 
 - [ ] **Step 3: Implement `spec-to-metadata.ts`**
 
-`/atelier/skills/dw-chart/src/spec-to-metadata.ts`:
+`/splash/skills/dw-chart/src/spec-to-metadata.ts`:
 ```ts
 import type { ChartSpec } from './chart-spec';
 
@@ -355,13 +355,13 @@ export function specToMetadata(spec: ChartSpec): DwPatch {
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `cd /atelier/skills/dw-chart && bun test tests/spec-to-metadata.test.ts`
+Run: `cd /splash/skills/dw-chart && bun test tests/spec-to-metadata.test.ts`
 Expected: PASS — 5 tests green.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /atelier && git add skills/dw-chart/src/spec-to-metadata.ts skills/dw-chart/tests/spec-to-metadata.test.ts
+cd /splash && git add skills/dw-chart/src/spec-to-metadata.ts skills/dw-chart/tests/spec-to-metadata.test.ts
 git commit -m "feat(dw-chart): map ChartSpec to Datawrapper metadata (conformance fields)"
 ```
 
@@ -370,8 +370,8 @@ git commit -m "feat(dw-chart): map ChartSpec to Datawrapper metadata (conformanc
 ### Task 4: Datawrapper REST client
 
 **Files:**
-- Create: `/atelier/skills/dw-chart/src/datawrapper.ts`
-- Test: `/atelier/skills/dw-chart/tests/datawrapper.test.ts`
+- Create: `/splash/skills/dw-chart/src/datawrapper.ts`
+- Test: `/splash/skills/dw-chart/tests/datawrapper.test.ts`
 
 **Interfaces:**
 - Consumes: `DATAWRAPPER_API_TOKEN` from env.
@@ -385,7 +385,7 @@ git commit -m "feat(dw-chart): map ChartSpec to Datawrapper metadata (conformanc
 
 - [ ] **Step 1: Write the failing integration test (real API)**
 
-`/atelier/skills/dw-chart/tests/datawrapper.test.ts`:
+`/splash/skills/dw-chart/tests/datawrapper.test.ts`:
 ```ts
 import { describe, it, expect, afterAll } from 'bun:test';
 import { tmpdir } from 'node:os';
@@ -402,14 +402,14 @@ describe('datawrapper client (real API)', () => {
   });
 
   it('runs the full create→data→patch→publish→export-png chain', async () => {
-    const id = await createChart('atelier client test', 'column-chart');
+    const id = await createChart('splash client test', 'column-chart');
     createdId = id;
     expect(id).toMatch(/^[A-Za-z0-9]{5}$/);
     await setData(id, 'year,value\n2021,3\n2022,5\n2023,4\n');
     await patchChart(id, { metadata: { visualize: { 'base-color': '#0072B2' } } });
     const url = await publishChart(id);
     expect(url).toContain('datawrapper');
-    const out = join(tmpdir(), `atelier-${id}.png`);
+    const out = join(tmpdir(), `splash-${id}.png`);
     const bytes = await exportPng(id, out);
     expect(existsSync(out)).toBe(true);
     expect(bytes).toBeGreaterThan(1000);
@@ -422,18 +422,18 @@ afterAll(async () => { if (createdId) await deleteChart(createdId); });
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `cd /atelier/skills/dw-chart && bun test tests/datawrapper.test.ts`
+Run: `cd /splash/skills/dw-chart && bun test tests/datawrapper.test.ts`
 Expected: FAIL — cannot find module `../src/datawrapper`.
 
 - [ ] **Step 3: Implement `datawrapper.ts`**
 
-`/atelier/skills/dw-chart/src/datawrapper.ts`:
+`/splash/skills/dw-chart/src/datawrapper.ts`:
 ```ts
 const API = 'https://api.datawrapper.de/v3';
 
 function token(): string {
   const t = process.env.DATAWRAPPER_API_TOKEN;
-  if (!t) throw new Error('DATAWRAPPER_API_TOKEN is not set (see /atelier/.env)');
+  if (!t) throw new Error('DATAWRAPPER_API_TOKEN is not set (see /splash/.env)');
   return t;
 }
 function auth(extra: Record<string, string> = {}): Record<string, string> {
@@ -488,13 +488,13 @@ export async function deleteChart(id: string): Promise<void> {
 
 - [ ] **Step 4: Run the test to verify it passes (real token)**
 
-Run: `cd /atelier/skills/dw-chart && bun test tests/datawrapper.test.ts`
-Expected: PASS — token present, full chain green, PNG > 1000 bytes. (Bun auto-loads `/atelier/.env`; if running from the skill dir, ensure the token is exported: `set -a; source /atelier/.env; set +a` before `bun test`.)
+Run: `cd /splash/skills/dw-chart && bun test tests/datawrapper.test.ts`
+Expected: PASS — token present, full chain green, PNG > 1000 bytes. (Bun auto-loads `/splash/.env`; if running from the skill dir, ensure the token is exported: `set -a; source /splash/.env; set +a` before `bun test`.)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /atelier && git add skills/dw-chart/src/datawrapper.ts skills/dw-chart/tests/datawrapper.test.ts
+cd /splash && git add skills/dw-chart/src/datawrapper.ts skills/dw-chart/tests/datawrapper.test.ts
 git commit -m "feat(dw-chart): Datawrapper REST client (create/data/patch/publish/export-png)"
 ```
 
@@ -503,10 +503,10 @@ git commit -m "feat(dw-chart): Datawrapper REST client (create/data/patch/publis
 ### Task 5: produce orchestrator (+ conformance assertion)
 
 **Files:**
-- Create: `/atelier/skills/dw-chart/src/produce.ts`
-- Create: `/atelier/skills/dw-chart/assets/sample-data/unemployment.csv`
-- Create: `/atelier/skills/dw-chart/assets/sample-data/sample.spec.json`
-- Test: `/atelier/skills/dw-chart/tests/produce.test.ts`
+- Create: `/splash/skills/dw-chart/src/produce.ts`
+- Create: `/splash/skills/dw-chart/assets/sample-data/unemployment.csv`
+- Create: `/splash/skills/dw-chart/assets/sample-data/sample.spec.json`
+- Test: `/splash/skills/dw-chart/tests/produce.test.ts`
 
 **Interfaces:**
 - Consumes: `validateChartSpec`, `ChartSpec` (Task 2); `specToMetadata` (Task 3); the client (Task 4).
@@ -514,7 +514,7 @@ git commit -m "feat(dw-chart): Datawrapper REST client (create/data/patch/publis
 
 - [ ] **Step 1: Create the sample data**
 
-`/atelier/skills/dw-chart/assets/sample-data/unemployment.csv`:
+`/splash/skills/dw-chart/assets/sample-data/unemployment.csv`:
 ```csv
 year,value
 2018,5.1
@@ -525,7 +525,7 @@ year,value
 2023,3.7
 ```
 
-`/atelier/skills/dw-chart/assets/sample-data/sample.spec.json`:
+`/splash/skills/dw-chart/assets/sample-data/sample.spec.json`:
 ```json
 {
   "type": "d3-lines",
@@ -542,7 +542,7 @@ year,value
 
 - [ ] **Step 2: Write the failing integration test**
 
-`/atelier/skills/dw-chart/tests/produce.test.ts`:
+`/splash/skills/dw-chart/tests/produce.test.ts`:
 ```ts
 import { describe, it, expect, afterAll } from 'bun:test';
 import { tmpdir } from 'node:os';
@@ -560,7 +560,7 @@ let id = '';
 describe('produceChart (real API)', () => {
   it('produces a published chart, an embed, and an owned PNG with conformance applied', async () => {
     expect(!!process.env.DATAWRAPPER_API_TOKEN).toBe(true);
-    const out = join(tmpdir(), 'atelier-produce.png');
+    const out = join(tmpdir(), 'splash-produce.png');
     const res = await produceChart(spec, out);
     id = res.chartId;
     expect(res.publicUrl).toContain('datawrapper');
@@ -582,12 +582,12 @@ afterAll(async () => { if (id) await deleteChart(id); });
 
 - [ ] **Step 3: Run the test to verify it fails**
 
-Run: `cd /atelier/skills/dw-chart && bun test tests/produce.test.ts`
+Run: `cd /splash/skills/dw-chart && bun test tests/produce.test.ts`
 Expected: FAIL — cannot find module `../src/produce`.
 
 - [ ] **Step 4: Implement `produce.ts`**
 
-`/atelier/skills/dw-chart/src/produce.ts`:
+`/splash/skills/dw-chart/src/produce.ts`:
 ```ts
 import { validateChartSpec, type ChartSpec } from './chart-spec';
 import { specToMetadata } from './spec-to-metadata';
@@ -620,18 +620,18 @@ export async function produceChart(spec: ChartSpec, pngPath: string): Promise<Pr
 
 - [ ] **Step 5: Run the test to verify it passes (real token)**
 
-Run: `cd /atelier/skills/dw-chart && set -a; source /atelier/.env; set +a; bun test tests/produce.test.ts`
+Run: `cd /splash/skills/dw-chart && set -a; source /splash/.env; set +a; bun test tests/produce.test.ts`
 Expected: PASS — chart published, embed contains the url, PNG written, `aria-description` and `base-color` confirmed on the live chart.
 
 - [ ] **Step 6: Run the full suite**
 
-Run: `cd /atelier/skills/dw-chart && set -a; source /atelier/.env; set +a; bun test`
+Run: `cd /splash/skills/dw-chart && set -a; source /splash/.env; set +a; bun test`
 Expected: PASS — `chart-spec`, `spec-to-metadata`, `datawrapper`, `produce` all green.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /atelier && git add skills/dw-chart/src/produce.ts skills/dw-chart/assets/sample-data skills/dw-chart/tests/produce.test.ts
+cd /splash && git add skills/dw-chart/src/produce.ts skills/dw-chart/assets/sample-data skills/dw-chart/tests/produce.test.ts
 git commit -m "feat(dw-chart): produce orchestrator — spec to published chart + owned PNG, conformance verified"
 ```
 
@@ -640,9 +640,9 @@ git commit -m "feat(dw-chart): produce orchestrator — spec to published chart 
 ### Task 6: dw-chart SKILL.md + references + output-proof
 
 **Files:**
-- Create: `/atelier/skills/dw-chart/SKILL.md`
-- Create: `/atelier/skills/dw-chart/references/api-flow.md`
-- Create: `/atelier/skills/dw-chart/output-proof/` (PNG + embed snippet)
+- Create: `/splash/skills/dw-chart/SKILL.md`
+- Create: `/splash/skills/dw-chart/references/api-flow.md`
+- Create: `/splash/skills/dw-chart/output-proof/` (PNG + embed snippet)
 
 **Interfaces:**
 - Consumes: everything from Tasks 2-5 (the skill is functionally complete; this makes it conform to the skill contract + produces the proof).
@@ -650,7 +650,7 @@ git commit -m "feat(dw-chart): produce orchestrator — spec to published chart 
 
 - [ ] **Step 1: Generate the proof from the sample spec**
 
-`/atelier/skills/dw-chart/scripts/make-proof.ts`:
+`/splash/skills/dw-chart/scripts/make-proof.ts`:
 ```ts
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -668,12 +668,12 @@ writeFileSync(join(dir, 'result.json'), JSON.stringify({ chartId: res.chartId, p
 console.log('proof written:', res.publicUrl);
 ```
 
-Run: `cd /atelier/skills/dw-chart && set -a; source /atelier/.env; set +a; bun scripts/make-proof.ts`
+Run: `cd /splash/skills/dw-chart && set -a; source /splash/.env; set +a; bun scripts/make-proof.ts`
 Expected: prints `proof written: https://…datawrapper…`; `output-proof/chart.png`, `embed.html`, `result.json` exist.
 
 - [ ] **Step 2: Write `SKILL.md` (8 sections)**
 
-`/atelier/skills/dw-chart/SKILL.md`:
+`/splash/skills/dw-chart/SKILL.md`:
 ```markdown
 ---
 name: dw-chart
@@ -697,7 +697,7 @@ For video charts use the chart-video skills; for maps use the map skills; for ri
 
 ## The one gotcha that will waste your day (read first)
 
-SVG/PDF export is **paid** on Datawrapper (`export/svg` → 401). The owned fallback is **PNG** (`export/png` → 200, free). Don't build the fallback on SVG. The token lives in `/atelier/.env` as `DATAWRAPPER_API_TOKEN`; `bun test` from the skill dir needs it exported (`set -a; source /atelier/.env; set +a`).
+SVG/PDF export is **paid** on Datawrapper (`export/svg` → 401). The owned fallback is **PNG** (`export/png` → 200, free). Don't build the fallback on SVG. The token lives in `/splash/.env` as `DATAWRAPPER_API_TOKEN`; `bun test` from the skill dir needs it exported (`set -a; source /splash/.env; set +a`).
 
 ## Architecture
 
@@ -720,7 +720,7 @@ Full field mapping + endpoints → `references/api-flow.md`.
 ## Quick start
 
 1. Build a `ChartSpec` (see `assets/sample-data/sample.spec.json`).
-2. `set -a; source /atelier/.env; set +a` (token).
+2. `set -a; source /splash/.env; set +a` (token).
 3. `bun -e "import {produceChart} from './src/produce'; ..."` or call `produceChart(spec, 'out.png')`.
 
 ## Tuning knobs (each is one value)
@@ -743,7 +743,7 @@ Full field mapping + endpoints → `references/api-flow.md`.
 
 - [ ] **Step 3: Write `references/api-flow.md`**
 
-`/atelier/skills/dw-chart/references/api-flow.md`:
+`/splash/skills/dw-chart/references/api-flow.md`:
 ```markdown
 # Datawrapper API flow + field mapping
 
@@ -772,7 +772,7 @@ Auth: `Authorization: Bearer $DATAWRAPPER_API_TOKEN`. Base: `https://api.datawra
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /atelier && printf 'output-proof/\n' >> skills/dw-chart/.gitignore  # PNG is a generated proof; keep embed+result
+cd /splash && printf 'output-proof/\n' >> skills/dw-chart/.gitignore  # PNG is a generated proof; keep embed+result
 git add skills/dw-chart/SKILL.md skills/dw-chart/references skills/dw-chart/scripts skills/dw-chart/.gitignore
 git add -f skills/dw-chart/output-proof/embed.html skills/dw-chart/output-proof/result.json
 git commit -m "docs(dw-chart): SKILL.md (8-section contract) + api-flow + output-proof"
@@ -783,8 +783,8 @@ git commit -m "docs(dw-chart): SKILL.md (8-section contract) + api-flow + output
 ### Task 7: suggest-chart skill (② minimal) + worked example
 
 **Files:**
-- Create: `/atelier/skills/suggest-chart/SKILL.md`
-- Create: `/atelier/skills/suggest-chart/examples/unemployment.md`
+- Create: `/splash/skills/suggest-chart/SKILL.md`
+- Create: `/splash/skills/suggest-chart/examples/unemployment.md`
 
 **Interfaces:**
 - Consumes: `knowledge/references/chart-selection.md` + `design-conformance.md` (Task 1); emits a `ChartSpec` (Task 2 shape) consumed by `dw-chart`.
@@ -792,7 +792,7 @@ git commit -m "docs(dw-chart): SKILL.md (8-section contract) + api-flow + output
 
 - [ ] **Step 1: Write `SKILL.md`**
 
-`/atelier/skills/suggest-chart/SKILL.md`:
+`/splash/skills/suggest-chart/SKILL.md`:
 ```markdown
 ---
 name: suggest-chart
@@ -833,7 +833,7 @@ A single `ChartSpec` JSON (or a `no-chart` decision). Hand it to `dw-chart`.
 
 - [ ] **Step 2: Write the worked example**
 
-`/atelier/skills/suggest-chart/examples/unemployment.md`:
+`/splash/skills/suggest-chart/examples/unemployment.md`:
 ```markdown
 # Worked example — unemployment trend
 
@@ -863,7 +863,7 @@ This is the same spec as `dw-chart/assets/sample-data/sample.spec.json` — it v
 
 Run:
 ```bash
-cd /atelier/skills/dw-chart && bun -e '
+cd /splash/skills/dw-chart && bun -e '
 import { validateChartSpec } from "./src/chart-spec";
 import { readFileSync } from "node:fs";
 const spec = JSON.parse(readFileSync("assets/sample-data/sample.spec.json","utf8"));
@@ -876,7 +876,7 @@ Expected: prints `example spec valid ✅`.
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /atelier && git add skills/suggest-chart
+cd /splash && git add skills/suggest-chart
 git commit -m "feat(suggest-chart): minimal suggester emitting a validated ChartSpec, grounded on KB"
 ```
 
@@ -891,29 +891,29 @@ git commit -m "feat(suggest-chart): minimal suggester emitting a validated Chart
 
 Run:
 ```bash
-cd /atelier/skills/dw-chart && set -a; source /atelier/.env; set +a
+cd /splash/skills/dw-chart && set -a; source /splash/.env; set +a
 bun -e '
 import { produceChart } from "./src/produce";
 import { readFileSync } from "node:fs";
 const spec = JSON.parse(readFileSync("assets/sample-data/sample.spec.json","utf8"));
-const res = await produceChart(spec, "/tmp/atelier-e2e.png");
+const res = await produceChart(spec, "/tmp/splash-e2e.png");
 console.log("publicUrl:", res.publicUrl);
 console.log("embed starts:", res.embed.slice(0,40));
-import { statSync } from "node:fs"; console.log("png bytes:", statSync("/tmp/atelier-e2e.png").size);
+import { statSync } from "node:fs"; console.log("png bytes:", statSync("/tmp/splash-e2e.png").size);
 import { deleteChart } from "./src/datawrapper"; await deleteChart(res.chartId);'
 ```
 Expected: prints a datawrapper `publicUrl`, an `<iframe` embed, and `png bytes:` > 1000.
 
 - [ ] **Step 2: Full suite green**
 
-Run: `cd /atelier/skills/dw-chart && set -a; source /atelier/.env; set +a; bun test`
+Run: `cd /splash/skills/dw-chart && set -a; source /splash/.env; set +a; bun test`
 Expected: all 4 test files PASS.
 
 - [ ] **Step 3: Confirm the contract files exist**
 
 Run:
 ```bash
-cd /atelier && ls knowledge/references/chart-selection.md knowledge/references/design-conformance.md \
+cd /splash && ls knowledge/references/chart-selection.md knowledge/references/design-conformance.md \
   skills/dw-chart/SKILL.md skills/dw-chart/output-proof/embed.html skills/suggest-chart/SKILL.md
 ```
 Expected: all listed, no "No such file".
@@ -921,6 +921,6 @@ Expected: all listed, no "No such file".
 - [ ] **Step 4: Final commit (only if fixes were needed)**
 
 ```bash
-cd /atelier && git add -A && git commit -m "test(slice-1): end-to-end loop verified — intent to owned PNG + embed"
+cd /splash && git add -A && git commit -m "test(slice-1): end-to-end loop verified — intent to owned PNG + embed"
 ```
 </content>

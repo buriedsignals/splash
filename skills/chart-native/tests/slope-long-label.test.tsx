@@ -18,7 +18,7 @@ import { checkLabelDataIntegrity } from "../src/core/conformance";
 // `rows[1].categorie = "Interm."` while its `altInsight` still said "professions
 // intermédiaires" in full: data mutilated to fit the layout. The fix sizes the left
 // gutter to the WIDEST actual "name value" label (leftLabelGutterPx), so the FULL name
-// always renders and the guard never fires → atelier never needs to shorten the data.
+// always renders and the guard never fires → splash never needs to shorten the data.
 //
 // Fixture grounded in that real artifact (teletravail-polarisation), with the true full
 // name RESTORED to the row the bug had shortened to "Interm.".

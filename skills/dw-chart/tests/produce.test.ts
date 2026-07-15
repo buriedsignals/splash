@@ -27,7 +27,7 @@ const d = hasToken ? describe : describe.skip;
 d("produceChart (real API)", () => {
   it("produces a published chart, an embed, and an owned PNG with conformance applied", async () => {
     expect(!!process.env.DATAWRAPPER_API_TOKEN).toBe(true);
-    const out = join(tmpdir(), "atelier-produce.png");
+    const out = join(tmpdir(), "splash-produce.png");
     const res = await produceChart(spec, out);
     id = res.chartId;
     expect(res.publicUrl).toContain("datawrapper");
@@ -53,7 +53,7 @@ d("produceChart (real API)", () => {
       altInsight:
         "Renewables grew from 20% in 2018 to 42% in 2022, overtaking coal",
     };
-    const out = join(tmpdir(), "atelier-multiseries.png");
+    const out = join(tmpdir(), "splash-multiseries.png");
     const res = await produceChart(msSpec as any, out);
     msId = res.chartId;
     const r = await fetch(
@@ -81,7 +81,7 @@ d("produceChart (real API)", () => {
       altInsight: "It peaked at 5.6% in 2021",
       annotations: [{ text: "Peak", x: "2021", y: 5.6 }],
     };
-    const out = join(tmpdir(), "atelier-annot.png");
+    const out = join(tmpdir(), "splash-annot.png");
     const res = await produceChart(annSpec as any, out);
     annId = res.chartId;
     const r = await fetch(`https://api.datawrapper.de/v3/charts/${annId}`, {
@@ -107,7 +107,7 @@ d("produceChart (real API)", () => {
       altInsight:
         "Le taux de chômage est passé de 7,9 % en 2021 à 7,1 % en 2023",
     };
-    const out = join(tmpdir(), "atelier-fr-source.png");
+    const out = join(tmpdir(), "splash-fr-source.png");
     const res = await produceChart(frSpec, out);
     frId = res.chartId;
     // The existing e2e pattern exports the render — keep it (static default).
@@ -142,7 +142,7 @@ d("produceChart (real API)", () => {
       numberFormat: "$0,0.00",
       altInsight: "Steak at $32 is roughly eight times the price of coffee",
     };
-    const out = join(tmpdir(), "atelier-dwbar-value-labels.png");
+    const out = join(tmpdir(), "splash-dwbar-value-labels.png");
     rmSync(out, { force: true });
     const res = await produceChart(barSpec, out);
     barId = res.chartId;
@@ -167,7 +167,7 @@ d("produceChart (real API)", () => {
   // exportPng call after every publish). "static" (the default, tested above) is
   // unchanged: it still exports the media.
   it('produces the embed/publicUrl but writes NO png when format is "interactive"', async () => {
-    const out = join(tmpdir(), "atelier-interactive.png");
+    const out = join(tmpdir(), "splash-interactive.png");
     rmSync(out, { force: true });
     const res = await produceChart(spec, out, { format: "interactive" });
     interactiveId = res.chartId;
@@ -191,7 +191,7 @@ describe("produceChart fails fast on a garbled channel BEFORE any API call", () 
     const saved = process.env.DATAWRAPPER_API_TOKEN;
     delete process.env.DATAWRAPPER_API_TOKEN;
     try {
-      const out = join(tmpdir(), "atelier-garbled-channel.png");
+      const out = join(tmpdir(), "splash-garbled-channel.png");
       const garbled = { ...spec, channel: "instagramz" };
       await expect(produceChart(garbled, out)).rejects.toThrow(
         /unknown channel "instagramz"/,

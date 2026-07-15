@@ -5,7 +5,7 @@
 //
 //   bun scripts/produce.mjs <config.json> <outDir> <format>
 //   format: the SINGLE VisualFormat to build — "static" | "interactive" | "video" |
-//   "scrolly" (the ../../atelier/src/channel.ts vocabulary — same format-value set as
+//   "scrolly" (the ../../splash/src/channel.ts vocabulary — same format-value set as
 //   chart-native's produce.mjs, single-format-produce-export design). Builds EXACTLY
 //   that one format's artifacts, nothing else (no cross-format byproducts — e.g. a
 //   "static" run no longer also builds interactive.html just because the channel
@@ -41,7 +41,7 @@ import { snapCommand, remotionCommand } from "../src/platform-runners.ts";
 import { runWithVideoWatchdog } from "../src/video-watchdog.ts";
 import { mapSourceManifest } from "../src/source-manifest.ts";
 import { readCompDims } from "./lib/comp-registry.mjs";
-import { ALL_CHANNELS, channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
+import { ALL_CHANNELS, channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../splash/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -98,7 +98,7 @@ function readPngSize(pngPath) {
 // bounded to the comp's own tag — see scripts/lib/comp-registry.mjs (mirrored).
 
 // Channel-driven format (Slice 2): the confirmed CADRAGE Q3 channel, forwarded by
-// adapters.ts as `ATELIER_CHANNEL` (see adapters.ts's CHANNEL THREADING note). Absent
+// adapters.ts as `SPLASH_CHANNEL` (see adapters.ts's CHANNEL THREADING note). Absent
 // (legacy proposals, manual runs) defaults to "article-web" — matches normalizeChannel's
 // default and today's landscape-first behavior, so produce.mjs still works with no
 // channel arg at all.
@@ -110,11 +110,11 @@ function readPngSize(pngPath) {
 // accepted: the spine normalizes aliases/case-variants ("feed", "Stories") to
 // canonical BEFORE threading, so the alias table lives once in normalizeChannel and
 // is never duplicated here. Absent/EMPTY keeps the article-web default.
-const rawChannel = (process.env.ATELIER_CHANNEL ?? "").trim();
+const rawChannel = (process.env.SPLASH_CHANNEL ?? process.env.ATELIER_CHANNEL ?? "").trim();
 const channel = rawChannel === "" ? "article-web" : rawChannel;
 if (!ALL_CHANNELS.includes(channel)) {
   console.error(
-    `produce: unknown ATELIER_CHANNEL "${rawChannel}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
+    `produce: unknown SPLASH_CHANNEL "${rawChannel}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
       "(absent/empty defaults to article-web); refusing to default an unrecognized channel to article-web.",
   );
   process.exit(1);
@@ -387,7 +387,7 @@ switch (format) {
       const mp4Out = join(outDir, `${name}.mp4`);
       // Both Remotion invocations run under the render watchdog (src/video-watchdog.ts):
       // the seismes-class hang (Remotion+MapLibre per-frame render) is killed after
-      // ATELIER_VIDEO_TIMEOUT_MS (default 15 min) and fails the run cleanly instead of
+      // SPLASH_VIDEO_TIMEOUT_MS (default 15 min) and fails the run cleanly instead of
       // burning it — root-causing the hang itself stays a separate ticket.
       const renderEnv = { ...env, COMP: comp };
       console.log(`[produce map] video ${name} (${comp}) — still…`);
@@ -434,7 +434,7 @@ switch (format) {
   }
 
   // scrolly — NOT built by map-native directly. The true interactive scroll-driven
-  // format (skills/scrolly) is its own producer (see ../../atelier/src/producer-spec.ts
+  // format (skills/scrolly) is its own producer (see ../../splash/src/producer-spec.ts
   // Producer union and adapters.ts's SCRIPT table): it hosts map-native's rendering
   // under its own build/render pipeline, dispatched independently by the orchestrator
   // as producer "scrolly", never through this script. map-native's own former

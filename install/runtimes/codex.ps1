@@ -13,8 +13,8 @@ function Seed-CodexConfig {
   $codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME ".codex" }
   $config = Join-Path $codexHome "config.toml"
   $block = @'
-# Atelier — Codex sandbox settings.
-# Atelier's producers call provider APIs (MapTiler, Datawrapper, fly.io) and the runnable-source
+# Splash — Codex sandbox settings.
+# Splash's producers call provider APIs (MapTiler, Datawrapper, fly.io) and the runnable-source
 # export runs `bun install`, so the workspace-write sandbox needs outbound network access.
 sandbox_mode = "workspace-write"
 # Prompts before networked / out-of-workspace actions. Set to "never" for the smoothest
@@ -27,9 +27,9 @@ network_access = true
   if (-not (Test-Path $config)) {
     New-Item -ItemType Directory -Force -Path $codexHome | Out-Null
     Set-Content -Path $config -Value $block -Encoding ascii
-    Write-Host "-> Wrote Codex sandbox config to $config (network enabled for Atelier producers)."
+    Write-Host "-> Wrote Codex sandbox config to $config (network enabled for Splash producers)."
   } elseif (-not (Select-String -Path $config -Pattern "network_access" -Quiet)) {
-    Write-Warning "Existing $config has no 'network_access' key. Atelier's producers need outbound network under the workspace-write sandbox — add this:"
+    Write-Warning "Existing $config has no 'network_access' key. Splash's producers need outbound network under the workspace-write sandbox — add this:"
     Write-Host $block
   }
 }

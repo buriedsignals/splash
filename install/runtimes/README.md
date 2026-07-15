@@ -1,7 +1,7 @@
 # Runtime modules
 
 One file per supported AI runtime. The bootstrap installer records the journalist's chosen
-runtime in `~/Atelier/.atelier-runtime` (via the local configurator) and dispatches to the
+runtime in `~/Splash/.splash-runtime` (via the local configurator) and dispatches to the
 matching module here — so adding a runtime is a new file in this directory, never a change to
 `bootstrap.sh` / `bootstrap.ps1`.
 

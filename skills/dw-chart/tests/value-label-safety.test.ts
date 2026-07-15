@@ -122,7 +122,7 @@ describe("checkValueLabelContrast — the regression guard", () => {
   // 3.42:1 (below WCAG AA) as an advisory "concern". Datawrapper owns the inside-label
   // colour (its YIQ auto-pick — verified against the live d3-bars option schema: the
   // value-label keys are show-value-labels / value-label-visibility / value-label-
-  // alignment / value-label-format, NONE control colour or inside/outside), so atelier
+  // alignment / value-label-format, NONE control colour or inside/outside), so splash
   // cannot recolour it. The value axis (force-grid) being present does NOT cure the
   // label's own 1.4.3 contrast failure — so a sub-AA white inside label is now a HARD
   // failure (fail-loud) on the auto path, caught before publish instead of shipped

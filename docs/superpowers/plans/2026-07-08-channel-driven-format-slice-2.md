@@ -11,14 +11,14 @@ aspect; fail-hard if rendered aspect ≠ channel. Spec:
 - English identifiers/comments/commits. No Claude/Anthropic mention. Bun only. No fabricated data.
 - `bun run check` 16/16 at each task end. Do NOT break drift tests (native-types, completeness, map-types).
 - Channel enum `social-vertical|social-feed|article-web`; sizes portrait 1080×1920 · square 1080×1080 ·
-  landscape 1200×675 (from `skills/atelier/src/channel.ts` `CHANNELS[*].mediaSize`).
+  landscape 1200×675 (from `skills/splash/src/channel.ts` `CHANNELS[*].mediaSize`).
 - Absent channel ⇒ default `article-web` (landscape) — back-compat, producers still work with no channel arg.
 - 9:16 = **repoint** existing Portrait comps 1350→1920 (drop 4:5, no channel uses it), NOT a 4th aspect.
 
 ---
 
 ### Task 1: shared render-size accessors/assert + thread channel through the adapter
-**Files:** `skills/atelier/src/channel.ts`, `skills/atelier/tests/channel.test.ts`, `skills/atelier/src/adapters.ts`.
+**Files:** `skills/splash/src/channel.ts`, `skills/splash/tests/channel.test.ts`, `skills/splash/src/adapters.ts`.
 **Produces:**
 ```ts
 export function channelAspect(channel: Channel): ChannelAspect; // = CHANNELS[channel].aspect
@@ -28,7 +28,7 @@ export function assertRenderedSize(actualW: number, actualH: number, channel: Ch
 ```
 - `adapters.ts` `dispatchFileBased`/`realDispatch` (~:185-205): for chart-native + map-native, append the
   proposal's `channel` (default `"article-web"`) to the dispatched argv (a 5th positional arg) OR as env
-  `ATELIER_CHANNEL`. Pick whichever the entry scripts read most cleanly; document it. dw-chart/map-dw
+  `SPLASH_CHANNEL`. Pick whichever the entry scripts read most cleanly; document it. dw-chart/map-dw
   dispatch unchanged.
 - [ ] Test `channelAspect`/`renderSize`/`assertRenderedSize` (pass on match, fail on 1080×1350 vs a
   social-vertical 1080×1920). [ ] Test adapters passes channel (unit around the argv builder). [ ] Commit.
@@ -73,12 +73,12 @@ shared probe (reuse `assertRenderedSize` from T1).
 - [ ] Test: a deliberately wrong-sized static → produce exits non-zero. [ ] Verify GREEN on a correct
   channel-sized render (produce exits 0). [ ] Commit.
 
-### Task 5: atelier SKILL.md EXPORT — produce the one channel aspect
-**Files:** `skills/atelier/SKILL.md`.
+### Task 5: splash SKILL.md EXPORT — produce the one channel aspect
+**Files:** `skills/splash/SKILL.md`.
 - EXPORT §6 VIDEO branch (~:299-310): change "producer emits three aspect ratios … pick one at EXPORT" →
   "the producer renders the ONE aspect the channel requires (social-vertical→9:16, feed→square,
   article-web→landscape); hand over that mp4." Remove the Slice-1 4:5 caveat (9:16 now real).
-- [ ] `bun test skills/atelier` green. [ ] Commit.
+- [ ] `bun test skills/splash` green. [ ] Commit.
 
 ## Final
 - Whole-branch review (opus) vs these constraints. Fix findings (one fixer for all).
