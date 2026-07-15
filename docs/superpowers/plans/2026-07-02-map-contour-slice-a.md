@@ -23,8 +23,8 @@ layer-on-basemap references; `resolveMapStyle`). Contour design spec approved.
 - Runtime **Bun** always — never npm/node. Tests `bun test`.
 - Code, comments, commits, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it; render commands
-  `set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a`.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it; render commands
+  `set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a`.
 - **Determinism:** the geometry is a pure function of the config — turf `interpolate`/`isobands`/`isolines`
   are deterministic; no `Date.now`/`Math.random`/argless `new Date()`.
 - **Basemap always kept** (situated field) — do NOT apply any neutral background (that is cartogram-grid).
@@ -289,7 +289,7 @@ git commit -m "feat(map-native): contour config validation + conformance guard"
 
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bun scripts/produce.mjs assets/sample-data/contour-bands.json /tmp/contour/bands static
 bun scripts/produce.mjs assets/sample-data/contour-both.json /tmp/contour/both static
 ```

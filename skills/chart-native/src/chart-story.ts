@@ -109,7 +109,7 @@ function listValidAnchors(values: string[]): string {
 // Validate an explicit beat plan against the chart type + the data's own anchor
 // values (line: the x column; bar: the category column). Returns human-readable
 // errors ([] = valid). Pure and throw-free so the spine validation gate
-// (skills/atelier/src/validate-gate.ts) can surface a typo BEFORE production;
+// (skills/splash/src/validate-gate.ts) can surface a typo BEFORE production;
 // deriveChartStory throws on the same errors at derive time (defense in depth
 // for a bypassed gate).
 export function narrativeBeatErrors(spec: NativeSpec): string[] {

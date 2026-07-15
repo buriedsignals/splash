@@ -3,7 +3,7 @@
 > **Date** : 2026-07-08
 > **Statut** : design approuvé (brainstorming) → prêt pour `writing-plans`.
 > **Branche** : `feat/installer-local-configurator` (worktree isolé, base `main`).
-> **Contexte amont** : ré-aligner l'installeur Atelier sur le **pattern canonique Buried Signals**
+> **Contexte amont** : ré-aligner l'installeur Splash sur le **pattern canonique Buried Signals**
 > (Mycroft/Spotlight), que le CLAUDE.md nous désigne comme modèle. L'installeur actuel (livré au lot
 > précédent) **bake les clés** dans l'artefact généré ; le canon utilise un **installeur sans clés +
 > configurateur local `127.0.0.1`** où les clés sont saisies après install, vérifiées en direct,
@@ -26,7 +26,7 @@ saisit ses clés (**vérifiées en direct** avec chaque provider) ; elles sont �
 **IN**
 - Page publique **dépouillée** : one-liner statique key-free par OS + download key-free + doc contournement.
 - **`install/configurator.ts`** : serveur **Bun** local `127.0.0.1` (formulaire runtime + clés,
-  vérif live, écrit `~/Atelier/.env` chmod 600 + le runtime choisi, exit 0).
+  vérif live, écrit `~/Splash/.env` chmod 600 + le runtime choisi, exit 0).
 - **Bootstrap ré-ordonné** : Bun → repo → **configurateur** → runtime + deps + Playwright → launcher.
 - **Auth flexible** : marche avec **abonnement** (OAuth login de `claude`, clé Anthropic vide) **OU
   clé API** (champ Anthropic optionnel).
@@ -69,14 +69,14 @@ saisit ses clés (**vérifiées en direct** avec chaque provider) ; elles sont �
                           ▼
      install/bootstrap.{sh,ps1} (hébergé, SANS clés)
        1. installe Bun            (requis pour lancer le configurateur)
-       2. fetch Atelier (zip)     (contient le configurateur)
+       2. fetch Splash (zip)     (contient le configurateur)
        3. bun install/configurator.ts   ─────────────┐  (bloque)
                                                       ▼
                              ┌─────────────────────────────────────────┐
                              │ configurateur Bun — 127.0.0.1:<port>     │
                              │ formulaire (runtime + clés) → navigateur │
                              │ submit → VÉRIF LIVE chaque clé           │
-                             │ OK → écrit ~/Atelier/.env (chmod 600)    │
+                             │ OK → écrit ~/Splash/.env (chmod 600)    │
                              │       + runtime choisi → exit 0          │
                              └─────────────────────────────────────────┘
                           ▼
@@ -113,16 +113,16 @@ assigne un port libre ; lire `server.port`). Ouvre le navigateur : `open` (darwi
   abonnement »).
 - `POST /verify` → pour chaque clé fournie, appelle `verify<Provider>(key)` (vraies API §3), renvoie
   `{maptiler:bool, datawrapper:bool, anthropic:bool|null}`. La page affiche ✓/✗ par champ.
-- `POST /submit` → re-vérifie, puis `serializeEnv(cfg)` → écrit `~/Atelier/.env` (`writeFileSync` +
+- `POST /submit` → re-vérifie, puis `serializeEnv(cfg)` → écrit `~/Splash/.env` (`writeFileSync` +
   `chmodSync(path, 0o600)` — no-op effectif sur NTFS, noté) + écrit le runtime choisi dans
-  `~/Atelier/.atelier-runtime` (texte, ex. `claude`). Répond une page « Configuration enregistrée,
+  `~/Splash/.splash-runtime` (texte, ex. `claude`). Répond une page « Configuration enregistrée,
   reviens au Terminal ». Puis `server.stop()` + `process.exit(0)`.
 - L'utilisateur ferme sans submit → le bootstrap détecte l'absence de `.env` (ou un exit≠0) → avertit
   « configuration non terminée, relance l'installeur » (miroir Mycroft), exit≠0.
 
 **`serializeEnv(cfg)`** émet exactement les variables existantes (compat avec le reste du système) :
 `ANTHROPIC_API_KEY` (uniquement si fournie), `VITE_MAPTILER_KEY`, `REMOTION_MAPTILER_KEY`,
-`DATAWRAPPER_API_TOKEN`, `ATELIER_EMBED_APP`, `FLY_API_TOKEN`. Clés supposées alphanumériques (pas de
+`DATAWRAPPER_API_TOKEN`, `SPLASH_EMBED_APP`, `FLY_API_TOKEN`. Clés supposées alphanumériques (pas de
 guillemets) — mais ici plus de risque shell-history (écrites directement sur disque).
 
 ## 7. Modèle d'auth (les deux chemins)

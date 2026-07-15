@@ -21,7 +21,7 @@ await mkdir(outDir, { recursive: true });
 const staticDir = process.env.SERVE_DIR ?? join(root, "dist", "static");
 
 // Channel-driven format (Slice 2): produce.mjs threads the channel's exact deliverable
-// pixels (MAP_WIDTH/MAP_HEIGHT, from renderSize(channel) in skills/atelier/src/channel.ts)
+// pixels (MAP_WIDTH/MAP_HEIGHT, from renderSize(channel) in skills/splash/src/channel.ts)
 // so static.png comes out AT that size — deviceScaleFactor:1 so the viewport IS the final
 // pixel box (no 2x-rounding surprise, e.g. article-web's odd 675 height). Manual/no-env
 // runs (e.g. `bun scripts/snap-static.mjs` per SKILL.md) keep the original 1280x720 @2x.

@@ -1,6 +1,6 @@
 // Thin Bun server for the local configurator. Serves the form on 127.0.0.1:<free port>, opens the
-// browser, verifies keys live, writes ~/Atelier/.env (chmod 600) + the chosen runtime, then exits so
-// the bootstrap continues. Run from within ~/Atelier: `bun install/configurator.ts`.
+// browser, verifies keys live, writes ~/Splash/.env (chmod 600) + the chosen runtime, then exits so
+// the bootstrap continues. Run from within ~/Splash: `bun install/configurator.ts`.
 import { writeFileSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -12,8 +12,8 @@ import {
   type ConfiguratorConfig,
 } from "./configurator-core.ts";
 
-const DEST = process.cwd(); // the bootstrap runs this from ~/Atelier
-const NO_OPEN = process.env.ATELIER_NO_OPEN === "1"; // testability seam
+const DEST = process.cwd(); // the bootstrap runs this from ~/Splash
+const NO_OPEN = (process.env.SPLASH_NO_OPEN ?? process.env.ATELIER_NO_OPEN) === "1"; // testability seam
 
 function openBrowser(url: string): void {
   const cmd =
@@ -78,11 +78,11 @@ const server = Bun.serve({
           /* NTFS — no-op */
         }
         writeFileSync(
-          join(DEST, ".atelier-runtime"),
+          join(DEST, ".splash-runtime"),
           (cfg.runtime || "claude") + "\n",
         );
       } catch (err) {
-        // Read-only ~/Atelier or a full disk. Don't leave the write to throw unhandled — that
+        // Read-only ~/Splash or a full disk. Don't leave the write to throw unhandled — that
         // returned Bun's dev 500 overlay AND left this process (and the blocking bootstrap)
         // running forever. Report the real cause and exit non-zero so the bootstrap's
         // "Configuration was not completed — re-run this installer" guidance fires.
@@ -93,13 +93,13 @@ const server = Bun.serve({
           process.exit(1);
         }, 250);
         return new Response(
-          `could not write ~/Atelier/.env: ${msg} — check folder permissions and free disk space, then re-run the installer`,
+          `could not write ~/Splash/.env: ${msg} — check folder permissions and free disk space, then re-run the installer`,
           { status: 500 },
         );
       }
       // Give Bun a moment to flush this response to the browser before we exit, so the
       // journalist sees the "Saved ✓" page instead of a dropped connection. The bootstrap
-      // then continues (it checks ~/Atelier/.env exists). Localhost round-trip is <10ms.
+      // then continues (it checks ~/Splash/.env exists). Localhost round-trip is <10ms.
       setTimeout(() => {
         server.stop();
         process.exit(0);
@@ -111,7 +111,7 @@ const server = Bun.serve({
 });
 
 const localUrl = `http://127.0.0.1:${server.port}/`;
-console.log(`-> Configure Atelier at ${localUrl}`);
+console.log(`-> Configure Splash at ${localUrl}`);
 console.log(
   "   (Waiting for you to finish in the browser… press Ctrl-C here to cancel.)",
 );

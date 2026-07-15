@@ -13,7 +13,7 @@ export interface DotDensityData {
   categories?: { field: string; label: string; color?: string }[];
   rows: Record<string, string | number>[];
   dotValue?: number;
-  // Newsroom house style (set by the profile merge, skills/atelier/src/brand-profile.ts).
+  // Newsroom house style (set by the profile merge, skills/splash/src/brand-profile.ts).
   // Univariate: brandHue becomes the single dot accent. Multivariate: brandPalette seeds the
   // per-category colours (cycled). An explicit `categories[].color` always wins.
   brandHue?: string;

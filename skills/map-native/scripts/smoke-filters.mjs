@@ -11,12 +11,12 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
-const atelier = join(root, "..", "..");
+const splash = join(root, "..", "..");
 
-// Load .env from the atelier root if VITE_MAPTILER_KEY is not already set.
+// Load .env from the splash root if VITE_MAPTILER_KEY is not already set.
 if (!process.env.VITE_MAPTILER_KEY) {
   try {
-    const envText = readFileSync(join(atelier, ".env"), "utf8");
+    const envText = readFileSync(join(splash, ".env"), "utf8");
     for (const line of envText.split("\n")) {
       const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
       if (m) process.env[m[1]] = m[2];

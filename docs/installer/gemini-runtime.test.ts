@@ -60,7 +60,7 @@ test("installs the Gemini CLI Bun-first (never npm) and pins @google/gemini-cli"
 // (c) — hermetic behavioural test: with the CLI install MOCKED, runtime_install must
 // populate a fake ~/.agents/skills from a fake $DEST/skills/*. No network, fake HOME.
 test("runtime_install symlinks every skill into ~/.agents/skills (CLI install mocked)", () => {
-  const work = mkdtempSync(join(tmpdir(), "atelier-gemini-"));
+  const work = mkdtempSync(join(tmpdir(), "splash-gemini-"));
   try {
     const home = join(work, "home");
     const dest = join(work, "dest");

@@ -10,7 +10,7 @@ export function dataShape(csv: string): { columns: string[]; rows: number } {
 // surrounding quotes are stripped. Unquoted cells are whitespace-trimmed; a
 // quoted cell's interior is preserved verbatim. Sibling of the identical scanner
 // in skills/chart-native/src/csv.ts (skills stay self-contained — no cross-skill
-// imports), which itself mirrors skills/atelier/src/map-data.ts.
+// imports), which itself mirrors skills/splash/src/map-data.ts.
 export function parseCsvRecords(text: string): string[][] {
   const records: string[][] = [];
   let row: string[] = [];

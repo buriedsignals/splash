@@ -10,7 +10,7 @@ import {
   ALL_CHANNELS,
   CHANNELS,
   normalizeChannel,
-} from "../../atelier/src/channel";
+} from "../../splash/src/channel";
 
 describe("channelToExportSize (FINDING 2: static export aspect follows the CADRAGE channel)", () => {
   it("maps feed/square to a ~1:1 square box", () => {
@@ -126,7 +126,7 @@ describe("channelToExportSize type-awareness (REGRESSION: row-driven types must 
   });
 });
 
-describe("channelToAspect / channelToExportSize now delegate to the shared atelier channel model (single source of truth)", () => {
+describe("channelToAspect / channelToExportSize now delegate to the shared splash channel model (single source of truth)", () => {
   it("matches the plan's literal cases: Stories→portrait, feed→square, undefined+row-driven→width-only landscape", () => {
     expect(channelToExportSize("Stories", "d3-lines")).toEqual(
       EXPORT_SIZES.portrait,
@@ -148,7 +148,7 @@ describe("channelToAspect / channelToExportSize now delegate to the shared ateli
   });
 
   // M1 — pixel-size drift guard: dw-chart's EXPORT_SIZES box (keyed by aspect) and
-  // atelier's CHANNELS[ch].mediaSize (keyed by channel) encode the SAME pixel
+  // splash's CHANNELS[ch].mediaSize (keyed by channel) encode the SAME pixel
   // dimensions in two places — this pins them together so they can't silently
   // diverge (portrait 1080×1920 · square 1080×1080 · landscape 1200×675).
   it("EXPORT_SIZES[aspect] matches CHANNELS[channel].mediaSize for every channel (no dimension drift)", () => {

@@ -1,6 +1,6 @@
 # Newsroom house colour on every producer — design
 
-> The newsroom profile's colour must brand EVERY visual atelier can produce, not just charts.
+> The newsroom profile's colour must brand EVERY visual splash can produce, not just charts.
 > Today `mergeProfileDefaults` seeds the house colour for **chart-native + dw-chart only**
 > (`BRAND_COLOUR_PRODUCERS`, brand-profile.ts:280); maps / scrolly / image ignore it. Extend it to
 > map-native (7 types, 4 formats, light + dark), map-dw, and scrolly — with the map-appropriate
@@ -84,7 +84,7 @@ CONTRAST check (new, `contrastOk`) downgrades a low-contrast house fill to a ren
 - locator `marker.color` default: the house `palette` cycle instead of `OKABE_ITO`.
 - map-dw is light-only (Datawrapper SaaS) — no dark branch.
 
-### 5. Seed at the merge — `skills/atelier/src/brand-profile.ts`
+### 5. Seed at the merge — `skills/splash/src/brand-profile.ts`
 
 Add map-native + map-dw to `BRAND_COLOUR_PRODUCERS`. `mergeProfileDefaults` becomes map-aware:
 for a map spec it seeds the ramp field (choropleth/hex/cartogram/map-dw-choropleth) OR the single-
@@ -104,7 +104,7 @@ scrolly". Fix: resolve `dark` from `mapStyle` like the other 4 scrolly map rende
 
 - suggest-map SKILL.md: house palette FIRST for maps (mirror the suggest-chart rule) — when a
   profile palette exists, the ramp/accent comes from the house palette, not the auto pick.
-- SKILL.md (atelier) + CLAUDE.md: brand colour now reaches maps/scrolly; drop the "chart-only"
+- SKILL.md (splash) + CLAUDE.md: brand colour now reaches maps/scrolly; drop the "chart-only"
   caveat; note image-native is the remaining follow-up.
 
 ## Phasing (build order — all in this chantier)

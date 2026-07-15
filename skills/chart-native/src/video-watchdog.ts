@@ -12,7 +12,7 @@ import process from "node:process";
 /** Hard ceiling on ONE render subprocess, in ms. 15 min is a ceiling, not a target:
  * the slowest legitimate render observed (map-native story portrait) finishes well
  * under it, while a hung render never returns at all. Override per run with
- * ATELIER_VIDEO_TIMEOUT_MS. */
+ * SPLASH_VIDEO_TIMEOUT_MS. */
 export const DEFAULT_VIDEO_TIMEOUT_MS = 900_000;
 
 /** Resolves the effective watchdog timeout from the environment. A malformed or
@@ -21,12 +21,12 @@ export const DEFAULT_VIDEO_TIMEOUT_MS = 900_000;
 export function videoTimeoutMs(
   env: Record<string, string | undefined> = process.env,
 ): number {
-  const raw = env.ATELIER_VIDEO_TIMEOUT_MS;
+  const raw = env.SPLASH_VIDEO_TIMEOUT_MS ?? env.ATELIER_VIDEO_TIMEOUT_MS;
   if (raw === undefined || raw.trim() === "") return DEFAULT_VIDEO_TIMEOUT_MS;
   const n = Number(raw);
   if (!Number.isFinite(n) || n <= 0) {
     throw new Error(
-      `ATELIER_VIDEO_TIMEOUT_MS must be a positive number of milliseconds, got "${raw}"`,
+      `SPLASH_VIDEO_TIMEOUT_MS must be a positive number of milliseconds, got "${raw}"`,
     );
   }
   return n;
@@ -117,7 +117,7 @@ export function runWithVideoWatchdog(
           new Error(
             `video render exceeded the ${timeoutMs} ms watchdog and was killed ` +
               `(${cmd} ${args.join(" ")}). A legitimate render should finish well under this; ` +
-              `if yours genuinely needs longer, raise it via ATELIER_VIDEO_TIMEOUT_MS.`,
+              `if yours genuinely needs longer, raise it via SPLASH_VIDEO_TIMEOUT_MS.`,
           ),
         );
       } else if (code !== 0) {

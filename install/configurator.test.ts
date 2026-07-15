@@ -12,7 +12,7 @@ async function startServer(
 ): Promise<{ port: number; proc: Bun.Subprocess }> {
   const proc = Bun.spawn(["bun", CFG], {
     cwd: dest,
-    env: { ...process.env, ATELIER_NO_OPEN: "1" },
+    env: { ...process.env, SPLASH_NO_OPEN: "1" },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -35,7 +35,7 @@ async function startServer(
 }
 
 test("POST /verify with a malformed body returns a clean 400, not Bun's 500 overlay", async () => {
-  const dest = mkdtempSync(join(tmpdir(), "atelier-cfg-"));
+  const dest = mkdtempSync(join(tmpdir(), "splash-cfg-"));
   const { port, proc } = await startServer(dest);
   try {
     const r = await fetch(`http://127.0.0.1:${port}/verify`, {
@@ -51,7 +51,7 @@ test("POST /verify with a malformed body returns a clean 400, not Bun's 500 over
 });
 
 test("POST /submit (all-blank, soft path) writes a double-quoted .env + runtime", async () => {
-  const dest = mkdtempSync(join(tmpdir(), "atelier-cfg-"));
+  const dest = mkdtempSync(join(tmpdir(), "splash-cfg-"));
   const { port, proc } = await startServer(dest);
   try {
     const body = JSON.stringify({
@@ -71,7 +71,7 @@ test("POST /submit (all-blank, soft path) writes a double-quoted .env + runtime"
     expect(env).toContain('VITE_MAPTILER_KEY=""');
     expect(env).toContain('DATAWRAPPER_API_TOKEN=""');
     expect(env).not.toContain("ANTHROPIC_API_KEY");
-    expect(existsSync(join(dest, ".atelier-runtime"))).toBe(true);
+    expect(existsSync(join(dest, ".splash-runtime"))).toBe(true);
   } finally {
     proc.kill();
     rmSync(dest, { recursive: true, force: true });
@@ -79,7 +79,7 @@ test("POST /submit (all-blank, soft path) writes a double-quoted .env + runtime"
 });
 
 test("GET an unknown path returns 404", async () => {
-  const dest = mkdtempSync(join(tmpdir(), "atelier-cfg-"));
+  const dest = mkdtempSync(join(tmpdir(), "splash-cfg-"));
   const { port, proc } = await startServer(dest);
   try {
     const r = await fetch(`http://127.0.0.1:${port}/nope`);

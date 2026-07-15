@@ -41,7 +41,7 @@ d("highlight (real API e2e)", () => {
       source: { name: "Sample data" },
       altInsight: "Basel tops the ranking with 812 beds per 100k residents",
     };
-    const out = join(tmpdir(), "atelier-highlight.png");
+    const out = join(tmpdir(), "splash-highlight.png");
     const res = await produceChart(spec, out);
     chartId = res.chartId;
 

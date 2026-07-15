@@ -23,8 +23,8 @@ grid-neutral / scaled-basemap rule across ALL formats.
 - Runtime **Bun** always — never npm/node. Tests `bun test`; build `bunx vite`.
 - Code, comments, commits, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it; load with
-  `set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a`.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it; load with
+  `set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a`.
 - **Frame-determinism (video):** the cartogram layout is computed ONCE and held; camera animates per
   frame; no `Date.now`/`Math.random`/argless `new Date()`; render `--gl=angle --concurrency=1`.
 - **Grid-neutral-background rule (SYSTEM):** the `grid` variant renders on a flat neutral background
@@ -150,7 +150,7 @@ git commit -m "feat(map-native): deriveCartogramStory (highest-region beats) + s
 - [ ] **Step 6: Render-verify reveal + story, BOTH variants (scaled + grid), landscape.** COMMIT first, then:
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 for CFG in cartogram-scaled cartogram-grid; do node -e "const fs=require('fs');fs.writeFileSync('/tmp/cb-$CFG.json',JSON.stringify({config:JSON.parse(fs.readFileSync('assets/sample-data/$CFG.json','utf8'))}))"; done
 for C in CartogramReveal CartogramStory; do
   bunx remotion render remotion/src/index.ts $C /tmp/cb/scaled-$C.mp4 --gl=angle --concurrency=1 --timeout=120000 --props=/tmp/cb-cartogram-scaled.json
@@ -191,7 +191,7 @@ git commit -m "feat(map-native): cartogram video reveal + storytelling (grid-neu
 - [ ] **Step 5: Render-verify scrolly, BOTH variants, landscape.** COMMIT first:
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bunx remotion render remotion/src/index.ts MapScrolly /tmp/cb/scaled-MapScrolly.mp4 --gl=angle --concurrency=1 --timeout=120000 --props=/tmp/cb-cartogram-scaled.json
 bunx remotion render remotion/src/index.ts MapScrolly /tmp/cb/grid-MapScrolly.mp4 --gl=angle --concurrency=1 --timeout=120000 --props=/tmp/cb-cartogram-grid.json
 ```

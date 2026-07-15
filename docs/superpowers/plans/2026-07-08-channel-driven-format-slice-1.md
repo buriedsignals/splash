@@ -8,10 +8,10 @@ channel enum, a shared channel table, format reconciled+announced to the channel
 and a fail-hard conformance that a shipped format ∈ allowedFormats(channel). Producer pixel-rendering of
 every aspect (native 9:16 comps, channel→size threading) is **Slice 2**, out of scope here.
 
-**Architecture:** One shared, pure channel model in `skills/atelier/src/channel.ts` (the cross-producer
+**Architecture:** One shared, pure channel model in `skills/splash/src/channel.ts` (the cross-producer
 hub — cross-skill imports already exist, e.g. `suggest-chart/eval/score.ts` imports `../../dw-chart`).
 dw-chart's existing `export-aspect.ts` is refactored to consume it (single source of truth). suggest-chart
-routing + eval, atelier SKILL.md prose, and format-selection.md are aligned to it.
+routing + eval, splash SKILL.md prose, and format-selection.md are aligned to it.
 
 **Tech Stack:** Bun, TypeScript, bun:test. Runtime English. No vendor mention.
 
@@ -30,11 +30,11 @@ routing + eval, atelier SKILL.md prose, and format-selection.md are aligned to i
 
 ---
 
-### Task 1: Shared channel model (`skills/atelier/src/channel.ts`)
+### Task 1: Shared channel model (`skills/splash/src/channel.ts`)
 
 **Files:**
-- Create: `skills/atelier/src/channel.ts`
-- Test: `skills/atelier/tests/channel.test.ts`
+- Create: `skills/splash/src/channel.ts`
+- Test: `skills/splash/tests/channel.test.ts`
 
 **Interfaces (Produces):**
 ```ts
@@ -67,7 +67,7 @@ export function normalizeChannel(freeText?: string): Channel; // maps legacy fre
 - [ ] **Step 1:** Write `channel.test.ts` — assert: each channel's allowedFormats (social excludes "interactive" & "scrolly"; article-web includes them); `isFormatAllowed("social-feed","interactive")===false`; `interactiveDefault` only true for article-web; `mediaSize` per channel; `normalizeChannel("Stories")==="social-vertical"`, `normalizeChannel("feed")==="social-feed"`, `normalizeChannel("article embed")==="article-web"`, `normalizeChannel(undefined)==="article-web"`.
 - [ ] **Step 2:** Run → fails (module missing).
 - [ ] **Step 3:** Implement `channel.ts`.
-- [ ] **Step 4:** `bun test skills/atelier/tests/channel.test.ts` → passes.
+- [ ] **Step 4:** `bun test skills/splash/tests/channel.test.ts` → passes.
 - [ ] **Step 5:** Commit.
 
 ---
@@ -75,14 +75,14 @@ export function normalizeChannel(freeText?: string): Channel; // maps legacy fre
 ### Task 2: Refactor dw-chart `export-aspect.ts` to consume the shared model
 
 **Files:**
-- Modify: `skills/dw-chart/src/export-aspect.ts` (replace its private `CHANNEL_ASPECT`/`channelToAspect` with a call into `skills/atelier/src/channel.ts` `normalizeChannel` + `CHANNELS[ch].aspect`; keep `EXPORT_SIZES`, `ROW_DRIVEN_TYPES`, `isRowDriven`, `channelToExportSize` — the row-driven crop concern stays DW-specific).
+- Modify: `skills/dw-chart/src/export-aspect.ts` (replace its private `CHANNEL_ASPECT`/`channelToAspect` with a call into `skills/splash/src/channel.ts` `normalizeChannel` + `CHANNELS[ch].aspect`; keep `EXPORT_SIZES`, `ROW_DRIVEN_TYPES`, `isRowDriven`, `channelToExportSize` — the row-driven crop concern stays DW-specific).
 - Test: `skills/dw-chart/tests/export-aspect.test.ts` (keep green; adjust only if a name moved).
 
 **Interfaces (Consumes):** Task 1's `normalizeChannel`, `CHANNELS`.
 
 - Keep `channelToExportSize(channel?, type?)` signature identical (produce.ts:80 depends on it). Internally:
   `aspect = CHANNELS[normalizeChannel(channel)].aspect`; `box = EXPORT_SIZES[aspect]`; row-driven ⇒ width-only.
-- Verify the dw-chart tsconfig can import from `../../atelier/src/channel` (cross-skill import like score.ts). If a tsconfig `rootDir`/path issue blocks it, note it and use a relative import that tsc + bun both resolve (the produce `.mjs` run under bun/tsx).
+- Verify the dw-chart tsconfig can import from `../../splash/src/channel` (cross-skill import like score.ts). If a tsconfig `rootDir`/path issue blocks it, note it and use a relative import that tsc + bun both resolve (the produce `.mjs` run under bun/tsx).
 
 - [ ] **Step 1:** Adjust `export-aspect.test.ts` to keep asserting `channelToExportSize("Stories","d3-lines")→portrait 1080×1920`, `("feed","d3-lines")→square 1080×1080`, `(undefined,"d3-bars")→width-only landscape`.
 - [ ] **Step 2:** Run → still green on unchanged behavior (RED only if you renamed something).
@@ -115,11 +115,11 @@ export function normalizeChannel(freeText?: string): Channel; // maps legacy fre
 
 ---
 
-### Task 4: atelier SKILL.md — CADRAGE Q3 structured pick · PROPOSITION announce · EXPORT branching · narration
+### Task 4: splash SKILL.md — CADRAGE Q3 structured pick · PROPOSITION announce · EXPORT branching · narration
 
-**Files:** Modify `skills/atelier/SKILL.md` (Q3 §50-59; PROPOSITION §79-113; EXPORT §206-254).
+**Files:** Modify `skills/splash/SKILL.md` (Q3 §50-59; PROPOSITION §79-113; EXPORT §206-254).
 
-- **CADRAGE Q3** → a structured 3-way channel choice (multiple-choice, journalist's language): Social vertical (Stories/Reels) · Social feed (post) · Article web / embed. State that the pick maps to `skills/atelier/src/channel.ts` (deterministic size + allowed formats). Keep "always asked, both branches."
+- **CADRAGE Q3** → a structured 3-way channel choice (multiple-choice, journalist's language): Social vertical (Stories/Reels) · Social feed (post) · Article web / embed. State that the pick maps to `skills/splash/src/channel.ts` (deterministic size + allowed formats). Keep "always asked, both branches."
 - **PROPOSITION** → after routing, announce for each opportunity the reconciled `{format, size, sub-format}` in plain language ("un chart INTERACTIF, responsive, explore-libre — calé sur ton article web ; refuser/changer ?"), vetoable. Hard rule surfaced: not-embed ⇒ image or video only.
 - **Narration sub-format:** GUIDED branch ⇒ the AI picks the sub-format (grounded, announced, vetoable); DIRECT ⇒ the journalist names it (checked reachable first). Applies to interactive (explore vs scrolly) and video (camera/reveal modes).
 - **EXPORT §6** → branch exactly on the model: image/video ⇒ hand over the media directly at the channel size + chosen sub-format (no delivery menu); interactive ⇒ the 3 deliveries (source code · static HTML · fly.io embed link). Fix the note that portrait mp4 is "9:16" to stay consistent (native 9:16 comes in Slice 2 — reference that here so the doc isn't lying).
@@ -127,7 +127,7 @@ export function normalizeChannel(freeText?: string): Channel; // maps legacy fre
 - [ ] **Step 1:** Edit Q3 to the structured pick.
 - [ ] **Step 2:** Edit PROPOSITION to announce `{format,size,sub-format}` + narration GUIDED/DIRECT rule.
 - [ ] **Step 3:** Edit EXPORT §6 to the exact branching + note Slice-2 for native 9:16.
-- [ ] **Step 4:** `bun test skills/atelier` → green (prose change; ensure no test parses these lines strictly). Commit.
+- [ ] **Step 4:** `bun test skills/splash` → green (prose change; ensure no test parses these lines strictly). Commit.
 
 ---
 
@@ -137,7 +137,7 @@ export function normalizeChannel(freeText?: string): Channel; // maps legacy fre
 
 - Add a top gate: **the channel first constrains the allowed-format set** (table). Social ⇒ image/video only; article-web ⇒ all four, **default interactive**, with the static-fallback a11y invariant.
 - Keep the static-first sources (Archie Tse / Malofiej) reframed as the **a11y-fallback grounding** (why the static fallback always ships), not a blanket veto on interactive for article-web.
-- Cross-ref `skills/atelier/src/channel.ts` as the code source of truth.
+- Cross-ref `skills/splash/src/channel.ts` as the code source of truth.
 
 - [ ] **Step 1:** Edit the doc (channel-first gate + reframed static-first + cross-ref). English, real URLs only.
 - [ ] **Step 2:** Commit. (No test; it's KB prose — the suggest-chart eval covers the behavior.)
@@ -147,16 +147,16 @@ export function normalizeChannel(freeText?: string): Channel; // maps legacy fre
 ### Task 6: Fail-hard conformance — shipped format ∈ allowedFormats(channel)
 
 **Files:**
-- Modify: `skills/atelier/src/producer-spec.ts` (add optional `channel?: Channel` to `AcceptedProposal`).
-- Modify: `skills/atelier/src/produce-all.ts` (or the adapters) — before/after producing a proposal, assert `isFormatAllowed(proposal.channel ?? "article-web", proposal.format)`; a violation is a hard failure recorded in the result (mirrors the existing drop-proof reporting), NOT a silent ship. Reuse the existing structured-report path.
-- Test: `skills/atelier/tests/…` — a proposal `{channel:"social-feed", format:"interactive"}` fails; `{channel:"article-web", format:"interactive"}` passes; `{channel:"social-vertical", format:"video"}` passes.
+- Modify: `skills/splash/src/producer-spec.ts` (add optional `channel?: Channel` to `AcceptedProposal`).
+- Modify: `skills/splash/src/produce-all.ts` (or the adapters) — before/after producing a proposal, assert `isFormatAllowed(proposal.channel ?? "article-web", proposal.format)`; a violation is a hard failure recorded in the result (mirrors the existing drop-proof reporting), NOT a silent ship. Reuse the existing structured-report path.
+- Test: `skills/splash/tests/…` — a proposal `{channel:"social-feed", format:"interactive"}` fails; `{channel:"article-web", format:"interactive"}` passes; `{channel:"social-vertical", format:"video"}` passes.
 
 **Interfaces (Consumes):** Task 1 `isFormatAllowed`.
 
 - [ ] **Step 1:** Write the test (allowed/blocked matrix).
 - [ ] **Step 2:** Run → fails.
 - [ ] **Step 3:** Thread `channel` onto `AcceptedProposal`; add the fail-hard check in produce-all's loop; record a structured violation result.
-- [ ] **Step 4:** `bun test skills/atelier` → green. Commit.
+- [ ] **Step 4:** `bun test skills/splash` → green. Commit.
 
 ---
 

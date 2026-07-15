@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "atelier",
+      "name": "splash",
       "devDependencies": {
         "@types/node": "26.1.1",
         "bun-types": "1.3.14",

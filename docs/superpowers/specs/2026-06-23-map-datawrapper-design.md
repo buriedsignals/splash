@@ -6,7 +6,7 @@
 
 ## Why
 
-Atelier's visual grid covers maps as a first-class family. The dw-chart seam already proved the
+Splash's visual grid covers maps as a first-class family. The dw-chart seam already proved the
 shape `Spec → spec-to-metadata → datawrapper client → produce → {publicUrl, png}`. A Datawrapper
 **choropleth** is the cheapest correct map: same client, same orchestration, a different metadata
 mapper and a geo-aware contract. This cut delivers choropleth end-to-end (published + owned PNG),
@@ -35,7 +35,7 @@ The spike found the correct DW field **and the black-render trap**, proven by ex
   `colorscale: { mode: "continuous", interpolation: "equidistant", colors: [{color,position}…] }`.
 - **Default behaviour:** if no `colorscale` is sent, DW auto-derives a CVD-safe green→blue gradient
   from the numeric value column. We override to a **single-hue light→`#0072B2` blue** sequential
-  (colorblind-safe, matches Atelier's Okabe-Ito anchor).
+  (colorblind-safe, matches Splash's Okabe-Ito anchor).
 
 This was verified by creating real charts, patching candidates, publishing, exporting PNG, and
 LOOKING: `gradient`/`stops`-string → black; `colors` without `stops` → light→blue gradient.
@@ -159,7 +159,7 @@ skills/map-dw/
 
 Bun; `bun:test`; TDD; English only; no Claude/Anthropic mention; no tiers. Reuse the dw-chart client
 and the eval pattern; do not modify dw-chart / suggest-chart / suggest-article. Keep main's 46 tests
-green. Token from `/atelier/.env`.
+green. Token from `/splash/.env`.
 
 ## Open / honest gaps
 

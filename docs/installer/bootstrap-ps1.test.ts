@@ -53,8 +53,8 @@ test("runs the local configurator and does NOT write .env from caller env vars",
 
 test("acquires the repo by zip (glob-safe) and makes a .cmd launcher (never a .ps1)", () => {
   expect(ps).toContain("Invoke-WebRequest");
-  expect(ps).toMatch(/Get-ChildItem .*-Filter "atelier-\*"/);
-  expect(ps).toContain("Launch Atelier.cmd");
+  expect(ps).toMatch(/Get-ChildItem .*-Filter "splash-\*"/);
+  expect(ps).toContain("Launch Splash.cmd");
 });
 
 test("guards winget so an absent winget falls through to the friendly Node guidance", () => {

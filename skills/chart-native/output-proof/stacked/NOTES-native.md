@@ -7,8 +7,8 @@ paths:
 
 ```
 bun skills/chart-native/scripts/produce-from-spec.mjs \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/stacked/spec-native.json \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/stacked static
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/stacked/spec-native.json \
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/stacked static
 ```
 
 printed `[produce stacked] conformance: OK (0 violations).` before building — confirming the

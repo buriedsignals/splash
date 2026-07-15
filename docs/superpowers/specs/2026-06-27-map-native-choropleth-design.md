@@ -72,7 +72,7 @@ Tokens (the sequential ramp, type scale), the title/subtitle/source shell, the c
 
 ## Prerequisite
 
-A MapTiler API key in `/atelier/.env` as `REMOTION_MAPTILER_KEY` (and a client key for the web builds). Free tier. Like the Datawrapper token — gitignored, kept out of logs.
+A MapTiler API key in `/splash/.env` as `REMOTION_MAPTILER_KEY` (and a client key for the web builds). Free tier. Like the Datawrapper token — gitignored, kept out of logs.
 
 ## Testing
 
@@ -90,7 +90,7 @@ A MapTiler API key in `/atelier/.env` as `REMOTION_MAPTILER_KEY` (and a client k
 worked exemplar (the "line" of maps); every other type plugs into the **same foundation** (the
 map-explainer harness + a per-type pure geo-core + the conformance guard + the audit + `produce`) and is
 added **one at a time via the recipe**, not redesigned. The roadmap (source: the FT "MAP" group in
-`docs/atelier/visual-element-grid.md`, S/I/V = which formats fit):
+`docs/splash/visual-element-grid.md`, S/I/V = which formats fit):
 
 | Map type | Engine | S | I | V | Tom reference |
 | --- | --- | --- | --- | --- | --- |
@@ -112,6 +112,6 @@ The engine `SKILL.md` carries the recipe + this catalogue, the way `chart-native
 
 - The other eight MapTiler map types above — future slices, same foundation, one at a time.
 - 3D terrain flyover — Cesium (`cesium-flyover`), a separate engine, not `map-native`.
-- The viznews Svelte `Explore.svelte` interactive device — a parallel product path; `map-native` is the React/Remotion atelier engine. (We borrow Tom's geojsonPreset *idea*, not his Svelte component.)
+- The viznews Svelte `Explore.svelte` interactive device — a parallel product path; `map-native` is the React/Remotion splash engine. (We borrow Tom's geojsonPreset *idea*, not his Svelte component.)
 - Scrolly/waypoints narration — a downstream archetype, not a map type.
 - Reader-supplied arbitrary GeoJSON — slice 1 ships the standard presets; custom GeoJSON is a later option.

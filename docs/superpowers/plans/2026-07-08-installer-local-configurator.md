@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Re-align the Atelier installer to the Buried Signals canon — a **key-free** public page + one command, then a **local `127.0.0.1` configurator** (Bun) where the journalist enters keys, verified live, written to `~/Atelier/.env` (chmod 600) — never in Downloads or shell history.
+**Goal:** Re-align the Splash installer to the Buried Signals canon — a **key-free** public page + one command, then a **local `127.0.0.1` configurator** (Bun) where the journalist enters keys, verified live, written to `~/Splash/.env` (chmod 600) — never in Downloads or shell history.
 
 **Architecture:** Public page shows a static key-free one-liner per OS + a key-free download. The hosted `install/bootstrap.{sh,ps1}` install Bun → fetch repo → **run `bun install/configurator.ts`** (serves a local form, verifies keys live, writes `.env` + the chosen runtime) → install runtime + deps → local launcher. The configurator is Bun-native (cross-platform, incl. Windows — our edge over Mycroft's Python/POSIX-only).
 
@@ -14,12 +14,12 @@ _Every task's requirements implicitly include this section._
 
 - Runtime **Bun**; tests **bun:test**; **TDD** (failing test first). Frequent commits.
 - **English** code/comments/identifiers/commit messages. **No Claude/Anthropic/AI-vendor attribution** in any artifact (commits included); no `Co-Authored-By`. (Functional `claude.ai/install.sh`, `ANTHROPIC_API_KEY`, "Claude Code" label are legitimate runtime setup.)
-- **Key-free** installer: the public page and the bootstrap carry NO keys. Keys are entered only in the local configurator and written straight to `~/Atelier/.env`.
+- **Key-free** installer: the public page and the bootstrap carry NO keys. Keys are entered only in the local configurator and written straight to `~/Splash/.env`.
 - **Verify live** = real API calls, **no mocks** (per project rule). Network tests **self-skip** when the provider key isn't in env, to stay green on a clean checkout.
 - `.env` written **chmod 600** (no-op on NTFS — documented). Acquisition by **zip**, never git. **Zero code-signing**. **Native Windows kept** (the tsx render guard is inherited, untouched).
 - **Zero new `any`.** `bun run check` MUST end green.
 - Work in the worktree on branch `feat/installer-local-configurator` (base `main`).
-- `REPO_URL`=`https://github.com/buriedsignals/atelier`, `REF`=`main` are pre-release placeholders (tracked by `preflight-release.mjs`).
+- `REPO_URL`=`https://github.com/buriedsignals/splash`, `REF`=`main` are pre-release placeholders (tracked by `preflight-release.mjs`).
 
 ---
 
@@ -28,7 +28,7 @@ _Every task's requirements implicitly include this section._
 **Create:**
 - `docs/installer/commands.js` — pure, key-free: `bootstrapUrl(os)`, `installCommand(os)`, `launcherContents(os)`, `launcherFilename(os)`.
 - `docs/installer/commands.test.ts`
-- `install/package.json`, `install/tsconfig.json` — make `install/` tsc-checkable + testable (mirror `skills/atelier`).
+- `install/package.json`, `install/tsconfig.json` — make `install/` tsc-checkable + testable (mirror `skills/splash`).
 - `install/configurator-core.ts` — pure/testable: `RUNTIMES`, `serializeEnv`, `verifyMapTiler`/`verifyDatawrapper`/`verifyAnthropic` (real API), `renderConfiguratorHtml`, `freePortHint`.
 - `install/configurator-core.test.ts`
 - `install/configurator.ts` — thin Bun server entry (serve `127.0.0.1`, routes, open browser, write `.env`+runtime, exit).
@@ -54,7 +54,7 @@ _Every task's requirements implicitly include this section._
 **Interfaces (produces):**
 - `bootstrapUrl(os: "mac"|"windows") -> string`
 - `installCommand(os) -> string` (`curl … | bash` / `irm … | iex`, no keys)
-- `launcherFilename(os) -> "atelier-setup.command"|"atelier-setup.cmd"`
+- `launcherFilename(os) -> "splash-setup.command"|"splash-setup.cmd"`
 - `launcherContents(os) -> string` (key-free launcher)
 
 - [ ] **Step 1: Write the failing tests**
@@ -80,8 +80,8 @@ test("windows install command is a key-free irm|iex of the ps1 bootstrap", () =>
 test("launchers are key-free, self-heal on mac, never a .ps1", () => {
   const mac = launcherContents("mac");
   const win = launcherContents("windows");
-  expect(launcherFilename("mac")).toBe("atelier-setup.command");
-  expect(launcherFilename("windows")).toBe("atelier-setup.cmd");
+  expect(launcherFilename("mac")).toBe("splash-setup.command");
+  expect(launcherFilename("windows")).toBe("splash-setup.cmd");
   expect(mac.startsWith("#!/usr/bin/env bash")).toBe(true);
   expect(mac).toContain("xattr -d com.apple.quarantine");
   expect(mac).toContain("curl -fsSL");
@@ -106,7 +106,7 @@ Expected: FAIL (module missing).
 ```js
 // Pure, KEY-FREE command generators for the public installer page. The command is identical
 // for every user (no per-user baking) — keys are collected later by the local configurator.
-const REPO_URL = "https://github.com/buriedsignals/atelier"; // confirm before public release
+const REPO_URL = "https://github.com/buriedsignals/splash"; // confirm before public release
 const REF = "main"; // pin to a release tag before public release
 const REPO_PATH = new URL(REPO_URL).pathname.replace(/^\//, "");
 
@@ -121,7 +121,7 @@ export function installCommand(os) {
 }
 
 export function launcherFilename(os) {
-  return os === "windows" ? "atelier-setup.cmd" : "atelier-setup.command";
+  return os === "windows" ? "splash-setup.cmd" : "splash-setup.command";
 }
 
 export function launcherContents(os) {
@@ -129,14 +129,14 @@ export function launcherContents(os) {
   if (os === "windows") {
     return (
       "@echo off\r\n" +
-      "rem atelier-setup.cmd — installs Atelier. No keys inside; you enter them in the configurator.\r\n" +
+      "rem splash-setup.cmd — installs Splash. No keys inside; you enter them in the configurator.\r\n" +
       `powershell -ExecutionPolicy Bypass -Command "irm ${url} | iex"\r\n` +
       "pause\r\n"
     );
   }
   return (
     "#!/usr/bin/env bash\n" +
-    "# atelier-setup.command — installs Atelier. No keys inside; you enter them in the configurator.\n" +
+    "# splash-setup.command — installs Splash. No keys inside; you enter them in the configurator.\n" +
     'chmod +x "$0" 2>/dev/null; xattr -d com.apple.quarantine "$0" 2>/dev/null || true\n' +
     `curl -fsSL ${url} | bash\n`
   );
@@ -209,7 +209,7 @@ Expected: FAIL (old page still has the form).
 Replace everything between `<body>` and `</body>` with:
 ```html
   <main>
-    <h1>Install Atelier</h1>
+    <h1>Install Splash</h1>
     <p>One command sets everything up. You'll enter your keys <strong>afterward</strong>, in a
       configurator that opens on your own machine — they never touch this website or your Downloads.</p>
 
@@ -233,7 +233,7 @@ Replace everything between `<body>` and `</body>` with:
 
     <p class="note">After it installs, a <strong>configurator</strong> opens in your browser to collect
       your keys (MapTiler, Datawrapper, optionally an Anthropic API key). They're verified on the spot
-      and saved to <code>~/Atelier/.env</code> on your machine.</p>
+      and saved to <code>~/Splash/.env</code> on your machine.</p>
   </main>
 
   <script type="module">
@@ -290,7 +290,7 @@ Expected: PASS (4 tests). Also run `cd docs/installer && bun test` — the whole
 
 - [ ] **Step 6: Manual browser check (controller does this — UI unit tests can't cover it)**
 
-Serve `docs/installer` over http, open it: confirm OS auto-detected; toggling Mac/Windows swaps the one-liner between `curl…|bash` and `irm…|iex`; **Copy** copies it; **Download** yields `atelier-setup.command` (Mac) / `atelier-setup.cmd` (Windows) with NO keys; the configurator note + workaround show.
+Serve `docs/installer` over http, open it: confirm OS auto-detected; toggling Mac/Windows swaps the one-liner between `curl…|bash` and `irm…|iex`; **Copy** copies it; **Download** yields `splash-setup.command` (Mac) / `splash-setup.cmd` (Windows) with NO keys; the configurator note + workaround show.
 
 - [ ] **Step 7: Commit**
 ```bash
@@ -314,12 +314,12 @@ git commit -m "feat(installer): strip the public page to a key-free single comma
 - `freePortHint(): number` (0 — let the OS assign; kept as a named seam)
 - (verify functions added in Task 4)
 
-- [ ] **Step 1: Create `install/package.json` + `install/tsconfig.json`** (mirror `skills/atelier`)
+- [ ] **Step 1: Create `install/package.json` + `install/tsconfig.json`** (mirror `skills/splash`)
 
 `install/package.json`:
 ```json
 {
-  "name": "atelier-installer",
+  "name": "splash-installer",
   "private": true,
   "devDependencies": {
     "@types/node": "26.1.0",
@@ -416,7 +416,7 @@ export function freePortHint(): number {
   return 0;
 }
 
-// Serialize to ~/Atelier/.env lines. Keys are alphanumeric (no quoting needed); the launcher
+// Serialize to ~/Splash/.env lines. Keys are alphanumeric (no quoting needed); the launcher
 // sources this file. ANTHROPIC_API_KEY is omitted when blank so `claude` falls back to OAuth login.
 export function serializeEnv(cfg: ConfiguratorConfig): string {
   const lines: string[] = [];
@@ -424,7 +424,7 @@ export function serializeEnv(cfg: ConfiguratorConfig): string {
   lines.push(`VITE_MAPTILER_KEY=${cfg.maptiler}`);
   lines.push(`REMOTION_MAPTILER_KEY=${cfg.maptiler}`);
   lines.push(`DATAWRAPPER_API_TOKEN=${cfg.datawrapper}`);
-  lines.push(`ATELIER_EMBED_APP=${cfg.embedApp}`);
+  lines.push(`SPLASH_EMBED_APP=${cfg.embedApp}`);
   lines.push(`FLY_API_TOKEN=${cfg.flyToken}`);
   return lines.join("\n") + "\n";
 }
@@ -438,13 +438,13 @@ export function renderConfiguratorHtml(): string {
     )
     .join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/><title>Configure Atelier</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/><title>Configure Splash</title>
 <style>body{font-family:system-ui;max-width:34rem;margin:2rem auto;padding:0 1rem}
 label{display:block;margin:.8rem 0}input[type=password],input[type=text]{width:100%;padding:.4rem}
 .status{font-size:.85rem}.ok{color:#2e7d32}.bad{color:#c62828}button{padding:.6rem 1rem;margin-top:1rem}
 .rt{display:inline-block;margin-right:1rem}small{color:#777}</style></head><body>
-<h1>Configure Atelier</h1>
-<p>Your keys are verified with each provider and written to <code>~/Atelier/.env</code> on this machine — nothing is sent anywhere else.</p>
+<h1>Configure Splash</h1>
+<p>Your keys are verified with each provider and written to <code>~/Splash/.env</code> on this machine — nothing is sent anywhere else.</p>
 <form id="cfg">
 <fieldset><legend>AI runtime</legend>${runtimeOptions}</fieldset>
 <label>MapTiler key <input name="maptiler" type="password" autocomplete="off"/><span class="status" data-for="maptiler"></span></label>
@@ -486,13 +486,13 @@ Expected: PASS (5 tests), tsc clean.
 
 In `scripts/check.mjs`: add `"install"` to `TSC_DIRS` and to `TEST_DIRS`:
 ```js
-const TSC_DIRS = ["skills/atelier", "skills/chart-native", "skills/map-native", "skills/scrolly", "install"];
+const TSC_DIRS = ["skills/splash", "skills/chart-native", "skills/map-native", "skills/scrolly", "install"];
 ```
 ```js
 const TEST_DIRS = [
   "skills/dw-chart", "skills/chart-native", "skills/map-native", "skills/scrolly",
   "skills/map-dw/eval", "skills/map-dw/src", "skills/suggest-chart/eval",
-  "skills/suggest-article/eval", "skills/atelier", "docs/installer", "install",
+  "skills/suggest-article/eval", "skills/splash", "docs/installer", "install",
 ];
 ```
 
@@ -603,13 +603,13 @@ git commit -m "feat(installer): live key verification against MapTiler/Datawrapp
 **Files:**
 - Create: `install/configurator.ts`
 
-**Interfaces:** Consumes everything from `configurator-core.ts`. Run by the bootstrap as `bun install/configurator.ts` from within `~/Atelier` (writes `.env` + `.atelier-runtime` in cwd).
+**Interfaces:** Consumes everything from `configurator-core.ts`. Run by the bootstrap as `bun install/configurator.ts` from within `~/Splash` (writes `.env` + `.splash-runtime` in cwd).
 
 - [ ] **Step 1: Create `install/configurator.ts`**
 ```ts
 // Thin Bun server for the local configurator. Serves the form on 127.0.0.1:<free port>, opens the
-// browser, verifies keys live, writes ~/Atelier/.env (chmod 600) + the chosen runtime, then exits so
-// the bootstrap continues. Run from within ~/Atelier: `bun install/configurator.ts`.
+// browser, verifies keys live, writes ~/Splash/.env (chmod 600) + the chosen runtime, then exits so
+// the bootstrap continues. Run from within ~/Splash: `bun install/configurator.ts`.
 import { writeFileSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -617,8 +617,8 @@ import {
   type ConfiguratorConfig,
 } from "./configurator-core.ts";
 
-const DEST = process.cwd(); // the bootstrap runs this from ~/Atelier
-const NO_OPEN = process.env.ATELIER_NO_OPEN === "1"; // testability seam
+const DEST = process.cwd(); // the bootstrap runs this from ~/Splash
+const NO_OPEN = process.env.SPLASH_NO_OPEN === "1"; // testability seam
 
 function openBrowser(url: string): void {
   const cmd = process.platform === "darwin" ? ["open", url]
@@ -652,7 +652,7 @@ const server = Bun.serve({
       const envPath = join(DEST, ".env");
       writeFileSync(envPath, serializeEnv(cfg));
       try { chmodSync(envPath, 0o600); } catch { /* NTFS — no-op */ }
-      writeFileSync(join(DEST, ".atelier-runtime"), (cfg.runtime || "claude") + "\n");
+      writeFileSync(join(DEST, ".splash-runtime"), (cfg.runtime || "claude") + "\n");
       queueMicrotask(() => { server.stop(); process.exit(0); });
       return new Response("ok");
     }
@@ -661,7 +661,7 @@ const server = Bun.serve({
 });
 
 const localUrl = `http://127.0.0.1:${server.port}/`;
-console.log(`-> Configure Atelier at ${localUrl}`);
+console.log(`-> Configure Splash at ${localUrl}`);
 if (!NO_OPEN) openBrowser(localUrl);
 ```
 
@@ -672,17 +672,17 @@ Expected: clean (0 errors, no `any`).
 
 - [ ] **Step 3: Controller run-verify** (this task's real proof — a server can't be unit-tested meaningfully)
 
-In a temp dir acting as `~/Atelier`, run the configurator headless and drive it with a fetch/Playwright:
+In a temp dir acting as `~/Splash`, run the configurator headless and drive it with a fetch/Playwright:
 ```bash
-mkdir -p /tmp/atelier-cfg && cd /tmp/atelier-cfg
-ATELIER_NO_OPEN=1 bun <repo>/install/configurator.ts &   # note the printed 127.0.0.1:<port>
-# GET / returns the form; POST /submit with a JSON body writes .env + .atelier-runtime
+mkdir -p /tmp/splash-cfg && cd /tmp/splash-cfg
+SPLASH_NO_OPEN=1 bun <repo>/install/configurator.ts &   # note the printed 127.0.0.1:<port>
+# GET / returns the form; POST /submit with a JSON body writes .env + .splash-runtime
 curl -s -X POST 127.0.0.1:<port>/submit -d '{"runtime":"claude","maptiler":"MT","datawrapper":"DW","anthropic":"","embedApp":"","flyToken":""}'
-cat /tmp/atelier-cfg/.env            # → VITE_MAPTILER_KEY=MT … (no ANTHROPIC line)
-cat /tmp/atelier-cfg/.atelier-runtime # → claude
-stat -f "%Lp" /tmp/atelier-cfg/.env  # → 600 (macOS)
+cat /tmp/splash-cfg/.env            # → VITE_MAPTILER_KEY=MT … (no ANTHROPIC line)
+cat /tmp/splash-cfg/.splash-runtime # → claude
+stat -f "%Lp" /tmp/splash-cfg/.env  # → 600 (macOS)
 ```
-Confirm: the server serves the form, `/submit` writes a correct `.env` (600) + `.atelier-runtime`, and the process exits 0. Verify `/verify` with a real key if available.
+Confirm: the server serves the form, `/submit` writes a correct `.env` (600) + `.splash-runtime`, and the process exits 0. Verify `/verify` with a real key if available.
 
 - [ ] **Step 4: Commit**
 ```bash
@@ -727,7 +727,7 @@ test("runs the local configurator and does NOT write .env from caller env vars",
 test("acquires the repo by zip, installs the render engine, and makes a local launcher", () => {
   expect(sh).toContain("/archive/");
   expect(sh).toContain("playwright install chromium");
-  expect(sh).toContain("Launch Atelier.command");
+  expect(sh).toContain("Launch Splash.command");
 });
 ```
 
@@ -739,17 +739,17 @@ Expected: FAIL (old bootstrap still writes .env from env, no configurator).
 - [ ] **Step 3: Rewrite `install/bootstrap.sh`**
 ```bash
 #!/usr/bin/env bash
-# Atelier bootstrap (macOS / Linux). Idempotent — safe to re-run. Contains NO keys and receives
+# Splash bootstrap (macOS / Linux). Idempotent — safe to re-run. Contains NO keys and receives
 # none: it installs the toolchain, then opens a LOCAL configurator (127.0.0.1) where you enter your
-# keys — they are written straight to ~/Atelier/.env, never passed on the command line.
+# keys — they are written straight to ~/Splash/.env, never passed on the command line.
 set -euo pipefail
 
-REPO="https://github.com/buriedsignals/atelier"   # confirm before public release (preflight-release.mjs)
-REF="${ATELIER_REF:-main}"
-DEST="$HOME/Atelier"
+REPO="https://github.com/buriedsignals/splash"   # confirm before public release (preflight-release.mjs)
+REF="${SPLASH_REF:-main}"
+DEST="$HOME/Splash"
 NATIVE_SKILLS=("skills/chart-native" "skills/map-native")
 
-echo "-> Installing Atelier (a few minutes)…"
+echo "-> Installing Splash (a few minutes)…"
 
 # 1. Bun (its own installer — needed to run the configurator and the skills)
 if ! command -v bun >/dev/null 2>&1; then
@@ -759,17 +759,17 @@ fi
 export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-# 2. Atelier source (zip — no git; contains the configurator)
+# 2. Splash source (zip — no git; contains the configurator)
 if [ ! -d "$DEST" ]; then
-  echo "-> Downloading Atelier…"
+  echo "-> Downloading Splash…"
   tmp="$(mktemp -d)"
-  curl -fsSL "$REPO/archive/$REF.zip" -o "$tmp/atelier.zip"
-  unzip -q "$tmp/atelier.zip" -d "$tmp"
-  mv "$tmp"/atelier-* "$DEST"
+  curl -fsSL "$REPO/archive/$REF.zip" -o "$tmp/splash.zip"
+  unzip -q "$tmp/splash.zip" -d "$tmp"
+  mv "$tmp"/splash-* "$DEST"
   rm -rf "$tmp"
 fi
 
-# 3. Local configurator — pick runtime + enter keys (verified live); writes ~/Atelier/.env
+# 3. Local configurator — pick runtime + enter keys (verified live); writes ~/Splash/.env
 echo "-> Opening the configurator in your browser to collect your keys…"
 ( cd "$DEST" && bun install/configurator.ts )
 if [ ! -f "$DEST/.env" ]; then
@@ -778,7 +778,7 @@ if [ ! -f "$DEST/.env" ]; then
 fi
 
 # 4. Runtime — install the one the configurator recorded (Claude Code today)
-runtime="$(cat "$DEST/.atelier-runtime" 2>/dev/null || echo claude)"
+runtime="$(cat "$DEST/.splash-runtime" 2>/dev/null || echo claude)"
 if [ "$runtime" = "claude" ] && ! command -v claude >/dev/null 2>&1; then
   echo "-> Installing Claude Code…"
   curl -fsSL https://claude.ai/install.sh | bash
@@ -793,7 +793,7 @@ done
 ( cd "$DEST/skills/chart-native" && bunx playwright install chromium )
 
 # 6. Local double-click launcher (created locally → no quarantine → clean re-launch)
-launcher="$DEST/Launch Atelier.command"
+launcher="$DEST/Launch Splash.command"
 cat > "$launcher" <<'LAUNCH'
 #!/usr/bin/env bash
 cd "$(dirname "$0")" && set -a && . ./.env && set +a && claude --plugin-dir .
@@ -801,7 +801,7 @@ LAUNCH
 chmod +x "$launcher"
 
 echo ""
-echo "Done! Double-click 'Launch Atelier.command' in $DEST to start."
+echo "Done! Double-click 'Launch Splash.command' in $DEST to start."
 echo "(Your keys live only in $DEST/.env, chmod 600.)"
 ```
 
@@ -848,8 +848,8 @@ test("runs the local configurator and does NOT write .env from caller env vars",
 
 test("acquires the repo by zip (glob-safe) and makes a .cmd launcher (never a .ps1)", () => {
   expect(ps).toContain("Invoke-WebRequest");
-  expect(ps).toMatch(/Get-ChildItem .*-Filter "atelier-\*"/);
-  expect(ps).toContain("Launch Atelier.cmd");
+  expect(ps).toMatch(/Get-ChildItem .*-Filter "splash-\*"/);
+  expect(ps).toContain("Launch Splash.cmd");
 });
 ```
 
@@ -860,17 +860,17 @@ Expected: FAIL.
 
 - [ ] **Step 3: Rewrite `install/bootstrap.ps1`**
 ```powershell
-# Atelier bootstrap (Windows). Idempotent — safe to re-run. Contains NO keys and receives none: it
+# Splash bootstrap (Windows). Idempotent — safe to re-run. Contains NO keys and receives none: it
 # installs the toolchain, then opens a LOCAL configurator (127.0.0.1) where you enter your keys —
-# written straight to %USERPROFILE%\Atelier\.env, never passed on the command line.
+# written straight to %USERPROFILE%\Splash\.env, never passed on the command line.
 $ErrorActionPreference = "Stop"
 
-$Repo = "https://github.com/buriedsignals/atelier"   # confirm before public release
-$Ref  = if ($env:ATELIER_REF) { $env:ATELIER_REF } else { "main" }
-$Dest = Join-Path $HOME "Atelier"
+$Repo = "https://github.com/buriedsignals/splash"   # confirm before public release
+$Ref  = if ($env:SPLASH_REF) { $env:SPLASH_REF } else { "main" }
+$Dest = Join-Path $HOME "Splash"
 $NativeSkills = @("skills\chart-native", "skills\map-native")
 
-Write-Host "-> Installing Atelier (a few minutes)…"
+Write-Host "-> Installing Splash (a few minutes)…"
 
 # 1. Bun (native Windows build — needed to run the configurator and the skills)
 if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
@@ -892,17 +892,17 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   throw "Node.js is required (it drives Playwright/Remotion on Windows) but could not be installed via winget. Install Node LTS from https://nodejs.org, then re-run this installer."
 }
 
-# 3. Atelier source (zip — no git; contains the configurator)
+# 3. Splash source (zip — no git; contains the configurator)
 if (-not (Test-Path $Dest)) {
-  Write-Host "-> Downloading Atelier…"
-  $tmp = Join-Path $env:TEMP "atelier-dl"
+  Write-Host "-> Downloading Splash…"
+  $tmp = Join-Path $env:TEMP "splash-dl"
   Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
   New-Item -ItemType Directory -Path $tmp | Out-Null
-  $zip = Join-Path $tmp "atelier.zip"
+  $zip = Join-Path $tmp "splash.zip"
   Invoke-WebRequest "$Repo/archive/$Ref.zip" -OutFile $zip
   Expand-Archive $zip -DestinationPath $tmp -Force
   # GitHub's archive top-dir strips a leading "v" / rewrites "/" in tags — match by glob (mirror .sh).
-  Move-Item (Get-ChildItem $tmp -Directory -Filter "atelier-*" | Select-Object -First 1).FullName $Dest
+  Move-Item (Get-ChildItem $tmp -Directory -Filter "splash-*" | Select-Object -First 1).FullName $Dest
   Remove-Item $tmp -Recurse -Force
 }
 
@@ -916,7 +916,7 @@ if (-not (Test-Path (Join-Path $Dest ".env"))) {
 }
 
 # 5. Runtime — install the one the configurator recorded (Claude Code today)
-$runtime = if (Test-Path (Join-Path $Dest ".atelier-runtime")) { (Get-Content (Join-Path $Dest ".atelier-runtime") -Raw).Trim() } else { "claude" }
+$runtime = if (Test-Path (Join-Path $Dest ".splash-runtime")) { (Get-Content (Join-Path $Dest ".splash-runtime") -Raw).Trim() } else { "claude" }
 if ($runtime -eq "claude" -and -not (Get-Command claude -ErrorAction SilentlyContinue)) {
   Write-Host "-> Installing Claude Code…"
   irm https://claude.ai/install.ps1 | iex
@@ -936,7 +936,7 @@ if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download fai
 Pop-Location
 
 # 7. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
-$launcher = Join-Path $Dest "Launch Atelier.cmd"
+$launcher = Join-Path $Dest "Launch Splash.cmd"
 @'
 @echo off
 cd /d "%~dp0"
@@ -945,7 +945,7 @@ claude --plugin-dir .
 '@ | Set-Content -Path $launcher -Encoding ascii
 
 Write-Host ""
-Write-Host "Done! Double-click 'Launch Atelier.cmd' in $Dest to start."
+Write-Host "Done! Double-click 'Launch Splash.cmd' in $Dest to start."
 ```
 
 - [ ] **Step 4: Run, verify PASS**
@@ -968,10 +968,10 @@ git commit -m "refactor(installer): Windows bootstrap runs the local configurato
 
 - [ ] **Step 1: Rewrite `docs/installer/README.md`**
 ```markdown
-# Atelier installer
+# Splash installer
 
 Static, key-free public page → one command → a **local `127.0.0.1` configurator** (Bun) where the
-journalist enters keys, verified live, written to `~/Atelier/.env` (chmod 600). No backend, no keys
+journalist enters keys, verified live, written to `~/Splash/.env` (chmod 600). No backend, no keys
 in the page, the command, or the Downloads folder.
 
 ## Pieces
@@ -981,11 +981,11 @@ in the page, the command, or the Downloads folder.
 
 ## Flow
 1. Public page shows `curl …/bootstrap.sh | bash` (mac) / `irm …/bootstrap.ps1 | iex` (win), or a key-free `.command`/`.cmd`.
-2. The bootstrap installs Bun, fetches Atelier (zip), then runs `bun install/configurator.ts`.
+2. The bootstrap installs Bun, fetches Splash (zip), then runs `bun install/configurator.ts`.
 3. The configurator opens on `127.0.0.1`, the journalist enters keys (MapTiler / Datawrapper / optional
    Anthropic — blank means the Claude subscription OAuth login). Keys are verified live, then written to
-   `~/Atelier/.env` (chmod 600) with the chosen runtime.
-4. The bootstrap installs the runtime + deps + Playwright, and drops a local `Launch Atelier` launcher.
+   `~/Splash/.env` (chmod 600) with the chosen runtime.
+4. The bootstrap installs the runtime + deps + Playwright, and drops a local `Launch Splash` launcher.
 
 ## Hosting
 - Page: GitHub Pages serves `docs/`. Bootstraps fetched over `raw.githubusercontent.com/<repo>/<ref>/install/`.
@@ -1002,9 +1002,9 @@ Native (no WSL): Bun + Node + Claude Code install natively; the configurator is 
 ## Release smoke test (manual, before announcing the URL)
 On a clean macOS account AND a clean Windows VM, both modes:
 1. Run the command / double-click the file (clear the OS warning per the on-page note).
-2. Confirm Bun (+ Node on Win) install; `~/Atelier` populated from zip; the **configurator opens**.
-3. Enter keys → they verify live → `.env` (600) + `.atelier-runtime` written.
-4. Claude Code + deps + Playwright install; `Launch Atelier` created; double-click → Atelier starts.
+2. Confirm Bun (+ Node on Win) install; `~/Splash` populated from zip; the **configurator opens**.
+3. Enter keys → they verify live → `.env` (600) + `.splash-runtime` written.
+4. Claude Code + deps + Playwright install; `Launch Splash` created; double-click → Splash starts.
 5. Windows native render (chart-native + map-native) does NOT hang (tsx guard, inherited).
 ```
 
@@ -1025,7 +1025,7 @@ git commit -m "docs(installer): key-free + local configurator flow, hosting, smo
 
 - **Spec coverage:** §2 public page → T1,T2; §3 bootstrap reorder → T6,T7; §4 architecture → all; §5 components table → T1–T5 + T3 gate wiring; §6 configurator → T3,T4,T5; §7 auth (both paths) → T3 (omit-anthropic-when-blank) + T7/T6 (claude OAuth on launch); §8 tests → every task's TDD + T5/T4 controller verify + T8 gate; §9 locked decisions → Global Constraints. No uncovered section.
 - **Placeholder scan:** none — real code/commands throughout. `<repo>`/`<ref>`/`<port>` are deliberate runtime placeholders, flagged.
-- **Type consistency:** `ConfiguratorConfig` fields (`runtime,maptiler,datawrapper,anthropic,embedApp,flyToken`) consistent across `serializeEnv`/`verifyAll`/the form/`configurator.ts`. `installCommand`/`launcherContents`/`launcherFilename`/`bootstrapUrl` (T1) consumed with matching shapes in T2. `verify*` signatures (T4) consumed in T5. `.env` + `.atelier-runtime` written by T5, read by T6/T7.
+- **Type consistency:** `ConfiguratorConfig` fields (`runtime,maptiler,datawrapper,anthropic,embedApp,flyToken`) consistent across `serializeEnv`/`verifyAll`/the form/`configurator.ts`. `installCommand`/`launcherContents`/`launcherFilename`/`bootstrapUrl` (T1) consumed with matching shapes in T2. `verify*` signatures (T4) consumed in T5. `.env` + `.splash-runtime` written by T5, read by T6/T7.
 
 ## Known follow-ons (out of scope, from the spec)
 - fly token: no live verify v1 (deploy token). NTFS ACL for `.env` on Windows. Other runtimes (Codex/Gemini/Goose) install + configurator entry. Release MIT: `REPO_URL` + pin `REF`. The tsx Windows render guard + producers: unchanged.

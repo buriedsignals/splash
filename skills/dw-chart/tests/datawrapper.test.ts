@@ -20,7 +20,7 @@ const d = hasToken ? describe : describe.skip;
 
 d("datawrapper client (real API)", () => {
   it("runs the full create→data→patch→publish→export-png chain", async () => {
-    const id = await createChart("atelier client test", "column-chart");
+    const id = await createChart("splash client test", "column-chart");
     createdId = id;
     expect(id).toMatch(/^[A-Za-z0-9]{5}$/);
     await setData(id, "year,value\n2021,3\n2022,5\n2023,4\n");
@@ -29,7 +29,7 @@ d("datawrapper client (real API)", () => {
     });
     const url = await publishChart(id);
     expect(url).toContain("datawrapper");
-    const out = join(tmpdir(), `atelier-${id}.png`);
+    const out = join(tmpdir(), `splash-${id}.png`);
     const bytes = await exportPng(id, out);
     expect(existsSync(out)).toBe(true);
     expect(bytes).toBeGreaterThan(1000);

@@ -22,8 +22,8 @@ as the cell-on-basemap reference; `resolveMapStyle`). Cartogram design spec appr
 - Runtime **Bun** always — never npm/node. Tests: `bun test`.
 - Code, comments, commits, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it; render commands
-  `set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a`.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it; render commands
+  `set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a`.
 - **Determinism:** the geometry is a pure function of the config — no `Date.now`/`Math.random`/argless
   `new Date()`; the grid auto-layout assignment is stable (explicit sort + deterministic tie-break).
 - **Uniform-cell invariant (`grid`):** cell colour encodes magnitude, never cell size; no size legend.
@@ -397,7 +397,7 @@ Expected: clean (apart from pre-existing react-dom TS2688); all tests pass.
 
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bun scripts/produce.mjs assets/sample-data/cartogram-scaled.json /tmp/carto/scaled static
 bun scripts/produce.mjs assets/sample-data/cartogram-grid.json /tmp/carto/grid static
 ```

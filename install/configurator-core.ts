@@ -8,7 +8,7 @@ export const RUNTIMES: Record<string, { label: string; verified: boolean }> = {
   // blocked it, so it needs a paid tier to confirm. See docs/installer/gemini-proof.md.
   gemini: { label: "Gemini CLI", verified: true },
   // Enabled by decision (2026-07-14). Layer A (skill discovery) proven live, and Goose activated the
-  // atelier skill + drove the flow — but Layer B was cut off by the free Gemini quota before the
+  // splash skill + drove the flow — but Layer B was cut off by the free Gemini quota before the
   // nested invocation completed, so the full end-to-end is not proven. See docs/installer/goose-proof.md.
   goose: { label: "Goose", verified: true },
 };
@@ -27,7 +27,7 @@ export function freePortHint(): number {
   return 0;
 }
 
-// Serialize to ~/Atelier/.env lines. Values are DOUBLE-QUOTED and trimmed so BOTH launchers
+// Serialize to ~/Splash/.env lines. Values are DOUBLE-QUOTED and trimmed so BOTH launchers
 // parse them safely: the macOS/Linux launcher sources the file with `. ./.env` (POSIX word-
 // splits an unquoted space) and the Windows launcher reads it with `for /f … set "%%a=%%~b"`
 // (the ~ strips the surrounding quotes). Modern fly.io deploy tokens are `FlyV1 fm2_…` — a
@@ -45,7 +45,7 @@ export function serializeEnv(cfg: ConfiguratorConfig): string {
   lines.push(`VITE_MAPTILER_KEY=${envValue(cfg.maptiler)}`);
   lines.push(`REMOTION_MAPTILER_KEY=${envValue(cfg.maptiler)}`);
   lines.push(`DATAWRAPPER_API_TOKEN=${envValue(cfg.datawrapper)}`);
-  lines.push(`ATELIER_EMBED_APP=${envValue(cfg.embedApp)}`);
+  lines.push(`SPLASH_EMBED_APP=${envValue(cfg.embedApp)}`);
   lines.push(`FLY_API_TOKEN=${envValue(cfg.flyToken)}`);
   return lines.join("\n") + "\n";
 }
@@ -60,13 +60,13 @@ export function renderConfiguratorHtml(): string {
     )
     .join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/><title>Configure Atelier</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/><title>Configure Splash</title>
 <style>body{font-family:system-ui;max-width:34rem;margin:2rem auto;padding:0 1rem}
 label{display:block;margin:.8rem 0}input[type=password],input[type=text]{width:100%;padding:.4rem}
 .status{font-size:.85rem;display:block}.ok{color:#2e7d32}.bad{color:#c62828}.warn{color:#b26a00}button{padding:.6rem 1rem;margin-top:1rem}
 .rt{display:inline-block;margin-right:1rem}small{color:#777}</style></head><body>
-<h1>Configure Atelier</h1>
-<p>Your keys are verified with each provider and written to <code>~/Atelier/.env</code> on this machine — nothing is sent anywhere else.</p>
+<h1>Configure Splash</h1>
+<p>Your keys are verified with each provider and written to <code>~/Splash/.env</code> on this machine — nothing is sent anywhere else.</p>
 <form id="cfg">
 <fieldset><legend>AI runtime</legend>${runtimeOptions}</fieldset>
 <label>MapTiler key <small>(required for maps)</small> <input name="maptiler" type="password" autocomplete="off"/><span class="status" data-for="maptiler"></span></label>

@@ -1,10 +1,10 @@
-# Atelier feedback log
+# Splash feedback log
 
 Append-only. One entry per feedback: verbatim, diagnostic, action, status.
 
 ## 2026-07-06 · locator routed to map-dw renders inland strike offshore
 
-**Feedback** (Rémy, from a real `/atelier:atelier` run on the NYT Lamerd/Iran geolocation investigation):
+**Feedback** (Rémy, from a real `/splash:splash` run on the NYT Lamerd/Iran geolocation investigation):
 > Le système a routé une carte régionale (Kuwait → Lamerd) vers map-dw (Datawrapper locator), dont le
 > basemap généralise la côte au zoom large → Lamerd (ville à l'intérieur des terres) apparaît dans le
 > golfe Persique. Il a brûlé ~5 re-renders à découvrir la limite. Or map-native (MapTiler) existe déjà.
@@ -35,7 +35,7 @@ Append-only. One entry per feedback: verbatim, diagnostic, action, status.
 > Un "Invalid tool parameters" est survenu pendant la phase CADRAGE (entre deux questions). Glitch réel.
 
 **Diagnostic** :
-- Fichier : `skills/atelier/SKILL.md` (CADRAGE décrit les questions en prose, pas d'appel d'outil codé).
+- Fichier : `skills/splash/SKILL.md` (CADRAGE décrit les questions en prose, pas d'appel d'outil codé).
 - Root cause : PAS de défaut statique dans le code. Le modèle runtime a mal formé UN appel de question,
   puis s'est auto-rattrapé. Erreur transitoire d'appel LLM — non reproductible par un test.
 
@@ -49,12 +49,12 @@ Append-only. One entry per feedback: verbatim, diagnostic, action, status.
 
 ## 2026-07-06 · export lands in an ephemeral session scratchpad
 
-**Feedback** (Rémy, from the CO₂-emissions `/atelier:atelier` run):
+**Feedback** (Rémy, from the CO₂-emissions `/splash:splash` run):
 > Le livrable a atterri dans `/private/tmp/.../scratchpad/co2-export/` — hors repo, dossier de session
 > temporaire. J'ai dû demander « où est l'export ? ». Éphémère, introuvable.
 
 **Diagnostic** :
-- Fichiers : `skills/atelier/SKILL.md` (EXPORT), `skills/atelier/scripts/export-code.mjs`, `.gitignore`.
+- Fichiers : `skills/splash/SKILL.md` (EXPORT), `skills/splash/scripts/export-code.mjs`, `.gitignore`.
 - Root cause : la phase EXPORT ne précisait aucune destination stable → l'orchestrateur a écrit dans le
   scratchpad de session (nettoyé, hors repo).
 
@@ -67,7 +67,7 @@ Append-only. One entry per feedback: verbatim, diagnostic, action, status.
   3. `.gitignore` — `exports/` (les livrables ne polluent pas git).
   4. Test : `isEphemeralPath` true sur temp/scratchpad, false sur `exports/<slug>`.
 
-**Verify** : `bun test skills/atelier/scripts/export-code.test.ts` → 6/6.
+**Verify** : `bun test skills/splash/scripts/export-code.test.ts` → 6/6.
 **Status** : fixed
 
 ## 2026-07-06 · Playwright browser not pre-installed (mid-run download)

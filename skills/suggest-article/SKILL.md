@@ -14,7 +14,7 @@ opportunities. It never invents data or text. It carries **no chart type** — c
 downstream `suggest-chart` cut's job. The journalist accepts/edits/rejects; there is no hard gate.
 It likewise carries **no `format`** — pinning the single `VisualFormat` (`static|interactive|video|scrolly`,
 within `allowedFormats(channel)`) is `suggest-chart`'s job too; that one pinned format is what reaches
-PROPOSITION (`skills/atelier/SKILL.md` Gate 2) for the journalist's veto.
+PROPOSITION (`skills/splash/SKILL.md` Gate 2) for the journalist's veto.
 
 ## When to use
 
@@ -111,9 +111,9 @@ normalise to English.
    never use the CSV table's filename (`dataSource.table`) as this label — that names which supplied
    file backed the claim, not a citable publication a reader can verify. If the article states a name
    but no URL (or no attribution at all), do not guess or fill in a URL — omit `sourceHint.url` (or the
-   whole field) and leave it to the downstream atelier flow (CADRAGE/PROPOSITION Gate 2c) to ask the
+   whole field) and leave it to the downstream splash flow (CADRAGE/PROPOSITION Gate 2c) to ask the
    journalist directly for the specific, traceable dataset/page URL.
-4. **PROPOSITION — choose the few.** Read the shared KB (at the atelier repo root, NOT under this skill)
+4. **PROPOSITION — choose the few.** Read the shared KB (at the splash repo root, NOT under this skill)
    `<repo-root>/knowledge/references/chart-selection.md` and `<repo-root>/knowledge/references/design-conformance.md`
    for *which claims warrant a visual* (a magnitude, a trend, a ranking, a
    part-to-whole, a correlation — claims with a comparison or a shape). Keep the **strongest 1–3**;
@@ -143,7 +143,7 @@ Output one `ProposalSet`:
       "dataSource": { "table": "cross-border.csv", "columns": ["year","France","Switzerland"] },
       // "sourceHint" is OPTIONAL — set ONLY when the article itself names a citable dataset/URL for
       // these figures, e.g. { "name": "Insee", "url": "https://www.insee.fr/fr/statistiques/xxxx" }.
-      // Omitted here because this article gives no separate attribution — atelier asks the journalist.
+      // Omitted here because this article gives no separate attribution — splash asks the journalist.
       "confidence": "high",
       "rationale": "A two-side growth claim over a continuous period is the article's spine."
     }

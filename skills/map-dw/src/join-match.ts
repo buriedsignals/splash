@@ -61,7 +61,7 @@ export async function fetchBasemapRegionValues(
 ): Promise<Set<string>> {
   const t = process.env.DATAWRAPPER_API_TOKEN;
   if (!t)
-    throw new Error("DATAWRAPPER_API_TOKEN is not set (see /atelier/.env)");
+    throw new Error("DATAWRAPPER_API_TOKEN is not set (see /splash/.env)");
   const r = await fetch(`${API}/basemaps/${basemap}`, {
     headers: { Authorization: `Bearer ${t}` },
   });

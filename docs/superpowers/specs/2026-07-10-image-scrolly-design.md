@@ -2,18 +2,18 @@
 
 > Statut : **design validé, prêt pour plan**. Écrit après un brainstorming + une vérification
 > multi-agents adversariale (26 findings réels repliés dans ce document). Spec-parapluie :
-> `2026-06-14-atelier-architecture-design.md`. Décision de scope amont : mémoire Claude Code
-> `image-scrolly-scope` (Tom, 2026-07-10 — atelier *formate* les images, ne les génère pas).
+> `2026-06-14-splash-architecture-design.md`. Décision de scope amont : mémoire Claude Code
+> `image-scrolly-scope` (Tom, 2026-07-10 — splash *formate* les images, ne les génère pas).
 
 ## 1. Quoi / pourquoi
 
-**Image-scrolly** = le 4ᵉ moteur d'atelier : une **séquence de photos / images satellite qui avance
-au scroll** (« evidence, one frame at a time »). C'est le skill #7 de la vitrine Splash qu'atelier ne
-produisait pas encore. On le construit pour fermer le gap côté atelier (l'autre gap, le flythrough 3D
+**Image-scrolly** = le 4ᵉ moteur d'splash : une **séquence de photos / images satellite qui avance
+au scroll** (« evidence, one frame at a time »). C'est le skill #7 de la vitrine Splash qu'splash ne
+produisait pas encore. On le construit pour fermer le gap côté splash (l'autre gap, le flythrough 3D
 Cesium, reste porté par Buried Signals).
 
-**Principe fondateur préservé** : atelier **n'engendre ni image ni texte éditorial**. Il orchestre.
-Pour l'image, ça veut dire : le journaliste fournit un **lot d'images brutes + son article** ; atelier
+**Principe fondateur préservé** : splash **n'engendre ni image ni texte éditorial**. Il orchestre.
+Pour l'image, ça veut dire : le journaliste fournit un **lot d'images brutes + son article** ; splash
 (1) *formate* les images (crop/canvas-frame au gabarit + compression), (2) *propose* un ordre narratif
 et des captions **dérivées de l'article** (vetoable), (3) *rend* les 3 formats possédés.
 
@@ -67,7 +67,7 @@ alt + crédit /image  ┘             {ordre, captions dérivées-article,      
 ## 4. Flux de données
 
 1. **INPUT** : le journaliste dépose un dossier d'images + l'article + le canal (CADRAGE Q3) + par image
-   un **`alt`** et un **`credit`** (les deux seuls textes qu'atelier *collecte*, cf. §5/§7).
+   un **`alt`** et un **`credit`** (les deux seuls textes qu'splash *collecte*, cf. §5/§7).
 2. **② suggest-image** : lit l'article, regarde chaque image (vision → « quel paragraphe parle de cette
    photo ? »), propose ordre + captions + `keyFrame`, **et** un *cull* si >6 images (§7). Écrit
    `image-story.json`.

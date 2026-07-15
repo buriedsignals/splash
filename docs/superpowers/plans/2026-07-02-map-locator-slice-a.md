@@ -22,7 +22,7 @@ formats are Slice B (they share `deriveLocatorStory`, out of scope here).
 - Code, comments, commit messages, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer in any
   commit, PR, file, or doc.
-- MapTiler key lives in `atelier/.env` (gitignored) — never commit or log its value.
+- MapTiler key lives in `splash/.env` (gitignored) — never commit or log its value.
 - Reuse existing building blocks: `MapFrame`/`resolveMapFrame`, the bounds/fit logic, the
   `QUALITATIVE` palette + `resolveMapStyle`/`MAP_STYLES` from `route-geo.ts`. Do not fork them.
 - A locator marker is **uniform-size** — never value-scaled (that is proportional-symbol).
@@ -705,7 +705,7 @@ Expected: clean tsc (apart from the pre-existing `react-dom` TS2688); all tests 
 
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bun scripts/produce.mjs assets/sample-data/locator-few.json /tmp/loc/few static
 bun scripts/produce.mjs assets/sample-data/locator-many.json /tmp/loc/many static
 ```

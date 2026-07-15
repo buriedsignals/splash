@@ -128,7 +128,7 @@ For each new map type, in order:
 
 ## Module furniture
 
-Every map module carries three pieces of furniture — **insight title**, **description** (subtitle elaborating the insight), and **source** — each appearing exactly once. Overlays use `min()`/`clamp()`/`vw` units so they stay readable from 390 px mobile up to 1280 px desktop without breakpoints. The video title card inherits `title` and `description` from the shared config (same JSON drives all three formats). The interactive scrolly inherits the same values via the shared config. See `docs/atelier/embeddable-module-best-practices.md` for the full responsive overlay contract.
+Every map module carries three pieces of furniture — **insight title**, **description** (subtitle elaborating the insight), and **source** — each appearing exactly once. Overlays use `min()`/`clamp()`/`vw` units so they stay readable from 390 px mobile up to 1280 px desktop without breakpoints. The video title card inherits `title` and `description` from the shared config (same JSON drives all three formats). The interactive scrolly inherits the same values via the shared config. See `docs/splash/embeddable-module-best-practices.md` for the full responsive overlay contract.
 
 ## Overview
 
@@ -168,7 +168,7 @@ blank — catches the "still succeeds but the mp4 is frozen/blank" class mechani
 frame at `STORY_STILL_FRAME` **matches the approved review still** within codec tolerance — so the frame
 Gate-3 approves is the frame that ships (measurements + thresholds land in `video-verify.json`). Both
 Remotion invocations are bounded by a **watchdog** (`src/video-watchdog.ts`, default 15 min,
-`ATELIER_VIDEO_TIMEOUT_MS` override) that kills a hung render process tree — the seismes-class
+`SPLASH_VIDEO_TIMEOUT_MS` override) that kills a hung render process tree — the seismes-class
 Remotion+MapLibre per-frame hang becomes a clean fail-hard instead of a burned run (root-causing that
 hang stays a separate ticket). The static and interactive web builds need `VITE_MAPTILER_KEY` in `.env`;
 the Remotion build needs `REMOTION_MAPTILER_KEY` — both free-tier keys, gitignored.
@@ -336,9 +336,9 @@ emitted; the `format` arg gates the VIDEO render:
   `scrolly` alongside `story` (route has no simple-reveal). See `knowledge/references/map/formats/video-scrolly.md`.
 - `all` → reveal + story + scrolly.
 
-**Channel-driven aspect (Slice 2):** `ATELIER_CHANNEL` (env, default `article-web`) picks which ONE
+**Channel-driven aspect (Slice 2):** `SPLASH_CHANNEL` (env, default `article-web`) picks which ONE
 aspect is rendered — `social-vertical`→portrait 1080×1920, `social-feed`→square 1080×1080,
-`article-web`→landscape 1200×675 (`skills/atelier/src/channel.ts` `channelAspect`/`renderSize`) — never
+`article-web`→landscape 1200×675 (`skills/splash/src/channel.ts` `channelAspect`/`renderSize`) — never
 the full landscape+square+portrait triple. The STATIC build is also sized to the channel's exact
 pixels (`static.png` comes out at `renderSize(channel)`); `interactive.png`/`interactive.html` stay
 unsized (the `interactive` format is article-web-only, filling its host).
@@ -362,7 +362,7 @@ best practices live in `knowledge/references/map/formats/video-reveal.md`.
 | Basemap style | `MapStyle.DATAVIZ.LIGHT` | `ChoroplethMap.tsx` |
 | Viewport padding on fitBounds | `padding: 48` | `ChoroplethMap.tsx` / `ChoroplethStory.tsx` |
 | Min data fill fraction (audit) | `MIN_DATA_FILL_FRACTION` (0.7) | `scripts/audit.mjs` |
-| Render watchdog ceiling | `DEFAULT_VIDEO_TIMEOUT_MS` (900000 = 15 min; env `ATELIER_VIDEO_TIMEOUT_MS`) | `src/video-watchdog.ts` |
+| Render watchdog ceiling | `DEFAULT_VIDEO_TIMEOUT_MS` (900000 = 15 min; env `SPLASH_VIDEO_TIMEOUT_MS`) | `src/video-watchdog.ts` |
 | Video snap sensitivity | `REVEAL_MIN_MEAN_DIFF` (0.5) / `PROGRESSION_MIN_MEAN_DIFF` (0.15) / `MIN_LUMA_VARIANCE` (10) / `STILL_MATCH_CHANNEL_TOLERANCE` (40) / `STILL_MATCH_MAX_DIFF_RATIO` (0.01) | `src/core/video-verify.ts` |
 
 ## Files
@@ -396,7 +396,7 @@ best practices live in `knowledge/references/map/formats/video-reveal.md`.
 - `scripts/lib/furniture-i18n.mjs` — i18n furniture gate (fail-hard, runs inside `snap-static.mjs` + `snap-a11y.mjs`'s existing page loads): a non-English config's rendered HTML furniture (MapFrame title/source, legend, filter bar) must carry the localized "Source" label from `src/core/locale.ts`, no English caption, no unambiguously English-grouped number; GL-canvas text is not DOM-reachable and stays out of scope.
 - `scripts/produce.mjs` — `produce(configPath, outDir)`: all three formats from an arbitrary config.
 - `scripts/snap-video.mjs` — video snap guard (fail-hard after the mp4 render): container sanity + reveal-animates + mp4-matches-reviewed-still, via the bundled ffmpeg (`scripts/lib/ffbin.mjs`); pure pixel math in `src/core/video-verify.ts`.
-- `src/video-watchdog.ts` — bounds every Remotion render/still subprocess (default 15 min, `ATELIER_VIDEO_TIMEOUT_MS`); kills the hung process tree (seismes-class hang → clean fail-hard).
+- `src/video-watchdog.ts` — bounds every Remotion render/still subprocess (default 15 min, `SPLASH_VIDEO_TIMEOUT_MS`); kills the hung process tree (seismes-class hang → clean fail-hard).
 - `src/route-geo.ts` — `computeRoute` / `computeRouteReveal`: runtime route geometry (auto-detect crossed territories + stops + borders); superseded the build-time `prep-geo.mjs` bake.
 - `assets/geo/world.geojson` — Natural Earth admin-0 boundaries (simplified).
 - `assets/sample-data/choropleth.json` — runnable sample (EU renewable energy share by country).

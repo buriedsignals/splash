@@ -53,7 +53,7 @@ test("serializeEnv trims and strips quote/newline that would corrupt the .env fi
     embedApp: 'a"b\nc',
   });
   expect(env).toContain('VITE_MAPTILER_KEY="MT"'); // trimmed
-  expect(env).toContain('ATELIER_EMBED_APP="abc"'); // " and \n dropped
+  expect(env).toContain('SPLASH_EMBED_APP="abc"'); // " and \n dropped
   expect(env).not.toContain("\nc"); // no injected extra env line
 });
 
@@ -65,7 +65,7 @@ test("serialized .env sources cleanly in bash with a spaced fly token (launcher 
     maptiler: "MTKEY",
     flyToken: "FlyV1 fm2_realmacaroon==",
   });
-  const p = join(tmpdir(), `atelier-env-test-${process.pid}.env`);
+  const p = join(tmpdir(), `splash-env-test-${process.pid}.env`);
   writeFileSync(p, env);
   try {
     // Mirror the launcher exactly: `set -a && . ./.env && set +a`.

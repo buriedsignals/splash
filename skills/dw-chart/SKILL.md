@@ -20,7 +20,7 @@ For video charts use the chart-video skills; for maps use the map skills; for ri
 
 ## The one gotcha that will waste your day (read first)
 
-SVG/PDF export is **paid** on Datawrapper (`export/svg` → 401). The owned fallback is **PNG** (`export/png` → 200, free). Don't build the fallback on SVG. The token lives in `/atelier/.env` as `DATAWRAPPER_API_TOKEN`; `bun test` from the skill dir needs it exported (`set -a; source /atelier/.env; set +a`).
+SVG/PDF export is **paid** on Datawrapper (`export/svg` → 401). The owned fallback is **PNG** (`export/png` → 200, free). Don't build the fallback on SVG. The token lives in `/splash/.env` as `DATAWRAPPER_API_TOKEN`; `bun test` from the skill dir needs it exported (`set -a; source /splash/.env; set +a`).
 
 ## Architecture
 
@@ -43,7 +43,7 @@ Full field mapping + endpoints → `references/api-flow.md`.
 ## Quick start
 
 1. Build a `ChartSpec` (see `assets/sample-data/sample.spec.json`).
-2. `set -a; source /atelier/.env; set +a` (token).
+2. `set -a; source /splash/.env; set +a` (token).
 3. `bun -e "import {produceChart} from './src/produce'; ..."` or call `produceChart(spec, 'out.png')`.
 
 ## Tuning knobs (each is one value)

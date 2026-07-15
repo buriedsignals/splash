@@ -384,7 +384,7 @@ Expected: PASS — 6 tests pass.
 
 - [ ] **Step 6: Run the full repo suite to confirm nothing regressed**
 
-Run: `cd /Users/rmdms/Sites/Professional/atelier && bun test`
+Run: `cd /Users/rmdms/Sites/Professional/splash && bun test`
 Expected: 46 pass (40 prior + 6 new), 0 fail.
 
 - [ ] **Step 7: Commit**
@@ -513,7 +513,7 @@ the `ProposalSet`. For each accepted proposal, hand `(proposal.data, proposal.in
 
 - [ ] **Step 2: Verify the file is valid Markdown and self-consistent**
 
-Run: `cd /Users/rmdms/Sites/Professional/atelier && head -5 skills/suggest-article/SKILL.md && grep -c "^##" skills/suggest-article/SKILL.md`
+Run: `cd /Users/rmdms/Sites/Professional/splash && head -5 skills/suggest-article/SKILL.md && grep -c "^##" skills/suggest-article/SKILL.md`
 Expected: frontmatter present; ≥8 second-level headings.
 
 - [ ] **Step 3: Commit**
@@ -625,7 +625,7 @@ Each case is a complete `{ id, article, data, expect }`. Articles are 2–4 shor
 
 - [ ] **Step 5: Validate every case file parses as JSON**
 
-Run: `cd /Users/rmdms/Sites/Professional/atelier && for f in skills/suggest-article/eval/cases/*.json; do bun -e "JSON.parse(require('fs').readFileSync('$f','utf8')); console.log('ok $f')"; done`
+Run: `cd /Users/rmdms/Sites/Professional/splash && for f in skills/suggest-article/eval/cases/*.json; do bun -e "JSON.parse(require('fs').readFileSync('$f','utf8')); console.log('ok $f')"; done`
 Expected: `ok ...` for all 4 files, no parse error.
 
 - [ ] **Step 6: Commit**
@@ -696,7 +696,7 @@ Be candid. Do not inflate scores. The `rationale` must name the concrete reason 
 
 - [ ] **Step 2: Verify schema keys present**
 
-Run: `cd /Users/rmdms/Sites/Professional/atelier && grep -E "rightPlace|rightKind|rightDose|dataFit" skills/suggest-article/eval/judge.md | head`
+Run: `cd /Users/rmdms/Sites/Professional/splash && grep -E "rightPlace|rightKind|rightDose|dataFit" skills/suggest-article/eval/judge.md | head`
 Expected: each of the 4 axes appears.
 
 - [ ] **Step 3: Commit**
@@ -784,9 +784,9 @@ git commit -m "docs(suggest-article): agent-orchestrated eval runner (scorePropo
 
 ```ts
 // scratch: score-all.ts
-import { scoreProposalSet } from "/Users/rmdms/Sites/Professional/atelier/skills/suggest-article/eval/score";
+import { scoreProposalSet } from "/Users/rmdms/Sites/Professional/splash/skills/suggest-article/eval/score";
 import { readFileSync } from "fs";
-const dir = "/Users/rmdms/Sites/Professional/atelier/skills/suggest-article/eval/cases";
+const dir = "/Users/rmdms/Sites/Professional/splash/skills/suggest-article/eval/cases";
 for (const id of ["town-growth", "school-budget", "clinic-waits", "festival-recap"]) {
   const c = JSON.parse(readFileSync(`${dir}/${id}.json`, "utf8"));
   const emitted = JSON.parse(readFileSync(`/path/to/emit-${id}.json`, "utf8"));
@@ -819,7 +819,7 @@ git commit -m "eval(suggest-article): baseline run — deterministic pass + judg
 - Create: `skills/suggest-article/eval/e2e-proof.md`
 
 **Interfaces:**
-- Consumes: one case's emitted `ProposalSet` (Task 6), one accepted proposal's `(data, intent)`, the prior cut `suggest-chart` (act as ② to choose a type → a `ChartSpec`), `produceChart` from `dw-chart/src/produce.ts`, the real Datawrapper API (token in `/atelier/.env`).
+- Consumes: one case's emitted `ProposalSet` (Task 6), one accepted proposal's `(data, intent)`, the prior cut `suggest-chart` (act as ② to choose a type → a `ChartSpec`), `produceChart` from `dw-chart/src/produce.ts`, the real Datawrapper API (token in `/splash/.env`).
 - Produces: a real published chart URL, confirmed, then deleted; the proof file.
 
 - [ ] **Step 1: Pick one accepted proposal** from a baseline case (e.g. `clinic-waits` — a clean single trend). Take its `(proposal.data, proposal.intent)`.
@@ -830,13 +830,13 @@ git commit -m "eval(suggest-article): baseline run — deterministic pass + judg
 
 ```ts
 // scratch: e2e.ts
-import { produceChart } from "/Users/rmdms/Sites/Professional/atelier/skills/dw-chart/src/produce";
+import { produceChart } from "/Users/rmdms/Sites/Professional/splash/skills/dw-chart/src/produce";
 const spec = { /* the ChartSpec from Step 2 */ };
 const r = await produceChart(spec as any, "/private/tmp/.../e2e.png");
 console.log(JSON.stringify(r, null, 2));
 ```
 
-Run: `cd /Users/rmdms/Sites/Professional/atelier && set -a; source .env; set +a; bun /private/tmp/.../e2e.ts`
+Run: `cd /Users/rmdms/Sites/Professional/splash && set -a; source .env; set +a; bun /private/tmp/.../e2e.ts`
 Expected: a `ProduceResult` with `chartId`, `publicUrl`, `embed`, `pngPath`; the PNG exists on disk.
 
 - [ ] **Step 4: Confirm the chart is real.** `curl -sI` the `publicUrl` (or fetch it) → HTTP 200. Confirm the PNG file is non-empty (`ls -l` the path).
@@ -844,7 +844,7 @@ Expected: a `ProduceResult` with `chartId`, `publicUrl`, `embed`, `pngPath`; the
 - [ ] **Step 5: Delete the test chart.** DELETE `https://api.datawrapper.de/v3/charts/<chartId>` with the bearer token:
 
 ```bash
-cd /Users/rmdms/Sites/Professional/atelier && set -a; source .env; set +a; \
+cd /Users/rmdms/Sites/Professional/splash && set -a; source .env; set +a; \
 curl -s -X DELETE -H "Authorization: Bearer $DATAWRAPPER_API_TOKEN" \
   https://api.datawrapper.de/v3/charts/<chartId> -o /dev/null -w "%{http_code}\n"
 ```
@@ -865,22 +865,22 @@ git commit -m "test(suggest-article): live e2e — accepted proposal → suggest
 
 - [ ] **Step 1: Run the full repo suite**
 
-Run: `cd /Users/rmdms/Sites/Professional/atelier && bun test`
+Run: `cd /Users/rmdms/Sites/Professional/splash && bun test`
 Expected: 46 pass (40 prior + 6 new), 0 fail. The prior 8 suggest-chart eval + 32 dw-chart tests are untouched and green.
 
 - [ ] **Step 2: Confirm no prohibited content**
 
-Run: `cd /Users/rmdms/Sites/Professional/atelier && grep -ri "claude\|anthropic" skills/suggest-article/ || echo "clean"`
+Run: `cd /Users/rmdms/Sites/Professional/splash && grep -ri "claude\|anthropic" skills/suggest-article/ || echo "clean"`
 Expected: `clean`.
 
 - [ ] **Step 3: Confirm the prior cut + dw-chart are unmodified**
 
-Run: `cd /Users/rmdms/Sites/Professional/atelier && git diff --name-only main -- skills/suggest-chart skills/dw-chart knowledge | grep -v "^skills/suggest-article" || echo "prior cuts untouched"`
+Run: `cd /Users/rmdms/Sites/Professional/splash && git diff --name-only main -- skills/suggest-chart skills/dw-chart knowledge | grep -v "^skills/suggest-article" || echo "prior cuts untouched"`
 Expected: `prior cuts untouched` (no files outside `suggest-article/` changed).
 
 - [ ] **Step 4: Confirm branch state** — all work committed on `feat/suggester-article-reading`, NOT merged to `main`.
 
-Run: `git -C /Users/rmdms/Sites/Professional/atelier status --short && git -C /Users/rmdms/Sites/Professional/atelier log --oneline main..HEAD`
+Run: `git -C /Users/rmdms/Sites/Professional/splash status --short && git -C /Users/rmdms/Sites/Professional/splash log --oneline main..HEAD`
 Expected: clean working tree; the new commits listed.
 
 ---

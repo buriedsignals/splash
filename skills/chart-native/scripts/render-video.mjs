@@ -2,7 +2,7 @@
 // then render the mp4 with --gl=angle. Frame-deterministic: pure function of frame.
 // Both Remotion invocations run under the render watchdog (src/video-watchdog.ts):
 // a hung render (the seismes-class Remotion hang) is killed after
-// ATELIER_VIDEO_TIMEOUT_MS (default 15 min) and fails hard instead of burning the
+// SPLASH_VIDEO_TIMEOUT_MS (default 15 min) and fails hard instead of burning the
 // run — root-causing the hang itself stays a separate ticket.
 import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
 import { dirname, join } from "node:path";

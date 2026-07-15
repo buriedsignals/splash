@@ -157,7 +157,7 @@ Expected: the file exists.
 Run: `bun run check`
 Expected: PASS — `completeness.test.ts` (reachable ⟹ guarded ∧ mapper ∧ KB) and `native-family-types.test.ts` (every family id is a non-deferred native type) both accept `slope`.
 
-- [ ] **Step 10: Render-verify E2E** — produce a slope static from a spec/CSV with `category, <period1>, <period2>` (2 numeric columns) via the real produce path (`scripts/produce-from-spec.mjs`) and write the PNG to `/private/tmp/claude-501/-Users-rmdms-Sites-Professional-atelier/09e77fc1-8fab-4f66-b1ca-26e67d7d2f11/scratchpad/slope-e2e.png`. Confirm: two period captions, sloping lines, one accent line (if highlight given), end-labels in ink, title un-clipped, source present.
+- [ ] **Step 10: Render-verify E2E** — produce a slope static from a spec/CSV with `category, <period1>, <period2>` (2 numeric columns) via the real produce path (`scripts/produce-from-spec.mjs`) and write the PNG to `/private/tmp/claude-501/-Users-rmdms-Sites-Professional-splash/09e77fc1-8fab-4f66-b1ca-26e67d7d2f11/scratchpad/slope-e2e.png`. Confirm: two period captions, sloping lines, one accent line (if highlight given), end-labels in ink, title un-clipped, source present.
 
 - [ ] **Step 11: Commit**
 
@@ -289,7 +289,7 @@ Expected: the file exists.
 Run: `bun run check`
 Expected: PASS — completeness + native-family-types accept `bullet`.
 
-- [ ] **Step 10: Render-verify E2E** — produce a bullet static from a spec/CSV `category, value, target` (positive KPI values) via `scripts/produce-from-spec.mjs`; write the PNG to `/private/tmp/claude-501/-Users-rmdms-Sites-Professional-atelier/09e77fc1-8fab-4f66-b1ca-26e67d7d2f11/scratchpad/bullet-e2e.png`. Confirm: each row shows the measure bar vs a target tick on a single neutral grey track, measure coloured blue (met) / vermillion (missed), value labels in ink with margin (target not clipped at the edge), title un-clipped, source present.
+- [ ] **Step 10: Render-verify E2E** — produce a bullet static from a spec/CSV `category, value, target` (positive KPI values) via `scripts/produce-from-spec.mjs`; write the PNG to `/private/tmp/claude-501/-Users-rmdms-Sites-Professional-splash/09e77fc1-8fab-4f66-b1ca-26e67d7d2f11/scratchpad/bullet-e2e.png`. Confirm: each row shows the measure bar vs a target tick on a single neutral grey track, measure coloured blue (met) / vermillion (missed), value labels in ink with margin (target not clipped at the edge), title un-clipped, source present.
 
 - [ ] **Step 11: Commit**
 

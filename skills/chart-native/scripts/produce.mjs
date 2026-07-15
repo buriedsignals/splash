@@ -6,7 +6,7 @@
 //
 //   bun scripts/produce.mjs <type> <config.json> <outDir> <format>
 //   format: the SINGLE VisualFormat to build — "static" | "interactive" | "video" |
-//           "scrolly" (the ../../atelier/src/channel.ts vocabulary). Builds EXACTLY
+//           "scrolly" (the ../../splash/src/channel.ts vocabulary). Builds EXACTLY
 //           that one format's artifacts, nothing else (no cross-format byproducts —
 //           see the single-format-produce-export design). "scrolly" is not built by
 //           chart-native directly (see the case below) — it fails hard.
@@ -19,7 +19,7 @@ import { runProduceConformance } from "../src/core/produce-conformance.ts";
 import { REMOTION_PREFIX } from "../src/native-types.ts";
 import { snapCommand } from "../src/platform-runners.ts";
 import { readCompDims, readCompTiming } from "./lib/comp-registry.mjs";
-import { ALL_CHANNELS, channelAspect, assertRenderedSize, isFormatAllowed } from "../../atelier/src/channel.ts";
+import { ALL_CHANNELS, channelAspect, assertRenderedSize, isFormatAllowed } from "../../splash/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -60,7 +60,7 @@ function readPngSize(pngPath) {
 // snap diffs against it are the SAME frame (the load-bearing still≈mp4 transfer).
 const VIDEO_STILL_FRAME = 140;
 
-// The single-format-produce-export redesign's vocabulary (mirrors ../../atelier/src/
+// The single-format-produce-export redesign's vocabulary (mirrors ../../splash/src/
 // channel.ts's VisualFormat — kept as a plain runtime Set here since this is a .mjs,
 // not imported, to avoid a type-only import needing a bundler step).
 const VALID_FORMATS = new Set(["static", "interactive", "video", "scrolly"]);
@@ -77,7 +77,7 @@ if (!type || !configPath || !outDir || !VALID_FORMATS.has(format)) {
 // Channel-driven format (Slice 2) — the distribution channel this deliverable
 // targets (default article-web, matching normalizeChannel's default / back-compat
 // for legacy callers with no channel). Threaded in by adapters.ts as an env var
-// (see skills/atelier/src/adapters.ts channelEnvFor). Sizes the static/interactive
+// (see skills/splash/src/adapters.ts channelEnvFor). Sizes the static/interactive
 // Vite build (vite.config.ts) and selects the video aspect below.
 //
 // FAIL-CLOSED (defense in depth below the produce-all gate): an unrecognized
@@ -87,11 +87,11 @@ if (!type || !configPath || !outDir || !VALID_FORMATS.has(format)) {
 // ("feed", "Stories") to canonical BEFORE threading (produce-all's gate), so the
 // alias table lives once in normalizeChannel and is never duplicated here.
 // Absent/EMPTY keeps the article-web default (legacy/manual callers).
-const rawChannel = (process.env.ATELIER_CHANNEL ?? "").trim();
+const rawChannel = (process.env.SPLASH_CHANNEL ?? process.env.ATELIER_CHANNEL ?? "").trim();
 const channel = rawChannel === "" ? "article-web" : rawChannel;
 if (!ALL_CHANNELS.includes(channel)) {
   console.error(
-    `produce: unknown ATELIER_CHANNEL "${rawChannel}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
+    `produce: unknown SPLASH_CHANNEL "${rawChannel}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
       "(absent/empty defaults to article-web); refusing to default an unrecognized channel to article-web.",
   );
   process.exit(1);
@@ -178,7 +178,7 @@ if (brandConcerns.length > 0) {
 // Re-assert the validated channel (rawChannel may have been absent/empty — an
 // invalid one already exited above) so vite.config.ts and render-video.mjs never
 // have to re-derive the fallback.
-const env = { ...process.env, CHART: type, CONFIG: configPath, ATELIER_CHANNEL: channel };
+const env = { ...process.env, CHART: type, CONFIG: configPath, SPLASH_CHANNEL: channel };
 const run = (cmd, args, extraEnv = {}) =>
   execFileSync(cmd, args, { stdio: "inherit", cwd: root, env: { ...env, ...extraEnv }, shell: isWin });
 const snap = (script, extraEnv = {}) => run(SNAP[0], [...SNAP.slice(1), script], extraEnv);
@@ -384,7 +384,7 @@ switch (format) {
   }
 
   // scrolly — NOT built by chart-native directly. The true interactive scroll-driven
-  // format (skills/scrolly) is its own producer (see ../../atelier/src/producer-spec.ts
+  // format (skills/scrolly) is its own producer (see ../../splash/src/producer-spec.ts
   // Producer union and adapters.ts's SCRIPT table): it hosts chart-native's chart
   // geometry under its own build/render pipeline, dispatched independently by the
   // orchestrator as producer "scrolly", never through this script. chart-native has no

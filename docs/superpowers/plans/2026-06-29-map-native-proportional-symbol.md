@@ -13,7 +13,7 @@
 - **Bun only** — `bun`, `bunx`, `bun test`. The sole accepted exception is Remotion render via `bunx remotion` (its node toolchain), exactly as choropleth already does.
 - **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`. (User rule; overrides any default trailer instruction.)
 - **Code, comments, commit messages in English.**
-- **MapTiler key via env only** (`VITE_MAPTILER_KEY` web / `REMOTION_MAPTILER_KEY` video, from `/atelier/.env`) — never hard-code or log it.
+- **MapTiler key via env only** (`VITE_MAPTILER_KEY` web / `REMOTION_MAPTILER_KEY` video, from `/splash/.env`) — never hard-code or log it.
 - **Area-proportional sizing** (`r ∝ √value`), never radius-proportional — enforced by the conformance guard.
 - **Single hue** (size is the encoding); furniture standard = title-insight + description + source.
 - **Verify at render** — eyeball each format at multiple widths (360→1600) and on the margins, not just at the unit-test level. A static PNG cannot show hover — verify interactive behaviour live in-browser (Playwright hover + screenshot).
@@ -839,7 +839,7 @@ createRoot(root).render(
 
 - [ ] **Step 4: Build + render static and interactive from the sample**
 
-Load the key from `/atelier/.env` (never print it) and produce the web formats only:
+Load the key from `/splash/.env` (never print it) and produce the web formats only:
 
 ```bash
 cd skills/map-native

@@ -11,8 +11,8 @@ wait-day observations each. Within-clinic spread is narrow (Riverside 3–7, Nor
 
 ```
 bun scripts/produce-from-spec.mjs \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/dot-strip/spec-native.json \
-  /Users/rmdms/Sites/Professional/atelier/skills/chart-native/output-proof/dot-strip static
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/dot-strip/spec-native.json \
+  /Users/rmdms/Sites/Professional/splash/skills/chart-native/output-proof/dot-strip static
 ```
 
 ```

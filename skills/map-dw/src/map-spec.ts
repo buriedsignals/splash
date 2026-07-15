@@ -80,14 +80,14 @@ export interface ChoroplethMapSpec {
   /** CADRAGE delivery channel (Gate 1, Q3), same free-form field as ChartSpec.channel:
    *  fixes the static PNG export box (feed/square → 1:1, social/vertical → 9:16,
    *  web/article → 16:9, the default). Resolved fail-closed via the shared channel
-   *  model (skills/atelier/src/channel.ts); absent → article-web. Does not affect the
+   *  model (skills/splash/src/channel.ts); absent → article-web. Does not affect the
    *  interactive embed (that stays fluid). */
   channel?: string;
   /** Deliverable language (BCP-47, e.g. "fr", "fr-CH"). Sets the DW chart `language`, so
    *  Datawrapper localizes the legend + tooltip numbers — French groups thousands with a
    *  narrow no-break space ("17 600"), not the English comma. Absent → DW default (en-US). */
   lang?: string;
-  /** Newsroom house hue (#rrggbb), set by the profile merge (skills/atelier/src/brand-profile.ts).
+  /** Newsroom house hue (#rrggbb), set by the profile merge (skills/splash/src/brand-profile.ts).
    *  When present and `colorScale` is NOT given, the gradient is derived from it via `houseRamp`
    *  (skills/map-native/src/theme/house-ramp.ts) — a monotonic-luminance, CVD-safe sequential
    *  ramp of the house hue. An explicit colorScale always wins. */
@@ -421,7 +421,7 @@ export function validateMapSpec(
     // and Datawrapper offers no "label symbols by column" / "show values on symbols" option (the
     // "labels by column" feature is choropleth-only — verified against the Datawrapper Academy
     // "Customizing your symbol map" docs, which describe symbol labels as tooltip-only). map-dw
-    // is the STATIC map producer, and every atelier channel requires a claim-carrying static
+    // is the STATIC map producer, and every splash channel requires a claim-carrying static
     // deliverable (the social static, or the article-web a11y static fallback). So a map-dw
     // symbol map can ONLY ship mute, unlabeled circles — no place identifiable, no value
     // readable without hover — which violates the project rule "the data must be legible WITHOUT

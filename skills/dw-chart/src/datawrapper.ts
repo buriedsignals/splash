@@ -3,7 +3,7 @@ const API = "https://api.datawrapper.de/v3";
 function token(): string {
   const t = process.env.DATAWRAPPER_API_TOKEN;
   if (!t)
-    throw new Error("DATAWRAPPER_API_TOKEN is not set (see /atelier/.env)");
+    throw new Error("DATAWRAPPER_API_TOKEN is not set (see /splash/.env)");
   return t;
 }
 function auth(extra: Record<string, string> = {}): Record<string, string> {

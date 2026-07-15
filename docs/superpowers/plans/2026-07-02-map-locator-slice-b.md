@@ -22,8 +22,8 @@ conformance) is merged to main. This plan builds on it.
 - Runtime **Bun** always — never npm/node. Tests: `bun test`.
 - Code, comments, commit messages, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key lives in `atelier/.env` (gitignored) — never commit/log it. Render commands load it via
-  `set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a`.
+- MapTiler key lives in `splash/.env` (gitignored) — never commit/log it. Render commands load it via
+  `set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a`.
 - Frame-deterministic Remotion: no `Date.now`/`Math.random`/argless `new Date()`; map updates use
   `delayRender → jumpTo/setData/setPaintProperty → map.once("idle") → continueRender`; render with
   `--gl=angle --concurrency=1`.
@@ -352,7 +352,7 @@ Expected: clean tsc (apart from pre-existing react-dom TS2688); all tests pass.
 
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 for CFG in locator-few locator-many; do
   node -e "const fs=require('fs');fs.writeFileSync('/tmp/lb-$CFG.json',JSON.stringify({config:JSON.parse(fs.readFileSync('assets/sample-data/$CFG.json','utf8'))}))"
 done
@@ -420,7 +420,7 @@ Expected: clean; all pass.
 
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 for C in MapScrolly MapScrollySquare MapScrollyPortrait; do
   bunx remotion render remotion/src/index.ts $C /tmp/lb/few-$C.mp4 --gl=angle --concurrency=1 --timeout=120000 --props=/tmp/lb-locator-few.json
   bunx remotion render remotion/src/index.ts $C /tmp/lb/many-$C.mp4 --gl=angle --concurrency=1 --timeout=120000 --props=/tmp/lb-locator-many.json
@@ -466,7 +466,7 @@ git commit -m "feat(map-native): locator scrolly video (per-place/per-category) 
 Run: `cd skills/map-native && bun test` (all pass). Then confirm produce emits the locator video block
 end-to-end for one regime:
 ```bash
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bun scripts/produce.mjs assets/sample-data/locator-many.json /tmp/lb/prod all
 ```
 Expected: `PRODUCE_RESULT` with `reveal`, `story`, `scrolly` blocks (each `{landscape,square,portrait}`)

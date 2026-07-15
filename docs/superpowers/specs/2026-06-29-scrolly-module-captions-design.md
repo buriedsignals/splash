@@ -4,7 +4,7 @@
 **Status:** approved (brainstorming)
 **Scope:** make the scrolly an embeddable, self-contained MODULE: richer **data-tied** step captions
 (never an article excerpt) + module furniture (insight title + description + source) + conformance.
-Grounded in `docs/atelier/embeddable-module-best-practices.md`.
+Grounded in `docs/splash/embeddable-module-best-practices.md`.
 
 ## Goal
 
@@ -73,7 +73,7 @@ Extend `checkScrollyConformance` so an embeddable module must be self-contained:
 ### 4. Encode in the engine SKILL.md + the shared reference
 
 The `scrolly` SKILL.md gains a short "embeddable module" section pointing at
-`docs/atelier/embeddable-module-best-practices.md`: self-contained, data-tied captions (never article
+`docs/splash/embeddable-module-best-practices.md`: self-contained, data-tied captions (never article
 excerpts), title + description + source furniture, 3–6 steps. So future visual types inherit the rule.
 
 ## Out of scope

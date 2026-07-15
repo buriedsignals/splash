@@ -38,7 +38,7 @@ export interface ChoroplethData {
   regionKey: string;
   valueField: string;
   rows: Record<string, string | number>[];
-  // Newsroom house hue (set by the profile merge, skills/atelier/src/brand-profile.ts). When
+  // Newsroom house hue (set by the profile merge, skills/splash/src/brand-profile.ts). When
   // present and no explicit `palette` is chosen, the ramp is a derived house luminance ramp
   // (houseRamp) — CVD-safe by construction. An explicit palette always wins.
   brandHue?: string;

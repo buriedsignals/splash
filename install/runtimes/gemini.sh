@@ -18,7 +18,7 @@ runtime_install() {
     echo "Gemini CLI could not be installed. Install Node 20+, run 'bun add -g @google/gemini-cli' (or see https://geminicli.com/docs/get-started/installation/), then re-run this installer." >&2
     exit 1
   fi
-  # Surface Atelier's skills to Gemini's native Agent Skills discovery (~/.agents/skills).
+  # Surface Splash's skills to Gemini's native Agent Skills discovery (~/.agents/skills).
   link_agents_skills
 }
 

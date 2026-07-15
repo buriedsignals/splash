@@ -13,7 +13,7 @@
 - **Runtime:** Bun only — `bun`, `bunx`, `bun test`. Never `npm`/`npx`/`node`.
 - **Language:** all code, comments, commit messages in English.
 - **No attribution:** never mention Claude/Anthropic. No `Co-Authored-By`. Commit trailer (only if used) EXACTLY: `Claude-Session: https://claude.ai/code/session_01Paz87P3M49t27P9GksL246`
-- **Furniture standard** (from `docs/atelier/embeddable-module-best-practices.md`): insight title + description + source, each once + responsive. The `description` is the what/when/where line, distinct from the long `unit` (legend label) and short `valueUnit`.
+- **Furniture standard** (from `docs/splash/embeddable-module-best-practices.md`): insight title + description + source, each once + responsive. The `description` is the what/when/where line, distinct from the long `unit` (legend label) and short `valueUnit`.
 - **Responsive recipe**: `min()/clamp()/vw` inline; cap fixed overlays at `min(Npx, calc(100vw - gutter))`.
 - **Determinism (video):** pure function of `frame`; no `Date`/`Math.random`. **Key hygiene:** MapTiler key via env only; never hard-code/log it.
 
@@ -237,7 +237,7 @@ Run: `cd skills/map-native && bunx tsc --noEmit 2>&1 | grep -i "ChoroplethStory"
 
 - [ ] **Step 4: SKILL.md — module furniture note**
 
-Add a short note to `skills/map-native/SKILL.md` (near the conformance/overview section): every map module carries insight title + description + source, each once, with responsive overlays (`min()/clamp()/vw`); see `docs/atelier/embeddable-module-best-practices.md`. The scrolly inherits this via the shared config.
+Add a short note to `skills/map-native/SKILL.md` (near the conformance/overview section): every map module carries insight title + description + source, each once, with responsive overlays (`min()/clamp()/vw`); see `docs/splash/embeddable-module-best-practices.md`. The scrolly inherits this via the shared config.
 
 - [ ] **Step 5: Confirm dw-chart already conforms**
 

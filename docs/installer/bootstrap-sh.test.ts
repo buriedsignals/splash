@@ -68,7 +68,7 @@ test("runs the local configurator and does NOT write .env from caller env vars",
 test("acquires the repo by zip, installs the render engine, and makes a local launcher", () => {
   expect(sh).toContain("/archive/");
   expect(sh).toContain("playwright install chromium");
-  expect(sh).toContain("Launch Atelier.command");
+  expect(sh).toContain("Launch Splash.command");
 });
 
 test("keeps stderr on dependency install and guards each step (no silent dead-stop)", () => {
@@ -81,6 +81,6 @@ test("keeps stderr on dependency install and guards each step (no silent dead-st
 
 test("skips the configurator on a re-run that already has a verified .env", () => {
   expect(sh).toMatch(
-    /if \[ ! -f "\$DEST\/\.env" \] \|\| \[ "\$\{ATELIER_RECONFIGURE:-0\}" = "1" \]; then/,
+    /if \[ ! -f "\$DEST\/\.env" \] \|\| \[ "\$\{SPLASH_RECONFIGURE:-\$\{ATELIER_RECONFIGURE:-0\}\}" = "1" \]; then/,
   );
 });

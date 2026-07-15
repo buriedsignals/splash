@@ -15,7 +15,7 @@
 - **No attribution:** never mention Claude/Anthropic in any file, commit, or doc. No `Co-Authored-By`.
 - **Remotion determinism:** the animation MUST be a pure function of `frame` — never `Date.now()`, `Math.random()`, or `new Date()` in the Remotion path (they also throw in the workflow runtime). Camera is set with `map.jumpTo(...)` per frame, never async `flyTo`.
 - **Remotion flags:** render videos with `--gl=angle --concurrency=1` (a second worker racing the shared map instance corrupts frames).
-- **Key hygiene:** the MapTiler key comes from `REMOTION_MAPTILER_KEY` (Remotion) / `VITE_MAPTILER_KEY` (web), both gitignored in `/atelier/.env`. Never hard-code, commit, or log the key value.
+- **Key hygiene:** the MapTiler key comes from `REMOTION_MAPTILER_KEY` (Remotion) / `VITE_MAPTILER_KEY` (web), both gitignored in `/splash/.env`. Never hard-code, commit, or log the key value.
 - **Determinism in derivation:** ties resolve by ascending region-key order — no clock/random.
 - **Reveal-from-nothing:** the video is blank (fill-opacity 0) at `frame 0` (existing audit guard).
 
@@ -798,7 +798,7 @@ Render the real outputs and eyeball that the video now narrates (the operator's 
 
 - [ ] **Step 1: Run produce on the sample (all formats)**
 
-Run (the key must be present in the environment; sourced from `/atelier/.env`, never logged):
+Run (the key must be present in the environment; sourced from `/splash/.env`, never logged):
 ```bash
 cd skills/map-native && set -a && . ../../.env && set +a \
   && bun scripts/produce.mjs assets/sample-data/choropleth.json output-proof/choropleth all
@@ -831,4 +831,4 @@ git commit -m "chore(map-native): narrative video proof outputs (story replaces 
 - Build from the existing `ChoroplethReveal.tsx` — it already solves map-init, the world fetch via `staticFile`, the symbol-layer strip, and the `delayRender`/idle gate. The story component changes only what the spec's deltas describe (beats, camera, dim, overlays).
 - The `react-dom` `TS2688` typecheck error is pre-existing and unrelated — do not chase it; only ensure your new files add no NEW type errors.
 - Do not run the full browser `audit` (the live-tile basemap-fit audit) more than necessary — repeated back-to-back full runs hit MapTiler tile rate limits and produce flaky idle timeouts (a known minor). The story audit (`audit:story`) is render-free and deterministic; prefer it for the narrative gate.
-- Never commit or log the MapTiler key. Source `/atelier/.env` only in the shell, not into any file.
+- Never commit or log the MapTiler key. Source `/splash/.env` only in the shell, not into any file.

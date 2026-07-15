@@ -20,7 +20,7 @@ and scroll (this engine): one story, two outputs.
 ## Embeddable module — self-contained, data-tied, never article text
 
 A scrolly is a **module embedded into a newsroom's article** to support it — NOT the article itself, and
-NOT a transform of the whole article. So (grounded in `docs/atelier/embeddable-module-best-practices.md`):
+NOT a transform of the whole article. So (grounded in `docs/splash/embeddable-module-best-practices.md`):
 
 - **Captions are data-tied and self-contained** — derived from the data + the insight, NEVER pulled from
   the article (verbatim excerpts duplicate the prose and bloat the module; embeds also circulate out of
@@ -33,7 +33,7 @@ NOT a transform of the whole article. So (grounded in `docs/atelier/embeddable-m
   relative to EVERY entity it is compared to (a shipped beat caption claimed a value ranked "devant"
   two others while it was LOWER than both — the caption inverted the on-screen order). Auto-generated
   rank captions derive from the real sort; a journalist-edited caption or an explicit-`beats` `text`
-  gets the SAME check, and the orchestrator's render-review (atelier Gate 3a) re-verifies each step
+  gets the SAME check, and the orchestrator's render-review (splash Gate 3a) re-verifies each step
   caption against what the step visually shows.
 - **Each furniture element appears once**: the **insight title** in a persistent header, the
   **description** (what/when/where) as the intro step caption, the **source** in the footer. The on-map

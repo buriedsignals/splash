@@ -19,7 +19,7 @@ markers) — building ONLY the element's pinned format (single-format-produce-ex
 - **`interactive`** → the hosted embed (`publicUrl`) alone — no PNG is exported for it.
 - **`video` / `scrolly`** → **fail hard BEFORE any API call** (`map-dw cannot build format …` —
   animated maps are map-native's), both in `produceMap` itself and at the orchestrator dispatch
-  (`skills/atelier/src/adapters.ts`). Format/channel resolution runs before `createChart`, so a
+  (`skills/splash/src/adapters.ts`). Format/channel resolution runs before `createChart`, so a
   bad pin or garbled channel never leaves an orphaned published map behind.
 
 Datawrapper renders the geography; we apply best-practice (colorblind-safe sequential scale, WCAG
@@ -98,7 +98,7 @@ For animated/video maps use the map-video skills; for rich custom interactivity 
 | Mapping | `src/spec-to-map-metadata.ts` | MapSpec → DW metadata (colorscale-without-`stops` fix) |
 | Client | `../dw-chart/src/datawrapper.ts` | REUSED generic REST client (create/data/patch/publish/png) |
 | Dataless guard | `src/join-match.ts` | produce-time real join-match rate from live geometry; fails hard on a dataless join |
-| Orchestrator | `src/produce.ts` | `produceMap(spec, pngPath, {format?})` → `{chartId, embed, pngPath?, publicUrl}` — single-format (`static` default \| `interactive`; video/scrolly fail hard pre-API); channel-derived export box + render-size floor (shared `skills/atelier/src/channel.ts`) |
+| Orchestrator | `src/produce.ts` | `produceMap(spec, pngPath, {format?})` → `{chartId, embed, pngPath?, publicUrl}` — single-format (`static` default \| `interactive`; video/scrolly fail hard pre-API); channel-derived export box + render-size floor (shared `skills/splash/src/channel.ts`) |
 
 ## How it works (the shape)
 
@@ -167,7 +167,7 @@ render — only the sparse-subset fraction is checked mechanically.)
    (e.g. alpha-3 `DW_STATE_CODE`, not `ISO_A3`, on `world-2019`) — a wrong key ships a grey dataless
    map. Known basemaps' keys are recorded in `src/basemap-keys.ts` (validated offline); add a basemap
    there when you introduce it.
-2. `set -a; source /atelier/.env; set +a` (token).
+2. `set -a; source /splash/.env; set +a` (token).
 3. `produceMap(spec, 'out.png')` — static by default (owned PNG at the channel box);
    `produceMap(spec, 'out.png', { format: 'interactive' })` for the hosted embed alone.
 

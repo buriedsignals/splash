@@ -204,7 +204,7 @@ export type SymbolConfigShape = {
   cameraMode?: CameraMode;
   maxReveals?: number;
   filters?: MapFilter[];
-  // Newsroom house style (profile merge, skills/atelier/src/brand-profile.ts). brandHue is the
+  // Newsroom house style (profile merge, skills/splash/src/brand-profile.ts). brandHue is the
   // single symbol fill (else the default). An explicit choice is not modelled per-symbol, so the
   // house hue is the only override here.
   brandHue?: string;

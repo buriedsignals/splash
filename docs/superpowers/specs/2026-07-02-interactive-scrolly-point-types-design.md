@@ -127,7 +127,7 @@ config (point-based) ──► Scrolly.tsx
 - Runtime **Bun** always (never npm/node); tests `bun test`.
 - Code, comments, commits, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log the value; components read
+- MapTiler key in `splash/.env` (gitignored) — never commit/log the value; components read
   `import.meta.env.VITE_MAPTILER_KEY` and fail fast if absent.
 - Reuse the type geo cores + `deriveXStory` + `mapStoryToChapters` + the `ScrollySymbolMap` camera/step
   pattern; do not fork them. Uniform-cell invariant for hex-grid (colour = magnitude, never size).

@@ -22,7 +22,7 @@ scrolly are Slice B (they add `deriveDotDensityStory`), out of scope here.
 - Runtime **Bun** always — never npm/node. Tests: `bun test`.
 - Code, comments, commit messages, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key lives in `atelier/.env` (gitignored) — never commit or log it.
+- MapTiler key lives in `splash/.env` (gitignored) — never commit or log it.
 - Reuse: the choropleth region-join pattern (`src/choropleth-geo.ts`), `mainlandFeature`/`regionBounds`,
   `MapFrame`/`resolveMapFrame`, `resolveMapStyle`/`MAP_STYLES` + `QUALITATIVE` (`src/route-geo.ts`).
 - **Frame-determinism:** the scatter uses a seeded PRNG (never `Math.random`/`Date.now`) and is
@@ -703,7 +703,7 @@ Expected: clean tsc (apart from the pre-existing react-dom TS2688); all tests pa
 
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bun scripts/produce.mjs assets/sample-data/dot-density-uni.json /tmp/dd/uni static
 bun scripts/produce.mjs assets/sample-data/dot-density-multi.json /tmp/dd/multi static
 ```

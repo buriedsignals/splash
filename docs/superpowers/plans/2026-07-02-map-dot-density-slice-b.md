@@ -22,8 +22,8 @@ validation, conformance) is merged to main.
 - Runtime **Bun** always — never npm/node. Tests: `bun test`.
 - Code, comments, commits, branch names: **English**.
 - **No** Claude/Anthropic mention, **no** `Co-Authored-By`, **no** Claude-Session trailer anywhere.
-- MapTiler key in `atelier/.env` (gitignored). Render commands load it via
-  `set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a`.
+- MapTiler key in `splash/.env` (gitignored). Render commands load it via
+  `set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a`.
 - **Frame-determinism:** the dot GeoJSON is built ONCE (seeded `scatterInPolygon`) and held; camera
   animates per frame; no `Date.now`/`Math.random`/argless `new Date()`; render `--gl=angle --concurrency=1`.
 - **Uniform-dot invariant:** dot radius stays fixed (2px), never value-scaled, in the video too.
@@ -325,7 +325,7 @@ Expected: clean tsc (apart from pre-existing react-dom TS2688); all tests pass.
 
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 for CFG in dot-density-uni dot-density-multi; do
   node -e "const fs=require('fs');fs.writeFileSync('/tmp/ddb-$CFG.json',JSON.stringify({config:JSON.parse(fs.readFileSync('assets/sample-data/$CFG.json','utf8'))}))"
 done
@@ -390,7 +390,7 @@ Expected: clean; all pass.
 
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bunx remotion render remotion/src/index.ts MapScrolly /tmp/ddb/uni-MapScrolly.mp4 --gl=angle --concurrency=1 --timeout=120000 --props=/tmp/ddb-dot-density-uni.json
 bunx remotion render remotion/src/index.ts MapScrolly /tmp/ddb/multi-MapScrolly.mp4 --gl=angle --concurrency=1 --timeout=120000 --props=/tmp/ddb-dot-density-multi.json
 ```
@@ -431,7 +431,7 @@ git commit -m "feat(map-native): dot-density scrolly video via MapScrolly dispat
 
 Run: `cd skills/map-native && bun test` (all pass). Then confirm produce emits the dot-density video blocks:
 ```bash
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bun scripts/produce.mjs assets/sample-data/dot-density-multi.json /tmp/ddb/prod all
 ```
 Expected: `PRODUCE_RESULT` with `reveal`, `story`, `scrolly` blocks (each `{landscape,square,portrait}`)

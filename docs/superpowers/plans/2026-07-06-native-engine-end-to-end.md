@@ -14,7 +14,7 @@
 - Code, comments, identifiers, commit messages, branch names: **English only**.
 - **Zero `any`, zero `@ts-ignore`.** The two existing `// eslint-disable-next-line @typescript-eslint/no-explicit-any` lines on the registries may be preserved verbatim when moved; introduce no new ones.
 - **No vendor attribution** in any artifact (no `Co-Authored-By`, no "Generated with", no Claude/Anthropic mention in commits/docs/code).
-- `bun run check` (root) MUST be green at the END of every task (tsc on `skills/{atelier,chart-native,map-native,scrolly}` + `bun test` on the 10 suites).
+- `bun run check` (root) MUST be green at the END of every task (tsc on `skills/{splash,chart-native,map-native,scrolly}` + `bun test` on the 10 suites).
 - The canonical type **id is the render-path key** (`grouped`, `stacked`, `diverging`, `pyramid` — NOT the display names). The mapper returns `type` = this id; `nativeType` in a `NativeSpec` is this id.
 - TDD: write the failing test first, watch it fail, implement the minimum, watch it pass, commit.
 - Branch already exists: `feat/native-engine-couture`. Commit there; do not merge to `main` within this plan.

@@ -22,8 +22,8 @@ test("windows install command is a key-free irm|iex of the ps1 bootstrap", () =>
 test("launchers are key-free, self-heal on mac, never a .ps1", () => {
   const mac = launcherContents("mac");
   const win = launcherContents("windows");
-  expect(launcherFilename("mac")).toBe("atelier-setup.command");
-  expect(launcherFilename("windows")).toBe("atelier-setup.cmd");
+  expect(launcherFilename("mac")).toBe("splash-setup.command");
+  expect(launcherFilename("windows")).toBe("splash-setup.cmd");
   expect(mac.startsWith("#!/usr/bin/env bash")).toBe(true);
   expect(mac).toContain("xattr -d com.apple.quarantine");
   expect(mac).toContain("curl -fsSL");

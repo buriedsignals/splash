@@ -1,7 +1,7 @@
 # Live e2e proof — the whole new loop runs end to end
 
 > Run date: 2026-06-23. Branch `feat/suggester-article-reading`. Real Datawrapper API
-> (token from `/atelier/.env`). The test chart was published, confirmed live, then **deleted**.
+> (token from `/splash/.env`). The test chart was published, confirmed live, then **deleted**.
 
 This proves the full new loop the cut introduces:
 

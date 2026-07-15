@@ -1,8 +1,8 @@
 # Tranche verticale n°1 — Datawrapper chart (end-to-end)
 
-> Première tranche de validation. But : faire tourner **toute la boucle Atelier** sur le cas le moins cher
+> Première tranche de validation. But : faire tourner **toute la boucle Splash** sur le cas le moins cher
 > et le plus représentatif, pour de-risquer ② avant de scaler la KB. Base : la demo « Datawrapper chart »
-> du site Atelier. Aligné sur la spec-parapluie (sans tiers, fichier possédé).
+> du site Splash. Aligné sur la spec-parapluie (sans tiers, fichier possédé).
 
 ## But
 
@@ -62,7 +62,7 @@ Le fichier statique possédé (SVG/PNG) + le snippet embed. Rien hébergé chez 
 4. Les 2 références KB sont autonomes (<500 lignes) et créditées.
 
 ## Dépendances & risques — LEVÉS par spike du 2026-06-23 (vrai token)
-- **Token Datawrapper** : présent et valide, dans `/atelier/.env` (gitignored), `DATAWRAPPER_API_TOKEN`. Compte gratuit.
+- **Token Datawrapper** : présent et valide, dans `/splash/.env` (gitignored), `DATAWRAPPER_API_TOKEN`. Compte gratuit.
 - **Tier d'export — résolu** : sur compte gratuit, `GET /v3/charts/{id}/export/png` → **HTTP 200** ✅ ;
   `export/svg` et `export/pdf` → **HTTP 401** (plan payant). **Donc le fallback possédé = PNG.** Plan B
   Playwright **inutile**. SVG/PDF = feature payante (à signaler, non bloquant).
@@ -76,6 +76,6 @@ Le fichier statique possédé (SVG/PNG) + le snippet embed. Rien hébergé chez 
 - L'installeur, le ② comme produit complet, le website.
 
 ## Où ça vit
-`/atelier` : `knowledge/references/{chart-selection,design-conformance}.md` + `skills/dw-chart/`.
+`/splash` : `knowledge/references/{chart-selection,design-conformance}.md` + `skills/dw-chart/`.
 Sources KB : corpus `vizualisation-skill` (FT vocab, data-to-viz, design-principles) — créditées.
 </content>

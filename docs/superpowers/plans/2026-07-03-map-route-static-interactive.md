@@ -20,8 +20,8 @@ sample `assets/sample-data/route.json` (type route, 603-pt river, 2 territories,
 
 - Runtime **Bun** always; tests `bun test`. English everywhere. **No** Claude/Anthropic mention, **no**
   `Co-Authored-By`, **no** Claude-Session trailer.
-- MapTiler key in `atelier/.env` (gitignored) — never commit/log it;
-  `set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a`.
+- MapTiler key in `splash/.env` (gitignored) — never commit/log it;
+  `set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a`.
 - Reuse `computeRoute`/`RouteConfig`/`RouteLayout`/`QUALITATIVE`/`resolveMapStyle` (`src/route-geo.ts`) and
   `RouteReveal.tsx`'s visual vocabulary (electric line: glow `#49C6FF` width~11 opacity .32 blur 6 → core
   width~3; territory fills + border trails + labels). Do NOT fork them; do NOT change the video path.
@@ -104,7 +104,7 @@ git commit -m "feat(map-native): route config validation + conformance guard"
 - [ ] **Step 5: Render-verify static + interactive, light + dark.** COMMIT first, then:
 ```bash
 cd skills/map-native
-set -a; source /Users/rmdms/Sites/Professional/atelier/.env; set +a
+set -a; source /Users/rmdms/Sites/Professional/splash/.env; set +a
 bun scripts/produce.mjs assets/sample-data/route.json /tmp/route/dark static
 # a light variant: make a copy with mapStyle dataviz-light to check both
 node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('assets/sample-data/route.json','utf8'));c.mapStyle='dataviz-light';fs.writeFileSync('/tmp/route-light.json',JSON.stringify(c))"

@@ -77,7 +77,7 @@ base `de` / `it` today.)
 4. **Format (Gates -1→4):** read `<repo-root>/knowledge/references/formats/format-selection.md`.
    **The channel sets the format default FIRST (GATE -1) — there is no single global "static-first" rule.**
    On the two social channels static-first governs (the only escalation available is to video). On
-   **article-web the channel default is interactive** (`skills/atelier/src/channel.ts`
+   **article-web the channel default is interactive** (`skills/splash/src/channel.ts`
    `article-web.interactiveDefault: true`), always shipped with a self-contained static HTML (no-JS) a11y
    fallback — see the channel block below. The format-selection "escalation" conditions (large/multi-series
    data · a personal-data hook · web-only distribution) are **signals of how strongly a visual benefits from
@@ -86,7 +86,7 @@ base `de` / `it` today.)
    fallback guarantees a11y either way.
 
    **Channel restricts the format set FIRST — before any gate below.** The confirmed distribution channel
-   (`skills/atelier/src/channel.ts` `Channel`) hard-constrains which formats are even reachable, before the
+   (`skills/splash/src/channel.ts` `Channel`) hard-constrains which formats are even reachable, before the
    gates below choose within that set:
    - **social-vertical / social-feed ⇒ format ∈ {static image, video} — NEVER interactive or scrolly.** A
      social post/story has no host page for a live component; do not propose one for these channels.
@@ -106,10 +106,10 @@ base `de` / `it` today.)
    PROPOSITION step is what surfaces this to the journalist, vetoable).
 
    **Commit to exactly ONE `format`.** The emitted spec carries a single `VisualFormat`
-   (`static|interactive|video|scrolly`, `skills/atelier/src/channel.ts`) chosen from `allowedFormats(channel)`
+   (`static|interactive|video|scrolly`, `skills/splash/src/channel.ts`) chosen from `allowedFormats(channel)`
    — never the whole allowed set. `interactiveDefault` (above) only steers WHICH single format article-web
    defaults to; it is not a fallback list to emit alongside the choice. This single pinned format is what
-   PROPOSITION (`skills/atelier/SKILL.md` Gate 2) announces for the journalist's veto, and what
+   PROPOSITION (`skills/splash/SKILL.md` Gate 2) announces for the journalist's veto, and what
    `assertFormatAllowed(channel, format)` re-checks at produce time.
 
    **Map element type FIRST — before the format ladder.** Branch on what the data is:
@@ -118,7 +118,7 @@ base `de` / `it` today.)
      static/interactive. `map-dw` CANNOT produce a claim-carrying static symbol map: Datawrapper draws the
      proportional circles with values on HOVER only and offers no "label symbols by column" option (verified
      against the Datawrapper Academy "Customizing your symbol map" docs), so its owned static PNG ships mute,
-     unlabeled circles — no place identifiable, no value readable without interaction. Every atelier channel
+     unlabeled circles — no place identifiable, no value readable without interaction. Every splash channel
      requires a claim-carrying static (the social static, or the article-web a11y static fallback), so a
      valued point map MUST use `map-native`, whose proportional-symbol renderer directly labels the top-N
      circles by name + value (conformance asserts `labeled`). `validateMapSpec` now **rejects** a `map-dw`
@@ -180,7 +180,7 @@ base `de` / `it` today.)
 
 ## How it decides
 
-1. Read the shared KB `<repo-root>/knowledge/references/chart-selection.md` (at the atelier repo root, not under this skill) → map **intent → DW type** (intent first, simplest type that serves it).
+1. Read the shared KB `<repo-root>/knowledge/references/chart-selection.md` (at the splash repo root, not under this skill) → map **intent → DW type** (intent first, simplest type that serves it).
 2. Read `<repo-root>/knowledge/references/design-conformance.md` (shared KB, repo root) → fill the conformance fields.
 3. Emit a **ChartSpec** (the exact shape `dw-chart/src/chart-spec.ts` validates):
    `{ type, title (the insight, sentence case), intro?, data (CSV), subject (the topic hint, e.g. "solar"),
@@ -188,7 +188,7 @@ base `de` / `it` today.)
    highlight? (bar-family accent — see below), seriesLabels? (machine column → human name), valueLabels?,
    numberFormat?, source?,
    channel (the CADRAGE Q3 answer — one of the structured channels `social-vertical | social-feed |
-   article-web` from `skills/atelier/src/channel.ts`; sizes the static export: social-feed→square,
+   article-web` from `skills/splash/src/channel.ts`; sizes the static export: social-feed→square,
    social-vertical→9:16, article-web→16:9. `normalizeChannel` still accepts legacy free text, e.g. "feed"
    or "stories", and maps it to the same enum),
    altInsight (WCAG: the insight, not the structure) }`.
@@ -462,11 +462,11 @@ Field notes:
   than shipping it generic or incomplete. The only legitimate name-only case is the honest prose fallback
   below, which names no separate dataset to link.
 - `channel`: the CADRAGE Q3 answer — the same structured channels as `ChartSpec.channel`
-  (`social-vertical | social-feed | article-web`, `skills/atelier/src/channel.ts`). It sizes the static
+  (`social-vertical | social-feed | article-web`, `skills/splash/src/channel.ts`). It sizes the static
   PNG export box (social-feed→1080x1080 square, social-vertical→1080x1920 9:16, article-web→1200x675)
   and the render-size floor verifies the delivered PNG against it. Emit it explicitly: the spine also
   injects the proposal's confirmed channel at dispatch (`withProposalChannel` in
-  `skills/atelier/src/adapters.ts`, proposal wins), but a spec run directly against `produceMap` has no
+  `skills/splash/src/adapters.ts`, proposal wins), but a spec run directly against `produceMap` has no
   proposal to inherit from and would otherwise silently size against the article-web default.
 - `colorScale` (optional): an array of `{color: hex, position: 0..1}` stops, ascending. If omitted,
   `map-dw` applies the default blue sequential scale. Choose the stops from a subject-fit ramp per the
@@ -524,7 +524,7 @@ force a map. Fall back to a **sorted bar chart** (`d3-bars`, `sort:"desc"`) and 
 output (cite the basemap-fallback rule).
 
 **Produce:** route the `MapSpec` to `map-dw`'s producer via the `MapSpec → spec-to-map-metadata →
-produceMap` seam. The Datawrapper token comes from `/atelier/.env` (`DATAWRAPPER_API_TOKEN`) — it is
+produceMap` seam. The Datawrapper token comes from `/splash/.env` (`DATAWRAPPER_API_TOKEN`) — it is
 **never logged**.
 
 ### map-native (interactive / video choropleth map)
@@ -614,7 +614,7 @@ every marker/point. Those numbers MUST come from ONE of:
 1. the **supplied data** — the newsroom's table has explicit `lon`/`lat` (or `x`/`y` / `longitude`/
    `latitude`) columns; read them straight through; OR
 2. a **real deterministic geocoding step** — an actual geocoder run (e.g. a MapTiler geocoding API call
-   with the place names, from `/atelier/.env`'s `MAPTILER_API_KEY`), whose returned coordinates you use.
+   with the place names, from `/splash/.env`'s `MAPTILER_API_KEY`), whose returned coordinates you use.
    A geocode is a real lookup, not a recollection.
 
 You must **NEVER hand-type a coordinate from the model's own knowledge** ("Gare du Nord is at ~2.35,
@@ -673,7 +673,7 @@ path — `kind:"category"` on a marker attribute; `kind:"range"` on a numeric va
 **Produce:** write the config to a temp JSON, then run from the `skills/map-native/` directory:
 `bun scripts/produce.mjs <config.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s (landscape, square, portrait). The MapTiler key comes from
-`/atelier/.env` (`MAPTILER_API_KEY`) — it is **never logged**.
+`/splash/.env` (`MAPTILER_API_KEY`) — it is **never logged**.
 
 ### scrolly (scroll-driven geographic guided narrative — Gate 3)
 
@@ -732,7 +732,7 @@ standard). The scrolly config IS a choropleth config — the same validator appl
 
 **Produce:** write the config to a temp JSON, then run from the `skills/scrolly/` directory:
 `bun scripts/produce.mjs <config.json> <outDir>` → produces a single-file `scrolly.html`.
-The MapTiler key comes from `/atelier/.env` (`MAPTILER_API_KEY`) — it is **never logged**.
+The MapTiler key comes from `/splash/.env` (`MAPTILER_API_KEY`) — it is **never logged**.
 
 #### Chart scrolly (line / bar / scatter ONLY)
 

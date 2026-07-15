@@ -4,7 +4,7 @@
 
 **Goal:** Give the export "code source" delivery form a genuinely runnable React source bundle for the `map-native` and `scrolly` engines (`bun install && bun run build` reproduces the visual from zero), replacing today's bare interactive-HTML copy.
 
-**Architecture:** A shared, engine-agnostic generator (`skills/atelier/scripts/bundle-source.mjs`) traces the entry module's import closure with a custom static-import tracer, copies exactly the reached files + assets **preserving the repo-relative `skills/<name>/{src,assets}` layout** (so existing relative imports resolve unchanged), derives deps from the closure's bare specifiers (self-correcting — remotion IS on the interactive map path), and emits a root Vite scaffold that bakes `config.json`. Each producer drops a `source-manifest.json` marker; `export-code.mjs` routes map/scrolly `code-source` to the generator. chart-native keeps its proven `export-source.mjs` path.
+**Architecture:** A shared, engine-agnostic generator (`skills/splash/scripts/bundle-source.mjs`) traces the entry module's import closure with a custom static-import tracer, copies exactly the reached files + assets **preserving the repo-relative `skills/<name>/{src,assets}` layout** (so existing relative imports resolve unchanged), derives deps from the closure's bare specifiers (self-correcting — remotion IS on the interactive map path), and emits a root Vite scaffold that bakes `config.json`. Each producer drops a `source-manifest.json` marker; `export-code.mjs` routes map/scrolly `code-source` to the generator. chart-native keeps its proven `export-source.mjs` path.
 
 **Tech Stack:** Bun, TypeScript, `bun:test` (TDD), Vite 8 + `@vitejs/plugin-react` + `vite-plugin-singlefile`, MapTiler SDK, node ESM `.mjs` scripts.
 
@@ -27,26 +27,26 @@
 ## File Structure
 
 **Create:**
-- `skills/atelier/scripts/bundle-source.mjs` — the shared generator (tracer + dep derivation + scaffold emitters + CLI).
-- `skills/atelier/scripts/bundle-source.test.ts` — unit tests for the pure helpers + CLI assembly test (no network).
-- `skills/atelier/scripts/verify-source-bundle.mjs` — opt-in from-zero build+render harness (not in the gate).
+- `skills/splash/scripts/bundle-source.mjs` — the shared generator (tracer + dep derivation + scaffold emitters + CLI).
+- `skills/splash/scripts/bundle-source.test.ts` — unit tests for the pure helpers + CLI assembly test (no network).
+- `skills/splash/scripts/verify-source-bundle.mjs` — opt-in from-zero build+render harness (not in the gate).
 
 **Modify:**
 - `skills/map-native/scripts/produce.mjs` — emit `source-manifest.json` + `config.json` in the interactive case.
 - `skills/map-native/scripts/produce.mjs` (or a tiny new `skills/map-native/src/source-manifest.ts`) — export a pure `mapSourceManifest(config)` helper for unit testing.
 - `skills/scrolly/scripts/produce.mjs` — emit `source-manifest.json` + `config.json`; export a pure `scrollySourceManifest(config)` helper.
-- `skills/atelier/src/export-guard.ts:122-128` — tighten `assertDelivered(code-source)` to require `package.json` + `vite.config.ts`.
-- `skills/atelier/scripts/export-code.mjs` — add a `hasSourceManifest` branch invoking the generator; relabel `emitProposal` form a.
-- `skills/atelier/scripts/export-code.test.ts` — cover routing + labeling.
-- Docs: `skills/atelier/SKILL.md`, `CLAUDE.md`, `docs/atelier/CHANGELOG.md`, `export-code.mjs` header.
+- `skills/splash/src/export-guard.ts:122-128` — tighten `assertDelivered(code-source)` to require `package.json` + `vite.config.ts`.
+- `skills/splash/scripts/export-code.mjs` — add a `hasSourceManifest` branch invoking the generator; relabel `emitProposal` form a.
+- `skills/splash/scripts/export-code.test.ts` — cover routing + labeling.
+- Docs: `skills/splash/SKILL.md`, `CLAUDE.md`, `docs/splash/CHANGELOG.md`, `export-code.mjs` header.
 
 ---
 
 ## Task 1: Static-import tracer + closure (`bundle-source.mjs` core)
 
 **Files:**
-- Create: `skills/atelier/scripts/bundle-source.mjs`
-- Test: `skills/atelier/scripts/bundle-source.test.ts`
+- Create: `skills/splash/scripts/bundle-source.mjs`
+- Test: `skills/splash/scripts/bundle-source.test.ts`
 
 **Interfaces:**
 - Produces: `stripQuery(spec: string): string`, `importSpecifiers(src: string): string[]`, `resolveRelative(fromFileAbs: string, spec: string): string | null`, `traceClosure(entryAbs: string): { files: string[]; bareSpecifiers: string[] }`.
@@ -54,7 +54,7 @@
 - [ ] **Step 1: Write failing tests for the tracer helpers**
 
 ```ts
-// skills/atelier/scripts/bundle-source.test.ts
+// skills/splash/scripts/bundle-source.test.ts
 import { describe, it, expect } from "bun:test";
 import { join } from "node:path";
 import {
@@ -64,7 +64,7 @@ import {
   traceClosure,
 } from "./bundle-source.mjs";
 
-const REPO = join(import.meta.dir, "..", "..", ".."); // skills/atelier/scripts → repo root
+const REPO = join(import.meta.dir, "..", "..", ".."); // skills/splash/scripts → repo root
 const MAP_MOUNT = join(REPO, "skills", "map-native", "src", "mount.tsx");
 
 describe("stripQuery", () => {
@@ -127,13 +127,13 @@ describe("traceClosure — map-native interactive entry", () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd skills/atelier && bun test scripts/bundle-source.test.ts`
+Run: `cd skills/splash && bun test scripts/bundle-source.test.ts`
 Expected: FAIL — `Cannot find module "./bundle-source.mjs"` (file not created yet).
 
 - [ ] **Step 3: Implement the tracer**
 
 ```js
-// skills/atelier/scripts/bundle-source.mjs
+// skills/splash/scripts/bundle-source.mjs
 // EXPORT (form 1 — "Code source") generator for the map-native / scrolly engines: assemble a
 // SELF-CONTAINED, runnable Vite project for ONE interactive/scrolly element so a technical
 // journalist can `bun install && bun run build` and rebuild/customise it from source.
@@ -160,7 +160,7 @@ import { dirname, join, resolve, relative, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
-export const REPO_ROOT = resolve(scriptDir, "..", "..", ".."); // skills/atelier/scripts → repo root
+export const REPO_ROOT = resolve(scriptDir, "..", "..", ".."); // skills/splash/scripts → repo root
 
 const RESOLVE_EXTS = [".ts", ".tsx", ".js", ".jsx", ".json", ".geojson"];
 
@@ -225,14 +225,14 @@ export function traceClosure(entryAbs) {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd skills/atelier && bun test scripts/bundle-source.test.ts`
+Run: `cd skills/splash && bun test scripts/bundle-source.test.ts`
 Expected: PASS (all `traceClosure`/`importSpecifiers`/`resolveRelative`/`stripQuery` tests green).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add skills/atelier/scripts/bundle-source.mjs skills/atelier/scripts/bundle-source.test.ts
-git commit -m "feat(atelier): static-import closure tracer for the source-bundle generator"
+git add skills/splash/scripts/bundle-source.mjs skills/splash/scripts/bundle-source.test.ts
+git commit -m "feat(splash): static-import closure tracer for the source-bundle generator"
 ```
 
 ---
@@ -240,8 +240,8 @@ git commit -m "feat(atelier): static-import closure tracer for the source-bundle
 ## Task 2: Dependency derivation (`deriveDeps` + `packageName`)
 
 **Files:**
-- Modify: `skills/atelier/scripts/bundle-source.mjs`
-- Test: `skills/atelier/scripts/bundle-source.test.ts`
+- Modify: `skills/splash/scripts/bundle-source.mjs`
+- Test: `skills/splash/scripts/bundle-source.test.ts`
 
 **Interfaces:**
 - Consumes: `traceClosure(...).bareSpecifiers`.
@@ -250,7 +250,7 @@ git commit -m "feat(atelier): static-import closure tracer for the source-bundle
 - [ ] **Step 1: Write failing tests**
 
 ```ts
-// append to skills/atelier/scripts/bundle-source.test.ts
+// append to skills/splash/scripts/bundle-source.test.ts
 import { packageName, deriveDeps } from "./bundle-source.mjs";
 
 describe("packageName", () => {
@@ -292,13 +292,13 @@ describe("deriveDeps", () => {
 
 - [ ] **Step 2: Run to verify fail**
 
-Run: `cd skills/atelier && bun test scripts/bundle-source.test.ts`
+Run: `cd skills/splash && bun test scripts/bundle-source.test.ts`
 Expected: FAIL — `packageName`/`deriveDeps` not exported.
 
 - [ ] **Step 3: Implement**
 
 ```js
-// append to skills/atelier/scripts/bundle-source.mjs
+// append to skills/splash/scripts/bundle-source.mjs
 
 // The bundle always needs these dev deps (Vite scaffold + types), version-resolved from the
 // same skills so the lockfile-resolved pins never drift.
@@ -360,14 +360,14 @@ export function deriveDeps(bareSpecifiers, skillPkgs) {
 
 - [ ] **Step 4: Run to verify pass**
 
-Run: `cd skills/atelier && bun test scripts/bundle-source.test.ts`
+Run: `cd skills/splash && bun test scripts/bundle-source.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add skills/atelier/scripts/bundle-source.mjs skills/atelier/scripts/bundle-source.test.ts
-git commit -m "feat(atelier): derive bundle deps from the traced closure (version-union, fail-loud)"
+git add skills/splash/scripts/bundle-source.mjs skills/splash/scripts/bundle-source.test.ts
+git commit -m "feat(splash): derive bundle deps from the traced closure (version-union, fail-loud)"
 ```
 
 ---
@@ -375,8 +375,8 @@ git commit -m "feat(atelier): derive bundle deps from the traced closure (versio
 ## Task 3: Scaffold emitters (vite.config / index.html / tsconfig / README / .env.example)
 
 **Files:**
-- Modify: `skills/atelier/scripts/bundle-source.mjs`
-- Test: `skills/atelier/scripts/bundle-source.test.ts`
+- Modify: `skills/splash/scripts/bundle-source.mjs`
+- Test: `skills/splash/scripts/bundle-source.test.ts`
 
 **Interfaces:**
 - Produces: `bundleViteConfig(engine: "map-native"|"scrolly"): string`, `bundleIndexHtml(engine: string, title: string): string`, `bundleTsconfig(): string`, `bundleReadme(engine: string, title: string): string`, `bundleEnvExample(): string`.
@@ -384,7 +384,7 @@ git commit -m "feat(atelier): derive bundle deps from the traced closure (versio
 - [ ] **Step 1: Write failing tests**
 
 ```ts
-// append to skills/atelier/scripts/bundle-source.test.ts
+// append to skills/splash/scripts/bundle-source.test.ts
 import {
   bundleViteConfig,
   bundleIndexHtml,
@@ -424,13 +424,13 @@ describe("scaffold emitters", () => {
 
 - [ ] **Step 2: Run to verify fail**
 
-Run: `cd skills/atelier && bun test scripts/bundle-source.test.ts`
+Run: `cd skills/splash && bun test scripts/bundle-source.test.ts`
 Expected: FAIL — emitters not exported.
 
 - [ ] **Step 3: Implement**
 
 ```js
-// append to skills/atelier/scripts/bundle-source.mjs
+// append to skills/splash/scripts/bundle-source.mjs
 
 // The bundle's Vite config. Reuses each engine's real behaviour but sources the baked config
 // from ./config.json (NOT process.env.CONFIG), so `vite build` alone rebuilds the visual.
@@ -547,14 +547,14 @@ key before building.
 
 - [ ] **Step 4: Run to verify pass**
 
-Run: `cd skills/atelier && bun test scripts/bundle-source.test.ts`
+Run: `cd skills/splash && bun test scripts/bundle-source.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add skills/atelier/scripts/bundle-source.mjs skills/atelier/scripts/bundle-source.test.ts
-git commit -m "feat(atelier): source-bundle scaffold emitters (vite/index/tsconfig/readme/env)"
+git add skills/splash/scripts/bundle-source.mjs skills/splash/scripts/bundle-source.test.ts
+git commit -m "feat(splash): source-bundle scaffold emitters (vite/index/tsconfig/readme/env)"
 ```
 
 ---
@@ -562,8 +562,8 @@ git commit -m "feat(atelier): source-bundle scaffold emitters (vite/index/tsconf
 ## Task 4: Generator CLI (`main`) + assembly test on a real map config
 
 **Files:**
-- Modify: `skills/atelier/scripts/bundle-source.mjs`
-- Test: `skills/atelier/scripts/bundle-source.test.ts`
+- Modify: `skills/splash/scripts/bundle-source.mjs`
+- Test: `skills/splash/scripts/bundle-source.test.ts`
 
 **Interfaces:**
 - Consumes: all Task 1-3 exports.
@@ -575,7 +575,7 @@ git commit -m "feat(atelier): source-bundle scaffold emitters (vite/index/tsconf
 Uses map-native's committed sample config so no producer run is needed.
 
 ```ts
-// append to skills/atelier/scripts/bundle-source.test.ts
+// append to skills/splash/scripts/bundle-source.test.ts
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync, existsSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -635,13 +635,13 @@ function walk(dir) {
 
 - [ ] **Step 2: Run to verify fail**
 
-Run: `cd skills/atelier && bun test scripts/bundle-source.test.ts`
+Run: `cd skills/splash && bun test scripts/bundle-source.test.ts`
 Expected: FAIL — no `BUNDLE_SOURCE_RESULT` (CLI `main` not implemented).
 
 - [ ] **Step 3: Implement the CLI main**
 
 ```js
-// append to skills/atelier/scripts/bundle-source.mjs
+// append to skills/splash/scripts/bundle-source.mjs
 
 const ENGINE_ENTRY = {
   "map-native": "skills/map-native/src/mount.tsx",
@@ -738,14 +738,14 @@ Note: replace the two `require("node:path")` uses with the already-imported `bas
 
 - [ ] **Step 4: Run to verify pass**
 
-Run: `cd skills/atelier && bun test scripts/bundle-source.test.ts`
+Run: `cd skills/splash && bun test scripts/bundle-source.test.ts`
 Expected: PASS — the map bundle assembles, layout preserved, deps include remotion, no dangling import.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add skills/atelier/scripts/bundle-source.mjs skills/atelier/scripts/bundle-source.test.ts
-git commit -m "feat(atelier): bundle-source CLI — closure copy + scaffold for map-native/scrolly"
+git add skills/splash/scripts/bundle-source.mjs skills/splash/scripts/bundle-source.test.ts
+git commit -m "feat(splash): bundle-source CLI — closure copy + scaffold for map-native/scrolly"
 ```
 
 ---
@@ -786,7 +786,7 @@ Expected: FAIL — module not found.
 
 ```ts
 // skills/map-native/src/source-manifest.ts
-// The entry marker the EXPORT "code source" generator (skills/atelier/scripts/bundle-source.mjs)
+// The entry marker the EXPORT "code source" generator (skills/splash/scripts/bundle-source.mjs)
 // reads to build a runnable bundle. Mirrors chart-native's native-source.json but engine-tagged.
 export function mapSourceManifest(config: { type?: string }): {
   engine: "map-native";
@@ -927,8 +927,8 @@ git commit -m "feat(scrolly): emit source-manifest.json + config.json for the co
 ## Task 7: Tighten `assertDelivered(code-source)` to require a real bundle
 
 **Files:**
-- Modify: `skills/atelier/src/export-guard.ts:122-128`
-- Test: `skills/atelier/src/export-guard.test.ts` (append; create if absent)
+- Modify: `skills/splash/src/export-guard.ts:122-128`
+- Test: `skills/splash/src/export-guard.test.ts` (append; create if absent)
 
 **Interfaces:**
 - Consumes/Produces: unchanged `assertDelivered(files, { format, form })` signature; stricter `code-source` rule.
@@ -936,7 +936,7 @@ git commit -m "feat(scrolly): emit source-manifest.json + config.json for the co
 - [ ] **Step 1: Write failing tests**
 
 ```ts
-// append to skills/atelier/src/export-guard.test.ts (create with the import header if missing)
+// append to skills/splash/src/export-guard.test.ts (create with the import header if missing)
 import { describe, it, expect } from "bun:test";
 import { assertDelivered } from "./export-guard";
 
@@ -962,12 +962,12 @@ describe("assertDelivered — code-source now requires a runnable bundle", () =>
 
 - [ ] **Step 2: Run to verify fail**
 
-Run: `cd skills/atelier && bun test src/export-guard.test.ts`
+Run: `cd skills/splash && bun test src/export-guard.test.ts`
 Expected: FAIL — the lone-html case does not throw yet (current rule only checks non-empty).
 
 - [ ] **Step 3: Implement the tightened rule**
 
-Replace `skills/atelier/src/export-guard.ts:122-128` with:
+Replace `skills/splash/src/export-guard.ts:122-128` with:
 
 ```ts
   if (form === "code-source") {
@@ -985,16 +985,16 @@ Replace `skills/atelier/src/export-guard.ts:122-128` with:
   }
 ```
 
-- [ ] **Step 4: Run to verify pass + full atelier suite**
+- [ ] **Step 4: Run to verify pass + full splash suite**
 
-Run: `cd skills/atelier && bun test src/export-guard.test.ts && bun test`
-Expected: PASS — new rule holds; no regression in the rest of the atelier suite (chart-native's bundle already carries package.json + vite.config.ts, so its code-source delivery still passes).
+Run: `cd skills/splash && bun test src/export-guard.test.ts && bun test`
+Expected: PASS — new rule holds; no regression in the rest of the splash suite (chart-native's bundle already carries package.json + vite.config.ts, so its code-source delivery still passes).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add skills/atelier/src/export-guard.ts skills/atelier/src/export-guard.test.ts
-git commit -m "feat(atelier): code-source delivery must be a runnable bundle (package.json + vite.config)"
+git add skills/splash/src/export-guard.ts skills/splash/src/export-guard.test.ts
+git commit -m "feat(splash): code-source delivery must be a runnable bundle (package.json + vite.config)"
 ```
 
 ---
@@ -1002,8 +1002,8 @@ git commit -m "feat(atelier): code-source delivery must be a runnable bundle (pa
 ## Task 8: Route map/scrolly `code-source` through the generator in `export-code.mjs`
 
 **Files:**
-- Modify: `skills/atelier/scripts/export-code.mjs` (`hasNativeSource` region ~191-196; code-source branch ~235-281; `emitProposal` form a ~367-404; header comment)
-- Test: `skills/atelier/scripts/export-code.test.ts`
+- Modify: `skills/splash/scripts/export-code.mjs` (`hasNativeSource` region ~191-196; code-source branch ~235-281; `emitProposal` form a ~367-404; header comment)
+- Test: `skills/splash/scripts/export-code.test.ts`
 
 **Interfaces:**
 - Consumes: `bundle-source.mjs` CLI (`BUNDLE_SOURCE_RESULT`), `source-manifest.json` in `outDir`.
@@ -1033,7 +1033,7 @@ In `main`, beside `hasNativeSource` (~191-196), add:
 - [ ] **Step 2: Write a failing routing test**
 
 ```ts
-// append to skills/atelier/scripts/export-code.test.ts
+// append to skills/splash/scripts/export-code.test.ts
 import { describe, it, expect } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from "node:fs";
@@ -1072,7 +1072,7 @@ describe("export-code — map-native code-source builds a runnable bundle", () =
 
 - [ ] **Step 3: Run to verify fail**
 
-Run: `cd skills/atelier && bun test scripts/export-code.test.ts`
+Run: `cd skills/splash && bun test scripts/export-code.test.ts`
 Expected: FAIL — code-source currently copies the lone html (no `m1-source` dir).
 
 - [ ] **Step 4: Implement the branch**
@@ -1120,9 +1120,9 @@ In `emitProposal` (`export-code.mjs:367-404`), the `forms.a` currently branches 
 
 And in the human relay block (`export-code.mjs:424-429`), the `forms.a.kind === "react-source-bundle"` branch already prints the runnable-bundle line — no change needed there.
 
-- [ ] **Step 6: Run to verify pass + full atelier suite**
+- [ ] **Step 6: Run to verify pass + full splash suite**
 
-Run: `cd skills/atelier && bun test scripts/export-code.test.ts && bun test`
+Run: `cd skills/splash && bun test scripts/export-code.test.ts && bun test`
 Expected: PASS — map code-source assembles `m1-source`; chart-native + hosted-DW paths unchanged.
 
 - [ ] **Step 7: Update the header comment**
@@ -1132,8 +1132,8 @@ In `export-code.mjs` header (lines 13-18), update the `code-source` description 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add skills/atelier/scripts/export-code.mjs skills/atelier/scripts/export-code.test.ts
-git commit -m "feat(atelier): route map-native/scrolly code-source through bundle-source (runnable bundle)"
+git add skills/splash/scripts/export-code.mjs skills/splash/scripts/export-code.test.ts
+git commit -m "feat(splash): route map-native/scrolly code-source through bundle-source (runnable bundle)"
 ```
 
 ---
@@ -1141,7 +1141,7 @@ git commit -m "feat(atelier): route map-native/scrolly code-source through bundl
 ## Task 9: Opt-in from-zero build+render verification harness
 
 **Files:**
-- Create: `skills/atelier/scripts/verify-source-bundle.mjs`
+- Create: `skills/splash/scripts/verify-source-bundle.mjs`
 
 **Interfaces:**
 - CLI: `bun verify-source-bundle.mjs` — produces representative elements, bundles them, runs `bun install && bun run build`, headless-renders `dist/index.html`, asserts the map renders (no missing-key throw, a canvas/map node present). Requires `VITE_MAPTILER_KEY` in env. **Not** wired into `bun run check`.
@@ -1159,10 +1159,10 @@ The script, for each representative case `{ engine, type/config }`:
 Representative set: `map-native` choropleth, `map-native` symbol, one geo-heavy (`route` or `cartogram`), and one map-scrolly. Structural-only (skip step 5 render) for the remaining map types.
 
 ```js
-// skills/atelier/scripts/verify-source-bundle.mjs
+// skills/splash/scripts/verify-source-bundle.mjs
 // OPT-IN from-zero proof (real network install + live MapTiler tiles) that a map/scrolly
 // code-source bundle rebuilds and renders. NOT part of `bun run check` (keeps the gate
-// network-light). Run manually: VITE_MAPTILER_KEY=… bun skills/atelier/scripts/verify-source-bundle.mjs
+// network-light). Run manually: VITE_MAPTILER_KEY=… bun skills/splash/scripts/verify-source-bundle.mjs
 // … (implementation drives produce.mjs → bundle-source.mjs → bun install → bun run build →
 //    playwright render; prints PASS/FAIL per case, writes proof PNGs under a temp proof dir.)
 ```
@@ -1171,14 +1171,14 @@ Representative set: `map-native` choropleth, `map-native` symbol, one geo-heavy 
 
 - [ ] **Step 2: Run it for real (the definition-of-done proof)**
 
-Run: `VITE_MAPTILER_KEY=$VITE_MAPTILER_KEY bun skills/atelier/scripts/verify-source-bundle.mjs`
+Run: `VITE_MAPTILER_KEY=$VITE_MAPTILER_KEY bun skills/splash/scripts/verify-source-bundle.mjs`
 Expected: PASS for choropleth, symbol, the geo-heavy type, and the map-scrolly — each `dist/index.html` renders a map (proof PNGs written). Capture the output in the commit message / CHANGELOG.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add skills/atelier/scripts/verify-source-bundle.mjs
-git commit -m "test(atelier): opt-in from-zero build+render proof for map/scrolly source bundles"
+git add skills/splash/scripts/verify-source-bundle.mjs
+git commit -m "test(splash): opt-in from-zero build+render proof for map/scrolly source bundles"
 ```
 
 ---
@@ -1186,18 +1186,18 @@ git commit -m "test(atelier): opt-in from-zero build+render proof for map/scroll
 ## Task 10: Docs + gate + backlog reconciliation
 
 **Files:**
-- Modify: `skills/atelier/SKILL.md` (export section — describe the now-runnable map/scrolly code-source form)
+- Modify: `skills/splash/SKILL.md` (export section — describe the now-runnable map/scrolly code-source form)
 - Modify: `CLAUDE.md` (fix `:121` "15 déférés" → **14**; mark option-3 item 3 done; add a État-courant bullet)
-- Modify: `docs/atelier/CHANGELOG.md` (dated session entry)
+- Modify: `docs/splash/CHANGELOG.md` (dated session entry)
 
 - [ ] **Step 1: Run the full gate**
 
 Run: `bun run check`
-Expected: 20/20 checks pass (the new tests live under existing TEST_DIRS `skills/atelier`, `skills/map-native`, `skills/scrolly` — no new gate row, no network in the gate).
+Expected: 20/20 checks pass (the new tests live under existing TEST_DIRS `skills/splash`, `skills/map-native`, `skills/scrolly` — no new gate row, no network in the gate).
 
 - [ ] **Step 2: Update SKILL.md**
 
-In `skills/atelier/SKILL.md`, in the EXPORT/form section, note that form a (Code source) now yields a runnable React bundle for map-native/scrolly too (was chart-native only), with the MapTiler-key + online caveat. Keep it to the existing style/length.
+In `skills/splash/SKILL.md`, in the EXPORT/form section, note that form a (Code source) now yields a runnable React bundle for map-native/scrolly too (was chart-native only), with the MapTiler-key + online caveat. Keep it to the existing style/length.
 
 - [ ] **Step 3: Reconcile CLAUDE.md**
 
@@ -1206,13 +1206,13 @@ In `skills/atelier/SKILL.md`, in the EXPORT/form section, note that form a (Code
 
 - [ ] **Step 4: CHANGELOG entry**
 
-Add a dated `2026-07-13` entry to `docs/atelier/CHANGELOG.md` summarising: the closure-driven `bundle-source.mjs`, the two producer markers, the export-code routing + tightened `assertDelivered`, and the from-zero render proof results (paste the verify output).
+Add a dated `2026-07-13` entry to `docs/splash/CHANGELOG.md` summarising: the closure-driven `bundle-source.mjs`, the two producer markers, the export-code routing + tightened `assertDelivered`, and the from-zero render proof results (paste the verify output).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add skills/atelier/SKILL.md CLAUDE.md docs/atelier/CHANGELOG.md
-git commit -m "docs(atelier): runnable code-source bundle for map-native/scrolly shipped; backlog reconciled"
+git add skills/splash/SKILL.md CLAUDE.md docs/splash/CHANGELOG.md
+git commit -m "docs(splash): runnable code-source bundle for map-native/scrolly shipped; backlog reconciled"
 ```
 
 ---
