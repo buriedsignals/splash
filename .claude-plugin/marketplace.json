@@ -1,11 +1,11 @@
 {
-  "name": "atelier-dev",
+  "name": "splash-dev",
   "owner": {
     "name": "Remy Dumas"
   },
   "plugins": [
     {
-      "name": "atelier",
+      "name": "splash",
       "source": "."
     }
   ]
