@@ -1,51 +1,50 @@
 ---
 # ─────────────────────────────────────────────────────────────────────────
-#  Profil de rédaction — rempli UNE FOIS, réutilisé sur CHAQUE visuel
-#  Copiez ce fichier en `NEWSROOM-PROFILE.md` à la racine de votre projet,
-#  puis remplacez les valeurs par les vôtres. Tout est optionnel.
+#  Newsroom profile — filled in ONCE, reused on EVERY visual
+#  Copy this file to `NEWSROOM-PROFILE.md` at the root of your project,
+#  then replace the values with your own. Everything is optional.
 # ─────────────────────────────────────────────────────────────────────────
 
-palette:                      # les couleurs de votre charte ; la 1re = principale
-  - "#0A5C36"                 # vert maison (couleur principale des visuels)
-  - "#C8102E"                 # une 2e couleur de série
-accent: "#C8102E"             # couleur d'accent (mise en avant)
+palette:                      # your brand colours; the 1st one is the primary
+  - "#0A5C36"                 # house green (primary colour of the visuals)
+  - "#C8102E"                 # a 2nd series colour
+accent: "#C8102E"             # accent colour (used to highlight)
 
-source:                       # attribution par défaut sous chaque visuel
-  name: "Heidi.news"          # le nom affiché (« Source : Heidi.news »)
-  url: "https://heidi.news"   # lien optionnel
+source:                       # default attribution shown under each visual
+  name: "Heidi.news"          # the displayed name ("Source: Heidi.news")
+  url: "https://heidi.news"   # optional link
 
-lang: "fr"                    # langue par défaut des livrables (fr, en, de, it…)
-                              # le crédit suit automatiquement la langue (« Source : » en fr)
+lang: "fr"                    # default language of the deliverables (fr, en, de, it…)
+                              # the credit follows the language automatically ("Source:" / "Source :")
 
-# theme: "dark"              # thème des CARTES : décommentez pour un fond sombre sur chaque carte
-                              # (rédaction au thème sombre). Absent = fond clair (défaut).
-                              # Un choix par-carte prime toujours.
+# theme: "dark"              # MAP theme: uncomment for a dark ground on every map
+                              # (dark-themed newsroom). Absent = light ground (default).
+                              # A per-map choice always wins.
 ---
 
-# Comment remplir ce profil
+# How to fill in this profile
 
-Ce fichier définit le **style maison** que Splash réutilise sur tous vos visuels, pour ne pas
-avoir à le redonner à chaque fois. Chaque visuel peut toujours **surcharger** une valeur au cas
-par cas — ce que vous mettez ici sert de **défaut**.
+This file defines the **house style** that Splash reuses across all your visuals, so you don't
+have to restate it each time. Any visual can still **override** a value case by case — what you
+put here serves as the **default**.
 
-- **palette** — les couleurs de votre charte graphique, en codes hexadécimaux (`#RRGGBB`). La
-  première est la couleur **principale**. Astuce : votre graphiste ou votre charte les connaît ;
-  sinon, un outil comme « pipette de couleur » vous les donne depuis votre logo.
-  > ⚠️ Si une couleur maison est difficile à distinguer pour un daltonien, Splash la **garde
-  > quand même** (c'est votre marque) et vous le **signale** à la relecture — à vous de trancher.
+- **palette** — your brand colours, as hex codes (`#RRGGBB`). The first one is the **primary**
+  colour. Tip: your designer or brand guidelines already know them; otherwise a colour-picker
+  tool reads them straight off your logo.
+  > ⚠️ If a house colour is hard to distinguish for a colour-blind reader, Splash **keeps it
+  > anyway** (it's your brand) and **flags it** at review time — the call is yours.
 
-- **accent** — la couleur que vous utilisez pour **mettre en avant** un élément.
+- **accent** — the colour you use to **highlight** an element.
 
-- **source** — le nom de votre rédaction (ou de la source de données) affiché sous le visuel, et
-  un lien optionnel. Si un article cite une autre source, celle-ci **prend le dessus**.
+- **source** — the name of your newsroom (or of the data source) shown under the visual, plus an
+  optional link. If an article cites another source, that one **takes precedence**.
 
-- **lang** — la langue par défaut de vos publications (`fr`, `en`, `de`, `it`…). Elle règle
-  automatiquement le format du crédit (« Source : » en français, « Source: » en anglais).
+- **lang** — the default language of your publications (`fr`, `en`, `de`, `it`…). It automatically
+  sets the credit format ("Source :" in French, "Source:" in English).
 
-- **theme** — le fond de vos **cartes** : `dark` pour un fond sombre sur chaque carte (une rédaction
-  au thème sombre le règle une fois), `light` (défaut) pour un fond clair. Un choix par-carte prime
-  toujours. _(S'applique aux cartes map-native et map-scrolly ; le fond sombre Datawrapper arrivera
-  plus tard.)_
+- **theme** — the ground of your **maps**: `dark` for a dark ground on every map (a dark-themed
+  newsroom sets it once), `light` (default) for a light ground. A per-map choice always wins.
+  _(Applies to map-native and map-scrolly maps; the Datawrapper dark ground will come later.)_
 
-_Couleurs, source, langue et thème de carte sont pris en charge aujourd'hui. Un gabarit de crédit
-personnalisé, le logo et la police de caractères arriveront plus tard._
+_Colours, source, language and map theme are supported today. A custom credit template, the logo
+and the typeface will come later._

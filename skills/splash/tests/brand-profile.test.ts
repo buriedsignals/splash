@@ -72,19 +72,19 @@ describe("parseBrandProfile", () => {
 
 describe("parseNewsroomMarkdown", () => {
   const md = `---
-palette:                    # la 1re = principale
-  - "#0A5C36"               # vert maison
+palette:                    # the 1st is primary
+  - "#0A5C36"               # house green
   - "#C8102E"
 accent: "#C8102E"
 source:
   name: "Heidi.news"
   url: "https://heidi.news"
 lang: "fr"
-credit: "Source : {name}"   # gabarit
+credit: "Source : {name}"   # template
 ---
 
-# Comment remplir
-- palette : ...
+# How to fill in
+- palette: ...
 `;
 
   it("parses the frontmatter into a BrandProfile, stripping comments but keeping quoted hex", () => {
