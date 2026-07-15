@@ -69,6 +69,15 @@ if (!process.env.VITE_MAPTILER_KEY || !process.env.REMOTION_MAPTILER_KEY) {
   }
 }
 
+// Mirror one MapTiler key onto the other when only one is set: the two ALWAYS hold the SAME MapTiler
+// key — Vite exposes only `VITE_`-prefixed vars to the web bundle, Remotion only `REMOTION_`-prefixed
+// vars to the video composition, so the same key must appear under both prefixes. The installer
+// writes both from one input; this covers a hand-edited `.env` that sets only one — the web AND the
+// video build then both get the key from a single line. `||=` so an empty value ("KEY=") also falls
+// back rather than shadowing the other with an empty string.
+process.env.REMOTION_MAPTILER_KEY ||= process.env.VITE_MAPTILER_KEY;
+process.env.VITE_MAPTILER_KEY ||= process.env.REMOTION_MAPTILER_KEY;
+
 // The fixed 8-byte PNG file signature (RFC 2083 / ISO 15948 §5.2).
 const PNG_SIGNATURE = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,

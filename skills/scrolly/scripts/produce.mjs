@@ -20,7 +20,9 @@ if (!process.env.VITE_MAPTILER_KEY) {
   try {
     const lines = readFS(rootEnv, "utf8").split("\n");
     for (const line of lines) {
-      const m = line.match(/^VITE_MAPTILER_KEY\s*=\s*(.+)$/);
+      // Accept EITHER prefix — the two hold the same MapTiler key (Vite vs Remotion prefix), so a
+      // .env that sets only REMOTION_MAPTILER_KEY still satisfies the scrolly's (Vite) web build.
+      const m = line.match(/^(?:VITE|REMOTION)_MAPTILER_KEY\s*=\s*(.+)$/);
       if (m) { process.env.VITE_MAPTILER_KEY = m[1].trim(); break; }
     }
   } catch {
