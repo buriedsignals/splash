@@ -10,6 +10,7 @@ import {
   computeChoropleth,
   type ChoroplethData,
 } from "../../map-native/src/choropleth-geo";
+import { deriveFurniture, bgIsDark } from "../../chart-native/src/core/tokens";
 import { deriveMapStory, type Beat } from "../../map-native/src/map-story";
 import { formatLocaleNumber } from "../../map-native/src/core/locale";
 import { NO_DATA_COLOR } from "../../map-native/src/theme/colors";
@@ -50,6 +51,9 @@ export interface ScrollyMapConfig extends ChoroplethData {
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   mapStyle?: string;
+  /** newsroom house ground (#rrggbb) — the hover popup furniture derives from it (like the map
+   *  static/interactive furniture), instead of a fixed dark preset. */
+  themeBg?: string;
   // brandHue is already carried by ChoroplethData (drives computeChoropleth's derived house
   // ramp) — brandPalette is added here so the profile merge can set both without a type error.
   brandPalette?: string[];
@@ -119,6 +123,27 @@ export const ScrollyMap: React.FC<{
   const [mapState, setMapState] = useState<MapState | null>(null);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+
+  // Hover-popup furniture DERIVED from the newsroom house ground (config.themeBg) rather than a fixed
+  // dark preset: on a themed dark ground the popup panel is that ground lifted toward white (a raised,
+  // harmonised surface) with the ground's derived ink. Falls back to the fixed dark preset only for an
+  // un-themed dark basemap (dark mapStyle, no house theme). Light default → no override (default popup).
+  const popup = (() => {
+    if (!bgIsDark(config.themeBg)) {
+      // no house ground → keep the legacy behaviour: fixed dark panel on a dark basemap, else none.
+      return dark
+        ? { bg: "rgba(28,28,31,0.95)", ink: "#f4f4f5", strong: "#ffffff" }
+        : null;
+    }
+    const f = deriveFurniture(config.themeBg);
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(f.bg.slice(i, i + 2), 16));
+    const lift = (v: number) => Math.round(v + (255 - v) * 0.1);
+    return {
+      bg: `rgba(${lift(r)},${lift(g)},${lift(b)},0.95)`,
+      ink: f.ink,
+      strong: "#ffffff",
+    };
+  })();
 
   // ---------------------------------------------------------------------------
   // Init map ONCE — ref guard prevents double-init in React Strict Mode.
@@ -389,10 +414,10 @@ export const ScrollyMap: React.FC<{
           border-radius: 4px;
         }
         ${
-          dark
-            ? `.maplibregl-popup-content { background: rgba(28,28,31,0.95) !important; color: #f4f4f5 !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.14) !important; }
-        .maplibregl-popup-content strong { color: #ffffff !important; }
-        .maplibregl-popup-tip { border-top-color: rgba(28,28,31,0.95) !important; border-bottom-color: rgba(28,28,31,0.95) !important; }`
+          popup
+            ? `.maplibregl-popup-content { background: ${popup.bg} !important; color: ${popup.ink} !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.14) !important; }
+        .maplibregl-popup-content strong { color: ${popup.strong} !important; }
+        .maplibregl-popup-tip { border-top-color: ${popup.bg} !important; border-bottom-color: ${popup.bg} !important; }`
             : ""
         }
       `}</style>
