@@ -234,31 +234,46 @@ Branch:
 
 ### 4. PROPOSITION — GATE 2 (guided path only)
 
-For each `suggest-article` opportunity, invoke `suggest-chart` **as a real Skill call** (never guess
-the element/format/producer yourself — that re-decides what a sub-skill already decides and skips its
-KB-grounded guardrails) to get its routing decision. Present the ProposalSet × `suggest-chart` routing
-as plain-language lines — for each opportunity: what it shows, which visual, why.
+For each `suggest-article` opportunity, invoke `suggest-chart` **as a real Skill call** (never
+guess the element/format/producer yourself — that re-decides what a sub-skill already decides and
+skips its KB-grounded guardrails). Since the canonical 12-step flow (2026-07-16) it answers in TWO
+stages, and the presentation is BATCHED:
 
-**Announce the reconciled `{format, size, sub-format}` — vetoable.** After routing, state in plain
-language what the CADRAGE Q3 channel + `suggest-chart`'s routing land on for THIS opportunity, and let
-the journalist veto or change it before moving on — e.g. « un chart INTERACTIF, responsive,
-explore-libre — calé sur ton article web ; on part là-dessus ou tu changes ? » or « une image PORTRAIT
-(9:16) pour ta Story — ok ? ». This is a statement of the already-routed decision offered for veto, not
-a fresh options menu — and since the CADRAGE channel question (Q3) set only the ALLOWED SET (never a
-format), this announce is the FIRST and ONLY place the single format is surfaced, so channel and format
-never double-ask. **Hard rule surfaced here too:** a non-article/embed channel can only land on
-image or video — never interactive or scrolly; if the journalist asks for an interactive on a social
-channel, say so and point back to the CADRAGE Q3 channel pick rather than silently escalating.
+**Stage 1 — candidates, all opportunities, ONE batched message.** For every opportunity,
+`suggest-chart` returns its reachable candidates — charts AND maps — each with its editorial
+why ("why it can be interesting" for THIS claim), the first one recommended. Reachable = a
+mapper exists × the data shape fits × every deterministic guardrail passes × the channel
+(known since CADRAGE Q6) allows at least one of its formats — a barred candidate NEVER
+appears. An engine that fails preflight (C2) is annotated, never hidden. Present ALL
+opportunities' candidate lists in ONE batched message — never a per-opportunity question loop
+— and let the journalist answer per opportunity (pick a candidate, or « aucun » = veto; a
+vetoed opportunity emits `no-chart` with the reason). Each kept opportunity remains its OWN
+accept decision and its OWN `accepted.json` entry with its OWN confirmedTakeaway — the
+batching is presentation, never a merged decision.
 
-**The accepted spec pins exactly ONE `format`.** `suggest-chart` commits to a single `VisualFormat`
-(`static|interactive|video|scrolly`) from `allowedFormats(channel)` — never the whole allowed set — and
-THIS is the `{format}` announced above for veto; the journalist may change it here, but to another single
-member of `allowedFormats(channel)`, not to a list. `interactiveDefault` (`skills/splash/src/channel.ts`)
-still steers `suggest-chart`'s default pick to interactive on article-web — it only sets the default, not
-a fallback set. Once accepted, that one format is what `accepted.json` carries (5b) and what flows to
-PRODUCTION; `produce-all` applies `assertFormatAllowed(channel, format)` (`skills/splash/src/channel.ts`)
-as the produce-time guard that the pinned format is actually a member of the channel's allowed set — no
-new gate, the check reuses PROPOSITION's own decision.
+**Stage 2 — one spec per kept opportunity.** For each choice, `suggest-chart` emits the full
+validated spec. The format is **derived from channel × type** (social ⇒ static or video at
+the channel's size; article-web ⇒ interactive by default) and announced for veto in the same
+breath — « un chart colonnes INTERACTIF, responsive, calé sur ton canal article web — on part
+là-dessus ou tu le veux en image ? ». An explicit journalist format signal (« une image
+statique », « pour le print ») WINS over the default. The accepted spec pins exactly ONE
+`format`; `assertFormatAllowed(channel, format)` re-checks it at produce time, unchanged.
+
+**The pinned `format` mechanics are unchanged.** `suggest-chart` commits to a single `VisualFormat`
+(`static|interactive|video|scrolly`) from `allowedFormats(channel)` — never the whole allowed set —
+and THIS is the `{format}` announced above for veto; the journalist may change it here, but to
+another single member of `allowedFormats(channel)`, not to a list. `interactiveDefault`
+(`skills/splash/src/channel.ts`) still steers `suggest-chart`'s default pick to interactive on
+article-web — it only sets the default, not a fallback set. Once accepted, that one format is what
+`accepted.json` carries (5b) and what flows to PRODUCTION; `produce-all` applies
+`assertFormatAllowed(channel, format)` (`skills/splash/src/channel.ts`) as the produce-time guard
+that the pinned format is actually a member of the channel's allowed set — no new gate, the check
+reuses PROPOSITION's own decision. Since the CADRAGE channel question (Q6) set only the ALLOWED SET
+(never a format), the Stage-2 announce is the FIRST and ONLY place the single format is surfaced, so
+channel and format never double-ask. **Hard rule surfaced here too:** a non-article/embed channel
+can only land on image or video — never interactive or scrolly; if the journalist asks for an
+interactive on a social channel, say so and point back to the CADRAGE Q6 channel pick rather than
+silently escalating.
 
 **Narrative sub-format — who picks it reuses the CADRAGE branch:**
 - **interactive** → the sub-format is **explore-libre** (pan/zoom/hover) vs **scrolly** (sequential).
@@ -308,7 +323,7 @@ journalist actually wants.** For the article-web channel, `suggest-chart` routin
 That default is NOT a mandate: an explicit journalist format signal ("a static image", "a static chart",
 "just an image", "pour le print") WINS over it — pin `static`, never interactive. **Print is the
 strongest such signal**: when the STATED destination is print (the journalist answered (c) at CADRAGE
-Q3 NAMING the print destination — print is a sub-case of that channel, the pick alone does not imply
+Q6 NAMING the print destination — print is a sub-case of that channel, the pick alone does not imply
 it — or says the piece is print-bound at any point), pin `static` — a printed page cannot run
 an interactive or a video, so `interactiveDefault` never applies to it. Since the single-format
 redesign there is NO auto no-JS `static.html` produced alongside an interactive (a11y = choosing the
@@ -716,7 +731,26 @@ completion — a pure thanks/goodbye with no new request ("Merci, tout est en or
 thanks") — send AT MOST ONE brief closing message and treat the session as ENDED: no new questions, no
 re-engagement, no repeated farewells, and no echoing further goodbyes back (trading "Parfait, à bientôt."
 / "À bientôt !" variants turn after turn is noise, not service). A message that carries ANY new request
-alongside the thanks is NOT a close — handle the request instead.
+alongside the thanks is NOT a close — handle the request instead. (The step-12 other-format offer
+below is made WITH the handover, BEFORE any close — the journalist declining it, or a pure thanks
+after it, is what closes the session.)
+
+### Step 12 — offer another format (proactive, after EVERY export)
+
+Once an element is exported, OFFER another format of the same element — « tu la veux aussi en
+vidéo pour Instagram, ou en image pour le print ? » — the journalist doesn't have to know to
+ask (canonical step 12). On a yes:
+- re-ask ONLY the channel/format pin for the new target (one line, or infer + confirm-back
+  when the ask names it — « une vidéo Instagram » ⇒ social-feed/video);
+- append a NEW `accepted.json` entry: `id` = `<original-id>-<format>` (NEW id ⇒
+  `produce-all`'s per-id `freshOutDir` can never wipe the first delivery); `spec`,
+  `confirmedTakeaway`, `provenance`/`confirmedTable`, `sourceHint` copied VERBATIM (the
+  duplicate-takeaway guard, GUARD 3b, sanctions this ONE twin shape — a `<id>`/`<id>-<format>`
+  pair — because it is the SAME element re-formatted, not a second element);
+- PRODUCTION → Gate 3 → EXPORT run as any cycle (a fresh render is never pre-approved).
+No re-CADRAGE, no re-selection. The single-format model is untouched: each cycle produces
+exactly ONE pinned format — « chaque graphique aura plusieurs formats » = short journalist
+cycles, never a batch.
 
 ## Gates
 
