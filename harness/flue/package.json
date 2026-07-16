@@ -4,7 +4,8 @@
   "type": "module",
   "dependencies": {
     "@flue/runtime": "1.0.0-beta.9",
-    "@flue/cli": "1.0.0-beta.9"
+    "@flue/cli": "1.0.0-beta.9",
+    "@earendil-works/pi-ai": "^"
   },
   "devDependencies": {
     "@types/bun": "1.3.14"
