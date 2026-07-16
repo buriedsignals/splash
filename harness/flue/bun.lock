@@ -5,7 +5,7 @@
     "": {
       "name": "splash-flue-harness",
       "dependencies": {
-        "@earendil-works/pi-ai": "^",
+        "@earendil-works/pi-ai": "^0.80.7",
         "@flue/cli": "1.0.0-beta.9",
         "@flue/runtime": "1.0.0-beta.9",
       },
