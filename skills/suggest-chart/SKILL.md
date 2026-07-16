@@ -186,7 +186,7 @@ base `de` / `it` today.)
    baseColor (a subject-fit Okabe-Ito hue — see Colour below), seriesColors? (multi-series: series → hue),
    highlight? (bar-family accent — see below), seriesLabels? (machine column → human name), valueLabels?,
    numberFormat?, source?,
-   channel (the CADRAGE Q3 answer — one of the structured channels `social-vertical | social-feed |
+   channel (the CADRAGE Q6 answer, asked LAST — one of the structured channels `social-vertical | social-feed |
    article-web` from `skills/splash/src/channel.ts`; sizes the static export: social-feed→square,
    social-vertical→9:16, article-web→16:9. `normalizeChannel` still accepts legacy free text, e.g. "feed"
    or "stories", and maps it to the same enum),
@@ -415,7 +415,7 @@ identify the path).
   "altInsight": "<the insight — WCAG alt, same wording as title>",
   "unit": "<the value's short unit as a literal suffix, e.g. ' mm' / '%' / ' €' — see the unit rule below>",
   "source": { "name": "<honest source>", "url": "<its real URL>" },
-  "channel": "<the CADRAGE Q3 channel — social-vertical | social-feed | article-web>"
+  "channel": "<the CADRAGE Q6 channel — social-vertical | social-feed | article-web>"
 }
 ```
 
@@ -460,7 +460,7 @@ Field notes:
   for the specific dataset/page reference (free text, collecting name + the specific URL together) rather
   than shipping it generic or incomplete. The only legitimate name-only case is the honest prose fallback
   below, which names no separate dataset to link.
-- `channel`: the CADRAGE Q3 answer — the same structured channels as `ChartSpec.channel`
+- `channel`: the CADRAGE Q6 answer — the same structured channels as `ChartSpec.channel`
   (`social-vertical | social-feed | article-web`, `skills/splash/src/channel.ts`). It sizes the static
   PNG export box (social-feed→1080x1080 square, social-vertical→1080x1920 9:16, article-web→1200x675)
   and the render-size floor verifies the delivered PNG against it. Emit it explicitly: the spine also

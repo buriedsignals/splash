@@ -12,7 +12,7 @@
 
 ## GATE -1 — CHANNEL FIRST (constrains the allowed-format set, before anything else)
 
-The confirmed distribution channel (CADRAGE Q3) hard-restricts which formats are even eligible for a
+The confirmed distribution channel (confirmed as the last CADRAGE question, Q6) hard-restricts which formats are even eligible for a
 given piece — this gate runs BEFORE the escalation ladder in GATE 0→5, not after it. Code source of
 truth: `skills/splash/src/channel.ts` (`CHANNELS`, `allowedFormats`, `isFormatAllowed`). Exactly three
 channels:
