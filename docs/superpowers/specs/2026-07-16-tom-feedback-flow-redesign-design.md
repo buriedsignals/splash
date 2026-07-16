@@ -173,11 +173,15 @@ DNA (image scrolly). The suggester only knows data visuals.
 
 ### Design
 
-- **New engine skill** in the canonical self-contained format: the journalist provides **their
-  images + captions/beats**; Splash orchestrates a crossfade scrolly, reusing the existing
-  `skills/scrolly` mechanism (orchestrator piloting a renderer; furniture inherited per the
-  engine-furniture rule). Splash generates no images — editorial intent stays with the
-  journalist.
+- **The engine is already half-built — resume it, don't redesign it.** A validated design exists
+  (`docs/superpowers/specs/2026-07-10-image-scrolly-design.md`, written with Tom's scope decision
+  "Splash formats images, never generates them") plus a phase-1 plan
+  (`docs/superpowers/plans/2026-07-10-image-scrolly.md`, 7 tasks, delivered: the
+  `skills/image-native` data contract — `ImageStory` schema + conformance + tests, registered in
+  the root gate). What remains is phase 2: the deterministic producers (`prep-images`, static
+  key-frame, `ScrollyImage.tsx` in `skills/scrolly`), the `suggest-image` orchestration skill
+  (vision for matching/ordering ONLY; caption words come from the article), and splash routing.
+  The journalist provides **their images + article**; Splash formats, orders (vetoable), renders.
 - **Suggester recognition rule**: narrative text block (place, process, before/after) without
   sufficient tabular data → image-scrolly candidate in the ranked list (C4), with an explicit
   note of what the journalist must supply. The honest-data guard stays for charts, but it now
@@ -199,10 +203,13 @@ scrolly are not. Annotation grounding is dw-chart's separate y-domain tripwire
 
 ### Design
 
-- **Extend GUARD 4 to map paths**: read the value domain from the map spec's data values
-  (GeoJSON properties / joined values) instead of bailing on non-CSV data. Same two checks
-  (years vs time axis where applicable, values exceeding the max).
-- **Cover chart-native annotations** with a y-domain tripwire mirroring dw-chart's.
+- **Extend GUARD 4 to map-native**: its configs carry `rows: Record<string, string|number>[]` +
+  `valueField` (`choropleth-geo.ts`), not CSV — read the value domain from `rows[valueField]`
+  instead of bailing. Same value-exceeds-max check. (`map-dw`'s `MapSpec.data` IS CSV text per
+  the adapters contract, so GUARD 4 likely already bites there — prove it with a test rather
+  than assume either way.)
+- **chart-native**: no `annotations` field exists on `NativeSpec`; its narrative `beats` are
+  already anchor-validated fail-loud (`narrativeBeatErrors`). Nothing to add there.
 - **Document what exists**: `docs/splash/guardrails.md` — the list of scripted guards
   (claim-grounding, annotation y-domain, beat captions, guardrail-parity, channel/format gates,
   contrast/label-fit snaps…) with what each catches. Tom's ask reveals the guards are invisible
@@ -246,6 +253,6 @@ programme (`feat/tom-feedback-spec` is the spec branch; implementation branches 
   presentation; pin only after choice.
 - C5: engine self-contained format checks + scrolly furniture inheritance; suggester proposes it
   only once shipped.
-- C6: GUARD 4 map-path coverage tests (claim exceeding joined-value max → fail loud);
-  chart-native annotation tripwire test.
+- C6: GUARD 4 map-native coverage tests (claim exceeding the `rows[valueField]` max → fail
+  loud); a test proving (or disproving) existing map-dw CSV coverage.
 - Full `bun run check` green before each merge; render-verified where a visual changes.
