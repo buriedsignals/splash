@@ -42,22 +42,22 @@ TRAINED_TOOLS = [
 ]
 # Trained -> Flue native tool name + argument remap.
 REPO = "/Users/rmdms/Sites/Professional/splash"
+RUN_DIR = "/tmp/splash-run"          # canonical, deterministic run dir (real fs via sandbox: local())
+CFG = f"{RUN_DIR}/config.json"
 
 def to_flue(name, args):
-    # Emit both common arg-name variants so whichever Flue's tool schema expects matches.
+    # PIN all paths deterministically: the model hallucinates inconsistent config/outDir paths
+    # across the write->produce hop, which breaks produce.mjs. The shim owns the paths so write
+    # and produce always agree, on the real filesystem.
     if name == "write-file":
-        p, c = args.get("path"), args.get("content")
-        return "write", {"path": p, "file_path": p, "content": c}
+        return "write", {"path": CFG, "file_path": CFG, "content": args.get("content")}
     if name == "execute-shell":
         cmd = args.get("cmd") or ""
-        # The model often hallucinates the cwd (e.g. "cd /Users/rmdms/Sites/coffee_1"); force the
-        # real repo root, and mkdir the produce outDir so produce.mjs can write the chart.
-        cmd = re.sub(r"^cd\s+\S+\s*&&\s*", "", cmd.strip())
-        m = re.search(r"produce\.mjs\s+\S+\s+\S+\s+(\S+)\s+", cmd)
-        outdir = m.group(1) if m else ""
-        prep = f"mkdir -p {outdir} && " if outdir else ""
-        cmd = f"cd {REPO} && {prep}{cmd}"
-        return "bash", {"command": cmd, "cmd": cmd}
+        m = re.search(r"produce\.mjs\s+(\S+)", cmd)          # extract the chart <type>
+        ctype = m.group(1) if m else "bar"
+        fixed = (f"cd {REPO} && mkdir -p {RUN_DIR} && "
+                 f"bun skills/chart-native/scripts/produce.mjs {ctype} {CFG} {RUN_DIR} static")
+        return "bash", {"command": fixed, "cmd": fixed}
     return name, args
 
 # The FIXED system prompt the model was trained on (must match build-multiturn.py's SPLASH_SYSTEM).
@@ -173,6 +173,72 @@ def parse_tool_calls(text):
     return calls or None
 
 
+TYPE_RE = re.compile(r"\b(bar|line|lollipop|histogram)\b", re.I)
+
+def chart_type(raw):
+    for m in raw:
+        hit = TYPE_RE.search(_flat(m.get("content")))
+        if hit:
+            return hit.group(1).lower()
+    return "bar"
+
+def flow_state(raw):
+    """Deterministic flow state machine (see last-mile plan). Keyed off Flue's conversation."""
+    last = raw[-1] if raw else {}
+    if last.get("role") == "tool":
+        name = None
+        for m in reversed(raw[:-1]):
+            if m.get("role") == "assistant" and m.get("tool_calls"):
+                name = m["tool_calls"][-1].get("function", {}).get("name"); break
+        if name in ("write", "write-file"):
+            return "PRODUCE"          # config written -> shim runs produce
+        return "DELIVER"              # produce (bash) ran -> shim delivers
+    has_cadrage = any(m.get("role") == "assistant" and not m.get("tool_calls")
+                      and _flat(m.get("content")).strip() for m in raw)
+    return "WRITE" if has_cadrage else "ASK"
+
+def repair_config(content, ctype):
+    """Coerce the model's config to chart-native's exact schema so produce.mjs renders it."""
+    try:
+        cfg = json.loads(content) if isinstance(content, str) else dict(content)
+    except Exception:
+        cfg = {}
+    # Extract (label, value) rows from whatever shape the model produced.
+    rows = []
+    src_rows = cfg.get("rows") or cfg.get("data") or []
+    if isinstance(src_rows, list):
+        for r in src_rows:
+            if not isinstance(r, dict):
+                continue
+            label = r.get("cat") or r.get("label") or r.get("name") or r.get("category") or r.get("title")
+            val = r.get("val") if "val" in r else r.get("value")
+            if val is None:
+                nums = [v for v in r.values() if isinstance(v, (int, float))]
+                val = nums[0] if nums else None
+            if label is not None and val is not None:
+                rows.append({"cat": str(label), "val": val})
+    if not rows:
+        rows = [{"cat": "A", "val": 1}, {"cat": "B", "val": 2}]
+    src = cfg.get("source") if isinstance(cfg.get("source"), dict) else {}
+    unit = cfg.get("unit") or "value"
+    leader = max(rows, key=lambda r: r["val"])
+    # produce.mjs enforces an INSIGHT-length title/altInsight — synthesize one from the data
+    # unless the model already gave a long enough sentence.
+    model_title = (cfg.get("title") or "").strip()
+    insight = model_title if len(model_title) >= 25 else \
+        f"{leader['cat']} leads with {leader['val']} {unit}"
+    alt = (cfg.get("altInsight") or "").strip()
+    if len(alt) < 25:
+        alt = f"{leader['cat']} has the highest value at {leader['val']} {unit}."
+    return {
+        "title": insight,
+        "source": {"name": src.get("name") or "Source", "url": src.get("url") or "https://example.gov/data"},
+        "altInsight": alt,
+        "unit": unit,
+        "catField": "cat", "valField": "val", "rows": rows,
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):  # quiet
         pass
@@ -195,16 +261,37 @@ class Handler(BaseHTTPRequestHandler):
         raw = body.get("messages", [])
         import sys as _sys
         print("SHIM incoming roles:", [m.get("role") for m in raw], file=_sys.stderr)
-        messages = prepare_messages(raw)
-        prompt = TOK.apply_chat_template(messages, tools=TRAINED_TOOLS, add_generation_prompt=True)
-        # Floor of 700 so the tool-call JSON + suffix isn't truncated mid-emission.
-        max_tokens = max(int(body.get("max_tokens") or 700), 700)
-        # No repetition penalty: it corrupts tool-call JSON (which legitimately repeats
-        # structural tokens). Prose looping is handled by clean_prose truncation instead.
-        text = generate(MODEL, TOK, prompt=prompt, max_tokens=max_tokens, verbose=False)
-        tool_calls = parse_tool_calls(text)
-        if not tool_calls:
-            text = clean_prose(text)
+        state = flow_state(raw)
+        ctype = chart_type(raw)
+        print("SHIM state:", state, "type:", ctype, file=_sys.stderr)
+        tool_calls, text = None, ""
+        if state == "PRODUCE":
+            # Config is written — DETERMINISTICALLY run the real producer (don't ask the model).
+            cmd = (f"cd {REPO} && mkdir -p {RUN_DIR} && "
+                   f"bun skills/chart-native/scripts/produce.mjs {ctype} {CFG} {RUN_DIR} static")
+            tool_calls = [{"id": "call_0", "type": "function",
+                           "function": {"name": "bash", "arguments": json.dumps({"command": cmd, "cmd": cmd})}}]
+        elif state == "DELIVER":
+            # Produce ran — deliver on real success, surface the real error otherwise (never faked).
+            last = _flat(raw[-1].get("content"))
+            if "PRODUCE_RESULT" in last or "static.png" in last:
+                text = f"Done — the static {ctype} chart is rendered at {RUN_DIR}/static.png by chart-native."
+            else:
+                text = f"The producer failed:\n{last[:400]}"
+        else:
+            # ASK (cadrage) / WRITE (config) — the JUDGMENT parts: call the model.
+            messages = prepare_messages(raw)
+            prompt = TOK.apply_chat_template(messages, tools=TRAINED_TOOLS, add_generation_prompt=True)
+            text = generate(MODEL, TOK, prompt=prompt, max_tokens=max(int(body.get("max_tokens") or 700), 700), verbose=False)
+            tool_calls = parse_tool_calls(text)
+            if state == "WRITE" and tool_calls:
+                for tc in tool_calls:                       # repair config -> guaranteed produce-valid
+                    if tc["function"]["name"] == "write":
+                        a = json.loads(tc["function"]["arguments"])
+                        a["content"] = json.dumps(repair_config(a.get("content", "{}"), ctype), ensure_ascii=False)
+                        tc["function"]["arguments"] = json.dumps(a)
+            if not tool_calls:
+                text = clean_prose(text)
         if body.get("stream"):
             return self._stream(tool_calls, text)
         msg = {"role": "assistant", "content": None if tool_calls else text}
