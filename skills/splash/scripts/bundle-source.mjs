@@ -3,12 +3,13 @@
 // journalist can `bun install && bun run build` and rebuild/customise it from source.
 //
 // Unlike chart-native (whose src is self-contained, so export-source.mjs copies it wholesale),
-// map-native/scrolly src is cross-entangled and pulls @maptiler/@turf/remotion. So we CLOSURE-
+// map-native/scrolly src is cross-entangled and pulls @maptiler/@turf. So we CLOSURE-
 // trace from the engine's real mount.tsx (reused verbatim; config baked via the Vite __CONFIG__
 // define) and copy exactly the reached files + assets PRESERVING the repo-relative
 // skills/<name>/... layout, so every existing relative import resolves unchanged. Deps are
-// DERIVED from the traced bare specifiers (never hand-authored — remotion is on the interactive
-// map path). Map bundles are rebuildable but online-only and need the journalist's own
+// DERIVED from the traced bare specifiers (never hand-authored; since the scene-constants/
+// map-styles extraction the interactive closure no longer reaches remotion — video stays
+// remotion-backed via video-scene.ts, which bundle-source never traces). Map bundles are rebuildable but online-only and need the journalist's own
 // VITE_MAPTILER_KEY (.env) — never baked.
 //
 //   bun bundle-source.mjs <source-manifest.json> <config.json> <destDir>

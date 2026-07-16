@@ -105,8 +105,11 @@ describe("traceClosure — map-native interactive entry", () => {
     expect(rel).not.toContain("skills/map-native/src/conformance.ts");
     expect(rel).not.toContain("skills/map-native/src/route-story.ts");
   });
-  it("pulls remotion as a bare dep (via route-geo → video-scene)", () => {
-    expect(bareSpecifiers).toContain("remotion");
+  it("does NOT pull remotion (route-geo reads its constant from runtime-free scene-constants since C1)", () => {
+    // Historically the interactive closure reached remotion via route-geo → video-scene —
+    // the same accidental coupling that crashed a Datawrapper-only produce-all on machines
+    // without the video runtime (Tom, 2026-07-16). The edge is cut; keep it cut.
+    expect(bareSpecifiers).not.toContain("remotion");
     expect(bareSpecifiers).toContain("@maptiler/sdk");
     expect(bareSpecifiers).toContain("react-dom/client");
   });
@@ -260,10 +263,11 @@ describe("bundle-source CLI — map-native assembly", () => {
         ".env.example",
       ])
         expect(existsSync(join(dest, f))).toBe(true);
-      // Deps complete AND include remotion (the trap the metafile/tracer self-corrects).
+      // Deps derived from the trace — and remotion stays OUT: the interactive closure no
+      // longer touches the video runtime (route-geo reads scene-constants since C1).
       const pkg = JSON.parse(readFileSync(join(dest, "package.json"), "utf8"));
       expect(pkg.dependencies["@maptiler/sdk"]).toBe("3.6.0");
-      expect(pkg.dependencies.remotion).toBe("4.0.482");
+      expect(pkg.dependencies.remotion).toBeUndefined();
       expect(pkg.scripts.build).toBe("vite build");
       // No copied file has a DANGLING cross-skill relative import (would break a rebuild).
       assertNoDanglingRelativeImports(join(dest, "skills"));

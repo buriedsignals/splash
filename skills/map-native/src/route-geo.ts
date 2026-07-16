@@ -1,19 +1,14 @@
 import * as turf from "@turf/turf";
-import { TITLE_SCENE_FRAMES } from "./video-scene";
+import { TITLE_SCENE_FRAMES } from "./scene-constants";
 
 // ---------------------------------------------------------------------------
-// Map style option space (framework-free tokens; RouteMap maps to MapTiler style)
+// Map style option space — lives in map-styles.ts (runtime-free, see that file's
+// header); re-exported here so the 30+ existing importers keep their historical
+// `from "./route-geo"` import.
 // ---------------------------------------------------------------------------
 
-export const MAP_STYLES = ["dataviz-light", "dataviz-dark"] as const;
-export type MapStyleToken = (typeof MAP_STYLES)[number];
-
-export function resolveMapStyle(token?: string): MapStyleToken {
-  if (token && (MAP_STYLES as readonly string[]).includes(token)) {
-    return token as MapStyleToken;
-  }
-  return "dataviz-light";
-}
+export { MAP_STYLES, resolveMapStyle } from "./map-styles";
+export type { MapStyleToken } from "./map-styles";
 
 // ---------------------------------------------------------------------------
 // CVD-safe qualitative palette (Okabe-Ito, 7 hues — black is dropped so a fill is

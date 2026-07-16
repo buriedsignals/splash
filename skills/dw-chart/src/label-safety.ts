@@ -1,4 +1,8 @@
-import { chromium, type Browser } from "playwright";
+// Type-only import: playwright is loaded LAZILY inside the two launch sites below, so a
+// machine without dw-chart's node_modules can still LOAD any module that imports this file
+// (produce-all's closure reaches here via adapters -> dw-chart/produce) — the same
+// load-time-crash class as the map-native remotion edge (validate-closure.test.ts).
+import type { Browser, Page } from "playwright";
 
 // Label-safety guardrail. Loads a published/exported Datawrapper chart, enumerates
 // the bounding rects of every text element (series direct labels, text-annotations,
@@ -170,7 +174,7 @@ export function findLabelViolations(
 
 // Collect the content box, every text rect, and the sampled series polyline(s)
 // from a rendered Datawrapper chart page.
-async function collect(page: import("playwright").Page): Promise<{
+async function collect(page: Page): Promise<{
   content: { x: number; y: number; w: number; h: number };
   rects: TextRect[];
   series: Point[][];
@@ -322,6 +326,7 @@ export async function measureChart(
 ): Promise<ChartGeometry> {
   const width = opts.width ?? 600;
   const height = opts.height ?? 450;
+  const { chromium } = await import("playwright");
   const browser = opts.browser ?? (await chromium.launch());
   try {
     const page = await browser.newPage({ viewport: { width, height } });
@@ -577,6 +582,7 @@ export async function checkResponsive(
   // guardrail measures is the aspect the reader actually gets — "validated ==
   // delivered" must hold at the delivered aspect, not only the landscape one.
   const aspect = opts.aspect ?? EXPORT_HEIGHT / EXPORT_WIDTH;
+  const { chromium } = await import("playwright");
   const browser = opts.browser ?? (await chromium.launch());
   try {
     const byWidth: { width: number; violations: string[] }[] = [];

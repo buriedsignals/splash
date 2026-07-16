@@ -1,6 +1,6 @@
 import type { ChoroplethData } from "./choropleth-geo";
 import { CAMERA_MODES, type CameraMode } from "./camera-mode";
-import { MAP_STYLES } from "./route-geo";
+import { MAP_STYLES } from "./map-styles";
 import type { LocatorMarker } from "./locator-geo";
 import { PALETTES, isCvdSafeRamp } from "./theme/scale";
 import { BASEMAP_NAMES } from "./basemaps";
