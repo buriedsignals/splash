@@ -3,12 +3,14 @@
 // not-ready engines in the ranked list) and produce-all's blocking gate (fail-fast in
 // journalist language BEFORE production, replacing the lazy deep throws: dw-chart's
 // token() at the first API call, map-native's key throw at component load).
+import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Producer } from "./producer-spec";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SKILLS_ROOT = resolve(here, "../..");
+const ROOT_ENV_PATH = resolve(SKILLS_ROOT, "../.env");
 
 // Each inner array is an ALTERNATIVES group: at least one member must be set (the MapTiler
 // mirror rule — either prefix satisfies both builds, produce.mjs mirrors one onto the other).
@@ -56,7 +58,10 @@ export const ENGINE_REQUIREMENTS: Record<Producer, EngineRequirements> = {
     },
     criticalDeps: {
       fromSkillDir: "map-native",
-      packages: ["react", "remotion", "maplibre-gl"],
+      // @maptiler/sdk (a DIRECT map-native dependency), never maplibre-gl: the latter only
+      // resolves via hoisting through the SDK's dep graph — a phantom check that would go
+      // permanently red on a healthy install if the SDK ever re-arranged its deps (review F4).
+      packages: ["react", "remotion", "@maptiler/sdk"],
     },
   },
   scrolly: {
@@ -89,6 +94,28 @@ function isSet(v: string | undefined): boolean {
   return typeof v === "string" && v.trim() !== "";
 }
 
+// Repo-root .env fallback (review F2): Bun auto-loads .env from the CWD only, while the
+// standard install keeps keys in /splash/.env and produce-all may run from anywhere (the
+// harness sandbox, an exports dir). The native producers self-load this file; the gate's
+// DEFAULT env must see the same truth or it false-blocks with a wrong instruction ("add it
+// to /splash/.env" when it is already there). process.env always wins over the file. Read
+// lazily, once per process; injected opts.env (tests, CLI) bypasses it entirely.
+let rootEnvCache: Record<string, string> | null = null;
+function defaultEnv(): Record<string, string | undefined> {
+  if (rootEnvCache === null) {
+    rootEnvCache = {};
+    try {
+      for (const line of readFileSync(ROOT_ENV_PATH, "utf8").split("\n")) {
+        const m = line.match(/^([A-Z_][A-Z0-9_]*)\s*=\s*"?([^"\n]*)"?\s*$/);
+        if (m) rootEnvCache[m[1]] = m[2];
+      }
+    } catch {
+      // no root .env — process.env alone decides
+    }
+  }
+  return { ...rootEnvCache, ...process.env };
+}
+
 export function preflightFindings(
   producer: Producer,
   opts: PreflightOpts = {},
@@ -97,7 +124,7 @@ export function preflightFindings(
   // A producer outside the union (untyped JSON at the CLI seam) is not preflight's call:
   // report nothing here and let the validation gate record it failed (drop-proof intact).
   if (!req) return [];
-  const env = opts.env ?? process.env;
+  const env = opts.env ?? defaultEnv();
   const resolveDep = opts.resolveDep ?? defaultResolveDep;
   const findings: PreflightFinding[] = [];
 

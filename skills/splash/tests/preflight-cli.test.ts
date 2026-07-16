@@ -70,3 +70,28 @@ describe("preflight CLI", () => {
     ).toThrow();
   });
 });
+
+// Review F1: a subset run must merge into the persisted map, never clobber it.
+import { mkdtempSync, readFileSync as readFS } from "node:fs";
+import { tmpdir } from "node:os";
+
+describe("preflight CLI persistence merge (review F1)", () => {
+  it("subset run preserves other engines' persisted statuses (read-merge-write)", () => {
+    const project = mkdtempSync(join(tmpdir(), "preflight-merge-"));
+    execFileSync("bun", [CLI, "--project", project], { encoding: "utf8" });
+    const full = JSON.parse(
+      readFS(join(project, ".splash-preflight.json"), "utf8"),
+    );
+    expect(Object.keys(full.engines).length).toBeGreaterThanOrEqual(5);
+    execFileSync("bun", [CLI, "dw-chart", "--project", project], {
+      encoding: "utf8",
+    });
+    const after = JSON.parse(
+      readFS(join(project, ".splash-preflight.json"), "utf8"),
+    );
+    expect(Object.keys(after.engines).length).toBe(
+      Object.keys(full.engines).length,
+    );
+    expect(after.engines["map-native"]).toBeDefined();
+  });
+});

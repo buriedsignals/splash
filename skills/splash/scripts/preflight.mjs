@@ -51,7 +51,19 @@ const producers = producerArgs.length
   ? producerArgs
   : Object.keys(ENGINE_REQUIREMENTS);
 const engines = {};
-const persisted = {};
+// Read-merge-write (review F1): a subset run (`preflight.mjs dw-chart`) must REFRESH the
+// named engines and PRESERVE the rest — clobbering the map would silently drop the other
+// engines' persisted statuses and defeat the resume purpose. A corrupt/absent file starts
+// fresh (it is a cache of re-computable state, never a source of truth).
+const statusPath = join(project, ".splash-preflight.json");
+let persisted = {};
+try {
+  const prior = JSON.parse(readFileSync(statusPath, "utf8"));
+  if (prior && typeof prior.engines === "object" && prior.engines !== null)
+    persisted = prior.engines;
+} catch {
+  // absent or corrupt — start fresh
+}
 for (const producer of producers) {
   if (!ENGINE_REQUIREMENTS[producer]) {
     console.error(
@@ -66,7 +78,7 @@ for (const producer of producers) {
 }
 
 writeFileSync(
-  join(project, ".splash-preflight.json"),
+  statusPath,
   JSON.stringify({ schemaVersion: "1", engines: persisted }, null, 2) + "\n",
 );
 
