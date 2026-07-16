@@ -12,13 +12,18 @@
 | Order | Plan | Stream | Depends on | Size |
 |---|---|---|---|---|
 | 1 | `2026-07-16-c1-validate-closure-remotion-fix.md` | C1 crash produce-all | — | S |
-| 2 | `2026-07-16-c2-preflight.md` | C2 preflight | — | M |
-| 3 | `2026-07-16-c3-c4-flow-inversion-ranked-selection.md` | C3+C4 flow | C2 (annotations) | L |
-| 4 | `2026-07-16-c6-claim-grounding-extension.md` | C6 guardrails | — | S |
-| 5 | `2026-07-16-c5-image-scrolly-phase2.md` | C5 image-scrolly | C3+C4 (ranked list) | XL |
+| 2 | `2026-07-16-c2-preflight.md` | C2 preflight (incl. Spotlight A2 tri-state persisted) | — | M |
+| 3 | `2026-07-16-a5-skills-invoked.md` | A5 mechanical sub-skill proof (Spotlight) | — | S |
+| 4 | `2026-07-16-c3-c4-flow-inversion-ranked-selection.md` | C3+C4 canonical 12-step flow (incl. Spotlight A1 context-recovery, A3 bounded retry, A4 stall protocol — Task 6) | C2 (annotations) | L |
+| 5 | `2026-07-16-c6-claim-grounding-extension.md` | C6 guardrails | — | S |
+| 6 | `2026-07-16-c5-image-scrolly-phase2.md` | C5 image-scrolly | C3+C4 (candidates) | XL |
+| release | `2026-07-16-mit-release-hardening.md` | Spotlight B1-B4 (runtime contract, versioned schemas, dependency pins, disclaimer) | the existing MIT-release chantier | M |
 
-C1, C2, C6 are independent of each other and can run in parallel worktrees; C3+C4 waits for C2;
-C5 waits for C3+C4.
+C1, C2, A5, C6 are independent of each other and can run in parallel worktrees; C3+C4 waits
+for C2; C5 waits for C3+C4; MIT hardening executes with the release chantier (written now,
+scope locked). Spotlight study behind the A/B items: `docs/splash/spotlight-learnings.md`.
+Harness-side adoption (protected regression categories) is tracked in the harness
+FIX-BACKLOG, not here.
 
 ## Branch discipline
 

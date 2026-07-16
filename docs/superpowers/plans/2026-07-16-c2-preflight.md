@@ -42,6 +42,14 @@ per-proposal loop, before validation, replacing today's lazy deep failures
   - `interface PreflightFinding { kind: "env" | "deps"; message: string }`
   - `interface PreflightOpts { env?: Record<string, string | undefined>; resolveDep?: (pkg: string, fromDir: string) => boolean }`
     (injection seams for tests and for the CLI's root-`.env` fallback)
+  - **Tri-state wrapper (Spotlight A2, spec §C2):**
+    `enginePreflightStatus(producer, opts?): EngineStatus` with
+    `interface EngineStatus { status: "green" | "yellow" | "red"; checkedAt: string; reason: string }`
+    — derived from the findings: no findings ⇒ `green` · env-only findings ⇒ `yellow`
+    (journalist-fixable via `.env`; the engine is ANNOTATED in proposals, and blocked at
+    dispatch until fixed) · any deps finding ⇒ `red` (install problem — `bun install`
+    instruction). `checkedAt` is injected (`opts.now?: string`) so tests stay
+    clock-deterministic; `reason` concatenates the findings' messages (empty for green).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -105,6 +113,25 @@ describe("preflightFindings", () => {
     for (const producer of ["dw-chart", "chart-native", "map-dw", "map-native", "scrolly"] as const) {
       expect(ENGINE_REQUIREMENTS[producer]).toBeDefined();
     }
+  });
+});
+
+describe("enginePreflightStatus (tri-state, Spotlight A2)", () => {
+  const NOW = "2026-07-16T12:00:00Z";
+  it("should be green with an empty reason when everything resolves", () => {
+    expect(
+      enginePreflightStatus("dw-chart", { env: ALL_SET, resolveDep: resolves, now: NOW }),
+    ).toEqual({ status: "green", checkedAt: NOW, reason: "" });
+  });
+  it("should be yellow (journalist-fixable) on a missing key", () => {
+    const s = enginePreflightStatus("dw-chart", { env: {}, resolveDep: resolves, now: NOW });
+    expect(s.status).toBe("yellow");
+    expect(s.reason).toContain("DATAWRAPPER_API_TOKEN");
+  });
+  it("should be red on unresolved deps, even when keys are set (install problem beats key problem)", () => {
+    const s = enginePreflightStatus("map-native", { env: ALL_SET, resolveDep: neverResolves, now: NOW });
+    expect(s.status).toBe("red");
+    expect(s.reason).toContain("bun install");
   });
 });
 ```
@@ -243,6 +270,27 @@ export function preflightFindings(
   }
 
   return findings;
+}
+
+// Tri-state status object (Spotlight A2, docs/splash/spotlight-learnings.md): what gets
+// PERSISTED per project and read by the PROPOSITION-time CLI. Derivation: green = ready;
+// yellow = env-only findings (journalist-fixable via .env — the engine stays proposable,
+// annotated); red = any deps finding (install problem — needs `bun install`, not a key).
+export interface EngineStatus {
+  status: "green" | "yellow" | "red";
+  checkedAt: string;
+  reason: string;
+}
+
+export function enginePreflightStatus(
+  producer: Producer,
+  opts: PreflightOpts & { now?: string } = {},
+): EngineStatus {
+  const findings = preflightFindings(producer, opts);
+  const checkedAt = opts.now ?? new Date().toISOString();
+  if (findings.length === 0) return { status: "green", checkedAt, reason: "" };
+  const status = findings.some((f) => f.kind === "deps") ? "red" : "yellow";
+  return { status, checkedAt, reason: findings.map((f) => f.message).join("; ") };
 }
 ```
 
@@ -453,10 +501,16 @@ git commit -m "feat(splash): produce-all preflight gate — engine keys/deps fai
 - Test: `skills/splash/tests/preflight-cli.test.ts`
 
 **Interfaces:**
-- Consumes: `preflightFindings`, `ENGINE_REQUIREMENTS` from `../src/preflight.ts`.
-- Produces: `bun scripts/preflight.mjs [producer…]` → prints JSON
-  `{ engines: { [producer]: { ready: boolean, findings: PreflightFinding[] } } }`, exit 0
-  always (reporting, not gating — the produce-time gate is Task 3).
+- Consumes: `preflightFindings`, `enginePreflightStatus`, `ENGINE_REQUIREMENTS` from
+  `../src/preflight.ts`.
+- Produces: `bun scripts/preflight.mjs [producer…] [--project <dir>]` → prints JSON
+  `{ engines: { [producer]: { ready: boolean, status: EngineStatus, findings: PreflightFinding[] } } }`,
+  exit 0 always (reporting, not gating — the produce-time gate is Task 3). **Persistence
+  (Spotlight A2):** the CLI also WRITES the tri-state map to `<project>/.splash-preflight.json`
+  (`{ schemaVersion: "1", engines: { [producer]: EngineStatus } }`, default project = cwd) so
+  later turns/resumes read the persisted statuses instead of re-probing every run; a re-run of
+  the CLI refreshes the file (statuses carry `checkedAt`). Add a CLI test: after running, the
+  file exists, parses, and its `dw-chart.status` matches the printed one.
 
 - [ ] **Step 1: Write the failing CLI test**
 
