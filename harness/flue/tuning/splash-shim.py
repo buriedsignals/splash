@@ -22,9 +22,15 @@ BOUNDARY_RE = re.compile(r"<unk>|<\|assistant_end\|>|<\|assistant_start\|>|<\|us
 
 def clean_prose(text):
     cut = BOUNDARY_RE.search(text)
-    text = text[:cut.start()] if cut else text
-    # collapse an immediate self-repeat (degeneration guard) to the first sentence group.
-    return text.strip()
+    text = (text[:cut.start()] if cut else text).strip()
+    # Degeneration guard: Apertus prose turns weren't trained to stop, so they loop.
+    # A cadrage is a question -> keep up to the first '?'. A delivery is a statement ->
+    # keep the first sentence. Either way, cut before the loop starts.
+    q = text.find("?")
+    if q >= 0:
+        return text[:q + 1].strip()
+    m = re.search(r"[.!]", text)
+    return text[:m.end()].strip() if m else text
 
 # Trained tool schema (flat, as the Apertus template expects).
 TRAINED_TOOLS = [
@@ -35,13 +41,22 @@ TRAINED_TOOLS = [
      "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}, "required": ["cmd"]}},
 ]
 # Trained -> Flue native tool name + argument remap.
+REPO = "/Users/rmdms/Sites/Professional/splash"
+
 def to_flue(name, args):
     # Emit both common arg-name variants so whichever Flue's tool schema expects matches.
     if name == "write-file":
         p, c = args.get("path"), args.get("content")
         return "write", {"path": p, "file_path": p, "content": c}
     if name == "execute-shell":
-        cmd = args.get("cmd")
+        cmd = args.get("cmd") or ""
+        # The model often hallucinates the cwd (e.g. "cd /Users/rmdms/Sites/coffee_1"); force the
+        # real repo root, and mkdir the produce outDir so produce.mjs can write the chart.
+        cmd = re.sub(r"^cd\s+\S+\s*&&\s*", "", cmd.strip())
+        m = re.search(r"produce\.mjs\s+\S+\s+\S+\s+(\S+)\s+", cmd)
+        outdir = m.group(1) if m else ""
+        prep = f"mkdir -p {outdir} && " if outdir else ""
+        cmd = f"cd {REPO} && {prep}{cmd}"
         return "bash", {"command": cmd, "cmd": cmd}
     return name, args
 
@@ -101,6 +116,13 @@ def prepare_messages(raw):
             content = _flat(m.get("content"))
             if last_call and last_call[0] == "write-file":
                 content = f"wrote {last_call[1].get('path')}"
+            elif last_call and last_call[0] == "execute-shell":
+                # Present the REAL PRODUCE_RESULT (honest: only if produce.mjs actually
+                # succeeded) in the compact training format so the model transitions to
+                # DELIVER (phase 4) instead of looping. If it failed, keep the real error.
+                pr = re.search(r'PRODUCE_RESULT \{[^}]*\}', content)
+                if pr:
+                    content = f"[produce] render-size: OK.\n{pr.group(0)}"
             out.append({"role": "tool", "content": content})
         else:
             out.append({"role": role, "content": _flat(m.get("content"))})

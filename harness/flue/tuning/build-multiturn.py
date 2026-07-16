@@ -93,11 +93,28 @@ for reseed in range(3):
                 "name": "execute-shell", "arguments": json.dumps({"cmd": cmd})}}]}
             t_es = {"role": "tool", "content": produce_out(t, out_dir)}
             a_del = {"role": "assistant", "content": f"Done — the static {t} chart is at {out_dir}/static.png (rendered by chart-native)."}
-            # 4 phase examples, each ending at its target assistant turn
+            # 4 phase examples, each ending at its target assistant turn.
             rows.append({"messages": [sys_m, u1, a_cad], "tools": TOOLS})                                   # cadrage
             rows.append({"messages": [sys_m, u1, a_cad, u2, a_wf], "tools": TOOLS})                          # write-file
-            rows.append({"messages": [sys_m, u1, a_cad, u2, a_wf, t_wf, a_es], "tools": TOOLS})              # execute-shell
             rows.append({"messages": [sys_m, u1, a_cad, u2, a_wf, t_wf, a_es, t_es, a_del], "tools": TOOLS}) # deliver
+            # Phase-3 (execute-shell) was the fragile one — the model kept delivering instead of
+            # running produce. Upweight it 3x with PATH/CONTENT/ANSWER variety so its trigger is
+            # robust to the perturbations that appear in the real Flue chain (model-chosen paths,
+            # stubbed configs, "produce it now" phrasing).
+            variants = [
+                (cfg_path, json.dumps(cfg, ensure_ascii=False), answer),
+                (f"{out_dir}.json", "{…}", f"Yes. Produce it now."),                       # bare .json path + stub
+                (f"/tmp/gold/{topic.replace(' ', '_')}_{seed}_cfg.json", "{}", f"Confirmed, static {t}."),
+            ]
+            for vp, vc, va in variants:
+                a_wf_v = {"role": "assistant", "content": "", "tool_calls": [{"type": "function", "function": {
+                    "name": "write-file", "arguments": json.dumps({"path": vp, "content": vc})}}]}
+                t_wf_v = {"role": "tool", "content": f"wrote {vp}"}
+                v_out = vp.rsplit("/", 1)[0]
+                a_es_v = {"role": "assistant", "content": "", "tool_calls": [{"type": "function", "function": {
+                    "name": "execute-shell", "arguments": json.dumps({"cmd": f"cd /Users/rmdms/Sites/Professional/splash && bun skills/chart-native/scripts/produce.mjs {t} {vp} {v_out} static"})}}]}
+                u2_v = {"role": "user", "content": va}
+                rows.append({"messages": [sys_m, u1, a_cad, u2_v, a_wf_v, t_wf_v, a_es_v], "tools": TOOLS})    # execute-shell x3
             idx += 1
 
 valid = rows[::20]

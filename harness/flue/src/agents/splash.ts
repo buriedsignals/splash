@@ -1,4 +1,5 @@
 import { defineAgent } from "@flue/runtime";
+import { local } from "@flue/runtime/node";
 import { FLUE_VERB_ADAPTER } from "../lib/roles.ts"; // Task 2 provides this
 import { registerLocalProvider } from "../lib/provider.ts";
 
@@ -17,9 +18,13 @@ if (MODEL.startsWith("local/")) registerLocalProvider();
 // vs Spotlight — see the design spec's "simpler than Spotlight" table.
 // The agent NAME comes from the module (`flue run splash`), not the runtime config —
 // AgentRuntimeConfig has no `name` field (verified against @flue/runtime types).
+// `local` sandbox = the REAL filesystem, so the write-file/execute-shell tools operate
+// on the real repo (chart-native producer) + /tmp — otherwise Flue's default isolated
+// sandbox hides the written config from `produce.mjs`, which then can't render the chart.
 export default defineAgent(() => ({
   model: MODEL,
   instructions: FLUE_VERB_ADAPTER,
+  sandbox: local(),
 }));
 
 export { MODEL, TIER };
