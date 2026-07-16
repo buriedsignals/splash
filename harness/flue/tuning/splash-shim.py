@@ -176,10 +176,13 @@ def parse_tool_calls(text):
 TYPE_RE = re.compile(r"\b(bar|line|lollipop|histogram)\b", re.I)
 
 def chart_type(raw):
+    # Only the journalist's (user) messages specify the chart type — NOT Flue's system
+    # prompt / verb-adapter (which may mention "line" etc. and mis-trigger the detection).
     for m in raw:
-        hit = TYPE_RE.search(_flat(m.get("content")))
-        if hit:
-            return hit.group(1).lower()
+        if m.get("role") == "user":
+            hit = TYPE_RE.search(_flat(m.get("content")))
+            if hit:
+                return hit.group(1).lower()
     return "bar"
 
 def flow_state(raw):
