@@ -36,6 +36,11 @@ const proposal = (
 // format-threading/gate behavior in isolation from the validation gate.
 const PASS: ProposalValidator = () => ({ ok: true, warnings: [] });
 
+// Always-ready preflight injection: these tests exercise format threading, not the
+// C2 engine-readiness gate (tests/preflight.test.ts owns that), so they must not
+// depend on the machine's real env/keys.
+const READY = () => [];
+
 describe("produceAll — dispatch is invoked with the proposal's pinned spec.format", () => {
   const CASES: Array<{ channel: Channel; format: VisualFormat }> = [
     { channel: "article-web", format: "static" },
@@ -64,6 +69,8 @@ describe("produceAll — dispatch is invoked with the proposal's pinned spec.for
         "out",
         dispatch,
         PASS,
+        null,
+        READY,
       );
       expect(received).toBe(format);
       expect(results[0].format).toBe(format);

@@ -7,3 +7,4 @@ node_modules
 
 # git worktrees created by the harness (EnterWorktree)
 .claude/worktrees/
+.splash-preflight.json

@@ -3,7 +3,12 @@ const API = "https://api.datawrapper.de/v3";
 function token(): string {
   const t = process.env.DATAWRAPPER_API_TOKEN;
   if (!t)
-    throw new Error("DATAWRAPPER_API_TOKEN is not set (see /splash/.env)");
+    throw new Error(
+      "DATAWRAPPER_API_TOKEN is not set — create a token at " +
+        "https://app.datawrapper.de/account/api-tokens and add it to /splash/.env " +
+        "(preflight should have caught this before production; if you see this, " +
+        "the preflight gate was bypassed)",
+    );
   return t;
 }
 function auth(extra: Record<string, string> = {}): Record<string, string> {

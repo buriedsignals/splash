@@ -244,6 +244,13 @@ e.g. which scrolly reveal style) to the journalist, it must already have been ch
 have to retract it as engine-infeasible after the fact — if a candidate isn't reachable, drop it before
 it reaches the journalist rather than proposing it and walking it back.
 
+**Preflight annotation (C2).** Before presenting engines/types, run
+`bun skills/splash/scripts/preflight.mjs` (JSON report, per engine). A type whose engine is
+NOT ready is **annotated, never silently omitted** — e.g. « ce type passe par Datawrapper —
+il te faudra une clé (gratuite) ; je te guide si tu le choisis » — so the journalist can pick
+it and fix the key, or pick a ready alternative. The produce-time gate (produce-all) re-checks
+mechanically either way; this annotation is honesty, not the enforcement.
+
 **GATE 2b (data provenance — prose proposals only):** if a proposal's figures are
 `provenance:"prose"`, show the reconstructed table and get an explicit confirmation that the numbers
 are correct BEFORE the journalist accepts/edits/rejects that proposal. The reconstructed table MUST be

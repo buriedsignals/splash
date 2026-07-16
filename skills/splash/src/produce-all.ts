@@ -1,8 +1,10 @@
 import type {
   AcceptedProposal,
   ProduceReport,
+  Producer,
   ProposalResult,
 } from "./producer-spec";
+import { preflightFindings, type PreflightFinding } from "./preflight";
 import { validateAccepted, type ValidationOutcome } from "./validate-gate";
 import { assertFormatAllowed, normalizeChannel, type Channel } from "./channel";
 import { producerMismatchReason } from "./producer-guard";
@@ -41,6 +43,9 @@ export async function produceAll(
   // by the CLI from NEWSROOM-PROFILE.md / brand.json. Merged onto each element's spec as DEFAULTS
   // (the per-element value always wins). null → today's behaviour, unchanged.
   profile: BrandProfile | null = null,
+  // The engine-readiness check is injected (like dispatch/validate) so loop-mechanics
+  // tests stay hermetic; the real default consults the machine's env + node_modules.
+  preflight: (p: Producer) => PreflightFinding[] = preflightFindings,
 ): Promise<ProduceReport> {
   // Merge the newsroom profile's defaults onto every element's spec ONCE, up front —
   // source/lang universal, brand colour only for the colour-consuming producers — the
@@ -107,6 +112,19 @@ export async function produceAll(
         ...base,
         status: "failed",
         error: e instanceof Error ? e.message : String(e),
+      });
+      continue;
+    }
+    // C2 preflight — the engine's keys/deps are checked HERE, before anything is promised
+    // or produced, replacing the lazy deep failures (dw-chart's token() throw at the first
+    // API call mid-PRODUCTION, map-native's key throw at component load). The message is
+    // journalist-language: which key, where to get it, where to put it.
+    const notReady = preflight(p.producer);
+    if (notReady.length) {
+      results.push({
+        ...base,
+        status: "failed",
+        error: `preflight: ${notReady.map((f) => f.message).join("; ")}`,
       });
       continue;
     }
