@@ -29,15 +29,47 @@ evidence base; the code anchors were verified against this branch.
 
 ### Locked decisions reversed by this spec
 
-1. **2026-06-23 "② proposes just the best visual"** → reversed by C4. The suggester now emits a
-   ranked list of every reachable type, first one recommended with an editorial why.
-2. **CADRAGE Q3 channel question (channel asked at Gate 1, both branches)** → reversed by C3. The
-   channel/format question moves to PROPOSITION, after the type choice. The single-format model
-   (2026-07-10) itself is **kept** — one element = one pinned format, produced and delivered
-   alone — but the pin becomes iterable via an explicit cycle-2 re-format path.
+1. **2026-06-23 "② proposes just the best visual"** → reversed by C4. The suggester now emits
+   multiple proposals per opportunity, each with its editorial why, first one recommended.
+2. **CADRAGE question order** → restructured by C3 (Rémy's canonical 12-step sequence,
+   2026-07-16, which supersedes the earlier "channel moves after the type choice" draft): the
+   channel question STAYS in CADRAGE but moves LAST — after takeaway, prose-table, source and
+   constraints — so data truth is established before anything is routed, and every proposal is
+   channel-aware when emitted. There is NO standalone format question anywhere: the format is
+   derived (channel × type), announced for veto with the chosen proposal; an explicit
+   journalist signal ("statique", "print") always wins. The single-format model (2026-07-10)
+   is **kept** — one element = one pinned format, produced and delivered alone — and becomes
+   iterable via the proactive post-export other-format offer (step 12).
 
 Everything downstream of the pin (channel sizes, `assertFormatAllowed`, off-embed ⇒ never
 interactive, single-format produce) is unchanged.
+
+### The canonical question sequence (Rémy, 2026-07-16 — source of truth for C3+C4)
+
+1. **Read the journalist's prompt.**
+2. **No article supplied → ask for it** (new explicit INPUT ask; a bare topic no longer walks
+   straight into dataset-naming).
+3. **Intent unclear → ask**: "do you already have a precise idea, or should I guide you?"
+   (conditional — a clearly named visual skips to a confirm-back, as today).
+4. **Takeaway** — "what is the ONE thing the reader must retain?" (GATE 1b, unchanged:
+   verbatim, non-skippable, one per element).
+5. **Data truth, before any routing**: if figures come from prose → confirm the reconstructed
+   table (GATE 2b, prose-only); then ask the source (GATE 2c, ALWAYS — CSV-provided data needs
+   its "Source:" line too). Two successive prompts, never bundled into one.
+6. **Constraints** — mobile-first, deadline, house style (conditional, as today).
+7. **Channel** — "where will it be published?" (the same three options; now the LAST CADRAGE
+   question, informing the proposals that follow).
+8. **PROPOSITIONS — plural, batched**: for the article's opportunities, present ALL proposals
+   in ONE message — per opportunity, its chart/map candidates, each explained (what it shows,
+   why it can be interesting), the first one recommended. One accept decision per opportunity
+   (invariant kept) but NO per-opportunity question loop. The chosen proposal's derived format
+   is announced for veto here.
+9. **Produce** the accepted visual(s).
+10. **Satisfaction** — GATE 3 ship-it on the REAL render (unchanged).
+11. **If interactive → the three delivery forms** (GATE 4 a/b/c, unchanged).
+12. **Once exported, proactively offer another format** of the same element (cycle 2 — splash
+    offers; the journalist doesn't have to know to ask). A yes re-runs ONLY steps 7'→9 (a
+    one-line channel/format re-pin on a new `<id>-<format>` entry), never re-CADRAGE.
 
 ---
 
@@ -103,46 +135,51 @@ module exports the list, both consume it.
 **Out of scope for C2**: interactive key entry mid-pipeline. The key goes into `.env`; preflight
 says exactly how. No new gate.
 
-## C3 — Inverted flow: type first, format last, cycle-2 re-format (Tom's #1)
+## C3 — The 12-step question sequence (Tom's #1, arbitrated by Rémy)
 
 ### Current state (anchors)
 
-Q3 channel is asked in CADRAGE (Gate 1) on both branches (`skills/splash/SKILL.md:89-125`,
-Q-label positions at `SKILL.md:40`); it fixes the allowed format set; the format pin is surfaced
-once at PROPOSITION (`SKILL.md:117-123`, `suggest-chart/SKILL.md:108-113`);
-`assertFormatAllowed(channel, format)` runs at produce (`produce-all.ts:103-104`); channel is
-threaded to producers via `SPLASH_CHANNEL` (`adapters.ts:28-37`) and `withProposalChannel`
+Q3 channel is asked mid-CADRAGE, before data truth (`skills/splash/SKILL.md:89-125`, Q-label
+positions at `SKILL.md:40`); GATE 2b (prose table) and GATE 2c (source) fire late, at
+PROPOSITION (`SKILL.md:247-257` and the 2c block) — a bad table invalidates an already-routed
+proposal; there is no explicit ask-for-the-article INPUT step; nothing offers another format
+after export. `assertFormatAllowed(channel, format)` runs at produce (`produce-all.ts:103-104`);
+channel is threaded via `SPLASH_CHANNEL` (`adapters.ts:28-37`) and `withProposalChannel`
 (`adapters.ts:152-158`).
 
-### New flow
+### New flow — the canonical sequence (see "The canonical question sequence" above)
 
-- **CADRAGE (Gate 1)** loses the channel question on BOTH branches (guided and DIRECT). Remaining:
-  branch, takeaway (Gate 1b, unchanged, non-skippable), constraint. The SKILL.md question model is
-  **rewritten, not patched** — question renumbering is a known-sensitive zone (Wave 11:
-  anti-double-ask, real counting); the question-count rules and the harness driver contract are
-  updated together.
-- **PROPOSITION** becomes: ranked type selection (C4) → journalist picks the **type** → ONE
-  question **"where will it live?"** (channel+format merged: the three channel options; format is
-  derived — social ⇒ static/video at the channel's sizes, article-web ⇒ interactive by default —
-  and announced for veto) → `spec.format` pinned → produce.
-- **Downstream unchanged**: `normalizeChannel` stays fail-closed, `assertFormatAllowed` at
-  produce, channel sizes, off-embed ⇒ never interactive. The guards just receive the channel
-  later.
+- **INPUT**: no article → ask for it (step 2). Intent unclear → branch question (step 3,
+  conditional; a named visual keeps today's confirm-back inference).
+- **CADRAGE reordered, channel LAST**: takeaway (4, GATE 1b unchanged) → prose table if prose
+  (5a, GATE 2b relocated here) → source ALWAYS (5b, GATE 2c relocated here) → constraints (6,
+  conditional) → channel (7, same three options, now informed-by and informing everything).
+  Data truth is established BEFORE any routing — a wrong table can no longer invalidate a
+  routed proposal. The SKILL.md question model is **rewritten, not patched** (Wave 11 lesson:
+  renumbering is a known-sensitive zone; question-count rules and the harness driver contract
+  move together).
+- **No standalone format question**: the format derives from channel × type and is announced
+  for veto with the chosen proposal (step 8); an explicit journalist signal ("statique",
+  "print") wins, as today.
+- **Downstream unchanged**: `normalizeChannel` fail-closed, `assertFormatAllowed` at produce,
+  channel sizes, off-embed ⇒ never interactive.
 
-### Cycle-2 re-format
+### Step 12 — proactive other-format offer (cycle 2)
 
-New explicit path on an already-delivered element: re-ask ONLY the "where will it live?"
-question, re-pin the new format, re-produce into the same export dir (same accepted spec, same
-data, same takeaway — no re-CADRAGE, no re-selection). This is Tom's ask verbatim ("si le
-journaliste veut une version vidéo il peut relancer un cycle 2"). Delivery of the new format goes
-through the same export forms (a/b/c) as any produce.
+After every export, splash OFFERS another format of the same element ("tu la veux aussi en
+vidéo pour Instagram ?") — the journalist doesn't have to know to ask. A yes re-runs ONLY the
+channel/format re-pin (one line) + produce + Gate 3 on a NEW `accepted.json` entry
+`<original-id>-<new-format>` (same spec/takeaway/source copied verbatim; new id ⇒ `freshOutDir`
+can never wipe the first delivery). No re-CADRAGE, no re-selection. Delivery goes through the
+same export forms (a/b/c) as any produce.
 
 ### Companion work (private repo)
 
-The splash-harness driver answers Q3 in CADRAGE today; its cases and the question-count checks
-must migrate with this change. Tracked as companion work, not part of this repo's gate.
+The splash-harness driver answers the channel at its old CADRAGE position and never sees
+batched proposals or the step-12 offer; its cases and question-count checks must migrate with
+this change. Tracked as companion work, not part of this repo's gate.
 
-## C4 — Full ranked selection at PROPOSITION (Tom's #2)
+## C4 — Multiple proposals, batched, each with its why (Tom's #2)
 
 ### Current state (anchors)
 
@@ -152,15 +189,20 @@ accept decision" (`SKILL.md:230-239`). There is no runtime candidate scorer.
 
 ### Design
 
-- The suggester emits a **ranked list of ALL reachable types** for the opportunity. Reachable =
-  mapper exists × data shape fits × deterministic guardrails pass (`guardrail-parity` filters
-  BEFORE presentation — a type barred by a guard never appears).
-- **Presentation in tiers, no raw scores**: ★ Recommended (1, full editorial why) · Solid (2-4,
-  one line each) · Possible (rest, names only). Digestible for an unequipped newsroom, complete
-  for a power user. Types whose engine fails preflight (C2) are annotated, not hidden.
-- **One accept decision preserved**: choosing from the list replaces accept/edit/reject; "none" =
-  veto. The full spec is built and the format pinned **only after** the choice (C3's "where will
-  it live?" question follows). `no-chart` remains possible when nothing is reachable.
+- Per opportunity, the suggester emits **multiple reachable candidates** (charts AND maps),
+  each with its editorial why ("en quoi chacune peut être intéressante"), the first one
+  recommended. Reachable = mapper exists × data shape fits × deterministic guardrails pass
+  (`guardrail-parity` filters BEFORE presentation — a guard-barred type never appears) ×
+  channel-compatible (the channel is KNOWN by step 8 — candidates never carry a format the
+  channel forbids). Types whose engine fails preflight (C2) are annotated, not hidden.
+- **Batched presentation across opportunities**: ALL proposals land in ONE message — per
+  opportunity, its candidate list — never a per-opportunity question loop (Rémy, 2026-07-16).
+  The journalist answers for each opportunity (pick a candidate / "aucun"); each kept
+  opportunity remains its own accept decision and its own `accepted.json` entry (invariant
+  kept).
+- The full spec is built and the single format pinned only after the choice, announced for
+  veto in the same breath. `no-chart` remains possible when nothing is reachable — and with
+  C5, the image-scrolly candidate turns the data-poor dead-end into an alternative.
 
 ## C5 — image-scrolly engine (Tom's #3)
 
@@ -246,11 +288,14 @@ programme (`feat/tom-feedback-spec` is the spec branch; implementation branches 
   map-native deps absent).
 - C2: unit tests on the manifest (each engine × missing key/dep → journalist-language failure,
   correct env var names); installer-list parity test (manifest keys == configurator keys).
-- C3: gate tests on the rewritten question model (channel never asked in CADRAGE, asked once at
-  PROPOSITION post-type-choice; cycle-2 re-format produces the second format without re-CADRAGE);
-  `assertFormatAllowed` unchanged and still fail-hard.
-- C4: suggester emits full reachable list (reachability = guardrail-parity filtered); tier
-  presentation; pin only after choice.
+- C3: doc-parity tests on the rewritten question model (12-step order: article-ask → takeaway →
+  table/source → constraints → channel LAST in CADRAGE; no standalone format question; step-12
+  proactive offer present; cycle-2 re-pin produces the second format without re-CADRAGE on its
+  own `<id>-<format>` outDir); `assertFormatAllowed` unchanged and still fail-hard.
+- C4: suggester emits multiple channel-aware candidates per opportunity, each with a why, first
+  recommended (reachability = guardrail-parity filtered); ALL opportunities batched in one
+  presentation; pin only after choice. Harness: `check:single-proposal-no-alternatives` flips
+  red → green on the candidates payload.
 - C5: engine self-contained format checks + scrolly furniture inheritance; suggester proposes it
   only once shipped.
 - C6: GUARD 4 map-native coverage tests (claim exceeding the `rows[valueField]` max → fail
