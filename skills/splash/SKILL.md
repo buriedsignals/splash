@@ -698,6 +698,8 @@ alongside the thanks is NOT a close — handle the request instead.
 | 3 | PRODUCTION | Journalist says "ship it" after seeing the ACTUAL render (re-run in full — 3a then 3b — after every re-produce, never reused from a prior render) | Visual quality not verified; a re-produced render ships on a stale sign-off |
 | 4 | EXPORT | Video/static → give the media file directly; interactive/scrolly → relay the emitted three-form proposal and the journalist chooses ONE: code source (runnable `<id>-source/` React bundle — chart-native, map-native, scrolly) / HTML autonome (single self-contained file) / embed (hosted link) — `--form` only runs AFTER their answer; per element on a multi-element delivery (a grouped answer like « embed pour les deux » is accepted from the journalist, never presumed) | Wrong delivery format; or the proposal collapsed to a bare "Livré." with nothing handed over; or the form auto-decided — `--form` ran (« je finalise pour les deux ») with no journalist answer to the proposal |
 
+The full scripted-guard inventory lives in `docs/splash/guardrails.md`.
+
 ## Never
 
 - Never skip a gate.

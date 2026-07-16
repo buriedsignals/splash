@@ -101,6 +101,153 @@ describe("validateAccepted — claim-grounding (Defect C)", () => {
   });
 });
 
+// GUARD 4 on the MAP producers. map-dw's MapSpec.data IS CSV text (the adapters contract),
+// so the existing csvDomain reader must already ground its takeaway claims — this test PINS
+// that coverage. map-native configs carry rows[valueField] instead (no CSV), covered below.
+describe("validateAccepted — claim-grounding on map producers (GUARD 4 extension)", () => {
+  it("should ground a map-dw takeaway claim against its CSV value domain (GUARD 4 covers map-dw)", () => {
+    // The takeaway over-claims 90 while the data tops out at 42: GUARD 4 must bite.
+    const proposal: AcceptedProposal = {
+      id: "mapdw-claim",
+      producer: "map-dw",
+      format: "static",
+      channel: "article-web",
+      confirmedTakeaway: "Unemployment peaks at 90% in the north",
+      provenance: "table",
+      spec: {
+        mapType: "choropleth",
+        basemap: "world-2019",
+        mapKeyAttr: "DW_NAME",
+        regionKey: "region",
+        valueColumn: "value",
+        data: "region,value\nNord,42\nSud,12\n",
+        title: "Unemployment by region",
+        altInsight: "Unemployment is concentrated in the north of the country.",
+      },
+    };
+    const outcome = validateAccepted(proposal, [proposal]);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        true,
+      );
+  });
+
+  // map-native configs carry no CSV: joined values live in rows[valueField] (ChoroplethData,
+  // choropleth-geo.ts). A minimal valid choropleth config whose data tops out at 42.
+  const mapNativeChoropleth = (
+    confirmedTakeaway: string,
+  ): AcceptedProposal => ({
+    id: "mapnative-claim",
+    producer: "map-native",
+    format: "static",
+    channel: "article-web",
+    confirmedTakeaway,
+    provenance: "table",
+    spec: {
+      basemap: "world",
+      regionKey: "iso",
+      valueField: "rate",
+      rows: [
+        { iso: "CHE", rate: 42 },
+        { iso: "FRA", rate: 31 },
+      ],
+      title: "Rate by country, highest in Switzerland",
+      description: "Rate per country, latest year.",
+      source: { name: "Example stats office", url: "https://stats.admin.ch" },
+      altInsight: "Switzerland has the highest rate of the countries mapped.",
+    },
+  });
+
+  it("should ground a map-native takeaway claim against rows[valueField] (GUARD 4 map-native)", () => {
+    const proposal = mapNativeChoropleth("The rate reaches 75% in Switzerland");
+    const outcome = validateAccepted(proposal, [proposal]);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        true,
+      );
+  });
+
+  it("should stay silent on a map-native claim inside the rows domain", () => {
+    // Same config, takeaway cites 42 (the actual max) → no claim-grounding error.
+    const proposal = mapNativeChoropleth("The rate reaches 42% in Switzerland");
+    const outcome = validateAccepted(proposal, [proposal]);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok)
+      throw new Error(
+        "in-domain map-native claim should ground cleanly, got: " +
+          outcome.errors.join(" | "),
+      );
+  });
+
+  it("should stay a strict no-op for a map-native config without rows/valueField", () => {
+    // A locator config (markers, no value field) → no claim-grounding error even with a
+    // number in the takeaway ("the 3 sites…").
+    const proposal: AcceptedProposal = {
+      id: "mapnative-locator",
+      producer: "map-native",
+      format: "static",
+      channel: "article-web",
+      confirmedTakeaway: "The 3 sites cluster along the border corridor",
+      provenance: "prose",
+      spec: {
+        type: "locator",
+        basemap: "world",
+        markers: [
+          { lon: 6.14, lat: 46.2, label: "Site A" },
+          { lon: 6.24, lat: 46.19, label: "Site B" },
+          { lon: 6.11, lat: 46.14, label: "Site C" },
+        ],
+        title: "Three sites along the border corridor",
+        description: "The three sites named in the article.",
+        source: {
+          name: "Example registry",
+          url: "https://registry.example-org.ch",
+        },
+        altInsight: "The three sites cluster along the border corridor.",
+      },
+    };
+    const outcome = validateAccepted(proposal, [proposal]);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        false,
+      );
+    else expect(outcome.ok).toBe(true);
+  });
+
+  it("should never claim-grounding-fire on a TYPO'D valueField (review F1: null cells must be skipped, not coerced to 0)", () => {
+    // valueField "rateX" doesn't exist in the rows: every cell is undefined. Before the
+    // fix, String(undefined ?? "") coerced to 0 → yMax:0 → the TRUE value 42 in the
+    // takeaway "EXCEEDS the plotted data maximum (0)" — a lying error on top of the
+    // legitimate producer-validator failure. rowsDomain must return null instead.
+    const proposal = mapNativeChoropleth("The rate reaches 42% in Switzerland");
+    (proposal.spec as Record<string, unknown>).valueField = "rateX";
+    const outcome = validateAccepted(proposal, [proposal]);
+    // The choropleth validator legitimately rejects the missing field — but the
+    // claim-grounding guard must stay SILENT (no bogus "maximum (0)" error).
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        false,
+      );
+  });
+
+  it("should not let a stray non-CSV data string DISARM the rows reader (review F2)", () => {
+    // A hand-authored spec carrying rows[valueField] AND a stray GeoJSON `data` string:
+    // csvDomain bails to null on JSON — the guard must fall through to rowsDomain and
+    // still catch the 99-vs-42 over-claim, never take the csv branch as an early out.
+    const proposal = mapNativeChoropleth("The rate reaches 99% in Switzerland");
+    (proposal.spec as Record<string, unknown>).data =
+      '{"type":"FeatureCollection","features":[]}';
+    const outcome = validateAccepted(proposal, [proposal]);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        true,
+      );
+  });
+});
+
 // DEFECTS B & D — spine wiring. The pure guards live in source-guard.ts and are unit-tested
 // there; these prove they are actually WIRED into validateAccepted and consume the proposal's
 // captured `sourceHint`. Production threading of sourceHint is prose-enforced by necessity (the
