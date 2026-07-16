@@ -78,12 +78,12 @@ base `de` / `it` today.)
    **The channel sets the format default FIRST (GATE -1) — there is no single global "static-first" rule.**
    On the two social channels static-first governs (the only escalation available is to video). On
    **article-web the channel default is interactive** (`skills/splash/src/channel.ts`
-   `article-web.interactiveDefault: true`), always shipped with a self-contained static HTML (no-JS) a11y
-   fallback — see the channel block below. The format-selection "escalation" conditions (large/multi-series
+   `article-web.interactiveDefault: true`). The format-selection "escalation" conditions (large/multi-series
    data · a personal-data hook · web-only distribution) are **signals of how strongly a visual benefits from
    interactivity — NOT a precondition an article-web interactive must clear.** A plain article-web
-   interactive with none of those signals is the intended default, not an over-escalation; the static-HTML
-   fallback guarantees a11y either way.
+   interactive with none of those signals is the intended default, not an over-escalation. Since the
+   single-format redesign there is NO auto no-JS static fallback — no-JS accessibility = pinning the
+   `static` format.
 
    **Channel restricts the format set FIRST — before any gate below.** The confirmed distribution channel
    (`skills/splash/src/channel.ts` `Channel`) hard-constrains which formats are even reachable, before the
@@ -91,9 +91,9 @@ base `de` / `it` today.)
    - **social-vertical / social-feed ⇒ format ∈ {static image, video} — NEVER interactive or scrolly.** A
      social post/story has no host page for a live component; do not propose one for these channels.
    - **article-web ⇒ format ∈ {static, interactive, video, scrolly}, and interactive is the DEFAULT** — it
-     wins unless a concrete reason (not a mere preference) rules it out. **Whenever interactive is chosen, a
-     static fallback that carries the claim on its own is ALSO produced** — the interactive layer is
-     additive, never load-bearing (a11y invariant: most readers never hover/click/scroll).
+     wins unless a concrete reason (not a mere preference) rules it out. An explicit journalist format
+     signal ("statique", "pour le print") is such a reason and WINS. The pinned format is the ONLY
+     artifact produced (single-format model) — no static fallback is produced alongside an interactive.
 
    **Aspect↔type guard.** For a portrait (social-vertical) or square (social-feed) channel, NEVER choose a
    row-driven horizontal type (`d3-bars`, `d3-dot-plot`, `d3-arrow-plot`, `d3-range-plot`) — they cannot
@@ -118,8 +118,8 @@ base `de` / `it` today.)
      static/interactive. `map-dw` CANNOT produce a claim-carrying static symbol map: Datawrapper draws the
      proportional circles with values on HOVER only and offers no "label symbols by column" option (verified
      against the Datawrapper Academy "Customizing your symbol map" docs), so its owned static PNG ships mute,
-     unlabeled circles — no place identifiable, no value readable without interaction. Every splash channel
-     requires a claim-carrying static (the social static, or the article-web a11y static fallback), so a
+     unlabeled circles — no place identifiable, no value readable without interaction. A static symbol map
+     must carry its claim on its own (the social channels' static format, or an article-web `static` pin), so a
      valued point map MUST use `map-native`, whose proportional-symbol renderer directly labels the top-N
      circles by name + value (conformance asserts `labeled`). `validateMapSpec` now **rejects** a `map-dw`
      symbol spec with a route-to-`map-native` error — there is NO `map-dw` symbol path.
@@ -150,9 +150,8 @@ base `de` / `it` today.)
    - **Static → `map-dw`** — the static-choropleth producer: used on the social channels (their non-video
      format), and on article-web only when a concrete reason prefers static over the interactive default.
    - **Interactive → `map-native`** — on **article-web this is the channel default** (a live choropleth:
-     "find your country", per-region hover at scale), shipped with map-native's static HTML (no-JS) a11y
-     fallback. The exploration hooks describe when interactivity pays off MOST — a signal, NOT a gate the
-     article-web interactive must clear.
+     "find your country", per-region hover at scale). The exploration hooks describe when interactivity
+     pays off MOST — a signal, NOT a gate the article-web interactive must clear.
    - **Video → `map-native`** (Gate 4: temporal/spatial diffusion, social/vertical distribution).
    - **Scrolly (Gate 3:** the story is **irreducibly sequential** — the author paces a guided north→south /
      step-by-step walk through the data, a single map evolves across 4+ discrete states, the piece is
@@ -187,7 +186,7 @@ base `de` / `it` today.)
    baseColor (a subject-fit Okabe-Ito hue — see Colour below), seriesColors? (multi-series: series → hue),
    highlight? (bar-family accent — see below), seriesLabels? (machine column → human name), valueLabels?,
    numberFormat?, source?,
-   channel (the CADRAGE Q3 answer — one of the structured channels `social-vertical | social-feed |
+   channel (the CADRAGE Q6 answer, asked LAST — one of the structured channels `social-vertical | social-feed |
    article-web` from `skills/splash/src/channel.ts`; sizes the static export: social-feed→square,
    social-vertical→9:16, article-web→16:9. `normalizeChannel` still accepts legacy free text, e.g. "feed"
    or "stories", and maps it to the same enum),
@@ -416,7 +415,7 @@ identify the path).
   "altInsight": "<the insight — WCAG alt, same wording as title>",
   "unit": "<the value's short unit as a literal suffix, e.g. ' mm' / '%' / ' €' — see the unit rule below>",
   "source": { "name": "<honest source>", "url": "<its real URL>" },
-  "channel": "<the CADRAGE Q3 channel — social-vertical | social-feed | article-web>"
+  "channel": "<the CADRAGE Q6 channel — social-vertical | social-feed | article-web>"
 }
 ```
 
@@ -461,7 +460,7 @@ Field notes:
   for the specific dataset/page reference (free text, collecting name + the specific URL together) rather
   than shipping it generic or incomplete. The only legitimate name-only case is the honest prose fallback
   below, which names no separate dataset to link.
-- `channel`: the CADRAGE Q3 answer — the same structured channels as `ChartSpec.channel`
+- `channel`: the CADRAGE Q6 answer — the same structured channels as `ChartSpec.channel`
   (`social-vertical | social-feed | article-web`, `skills/splash/src/channel.ts`). It sizes the static
   PNG export box (social-feed→1080x1080 square, social-vertical→1080x1920 9:16, article-web→1200x675)
   and the render-size floor verifies the delivered PNG against it. Emit it explicitly: the spine also
@@ -831,9 +830,36 @@ If `beats` is present, confirm every `x`/`xEnd`/`category` appears verbatim in t
   default or a social channel's static/video-only set, Gate 2/3/4 when a specific signal drove a
   particular format; ISO-A3 fallback rule if applicable).
 
-## Output
+## Output — candidates first, then ONE spec per kept opportunity
 
-One of:
+Since the canonical 12-step flow (2026-07-16), suggest-chart answers in two stages. The
+channel is KNOWN at both stages (CADRAGE Q6 precedes this call).
+
+**Stage 1: the candidates.** Emit, for the opportunity:
+
+```json
+{
+  "candidates": [
+    { "type": "column-chart", "producer": "dw-chart", "tier": "recommended",
+      "why": "three fixed rates, one comparison — a column chart carries the 25% claim at a glance" },
+    { "type": "d3-bars", "producer": "chart-native", "tier": "solid",
+      "why": "same comparison as a sorted horizontal read — stronger if labels are long" },
+    { "type": "dot-plot", "producer": "dw-chart", "tier": "possible",
+      "why": "minimal ink for the same two values" }
+  ]
+}
+```
+
+- EVERY reachable candidate appears — reachable = mapper exists × data shape fits × every
+  deterministic guardrail (Gates 0-5 above) passes × the channel allows at least one of the
+  type's formats. A guard- or channel-barred type NEVER appears.
+- Exactly ONE `tier: "recommended"` per opportunity, its `why` grounded in the confirmed
+  takeaway. EVERY candidate carries a real one-line `why` ("en quoi elle peut être
+  intéressante") — no bare names.
+- The orchestrator batches ALL opportunities' candidate lists into ONE journalist message.
+- Nothing reachable → emit the `no-chart` decision with a reason, as before.
+
+**Stage 2: ONE validated spec per kept opportunity** — exactly the historical output, one of:
 - a `ChartSpec` JSON for `dw-chart` (the default static chart path);
 - a `NativeSpec` JSON for `chart-native` (when motion/interactivity is the ask for a chart);
 - a `MapSpec` JSON with `producer: "map-dw"` (when Gate 5 routes to a map and format is static);
@@ -843,3 +869,7 @@ One of:
   the story is an irreducibly sequential guided narrative — ISO-A3 codes required, validated via
   `validateChoroplethConfig`, produced via `bun skills/scrolly/scripts/produce.mjs`);
 - or a `no-chart` decision with a reason.
+
+The single pinned `format` is derived from channel × type (`allowedFormats(channel)`,
+`interactiveDefault` on article-web, explicit journalist signal wins), announced for veto by
+the orchestrator.

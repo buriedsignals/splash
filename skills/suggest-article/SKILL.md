@@ -111,7 +111,7 @@ normalise to English.
    never use the CSV table's filename (`dataSource.table`) as this label — that names which supplied
    file backed the claim, not a citable publication a reader can verify. If the article states a name
    but no URL (or no attribution at all), do not guess or fill in a URL — omit `sourceHint.url` (or the
-   whole field) and leave it to the downstream splash flow (CADRAGE/PROPOSITION Gate 2c) to ask the
+   whole field) and leave it to the downstream splash flow (CADRAGE Q4, Gate 2c) to ask the
    journalist directly for the specific, traceable dataset/page URL.
 4. **PROPOSITION — choose the few.** Read the shared KB (at the splash repo root, NOT under this skill)
    `<repo-root>/knowledge/references/chart-selection.md` and `<repo-root>/knowledge/references/design-conformance.md`
