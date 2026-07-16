@@ -199,8 +199,10 @@ function duplicateConfirmedTakeawayError(
 //     fire ONLY when they EXCEED yMax — the over-claim / projection direction. Below-min values
 //     are NOT flagged, so a legitimate delta ("+14 Prozentpunkte", 14 < the 34% floor) never
 //     false-fires. A number matching an annotation / reference-line value is treated as backed.
-// The guard no-ops (returns []) for any spec without a parseable CSV `data` + numeric domain
-// (e.g. map producers), so it only bites the chart producers whose domain it can actually read.
+// The domain is read from the spec's CSV `data` when present (chart producers + map-dw, whose
+// MapSpec.data is CSV text), else from `rows[valueField]` (map-native joined configs). The guard
+// no-ops (returns []) for any spec carrying neither (locator/route/symbol point configs, GeoJSON
+// blobs), so it only bites the producers whose value domain it can actually read.
 
 // Strip typographic grouping separators (regular/no-break/narrow spaces) and resolve the
 // decimal separator (fr/de "1,5" → 1.5; "17.600"/"17,600" grouping → 17600). Returns NaN when
@@ -323,6 +325,33 @@ function csvDomain(csv: string): {
   };
 }
 
+// map-native configs carry no CSV: their joined values live in rows[valueField]
+// (ChoroplethData, choropleth-geo.ts — shared by choropleth/hex/cartogram configs).
+// Domain = the numeric values of that one field; no time axis exists on this path, so the
+// year check never applies (value-exceeds-max only — xIsTime is pinned false so the shape
+// matches csvDomain's exactly and the year branch skips). Returns null for any config
+// without rows/valueField (locator, route, symbol points…) so the guard stays a strict
+// no-op there.
+function rowsDomain(spec: Record<string, unknown>): {
+  xIsTime: boolean;
+  xMin?: number;
+  xMax?: number;
+  yMax?: number;
+} | null {
+  const rows = spec.rows;
+  const valueField = spec.valueField;
+  if (!Array.isArray(rows) || typeof valueField !== "string") return null;
+  const values: number[] = [];
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const v = (row as Record<string, unknown>)[valueField];
+    const n = typeof v === "number" ? v : parseLocaleNumber(String(v ?? ""));
+    if (Number.isFinite(n)) values.push(n);
+  }
+  if (!values.length) return null;
+  return { xIsTime: false, yMax: Math.max(...values) };
+}
+
 const CLAIM_EPS = 1e-9;
 
 function claimGroundingErrors(p: AcceptedProposal): string[] {
@@ -330,8 +359,7 @@ function claimGroundingErrors(p: AcceptedProposal): string[] {
   if (!spec || typeof spec !== "object") return [];
   const s = spec as Record<string, unknown>;
   const csv = typeof s.data === "string" ? s.data : undefined;
-  if (!csv) return [];
-  const domain = csvDomain(csv);
+  const domain = csv ? csvDomain(csv) : rowsDomain(s);
   if (!domain) return [];
   const backed = encodedBackingNumbers(s);
   const title = typeof s.title === "string" ? s.title : "";

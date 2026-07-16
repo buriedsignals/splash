@@ -132,6 +132,89 @@ describe("validateAccepted — claim-grounding on map producers (GUARD 4 extensi
         true,
       );
   });
+
+  // map-native configs carry no CSV: joined values live in rows[valueField] (ChoroplethData,
+  // choropleth-geo.ts). A minimal valid choropleth config whose data tops out at 42.
+  const mapNativeChoropleth = (
+    confirmedTakeaway: string,
+  ): AcceptedProposal => ({
+    id: "mapnative-claim",
+    producer: "map-native",
+    format: "static",
+    channel: "article-web",
+    confirmedTakeaway,
+    provenance: "table",
+    spec: {
+      basemap: "world",
+      regionKey: "iso",
+      valueField: "rate",
+      rows: [
+        { iso: "CHE", rate: 42 },
+        { iso: "FRA", rate: 31 },
+      ],
+      title: "Rate by country, highest in Switzerland",
+      description: "Rate per country, latest year.",
+      source: { name: "Example stats office", url: "https://stats.admin.ch" },
+      altInsight: "Switzerland has the highest rate of the countries mapped.",
+    },
+  });
+
+  it("should ground a map-native takeaway claim against rows[valueField] (GUARD 4 map-native)", () => {
+    const proposal = mapNativeChoropleth("The rate reaches 75% in Switzerland");
+    const outcome = validateAccepted(proposal, [proposal]);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        true,
+      );
+  });
+
+  it("should stay silent on a map-native claim inside the rows domain", () => {
+    // Same config, takeaway cites 42 (the actual max) → no claim-grounding error.
+    const proposal = mapNativeChoropleth("The rate reaches 42% in Switzerland");
+    const outcome = validateAccepted(proposal, [proposal]);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok)
+      throw new Error(
+        "in-domain map-native claim should ground cleanly, got: " +
+          outcome.errors.join(" | "),
+      );
+  });
+
+  it("should stay a strict no-op for a map-native config without rows/valueField", () => {
+    // A locator config (markers, no value field) → no claim-grounding error even with a
+    // number in the takeaway ("the 3 sites…").
+    const proposal: AcceptedProposal = {
+      id: "mapnative-locator",
+      producer: "map-native",
+      format: "static",
+      channel: "article-web",
+      confirmedTakeaway: "The 3 sites cluster along the border corridor",
+      provenance: "prose",
+      spec: {
+        type: "locator",
+        basemap: "world",
+        markers: [
+          { lon: 6.14, lat: 46.2, label: "Site A" },
+          { lon: 6.24, lat: 46.19, label: "Site B" },
+          { lon: 6.11, lat: 46.14, label: "Site C" },
+        ],
+        title: "Three sites along the border corridor",
+        description: "The three sites named in the article.",
+        source: {
+          name: "Example registry",
+          url: "https://registry.example-org.ch",
+        },
+        altInsight: "The three sites cluster along the border corridor.",
+      },
+    };
+    const outcome = validateAccepted(proposal, [proposal]);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        false,
+      );
+    else expect(outcome.ok).toBe(true);
+  });
 });
 
 // DEFECTS B & D — spine wiring. The pure guards live in source-guard.ts and are unit-tested
