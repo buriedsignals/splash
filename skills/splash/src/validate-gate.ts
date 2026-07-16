@@ -377,6 +377,49 @@ function claimGroundingErrors(p: AcceptedProposal): string[] {
   return errors;
 }
 
+// GUARD 5 — skillsInvoked (mechanical sub-skill proof, Spotlight A5). Absent/empty ⇒ warning
+// (legacy accepted.json). Present + guided branch declared without "suggest-chart" ⇒ error:
+// the ranked candidates only suggest-chart can emit were bypassed. Present but declaring
+// NEITHER branch token ⇒ warning too (review M1): a list that skips the branch declaration
+// silently bypasses the guided check — self-reported, so a warning not an error, but never
+// a silent pass.
+function skillsInvokedIssues(p: AcceptedProposal): {
+  errors: string[];
+  warnings: string[];
+} {
+  const list = p.skillsInvoked;
+  if (!Array.isArray(list) || list.length === 0) {
+    return {
+      errors: [],
+      warnings: [
+        (Array.isArray(list)
+          ? "skillsInvoked is empty"
+          : "skillsInvoked missing") +
+          " — cannot mechanically prove suggest-chart produced this proposal (emit it at §5b like channel/confirmedTakeaway)",
+      ],
+    };
+  }
+  const guided = list.includes("splash:cadrage-guided");
+  const direct = list.includes("splash:cadrage-direct");
+  if (!guided && !direct) {
+    return {
+      errors: [],
+      warnings: [
+        "skillsInvoked declares no branch token (splash:cadrage-guided | splash:cadrage-direct) — the guided-branch check cannot run; declare the branch as the first entry (§5b)",
+      ],
+    };
+  }
+  if (guided && !list.includes("suggest-chart")) {
+    return {
+      errors: [
+        "skillsInvoked declares the guided branch but does not list suggest-chart — a guided proposal must come from suggest-chart's candidates, never a host re-decision",
+      ],
+      warnings: [],
+    };
+  }
+  return { errors: [], warnings: [] };
+}
+
 // Run the producer-appropriate validator on an accepted proposal's spec, then the
 // cross-producer source-URL guard (GUARD 2), then the deterministic guardrail-parity gate
 // (ENFORCEMENT SLICE 2 — the deterministic guardrails that lived only in suggest-chart's
@@ -424,6 +467,12 @@ export function validateAccepted(
   // GUARD 4 — claim-grounding (Defect C): a numeric/temporal claim in the title/takeaway that
   // the data domain does not encode (and no annotation/reference line backs) fails hard.
   extraErrors.push(...claimGroundingErrors(p));
+  // GUARD 5 — skillsInvoked mechanical sub-skill proof (Spotlight A5): absent list is an
+  // observability warning (legacy-safe); a guided-branch declaration without suggest-chart
+  // is a hard error (the orchestrator re-decided what the sub-skill owns).
+  const skillsIssues = skillsInvokedIssues(p);
+  extraErrors.push(...skillsIssues.errors);
+  extraWarnings.push(...skillsIssues.warnings);
   extraErrors.push(...guardrailParityViolations(p));
   if (extraErrors.length) {
     return {
