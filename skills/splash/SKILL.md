@@ -345,7 +345,9 @@ confirmation — stays false/absent for "table" (and "none") provenance, which n
 never set it true on a table-provenance proposal just because it looks accepted>,
 "channel": "social-vertical|social-feed|article-web",
 "sourceHint": <OPTIONAL — `suggest-article`'s `sourceHint` verbatim, `{ "name"?, "url"? }`, set ONLY
-when the ARTICLE itself named a source/URL; omit entirely when it named none> }`.
+when the ARTICLE itself named a source/URL; omit entirely when it named none>,
+"skillsInvoked": ["splash:cadrage-guided" | "splash:cadrage-direct", "<each sub-skill you actually
+invoked>", …] }`.
 `producer` + `format` are what suggest-chart routed; `provenance` comes from suggest-article.
 **`sourceHint`, when the article named a source, MUST be carried onto the accepted proposal** — the
 spine's source guards (`validateAccepted` → `sourceNamePreservedReason` / `sourceUrlFidelityReason`)
@@ -358,6 +360,13 @@ when the shipped `source` is the generic fallback but no `sourceHint` was thread
 claim), `validateAccepted` emits a non-blocking render-gate WARNING (`ProposalResult.warnings`) so a
 dropped hint is no longer fully silent — treat that warning as "confirm the article really named no
 source; if it did, thread the hint and re-produce". It is advisory only; it never blocks the produce.
+
+- **`skillsInvoked`** (REQUIRED on new proposals): the skills you actually invoked for this
+  element, first entry declaring the branch — `"splash:cadrage-guided"` or
+  `"splash:cadrage-direct"` — then e.g. `"suggest-article"`, `"suggest-chart"`. Copied across
+  like `channel`/`confirmedTakeaway`; the spine gate warns when absent and FAILS a guided
+  entry without `suggest-chart` (GUARD 5).
+
 **`confirmedTakeaway` is REQUIRED — the spine's validation gate (`src/validate-gate.ts`,
 `validateAccepted`) FAILS any proposal whose `confirmedTakeaway` is missing or empty**, on both
 branches (Gate 1b is un-skippable on guided AND direct, so no proposal legitimately lacks one). It is
