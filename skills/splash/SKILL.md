@@ -246,8 +246,12 @@ stages, and the presentation is BATCHED:
 why ("why it can be interesting" for THIS claim), the first one recommended. Reachable = a
 mapper exists × the data shape fits × every deterministic guardrail passes × the channel
 (known since CADRAGE Q6) allows at least one of its formats — a barred candidate NEVER
-appears. An engine that fails preflight (C2) is annotated, never hidden. Present ALL
-opportunities' candidate lists in ONE batched message — never a per-opportunity question loop
+appears. An engine that fails preflight (C2) is annotated, never hidden. **If `suggest-chart`
+returns a single decision with NO candidates payload, re-invoke it ONCE demanding Stage 1
+explicitly** (« return the candidates JSON first — every reachable type with its why ») — the
+bounded-retry rules apply; never relay a take-it-or-leave-it decision to the journalist.
+Present ALL opportunities' candidate lists in ONE batched message — never a per-opportunity
+question loop
 — and let the journalist answer per opportunity (pick a candidate, or « aucun » = veto; a
 vetoed opportunity emits `no-chart` with the reason). Each kept opportunity remains its OWN
 accept decision and its OWN `accepted.json` entry with its OWN confirmedTakeaway — the
@@ -835,6 +839,10 @@ The full scripted-guard inventory lives in `docs/splash/guardrails.md`.
   "widening gap" framing on single-snapshot data, a per-capita framing on absolute counts). Constrain the
   offered options to the ANALYSE data shape; if the wanted framing needs data you don't have, say so and
   ask for it — never invent the series to justify the framing.
+- Never ask the FORMAT as a standalone question turn — no « Interactif ou image statique ? » menu,
+  ever (an observed real case: asked right after Q6). The format derives from channel × type and is
+  announced FOR VETO inside the same message as the chosen candidate's spec (Stage 2); the
+  journalist changes it by replying to that announce, never by answering a dedicated format question.
 - Never conduct the dialogue in a language other than the journalist's (detect from first message).
 - Never let the produced visual's furniture (title, intro, source label, scrolly captions) default to English — the detected language is threaded to suggest-article and suggest-chart so the OUTPUT matches the dialogue, not only the chat.
 - Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate. This means actually INVOKING `suggest-article` (ANALYSE) and `suggest-chart` (PROPOSITION routing) as real Skill calls, not hand-authoring their output from memory/inspection — their eval-hardened guardrails and KB grounding only fire when they genuinely run. This holds for the FIRST routing AND for any LATER change to the chosen element/format (a journalist request mid-flow, a fallback, a retry after a failed gate): re-invoke `suggest-chart` again with the new signal — never re-decide it yourself by grepping producer source and hand-authoring/`Write`-ing a `spec.json`; only `suggest-chart`'s own re-run re-validates the choice and re-applies its guardrails.

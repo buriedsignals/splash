@@ -45,6 +45,15 @@ base `de` / `it` today.)
 
 ② is the host agent. Execute these steps in order — do not skip the self-check.
 
+**★ YOUR FIRST OUTPUT IS THE CANDIDATES LIST, NEVER A SINGLE DECISION (Stage 1 — canonical
+12-step flow).** The gates below are HOW YOU RANK, not a funnel to one answer: walk them to
+identify EVERY reachable candidate (chart AND map families) for the opportunity, score which
+one you would recommend and WHY, and return the `candidates` JSON of the `## Output` section
+(one `tier:"recommended"` + `solid` + `possible`, each with a real one-line `why`). Only AFTER
+the journalist picks a candidate do you emit the single validated spec (Stage 2). Returning
+one take-it-or-leave-it decision on a first invocation is the exact defect this flow replaced
+(Tom feedback #2) — the harness fails any run whose transcript carries no candidates payload.
+
 1. **Profile** the data: list columns, infer each type (numeric / categorical / temporal), cardinality,
    and the row count. This fixes the data shape (single-series, multi-series, or two-value).
 

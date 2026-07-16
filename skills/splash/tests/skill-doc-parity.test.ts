@@ -71,6 +71,15 @@ describe("C3 — the canonical 12-step order", () => {
     expect(proposition).toContain("derived from channel × type");
   });
 
+  it("a standalone format question is a Never-list violation (validation-run regression)", () => {
+    expect(splash).toContain("Never ask the FORMAT as a standalone question");
+  });
+
+  it("a candidates-less suggest-chart return is re-invoked once (mechanical fallback)", () => {
+    expect(splash).toContain("re-invoke it ONCE");
+    expect(suggest).toContain("YOUR FIRST OUTPUT IS THE CANDIDATES LIST");
+  });
+
   it("step 12: after export, splash proactively offers another format", () => {
     expect(splash).toContain("### Step 12 — offer another format");
     expect(splash).toContain("-<format>");
