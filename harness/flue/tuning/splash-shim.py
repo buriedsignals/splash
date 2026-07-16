@@ -13,6 +13,18 @@ Point Flue at it: SPLASH_LOCAL_BASE_URL=http://127.0.0.1:8090/v1
 import argparse, json, re
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from mlx_lm import load, generate
+from mlx_lm.sample_utils import make_logits_processors
+
+# Apertus's template omits <|assistant_end|> at sequence end, so prose turns weren't
+# trained to stop -> the model rambles/loops after a cadrage question. Truncate prose at
+# the first boundary marker (its aborted stop attempt) to keep the assistant history clean.
+BOUNDARY_RE = re.compile(r"<unk>|<\|assistant_end\|>|<\|assistant_start\|>|<\|user_end\|>|<\|user_start\|>")
+
+def clean_prose(text):
+    cut = BOUNDARY_RE.search(text)
+    text = text[:cut.start()] if cut else text
+    # collapse an immediate self-repeat (degeneration guard) to the first sentence group.
+    return text.strip()
 
 # Trained tool schema (flat, as the Apertus template expects).
 TRAINED_TOOLS = [
@@ -32,6 +44,67 @@ def to_flue(name, args):
         cmd = args.get("cmd")
         return "bash", {"command": cmd, "cmd": cmd}
     return name, args
+
+# The FIXED system prompt the model was trained on (must match build-multiturn.py's SPLASH_SYSTEM).
+SPLASH_SYSTEM = (
+    "You are Splash, a sovereign data-viz orchestrator. Flow: (1) given an article, FIRST ask the "
+    "journalist ONE short cadrage question about the chart; (2) after they confirm, emit a `write-file` "
+    "tool call writing the config JSON; (3) after the config is written, emit an `execute-shell` tool call "
+    "running `bun skills/chart-native/scripts/produce.mjs <type> <config> <outDir> static`; (4) after it "
+    "produces, deliver one short sentence pointing to the artifact. Only the deterministic producer's real "
+    "output counts — never hand-write chart HTML/JS, never a CDN."
+)
+
+def from_flue(name, args):
+    """Reverse of to_flue: translate Flue's tool names/args back to the trained schema."""
+    if name == "write":
+        return "write-file", {"path": args.get("path") or args.get("file_path"), "content": args.get("content")}
+    if name == "bash":
+        return "execute-shell", {"cmd": args.get("cmd") or args.get("command")}
+    return name, args
+
+def _flat(c):
+    if isinstance(c, list):
+        return "\n".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in c)
+    return c if isinstance(c, str) else ("" if c is None else str(c))
+
+def prepare_messages(raw):
+    """Render Flue's OpenAI conversation into the Apertus template's expected shape:
+    fixed Splash system; every content flattened to a string; assistant tool_calls translated
+    back to the trained names; structure (cadrage/answers/tool results) preserved for multi-turn."""
+    out = [{"role": "system", "content": SPLASH_SYSTEM}]
+    last_call = None  # (trained_name, trained_args) of the most recent assistant tool call
+    for m in raw:
+        role = m.get("role")
+        if role == "system":
+            continue
+        if role == "assistant" and m.get("tool_calls"):
+            tcs = []
+            for tc in m["tool_calls"]:
+                fn = tc.get("function", {})
+                try:
+                    args = json.loads(fn.get("arguments") or "{}")
+                except Exception:
+                    args = {}
+                name, targs = from_flue(fn.get("name"), args)
+                last_call = (name, dict(targs))
+                # In HISTORY, stub the write-file config content: the model doesn't need to
+                # re-read its own (possibly huge/truncated) config to proceed to produce, and a
+                # clean short turn matches the training distribution that reliably triggers phase-3.
+                if name == "write-file" and "content" in targs:
+                    targs = {**targs, "content": "{…}"}
+                tcs.append({"type": "function", "function": {"name": name, "arguments": json.dumps(targs, ensure_ascii=False)}})
+            out.append({"role": "assistant", "content": "", "tool_calls": tcs})
+        elif role == "tool":
+            # Normalize the tool RESULT to the training format so the next phase triggers.
+            # Flue's raw write/bash result differs from training ("wrote <path>" / produce stdout).
+            content = _flat(m.get("content"))
+            if last_call and last_call[0] == "write-file":
+                content = f"wrote {last_call[1].get('path')}"
+            out.append({"role": "tool", "content": content})
+        else:
+            out.append({"role": role, "content": _flat(m.get("content"))})
+    return out
 
 def _balanced_array(s):
     """Extract the first complete top-level [...] via bracket matching (truncation-tolerant)."""
@@ -100,21 +173,16 @@ class Handler(BaseHTTPRequestHandler):
         raw = body.get("messages", [])
         import sys as _sys
         print("SHIM incoming roles:", [m.get("role") for m in raw], file=_sys.stderr)
-        # Normalize to [system, user]: the Apertus template rejects Flue's message
-        # structure ("Invalid user message"). Collapse all system content into one system
-        # turn and all non-system content into one user turn — always template-valid.
-        def _txt(c):
-            if isinstance(c, list):
-                return "\n".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in c)
-            return c if isinstance(c, str) else str(c)
-        sys_txt = "\n".join(_txt(m.get("content")) for m in raw if m.get("role") == "system").strip()
-        usr_txt = "\n".join(_txt(m.get("content")) for m in raw if m.get("role") != "system").strip()
-        messages = ([{"role": "system", "content": sys_txt}] if sys_txt else []) + [{"role": "user", "content": usr_txt}]
+        messages = prepare_messages(raw)
         prompt = TOK.apply_chat_template(messages, tools=TRAINED_TOOLS, add_generation_prompt=True)
         # Floor of 700 so the tool-call JSON + suffix isn't truncated mid-emission.
         max_tokens = max(int(body.get("max_tokens") or 700), 700)
+        # No repetition penalty: it corrupts tool-call JSON (which legitimately repeats
+        # structural tokens). Prose looping is handled by clean_prose truncation instead.
         text = generate(MODEL, TOK, prompt=prompt, max_tokens=max_tokens, verbose=False)
         tool_calls = parse_tool_calls(text)
+        if not tool_calls:
+            text = clean_prose(text)
         if body.get("stream"):
             return self._stream(tool_calls, text)
         msg = {"role": "assistant", "content": None if tool_calls else text}
