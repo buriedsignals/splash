@@ -128,6 +128,13 @@ Manifest contents per engine:
   run). Cheap check: attempt resolution of each engine's entry module, or verify the workspace
   `node_modules` markers.
 
+**Tri-state persisted statuses (Spotlight practice, `docs/splash/spotlight-learnings.md` A2):**
+each engine's preflight result is a status OBJECT `{status: green|yellow|red, checkedAt,
+reason}` persisted per project (`.splash-preflight.json`), never a transient boolean —
+`yellow` = degraded-but-announced (engine annotated in the proposals), `red` = blocking at
+dispatch for that engine only. The PROPOSITION-time CLI reads the persisted file instead of
+re-probing every run.
+
 Single source of truth: reuse the key list the installer already writes
 (`install/configurator-core.ts:45-49`). The manifest and the installer must not drift — one
 module exports the list, both consume it.
@@ -173,6 +180,24 @@ channel/format re-pin (one line) + produce + Gate 3 on a NEW `accepted.json` ent
 can never wipe the first delivery). No re-CADRAGE, no re-selection. Delivery goes through the
 same export forms (a/b/c) as any produce.
 
+### Orchestration hardening riding the same SKILL.md rewrite (Spotlight practices)
+
+Three sections adopted from Tom's Spotlight orchestrator (study 2026-07-16,
+`docs/splash/spotlight-learnings.md` A1/A3/A4) land in the same rewrite:
+
+- **Context recovery** (A1): a resume table keyed on artifact PRESENCE in `exports/<slug>/`
+  (no `accepted.json` → CADRAGE/PROPOSITION · `accepted.json` without `report.json` →
+  PRODUCTION · `report.json` without `*-export/` → EXPORT · `*-export/` present → step-12
+  offer) so an interrupted run reconstitutes its position from `ls`, never from memory.
+  Declined choices leave marker files, not just conversation turns.
+- **Bounded-retry discipline** (A3): a non-zero produce/validate is retried ONCE, quoting the
+  error verbatim, shape-only fixes; otherwise STOP and present the failure honestly — never
+  worked around (the exact improvisation Tom's run exhibited).
+- **Stall protocol** (A4): after 2 produce failures (or 2 successive Gate-3 rejections) on one
+  element, a SCRIPTED stop: « Je bloque sur {élément} : {raison}. Options : (a) un autre type
+  de la sélection, (b) abandonner cet élément, (c) me donner une consigne précise. » — the
+  model fills the gaps, never invents when to give up.
+
 ### Companion work (private repo)
 
 The splash-harness driver answers the channel at its old CADRAGE position and never sees
@@ -203,6 +228,11 @@ accept decision" (`SKILL.md:230-239`). There is no runtime candidate scorer.
 - The full spec is built and the single format pinned only after the choice, announced for
   veto in the same breath. `no-chart` remains possible when nothing is reachable — and with
   C5, the image-scrolly candidate turns the data-poor dead-end into an alternative.
+- **Mechanical sub-skill proof** (Spotlight practice A5, `docs/splash/spotlight-learnings.md`):
+  `AcceptedProposal` gains `skillsInvoked: string[]` (emitted at §5b like
+  `channel`/`confirmedTakeaway`); `validate-gate` warns when absent and fails a guided-branch
+  proposal that doesn't list `suggest-chart` — "invoke as a real Skill call" stops being
+  trust-only prose.
 
 ## C5 — image-scrolly engine (Tom's #3)
 

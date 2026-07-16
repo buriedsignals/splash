@@ -456,7 +456,91 @@ git commit -m "test(splash): step-12 re-format entry keys its own outDir — del
 
 ---
 
-### Task 6: Full-file coherence sweep + gate
+### Task 6: Orchestration hardening — context recovery, bounded retry, stall protocol
+
+**Files:**
+- Modify: `skills/splash/SKILL.md` (three new subsections; spec §"Orchestration hardening",
+  practices from `docs/splash/spotlight-learnings.md` A1/A3/A4)
+- Test: `skills/splash/tests/skill-doc-parity.test.ts` (extend)
+
+- [ ] **Step 1: Extend the doc-parity tests (red)**
+
+```ts
+describe("orchestration hardening (Spotlight A1/A3/A4)", () => {
+  it("has a context-recovery resume table keyed on artifact presence", () => {
+    expect(splash).toContain("## Context recovery");
+    expect(splash).toContain("accepted.json");
+    expect(splash).toContain("report.json");
+  });
+  it("has the bounded-retry discipline (once, verbatim error, shape-only)", () => {
+    expect(splash).toContain("retried ONCE");
+    expect(splash).toContain("never worked around");
+  });
+  it("has the scripted stall protocol", () => {
+    expect(splash).toContain("## Stall protocol");
+    expect(splash).toContain("Je bloque sur");
+  });
+});
+```
+
+- [ ] **Step 2: Write the three SKILL.md sections**
+
+Context recovery (place near the end, before the gate table):
+
+```markdown
+## Context recovery
+
+All flow state lives in files under `exports/<slug>/` — never in conversation memory. On any
+interruption (compaction, crash, resumed session), determine the position from artifact
+PRESENCE and resume there:
+
+| Present | Resume at |
+|---|---|
+| nothing / article only | CADRAGE (step 3-7) |
+| `accepted.json`, no `report.json` | PRODUCTION (produce-all the accepted entries) |
+| `report.json`, no `<id>-export/` | EXPORT (Gate 4 / delivery-form proposal) |
+| `<id>-export/` complete | step 12 — offer another format |
+
+A DECLINED choice leaves a marker file (e.g. `<id>-export/DECLINED.txt` with the declined
+form and timestamp), so absence-of-action is distinguishable from not-yet-asked.
+```
+
+Bounded retry (inside PRODUCTION):
+
+```markdown
+**Bounded retry — a failing produce/validate is never worked around.** When produce-all or a
+validator exits non-zero, re-run ONCE with the error message quoted verbatim and shape-only
+fixes (fix the spec field the error names — never rewrite content to dodge a guard, never
+switch tools, never hand-build artifacts). If it fails again: STOP and present the failure to
+the journalist honestly (stall protocol below).
+```
+
+Stall protocol (own subsection after PRODUCTION):
+
+```markdown
+## Stall protocol
+
+After 2 produce failures OR 2 successive Gate-3 rejections on one element, stop with exactly
+this shape — never silently retry a third time, never drop the element:
+
+> « Je bloque sur {élément} : {raison concrète}. Options : (a) un autre type de la sélection,
+> (b) abandonner cet élément, (c) me donner une consigne précise. »
+
+Wait for the journalist's decision. (a) re-enters step 8 with the remaining candidates; (b)
+records the element as abandoned in the recap; (c) applies the instruction then re-produces
+(counts toward the same bound).
+```
+
+- [ ] **Step 3: Run the parity tests — green. Commit**
+
+```bash
+git add skills/splash/SKILL.md skills/splash/tests/skill-doc-parity.test.ts
+git commit -m "feat(splash): context recovery + bounded retry + stall protocol (Spotlight practices A1/A3/A4)"
+```
+
+---
+
+### Task 7: Full-file coherence sweep + gate
 
 **Files:**
 - Modify: `skills/splash/SKILL.md`, `skills/suggest-chart/SKILL.md` (sweep hits only)
