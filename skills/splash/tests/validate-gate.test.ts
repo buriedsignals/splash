@@ -215,6 +215,37 @@ describe("validateAccepted — claim-grounding on map producers (GUARD 4 extensi
       );
     else expect(outcome.ok).toBe(true);
   });
+
+  it("should never claim-grounding-fire on a TYPO'D valueField (review F1: null cells must be skipped, not coerced to 0)", () => {
+    // valueField "rateX" doesn't exist in the rows: every cell is undefined. Before the
+    // fix, String(undefined ?? "") coerced to 0 → yMax:0 → the TRUE value 42 in the
+    // takeaway "EXCEEDS the plotted data maximum (0)" — a lying error on top of the
+    // legitimate producer-validator failure. rowsDomain must return null instead.
+    const proposal = mapNativeChoropleth("The rate reaches 42% in Switzerland");
+    (proposal.spec as Record<string, unknown>).valueField = "rateX";
+    const outcome = validateAccepted(proposal, [proposal]);
+    // The choropleth validator legitimately rejects the missing field — but the
+    // claim-grounding guard must stay SILENT (no bogus "maximum (0)" error).
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        false,
+      );
+  });
+
+  it("should not let a stray non-CSV data string DISARM the rows reader (review F2)", () => {
+    // A hand-authored spec carrying rows[valueField] AND a stray GeoJSON `data` string:
+    // csvDomain bails to null on JSON — the guard must fall through to rowsDomain and
+    // still catch the 99-vs-42 over-claim, never take the csv branch as an early out.
+    const proposal = mapNativeChoropleth("The rate reaches 99% in Switzerland");
+    (proposal.spec as Record<string, unknown>).data =
+      '{"type":"FeatureCollection","features":[]}';
+    const outcome = validateAccepted(proposal, [proposal]);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        true,
+      );
+  });
 });
 
 // DEFECTS B & D — spine wiring. The pure guards live in source-guard.ts and are unit-tested

@@ -325,13 +325,17 @@ function csvDomain(csv: string): {
   };
 }
 
-// map-native configs carry no CSV: their joined values live in rows[valueField]
-// (ChoroplethData, choropleth-geo.ts — shared by choropleth/hex/cartogram configs).
+// map-native configs carry no CSV: their joined values live in rows[valueField] — the
+// choropleth-style shape (ChoroplethData, choropleth-geo.ts; dot-density shares it). Hex-grid
+// (points[]) and cartogram (values[].value) carry other shapes and are NOT read here — their
+// value claims stay ungrounded (follow-up), same as locator/route/symbol.
 // Domain = the numeric values of that one field; no time axis exists on this path, so the
 // year check never applies (value-exceeds-max only — xIsTime is pinned false so the shape
 // matches csvDomain's exactly and the year branch skips). Returns null for any config
-// without rows/valueField (locator, route, symbol points…) so the guard stays a strict
-// no-op there.
+// without rows/valueField so the guard stays a strict no-op there — including a TYPO'D
+// valueField: a null/absent/empty cell is SKIPPED, never coerced (String(undefined ?? "") is
+// "" and Number("") is 0 — the coercion bug that once made a typo'd field yield yMax:0 and
+// false-fire on a validator-clean dot-density spec).
 function rowsDomain(spec: Record<string, unknown>): {
   xIsTime: boolean;
   xMin?: number;
@@ -345,7 +349,8 @@ function rowsDomain(spec: Record<string, unknown>): {
   for (const row of rows) {
     if (!row || typeof row !== "object") continue;
     const v = (row as Record<string, unknown>)[valueField];
-    const n = typeof v === "number" ? v : parseLocaleNumber(String(v ?? ""));
+    if (v == null || (typeof v === "string" && !v.trim())) continue;
+    const n = typeof v === "number" ? v : parseLocaleNumber(String(v));
     if (Number.isFinite(n)) values.push(n);
   }
   if (!values.length) return null;
@@ -359,7 +364,11 @@ function claimGroundingErrors(p: AcceptedProposal): string[] {
   if (!spec || typeof spec !== "object") return [];
   const s = spec as Record<string, unknown>;
   const csv = typeof s.data === "string" ? s.data : undefined;
-  const domain = csv ? csvDomain(csv) : rowsDomain(s);
+  // Chained, not either/or: a stray non-groundable `data` string on a map spec (e.g. a
+  // hand-authored GeoJSON blob — csvDomain bails to null on JSON) must not DISARM the rows
+  // reader. Charts keep their CSV domain; rows/valueField is the fallback, and a spec with
+  // neither stays a strict no-op.
+  const domain = (csv ? csvDomain(csv) : null) ?? rowsDomain(s);
   if (!domain) return [];
   const backed = encodedBackingNumbers(s);
   const title = typeof s.title === "string" ? s.title : "";
