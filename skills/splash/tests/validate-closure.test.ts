@@ -1,13 +1,29 @@
 // validate-closure.test.ts — drift guard: the VALIDATION import closure must stay free of
-// the video runtime. produce-all (and validate-gate, its heaviest import) must load on a
-// machine where map-native's remotion/react are not installed — a 100 % Datawrapper batch
+// the video/map runtime. produce-all (and validate-gate, its heaviest import) must load on
+// a machine where map-native's node_modules is not installed — a 100 % Datawrapper batch
 // must never require the video stack (C1, Tom's 2026-07-16 crash: route-geo re-exported a
-// scene constant from a remotion module, killing every produce-all at import time).
+// scene constant from a remotion module, killing every produce-all at import time; the
+// same graph also reached @turf/turf, another map-native-local dependency).
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
-const FORBIDDEN = new Set(["remotion", "react", "react-dom"]);
+// Every runtime dependency of map-native is forbidden in the closure — they only exist in
+// skills/map-native/node_modules, so any of them re-entering the graph recreates Tom's
+// crash on a machine that never installed the map/video skill. The list is read from the
+// package.json so a newly added map-native dependency is guarded automatically.
+const mapNativePkg = JSON.parse(
+  readFileSync(
+    resolve(import.meta.dir, "../../map-native/package.json"),
+    "utf8",
+  ),
+) as { dependencies?: Record<string, string> };
+const FORBIDDEN = new Set([
+  "remotion",
+  "react",
+  "react-dom",
+  ...Object.keys(mapNativePkg.dependencies ?? {}),
+]);
 const ENTRIES = [
   resolve(import.meta.dir, "../src/validate-gate.ts"),
   resolve(import.meta.dir, "../scripts/produce-all.mjs"),

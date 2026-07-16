@@ -4,8 +4,10 @@
 // title card fades out exactly as the furniture fades in. Pure, frame-deterministic.
 import { interpolate, Easing } from "remotion";
 
-export const TITLE_SCENE_FRAMES = 75; // ~2.5s @ 30fps — matches the storytelling title hold
-export const CROSSFADE_FRAMES = 12; // ~0.4s @ 30fps
+// Constants live in scene-constants.ts (runtime-free — see that file's header); re-exported
+// here so the 20+ video components keep their historical `from "../video-scene"` import.
+export { TITLE_SCENE_FRAMES, CROSSFADE_FRAMES } from "./scene-constants";
+import { CROSSFADE_FRAMES } from "./scene-constants";
 
 export function resolveScene(
   frame: number,
