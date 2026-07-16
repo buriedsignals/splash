@@ -102,3 +102,19 @@ describe("C4 — batched multi-proposals, each with its why", () => {
     );
   });
 });
+
+describe("orchestration hardening (Spotlight A1/A3/A4)", () => {
+  it("has a context-recovery resume table keyed on artifact presence", () => {
+    expect(splash).toContain("## Context recovery");
+    expect(splash).toContain("accepted.json");
+    expect(splash).toContain("report.json");
+  });
+  it("has the bounded-retry discipline (once, verbatim error, shape-only)", () => {
+    expect(splash).toContain("retried ONCE");
+    expect(splash).toContain("never worked around");
+  });
+  it("has the scripted stall protocol", () => {
+    expect(splash).toContain("## Stall protocol");
+    expect(splash).toContain("Je bloque sur");
+  });
+});

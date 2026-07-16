@@ -509,6 +509,13 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
   pipeline step: REPORT the bug to the journalist (this visual cannot ship yet) and drop or route around
   the proposal instead (see Never).
 
+**Bounded retry — a failing produce/validate is never worked around.** When produce-all or a
+validator exits non-zero, it is retried ONCE, with the error message quoted verbatim and
+shape-only fixes (fix the malformed/missing spec field the error names — a SUBSTANTIVE spec
+change still re-opens GATE 2 (5d); never rewrite content to dodge a guard, never switch tools,
+never hand-build artifacts). If it fails again: STOP and present the failure to the journalist
+honestly (see the Stall protocol, below the flow).
+
 **GATE 3 (render) — per produced visual.**
 
 **3a. Render-review FIRST (mandatory, Layer 2).** Before you show the journalist anything, put the
@@ -751,6 +758,34 @@ ask (canonical step 12). On a yes:
 No re-CADRAGE, no re-selection. The single-format model is untouched: each cycle produces
 exactly ONE pinned format — « chaque graphique aura plusieurs formats » = short journalist
 cycles, never a batch.
+
+## Context recovery
+
+All flow state lives in files under `exports/<slug>/` — never in conversation memory. On any
+interruption (compaction, crash, resumed session), determine the position from artifact
+PRESENCE and resume there:
+
+| Present | Resume at |
+|---|---|
+| nothing / article only | CADRAGE (steps 3-7) |
+| `accepted.json`, no `report.json` | PRODUCTION (produce-all the accepted entries) |
+| `report.json`, no `<id>-export/` | EXPORT (Gate 4 / delivery-form proposal) |
+| `<id>-export/` complete | step 12 — offer another format |
+
+A DECLINED choice leaves a marker file (e.g. `<id>-export/DECLINED.txt` with the declined
+form and timestamp), so absence-of-action is distinguishable from not-yet-asked.
+
+## Stall protocol
+
+After 2 produce failures OR 2 successive Gate-3 rejections on one element, stop with exactly
+this shape — never silently retry a third time, never drop the element:
+
+> « Je bloque sur {élément} : {raison concrète}. Options : (a) un autre type de la sélection,
+> (b) abandonner cet élément, (c) me donner une consigne précise. »
+
+Wait for the journalist's decision. (a) re-enters step 8 with the remaining candidates; (b)
+records the element as abandoned in the recap; (c) applies the instruction then re-produces
+(counts toward the same bound).
 
 ## Gates
 
