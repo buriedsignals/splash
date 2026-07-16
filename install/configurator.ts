@@ -13,7 +13,8 @@ import {
 } from "./configurator-core.ts";
 
 const DEST = process.cwd(); // the bootstrap runs this from ~/Splash
-const NO_OPEN = (process.env.SPLASH_NO_OPEN ?? process.env.ATELIER_NO_OPEN) === "1"; // testability seam
+const NO_OPEN =
+  (process.env.SPLASH_NO_OPEN ?? process.env.ATELIER_NO_OPEN) === "1"; // testability seam
 
 function openBrowser(url: string): void {
   const cmd =
@@ -54,7 +55,12 @@ const server = Bun.serve({
       } catch {
         return new Response("invalid request body", { status: 400 });
       }
-      return Response.json(await verifyAll(cfg));
+      // Constructed Response, not the static Response.json(): bun-types 1.3.14 dropped the
+      // static from its Response constructor typing, which failed the tsc gate on a fresh
+      // install. Runtime-identical.
+      return new Response(JSON.stringify(await verifyAll(cfg)), {
+        headers: { "Content-Type": "application/json" },
+      });
     }
     if (req.method === "POST" && url.pathname === "/submit") {
       let cfg: ConfiguratorConfig;
