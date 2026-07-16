@@ -217,3 +217,75 @@ describe("validateAccepted — dropped-hint observability", () => {
     expect(outcome.ok).toBe(false);
   });
 });
+
+// A5 — mechanical sub-skill proof. Minimal proposal that clears every other guard
+// (named source ⇒ no dropped-hint warning; no numbers in title/takeaway ⇒ no
+// claim-grounding fire), so the skillsInvoked guard is the only variable under test.
+function minimalValidProposal(): AcceptedProposal {
+  return {
+    id: "minimal",
+    producer: "chart-native",
+    format: "static",
+    spec: {
+      producer: "chart-native",
+      nativeType: "bar",
+      title: "Un titre",
+      data: "cat,val\nA,1\nB,2",
+      source: { name: "INSEE" },
+      altInsight: "insight",
+      lang: "fr",
+    },
+    confirmedTakeaway: "A confirmed takeaway with no numbers in it",
+    provenance: "table",
+  };
+}
+
+describe("skillsInvoked (mechanical sub-skill proof)", () => {
+  it("should warn (not fail) when skillsInvoked is absent — legacy proposals keep working", () => {
+    const p = minimalValidProposal(); // no skillsInvoked
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(true);
+    if (outcome.ok)
+      expect(outcome.warnings.some((w) => w.includes("skillsInvoked"))).toBe(
+        true,
+      );
+  });
+
+  it("should FAIL a guided-branch proposal whose skillsInvoked lacks suggest-chart", () => {
+    const p = {
+      ...minimalValidProposal(),
+      skillsInvoked: ["splash:cadrage-guided", "suggest-article"],
+    };
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("suggest-chart"))).toBe(
+        true,
+      );
+  });
+
+  it("should pass a guided-branch proposal that lists suggest-chart", () => {
+    const p = {
+      ...minimalValidProposal(),
+      skillsInvoked: [
+        "splash:cadrage-guided",
+        "suggest-article",
+        "suggest-chart",
+      ],
+    };
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(true);
+  });
+
+  it("should pass a DIRECT-branch proposal without suggest-chart in the list", () => {
+    // DIRECT still calls suggest-chart for validation in practice, but the GATE only
+    // enforces the guided-branch invariant (the journalist chose from candidates that
+    // ONLY suggest-chart can have produced).
+    const p = {
+      ...minimalValidProposal(),
+      skillsInvoked: ["splash:cadrage-direct"],
+    };
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(true);
+  });
+});

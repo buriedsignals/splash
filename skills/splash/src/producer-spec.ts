@@ -35,6 +35,14 @@ export interface AcceptedProposal {
   // warning in validate-gate.ts), so the guards stay dormant and the honest name-only/prose
   // fallback passes.
   sourceHint?: { name?: string; url?: string };
+  // Mechanical sub-skill proof (Spotlight practice A5): which skills the orchestrator
+  // actually invoked to build this proposal, emitted at §5b like channel/confirmedTakeaway.
+  // First entry declares the branch ("splash:cadrage-guided" | "splash:cadrage-direct").
+  // OPTIONAL and legacy-safe: absent ⇒ observability warning only. A PRESENT list that
+  // declares guided without "suggest-chart" fails the gate — a guided proposal can only
+  // come from suggest-chart's candidates, so its absence means the orchestrator re-decided
+  // what the sub-skill owns.
+  skillsInvoked?: string[];
 }
 
 export type ProduceStatus =
