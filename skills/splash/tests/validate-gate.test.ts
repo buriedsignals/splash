@@ -101,6 +101,39 @@ describe("validateAccepted — claim-grounding (Defect C)", () => {
   });
 });
 
+// GUARD 4 on the MAP producers. map-dw's MapSpec.data IS CSV text (the adapters contract),
+// so the existing csvDomain reader must already ground its takeaway claims — this test PINS
+// that coverage. map-native configs carry rows[valueField] instead (no CSV), covered below.
+describe("validateAccepted — claim-grounding on map producers (GUARD 4 extension)", () => {
+  it("should ground a map-dw takeaway claim against its CSV value domain (GUARD 4 covers map-dw)", () => {
+    // The takeaway over-claims 90 while the data tops out at 42: GUARD 4 must bite.
+    const proposal: AcceptedProposal = {
+      id: "mapdw-claim",
+      producer: "map-dw",
+      format: "static",
+      channel: "article-web",
+      confirmedTakeaway: "Unemployment peaks at 90% in the north",
+      provenance: "table",
+      spec: {
+        mapType: "choropleth",
+        basemap: "world-2019",
+        mapKeyAttr: "DW_NAME",
+        regionKey: "region",
+        valueColumn: "value",
+        data: "region,value\nNord,42\nSud,12\n",
+        title: "Unemployment by region",
+        altInsight: "Unemployment is concentrated in the north of the country.",
+      },
+    };
+    const outcome = validateAccepted(proposal, [proposal]);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        true,
+      );
+  });
+});
+
 // DEFECTS B & D — spine wiring. The pure guards live in source-guard.ts and are unit-tested
 // there; these prove they are actually WIRED into validateAccepted and consume the proposal's
 // captured `sourceHint`. Production threading of sourceHint is prose-enforced by necessity (the
