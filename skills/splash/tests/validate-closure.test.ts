@@ -17,24 +17,35 @@ const mapNativePkg = JSON.parse(
     resolve(import.meta.dir, "../../map-native/package.json"),
     "utf8",
   ),
-) as { dependencies?: Record<string, string> };
+) as {
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+};
+// dependencies AND devDependencies (review finding): a devDep statically imported into the
+// closure crashes a fresh clone exactly like remotion did — both count. (Follow-up, wider
+// invariant: forbid every sibling-skill-local package — d3-* via chart-native and playwright
+// via dw-chart are ALREADY in the produce-all closure, pre-existing crash class on selective
+// installs; tracked in the programme backlog.)
 const FORBIDDEN = new Set([
   "remotion",
   "react",
   "react-dom",
   ...Object.keys(mapNativePkg.dependencies ?? {}),
+  ...Object.keys(mapNativePkg.devDependencies ?? {}),
 ]);
 const ENTRIES = [
   resolve(import.meta.dir, "../src/validate-gate.ts"),
   resolve(import.meta.dir, "../scripts/produce-all.mjs"),
 ];
 
-// import/export-from/dynamic-import specifiers. `import type` / `export type` are erased at
-// runtime and pull nothing — skip them so a type-only edge is never a false positive.
-// The clause part ([^"']*?) deliberately spans newlines: multi-line import lists
-// (`import {\n  a,\n} from "x"`) are the norm in this codebase.
+// STATIC import/export-from/side-effect specifiers ONLY. `import type` / `export type` are
+// erased at runtime and pull nothing; a DYNAMIC `import("x")` is a LAZY edge that cannot
+// crash module load (the guard's whole invariant is load-time survival on a partial install
+// — label-safety.ts's playwright is the sanctioned example: type-only + lazy launch). Both
+// are deliberately NOT matched. The clause part ([^"']*?) deliberately spans newlines:
+// multi-line import lists (`import {\n  a,\n} from "x"`) are the norm in this codebase.
 const IMPORT_RE =
-  /(?:^|\n)\s*(?:import|export)\s+(?!type\b)[^"']*?from\s*["']([^"']+)["']|import\s*\(\s*["']([^"']+)["']\s*\)|(?:^|\n)\s*import\s*["']([^"']+)["']/g;
+  /(?:^|\n)\s*(?:import|export)\s+(?!type\b)[^"']*?from\s*["']([^"']+)["']|(?:^|\n)\s*import\s*["']([^"']+)["']/g;
 
 function read(file: string): string | null {
   try {
@@ -77,7 +88,7 @@ function closurePackages(entries: string[]): Map<string, string> {
     const src = read(file);
     if (src === null) throw new Error(`cannot read ${file}`);
     for (const m of src.matchAll(IMPORT_RE)) {
-      const spec = m[1] ?? m[2] ?? m[3];
+      const spec = m[1] ?? m[2];
       if (!spec) continue;
       if (spec.startsWith(".")) {
         queue.push(resolveRelative(spec, file));
