@@ -15,3 +15,7 @@ harness/flue/.agents/
 harness/flue/tuning/data/
 harness/flue/tuning/adapters/
 harness/flue/tuning/mlxenv/
+# Apertus tuning: fused models (~4GB each), runtime sqlite, pycache — local only, never pushed
+harness/flue/tuning/apertus-8b-splash-*/
+harness/flue/tuning/__pycache__/
+harness/flue/data/
