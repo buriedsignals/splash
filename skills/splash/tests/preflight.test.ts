@@ -1,7 +1,9 @@
 // preflight.test.ts — the per-engine readiness manifest. Pure: env and dep resolution are
 // injected, so these tests never depend on the machine's real .env or node_modules.
 import { describe, expect, it } from "bun:test";
+import { serializeEnv } from "../../../install/configurator-core";
 import {
+  EMBED_DELIVERY_ENV,
   ENGINE_REQUIREMENTS,
   enginePreflightStatus,
   preflightFindings,
@@ -103,5 +105,30 @@ describe("enginePreflightStatus (tri-state, Spotlight A2)", () => {
     });
     expect(s.status).toBe("red");
     expect(s.reason).toContain("bun install");
+  });
+});
+
+// Single source of truth with the installer: every env var the manifest (or the embed
+// delivery form) names must be one the installer's configurator actually writes.
+describe("installer parity", () => {
+  it("should only require env vars the installer's configurator writes", () => {
+    const written = serializeEnv({
+      runtime: "claude",
+      maptiler: "x",
+      datawrapper: "x",
+      anthropic: "x",
+      embedApp: "x",
+      flyToken: "x",
+    });
+    const writtenNames = new Set(
+      written
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => line.split("=")[0]),
+    );
+    const required = new Set<string>(EMBED_DELIVERY_ENV);
+    for (const req of Object.values(ENGINE_REQUIREMENTS))
+      for (const group of req.env) for (const name of group) required.add(name);
+    for (const name of required) expect(writtenNames.has(name)).toBe(true);
   });
 });
