@@ -24,6 +24,11 @@ const p = (
 // exercise the LOOP (drop-proof, gates, outDir routing), not the validation gate.
 const PASS: ProposalValidator = () => ({ ok: true, warnings: [] });
 
+// Loop-mechanics/validation tests inject an always-ready preflight so they stay hermetic
+// (the real default consults the machine's env/node_modules — that path has its own
+// dedicated tests in tests/preflight.test.ts and the C2 gate describe below).
+const READY = () => [];
+
 describe("produceAll — loop mechanics", () => {
   it("reports EVERY accepted proposal even when the middle one throws (drop-proof)", async () => {
     const dispatch: Dispatch = async (prop) => {
@@ -305,6 +310,8 @@ describe("produceAll — producer-match gate (GUARD 1)", () => {
       "out",
       dispatch,
       PASS,
+      null,
+      READY,
     );
     expect(results[0].status).toBe("failed");
     expect(results[0].error).toContain("dw-chart");
@@ -355,6 +362,8 @@ describe("produceAll — producer-match gate (GUARD 1)", () => {
       "out",
       dispatch,
       PASS,
+      null,
+      READY,
     );
     expect(results[0].status).toBe("produced");
     expect(results[0].actualProducer).toBe("map-native");
@@ -408,6 +417,9 @@ describe("produceAll — validation gate (real validator)", () => {
       ],
       "out",
       dispatch,
+      validateAccepted,
+      null,
+      READY,
     );
     expect(produced).toEqual([]); // dispatch NEVER ran for the invalid spec
     expect(results[0].status).toBe("failed");
@@ -428,6 +440,9 @@ describe("produceAll — validation gate (real validator)", () => {
       ],
       "out",
       dispatch,
+      validateAccepted,
+      null,
+      READY,
     );
     expect(produced).toEqual(["ok"]);
     expect(results[0].status).toBe("produced");
@@ -454,6 +469,9 @@ describe("produceAll — validation gate (real validator)", () => {
       ],
       "out",
       dispatch,
+      validateAccepted,
+      null,
+      READY,
     );
     expect(results.map((r) => r.id).sort()).toEqual(["a", "b"]);
     expect(results.find((r) => r.id === "b")?.status).toBe("failed");
@@ -490,6 +508,9 @@ describe("produceAll — validation gate (real validator)", () => {
       ],
       "out",
       dispatch,
+      validateAccepted,
+      null,
+      READY,
     );
     expect(results.map((r) => r.status)).toEqual([
       "failed",
@@ -519,6 +540,9 @@ describe("produceAll — validation gate (real validator)", () => {
       ],
       "out",
       dispatch,
+      validateAccepted,
+      null,
+      READY,
     );
     expect(produced).toEqual([]); // the producer never ran
     expect(results[0].status).toBe("failed");
@@ -553,6 +577,9 @@ describe("produceAll — validation gate (real validator)", () => {
       ],
       "out",
       dispatch,
+      validateAccepted,
+      null,
+      READY,
     );
     expect(results.map((r) => r.id).sort()).toEqual(["a", "c", "x"]);
     expect(results.find((r) => r.id === "x")?.status).toBe("failed");
@@ -609,6 +636,7 @@ describe("produceAll — newsroom profile defaults", () => {
       dispatch,
       PASS,
       profile,
+      READY,
     );
     expect(seen.baseColor).toBeUndefined();
     expect(seen.source).toEqual({ name: "Heidi.news" });
@@ -654,6 +682,7 @@ describe("produceAll — newsroom profile with the REAL validator (regression: f
       dispatch,
       validateAccepted, // the REAL validator — this is where the merge-clone identity bug bit
       profile,
+      READY,
     );
     expect(results[0].status).toBe("produced");
     expect(produced).toEqual(["ok"]);
@@ -686,6 +715,7 @@ describe("produceAll — newsroom profile with the REAL validator (regression: f
       dispatch,
       validateAccepted,
       profile,
+      READY,
     );
     expect(results.map((r) => r.status)).toEqual(["produced", "produced"]);
     expect(produced.sort()).toEqual(["a", "b"]);
@@ -719,6 +749,7 @@ describe("produceAll — newsroom profile with the REAL validator (regression: f
       dispatch,
       validateAccepted,
       profile,
+      READY,
     );
     expect(results.map((r) => r.id)).toEqual(["bad", "good"]); // both reported (no crash)
     expect(results.find((r) => r.id === "bad")?.status).toBe("failed");
@@ -774,5 +805,60 @@ describe("produceAll — dropped source-hint warning surfaces on the result", ()
     expect(
       (results[0].warnings ?? []).some((w) => w.includes("sourceHint")),
     ).toBe(false);
+  });
+});
+
+// C2 preflight gate — the engine's keys/deps are checked BEFORE validation/dispatch, in
+// journalist language (which key, where to get it, where to put it), replacing the lazy
+// deep failures (dw-chart's token() throw at the first API call mid-PRODUCTION).
+describe("produceAll — engine preflight gate (C2)", () => {
+  it("should fail a proposal loud, in journalist language, when the engine preflight is not ready", async () => {
+    const dispatched: string[] = [];
+    const dispatch: Dispatch = async (prop) => {
+      dispatched.push(prop.id);
+      return { status: "produced", outputs: [] };
+    };
+    const notReady = () => [
+      {
+        kind: "env" as const,
+        message:
+          "dw-chart needs DATAWRAPPER_API_TOKEN (create a token at https://app.datawrapper.de/account/api-tokens) — add it to /splash/.env",
+      },
+    ];
+    const report = await produceAll(
+      [
+        p("el-1", {
+          producer: "dw-chart",
+          spec: { title: "t", data: "a,b\n1,2" },
+        }),
+      ],
+      "out",
+      dispatch,
+      PASS,
+      null,
+      notReady,
+    );
+    expect(report.results[0].status).toBe("failed");
+    expect(report.results[0].error).toContain("DATAWRAPPER_API_TOKEN");
+    expect(report.results[0].error).toContain("/splash/.env");
+    expect(dispatched).toEqual([]); // never dispatched — blocked BEFORE production
+  });
+
+  it("should dispatch normally when the injected preflight reports ready", async () => {
+    const dispatched: string[] = [];
+    const dispatch: Dispatch = async (prop) => {
+      dispatched.push(prop.id);
+      return { status: "produced", outputs: [] };
+    };
+    const { results } = await produceAll(
+      [p("el-1")],
+      "out",
+      dispatch,
+      PASS,
+      null,
+      () => [],
+    );
+    expect(results[0].status).toBe("produced");
+    expect(dispatched).toEqual(["el-1"]);
   });
 });

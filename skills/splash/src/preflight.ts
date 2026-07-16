@@ -94,6 +94,9 @@ export function preflightFindings(
   opts: PreflightOpts = {},
 ): PreflightFinding[] {
   const req = ENGINE_REQUIREMENTS[producer];
+  // A producer outside the union (untyped JSON at the CLI seam) is not preflight's call:
+  // report nothing here and let the validation gate record it failed (drop-proof intact).
+  if (!req) return [];
   const env = opts.env ?? process.env;
   const resolveDep = opts.resolveDep ?? defaultResolveDep;
   const findings: PreflightFinding[] = [];
