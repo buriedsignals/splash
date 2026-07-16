@@ -73,7 +73,7 @@ if (import.meta.main) {
   // message — never let the upload stall mid-deploy or hand back a placeholder that fakes delivery.
   if (!flyTokenConfigured() && !hostedUrl) {
     console.error(
-      "embed delivery needs FLY_API_TOKEN — set it, or choose the standalone HTML form (b) instead",
+      "embed delivery needs FLY_API_TOKEN (create a deploy token with `flyctl tokens create deploy`) — add it to /splash/.env, or choose the standalone HTML form (b) instead",
     );
     process.exit(1);
   }
