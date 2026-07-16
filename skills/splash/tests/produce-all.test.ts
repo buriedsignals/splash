@@ -924,6 +924,78 @@ describe("produceAll — engine preflight gate (C2)", () => {
     expect(results.map((r) => r.status)).toEqual(["produced", "produced"]);
   });
 
+  it("should refuse a twin whose id suffix contradicts its own pinned format (review F7)", async () => {
+    const dispatch: Dispatch = async () => ({
+      status: "produced",
+      outputs: ["out/x.png"],
+    });
+    const takeaway = "Estonia recycles the most packaging waste in Europe";
+    const { results } = await produceAll(
+      [
+        {
+          id: "el-recycling",
+          producer: "dw-chart",
+          format: "static",
+          channel: "article-web",
+          spec: validDwSpec,
+          confirmedTakeaway: takeaway,
+        },
+        {
+          // id claims a video re-format but the pinned format is static — the shape can
+          // only come from an id chosen to dodge GUARD 3b, never from step 12.
+          id: "el-recycling-video",
+          producer: "dw-chart",
+          format: "static",
+          channel: "article-web",
+          spec: validDwSpec,
+          confirmedTakeaway: takeaway,
+        },
+      ],
+      "out",
+      dispatch,
+      validateAccepted,
+      null,
+      READY,
+    );
+    expect(results.map((r) => r.status)).toEqual(["failed", "failed"]);
+    expect(results[0].error).toContain("duplicate confirmedTakeaway");
+  });
+
+  it("should refuse two distinct elements sharing a takeaway when the suffix is not a format (review negative pin)", async () => {
+    const dispatch: Dispatch = async () => ({
+      status: "produced",
+      outputs: ["out/x.png"],
+    });
+    const takeaway = "Estonia recycles the most packaging waste in Europe";
+    const { results } = await produceAll(
+      [
+        {
+          id: "el-recycling",
+          producer: "dw-chart",
+          format: "static",
+          channel: "article-web",
+          spec: validDwSpec,
+          confirmedTakeaway: takeaway,
+        },
+        {
+          id: "el-recycling-map",
+          producer: "dw-chart",
+          format: "static",
+          channel: "article-web",
+          spec: validDwSpec,
+          confirmedTakeaway: takeaway,
+        },
+      ],
+      "out",
+      dispatch,
+      validateAccepted,
+      null,
+      READY,
+    );
+    expect(results.map((r) => r.status)).toEqual(["failed", "failed"]);
+    expect(results[0].error).toContain("duplicate confirmedTakeaway");
+  });
+
   it("should dispatch normally when the injected preflight reports ready", async () => {
     const dispatched: string[] = [];
     const dispatch: Dispatch = async (prop) => {

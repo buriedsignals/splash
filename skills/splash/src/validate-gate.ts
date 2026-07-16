@@ -175,11 +175,32 @@ function missingConfirmedTakeawayError(p: AcceptedProposal): string | null {
 // format suffix are that twin; every other duplicate stays refused.
 const FORMAT_SUFFIX = /-(static|interactive|video|scrolly)$/;
 
-function isReFormatTwin(a: string, b: string): boolean {
-  if (a === b) return false;
-  const baseA = a.replace(FORMAT_SUFFIX, "");
-  const baseB = b.replace(FORMAT_SUFFIX, "");
-  return baseA === baseB || baseA === b || baseB === a;
+// The base id a step-12 re-format entry derives from — ONLY when its id suffix matches the
+// entry's OWN pinned format (step 12 prescribes `id = <original-id>-<newformat>`, so the
+// sanctioned shape satisfies this by construction). A suffix that contradicts the pinned
+// format (`id: "el-video", format: "static"`) is NOT a twin — that shape can only come from
+// an id chosen to dodge the duplicate guard (review F7).
+function reFormatBase(p: AcceptedProposal): string | null {
+  const id = String(p.id);
+  const m = id.match(FORMAT_SUFFIX);
+  if (!m || m[1] !== p.format) return null;
+  return id.slice(0, -(m[1].length + 1));
+}
+
+function isReFormatTwin(a: AcceptedProposal, b: AcceptedProposal): boolean {
+  const idA = String(a.id);
+  const idB = String(b.id);
+  if (idA === idB) return false;
+  const baseA = reFormatBase(a);
+  const baseB = reFormatBase(b);
+  // One derives from the other, or both derive from the same original (a multi-format
+  // family produced across step-12 cycles). Ids are self-reported — the format-consistency
+  // check above is the mechanical floor, not a trust boundary.
+  return (
+    (baseA !== null &&
+      (baseA === idB || (baseB !== null && baseA === baseB))) ||
+    (baseB !== null && baseB === idA)
+  );
 }
 
 function duplicateConfirmedTakeawayError(
@@ -192,7 +213,7 @@ function duplicateConfirmedTakeawayError(
     (other) =>
       other !== p &&
       other.confirmedTakeaway === takeaway &&
-      !isReFormatTwin(String(p.id), String(other.id)),
+      !isReFormatTwin(p, other),
   );
   if (!twin) return null;
   return (

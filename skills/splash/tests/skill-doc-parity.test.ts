@@ -42,7 +42,7 @@ describe("C3 — the canonical 12-step order", () => {
   });
 
   it("CADRAGE ends on the channel question (step 7 — after takeaway, table, source, constraints)", () => {
-    const posTakeaway = cadrage.indexOf("takeaway");
+    const posTakeaway = cadrage.indexOf("Takeaway — GATE 1b");
     const posTable = cadrage.indexOf("GATE 2b");
     const posSource = cadrage.indexOf("GATE 2c");
     const posConstraint = cadrage.indexOf("Constraint");
