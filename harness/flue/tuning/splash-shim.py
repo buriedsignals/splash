@@ -24,10 +24,13 @@ TRAINED_TOOLS = [
 ]
 # Trained -> Flue native tool name + argument remap.
 def to_flue(name, args):
+    # Emit both common arg-name variants so whichever Flue's tool schema expects matches.
     if name == "write-file":
-        return "write", {"file_path": args.get("path"), "content": args.get("content")}
+        p, c = args.get("path"), args.get("content")
+        return "write", {"path": p, "file_path": p, "content": c}
     if name == "execute-shell":
-        return "bash", {"command": args.get("cmd")}
+        cmd = args.get("cmd")
+        return "bash", {"command": cmd, "cmd": cmd}
     return name, args
 
 def _balanced_array(s):
@@ -94,20 +97,55 @@ class Handler(BaseHTTPRequestHandler):
         if not self.path.endswith("/chat/completions"):
             return self._json(404, {"error": "not found"})
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        messages = body.get("messages", [])
-        # Render with the TRAINED tool schema (ignore the caller's tool naming) so the
-        # model sees its training-time context and emits; caller's system prompt is kept.
+        raw = body.get("messages", [])
+        import sys as _sys
+        print("SHIM incoming roles:", [m.get("role") for m in raw], file=_sys.stderr)
+        # Normalize to [system, user]: the Apertus template rejects Flue's message
+        # structure ("Invalid user message"). Collapse all system content into one system
+        # turn and all non-system content into one user turn — always template-valid.
+        def _txt(c):
+            if isinstance(c, list):
+                return "\n".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in c)
+            return c if isinstance(c, str) else str(c)
+        sys_txt = "\n".join(_txt(m.get("content")) for m in raw if m.get("role") == "system").strip()
+        usr_txt = "\n".join(_txt(m.get("content")) for m in raw if m.get("role") != "system").strip()
+        messages = ([{"role": "system", "content": sys_txt}] if sys_txt else []) + [{"role": "user", "content": usr_txt}]
         prompt = TOK.apply_chat_template(messages, tools=TRAINED_TOOLS, add_generation_prompt=True)
         # Floor of 700 so the tool-call JSON + suffix isn't truncated mid-emission.
         max_tokens = max(int(body.get("max_tokens") or 700), 700)
         text = generate(MODEL, TOK, prompt=prompt, max_tokens=max_tokens, verbose=False)
         tool_calls = parse_tool_calls(text)
+        if body.get("stream"):
+            return self._stream(tool_calls, text)
         msg = {"role": "assistant", "content": None if tool_calls else text}
         if tool_calls:
             msg["tool_calls"] = tool_calls
         self._json(200, {"id": "chatcmpl-shim", "object": "chat.completion", "model": MODEL_ID,
                          "choices": [{"index": 0, "finish_reason": "tool_calls" if tool_calls else "stop",
                                       "message": msg}], "usage": {}})
+
+    def _stream(self, tool_calls, text):
+        """OpenAI SSE stream (Flue's openai-completions provider expects streamed chunks)."""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+
+        def chunk(delta, finish=None):
+            payload = {"id": "chatcmpl-shim", "object": "chat.completion.chunk", "model": MODEL_ID,
+                       "choices": [{"index": 0, "delta": delta, "finish_reason": finish}]}
+            self.wfile.write(f"data: {json.dumps(payload)}\n\n".encode()); self.wfile.flush()
+
+        chunk({"role": "assistant"})
+        if tool_calls:
+            for i, tc in enumerate(tool_calls):
+                chunk({"tool_calls": [{"index": i, "id": tc["id"], "type": "function",
+                                       "function": {"name": tc["function"]["name"], "arguments": ""}}]})
+                chunk({"tool_calls": [{"index": i, "function": {"arguments": tc["function"]["arguments"]}}]})
+            chunk({}, finish="tool_calls")
+        else:
+            chunk({"content": text}, finish="stop")
+        self.wfile.write(b"data: [DONE]\n\n"); self.wfile.flush()
 
 
 if __name__ == "__main__":
