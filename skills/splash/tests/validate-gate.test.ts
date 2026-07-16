@@ -289,3 +289,25 @@ describe("skillsInvoked (mechanical sub-skill proof)", () => {
     expect(outcome.ok).toBe(true);
   });
 });
+
+// Review hardening (M1/M2): a present list with NO branch token must warn (never a silent
+// bypass of the guided check), and an empty list's warning must say "empty", not "missing".
+describe("skillsInvoked review hardening", () => {
+  const base = () => minimalValidProposal();
+
+  it("should warn when skillsInvoked declares no branch token (M1)", () => {
+    const p = { ...base(), skillsInvoked: ["suggest-article", "suggest-chart"] };
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(true);
+    if (outcome.ok)
+      expect(outcome.warnings.some((w) => w.includes("no branch token"))).toBe(true);
+  });
+
+  it("should say 'empty' (not 'missing') for a present-but-empty list (M2)", () => {
+    const p = { ...base(), skillsInvoked: [] as string[] };
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(true);
+    if (outcome.ok)
+      expect(outcome.warnings.some((w) => w.includes("skillsInvoked is empty"))).toBe(true);
+  });
+});

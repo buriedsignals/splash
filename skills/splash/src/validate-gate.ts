@@ -377,9 +377,12 @@ function claimGroundingErrors(p: AcceptedProposal): string[] {
   return errors;
 }
 
-// GUARD 5 — skillsInvoked (mechanical sub-skill proof, Spotlight A5). Absent ⇒ warning
+// GUARD 5 — skillsInvoked (mechanical sub-skill proof, Spotlight A5). Absent/empty ⇒ warning
 // (legacy accepted.json). Present + guided branch declared without "suggest-chart" ⇒ error:
-// the ranked candidates only suggest-chart can emit were bypassed.
+// the ranked candidates only suggest-chart can emit were bypassed. Present but declaring
+// NEITHER branch token ⇒ warning too (review M1): a list that skips the branch declaration
+// silently bypasses the guided check — self-reported, so a warning not an error, but never
+// a silent pass.
 function skillsInvokedIssues(p: AcceptedProposal): {
   errors: string[];
   warnings: string[];
@@ -389,11 +392,23 @@ function skillsInvokedIssues(p: AcceptedProposal): {
     return {
       errors: [],
       warnings: [
-        "skillsInvoked missing — cannot mechanically prove suggest-chart produced this proposal (emit it at §5b like channel/confirmedTakeaway)",
+        (Array.isArray(list)
+          ? "skillsInvoked is empty"
+          : "skillsInvoked missing") +
+          " — cannot mechanically prove suggest-chart produced this proposal (emit it at §5b like channel/confirmedTakeaway)",
       ],
     };
   }
   const guided = list.includes("splash:cadrage-guided");
+  const direct = list.includes("splash:cadrage-direct");
+  if (!guided && !direct) {
+    return {
+      errors: [],
+      warnings: [
+        "skillsInvoked declares no branch token (splash:cadrage-guided | splash:cadrage-direct) — the guided-branch check cannot run; declare the branch as the first entry (§5b)",
+      ],
+    };
+  }
   if (guided && !list.includes("suggest-chart")) {
     return {
       errors: [
