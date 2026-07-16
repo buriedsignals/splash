@@ -844,6 +844,86 @@ describe("produceAll — engine preflight gate (C2)", () => {
     expect(dispatched).toEqual([]); // never dispatched — blocked BEFORE production
   });
 
+  it("should produce a step-12 re-format entry into its own outDir, leaving the first delivery untouched", async () => {
+    const outDirs: string[] = [];
+    const fakeDispatch = async (_p: unknown, outDir: string) => {
+      outDirs.push(outDir);
+      return { status: "produced" as const, outputs: [] };
+    };
+    const alwaysValid = () => ({ ok: true as const, warnings: [] });
+    const base = {
+      producer: "dw-chart" as const,
+      spec: { title: "t", data: "a,b\n1,2" },
+      confirmedTakeaway: "the takeaway",
+    };
+    const report = await produceAll(
+      [
+        {
+          ...base,
+          id: "el-tariffs",
+          format: "static" as const,
+          channel: "article-web" as const,
+        },
+        {
+          ...base,
+          id: "el-tariffs-video",
+          format: "video" as const,
+          channel: "social-feed" as const,
+        },
+      ],
+      "/tmp/step12-test-out",
+      fakeDispatch,
+      alwaysValid,
+      undefined, // profile
+      () => [], // preflight always-ready: this test pins outDir keying, not machine keys
+    );
+    expect(report.results.map((r) => r.status)).toEqual([
+      "produced",
+      "produced",
+    ]);
+    expect(outDirs).toEqual([
+      "/tmp/step12-test-out/el-tariffs",
+      "/tmp/step12-test-out/el-tariffs-video",
+    ]);
+  });
+
+  // Step-12 copies confirmedTakeaway VERBATIM onto the <id>-<format> entry (same element,
+  // another format) — GUARD 3b must sanction exactly that twin shape, and ONLY it: two
+  // DIFFERENT elements sharing a takeaway stay refused (the Wave-9 miss, tested above).
+  it("should let a step-12 <id>-<format> twin share the takeaway verbatim (GUARD 3b exemption), with the REAL validator", async () => {
+    const dispatch: Dispatch = async () => ({
+      status: "produced",
+      outputs: ["out/x.png"],
+    });
+    const takeaway = "Estonia recycles the most packaging waste in Europe";
+    const { results } = await produceAll(
+      [
+        {
+          id: "el-recycling",
+          producer: "dw-chart",
+          format: "static",
+          channel: "article-web",
+          spec: validDwSpec,
+          confirmedTakeaway: takeaway,
+        },
+        {
+          id: "el-recycling-video",
+          producer: "dw-chart",
+          format: "video",
+          channel: "article-web",
+          spec: validDwSpec,
+          confirmedTakeaway: takeaway, // copied VERBATIM, as step 12 prescribes
+        },
+      ],
+      "out",
+      dispatch,
+      validateAccepted,
+      null,
+      READY,
+    );
+    expect(results.map((r) => r.status)).toEqual(["produced", "produced"]);
+  });
+
   it("should dispatch normally when the injected preflight reports ready", async () => {
     const dispatched: string[] = [];
     const dispatch: Dispatch = async (prop) => {

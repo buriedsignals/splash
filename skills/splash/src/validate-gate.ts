@@ -167,6 +167,21 @@ function missingConfirmedTakeawayError(p: AcceptedProposal): string | null {
 // visual. Exact (byte-identical) match only — semantic overlap is not mechanizable.
 // Absence/emptiness is GUARD 3's finding; this guard only compares present takeaways.
 // Single-element batches are unaffected by construction.
+//
+// ONE sanctioned twin shape: a step-12 re-format entry (`<id>`/`<id>-<format>`, splash
+// SKILL.md Step 12) copies the confirmedTakeaway VERBATIM because it is the SAME element
+// produced in another format, not a second element — Gate 1b's one-takeaway-per-element
+// invariant is not violated. Two entries sharing the base id after stripping a trailing
+// format suffix are that twin; every other duplicate stays refused.
+const FORMAT_SUFFIX = /-(static|interactive|video|scrolly)$/;
+
+function isReFormatTwin(a: string, b: string): boolean {
+  if (a === b) return false;
+  const baseA = a.replace(FORMAT_SUFFIX, "");
+  const baseB = b.replace(FORMAT_SUFFIX, "");
+  return baseA === baseB || baseA === b || baseB === a;
+}
+
 function duplicateConfirmedTakeawayError(
   p: AcceptedProposal,
   batch: AcceptedProposal[],
@@ -174,7 +189,10 @@ function duplicateConfirmedTakeawayError(
   const takeaway: unknown = p.confirmedTakeaway;
   if (typeof takeaway !== "string" || takeaway.trim() === "") return null;
   const twin = batch.find(
-    (other) => other !== p && other.confirmedTakeaway === takeaway,
+    (other) =>
+      other !== p &&
+      other.confirmedTakeaway === takeaway &&
+      !isReFormatTwin(String(p.id), String(other.id)),
   );
   if (!twin) return null;
   return (
