@@ -62,8 +62,15 @@ image-scrolly) with its why and what it requires (« tu fournis 3-6 images » fo
 Gate 3's strict escalation bar governs when a narrative option is RECOMMENDED first — it does
 NOT govern whether it may APPEAR: since the flow inversion, being in the menu is the
 journalist's decision to make, and a menu of static-only types on a story built of moments is
-an impoverished menu. A narrative candidate the engines cannot produce (preflight red, no
-images available and none supplyable) still never appears — reachability rules are unchanged.
+an impoverished menu. **image-scrolly appears WITH its requirement stated, never pre-filtered on it**: splash cannot
+know whether the journalist has images — the candidate line carries the condition (« si tu peux
+fournir 3-6 images — photos, vues satellite, archives — je dérive les légendes de ton
+article ») and dies naturally if the journalist has none. Only a preflight-red engine excludes
+it. **Narrative is CONSIDERED on every opportunity — mechanically**: each opportunity's
+candidates payload carries EITHER at least one narrative candidate (chart-scrolly · map-story ·
+image-scrolly · video reveal) OR an explicit `"narrativeRuledOut": "<one-line reason>"` field
+(e.g. « single-snapshot comparison, no sequence to narrate »). A payload with neither is
+invalid — silent absence of the narrative option is not a possible state.
 
 1. **Profile** the data: list columns, infer each type (numeric / categorical / temporal), cardinality,
    and the row count. This fixes the data shape (single-series, multi-series, or two-value).
