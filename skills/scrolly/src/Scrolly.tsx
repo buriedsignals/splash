@@ -19,8 +19,10 @@ import { deriveSymbolStory } from "../../map-native/src/symbol-story";
 import { deriveDotDensityStory } from "../../map-native/src/dot-density-story";
 import { deriveLocatorStory } from "../../map-native/src/locator-story";
 import { deriveCartogramStory } from "../../map-native/src/cartogram-story";
-import { mapStoryToChapters } from "./chapters";
+import { mapStoryToChapters, resolveVisual } from "./chapters";
 import { chartStoryToChapters } from "./chart-chapters";
+import { imageStoryToChapters } from "../../image-native/src/image-story";
+import { ScrollyImage, type ImageScrollyConfig } from "./ScrollyImage";
 import { deriveChartStory } from "../../chart-native/src/chart-story";
 import { deriveFurniture, bgIsDark } from "../../chart-native/src/core/tokens";
 import { ScrollyChart, type ChartScrollyConfig } from "./ScrollyChart";
@@ -41,7 +43,7 @@ import {
 } from "./ScrollyCartogramMap";
 
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
-import { sourceLabel } from "../../map-native/src/core/locale";
+import { sourceLabel, isFrench } from "../../map-native/src/core/locale";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
 // The chart types the scrolly can narrate (deriveChartStory dispatches on these). Any other
@@ -62,7 +64,8 @@ export const Scrolly: React.FC<{
     | ScrollyHexConfig
     | ScrollyDotDensityConfig
     | ScrollyLocatorConfig
-    | ScrollyCartogramConfig;
+    | ScrollyCartogramConfig
+    | ImageScrollyConfig;
 }> = ({ config }) => {
   // Themed scaffold surfaces derived from the newsroom house ground (config.themeBg): on a DARK
   // ground the whole scrolly goes dark — the GLOBAL page background, the prose cards and the header
@@ -110,6 +113,14 @@ export const Scrolly: React.FC<{
   // then falls back to choropleth.
   // -------------------------------------------------------------------------
   const story = useMemo(() => {
+    // IMAGE config (visual:"image", resolveVisual's image branch) — the story
+    // derivation is image-native's pure bridge (captions pass through AS-IS; the
+    // journalist gate upstream owns them). The `in` guard narrows the union (only
+    // ImageScrollyConfig carries `visual`), mirroring resolveVisual exactly.
+    if ("visual" in config) {
+      return imageStoryToChapters(config.story);
+    }
+
     // CHART config (chart-native NativeSpec) — has `nativeType`. Build the chart story
     // BEFORE the map branches; a chart needs no geojson.
     if ("nativeType" in config) {
@@ -268,6 +279,12 @@ export const Scrolly: React.FC<{
   // beats (establish / empty-takeaway are dropped), so resolve through the chapter.
   const stepRef = story.steps[currentStep]?.ref;
   const currentBeatRef = typeof stepRef === "number" ? stepRef : 0;
+
+  // Image track: the per-frame data the step cards surface (caption already IS the
+  // prose; the per-frame photo CREDIT — a different axis from the module source — is
+  // rendered under it, spec §10). null on the chart/map tracks.
+  const imageFrames = "visual" in config ? config.story.frames : null;
+  const photoLabel = isFrench(config.lang) ? "Photo :" : "Photo:";
 
   // Graceful degradation flag (pure, not a hook) — set when a chart config carries an
   // unsupported nativeType. The render shows a clear message instead of an empty scaffold.
@@ -560,7 +577,9 @@ export const Scrolly: React.FC<{
           {/* Pass the active step's BEAT ref (not the step index) — steps no longer
               map 1:1 to beats (the establish/empty-takeaway beats are dropped from
               the scroll), so the map must fly to story.steps[currentStep].ref. */}
-          {"nativeType" in config ? (
+          {"visual" in config ? (
+            <ScrollyImage config={config} currentStep={currentBeatRef} />
+          ) : "nativeType" in config ? (
             <ScrollyChart
               config={config as unknown as ChartScrollyConfig}
               scrollProgress={scrollProgress}
@@ -626,6 +645,33 @@ export const Scrolly: React.FC<{
                   }}
                 >
                   {step.prose}
+                  {/* Image track: the visible frame's photo credit rides in the card
+                      (name, url when present) — per-frame attribution, spec §10. */}
+                  {imageFrames &&
+                    typeof step.ref === "number" &&
+                    imageFrames[step.ref] && (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          fontSize: 11,
+                          color: cardSub,
+                        }}
+                      >
+                        {photoLabel}{" "}
+                        {imageFrames[step.ref].credit.url ? (
+                          <a
+                            href={imageFrames[step.ref].credit.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "inherit" }}
+                          >
+                            {imageFrames[step.ref].credit.name}
+                          </a>
+                        ) : (
+                          imageFrames[step.ref].credit.name
+                        )}
+                      </div>
+                    )}
                 </div>
               </div>
             );
@@ -639,14 +685,20 @@ export const Scrolly: React.FC<{
       {config.source && (
         <div style={creditStyle}>
           {sourceLabel(config.lang)}{" "}
-          <a
-            href={config.source.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "inherit" }}
-          >
-            {config.source.name}
-          </a>
+          {/* Name-only sources render as PLAIN TEXT — an <a> without a real href is an
+              a11y defect (empty link), and an honest prose source often has no URL. */}
+          {config.source.url ? (
+            <a
+              href={config.source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "inherit" }}
+            >
+              {config.source.name}
+            </a>
+          ) : (
+            config.source.name
+          )}
         </div>
       )}
     </>

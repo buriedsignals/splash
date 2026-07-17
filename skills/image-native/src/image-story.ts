@@ -290,6 +290,63 @@ export function captionOverlapRatio(caption: string, passage: string): number {
   return inter / a.size;
 }
 
+// ---------------------------------------------------------------------------------
+// Scrolly bridge (spec §5) — ImageStory → the scrolly scaffold's story shape.
+// Typed STRUCTURALLY (no import from skills/scrolly) so the dependency stays one-way:
+// scrolly imports image-native's schema, never the reverse. The shapes below are
+// assignable to scrolly's ScrollyStep/ScrollyStory by construction (visual:"image"
+// and action:"crossfade" are members of its VisualKind/StepAction unions).
+export interface ImageScrollyStep {
+  id: string;
+  visual: "image";
+  action: "crossfade";
+  ref: number; // frame index into ImageStory.frames
+  prose: string;
+  align?: "left" | "right" | "center";
+}
+
+export interface ImageScrollyStory {
+  title: string;
+  description?: string;
+  source?: { name: string; url?: string };
+  visual: "image";
+  steps: ImageScrollyStep[];
+}
+
+// One intro step (the description — what/when/where, shown over the FIRST frame) then
+// one step per frame. The caption is passed through AS-IS — unlike mapStoryToChapters,
+// which DERIVES its prose from the data — which is exactly why the §6/§7 tripwires
+// (sourcePassage + overlap + the mandatory journalist gate) sit upstream of this call.
+export function imageStoryToChapters(story: ImageStory): ImageScrollyStory {
+  const steps: ImageScrollyStep[] = [
+    {
+      id: "step-0-intro",
+      visual: "image",
+      action: "crossfade",
+      ref: 0,
+      prose: story.description,
+      align: "center",
+    },
+  ];
+  story.frames.forEach((frame, i) => {
+    steps.push({
+      id: `step-${i + 1}-frame-${frame.id}`,
+      visual: "image",
+      action: "crossfade",
+      ref: i,
+      prose: frame.caption,
+      align: frame.align ?? "center",
+    });
+  });
+  return {
+    title: story.title,
+    description: story.description,
+    source: story.source,
+    visual: "image",
+    steps,
+  };
+}
+
 export function checkImageConformance(
   story: ImageStory,
   opts?: { overlapThreshold?: number; format?: ImageFormat },
