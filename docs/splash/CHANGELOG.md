@@ -22,10 +22,12 @@ opportunités en un message, chaque candidat avec son pourquoi, un recommandé) 
 entrée `<id>-<format>`) · **clés = prérequis collectés dans le flow** (renverse le hors-scope C2 :
 `save-key.mjs`, seul chemin d'écriture, noms gatés manifeste, valeur jamais ré-affichée) ·
 **narratif toujours CONSIDÉRÉ** (candidat narratif présent quand la forme du récit le porte, sinon
-`narrativeRuledOut` explicite — l'absence silencieuse n'est plus un état) · **image-scrolly déclenché
-par l'ANALYSE de la prose** (`imageNarrative{potential,passages,sequenceHint}` sur le ProposalSet,
-indépendant de la richesse data, jamais pré-filtré sur la dispo des images — la condition « 3-6
-images » vit dans la ligne du candidat).
+`narrativeRuledOut` explicite — l'absence silencieuse n'est plus un état) · **narratif TOUTE LA FAMILLE
+déclenché par l'ANALYSE de la prose** (`narrativePotential` sur le ProposalSet, modes
+temporal→chart-scrolly/vidéo · geographic→map-story/scrolly · visual→image-scrolly, indépendant de
+la richesse data ; la dispo des images se résout au CHOIX du candidat, jamais en question CADRAGE.
+Confirmé au rendu : série 5 points → chart-scrolly recommandé + line-reveal en possible, pourquois
+ancrés sur les inflexions ; Venise → image-scrolly ancré prose IT ; logement → rule-out motivé).
 
 **Livré sur `main` (gate 20/20, reviews adversariales par branche) :**
 - **C1** closure de validation libérée de TOUTES les deps sibling (remotion/react via route-geo→
