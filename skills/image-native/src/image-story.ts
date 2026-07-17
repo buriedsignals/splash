@@ -28,6 +28,9 @@ export interface ImageStory {
   keyFrame: number; // index of the representative frame → static export
   fit: "canvas-frame" | "crop"; // project default (canvas-frame is the safe editorial default)
   lang?: string;
+  // Newsroom ground (#rrggbb) — scaffold + matte derive from it (threaded by the splash
+  // brand-profile merge; per-element value wins). Absent = light default.
+  themeBg?: string;
   imageDir: string; // root for resolving frameRefs (suggest-image → engine handoff)
 }
 
@@ -392,6 +395,14 @@ export function checkImageConformance(
   const ids = new Set<string>();
   story.frames.forEach((f, i) => {
     if (!f.id?.trim()) v.push(`frame at index ${i} has an empty id`);
+    // Path-safety (review F1/F2, probed exploits): the id becomes an output FILENAME
+    // (prep writes `<framesDir>/<id>.jpg`, the inliner reads it back) and the frameRef is
+    // resolved under imageDir. A traversal in either is an arbitrary read/write primitive
+    // reachable from an LLM-composed manifest — refuse at conformance, BEFORE any dispatch.
+    else if (!/^[A-Za-z0-9_-]+$/.test(f.id))
+      v.push(
+        `frame id "${f.id}" is not a safe slug (letters, digits, - and _ only) — ids become output filenames`,
+      );
     else {
       if (ids.has(f.id)) v.push(`duplicate frame id "${f.id}"`);
       ids.add(f.id);
@@ -400,6 +411,15 @@ export function checkImageConformance(
     if (!f.frameRef?.trim())
       v.push(
         `frame ${label} has an empty frameRef — every frame references a raw image`,
+      );
+    else if (
+      f.frameRef.startsWith("/") ||
+      f.frameRef.startsWith("\\") ||
+      /^[A-Za-z]:[\\/]/.test(f.frameRef) ||
+      f.frameRef.split(/[\\/]/).includes("..")
+    )
+      v.push(
+        `frame ${label} frameRef "${f.frameRef}" must be a plain path INSIDE the image folder — no absolute paths, no ".." (the raw images live under imageDir, nothing else is readable)`,
       );
     if (!f.caption?.trim()) v.push(`frame ${label} has empty caption`);
     if (!f.alt?.trim())

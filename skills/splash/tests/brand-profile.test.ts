@@ -626,3 +626,26 @@ describe("seedBrandColor", () => {
     expect(out.brandExplicit).toBe(false);
   });
 });
+
+// Review F4 — image-native inherits the newsroom ground (same class as the chart/map threading).
+import { describe as describeF4, expect as expectF4, it as itF4 } from "bun:test";
+import { mergeProfileDefaults as mergeF4 } from "../src/brand-profile";
+
+describeF4("image-native theme threading (review F4)", () => {
+  const profile = {
+    palette: ["#009E73"],
+    theme: "#101820",
+    source: undefined,
+    lang: undefined,
+  } as any;
+
+  itF4("should thread themeBg onto an image-native spec", () => {
+    const out = mergeF4({ title: "t" } as any, profile, { producer: "image-native" });
+    expectF4((out as any).themeBg).toBe("#101820");
+  });
+
+  itF4("should let a per-element themeBg win", () => {
+    const out = mergeF4({ title: "t", themeBg: "#FFFFFF" } as any, profile, { producer: "image-native" });
+    expectF4((out as any).themeBg).toBe("#FFFFFF");
+  });
+});

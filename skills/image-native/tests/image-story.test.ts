@@ -366,3 +366,34 @@ describe("captionOverlapRatio", () => {
     );
   });
 });
+
+// Path-safety guards (review F1/F2 — probed exploits: frameRef ../ read, id ../ write)
+describe("path safety (review F1/F2)", () => {
+  it("should refuse a frame id that is not a safe slug", () => {
+    const story = validStory();
+    story.frames[0].id = "../../evil";
+    const v = checkImageConformance(story, "scrolly");
+    expect(v.some((m) => m.includes("safe slug"))).toBe(true);
+  });
+
+  it("should refuse a frameRef with a .. segment", () => {
+    const story = validStory();
+    story.frames[0].frameRef = "../secret/secret.png";
+    const v = checkImageConformance(story, "scrolly");
+    expect(v.some((m) => m.includes("INSIDE the image folder"))).toBe(true);
+  });
+
+  it("should refuse an absolute frameRef", () => {
+    const story = validStory();
+    story.frames[0].frameRef = "/etc/passwd.png";
+    const v = checkImageConformance(story, "scrolly");
+    expect(v.some((m) => m.includes("INSIDE the image folder"))).toBe(true);
+  });
+
+  it("should accept a plain nested relative frameRef", () => {
+    const story = validStory();
+    story.frames[0].frameRef = "batch-1/photo.png";
+    const v = checkImageConformance(story, "scrolly");
+    expect(v.some((m) => m.includes("INSIDE the image folder"))).toBe(false);
+  });
+});

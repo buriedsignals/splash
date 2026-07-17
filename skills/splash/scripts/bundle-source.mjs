@@ -305,6 +305,17 @@ if (import.meta.main) {
     console.error(`bundle-source: unknown engine "${engine}" (expected map-native | scrolly)`);
     process.exit(1);
   }
+  // Review F3: an image-scrolly's frames are NOT bundled yet (the traced closure carries no
+  // .jpg and config.framesDir is an absolute producing-machine tmp path) — a "runnable" bundle
+  // would rebuild with broken images and leak local paths. Fail LOUD like the hosted-DW form
+  // does, until frames ship inside the bundle (backlog follow-up).
+  if (engine === "scrolly" && manifest.kind === "image") {
+    console.error(
+      "bundle-source: the code-source form is not yet supported for an image-scrolly — " +
+        "the frames are not bundled; deliver the standalone HTML form (b) instead",
+    );
+    process.exit(1);
+  }
   let config;
   try {
     config = JSON.parse(readFileSync(configPath, "utf8"));

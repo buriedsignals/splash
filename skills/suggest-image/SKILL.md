@@ -55,11 +55,13 @@ The schema + conformance live in `skills/image-native/src/image-story.ts`
 
 ## How it works
 
-1. **Collect the inputs.** The image folder (`imageDir`), the article text, and per image:
+1. **Collect the inputs.** The image folder (`imageDir` — record it as an ABSOLUTE path: the spine writes specs to a tmp config, so a relative path resolves nowhere), the article text, and per image:
    `alt` (what is visible) + `credit` (name; url/licence optional). Any missing alt/credit →
-   ask the journalist for it now. Also confirm `source` (the ARTICLE/DATA provenance — a
-   different axis from the per-frame photo credit) and the module `title` (the insight) +
-   `description` (what/when/where).
+   ask the journalist for it now. Also ASK the journalist for `source` (the ARTICLE/DATA
+   provenance — a different axis from the per-frame photo credit) and the module `title` (the
+   insight) + `description` (what/when/where) when they haven't given them — confirm-back what
+   they DID give; NEVER draft a title/description yourself and ask for a rubber stamp (same
+   rule as alt/credit: journalist-supplied, not generated).
 2. **Match and order (vision, scoped).** Look at each image only to answer: *which passage of
    the article talks about this?* From the matches, propose the narrative order and the
    `keyFrame` (the single frame that carries the story — feeds the static export later).

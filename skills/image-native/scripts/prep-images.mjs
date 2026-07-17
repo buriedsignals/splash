@@ -22,7 +22,7 @@
 // A frameRef that does not resolve to a file on disk halts with the FILENAME on stderr
 // (an editorial prompt — the journalist must know WHICH image is missing), exit 1.
 import { mkdirSync, statSync, existsSync, writeFileSync, readFileSync } from "node:fs";
-import { join, resolve, isAbsolute } from "node:path";
+import { join, resolve, isAbsolute, sep } from "node:path";
 import sharp from "sharp";
 
 // ---- tuning knobs (spec §12 — each one a number) --------------------------------
@@ -74,6 +74,14 @@ const reportFrames = [];
 
 for (const frame of story.frames) {
   const src = resolve(imageRoot, frame.frameRef);
+  // Containment belt (review F1) — conformance already refuses traversal shapes; this
+  // catches anything that slips a re-shaped manifest straight to the CLI.
+  if (src !== imageRoot && !src.startsWith(imageRoot + sep)) {
+    console.error(
+      `frame "${frame.id}": frameRef resolves OUTSIDE the image folder (${src}) — refused`,
+    );
+    process.exit(1);
+  }
   if (!existsSync(src)) {
     console.error(
       `frame "${frame.id}": image not found — ${frame.frameRef} (looked in ${imageRoot}). ` +
