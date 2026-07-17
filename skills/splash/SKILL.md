@@ -250,6 +250,11 @@ appears. An engine that fails preflight (C2) is annotated, never hidden. **If `s
 returns a single decision with NO candidates payload, re-invoke it ONCE demanding Stage 1
 explicitly** (« return the candidates JSON first — every reachable type with its why ») — the
 bounded-retry rules apply; never relay a take-it-or-leave-it decision to the journalist.
+**Write the raw Stage-1 payload to `exports/<slug>/candidates.json` BEFORE presenting** —
+one entry per opportunity, each candidate with `type`/`producer`/`tier`/`why` exactly as
+suggest-chart returned them. The journalist never sees this JSON (the presentation below is
+plain language); the file is the mechanical trace that the menu existed (the harness anchors
+on it), and the resume point if the session dies mid-PROPOSITION (see Context recovery).
 Present ALL opportunities' candidate lists in ONE batched message — never a per-opportunity
 question loop
 — and let the journalist answer per opportunity (pick a candidate, or « aucun » = veto; a
@@ -780,6 +785,7 @@ PRESENCE and resume there:
 | Present | Resume at |
 |---|---|
 | nothing / article only | CADRAGE (steps 3-7) |
+| `candidates.json`, no `accepted.json` | step 8 — re-present the saved candidates, await the choice |
 | `accepted.json`, no `report.json` | PRODUCTION (produce-all the accepted entries) |
 | `report.json`, no `<id>-export/` | EXPORT (Gate 4 / delivery-form proposal) |
 | `<id>-export/` complete | step 12 — offer another format |
