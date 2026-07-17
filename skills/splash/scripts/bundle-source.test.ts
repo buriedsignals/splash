@@ -68,6 +68,21 @@ describe("importSpecifiers", () => {
     const specs = importSpecifiers(src);
     expect(specs).toContain("./a");
   });
+  it('does not parse a "from" STRING LITERAL as an import (image-native stop-word list)', () => {
+    // The real shape that broke the scrolly closure: an array of quoted words containing
+    // "from" — the old regex read `from"` + the gap to the NEXT quote as a specifier.
+    const src = [
+      `const STOPWORDS = new Set([`,
+      `  "for",`,
+      `  "with",`,
+      `  "from",`,
+      `  "into",`,
+      `]);`,
+      `import { real } from "./real";`,
+    ].join("\n");
+    const specs = importSpecifiers(src);
+    expect(specs).toEqual(["./real"]);
+  });
 });
 
 describe("resolveRelative", () => {

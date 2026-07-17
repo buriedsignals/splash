@@ -48,11 +48,14 @@ function stripComments(src) {
 // All import/export specifiers in a source file. map-native/scrolly use only STATIC imports
 // (no dynamic import() — verified), so two regexes over `… from "x"` and side-effect
 // `import "x"` cover every edge (import/import type/export-from/side-effect css). Comments are
-// stripped first so a commented-out import is not traced.
+// stripped first so a commented-out import is not traced. The `from` regex refuses a
+// QUOTE right before the keyword: a string literal `"from",` in data code (image-native's
+// stop-word list) would otherwise parse as `from "<next-gap>"` and invent a bogus dep.
 export function importSpecifiers(src) {
   const code = stripComments(src);
   const specs = new Set();
-  for (const m of code.matchAll(/\bfrom\s*["']([^"']+)["']/g)) specs.add(m[1]);
+  for (const m of code.matchAll(/(?<!["'])\bfrom\s*["']([^"']+)["']/g))
+    specs.add(m[1]);
   for (const m of code.matchAll(/(?:^|[;\n{}(]|\s)import\s*["']([^"']+)["']/g))
     specs.add(m[1]);
   return [...specs];
