@@ -62,6 +62,12 @@ narrative formats are not just image-scrolly; consider each against the opportun
   offer the one that fits the channel (video for social/vertical, scrolly for article-web).
 - **`geographic` potential** → a **map-story** (video) or **map-scrolly** (waypoints).
 - **`visual` potential** → an **image-scrolly** (with the « si tu fournis 3-6 images » condition).
+  **Image availability is NEVER a CADRAGE question and NEVER a rule-out reason.** If the prose
+  carries a visual sequence, the image-scrolly candidate APPEARS in the menu with its condition;
+  the journalist resolves photo availability by PICKING it (then suggest-image collects the
+  images) or by not picking it. `narrativeRuledOut` for the visual mode fires ONLY when the prose
+  has no witnessable sequence at all — never « the journalist has no photos » (which hasn't been
+  asked, and asking it in CADRAGE both pre-filters a valid candidate and inflates the ≤6 cap).
 Each appears with a why GROUNDED in the matching `narrativePotential.<mode>.hint` (quote it), on
 data-RICH opportunities too — a trend worth scrolling, a ranking worth racing, a place worth
 showing. Gate 3's strict escalation bar governs when a narrative option is RECOMMENDED first — it
