@@ -255,8 +255,7 @@ one entry per opportunity, each candidate with `type`/`producer`/`tier`/`why` ex
 suggest-chart returned them. The journalist never sees this JSON (the presentation below is
 plain language); the file is the mechanical trace that the menu existed (the harness anchors
 on it), and the resume point if the session dies mid-PROPOSITION (see Context recovery).
-Present ALL opportunities' candidate lists in ONE batched message — never a per-opportunity
-question loop
+Present ALL opportunities' candidate lists in ONE batched message — never a per-opportunity question loop
 — and let the journalist answer per opportunity (pick a candidate, or « aucun » = veto; a
 vetoed opportunity emits `no-chart` with the reason). Each kept opportunity remains its OWN
 accept decision and its OWN `accepted.json` entry with its OWN confirmedTakeaway — the
