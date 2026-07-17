@@ -126,16 +126,25 @@ normalise to English.
    one-line `rationale`.
 7. **Self-check (provenance).** For every proposal, confirm each `data` column appears in its
    `dataSource.table` and the subset parses as CSV with ≥1 numeric column. Drop any proposal that fails.
-8. **Image-narrative potential (from the PROSE, not the data).** While reading, also ask: does
-   this article NARRATE something visually witnessable — a place transforming over time, a
-   journey/route, a sequence of scenes, a physical before/after, a subject a camera could have
-   followed (chantier, catastrophe, quartier, paysage, procès, exode…)? If yes, set
-   `imageNarrative` on the ProposalSet: `{ "potential": true, "passages": ["<the quote(s) that
-   narrate the visual sequence>"], "sequenceHint": "<one line: what the image sequence would
-   show>" }`. This is INDEPENDENT of data richness — a data-rich article can also carry a
-   strong image narrative (the numbers AND the three states of the same site). You never check
-   whether images exist — that is the journalist's to supply; you detect that the STORY could
-   carry them. No potential → set `imageNarrative: { "potential": false }` explicitly.
+8. **Narrative potential — ACROSS MODES (a story can be TOLD, not just charted).** The narrative
+   formats are a FAMILY, each with its own trigger; detect ALL that the article can carry and
+   record them on the ProposalSet as `narrativePotential`, per mode:
+   - **`temporal`** — the data (or the prose) carries 3+ distinct MOMENTS of the same measure
+     (a series, a rise/fall with named turning points, a « depuis X → aujourd'hui »). Carries a
+     **chart-scrolly** (step-by-step reveal of a line/bar) or a **chart-video** (line-reveal,
+     ranked-bars race, proportional-squares). Signal even on a data-RICH opportunity.
+   - **`geographic`** — a spatial progression, a route, a spread/diffusion, a region-by-region
+     tour. Carries a **map-story** (video) or **map-scrolly** (waypoints).
+   - **`visual`** — the prose narrates something a CAMERA could have followed: a place
+     transforming, a journey, a physical before/after, a sequence of scenes (chantier,
+     catastrophe, quartier, exode…). Carries an **image-scrolly** (journalist's own images).
+   For each mode present, record `{ "potential": true, "passages": ["<quotes>"], "hint": "<one
+   line: what the narrative would show>" }`; absent modes are `{ "potential": false }`. This is
+   INDEPENDENT of data richness — a numbers-heavy article can also carry a strong temporal OR
+   visual narrative (the figures AND the three states of the same site, or the figures AND the
+   trend worth scrolling). You never check whether images/resources exist — you detect that the
+   STORY could carry each mode; the journalist supplies what's needed. `narrativePotential` with
+   every mode `false` is the explicit "no narrative here" — never omit it.
 9. **Notes.** In `ProposalSet.notes`, record the claims you deliberately did NOT propose and why
    (e.g. "the mayor's declined comment carries no data"). This is what keeps you honest about
    under-proposing.
@@ -159,10 +168,10 @@ Output one `ProposalSet`:
     }
   ],
   "notes": "The mayor's declined comment carries no data and is left as prose.",
-  "imageNarrative": {
-    "potential": true,
-    "passages": ["the border villages emptied one commuter at a time, their shutters closing street by street"],
-    "sequenceHint": "the same border villages: lived-in, emptying, shuttered — three states a photo sequence would carry"
+  "narrativePotential": {
+    "temporal": { "potential": true, "passages": ["cross-border workers grew from ~40k to ~73k since 2015"], "hint": "the climb 2015 → 2023 revealed year by year — a chart-scrolly or line-reveal" },
+    "geographic": { "potential": false },
+    "visual": { "potential": true, "passages": ["the border villages emptied one commuter at a time, their shutters closing street by street"], "hint": "the same villages: lived-in, emptying, shuttered — an image sequence" }
   }
 }
 ```

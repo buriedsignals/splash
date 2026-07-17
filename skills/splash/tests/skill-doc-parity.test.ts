@@ -112,15 +112,25 @@ describe("C4 — batched multi-proposals, each with its why", () => {
     expect(suggest).toContain("never pre-filtered");
   });
 
-  it("image-narrative potential is detected at ANALYSE from the prose, independent of data richness", () => {
+  it("narrative potential is detected at ANALYSE across MODES (temporal/geographic/visual)", () => {
     const suggestArticle = readFileSync(
       join(import.meta.dir, "../../suggest-article/SKILL.md"),
       "utf8",
     );
-    expect(suggestArticle).toContain("imageNarrative");
+    expect(suggestArticle).toContain("narrativePotential");
+    expect(suggestArticle).toContain('"temporal"');
+    expect(suggestArticle).toContain('"geographic"');
+    expect(suggestArticle).toContain('"visual"');
     expect(suggestArticle).toContain("INDEPENDENT of data richness");
-    expect(suggest).toContain("imageNarrative.potential");
+    expect(suggest).toContain("narrativePotential.visual.potential");
     expect(suggest).toContain("never only as a data-poor fallback");
+  });
+
+  it("the Stage-1 narrative rule covers the whole family (scrolly/video/map-story), not just image-scrolly", () => {
+    expect(suggest).toContain("the WHOLE family");
+    expect(suggest).toContain("chart-video");
+    expect(suggest).toContain("map-story");
+    expect(suggest).toContain("map-scrolly");
   });
 
   it("narrative options (scrolly/story/image-scrolly) belong in the candidates menu", () => {
