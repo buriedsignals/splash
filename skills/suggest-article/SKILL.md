@@ -126,7 +126,17 @@ normalise to English.
    one-line `rationale`.
 7. **Self-check (provenance).** For every proposal, confirm each `data` column appears in its
    `dataSource.table` and the subset parses as CSV with ≥1 numeric column. Drop any proposal that fails.
-8. **Notes.** In `ProposalSet.notes`, record the claims you deliberately did NOT propose and why
+8. **Image-narrative potential (from the PROSE, not the data).** While reading, also ask: does
+   this article NARRATE something visually witnessable — a place transforming over time, a
+   journey/route, a sequence of scenes, a physical before/after, a subject a camera could have
+   followed (chantier, catastrophe, quartier, paysage, procès, exode…)? If yes, set
+   `imageNarrative` on the ProposalSet: `{ "potential": true, "passages": ["<the quote(s) that
+   narrate the visual sequence>"], "sequenceHint": "<one line: what the image sequence would
+   show>" }`. This is INDEPENDENT of data richness — a data-rich article can also carry a
+   strong image narrative (the numbers AND the three states of the same site). You never check
+   whether images exist — that is the journalist's to supply; you detect that the STORY could
+   carry them. No potential → set `imageNarrative: { "potential": false }` explicitly.
+9. **Notes.** In `ProposalSet.notes`, record the claims you deliberately did NOT propose and why
    (e.g. "the mayor's declined comment carries no data"). This is what keeps you honest about
    under-proposing.
 
@@ -148,7 +158,12 @@ Output one `ProposalSet`:
       "rationale": "A two-side growth claim over a continuous period is the article's spine."
     }
   ],
-  "notes": "The mayor's declined comment carries no data and is left as prose."
+  "notes": "The mayor's declined comment carries no data and is left as prose.",
+  "imageNarrative": {
+    "potential": true,
+    "passages": ["the border villages emptied one commuter at a time, their shutters closing street by street"],
+    "sequenceHint": "the same border villages: lived-in, emptying, shuttered — three states a photo sequence would carry"
+  }
 }
 ```
 

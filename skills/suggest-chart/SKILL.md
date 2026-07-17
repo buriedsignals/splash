@@ -66,7 +66,12 @@ an impoverished menu. **image-scrolly appears WITH its requirement stated, never
 know whether the journalist has images — the candidate line carries the condition (« si tu peux
 fournir 3-6 images — photos, vues satellite, archives — je dérive les légendes de ton
 article ») and dies naturally if the journalist has none. Only a preflight-red engine excludes
-it. **Narrative is CONSIDERED on every opportunity — mechanically**: each opportunity's
+it. **The trigger is the ARTICLE's own visual narrative, detected at ANALYSE — not data
+poverty**: when the ProposalSet carries `imageNarrative.potential: true` (suggest-article
+found the prose narrating something visually witnessable), the image-scrolly candidate appears
+with a why GROUNDED in that detection — quote the `sequenceHint` (« ton article décrit trois
+états du même lieu — une séquence d'images raconterait ça ») — on data-RICH opportunities too,
+alongside the chart candidates, never only as a data-poor fallback. **Narrative is CONSIDERED on every opportunity — mechanically**: each opportunity's
 candidates payload carries EITHER at least one narrative candidate (chart-scrolly · map-story ·
 image-scrolly · video reveal) OR an explicit `"narrativeRuledOut": "<one-line reason>"` field
 (e.g. « single-snapshot comparison, no sequence to narrate »). A payload with neither is
