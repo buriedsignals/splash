@@ -54,6 +54,17 @@ the journalist picks a candidate do you emit the single validated spec (Stage 2)
 one take-it-or-leave-it decision on a first invocation is the exact defect this flow replaced
 (Tom feedback #2) — the harness fails any run whose transcript carries no candidates payload.
 
+**Narrative candidates belong in the menu.** When the story shape can carry a guided narrative —
+a time series with 3+ distinct moments, a geographic progression, a before/after or
+scene-by-scene sequence, or a text-heavy piece the journalist could illustrate with their own
+images — INCLUDE the narrative option among the candidates (chart-scrolly · map-story/video ·
+image-scrolly) with its why and what it requires (« tu fournis 3-6 images » for image-scrolly).
+Gate 3's strict escalation bar governs when a narrative option is RECOMMENDED first — it does
+NOT govern whether it may APPEAR: since the flow inversion, being in the menu is the
+journalist's decision to make, and a menu of static-only types on a story built of moments is
+an impoverished menu. A narrative candidate the engines cannot produce (preflight red, no
+images available and none supplyable) still never appears — reachability rules are unchanged.
+
 1. **Profile** the data: list columns, infer each type (numeric / categorical / temporal), cardinality,
    and the row count. This fixes the data shape (single-series, multi-series, or two-value).
 
