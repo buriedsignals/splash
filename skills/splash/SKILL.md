@@ -19,6 +19,15 @@ their first message).
 Accept: an article (URL / file / pasted text), data (CSV / file / pasted table), both, or a bare
 topic. Normalise to `{ article?, data?, topic? }`. Do not proceed until you have at least one.
 
+**Keys are a PREREQUISITE — collected in the flow, never a mid-production crash.** Run
+`bun skills/splash/scripts/preflight.mjs` at INPUT. When the report shows key-less engines on a
+fresh install (no `.env`, or every engine yellow), tell the journalist what each missing key
+unlocks (the `reason` strings carry the get-it URLs) and COLLECT them — one free-text prompt per
+key, then save via `bun skills/splash/scripts/save-key.mjs <NAME> <value>` (the ONLY sanctioned
+way a key reaches `.env` — never hand-edit the file, never echo the value back), then re-run
+preflight and confirm. A journalist who wants to skip a key skips the engines it unlocks — the
+Stage-1 candidates stay annotated, nothing is silently hidden.
+
 **No article supplied → ask for the article** before anything else (canonical step 2): a bare
 topic or a lone dataset does not start CADRAGE — ask once, plainly (« envoie-moi l'article, ou
 dis-moi s'il n'existe pas encore »). Only when the journalist confirms there IS no article does
@@ -261,6 +270,13 @@ question loop
 vetoed opportunity emits `no-chart` with the reason). Each kept opportunity remains its OWN
 accept decision and its OWN `accepted.json` entry with its OWN confirmedTakeaway — the
 batching is presentation, never a merged decision.
+
+**Chosen candidate on a yellow engine → collect the key NOW (prerequisite before
+production):** explain where to get it (the preflight `reason` carries the URL), take the
+journalist's key in one free-text prompt, save it via `save-key.mjs`, re-run
+`preflight.mjs` and confirm green — then produce. A `red` engine (deps not installed) is not
+key-fixable: surface the `bun install` instruction and stop for that element (stall-protocol
+options apply). Never start PRODUCTION on a non-green engine.
 
 **Stage 2 — one spec per kept opportunity.** For each choice, `suggest-chart` emits the full
 validated spec. The format is **derived from channel × type** (social ⇒ static or video at

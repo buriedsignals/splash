@@ -117,6 +117,17 @@ describe("C4 — batched multi-proposals, each with its why", () => {
   });
 });
 
+describe("key prerequisite (2026-07-17)", () => {
+  it("missing keys are collected in the flow via the save-key seam", () => {
+    expect(splash).toContain("save-key.mjs");
+    expect(splash).toContain("PREREQUISITE");
+    expect(splash).toContain("never hand-edit the file");
+  });
+  it("production never starts on a non-green engine", () => {
+    expect(splash).toContain("Never start PRODUCTION on a non-green engine");
+  });
+});
+
 describe("orchestration hardening (Spotlight A1/A3/A4)", () => {
   it("has a context-recovery resume table keyed on artifact presence", () => {
     expect(splash).toContain("## Context recovery");
