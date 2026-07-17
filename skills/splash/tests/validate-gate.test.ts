@@ -528,3 +528,42 @@ describe("validateAccepted — image-native (C5)", () => {
     expect(outcome.errors.join(" | ")).toContain("interactive");
   });
 });
+
+// GUARD 4 duration exemption (2026-07-17 false positive: "en 5 ans" vs yMax 4)
+describe("claim-grounding duration exemption", () => {
+  const mk = (confirmedTakeaway: string): AcceptedProposal => ({
+    id: "duration-claim",
+    producer: "dw-chart",
+    format: "static",
+    channel: "article-web",
+    confirmedTakeaway,
+    spec: {
+      type: "column-chart",
+      title: "Le réseau a quadruplé en cinq ans",
+      data: "periode,lignes\nIl y a cinq ans,1\nAujourd'hui,4\n",
+      source: { name: "Régie", url: "https://regie.example-transport.fr/rapport" },
+    } as Record<string, unknown>,
+  });
+
+  it("should NOT fire on a duration ('en 5 ans') above the plotted max", () => {
+    const p = mk("Le réseau de bus de nuit a quadruplé en 5 ans");
+    const outcome = validateAccepted(p, [p]);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(false);
+  });
+
+  it("should NOT fire on 'les 5 dernières années'", () => {
+    const p = mk("Le réseau a quadruplé sur les 5 dernières années");
+    const outcome = validateAccepted(p, [p]);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(false);
+  });
+
+  it("should still fire on a bare magnitude above the plotted max", () => {
+    const p = mk("Le réseau atteint 5 lignes aujourd'hui");
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(true);
+  });
+});
