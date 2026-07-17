@@ -102,6 +102,11 @@ describe("C4 — batched multi-proposals, each with its why", () => {
     expect(proposition).toContain("first one recommended");
   });
 
+  it("narrative options (scrolly/story/image-scrolly) belong in the candidates menu", () => {
+    expect(suggest).toContain("Narrative candidates belong in the menu");
+    expect(suggest).toContain("does\nNOT govern whether it may APPEAR");
+  });
+
   it("suggest-chart emits the candidates contract", () => {
     expect(suggest).toContain("## Output — candidates first");
     expect(suggest).toContain('"candidates"');
