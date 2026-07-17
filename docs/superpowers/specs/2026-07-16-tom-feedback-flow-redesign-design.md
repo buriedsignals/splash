@@ -139,8 +139,14 @@ Single source of truth: reuse the key list the installer already writes
 (`install/configurator-core.ts:45-49`). The manifest and the installer must not drift — one
 module exports the list, both consume it.
 
-**Out of scope for C2**: interactive key entry mid-pipeline. The key goes into `.env`; preflight
-says exactly how. No new gate.
+**~~Out of scope for C2: interactive key entry mid-pipeline~~ — REVERSED (Rémy, 2026-07-17,
+implemented):** missing keys are a PREREQUISITE collected IN the flow. At INPUT on a fresh
+install (and again at Stage 2 when the chosen candidate's engine is yellow), splash asks for
+the key (one free-text prompt, the preflight `reason` carries the get-it URL) and saves it via
+the mechanical seam `skills/splash/scripts/save-key.mjs` — manifest-gated names only, quoted +
+newline-stripped values (installer escaping rule), `.env` chmod 0600, MapTiler mirror pair kept
+in sync, the value never echoed back. Production never starts on a non-green engine; `red`
+(deps) stays non-key-fixable (bun install instruction + stall options).
 
 ## C3 — The 12-step question sequence (Tom's #1, arbitrated by Rémy)
 
