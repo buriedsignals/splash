@@ -4,6 +4,89 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-16/17 — LE CHANTIER TOM : 6 retours → flow canonique 12 étapes + 4ᵉ moteur image-scrolly + préflight-prérequis, 15 runs de validation
+
+Tom (Buried Signals) a fait le premier test 100 % externe (clone rd-dev, article réel) : « pas
+foufou » + 6 retours (screenshots) : format demandé trop tôt · une seule reco · refus sec sur un
+article texte (« pas assez de données ») · préflight muet · pipeline morte (`Cannot find package
+'react'`) · guardrails anti-hallucination demandés. Session géante : spec + 7 plans (dont l'étude
+Spotlight), 6 chantiers implémentés/mergés (agents parallèles worktrees + review adversariale par
+branche), harness co-évolué, 15 runs de validation.
+
+**Décisions produit (Rémy) :** la **séquence canonique 12 étapes** (arbitrage sur le retour Tom —
+supersède mon premier draft « type avant canal ») : article demandé s'il manque · vérité des données
+(table 2b prose-only + source 2c TOUJOURS) remontée AVANT tout routage · canal = DERNIÈRE question
+du cadrage (les candidats sont canal-aware) · **propositions plurielles groupées** (toutes les
+opportunités en un message, chaque candidat avec son pourquoi, un recommandé) · zéro question format
+(déduit canal×type, annoncé pour veto) · offre re-format proactive post-export (étape 12, nouvelle
+entrée `<id>-<format>`) · **clés = prérequis collectés dans le flow** (renverse le hors-scope C2 :
+`save-key.mjs`, seul chemin d'écriture, noms gatés manifeste, valeur jamais ré-affichée) ·
+**narratif toujours CONSIDÉRÉ** (candidat narratif présent quand la forme du récit le porte, sinon
+`narrativeRuledOut` explicite — l'absence silencieuse n'est plus un état) · **image-scrolly déclenché
+par l'ANALYSE de la prose** (`imageNarrative{potential,passages,sequenceHint}` sur le ProposalSet,
+indépendant de la richesse data, jamais pré-filtré sur la dispo des images — la condition « 3-6
+images » vit dans la ligne du candidat).
+
+**Livré sur `main` (gate 20/20, reviews adversariales par branche) :**
+- **C1** closure de validation libérée de TOUTES les deps sibling (remotion/react via route-geo→
+  video-scene + playwright via dw-chart label-safety lazy) + drift-guard auto-actualisant
+  (deps+devDeps map-native, imports statiques seuls) ; repro Tom vert (charge sans node_modules).
+- **C2** préflight par moteur (env+deps), tri-état persisté `.splash-preflight.json`
+  (green/yellow/red+reason), gate produce-all AVANT production, CLI PROPOSITION, parité installeur,
+  fallback `.env` racine, read-merge-write ; + `save-key.mjs` (prérequis in-flow).
+- **C3+C4** SKILL.md réécrit sur les 12 étapes (survivantes re-ancrées — review exhaustive), contrat
+  `candidates` 2 stages (suggest-chart : Stage 1 EN TÊTE de procédure après échec live du placement
+  Output-only), artefact `candidates.json` écrit avant présentation (trace machine + reprise
+  mid-PROPOSITION), exemption jumelle GUARD 3b (suffixe==format pinné), context-recovery/retry-borné/
+  stall-protocol (pratiques Spotlight A1/A3/A4).
+- **A5** `skillsInvoked` mécanique (GUARD 5 : branche guidée sans suggest-chart = FAIL ; tokens
+  `splash:cadrage-guided|direct`) — prouvé émis dès le 1er run live.
+- **C6** GUARD 4 étendu map-native (`rows[valueField]`, typo=no-op strict, fallback chaîné) + preuve
+  map-dw + `docs/splash/guardrails.md` (inventaire vérifié ligne à ligne).
+- **C5 image-scrolly phase 2** (reprise du design 2026-07-10) : `prep-images.mjs` (sharp, fit/sRGB/
+  EXIF-strip, containment), `ScrollyImage.tsx` (crossfade, légendes, crédits, alt), produce CLI
+  scrolly-v1, routing spine complet (Producer union + preflight + validate via conformance),
+  `suggest-image` (vision = matching/ordre SEULEMENT, alt/crédit fournis jamais générés, gate
+  mandatory), e2e prouvé au rendu (output-proof committé). Review : 2 HIGH path-traversal fermés
+  (frameRef `../` lu+embarqué · id `../../` écriture arbitraire → slug strict + containment),
+  code-source image = refus loud, thème maison threadé.
+- **GUARD 4 affiné 2× sur incidents réels** : durées (« en 5 ans » vs max 4) puis tranches d'âge
+  (« over-55s »/« 55-Jährigen » vs max 48) exemptées fr/en/de/it — chaque faux positif re-pressait
+  un takeaway confirmé (réécriture sans re-confirmation observée = la vraie casse).
+- Fix env : `Response.json` statique (bun-types 1.3.14) dans le configurateur.
+
+**Harness co-évolué (~20 commits, 282/282)** : deep-verify couvre les embeds hébergés (URL +
+auto-détection `EMBED_URL.txt` ; 2 bugs du vérificateur débusqués en le testant : `locator.hover()`
+vs bgRect DW → mouse.move brut ; charts DW HTML-rendered sans SVG) · **juge réparé** (timeout
+120→300s — il pensait 201s, 4/4 étaient tués silencieusement) · checks neufs :
+`single-proposal-no-alternatives` (major mécanique, ancre `"tier"`, exemption DIRECT par token A5),
+`skills-invoked-not-emitted`, `preflight-false-block`, `narrative-not-considered` · sandbox installe
+les deps de skills jamais installées dans le repo partagé (classe image-native/sharp red) · driver
+migré 12 étapes (judge.md + bras persona candidats/étape-12) · WORKFLOW.md : baseline jugée =
+SÉQUENTIEL (le parallèle tue les juges ; re-vérif séquentielle obligatoire des findings parallèles
+— revalidé : 2 « majors » parallèles non reproduits en séquentiel).
+
+**15 runs de validation** (bus-de-nuit ×5, budget ×3, Tom-réel Trump/Iran polls texte-only, complexes
+streamgraph/scrolly-Afrique, batch 4-parallèle sans-dataset FR/DE/IT toujours-guidé embed-insisté +
+2 re-vérifs séquentielles) : **le dead-end de Tom livre désormais** (2 stats comparables → bar
+honnête, le 3ᵉ chiffre écarté explicitement « no companion value » ; deep-verify vert) · le menu
+candidats prouvé en vrai (slope recommandé + column + dumbbell, pourquois, `candidates.json`
+persisté) · les 2 faux positifs GUARD 4 attrapés-fixés · **cluster waffle confirmé** (baseColor
+droppé + grille 100 fixe vs unit-text + tooltip EN sous lang:fr) et furniture a/b/c d'export-code
+FR-hardcodé (session DE) → backlog harness trié (`FIX-BACKLOG.md`) avec 2 classes récurrentes
+escaladées (question format autonome 3× malgré Never-list · escalade chart-native sans demande
+d'interactivité 4× — levier `escalationReason` proposé).
+
+**Étude Spotlight** (`docs/splash/spotlight-learnings.md`) : A1-A5 adoptés (context recovery ·
+tri-état persisté · retry borné · stall protocol · skillsInvoked), B1-B4 planifiés pour la release
+MIT (`2026-07-16-mit-release-hardening.md` : AGENTS.md contrat runtime + llms.txt · schemaVersion +
+CHANGELOG public · deps pinnées + refus d'installer · DISCLAIMER + notice IA à doser), C1-C3 au
+backlog (catégories protégées harness · review-artefact · provenance manifest).
+
+**Reste ouvert** : push `main`→`origin/rd-dev` + re-test Tom (décision Rémy) · commits harness sur
+`feat/apertus-flue-runner` à cherry-pick vers master (checkout partagé session Apertus) · lot de
+fixes backlog (waffle cluster, treemap baseColor, a/b/c i18n, escalationReason) · notice IA (ton).
+
 ## Session 2026-07-14 (suite 3) — Vérif harness du thème arbitraire (scrolly/story) + fixes de trous, dont le scaffold scrolly blanc
 
 Rémy : « lance 2-3 tests harness avec persona/sujets neufs pour m'assurer que tout est correct » →
