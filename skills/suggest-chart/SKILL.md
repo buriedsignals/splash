@@ -186,6 +186,21 @@ one take-it-or-leave-it decision on a first invocation is the exact defect this 
 9. **Or `no-chart`**: if no visual serves the data and intent (data too thin, or the intent is not a
    visualisation question), emit `{ "decision": "no-chart", "reason": "..." }` instead of forcing a visual.
 
+**Image-scrolly recognition (C5).** When the claim is NARRATIVE (a place, a process, a
+before/after, a sequence of scenes) and the data test above fails (< 3 usable numbers — the
+honest-data guard for CHARTS, unchanged), do NOT stop at `no-chart`: emit an
+`image-scrolly` candidate (producer `image-native`, tier per fit) stating what the
+journalist must supply — « tu fournis 3-6 images (photos, satellite, archives) + leur
+crédit ; je dérive les légendes de ton article, tu valides tout avant rendu ». The chart
+refusal stays exactly as-is when the journalist asks for a CHART; the candidate is the
+alternative, not a softening of the data bar. Reachability: the format is `scrolly`, so the
+candidate only appears when the channel allows it (article-web — a social channel keeps the
+plain `no-chart`). A kept image-scrolly candidate is NOT specced here: hand it to the
+**`suggest-image`** skill, which collects the images + per-image alt/credit, matches each
+image to its article passage (vision = matching/ordering ONLY), and emits the
+`image-story.json` manifest behind its own mandatory journalist gate; production is
+`bun skills/image-native/scripts/produce.mjs <image-story.json> <outDir> scrolly`.
+
 ## How it decides
 
 1. Read the shared KB `<repo-root>/knowledge/references/chart-selection.md` (at the splash repo root, not under this skill) → map **intent → DW type** (intent first, simplest type that serves it).
@@ -866,7 +881,11 @@ channel is KNOWN at both stages (CADRAGE Q6 precedes this call).
   takeaway. EVERY candidate carries a real one-line `why` ("en quoi elle peut être
   intéressante") — no bare names.
 - The orchestrator batches ALL opportunities' candidate lists into ONE journalist message.
-- Nothing reachable → emit the `no-chart` decision with a reason, as before.
+- Nothing reachable → emit the `no-chart` decision with a reason, as before — UNLESS the
+  Image-scrolly recognition rule (C5, Runtime procedure step 9) fires: a NARRATIVE claim
+  that fails the chart data test on an article-web channel emits the `image-scrolly`
+  candidate (`{ "type": "image-scrolly", "producer": "image-native", "tier": "...",
+  "why": "..." }`, its `why` stating what the journalist supplies) instead of a dead-end.
 
 **Stage 2: ONE validated spec per kept opportunity** — exactly the historical output, one of:
 - a `ChartSpec` JSON for `dw-chart` (the default static chart path);

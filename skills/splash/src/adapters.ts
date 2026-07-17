@@ -78,13 +78,15 @@ import { produceMap } from "../../map-dw/src/produce";
 const here = dirname(fileURLToPath(import.meta.url));
 const SKILLS_ROOT = resolve(here, "../..");
 
-type FileBasedProducer = "chart-native" | "map-native" | "scrolly";
+type FileBasedProducer =
+  "chart-native" | "map-native" | "scrolly" | "image-native";
 
 function isFileBased(producer: Producer): producer is FileBasedProducer {
   return (
     producer === "chart-native" ||
     producer === "map-native" ||
-    producer === "scrolly"
+    producer === "scrolly" ||
+    producer === "image-native"
   );
 }
 
@@ -125,12 +127,16 @@ const SCRIPT: Record<FileBasedProducer, string> = {
   ),
   "map-native": join(SKILLS_ROOT, "map-native/scripts/produce.mjs"),
   scrolly: join(SKILLS_ROOT, "scrolly/scripts/produce.mjs"),
+  // image-native (C5): <image-story.json> <outDir> <format> — same single-format shape;
+  // v1 accepts "scrolly" only (its own CLI fails hard on anything else).
+  "image-native": join(SKILLS_ROOT, "image-native/scripts/produce.mjs"),
 };
 
 const SKILL_DIR: Record<FileBasedProducer, string> = {
   "chart-native": join(SKILLS_ROOT, "chart-native"),
   "map-native": join(SKILLS_ROOT, "map-native"),
   scrolly: join(SKILLS_ROOT, "scrolly"),
+  "image-native": join(SKILLS_ROOT, "image-native"),
 };
 
 // CHANNEL INJECTION (cloud producers) — the spine's truth flows in MECHANICALLY.

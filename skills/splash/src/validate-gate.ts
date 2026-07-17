@@ -25,6 +25,11 @@ import {
   narrativeBeatWarnings,
 } from "../../chart-native/src/chart-story";
 import {
+  checkImageConformance,
+  type ImageStory,
+  type ImageFormat,
+} from "../../image-native/src/image-story";
+import {
   placeholderSourceReason,
   sourceNamePreservedReason,
   sourceUrlFidelityReason,
@@ -126,6 +131,32 @@ function validateScrolly(spec: unknown): ValidationOutcome {
       ],
     };
   return validateMapNative(spec);
+}
+
+// image-native (C5): the spec IS the ImageStory manifest — run the engine's own
+// render-free conformance HERE, scoped by the proposal's pinned format (the frame
+// floor differs per format, spec §6.3). "interactive" is refused mechanically: an
+// image sequence has no data to explore (spec §2 non-goal — the engine's grid is
+// static/video/scrolly, never interactive), so no ImageFormat maps to it.
+function validateImageNative(
+  spec: unknown,
+  format: AcceptedProposal["format"],
+): ValidationOutcome {
+  if (format === "interactive") {
+    return {
+      ok: false,
+      errors: [
+        'image-native has no "interactive" format — an image sequence has no data to ' +
+          "explore (spec §2); pin scrolly (or static/video, follow-ups) instead",
+      ],
+    };
+  }
+  const violations = checkImageConformance(spec as ImageStory, {
+    format: format as ImageFormat,
+  });
+  return violations.length
+    ? { ok: false, errors: violations }
+    : { ok: true, warnings: [] };
 }
 
 // GUARD 2 — placeholder source URL. Every producer spec carries `source: { name, url? }`
@@ -576,6 +607,8 @@ function validateByProducer(p: AcceptedProposal): ValidationOutcome {
       return validateScrolly(p.spec);
     case "chart-native":
       return validateNative(p.spec);
+    case "image-native":
+      return validateImageNative(p.spec, p.format);
     default: {
       // produce-all.mjs builds `accepted` from an untyped JSON.parse, so a hand-authored
       // report can carry a producer outside the union. Handle it as a validation FAILURE,

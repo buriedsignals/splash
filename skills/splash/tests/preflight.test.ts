@@ -132,3 +132,25 @@ describe("installer parity", () => {
     for (const name of required) expect(writtenNames.has(name)).toBe(true);
   });
 });
+
+// C5 — image-native's readiness manifest: no env keys (prep + build are local; the
+// scrolly host's own entry already guards its key), sharp is the critical dep (the
+// native binary Tom's crash class is made of).
+describe("preflightFindings — image-native (C5)", () => {
+  it("should be clean when sharp resolves (no env required)", () => {
+    expect(
+      preflightFindings("image-native", { env: {}, resolveDep: resolves }),
+    ).toEqual([]);
+  });
+
+  it("should flag deps when sharp does not resolve, pointing at bun install", () => {
+    const findings = preflightFindings("image-native", {
+      env: ALL_SET,
+      resolveDep: neverResolves,
+    });
+    expect(findings.some((f) => f.kind === "deps")).toBe(true);
+    expect(findings.find((f) => f.kind === "deps")!.message).toContain(
+      "skills/image-native",
+    );
+  });
+});

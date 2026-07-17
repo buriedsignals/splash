@@ -13,6 +13,20 @@ export interface ScrollyStep {
   align?: "left" | "right" | "center";
 }
 
+// The dispatcher seam Scrolly.tsx routes its sticky graphic AND its story derivation
+// on — pure, so tests exercise the routing without importing the (MapTiler-keyed)
+// component tree. Mirrors how the branches were chosen inline before the image track:
+// an explicit visual:"image" wins, a `nativeType` config is the chart track, and
+// everything else is the map family (choropleth default).
+export function resolveVisual(config: {
+  visual?: unknown;
+  nativeType?: unknown;
+}): VisualKind {
+  if (config.visual === "image") return "image";
+  if (typeof config.nativeType === "string") return "chart";
+  return "map";
+}
+
 export interface ScrollyStory {
   title: string;
   description?: string;

@@ -435,6 +435,17 @@ export function mergeProfileDefaults<
   ) {
     out = { ...out, themeBg };
   }
+  // IMAGE-SCROLLY theme (review F4 — same class as the 2026-07-14 chart/map threading): the
+  // engine plumbing already derives scaffold + matte from `story.themeBg`; only this merge
+  // threads it. colourKind() is "none" for image-native (no data marks to colour), so this
+  // rides OUTSIDE the palette branches. Per-element value always wins.
+  if (
+    themeBg &&
+    opts?.producer === "image-native" &&
+    out.themeBg === undefined
+  ) {
+    out = { ...out, themeBg };
+  }
   if (out.source === undefined && profile.source)
     out = { ...out, source: profile.source };
   if (out.lang === undefined && profile.lang)

@@ -363,3 +363,47 @@ describe("freshOutDir — wipes a re-produce's outDir clean before the next disp
     expect(readdirSync(abs)).toEqual([]);
   });
 });
+
+// C5 — image-native is a FILE-BASED producer: the dispatch routes an accepted
+// image-native proposal to skills/image-native/scripts/produce.mjs with the standard
+// <config> <outDir> <format> shape. Proven by driving the REAL script through
+// realDispatch on its fast fail paths (no build): the v1 format gate and the
+// conformance gate both answer from image-native's own produce.mjs, so reaching them
+// IS the routing proof. No channel is threaded (scrolly-only v1, article-web implied).
+describe("realDispatch — image-native routing (C5)", () => {
+  const baseProposal = (over: Partial<AcceptedProposal>): AcceptedProposal => ({
+    id: "img-1",
+    producer: "image-native",
+    format: "scrolly",
+    spec: {
+      title: "T",
+      description: "D",
+      source: { name: "S" },
+      keyFrame: 0,
+      fit: "canvas-frame",
+      imageDir: "/tmp/nowhere",
+      frames: [],
+    },
+    confirmedTakeaway: "confirmed",
+    channel: "article-web",
+    ...over,
+  });
+
+  it("never threads a channel env to image-native", () => {
+    expect(channelEnvFor("image-native", "article-web")).toEqual({});
+  });
+
+  it('reaches image-native\'s produce.mjs — a "static" pin fails with the v1 message', async () => {
+    const outDir = join(mkdtempSync(join(tmpdir(), "splash-imgdispatch-")), "out");
+    const r = await realDispatch(baseProposal({ format: "static" }), outDir);
+    expect(r.status).toBe("failed");
+    expect(r.error).toContain('image-native builds "scrolly" only in v1');
+  });
+
+  it("a conformance-violating story fails loud from the engine CLI (frames empty)", async () => {
+    const outDir = join(mkdtempSync(join(tmpdir(), "splash-imgdispatch2-")), "out");
+    const r = await realDispatch(baseProposal({}), outDir);
+    expect(r.status).toBe("failed");
+    expect(r.error).toContain("conformance");
+  });
+});

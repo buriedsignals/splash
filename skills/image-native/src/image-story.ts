@@ -28,6 +28,9 @@ export interface ImageStory {
   keyFrame: number; // index of the representative frame → static export
   fit: "canvas-frame" | "crop"; // project default (canvas-frame is the safe editorial default)
   lang?: string;
+  // Newsroom ground (#rrggbb) — scaffold + matte derive from it (threaded by the splash
+  // brand-profile merge; per-element value wins). Absent = light default.
+  themeBg?: string;
   imageDir: string; // root for resolving frameRefs (suggest-image → engine handoff)
 }
 
@@ -290,6 +293,63 @@ export function captionOverlapRatio(caption: string, passage: string): number {
   return inter / a.size;
 }
 
+// ---------------------------------------------------------------------------------
+// Scrolly bridge (spec §5) — ImageStory → the scrolly scaffold's story shape.
+// Typed STRUCTURALLY (no import from skills/scrolly) so the dependency stays one-way:
+// scrolly imports image-native's schema, never the reverse. The shapes below are
+// assignable to scrolly's ScrollyStep/ScrollyStory by construction (visual:"image"
+// and action:"crossfade" are members of its VisualKind/StepAction unions).
+export interface ImageScrollyStep {
+  id: string;
+  visual: "image";
+  action: "crossfade";
+  ref: number; // frame index into ImageStory.frames
+  prose: string;
+  align?: "left" | "right" | "center";
+}
+
+export interface ImageScrollyStory {
+  title: string;
+  description?: string;
+  source?: { name: string; url?: string };
+  visual: "image";
+  steps: ImageScrollyStep[];
+}
+
+// One intro step (the description — what/when/where, shown over the FIRST frame) then
+// one step per frame. The caption is passed through AS-IS — unlike mapStoryToChapters,
+// which DERIVES its prose from the data — which is exactly why the §6/§7 tripwires
+// (sourcePassage + overlap + the mandatory journalist gate) sit upstream of this call.
+export function imageStoryToChapters(story: ImageStory): ImageScrollyStory {
+  const steps: ImageScrollyStep[] = [
+    {
+      id: "step-0-intro",
+      visual: "image",
+      action: "crossfade",
+      ref: 0,
+      prose: story.description,
+      align: "center",
+    },
+  ];
+  story.frames.forEach((frame, i) => {
+    steps.push({
+      id: `step-${i + 1}-frame-${frame.id}`,
+      visual: "image",
+      action: "crossfade",
+      ref: i,
+      prose: frame.caption,
+      align: frame.align ?? "center",
+    });
+  });
+  return {
+    title: story.title,
+    description: story.description,
+    source: story.source,
+    visual: "image",
+    steps,
+  };
+}
+
 export function checkImageConformance(
   story: ImageStory,
   opts?: { overlapThreshold?: number; format?: ImageFormat },
@@ -335,6 +395,14 @@ export function checkImageConformance(
   const ids = new Set<string>();
   story.frames.forEach((f, i) => {
     if (!f.id?.trim()) v.push(`frame at index ${i} has an empty id`);
+    // Path-safety (review F1/F2, probed exploits): the id becomes an output FILENAME
+    // (prep writes `<framesDir>/<id>.jpg`, the inliner reads it back) and the frameRef is
+    // resolved under imageDir. A traversal in either is an arbitrary read/write primitive
+    // reachable from an LLM-composed manifest — refuse at conformance, BEFORE any dispatch.
+    else if (!/^[A-Za-z0-9_-]+$/.test(f.id))
+      v.push(
+        `frame id "${f.id}" is not a safe slug (letters, digits, - and _ only) — ids become output filenames`,
+      );
     else {
       if (ids.has(f.id)) v.push(`duplicate frame id "${f.id}"`);
       ids.add(f.id);
@@ -343,6 +411,15 @@ export function checkImageConformance(
     if (!f.frameRef?.trim())
       v.push(
         `frame ${label} has an empty frameRef — every frame references a raw image`,
+      );
+    else if (
+      f.frameRef.startsWith("/") ||
+      f.frameRef.startsWith("\\") ||
+      /^[A-Za-z]:[\\/]/.test(f.frameRef) ||
+      f.frameRef.split(/[\\/]/).includes("..")
+    )
+      v.push(
+        `frame ${label} frameRef "${f.frameRef}" must be a plain path INSIDE the image folder — no absolute paths, no ".." (the raw images live under imageDir, nothing else is readable)`,
       );
     if (!f.caption?.trim()) v.push(`frame ${label} has empty caption`);
     if (!f.alt?.trim())

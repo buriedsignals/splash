@@ -2,7 +2,12 @@
 import type { Channel } from "./channel";
 
 export type Producer =
-  "dw-chart" | "chart-native" | "map-dw" | "map-native" | "scrolly";
+  | "dw-chart"
+  | "chart-native"
+  | "map-dw"
+  | "map-native"
+  | "scrolly"
+  | "image-native";
 export type VisualFormat = "static" | "interactive" | "video" | "scrolly";
 
 export interface AcceptedProposal {

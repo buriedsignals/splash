@@ -143,3 +143,40 @@ describe("orchestration hardening (Spotlight A1/A3/A4)", () => {
     expect(splash).toContain("Je bloque sur");
   });
 });
+
+// C5 — image-scrolly enters the ranked list. The dead-end this closes (Tom's #3): a
+// narrative text block with < 3 usable numbers used to end at a bare `no-chart`; now the
+// SAME condition emits an image-scrolly candidate (producer image-native) stating what
+// the journalist must supply. The chart refusal itself is unchanged — the candidate is
+// the alternative, never a softening of the honest-data bar.
+describe("C5 — image-scrolly recognition + suggest-image", () => {
+  it("suggest-chart carries the recognition rule beside the no-chart decision", () => {
+    expect(suggest).toContain("Image-scrolly recognition (C5)");
+    expect(suggest).toContain("do NOT stop at `no-chart`");
+    expect(suggest).toContain("producer `image-native`");
+    expect(suggest).toContain("tu fournis 3-6 images");
+  });
+
+  it("the honest-data refusal stays (the candidate accompanies it, never replaces it)", () => {
+    expect(suggest).toContain('"decision": "no-chart"');
+    expect(suggest).toContain(
+      "refusal stays exactly as-is when the journalist asks for a CHART",
+    );
+  });
+
+  it("suggest-image: vision = matching/ordering ONLY, alt+credit collected, gate mandatory", () => {
+    const suggestImage = readFileSync(
+      join(import.meta.dir, "../../suggest-image/SKILL.md"),
+      "utf8",
+    );
+    expect(suggestImage).toContain("matching + ordering ONLY");
+    expect(suggestImage).toContain("NEVER generates");
+    expect(suggestImage).toContain("MANDATORY");
+    expect(suggestImage).toContain("non-skippable");
+    // alt + credit are ASKED FOR (journalist-supplied), never derived from vision
+    expect(suggestImage).toContain("asked for");
+    // v1 format constraint is stated
+    expect(suggestImage).toContain("scrolly");
+    expect(suggestImage).toContain("image-story.json");
+  });
+});

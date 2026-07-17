@@ -37,10 +37,35 @@ if (!configPath || !outDir) {
   process.exit(1);
 }
 mkdirSync(outDir, { recursive: true });
+
+// IMAGE track (visual:"image"): the prepped frames live on disk (framesDir), but the
+// deliverable is ONE self-contained scrolly.html — so the frames are inlined here as
+// base64 data URIs (frameSrcs, aligned 1:1 with story.frames) into the config the
+// Vite single-file build bakes. Chart/map configs pass through untouched.
+let buildConfigPath = configPath;
+const rawConfig = JSON.parse(readFS(configPath, "utf8"));
+if (rawConfig.visual === "image" && rawConfig.framesDir && !rawConfig.frameSrcs) {
+  const { readFileSync: readBin, mkdtempSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { resolve, isAbsolute } = await import("node:path");
+  const framesRoot = isAbsolute(rawConfig.framesDir)
+    ? rawConfig.framesDir
+    : resolve(configPath, "..", rawConfig.framesDir);
+  const frameSrcs = rawConfig.story.frames.map((frame) => {
+    const framePath = join(framesRoot, `${frame.id}.jpg`);
+    const b64 = readBin(framePath).toString("base64");
+    return `data:image/jpeg;base64,${b64}`;
+  });
+  const inlined = { ...rawConfig, frameSrcs };
+  const tmp = mkdtempSync(join(tmpdir(), "scrolly-image-config-"));
+  buildConfigPath = join(tmp, "config.json");
+  writeFileSync(buildConfigPath, JSON.stringify(inlined));
+}
+
 execFileSync("bunx", ["vite", "build"], {
   stdio: "inherit",
   cwd: root,
-  env: { ...process.env, CONFIG: configPath },
+  env: { ...process.env, CONFIG: buildConfigPath },
 });
 const out = join(outDir, "scrolly.html");
 copyFileSync(join(root, "dist", "index.html"), out);
