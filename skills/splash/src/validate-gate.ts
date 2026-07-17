@@ -429,6 +429,12 @@ function rowsDomain(spec: Record<string, unknown>): {
 
 const CLAIM_EPS = 1e-9;
 
+// Age bands ("over-55s", "unter 35", "les plus de 55 ans", "55-Jährigen", "65 anni e oltre")
+// are COHORT LABELS, never plotted magnitudes — same false-positive class as durations (a
+// "55" cohort was compared to a 48% max, re-pressuring a confirmed takeaway, 2026-07-17 KI run).
+const AGE_BAND_RE =
+  /(?:\b(?:over|under|unter|über|oltre|sotto|moins\s+de|plus\s+de)[-\s]*\d+s?\b)|(?:\d+[-\s]*(?:j[äa]hrigen?|year[-\s]?olds?)\b)|(?:\d+\s+ans\s+et\s+plus\b)|(?:\d+\s+anni\s+e\s+oltre\b)/giu;
+
 // number + (optional "last/next"-style adjective) + a duration unit, fr/en/de/it.
 const DURATION_PHRASE_RE =
   /\d[\d.,\s]*\s*(?:derni[eè]re?s?\s+|prochaines?\s+|last\s+|next\s+|letzten?\s+|ultimi?\s+)?(?:ans?\b|ann[ée]es?\b|years?\b|yrs?\b|mois\b|months?\b|jours?\b|days?\b|semaines?\b|weeks?\b|heures?\b|hours?\b|Jahren?\b|Monaten?\b|Tagen?\b|Wochen\b|anni\b|anno\b|mesi\b|mese\b|giorni\b|giorno\b|settimane\b|ore\b)/giu;
@@ -456,7 +462,9 @@ function claimGroundingErrors(p: AcceptedProposal): string[] {
   // "en 5 ans" was rejected twice against yMax 4, and the workaround edited a confirmed title
   // without re-confirmation — the guard must never manufacture that pressure. Dates/years keep
   // their own dedicated x-axis check below.
-  const claimText = `${title}\n${takeaway}`.replace(DURATION_PHRASE_RE, " ");
+  const claimText = `${title}\n${takeaway}`
+    .replace(DURATION_PHRASE_RE, " ")
+    .replace(AGE_BAND_RE, " ");
   for (const tok of extractNumberTokens(claimText)) {
     if (seen.has(tok.value)) continue;
     if (backed.has(tok.value)) continue;
