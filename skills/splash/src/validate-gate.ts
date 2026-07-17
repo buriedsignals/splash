@@ -429,6 +429,10 @@ function rowsDomain(spec: Record<string, unknown>): {
 
 const CLAIM_EPS = 1e-9;
 
+// number + (optional "last/next"-style adjective) + a duration unit, fr/en/de/it.
+const DURATION_PHRASE_RE =
+  /\d[\d.,\s]*\s*(?:derni[eè]re?s?\s+|prochaines?\s+|last\s+|next\s+|letzten?\s+|ultimi?\s+)?(?:ans?\b|ann[ée]es?\b|years?\b|yrs?\b|mois\b|months?\b|jours?\b|days?\b|semaines?\b|weeks?\b|heures?\b|hours?\b|Jahren?\b|Monaten?\b|Tagen?\b|Wochen\b|anni\b|anno\b|mesi\b|mese\b|giorni\b|giorno\b|settimane\b|ore\b)/giu;
+
 function claimGroundingErrors(p: AcceptedProposal): string[] {
   const spec = p.spec;
   if (!spec || typeof spec !== "object") return [];
@@ -446,7 +450,14 @@ function claimGroundingErrors(p: AcceptedProposal): string[] {
     typeof p.confirmedTakeaway === "string" ? p.confirmedTakeaway : "";
   const errors: string[] = [];
   const seen = new Set<number>();
-  for (const tok of extractNumberTokens(`${title}\n${takeaway}`)) {
+  // Duration phrases ("quadruplé en 5 ans", "over 10 years", "in 3 Monaten") are TIME SPANS,
+  // never plotted magnitudes — stripped BEFORE token extraction so the "5" of "5 ans" is not
+  // compared to yMax. Real false positive (2026-07-17 run): a confirmed takeaway carrying
+  // "en 5 ans" was rejected twice against yMax 4, and the workaround edited a confirmed title
+  // without re-confirmation — the guard must never manufacture that pressure. Dates/years keep
+  // their own dedicated x-axis check below.
+  const claimText = `${title}\n${takeaway}`.replace(DURATION_PHRASE_RE, " ");
+  for (const tok of extractNumberTokens(claimText)) {
     if (seen.has(tok.value)) continue;
     if (backed.has(tok.value)) continue;
     if (looksLikeYear(tok.value)) {
