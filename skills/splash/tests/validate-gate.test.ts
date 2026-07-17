@@ -567,3 +567,41 @@ describe("claim-grounding duration exemption", () => {
       expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(true);
   });
 });
+
+// GUARD 4 age-band exemption (2026-07-17 KI run: "over-55s"/"55-Jährigen" vs max 48)
+describe("claim-grounding age-band exemption", () => {
+  const mk = (confirmedTakeaway: string): AcceptedProposal => ({
+    id: "ageband-claim",
+    producer: "dw-chart",
+    format: "static",
+    channel: "article-web",
+    confirmedTakeaway,
+    spec: {
+      type: "column-chart",
+      title: "Die Sorgenlücke zwischen den Generationen",
+      data: "gruppe,anteil\nUnter 35,48\nÜber 55,23\n",
+      source: { name: "Forsa", url: "https://forsa.example-umfrage.de/ki" },
+    } as Record<string, unknown>,
+  });
+
+  it("should NOT fire on 'over-55s' / '55-Jährigen' cohort labels above the max", () => {
+    for (const t of [
+      "Only 23% of over-55s worry, versus 48% of the under 35",
+      "Bei den 55-Jährigen sind es nur 23 Prozent",
+      "Les plus de 55 ans ne sont que 23 %",
+    ]) {
+      const p = mk(t);
+      const outcome = validateAccepted(p, [p]);
+      if (!outcome.ok)
+        expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(false);
+    }
+  });
+
+  it("should still fire on a bare magnitude above the max", () => {
+    const p = mk("Der Anteil erreicht 55 Prozent");
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(true);
+  });
+});
