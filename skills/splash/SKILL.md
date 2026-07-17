@@ -261,9 +261,11 @@ explicitly** (« return the candidates JSON first — every reachable type with 
 bounded-retry rules apply; never relay a take-it-or-leave-it decision to the journalist.
 **Write the raw Stage-1 payload to `exports/<slug>/candidates.json` BEFORE presenting** —
 one entry per opportunity, each candidate with `type`/`producer`/`tier`/`why` exactly as
-suggest-chart returned them — including, per opportunity, either a narrative candidate or the
-explicit `narrativeRuledOut` reason (suggest-chart's contract: silent narrative absence is
-not a valid payload). The journalist never sees this JSON (the presentation below is
+suggest-chart returned them — including, per opportunity, either a narrative candidate — from the WHOLE family matched to
+the story shape (chart-scrolly/chart-video for a temporal series, map-story/map-scrolly for a
+geographic progression, image-scrolly for a prose-visual sequence) — or the explicit
+`narrativeRuledOut` reason (suggest-chart's contract: silent narrative absence is not a valid
+payload). The journalist never sees this JSON (the presentation below is
 plain language); the file is the mechanical trace that the menu existed (the harness anchors
 on it), and the resume point if the session dies mid-PROPOSITION (see Context recovery).
 Present ALL opportunities' candidate lists in ONE batched message — never a per-opportunity question loop

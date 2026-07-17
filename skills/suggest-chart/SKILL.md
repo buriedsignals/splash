@@ -54,22 +54,26 @@ the journalist picks a candidate do you emit the single validated spec (Stage 2)
 one take-it-or-leave-it decision on a first invocation is the exact defect this flow replaced
 (Tom feedback #2) — the harness fails any run whose transcript carries no candidates payload.
 
-**Narrative candidates belong in the menu.** When the story shape can carry a guided narrative —
-a time series with 3+ distinct moments, a geographic progression, a before/after or
-scene-by-scene sequence, or a text-heavy piece the journalist could illustrate with their own
-images — INCLUDE the narrative option among the candidates (chart-scrolly · map-story/video ·
-image-scrolly) with its why and what it requires (« tu fournis 3-6 images » for image-scrolly).
-Gate 3's strict escalation bar governs when a narrative option is RECOMMENDED first — it does
-NOT govern whether it may APPEAR: since the flow inversion, being in the menu is the
-journalist's decision to make, and a menu of static-only types on a story built of moments is
+**Narrative candidates belong in the menu — the WHOLE family, matched to the story shape.** The
+narrative formats are not just image-scrolly; consider each against the opportunity and ANALYSE's
+`narrativePotential`:
+- **`temporal` potential** (a series with 3+ moments) → a **chart-scrolly** (step-reveal of the
+  line/bar) AND/OR a **chart-video** (line-reveal · ranked-bars race · proportional-squares) —
+  offer the one that fits the channel (video for social/vertical, scrolly for article-web).
+- **`geographic` potential** → a **map-story** (video) or **map-scrolly** (waypoints).
+- **`visual` potential** → an **image-scrolly** (with the « si tu fournis 3-6 images » condition).
+Each appears with a why GROUNDED in the matching `narrativePotential.<mode>.hint` (quote it), on
+data-RICH opportunities too — a trend worth scrolling, a ranking worth racing, a place worth
+showing. Gate 3's strict escalation bar governs when a narrative option is RECOMMENDED first — it
+does NOT govern whether it may APPEAR: a menu of static-only types on a story built of moments is
 an impoverished menu. **image-scrolly appears WITH its requirement stated, never pre-filtered on it**: splash cannot
 know whether the journalist has images — the candidate line carries the condition (« si tu peux
 fournir 3-6 images — photos, vues satellite, archives — je dérive les légendes de ton
 article ») and dies naturally if the journalist has none. Only a preflight-red engine excludes
 it. **The trigger is the ARTICLE's own visual narrative, detected at ANALYSE — not data
-poverty**: when the ProposalSet carries `imageNarrative.potential: true` (suggest-article
+poverty**: when the ProposalSet carries `narrativePotential.visual.potential: true` (suggest-article
 found the prose narrating something visually witnessable), the image-scrolly candidate appears
-with a why GROUNDED in that detection — quote the `sequenceHint` (« ton article décrit trois
+with a why GROUNDED in that detection — quote the `visual.hint` (« ton article décrit trois
 états du même lieu — une séquence d'images raconterait ça ») — on data-RICH opportunities too,
 alongside the chart candidates, never only as a data-poor fallback. **Narrative is CONSIDERED on every opportunity — mechanically**: each opportunity's
 candidates payload carries EITHER at least one narrative candidate (chart-scrolly · map-story ·
