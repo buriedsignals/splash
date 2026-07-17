@@ -112,6 +112,17 @@ describe("C4 — batched multi-proposals, each with its why", () => {
     expect(suggest).toContain("never pre-filtered");
   });
 
+  it("image-narrative potential is detected at ANALYSE from the prose, independent of data richness", () => {
+    const suggestArticle = readFileSync(
+      join(import.meta.dir, "../../suggest-article/SKILL.md"),
+      "utf8",
+    );
+    expect(suggestArticle).toContain("imageNarrative");
+    expect(suggestArticle).toContain("INDEPENDENT of data richness");
+    expect(suggest).toContain("imageNarrative.potential");
+    expect(suggest).toContain("never only as a data-poor fallback");
+  });
+
   it("narrative options (scrolly/story/image-scrolly) belong in the candidates menu", () => {
     expect(suggest).toContain("Narrative candidates belong in the menu");
     expect(suggest).toContain("does\nNOT govern whether it may APPEAR");
