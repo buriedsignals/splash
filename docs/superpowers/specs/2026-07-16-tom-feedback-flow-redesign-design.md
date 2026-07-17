@@ -234,6 +234,14 @@ accept decision" (`SKILL.md:230-239`). There is no runtime candidate scorer.
 - The full spec is built and the single format pinned only after the choice, announced for
   veto in the same breath. `no-chart` remains possible when nothing is reachable — and with
   C5, the image-scrolly candidate turns the data-poor dead-end into an alternative.
+- **Narrative considered, always (Rémy, 2026-07-17 — implemented):** narrative candidates
+  (chart-scrolly · map-story · image-scrolly · video reveal) belong in the Stage-1 menu whenever
+  the story shape carries them — Gate 3's strict escalation bar governs RECOMMENDING one first,
+  never whether it may APPEAR. And the narrative dimension can never be silently absent: each
+  opportunity's candidates payload carries either a narrative candidate or an explicit
+  `narrativeRuledOut: "<reason>"` (harness `check:narrative-not-considered` + judge rubric on the
+  reason's quality). Forcing a narrative candidate on a sequence-less story is deliberately NOT
+  required — no fake diversity.
 - **Mechanical sub-skill proof** (Spotlight practice A5, `docs/splash/spotlight-learnings.md`):
   `AcceptedProposal` gains `skillsInvoked: string[]` (emitted at §5b like
   `channel`/`confirmedTakeaway`); `validate-gate` warns when absent and fails a guided-branch
@@ -260,10 +268,15 @@ DNA (image scrolly). The suggester only knows data visuals.
   key-frame, `ScrollyImage.tsx` in `skills/scrolly`), the `suggest-image` orchestration skill
   (vision for matching/ordering ONLY; caption words come from the article), and splash routing.
   The journalist provides **their images + article**; Splash formats, orders (vetoable), renders.
-- **Suggester recognition rule**: narrative text block (place, process, before/after) without
-  sufficient tabular data → image-scrolly candidate in the ranked list (C4), with an explicit
-  note of what the journalist must supply. The honest-data guard stays for charts, but it now
-  leads to an alternative instead of a dead end.
+- **Suggester recognition rule (upgraded 2026-07-17)**: the trigger is the ARTICLE's own visual
+  narrative, detected at ANALYSE — suggest-article sets `imageNarrative: { potential, passages,
+  sequenceHint }` on the ProposalSet by reading the PROSE (a place transforming, a journey, a
+  before/after a camera could have followed), INDEPENDENT of data richness. Stage-1 then grounds
+  the image-scrolly candidate's why in that detection (quote the sequenceHint), on data-RICH
+  opportunities too — never only a data-poor fallback. The candidate always carries its
+  requirement (« si tu peux fournir 3-6 images ») and is never pre-filtered on image
+  availability (splash cannot know; the journalist decides). The honest-data guard stays for
+  charts.
 - **v1 format**: interactive-scrolly only (video = follow-up). Single-format model applies
   unchanged.
 - **Sequencing**: built last (see order below). Until the engine ships, the suggester does NOT
