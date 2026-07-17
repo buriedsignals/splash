@@ -72,6 +72,14 @@ export const ENGINE_REQUIREMENTS: Record<Producer, EngineRequirements> = {
     },
     criticalDeps: { fromSkillDir: "scrolly", packages: ["react", "vite"] },
   },
+  // image-native (C5): prep + build are local — no API key of its own (the scrolly host
+  // build's MapTiler need is the scrolly entry's concern). sharp is the critical native
+  // dep (the exact "binary missing after a bare clone" crash class C2 exists for).
+  "image-native": {
+    env: [],
+    envHelp: {},
+    criticalDeps: { fromSkillDir: "image-native", packages: ["sharp"] },
+  },
 };
 
 // The embed DELIVERY FORM's requirement (not an engine's): deploy-embed.mjs owns the

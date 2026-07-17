@@ -458,3 +458,73 @@ describe("skillsInvoked review hardening", () => {
       expect(outcome.warnings.some((w) => w.includes("skillsInvoked is empty"))).toBe(true);
   });
 });
+
+// C5 — the image-native producer rides the spine: validateByProducer runs
+// checkImageConformance on the accepted ImageStory spec (fail-hard, before any
+// producer runs), and the no-interactive rule (spec §2: an image has no data to
+// explore) is enforced HERE, mechanically.
+function imageStorySpec() {
+  return {
+    title: "Le canal qui a coupé le village en deux",
+    description: "Comment le nouveau chenal a transformé la rive est, 2019–2024.",
+    source: { name: "Heidi.news" },
+    keyFrame: 0,
+    fit: "canvas-frame",
+    imageDir: "/tmp/raw-images",
+    frames: ["avant", "pendant", "apres"].map((id, i) => ({
+      id,
+      frameRef: `${id}.jpg`,
+      caption: `Étape ${i + 1} de la transformation de la rive est.`,
+      alt: `Scène distincte numéro ${i + 1} au bord de l'eau.`,
+      credit: { name: "Jeanne Dupont / Agence Photo" },
+      sourcePassage: `Passage original numéro ${i + 1}, raconté autrement dans l'article.`,
+    })),
+  };
+}
+
+function imageProposal(): AcceptedProposal {
+  return {
+    id: "canal-image-scrolly",
+    producer: "image-native",
+    format: "scrolly",
+    spec: imageStorySpec(),
+    confirmedTakeaway: "La rive est a été entièrement transformée en cinq ans",
+    provenance: "prose",
+    confirmedTable: true,
+    channel: "article-web",
+  };
+}
+
+describe("validateAccepted — image-native (C5)", () => {
+  it("accepts a valid ImageStory pinned scrolly on article-web", () => {
+    const p = imageProposal();
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(true);
+  });
+
+  it("fails LOUD on a conformance violation (empty alt — WCAG floor)", () => {
+    const p = imageProposal();
+    (p.spec as ReturnType<typeof imageStorySpec>).frames[1].alt = "";
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) throw new Error("unreachable");
+    expect(outcome.errors.join(" | ")).toContain("empty alt");
+  });
+
+  it("fails LOUD below the scrolly frame floor (2 frames < 3)", () => {
+    const p = imageProposal();
+    (p.spec as ReturnType<typeof imageStorySpec>).frames.pop();
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) throw new Error("unreachable");
+    expect(outcome.errors.join(" | ")).toContain("a scrolly needs at least 3");
+  });
+
+  it('rejects format "interactive" — an image sequence has no data to explore (spec §2)', () => {
+    const p = { ...imageProposal(), format: "interactive" as const };
+    const outcome = validateAccepted(p, [p]);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) throw new Error("unreachable");
+    expect(outcome.errors.join(" | ")).toContain("interactive");
+  });
+});
