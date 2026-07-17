@@ -75,6 +75,11 @@ describe("C3 — the canonical 12-step order", () => {
     expect(splash).toContain("Never ask the FORMAT as a standalone question");
   });
 
+  it("the Stage-1 payload is written as candidates.json before presenting (mechanical trace)", () => {
+    expect(splash).toContain("exports/<slug>/candidates.json");
+    expect(splash).toContain("BEFORE presenting");
+  });
+
   it("a candidates-less suggest-chart return is re-invoked once (mechanical fallback)", () => {
     expect(splash).toContain("re-invoke it ONCE");
     expect(suggest).toContain("YOUR FIRST OUTPUT IS THE CANDIDATES LIST");
