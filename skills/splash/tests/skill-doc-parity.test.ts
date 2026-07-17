@@ -126,6 +126,11 @@ describe("C4 — batched multi-proposals, each with its why", () => {
     expect(suggest).toContain("never only as a data-poor fallback");
   });
 
+  it("image availability is never a CADRAGE question — resolved at candidate selection", () => {
+    expect(suggest).toContain("Image availability is NEVER a CADRAGE question");
+    expect(splash).toContain("NEVER a « do you have photos");
+  });
+
   it("the Stage-1 narrative rule covers the whole family (scrolly/video/map-story), not just image-scrolly", () => {
     expect(suggest).toContain("the WHOLE family");
     expect(suggest).toContain("chart-video");

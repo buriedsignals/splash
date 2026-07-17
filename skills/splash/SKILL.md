@@ -42,7 +42,7 @@ analysis inline instead of invoking the skill skips its provenance discipline an
 cost observed in practice, not a theoretical one. For a bare topic (no article/data), instead NAME the
 real dataset the topic needs (the honest sans-rien path) and carry that forward.
 
-### 3. CADRAGE — GATE 1 (questionnaire, journalist's language, up to 6 questions, one at a time, conditionals skipped)
+### 3. CADRAGE — GATE 1 (questionnaire, journalist's language, up to 6 questions, one at a time, conditionals skipped — and NEVER a « do you have photos? » turn: image availability is resolved by PICKING the image-scrolly candidate, not by a CADRAGE question)
 
 Ask each question as ONE well-formed single-select prompt (a short header, 2–4 concrete options) and
 wait for the answer before the next — never batch several into one call, which is what malforms the
