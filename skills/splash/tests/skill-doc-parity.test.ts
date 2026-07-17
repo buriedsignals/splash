@@ -102,6 +102,16 @@ describe("C4 — batched multi-proposals, each with its why", () => {
     expect(proposition).toContain("first one recommended");
   });
 
+  it("narrative is considered on every opportunity — present or explicitly ruled out", () => {
+    expect(suggest).toContain("narrativeRuledOut");
+    expect(suggest).toContain("silent absence of the narrative option is not a possible state");
+    expect(splash).toContain("narrativeRuledOut");
+  });
+
+  it("image-scrolly appears with its requirement stated, never pre-filtered", () => {
+    expect(suggest).toContain("never pre-filtered");
+  });
+
   it("narrative options (scrolly/story/image-scrolly) belong in the candidates menu", () => {
     expect(suggest).toContain("Narrative candidates belong in the menu");
     expect(suggest).toContain("does\nNOT govern whether it may APPEAR");
