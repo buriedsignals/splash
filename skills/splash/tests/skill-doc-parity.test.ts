@@ -229,6 +229,17 @@ describe("C5 — image-scrolly recognition + suggest-image", () => {
 // the SKILL.md prose stops the miss they guard. They are pinned FIRST (before any prose
 // slim) so the moment a cut drops a survivor, its pin goes red. They must stay GREEN through
 // the whole slim.
+describe("placement at delivery (2026-07-18)", () => {
+  it("EXPORT states each delivered element's placement from its anchor", () => {
+    expect(splash).toContain("State the PLACEMENT of each delivered element");
+    expect(splash).toContain("à placer autour du");
+    expect(splash).toContain("paragraphIndex");
+  });
+  it("§5b copies the anchor across when suggest-article provided one", () => {
+    expect(splash).toMatch(/\*\*`anchor`\*\*/);
+  });
+});
+
 describe("survivor rules — load-bearing, no mechanical backstop, MUST survive any slim", () => {
   // Each pin asserts the ACTIONABLE CLAUSE of the rule, not a lone keyword whose token recurs
   // elsewhere — a gutted rule whose keyword survives in a comment/reference would keep a weak

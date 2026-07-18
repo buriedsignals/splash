@@ -48,6 +48,14 @@ export interface AcceptedProposal {
   // come from suggest-chart's candidates, so its absence means the orchestrator re-decided
   // what the sub-skill owns.
   skillsInvoked?: string[];
+  // Placement anchor (suggest-article's `anchor: { paragraphIndex, quote }`) — WHERE in the
+  // article this element serves the narrative. Carried here so EXPORT can tell the journalist,
+  // at hand-over, where to place each delivered element (« à placer autour du §N, près de
+  // « quote » »). Advisory by design — the journalist does the final placement in their CMS.
+  // Copied across at §5b like sourceHint/confirmedTakeaway (prose-enforced; no script transforms
+  // the in-context ProposalSet). OPTIONAL: absent ⇒ no placement stated at delivery, no error
+  // (a bare-topic run, or an opportunity suggest-article bound to no specific passage).
+  anchor?: { paragraphIndex?: number; quote?: string };
 }
 
 export type ProduceStatus =
