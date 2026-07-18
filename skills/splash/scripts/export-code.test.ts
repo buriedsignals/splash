@@ -81,6 +81,52 @@ describe("isEphemeralPath", () => {
   });
 });
 
+describe("export-code CLI — --id path-safety (audit gap #1, same class as the spine)", () => {
+  // --id becomes a path component: bundleDir = join(exportDir, `${id}-source`). A
+  // traversal id would let the code-source form write a bundle OUTSIDE exportDir. Reject
+  // an unsafe --id up front, before any find/copy/exec — and prove the sentinel survives.
+  for (const badId of ["../../evil", "/etc", "a/b", ".."]) {
+    it(`refuses an unsafe --id ${JSON.stringify(badId)} and writes nothing outside exportDir`, () => {
+      const root = mkdtempSync(join(import.meta.dir, "export-idsafe-fixture-"));
+      const outDir = join(root, "out");
+      const exportDir = join(root, "exp");
+      mkdirSync(outDir, { recursive: true });
+      mkdirSync(exportDir, { recursive: true });
+      writeFileSync(join(outDir, "static.png"), Buffer.from("x"));
+      const victim = join(exportDir, "..", "evil-source");
+      const resultsPath = join(outDir, "report.json");
+      writeFileSync(resultsPath, JSON.stringify(report(badId, "static")));
+
+      let threw = false;
+      try {
+        run(outDir, exportDir, resultsPath, badId);
+      } catch (e) {
+        threw = true;
+        expect(String((e as { stderr?: string }).stderr ?? e)).toMatch(
+          /not a safe slug/i,
+        );
+      }
+      expect(threw).toBe(true);
+      // Nothing was written to a sibling of exportDir via the traversal.
+      expect(existsSync(victim)).toBe(false);
+      rmSync(root, { recursive: true, force: true });
+    });
+  }
+
+  it("accepts a normal slug --id", () => {
+    const outDir = mkdtempSync(join(tmpdir(), "splash-export-idsafe-ok-"));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-idsafe-ok-fixture-"),
+    );
+    writeFileSync(join(outDir, "static.png"), Buffer.from("x"));
+    const resultsPath = join(outDir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(report("co2-2026", "static")));
+    expect(() => run(outDir, exportDir, resultsPath, "co2-2026")).not.toThrow();
+    rmSync(outDir, { recursive: true, force: true });
+    rmSync(exportDir, { recursive: true, force: true });
+  });
+});
+
 describe("export-code CLI — STATIC delivery (media direct, no folder machinery)", () => {
   it("delivers the lone static image — no static.html, no EMBED.md, no -source folder", () => {
     const outDir = mkdtempSync(join(tmpdir(), "splash-export-static-"));
