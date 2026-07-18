@@ -406,6 +406,10 @@ source; if it did, thread the hint and re-produce". It is advisory only; it neve
   `"splash:cadrage-direct"` — then e.g. `"suggest-article"`, `"suggest-chart"`. Copied across
   like `channel`/`confirmedTakeaway`; the spine gate warns when absent and FAILS a guided
   entry without `suggest-chart` (GUARD 5).
+- **`anchor`** (copy it across when `suggest-article` provided one): the element's placement in
+  the article — `{ paragraphIndex, quote }`, the passage this visual serves. Copied verbatim
+  like `sourceHint`; EXPORT surfaces it at hand-over (§6, delivery placement). OPTIONAL —
+  absent on a bare-topic run or an opportunity bound to no specific passage.
 
 **`confirmedTakeaway` is REQUIRED** — the spine's validation gate (`src/validate-gate.ts`) FAILS any
 proposal missing/empty it (GUARD 3), on both branches. It is the Gate-1b presence lever: Gate 3a quotes
@@ -571,6 +575,16 @@ call `produce-all`, not them directly. An omitted map-native format still defaul
 the full video set.)_
 
 ### 6. EXPORT — GATE 4 (delivery depends on the visual's format)
+
+**★ State the PLACEMENT of each delivered element — WHERE it goes in the article.** When you hand over a
+finished element (each one, on a multi-element article), tell the journalist where it belongs in their
+piece, using the proposal's `anchor`: « à placer autour du §{paragraphIndex}, près de « {quote} » ». This
+is the payoff of suggest-article having found WHERE each visual serves the narrative — surfaced at the
+moment it is actionable (the finished visual in hand), not buried at proposition time. Placement is
+ADVISORY (the journalist does the final positioning); absent an `anchor` (bare topic, or an opportunity
+bound to no specific passage), say the element is free-standing and skip the placement line — never invent
+a paragraph. On a multi-element hand-over, list each element WITH its own placement, so a 3-visual article
+gets « le chart des recettes → §2 ; la carte → §5 ; le scrolly → la fin », not one undifferentiated dump.
 
 **Delivery location — stable, never the scratchpad.** Write every hand-over (export folder, mp4, PNG) to
 `exports/<slug>/` under the journalist's working directory (the splash project root), NOT the session
