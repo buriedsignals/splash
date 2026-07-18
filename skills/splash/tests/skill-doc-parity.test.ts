@@ -104,7 +104,9 @@ describe("C4 — batched multi-proposals, each with its why", () => {
 
   it("narrative is considered on every opportunity — present or explicitly ruled out", () => {
     expect(suggest).toContain("narrativeRuledOut");
-    expect(suggest).toContain("silent absence of the narrative option is not a possible state");
+    expect(suggest).toContain(
+      "silent absence of the narrative option is not a possible state",
+    );
     expect(splash).toContain("narrativeRuledOut");
   });
 
@@ -140,7 +142,7 @@ describe("C4 — batched multi-proposals, each with its why", () => {
 
   it("narrative options (scrolly/story/image-scrolly) belong in the candidates menu", () => {
     expect(suggest).toContain("Narrative candidates belong in the menu");
-    expect(suggest).toContain("does\nNOT govern whether it may APPEAR");
+    expect(suggest).toContain("does NOT govern whether it may APPEAR");
   });
 
   it("suggest-chart emits the candidates contract", () => {
@@ -219,5 +221,53 @@ describe("C5 — image-scrolly recognition + suggest-image", () => {
     // v1 format constraint is stated
     expect(suggestImage).toContain("scrolly");
     expect(suggestImage).toContain("image-story.json");
+  });
+});
+
+// Survivor rules — the load-bearing prose that has NO mechanical backstop. Every guard
+// documented in docs/splash/guardrails.md is enforced in code; these rules are NOT — only
+// the SKILL.md prose stops the miss they guard. They are pinned FIRST (before any prose
+// slim) so the moment a cut drops a survivor, its pin goes red. They must stay GREEN through
+// the whole slim.
+describe("survivor rules — load-bearing, no mechanical backstop, MUST survive any slim", () => {
+  // Each pin asserts the ACTIONABLE CLAUSE of the rule, not a lone keyword whose token recurs
+  // elsewhere — a gutted rule whose keyword survives in a comment/reference would keep a weak
+  // pin green (adversarial review 2026-07-17). The clauses below are the specific sentences
+  // that carry the instruction; deleting the rule removes them.
+  // 1. Source-uncertainty: a hedged-but-real-looking citation passes every guard; only prose stops it.
+  it("keeps the source-uncertainty rule (a confident citation over admitted uncertainty is a DEFECT)", () => {
+    expect(splash).toContain("citation over admitted uncertainty is a DEFECT");
+  });
+  // 2. Takeaway must be EXPLICITLY confirmed, never inferred-and-skipped (GUARD 3 checks presence only).
+  it("keeps 'never advance on an unconfirmed, silently-inferred takeaway'", () => {
+    expect(splash).toContain("silently-inferred");
+    expect(splash).toContain("EXPLICITLY confirmed");
+  });
+  // 3. Never fabricate a value — the HARD coordinate-provenance clause (validators cannot tell real from invented).
+  it("keeps never-hand-type-a-coordinate + never-fabricate-attribution", () => {
+    expect(suggest).toContain(
+      "NEVER hand-type a coordinate from the model's own knowledge",
+    );
+    expect(splash).toContain("Never fabricate a dataset attribution");
+  });
+  // 4. Gate-3a render-review: the interaction-not-from-a-still clause specifically (the most droppable of the six).
+  it("keeps the Gate-3a interaction-not-asserted-from-a-still criterion + part-by-part title check", () => {
+    expect(splash).toContain(
+      'never assert an interaction "works" from a still',
+    );
+    expect(splash).toContain("part by part");
+  });
+  // 5. WAIT-means-WAIT delivery gate — the actionable clause, not the bare word "wait".
+  it("keeps WAIT-means-WAIT (--form MUST NOT run until a journalist message answers the proposal)", () => {
+    expect(splash).toContain("MUST NOT run until a journalist message");
+    expect(splash).toContain("Never auto-progress");
+  });
+  // Honorable mentions — the actionable clause.
+  it("keeps one-element-one-takeaway SEMANTIC (never a shared combined string)", () => {
+    expect(splash).toContain("never a shared combined string");
+  });
+  it("keeps 'always ask Q6 channel' + the permissive-default warning (absent → article-web)", () => {
+    expect(splash).toContain("the LAST CADRAGE question");
+    expect(splash).toContain("Never omit it");
   });
 });

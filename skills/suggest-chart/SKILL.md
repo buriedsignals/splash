@@ -255,8 +255,7 @@ image to its article passage (vision = matching/ordering ONLY), and emits the
    palette grey. A VALUE, never a row index (`sort` re-orders the rows — an index would accent the wrong
    bar). The same CADRAGE-framing discipline as the native `highlight` applies: only accent a category the
    confirmed insight singles out; omit it for a neutral overview. There is NO `highlightColor` field —
-   the accent IS `baseColor`; `validateChartSpec` is STRICT and rejects any unknown top-level field
-   (a hallucinated field once shipped a silently-unhighlighted chart).
+   the accent IS `baseColor`; `validateChartSpec` is STRICT and rejects any unknown top-level field.
 4. Guardrails: **≤2 colours**; **CHOOSE `baseColor` by subject — NEVER leave a chart on a blue-family hue
    for a subject that is not water/cold/sky/marine** (the validator FAILS a declared `subject` whose
    `baseColor` is absent or the default `#0072B2`); if the data is too complex for a clean chart, return
@@ -279,18 +278,16 @@ Set `subject` to the topic and pick the Okabe-Ito hue whose meaning fits:
 - water / cold / sky / marine → blue `#0072B2` (the ONE case the default blue is correct)
 - social / culture / politics-neutral → reddish-purple `#CC79A7`
 - **housing / rent / cost-of-living / real estate → amber `#E69F00`** — a "cost of living / hearth"
-  subject; warm, and pointedly NOT the blue that reads as water/cold (found shipped with NO `baseColor`
-  at all on a rent chart — leaving it unset is the same defect as leaving it blue: both fall through to
-  the component's blue default).
+  subject; warm, and pointedly NOT the blue that reads as water/cold. Leaving `baseColor` unset is the
+  same defect as leaving it blue: both fall through to the component's blue default.
 - **labour market / cross-border commuting / migration / transport-flow → vermilion `#D55E00`** — a
   friction/flow subject; if vermilion is already used elsewhere in the same piece, fall back to reddish-
   purple `#CC79A7` rather than to blue.
 
 **NEVER leave blue for a subject that is not water/cold/sky/marine — and "blue" means the WHOLE blue
 family, not just the exact library default.** Both `#0072B2` (blue) and `#56B4E9` (sky) read as "blue" to
-a reader; swapping the literal default for the lighter sky-blue is the SAME defect with a different hex —
-found shipped live on a "cross-border commuting" chart (`baseColor: "#56B4E9"`), a subject that matches
-none of water/cold/sky/marine. If the subject doesn't match that list, NEITHER `#0072B2` NOR `#56B4E9` may
+a reader; swapping the literal default for the lighter sky-blue (`#56B4E9`) is the SAME defect with a
+different hex on a non-water subject. If the subject doesn't match that list, NEITHER `#0072B2` NOR `#56B4E9` may
 be the `baseColor` — pick amber/green/vermilion/purple/yellow/black deliberately instead.
 
 All eight Okabe-Ito hues are CVD-safe, so any choice passes the guard; the point is that the choice must
@@ -319,7 +316,7 @@ comment marks `baseColor` optional-with-a-default:**
 - **`baseColor`**: pick a deliberate subject-fit Okabe-Ito hue using the exact same Colour rule as
   `ChartSpec` above (reason about the subject, then set the hex). Leaving `baseColor` unset silently
   falls back to the component's blue default — the same "everything is blue" defect this rule exists to
-  stop (found shipped live: a housing/rent native chart with no `baseColor` key at all).
+  stop.
 - **`subject`** (recommended): set the topic string (e.g. `"housing rents"`). It is injected onto the
   produced config and the produce-time guard then HARD-FAILS a chart left on a blue-family hue for a
   non-water/cold subject — the same subject-fit enforcement `ChartSpec` has. It is the belt-and-braces
@@ -327,8 +324,7 @@ comment marks `baseColor` optional-with-a-default:**
 - **`altInsight`**: the WCAG alt text — the insight, not the chart's structure — same requirement and
   wording discipline as `ChartSpec.altInsight` above. Always include it: chart-native's produce gate now
   HARD-REQUIRES a non-empty `altInsight` on every produced chart (fail-hard, like dw-chart/map-dw spec
-  validation) — a spec without it refuses to produce. Originally found missing entirely on a shipped
-  beeswarm spec, leaving the visual with no accessible description at all.
+  validation) — a spec without it refuses to produce.
 
 The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
@@ -344,111 +340,9 @@ region leads"). When the journalist confirmed a neutral "vue d'ensemble" / "how 
 with no single subject, leave `highlight` UNSET — accenting one category then steers the eye to a story the
 journalist explicitly did NOT choose (an encoding drift from the confirmed takeaway). Same discipline as the
 title rule: the encoding may not narrow or diverge from the framing confirmed at Gate 1b.
-`grouped` expects a **wide CSV**: the first column is the category, and every following numeric column
-is a series (≤3 — beyond that use small multiples). Example: `region,urban,rural` then a row like
-`North,2400,1900`.
-`stacked` expects a **wide CSV**: the first column is the category/time, and every following numeric
-column is a series that stacks bottom→top (≤5 — beyond that group into "Other" or use small
-multiples); a composition/part-to-whole story. Example: `year,hydro,wind,solar` then a row like
-`2024,130,110,90`.
-`stacked-area` expects a **wide CSV** with a **numeric time key** first column (e.g. `year`) and 2–5
-numeric series columns that stack bottom→top over that continuous time axis; a composition-over-time
-story (the continuous sibling of `stacked`). Example: `year,gas,coal,renewables` then a row like
-`2024,45,55,150`.
-`histogram` expects **one numeric column of RAW individual observations** (not pre-binned counts); the
-engine bins them.
-`lollipop` expects **category + one value** (a ranking/magnitude dot-and-stem); `highlight` names the
-category to accent.
-`connected-scatter` expects the **first column as the ordering/time key, then TWO numeric measure
-columns**; rows must be ordered by that key (the path follows row order).
-`beeswarm` expects **one numeric value column** (raw observations) + an **optional low-cardinality
-grouping column** (≤5 groups → colours) + an optional per-point label column. A SINGLE-HUE swarm (no
-grouping column) honours `baseColor` — a housing rent-dispersion swarm is amber, never the default blue;
-set `subject` so the produce guard enforces it. Name the outliers that "break away" via `highlights`
-(an array, e.g. `["Cologny","Genthod"]`; the single `highlight` also works) — they render larger with a
-direct name+value label so they read without a hover.
-`dot-strip` expects **category + one value, with MANY rows per category** (raw observations, NOT
-pre-aggregated) — shows the spread of individual values within a few groups, one horizontal strip per
-category plus a mean marker; a single category with only one observation per row is still valid, but the
-type earns its keep when several rows share a category.
-`waffle` expects **category + one value, ≤6 categories** (a part-to-whole composition made countable,
-one square per unit) — group any tail beyond 6 into "Other"; `unit` must name what one square represents
-(e.g. "each square = 1%"), it renders as the subtitle. Not for change over time (use `stacked-area`)
-or for more than ~6 slices (use `pie` or `bar`).
-`radial-bar` expects **category + one value**; use it ONLY when the category axis is CYCLICAL (hours
-of the day, months of the year, compass points) and the cycle itself is part of the story — keep rows
-in **CSV order** (do NOT sort by value; angle encodes the category's cyclical position, unlike every
-other single-value type above). For a non-cyclical magnitude/ranking, prefer plain `bar`.
-`diverging` expects **category + one signed value that CROSSES zero** (gain↔loss / above↔below a
-midpoint). Route it ONLY when values span both negative and positive — otherwise use `bar`.
-`waterfall` expects **ordered label + one signed value** (a bridge of increases/decreases); an optional
-`total` column (1/true) marks opening/closing running-total bars. Route it for step-by-step build-up to
-a final figure.
-`dumbbell` expects **category + exactly two numeric columns** (start/end, e.g. `2019`,`2024`); the two
-column headers become the series labels. Route it for a two-point comparison per category — never a line
-(two points imply no trend).
-`slope` expects **category + exactly TWO time-point columns** (e.g. `2019`,`2024`); the two column headers
-become the period captions. Route it for a two-point change/comparison per category — NOT for 3+ points
-(use `line`). **A slope asserts a MONOTONIC change between its two points** — if the underlying series
-reverses in between (a peak or dip the two endpoints hide), the slope misrepresents the trend: keep a
-`line`, or disclose the dropped middle to the journalist. `highlight` names the one line that bucks the trend.
-`bullet` expects **category + a measure value + a `target`** (a column named `target`, or the last numeric
-column). Route it ONLY when there's a target to measure against (a KPI vs its goal). The measure is coloured
-by hit (blue) / miss (vermillion); by default it sits on a single neutral track — qualitative range bands
-require explicit threshold columns (deferred), never invent them.
-`treemap` expects **label + one value, with an OPTIONAL grouping category column** (`label,value` or
-`label,value,category`) — a part-to-whole layout where each cell's AREA is proportional to value; when a
-grouping column has **≤5 distinct values**, cells are coloured and clustered by group. Past 5 distinct
-values, the mapper degrades to a **flat single-hue treemap** (grouping dropped, no legend) rather than
-wrapping the 5-colour palette. For a flat ranking with few items, prefer `bar`/`waffle`; for ≤6 shares with
-no hierarchy, prefer `pie`.
-`boxplot` expects **category + one numeric value column, with MANY raw observations per category**
-(not pre-aggregated summary stats — the engine computes the five-number summary itself); shows the
-distribution spread (median, IQR, whiskers, outliers) per group. For a single ungrouped distribution,
-or to see every individual point, prefer `histogram`/`beeswarm`/`dot-strip` instead.
-`violin` expects the **same CSV shape as `boxplot`**: category + one numeric value column, with MANY
-raw observations per category (not pre-aggregated). Unlike `boxplot`, it draws a density silhouette (a
-KDE) so multimodal/skewed shapes are visible, not just the five-number summary — route it when the
-distribution's SHAPE is the story, not only its centre/spread. Needs at least 2 observations per
-category (a density is undefined below that). For very few categories or small n, prefer `boxplot`,
-`dot-strip`, or `beeswarm` instead.
-`diverging-stacked` expects a **wide CSV**: the first column is the item/statement, and every following
-numeric column is an ORDERED Likert response (negative → neutral → positive) that sums to ~100% per row
-(e.g. `item,stronglyDisagree,disagree,neutral,agree,stronglyAgree`). With an ODD response count, the
-middle column straddles the centre (half each side, grey) — a genuine neutral bucket; an EVEN count has
-no true middle and splits evenly with no straddle. Do NOT reorder responses — order encodes sign. Route
-it for survey/opinion composition per item; for a plain (non-signed) composition use `stacked`.
-`pyramid` expects **band + exactly two numeric columns** (e.g. `ageBand,male,female`); the two column
-headers become the mirrored side labels, drawn back-to-back from a shared central axis on the SAME
-magnitude scale. Route it for a paired age/sex (or any two-group) population breakdown — for a plain
-two-point comparison per category (not mirrored/centred), prefer `dumbbell`.
-`fan` is NOT a tidy wide CSV — it expects **forecast-style columns with MAGIC names**: a time column
-first, then `actual` (the historical series), `central` (the forecast's point estimate), and paired
-`lo{n}`/`hi{n}` confidence-band columns for each level (e.g. `year,actual,central,lo80,hi80,lo95,hi95`).
-The first column must be a **numeric time axis** (e.g. a year). History rows populate `actual` and leave
-`central`/the bands blank; forecast rows are the mirror (blank `actual`, populated `central`+bands).
-Levels are derived from whichever `lo{n}`/`hi{n}` pairs are present (**≥2 confidence-band pairs required**,
-e.g. `lo80`/`hi80` AND `lo95`/`hi95` — a single pair fails shape-validation). Route it ONLY for a
-forecast/projection story where the UNCERTAINTY itself is the point — never invent bands for a plain
-point forecast (use `line`).
-`bump` expects a **wide CSV**: the first column is the item's label, and every following numeric column
-is an ORDERED period holding that item's RANK at that period (1 = top), e.g. `team,2021,2022,2023`. Route
-it for a ranking-over-time race where the CROSSINGS are the story (who overtook whom) — for a magnitude/
-value trend over time, prefer `line`; for a single before/after comparison, prefer `slope`. `highlight`
-names the ONE item to accent (others render as neutral grey context); at most a few highlights keep the
-tangle of lines readable. A `highlight` is **effectively required** — without it every line renders the
-same colour (all-blue) and the chart is an indistinguishable tangle.
-`heatmap` expects a **wide MATRIX CSV**: the first column is the ROW dimension, and every following
-numeric column is a value of the COLUMN dimension — a value over TWO categorical/temporal dimensions
-where **colour encodes the value** (e.g. `day,06-10,10-14,14-18,18-22` then `Mon,52,38,41,60`). Route it
-when the story is a PATTERN over two dimensions — activity by day×hour, intensity over region×year, a
-correlation matrix — and the eye should scan the grid for hot/cold clusters. This is the ONE native type
-where colour is the quantitative channel: it paints a **sequential CVD-safe ramp** (single-hue Blues,
-monotonic luminance), NOT the Okabe-Ito categorical palette, so do NOT set `baseColor` (it is ignored —
-the ramp is the encoding); a colourbar legend + optional in-cell value labels come built in. For a value
-over ONE dimension prefer `bar` (length reads more precisely than colour); for too-fine grids, aggregate
-the bins first. `unit` names the value the colour encodes (e.g. "median wait (minutes)"). Ships static +
-interactive (per-cell hover/focus) + video (a diagonal fade-in reveal).
+Per-type spec shapes (the CSV shape each `nativeType` expects, `grouped`…`heatmap`): see the
+**Native chart type catalogue** in `knowledge/references/chart-selection.md` — consult the entry for the
+chosen type when emitting the Stage-2 `NativeSpec`.
 
 ### map-dw (static choropleth map) — default map path
 
@@ -489,8 +383,8 @@ Field notes:
   department names: `"Ain"`, `"Haute-Savoie"`). Its other registered keys do NOT carry what their names
   suggest (probed live): `postal` holds two-letter POSTAL ABBREVIATIONS (`"FF"`, `"CY"`) — **NOT INSEE
   department numbers**, so joining `"01"…"95"` codes on `postal` matches 0 rows (a registered key can
-  still be the WRONG key for your columns — the registry only lists which keys exist; QA: this cost a full
-  corrective pass, caught only by the dataless-join guard); `fips` is `"FRB9"`-style; `code_hasc` is
+  still be the WRONG key for your columns — the registry only lists which keys exist, not which fits your
+  data; the dataless-join guard is the net); `fips` is `"FRB9"`-style; `code_hasc` is
   `"FR.AI"`-style. **No key on this basemap carries INSEE codes** — convert INSEE codes to department
   names first and join on `name`. For any registered basemap, read the valid keys off
   `map-dw/src/basemap-keys.ts` verbatim; for an unregistered one, confirm the exact `mapKeyAttr` via the
@@ -568,9 +462,7 @@ default blue, so an energy/electricity map MUST carry `palette:"oranges"` — th
 - `unit` — **EMIT IT whenever the measured quantity has a short unit (mm, %, €, t, hab.)**; omit only
   when the quantity truly has none (a count of people, an index). The unit is part of faithful data
   representation, not decoration: it feeds the legend endpoints AND the hover tooltip — a reader hovering
-  a rainfall map must read "624 mm", never a bare "624" (QA Wave 10: the journalist explicitly asked for
-  the exact millimetres on hover, and an emitted `unit: undefined` left map-dw's tooltip-unit mechanism
-  with nothing to append). It is a LITERAL suffix with the leading-space semantics `map-dw/src/map-spec.ts`
+  a rainfall map must read "624 mm", never a bare "624". It is a LITERAL suffix with the leading-space semantics `map-dw/src/map-spec.ts`
   documents: include a leading space unless the unit hugs the number (`" mm"` → "624 mm", `" €"` →
   "17 600 €", `"%"` → "70%"). Do not double-declare a percent — either `unit:"%"` or a `"%"` `numberFormat`
   token is enough on its own (map-dw suppresses the collision, but one declaration is the honest spec).
@@ -633,9 +525,8 @@ Field notes:
 - `source.name` + `source.url`: required (furniture standard; missing is a warning).
 - `unit` / `valueUnit`: **EMIT them whenever the measured quantity has a short unit (mm, %, €, t,
   hab.)** — the unit feeds the legend and the hover/caption surfaces and is part of faithful data
-  representation, not decoration (same rule as the map-dw `unit` field note above; QA Wave 10: a
-  rainfall map emitted without a unit hovered a bare number where the journalist asked for exact
-  millimetres). Omit only when the quantity truly has none.
+  representation, not decoration (same rule as the map-dw `unit` field note above). Omit only when the
+  quantity truly has none.
 
 **Filters (INTERACTIVE maps only — reader exploration).** When the format is **interactive** (Gate 2
 fired) AND the data shape supports it, add a `filters` array so the reader can explore. Emit a filter
