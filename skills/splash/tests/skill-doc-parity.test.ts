@@ -230,40 +230,44 @@ describe("C5 — image-scrolly recognition + suggest-image", () => {
 // slim) so the moment a cut drops a survivor, its pin goes red. They must stay GREEN through
 // the whole slim.
 describe("survivor rules — load-bearing, no mechanical backstop, MUST survive any slim", () => {
+  // Each pin asserts the ACTIONABLE CLAUSE of the rule, not a lone keyword whose token recurs
+  // elsewhere — a gutted rule whose keyword survives in a comment/reference would keep a weak
+  // pin green (adversarial review 2026-07-17). The clauses below are the specific sentences
+  // that carry the instruction; deleting the rule removes them.
   // 1. Source-uncertainty: a hedged-but-real-looking citation passes every guard; only prose stops it.
-  it("keeps the source-uncertainty rule (« je crois » / de mémoire → never a confident citation)", () => {
-    expect(splash).toMatch(/je crois|de mémoire|uncertain|incertain/i);
-    expect(splash).toContain("Source"); // near the uncertainty rule
+  it("keeps the source-uncertainty rule (a confident citation over admitted uncertainty is a DEFECT)", () => {
+    expect(splash).toContain("citation over admitted uncertainty is a DEFECT");
   });
   // 2. Takeaway must be EXPLICITLY confirmed, never inferred-and-skipped (GUARD 3 checks presence only).
-  it("keeps 'takeaway confirmed EXPLICITLY, never inferred and skipped'", () => {
-    expect(splash).toMatch(
-      /EXPLICIT[^.]*confirm|confirm[^.]*EXPLICIT|jamais infér|never infer/i,
+  it("keeps 'never advance on an unconfirmed, silently-inferred takeaway'", () => {
+    expect(splash).toContain("silently-inferred");
+    expect(splash).toContain("EXPLICITLY confirmed");
+  });
+  // 3. Never fabricate a value — the HARD coordinate-provenance clause (validators cannot tell real from invented).
+  it("keeps never-hand-type-a-coordinate + never-fabricate-attribution", () => {
+    expect(suggest).toContain(
+      "NEVER hand-type a coordinate from the model's own knowledge",
     );
+    expect(splash).toContain("Never fabricate a dataset attribution");
   });
-  // 3. Never fabricate a value — coordinates/dates/numbers (validators cannot tell real from invented).
-  it("keeps never-fabricate-any-value (both files)", () => {
-    expect(splash).toMatch(
-      /never fabricate|jamais inventer|ne jamais inventer/i,
+  // 4. Gate-3a render-review: the interaction-not-from-a-still clause specifically (the most droppable of the six).
+  it("keeps the Gate-3a interaction-not-asserted-from-a-still criterion + part-by-part title check", () => {
+    expect(splash).toContain(
+      'never assert an interaction "works" from a still',
     );
-    expect(suggest).toMatch(/never invent|coordinate|fabricate/i);
+    expect(splash).toContain("part by part");
   });
-  // 4. Gate-3a render-review six criteria (assertShippable only checks a record EXISTS, not honesty).
-  it("keeps the Gate-3a render-review criteria (title↔takeaway part-by-part, comparative caption, interaction-not-from-a-still)", () => {
-    expect(splash).toMatch(/render.?review|Gate 3a/i);
-    expect(splash).toMatch(/part.by.part|comparative|tooltip|interaction/i);
+  // 5. WAIT-means-WAIT delivery gate — the actionable clause, not the bare word "wait".
+  it("keeps WAIT-means-WAIT (--form MUST NOT run until a journalist message answers the proposal)", () => {
+    expect(splash).toContain("MUST NOT run until a journalist message");
+    expect(splash).toContain("Never auto-progress");
   });
-  // 5. WAIT-means-WAIT delivery gate / never auto-progress a gate (harness check is post-hoc, not in-flow).
-  it("keeps WAIT-means-WAIT / never auto-progress a gate", () => {
-    expect(splash).toMatch(/WAIT|attends|never auto-progress|jamais auto/i);
+  // Honorable mentions — the actionable clause.
+  it("keeps one-element-one-takeaway SEMANTIC (never a shared combined string)", () => {
+    expect(splash).toContain("never a shared combined string");
   });
-  // Honorable mentions — terse but present.
-  it("keeps one-element-one-takeaway SEMANTIC (paraphrased shared takeaway escapes GUARD 3b)", () => {
-    expect(splash).toMatch(
-      /one .?element.* one|un élément.* un|per accepted element/i,
-    );
-  });
-  it("keeps 'always ask Q6 channel' (absent channel silently defaults to permissive article-web)", () => {
-    expect(splash).toMatch(/Où sera-t-il publié|channel.*LAST|Q6/);
+  it("keeps 'always ask Q6 channel' + the permissive-default warning (absent → article-web)", () => {
+    expect(splash).toContain("the LAST CADRAGE question");
+    expect(splash).toContain("Never omit it");
   });
 });
