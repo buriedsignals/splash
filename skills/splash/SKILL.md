@@ -199,22 +199,14 @@ the flow did not reach (a canned « Q6, toujours posée » when the flow did not
    the allowed SET; the format pin is surfaced ONCE, at PROPOSITION — the two never double-ask.
 
 Branch:
-- **DIRECT** (journalist names the visual, e.g. "a scrolly map"): skip PROPOSITION's candidate menu.
-  The rest of CADRAGE is NOT skipped — the channel is asked at the same LAST position (Q6) on both
-  branches. Go to PRODUCTION, passing suggest-chart the (data, intent, channel) PLUS the forced
-  element/format — suggest-chart still emits a VALIDATED spec and applies its guardrails (obey the
-  choice, but if it violates a hard guardrail, surface the warning to the journalist rather than
-  shipping a broken visual). On DIRECT, the branch fires at Q1. **Q2 (takeaway, GATE 1b) is NOT
-  skipped either** — its open-ended asking is simply replaced by a confirm-back: state the takeaway
-  inferred from the article + the named visual and get the journalist's explicit confirmation before
-  PRODUCTION (a named visual carries a chart TYPE, not a confirmed CLAIM). **Q3 (prose table) and Q4
-  (source) apply on DIRECT too** — data truth is branch-independent. **Q6 (channel) is likewise always
-  asked, on both branches**, because the format/aspect routing downstream (PRODUCTION's aspect
-  defaulting, `suggest-chart`'s Gate 1–4 ladder) depends on it. Q5 stays conditional, as above.
-  If DIRECT names a visual whose exact sub-format is still open (e.g. "a scrolly" — bars vs line
-  reveal), do not float multiple sub-format options to the journalist before checking each one's
-  reachability via `suggest-chart` — confirm producibility first, then offer only what's reachable
-  (same rule as PROPOSITION below; never offer then retract).
+- **DIRECT** (journalist names the visual, e.g. "a scrolly map"): skip PROPOSITION's candidate menu, but
+  NOT the rest of CADRAGE — Q2 (takeaway/Gate 1b, via confirm-back: a named visual carries a chart TYPE,
+  not a confirmed CLAIM), Q3/Q4 (data truth, branch-independent) and Q6 (channel, same LAST position) all
+  still apply; the branch fires at Q1, Q5 stays conditional. Go to PRODUCTION, passing suggest-chart the
+  (data, intent, channel) PLUS the forced element/format — it still emits a VALIDATED spec and applies its
+  guardrails (obey the choice, but surface a hard-guardrail warning rather than ship a broken visual). If
+  the named visual's exact sub-format is still open (e.g. "a scrolly" — bars vs line reveal), confirm
+  reachability via `suggest-chart` before offering — never offer then retract.
 - **GUIDED**: go to PROPOSITION.
 
 ### 4. PROPOSITION — GATE 2 (guided path only)
@@ -687,23 +679,8 @@ article-web is the one channel that can host it**:
   `interactive.png`, or the build subdir's byproducts are NOT a delivery. If the `--form` build did not run, the
   visual is NOT delivered, no matter how the run otherwise ended.
 
-  **One-time fly.io host setup — on the JOURNALIST'S OWN fly.io account** (run once from
-  `skills/splash/embed-host/`; fly.io app names are globally unique, so the journalist picks their own,
-  e.g. `<newsroom>-embeds`):
-  ```bash
-  flyctl auth login                        # the journalist's own fly.io account
-  flyctl launch --no-deploy --name <their-app>   # creates their embed host app; commit fly.toml
-  flyctl volumes create data --size 1
-  flyctl deploy
-  ```
-  After that, `deploy-embed.mjs <html> <slug> <their-app>` (or `$SPLASH_EMBED_APP=<their-app>`) uploads
-  directly to their app via `flyctl ssh sftp shell`. There is no shared default app name — each journalist
-  hosts on their own account.
-
-  **Auth:** `flyctl` reads credentials from either `flyctl auth login` (interactive, stored in `~/.fly/`)
-  or a `FLY_API_TOKEN` in the environment (create with `flyctl tokens create deploy`). For a headless /
-  automated run, put `FLY_API_TOKEN` (and `SPLASH_EMBED_APP`) in `.env` — Bun loads them into the
-  environment and `flyctl` picks them up. See `.env.example`.
+  The one-time fly.io host setup (on the journalist's OWN account) + the `flyctl` auth details are in the
+  **Reference** appendix at the end of this file — consult it only when a journalist first chooses the embed form.
 
 **Session close — after the handover.** Once the deliverable is handed over and the journalist signals
 completion — a pure thanks/goodbye with no new request ("Merci, tout est en ordre", "That is everything,
@@ -837,3 +814,27 @@ The full scripted-guard inventory lives in `docs/splash/guardrails.md`.
 - Never silently substitute a value from a prior/stale export when it disagrees with the journalist's current article/data — the values used (and shown at Gate 2b) MUST always be the ones the journalist provided in the current session.
 - Never offer the journalist an element/format (or sub-format) option before confirming — via `suggest-chart`'s reachability, not from memory — that it is actually producible. Retracting an offered option as infeasible forces the journalist to re-answer the same decision multiple times; check first, propose only what's confirmed.
 - Never keep the conversation going after the journalist signs off. Once the deliverable is handed over and the journalist signals completion (a pure thanks/goodbye with no new request), send AT MOST ONE brief closing message and treat the session as ENDED — no new questions, no repeated farewells, no re-engagement, no echoing further goodbyes back.
+
+## Reference (consult on demand)
+
+The hot path above is the whole flow. The material below is consulted only when a specific case
+needs it — it is NOT part of the live decision ladder. Guard mechanics: `docs/splash/guardrails.md`.
+
+### One-time fly.io host setup (only when a journalist first picks the embed form)
+
+On the JOURNALIST'S OWN fly.io account (run once from `skills/splash/embed-host/`; fly.io app names are
+globally unique, so the journalist picks their own, e.g. `<newsroom>-embeds`):
+```bash
+flyctl auth login                        # the journalist's own fly.io account
+flyctl launch --no-deploy --name <their-app>   # creates their embed host app; commit fly.toml
+flyctl volumes create data --size 1
+flyctl deploy
+```
+After that, `deploy-embed.mjs <html> <slug> <their-app>` (or `$SPLASH_EMBED_APP=<their-app>`) uploads
+directly to their app via `flyctl ssh sftp shell`. There is no shared default app name — each journalist
+hosts on their own account.
+
+**Auth:** `flyctl` reads credentials from either `flyctl auth login` (interactive, stored in `~/.fly/`)
+or a `FLY_API_TOKEN` in the environment (create with `flyctl tokens create deploy`). For a headless /
+automated run, put `FLY_API_TOKEN` (and `SPLASH_EMBED_APP`) in `.env` — Bun loads them into the
+environment and `flyctl` picks them up. See `.env.example`.
