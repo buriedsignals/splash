@@ -36,6 +36,8 @@ export interface WaffleConfig {
   /** deliverable language — localizes number separators + "Source". Default English. */
   lang?: Lang;
   unit: string; // subtitle / what one square is
+  /** cells per side (default 10 → a 100-cell PERCENTAGE grid, one cell = 1%). The
+   *  tooltip square-count derives from gridN² — it is never a hardcoded 100. */
   gridN?: number;
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
   themeBg?: string;
@@ -331,7 +333,12 @@ function Tooltip({
       <strong style={{ color: "#fff", fontSize: 13 }}>{cat.label}</strong>{" "}
       <span style={{ fontSize: 13 }}>{fmt(cat.value)}</span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>
-        {cat.cells} of 100 squares
+        {/* derive the denominator from the ACTUAL grid (gridN²) — never a hardcoded
+            100 — so the count can't contradict the rendered grid. INVARIANT: the
+            waffle is a percentage grid (default gridN=10 → 100 cells, one cell = 1%);
+            a `unit` subtitle implying a different denominator (e.g. "1 square = 1 in 10")
+            is a semantic mismatch the component can't police — see WaffleConfig.gridN. */}
+        {cat.cells} of {layout.gridN * layout.gridN} squares
       </div>
     </div>
   );
