@@ -320,17 +320,17 @@ function extractNumberTokens(text: string): NumberToken[] {
   return out;
 }
 
-// Numbers a spec ENCODES via annotations / reference lines — a takeaway number matching one of
-// these is grounded (the chart shows it), so it is exempt from the domain check. Reads the
-// numeric x/y/value of each annotation and any numbers embedded in its text/label, defensively.
+// Numbers a spec ENCODES via annotations / reference lines / target markers — a takeaway number
+// matching one of these is grounded (the chart plots it at a real position), so it is exempt from
+// the domain check. Reads ONLY the STRUCTURAL numeric fields (x/y/value): a number that merely
+// APPEARS in an annotation's free `text`/`label` prose is NOT scraped (audit gap #4 — mentioning
+// a number is not encoding it; a decorative caption citing "70 %" must never launder an over-claim
+// of 70). A legitimately text-encoded number is the journalist's call at render-review, not an
+// automatic exemption.
 function encodedBackingNumbers(spec: Record<string, unknown>): Set<number> {
   const backed = new Set<number>();
   const add = (v: unknown) => {
     if (typeof v === "number" && Number.isFinite(v)) backed.add(v);
-  };
-  const addFromText = (v: unknown) => {
-    if (typeof v === "string")
-      for (const t of extractNumberTokens(v)) backed.add(t.value);
   };
   for (const key of [
     "annotations",
@@ -346,8 +346,6 @@ function encodedBackingNumbers(spec: Record<string, unknown>): Set<number> {
       add(o.x);
       add(o.y);
       add(o.value);
-      addFromText(o.text);
-      addFromText(o.label);
     }
   }
   return backed;
