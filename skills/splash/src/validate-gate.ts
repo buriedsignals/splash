@@ -305,6 +305,10 @@ function looksLikeYear(v: number): boolean {
 interface NumberToken {
   raw: string;
   value: number;
+  // Character offsets of the token within the source text — used by the per-token
+  // duration/cohort exclusion to inspect the text immediately before/after THIS token.
+  index: number;
+  end: number;
 }
 
 // Extract number-like tokens from prose. Internal separators are '.'/',' and the typographic
@@ -315,22 +319,25 @@ function extractNumberTokens(text: string): NumberToken[] {
   const re = /\d[\d.,   ]*\d|\d/g;
   for (const m of text.matchAll(re)) {
     const value = parseLocaleNumber(m[0]);
-    if (Number.isFinite(value)) out.push({ raw: m[0], value });
+    if (Number.isFinite(value)) {
+      const index = m.index ?? 0;
+      out.push({ raw: m[0], value, index, end: index + m[0].length });
+    }
   }
   return out;
 }
 
-// Numbers a spec ENCODES via annotations / reference lines — a takeaway number matching one of
-// these is grounded (the chart shows it), so it is exempt from the domain check. Reads the
-// numeric x/y/value of each annotation and any numbers embedded in its text/label, defensively.
+// Numbers a spec ENCODES via annotations / reference lines / target markers — a takeaway number
+// matching one of these is grounded (the chart plots it at a real position), so it is exempt from
+// the domain check. Reads ONLY the STRUCTURAL numeric fields (x/y/value): a number that merely
+// APPEARS in an annotation's free `text`/`label` prose is NOT scraped (audit gap #4 — mentioning
+// a number is not encoding it; a decorative caption citing "70 %" must never launder an over-claim
+// of 70). A legitimately text-encoded number is the journalist's call at render-review, not an
+// automatic exemption.
 function encodedBackingNumbers(spec: Record<string, unknown>): Set<number> {
   const backed = new Set<number>();
   const add = (v: unknown) => {
     if (typeof v === "number" && Number.isFinite(v)) backed.add(v);
-  };
-  const addFromText = (v: unknown) => {
-    if (typeof v === "string")
-      for (const t of extractNumberTokens(v)) backed.add(t.value);
   };
   for (const key of [
     "annotations",
@@ -346,8 +353,6 @@ function encodedBackingNumbers(spec: Record<string, unknown>): Set<number> {
       add(o.x);
       add(o.y);
       add(o.value);
-      addFromText(o.text);
-      addFromText(o.label);
     }
   }
   return backed;
@@ -429,15 +434,36 @@ function rowsDomain(spec: Record<string, unknown>): {
 
 const CLAIM_EPS = 1e-9;
 
-// Age bands ("over-55s", "unter 35", "les plus de 55 ans", "55-Jährigen", "65 anni e oltre")
-// are COHORT LABELS, never plotted magnitudes — same false-positive class as durations (a
-// "55" cohort was compared to a 48% max, re-pressuring a confirmed takeaway, 2026-07-17 KI run).
-const AGE_BAND_RE =
-  /(?:\b(?:over|under|unter|über|oltre|sotto|moins\s+de|plus\s+de)[-\s]*\d+s?\b)|(?:\d+[-\s]*(?:j[äa]hrigen?|year[-\s]?olds?)\b)|(?:\d+\s+ans\s+et\s+plus\b)|(?:\d+\s+anni\s+e\s+oltre\b)/giu;
+// Per-token duration/cohort exclusion (replaces the former pre-extraction phrase STRIP, audit
+// gap #3). A duration span ("5 ans", "over 10 years") or an age/cohort label ("over-55s",
+// "unter 35", "les plus de 55 ans", "55-Jährigen", "65 anni e oltre") is never a plotted
+// magnitude, so its number must skip the domain check. But the old strip removed WHOLE phrases
+// before extraction: a greedy `\d[\d.,\s]*…unit` span could bridge over intervening
+// digits/spaces (including the title↔takeaway newline) and disarm a NEIGHBORING bare magnitude
+// in the same sentence. The exclusion below narrows the exemption to the ONE token actually
+// adjacent to a duration/cohort unit — a bare "55 %" magnitude next to a "3 ans" duration keeps
+// its own check.
 
-// number + (optional "last/next"-style adjective) + a duration unit, fr/en/de/it.
-const DURATION_PHRASE_RE =
-  /\d[\d.,\s]*\s*(?:derni[eè]re?s?\s+|prochaines?\s+|last\s+|next\s+|letzten?\s+|ultimi?\s+)?(?:ans?\b|ann[ée]es?\b|years?\b|yrs?\b|mois\b|months?\b|jours?\b|days?\b|semaines?\b|weeks?\b|heures?\b|hours?\b|Jahren?\b|Monaten?\b|Tagen?\b|Wochen\b|anni\b|anno\b|mesi\b|mese\b|giorni\b|giorno\b|settimane\b|ore\b)/giu;
+// TRAILING: the number is immediately followed (optionally through a post-positioned adjective
+// like "dernières"/"prochaines") by a duration or cohort unit, fr/en/de/it. Anchored at ^ so it
+// only matches text that begins right after the token.
+const TRAILING_DURATION_COHORT_RE =
+  /^[-\s]*(?:(?:derni[eè]re?s?|prochaines?|ultimi?|letzten?)\s+)?(?:ans?|ann[ée]es?|years?|yrs?|mois|months?|jours?|days?|semaines?|weeks?|heures?|hours?|Jahren?|Monaten?|Tagen?|Wochen|anni|anno|mesi|mese|giorni|giorno|settimane|ore|j[äa]hrigen?|j[äa]hrige|year[-\s]?olds?)\b/iu;
+
+// LEADING: the number is immediately preceded by a cohort quantifier ("over"/"under"/"unter"/
+// "über"/"oltre"/"sotto"/"moins de"/"plus de"), covering cohort forms that carry no trailing
+// unit ("over-55s", "unter 35"). Anchored at $ so it only matches text ending right before the
+// token; the lookbehind keeps "discover" from matching on "over".
+const LEADING_COHORT_RE =
+  /(?<!\p{L})(?:over|under|unter|über|oltre|sotto|moins\s+de|plus\s+de)[-\s]*$/iu;
+
+// True when THIS token is a duration span or an age/cohort reference (exempt from the domain
+// check), decided only from the text immediately around the token — never a whole-phrase strip.
+function isDurationOrCohortToken(text: string, tok: NumberToken): boolean {
+  if (TRAILING_DURATION_COHORT_RE.test(text.slice(tok.end))) return true;
+  if (LEADING_COHORT_RE.test(text.slice(0, tok.index))) return true;
+  return false;
+}
 
 function claimGroundingErrors(p: AcceptedProposal): string[] {
   const spec = p.spec;
@@ -456,16 +482,18 @@ function claimGroundingErrors(p: AcceptedProposal): string[] {
     typeof p.confirmedTakeaway === "string" ? p.confirmedTakeaway : "";
   const errors: string[] = [];
   const seen = new Set<number>();
-  // Duration phrases ("quadruplé en 5 ans", "over 10 years", "in 3 Monaten") are TIME SPANS,
-  // never plotted magnitudes — stripped BEFORE token extraction so the "5" of "5 ans" is not
-  // compared to yMax. Real false positive (2026-07-17 run): a confirmed takeaway carrying
-  // "en 5 ans" was rejected twice against yMax 4, and the workaround edited a confirmed title
-  // without re-confirmation — the guard must never manufacture that pressure. Dates/years keep
+  // Duration phrases ("quadruplé en 5 ans", "over 10 years", "in 3 Monaten") and age/cohort
+  // labels ("les plus de 55 ans", "55-Jährigen") are TIME SPANS / cohort labels, never plotted
+  // magnitudes — so their number skips the domain check. Real false positive (2026-07-17 run):
+  // a confirmed takeaway carrying "en 5 ans" was rejected twice against yMax 4, and the
+  // workaround edited a confirmed title without re-confirmation — the guard must never
+  // manufacture that pressure. The exemption is decided PER TOKEN (isDurationOrCohortToken),
+  // not by a pre-extraction phrase strip: only the number actually adjacent to a duration/cohort
+  // unit is exempt, so a bare magnitude in the same sentence is never disarmed. Dates/years keep
   // their own dedicated x-axis check below.
-  const claimText = `${title}\n${takeaway}`
-    .replace(DURATION_PHRASE_RE, " ")
-    .replace(AGE_BAND_RE, " ");
+  const claimText = `${title}\n${takeaway}`;
   for (const tok of extractNumberTokens(claimText)) {
+    if (isDurationOrCohortToken(claimText, tok)) continue;
     if (seen.has(tok.value)) continue;
     if (backed.has(tok.value)) continue;
     if (looksLikeYear(tok.value)) {

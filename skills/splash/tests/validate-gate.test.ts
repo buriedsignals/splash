@@ -443,11 +443,16 @@ describe("skillsInvoked review hardening", () => {
   const base = () => minimalValidProposal();
 
   it("should warn when skillsInvoked declares no branch token (M1)", () => {
-    const p = { ...base(), skillsInvoked: ["suggest-article", "suggest-chart"] };
+    const p = {
+      ...base(),
+      skillsInvoked: ["suggest-article", "suggest-chart"],
+    };
     const outcome = validateAccepted(p, [p]);
     expect(outcome.ok).toBe(true);
     if (outcome.ok)
-      expect(outcome.warnings.some((w) => w.includes("no branch token"))).toBe(true);
+      expect(outcome.warnings.some((w) => w.includes("no branch token"))).toBe(
+        true,
+      );
   });
 
   it("should say 'empty' (not 'missing') for a present-but-empty list (M2)", () => {
@@ -455,7 +460,9 @@ describe("skillsInvoked review hardening", () => {
     const outcome = validateAccepted(p, [p]);
     expect(outcome.ok).toBe(true);
     if (outcome.ok)
-      expect(outcome.warnings.some((w) => w.includes("skillsInvoked is empty"))).toBe(true);
+      expect(
+        outcome.warnings.some((w) => w.includes("skillsInvoked is empty")),
+      ).toBe(true);
   });
 });
 
@@ -466,7 +473,8 @@ describe("skillsInvoked review hardening", () => {
 function imageStorySpec() {
   return {
     title: "Le canal qui a coupé le village en deux",
-    description: "Comment le nouveau chenal a transformé la rive est, 2019–2024.",
+    description:
+      "Comment le nouveau chenal a transformé la rive est, 2019–2024.",
     source: { name: "Heidi.news" },
     keyFrame: 0,
     fit: "canvas-frame",
@@ -541,7 +549,10 @@ describe("claim-grounding duration exemption", () => {
       type: "column-chart",
       title: "Le réseau a quadruplé en cinq ans",
       data: "periode,lignes\nIl y a cinq ans,1\nAujourd'hui,4\n",
-      source: { name: "Régie", url: "https://regie.example-transport.fr/rapport" },
+      source: {
+        name: "Régie",
+        url: "https://regie.example-transport.fr/rapport",
+      },
     } as Record<string, unknown>,
   });
 
@@ -549,14 +560,18 @@ describe("claim-grounding duration exemption", () => {
     const p = mk("Le réseau de bus de nuit a quadruplé en 5 ans");
     const outcome = validateAccepted(p, [p]);
     if (!outcome.ok)
-      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(false);
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        false,
+      );
   });
 
   it("should NOT fire on 'les 5 dernières années'", () => {
     const p = mk("Le réseau a quadruplé sur les 5 dernières années");
     const outcome = validateAccepted(p, [p]);
     if (!outcome.ok)
-      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(false);
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        false,
+      );
   });
 
   it("should still fire on a bare magnitude above the plotted max", () => {
@@ -564,7 +579,9 @@ describe("claim-grounding duration exemption", () => {
     const outcome = validateAccepted(p, [p]);
     expect(outcome.ok).toBe(false);
     if (!outcome.ok)
-      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(true);
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        true,
+      );
   });
 });
 
@@ -593,7 +610,9 @@ describe("claim-grounding age-band exemption", () => {
       const p = mk(t);
       const outcome = validateAccepted(p, [p]);
       if (!outcome.ok)
-        expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(false);
+        expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+          false,
+        );
     }
   });
 
@@ -602,6 +621,198 @@ describe("claim-grounding age-band exemption", () => {
     const outcome = validateAccepted(p, [p]);
     expect(outcome.ok).toBe(false);
     if (!outcome.ok)
-      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(true);
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        true,
+      );
+  });
+});
+
+// GUARD 4 — Bug 1 (audit gap #4): annotation-TEXT laundering. Numbers scraped from an
+// annotation's free-text `text`/`label` were marked "backed" (exempt), so an over-claim was
+// laundered by any decorative caption that merely MENTIONED the number. A number is backed
+// only when STRUCTURALLY encoded — a numeric x/y/value field (a real plotted position), never
+// prose. Proven fr/en/de/it.
+describe("claim-grounding — annotation-text does not launder an over-claim (Bug 1)", () => {
+  const mk = (
+    takeaway: string,
+    annotations: unknown,
+    lang: string,
+  ): AcceptedProposal => ({
+    id: "launder-claim",
+    producer: "dw-chart",
+    format: "static",
+    channel: "article-web",
+    confirmedTakeaway: takeaway,
+    spec: {
+      type: "column-chart",
+      title: "Test",
+      data: "gruppe,anteil\nA,48\nB,23\n",
+      annotations,
+      lang,
+      source: { name: "X", url: "https://x.example-org.fr/rapport" },
+    } as Record<string, unknown>,
+  });
+
+  const cases: Array<{ lang: string; takeaway: string; text: string }> = [
+    {
+      lang: "fr",
+      takeaway: "Le taux atteint 70 % des cas",
+      text: "objectif de 70 % visé pour 2035",
+    },
+    {
+      lang: "en",
+      takeaway: "The rate reaches 70% of cases",
+      text: "target of 70% by 2035",
+    },
+    {
+      lang: "de",
+      takeaway: "Der Anteil erreicht 70 %",
+      text: "Ziel von 70 % bis 2035",
+    },
+    {
+      lang: "it",
+      takeaway: "La quota raggiunge il 70%",
+      text: "obiettivo del 70% entro il 2035",
+    },
+  ];
+
+  for (const c of cases) {
+    it(`[${c.lang}] STILL fires: a decorative annotation whose TEXT mentions 70 does not back it`, () => {
+      const p = mk(c.takeaway, [{ text: c.text }], c.lang);
+      const outcome = validateAccepted(p, [p]);
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok) {
+        const cg = outcome.errors.filter((e) => e.includes("claim-grounding"));
+        expect(cg.length).toBeGreaterThan(0);
+        expect(cg.join(" | ")).toContain("70");
+      }
+    });
+
+    it(`[${c.lang}] label prose is also not scraped as backing`, () => {
+      const p = mk(c.takeaway, [{ label: c.text }], c.lang);
+      const outcome = validateAccepted(p, [p]);
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok)
+        expect(
+          outcome.errors.some(
+            (e) => e.includes("claim-grounding") && e.includes("70"),
+          ),
+        ).toBe(true);
+    });
+  }
+
+  it("a STRUCTURED annotation value (y: 70) DOES back the claim — correctly exempt", () => {
+    const p = mk("Le taux atteint 70 %", [{ y: 70, label: "objectif" }], "fr");
+    const outcome = validateAccepted(p, [p]);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        false,
+      );
+    else expect(outcome.ok).toBe(true);
+  });
+
+  it("a STRUCTURED annotation value field (value: 70) DOES back the claim", () => {
+    const p = mk("The rate reaches 70%", [{ value: 70 }], "en");
+    const outcome = validateAccepted(p, [p]);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        false,
+      );
+    else expect(outcome.ok).toBe(true);
+  });
+});
+
+// GUARD 4 — Bug 2 (audit gap #3): age-band/duration pre-extraction STRIP over-matches. The
+// strips removed whole phrases before token extraction — a greedy `\d[\d.,\s]*…unit` span could
+// bridge (via digits/spaces, even the title↔takeaway newline) onto a NEIGHBORING bare magnitude
+// and disarm it. Replaced by a per-token EXCLUSION: a token is exempt ONLY when it is itself
+// immediately adjacent to a duration/cohort unit ("5 ans", "55-Jährigen", "plus de 55"); a bare
+// magnitude keeps its own check even when a duration/cohort token sits in the same sentence.
+describe("claim-grounding — per-token duration/cohort exclusion is narrow (Bug 2)", () => {
+  // data max 48, no time axis.
+  const mk = (title: string, takeaway: string): AcceptedProposal => ({
+    id: "overstrip-claim",
+    producer: "dw-chart",
+    format: "static",
+    channel: "article-web",
+    confirmedTakeaway: takeaway,
+    spec: {
+      type: "column-chart",
+      title,
+      data: "gruppe,anteil\nA,48\nB,23\n",
+      source: { name: "X", url: "https://x.example-org.fr/rapport" },
+    } as Record<string, unknown>,
+  });
+
+  // The blind-spot flip: a greedy strip bridged the title's over-max 55 to the takeaway's
+  // duration "3 ans/years/Jahre/anni" across the `\n` join and laundered it. Per-token: the
+  // magnitude 55 keeps its check, the duration number is exempt.
+  const bridge: Array<{ lang: string; title: string; takeaway: string }> = [
+    {
+      lang: "fr",
+      title: "Le taux grimpe à 55",
+      takeaway: "3 ans plus tard, la tendance se confirme",
+    },
+    {
+      lang: "en",
+      title: "The rate climbs to 55",
+      takeaway: "3 years later, the trend holds",
+    },
+    {
+      lang: "de",
+      title: "Der Wert steigt auf 55",
+      takeaway: "3 Jahre später hält der Trend an",
+    },
+    {
+      lang: "it",
+      title: "Il tasso sale a 55",
+      takeaway: "3 anni dopo, la tendenza regge",
+    },
+  ];
+  for (const c of bridge) {
+    it(`[${c.lang}] FIRES on the over-max 55; the neighboring duration is not allowed to bridge and disarm it`, () => {
+      const p = mk(c.title, c.takeaway);
+      const outcome = validateAccepted(p, [p]);
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok)
+        expect(
+          outcome.errors.some(
+            (e) => e.includes("claim-grounding") && e.includes("55"),
+          ),
+        ).toBe(true);
+    });
+  }
+
+  // Same-sentence: a cohort token AND a bare magnitude sharing the value 55. The cohort ("55 ans"
+  // / "over-55s" / "55-Jährigen" / "over 55") is exempt, the bare "55 %" magnitude still fires.
+  const cohortPlusMagnitude: Array<{ lang: string; takeaway: string }> = [
+    { lang: "fr", takeaway: "Les plus de 55 ans dépassent 55 % des cas" },
+    { lang: "en", takeaway: "The over-55s exceed 55% of cases" },
+    { lang: "de", takeaway: "Die über 55-Jährigen übersteigen 55 % der Fälle" },
+    { lang: "it", takeaway: "Gli over 55 superano il 55% dei casi" },
+  ];
+  for (const c of cohortPlusMagnitude) {
+    it(`[${c.lang}] FIRES on the bare 55 % magnitude while the 55 cohort token stays exempt`, () => {
+      const p = mk("Test", c.takeaway);
+      const outcome = validateAccepted(p, [p]);
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok)
+        expect(
+          outcome.errors.some(
+            (e) => e.includes("claim-grounding") && e.includes("55"),
+          ),
+        ).toBe(true);
+    });
+  }
+
+  it("stays silent when ONLY the cohort/duration token is over-max (no bare magnitude)", () => {
+    // "les plus de 55 ans" alone, no bare 55 magnitude — the cohort token is exempt.
+    const p = mk("Test", "Les plus de 55 ans sont les plus touchés");
+    const outcome = validateAccepted(p, [p]);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        false,
+      );
+    else expect(outcome.ok).toBe(true);
   });
 });
