@@ -4,6 +4,40 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-18 (suite) — Résolution GÉNÉRALE des bugs de l'audit (4 fixes, 4 agents //, review par branche)
+
+Rémy : « résous proprement et de manière générale les bugs que tu as soulevés ». Principe feedback→
+système : la CLASSE, pas l'instance. 4 agents parallèles (worktrees disjoints) + review adversariale
+ciblée « sur-correction / faux-positif » (pas « ça marche » — c'est TDD). Gate 20/20.
+
+- **p.id path-safety** (`assertSafeId`, `id-safety.ts`) : tout identifiant fourni par le LLM passe un
+  slug-guard `/^[A-Za-z0-9_-]+$/` avant d'atteindre une résolution de chemin — au spine (produce-all
+  fail-hard AVANT le `rmSync`), realDispatch, ET export-code `--id` (2ᵉ instance trouvée par l'agent).
+  Test escape-proof : un fichier sentinelle voisin de outDir survit à `id:"../precious"`. Ferme la
+  classe path-traversal côté spine (même que C5 côté image-native).
+- **claim-grounding — 2 angles morts fermés** (validate-gate) : (1) un nombre n'est « backed » que via
+  un champ structurel `x`/`y`/`value` d'annotation, plus le scraping du texte libre (fin du laundering
+  « objectif 70 % » en caption) ; (2) le strip de phrase fragile (qui bridgait par-dessus le newline
+  title\ntakeaway) → exclusion PAR TOKEN (exempté seulement si adjacent à une unité durée/cohorte).
+  Review : SAFE — le seul producteur d'annotations (dw-chart) ancre par `y` structurel, les lignes-cibles
+  passent encore. narrower-not-wider prouvé fr/en/de/it.
+- **Family-B baseColor — sweep de TOUTE la famille** (chart-native, 10 mappers + 10 composants) : mon
+  rapport disait « tous les autres types forwardent » — FAUX (6/27 seulement). 10 types droppaient
+  baseColor et rendaient bleu défaut ; tous corrigés, preuve au rendu (cellules #CC79A7 réelles).
+  **Review a attrapé un fix incomplet** : forwarder baseColor sans mettre à jour `resolve-conformance-
+  colors.ts` DÉSARMAIT la garde WCAG sur histogram/lollipop/connected-scatter (elle validait le bleu
+  fantôme pendant que le composant peignait le hue faible-contraste) → corrigé (le resolver lit baseColor
+  comme beeswarm, la garde valide la vraie couleur). + waffle tooltip dérive le dénominateur du grid réel.
+- **anti-improvisation (harness, `feat/apertus-flue-runner`)** : `check:hand-authored-spec` [major] keye
+  sur le CONTENU (un objet type/nativeType+data+title = un spec de producteur, quel que soit le chemin —
+  imparable, généralise le vieux PRODUCT_SOURCE_RE limité à src/scripts) + `check:suggest-chart-no-
+  candidates`. Validé sur les vrais transcripts : peage 1×, w9-double 2×, bus-de-nuit propre 0.
+
+**Leçon (constante de la session) : mes affirmations produites par agent se font corriger par la
+vérification, et c'est le système qui marche** — rapport de bug imprécis (6/27 pas « tous »), fix
+incomplet (resolver désarmé), 2ᵉ instance ratée (export-code), tout attrapé avant merge par la review
+adversariale ciblée sur la sur-correction.
+
 ## Session 2026-07-17/18 — AUDIT agentic challengé + DÉGRAISSAGE prose (validé au comportement)
 
 Rémy : « audit Splash + best-practices agentic » → « challenge l'audit » → « dégraisse la prose ».
