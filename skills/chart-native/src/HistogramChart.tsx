@@ -18,7 +18,14 @@ import {
   type HistogramLayout,
 } from "./histogram-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, themeColors, FONT, TYPE, OKABE_ITO, tooltipBorder } from "./core/tokens";
+import {
+  COLORS,
+  themeColors,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -33,6 +40,9 @@ export interface HistogramConfig {
   unit: string;
   valueField: string;
   binWidth?: number;
+  /** subject-fit hue for the distribution bars. Absent → the theme line colour
+   *  (Okabe-Ito blue; skyblue on dark). */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -167,7 +177,7 @@ function HistogramSvg({
   sc: number;
 }) {
   const C = themeColors(config.themeBg);
-  const BAR = C.line; // single distribution colour (Okabe-Ito blue; skyblue on dark)
+  const BAR = config.baseColor ?? C.line; // subject-fit hue, else theme line (Okabe-Ito blue; skyblue on dark)
   const { innerWidth, innerHeight, base, bars, median, medianX } = layout;
   const n = bars.length;
 

@@ -103,11 +103,14 @@ describe("#3 — a subject-fit hue passes conformance instead of defaulting to b
 });
 
 describe("resolveConformanceColors — histogram", () => {
-  it("is a fixed COLORS.line bar colour (no baseColor field); the median label text is WCAG-safe ink, not the vermillion accent", () => {
+  it("resolves config.baseColor as the bar hue (so the WCAG guard validates the REAL painted colour); the median label text stays WCAG-safe ink, not the vermillion accent", () => {
     const c = resolveConformanceColors("histogram", { baseColor: "#123456" });
-    // histogram has no baseColor knob — config.baseColor must NOT leak through
-    expect(c.data).toBe(COLORS.line);
+    expect(c.data).toBe("#123456");
     expect(c.text).not.toContain(OKABE_ITO.vermillion);
+  });
+  it("defaults the bar hue to COLORS.line when baseColor is absent (byte-identical to before)", () => {
+    const c = resolveConformanceColors("histogram", {});
+    expect(c.data).toBe(COLORS.line);
   });
 });
 
@@ -120,20 +123,27 @@ describe("resolveConformanceColors — beeswarm", () => {
 });
 
 describe("resolveConformanceColors — connected-scatter", () => {
-  it("is a fixed OKABE_ITO.blue accent (no baseColor field), never rendered as text", () => {
+  it("resolves config.baseColor as the line/dot hue (guard validates the REAL painted colour), never rendered as text", () => {
     const c = resolveConformanceColors("connected-scatter", {
       baseColor: "#123456",
     });
-    expect(c.data).toBe(OKABE_ITO.blue);
+    expect(c.data).toBe("#123456");
     expect(c.text).toEqual([COLORS.ink, COLORS.muted]);
+  });
+  it("defaults to OKABE_ITO.blue when baseColor is absent", () => {
+    const c = resolveConformanceColors("connected-scatter", {});
+    expect(c.data).toBe(OKABE_ITO.blue);
   });
 });
 
 describe("resolveConformanceColors — lollipop", () => {
-  it("is a fixed OKABE_ITO.blue stem/dot colour; no highlight → text excludes the accent", () => {
+  it("resolves config.baseColor as the stem/dot hue when set; defaults to OKABE_ITO.blue; no highlight → text excludes the accent", () => {
     const c = resolveConformanceColors("lollipop", {});
     expect(c.data).toBe(OKABE_ITO.blue);
     expect(c.text).not.toContain(OKABE_ITO.vermillion);
+    expect(
+      resolveConformanceColors("lollipop", { baseColor: "#123456" }).data,
+    ).toBe("#123456");
   });
   it("keeps label text WCAG-safe even when highlightLabel is set (vermillion stays on the mark)", () => {
     const c = resolveConformanceColors("lollipop", {

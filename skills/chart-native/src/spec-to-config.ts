@@ -270,6 +270,9 @@ export const MAPPERS: Record<
         // same rule as scatter: spec-provided human label wins, else humanize the header.
         xLabel: spec.xLabel ?? humanizeColumn(xField),
         yLabel: spec.yLabel ?? humanizeColumn(yField),
+        // the single path is one subject hue — honour the subject-fit baseColor;
+        // absent → the component's OKABE_ITO.blue default.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows, // pass through IN ORDER — do NOT sort (the path follows row order)
       },
     };
@@ -371,6 +374,9 @@ export const MAPPERS: Record<
         // unit does double duty (subtitle + inline "median N unit"); prefer the short callout unit
         unit: spec.valueUnit ?? spec.unit,
         valueField,
+        // the distribution bars are one subject hue — honour the subject-fit baseColor;
+        // absent → the component's theme line colour (Okabe-Ito blue).
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows,
       },
     };
@@ -389,6 +395,9 @@ export const MAPPERS: Record<
         catField: catCol,
         valField: valCol,
         ...(spec.highlight ? { highlightLabel: spec.highlight } : {}),
+        // the neutral stems/dots are one subject hue — honour the subject-fit baseColor
+        // (the vermillion highlight accent is unchanged); absent → OKABE_ITO.blue default.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows,
       },
     };
@@ -457,6 +466,9 @@ export const MAPPERS: Record<
         unit: spec.unit,
         categoryField: catCol,
         valueField: valCol,
+        // the dots are one subject hue — honour the subject-fit baseColor;
+        // absent → the component's OKABE_ITO.blue default.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows: parsed.rows, // RAW observations — many rows share a category, do NOT aggregate
       },
     };
@@ -491,6 +503,9 @@ export const MAPPERS: Record<
         unit: spec.unit,
         categoryField: catCol,
         valueField: valCol,
+        // the ring bars are one subject hue — honour the subject-fit baseColor (the
+        // orange PEAK accent is unchanged); absent → the component's OKABE_ITO.blue default.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows: parsed.rows, // CSV order — angle encodes cyclical position, do NOT sort
       },
     };
@@ -527,6 +542,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // the PRIMARY (first) category is the subject — honour its subject-fit hue;
+        // absent → the component's WAFFLE_CATEGORY_COLORS[0] default.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         items,
       },
     };
@@ -642,6 +660,10 @@ export const MAPPERS: Record<
         source: src(spec.source),
         unit: spec.unit,
         ...(categories ? { categories } : {}),
+        // FLAT (ungrouped) treemap paints every cell one subject hue — honour the
+        // subject-fit baseColor; absent → the component's OKABE_ITO.blue default. A
+        // GROUPED treemap uses TREEMAP_GROUP_COLORS per category (baseColor ignored there).
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         items,
       },
     };
@@ -671,6 +693,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         valueLabel: spec.unit, // NativeSpec has no valueLabel; its long-axis `unit` maps here
+        // the boxes are one subject hue — honour the subject-fit baseColor;
+        // absent → the component's OKABE_ITO.blue default.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         categories,
       },
     };
@@ -700,6 +725,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // the violins are one subject hue — honour the subject-fit baseColor;
+        // absent → the component's OKABE_ITO.blue default.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         categories,
       },
     };
@@ -792,6 +820,9 @@ export const MAPPERS: Record<
         unit: spec.unit,
         xField,
         levels,
+        // the fan bands + central line are one subject hue — honour the subject-fit
+        // baseColor; absent → the component's OKABE_ITO.blue default.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows: fanRows,
       },
     };

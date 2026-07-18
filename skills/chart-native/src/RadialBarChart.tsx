@@ -20,7 +20,14 @@ import {
   type RadialBarLayout,
 } from "./radial-bar-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO, themeColors, tooltipBorder } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -35,6 +42,9 @@ export interface RadialBarConfig {
   valueField: string;
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
   themeBg?: string;
+  /** subject-fit hue for the ring bars (the orange PEAK accent is unchanged).
+   *  Absent → the OKABE_ITO.blue default. */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -234,7 +244,7 @@ function RadialBarSvg({
               <path
                 key={`b${b.index}`}
                 d={radialBarPath(b, 0, 0, innerR, clamp01(grow))}
-                fill={isPeak ? PEAK_COLOR : BASE_COLOR}
+                fill={isPeak ? PEAK_COLOR : (config.baseColor ?? BASE_COLOR)}
                 opacity={dim ? 0.35 : 1}
                 tabIndex={interactive ? 0 : undefined}
                 role={interactive ? "img" : undefined}

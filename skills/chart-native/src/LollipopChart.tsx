@@ -43,6 +43,9 @@ export interface LollipopConfig {
   valField: string;
   /** optional accent on ONE key row (the headline subject) */
   highlightLabel?: string;
+  /** subject-fit hue for the neutral stems/dots (the highlight keeps its vermillion
+   *  accent). Absent → the OKABE_ITO.blue default. */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -234,7 +237,9 @@ function LollipopSvg({
           const rp = rowP(r.index);
           const endX = growStem(r, rp);
           const hi = isHi(r);
-          const color = hi ? ACCENT : BASE;
+          // the neutral stems/dots honour the subject-fit hue; the highlighted row
+          // keeps the vermillion accent. Absent baseColor → the OKABE_ITO.blue default.
+          const color = hi ? ACCENT : (config.baseColor ?? BASE);
           // lollipop.md rule 4 — EVERY dot carries its value label at EVERY frame. It
           // fades in early with the stem (shared `labelReveal` knob) and rides the
           // stem's ANIMATED head `endX` (right of the dot, always outside) so it never

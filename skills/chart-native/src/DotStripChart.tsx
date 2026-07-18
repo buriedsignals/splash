@@ -20,7 +20,14 @@ import {
   type DotStripLayout,
 } from "./dot-strip-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, themeColors, FONT, TYPE, OKABE_ITO, tooltipBorder } from "./core/tokens";
+import {
+  COLORS,
+  themeColors,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -37,6 +44,8 @@ export interface DotStripConfig {
   categoryField: string;
   valueField: string;
   summaryLabel?: string; // legend text for the mean tick
+  /** subject-fit hue for the dots. Absent → the OKABE_ITO.blue default. */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -225,6 +234,7 @@ function DotStripSvg({
 }) {
   const C = themeColors(config.themeBg);
   const MEAN_COLOR = C.ink; // neutral reference marker
+  const dotColor = config.baseColor ?? DOT_COLOR; // subject-fit hue, else default
   const { innerWidth, innerHeight, rows } = layout;
   const chrome = easeOutCubic(p / 0.18);
   const reveal = easeInOutCubic(p);
@@ -324,7 +334,7 @@ function DotStripSvg({
                     cx={d.x}
                     cy={r.y + dotJitter(d.value, di, r.bandH)}
                     r={dotR}
-                    fill={DOT_COLOR}
+                    fill={dotColor}
                     fillOpacity={0.55}
                     stroke={C.bg}
                     strokeWidth={0.75 * sc}
@@ -375,7 +385,7 @@ function DotStripSvg({
             }
             cy={legendWraps ? legY + LEG_ROW * sc : legY}
             r={dotR}
-            fill={DOT_COLOR}
+            fill={dotColor}
             fillOpacity={0.55}
             stroke={C.bg}
             strokeWidth={0.75 * sc}

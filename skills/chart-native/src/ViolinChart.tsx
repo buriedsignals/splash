@@ -20,7 +20,14 @@ import {
 } from "./violin-geometry";
 import { area, curveCatmullRom } from "d3-shape";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, themeColors, FONT, TYPE, OKABE_ITO, tooltipBorder } from "./core/tokens";
+import {
+  COLORS,
+  themeColors,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -35,6 +42,8 @@ export interface ViolinConfig {
   themeBg?: string;
   unit: string; // subtitle + value-axis meaning
   summaryLabel?: string; // legend text for the median tick
+  /** subject-fit hue for the KDE silhouettes. Absent → the OKABE_ITO.blue default. */
+  baseColor?: string;
   categories: { label: string; values: number[] }[];
 }
 
@@ -196,6 +205,7 @@ function ViolinSvg({
   legRow: number;
 }) {
   const C = themeColors(config.themeBg);
+  const violinFill = config.baseColor ?? FILL; // subject-fit hue, else default
   // the inner median tick punches the BACKGROUND colour through the (dark→light on
   // dark theme) IQR bar, so it flips with the theme — a fixed white would vanish on
   // the light IQR bar the dark theme produces, and its legend swatch would too.
@@ -297,9 +307,9 @@ function ViolinSvg({
                 {/* the KDE silhouette */}
                 <path
                   d={violinPath(r)}
-                  fill={FILL}
+                  fill={violinFill}
                   fillOpacity={0.85}
-                  stroke={FILL}
+                  stroke={violinFill}
                   strokeWidth={1 * sc}
                   strokeLinejoin="round"
                 />
@@ -362,7 +372,7 @@ function ViolinSvg({
             cy={itemBy}
             rx={10 * sc}
             ry={6 * sc}
-            fill={FILL}
+            fill={violinFill}
             fillOpacity={0.85}
           />
           <text

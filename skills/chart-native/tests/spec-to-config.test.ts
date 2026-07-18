@@ -260,6 +260,48 @@ describe("specToNativeConfig — baseColor threading", () => {
     const { config } = specToNativeConfig(spec);
     expect(config.baseColor).toBe("#009E73");
   });
+
+  // Every native type that renders a SUBJECT-COLOURED single mark must forward
+  // spec.baseColor so a declared non-blue subject renders in its own hue instead of
+  // silently falling back to the default Okabe-Ito blue. Multi-hue types
+  // (categorical/diverging/role/two-side palettes) legitimately ignore it and are
+  // covered by their own mapper tests.
+  const subjectHueTypes: { nativeType: string; data: string }[] = [
+    { nativeType: "waffle", data: "group,share\nAffected,42\nOther,58" },
+    { nativeType: "treemap", data: "sector,value\nHousing,120\nTransport,80" },
+    { nativeType: "histogram", data: "minutes\n8\n12\n15\n19\n22\n31" },
+    {
+      nativeType: "dot-strip",
+      data: "region,value\nNorth,5\nNorth,7\nSouth,3",
+    },
+    { nativeType: "boxplot", data: "group,value\nA,1\nA,9\nB,4\nB,6" },
+    { nativeType: "violin", data: "group,value\nA,1\nA,9\nB,4\nB,6" },
+    {
+      nativeType: "connected-scatter",
+      data: "year,spend,score\n2019,10,50\n2020,20,60\n2021,30,72",
+    },
+    {
+      nativeType: "fan",
+      data: "year,actual,central,lo50,hi50,lo90,hi90\n2020,3,,,,,\n2021,,4,3.5,4.5,3,5",
+    },
+    { nativeType: "lollipop", data: "role,days\nNurse,31\nGP,12\nDentist,9" },
+    { nativeType: "radial-bar", data: "hour,trips\n0,5\n1,3\n2,8" },
+  ];
+  for (const { nativeType, data } of subjectHueTypes) {
+    it(`threads baseColor into ${nativeType} config when provided`, () => {
+      const { config } = specToNativeConfig({
+        ...base,
+        nativeType,
+        data,
+        baseColor: "#CC79A7",
+      });
+      expect(config.baseColor).toBe("#CC79A7");
+    });
+    it(`omits baseColor from ${nativeType} config when absent`, () => {
+      const { config } = specToNativeConfig({ ...base, nativeType, data });
+      expect(config.baseColor).toBeUndefined();
+    });
+  }
 });
 
 describe("specToNativeConfig — unsupported", () => {
