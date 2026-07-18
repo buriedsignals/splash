@@ -92,13 +92,14 @@ export function resolveConformanceColors(
     }
 
     case "histogram": {
-      // HistogramChart.tsx: bars are a FIXED `COLORS.line` (HistogramConfig has
-      // no baseColor field — config.baseColor must NOT leak through). The median
-      // LINE is a fixed `OKABE_ITO.vermillion` accent (a mark, not text); the
-      // "median N unit" label TEXT is `COLORS.ink` (WCAG-safe), kept legible over
-      // the bars by a white halo.
+      // HistogramChart.tsx: bars paint `config.baseColor` (subject-fit hue) or fall back
+      // to `COLORS.line`. The guard must validate the REAL painted hue (like beeswarm below)
+      // — a histogram left on the default must stay catchable, and a low-contrast subject
+      // hue must FAIL here rather than ship. The median LINE is a fixed `OKABE_ITO.vermillion`
+      // accent (a mark, not text); the "median N unit" label TEXT is `COLORS.ink` (WCAG-safe),
+      // kept legible over the bars by a white halo.
       return {
-        data: COLORS.line,
+        data: readString(config.baseColor) ?? COLORS.line,
         text,
         bg,
       };
@@ -125,17 +126,18 @@ export function resolveConformanceColors(
     }
 
     case "connected-scatter": {
-      // ConnectedScatterChart.tsx: fixed `ACCENT = OKABE_ITO.blue` for the line +
-      // dots only (no baseColor field) — never rendered as text.
-      return { data: OKABE_ITO.blue, text, bg };
+      // ConnectedScatterChart.tsx: the line + dots paint `config.baseColor` (subject-fit
+      // hue) or fall back to `OKABE_ITO.blue`. The guard validates the REAL painted hue
+      // (like beeswarm) — never rendered as text.
+      return { data: readString(config.baseColor) ?? OKABE_ITO.blue, text, bg };
     }
 
     case "lollipop": {
-      // LollipopChart.tsx: fixed `BASE = OKABE_ITO.blue` for the stem/dot (no
-      // baseColor field). ALL category/value label TEXT is `COLORS.ink` — the
-      // highlighted row is emphasised by the vermillion MARK (stem/dot) + bold
-      // weight, NOT by colouring the label text (which fails WCAG contrast).
-      return { data: OKABE_ITO.blue, text, bg };
+      // LollipopChart.tsx: the stem/dot paint `config.baseColor` (subject-fit hue) or fall
+      // back to `OKABE_ITO.blue`; a low-contrast subject hue must FAIL here. ALL
+      // category/value label TEXT is `COLORS.ink` — the highlighted row is emphasised by
+      // the vermillion MARK (stem/dot) + bold weight, NOT by colouring the label text.
+      return { data: readString(config.baseColor) ?? OKABE_ITO.blue, text, bg };
     }
   }
 }
