@@ -721,3 +721,98 @@ describe("claim-grounding — annotation-text does not launder an over-claim (Bu
     else expect(outcome.ok).toBe(true);
   });
 });
+
+// GUARD 4 — Bug 2 (audit gap #3): age-band/duration pre-extraction STRIP over-matches. The
+// strips removed whole phrases before token extraction — a greedy `\d[\d.,\s]*…unit` span could
+// bridge (via digits/spaces, even the title↔takeaway newline) onto a NEIGHBORING bare magnitude
+// and disarm it. Replaced by a per-token EXCLUSION: a token is exempt ONLY when it is itself
+// immediately adjacent to a duration/cohort unit ("5 ans", "55-Jährigen", "plus de 55"); a bare
+// magnitude keeps its own check even when a duration/cohort token sits in the same sentence.
+describe("claim-grounding — per-token duration/cohort exclusion is narrow (Bug 2)", () => {
+  // data max 48, no time axis.
+  const mk = (title: string, takeaway: string): AcceptedProposal => ({
+    id: "overstrip-claim",
+    producer: "dw-chart",
+    format: "static",
+    channel: "article-web",
+    confirmedTakeaway: takeaway,
+    spec: {
+      type: "column-chart",
+      title,
+      data: "gruppe,anteil\nA,48\nB,23\n",
+      source: { name: "X", url: "https://x.example-org.fr/rapport" },
+    } as Record<string, unknown>,
+  });
+
+  // The blind-spot flip: a greedy strip bridged the title's over-max 55 to the takeaway's
+  // duration "3 ans/years/Jahre/anni" across the `\n` join and laundered it. Per-token: the
+  // magnitude 55 keeps its check, the duration number is exempt.
+  const bridge: Array<{ lang: string; title: string; takeaway: string }> = [
+    {
+      lang: "fr",
+      title: "Le taux grimpe à 55",
+      takeaway: "3 ans plus tard, la tendance se confirme",
+    },
+    {
+      lang: "en",
+      title: "The rate climbs to 55",
+      takeaway: "3 years later, the trend holds",
+    },
+    {
+      lang: "de",
+      title: "Der Wert steigt auf 55",
+      takeaway: "3 Jahre später hält der Trend an",
+    },
+    {
+      lang: "it",
+      title: "Il tasso sale a 55",
+      takeaway: "3 anni dopo, la tendenza regge",
+    },
+  ];
+  for (const c of bridge) {
+    it(`[${c.lang}] FIRES on the over-max 55; the neighboring duration is not allowed to bridge and disarm it`, () => {
+      const p = mk(c.title, c.takeaway);
+      const outcome = validateAccepted(p, [p]);
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok)
+        expect(
+          outcome.errors.some(
+            (e) => e.includes("claim-grounding") && e.includes("55"),
+          ),
+        ).toBe(true);
+    });
+  }
+
+  // Same-sentence: a cohort token AND a bare magnitude sharing the value 55. The cohort ("55 ans"
+  // / "over-55s" / "55-Jährigen" / "over 55") is exempt, the bare "55 %" magnitude still fires.
+  const cohortPlusMagnitude: Array<{ lang: string; takeaway: string }> = [
+    { lang: "fr", takeaway: "Les plus de 55 ans dépassent 55 % des cas" },
+    { lang: "en", takeaway: "The over-55s exceed 55% of cases" },
+    { lang: "de", takeaway: "Die über 55-Jährigen übersteigen 55 % der Fälle" },
+    { lang: "it", takeaway: "Gli over 55 superano il 55% dei casi" },
+  ];
+  for (const c of cohortPlusMagnitude) {
+    it(`[${c.lang}] FIRES on the bare 55 % magnitude while the 55 cohort token stays exempt`, () => {
+      const p = mk("Test", c.takeaway);
+      const outcome = validateAccepted(p, [p]);
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok)
+        expect(
+          outcome.errors.some(
+            (e) => e.includes("claim-grounding") && e.includes("55"),
+          ),
+        ).toBe(true);
+    });
+  }
+
+  it("stays silent when ONLY the cohort/duration token is over-max (no bare magnitude)", () => {
+    // "les plus de 55 ans" alone, no bare 55 magnitude — the cohort token is exempt.
+    const p = mk("Test", "Les plus de 55 ans sont les plus touchés");
+    const outcome = validateAccepted(p, [p]);
+    if (!outcome.ok)
+      expect(outcome.errors.some((e) => e.includes("claim-grounding"))).toBe(
+        false,
+      );
+    else expect(outcome.ok).toBe(true);
+  });
+});
