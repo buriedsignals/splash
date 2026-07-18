@@ -83,7 +83,32 @@ Splash = **un skill open-source MIT, installable, agnostique runtime, local-firs
 
 ## ★ État courant — 2026-07-17 (LIS CECI pour l'état de `main`)
 
-`main` (voir `git log --oneline -15` pour le HEAD exact), gate `bun run check` **18 checks** (tsc skills + install + image-native + installer, suites de test — vert ; le produce map-native interactif peut timeout/flaker sous contention réseau, passe 568/0 en isolation). 0 mention vendor attributive, 0 `any` introduit. Le **journal daté complet** de comment on est arrivé là = `docs/splash/CHANGELOG.md`.
+`main` (voir `git log --oneline -15` pour le HEAD exact), gate `bun run check` **20/20** (tsc skills + install + image-native + installer, suites de test — vert ; le produce map-native interactif peut timeout/flaker sous contention réseau, passe en isolation). 0 mention vendor attributive. Le **journal daté complet** = `docs/splash/CHANGELOG.md`.
+
+> ## ⏸️ REPRISE — 2026-07-18 (LIS D'ABORD ce bloc)
+>
+> **Où on en est.** `main` (worktree `../splash-merge`) ≈ **88 commits d'avance sur `origin/rd-dev`**, gate **20/20**, tout mergé. NON PUSHÉ (décision Rémy). Le repo `splash` réel est sur `feat/splash-apertus-sovereign` (session Apertus, à part). Harness privé `../splash-harness` sur `feat/apertus-flue-runner` (~30 commits QA de la session, à cherry-pick vers `master`).
+>
+> **Ce qui a été fait cette session (détail → CHANGELOG, 2026-07-16→18) :** le CHANTIER TOM complet (6 retours), l'audit agentic challengé (avocat du diable), le dégraissage prose validé au comportement, la résolution GÉNÉRALE de 4 bugs, le placement-à-la-livraison, le narratif toute-famille.
+>
+> **★ AUDIT des 6 retours de Tom (verdict honnête, 2026-07-18) — 4/6 prouvés en run, 2/6 construits mais PAS prouvés en conditions réelles :**
+> - **#1 format trop tôt** → ✅ PROUVÉ (flow 12 étapes, canal en Q6, type avant format, cycle-2 re-format).
+> - **#2 reco unique → sélection** → ✅ PROUVÉ *mais caveat fiabilité* : le LLM CONTOURNE parfois le menu candidats (écrit le spec à la main) — attrapé mécaniquement (`check:hand-authored-spec`) mais **le levier qui FORCE le menu reste à câbler** (= le dernier maillon du #2).
+> - **#3 texte→scrolly-images** → ✅ PROUVÉ (4ᵉ moteur image-scrolly ; `narrativePotential` détecté à l'ANALYSE ; dead-end fermé, cas Trump/Iran livre).
+> - **#4 preflight/clé** → ⚙️ CONSTRUIT + unit-testé (`save-key.mjs`, preflight tri-état) **mais JAMAIS prouvé en run** — le sandbox symlinke toujours `.env`, le chemin « clé absente → demande » n'est pas exercé. **Besoin du re-test réel de Tom.**
+> - **#5 déploiement/crash** → le CRASH (`Cannot find package 'react'`) ✅ FIXÉ+PROUVÉ (C1, drift-guard) ; le **déploiement fly ⚠️ JAMAIS prouvé** (pas de FLY_API_TOKEN ; tous les runs livrent via embeds Datawrapper hébergés). **Besoin du token de Tom.**
+> - **#6 guardrails anti-hallucination** → ✅ PROUVÉ (GUARD 4 étendu cartes + 2 angles morts fermés + never-fabricate + anti-improvisation + `docs/splash/guardrails.md`).
+>
+> **Décisions qui attendent Rémy :** (a) **push `main`→`origin/rd-dev` + demander à Tom de re-cloner et rejouer son cas** (= l'acceptance test des #4 et #5) ; (b) cherry-pick des commits harness vers `master` ; (c) follow-ups design non-tranchés (waffle « 1 case = N » unit ; ton de la notice IA MIT).
+>
+> **Prochain travail dispo (par priorité empirique, cf. `../splash-harness/FIX-BACKLOG.md`) :**
+> 1. **Levier de forçage du menu candidats** (ferme le caveat #2 — le LLM ne doit plus pouvoir hand-author un spec ; le check existe, le forçage produit manque).
+> 2. Levier `escalationReason` (escalade chart-native sans demande d'interactivité, 4× observé).
+> 3. i18n furniture (menu a/b/c d'export-code codé FR ; CADRAGE ouvre parfois en EN sur article non-EN, 5×).
+> 4. approximation-hardening (« meno di 48k » → 48000 exact, 3× Venezia).
+> 5. Plan MIT-hardening (`docs/superpowers/plans/2026-07-16-mit-release-hardening.md`) à la release.
+>
+> **Méthode gravée de la session (à garder) :** rien ne passe sur la parole d'un agent — review adversariale ciblée « sur-correction/faux-positif » + preuve au rendu/transcript réel + doc-parity. Mes propres affirmations d'audit se sont fait corriger 4× par la vérif (« tous forwardent »→6/27, fix resolver incomplet, 2ᵉ instance ratée, « −55 % »→−9 %). **Baseline jugée = runs SÉQUENTIELS** (le parallèle tue les juges + fabrique des phantoms). **Vérifier le LIVRÉ, pas le proof ; le juge peut mentir ; les chiffres d'un audit-agent se challengent, y compris les miens.**
 
 **Ce qui est construit et vert :**
 - **Session 2026-07-16/17 — LE CHANTIER TOM (détail complet : CHANGELOG).** Premier test 100 % externe (Tom, clone rd-dev) → 6 retours → tout traité et mergé, gate 20/20 :
