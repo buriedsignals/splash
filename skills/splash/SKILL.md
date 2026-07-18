@@ -113,48 +113,24 @@ the flow did not reach (a canned « Q6, toujours posée » when the flow did not
    **GATE 2b applies only to `provenance:"prose"` figures** — a `"table"` (or `"none"`)
    element never goes through 2b, so its `confirmedTable` (set in 5b) stays `false`/absent;
    only set it `true` after an actual 2b confirmation fires for a prose element.
-4. **Source — GATE 2c (EVERY run):** the source is asked on EVERY run — CSV-provided data
-   needs its « Source : » line too, not only prose — and established HERE, BEFORE any routing,
-   so the render-review (Gate 3a) is never the first thing that catches a weak source. It is a
-   free-text prompt (name + URL), never a menu (a fixed menu cannot carry a URL). Q3 and Q4
-   are two successive prompts, never one bundled question. When the article carries SEVERAL
-   distinct datasets (e.g. a Eurostat table AND prose figures), resolve a source for EACH —
-   one source is never silently stamped onto an element whose figures came from elsewhere. The resolution rules are unchanged
-   from when this gate lived at PROPOSITION:
-   - Start from what `suggest-article` already surfaced (its `sourceHint`, set only when the
-     article itself names where the figures come from, or quotes an actual URL). If that
-     already gives BOTH a name and a specific, traceable dataset/page URL, use it verbatim —
-     never invent or embellish it.
-   - **A source resolves to exactly ONE of THREE states — and a NAMED org is never thrown
-     away:**
-     - **(a) name + specific, traceable dataset/page URL** — the goal; ship both verbatim.
-     - **(b) named org kept NAME-ONLY** — when the article named an org (or the journalist
-       confirms one) but no precise dataset/page URL can be obtained, ship `source.name` =
-       that org, `url` omitted. Name-only is a legitimate, honest citation; it is NOT a reason
-       to fall back to the generic prose.
-     - **(c) generic prose fallback** ("Chiffres tels que rapportés dans cet article" /
-       "Figures as reported in this article") — legitimate ONLY when the article names **no**
-       org at all (the genuine no-dataset case), or when a hedged recollection stays
-       unconfirmed (uncertainty rule below).
-     Collapsing a named org (state b) into the generic fallback (state c) DISCARDS a real,
-     verifiable attribution — a shipped defect (real cases: INSEE, REN/DGEG). The spine
-     enforces this mechanically: carry `suggest-article`'s `sourceHint` onto each accepted
-     proposal's `sourceHint` field (5b) so the source guards (`sourceNamePreservedReason`,
-     `sourceUrlFidelityReason` in `src/source-guard.ts`, wired in `validate-gate.ts`) fail the
-     produce for EVERY producer if a named org is dropped for the fallback, or if a shipped
-     URL diverges from the one the journalist provided.
-   - Otherwise, ask the journalist ONE free-text question that collects the label AND the
-     specific URL TOGETHER, in the SAME turn — never split it into "what's the source?" then a
-     follow-up "and the URL?"; that two-step pattern is exactly the multi-turn back-and-forth
-     this gate exists to close.
-   - Apply the same rejection rule used at Gate 3 (see Never, below) to the answer BEFORE
-     accepting it: a bare organisation homepage (`eurostat.ec.europa.eu`, `insee.fr`) standing
-     in for the specific dataset/page is not a URL you should promote to state (a) — ask once
-     for the specific page; if none comes, keep the org NAME-ONLY (state b), never quietly
-     downgrade to the "reported in this article" fallback. **And never do the inverse:** do
-     NOT UPGRADE a homepage (or any journalist-provided URL) to a deeper `…/path/file.pdf` you
-     cannot confirm — cite only the exact URL the journalist gave or one they explicitly
-     confirm in-turn (Defect D: a fabricated-deeper `dares…/sites/…pdf` shipped as fact).
+4. **Source — GATE 2c (EVERY run):** the source is asked on EVERY run — CSV data needs its
+   « Source : » line too, not only prose — and established HERE, BEFORE any routing (so Gate 3a is
+   never the first thing to catch a weak source). Free-text prompt (name + URL), never a menu; Q3 and
+   Q4 are two successive prompts, never one bundled question. Resolve a source for EACH distinct
+   dataset. Start from `suggest-article`'s `sourceHint`; a source resolves to exactly ONE of THREE
+   states, and a NAMED org is never thrown away:
+   - **(a) name + specific, traceable dataset/page URL** — the goal; ship both verbatim.
+   - **(b) named org kept NAME-ONLY** — an org named but no precise URL obtainable; `source.name` =
+     the org, `url` omitted. A legitimate honest citation, NOT a reason to fall back to generic prose.
+   - **(c) generic prose fallback** ("Figures as reported in this article") — legitimate ONLY when the
+     article names no org at all, or a hedged recollection stays unconfirmed (uncertainty rule below).
+   Ask ONE free-text question collecting label AND the specific URL together (never a two-step
+   "source?" then "URL?"). A bare org homepage (`eurostat.ec.europa.eu`, `insee.fr`) is NOT state (a) —
+   ask once for the specific page, else keep NAME-ONLY (b); and never UPGRADE a given URL to a deeper
+   one you cannot confirm. Collapsing a named org (b) into the fallback (c), or diverging a
+   journalist-provided URL, is caught mechanically: carry `suggest-article`'s `sourceHint` onto each
+   accepted proposal (5b) so the source guards (`sourceNamePreservedReason` / `sourceUrlFidelityReason`,
+   `src/source-guard.ts`) fail the produce — see `docs/splash/guardrails.md`.
    - **Journalist UNCERTAINTY is not a source.** When the answer comes hedged — « je crois »,
      « de mémoire », "I think it was the 2023 report", the journalist cannot name the exact
      report/dataset — do NOT ship a flat, confident-looking citation built on that admission:
@@ -166,23 +142,21 @@ the flow did not reach (a canned « Q6, toujours posée » when the flow did not
      article" / "Figures as reported in this article" (or name-only with the OUTLET's own
      name) — which claims no more than what is actually known. Never dress the uncertain
      recollection up as a confirmed dataset citation, and never invent a URL to firm it up.
-   - The honest prose fallback ("Figures as reported in this article" / the outlet's own name)
-     is legitimate in exactly TWO cases: when the data genuinely has no separate cited dataset
-     (`provenance:"prose"` or `"none"`), and when the journalist's recollection of a source
-     stays UNCONFIRMED after the uncertainty rule above (they cannot confirm the exact
-     report/dataset and choose not to hold for it). Never use it merely because the journalist
-     has not yet answered, and never use it as a shortcut out of this gate.
-   - Only once the source is resolved to one of the three states above — (a) name + specific
-     traceable URL, (b) named org kept name-only, or (c) the honest prose fallback (genuine
-     no-dataset case, or a hedged source left unconfirmed per the uncertainty rule above) —
-     does it go into each accepted proposal's spec at `accepted.json` time (5b). Also copy
-     `suggest-article`'s `sourceHint` verbatim onto each accepted proposal's `sourceHint`
-     field so the spine's source guards can enforce states (a)/(b)/(c) mechanically. This does
-     not replace Gate 3a's render-review source check — that stays the safety net if the URL
-     turns out unreachable once the actual render is seen — but it should rarely have anything
-     left to catch.
+   The resolved source (one of the three states) goes into each accepted spec at 5b, with
+   `suggest-article`'s `sourceHint` copied verbatim alongside it. The honest prose fallback is
+   legitimate ONLY in two cases — no separate cited dataset (`provenance:"prose"`/`"none"`), or a hedged
+   recollection left unconfirmed — never merely because the journalist has not answered yet. Gate 3a's
+   render-review source check stays the safety net if a URL turns out unreachable.
 5. Constraint (only if relevant): mobile-first, deadline, house style.
-   - **Newsroom profile (F2):** the project's house style lives in `NEWSROOM-PROFILE.md` (the journalist fills it once — palette + accent + default `source` + `lang` + `credit` + `theme` (dark/light map basemap); see `NEWSROOM-PROFILE.example.md`). It is **auto-applied at produce time** — `produce-all` calls `loadNewsroomProfile` and merges the profile onto every element's spec as DEFAULTS (the per-element value always wins): `source`/`lang` universally, brand colour for chart-native/dw-chart. You do NOT load it manually; just **ANNOUNCE** the house style is being applied (palette + default source/lang) so the journalist can veto or override. A non-CVD-safe / low-contrast house colour is applied AS CHOSEN (policy b, brand-first), NOT rewritten — the produce-time a11y guards downgrade it to a render-review concern (Gate 3), the editor decides. No profile → auto subject-fit colour + per-article source/lang, unchanged. Brand colour reaches **every producer**: chart-native/dw-chart take the house primary as `baseColor`; map-native derives a house **ramp** (choropleth/hex/cartogram — CVD-safe by monotonic luminance) or **fill/accent** (symbol/route/dot-density/locator), light **and** dark basemaps; map-dw derives the house gradient; scrolly inherits its host's colour. Two mechanics: for map-native the merge **clears the suggester's auto ramp `palette`** so the house ramp wins (mechanical); map-dw reads a `colorScale`, so its house colour depends on the suggester **omitting** the auto colorScale under a profile (the Map-colour rule in suggest-chart). An explicit per-element colour wins everywhere it is flagged `baseColorExplicit`. Exception: a **diverging** map keeps its registry palette (a sequential house ramp can't encode a signed midpoint — house diverging ramp is a follow-up). A house `theme: dark` sits every map-native/map-scrolly map on the **dark basemap** (map-dw dark = follow-up; a per-element `mapStyle` wins). Source + language apply universally. Logo/fonts and image-native accent are the remaining follow-ups.
+   - **Newsroom profile (F2):** the project's house style lives in `NEWSROOM-PROFILE.md` (palette + accent
+     + default `source` + `lang` + `credit` + `theme`; see `NEWSROOM-PROFILE.example.md`). It is **auto-applied
+     at produce time** — `produce-all`'s `mergeProfileDefaults` merges it onto every spec as DEFAULTS (the
+     per-element value always wins). **You do NOT load it manually; just ANNOUNCE** the house style is being
+     applied (palette + default source/lang) so the journalist can veto. No profile → auto subject-fit colour
+     + per-article source/lang. Colour/theme reach every producer (chart-native/dw-chart `baseColor`, map house
+     ramp/fill on light+dark basemaps); an explicit per-element colour flagged `baseColorExplicit` wins, and a
+     diverging map keeps its registry palette. Mechanics are in the code (`mergeProfileDefaults`) — a
+     non-CVD-safe house colour ships AS CHOSEN (brand-first) and is downgraded to a Gate-3 render-review concern.
 6. **Channel — the LAST CADRAGE question ("Where will it be published?"):** « Où sera-t-il
    publié ? » — a STRUCTURED single-select, journalist's language, exactly three options —
    **Social vertical (Stories/Reels)** · **Social feed (Instagram/Facebook post)** · **Article
@@ -290,21 +264,12 @@ pour ta Story — ok ? ». An explicit journalist format signal (« une image
 statique », « pour le print ») WINS over the default. The accepted spec pins exactly ONE
 `format`; `assertFormatAllowed(channel, format)` re-checks it at produce time, unchanged.
 
-**The pinned `format` mechanics are unchanged.** `suggest-chart` commits to a single `VisualFormat`
-(`static|interactive|video|scrolly`) from `allowedFormats(channel)` — never the whole allowed set —
-and THIS is the `{format}` announced above for veto; the journalist may change it here, but to
-another single member of `allowedFormats(channel)`, not to a list. `interactiveDefault`
-(`skills/splash/src/channel.ts`) still steers `suggest-chart`'s default pick to interactive on
-article-web — it only sets the default, not a fallback set. Once accepted, that one format is what
-`accepted.json` carries (5b) and what flows to PRODUCTION; `produce-all` applies
-`assertFormatAllowed(channel, format)` (`skills/splash/src/channel.ts`) as the produce-time guard
-that the pinned format is actually a member of the channel's allowed set — no new gate, the check
-reuses PROPOSITION's own decision. Since the CADRAGE channel question (Q6) set only the ALLOWED SET
-(never a format), the Stage-2 announce is the FIRST and ONLY place the single format is surfaced, so
-channel and format never double-ask. **Hard rule surfaced here too:** a non-article/embed channel
-can only land on image or video — never interactive or scrolly; if the journalist asks for an
-interactive on a social channel, say so and point back to the CADRAGE Q6 channel pick rather than
-silently escalating.
+`suggest-chart` pins exactly ONE `VisualFormat` from `allowedFormats(channel)` (never the whole set);
+`interactiveDefault` (`skills/splash/src/channel.ts`) only steers the article-web default. The journalist
+may change it, but to another single member of the channel's allowed set. Q6 set only the ALLOWED SET, so
+this Stage-2 announce is the FIRST and ONLY place the single format is surfaced — channel and format never
+double-ask. **Hard rule:** a non-article/embed channel lands on image or video only, never
+interactive/scrolly; point back to the Q6 pick rather than escalating.
 
 **Narrative sub-format — who picks it reuses the CADRAGE branch:**
 - **interactive** → the sub-format is **explore-libre** (pan/zoom/hover) vs **scrolly** (sequential).
@@ -381,11 +346,9 @@ have to retract it as engine-infeasible after the fact — if a candidate isn't 
 it reaches the journalist rather than proposing it and walking it back.
 
 **Preflight annotation (C2).** Before presenting engines/types, run
-`bun skills/splash/scripts/preflight.mjs` (JSON report, per engine). A type whose engine is
-NOT ready is **annotated, never silently omitted** — e.g. « ce type passe par Datawrapper —
-il te faudra une clé (gratuite) ; je te guide si tu le choisis » — so the journalist can pick
-it and fix the key, or pick a ready alternative. The produce-time gate (produce-all) re-checks
-mechanically either way; this annotation is honesty, not the enforcement.
+`bun skills/splash/scripts/preflight.mjs`; a not-ready engine is **annotated, never silently omitted**
+(the journalist picks it and fixes the key, or picks a ready alternative). The produce-time gate re-checks
+mechanically — this annotation is honesty, not the enforcement (`docs/splash/guardrails.md`).
 
 **Data truth was established at CADRAGE (Gates 2b/2c — Q3/Q4), BEFORE this routing.** The prose
 table (2b) and the source (2c) are NOT re-asked here. If — exceptionally — an accepted element's
@@ -452,24 +415,15 @@ source; if it did, thread the hint and re-produce". It is advisory only; it neve
   like `channel`/`confirmedTakeaway`; the spine gate warns when absent and FAILS a guided
   entry without `suggest-chart` (GUARD 5).
 
-**`confirmedTakeaway` is REQUIRED — the spine's validation gate (`src/validate-gate.ts`,
-`validateAccepted`) FAILS any proposal whose `confirmedTakeaway` is missing or empty**, on both
-branches (Gate 1b is un-skippable on guided AND direct, so no proposal legitimately lacks one). It is
-the Gate-1b presence lever: the render-review (3a) quotes it VERBATIM against the produced
-title/insight, part by part — copy the confirmed wording exactly, never a paraphrase that drops a
-part. **Per-element, never shared:** in a multi-element run each entry's `confirmedTakeaway` is that
-element's OWN confirmed claim — two accepted elements never carry the same combined takeaway string
-(an observed miss: a two-opportunity run shipped BOTH elements with one combined "les deux à la
-fois…" takeaway, so each title was checked against a claim half of which belonged to the other
-visual). This is mechanically enforced: the same validation gate FAILS any two proposals of a batch
-carrying the byte-identical `confirmedTakeaway` string (GUARD 3b). **`channel`
-is REQUIRED — it is the CADRAGE Q6 confirmed pick (§3, the structured channel question, asked LAST),
-copied verbatim onto every proposal it applies to.** `produce-all`'s channel/format gate (5c) reads this
-field to enforce "not-embed ⇒ never interactive/scrolly"; **omitting it silently defeats that guard** —
-an ABSENT channel falls back to `"article-web"` (the permissive default, matching `normalizeChannel`'s
-absent-input default), so a social-only visual with a dropped `channel` would ship an interactive nobody
-asked for. Never omit it. (A GARBLED non-empty channel string does NOT widen that way: `normalizeChannel`
-is fail-closed and the gate records it as a failed result naming the valid channels.)
+**`confirmedTakeaway` is REQUIRED** — the spine's validation gate (`src/validate-gate.ts`) FAILS any
+proposal missing/empty it (GUARD 3), on both branches. It is the Gate-1b presence lever: Gate 3a quotes
+it VERBATIM against the produced title, part by part — copy the confirmed wording exactly, never a
+paraphrase that drops a part. **Per-element, never shared:** each entry carries its OWN confirmed claim;
+the same gate FAILS two proposals of a batch with the byte-identical `confirmedTakeaway` (GUARD 3b).
+**`channel` is REQUIRED** — the CADRAGE Q6 pick, copied verbatim; `produce-all`'s channel/format gate
+reads it to enforce "not-embed ⇒ never interactive/scrolly", and an ABSENT channel falls back to the
+permissive `article-web` (a dropped `channel` would ship an interactive nobody asked for; a GARBLED one
+fails closed). Never omit it. See `docs/splash/guardrails.md`.
 
 **5c. Produce everything at once** — report to a FILE (the gates and EXPORT read it back):
 ```bash
@@ -480,38 +434,26 @@ bun skills/splash/scripts/produce-all.mjs exports/<slug>/accepted.json exports/<
 `{ results: [{ id, producer, actualProducer, format, status, outputs?, publicUrl?, reason?, error?, renderApproved }] }`.
 It exits non-zero only if some `status` is `"failed"`. (Redirecting to `report.json` is required — the
 report is the machine channel; producer progress goes to stderr, so stdout stays pure JSON.)
-**★ Mechanical producer-match guard (GUARD 1, `src/producer-guard.ts`):** `actualProducer` records the
-producer that ACTUALLY ran; `produce-all` fails-hard (`status:"failed"`) when it diverges from the
-accepted proposal's `producer` — so an accepted **dw-chart** that is silently produced with
-**chart-native** (an observed flip) is refused, never shipped. The ONE sanctioned switch is the
-native→dw fallback (`needs-fallback`, below). Any element/format change goes back through `suggest-chart`
-(5d / see Never) — never hand-swap the producer in `accepted.json`.
+**Producer-match guard (GUARD 1, `src/producer-guard.ts`):** `actualProducer` records what ACTUALLY
+ran; `produce-all` fails-hard when it diverges from the accepted `producer` (a silent dw-chart→chart-native
+flip is refused). The ONE sanctioned switch is the native→dw fallback (`needs-fallback`, below); any other
+element/format change goes back through `suggest-chart` (5d / see Never) — never hand-swap the producer in
+`accepted.json`. See `docs/splash/guardrails.md`.
 
-**★ Spine validation gate re-applies suggest-chart's DETERMINISTIC guardrails (`src/validate-gate.ts`
-→ `validateAccepted`).** Before dispatch, `produce-all` runs, on EVERY accepted proposal itself: the
-producer's own validator (`validateChartSpec` / `validateMapSpec` / `validateChoroplethConfig` /
-`validateShape`), the placeholder-source guard (GUARD 2), AND — since there is **no trust boundary**
-between this orchestrator and `suggest-chart` (they are the same LLM, so a spec's provenance cannot be
-proven) — the deterministic guardrails that otherwise lived only in `suggest-chart`'s eval
-(`src/guardrail-parity.ts`): the **aspect↔type guard** (a row-driven horizontal chart type like `d3-bars`
-can never take a portrait/square channel), **chart-native furniture** (an insight title + a source name
-are present), and **chart-native subject-fit** (a declared non-water subject is not painted on a
-blue-family hue). A spec the orchestrator HAND-AUTHORED — bypassing `suggest-chart` entirely — must still
-clear this identical deterministic bar or it comes back `status:"failed"`, never shipped. **Out of scope
-(genuinely non-deterministic at produce):** the SEMANTIC / gold-dependent parts of the eval — element vs
-producer vs family "correctness", and the LLM-judge's editorial quality (is the title really the insight?
-is this the RIGHT chart for the claim?) — have no gold at produce and are the render-review's job (GATE 3),
-not a mechanical gate. Validator WARNINGS also stay advisory here by design (surfaced at the render gate),
-unlike the eval's stricter `maxWarnings:0` suggester scorecard.
+Before dispatch, `produce-all` re-validates EVERY accepted proposal at the spine
+(`src/validate-gate.ts` → `validateAccepted`): the producer's own validator, the placeholder-source
+guard (GUARD 2), and the deterministic guardrail-parity gate (aspect↔type, chart-native furniture,
+subject-fit) — there is no trust boundary with `suggest-chart` (same LLM), so a HAND-AUTHORED spec must
+clear the identical bar or it comes back `status:"failed"`. Guard details: `docs/splash/guardrails.md`.
+The SEMANTIC parts (is the title really the insight? the RIGHT chart?) have no gold at produce and stay
+the render-review's job (GATE 3); validator WARNINGS stay advisory here, surfaced at the render gate.
 
-**★ Every re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) writes a WHOLLY FRESH
-`report.json`.** `renderApproved` starts `false` and `reviewed` is absent for EVERY proposal in that
-run — even one that was already reviewed and approved before the correction — this is by design, not a
-regression: a re-produced artifact has never been through Gate 3 itself, no matter how many times its
-predecessor was. It means Gate 3a (`review-gate`) and Gate 3b (`gate-render`) MUST run again, in order,
-on the NEW render before it can ship — never call `gate-render` right after a re-produce assuming a
-prior sign-off still holds (see Never, below), and never hand-edit `report.json` to restore a prior
-`reviewed`/`renderApproved` value onto a new artifact.
+**Every re-produce (any re-run of 5c) writes a WHOLLY FRESH `report.json`** — `renderApproved:false` and
+`reviewed` absent for EVERY proposal, even one already approved before the correction (a re-produced
+artifact has never been through Gate 3). So Gate 3a then 3b MUST run again, in order, on the NEW render;
+never call `gate-render` right after a re-produce assuming a prior sign-off holds (see Never), and never
+hand-edit `report.json` to restore a prior approval. The render-provenance guard refuses a stale-generation
+approval — `docs/splash/guardrails.md`.
 Each proposal's artifacts land in a **per-proposal subdir** `exports/<slug>/<id>/` — that subdir (not the
 parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
 
