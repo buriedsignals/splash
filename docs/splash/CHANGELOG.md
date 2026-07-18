@@ -4,6 +4,35 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-17/18 — AUDIT agentic challengé + DÉGRAISSAGE prose (validé au comportement)
+
+Rémy : « audit Splash + best-practices agentic » → « challenge l'audit » → « dégraisse la prose ».
+
+**Audit croisé (3 analyses // : spine, flow empirique, best-practices groundées Anthropic/EMNLP/OWASP).**
+Conclusion : la philosophie de Splash EST la best-practice (« code the floor, prose the ceiling » =
+workflow gaté d'Anthropic). Loi empirique (17 runs) : la prose perd contre l'échelle de décision ;
+ne survit que hoistée + adossée à un levier (fait 6× cette session). **Passé à l'avocat du diable
+(auto-critique) :** 3 biais corrigés — (1) les 2 « HIGH » (p.id delete, source fabriquée) = 0/766
+observés, théoriques, rétrogradés sous threat-model local-first ; (2) « pyramide QA inversée » = erreur
+de catégorie (le 97 %/3 % mesure le harness de découverte, pas l'enforcement produit qui tourne 100 %
+au spine) ; (3) le vrai n°1 manquait = la volumétrie prose. Artifact d'audit + roadmap révisée sur
+l'empirique. Plan MIT-hardening (Spotlight B1-B4) et roadmap leviers (escalationReason, checks
+récurrents) au backlog.
+
+**Dégraissage prose (chantier `2026-07-17-prose-slimming.md`, mergé, gate 20/20, adversarial-review SAFE) :**
+SKILL.md **1835→1667 lignes** (le −55 % promis était de l'optimisme d'audit — acté ; l'irréductible
+est de la vraie règle porteuse). Structurel : catalogue par-type (105 l.) déplacé en `chart-selection.md`
+à-la-demande · ~8 blocs guard-explainer → pointeurs `guardrails.md` (qui gagne la ligne GUARD 5) ·
+war-stories d'incidents → impératifs terses · ordre hot-path-first. **Filet TDD durable : 7 pins
+survivantes** dans `skill-doc-parity.test.ts` (resserrées sur la clause actionnable après review — les
+pins mots-clés étaient gameable) verrouillent mécaniquement les 5 règles sans backstop (source-incertaine,
+takeaway-explicite, never-fabricate-coord, Gate-3a 6 critères, WAIT-means-WAIT) + 2 mentions. **Validé
+au comportement (4 runs de parité, 0 régression survivante)** : peage narratif parfait (chart-scrolly +
+line-reveal), venezia single-proposal = variance (re-run OK), bus-de-nuit = bug harness corrigé
+(`checkNarrativeConsidered` tableau-nu). Résidus (i18n, approximations, format-q) = classes pré-slim,
+pas des régressions. **Leçon gravée : les chiffres d'un audit produit par agent se challengent, y compris
+les siens ; la doc-parity prouve la présence, seul le run prouve le suivi.**
+
 ## Session 2026-07-16/17 — LE CHANTIER TOM : 6 retours → flow canonique 12 étapes + 4ᵉ moteur image-scrolly + préflight-prérequis, 15 runs de validation
 
 Tom (Buried Signals) a fait le premier test 100 % externe (clone rd-dev, article réel) : « pas
