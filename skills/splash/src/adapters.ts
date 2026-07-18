@@ -67,6 +67,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { Channel } from "./channel";
+import { assertSafeId } from "./id-safety";
 import type { Dispatch } from "./produce-all";
 import type { AcceptedProposal, Producer, VisualFormat } from "./producer-spec";
 import type { NativeSpec } from "../../chart-native/src/spec-to-config";
@@ -317,6 +318,14 @@ export const realDispatch: Dispatch = async (
   p: AcceptedProposal,
   outDir: string,
 ): Promise<DispatchResult> => {
+  // Path-safety, belt-and-suspenders (audit gap #1). produce-all gates p.id at the spine
+  // BEFORE building this outDir, but realDispatch is an exported entry point and p.id is
+  // joined into a filesystem path directly here (the map-dw/map-native PNG below,
+  // `${p.id}.png`), and freshOutDir resolve+rmSyncs. Re-assert the slug so no direct
+  // caller can drive a traversal id into a delete/write outside outDir. Thrown here, it is
+  // caught by produce-all's dispatch try/catch and recorded as a failed result — never a
+  // silent delete (skills/splash/src/id-safety.ts).
+  assertSafeId(p.id);
   if (isFileBased(p.producer)) {
     const spec =
       p.producer === "chart-native"

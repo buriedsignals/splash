@@ -9,6 +9,7 @@ import { validateAccepted, type ValidationOutcome } from "./validate-gate";
 import { assertFormatAllowed, normalizeChannel, type Channel } from "./channel";
 import { producerMismatchReason } from "./producer-guard";
 import { mergeProfileDefaults, type BrandProfile } from "./brand-profile";
+import { assertSafeId } from "./id-safety";
 
 // Produce ONE proposal → its outcome (bookkeeping fields are added by produceAll).
 // `actualProducer` is the producer the dispatch actually ran (GUARD 1) — the real
@@ -84,6 +85,26 @@ export async function produceAll(
       format: p.format,
       renderApproved: false,
     };
+    // Path-safety gate (audit gap #1) — FIRST, before the id is joined into ANY
+    // filesystem path. AcceptedProposal.id is LLM-composed and reaches the disk as a
+    // directory/filename component: this loop keys the per-proposal outDir on it below
+    // (`${outDir}/${p.id}`), which the dispatch then resolves + rmSync(recursive,force)s
+    // in freshOutDir. A traversal id ("../../x") resolves OUTSIDE outDir and recursively
+    // deletes an arbitrary directory — a real data-loss primitive in this local-first
+    // tool running in the journalist's own repo. Like the channel/format gate below, a
+    // rejected id is a fail-hard RECORDED result (never a silent skip, and crucially
+    // never a delete): the id never reaches a path unless it is a safe slug
+    // (skills/splash/src/id-safety.ts, mirroring image-native's C5 frame-id guard).
+    try {
+      assertSafeId(p.id);
+    } catch (e) {
+      results.push({
+        ...base,
+        status: "failed",
+        error: e instanceof Error ? e.message : String(e),
+      });
+      continue;
+    }
     // Channel/format gate — the hard rule: not-embed ⇒ never interactive/scrolly. The
     // single VisualFormat pinned on the accepted spec (single-format-produce-export,
     // Task 1) must belong to its channel's allowed set (skills/splash/src/channel.ts).
