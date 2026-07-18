@@ -115,6 +115,20 @@ function main() {
     );
     process.exit(1);
   }
+  // Path-safety (audit gap #1, same class the spine's id-safety.ts guards) — the LLM-
+  // supplied --id becomes a path component here: the code-source form writes its bundle to
+  // `join(exportDir, `${id}-source`)`. A traversal id ("../../evil") would escape exportDir
+  // and write outside the journalist's chosen export folder. Reject anything but a plain
+  // slug BEFORE any find/copy/exec runs. Kept inline (mirrors id-safety.ts's regex) so this
+  // standalone script carries no cross-module dependency.
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) {
+    console.error(
+      `--id "${id}" is not a safe slug (letters, digits, - and _ only, 1-128 chars) — ` +
+        `the id becomes a directory name under the export folder, so a path separator, ` +
+        `"..", or an absolute path could write outside it`,
+    );
+    process.exit(1);
+  }
   const form = rawForm ?? null;
   if (form !== null && !VALID_FORMS.includes(form)) {
     console.error(
