@@ -22,7 +22,9 @@ import {
   FONT,
   TYPE,
   WAFFLE_CATEGORY_COLORS,
-  themeColors, tooltipBorder } from "./core/tokens";
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -37,6 +39,9 @@ export interface WaffleConfig {
   gridN?: number;
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
   themeBg?: string;
+  /** subject-fit hue for the PRIMARY (first) category — the chart subject. Absent →
+   *  the WAFFLE_CATEGORY_COLORS[0] default. Later categories keep the palette. */
+  baseColor?: string;
   items: { label: string; value: number }[];
 }
 
@@ -100,7 +105,12 @@ export function WaffleChart({
   const ts = frame.type;
   const sc = frame.scale;
 
-  const colorOf = (i: number) => WAFFLE_COLORS[i % WAFFLE_COLORS.length];
+  // the PRIMARY (first) category is the chart subject — honour its subject-fit hue;
+  // later categories keep the CVD-safe palette. Absent → the palette default.
+  const colorOf = (i: number) =>
+    i === 0 && config.baseColor
+      ? config.baseColor
+      : WAFFLE_COLORS[i % WAFFLE_COLORS.length];
 
   const data: WaffleData = { items: config.items, gridN: config.gridN };
   const layout = computeWaffleLayout(data, { width, height, padding });

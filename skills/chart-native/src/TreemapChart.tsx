@@ -26,7 +26,9 @@ import {
   TYPE,
   OKABE_ITO,
   TREEMAP_GROUP_COLORS,
-  themeColors, tooltipBorder } from "./core/tokens";
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -41,6 +43,9 @@ export interface TreemapConfig {
   lang?: Lang;
   unit: string; // subtitle (what the area measures)
   categories?: string[];
+  /** subject-fit hue for a FLAT (ungrouped) treemap — every cell one subject colour.
+   *  Absent → the OKABE_ITO.blue default. Ignored when `categories` drive the colouring. */
+  baseColor?: string;
   items: { label: string; value: number; category?: string }[];
   /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture. The group
    *  palette (TREEMAP_GROUP_COLORS) has no black; in-cell text is picked per-fill by
@@ -104,10 +109,14 @@ export function TreemapChart({
 
   const colorIndex = new Map<string, number>();
   (config.categories ?? []).forEach((c, i) => colorIndex.set(c, i));
+  // GROUPED → per-category palette; FLAT (ungrouped) → the subject-fit baseColor,
+  // else the OKABE_ITO.blue default. A declared non-blue subject no longer silently
+  // renders on blue.
+  const flatFill = config.baseColor ?? OKABE_ITO.blue;
   const colorOf = (cat?: string) =>
     cat != null && colorIndex.has(cat)
       ? TREEMAP_GROUP_COLORS[colorIndex.get(cat)! % TREEMAP_GROUP_COLORS.length]
-      : OKABE_ITO.blue;
+      : flatFill;
 
   const data: TreemapData = {
     unit: config.unit,

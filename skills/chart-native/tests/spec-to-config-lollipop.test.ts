@@ -22,7 +22,7 @@ describe("specToNativeConfig — lollipop (single)", () => {
     expect(config.highlightLabel).toBe("Nurse");
   });
 
-  it("omits highlightLabel when no highlight given, and never forwards baseColor", () => {
+  it("omits highlightLabel when no highlight given, but forwards the subject-fit baseColor", () => {
     const { config } = specToNativeConfig({
       ...base,
       nativeType: "lollipop",
@@ -30,6 +30,8 @@ describe("specToNativeConfig — lollipop (single)", () => {
       baseColor: "#009E73",
     });
     expect(config.highlightLabel).toBeUndefined();
-    expect(config.baseColor).toBeUndefined();
+    // the neutral stems/dots honour the subject-fit hue (the vermillion highlight
+    // accent is separate); a declared subject no longer silently renders on blue.
+    expect(config.baseColor).toBe("#009E73");
   });
 });

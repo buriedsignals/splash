@@ -40,6 +40,8 @@ export interface BoxplotConfig {
   /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
   themeBg?: string;
   valueLabel: string; // subtitle / units
+  /** subject-fit hue for the boxes (fill + whiskers + median). Absent → OKABE_ITO.blue. */
+  baseColor?: string;
   categories: { label: string; values: number[] }[];
 }
 
@@ -184,6 +186,7 @@ function BoxplotSvg({
   sc: number;
 }) {
   const C = themeColors(config.themeBg);
+  const boxFill = config.baseColor ?? BOX; // subject-fit hue, else default
   const { innerWidth, innerHeight, rows } = layout;
   const n = rows.length;
 
@@ -265,7 +268,7 @@ function BoxplotSvg({
                   x2={g.whiskerHiX}
                   y1={r.y}
                   y2={r.y}
-                  stroke={BOX}
+                  stroke={boxFill}
                   strokeWidth={1.5 * sc}
                 />
                 <line
@@ -273,7 +276,7 @@ function BoxplotSvg({
                   x2={g.whiskerLoX}
                   y1={r.y - capH / 2}
                   y2={r.y + capH / 2}
-                  stroke={BOX}
+                  stroke={boxFill}
                   strokeWidth={1.5 * sc}
                 />
                 <line
@@ -281,7 +284,7 @@ function BoxplotSvg({
                   x2={g.whiskerHiX}
                   y1={r.y - capH / 2}
                   y2={r.y + capH / 2}
-                  stroke={BOX}
+                  stroke={boxFill}
                   strokeWidth={1.5 * sc}
                 />
                 {/* the IQR box */}
@@ -290,9 +293,9 @@ function BoxplotSvg({
                   y={r.y - half}
                   width={boxW}
                   height={r.h}
-                  fill={BOX}
+                  fill={boxFill}
                   fillOpacity={0.18}
-                  stroke={BOX}
+                  stroke={boxFill}
                   strokeWidth={1.5 * sc}
                 />
                 {/* the median line — the headline statistic */}
@@ -320,7 +323,7 @@ function BoxplotSvg({
                         cy={r.y}
                         r={dotR}
                         fill={C.bg}
-                        stroke={BOX}
+                        stroke={boxFill}
                         strokeWidth={1.5 * sc}
                         opacity={outlierOp}
                       />

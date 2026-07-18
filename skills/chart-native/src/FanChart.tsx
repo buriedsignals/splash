@@ -19,7 +19,14 @@ import {
   easeOutCubic,
   formatNumber,
 } from "./core/math";
-import { COLORS, themeColors, FONT, TYPE, OKABE_ITO, tooltipBorder } from "./core/tokens";
+import {
+  COLORS,
+  themeColors,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -35,6 +42,8 @@ export interface FanConfig {
   unit: string; // subtitle / value-axis caption
   xField: string;
   levels: number[];
+  /** subject-fit hue for the bands + central line. Absent → the OKABE_ITO.blue default. */
+  baseColor?: string;
   rows: Record<string, number>[];
 }
 
@@ -182,6 +191,7 @@ function FanSvg({
     xTicks,
     yTicks,
   } = layout;
+  const hue = config.baseColor ?? HUE; // subject-fit hue, else default
   const chrome = easeOutCubic(p / 0.18);
   const reveal = easeInOutCubic(p);
   const clipW = innerWidth * reveal + 1;
@@ -292,7 +302,7 @@ function FanSvg({
             <path
               key={`band${b.level}`}
               d={bandArea(b.points) ?? ""}
-              fill={HUE}
+              fill={hue}
               fillOpacity={BAND_OPACITY[b.level] ?? 0.2}
             />
           ))}
@@ -326,7 +336,7 @@ function FanSvg({
           <path
             d={lineGen(central) ?? ""}
             fill="none"
-            stroke={HUE}
+            stroke={hue}
             strokeWidth={2 * sc}
             strokeDasharray={`${6 * sc} ${4 * sc}`}
             opacity={0.85}
@@ -335,7 +345,7 @@ function FanSvg({
           <path
             d={lineGen(history) ?? ""}
             fill="none"
-            stroke={HUE}
+            stroke={hue}
             strokeWidth={2.6 * sc}
           />
 

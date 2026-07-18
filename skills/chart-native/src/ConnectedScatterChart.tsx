@@ -18,7 +18,14 @@ import {
   type ConnectedScatterLayout,
 } from "./connected-scatter-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO, themeColors, tooltipBorder } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -36,6 +43,8 @@ export interface ConnectedScatterConfig {
   yLabel: string;
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
   themeBg?: string;
+  /** subject-fit hue for the path + dots. Absent → the OKABE_ITO.blue default. */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -172,6 +181,7 @@ function ConnectedScatterSvg({
   sc: number;
 }) {
   const C = themeColors(config.themeBg);
+  const accent = config.baseColor ?? ACCENT; // subject-fit hue, else default
   const { innerWidth, innerHeight, points, totalLen } = layout;
 
   const chrome = easeOutCubic(p / 0.18);
@@ -266,7 +276,7 @@ function ConnectedScatterSvg({
           className="connected-path"
           d={path}
           fill="none"
-          stroke={ACCENT}
+          stroke={accent}
           strokeWidth={2.5 * sc}
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -281,7 +291,7 @@ function ConnectedScatterSvg({
           cy={head.y}
           r={4 * sc}
           fill={C.head}
-          stroke={ACCENT}
+          stroke={accent}
           strokeWidth={2 * sc}
           opacity={clamp01((draw - 0.005) / 0.03) * clamp01((1 - draw) / 0.025)}
         />
@@ -294,7 +304,7 @@ function ConnectedScatterSvg({
             cx={pt.cx}
             cy={pt.cy}
             r={(interactive ? 6 : 5) * sc}
-            fill={ACCENT}
+            fill={accent}
             opacity={dotOp(pt)}
             tabIndex={interactive ? 0 : undefined}
             role={interactive ? "img" : undefined}
