@@ -255,8 +255,7 @@ image to its article passage (vision = matching/ordering ONLY), and emits the
    palette grey. A VALUE, never a row index (`sort` re-orders the rows — an index would accent the wrong
    bar). The same CADRAGE-framing discipline as the native `highlight` applies: only accent a category the
    confirmed insight singles out; omit it for a neutral overview. There is NO `highlightColor` field —
-   the accent IS `baseColor`; `validateChartSpec` is STRICT and rejects any unknown top-level field
-   (a hallucinated field once shipped a silently-unhighlighted chart).
+   the accent IS `baseColor`; `validateChartSpec` is STRICT and rejects any unknown top-level field.
 4. Guardrails: **≤2 colours**; **CHOOSE `baseColor` by subject — NEVER leave a chart on a blue-family hue
    for a subject that is not water/cold/sky/marine** (the validator FAILS a declared `subject` whose
    `baseColor` is absent or the default `#0072B2`); if the data is too complex for a clean chart, return
@@ -279,18 +278,16 @@ Set `subject` to the topic and pick the Okabe-Ito hue whose meaning fits:
 - water / cold / sky / marine → blue `#0072B2` (the ONE case the default blue is correct)
 - social / culture / politics-neutral → reddish-purple `#CC79A7`
 - **housing / rent / cost-of-living / real estate → amber `#E69F00`** — a "cost of living / hearth"
-  subject; warm, and pointedly NOT the blue that reads as water/cold (found shipped with NO `baseColor`
-  at all on a rent chart — leaving it unset is the same defect as leaving it blue: both fall through to
-  the component's blue default).
+  subject; warm, and pointedly NOT the blue that reads as water/cold. Leaving `baseColor` unset is the
+  same defect as leaving it blue: both fall through to the component's blue default.
 - **labour market / cross-border commuting / migration / transport-flow → vermilion `#D55E00`** — a
   friction/flow subject; if vermilion is already used elsewhere in the same piece, fall back to reddish-
   purple `#CC79A7` rather than to blue.
 
 **NEVER leave blue for a subject that is not water/cold/sky/marine — and "blue" means the WHOLE blue
 family, not just the exact library default.** Both `#0072B2` (blue) and `#56B4E9` (sky) read as "blue" to
-a reader; swapping the literal default for the lighter sky-blue is the SAME defect with a different hex —
-found shipped live on a "cross-border commuting" chart (`baseColor: "#56B4E9"`), a subject that matches
-none of water/cold/sky/marine. If the subject doesn't match that list, NEITHER `#0072B2` NOR `#56B4E9` may
+a reader; swapping the literal default for the lighter sky-blue (`#56B4E9`) is the SAME defect with a
+different hex on a non-water subject. If the subject doesn't match that list, NEITHER `#0072B2` NOR `#56B4E9` may
 be the `baseColor` — pick amber/green/vermilion/purple/yellow/black deliberately instead.
 
 All eight Okabe-Ito hues are CVD-safe, so any choice passes the guard; the point is that the choice must
@@ -319,7 +316,7 @@ comment marks `baseColor` optional-with-a-default:**
 - **`baseColor`**: pick a deliberate subject-fit Okabe-Ito hue using the exact same Colour rule as
   `ChartSpec` above (reason about the subject, then set the hex). Leaving `baseColor` unset silently
   falls back to the component's blue default — the same "everything is blue" defect this rule exists to
-  stop (found shipped live: a housing/rent native chart with no `baseColor` key at all).
+  stop.
 - **`subject`** (recommended): set the topic string (e.g. `"housing rents"`). It is injected onto the
   produced config and the produce-time guard then HARD-FAILS a chart left on a blue-family hue for a
   non-water/cold subject — the same subject-fit enforcement `ChartSpec` has. It is the belt-and-braces
@@ -327,8 +324,7 @@ comment marks `baseColor` optional-with-a-default:**
 - **`altInsight`**: the WCAG alt text — the insight, not the chart's structure — same requirement and
   wording discipline as `ChartSpec.altInsight` above. Always include it: chart-native's produce gate now
   HARD-REQUIRES a non-empty `altInsight` on every produced chart (fail-hard, like dw-chart/map-dw spec
-  validation) — a spec without it refuses to produce. Originally found missing entirely on a shipped
-  beeswarm spec, leaving the visual with no accessible description at all.
+  validation) — a spec without it refuses to produce.
 
 The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
@@ -387,8 +383,8 @@ Field notes:
   department names: `"Ain"`, `"Haute-Savoie"`). Its other registered keys do NOT carry what their names
   suggest (probed live): `postal` holds two-letter POSTAL ABBREVIATIONS (`"FF"`, `"CY"`) — **NOT INSEE
   department numbers**, so joining `"01"…"95"` codes on `postal` matches 0 rows (a registered key can
-  still be the WRONG key for your columns — the registry only lists which keys exist; QA: this cost a full
-  corrective pass, caught only by the dataless-join guard); `fips` is `"FRB9"`-style; `code_hasc` is
+  still be the WRONG key for your columns — the registry only lists which keys exist, not which fits your
+  data; the dataless-join guard is the net); `fips` is `"FRB9"`-style; `code_hasc` is
   `"FR.AI"`-style. **No key on this basemap carries INSEE codes** — convert INSEE codes to department
   names first and join on `name`. For any registered basemap, read the valid keys off
   `map-dw/src/basemap-keys.ts` verbatim; for an unregistered one, confirm the exact `mapKeyAttr` via the
@@ -466,9 +462,7 @@ default blue, so an energy/electricity map MUST carry `palette:"oranges"` — th
 - `unit` — **EMIT IT whenever the measured quantity has a short unit (mm, %, €, t, hab.)**; omit only
   when the quantity truly has none (a count of people, an index). The unit is part of faithful data
   representation, not decoration: it feeds the legend endpoints AND the hover tooltip — a reader hovering
-  a rainfall map must read "624 mm", never a bare "624" (QA Wave 10: the journalist explicitly asked for
-  the exact millimetres on hover, and an emitted `unit: undefined` left map-dw's tooltip-unit mechanism
-  with nothing to append). It is a LITERAL suffix with the leading-space semantics `map-dw/src/map-spec.ts`
+  a rainfall map must read "624 mm", never a bare "624". It is a LITERAL suffix with the leading-space semantics `map-dw/src/map-spec.ts`
   documents: include a leading space unless the unit hugs the number (`" mm"` → "624 mm", `" €"` →
   "17 600 €", `"%"` → "70%"). Do not double-declare a percent — either `unit:"%"` or a `"%"` `numberFormat`
   token is enough on its own (map-dw suppresses the collision, but one declaration is the honest spec).
@@ -531,9 +525,8 @@ Field notes:
 - `source.name` + `source.url`: required (furniture standard; missing is a warning).
 - `unit` / `valueUnit`: **EMIT them whenever the measured quantity has a short unit (mm, %, €, t,
   hab.)** — the unit feeds the legend and the hover/caption surfaces and is part of faithful data
-  representation, not decoration (same rule as the map-dw `unit` field note above; QA Wave 10: a
-  rainfall map emitted without a unit hovered a bare number where the journalist asked for exact
-  millimetres). Omit only when the quantity truly has none.
+  representation, not decoration (same rule as the map-dw `unit` field note above). Omit only when the
+  quantity truly has none.
 
 **Filters (INTERACTIVE maps only — reader exploration).** When the format is **interactive** (Gate 2
 fired) AND the data shape supports it, add a `filters` array so the reader can explore. Emit a filter
