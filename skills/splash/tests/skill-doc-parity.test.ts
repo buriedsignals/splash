@@ -104,7 +104,9 @@ describe("C4 — batched multi-proposals, each with its why", () => {
 
   it("narrative is considered on every opportunity — present or explicitly ruled out", () => {
     expect(suggest).toContain("narrativeRuledOut");
-    expect(suggest).toContain("silent absence of the narrative option is not a possible state");
+    expect(suggest).toContain(
+      "silent absence of the narrative option is not a possible state",
+    );
     expect(splash).toContain("narrativeRuledOut");
   });
 
@@ -140,7 +142,7 @@ describe("C4 — batched multi-proposals, each with its why", () => {
 
   it("narrative options (scrolly/story/image-scrolly) belong in the candidates menu", () => {
     expect(suggest).toContain("Narrative candidates belong in the menu");
-    expect(suggest).toContain("does\nNOT govern whether it may APPEAR");
+    expect(suggest).toContain("does NOT govern whether it may APPEAR");
   });
 
   it("suggest-chart emits the candidates contract", () => {
@@ -219,5 +221,49 @@ describe("C5 — image-scrolly recognition + suggest-image", () => {
     // v1 format constraint is stated
     expect(suggestImage).toContain("scrolly");
     expect(suggestImage).toContain("image-story.json");
+  });
+});
+
+// Survivor rules — the load-bearing prose that has NO mechanical backstop. Every guard
+// documented in docs/splash/guardrails.md is enforced in code; these rules are NOT — only
+// the SKILL.md prose stops the miss they guard. They are pinned FIRST (before any prose
+// slim) so the moment a cut drops a survivor, its pin goes red. They must stay GREEN through
+// the whole slim.
+describe("survivor rules — load-bearing, no mechanical backstop, MUST survive any slim", () => {
+  // 1. Source-uncertainty: a hedged-but-real-looking citation passes every guard; only prose stops it.
+  it("keeps the source-uncertainty rule (« je crois » / de mémoire → never a confident citation)", () => {
+    expect(splash).toMatch(/je crois|de mémoire|uncertain|incertain/i);
+    expect(splash).toContain("Source"); // near the uncertainty rule
+  });
+  // 2. Takeaway must be EXPLICITLY confirmed, never inferred-and-skipped (GUARD 3 checks presence only).
+  it("keeps 'takeaway confirmed EXPLICITLY, never inferred and skipped'", () => {
+    expect(splash).toMatch(
+      /EXPLICIT[^.]*confirm|confirm[^.]*EXPLICIT|jamais infér|never infer/i,
+    );
+  });
+  // 3. Never fabricate a value — coordinates/dates/numbers (validators cannot tell real from invented).
+  it("keeps never-fabricate-any-value (both files)", () => {
+    expect(splash).toMatch(
+      /never fabricate|jamais inventer|ne jamais inventer/i,
+    );
+    expect(suggest).toMatch(/never invent|coordinate|fabricate/i);
+  });
+  // 4. Gate-3a render-review six criteria (assertShippable only checks a record EXISTS, not honesty).
+  it("keeps the Gate-3a render-review criteria (title↔takeaway part-by-part, comparative caption, interaction-not-from-a-still)", () => {
+    expect(splash).toMatch(/render.?review|Gate 3a/i);
+    expect(splash).toMatch(/part.by.part|comparative|tooltip|interaction/i);
+  });
+  // 5. WAIT-means-WAIT delivery gate / never auto-progress a gate (harness check is post-hoc, not in-flow).
+  it("keeps WAIT-means-WAIT / never auto-progress a gate", () => {
+    expect(splash).toMatch(/WAIT|attends|never auto-progress|jamais auto/i);
+  });
+  // Honorable mentions — terse but present.
+  it("keeps one-element-one-takeaway SEMANTIC (paraphrased shared takeaway escapes GUARD 3b)", () => {
+    expect(splash).toMatch(
+      /one .?element.* one|un élément.* un|per accepted element/i,
+    );
+  });
+  it("keeps 'always ask Q6 channel' (absent channel silently defaults to permissive article-web)", () => {
+    expect(splash).toMatch(/Où sera-t-il publié|channel.*LAST|Q6/);
   });
 });
