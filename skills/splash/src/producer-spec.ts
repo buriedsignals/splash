@@ -104,4 +104,9 @@ export interface ProduceReport {
   // only for legacy reports; produce-all always writes it.
   generatedAt?: string;
   results: ProposalResult[];
+  // Menu-level (batch-wide) advisory warnings, surfaced at the render gate — distinct from a
+  // result's per-proposal `warnings`. Today's only source: the narrative-consideration signal
+  // (Tom #3, skills/splash/src/candidate-provenance.ts `narrativeConsiderationWarning`), attached
+  // by the produce-all CLI from the candidates.json menu. Absent ⇒ no menu-level concern.
+  warnings?: string[];
 }

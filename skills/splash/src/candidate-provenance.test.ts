@@ -4,6 +4,7 @@ import {
   specType,
   isDirectBranch,
   candidateProvenanceIssue,
+  narrativeConsiderationWarning,
 } from "./candidate-provenance";
 import type { AcceptedProposal } from "./producer-spec";
 
@@ -184,5 +185,90 @@ describe("candidateProvenanceIssue — the fail-hard decision (producer-level)",
         },
       ),
     ).toBeNull();
+  });
+});
+
+describe("narrativeConsiderationWarning — Tom #3, surfaced by the tool (menu-level, non-blocking)", () => {
+  it("is null when the menu offers a narrative-family candidate (image-scrolly)", () => {
+    const json = {
+      candidates: [
+        { type: "column-chart", producer: "dw-chart", tier: "solid" },
+        {
+          type: "image-scrolly",
+          producer: "image-native",
+          tier: "recommended",
+        },
+      ],
+    };
+    expect(narrativeConsiderationWarning(json)).toBeNull();
+  });
+
+  it("is null for a scrolly / map-story / video narrative candidate (by producer or type)", () => {
+    expect(
+      narrativeConsiderationWarning({
+        candidates: [
+          { type: "chart-scrolly", producer: "scrolly", tier: "recommended" },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      narrativeConsiderationWarning({
+        candidates: [
+          { type: "map-story", producer: "map-native", tier: "solid" },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      narrativeConsiderationWarning({
+        candidates: [
+          { type: "line-reveal", producer: "chart-native", tier: "solid" },
+        ],
+      }),
+    ).toBeNull();
+  });
+
+  it("is null when the menu explicitly rules narrative out (narrativeRuledOut)", () => {
+    const json = {
+      candidates: [
+        { type: "column-chart", producer: "dw-chart", tier: "recommended" },
+      ],
+      narrativeRuledOut:
+        "two fixed rates — no temporal/geographic/visual sequence to narrate",
+    };
+    expect(narrativeConsiderationWarning(json)).toBeNull();
+  });
+
+  it("finds narrativeRuledOut nested per-opportunity", () => {
+    const json = {
+      opportunities: [
+        {
+          candidates: [
+            { type: "bar", producer: "dw-chart", tier: "recommended" },
+          ],
+          narrativeRuledOut: "single snapshot",
+        },
+      ],
+    };
+    expect(narrativeConsiderationWarning(json)).toBeNull();
+  });
+
+  it("WARNS when the menu carries neither a narrative candidate nor narrativeRuledOut (silent absence)", () => {
+    const json = {
+      candidates: [
+        { type: "column-chart", producer: "dw-chart", tier: "recommended" },
+        { type: "dot-plot", producer: "dw-chart", tier: "possible" },
+      ],
+    };
+    const w = narrativeConsiderationWarning(json);
+    expect(w).toBeString();
+    expect(w).toContain("narrative");
+  });
+
+  it("treats an empty narrativeRuledOut string as NOT ruled out (still warns)", () => {
+    const json = {
+      candidates: [{ type: "bar", producer: "dw-chart", tier: "recommended" }],
+      narrativeRuledOut: "",
+    };
+    expect(narrativeConsiderationWarning(json)).toBeString();
   });
 });

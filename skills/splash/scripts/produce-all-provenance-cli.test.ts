@@ -97,4 +97,51 @@ describe("produce-all.mjs — candidate-provenance CLI wiring", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("surfaces the menu-level narrative-consideration warning (Tom #3) when the menu skipped narrative silently", () => {
+    const { dir, acceptedPath } = setup({
+      candidates: [
+        {
+          type: "d3-bars",
+          producer: "chart-native",
+          tier: "recommended",
+          why: "x",
+        },
+        {
+          type: "dot-plot",
+          producer: "chart-native",
+          tier: "possible",
+          why: "y",
+        },
+      ],
+    });
+    try {
+      const { report } = run(acceptedPath, join(dir, "out"));
+      expect(report.warnings ?? []).toEqual([
+        expect.stringContaining("narrative"),
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("emits NO menu warning when the menu explicitly ruled narrative out", () => {
+    const { dir, acceptedPath } = setup({
+      candidates: [
+        {
+          type: "d3-bars",
+          producer: "chart-native",
+          tier: "recommended",
+          why: "x",
+        },
+      ],
+      narrativeRuledOut: "single snapshot — nothing to narrate",
+    });
+    try {
+      const { report } = run(acceptedPath, join(dir, "out"));
+      expect(report.warnings ?? []).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

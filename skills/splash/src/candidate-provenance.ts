@@ -111,3 +111,55 @@ export function candidateProvenanceIssue(
     escapeHatch
   );
 }
+
+// A candidate is NARRATIVE when its producer is a narrative engine (scrolly / image-native) or
+// its type/format names a narrative form (scrolly · story · video · reveal). The suggest-chart
+// contract (SKILL.md): the menu carries EITHER at least one narrative-family candidate OR an
+// explicit `narrativeRuledOut` reason — "silent narrative absence is not a valid payload".
+const NARRATIVE_TYPE_RE = /scrolly|story|video|reveal/i;
+const NARRATIVE_PRODUCERS = new Set<string>(["scrolly", "image-native"]);
+
+function nodeIsNarrativeCandidate(obj: Record<string, unknown>): boolean {
+  if (typeof obj.producer === "string" && NARRATIVE_PRODUCERS.has(obj.producer))
+    return true;
+  const t = typeof obj.type === "string" ? obj.type : "";
+  const f = typeof obj.format === "string" ? obj.format : "";
+  return NARRATIVE_TYPE_RE.test(t) || NARRATIVE_TYPE_RE.test(f);
+}
+
+/**
+ * Tom feedback #3, surfaced by the tool (menu-level, NON-blocking). Returns a warning when a
+ * PRESENT candidates.json carries NEITHER a narrative-family candidate NOR a non-empty
+ * `narrativeRuledOut` reason — the "silent narrative absence" the suggest-chart contract forbids.
+ * Null when narrative was considered (offered or explicitly ruled out). This moves the check that
+ * used to live only in the harness (check:narrative-not-considered) into the tool as an
+ * observability signal; the harness verifies it. Recurses so a per-opportunity nesting works.
+ */
+export function narrativeConsiderationWarning(json: unknown): string | null {
+  let sawNarrativeCandidate = false;
+  let sawRuledOut = false;
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    const obj = node as Record<string, unknown>;
+    if (
+      typeof obj.narrativeRuledOut === "string" &&
+      obj.narrativeRuledOut.trim() !== ""
+    )
+      sawRuledOut = true;
+    if (nodeIsNarrativeCandidate(obj)) sawNarrativeCandidate = true;
+    for (const value of Object.values(obj)) visit(value);
+  };
+  visit(json);
+  if (sawNarrativeCandidate || sawRuledOut) return null;
+  return (
+    "candidates.json considered NO narrative form and carries no explicit " +
+    "`narrativeRuledOut` reason — the menu skipped the narrative family (chart-scrolly · " +
+    "map-story · map-scrolly · image-scrolly · video reveal) silently. Either offer the " +
+    'narrative candidate the story shape warrants, or state `narrativeRuledOut: "<reason>"` ' +
+    "(suggest-chart contract: silent narrative absence is not a valid payload)"
+  );
+}

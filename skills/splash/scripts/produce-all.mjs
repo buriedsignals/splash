@@ -6,7 +6,10 @@ import { produceAll } from "../src/produce-all.ts";
 import { realDispatch } from "../src/adapters.ts";
 import { validateAccepted } from "../src/validate-gate.ts";
 import { loadNewsroomProfile } from "../src/brand-profile.ts";
-import { extractCandidateProducers } from "../src/candidate-provenance.ts";
+import {
+  extractCandidateProducers,
+  narrativeConsiderationWarning,
+} from "../src/candidate-provenance.ts";
 
 const acceptedPath = process.argv[2];
 const outDir = process.argv[3];
@@ -34,12 +37,14 @@ const profile = loadNewsroomProfile(projectDir);
 // the file is absent (the menu was never made) is itself a fail-hard signal for non-direct proposals.
 const candidatesPath = join(dirname(acceptedPath), "candidates.json");
 let candidateProvenance = { present: false, producers: new Set() };
+// Menu-level narrative-consideration warning (Tom #3): computed from the same candidates.json,
+// attached to the report AFTER production (a menu property, not a per-proposal one).
+let menuNarrativeWarning = null;
 if (existsSync(candidatesPath)) {
   try {
-    const producers = extractCandidateProducers(
-      JSON.parse(readFileSync(candidatesPath, "utf8")),
-    );
-    candidateProvenance = { present: true, producers };
+    const parsed = JSON.parse(readFileSync(candidatesPath, "utf8"));
+    candidateProvenance = { present: true, producers: extractCandidateProducers(parsed) };
+    menuNarrativeWarning = narrativeConsiderationWarning(parsed);
   } catch {
     // A corrupt/unparseable candidates.json is treated as absent (present:false) — a non-direct
     // proposal then fails provenance loudly rather than silently skipping the gate.
@@ -56,6 +61,7 @@ const report = await produceAll(
   undefined,
   candidateProvenance,
 );
+if (menuNarrativeWarning) report.warnings = [menuNarrativeWarning];
 console.log(JSON.stringify(report, null, 2));
 // Exit non-zero if anything failed, so a caller can detect trouble; needs-fallback and
 // needs-confirmation are NOT failures (the agent acts on them), so they exit 0.
