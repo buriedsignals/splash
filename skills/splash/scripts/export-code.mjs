@@ -9,14 +9,14 @@
 //       phase 1 (no --form): EMIT the a/b/c delivery-form proposal (the machine-relayable
 //                            `EXPORT_FORMS_JSON` line + the human `EXPORT_FORMS_PROPOSAL`
 //                            block) describing what each form WOULD be — building NOTHING
-//                            (no React bundle, no fly deploy, no file copies).
+//                            (no React bundle, no embed deploy, no file copies).
 //       phase 2 (--form <html|code-source|embed>): materialise + deliver ONLY that form:
 //           html        → copy the interactive.html / scrolly.html file.
 //           code-source → run export-source.mjs NOW → the runnable `<id>-source` React
 //                         bundle (chart-native, a straight-copy project), else run
 //                         bundle-source.mjs NOW → the runnable `<id>-source` bundle assembled
 //                         by closure-tracing the entangled map-native / scrolly src.
-//           embed       → run deploy-embed.mjs NOW (fly.io) and record the hosted URL in
+//           embed       → run deploy-embed.mjs NOW (Cloudflare Pages) and record the hosted URL in
 //                         EMBED_URL.txt (a hosted-DW producer records its already-live
 //                         publicUrl — no deploy step).
 // There is NO auto no-JS static.html fallback any more: accessibility is a FORMAT choice at
@@ -41,7 +41,7 @@ import {
   assertDelivered,
   isHostedUrl,
 } from "../src/export-guard.ts";
-import { flyTokenConfigured } from "./deploy-embed.mjs";
+import { embedDeliveryStatus } from "../src/preflight.ts";
 
 const SELF = fileURLToPath(import.meta.url);
 // The chart-native source-bundle generator — form "code-source" for chart-native is a
@@ -350,7 +350,7 @@ function main() {
           { encoding: "utf8" },
         );
       } catch (e) {
-        // deploy-embed fail-fasts (e.g. missing FLY_API_TOKEN) or the upload fails — surface its
+        // deploy-embed fail-fasts (e.g. missing CLOUDFLARE_API_TOKEN) or the upload fails — surface its
         // actionable message and refuse. Never fall through to write a placeholder EMBED_URL.txt.
         const msg = (e.stderr || e.stdout || e.message || "").toString().trim();
         fail(msg || `${format} form=embed deploy failed`);
@@ -385,7 +385,7 @@ function main() {
 //       with a source-manifest. Omitted entirely when NEITHER source marker is present (a
 //       markerless outDir has no code-source deliverable — only b / c are offered).
 //   b — HTML autonome: the single self-contained interactive.html / scrolly.html.
-//   c — Embed (hébergé): deploy the html to the journalist's fly.io host (or, for a hosted
+//   c — Embed (hébergé): deploy the html to the newsroom's Cloudflare Pages project (or, for a hosted
 //       DW producer, the already-live publicUrl — no deploy step).
 function emitProposal(ctx) {
   const {
@@ -433,18 +433,20 @@ function emitProposal(ctx) {
       path: join(absExportDir, interactive),
       deliver: `${deliverBase} --form html`,
     };
-    // A self-hosted embed can only ship by deploying to the journalist's fly.io host, which needs
-    // FLY_API_TOKEN. If it is unconfigured, form c CANNOT be delivered here — flag it unavailable
-    // (with a reason) and steer to form b, rather than offering a form that would stall/fail.
-    const flyReady = flyTokenConfigured();
+    // A hosted embed can only ship by deploying to the newsroom's own Cloudflare Pages project.
+    // If a credential is missing, form c cannot be delivered AS IS — but it is KEY-FIXABLE, so
+    // the reason carries what is missing and where to get it (same prerequisite flow as an
+    // engine key). The orchestrator collects it rather than silently steering to form b.
+    const embedStatus = embedDeliveryStatus();
+    const embedReady = embedStatus.ready;
     forms.c = {
       label: "Embed (hébergé)",
-      available: flyReady,
-      ...(flyReady
+      available: embedReady,
+      ...(embedReady
         ? {}
         : {
-            reason:
-              "FLY_API_TOKEN non configuré — le déploiement fly.io est indisponible dans cet environnement. Choisissez b) (HTML autonome), ou configurez fly.io puis réessayez.",
+            reason: `Clé(s) manquante(s) pour l'embed hébergé : ${embedStatus.reason}. Fournissez-la/les (elles seront enregistrées via save-key.mjs) pour livrer en c), ou choisissez b) (HTML autonome).`,
+            missingKeys: embedStatus.missing,
           }),
       command: `bun ${DEPLOY_EMBED_SCRIPT} ${join(absExportDir, interactive)} ${id} --results ${resolve(resultsPath)} --id ${id}`,
       deliver: `${deliverBase} --form embed`,
@@ -484,8 +486,8 @@ function emitProposal(ctx) {
       forms.c.url
         ? `  c) Embed (hébergé) — lien déjà en ligne, réutilisable partout : ${forms.c.url}`
         : forms.c.available === false
-          ? `  c) Embed (hébergé) — INDISPONIBLE ici : nécessite la configuration fly.io (FLY_API_TOKEN). Prenez plutôt b) (fichier HTML autonome équivalent), ou configurez fly.io puis réessayez.`
-          : `  c) Embed (hébergé) — publier sur votre hôte fly.io pour obtenir un lien à réutiliser`,
+          ? `  c) Embed (hébergé) — nécessite une clé manquante (${forms.c.missingKeys.join(", ")}). Je peux vous la demander et l'enregistrer, puis livrer en c) ; sinon prenez b) (fichier HTML autonome équivalent).`
+          : `  c) Embed (hébergé) — publier sur votre projet Cloudflare Pages pour obtenir un lien à réutiliser`,
     );
   relay.push(
     `Quelle forme souhaitez-vous ? (${Object.keys(forms).join(" / ")}) — puis relancer export-code avec --form <html|code-source|embed>.`,

@@ -9,6 +9,7 @@ import {
   verifyMapTiler,
   verifyDatawrapper,
   verifyAnthropic,
+  verifyCloudflare,
   type ConfiguratorConfig,
 } from "./configurator-core.ts";
 
@@ -35,6 +36,9 @@ async function verifyAll(c: ConfiguratorConfig) {
     maptiler: c.maptiler ? await verifyMapTiler(c.maptiler) : null,
     datawrapper: c.datawrapper ? await verifyDatawrapper(c.datawrapper) : null,
     anthropic: c.anthropic ? await verifyAnthropic(c.anthropic) : null,
+    cloudflare: c.cloudflareToken
+      ? await verifyCloudflare(c.cloudflareToken, c.cloudflareAccount)
+      : null,
   };
 }
 

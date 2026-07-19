@@ -553,7 +553,7 @@ updated spec to 3b (`gate-render`); the fresh report 5c writes resets `reviewed`
 exactly this reason (see the ★ note under 5c above), and 3b's approval is only ever for the render just
 shown, never a prior one.
 Verify quality, not just that it built. **After "ship it", record the approval — pass the LOCAL
-artifact file path on disk, NEVER the public/cloud URL** (a Datawrapper `publicUrl`, a fly.io embed
+artifact file path on disk, NEVER the public/cloud URL** (a Datawrapper `publicUrl`, a Cloudflare embed
 link, etc.): `gate-render` opens and hashes the file at that path, so a public URL ENOENTs.
 ```bash
 bun skills/splash/scripts/gate-render.mjs exports/<slug>/report.json <id> exports/<slug>/<id>/static.png
@@ -624,7 +624,7 @@ article-web is the one channel that can host it**:
   article-web) — no delivery menu, just the file.
 - **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`, article-web only):**
   splash **PROPOSES three delivery forms and the journalist CHOOSES one — and ONLY the chosen form is built
-  (LAZILY, on demand)**. There is no "produce all forms unconditionally": the React bundle and the fly.io
+  (LAZILY, on demand)**. There is no "produce all forms unconditionally": the React bundle and the Cloudflare
   deploy are expensive/irreversible, so nothing beyond the produced `interactive.html`/`scrolly.html` is
   materialised until the journalist has picked. **There is NO auto no-JS `static.html` fallback** — accessibility
   is a FORMAT choice at CADRAGE (picking `static` IS the accessible path), not a file bolted onto every
@@ -672,22 +672,30 @@ article-web is the one channel that can host it**:
          `.env.example` + `README.md`).
      - **b) HTML autonome** — JUST the single self-contained file: the JS-inlined `interactive.html`
        (`scrolly.html` for a scrolly). One file, drops into any CMS/email/offline.
-     - **c) Embed (hébergé)** — deploy the html to the journalist's own fly.io host and share the returned URL
+     - **c) Embed (hébergé)** — deploy the html to the newsroom's own Cloudflare Pages project and share the returned URL
        (for a **hosted-DW** producer, whose interactive IS the already-published embed, this is the live
-       `publicUrl` — no deploy step). **A SELF-HOSTED embed (no live `publicUrl`) needs `FLY_API_TOKEN`** to
-       deploy: when it is unconfigured, the emitted proposal FLAGS form c `available:false` (with a `reason`)
-       and the relay text marks it « INDISPONIBLE ici » steering to **b) HTML autonome** — do NOT offer /
-       run form c in that environment (a hosted-DW form c stays available — it needs no fly deploy).
+       `publicUrl` — no deploy step). **A SELF-HOSTED embed (no live `publicUrl`) needs the Cloudflare credentials**
+       to deploy. When one is missing the proposal flags form c `available:false` and carries `missingKeys` +
+       a `reason` with the get-it URL.
+       **A missing embed key is a KEY-PREREQUISITE, not a dead end — treat it exactly like a yellow engine
+       key (§INPUT):** if the journalist picks c), explain what the missing key unlocks and where to get it
+       (the `reason` carries the URL), collect it in ONE free-text prompt per key, save it with
+       `bun skills/splash/scripts/save-key.mjs <NAME> <value>` (never hand-edit `.env`, never echo the value
+       back), then re-run the `--form embed` deliver command. Only if the journalist declines to provide the
+       key do you fall back to **b) HTML autonome**. Never silently downgrade c) to b).
+       `SPLASH_EMBED_PROJECT` is the newsroom's own project name and becomes the PUBLIC URL — ask for a name
+       that identifies the newsroom (e.g. `heidi-news-splash`); generic names are refused by the adapter.
+       (A hosted-DW form c stays available — it needs no deploy of ours.)
   3. **THEN build + deliver ONLY the chosen form** — re-run `export-code.mjs` with `--form <html|code-source|embed>`
      (the `deliver` command from the proposal is exactly this):
      - `--form html` → copies the standalone `interactive.html`/`scrolly.html` into the export folder; print its
        ABSOLUTE path (that single file IS the delivery).
      - `--form code-source` → runs `export-source.mjs` NOW (chart-native) or `bundle-source.mjs` NOW
        (map-native/scrolly) to assemble the runnable `<id>-source/` bundle; print its ABSOLUTE path.
-     - `--form embed` → runs `deploy-embed.mjs` NOW to upload to the journalist's OWN fly.io app (name via the
-       3rd arg or `$SPLASH_EMBED_APP`) and records the hosted URL in `EMBED_URL.txt` (a hosted-DW producer
+     - `--form embed` → runs `deploy-embed.mjs` NOW to publish to the newsroom's OWN Cloudflare Pages project
+       (`$SPLASH_EMBED_PROJECT`) and records the hosted URL in `EMBED_URL.txt` (a hosted-DW producer
        records its already-live `publicUrl`, no deploy). Share the URL. **Integrity: `deploy-embed.mjs`
-       FAIL-FASTS (non-zero, before any flyctl call) if `FLY_API_TOKEN` is unset and there is no live
+       FAIL-FASTS (non-zero, before any network call) if the Cloudflare credentials are unset and there is no live
        `publicUrl` — it never half-deploys or writes a placeholder; `export-code` surfaces that message and
        refuses.** The URL recorded must pass `isHostedUrl` (a real https origin) or the export fails.
      Each run ends with the `assertDelivered(files, { format, form })` gate — the folder must match the
@@ -703,7 +711,7 @@ article-web is the one channel that can host it**:
   `interactive.png`, or the build subdir's byproducts are NOT a delivery. If the `--form` build did not run, the
   visual is NOT delivered, no matter how the run otherwise ended.
 
-  The one-time fly.io host setup (on the journalist's OWN account) + the `flyctl` auth details are in the
+  The one-time Cloudflare setup (on the newsroom's OWN account) + the token details are in the
   **Reference** appendix at the end of this file — consult it only when a journalist first chooses the embed form.
 
 **Session close — after the handover.** Once the deliverable is handed over and the journalist signals
@@ -844,21 +852,32 @@ The full scripted-guard inventory lives in `docs/splash/guardrails.md`.
 The hot path above is the whole flow. The material below is consulted only when a specific case
 needs it — it is NOT part of the live decision ladder. Guard mechanics: `docs/splash/guardrails.md`.
 
-### One-time fly.io host setup (only when a journalist first picks the embed form)
+### One-time Cloudflare setup (only when a journalist first picks the embed form)
 
-On the JOURNALIST'S OWN fly.io account (run once from `skills/splash/embed-host/`; fly.io app names are
-globally unique, so the journalist picks their own, e.g. `<newsroom>-embeds`):
-```bash
-flyctl auth login                        # the journalist's own fly.io account
-flyctl launch --no-deploy --name <their-app>   # creates their embed host app; commit fly.toml
-flyctl volumes create data --size 1
-flyctl deploy
+No app, no container, no volume — three values in `.env`, on the NEWSROOM'S OWN Cloudflare account:
+
 ```
-After that, `deploy-embed.mjs <html> <slug> <their-app>` (or `$SPLASH_EMBED_APP=<their-app>`) uploads
-directly to their app via `flyctl ssh sftp shell`. There is no shared default app name — each journalist
-hosts on their own account.
+CLOUDFLARE_API_TOKEN="…"     # account API token, permission: Cloudflare Pages: Edit
+CLOUDFLARE_ACCOUNT_ID="…"    # Workers & Pages page → Account details
+SPLASH_EMBED_PROJECT="…"     # e.g. heidi-news-splash — becomes the PUBLIC url
+```
 
-**Auth:** `flyctl` reads credentials from either `flyctl auth login` (interactive, stored in `~/.fly/`)
-or a `FLY_API_TOKEN` in the environment (create with `flyctl tokens create deploy`). For a headless /
-automated run, put `FLY_API_TOKEN` (and `SPLASH_EMBED_APP`) in `.env` — Bun loads them into the
-environment and `flyctl` picks them up. See `.env.example`.
+Create the token at <https://dash.cloudflare.com> → **Manage Account → API Tokens → Create Token**,
+with the **Cloudflare Pages: Edit** permission. The installer collects and verifies all three.
+
+`deploy-embed.mjs` creates the Pages project on first use and deploys over plain HTTPS — **no wrangler
+CLI and no Node.js runtime**. Each visual becomes a branch of that project, published at
+`https://<visual-slug>.<project>.pages.dev`.
+
+Two rules the platform enforces, encoded in `src/cloudflare-pages.ts` (measured — see
+`docs/superpowers/specs/2026-07-19-cloudflare-pages-embed-adapter-design.md`):
+
+- **`SPLASH_EMBED_PROJECT` must identify the newsroom.** It is the public URL, so generic names
+  (`splash`, `embeds`, `demo`…) are refused: every newsroom would otherwise share one hostname.
+- **The visual slug is normalised before it is sent.** Cloudflare rewrites branch labels lossily —
+  it DELETES accented characters (`Élections` → `lections`), turns `_` into `-`, truncates at 28
+  chars and appends a random suffix on collision. Splash strips diacritics and appends its own
+  deterministic digest so a French title yields a readable, stable URL.
+
+A newsroom's FIRST embed takes ~100 s (Cloudflare provisions the project); later ones take seconds.
+The deploy is only reported as delivered once the URL actually serves the artifact's own bytes.

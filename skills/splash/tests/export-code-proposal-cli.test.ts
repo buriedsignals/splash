@@ -64,10 +64,16 @@ function parseFormsJson(stdout: string): {
   return JSON.parse(line.slice(marker.length));
 }
 
-function envWithoutFlyToken(): NodeJS.ProcessEnv {
-  const env = { ...process.env };
-  delete env.FLY_API_TOKEN;
-  return env;
+// Set to EMPTY rather than deleted: preflight falls back to the repo-root .env by design
+// (so the gate sees the same truth as the producers), and process.env wins over that file —
+// an empty value is the only way to emulate "not configured" on a machine that has real keys.
+function envWithoutEmbedCredentials(): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    CLOUDFLARE_API_TOKEN: "",
+    CLOUDFLARE_ACCOUNT_ID: "",
+    SPLASH_EMBED_PROJECT: "",
+  };
 }
 
 /** The wait instruction the emitted block must carry, split into its load-bearing parts. */
@@ -124,10 +130,11 @@ describe("export-code phase 1 — emitted proposal carries the WAIT instruction"
 });
 
 // Lever 3 of the embed-delivery-integrity fix: a SELF-HOSTED interactive/scrolly (no live DW
-// publicUrl) can only ship form c (embed) by deploying to fly.io — which needs FLY_API_TOKEN.
-// When the token is unconfigured, the a/b/c proposal must FLAG form c unavailable and steer the
-// journalist to the standalone-HTML form (b), rather than offering a form that cannot deliver.
-describe("export-code phase 1 — embed availability reflects fly.io configuration", () => {
+// publicUrl) can only ship form c (embed) by deploying to the newsroom's Cloudflare Pages
+// project. When those credentials are unconfigured, the a/b/c proposal must FLAG form c
+// unavailable and steer the journalist to the standalone-HTML form (b), rather than offering a
+// form that cannot deliver.
+describe("export-code phase 1 — embed availability reflects Cloudflare configuration", () => {
   function writeNativeInteractive(name: string): {
     outDir: string;
     exportDir: string;
@@ -148,7 +155,7 @@ describe("export-code phase 1 — embed availability reflects fly.io configurati
     return { outDir, exportDir, reportPath };
   }
 
-  it("flags form c (embed) UNAVAILABLE for a self-hosted interactive when FLY_API_TOKEN is unset, steering to b", () => {
+  it("flags form c (embed) UNAVAILABLE for a self-hosted interactive when the Cloudflare credentials are unset, steering to b", () => {
     const { outDir, exportDir, reportPath } =
       writeNativeInteractive("no-token");
     const stdout = runPhase1(
@@ -156,11 +163,11 @@ describe("export-code phase 1 — embed availability reflects fly.io configurati
       exportDir,
       reportPath,
       "el",
-      envWithoutFlyToken(),
+      envWithoutEmbedCredentials(),
     );
     const payload = parseFormsJson(stdout);
     expect(payload.forms.c.available).toBe(false);
-    expect(String(payload.forms.c.reason)).toMatch(/FLY_API_TOKEN|fly/i);
+    expect(String(payload.forms.c.reason)).toMatch(/CLOUDFLARE_API_TOKEN|cloudflare/i);
     // form b (standalone HTML) is still offered as the deliverable alternative
     expect(payload.forms.b).toBeDefined();
     // the human relay block warns and points to b
@@ -168,23 +175,30 @@ describe("export-code phase 1 — embed availability reflects fly.io configurati
       stdout.indexOf("EXPORT_FORMS_PROPOSAL"),
       stdout.indexOf("END_EXPORT_FORMS_PROPOSAL"),
     );
-    expect(block).toMatch(/indisponible/i);
+    // A missing embed key is COLLECTABLE, not a dead end: the relay must name the missing
+    // credentials and offer to collect them, while still leaving b) as the alternative if the
+    // journalist declines. (Before 2026-07-19 this said "INDISPONIBLE" and steered to b —
+    // a silent downgrade of the delivery the journalist actually asked for.)
+    expect(block).toMatch(/CLOUDFLARE_API_TOKEN/);
+    expect(block).toMatch(/demander|enregistrer/i);
     expect(block).toMatch(/\bb\)/);
   });
 
-  it("keeps form c (embed) available for a self-hosted interactive when FLY_API_TOKEN is configured", () => {
+  it("keeps form c (embed) available for a self-hosted interactive when Cloudflare is configured", () => {
     const { outDir, exportDir, reportPath } =
       writeNativeInteractive("with-token");
     const stdout = runPhase1(outDir, exportDir, reportPath, "el", {
       ...process.env,
-      FLY_API_TOKEN: "dummy-token-not-real",
+      CLOUDFLARE_API_TOKEN: "dummy-token-not-real",
+      CLOUDFLARE_ACCOUNT_ID: "dummy-account-not-real",
+      SPLASH_EMBED_PROJECT: "test-newsroom-splash",
     });
     const payload = parseFormsJson(stdout);
     expect(payload.forms.c.available).toBe(true);
     expect(payload.forms.c.reason).toBeUndefined();
   });
 
-  it("leaves a hosted-DW embed (already-live publicUrl) available with no FLY_API_TOKEN — no fly deploy needed", () => {
+  it("leaves a hosted-DW embed (already-live publicUrl) available with no Cloudflare credentials — no deploy needed", () => {
     const outDir = join(WORK, "hosted-dw", "el");
     const exportDir = join(WORK, "hosted-dw", "el-export");
     mkdirSync(outDir, { recursive: true });
@@ -202,11 +216,11 @@ describe("export-code phase 1 — embed availability reflects fly.io configurati
       exportDir,
       reportPath,
       "el",
-      envWithoutFlyToken(),
+      envWithoutEmbedCredentials(),
     );
     const payload = parseFormsJson(stdout);
     expect(payload.forms.c.url).toBe("https://datawrapper.dwcdn.net/XXXXX/1/");
-    // a live hosted embed is fly-independent — never flagged unavailable
+    // a live hosted embed needs no deploy of ours — never flagged unavailable
     expect(payload.forms.c.available).not.toBe(false);
   });
 });

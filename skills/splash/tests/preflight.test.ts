@@ -117,8 +117,9 @@ describe("installer parity", () => {
       maptiler: "x",
       datawrapper: "x",
       anthropic: "x",
-      embedApp: "x",
-      flyToken: "x",
+      embedProject: "x",
+      cloudflareToken: "x",
+      cloudflareAccount: "x",
     });
     const writtenNames = new Set(
       written

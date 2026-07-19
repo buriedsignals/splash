@@ -45,7 +45,9 @@ describe("save-key CLI", () => {
 
   it("should strip quotes and newlines from the value (installer escaping rule)", () => {
     const envPath = tmpEnv();
-    run(["FLY_API_TOKEN", 'FlyV1 fm2_"abc"\ndef'], envPath);
-    expect(readFileSync(envPath, "utf8")).toContain('FLY_API_TOKEN="FlyV1 fm2_abcdef"');
+    run(["CLOUDFLARE_API_TOKEN", 'cfat_"abc"\ndef'], envPath);
+    expect(readFileSync(envPath, "utf8")).toContain(
+      'CLOUDFLARE_API_TOKEN="cfat_abcdef"',
+    );
   });
 });
