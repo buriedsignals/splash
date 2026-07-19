@@ -21,6 +21,21 @@ describe("produce-all CLI", () => {
         },
       ]),
     );
+    // Satisfy the candidate-provenance gate (it runs before the prose-confirmation gate): a
+    // matching candidates.json sibling so this proposal reaches the prose gate under test.
+    writeFileSync(
+      join(dir, "candidates.json"),
+      JSON.stringify({
+        candidates: [
+          {
+            type: "d3-bars",
+            producer: "chart-native",
+            tier: "recommended",
+            why: "x",
+          },
+        ],
+      }),
+    );
     const out = execFileSync(
       "bun",
       ["scripts/produce-all.mjs", accepted, join(dir, "out")],

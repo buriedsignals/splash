@@ -10,6 +10,10 @@ import { assertFormatAllowed, normalizeChannel, type Channel } from "./channel";
 import { producerMismatchReason } from "./producer-guard";
 import { mergeProfileDefaults, type BrandProfile } from "./brand-profile";
 import { assertSafeId } from "./id-safety";
+import {
+  candidateProvenanceIssue,
+  type CandidateProvenance,
+} from "./candidate-provenance";
 
 // Produce ONE proposal → its outcome (bookkeeping fields are added by produceAll).
 // `actualProducer` is the producer the dispatch actually ran (GUARD 1) — the real
@@ -47,6 +51,11 @@ export async function produceAll(
   // The engine-readiness check is injected (like dispatch/validate) so loop-mechanics
   // tests stay hermetic; the real default consults the machine's env + node_modules.
   preflight: (p: Producer) => PreflightFinding[] = preflightFindings,
+  // Candidate-provenance context (skills/splash/src/candidate-provenance.ts): the
+  // (producer, type) pairs of the persisted candidates.json beside accepted.json, built by
+  // the CLI. null (the default) DISABLES the gate — in-code/unit callers stay hermetic; the
+  // real CLI always supplies it, so production always enforces the menu-was-consulted invariant.
+  candidateProvenance: CandidateProvenance | null = null,
 ): Promise<ProduceReport> {
   // Merge the newsroom profile's defaults onto every element's spec ONCE, up front —
   // source/lang universal, brand colour only for the colour-consuming producers — the
@@ -148,6 +157,24 @@ export async function produceAll(
         error: `preflight: ${notReady.map((f) => f.message).join("; ")}`,
       });
       continue;
+    }
+    // Candidate-provenance gate — the mechanical lever that makes the suggester's ranked
+    // candidates menu a PRECONDITION of production (Tom feedback #1/#2/#3; harness↔tool
+    // boundary audit). A non-direct proposal must trace to a persisted candidate; a
+    // hand-authored spec the menu never proposed (or a run with no candidates.json at all)
+    // fails HERE, before production — moving the enforcement that used to live only in the
+    // harness (check:hand-authored-spec / :single-proposal-no-alternatives) into the tool.
+    // Disabled when candidateProvenance is null (in-code callers), enforced by the CLI.
+    if (candidateProvenance) {
+      const issue = candidateProvenanceIssue(p, candidateProvenance);
+      if (issue) {
+        results.push({
+          ...base,
+          status: "failed",
+          error: `candidate-provenance: ${issue}`,
+        });
+        continue;
+      }
     }
     // Gate 2b: a prose figure must be human-confirmed before it is charted. The trigger
     // (provenance === "prose") is set by suggest-article from the data, so this gate is

@@ -232,8 +232,18 @@ the story shape (chart-scrolly/chart-video for a temporal series, map-story/map-
 geographic progression, image-scrolly for a prose-visual sequence) — or the explicit
 `narrativeRuledOut` reason (suggest-chart's contract: silent narrative absence is not a valid
 payload). The journalist never sees this JSON (the presentation below is
-plain language); the file is the mechanical trace that the menu existed (the harness anchors
-on it), and the resume point if the session dies mid-PROPOSITION (see Context recovery).
+plain language); the file is the mechanical trace that the menu existed, and the resume point
+if the session dies mid-PROPOSITION (see Context recovery). **`produce-all` ENFORCES this: it
+resolves `candidates.json` beside `accepted.json` and REFUSES (fail-hard, per proposal) any
+non-direct proposal whose PRODUCER is not named in the menu — or any run with no
+`candidates.json` at all.** So the menu is a hard precondition of production, not a courtesy: a
+spec for a producer the suggester never proposed cannot ship. (The gate is producer-level, not
+type-level — a narrative candidate names a format like `chart-scrolly` while its spec names the
+underlying `line`/`choropleth`, so a type-strict gate would false-block scrolly; off-menu TYPE
+within an offered producer stays caught by the render review + GUARD 4/5.) The ONLY exemption is
+the DIRECT branch (journalist NAMED the visual) — declare it with
+`skillsInvoked: ["splash:cadrage-direct", …]` on that proposal (5b). Never satisfy the gate by
+faking a candidate or a direct declaration.
 Present ALL opportunities' candidate lists in ONE batched message — never a per-opportunity question loop
 — and let the journalist answer per opportunity (pick a candidate, or « aucun » = veto; a
 vetoed opportunity emits `no-chart` with the reason). Each kept opportunity remains its OWN

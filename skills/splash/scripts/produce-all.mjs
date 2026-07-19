@@ -1,10 +1,12 @@
 // CLI: bun scripts/produce-all.mjs <accepted.json> <outDir>
 // Reads the accepted proposals, runs the in-code batch loop, prints the report as JSON.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { produceAll } from "../src/produce-all.ts";
 import { realDispatch } from "../src/adapters.ts";
 import { validateAccepted } from "../src/validate-gate.ts";
 import { loadNewsroomProfile } from "../src/brand-profile.ts";
+import { extractCandidateProducers } from "../src/candidate-provenance.ts";
 
 const acceptedPath = process.argv[2];
 const outDir = process.argv[3];
@@ -25,12 +27,34 @@ try {
   process.exit(1);
 }
 const profile = loadNewsroomProfile(projectDir);
+
+// Candidate-provenance context: the ranked candidates the suggester persisted MUST sit beside
+// accepted.json (same dir). The real production path ALWAYS builds this — so produce-all enforces
+// the menu-was-consulted invariant (Tom #1/#2/#3), fail-hard, on every run. `present: false` when
+// the file is absent (the menu was never made) is itself a fail-hard signal for non-direct proposals.
+const candidatesPath = join(dirname(acceptedPath), "candidates.json");
+let candidateProvenance = { present: false, producers: new Set() };
+if (existsSync(candidatesPath)) {
+  try {
+    const producers = extractCandidateProducers(
+      JSON.parse(readFileSync(candidatesPath, "utf8")),
+    );
+    candidateProvenance = { present: true, producers };
+  } catch {
+    // A corrupt/unparseable candidates.json is treated as absent (present:false) — a non-direct
+    // proposal then fails provenance loudly rather than silently skipping the gate.
+    candidateProvenance = { present: false, producers: new Set() };
+  }
+}
+
 const report = await produceAll(
   accepted,
   outDir,
   realDispatch,
   validateAccepted,
   profile,
+  undefined,
+  candidateProvenance,
 );
 console.log(JSON.stringify(report, null, 2));
 // Exit non-zero if anything failed, so a caller can detect trouble; needs-fallback and

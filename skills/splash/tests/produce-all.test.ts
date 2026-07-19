@@ -140,6 +140,116 @@ describe("produceAll — Gate 3 reset on (re-)produce", () => {
   });
 });
 
+// Candidate-provenance gate (2026-07-18): a non-direct proposal must trace to a persisted
+// candidate; produce-all refuses (fail-hard, recorded) a hand-authored spec the menu never
+// proposed. Injected like preflight — null (the default) keeps the loop hermetic; the CLI
+// builds it from the candidates.json beside accepted.json.
+describe("produceAll — candidate-provenance gate", () => {
+  const provenance = {
+    present: true,
+    producers: new Set(["dw-chart", "chart-native"]),
+  };
+  const NEVER_DISPATCH: Dispatch = async () => {
+    throw new Error("dispatch must NOT run when provenance fails");
+  };
+
+  it("blocks a proposal whose producer is not in the menu — dispatch never runs", async () => {
+    const { results } = await produceAll(
+      [p("p1", { producer: "map-native", spec: { type: "choropleth" } })],
+      "out",
+      NEVER_DISPATCH,
+      PASS,
+      null,
+      READY,
+      provenance,
+    );
+    expect(results[0].status).toBe("failed");
+    expect(results[0].error).toContain("candidate-provenance");
+    expect(results[0].error).toContain("map-native");
+  });
+
+  it("blocks every proposal when candidates.json was never made (present: false)", async () => {
+    const { results } = await produceAll(
+      [p("p1")],
+      "out",
+      NEVER_DISPATCH,
+      PASS,
+      null,
+      READY,
+      { present: false, producers: new Set() },
+    );
+    expect(results[0].status).toBe("failed");
+    expect(results[0].error).toContain("candidates.json");
+  });
+
+  it("produces a proposal whose producer IS in the menu", async () => {
+    const dispatch: Dispatch = async () => ({ status: "produced" });
+    const { results } = await produceAll(
+      [p("p1", { producer: "chart-native", spec: { nativeType: "d3-bars" } })],
+      "out",
+      dispatch,
+      PASS,
+      null,
+      READY,
+      provenance,
+    );
+    expect(results[0].status).toBe("produced");
+  });
+
+  it("does NOT false-block a scrolly proposal whose spec type differs from its narrative candidate type", async () => {
+    // producer-level match: candidate producer `scrolly` is present; the spec's nativeType
+    // (`line`) legitimately differs from the narrative candidate type (`chart-scrolly`).
+    const dispatch: Dispatch = async () => ({ status: "produced" });
+    const { results } = await produceAll(
+      [
+        p("p1", {
+          producer: "scrolly",
+          format: "scrolly",
+          spec: { nativeType: "line" },
+        }),
+      ],
+      "out",
+      dispatch,
+      PASS,
+      null,
+      READY,
+      { present: true, producers: new Set(["scrolly"]) },
+    );
+    expect(results[0].status).toBe("produced");
+  });
+
+  it("EXEMPTS a direct-branch proposal even with no candidates.json", async () => {
+    const dispatch: Dispatch = async () => ({ status: "produced" });
+    const { results } = await produceAll(
+      [
+        p("p1", {
+          producer: "map-native",
+          spec: { type: "choropleth" },
+          skillsInvoked: ["splash:cadrage-direct"],
+        }),
+      ],
+      "out",
+      dispatch,
+      PASS,
+      null,
+      READY,
+      { present: false, producers: new Set() },
+    );
+    expect(results[0].status).toBe("produced");
+  });
+
+  it("does nothing when provenance is not injected (null default — hermetic legacy path)", async () => {
+    const dispatch: Dispatch = async () => ({ status: "produced" });
+    const { results } = await produceAll(
+      [p("p1", { spec: { type: "anything" } })],
+      "out",
+      dispatch,
+      PASS,
+    );
+    expect(results[0].status).toBe("produced");
+  });
+});
+
 // The hard rule: not-embed ⇒ never interactive/scrolly. A shipped format must belong to
 // its channel's allowed set (skills/splash/src/channel.ts). A violation is a fail-hard
 // recorded result — never a thrown exception, never a silent ship.
