@@ -37,8 +37,21 @@ points Tom #1 (type d'abord), #2 (alternatives), #3 (narratif).
 - **Preuve pré-merge** : run harness réel `budget-commune-part` sur la branche (via override test-infra
   `SANDBOX_HEAD_REF` — le sandbox détachait sur `main`) → livré, provenance ENGAGÉE et passée légitimement
   (`candidates.json` présent au bon endroit, producer-match), `report.warnings: None` (narrativeRuledOut
-  reconnu), **zéro faux-blocage**. Révèle le prochain item de même classe : impro sur l'axe **format**
-  (interactive→static par édition main d'`accepted.json`) — hors scope producer-level, à fermer ensuite.
+  reconnu), **zéro faux-blocage**.
+- **Axe format = TROIS faux-positifs démasqués (discipline « challenger le finding / vérifier le LIVRÉ »)** :
+  le run avait deux findings sur un switch format interactive→static. (1) Le juge criait « impro / spec
+  hand-authored » → **FAUX** : le transcript montre que le journaliste a *confirmé* interactif puis, informé
+  d'un vrai bug apparent, a *explicitement* choisi static (« la source doit être visible »). **Pas de gate
+  format à construire.** (2) « Le waffle interactif drope la source » → j'ai vérifié au DOM du livrable
+  (`interactive.html` rendu pleine page en navigateur) : `Source: Riverton Energy Authority 2025` **présent,
+  visible, dans les bornes du doc** (y=558-573 / docHeight 605). La source EST livrée. (3) Le review-still
+  (`interactive.png`) ET l'output-proof la coupaient tous deux — **même cause racine**. **VRAI bug trouvé
+  (review-infra, pas livrable)** : `snap-proof.mjs` capturait l'interactif en **page screenshot borné au
+  viewport 560px**, coupant le footer source que le `ChartFrame` responsive rend en flow SOUS le plot
+  (~605px). Splash, le juge, l'output-proof lisaient tous ce still tronqué → faux « source manquante », classe
+  systémique sur toute la famille interactive. **Fix** (`bbf7b1e`) : element screenshot de `#root > div`
+  (comme le static) → pleine hauteur, source incluse ; render-vérifié sur le waffle ; garde
+  `snap-proof-fullheight.test.ts`. Follow-up mineur : re-générer les `output-proof/*/interactive.png` tronqués.
 
 ## Session 2026-07-18 (suite) — Résolution GÉNÉRALE des bugs de l'audit (4 fixes, 4 agents //, review par branche)
 
