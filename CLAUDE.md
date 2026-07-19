@@ -85,24 +85,26 @@ Splash = **un skill open-source MIT, installable, agnostique runtime, local-firs
 
 `main` (voir `git log --oneline -15` pour le HEAD exact), gate `bun run check` **20/20** (tsc skills + install + image-native + installer, suites de test — vert ; le produce map-native interactif peut timeout/flaker sous contention réseau, passe en isolation). 0 mention vendor attributive. Le **journal daté complet** = `docs/splash/CHANGELOG.md`.
 
-> ## ⏸️ REPRISE — 2026-07-18 (LIS D'ABORD ce bloc)
+> ## ⏸️ REPRISE — 2026-07-19 (LIS D'ABORD ce bloc)
 >
-> **Où on en est.** `main` (worktree `../splash-merge`) ≈ **88 commits d'avance sur `origin/rd-dev`**, gate **20/20**, tout mergé. NON PUSHÉ (décision Rémy). Le repo `splash` réel est sur `feat/splash-apertus-sovereign` (session Apertus, à part). Harness privé `../splash-harness` sur `feat/apertus-flue-runner` (~30 commits QA de la session, à cherry-pick vers `master`).
+> **Où on en est.** `main` (worktree `../splash-merge`) ≈ **91 commits d'avance sur `origin/rd-dev`**, gate **20/20**, tout mergé. NON PUSHÉ (décision Rémy). Le repo `splash` réel est sur `feat/splash-apertus-sovereign` (session Apertus, à part). Harness privé `../splash-harness` sur `fix/improvisation-detection` (+ `SANDBOX_HEAD_REF` test-infra `20fb19b`, à cherry-pick vers `master`).
+>
+> **★ 2026-07-19 — FRONTIÈRE harness↔outil auditée + fuite principale FERMÉE dans l'outil (détail → CHANGELOG).** Rémy : « le harness ne fait QUE tester, l'outil détecte/orchestre tout ». Le routage suggesteur/menu de candidats était prose-only + harness-seul → **gate de provenance mergé dans `produce-all`** (`candidate-provenance.ts` : refuse avant production toute proposition non-directe dont le producteur n'est pas au menu, ou un run sans `candidates.json` ; producer-level pour ne pas faux-bloquer scrolly ; DIRECT seul exempté) + **warning narratif menu-level** (`report.warnings`, Tom #3). Les 4 checks harness deviennent de la pure vérification. **Prouvé en run réel** (`budget-commune-part` sur la branche via `SANDBOX_HEAD_REF`) : provenance passée légitimement, zéro faux-blocage. **#4 (clé) prouvé côté-outil** (le gate `produce-all` refuse avant prod sous condition clone-sans-clé ; save-key round-trip). **PROCHAIN EN COURS : axe FORMAT** (le run a révélé une impro format interactive→static par édition main d'`accepted.json` — même classe, hors scope producer-level).
 >
 > **Ce qui a été fait cette session (détail → CHANGELOG, 2026-07-16→18) :** le CHANTIER TOM complet (6 retours), l'audit agentic challengé (avocat du diable), le dégraissage prose validé au comportement, la résolution GÉNÉRALE de 4 bugs, le placement-à-la-livraison, le narratif toute-famille.
 >
 > **★ AUDIT des 6 retours de Tom (verdict honnête, 2026-07-18) — 4/6 prouvés en run, 2/6 construits mais PAS prouvés en conditions réelles :**
 > - **#1 format trop tôt** → ✅ PROUVÉ (flow 12 étapes, canal en Q6, type avant format, cycle-2 re-format).
-> - **#2 reco unique → sélection** → ✅ PROUVÉ *mais caveat fiabilité* : le LLM CONTOURNE parfois le menu candidats (écrit le spec à la main) — attrapé mécaniquement (`check:hand-authored-spec`) mais **le levier qui FORCE le menu reste à câbler** (= le dernier maillon du #2).
+> - **#2 reco unique → sélection** → ✅ PROUVÉ + **caveat fiabilité FERMÉ (2026-07-19)** : le levier qui FORCE le menu est câblé — `produce-all` exige la provenance de candidats (`candidate-provenance.ts`), refuse avant production un spec dont le producteur n'est pas au menu. Le LLM ne peut plus hand-author en contournant le menu (sauf déclaration DIRECT explicite). Reste l'axe **format** (impro sur `accepted.json.format`), en cours.
 > - **#3 texte→scrolly-images** → ✅ PROUVÉ (4ᵉ moteur image-scrolly ; `narrativePotential` détecté à l'ANALYSE ; dead-end fermé, cas Trump/Iran livre).
-> - **#4 preflight/clé** → ⚙️ CONSTRUIT + unit-testé (`save-key.mjs`, preflight tri-état) **mais JAMAIS prouvé en run** — le sandbox symlinke toujours `.env`, le chemin « clé absente → demande » n'est pas exercé. **Besoin du re-test réel de Tom.**
+> - **#4 preflight/clé** → ✅ PROUVÉ CÔTÉ-OUTIL (2026-07-19) : sous la condition exacte de Tom (clone sans clé MapTiler), le gate `produce-all` refuse AVANT production (message langage-journaliste + URL, rien produit) — prouvé au vrai CLI ; round-trip `save-key.mjs` (yellow→green + miroir + chmod 0600). L'outil détecte/gère lui-même. (La *demande* conversationnelle reste prose ; le refus mécanique, lui, est prouvé.)
 > - **#5 déploiement/crash** → le CRASH (`Cannot find package 'react'`) ✅ FIXÉ+PROUVÉ (C1, drift-guard) ; le **déploiement fly ⚠️ JAMAIS prouvé** (pas de FLY_API_TOKEN ; tous les runs livrent via embeds Datawrapper hébergés). **Besoin du token de Tom.**
 > - **#6 guardrails anti-hallucination** → ✅ PROUVÉ (GUARD 4 étendu cartes + 2 angles morts fermés + never-fabricate + anti-improvisation + `docs/splash/guardrails.md`).
 >
 > **Décisions qui attendent Rémy :** (a) **push `main`→`origin/rd-dev` + demander à Tom de re-cloner et rejouer son cas** (= l'acceptance test des #4 et #5) ; (b) cherry-pick des commits harness vers `master` ; (c) follow-ups design non-tranchés (waffle « 1 case = N » unit ; ton de la notice IA MIT).
 >
 > **Prochain travail dispo (par priorité empirique, cf. `../splash-harness/FIX-BACKLOG.md`) :**
-> 1. **Levier de forçage du menu candidats** (ferme le caveat #2 — le LLM ne doit plus pouvoir hand-author un spec ; le check existe, le forçage produit manque).
+> 1. ✅ **FAIT (2026-07-19)** — levier de forçage du menu candidats = gate de provenance dans `produce-all`. **EN COURS : extension à l'axe FORMAT** (impro `accepted.json.format` interactive→static révélée par le run harness — même classe).
 > 2. Levier `escalationReason` (escalade chart-native sans demande d'interactivité, 4× observé).
 > 3. i18n furniture (menu a/b/c d'export-code codé FR ; CADRAGE ouvre parfois en EN sur article non-EN, 5×).
 > 4. approximation-hardening (« meno di 48k » → 48000 exact, 3× Venezia).

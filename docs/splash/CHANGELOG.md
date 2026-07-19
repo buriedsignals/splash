@@ -4,6 +4,42 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-19 — Frontière harness↔outil : provenance de candidats DANS l'outil (Tom #1/#2/#3) + validation réelle #4/#5
+
+Rémy (après correction sur #4) : « assure-toi que le harness ne fait QUE tester et que c'est l'OUTIL
+qui gère/détecte/orchestre tout ». Audit complet de la frontière → **une vraie fuite** : le routage
+suggesteur/menu de candidats était **prose-only + harness-seul** (aucun code outil ne lisait
+`candidates.json` ; GUARD 5 `skillsInvoked` contournable par omission). En run réel SANS harness (le cas
+de Tom), un orchestrateur qui improvise expédiait un seul spec hors-menu — fondation structurelle des
+points Tom #1 (type d'abord), #2 (alternatives), #3 (narratif).
+
+- **Gate de provenance dans `produce-all`** (branche `feat/candidate-provenance-gate`, mergée main
+  `780cbbb`, gate 20/20) : `candidate-provenance.ts` (`extractCandidateProducers`,
+  `candidateProvenanceIssue`) ; `produce-all` résout `candidates.json` frère d'`accepted.json` et
+  **refuse avant production** (fail-hard, par proposition) toute proposition **non-directe** dont le
+  PRODUCER n'est pas au menu, ou tout run **sans `candidates.json`**. **Producer-level** (pas type-level)
+  — review adversariale de mon propre code a attrapé un **faux-blocage scrolly** (candidat `chart-scrolly`
+  ≠ spec `line`) : match strict aurait cassé tout run scrolly. Branche DIRECT (`skillsInvoked:
+  splash:cadrage-direct`) seule exemptée ; `skillsInvoked` absent N'EST PAS exempté (ferme le trou par
+  omission). CLI injecte toujours → prod applique toujours ; param `null` = tests hermétiques.
+- **Warning narratif menu-level (Tom #3)** : même classe, même artefact. `narrativeConsiderationWarning`
+  → `report.warnings` (NON-bloquant, choisi vs fail-hard pour ne pas faux-bloquer un batch sur un
+  marqueur manquant) quand un menu présent ne porte NI candidat narratif NI `narrativeRuledOut`. Nouveau
+  champ `ProduceReport.warnings`.
+- **Résultat frontière** : les checks harness (`hand-authored-spec`, `suggest-chart-no-candidates`,
+  `single-proposal-no-alternatives`, `narrative-not-considered`) passent de *détection d'un trou* à
+  *vérification d'un invariant garanti par l'outil*.
+- **Validation réelle #4 (demande de clé)** : sous la condition exacte de Tom (clone sans clé MapTiler),
+  le gate propre `produce-all` refuse AVANT production (message langage-journaliste + URL, rien produit) —
+  prouvé au vrai CLI ; round-trip `save-key.mjs` (yellow→green + miroir MapTiler + chmod 0600). L'OUTIL
+  détecte/gère, pas le harness. **#5 (deploy fly)** : `deploy-embed.mjs` fail-fast prouvé en vrai (stall
+  corrigé) ; le deploy fly qui RÉUSSIT reste à prouver avec un vrai compte fly (runbook préparé).
+- **Preuve pré-merge** : run harness réel `budget-commune-part` sur la branche (via override test-infra
+  `SANDBOX_HEAD_REF` — le sandbox détachait sur `main`) → livré, provenance ENGAGÉE et passée légitimement
+  (`candidates.json` présent au bon endroit, producer-match), `report.warnings: None` (narrativeRuledOut
+  reconnu), **zéro faux-blocage**. Révèle le prochain item de même classe : impro sur l'axe **format**
+  (interactive→static par édition main d'`accepted.json`) — hors scope producer-level, à fermer ensuite.
+
 ## Session 2026-07-18 (suite) — Résolution GÉNÉRALE des bugs de l'audit (4 fixes, 4 agents //, review par branche)
 
 Rémy : « résous proprement et de manière générale les bugs que tu as soulevés ». Principe feedback→
