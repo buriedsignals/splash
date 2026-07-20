@@ -443,6 +443,15 @@ describe("validateHexGridConfig — filters wiring", () => {
       }).ok,
     ).toBe(true);
   });
+  it("accepts a known revealMode and rejects an unknown one", () => {
+    expect(
+      validateHexGridConfig({ ...base, revealMode: "sequential" }).ok,
+    ).toBe(true);
+    const bad = validateHexGridConfig({ ...base, revealMode: "shuffle" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok)
+      expect(bad.errors.some((e) => /revealMode/.test(e))).toBe(true);
+  });
 });
 
 describe("validateCartogramConfig — filters wiring", () => {

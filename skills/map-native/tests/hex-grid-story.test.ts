@@ -37,6 +37,7 @@ const layout: HexGridLayout = {
   binShape: "hex",
   aggregateLabel: "points per hexagon",
   capped: false,
+  valueUnit: "",
 };
 
 describe("deriveHexGridStory", () => {
@@ -69,5 +70,49 @@ describe("deriveHexGridStory", () => {
         { maxReveals: 1 },
       ).filter((b) => b.kind === "reveal").length,
     ).toBe(1);
+  });
+  it("never forces a fake name — callout.name stays the rank descriptor", () => {
+    const reveals = deriveHexGridStory(layout, {
+      title: "Where the incidents cluster",
+    }).filter((b) => b.kind === "reveal");
+    expect(reveals[0].callout?.name).toBe("the densest");
+    expect(reveals[1].callout?.name).toBe("the 2nd densest");
+  });
+});
+
+describe("deriveHexGridStory — valueUnit", () => {
+  it("appends the config's valueUnit to sum/mean callouts", () => {
+    const sumLayout: HexGridLayout = {
+      ...layout,
+      aggregate: "sum",
+      valueUnit: "kWh",
+    };
+    const reveals = deriveHexGridStory(sumLayout, {
+      title: "Where consumption is highest",
+    }).filter((b) => b.kind === "reveal");
+    expect(reveals[0].callout?.value).toBe("18kWh");
+
+    const meanLayout: HexGridLayout = {
+      ...layout,
+      aggregate: "mean",
+      valueUnit: "kWh",
+    };
+    const meanReveals = deriveHexGridStory(meanLayout, {
+      title: "Where consumption is highest",
+    }).filter((b) => b.kind === "reveal");
+    expect(meanReveals[0].callout?.value).toBe("18.0kWh avg");
+  });
+  it("never applies valueUnit to a count aggregate (count is of points, not the value)", () => {
+    const countLayout: HexGridLayout = { ...layout, valueUnit: "kWh" };
+    const reveals = deriveHexGridStory(countLayout, {
+      title: "Where the incidents cluster",
+    }).filter((b) => b.kind === "reveal");
+    expect(reveals[0].callout?.value).toBe("18 points");
+  });
+  it("omits the unit entirely when the config sets none", () => {
+    const reveals = deriveHexGridStory(layout, {
+      title: "Where the incidents cluster",
+    }).filter((b) => b.kind === "reveal");
+    expect(reveals[0].callout?.value).toBe("18 points");
   });
 });

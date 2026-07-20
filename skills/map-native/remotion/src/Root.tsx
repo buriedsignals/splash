@@ -182,8 +182,29 @@ const sampleHGBeats = deriveHexGridStory(sampleHGLayout, {
 const HEX_GRID_STORY_FRAMES = buildTimeline(
   sampleHGBeats.map((b) => b.kind),
   30,
+  AREAL_TIMELINE_OPTS,
 ).totalFrames;
 const hexGridDefaultProps = { config: sampleHexGrid };
+
+// Mode-aware composition duration — mirrors `cartogramStoryMeta` above (single source of truth
+// with HexGridStory.tsx's own layout+beats+beatsForMode setup, so the sequential mp4 doesn't end
+// with a frozen tail).
+const hexGridStoryMeta = makeStoryMeta((cfg) => {
+  const layout = computeHexGrid(cfg);
+  const beats = beatsForMode(
+    deriveHexGridStory(layout, {
+      title: cfg.title ?? "",
+      description: cfg.description,
+      insight: cfg.insight ?? cfg.title ?? "",
+    }),
+    resolveRevealMode(cfg),
+  );
+  return buildTimeline(
+    beats.map((b) => b.kind),
+    30,
+    AREAL_TIMELINE_OPTS,
+  ).totalFrames;
+});
 
 const sampleCGLayout = computeCartogram(sampleCartogram as any, world as any);
 const sampleCGBeats = deriveCartogramStory(sampleCGLayout, {
@@ -532,6 +553,7 @@ export const RemotionRoot: React.FC = () => (
       id="HexGridStory"
       component={HexGridStory}
       durationInFrames={HEX_GRID_STORY_FRAMES}
+      calculateMetadata={hexGridStoryMeta}
       fps={30}
       width={1280}
       height={720}
@@ -541,6 +563,7 @@ export const RemotionRoot: React.FC = () => (
       id="HexGridStorySquare"
       component={HexGridStory}
       durationInFrames={HEX_GRID_STORY_FRAMES}
+      calculateMetadata={hexGridStoryMeta}
       fps={30}
       width={1080}
       height={1080}
@@ -550,6 +573,7 @@ export const RemotionRoot: React.FC = () => (
       id="HexGridStoryPortrait"
       component={HexGridStory}
       durationInFrames={HEX_GRID_STORY_FRAMES}
+      calculateMetadata={hexGridStoryMeta}
       fps={30}
       width={1080}
       height={1920}

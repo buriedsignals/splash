@@ -604,6 +604,12 @@ export type HexGridConfigShape = {
   // A named registry palette or a custom CVD-safe ramp (see theme/scale.ts); hex-grid is
   // always sequential, so no scaleType field — mirrors validateCartogramConfig's palette.
   palette?: string | string[];
+  // The short value suffix for the sum/mean aggregate (e.g. "kWh") — mirrors
+  // CartogramConfigShape's `valueUnit`. Not applied to a "count" aggregate.
+  valueUnit?: string;
+  /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
+   * resolveRevealMode — unset/unknown falls back to "context". */
+  revealMode?: RevealMode;
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
@@ -628,6 +634,11 @@ export function validateHexGridConfig(
   )
     errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
   errors.push(...paletteErrors(s));
+  if (
+    s.revealMode !== undefined &&
+    !["context", "sequential"].includes(s.revealMode as string)
+  )
+    errors.push("revealMode must be one of: context, sequential");
   if (
     s.binShape !== undefined &&
     !["hex", "square"].includes(s.binShape as string)

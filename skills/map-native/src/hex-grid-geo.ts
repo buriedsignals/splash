@@ -22,6 +22,10 @@ export interface HexGridData {
   // A named registry palette or a custom CVD-safe ramp; falls back to BLUES when absent.
   palette?: string | string[];
   brandHue?: string; // newsroom house hue → derived sequential ramp when no palette is set
+  // The short value suffix for the sum/mean aggregate (e.g. "kWh", "$") — mirrors
+  // CartogramData's `valueUnit`. Not applied to "count" (a count of points has no value
+  // unit of its own — "points" already names it).
+  valueUnit?: string;
 }
 export interface HexCell {
   feature: GeoJSON.Feature;
@@ -39,6 +43,8 @@ export interface HexGridLayout {
   binShape: "hex" | "square";
   aggregateLabel: string;
   capped: boolean;
+  // The short value suffix for callouts (e.g. "kWh") — "" when the config sets none.
+  valueUnit: string;
 }
 
 // hex-grid ALWAYS paints a sequential ramp (see `computeHexGrid` below) — there is no
@@ -208,5 +214,6 @@ export function computeHexGrid(data: HexGridData): HexGridLayout {
     binShape,
     aggregateLabel,
     capped,
+    valueUnit: data.valueUnit ?? "",
   };
 }

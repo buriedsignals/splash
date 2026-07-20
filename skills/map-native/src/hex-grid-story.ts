@@ -38,11 +38,15 @@ export function deriveHexGridStory(
   const cap = Math.max(1, opts.maxReveals ?? DEFAULT_MAX_REVEALS);
   const full = layout.bounds;
   const shapeWord = layout.binShape === "hex" ? "hexagon" : "cell";
+  // The unit only applies to sum/mean — those aggregate the points' VALUE column, which the
+  // unit describes (e.g. "kWh"). "count" aggregates the points THEMSELVES, already named by
+  // the "points" word below; appending a value unit there would misdescribe the number.
+  const unit = layout.valueUnit ?? "";
   const fmt = (v: number) =>
     layout.aggregate === "mean"
-      ? `${v.toFixed(1)} avg`
+      ? `${v.toFixed(1)}${unit} avg`
       : layout.aggregate === "sum"
-        ? `${Math.round(v)}`
+        ? `${Math.round(v)}${unit}`
         : `${Math.round(v)} points`;
 
   const beats: Beat[] = [];
