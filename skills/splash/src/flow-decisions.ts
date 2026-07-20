@@ -41,6 +41,31 @@ export const FLOW_DECISIONS: FlowDecision[] = [
               "candidates.json is absent from the run directory — suggest-chart was not actually invoked (routing done from memory)",
           },
   },
+  {
+    id: "source-fidelity",
+    evidenceKind: "artifact",
+    prerequisites: [],
+    required: false,
+    // The "artifact" is the article text itself (a spine input). A cited name/url that the
+    // article never contains is a fabricated/upgraded citation (finding class
+    // source-url-unconfirmed).
+    artifactCheck: (_runDir, payload) => {
+      const article = String(payload.article ?? "");
+      const url = payload.sourceUrl ? String(payload.sourceUrl) : "";
+      const name = payload.sourceName ? String(payload.sourceName) : "";
+      if (url && !article.includes(url))
+        return {
+          ok: false,
+          reason: `cited source URL "${url}" does not appear in the article text`,
+        };
+      if (name && !article.includes(name))
+        return {
+          ok: false,
+          reason: `cited source name "${name}" does not appear in the article text`,
+        };
+      return { ok: true };
+    },
+  },
 ];
 
 export function getDecision(id: string): FlowDecision | undefined {

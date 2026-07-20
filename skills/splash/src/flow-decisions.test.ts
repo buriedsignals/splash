@@ -65,3 +65,25 @@ describe("evaluateDecisions — the spine gate reader", () => {
     expect(r.warnings).toEqual([]);
   });
 });
+
+describe("source-fidelity decision", () => {
+  it("passes when the cited URL appears in the article text", () => {
+    const d = getDecision("source-fidelity")!;
+    const r = d.artifactCheck!("/unused", {
+      article: "Selon l'ETSC (https://etsc.eu), les morts baissent.",
+      sourceName: "ETSC",
+      sourceUrl: "https://etsc.eu",
+    });
+    expect(r).toEqual({ ok: true });
+  });
+
+  it("fails when the cited URL is absent from the article", () => {
+    const d = getDecision("source-fidelity")!;
+    const r = d.artifactCheck!("/unused", {
+      article: "Une analyse anonyme des villes européennes.",
+      sourceName: "ETSC",
+      sourceUrl: "https://etsc.eu/deep/unconfirmed/path",
+    });
+    expect(r.ok).toBe(false);
+  });
+});
