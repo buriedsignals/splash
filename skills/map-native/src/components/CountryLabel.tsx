@@ -54,13 +54,14 @@ export const CountryLabel: React.FC<{
         />
         <div
           style={{
-            fontFamily,
-            fontWeight: 600,
-            fontSize: 34,
-            letterSpacing: "0.22em",
+            fontFamily: `var(--map-label-font, ${fontFamily})`,
+            fontWeight: "var(--map-label-weight, 600)" as unknown as number,
+            fontSize: `var(--map-label-size, 34px)`,
+            letterSpacing: "var(--map-label-tracking, 0.22em)",
             textTransform: "uppercase",
-            color: "#F5F2ED",
-            textShadow: "0 2px 18px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7)",
+            color: "var(--map-label-color, #F5F2ED)",
+            textShadow:
+              "var(--map-label-shadow, 0 2px 18px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7))",
             marginTop: 13,
             paddingLeft: "0.22em", // balance the trailing letter-spacing so the word stays centred
             whiteSpace: "nowrap",
@@ -71,13 +72,15 @@ export const CountryLabel: React.FC<{
         {value && (
           <div
             style={{
-              fontFamily,
-              fontWeight: 700,
-              fontSize: 40,
-              color: "#F5F2ED",
-              textShadow: "0 2px 18px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7)",
+              fontFamily: `var(--map-label-font, ${fontFamily})`,
+              fontWeight:
+                "var(--map-label-value-weight, 700)" as unknown as number,
+              fontSize: `var(--map-label-value-size, 40px)`,
+              color: "var(--map-label-color, #F5F2ED)",
+              textShadow:
+                "var(--map-label-shadow, 0 2px 18px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7))",
               marginTop: 6,
-              letterSpacing: "0.02em",
+              letterSpacing: "var(--map-label-value-tracking, 0.02em)",
             }}
           >
             {value}
