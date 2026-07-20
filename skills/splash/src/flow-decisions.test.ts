@@ -100,6 +100,28 @@ describe("source-fidelity decision", () => {
     });
     expect(r.ok).toBe(false);
   });
+
+  // M3: the naive article.includes() false-refused legitimate citations; the check now
+  // canonicalizes so protocol / case / trailing-slash differences do not matter.
+  it("accepts a citation that differs only by protocol or trailing slash", () => {
+    const d = getDecision("source-fidelity")!;
+    expect(
+      d.artifactCheck!("/unused", {
+        article: "Selon l'ETSC (etsc.eu), les morts baissent.",
+        sourceUrl: "https://etsc.eu/",
+      }),
+    ).toEqual({ ok: true });
+  });
+
+  it("accepts a source name cited in a different case", () => {
+    const d = getDecision("source-fidelity")!;
+    expect(
+      d.artifactCheck!("/unused", {
+        article: "Selon l'etsc, les morts baissent.",
+        sourceName: "ETSC",
+      }),
+    ).toEqual({ ok: true });
+  });
 });
 
 describe("producer-escalation decision", () => {

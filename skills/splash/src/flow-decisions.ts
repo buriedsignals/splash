@@ -6,6 +6,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { AcceptedProposal } from "./producer-spec";
 import { isDirectBranch } from "./candidate-provenance";
+import { canonicalUrl } from "./source-guard";
 
 export type CheckResult = { ok: true } | { ok: false; reason: string };
 
@@ -83,15 +84,21 @@ export const FLOW_DECISIONS: FlowDecision[] = [
     // article never contains is a fabricated/upgraded citation (finding class
     // source-url-unconfirmed).
     artifactCheck: (_runDir, payload) => {
-      const article = String(payload.article ?? "");
+      const haystack = String(payload.article ?? "").toLowerCase();
       const url = payload.sourceUrl ? String(payload.sourceUrl) : "";
       const name = payload.sourceName ? String(payload.sourceName) : "";
-      if (url && !article.includes(url))
-        return {
-          ok: false,
-          reason: `cited source URL "${url}" does not appear in the article text`,
-        };
-      if (name && !article.includes(name))
+      // Match the URL on its canonical HOST (protocol/case/trailing-slash-insensitive, shared with
+      // source-guard) — M3: the anti-fabrication signal is whether the cited domain appears in the
+      // article at all, so a legitimate citation is never refused for a cosmetic difference.
+      if (url) {
+        const host = canonicalUrl(url).split("/")[0];
+        if (host && !haystack.includes(host))
+          return {
+            ok: false,
+            reason: `cited source URL "${url}" (host ${host}) does not appear in the article text`,
+          };
+      }
+      if (name && !haystack.includes(name.trim().toLowerCase()))
         return {
           ok: false,
           reason: `cited source name "${name}" does not appear in the article text`,

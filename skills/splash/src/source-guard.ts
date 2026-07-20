@@ -119,7 +119,7 @@ export function sourceNamePreservedReason(
 // Canonicalise a URL for comparison: lowercased host, trailing slash(es) stripped, query kept.
 // Accepts a scheme-less host (a homepage pasted without https://). Falls back to a trimmed,
 // lowercased, trailing-slash-stripped string when nothing parses.
-function canonicalUrl(u: string): string {
+export function canonicalUrl(u: string): string {
   const raw = u.trim();
   for (const candidate of [raw, `https://${raw}`]) {
     try {
