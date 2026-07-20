@@ -465,7 +465,13 @@ export const ChoroplethStory: React.FC<{
         const delta = Math.max(0, staged.fillOpacity - BLOOM_BASE);
         map.setPaintProperty(`choro-bloom-${key}`, "fill-opacity", delta);
       } else {
-        // sequential handled in Task 9
+        // sequential: the bloom layer carries the FULL entrance (0 → overshoot → 0.9, holds)
+        // since the base choropleth-fill is pinned to 0 for the whole distribution below.
+        map.setPaintProperty(
+          `choro-bloom-${key}`,
+          "fill-opacity",
+          staged.fillOpacity,
+        );
       }
     }
 
@@ -484,14 +490,21 @@ export const ChoroplethStory: React.FC<{
       );
     }
 
-    // Only data-bearing regions are painted. No-data regions stay unpainted
-    // (opacity 0) → default MapTiler basemap, like the ocean and the symbol map.
-    map.setPaintProperty("choropleth-fill", "fill-opacity", [
-      "case",
-      ["==", ["get", "__hasData"], false],
-      0, // no-data: unpainted → default basemap
-      fillReveal * 0.9, // data: driven by the beat reveal
-    ] as never);
+    // Base choropleth-fill opacity — branches on revealMode (never both in one frame):
+    //  - context: whole distribution visible (Task 8, untouched) — only data-bearing
+    //    regions are painted, no-data regions stay unpainted → default basemap.
+    //  - sequential: nothing lit from establish — every subject's own bloom layer
+    //    (above) carries its full entrance instead.
+    if (mode === "sequential") {
+      map.setPaintProperty("choropleth-fill", "fill-opacity", 0);
+    } else {
+      map.setPaintProperty("choropleth-fill", "fill-opacity", [
+        "case",
+        ["==", ["get", "__hasData"], false],
+        0, // no-data: unpainted → default basemap
+        fillReveal * 0.9, // data: driven by the beat reveal
+      ] as never);
+    }
 
     // Compute overlay state while we still have access to map.project.
     const beat = beats[beatIndex];
