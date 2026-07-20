@@ -38,6 +38,7 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import { poleOfInaccessibility } from "../core/label-anchor";
+import { mainlandFeature } from "../choropleth-geo";
 import {
   computeDotDensity,
   UNIVARIATE_ACCENT,
@@ -284,9 +285,12 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
           //  - its border-draw geometry: ALL of the region feature's exterior ring(s) (a
           //    MultiPolygon region, e.g. offshore islands, must draw every part, not just the
           //    largest), staged-drawn on over the beat's own entrance window.
-          //  - its callout anchor: the pole of inaccessibility (most-interior point) of the FULL
-          //    region feature — country polygons are frequently concave, a centroid can land
-          //    outside the shape.
+          //  - its callout anchor: the pole of inaccessibility (most-interior point) of the
+          //    region's MAINLAND polygon only, not the full feature — the camera bounds
+          //    (region.camera, built from regionBounds's mainlandFeature) frame the mainland,
+          //    so anchoring on the full feature risks the pole grid-search landing on a large
+          //    offshore-islands part that wins the search but sits outside the framed
+          //    viewport, projecting off-screen (mirrors ChoroplethStory's guard).
           const regionByKey = new Map(layout.regions.map((r) => [r.key, r]));
           const triggers = triggerFrameByRegion(beats, phases);
           const borderByKey = new Map<string, DrawEntry>();
@@ -310,7 +314,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
               anchorByKey.set(
                 key,
                 poleOfInaccessibility(
-                  region.feature as GeoJSON.Feature<
+                  mainlandFeature(region.feature) as GeoJSON.Feature<
                     GeoJSON.Polygon | GeoJSON.MultiPolygon
                   >,
                 ),
