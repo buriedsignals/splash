@@ -1,7 +1,7 @@
 # Map Explainer — architecture reference
 
 Deep detail behind `SKILL.md`: the timing model, the river reveal + electric head, the per-country
-sequence, label projection, and the camera. Values from the operator-approved water-wars Pilot A render.
+sequence, and label projection. The supplied values are examples, not a production style system.
 The full runnable code is `../assets/RiverReveal.tsx` + `../assets/CountryLabel.tsx` + `../assets/tokens.ts`.
 
 ## 1. The render harness (per frame)
@@ -25,12 +25,12 @@ long as the sequences need.
 const RIVER_START = 0.3, RIVER_END = 8.0;            // river draws over this window
 const BORDER_S = 2.5, FILL_S = 1.0, LABEL_S = 0.7;   // per-country sequence (constant durations)
 const trigger = (c) => RIVER_START + META[c].stop * (RIVER_END - RIVER_START);  // river-arrival time
-// beat length = max over c of (trigger(c) + BORDER_S + FILL_S + LABEL_S) + tail   → water-wars = 12 s
+// beat length = max over c of (trigger(c) + BORDER_S + FILL_S + LABEL_S) + tail
 const reveal = interpolate(t, [RIVER_START, RIVER_END], [0,1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
 ```
 
 **Constant durations matter:** drive the border draw by *time since trigger*, not a slice of the reveal —
-otherwise the long borders (India, Bangladesh) flash by in a fraction of a second.
+otherwise complex or long borders flash by in a fraction of a second.
 
 ## 3. River animation — line reveal + electric draw-head
 
@@ -87,13 +87,13 @@ const sliceBorder = (d, fromKm, toKm) => {
 };
 ```
 
-Fill colours = a brand trio at `FILL_OPACITY = 0.5` (china amber `#D4A853`, india teal `#5B8A8A`,
-bangladesh clay `#C07B57`); borders the darker shades (`#9A7530` / `#3C5C5C` / `#855239`).
+Choose fill, border, and river colours in the production's local token file. The bundled token values are
+examples only; do not carry a source project's palette into another production.
 
-## 5. Labels — Space Grotesk HTML overlay, projected each frame
+## 5. Labels — HTML overlay, projected each frame
 
-Labels are React, not map symbols (font control). `CountryLabel` (Space Grotesk via
-`@remotion/google-fonts`): an accent rule that draws out above the name, rise-and-fade entrance.
+Labels are React, not map symbols (full typography control). `CountryLabel` is an example accent-rule,
+rise-and-fade treatment; select the typeface and final values in the production.
 Positioned by projecting the anchor to screen pixels **every frame**, stored in state:
 
 ```ts
@@ -102,18 +102,12 @@ pos[c] = { x: p.x, y: p.y, reveal: lp };
 setLabels(pos);                          // re-render the overlay; effect deps exclude `labels`
 ```
 
-`CountryLabel` styling: name in Space Grotesk, weight 600, size 34, `letterSpacing 0.22em`, uppercase,
-cream `#F5F2ED`, strong text-shadow; an accent rule (`width 64, height 3`, country colour) with
-`transform: scaleX(reveal)` and a glow; entrance `opacity = easeOut(reveal)`, `translateY((1-e)*16)`.
-`paddingLeft:"0.22em"` balances the trailing letter-spacing so the word stays centred. `pointerEvents:none`.
+`CountryLabel` shows the mechanics: uppercase region name, short accent divider, rise/fade entrance,
+and `pointerEvents:none`. Select font, weight, size, spacing, contrast, and colour from the production's
+own type and palette system.
 
-## 6. Camera — gentle 2D push-in
+## 6. Camera — fixed map plate for any movement
 
-Low pitch, slow zoom-in over the whole beat, lerped by overall progress `tt = frame/(dur-1)`:
-
-```ts
-const START = { center:[89.6,27.7], zoom:4.75, pitch:0 };
-const END   = { center:[90.2,27.0], zoom:5.05, pitch:10 };
-map.jumpTo({ center:[lerp(START.center[0],END.center[0],tt), lerp(START.center[1],END.center[1],tt)],
-             zoom: lerp(START.zoom,END.zoom,tt), pitch: lerp(START.pitch,END.pitch,tt), bearing:0 });
-```
+Read `render-stability.md`. Do not use per-frame `map.jumpTo()` for a moving 2D shot; it can shimmer in
+headless renders even on satellite imagery. Interpolate the intended camera for the CSS plate transform,
+while keeping the MapTiler renderer static.

@@ -8,8 +8,8 @@ description: Use when you need a 2D geographic explainer map for video — showi
 ## Overview
 
 A flat investigative map beat: a **river (or route) draws on**, and as it flows into each country the
-country **animates in** — its border draws, its fill blooms, its label rises. Proven on water-wars
-Pilot A (Yarlung Tsangpo → Brahmaputra, Tibet → Bangladesh), operator sign-off "perfect".
+country **animates in** — its border draws, its fill blooms, its label rises. The bundled assets are a
+working sample; replace all geography, visual tokens, and typography with the production's own system.
 
 For 3D terrain fly-overs use the **cesium-flyover** skill; for plain animated maps see remotion's
 `maps.md` / `maplibre.md`.
@@ -24,11 +24,15 @@ For 3D terrain fly-overs use the **cesium-flyover** skill; for plain animated ma
 
 | Layer | Role |
 | --- | --- |
-| **MapTiler SDK** (`@maptiler/sdk`, `DATAVIZ.DARK`) | Draws the basemap + all GeoJSON layers (river, fills, borders) into a WebGL canvas. Use the SDK (not raw maplibre-gl) for the built-in dataviz-dark style; the camera is gentle/2D so no free-camera APIs needed. |
+| **MapTiler SDK** (`@maptiler/sdk`) | Draws the basemap + all GeoJSON layers (river, fills, borders) into a WebGL canvas. Default styled-vector starting point: `MapStyle.BASIC`; satellite is an equally valid evidence-led choice. |
 | **Remotion** | Frame-by-frame harness. Imperatively update `setData`/`setPaintProperty`; use `jumpTo` only for a static shot, or a fixed map plate for any pan/zoom. Gate with `delayRender` until `map.once('idle')`. `--gl=angle`, `preserveDrawingBuffer:true`. |
-| **React HTML overlay** | The country **labels** — positioned `<div>`s (Space Grotesk via `@remotion/google-fonts`), NOT MapLibre symbols. Gives full font/animation control. Positioned each frame via `map.project(lngLat)` → `setState`. |
+| **React HTML overlay** | The country **labels** — positioned `<div>`s, NOT MapLibre symbols. Gives full project-defined typography and animation control. Positioned each frame via `map.project(lngLat)` → `setState`. |
 
 Env `REMOTION_MAPTILER_KEY` (unrestricted). Init the map once (ref guard); update imperatively per frame.
+
+Choose the basemap by evidence: begin styled-vector work with `MapStyle.BASIC`; use satellite when terrain,
+land use, construction, or a river's physical course is itself evidence. The skill owns no fixed palette,
+font, or branded treatment—put those in the production's local configuration.
 
 ## Motion stability — use a fixed map plate for camera moves
 
@@ -36,10 +40,8 @@ Env `REMOTION_MAPTILER_KEY` (unrestricted). Init the map once (ref guard); updat
 make both MapTiler hillshade **and satellite imagery** shimmer/jitter, even when the source tiles load
 correctly. This is renderer resampling, not a data, network, or label problem.
 
-For any 2D pan or zoom, freeze the map at the largest required zoom in an oversized (typically 3×)
-container. Then reproduce the approved centre/zoom choreography with a CSS `translate` + `scale` on that
-plate. Project every HTML label with the same transform. Keep map-layer data animation (`setData`, fills,
-borders, river) imperative as usual; only the renderer camera stays fixed.
+For the implementation, read **`references/render-stability.md`** before building or debugging any moving
+map. It contains the fixed-map-plate recipe, diagnostics, and render checks.
 
 - Use the live MapTiler camera only for a static shot.
 - Keep pitch and bearing constant for a fixed plate. A genuine changing 3D camera needs the
@@ -88,7 +90,8 @@ borders, bbox/nudge tuning) → **`references/geo-prep.md`**.
    (`COUNTRIES`, input paths, `FRAME_BBOX`/`ANCHOR_BBOX`/`NUDGE`), run it → river line + `country-meta.json`
    + `borders.geojson`. (Or use the sample outputs in `assets/sample-data/` to render water-wars as-is.)
 3. Keep the country keys identical across `prep-geo.mjs`, `RiverReveal.tsx` `ORDER`, and `tokens.ts` (the
-   four-file contract in `assets/README.md`). Set `REMOTION_MAPTILER_KEY`; `npm i @remotion/google-fonts`.
+   four-file contract in `assets/README.md`). Set `REMOTION_MAPTILER_KEY`; add a font package only if the
+   project's typography requires one.
 4. Render with `--gl=angle --timeout=120000` (`--gl=angle` is mandatory — WebGL map). Adapt-points → `assets/README.md`.
 
 ## Tuning knobs (each is one number)
@@ -101,18 +104,19 @@ borders, bbox/nudge tuning) → **`references/geo-prep.md`**.
 | Border visibility | lighten `COUNTRY_DARK` or bump `trail` width/opacity | tokens / component |
 | Fill bloom strength | `[0,0.6,1] → [0, ×1.25, ×1]` overshoot | `RiverReveal.tsx` |
 | Label position | `NUDGE` + `ANCHOR_BBOX` (pole of inaccessibility) | `scripts/prep-geo.mjs` |
-| Label look | font size 34, accent rule, letter-spacing | `CountryLabel.tsx` |
+| Label look | project typography, divider/callout treatment, letter-spacing | `CountryLabel.tsx` |
 | When a country lights up | its `stop` (river-arrival fraction) | recompute in prep |
 | Overall pace | `RIVER_START`/`RIVER_END` + sequence durations (beat length follows) | `RiverReveal.tsx` |
 
 ## Files
 
 - `assets/RiverReveal.tsx` — the main component (river reveal + sequenced country animate-ins).
-- `assets/CountryLabel.tsx` — reusable Space Grotesk label (accent rule, rise-and-fade).
-- `assets/tokens.ts` — palette + durations the components import.
+- `assets/CountryLabel.tsx` — reusable example label (accent rule, rise-and-fade).
+- `assets/tokens.ts` — example palette + durations; replace with project tokens.
 - `assets/example-Root.tsx` — minimal Remotion `<Composition>` scaffold (duration = the beat).
 - `assets/sample-data/{yarlung-flow,country-meta}.json` — runnable sample so the component renders without prep.
 - `assets/preview.png` — a still from the proven render.
 - `scripts/prep-geo.mjs` — geo pipeline (river, borders, entry stops, label anchors).
 - `references/architecture.md` — timing model, river/electric head, country sequence, labels, full code.
 - `references/geo-prep.md` — basemap stripping + the geo pipeline internals.
+- `references/render-stability.md` — required reference for camera motion, shimmer/jitter diagnosis, and stable headless renders.

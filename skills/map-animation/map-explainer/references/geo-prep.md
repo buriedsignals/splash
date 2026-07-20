@@ -12,9 +12,8 @@ for (const l of m.getStyle().layers as any[])
 ```
 
 - `type === "symbol"` → every place/water/road **label** (the "MapTiler labels"). Gone.
-- `/other border/i` → dataviz-dark's **inner admin borders** are layers `'Other border'` + `'Other
-  border dash'` (filter `admin_level ∈ 3..10`). Removing them drops state/province/district lines. The
-  `'Country border'` (admin_level 2) and `'Disputed border'` layers are **kept** (subtle context).
+- Inner admin-border layer IDs vary by style. Inspect the loaded style, remove state/province/district
+  layers as needed, and retain only the context borders the production requires.
 - Logo/attribution: `maptilerLogo:false` + `attributionControl:false` aren't always enough — also hide
   via CSS in the component:
   ```tsx
@@ -25,9 +24,8 @@ for (const l of m.getStyle().layers as any[])
 
 Reads a routed river GeoJSON + country polygon GeoJSONs; writes:
 
-- **River line** — simplified for a smooth draw. (The water-wars river was OSM, Dijkstra-routed
-  source→mouth through braided reaches: greedy endpoint-chaining bounces between parallel channels —
-  route a graph shortest-path instead.) → `src/geo/yarlung-flow.json`.
+- **River line** — simplified for a smooth draw. For a braided river, route one source→mouth path through
+  the network first: greedy endpoint-chaining bounces between parallel channels. → `src/geo/river-flow.json`.
 - **`public/geo/borders.geojson`** — each country's polygon tagged `{country: name}` (one source,
   filtered per country for the fills).
 - **`src/geo/country-meta.json`** — per country `{ stop, anchor, border }`.
