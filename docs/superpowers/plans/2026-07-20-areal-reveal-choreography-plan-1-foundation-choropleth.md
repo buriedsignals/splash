@@ -892,15 +892,17 @@ git commit -m "feat(map-native): choropleth context-mode entrance (fill pulse + 
 
 - [ ] **Step 1: Branch the fill compositing on `revealMode`**
 
-Compute `const mode = resolveRevealMode(config);` once. Base fill opacity:
-- `context`: leave as today (`fillReveal*0.9`) — Task 8.
-- `sequential`: set the base `choropleth-fill` opacity expression to `0` for data regions (nothing lit from establish):
+Compute `const mode = resolveRevealMode(config);` once, and branch **in JS** (not inside a paint
+expression). Base `choropleth-fill` opacity:
+- `context`: leave exactly as Task 8 (the `["case", __hasData==false → 0, fillReveal*0.9]` expression). Do not touch it.
+- `sequential`: set base fill to `0` everywhere (nothing lit from establish; the per-subject bloom layers carry all fill):
   ```ts
-  map.setPaintProperty("choropleth-fill", "fill-opacity", [
-    "case", ["==", ["get", "__hasData"], false], 0, mode === "sequential" ? 0 : ["literal", null],
-  ] as never);
+  if (mode === "sequential") {
+    map.setPaintProperty("choropleth-fill", "fill-opacity", 0);
+  }
   ```
-  (Keep the context branch exactly as Task 8; only the sequential branch forces 0.)
+  Guard so the context branch's expression is set only when `mode === "context"` and the sequential
+  `0` only when `mode === "sequential"` — never both in one frame.
 
 Per-subject bloom opacity:
 - `context`: `Math.max(0, staged.fillOpacity - base)` (Task 8).
