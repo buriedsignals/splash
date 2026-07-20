@@ -223,12 +223,12 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         type: "circle",
         source: "symbols",
         paint: {
-          "circle-radius": ["get", "__radius"],
+          "circle-radius": ["get", "__radius"] as never,
           "circle-color": houseFill(config.brandHue),
-          "circle-opacity": ["get", "__opacity"],
+          "circle-opacity": ["get", "__opacity"] as never,
           "circle-stroke-color": SYMBOL_STROKE,
           "circle-stroke-width": 1.5,
-        } as never,
+        },
       });
 
       // Direct label layer — every mark carries its name+value, not just the
@@ -255,8 +255,8 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           "text-color": dark ? "#f4f4f5" : "#1a1a1a",
           "text-halo-color": dark ? "rgba(0,0,0,0.85)" : "#ffffff",
           "text-halo-width": 1.6,
-          "text-opacity": ["get", "__labelOpacity"],
-        } as never,
+          "text-opacity": ["get", "__labelOpacity"] as never,
+        },
       });
 
       // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox, padded.
