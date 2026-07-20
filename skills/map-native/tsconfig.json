@@ -13,5 +13,6 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "remotion/src", "scripts"]
+  "include": ["src", "remotion/src", "scripts"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
 }
