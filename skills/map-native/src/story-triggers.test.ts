@@ -27,4 +27,14 @@ describe("triggerFrameByRegion", () => {
     expect(m.has("")).toBe(false);
     expect(m.size).toBe(2);
   });
+  it("keeps the first beat's startFrame on duplicate highlight keys", () => {
+    const dupeBeats = [
+      { kind: "reveal", highlight: ["NOR"] },
+      { kind: "reveal", highlight: ["NOR"] },
+    ] as any;
+    const dupePhases = [{ startFrame: 40 }, { startFrame: 200 }] as any;
+    const m = triggerFrameByRegion(dupeBeats, dupePhases);
+    expect(m.get("NOR")).toBe(40);
+    expect(m.size).toBe(1);
+  });
 });

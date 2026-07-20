@@ -249,10 +249,20 @@ export const ChoroplethStory: React.FC<{
               (ft) => String(ft.properties?.["iso_a3"]) === key,
             );
             if (!f) continue;
-            const mainland = mainlandFeature(f);
-            if (mainland.geometry.type !== "Polygon") continue;
-            const exteriorRing = mainland.geometry.coordinates[0];
-            borderByRegion.set(key, buildDraw([exteriorRing]));
+            // Exterior ring(s) of the ACTUAL geometry — a MultiPolygon subject (e.g. a
+            // country with offshore islands) must draw ALL of its parts, not just the
+            // largest one (mainlandFeature is for camera framing, not render geometry).
+            const g = f.geometry;
+            let rings: number[][][];
+            if (g.type === "Polygon") {
+              rings = [g.coordinates[0]];
+            } else if (g.type === "MultiPolygon") {
+              rings = g.coordinates.map((poly) => poly[0]);
+            } else {
+              continue;
+            }
+            if (rings.length === 0) continue;
+            borderByRegion.set(key, buildDraw(rings));
           }
 
           // Build the initial enriched world for beat 0.
