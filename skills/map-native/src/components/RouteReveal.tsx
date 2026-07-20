@@ -11,6 +11,13 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
+import { stagedEntrance } from "../core/staged-reveal";
+import {
+  buildDraw,
+  sliceBorder,
+  EMPTY_FEATURE,
+  type DrawEntry,
+} from "../core/border-slice";
 import * as turf from "@turf/turf";
 import worldGeoJsonImport from "../../assets/geo/world.geojson";
 import type {
@@ -67,58 +74,6 @@ function darkenHex(hex: string, amount: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// sliceBorder — reveal the portion of a multi-segment border between fromKm and toKm.
-// ---------------------------------------------------------------------------
-
-interface DrawEntry {
-  segLines: ReturnType<typeof turf.lineString>[];
-  segLen: number[];
-  cum: number[];
-  total: number;
-}
-
-const EMPTY_FEATURE = {
-  type: "Feature" as const,
-  properties: {},
-  geometry: {
-    type: "MultiLineString" as const,
-    coordinates: [] as number[][][],
-  },
-};
-
-function buildDraw(territory: RouteRevealTerritory): DrawEntry {
-  const segLines = territory.border.map((s) => turf.lineString(s));
-  const segLen = segLines.map((l) => turf.length(l));
-  const cum: number[] = [];
-  let acc = 0;
-  for (const L of segLen) {
-    cum.push(acc);
-    acc += L;
-  }
-  return { segLines, segLen, cum, total: acc };
-}
-
-function sliceBorder(d: DrawEntry, fromKm: number, toKm: number) {
-  const out: number[][][] = [];
-  for (let i = 0; i < d.segLines.length; i++) {
-    const start = d.cum[i];
-    const end = start + d.segLen[i];
-    const a = Math.max(fromKm, start);
-    const b = Math.min(toKm, end);
-    if (b - a <= 0.0008) continue;
-    out.push(
-      turf.lineSliceAlong(d.segLines[i], a - start, b - start).geometry
-        .coordinates,
-    );
-  }
-  return {
-    type: "Feature" as const,
-    properties: {},
-    geometry: { type: "MultiLineString" as const, coordinates: out },
-  };
-}
-
-// ---------------------------------------------------------------------------
 // Mercator-safe bounds clamp
 // ---------------------------------------------------------------------------
 
@@ -142,9 +97,6 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 // ---------------------------------------------------------------------------
 
 const RIVER_START = 0.3; // seconds before the route line starts drawing
-const BORDER_S = 2.5;
-const FILL_S = 1.0;
-const LABEL_S = 0.7;
 
 // RIVER_END mirrors routeRevealFrames's DRAW_S formula.
 function riverEnd(territoryCount: number): number {
@@ -203,7 +155,7 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
       territories: terr,
       RIVER_END: riverEnd(terr.length),
       DRAW: Object.fromEntries(
-        terr.map((t) => [t.key, buildDraw(t)]),
+        terr.map((t) => [t.key, buildDraw(t.border)]),
       ) as Record<string, DrawEntry>,
     };
   }, [config]);
@@ -436,37 +388,21 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
     for (const terr of territories) {
       const d = DRAW[terr.key];
       const lt = t - trigger(terr); // local seconds since this territory triggered
+      const staged = stagedEntrance(lt, { fillOpacity: FILL_OPACITY });
 
-      // 1) Border draws on over BORDER_S
-      const bp = interpolate(clamp01(lt / BORDER_S), [0, 1], [0, 1], {
-        easing: Easing.inOut(Easing.cubic),
-      });
       (map.getSource(`trail-${terr.key}`) as any)?.setData(
-        bp <= 0 ? EMPTY_FEATURE : sliceBorder(d, 0, d.total * bp),
-      );
-
-      // 2) Fill blooms in after border completes (overshoot then settle)
-      const fp = clamp01((lt - BORDER_S) / FILL_S);
-      const fo = interpolate(
-        fp,
-        [0, 0.6, 1],
-        [0, FILL_OPACITY * 1.25, FILL_OPACITY],
-        {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-          easing: Easing.out(Easing.cubic),
-        },
+        staged.borderProgress <= 0
+          ? EMPTY_FEATURE
+          : sliceBorder(d, 0, d.total * staged.borderProgress),
       );
       map.setPaintProperty(
         `fill-${terr.key}`,
         "fill-opacity",
-        fp <= 0 ? 0 : fo,
+        staged.fillOpacity,
       );
 
-      // 3) Label rises in after fill
-      const lp = clamp01((lt - BORDER_S - FILL_S) / LABEL_S);
       const p = map.project(terr.anchor as [number, number]);
-      pos[terr.key] = { x: p.x, y: p.y, reveal: lp };
+      pos[terr.key] = { x: p.x, y: p.y, reveal: staged.labelReveal };
     }
     setLabels(pos);
 
