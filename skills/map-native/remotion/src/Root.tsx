@@ -146,7 +146,31 @@ const sampleSymbolBeats = deriveSymbolStory(sampleSymbol.points, {
 const SYMBOL_FRAMES = buildTimeline(
   sampleSymbolBeats.map((b) => b.kind),
   30,
+  AREAL_TIMELINE_OPTS,
 ).totalFrames;
+
+// Mode-aware composition duration — mirrors `dotDensityStoryMeta`/`cartogramStoryMeta` above
+// (single source of truth with SymbolStory.tsx's own beats+beatsForMode setup, so the
+// sequential mp4 doesn't end with a frozen tail).
+const symbolStoryMeta = makeStoryMeta((cfg) => {
+  const beats = beatsForMode(
+    deriveSymbolStory(
+      cfg.points,
+      {
+        title: cfg.title ?? "",
+        insight: cfg.insight ?? cfg.title ?? "",
+        unit: cfg.valueUnit ?? "",
+      },
+      { maxReveals: cfg.maxReveals },
+    ),
+    resolveRevealMode(cfg),
+  );
+  return buildTimeline(
+    beats.map((b) => b.kind),
+    30,
+    AREAL_TIMELINE_OPTS,
+  ).totalFrames;
+});
 
 const sampleLocatorBeats = deriveLocatorStory(sampleLocator.markers, {
   title: sampleLocator.title ?? "",
@@ -305,6 +329,7 @@ export const RemotionRoot: React.FC = () => (
       id="SymbolStory"
       component={SymbolStory}
       durationInFrames={SYMBOL_FRAMES}
+      calculateMetadata={symbolStoryMeta}
       fps={30}
       width={1280}
       height={720}
@@ -314,6 +339,7 @@ export const RemotionRoot: React.FC = () => (
       id="SymbolStorySquare"
       component={SymbolStory}
       durationInFrames={SYMBOL_FRAMES}
+      calculateMetadata={symbolStoryMeta}
       fps={30}
       width={1080}
       height={1080}
@@ -323,6 +349,7 @@ export const RemotionRoot: React.FC = () => (
       id="SymbolStoryPortrait"
       component={SymbolStory}
       durationInFrames={SYMBOL_FRAMES}
+      calculateMetadata={symbolStoryMeta}
       fps={30}
       width={1080}
       height={1920}

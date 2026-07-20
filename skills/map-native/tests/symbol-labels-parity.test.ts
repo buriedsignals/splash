@@ -69,7 +69,7 @@ describe("symbol renderer parity: every format labels every symbol (name+value)"
     expect(hasSymbolLabelsLayer(strippedId)).toBe(false);
 
     const circlesOnly = source.replace(
-      /\/\/ Direct label layer[\s\S]*?"text-opacity": 0,\s*\},\s*\}\);/,
+      /\/\/ Direct label layer[\s\S]*?"text-opacity":[\s\S]*?\}\);/,
       "",
     );
     expect(hasSymbolLabelsLayer(circlesOnly)).toBe(false);

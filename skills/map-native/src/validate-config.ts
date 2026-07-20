@@ -211,6 +211,9 @@ export type SymbolConfigShape = {
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   cameraMode?: CameraMode;
+  /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
+   * resolveRevealMode — unset/unknown falls back to "context". */
+  revealMode?: RevealMode;
   maxReveals?: number;
   filters?: MapFilter[];
   // Newsroom house style (profile merge, skills/splash/src/brand-profile.ts). brandHue is the
@@ -239,6 +242,11 @@ export function validateSymbolConfig(
     !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
   )
     errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  if (
+    s.revealMode !== undefined &&
+    !["context", "sequential"].includes(s.revealMode as string)
+  )
+    errors.push("revealMode must be one of: context, sequential");
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
 

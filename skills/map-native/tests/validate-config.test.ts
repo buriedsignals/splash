@@ -189,6 +189,15 @@ describe("validateSymbolConfig", () => {
     expect(bad.ok).toBe(false);
     if (!bad.ok) expect(bad.errors.some((e) => /mapStyle/.test(e))).toBe(true);
   });
+  it("accepts a known revealMode and rejects an unknown one", () => {
+    expect(
+      validateSymbolConfig({ ...okSymbol, revealMode: "sequential" }).ok,
+    ).toBe(true);
+    const bad = validateSymbolConfig({ ...okSymbol, revealMode: "shuffle" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok)
+      expect(bad.errors.some((e) => /revealMode/.test(e))).toBe(true);
+  });
 });
 
 const okRoute = {

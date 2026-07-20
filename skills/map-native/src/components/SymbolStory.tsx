@@ -1,7 +1,12 @@
 // SymbolStory — beat-driven guided camera tour for the proportional symbol map.
-// Mirrors ChoroplethStory exactly in structure:
-//   delayRender → on load add source/layers + build beats + jumpTo beat 0 → idle → continueRender
-//   per-frame: delayRender → jumpTo → setPaintProperty → project callout → overlay state → idle → continueRender
+// Mirrors ChoroplethStory/DotDensityStory's harness structure, POINT-mark flavour: each
+// mark's entrance (radius grow + opacity fade + label rise) is its OWN staged-entrance
+// envelope, keyed on a per-mark trigger frame baked into the `symbols` source's features —
+// no per-key emphasis layers (points have no rings to border-draw).
+//   delayRender → on load add source/layers + build beats + compute per-mark triggers →
+//     jumpTo beat 0 → idle → continueRender
+//   per-frame: delayRender → jumpTo → per-mark staged entrance + label-anchor declutter
+//     (ONE setData) → project callout → overlay state → idle → continueRender
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -21,14 +26,24 @@ import {
   assignSymbolLabelAnchors,
   type SymbolAnchorProps,
 } from "../symbol-labels";
-import { deriveSymbolStory } from "../symbol-story";
+import { deriveSymbolStory, markTriggerFrames } from "../symbol-story";
 import {
   buildTimeline,
   cameraForFrame,
   type CameraSolution,
   type Phase,
 } from "../story-timeline";
-import type { Beat } from "../map-story";
+import { resolveRevealMode, beatsForMode, type Beat } from "../map-story";
+import { triggerFrameByRegion } from "../story-triggers";
+import {
+  AREAL_TIMELINE_OPTS,
+  AREAL_BORDER_S,
+  AREAL_FILL_S,
+  AREAL_FILL_START_S,
+  AREAL_LABEL_S,
+  AREAL_LABEL_START_S,
+} from "../story-choreography";
+import { stagedEntrance } from "../core/staged-reveal";
 import type { SymbolConfig } from "../SymbolMap";
 import { resolveMapStyle } from "../route-geo";
 import { houseFill } from "../theme/house-ramp";
@@ -49,6 +64,19 @@ const MAX_RADIUS_PX = 40;
 // Px clearance between a circle's edge and its label — matches labelRadialOffset's
 // default `gap`, so the edge-clamp pixel offset equals the ems radial offset MapLibre renders.
 const LABEL_GAP = 6;
+// circle-opacity target once a mark's staged entrance settles (was the paint-time constant).
+const SYMBOL_BASE_OPACITY = 0.75;
+
+// Per-feature properties carried on the `symbols` GeoJSON source — extends the label-anchor
+// declutter's own shape with the staged-entrance channels this comp drives every frame.
+interface SymbolFeatureProps extends SymbolAnchorProps {
+  label: string;
+  labelOffset: number;
+  __triggerFrame: number;
+  __radius: number;
+  __opacity: number;
+  __labelOpacity: number;
+}
 
 interface SymbolMapState {
   map: InstanceType<typeof maptilersdk.Map>;
@@ -82,7 +110,6 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
   // Per-frame overlay state: projected callout position, reveals.
   const [overlay, setOverlay] = useState<{
     beatIndex: number;
-    fillReveal: number;
     calloutPt: { x: number; y: number } | null;
     calloutReveal: number;
     calloutValue: string;
@@ -121,9 +148,49 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     });
 
     m.on("load", () => {
+      const mode = resolveRevealMode(config);
+
+      // Build beats and timeline FIRST — each mark's own entrance trigger frame (below)
+      // is derived from the beat/phase timeline, so it must exist before the symbol
+      // features are built.
+      const meta = {
+        title: config.title ?? "",
+        insight: config.insight ?? config.title ?? "",
+        unit: config.valueUnit ?? "",
+      };
+      const beats = beatsForMode(
+        deriveSymbolStory(config.points, meta, {
+          maxReveals: config.maxReveals,
+        }),
+        mode,
+      );
+
+      const kinds = beats.map((b) => b.kind);
+      const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
+
+      // Reveal-beat marks only (the top-N the tour actually visits), keyed by mark
+      // label — `deriveSymbolStory` puts each reveal beat's mark name in `highlight[0]`.
+      const revealTriggers = triggerFrameByRegion(beats, phases);
+      const establishIdx = beats.findIndex((b) => b.kind === "establish");
+      const establishStartFrame =
+        establishIdx >= 0 ? phases[establishIdx].startFrame : 0;
+      // EVERY mark's own entrance trigger — context: all together at the establish
+      // beat's start; sequential: each mark's own reveal beat start, or never (stays
+      // hidden) for a mark beyond maxReveals.
+      const markTriggers = markTriggerFrames(
+        config.points,
+        mode,
+        establishStartFrame,
+        revealTriggers,
+      );
+
       const labels = symbolLabels(geo.symbols, config.lang);
       // `anchor` starts at the FT/NYT direct-label default (text to the RIGHT of the point,
       // MapLibre "left") and is re-derived per frame from each symbol's projected position.
+      // `__radius`/`__opacity`/`__labelOpacity` carry each mark's own staged-entrance channel
+      // values — recomputed per frame (see the frame effect below) and painted via
+      // ["get", ...] expressions, so a per-mark grow/fade/rise never needs a MapLibre
+      // expression to evaluate stagedEntrance itself.
       const symbolFeatures: GeoJSON.Feature[] = geo.symbols.map((s, i) => ({
         type: "Feature",
         properties: {
@@ -138,7 +205,12 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
               ),
           labelOffset: labelRadialOffset(s.radius, textSize),
           anchor: "left",
-        },
+          __triggerFrame:
+            markTriggers.get(s.label ?? "") ?? Number.POSITIVE_INFINITY,
+          __radius: 0,
+          __opacity: 0,
+          __labelOpacity: 0,
+        } satisfies SymbolFeatureProps,
         geometry: { type: "Point", coordinates: [s.lon, s.lat] },
       }));
       m.addSource("symbols", {
@@ -151,16 +223,16 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         type: "circle",
         source: "symbols",
         paint: {
-          "circle-radius": 0,
+          "circle-radius": ["get", "__radius"],
           "circle-color": houseFill(config.brandHue),
-          "circle-opacity": 0.75,
+          "circle-opacity": ["get", "__opacity"],
           "circle-stroke-color": SYMBOL_STROKE,
           "circle-stroke-width": 1.5,
-        },
+        } as never,
       });
 
       // Direct label layer — every mark carries its name+value, not just the
-      // top-N callouts. Fades in with the establish reveal via text-opacity.
+      // top-N callouts. Each mark's own text-opacity is its staged label-rise.
       m.addLayer({
         id: "symbol-labels",
         type: "symbol",
@@ -183,18 +255,8 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           "text-color": dark ? "#f4f4f5" : "#1a1a1a",
           "text-halo-color": dark ? "rgba(0,0,0,0.85)" : "#ffffff",
           "text-halo-width": 1.6,
-          "text-opacity": 0,
-        },
-      });
-
-      // Build beats and timeline.
-      const meta = {
-        title: config.title ?? "",
-        insight: config.insight ?? config.title ?? "",
-        unit: config.valueUnit ?? "",
-      };
-      const beats = deriveSymbolStory(config.points, meta, {
-        maxReveals: config.maxReveals,
+          "text-opacity": ["get", "__labelOpacity"],
+        } as never,
       });
 
       // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox, padded.
@@ -212,9 +274,6 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           zoom: result.zoom ?? 2,
         };
       });
-
-      const kinds = beats.map((b) => b.kind);
-      const { phases } = buildTimeline(kinds, fps);
 
       // City lookup for callout projection: label → [lon, lat].
       const cityByKey = new Map<string, [number, number]>();
@@ -246,56 +305,11 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
 
     const h = delayRender(`symbol-story-frame-${frame}`);
 
-    const { camera, beatIndex, fillReveal } = cameraForFrame(
-      frame,
-      phases,
-      solutions,
-    );
+    const { camera, beatIndex } = cameraForFrame(frame, phases, solutions);
 
     // Deterministic jump — never flyTo.
     map.jumpTo({ center: camera.center, zoom: camera.zoom });
 
-    // INVARIANT: a symbol label never renders outside the map viewport. The camera moves
-    // per frame, so re-derive each label's in-viewport anchor from its NEW projected
-    // position — jumpTo settles the projection synchronously, so we can project + clamp
-    // inline here (before the frame's idle/continueRender) and the captured frame shows the
-    // flipped anchors. The shared clamp's `changed` guard means setData only fires on frames
-    // where a label actually crossed an edge (no setData→idle churn otherwise).
-    if (map.getLayer("symbol-labels")) {
-      const el = ref.current;
-      if (el) {
-        const viewport = { width: el.clientWidth, height: el.clientHeight };
-        const projected = symbolFeatures.map((f) =>
-          map.project(
-            (f.geometry as GeoJSON.Point).coordinates as [number, number],
-          ),
-        );
-        const changed = assignSymbolLabelAnchors(
-          symbolFeatures.map(
-            (f) => f.properties as unknown as SymbolAnchorProps,
-          ),
-          projected,
-          { viewport, textSize, gap: LABEL_GAP },
-        );
-        if (changed) {
-          (map.getSource("symbols") as maptilersdk.GeoJSONSource).setData({
-            type: "FeatureCollection",
-            features: symbolFeatures,
-          });
-        }
-      }
-    }
-
-    // Circles ESTABLISH during establish beat (radius 0→target via fillReveal),
-    // then stay full for the rest of the tour. No dimming of non-highlighted symbols.
-    if (map.getLayer("symbol-circles")) {
-      map.setPaintProperty("symbol-circles", "circle-radius", [
-        "*",
-        ["get", "radius"],
-        fillReveal,
-      ]);
-    }
-    // Compute overlay state while we have access to map.project.
     const beat = beats[beatIndex];
     const phase = phases[beatIndex];
 
@@ -312,19 +326,74 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
     // Caption reveal: same easing.
     const captionReveal = calloutReveal;
 
-    // Labels fade in alongside the circles they name — every mark, not just callouts.
-    // The city currently under the giant CountryLabel callout (below) has its small
-    // persistent label suppressed in lockstep with the callout's own fade-in — the two
-    // never collide — while every other symbol keeps its label at the normal fillReveal
-    // opacity. Mirrors the ["case", ...] emphasis pattern used in SymbolScrolly.
-    if (map.getLayer("symbol-labels")) {
-      const highlightLabel = beat.callout?.region ?? "__none__";
-      map.setPaintProperty("symbol-labels", "text-opacity", [
-        "case",
-        ["==", ["get", "label"], highlightLabel],
-        fillReveal * (1 - calloutReveal),
-        fillReveal,
-      ] as never);
+    // The mark currently carrying the giant CountryLabel callout — its own small
+    // persistent label is suppressed in lockstep with the callout's fade-in below, so the
+    // two never collide (mirrors the emphasis pattern used in SymbolScrolly).
+    const highlightLabel = beat.callout?.region ?? "__none__";
+
+    // INVARIANT: a symbol label never renders outside the map viewport. The camera moves
+    // per frame, so re-derive each label's in-viewport anchor from its NEW projected
+    // position — jumpTo settles the projection synchronously, so we can project + clamp
+    // inline here (before the frame's idle/continueRender) and the captured frame shows the
+    // flipped anchors. Folded into the SAME feature rebuild as each mark's staged entrance
+    // (radius grow + opacity fade + label rise) below — one setData per frame, not two.
+    let dataChanged = false;
+    const el = ref.current;
+    if (el) {
+      const viewport = { width: el.clientWidth, height: el.clientHeight };
+      const projected = symbolFeatures.map((f) =>
+        map.project(
+          (f.geometry as GeoJSON.Point).coordinates as [number, number],
+        ),
+      );
+      const anchorsChanged = assignSymbolLabelAnchors(
+        symbolFeatures.map((f) => f.properties as unknown as SymbolAnchorProps),
+        projected,
+        { viewport, textSize, gap: LABEL_GAP },
+      );
+      if (anchorsChanged) dataChanged = true;
+    }
+
+    // Per-mark staged entrance — each mark's own trigger (context: the shared establish
+    // start, so every mark grows/fades/rises TOGETHER; sequential: its own reveal beat
+    // start, marks appearing one-by-one, or never for a mark beyond maxReveals — see
+    // markTriggerFrames) drives the SAME tuned areal envelope (radius grow → opacity fade →
+    // label rise, overlapping) every other beat-driven story comp uses.
+    for (const f of symbolFeatures) {
+      const props = f.properties as unknown as SymbolFeatureProps;
+      const localSeconds = (frame - props.__triggerFrame) / fps;
+      const staged = stagedEntrance(localSeconds, {
+        fillOpacity: 1,
+        borderS: AREAL_BORDER_S,
+        fillS: AREAL_FILL_S,
+        labelS: AREAL_LABEL_S,
+        fillStart: AREAL_FILL_START_S,
+        labelStart: AREAL_LABEL_START_S,
+      });
+      const radius = props.radius * staged.borderProgress;
+      const opacity = SYMBOL_BASE_OPACITY * staged.fillOpacity;
+      const labelOpacity =
+        props.label === highlightLabel
+          ? staged.labelReveal * (1 - calloutReveal)
+          : staged.labelReveal;
+
+      if (
+        props.__radius !== radius ||
+        props.__opacity !== opacity ||
+        props.__labelOpacity !== labelOpacity
+      ) {
+        props.__radius = radius;
+        props.__opacity = opacity;
+        props.__labelOpacity = labelOpacity;
+        dataChanged = true;
+      }
+    }
+
+    if (dataChanged) {
+      (map.getSource("symbols") as maptilersdk.GeoJSONSource).setData({
+        type: "FeatureCollection",
+        features: symbolFeatures,
+      });
     }
 
     // Callout projection: highlighted city's lon/lat → screen coords.
@@ -337,12 +406,13 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
       }
     }
 
-    // Update beat index ref (no source data to swap for symbol maps — layers are static).
+    // Update beat index ref (kept for parity with the other beat-driven story comps; the
+    // symbols source itself now updates per-mark via the staged-entrance loop above, not a
+    // beat-change gate).
     lastBeatIndex.current = beatIndex;
 
     setOverlay({
       beatIndex,
-      fillReveal,
       calloutPt,
       calloutReveal,
       calloutValue: beat.callout?.value ?? "",

@@ -60,6 +60,9 @@ export interface SymbolConfig extends SymbolData {
   source?: { name: string; url: string };
   maxReveals?: number;
   cameraMode?: CameraMode;
+  /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
+   * resolveRevealMode — unset/unknown falls back to "context". Consumed by SymbolStory. */
+  revealMode?: string;
   filters?: MapFilter[];
   /** deliverable language — localizes symbol value labels + "Source". Default English. */
   lang?: string;

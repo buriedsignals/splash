@@ -4,7 +4,7 @@
 // bbox) → reveal each city (value desc, callout name+value, camera = a small bbox
 // around the city) → takeaway (points bbox).
 import type { SymbolPoint } from "./symbol-geo";
-import type { Beat } from "./map-story";
+import type { Beat, RevealMode } from "./map-story";
 import { formatLocaleNumber, labelWithUnit, type Lang } from "./core/locale";
 import { shortWayLongitudeExtent } from "./core/longitude";
 
@@ -103,4 +103,34 @@ export function deriveSymbolStory(
   });
 
   return beats;
+}
+
+/**
+ * Per-mark entrance trigger frame for SymbolStory's choreography — every point gets one,
+ * not just the top-N reveal-beat subjects `triggerFrameByRegion` returns (that map only
+ * covers the marks a reveal beat actually visits, capped by `maxReveals`).
+ *  - context: every mark establishes TOGETHER, at the establish beat's own start frame.
+ *  - sequential: a mark with its own reveal beat (`revealTriggers`, keyed by name/label,
+ *    the SAME key `deriveSymbolStory` puts in a reveal beat's `highlight[0]`) triggers at
+ *    that beat's start frame — marks appear one-by-one. A mark with no reveal beat (beyond
+ *    `maxReveals`) never triggers — it stays hidden (radius/opacity/label all 0) for the
+ *    whole story, since sequential's narrative never visits it.
+ */
+export function markTriggerFrames(
+  points: SymbolPoint[],
+  mode: RevealMode,
+  establishStartFrame: number,
+  revealTriggers: Map<string, number>,
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const p of points) {
+    const key = p.label ?? "";
+    out.set(
+      key,
+      mode === "context"
+        ? establishStartFrame
+        : (revealTriggers.get(key) ?? Number.POSITIVE_INFINITY),
+    );
+  }
+  return out;
 }

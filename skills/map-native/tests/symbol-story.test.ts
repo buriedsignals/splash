@@ -1,5 +1,9 @@
 import { describe, it, expect } from "bun:test";
-import { deriveSymbolStory, DEFAULT_MAX_REVEALS } from "../src/symbol-story";
+import {
+  deriveSymbolStory,
+  DEFAULT_MAX_REVEALS,
+  markTriggerFrames,
+} from "../src/symbol-story";
 import type { SymbolPoint } from "../src/symbol-geo";
 
 const points: SymbolPoint[] = [
@@ -158,5 +162,46 @@ describe("deriveSymbolStory maxReveals", () => {
     for (const b of beats.filter((x) => x.kind === "reveal")) {
       expect(b.callout?.value.includes("$bn")).toBe(true);
     }
+  });
+});
+
+describe("markTriggerFrames", () => {
+  const marks: SymbolPoint[] = [
+    { lon: 0, lat: 51, value: 300, label: "London" },
+    { lon: 2, lat: 48, value: 200, label: "Paris" },
+    { lon: 13, lat: 52, value: 150, label: "Berlin" },
+  ];
+
+  it("context: every mark shares the establish beat's own start frame", () => {
+    const m = markTriggerFrames(marks, "context", 75, new Map());
+    expect(m.get("London")).toBe(75);
+    expect(m.get("Paris")).toBe(75);
+    expect(m.get("Berlin")).toBe(75);
+  });
+
+  it("sequential: a mark with its own reveal beat triggers at that beat's start frame", () => {
+    const revealTriggers = new Map([
+      ["London", 135],
+      ["Paris", 225],
+    ]);
+    const m = markTriggerFrames(marks, "sequential", 75, revealTriggers);
+    expect(m.get("London")).toBe(135);
+    expect(m.get("Paris")).toBe(225);
+  });
+
+  it("sequential: a mark with no reveal beat (beyond maxReveals) never triggers", () => {
+    const revealTriggers = new Map([["London", 135]]);
+    const m = markTriggerFrames(marks, "sequential", 75, revealTriggers);
+    expect(m.get("Berlin")).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it("falls back to the empty-string key for a point with no label", () => {
+    const m = markTriggerFrames(
+      [{ lon: 0, lat: 0, value: 1 }],
+      "context",
+      10,
+      new Map(),
+    );
+    expect(m.get("")).toBe(10);
   });
 });
