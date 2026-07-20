@@ -696,6 +696,38 @@ npx remotion render src/index.ts CesiumFlyover out.mp4 <span class="k">--gl=angl
 
   <section class="block">
     <div class="wrap">
+      <p class="eyebrow"><span class="tick">/</span> Labels</p>
+      <h2>Label by what it is</h2>
+      <p class="lede">The label system communicates geography before the viewer reads the words.
+      The skill defines role, hierarchy, anchoring, and motion; each production chooses its own font.</p>
+      <div class="cards-3">
+        <div class="card">
+          <p class="role">Geographic region</p>
+          <h3>Country or region</h3>
+          <p>Use a high-contrast, uppercase display label with a short accent divider. Position it in
+          clear territory, never over a marker cluster or a river. This treatment is for places only.</p>
+        </div>
+        <div class="card">
+          <p class="role">Physical geography</p>
+          <h3>River or route</h3>
+          <p>Anchor a leader line directly on the actual geometry, then run it to the label. Use the
+          route accent colour. Do not add redundant category words such as “RIVER”.</p>
+        </div>
+        <div class="card">
+          <p class="role">Constructed object</p>
+          <h3>Dam, tunnel, plant, site</h3>
+          <p>Use a smaller italic accent-coloured callout beside its point or line. No country-style
+          divider: infrastructure is an object in geography, not geography itself.</p>
+        </div>
+      </div>
+      <p class="lede" style="margin-top:18px">Animate the label after its geographic or data layer is
+      established. Keep it visible while the viewer needs the location; avoid overlapping labels and
+      test the actual 16:9 and 9:16 render, not only the map canvas.</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
       <p class="eyebrow"><span class="tick">/</span> Pipeline</p>
       <h2>From raw geodata to a finished beat</h2>
       <div class="steps">
