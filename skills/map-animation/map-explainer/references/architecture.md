@@ -60,7 +60,7 @@ of the country colour (the electricity is on the river, not here).
 
 ```ts
 const lt = t - trigger(c);                                   // local seconds since trigger
-// 1) border draws on over a constant BORDER_S, multi-segment-safe
+// 1) complete source border draws on over a constant BORDER_S, multi-segment-safe
 const bp = interpolate(clamp01(lt / BORDER_S), [0,1], [0,1], { easing: Easing.inOut(Easing.cubic) });
 map.getSource(`trail-${c}`).setData(sliceBorder(DRAW[c], 0, DRAW[c].total * bp));   // COUNTRY_DARK line
 // 2) fill blooms in (opacity overshoots, then settles) after the border completes
@@ -71,8 +71,8 @@ map.setPaintProperty(`fill-${c}`, "fill-opacity", fp <= 0 ? 0 : fo);
 const lp = clamp01((lt - BORDER_S - FILL_S) / LABEL_S);
 ```
 
-`sliceBorder(d, fromKm, toKm)` reveals a portion of a (possibly multi-segment) border as a
-MultiLineString, slicing each segment by cumulative length — no joins across gaps:
+`sliceBorder(d, fromKm, toKm)` reveals a portion of a complete (possibly multi-segment) border as a
+MultiLineString, slicing each segment by cumulative length — no joins across gaps and no viewport crop:
 
 ```ts
 const sliceBorder = (d, fromKm, toKm) => {

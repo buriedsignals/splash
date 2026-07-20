@@ -25,7 +25,7 @@ For 3D terrain fly-overs use the **cesium-flyover** skill; for plain animated ma
 | Layer | Role |
 | --- | --- |
 | **MapTiler SDK** (`@maptiler/sdk`, `DATAVIZ.DARK`) | Draws the basemap + all GeoJSON layers (river, fills, borders) into a WebGL canvas. Use the SDK (not raw maplibre-gl) for the built-in dataviz-dark style; the camera is gentle/2D so no free-camera APIs needed. |
-| **Remotion** | Frame-by-frame harness. Per frame: imperatively `setData`/`setPaintProperty`/`jumpTo`, gate with `delayRender` until `map.once('idle')`. `--gl=angle`, `preserveDrawingBuffer:true`. |
+| **Remotion** | Frame-by-frame harness. Imperatively update `setData`/`setPaintProperty`; use `jumpTo` only for a static shot, or a fixed map plate for any pan/zoom. Gate with `delayRender` until `map.once('idle')`. `--gl=angle`, `preserveDrawingBuffer:true`. |
 | **React HTML overlay** | The country **labels** — positioned `<div>`s (Space Grotesk via `@remotion/google-fonts`), NOT MapLibre symbols. Gives full font/animation control. Positioned each frame via `map.project(lngLat)` → `setState`. |
 
 Env `REMOTION_MAPTILER_KEY` (unrestricted). Init the map once (ref guard); update imperatively per frame.
@@ -51,18 +51,33 @@ borders, river) imperative as usual; only the renderer camera stays fixed.
 
 1. **Geo prep** (`scripts/prep-geo.mjs`) → `country-meta.json` + `borders.geojson` + the river line.
    Per country it bakes: `stop` (river-arrival fraction), `anchor` (label centre = pole of
-   inaccessibility), `border` (the longest visible outline segment). Details → `references/geo-prep.md`.
+   inaccessibility), `border` (complete source geometry, never a viewport crop). Details → `references/geo-prep.md`.
 2. **Basemap** — strip clutter on `load`: remove `symbol` layers (place labels) and `/other border/i`
    (admin-1 inner borders); hide the logo via CSS. Keep country + disputed borders.
 3. **River** — `turf.lineSliceAlong(line, 0, lineKm*reveal)` per frame, led by a **white-hot electric
    draw-head** (the last few % in its own bright+glow layers), faded out at the mouth. No dark casing.
-4. **Countries** — triggered as the river enters each (`stop`): a sequence of **border draws (constant
-   ~2.5 s, darker-shade line) → fill blooms (opacity overshoot) → Space Grotesk label rises**.
+4. **Countries** — triggered as the river enters each (`stop`): a sequence of **complete border draws
+   (constant ~2.5 s, darker-shade line) → fill blooms (opacity overshoot) → country label rises**.
 5. **Render** — `npx remotion render … --gl=angle`.
 
 The timing model, per-frame code, the electric-head logic, the country sequence, and label projection →
-**`references/architecture.md`**. The geo pipeline (entry stops, pole of inaccessibility, single-segment
+**`references/architecture.md`**. The geo pipeline (entry stops, pole of inaccessibility, complete
 borders, bbox/nudge tuning) → **`references/geo-prep.md`**.
+
+## Visual semantics — label and border rules
+
+- **Country or geographic region:** uppercase, high-contrast display label with a short accent divider.
+  Place it in clear territory, never over a river or marker cluster.
+- **River or route:** anchor a leader directly to the real line geometry, then run it to the label. Use the
+  route accent colour and omit redundant category words such as “RIVER”.
+- **Constructed object** (dam, tunnel, plant, site): smaller italic callout beside its actual point or
+  line. Do not use the country/region divider treatment; infrastructure is not geography.
+- Reveal a label only after the geographic/data layer it names is established, and keep it on-screen long
+  enough to read. Validate placement in both 16:9 and 9:16 renders.
+- Use complete named administrative geometry. **Never crop a country or bilateral border to the viewport**
+  to make its animation easier; it may continue off-frame naturally. For a highlighted bilateral boundary,
+  source the named full bilateral line. For country fills, avoid duplicating full outline strokes, which
+  makes shared borders double up.
 
 ## Quick start (adapt to a new river + countries)
 

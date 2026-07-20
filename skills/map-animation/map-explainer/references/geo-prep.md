@@ -60,11 +60,12 @@ const ANCHOR_BBOX = { china:[82,27,96,32], india:[76,14,99,31], bangladesh:[86,2
 const NUDGE = { china:[0,0.6], india:[-1.0,0], bangladesh:[0,-0.6] };                          // operator-directed
 ```
 
-### `border` — one continuous draw
+### `border` — complete source geometry
 
-The country's exterior ring clipped to the framed bbox (`FRAME_BBOX = [76,14,104,33.5]`), then **only the
-longest segment**. One continuous draw; drops stray corners (e.g. China's tiny Kashmir segment) that
-otherwise animate as a confusing *second* border for the same country.
+Preserve every exterior ring from the named country source. Never clip a country or bilateral border to
+the framed bbox and never discard an off-screen segment: the geometry may leave the frame naturally.
+The renderer handles a MultiLineString by cumulative length, so it remains one timed reveal without
+inventing joins across gaps.
 
 ## Tuning the geo prep for a new scenario
 
@@ -73,5 +74,5 @@ otherwise animate as a confusing *second* border for the same country.
 | Which countries | the country list in `prep-geo.mjs` (+ supply their polygon GeoJSONs) |
 | Label centred in the right region | `ANCHOR_BBOX[country]` (the story bbox) |
 | Nudge a label | `NUDGE[country]` (lng, lat offset) |
-| What border is drawn / how much | `FRAME_BBOX` (the visible extent) |
+| What border is drawn | the complete named source geometry; never the visible extent |
 | When each lights up | derived from `stop` — depends on the river geometry |

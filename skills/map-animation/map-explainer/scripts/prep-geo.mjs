@@ -25,7 +25,7 @@ const read = (p) => JSON.parse(readFileSync(p, "utf8"));
 const COUNTRIES = ["china", "india", "bangladesh"];        // ORDERED headwaters → mouth; first = source (stop 0)
 const RIVER = resolve(geo, "focus-rivers/yarlung-brahmaputra-full-osm.geojson"); // a single clean source→mouth LineString
 const BORDER = (name) => resolve(geo, `project-borders/${name}.geojson`);        // one polygon file per country, named <country>.geojson
-const FRAME_BBOX = [76, 14, 104, 33.5];                    // [W,S,E,N] visible extent — bounds the drawn border
+const FRAME_BBOX = [76, 14, 104, 33.5];                    // [W,S,E,N] visible extent — fallback for label anchoring only
 const ANCHOR_BBOX = { china: [82, 27, 96, 32], india: [76, 14, 99, 31], bangladesh: [86, 20, 93, 27] }; // [W,S,E,N] per-country label "story region"
 const NUDGE = { china: [0, 0.6], india: [-1.0, 0], bangladesh: [0, -0.6] };      // [lng,lat] label nudge
 const RIVER_SIMPLIFY_TOL = 0.006;                          // degrees — smooths the draw-on (bigger = simpler)
@@ -77,8 +77,8 @@ for (let i = 0; i < flow.length; i++) {
 }
 
 // --- Per-country meta: anchor = pole of inaccessibility of the visible landmass (centred, away from
-// borders/edges) within the country's story region + a NUDGE; border = the longest visible exterior
-// segment (one continuous draw; drops stray corners that animate as a confusing second border). ---
+// borders/edges) within the country's story region + a NUDGE; border = every exterior ring from the
+// complete named source. Never crop a country or bilateral boundary to the viewport. ---
 const biggestPoly = (geom) => {
   const rings = geom.type === "MultiPolygon" ? geom.coordinates : [geom.coordinates];
   let best = null, bestA = -1;
@@ -90,10 +90,13 @@ const largestPolygon = (fc) => {
   for (const f of fc.features) { const p = biggestPoly(f.geometry), a = turf.area(p); if (a > bestA) { bestA = a; best = p; } }
   return best;
 };
-const clipSegments = (ringCoords) => {
-  const c = turf.bboxClip(turf.lineString(ringCoords), FRAME_BBOX).geometry;
-  const segs = c.type === "MultiLineString" ? c.coordinates : c.coordinates.length ? [c.coordinates] : [];
-  return segs.filter((s) => s.length > 1);
+const completeExteriorSegments = (fc) => {
+  const segments = [];
+  for (const feature of fc.features) {
+    const polygons = feature.geometry.type === "MultiPolygon" ? feature.geometry.coordinates : [feature.geometry.coordinates];
+    for (const polygon of polygons) if (polygon[0]?.length > 1) segments.push(polygon[0]);
+  }
+  return segments;
 };
 const poleOfInaccessibility = (poly) => {
   const bb = turf.bbox(poly), boundary = turf.polygonToLine(poly), N = 46;
@@ -112,10 +115,9 @@ for (const name of COUNTRIES) {
   const poly = largestPolygon(polys[name]);
   const storyRegion = biggestPoly(turf.bboxClip(poly, ANCHOR_BBOX[name] || FRAME_BBOX).geometry);
   const pole = poleOfInaccessibility(storyRegion);
-  const segs = clipSegments(poly.geometry.coordinates[0]);
-  segs.sort((a, b) => turf.length(turf.lineString(b)) - turf.length(turf.lineString(a)));
+  const segs = completeExteriorSegments(polys[name]);
   const nudge = NUDGE[name] || [0, 0];
-  countryMeta[name] = { stop: stops[name], anchor: [pole[0] + nudge[0], pole[1] + nudge[1]], border: segs.length ? [segs[0]] : [] };
+  countryMeta[name] = { stop: stops[name], anchor: [pole[0] + nudge[0], pole[1] + nudge[1]], border: segs };
 }
 
 mkdirSync(dirname(OUT_RIVER), { recursive: true });
