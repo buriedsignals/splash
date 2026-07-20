@@ -38,6 +38,14 @@ import { resolveScene } from "../video-scene";
 import { legendTheme } from "../theme/legend-theme";
 import { resolveMapStyle } from "../route-geo";
 import { fmtBinRange } from "../core/legend-format";
+import { triggerFrameByRegion } from "../story-triggers";
+import { stagedEntrance } from "../core/staged-reveal";
+import {
+  buildDraw,
+  sliceBorder,
+  EMPTY_FEATURE,
+  type DrawEntry,
+} from "../core/border-slice";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -86,6 +94,8 @@ interface MapStory {
   centroidByKey: Map<string, [number, number]>;
   worldGeoJson: GeoJSON.FeatureCollection;
   joined: { key: string; value: number | null }[];
+  triggers: Map<string, number>;
+  borderByRegion: Map<string, DrawEntry>;
 }
 
 export const ChoroplethStory: React.FC<{
@@ -229,6 +239,22 @@ export const ChoroplethStory: React.FC<{
             }
           }
 
+          // Precompute the border-draw geometry for each subject region (the FEW regions
+          // a reveal beat visits) — the exterior ring of its mainland polygon, staged-drawn
+          // on over the beat's first ~2.5s via the shared border-slice/staged-reveal core.
+          const triggers = triggerFrameByRegion(beats, phases);
+          const borderByRegion = new Map<string, DrawEntry>();
+          for (const key of triggers.keys()) {
+            const f = worldGeoJson.features.find(
+              (ft) => String(ft.properties?.["iso_a3"]) === key,
+            );
+            if (!f) continue;
+            const mainland = mainlandFeature(f);
+            if (mainland.geometry.type !== "Polygon") continue;
+            const exteriorRing = mainland.geometry.coordinates[0];
+            borderByRegion.set(key, buildDraw([exteriorRing]));
+          }
+
           // Build the initial enriched world for beat 0.
           const initialWorld = enrichWorld(
             worldGeoJson,
@@ -276,22 +302,25 @@ export const ChoroplethStory: React.FC<{
             },
           });
 
-          // Highlight stroke — data-driven width means no per-frame setPaintProperty needed.
-          m.addLayer({
-            id: "choropleth-highlight-stroke",
-            type: "line",
-            source: "choropleth-world",
-            paint: {
-              "line-width": [
-                "case",
-                ["==", ["get", "__highlight"], 1],
-                2.5,
-                0,
-              ] as never,
-              "line-color": dark ? "#f4f4f5" : "#1a1a1a",
-              "line-opacity": 0.9,
-            },
-          });
+          // Per-subject emphasis trail — one dedicated line source+layer per reveal-beat
+          // region, staged-drawn on over the beat's first ~2.5s (replaces the static
+          // highlight-stroke; fill-bloom and label follow in later tasks).
+          for (const key of triggers.keys()) {
+            m.addSource(`choro-trail-${key}`, {
+              type: "geojson",
+              data: EMPTY_FEATURE,
+            });
+            m.addLayer({
+              id: `choro-trail-${key}`,
+              type: "line",
+              source: `choro-trail-${key}`,
+              paint: {
+                "line-color": dark ? "#f4f4f5" : "#1a1a1a",
+                "line-width": 2.5,
+                "line-opacity": 0.95,
+              },
+            });
+          }
 
           // Position to beat 0 (global establish view).
           m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
@@ -306,6 +335,8 @@ export const ChoroplethStory: React.FC<{
               centroidByKey,
               worldGeoJson,
               joined: layout.joined,
+              triggers,
+              borderByRegion,
             });
             continueRender(handle);
           });
@@ -329,6 +360,8 @@ export const ChoroplethStory: React.FC<{
       centroidByKey,
       worldGeoJson,
       joined,
+      triggers,
+      borderByRegion,
     } = mapState;
 
     const h = delayRender(`story-frame-${frame}`);
@@ -341,6 +374,23 @@ export const ChoroplethStory: React.FC<{
 
     // Deterministic jump — never flyTo.
     map.jumpTo({ center: camera.center, zoom: camera.zoom });
+
+    // Per-subject border draw — each region's trail draws on over the first ~2.5s
+    // since its reveal beat's own trigger frame (constant seconds, never a global
+    // fraction). Fill-bloom and label rise follow in later tasks.
+    for (const [key, triggerFrame] of triggers) {
+      const localSeconds = (frame - triggerFrame) / fps;
+      const staged = stagedEntrance(localSeconds, { fillOpacity: 0.9 });
+      const d = borderByRegion.get(key);
+      if (!d) continue;
+      (
+        map.getSource(`choro-trail-${key}`) as maptilersdk.GeoJSONSource
+      ).setData(
+        staged.borderProgress <= 0
+          ? EMPTY_FEATURE
+          : sliceBorder(d, 0, d.total * staged.borderProgress),
+      );
+    }
 
     // Update source data only when the beat changes.
     if (beatIndex !== lastBeatIndex.current) {
