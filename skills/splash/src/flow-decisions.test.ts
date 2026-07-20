@@ -2,7 +2,11 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { FLOW_DECISIONS, getDecision } from "./flow-decisions.ts";
+import {
+  FLOW_DECISIONS,
+  evaluateDecisions,
+  getDecision,
+} from "./flow-decisions.ts";
 
 describe("flow-decision registry", () => {
   it("every entry is well-formed", () => {
@@ -37,5 +41,27 @@ describe("flow-decision registry", () => {
     } finally {
       rmSync(runDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("evaluateDecisions — the spine gate reader", () => {
+  it("warns (not errors) on an absent required:false decision", () => {
+    const r = evaluateDecisions("/nonexistent", new Set(), {
+      only: ["suggest-chart-invoked"],
+    });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings.join(" ")).toContain("suggest-chart-invoked");
+  });
+
+  it("is silent when the decision is logged", () => {
+    const r = evaluateDecisions(
+      "/nonexistent",
+      new Set(["suggest-chart-invoked"]),
+      {
+        only: ["suggest-chart-invoked"],
+      },
+    );
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toEqual([]);
   });
 });

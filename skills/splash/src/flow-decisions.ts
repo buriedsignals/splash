@@ -46,3 +46,25 @@ export const FLOW_DECISIONS: FlowDecision[] = [
 export function getDecision(id: string): FlowDecision | undefined {
   return FLOW_DECISIONS.find((d) => d.id === id);
 }
+
+// The spine gate reader: for each registry decision (or the subset named by opts.only), if its
+// id is absent from loggedIds, push an ERROR when required, a WARNING when not. A proposal that
+// never escalated should not be asked for producer-escalation — opts.only scopes to what applies.
+export function evaluateDecisions(
+  _runDir: string,
+  loggedIds: Set<string>,
+  opts: { only?: string[] } = {},
+): { errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const scope = opts.only
+    ? FLOW_DECISIONS.filter((d) => opts.only!.includes(d.id))
+    : FLOW_DECISIONS;
+  for (const d of scope) {
+    if (loggedIds.has(d.id)) continue;
+    const msg = `flow decision "${d.id}" was never recorded (no save-decision.mjs entry)`;
+    if (d.required) errors.push(msg);
+    else warnings.push(msg);
+  }
+  return { errors, warnings };
+}
