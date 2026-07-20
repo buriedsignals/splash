@@ -174,12 +174,22 @@ The envelope has three phases; **each comp enables the phases its geometry suppo
 - **Callout anchor switches from `centroid(mainlandFeature(f))` (`ChoroplethStory.tsx:222`) to
   `poleOfInaccessibility(mainlandFeature(f))`** — fixes the latent bug where a concave mainland
   centroid falls outside the polygon and drops the callout off-region.
-- ⚠️ **VALIDATION CHECKPOINT (decide at render, not in theory):** on a choropleth, regions are
-  **adjacent** (shared borders). A per-region emphasis border drawing on *over its neighbors*
-  may read as noisy/crawling. **Render both modes and judge.** If border-draw reads poorly on
-  adjacent regions, **drop the border-draw phase for Choropleth** (keep fill-bloom + label-rise)
-  and reserve border-draw for separated geometries. The shared core makes each phase independently
-  switchable per comp — this fallback is a config flag, not a rewrite.
+- ✅ **VALIDATION CHECKPOINT — RESOLVED 2026-07-20 (KEEP border-draw).** The concern was that a
+  per-region emphasis border drawing on *over its neighbors* might read as noisy/crawling on
+  adjacent choropleth regions. Both modes were render-judged (real MP4s). On a landlocked subject
+  with many neighbors (**Germany** — France/Poland/Czechia/Austria/…), the emphasis border draws
+  as a **clean, distinct outline** that delineates the subject without noise, in both `context`
+  and `sequential`. Coastal subjects (Norway/Sweden) draw their full coastline+islands cleanly
+  (MultiPolygon rings all included). **Decision: keep the border-draw phase for Choropleth.**
+  Plan 2 (Cartogram/HexGrid) inherits this: border-draw stays on for areal comps; the phase remains
+  independently switchable per comp via the shared core, so a future comp that reads poorly can drop
+  it by config without a rewrite.
+- **Render-judged polish note (context mode, non-blocking, for follow-up):** the context-mode
+  fill-bloom is a same-color opacity *delta* over the region's already-painted base fill, so on a
+  top-bin (already-dark) region it is nearly imperceptible — the border-draw + label-rise carry the
+  spotlight. Candidate refinement: make the context bloom a *lightness* shift (mix toward a brighter
+  tint) so it reads across all bins. `sequential` mode is unaffected (there the bloom is the region's
+  entire 0→base fill and reads fully).
 
 ### Cartogram — border-draw (cell outline) + fill-bloom + label-rise
 - Cells (scaled polygons or grid squares): `buildDraw` on the cell outline, fill-bloom on the cell,
