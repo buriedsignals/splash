@@ -431,6 +431,17 @@ reads it to enforce "not-embed ⇒ never interactive/scrolly", and an ABSENT cha
 permissive `article-web` (a dropped `channel` would ship an interactive nobody asked for; a GARBLED one
 fails closed). Never omit it. See `docs/splash/guardrails.md`.
 
+**Record each flow decision mechanically (does NOT replace the gate — it feeds it).**
+After the corroborating step, run the sanctioned writer so the spine can verify it:
+- after suggest-chart produced `candidates.json`:
+  `bun skills/splash/scripts/save-decision.mjs suggest-chart-invoked <runDir>`
+- when citing the article's source:
+  `bun skills/splash/scripts/save-decision.mjs source-fidelity <runDir> --payload '{"article":"…","sourceName":"…","sourceUrl":"…"}'`
+- when escalating to chart-native on a dw-reachable type:
+  `bun skills/splash/scripts/save-decision.mjs producer-escalation <runDir> --payload '{"escalationReason":"…"}'`
+`<runDir>` is the directory that holds `accepted.json`/`candidates.json`. The writer REFUSES a
+decision whose evidence is missing — you cannot record a routing that did not happen.
+
 **5c. Produce everything at once** — report to a FILE (the gates and EXPORT read it back):
 ```bash
 bun skills/splash/scripts/produce-all.mjs exports/<slug>/accepted.json exports/<slug> \
