@@ -16,14 +16,14 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
-import { centroid } from "@turf/turf";
 import {
   computeChoropleth,
   mainlandFeature,
   type ChoroplethData,
 } from "../choropleth-geo";
 import { NO_DATA_COLOR } from "../theme/colors";
-import { deriveMapStory, type Beat } from "../map-story";
+import { deriveMapStory, resolveRevealMode, type Beat } from "../map-story";
+import { poleOfInaccessibility } from "../core/label-anchor";
 import {
   buildTimeline,
   cameraForFrame,
@@ -39,7 +39,7 @@ import { legendTheme } from "../theme/legend-theme";
 import { resolveMapStyle } from "../route-geo";
 import { fmtBinRange } from "../core/legend-format";
 import { triggerFrameByRegion } from "../story-triggers";
-import { stagedEntrance } from "../core/staged-reveal";
+import { stagedEntrance, type StagedEntrance } from "../core/staged-reveal";
 import {
   buildDraw,
   sliceBorder,
@@ -91,7 +91,7 @@ interface MapStory {
   phases: Phase[];
   solutions: CameraSolution[];
   sortedBins: { min: number; max: number; color: string }[];
-  centroidByKey: Map<string, [number, number]>;
+  anchorByKey: Map<string, [number, number]>;
   worldGeoJson: GeoJSON.FeatureCollection;
   joined: { key: string; value: number | null }[];
   triggers: Map<string, number>;
@@ -116,6 +116,8 @@ export const ChoroplethStory: React.FC<{
     mapStyle?: string;
     /** deliverable language — localizes legend numbers + "Source". Default English. */
     lang?: string;
+    /** context (default) blooms the subject over the full distribution; sequential — Task 9. */
+    revealMode?: string;
   };
 }> = ({ config }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -124,6 +126,7 @@ export const ChoroplethStory: React.FC<{
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const mode = resolveRevealMode(config);
   const theme = useMemo(() => legendTheme(dark), [dark]);
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
@@ -140,6 +143,7 @@ export const ChoroplethStory: React.FC<{
     fillReveal: number;
     calloutPt: { x: number; y: number } | null;
     calloutReveal: number;
+    labelReveal: number;
     calloutText: string;
     calloutValue: string;
     calloutColor: string;
@@ -175,10 +179,11 @@ export const ChoroplethStory: React.FC<{
     });
 
     m.on("load", () => {
-      // Strip symbol layers (labels).
+      // Strip symbol layers (labels) + inner admin-1 borders (clutter under our own strokes).
       const layers = m.getStyle()?.layers ?? [];
       for (const layer of layers) {
-        if (layer.type === "symbol") m.removeLayer(layer.id);
+        if (layer.type === "symbol" || /other border/i.test(layer.id))
+          m.removeLayer(layer.id);
       }
 
       fetch(staticFile("geo/world.geojson"))
@@ -224,34 +229,39 @@ export const ChoroplethStory: React.FC<{
           const kinds = beats.map((b) => b.kind);
           const { phases } = buildTimeline(kinds, fps);
 
-          // Precompute mainland centroids for callout projection.
-          const centroidByKey = new Map<string, [number, number]>();
-          for (const f of worldGeoJson.features) {
-            const key = String(f.properties?.["iso_a3"]);
-            try {
-              const c = centroid(mainlandFeature(f));
-              centroidByKey.set(key, [
-                c.geometry.coordinates[0],
-                c.geometry.coordinates[1],
-              ]);
-            } catch {
-              // Skip features where centroid fails (e.g., null geometry).
-            }
-          }
-
-          // Precompute the border-draw geometry for each subject region (the FEW regions
-          // a reveal beat visits) — the exterior ring of its mainland polygon, staged-drawn
-          // on over the beat's first ~2.5s via the shared border-slice/staged-reveal core.
+          // Precompute, for each subject region (the FEW regions a reveal beat visits —
+          // triggerFrameByRegion keys are exactly the beats' callout.region values):
+          //  - its callout anchor: the pole of inaccessibility of its mainland polygon
+          //    (most-interior point), not the centroid — a centroid can fall outside a
+          //    concave/crescent shape or on the wrong side of an offshore-islands split, the
+          //    pole never does. Grid-sample cost is real (~400ms/feature) — scoped to the
+          //    handful of subjects, never the whole ~240-feature world (measured ~98s and a
+          //    delayRender timeout when it was).
+          //  - its border-draw geometry: the exterior ring(s) of the ACTUAL geometry (a
+          //    MultiPolygon subject, e.g. a country with offshore islands, must draw ALL of
+          //    its parts, not just the largest one — mainlandFeature is for camera framing
+          //    and the anchor, not render geometry), staged-drawn on over the beat's first
+          //    ~2.5s via the shared border-slice/staged-reveal core.
           const triggers = triggerFrameByRegion(beats, phases);
+          const anchorByKey = new Map<string, [number, number]>();
           const borderByRegion = new Map<string, DrawEntry>();
           for (const key of triggers.keys()) {
             const f = worldGeoJson.features.find(
               (ft) => String(ft.properties?.["iso_a3"]) === key,
             );
-            if (!f) continue;
-            // Exterior ring(s) of the ACTUAL geometry — a MultiPolygon subject (e.g. a
-            // country with offshore islands) must draw ALL of its parts, not just the
-            // largest one (mainlandFeature is for camera framing, not render geometry).
+            if (!f || !f.geometry) continue;
+
+            try {
+              const c = poleOfInaccessibility(
+                mainlandFeature(f) as GeoJSON.Feature<
+                  GeoJSON.Polygon | GeoJSON.MultiPolygon
+                >,
+              ) as [number, number];
+              anchorByKey.set(key, c);
+            } catch {
+              // Skip a subject where the pole computation fails (e.g., degenerate geometry).
+            }
+
             const g = f.geometry;
             let rings: number[][][];
             if (g.type === "Polygon") {
@@ -312,10 +322,51 @@ export const ChoroplethStory: React.FC<{
             },
           });
 
-          // Per-subject emphasis trail — one dedicated line source+layer per reveal-beat
-          // region, staged-drawn on over the beat's first ~2.5s (replaces the static
-          // highlight-stroke; fill-bloom and label follow in later tasks).
+          // A subject region's own feature, isolated as a one-feature FeatureCollection —
+          // the bloom fill source (filtered so the transient overshoot only ever paints
+          // that region, never the rest of the distribution).
+          const singleRegionFeature = (
+            key: string,
+          ): GeoJSON.FeatureCollection => ({
+            type: "FeatureCollection",
+            features: worldGeoJson.features.filter(
+              (f) => String(f.properties?.["iso_a3"]) === key,
+            ),
+          });
+
+          // A subject region's bin color — same sortedBins lookup as colorExpr/the callout
+          // highlight color below, so the bloom always matches what's already painted there.
+          const binColorForKey = (key: string): string => {
+            const j = layout.joined.find((jj) => jj.key === key);
+            if (j?.value === null || j?.value === undefined)
+              return NO_DATA_COLOR;
+            const binIdx = sortedBins.findIndex(
+              (b, bi) =>
+                (j.value as number) < b.max || bi === sortedBins.length - 1,
+            );
+            return binIdx >= 0 ? sortedBins[binIdx].color : NO_DATA_COLOR;
+          };
+
+          // Per-subject emphasis: border trail (draws on) + fill bloom (brief overshoot on
+          // top of the base fill) — one dedicated source+layer pair per reveal-beat region,
+          // staged over the beat's first ~2.5-4.2s. Bloom sits above the base fill so its
+          // opacity reads as an additive brightening; the trail sits above the bloom so the
+          // drawn border stays visible through it.
           for (const key of triggers.keys()) {
+            m.addSource(`choro-bloom-${key}`, {
+              type: "geojson",
+              data: singleRegionFeature(key),
+            });
+            m.addLayer({
+              id: `choro-bloom-${key}`,
+              type: "fill",
+              source: `choro-bloom-${key}`,
+              paint: {
+                "fill-color": binColorForKey(key),
+                "fill-opacity": 0,
+              },
+            });
+
             m.addSource(`choro-trail-${key}`, {
               type: "geojson",
               data: EMPTY_FEATURE,
@@ -342,7 +393,7 @@ export const ChoroplethStory: React.FC<{
               phases,
               solutions,
               sortedBins,
-              centroidByKey,
+              anchorByKey,
               worldGeoJson,
               joined: layout.joined,
               triggers,
@@ -367,7 +418,7 @@ export const ChoroplethStory: React.FC<{
       phases,
       solutions,
       sortedBins,
-      centroidByKey,
+      anchorByKey,
       worldGeoJson,
       joined,
       triggers,
@@ -385,21 +436,37 @@ export const ChoroplethStory: React.FC<{
     // Deterministic jump — never flyTo.
     map.jumpTo({ center: camera.center, zoom: camera.zoom });
 
-    // Per-subject border draw — each region's trail draws on over the first ~2.5s
-    // since its reveal beat's own trigger frame (constant seconds, never a global
-    // fraction). Fill-bloom and label rise follow in later tasks.
+    // Per-subject entrance — each region's trail draws on, then (context mode) its fill
+    // blooms with a transient overshoot, over the first ~2.5-4.2s since its reveal beat's
+    // own trigger frame (constant seconds, never a global fraction). Staged per key once,
+    // reused below for the callout's label-rise.
+    const BLOOM_BASE = 0.9; // matches the base choropleth-fill target (fillReveal*0.9 at full reveal)
+    const stagedByKey = new Map<string, StagedEntrance>();
     for (const [key, triggerFrame] of triggers) {
       const localSeconds = (frame - triggerFrame) / fps;
-      const staged = stagedEntrance(localSeconds, { fillOpacity: 0.9 });
+      const staged = stagedEntrance(localSeconds, { fillOpacity: BLOOM_BASE });
+      stagedByKey.set(key, staged);
+
       const d = borderByRegion.get(key);
-      if (!d) continue;
-      (
-        map.getSource(`choro-trail-${key}`) as maptilersdk.GeoJSONSource
-      ).setData(
-        staged.borderProgress <= 0
-          ? EMPTY_FEATURE
-          : sliceBorder(d, 0, d.total * staged.borderProgress),
-      );
+      if (d) {
+        (
+          map.getSource(`choro-trail-${key}`) as maptilersdk.GeoJSONSource
+        ).setData(
+          staged.borderProgress <= 0
+            ? EMPTY_FEATURE
+            : sliceBorder(d, 0, d.total * staged.borderProgress),
+        );
+      }
+
+      if (mode === "context") {
+        // Transient overshoot delta only — the base choropleth-fill opacity below is left
+        // untouched (fillReveal*0.9 for the whole distribution), so this is a brief
+        // brightening on top, never a drop-to-zero.
+        const delta = Math.max(0, staged.fillOpacity - BLOOM_BASE);
+        map.setPaintProperty(`choro-bloom-${key}`, "fill-opacity", delta);
+      } else {
+        // sequential handled in Task 9
+      }
     }
 
     // Update source data only when the beat changes.
@@ -445,14 +512,20 @@ export const ChoroplethStory: React.FC<{
 
     let calloutPt: { x: number; y: number } | null = null;
     let calloutColor = "#ffffff";
+    // Staged rise for the active subject's label — falls back to the 0.5s calloutReveal
+    // ease if this callout's region has no trigger (shouldn't happen: every reveal-beat
+    // callout region has one, see triggerFrameByRegion).
+    let labelReveal = calloutReveal;
 
     if (beat.callout) {
       const regionKey = beat.callout.region;
-      const lngLat = centroidByKey.get(regionKey);
+      const lngLat = anchorByKey.get(regionKey);
       if (lngLat) {
         const pt = map.project(lngLat as [number, number]);
         calloutPt = { x: pt.x, y: pt.y };
       }
+      const staged = stagedByKey.get(regionKey);
+      if (staged) labelReveal = staged.labelReveal;
       // Resolve the highlighted region's bin color.
       if (beat.highlight.length > 0) {
         const hKey = beat.highlight[0];
@@ -472,6 +545,7 @@ export const ChoroplethStory: React.FC<{
       fillReveal,
       calloutPt,
       calloutReveal,
+      labelReveal,
       calloutText: beat.callout?.text ?? "",
       calloutValue: beat.callout?.value ?? "",
       calloutColor,
@@ -564,7 +638,7 @@ export const ChoroplethStory: React.FC<{
           <CountryLabel
             name={beat.callout.name}
             color={overlay.calloutColor}
-            reveal={overlay.calloutReveal}
+            reveal={overlay.labelReveal}
             x={overlay.calloutPt.x}
             y={overlay.calloutPt.y}
             value={overlay.calloutValue}
