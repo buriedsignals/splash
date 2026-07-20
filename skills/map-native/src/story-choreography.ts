@@ -74,6 +74,11 @@ export function stagedByKey(
  * reads as an additive brightening; the trail sits above the bloom so the drawn border
  * stays visible through it. `idPrefix` namespaces the source/layer ids per comp family
  * (choropleth passes "choro") so multiple story comps never collide.
+ *
+ * `bloom` (default true) controls whether the fill-bloom source+layer is built at all.
+ * DotDensityStory's fill channel is the dots themselves (stipple-in, driven per-frame
+ * off `stagedByKey`'s fillOpacity), not an areal fill — it passes `bloom: false` to get
+ * the trail only, so no unused bloom source/layer is created.
  */
 export function addSubjectEmphasisLayers(
   map: maptilersdk.Map,
@@ -85,23 +90,26 @@ export function addSubjectEmphasisLayers(
     featureFor: (k: string) => GeoJSON.Feature | GeoJSON.FeatureCollection;
     colorFor: (k: string) => string;
     dark: boolean;
+    bloom?: boolean;
   },
 ): void {
-  const { idPrefix, featureFor, colorFor, dark } = opts;
+  const { idPrefix, featureFor, colorFor, dark, bloom = true } = opts;
   for (const key of keys) {
-    map.addSource(`${idPrefix}-bloom-${key}`, {
-      type: "geojson",
-      data: featureFor(key),
-    });
-    map.addLayer({
-      id: `${idPrefix}-bloom-${key}`,
-      type: "fill",
-      source: `${idPrefix}-bloom-${key}`,
-      paint: {
-        "fill-color": colorFor(key),
-        "fill-opacity": 0,
-      },
-    });
+    if (bloom) {
+      map.addSource(`${idPrefix}-bloom-${key}`, {
+        type: "geojson",
+        data: featureFor(key),
+      });
+      map.addLayer({
+        id: `${idPrefix}-bloom-${key}`,
+        type: "fill",
+        source: `${idPrefix}-bloom-${key}`,
+        paint: {
+          "fill-color": colorFor(key),
+          "fill-opacity": 0,
+        },
+      });
+    }
 
     map.addSource(`${idPrefix}-trail-${key}`, {
       type: "geojson",

@@ -1,18 +1,28 @@
 // DotDensityStory — beat-driven guided camera tour for the dot-density map.
-// Ports LocatorStory, with dot-density deltas:
-//   1. beats from deriveDotDensityStory(computeDotDensity(config, world, "iso_a3"), meta) — title →
-//      establish → reveal the DENSEST regions (dots/area, descending) → takeaway.
+// Ports ChoroplethStory/CartogramStory's areal choreography, with a STIPPLE-IN twist:
+//   1. beats from beatsForMode(deriveDotDensityStory(computeDotDensity(config, world, "iso_a3"),
+//      meta), mode) — title → establish (dropped in sequential) → reveal the DENSEST regions
+//      (dots/area, descending) → takeaway.
 //   2. same dot-build as DotDensityReveal (uniform circle-radius 2, NEVER value-scaled), but each dot
-//      Point is TAGGED with __region = its region key so the story can dim non-highlighted regions.
-//   3. on a `reveal` beat (highlight = [regionKey]) the dot layer circle-opacity is a data-driven
-//      expression: full for __region === highlightKey, dimmed (~0.25) otherwise — synced to the beat.
-//      On title/establish/takeaway (empty highlight) all dots are full.
-//   4. camera flies to each beat via buildTimeline/cameraForFrame; caption = CaptionCard(beat.copy);
+//      Point is TAGGED with __region = its region key so the story can dim/stipple non-highlighted
+//      or not-yet-entered regions. Region polygons (dot-density-region-src) are REAL country
+//      geometry — genuine border-draw (trail), pole-of-inaccessibility label anchor.
+//   3. the FILL CHANNEL IS THE DOTS THEMSELVES, not a bloom fill layer: addSubjectEmphasisLayers
+//      is called with `bloom:false` (trail-only), and each subject's dot circle-opacity is a
+//      per-frame data-driven expression built from stagedByKey's fillOpacity (0→overshoot→1
+//      stipple-in), computed by buildDotOpacityExpression (dot-density-story.ts, pure/tested).
+//      context: highlighted subject's dots stipple in, others held at DIM_OPACITY; title/
+//      establish/takeaway → every dot full. sequential: every triggered region shows its own
+//      staged fillOpacity (0 while not yet entered), untriggered regions 0.
+//   4. camera flies to each beat via buildTimeline/cameraForFrame (AREAL_TIMELINE_OPTS, shared
+//      with the other areal story comps); projected CountryLabel (name + value) at the pole of
+//      inaccessibility, reveal=labelReveal; CaptionCard(beat.copy) carries the fuller sentence;
 //      title scene via resolveScene; legend "1 dot = N" + category swatches (multivariate).
-//   5. NO on-map name callout — the caption carries the region name (locator callout-removal decision).
 // Harness:
-//   delayRender → on load fetch world → build dots(+__region) + beats + jumpTo beat 0 → idle → continueRender
-//   per-frame: delayRender → jumpTo → setPaintProperty(dim by beat) → caption overlay state → idle → continueRender
+//   delayRender → on load fetch world → build dots(+__region) + regions + beats + entrance
+//   layers (trail-only) → jumpTo beat 0 → idle → continueRender
+//   per-frame: delayRender → jumpTo → per-subject trail slice → dots opacity expression →
+//   project label anchor → caption/label overlay → idle → continueRender
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -27,9 +37,17 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
-import { computeDotDensity, UNIVARIATE_ACCENT } from "../dot-density-geo";
+import { poleOfInaccessibility } from "../core/label-anchor";
+import {
+  computeDotDensity,
+  UNIVARIATE_ACCENT,
+  type RegionDotSpec,
+} from "../dot-density-geo";
 import { scatterInPolygon } from "../dot-scatter";
-import { deriveDotDensityStory } from "../dot-density-story";
+import {
+  deriveDotDensityStory,
+  buildDotOpacityExpression,
+} from "../dot-density-story";
 import { resolveMapStyle } from "../route-geo";
 import {
   buildTimeline,
@@ -37,8 +55,21 @@ import {
   type CameraSolution,
   type Phase,
 } from "../story-timeline";
-import type { Beat } from "../map-story";
+import { resolveRevealMode, beatsForMode, type Beat } from "../map-story";
+import { triggerFrameByRegion } from "../story-triggers";
+import {
+  AREAL_TIMELINE_OPTS,
+  stagedByKey,
+  addSubjectEmphasisLayers,
+} from "../story-choreography";
+import {
+  buildDraw,
+  sliceBorder,
+  EMPTY_FEATURE,
+  type DrawEntry,
+} from "../core/border-slice";
 import type { DotDensityConfigShape } from "../validate-config";
+import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
@@ -51,7 +82,7 @@ const DOT_RADIUS_PX = 2; // FIXED — uniform dot size, NEVER value-scaled
 const DOT_LAYER = "dot-density-dots";
 const OUTLINE_LAYER = "dot-density-outline";
 const JOIN_KEY = "iso_a3";
-const DIM_OPACITY = 0.25; // non-highlighted regions during a reveal beat
+const DIM_OPACITY = 0.25; // non-highlighted regions during a reveal beat (context mode)
 
 interface DDLegend {
   hasCategories: boolean;
@@ -64,6 +95,18 @@ interface DotStoryMapState {
   beats: Beat[];
   phases: Phase[];
   solutions: CameraSolution[];
+  triggers: Map<string, number>;
+  borderByKey: Map<string, DrawEntry>;
+  anchorByKey: Map<string, [number, number]>;
+  regionByKey: Map<string, RegionDotSpec>;
+}
+
+// A region's dominant colour — the single group for a univariate map, else the group with the
+// highest dot count (mirrors the "mostly X" dominant-category pick in deriveDotDensityStory).
+function dominantColor(region: RegionDotSpec): string {
+  if (!region.groups.length) return "#ffffff";
+  return region.groups.reduce((best, g) => (g.count > best.count ? g : best))
+    .color;
 }
 
 export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
@@ -76,6 +119,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
   const { fps, width, height } = useVideoConfig();
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
+  const mode = resolveRevealMode(config);
   const bg = dark ? "#0e0f12" : "#f4f4f4";
   const outlineColor = dark ? "#5a5a63" : "#9aa0a6";
 
@@ -94,13 +138,15 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
     delayRender("dot-density-story-init", { timeoutInMilliseconds: 120000 }),
   );
 
-  // Per-frame overlay state: the caption reveal ramp for the active beat.
+  // Per-frame overlay state: caption reveal ramp + the active subject's projected label state.
   const [overlay, setOverlay] = useState<{
     beatIndex: number;
     captionReveal: number;
+    calloutPt: { x: number; y: number } | null;
+    calloutColor: string;
+    calloutValue: string;
+    labelReveal: number;
   } | null>(null);
-
-  const lastBeatIndex = useRef<number>(-1);
 
   // Init map once.
   useEffect(() => {
@@ -201,7 +247,8 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
             },
           });
 
-          // Build beats from the layout — title → establish → densest reveals → takeaway.
+          // Build beats from the layout — title → establish (dropped in sequential) → densest
+          // reveals → takeaway.
           const meta = {
             title: config.title ?? "",
             description: config.description,
@@ -212,7 +259,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
             unit:
               ((config as Record<string, unknown>).valueUnit as string) ?? "",
           };
-          const beats = deriveDotDensityStory(layout, meta);
+          const beats = beatsForMode(deriveDotDensityStory(layout, meta), mode);
 
           // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox, padded.
           const solutions: CameraSolution[] = beats.map((b) => {
@@ -228,8 +275,64 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
             };
           });
 
+          // Build timeline phases — same fluid interwoven envelope as ChoroplethStory/CartogramStory.
           const kinds = beats.map((b) => b.kind);
-          const { phases } = buildTimeline(kinds, fps);
+          const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
+
+          // Precompute, for each subject region a reveal beat actually visits (triggerFrameByRegion
+          // keys are exactly the beats' callout.region values) — never the whole region set:
+          //  - its border-draw geometry: ALL of the region feature's exterior ring(s) (a
+          //    MultiPolygon region, e.g. offshore islands, must draw every part, not just the
+          //    largest), staged-drawn on over the beat's own entrance window.
+          //  - its callout anchor: the pole of inaccessibility (most-interior point) of the FULL
+          //    region feature — country polygons are frequently concave, a centroid can land
+          //    outside the shape.
+          const regionByKey = new Map(layout.regions.map((r) => [r.key, r]));
+          const triggers = triggerFrameByRegion(beats, phases);
+          const borderByKey = new Map<string, DrawEntry>();
+          const anchorByKey = new Map<string, [number, number]>();
+          for (const key of triggers.keys()) {
+            const region = regionByKey.get(key);
+            if (!region) continue;
+
+            const g = region.feature.geometry;
+            let rings: number[][][];
+            if (g.type === "Polygon") {
+              rings = [g.coordinates[0]];
+            } else if (g.type === "MultiPolygon") {
+              rings = g.coordinates.map((poly) => poly[0]);
+            } else {
+              continue;
+            }
+            if (rings.length > 0) borderByKey.set(key, buildDraw(rings));
+
+            try {
+              anchorByKey.set(
+                key,
+                poleOfInaccessibility(
+                  region.feature as GeoJSON.Feature<
+                    GeoJSON.Polygon | GeoJSON.MultiPolygon
+                  >,
+                ),
+              );
+            } catch {
+              // Skip a subject where the pole computation fails (e.g., degenerate geometry).
+            }
+          }
+
+          // Per-subject emphasis: border trail ONLY (bloom:false) — the fill channel is the
+          // dots themselves (stipple-in via circle-opacity, computed per-frame below), not an
+          // areal fill layer.
+          addSubjectEmphasisLayers(m, [...triggers.keys()], {
+            idPrefix: "dotdensity",
+            featureFor: (key) => regionByKey.get(key)?.feature ?? EMPTY_FEATURE,
+            colorFor: (key) => {
+              const region = regionByKey.get(key);
+              return region ? dominantColor(region) : "#999999";
+            },
+            dark,
+            bloom: false,
+          });
 
           m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
 
@@ -240,7 +343,16 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
           });
 
           continueWhenMapSettles(m, () => {
-            setMapState({ map: m, beats, phases, solutions });
+            setMapState({
+              map: m,
+              beats,
+              phases,
+              solutions,
+              triggers,
+              borderByKey,
+              anchorByKey,
+              regionByKey,
+            });
             continueRender(handle);
           });
         })
@@ -254,7 +366,16 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
   // Per-frame update — deterministic, driven entirely by `frame`.
   useEffect(() => {
     if (!mapState) return;
-    const { map, beats, phases, solutions } = mapState;
+    const {
+      map,
+      beats,
+      phases,
+      solutions,
+      triggers,
+      borderByKey,
+      anchorByKey,
+      regionByKey,
+    } = mapState;
 
     const h = delayRender(`dot-density-story-frame-${frame}`);
 
@@ -266,30 +387,39 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
     const beat = beats[beatIndex];
     const phase = phases[beatIndex];
 
-    // On beat change: sync the dot emphasis. On a `reveal` beat (dim + highlight), dim every dot
-    // whose __region isn't the highlighted key; otherwise all dots full. Data-driven expression.
-    if (beatIndex !== lastBeatIndex.current) {
-      lastBeatIndex.current = beatIndex;
-      const emphasise = beat.dim && beat.highlight.length > 0;
-      if (emphasise) {
-        const highlightKey = beat.highlight[0];
-        const opacityExpr = [
-          "case",
-          ["==", ["get", "__region"], highlightKey],
-          1,
-          DIM_OPACITY,
-        ];
-        map.setPaintProperty(DOT_LAYER, "circle-opacity", opacityExpr as never);
-        map.setPaintProperty(
-          DOT_LAYER,
-          "circle-stroke-opacity",
-          opacityExpr as never,
+    // Per-subject entrance — each subject region's border trail draws on, staged over the first
+    // ~2.5-4.2s since its reveal beat's own trigger frame. fillTarget=1 so a subject's staged
+    // fillOpacity feeds the DOT layer's own full opacity (below), not a bloom overshoot.
+    const stagedMap = stagedByKey(triggers, frame, fps, 1);
+    for (const key of triggers.keys()) {
+      const staged = stagedMap.get(key)!;
+      const d = borderByKey.get(key);
+      if (d) {
+        (
+          map.getSource(`dotdensity-trail-${key}`) as maptilersdk.GeoJSONSource
+        ).setData(
+          staged.borderProgress <= 0
+            ? EMPTY_FEATURE
+            : sliceBorder(d, 0, d.total * staged.borderProgress),
         );
-      } else {
-        map.setPaintProperty(DOT_LAYER, "circle-opacity", 1);
-        map.setPaintProperty(DOT_LAYER, "circle-stroke-opacity", 1);
       }
     }
+
+    // Dots STIPPLE IN: the fill channel is the dot layer itself, not a bloom fill — a per-frame
+    // data-driven circle-opacity expression built from each subject's own staged fillOpacity
+    // (pure helper, unit-tested — see dot-density-story.ts).
+    const opacityExpr = buildDotOpacityExpression(
+      mode,
+      beat,
+      stagedMap,
+      DIM_OPACITY,
+    );
+    map.setPaintProperty(DOT_LAYER, "circle-opacity", opacityExpr as never);
+    map.setPaintProperty(
+      DOT_LAYER,
+      "circle-stroke-opacity",
+      opacityExpr as never,
+    );
 
     // Caption reveal: ease over first ~0.5s of the beat's hold.
     const holdStart = phase.startFrame + phase.moveFrames;
@@ -301,7 +431,35 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
       { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
     );
 
-    setOverlay({ beatIndex, captionReveal });
+    // Projected label overlay — the beat's subject region, staged label-rise driven by the same
+    // entrance envelope as its border trail/dot stipple. Falls back to the 0.5s captionReveal
+    // ease if this callout's region has no trigger (shouldn't happen: every reveal-beat callout
+    // region has one, see triggerFrameByRegion).
+    let calloutPt: { x: number; y: number } | null = null;
+    let calloutColor = "#ffffff";
+    let labelReveal = captionReveal;
+
+    if (beat.callout) {
+      const regionKey = beat.callout.region;
+      const lngLat = anchorByKey.get(regionKey);
+      if (lngLat) {
+        const pt = map.project(lngLat as [number, number]);
+        calloutPt = { x: pt.x, y: pt.y };
+      }
+      const staged = stagedMap.get(regionKey);
+      if (staged) labelReveal = staged.labelReveal;
+      const region = regionByKey.get(regionKey);
+      if (region) calloutColor = dominantColor(region);
+    }
+
+    setOverlay({
+      beatIndex,
+      captionReveal,
+      calloutPt,
+      calloutColor,
+      calloutValue: beat.callout?.value ?? "",
+      labelReveal,
+    });
 
     continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
@@ -379,10 +537,22 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
         }}
       />
 
-      {/* No on-map callout: the caption below carries the region name + value — consistent with the
-          locator callout-removal decision, and avoids a projected label overflowing near frame edges. */}
+      {/* Projected on-map label — the beat's subject region, name + value, staged rise */}
+      {overlay &&
+        beat?.callout &&
+        overlay.calloutPt &&
+        overlay.labelReveal > 0 && (
+          <CountryLabel
+            name={beat.callout.name}
+            color={overlay.calloutColor}
+            reveal={overlay.labelReveal}
+            x={overlay.calloutPt.x}
+            y={overlay.calloutPt.y}
+            value={overlay.calloutValue}
+          />
+        )}
 
-      {/* Caption lower-third — for reveal/takeaway beats with copy */}
+      {/* Caption lower-third — carries the fuller sentence (incl. "mostly X" for multivariate) */}
       {overlay &&
         beat?.kind !== "title" &&
         beat?.copy &&

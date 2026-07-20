@@ -171,8 +171,30 @@ const sampleDDBeats = deriveDotDensityStory(sampleDDLayout, {
 const DOT_DENSITY_STORY_FRAMES = buildTimeline(
   sampleDDBeats.map((b) => b.kind),
   30,
+  AREAL_TIMELINE_OPTS,
 ).totalFrames;
 const dotDensityDefaultProps = { config: sampleDotDensity };
+
+// Mode-aware composition duration — mirrors `storyMeta`/`cartogramStoryMeta` above (single
+// source of truth with DotDensityStory.tsx's own layout+beats+beatsForMode setup, so the
+// sequential mp4 doesn't end with a frozen tail).
+const dotDensityStoryMeta = makeStoryMeta((cfg) => {
+  const layout = computeDotDensity(cfg, world as any, "iso_a3");
+  const beats = beatsForMode(
+    deriveDotDensityStory(layout, {
+      title: cfg.title ?? "",
+      description: cfg.description,
+      insight: cfg.insight ?? cfg.title ?? "",
+      unit: cfg.valueUnit ?? "",
+    }),
+    resolveRevealMode(cfg),
+  );
+  return buildTimeline(
+    beats.map((b) => b.kind),
+    30,
+    AREAL_TIMELINE_OPTS,
+  ).totalFrames;
+});
 
 const sampleHGLayout = computeHexGrid(sampleHexGrid as any);
 const sampleHGBeats = deriveHexGridStory(sampleHGLayout, {
@@ -499,6 +521,7 @@ export const RemotionRoot: React.FC = () => (
       id="DotDensityStory"
       component={DotDensityStory}
       durationInFrames={DOT_DENSITY_STORY_FRAMES}
+      calculateMetadata={dotDensityStoryMeta}
       fps={30}
       width={1280}
       height={720}
@@ -508,6 +531,7 @@ export const RemotionRoot: React.FC = () => (
       id="DotDensityStorySquare"
       component={DotDensityStory}
       durationInFrames={DOT_DENSITY_STORY_FRAMES}
+      calculateMetadata={dotDensityStoryMeta}
       fps={30}
       width={1080}
       height={1080}
@@ -517,6 +541,7 @@ export const RemotionRoot: React.FC = () => (
       id="DotDensityStoryPortrait"
       component={DotDensityStory}
       durationInFrames={DOT_DENSITY_STORY_FRAMES}
+      calculateMetadata={dotDensityStoryMeta}
       fps={30}
       width={1080}
       height={1920}

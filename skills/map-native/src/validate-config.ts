@@ -499,6 +499,9 @@ export type DotDensityConfigShape = {
   /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
    * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
   themeBg?: string;
+  /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
+   * resolveRevealMode — unset/unknown falls back to "context". */
+  revealMode?: RevealMode;
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
@@ -530,6 +533,11 @@ export function validateDotDensityConfig(
     !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
   )
     errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  if (
+    s.revealMode !== undefined &&
+    !["context", "sequential"].includes(s.revealMode as string)
+  )
+    errors.push("revealMode must be one of: context, sequential");
 
   const hasCats =
     Array.isArray(s.categories) && (s.categories as unknown[]).length > 0;

@@ -1,8 +1,9 @@
 // Beat derivation for dot-density videos — the sibling of deriveLocatorStory. title → establish
 // (all dots in view) → reveal the DENSEST regions (dots per area, descending, capped) → takeaway.
 // Same Beat shape as the other types. The dot scatter is unchanged; the video just moves the camera.
-import type { Beat } from "./map-story";
+import type { Beat, RevealMode } from "./map-story";
 import type { DotDensityLayout } from "./dot-density-geo";
+import type { StagedEntrance } from "./core/staged-reveal";
 import { regionBounds } from "./choropleth-geo";
 import { area } from "@turf/turf";
 
@@ -96,4 +97,49 @@ export function deriveDotDensityStory(
   });
 
   return beats;
+}
+
+/**
+ * Builds the per-frame `circle-opacity` (data-driven MapLibre expression, or a flat number)
+ * for the `dot-density-dots` layer — the STIPPLE-IN twist: the fill channel is the dots
+ * themselves, not a bloom fill layer, so each subject region's dot opacity is driven directly
+ * off its own `stagedByKey` entrance envelope (0 → overshoot → 1) instead of jumping straight
+ * from dim to full at the beat boundary. Pure — no map/DOM access, unit-testable.
+ *
+ * - `context`: title/establish/takeaway (no dim/highlight) → every dot at full opacity (1).
+ *   A reveal beat → the ONE highlighted region's dots stipple in via its own staged fillOpacity
+ *   (kept simple: only the current beat's subject blends, not every previously-visited one),
+ *   every other region held at `dimOpacity`.
+ * - `sequential`: nothing is lit from the base map. Every region that has EVER triggered
+ *   (past or present reveal beat) shows its own staged fillOpacity (0 while not yet entered,
+ *   ramping 0→1 once its beat starts, holding at 1 after); anything never triggered is 0.
+ */
+export function buildDotOpacityExpression(
+  mode: RevealMode,
+  beat: Pick<Beat, "dim" | "highlight">,
+  stagedMap: Map<string, StagedEntrance>,
+  dimOpacity: number,
+): unknown {
+  if (mode === "sequential") {
+    const expr: unknown[] = ["case"];
+    for (const [key, staged] of stagedMap) {
+      expr.push(["==", ["get", "__region"], key], staged.fillOpacity);
+    }
+    expr.push(0); // default: not (yet) a reveal subject
+    return expr;
+  }
+
+  if (beat.dim && beat.highlight.length > 0) {
+    const highlightKey = beat.highlight[0];
+    const staged = stagedMap.get(highlightKey);
+    const opacity = staged ? staged.fillOpacity : 1;
+    return [
+      "case",
+      ["==", ["get", "__region"], highlightKey],
+      opacity,
+      dimOpacity,
+    ];
+  }
+
+  return 1;
 }
