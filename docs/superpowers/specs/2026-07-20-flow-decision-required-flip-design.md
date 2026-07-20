@@ -85,3 +85,28 @@ defect remains. The presence check is a necessary floor; the full class needs on
 
 Each flip is a small, independently reviewable change. This doc is the input to a
 brainstorm → plan → execute cycle; it is not itself a plan.
+
+## Update 2026-07-20 (after auto-record + re-measurement) — the flip is NOT achievable for the current decisions
+
+Requirement 2 (spine auto-record) landed for `suggest-chart-invoked`, and Req.3-B/M3 hardened the
+others. A re-measurement + a grounding pass on where each decision's evidence actually lives then
+established the flip's real boundary:
+
+| Decision | Evidence at the spine? | Flip-safe? |
+|---|---|---|
+| `suggest-chart-invoked` | **Structural** — the candidate-provenance gate REQUIRES `candidates.json` for a guided run, and produce-all auto-records off it | Safe, but **redundant** — provenance already blocks a guided run without it, so `required:true` adds nothing |
+| `source-fidelity` | **No** — the article is not reliably beside `accepted.json` (measured: recent runs have none; the harness driver reads it from the case dir, never writes it to the runDir). Threading it via `accepted.json`/the orchestrator is prose-dependent — the exact fragility auto-record removed | **No** — cannot be made reliably spine-auto-recordable |
+| `producer-escalation` | **No** — the justification (a journalist motion/interactivity ask) lives in the conversation, not on disk | **No** — orchestrator-dependent |
+
+**Conclusion: no current decision is both safe AND non-redundant to flip.** This is the mechanism's
+boundary, not a bug: only a decision whose evidence is **structurally guaranteed at the spine**
+(the way provenance guarantees `candidates.json`) can be flipped to `required:true` without risking
+a legitimate run. The present set has exactly one such decision, and it is redundant with provenance.
+
+**Do NOT flip any of the three.** The productive next step is not the flip but adding NEW decisions
+that DO have structural spine evidence, or giving an existing class a structural anchor (e.g. a
+required-article convention the spine can depend on, which is a larger design of its own).
+
+**What shipped instead** (the useful parts of the prerequisites): `source-fidelity` hardened (M3);
+`producer-escalation` given a harness cross-check (`check:producer-escalation-no-reason`) that
+catches an unjustified escalation in QA even though it cannot enable the flip.
