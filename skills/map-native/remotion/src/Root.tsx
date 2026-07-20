@@ -179,8 +179,28 @@ const sampleLocatorBeats = deriveLocatorStory(sampleLocator.markers, {
 const LOCATOR_STORY_FRAMES = buildTimeline(
   sampleLocatorBeats.map((b) => b.kind),
   30,
+  AREAL_TIMELINE_OPTS,
 ).totalFrames;
 const locatorDefaultProps = { config: sampleLocator };
+
+// Mode-aware composition duration — mirrors `symbolStoryMeta` above (single source of truth
+// with LocatorStory.tsx's own beats+beatsForMode setup, so the sequential mp4 doesn't end with
+// a frozen tail).
+const locatorStoryMeta = makeStoryMeta((cfg) => {
+  const beats = beatsForMode(
+    deriveLocatorStory(cfg.markers, {
+      title: cfg.title ?? "",
+      description: cfg.description,
+      insight: cfg.insight ?? cfg.title ?? "",
+    }),
+    resolveRevealMode(cfg),
+  );
+  return buildTimeline(
+    beats.map((b) => b.kind),
+    30,
+    AREAL_TIMELINE_OPTS,
+  ).totalFrames;
+});
 
 const sampleDDLayout = computeDotDensity(
   sampleDotDensity as any,
@@ -494,6 +514,7 @@ export const RemotionRoot: React.FC = () => (
       id="LocatorStory"
       component={LocatorStory}
       durationInFrames={LOCATOR_STORY_FRAMES}
+      calculateMetadata={locatorStoryMeta}
       fps={30}
       width={1280}
       height={720}
@@ -503,6 +524,7 @@ export const RemotionRoot: React.FC = () => (
       id="LocatorStorySquare"
       component={LocatorStory}
       durationInFrames={LOCATOR_STORY_FRAMES}
+      calculateMetadata={locatorStoryMeta}
       fps={30}
       width={1080}
       height={1080}
@@ -512,6 +534,7 @@ export const RemotionRoot: React.FC = () => (
       id="LocatorStoryPortrait"
       component={LocatorStory}
       durationInFrames={LOCATOR_STORY_FRAMES}
+      calculateMetadata={locatorStoryMeta}
       fps={30}
       width={1080}
       height={1920}

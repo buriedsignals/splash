@@ -2,8 +2,9 @@
 // few-annotated (a beat per PLACE, camera on a tight box, caption = the marker note) and
 // categorized (a beat per CATEGORY, camera on that category's markers, caption = category + count).
 // title → establish (all markers) → reveals → takeaway. Same Beat shape as choropleth/symbol.
-import type { Beat } from "./map-story";
+import type { Beat, RevealMode } from "./map-story";
 import type { LocatorMarker } from "./locator-geo";
+import type { Phase } from "./story-timeline";
 import { shortWayLongitudeExtent } from "./core/longitude";
 
 export interface LocatorStoryMeta {
@@ -113,4 +114,55 @@ export function deriveLocatorStory(
   });
 
   return beats;
+}
+
+/**
+ * Every label present in ANY reveal beat's `highlight[]` (not just `highlight[0]`) → that
+ * beat's start frame. The generic `triggerFrameByRegion` (story-triggers.ts) assumes one
+ * subject per reveal beat — true for Symbol/Choropleth, but NOT for Locator's categorized
+ * regime, where a single reveal beat highlights EVERY marker in that category. A marker
+ * absent from every reveal beat's highlight (beyond `maxReveals`) is simply not in the map.
+ */
+export function revealTriggersByLabel(
+  beats: Beat[],
+  phases: Phase[],
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (let i = 0; i < beats.length; i++) {
+    if (beats[i].kind !== "reveal") continue;
+    for (const label of beats[i].highlight) {
+      if (!out.has(label)) out.set(label, phases[i].startFrame);
+    }
+  }
+  return out;
+}
+
+/**
+ * Per-marker entrance trigger frame for LocatorStory's choreography — every marker gets one
+ * (mirrors symbol-story.ts's `markTriggerFrames`, keyed by `label` instead of `SymbolPoint`
+ * so it works for `LocatorMarker`):
+ *  - context: every marker establishes TOGETHER, at the establish beat's own start frame.
+ *  - sequential: a marker with its own reveal beat (`revealTriggers`, built by
+ *    `revealTriggersByLabel` above so a categorized beat's every marker gets a trigger, not
+ *    just the first) triggers at that beat's start frame — markers appear one-by-one (few-
+ *    annotated) or category-by-category (categorized). A marker with no reveal beat (beyond
+ *    `maxReveals`) never triggers — it stays hidden (radius/opacity/label all 0) for the
+ *    whole story, since sequential's narrative never visits it.
+ */
+export function markTriggerFrames(
+  markers: { label: string }[],
+  mode: RevealMode,
+  establishStartFrame: number,
+  revealTriggers: Map<string, number>,
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const m of markers) {
+    out.set(
+      m.label,
+      mode === "context"
+        ? establishStartFrame
+        : (revealTriggers.get(m.label) ?? Number.POSITIVE_INFINITY),
+    );
+  }
+  return out;
 }

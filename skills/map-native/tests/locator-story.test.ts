@@ -1,5 +1,11 @@
 import { describe, it, expect } from "bun:test";
-import { deriveLocatorStory } from "../src/locator-story";
+import {
+  deriveLocatorStory,
+  revealTriggersByLabel,
+  markTriggerFrames,
+} from "../src/locator-story";
+import type { Beat } from "../src/map-story";
+import type { Phase } from "../src/story-timeline";
 
 const few = [
   {
@@ -79,5 +85,70 @@ describe("deriveLocatorStory", () => {
     const [w, s, e, n] = cultural.camera;
     expect(e - w).toBeGreaterThan(0);
     expect(n - s).toBeGreaterThan(0);
+  });
+});
+
+describe("revealTriggersByLabel", () => {
+  const beat = (kind: Beat["kind"], highlight: string[] = []): Beat => ({
+    kind,
+    camera: [0, 0, 1, 1],
+    highlight,
+    dim: kind === "reveal",
+    callout: null,
+    copy: "",
+  });
+  const phase = (startFrame: number): Phase => ({
+    startFrame,
+    moveFrames: 39,
+    holdFrames: 90,
+  });
+
+  it("maps EVERY label in a reveal beat's highlight[] (not just [0]) to that beat's start frame — the categorized-regime case", () => {
+    const beats = [
+      beat("title"),
+      beat("establish"),
+      beat("reveal", ["A", "B"]), // one category beat highlighting two markers
+      beat("reveal", ["C"]),
+      beat("takeaway"),
+    ];
+    const phases = [phase(0), phase(30), phase(150), phase(300), phase(450)];
+    const m = revealTriggersByLabel(beats, phases);
+    expect(m.get("A")).toBe(150);
+    expect(m.get("B")).toBe(150);
+    expect(m.get("C")).toBe(300);
+  });
+
+  it("ignores non-reveal beats and keeps the FIRST trigger for a repeated label", () => {
+    const beats = [beat("title"), beat("reveal", ["A"]), beat("reveal", ["A"])];
+    const phases = [phase(0), phase(30), phase(200)];
+    const m = revealTriggersByLabel(beats, phases);
+    expect(m.get("A")).toBe(30);
+  });
+});
+
+describe("markTriggerFrames (locator)", () => {
+  const markers = [{ label: "A" }, { label: "B" }, { label: "C" }];
+
+  it("context: every marker shares the establish beat's own start frame", () => {
+    const m = markTriggerFrames(markers, "context", 75, new Map());
+    expect(m.get("A")).toBe(75);
+    expect(m.get("B")).toBe(75);
+    expect(m.get("C")).toBe(75);
+  });
+
+  it("sequential: a marker with its own reveal-beat trigger (possibly shared with a category-mate) triggers at that beat's start frame", () => {
+    const revealTriggers = new Map([
+      ["A", 150],
+      ["B", 150], // A and B share ONE category reveal beat
+    ]);
+    const m = markTriggerFrames(markers, "sequential", 75, revealTriggers);
+    expect(m.get("A")).toBe(150);
+    expect(m.get("B")).toBe(150);
+  });
+
+  it("sequential: a marker with no reveal beat (beyond maxReveals) never triggers", () => {
+    const revealTriggers = new Map([["A", 150]]);
+    const m = markTriggerFrames(markers, "sequential", 75, revealTriggers);
+    expect(m.get("C")).toBe(Number.POSITIVE_INFINITY);
   });
 });

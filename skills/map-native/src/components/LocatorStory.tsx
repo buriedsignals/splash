@@ -1,13 +1,21 @@
 // LocatorStory — beat-driven guided camera tour for the locator / markers map.
 // Ports SymbolStory, with locator deltas:
-//   1. beats from deriveLocatorStory(config.markers, meta) — per-place (few) / per-category (many)
-//   2. uniform dot glyph, colour by category, mapStyle-adaptive (never value-scaled, never size legend)
-//   3. all markers visible; the "reveal" is the camera flying to each beat + highlighted markers
-//      emphasised (dim the rest) + the caption showing the beat copy
+//   1. beats from beatsForMode(deriveLocatorStory(config.markers, meta), mode) — per-place
+//      (few) / per-category (many)
+//   2. uniform dot glyph, colour by category, mapStyle-adaptive (never value-scaled, never size
+//      legend) — but EACH marker's own entrance (radius grow + opacity fade + label rise) is its
+//      OWN staged-entrance envelope, keyed on a per-marker trigger frame (markTriggerFrames), the
+//      SAME point-comp pattern SymbolStory uses. The `__highlight` dim-the-rest tour (recomputed
+//      per beat, declutter via placeLabels) stays a SEPARATE multiplier on top of the entrance.
+//   3. context: every marker establishes TOGETHER (shared establish trigger) + keeps the
+//      dim/highlight tour; sequential: markers appear one-by-one (few-annotated) or
+//      category-by-category (categorized) at their own reveal beat's start frame.
 //   4. category legend when the config has categories (reuse locatorGeometry.legend)
-// Structure mirrors SymbolStory exactly:
-//   delayRender → on load add source/layers + build beats + jumpTo beat 0 → idle → continueRender
-//   per-frame: delayRender → jumpTo → setPaintProperty → caption overlay state → idle → continueRender
+// Structure mirrors SymbolStory:
+//   delayRender → on load build beats/timeline/triggers FIRST → add source/layers → jumpTo beat 0
+//     → idle → continueRender
+//   per-frame: delayRender → jumpTo → (on beat change) recompute highlight+declutter → per-marker
+//     staged entrance (ONE setData) → caption overlay state → idle → continueRender
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -22,7 +30,11 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import { locatorGeometry } from "../locator-geo";
-import { deriveLocatorStory } from "../locator-story";
+import {
+  deriveLocatorStory,
+  revealTriggersByLabel,
+  markTriggerFrames,
+} from "../locator-story";
 import {
   placeLabels,
   labelRadialOffset,
@@ -35,7 +47,16 @@ import {
   type CameraSolution,
   type Phase,
 } from "../story-timeline";
-import type { Beat } from "../map-story";
+import { resolveRevealMode, beatsForMode, type Beat } from "../map-story";
+import {
+  AREAL_TIMELINE_OPTS,
+  AREAL_BORDER_S,
+  AREAL_FILL_S,
+  AREAL_FILL_START_S,
+  AREAL_LABEL_S,
+  AREAL_LABEL_START_S,
+} from "../story-choreography";
+import { stagedEntrance } from "../core/staged-reveal";
 import type { LocatorConfigShape } from "../validate-config";
 import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
@@ -44,17 +65,39 @@ import { resolveScene } from "../video-scene";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
-const DOT_RADIUS_PX = 6; // FIXED — uniform marker size, never value-scaled
+const DOT_RADIUS_PX = 6; // FIXED — uniform marker settled size, never value-scaled
 const MARKER_STROKE = "#ffffff";
 const GLYPH_LAYER = "locator-glyphs";
 const LABEL_LAYER = "locator-labels";
-const DIM_OPACITY = 0.25; // non-highlighted markers during a reveal beat
+const DIM_OPACITY = 0.25; // non-highlighted markers during a reveal beat (context mode)
+
+// Per-feature properties carried on the `locator` GeoJSON source — the declutter-driven
+// `__highlight`/`__showLabel` (recomputed per beat) plus the staged-entrance channels this
+// comp drives every frame (recomputed per frame, from each marker's own `__triggerFrame`).
+interface LocatorFeatureProps {
+  key: string;
+  label: string;
+  color: string;
+  category: string;
+  labelOffset: number;
+  __highlight: boolean;
+  __showLabel: boolean;
+  __triggerFrame: number;
+  __radius: number;
+  __opacity: number;
+  __strokeOpacity: number;
+  __labelOpacity: number;
+}
 
 interface LocatorMapState {
   map: InstanceType<typeof maptilersdk.Map>;
   beats: Beat[];
   phases: Phase[];
   solutions: CameraSolution[];
+  // Retained so the per-frame effect can mutate each marker's own __highlight/__showLabel
+  // (on beat change) and __radius/__opacity/__strokeOpacity/__labelOpacity (every frame) in
+  // place — ONE persistent array, ONE setData per frame (mirrors SymbolStory's symbolFeatures).
+  markerFeatures: GeoJSON.Feature[];
 }
 
 export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
@@ -102,21 +145,6 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
     if (!ref.current || started.current) return;
     started.current = true;
 
-    const features: GeoJSON.Feature[] = geo.markers.map((mk, i) => ({
-      type: "Feature",
-      id: i,
-      properties: {
-        key: `m${i}`,
-        label: mk.label,
-        color: mk.color,
-        category: mk.category ?? "",
-        labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
-        __showLabel: true,
-        __highlight: true, // establish: all markers full; recomputed per beat
-      },
-      geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
-    }));
-
     const m = new maptilersdk.Map({
       container: ref.current,
       style: dark
@@ -139,37 +167,87 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
     });
 
     m.on("load", () => {
+      const mode = resolveRevealMode(config);
+
+      // Build beats and timeline FIRST — each marker's own entrance trigger frame (below) is
+      // derived from the beat/phase timeline, so it must exist before the marker features are
+      // built (mirrors SymbolStory).
+      const meta = {
+        title: config.title ?? "",
+        description: config.description,
+        insight:
+          ((config as Record<string, unknown>).insight as string) ??
+          config.title ??
+          "",
+      };
+      const beats = beatsForMode(
+        deriveLocatorStory(config.markers, meta),
+        mode,
+      );
+
+      const kinds = beats.map((b) => b.kind);
+      const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
+
+      // EVERY marker's own entrance trigger — context: all together at the establish beat's
+      // start; sequential: its own reveal beat's start (a categorized beat's marker labels ALL
+      // share that beat's trigger — revealTriggersByLabel, unlike the generic
+      // triggerFrameByRegion, keys on every label in highlight[], not just [0]), or never for a
+      // marker beyond maxReveals.
+      const establishIdx = beats.findIndex((b) => b.kind === "establish");
+      const establishStartFrame =
+        establishIdx >= 0 ? phases[establishIdx].startFrame : 0;
+      const revealTriggers = revealTriggersByLabel(beats, phases);
+      const markTriggers = markTriggerFrames(
+        config.markers,
+        mode,
+        establishStartFrame,
+        revealTriggers,
+      );
+
+      const features: GeoJSON.Feature[] = geo.markers.map((mk, i) => ({
+        type: "Feature",
+        id: i,
+        properties: {
+          key: `m${i}`,
+          label: mk.label,
+          color: mk.color,
+          category: mk.category ?? "",
+          labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
+          __showLabel: true,
+          __highlight: true, // establish: all markers full; recomputed per beat
+          __triggerFrame:
+            markTriggers.get(mk.label) ?? Number.POSITIVE_INFINITY,
+          __radius: 0,
+          __opacity: 0,
+          __strokeOpacity: 0,
+          __labelOpacity: 0,
+        } satisfies LocatorFeatureProps,
+        geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
+      }));
+
       m.addSource("locator", {
         type: "geojson",
         data: { type: "FeatureCollection", features },
       });
 
-      // Uniform dot glyph — FIXED radius, colour by category. Opacity per-feature via __highlight.
+      // Uniform dot glyph — FIXED settled radius, colour by category. Radius/opacity per-feature
+      // via the staged-entrance channels (grow + fade), driven every frame below.
       m.addLayer({
         id: GLYPH_LAYER,
         type: "circle",
         source: "locator",
         paint: {
-          "circle-radius": DOT_RADIUS_PX,
+          "circle-radius": ["get", "__radius"],
           "circle-color": ["get", "color"],
           "circle-stroke-color": MARKER_STROKE,
           "circle-stroke-width": 1.5,
-          "circle-opacity": [
-            "case",
-            ["==", ["get", "__highlight"], true],
-            0.95,
-            DIM_OPACITY,
-          ],
-          "circle-stroke-opacity": [
-            "case",
-            ["==", ["get", "__highlight"], true],
-            1,
-            DIM_OPACITY,
-          ],
+          "circle-opacity": ["get", "__opacity"],
+          "circle-stroke-opacity": ["get", "__strokeOpacity"],
         },
       });
 
-      // Label layer — visibility per-feature via __showLabel (declutter), synced to the beat.
+      // Label layer — visibility per-feature via __showLabel (declutter), synced to the beat;
+      // text-opacity is the marker's own staged label-rise (× the highlight dim multiplier).
       m.addLayer({
         id: LABEL_LAYER,
         type: "symbol",
@@ -191,25 +269,9 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
           "text-color": labelInk,
           "text-halo-color": labelHalo,
           "text-halo-width": 1.6,
-          "text-opacity": [
-            "case",
-            ["==", ["get", "__highlight"], true],
-            1,
-            0.35,
-          ],
+          "text-opacity": ["get", "__labelOpacity"],
         },
       });
-
-      // Build beats and timeline.
-      const meta = {
-        title: config.title ?? "",
-        description: config.description,
-        insight:
-          ((config as Record<string, unknown>).insight as string) ??
-          config.title ??
-          "",
-      };
-      const beats = deriveLocatorStory(config.markers, meta);
 
       // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox, padded.
       const solutions: CameraSolution[] = beats.map((b) => {
@@ -225,13 +287,16 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         };
       });
 
-      const kinds = beats.map((b) => b.kind);
-      const { phases } = buildTimeline(kinds, fps);
-
       m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
 
       continueWhenMapSettles(m, () => {
-        setMapState({ map: m, beats, phases, solutions });
+        setMapState({
+          map: m,
+          beats,
+          phases,
+          solutions,
+          markerFeatures: features,
+        });
         continueRender(handle);
       });
     });
@@ -240,7 +305,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
   // Per-frame update — deterministic, driven entirely by `frame`.
   useEffect(() => {
     if (!mapState) return;
-    const { map, beats, phases, solutions } = mapState;
+    const { map, beats, phases, solutions, markerFeatures } = mapState;
 
     const h = delayRender(`locator-story-frame-${frame}`);
 
@@ -252,31 +317,16 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
     const beat = beats[beatIndex];
     const phase = phases[beatIndex];
 
-    // On beat change: recompute per-feature highlight + declutter, push source once.
+    let dataChanged = false;
+
+    // On beat change: recompute per-marker __highlight (dim-the-rest) + __showLabel
+    // (declutter) — MUTATED in place on the PERSISTENT markerFeatures array (never rebuilt)
+    // so the per-marker staged-entrance loop below (which runs every frame, not just on beat
+    // change) keeps reading/writing the same feature objects.
     if (beatIndex !== lastBeatIndex.current) {
       lastBeatIndex.current = beatIndex;
       const highlightSet = new Set(beat.highlight);
       const emphasise = beat.dim && highlightSet.size > 0;
-
-      // Highlight flags: on dim beats only the beat's markers glow; otherwise all.
-      // Rebuild features from geo to stay authoritative (source of truth).
-      const rebuilt: GeoJSON.Feature[] = geo.markers.map((mk, i) => {
-        const highlight = emphasise ? highlightSet.has(mk.label) : true;
-        return {
-          type: "Feature",
-          id: i,
-          properties: {
-            key: `m${i}`,
-            label: mk.label,
-            color: mk.color,
-            category: mk.category ?? "",
-            labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
-            __highlight: highlight,
-            __showLabel: false, // set by declutter below
-          },
-          geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
-        };
-      });
 
       // Declutter — prioritise highlighted markers on dim beats so their labels win.
       const boxes: LabelBox[] = geo.markers.map((mk, i) => {
@@ -298,13 +348,67 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         };
       });
       const shownSet = new Set(placeLabels(boxes).shown);
-      for (let i = 0; i < rebuilt.length; i++) {
-        (rebuilt[i].properties as Record<string, unknown>).__showLabel =
-          shownSet.has(`m${i}`);
+
+      for (let i = 0; i < geo.markers.length; i++) {
+        const mk = geo.markers[i];
+        const props = markerFeatures[i]
+          .properties as unknown as LocatorFeatureProps;
+        const highlight = emphasise ? highlightSet.has(mk.label) : true;
+        const showLabel = shownSet.has(`m${i}`);
+        if (
+          props.__highlight !== highlight ||
+          props.__showLabel !== showLabel
+        ) {
+          props.__highlight = highlight;
+          props.__showLabel = showLabel;
+          dataChanged = true;
+        }
       }
+    }
+
+    // Per-marker staged entrance — each marker's own trigger (context: the shared establish
+    // start, so every marker grows/fades/rises TOGETHER; sequential: its own reveal beat
+    // start, markers appearing one-by-one/category-by-category, or never for a marker beyond
+    // maxReveals — see markTriggerFrames) drives the SAME tuned areal envelope every other
+    // beat-driven story comp uses. The __highlight dim-the-rest state (just recomputed above,
+    // or unchanged from a prior beat) stays a SEPARATE multiplier on top: a dimmed marker
+    // still stipples in, just to its lower ceiling.
+    for (const f of markerFeatures) {
+      const props = f.properties as unknown as LocatorFeatureProps;
+      const localSeconds = (frame - props.__triggerFrame) / fps;
+      const staged = stagedEntrance(localSeconds, {
+        fillOpacity: 1,
+        borderS: AREAL_BORDER_S,
+        fillS: AREAL_FILL_S,
+        labelS: AREAL_LABEL_S,
+        fillStart: AREAL_FILL_START_S,
+        labelStart: AREAL_LABEL_START_S,
+      });
+      const radius = DOT_RADIUS_PX * staged.borderProgress;
+      const opacity =
+        (props.__highlight ? 0.95 : DIM_OPACITY) * staged.fillOpacity;
+      const strokeOpacity =
+        (props.__highlight ? 1 : DIM_OPACITY) * staged.fillOpacity;
+      const labelOpacity = (props.__highlight ? 1 : 0.35) * staged.labelReveal;
+
+      if (
+        props.__radius !== radius ||
+        props.__opacity !== opacity ||
+        props.__strokeOpacity !== strokeOpacity ||
+        props.__labelOpacity !== labelOpacity
+      ) {
+        props.__radius = radius;
+        props.__opacity = opacity;
+        props.__strokeOpacity = strokeOpacity;
+        props.__labelOpacity = labelOpacity;
+        dataChanged = true;
+      }
+    }
+
+    if (dataChanged) {
       (map.getSource("locator") as maptilersdk.GeoJSONSource).setData({
         type: "FeatureCollection",
-        features: rebuilt,
+        features: markerFeatures,
       });
     }
 
