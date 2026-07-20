@@ -194,8 +194,29 @@ const sampleCGBeats = deriveCartogramStory(sampleCGLayout, {
 const CARTOGRAM_STORY_FRAMES = buildTimeline(
   sampleCGBeats.map((b) => b.kind),
   30,
+  AREAL_TIMELINE_OPTS,
 ).totalFrames;
 const cartogramDefaultProps = { config: sampleCartogram };
+
+// Mode-aware composition duration — mirrors `storyMeta` above (single source of truth with
+// CartogramStory.tsx's own layout+beats+beatsForMode setup, so the sequential mp4 doesn't end
+// with a frozen tail).
+const cartogramStoryMeta = makeStoryMeta((cfg) => {
+  const layout = computeCartogram(cfg, world as any);
+  const beats = beatsForMode(
+    deriveCartogramStory(layout, {
+      title: cfg.title ?? "",
+      description: cfg.description,
+      insight: cfg.insight ?? cfg.title ?? "",
+    }),
+    resolveRevealMode(cfg),
+  );
+  return buildTimeline(
+    beats.map((b) => b.kind),
+    30,
+    AREAL_TIMELINE_OPTS,
+  ).totalFrames;
+});
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -565,6 +586,7 @@ export const RemotionRoot: React.FC = () => (
       id="CartogramStory"
       component={CartogramStory}
       durationInFrames={CARTOGRAM_STORY_FRAMES}
+      calculateMetadata={cartogramStoryMeta}
       fps={30}
       width={1280}
       height={720}
@@ -574,6 +596,7 @@ export const RemotionRoot: React.FC = () => (
       id="CartogramStorySquare"
       component={CartogramStory}
       durationInFrames={CARTOGRAM_STORY_FRAMES}
+      calculateMetadata={cartogramStoryMeta}
       fps={30}
       width={1080}
       height={1080}
@@ -583,6 +606,7 @@ export const RemotionRoot: React.FC = () => (
       id="CartogramStoryPortrait"
       component={CartogramStory}
       durationInFrames={CARTOGRAM_STORY_FRAMES}
+      calculateMetadata={cartogramStoryMeta}
       fps={30}
       width={1080}
       height={1920}

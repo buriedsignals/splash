@@ -1,6 +1,9 @@
 import { describe, it, expect } from "bun:test";
 import { deriveCartogramStory } from "../src/cartogram-story";
 import { computeCartogram } from "../src/cartogram-geo";
+import { beatsForMode, resolveRevealMode } from "../src/map-story";
+import { buildTimeline } from "../src/story-timeline";
+import { AREAL_TIMELINE_OPTS } from "../src/story-choreography";
 
 // Four unit-square regions in a 2x2 arrangement, keyed A..D (mirrored from cartogram-geo.test.ts).
 const sq = (id: string, x: number, y: number): GeoJSON.Feature => ({
@@ -118,5 +121,37 @@ describe("deriveCartogramStory", () => {
   it("is deterministic (no Date.now / Math.random)", () => {
     const again = deriveCartogramStory(layout, meta);
     expect(JSON.stringify(again)).toBe(JSON.stringify(beats));
+  });
+});
+
+// Mode-aware duration — the same threading CartogramStory.tsx and Root.tsx's
+// calculateMetadata must both apply (single source of truth), so the sequential MP4
+// doesn't end with a frozen tail. Mirrors ChoroplethStory/Root.tsx's storyMeta parity.
+describe("cartogram beats threaded through beatsForMode + buildTimeline(AREAL_TIMELINE_OPTS)", () => {
+  const beats = deriveCartogramStory(layout, meta);
+
+  it("sequential mode drops the establish beat, context keeps it", () => {
+    const context = beatsForMode(beats, resolveRevealMode({}));
+    const sequential = beatsForMode(
+      beats,
+      resolveRevealMode({ revealMode: "sequential" }),
+    );
+    expect(context.some((b) => b.kind === "establish")).toBe(true);
+    expect(sequential.some((b) => b.kind === "establish")).toBe(false);
+    expect(sequential.length).toBe(context.length - 1);
+  });
+
+  it("sequential total frames are shorter than context (one fewer beat + move)", () => {
+    const contextFrames = buildTimeline(
+      beatsForMode(beats, "context").map((b) => b.kind),
+      30,
+      AREAL_TIMELINE_OPTS,
+    ).totalFrames;
+    const sequentialFrames = buildTimeline(
+      beatsForMode(beats, "sequential").map((b) => b.kind),
+      30,
+      AREAL_TIMELINE_OPTS,
+    ).totalFrames;
+    expect(sequentialFrames).toBeLessThan(contextFrames);
   });
 });

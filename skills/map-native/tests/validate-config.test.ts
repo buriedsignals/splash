@@ -470,4 +470,13 @@ describe("validateCartogramConfig — filters wiring", () => {
       }).ok,
     ).toBe(true);
   });
+  it("accepts a known revealMode and rejects an unknown one", () => {
+    expect(
+      validateCartogramConfig({ ...base, revealMode: "sequential" }).ok,
+    ).toBe(true);
+    const bad = validateCartogramConfig({ ...base, revealMode: "shuffle" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok)
+      expect(bad.errors.some((e) => /revealMode/.test(e))).toBe(true);
+  });
 });
