@@ -187,9 +187,18 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
           const layout = computeDotDensity(config, world, JOIN_KEY);
 
           // Build the DOT GeoJSON once — one Point per dot, coloured by group, TAGGED with
-          // __region = the region key so a reveal beat can dim non-highlighted regions.
+          // __region = the region key so a reveal beat can dim non-highlighted regions, and
+          // __dotOrder = a deterministic per-region ordering fraction ∈ [0,1) (dot index over
+          // the region's total dot count, across all its groups) so the entrance can stipple
+          // dots in with a per-dot stagger instead of fading the whole region uniformly (see
+          // buildDotOpacityExpression, dot-density-story.ts).
           const dotFeatures: GeoJSON.Feature[] = [];
           for (const region of layout.regions) {
+            const regionDotCount = region.groups.reduce(
+              (s, g) => s + g.count,
+              0,
+            );
+            let dotIndex = 0;
             for (const group of region.groups) {
               const pts = scatterInPolygon(
                 region.feature,
@@ -199,9 +208,15 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
               for (const [lon, lat] of pts) {
                 dotFeatures.push({
                   type: "Feature",
-                  properties: { color: group.color, __region: region.key },
+                  properties: {
+                    color: group.color,
+                    __region: region.key,
+                    __dotOrder:
+                      regionDotCount > 0 ? dotIndex / regionDotCount : 0,
+                  },
                   geometry: { type: "Point", coordinates: [lon, lat] },
                 });
+                dotIndex++;
               }
             }
           }
