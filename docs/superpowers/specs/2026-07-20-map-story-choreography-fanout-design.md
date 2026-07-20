@@ -63,7 +63,7 @@ Thread `AREAL_TIMELINE_OPTS` into **both** each comp's `buildTimeline` call AND 
 
 ## Validation checkpoints (decide at render, not in theory)
 - **Areal projected labels:** on dense cartogram/hex grids a label per visited cell may crowd; render-judge. If it crowds, fall back to caption-only for that comp (label channel is per-comp switchable).
-- **Locator sequential:** Locator is a dim-the-rest tour, not accumulation — render-judge whether "marks appear one-by-one" reads well; if not, keep Locator context-only (documented), Symbol keeps both.
+- **Locator sequential — RESOLVED 2026-07-20 (KEEP both modes).** Render-judged: Locator's categorized regime makes sequential a **category-by-category** reveal (Cultural → Modern → Natural → Ports, ~10 sites each per beat), not one-of-40-markers-at-a-time — each category's markers grow/fade in together while prior categories dim. That reads cleanly and is editorially meaningful, so Locator keeps BOTH modes (no context-only guard). Context 27.3s / sequential 24s, render-proven.
 - **DotDensity stipple:** render-judge staggered vs uniform dot fade-in.
 
 ## Testing & proof discipline
