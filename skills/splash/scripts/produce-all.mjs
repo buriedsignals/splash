@@ -10,8 +10,12 @@ import {
   extractCandidateProducers,
   narrativeConsiderationWarning,
 } from "../src/candidate-provenance.ts";
-import { readDecisions } from "./save-decision.mjs";
-import { evaluateDecisions, applicableDecisions } from "../src/flow-decisions.ts";
+import { readDecisions, appendDecisionLine } from "./save-decision.mjs";
+import {
+  evaluateDecisions,
+  applicableDecisions,
+  spineAutoRecordableIds,
+} from "../src/flow-decisions.ts";
 
 const acceptedPath = process.argv[2];
 const outDir = process.argv[3];
@@ -57,14 +61,25 @@ if (existsSync(candidatesPath)) {
 // Flow-decision gate: decisions.jsonl sits beside accepted.json, like candidates.json. A required
 // decision never recorded fails the run; an optional one warns. Staged: the first-cut trio ships
 // required:false, so this is warnings-only until each is flipped.
-const loggedDecisionIds = new Set(readDecisions(dirname(acceptedPath)).map((d) => d.id));
+const runDir = dirname(acceptedPath);
 // Scope to the decisions that actually apply to THIS run (lever 1b, only-scoping): each registry
 // decision declares its own applicability, so a run that never escalated / never cited a source is
 // not asked for that decision. This is what makes the deferred required:true flip safe — a
 // legitimate run only faces the decisions it genuinely triggered. producer-escalation has no
 // applicability predicate yet (needs the chart-native↔dw type set) so it stays conservatively in.
-const decisionOutcome = evaluateDecisions(dirname(acceptedPath), loggedDecisionIds, {
-  only: applicableDecisions(accepted),
+const applicableIds = applicableDecisions(accepted);
+let loggedDecisionIds = new Set(readDecisions(runDir).map((d) => d.id));
+// SPINE AUTO-RECORD (lever 1b): for decisions the spine can confirm itself from the runDir
+// (candidates.json ⇒ suggest-chart-invoked), record them here rather than trusting the orchestrator's
+// prose-triggered save-decision call — the measurement suite showed that trigger is unreliable, so a
+// legit run would otherwise fail the deferred required:true flip. The spine SEES the artifact, so
+// this record is a confirmation, not a self-report.
+for (const id of spineAutoRecordableIds(runDir, applicableIds, loggedDecisionIds)) {
+  appendDecisionLine(runDir, id, { autoRecordedBy: "produce-all" });
+}
+loggedDecisionIds = new Set(readDecisions(runDir).map((d) => d.id));
+const decisionOutcome = evaluateDecisions(runDir, loggedDecisionIds, {
+  only: applicableIds,
 });
 for (const w of decisionOutcome.warnings) console.error(`[flow-decision] warning: ${w}`);
 if (decisionOutcome.errors.length) {

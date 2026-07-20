@@ -6,6 +6,7 @@ import {
   FLOW_DECISIONS,
   applicableDecisions,
   evaluateDecisions,
+  spineAutoRecordableIds,
   getDecision,
 } from "./flow-decisions.ts";
 import type { AcceptedProposal } from "./producer-spec";
@@ -230,5 +231,62 @@ describe("producer-escalation applicability — chart-native on a dw-reachable t
     expect(app({ producer: "chart-native", spec: {} })).not.toContain(
       "producer-escalation",
     );
+  });
+});
+
+describe("spineAutoRecordableIds — the spine records artifact decisions it can confirm itself (lever 1b)", () => {
+  it("auto-records suggest-chart-invoked when candidates.json is present, applicable, unlogged", () => {
+    const runDir = mkdtempSync(join(tmpdir(), "fd-auto-"));
+    try {
+      writeFileSync(join(runDir, "candidates.json"), "[]");
+      const ids = spineAutoRecordableIds(
+        runDir,
+        ["suggest-chart-invoked", "source-fidelity"],
+        new Set(),
+      );
+      expect(ids).toContain("suggest-chart-invoked");
+      // source-fidelity is NOT spine-auto-recordable (its evidence is the article, absent here)
+      expect(ids).not.toContain("source-fidelity");
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not auto-record when candidates.json is absent", () => {
+    const runDir = mkdtempSync(join(tmpdir(), "fd-auto-"));
+    try {
+      expect(
+        spineAutoRecordableIds(runDir, ["suggest-chart-invoked"], new Set()),
+      ).toEqual([]);
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not auto-record a decision already logged", () => {
+    const runDir = mkdtempSync(join(tmpdir(), "fd-auto-"));
+    try {
+      writeFileSync(join(runDir, "candidates.json"), "[]");
+      expect(
+        spineAutoRecordableIds(
+          runDir,
+          ["suggest-chart-invoked"],
+          new Set(["suggest-chart-invoked"]),
+        ),
+      ).toEqual([]);
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not auto-record a decision that is not applicable to the run", () => {
+    const runDir = mkdtempSync(join(tmpdir(), "fd-auto-"));
+    try {
+      writeFileSync(join(runDir, "candidates.json"), "[]");
+      // suggest-chart-invoked not in the applicable set → not recorded even with evidence present
+      expect(spineAutoRecordableIds(runDir, ["source-fidelity"], new Set())).toEqual([]);
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
   });
 });

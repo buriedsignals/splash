@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -41,9 +41,13 @@ describe("produce-all flow-decision gate wiring", () => {
     return accepted;
   }
 
-  it("warns on stderr (without failing the run) when decisions.jsonl is absent", () => {
+  it("auto-records suggest-chart-invoked at the spine (candidates.json present) — no warning", () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-flow-decision-"));
     try {
+      // The fixture writes candidates.json beside accepted.json (guided run). The spine confirms
+      // that artifact itself and RECORDS suggest-chart-invoked — no reliance on a prose trigger —
+      // so it must NOT warn. source-fidelity / producer-escalation do not apply (no source, no
+      // dw-reachable type). Net: no flow-decision warning at all.
       const accepted = writeFixture(dir);
       const proc = Bun.spawnSync(
         ["bun", "scripts/produce-all.mjs", accepted, join(dir, "out")],
@@ -51,13 +55,11 @@ describe("produce-all flow-decision gate wiring", () => {
       );
       const stderr = proc.stderr.toString();
       expect(proc.exitCode).toBe(0);
-      expect(stderr).toContain("[flow-decision] warning:");
-      expect(stderr).toContain("suggest-chart-invoked");
-      // only-scoping (lever 1b): the fixture proposal cites NO source and ships no dw-reachable
-      // type, so neither source-fidelity nor producer-escalation applies — before scoping, every
-      // decision warned on every run. Only suggest-chart-invoked (guided) remains in scope.
-      expect(stderr).not.toContain("source-fidelity");
-      expect(stderr).not.toContain("producer-escalation");
+      expect(stderr).not.toContain("[flow-decision] warning");
+      // and the spine actually wrote the decision to the journal
+      const journal = readFileSync(join(dir, "decisions.jsonl"), "utf8");
+      expect(journal).toContain("suggest-chart-invoked");
+      expect(journal).toContain("produce-all"); // autoRecordedBy marker
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

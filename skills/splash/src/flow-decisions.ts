@@ -51,6 +51,12 @@ export interface FlowDecision {
   // flip) would fail a legitimate run that never triggered it. ABSENT ⇒ applicability not yet
   // declared ⇒ conservatively always in scope (never silently dropped).
   applies?: (p: AcceptedProposal) => boolean;
+  // Whether the SPINE can confirm this decision's evidence from the runDir ALONE (no orchestrator
+  // attestation, no payload). PRESENT ⇒ produce-all auto-records it when the evidence is there,
+  // removing the fragile prose-trigger dependency the measurement suite exposed (a legit run
+  // where the orchestrator forgot to call save-decision would otherwise fail at the flip). This
+  // is STRONGER than a self-report: the spine sees the artifact, so the record cannot be a claim.
+  autoRecordAtSpine?: (runDir: string) => boolean;
 }
 
 export const FLOW_DECISIONS: FlowDecision[] = [
@@ -62,6 +68,9 @@ export const FLOW_DECISIONS: FlowDecision[] = [
     // Applies on the GUIDED branch only: a direct-branch proposal (the journalist named the
     // visual) legitimately has no candidates.json, so requiring it there would be wrong.
     applies: (p) => !isDirectBranch(p),
+    // The spine confirms it directly — candidates.json beside accepted.json IS the evidence that
+    // suggest-chart ran, so produce-all records this itself rather than trusting a prose trigger.
+    autoRecordAtSpine: (runDir) => existsSync(join(runDir, "candidates.json")),
     artifactCheck: (runDir) =>
       existsSync(join(runDir, "candidates.json"))
         ? { ok: true }
@@ -171,5 +180,23 @@ export function applicableDecisions(proposals: AcceptedProposal[]): string[] {
   const list = Array.isArray(proposals) ? proposals : [];
   return FLOW_DECISIONS.filter(
     (d) => d.applies === undefined || list.some((p) => d.applies!(p)),
+  ).map((d) => d.id);
+}
+
+// The decisions the SPINE should auto-record for a run: applicable, spine-confirmable (their
+// autoRecordAtSpine evidence is present in the runDir), and not already logged. produce-all
+// appends these to decisions.jsonl before the gate, so a legit run never fails the deferred
+// required:true flip merely because the orchestrator forgot the save-decision trigger.
+export function spineAutoRecordableIds(
+  runDir: string,
+  applicableIds: string[],
+  loggedIds: Set<string>,
+): string[] {
+  return FLOW_DECISIONS.filter(
+    (d) =>
+      applicableIds.includes(d.id) &&
+      !loggedIds.has(d.id) &&
+      d.autoRecordAtSpine !== undefined &&
+      d.autoRecordAtSpine(runDir),
   ).map((d) => d.id);
 }

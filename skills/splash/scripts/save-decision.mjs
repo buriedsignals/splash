@@ -27,6 +27,16 @@ export function readDecisions(runDir) {
   return decisions;
 }
 
+// Append a decision line to <runDir>/decisions.jsonl in the sanctioned format. The CLI path
+// guards eligibility BEFORE calling this; the spine's auto-record path (produce-all) confirms the
+// artifact itself before calling it, so the append is unconditional here. Same `at:"recorded"`
+// sentinel (never a timestamp — determinism), same chmod 0600.
+export function appendDecisionLine(runDir, id, payload = {}) {
+  const path = join(runDir, "decisions.jsonl");
+  appendFileSync(path, JSON.stringify({ id, payload, at: "recorded" }) + "\n");
+  chmodSync(path, 0o600);
+}
+
 // Pure write-eligibility policy, extracted so the untested branches (prerequisite refusal,
 // missing-artifactCheck refusal) can be exercised directly without shelling out to the CLI.
 // loggedIds: Set of decision ids already recorded in this run's decisions.jsonl.
