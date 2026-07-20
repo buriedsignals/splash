@@ -51,7 +51,7 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
 const NUM_BINS = 5;
 
-// Enriched GeoJSON world — adds __highlight, __value, __hasData, __binIdx.
+// Enriched GeoJSON world — adds __value, __hasData, __binIdx.
 function enrichWorld(
   worldGeoJson: GeoJSON.FeatureCollection,
   joined: { key: string; value: number | null }[],
@@ -62,7 +62,6 @@ function enrichWorld(
   return {
     type: "FeatureCollection",
     features: worldGeoJson.features.map((f, i) => {
-      const key = String(f.properties?.[joinKey]);
       const j = joined[i];
       const binIdx =
         j.value !== null
@@ -70,7 +69,6 @@ function enrichWorld(
               (b, bi) => j.value! < b.max || bi === sortedBins.length - 1,
             )
           : -1;
-      const isHighlight = beat.highlight.includes(key) ? 1 : 0;
       return {
         ...f,
         properties: {
@@ -78,7 +76,6 @@ function enrichWorld(
           __value: j.value,
           __hasData: j.value !== null,
           __binIdx: binIdx,
-          __highlight: isHighlight,
         },
       };
     }),
@@ -532,6 +529,7 @@ export const ChoroplethStory: React.FC<{
 
     if (beat.callout) {
       const regionKey = beat.callout.region;
+      // invariant: beat.callout.region is always a reveal-beat highlight[0] (see map-story.ts) → always a triggers/anchorByKey/stagedByKey key.
       const lngLat = anchorByKey.get(regionKey);
       if (lngLat) {
         const pt = map.project(lngLat as [number, number]);
