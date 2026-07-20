@@ -53,6 +53,9 @@ describe("produce-all flow-decision gate wiring", () => {
       expect(proc.exitCode).toBe(0);
       expect(stderr).toContain("[flow-decision] warning:");
       expect(stderr).toContain("suggest-chart-invoked");
+      // only-scoping (lever 1b): the fixture proposal cites NO source, so source-fidelity does
+      // not apply and must NOT be warned about — before scoping, every decision warned on every run.
+      expect(stderr).not.toContain("source-fidelity");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

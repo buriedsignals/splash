@@ -4,6 +4,8 @@
 // rule. Design: docs/superpowers/specs/2026-07-19-flow-decision-manifest-and-ledger-loop-design.md
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import type { AcceptedProposal } from "./producer-spec";
+import { isDirectBranch } from "./candidate-provenance";
 
 export type CheckResult = { ok: true } | { ok: false; reason: string };
 
@@ -24,6 +26,11 @@ export interface FlowDecision {
   // Transcript-only decisions: the spine can only enforce payload presence; the harness cross-checks
   // the real transcript. Present ⇒ this is the spine-side presence guard.
   writeGuard?: (payload: DecisionPayload) => CheckResult;
+  // Whether this decision applies to a given proposal (lever 1b, only-scoping). A decision is
+  // evaluated only on runs where it applies — else requiring it (at the deferred required:true
+  // flip) would fail a legitimate run that never triggered it. ABSENT ⇒ applicability not yet
+  // declared ⇒ conservatively always in scope (never silently dropped).
+  applies?: (p: AcceptedProposal) => boolean;
 }
 
 export const FLOW_DECISIONS: FlowDecision[] = [
@@ -32,6 +39,9 @@ export const FLOW_DECISIONS: FlowDecision[] = [
     evidenceKind: "artifact",
     prerequisites: [],
     required: false,
+    // Applies on the GUIDED branch only: a direct-branch proposal (the journalist named the
+    // visual) legitimately has no candidates.json, so requiring it there would be wrong.
+    applies: (p) => !isDirectBranch(p),
     artifactCheck: (runDir) =>
       existsSync(join(runDir, "candidates.json"))
         ? { ok: true }
@@ -46,6 +56,10 @@ export const FLOW_DECISIONS: FlowDecision[] = [
     evidenceKind: "artifact",
     prerequisites: [],
     required: false,
+    // Applies only when the proposal actually cites a source to corroborate — a run with no
+    // citation has nothing to check.
+    applies: (p) =>
+      Boolean(p.sourceHint?.name?.trim() || p.sourceHint?.url?.trim()),
     // The "artifact" is the article text itself (a spine input). A cited name/url that the
     // article never contains is a fabricated/upgraded citation (finding class
     // source-url-unconfirmed).
@@ -111,4 +125,17 @@ export function evaluateDecisions(
     else warnings.push(msg);
   }
   return { errors, warnings };
+}
+
+// The scoped only-set for a run: every decision that applies to at least one accepted proposal
+// (lever 1b, only-scoping). A decision with an `applies` predicate is included iff some proposal
+// matches; a decision with NO `applies` is always included (applicability not yet declared —
+// conservative, never silently dropped). Pass this as evaluateDecisions' `only` so a decision is
+// warned about (and, at the deferred flip, required) only where it genuinely applies. Defensive
+// against a malformed non-array accepted.json: falls back to the always-in decisions.
+export function applicableDecisions(proposals: AcceptedProposal[]): string[] {
+  const list = Array.isArray(proposals) ? proposals : [];
+  return FLOW_DECISIONS.filter(
+    (d) => d.applies === undefined || list.some((p) => d.applies!(p)),
+  ).map((d) => d.id);
 }

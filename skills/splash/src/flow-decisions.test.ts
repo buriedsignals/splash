@@ -4,9 +4,23 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   FLOW_DECISIONS,
+  applicableDecisions,
   evaluateDecisions,
   getDecision,
 } from "./flow-decisions.ts";
+import type { AcceptedProposal } from "./producer-spec";
+
+// Minimal AcceptedProposal fixture — only the fields applicability reads.
+function proposal(over: Partial<AcceptedProposal> = {}): AcceptedProposal {
+  return {
+    id: "p1",
+    producer: "chart-native",
+    format: "static",
+    spec: {},
+    confirmedTakeaway: "t",
+    ...over,
+  };
+}
 
 describe("flow-decision registry", () => {
   it("every entry is well-formed", () => {
@@ -104,5 +118,54 @@ describe("producer-escalation decision", () => {
   });
   it("is a transcript-kind decision", () => {
     expect(getDecision("producer-escalation")!.evidenceKind).toBe("transcript");
+  });
+});
+
+describe("applicableDecisions — scope only-set from the accepted proposals (lever 1b prep)", () => {
+  it("includes suggest-chart-invoked on a guided proposal (no direct branch token)", () => {
+    expect(applicableDecisions([proposal()])).toContain(
+      "suggest-chart-invoked",
+    );
+  });
+
+  it("excludes suggest-chart-invoked when every proposal is direct-branch", () => {
+    const direct = proposal({ skillsInvoked: ["splash:cadrage-direct"] });
+    expect(applicableDecisions([direct])).not.toContain(
+      "suggest-chart-invoked",
+    );
+  });
+
+  it("includes source-fidelity only when a proposal cites a source", () => {
+    expect(
+      applicableDecisions([proposal({ sourceHint: { name: "ETSC" } })]),
+    ).toContain("source-fidelity");
+    expect(applicableDecisions([proposal()])).not.toContain("source-fidelity");
+  });
+
+  it("treats a blank sourceHint as no source", () => {
+    const blank = proposal({ sourceHint: { name: "  ", url: "" } });
+    expect(applicableDecisions([blank])).not.toContain("source-fidelity");
+  });
+
+  it("keeps a decision with no applies predicate always in scope (producer-escalation, un-scoped for now)", () => {
+    // producer-escalation declares no applicability yet (needs the chart-native↔dw type set,
+    // bundled with requirement 3), so it must stay conservatively in scope, not vanish silently.
+    expect(applicableDecisions([proposal()])).toContain("producer-escalation");
+  });
+
+  it("is the union across a batch — one guided + one direct still scopes suggest-chart-invoked", () => {
+    const guided = proposal({ id: "a" });
+    const direct = proposal({
+      id: "b",
+      skillsInvoked: ["splash:cadrage-direct"],
+    });
+    expect(applicableDecisions([guided, direct])).toContain(
+      "suggest-chart-invoked",
+    );
+  });
+
+  it("tolerates a non-array input by scoping to the always-in decisions", () => {
+    // @ts-expect-error — defensive: produce-all may hand a malformed accepted.json through.
+    expect(applicableDecisions(null)).toContain("producer-escalation");
   });
 });
