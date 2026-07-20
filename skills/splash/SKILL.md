@@ -552,8 +552,14 @@ never narrated away. (A fresh DW publish may 404 its `dataset.csv` briefly — r
 bun skills/splash/scripts/review-gate.mjs exports/<slug>/report.json <id> --probes '[...]' [concern...]
 ```
 
-**3b. Show + approve.** Show the ACTUAL render (open it / a screenshot) TOGETHER WITH the review's
-concerns, and get an explicit "ship it". The concerns are advisory — the journalist is the editor. This
+**3b. SURFACE the render, THEN ask — never the reverse.** Before you ask the journalist ANYTHING about
+the visual, put the ACTUAL render in front of them: send the artifact file (the PNG/HTML) with
+`SendUserFile`, or — for a hosted producer — state the live URL on its own line. **Describing the chart
+in prose is NOT showing it** ("barres violettes, fracture 83/16" is a description, not a view); the render
+displaying on YOUR side is not the journalist seeing it. Asking "c'est bon ?" / "tu valides ?" before the
+journalist can actually SEE the render is the recurring "je veux bien valider mais tu ne me l'as pas
+montré" failure — surface FIRST, ask SECOND, every time. Then present the review's concerns TOGETHER with
+it and get an explicit "ship it". The concerns are advisory — the journalist is the editor. This
 should rarely fire on source now that Gate 2c establishes it proactively before PRODUCTION — but if a
 concern is about the source (missing, name-only, generic, or unclear), ask the journalist to supply it as
 ONE free-text prompt collecting the label AND the **specific, traceable dataset/page URL** together (e.g.
