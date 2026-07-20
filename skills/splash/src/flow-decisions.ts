@@ -9,6 +9,25 @@ import { isDirectBranch } from "./candidate-provenance";
 
 export type CheckResult = { ok: true } | { ok: false; reason: string };
 
+// The chart-native nativeTypes (skills/chart-native spec-to-config MAPPERS) that dw-chart could
+// ALSO render (its counterpart is in skills/dw-chart CHART_TYPES). Shipping one of these via
+// chart-native was an ESCALATION — a choice over dw's hosted interactive — so an escalationReason
+// is owed. The chart-native-only types (treemap, heatmap, violin, waterfall, …) are NOT here:
+// dw cannot do them, so choosing chart-native was a necessity, not an escalation.
+// Curated conservatively: only the unambiguous 1:1 overlaps. UNDER-including is the safe error —
+// a missed escalation is a lost warning, whereas OVER-including would (at the required:true flip)
+// wrongly demand a reason for a rich-type run dw never could have served. Sources:
+// skills/dw-chart/src/chart-spec.ts CHART_TYPES · skills/suggest-chart/eval/native-family-types.ts.
+export const DW_REACHABLE_NATIVE_TYPES = new Set([
+  "bar", // → d3-bars
+  "line", // → d3-lines
+  "scatter", // → d3-scatter-plot
+  "grouped", // → d3-bars-grouped
+  "stacked", // → d3-bars-stacked
+  "pie", // → d3-pies
+  "dumbbell", // → d3-range-plot
+]);
+
 // Payload passed at write-time (save-decision.mjs) and gate-time: the decision's own recorded
 // fields (e.g. escalationReason), so a transcript-kind decision can enforce presence of a
 // required justification even where no disk artifact exists.
@@ -85,6 +104,14 @@ export const FLOW_DECISIONS: FlowDecision[] = [
     evidenceKind: "transcript",
     prerequisites: [],
     required: false,
+    // Applies only when the run ACTUALLY escalated: chart-native shipping a type dw could also do.
+    // A chart-native-only type (dw cannot render it) is a necessity, not an escalation, so no
+    // reason is owed there. Reads the spec's nativeType defensively (spec is producer-opaque here).
+    applies: (p) =>
+      p.producer === "chart-native" &&
+      DW_REACHABLE_NATIVE_TYPES.has(
+        (p.spec as { nativeType?: string } | null)?.nativeType ?? "",
+      ),
     // No disk artifact: escalating to chart-native on a dw-reachable type is only justified by a
     // journalist motion/interactivity ask, which lives in the conversation. The spine enforces that
     // a reason was stated; the harness cross-checks it against the real transcript.

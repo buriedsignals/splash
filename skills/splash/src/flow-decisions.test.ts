@@ -147,12 +147,6 @@ describe("applicableDecisions — scope only-set from the accepted proposals (le
     expect(applicableDecisions([blank])).not.toContain("source-fidelity");
   });
 
-  it("keeps a decision with no applies predicate always in scope (producer-escalation, un-scoped for now)", () => {
-    // producer-escalation declares no applicability yet (needs the chart-native↔dw type set,
-    // bundled with requirement 3), so it must stay conservatively in scope, not vanish silently.
-    expect(applicableDecisions([proposal()])).toContain("producer-escalation");
-  });
-
   it("is the union across a batch — one guided + one direct still scopes suggest-chart-invoked", () => {
     const guided = proposal({ id: "a" });
     const direct = proposal({
@@ -164,8 +158,55 @@ describe("applicableDecisions — scope only-set from the accepted proposals (le
     );
   });
 
-  it("tolerates a non-array input by scoping to the always-in decisions", () => {
+  it("tolerates a non-array input without throwing (returns an empty scope)", () => {
     // @ts-expect-error — defensive: produce-all may hand a malformed accepted.json through.
-    expect(applicableDecisions(null)).toContain("producer-escalation");
+    expect(applicableDecisions(null)).toEqual([]);
+  });
+});
+
+describe("producer-escalation applicability — chart-native on a dw-reachable type (lever 1b req.3-B)", () => {
+  const app = (over: Partial<AcceptedProposal>) =>
+    applicableDecisions([proposal(over)]);
+
+  it("applies when chart-native ships a type dw could also do (escalation was a choice)", () => {
+    for (const nativeType of [
+      "bar",
+      "line",
+      "scatter",
+      "grouped",
+      "stacked",
+      "pie",
+      "dumbbell",
+    ]) {
+      expect(app({ producer: "chart-native", spec: { nativeType } })).toContain(
+        "producer-escalation",
+      );
+    }
+  });
+
+  it("does NOT apply for a chart-native-only type dw cannot do (escalation was a necessity)", () => {
+    for (const nativeType of [
+      "treemap",
+      "heatmap",
+      "violin",
+      "waterfall",
+      "beeswarm",
+    ]) {
+      expect(
+        app({ producer: "chart-native", spec: { nativeType } }),
+      ).not.toContain("producer-escalation");
+    }
+  });
+
+  it("does NOT apply for a non-chart-native producer (no escalation happened)", () => {
+    expect(
+      app({ producer: "dw-chart", spec: { type: "d3-bars" } }),
+    ).not.toContain("producer-escalation");
+  });
+
+  it("does NOT apply when the chart-native spec carries no nativeType", () => {
+    expect(app({ producer: "chart-native", spec: {} })).not.toContain(
+      "producer-escalation",
+    );
   });
 });
