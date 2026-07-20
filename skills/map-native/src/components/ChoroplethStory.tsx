@@ -22,7 +22,12 @@ import {
   type ChoroplethData,
 } from "../choropleth-geo";
 import { NO_DATA_COLOR } from "../theme/colors";
-import { deriveMapStory, resolveRevealMode, type Beat } from "../map-story";
+import {
+  deriveMapStory,
+  resolveRevealMode,
+  beatsForMode,
+  type Beat,
+} from "../map-story";
 import { poleOfInaccessibility } from "../core/label-anchor";
 import {
   buildTimeline,
@@ -50,6 +55,35 @@ import {
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
 const NUM_BINS = 5;
+
+// --- Areal entrance pacing (tuning knobs — each a number) --------------------
+// The choropleth is a beat-TOUR: each region is visited for one hold, then the
+// camera leaves. So the label (the payload) must land EARLY and stay readable
+// within the hold — unlike RouteReveal, where labels accumulate over a long
+// story. These durations are passed to stagedEntrance/buildTimeline so the core
+// defaults (which RouteReveal depends on for parity) are never touched.
+// The phases INTERWEAVE (overlap) instead of running strictly one-after-another,
+// so the entrance reads as one fluid gesture rather than three discrete steps:
+// the fill begins while the border is still drawing (AREAL_FILL_START_S), and the
+// label rises while the fill is still blooming (AREAL_LABEL_START_S). The border
+// draws during the camera glide-in (trigger = beat start = when the move begins),
+// so motion is continuous. Label reaches full at AREAL_LABEL_START_S + AREAL_LABEL_S;
+// AREAL_REVEAL_HOLD_S gives ~1s of readable stillness after that before the next move.
+const AREAL_BORDER_S = 1.3; // border draw-on seconds (was core default 2.5)
+const AREAL_FILL_S = 0.8; // fill-bloom seconds
+const AREAL_FILL_START_S = 0.5; // fill begins ~40% into the border draw (overlap)
+const AREAL_LABEL_S = 1.1; // label rise seconds — a gentle fade/rise-in, not a fast pop
+const AREAL_LABEL_START_S = 1.0; // label begins while the fill blooms (overlap) → full at ~2.1s
+const AREAL_REVEAL_HOLD_S = 3.0; // per-region hold → gentle entrance ~2.1s + ~0.9s readable stillness
+const AREAL_MOVE_S = 1.3; // camera move seconds — snappy but eased glide
+
+// Single source of truth for the beat-timeline pacing. MUST be used both here
+// (component animation) and in remotion/src/Root.tsx (composition durationInFrames):
+// if they diverge, the composition is too short and the story is cut off.
+export const AREAL_TIMELINE_OPTS = {
+  revealHold: AREAL_REVEAL_HOLD_S,
+  move: AREAL_MOVE_S,
+} as const;
 
 // Enriched GeoJSON world — adds __value, __hasData, __binIdx.
 function enrichWorld(
@@ -205,7 +239,12 @@ export const ChoroplethStory: React.FC<{
             narrativePattern: config.valueKind,
             lang: config.lang,
           };
-          const beats = deriveMapStory(layout, worldGeoJson, "iso_a3", meta);
+          // Drop the establish beat in `sequential` (dead air on an empty map) — shared
+          // rule with Root.tsx's duration calc so the video length matches the animation.
+          const beats = beatsForMode(
+            deriveMapStory(layout, worldGeoJson, "iso_a3", meta),
+            mode,
+          );
 
           // Precompute camera solutions — cameraForBounds → {center, zoom}.
           // Use mapFrame.pad so the data stays out of the title/source bands.
@@ -224,7 +263,7 @@ export const ChoroplethStory: React.FC<{
 
           // Build timeline phases — keyed by beat kind for per-kind hold durations.
           const kinds = beats.map((b) => b.kind);
-          const { phases } = buildTimeline(kinds, fps);
+          const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
 
           // Precompute, for each subject region (the FEW regions a reveal beat visits —
           // triggerFrameByRegion keys are exactly the beats' callout.region values):
@@ -441,7 +480,14 @@ export const ChoroplethStory: React.FC<{
     const stagedByKey = new Map<string, StagedEntrance>();
     for (const [key, triggerFrame] of triggers) {
       const localSeconds = (frame - triggerFrame) / fps;
-      const staged = stagedEntrance(localSeconds, { fillOpacity: BLOOM_BASE });
+      const staged = stagedEntrance(localSeconds, {
+        fillOpacity: BLOOM_BASE,
+        borderS: AREAL_BORDER_S,
+        fillS: AREAL_FILL_S,
+        labelS: AREAL_LABEL_S,
+        fillStart: AREAL_FILL_START_S,
+        labelStart: AREAL_LABEL_START_S,
+      });
       stagedByKey.set(key, staged);
 
       const d = borderByRegion.get(key);

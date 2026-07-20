@@ -27,7 +27,10 @@
 import React from "react";
 import { Composition } from "remotion";
 import { HarnessCheck } from "../../src/components/HarnessCheck";
-import { ChoroplethStory } from "../../src/components/ChoroplethStory";
+import {
+  ChoroplethStory,
+  AREAL_TIMELINE_OPTS,
+} from "../../src/components/ChoroplethStory";
 import { SymbolStory } from "../../src/components/SymbolStory";
 import type { SymbolConfig } from "../../src/SymbolMap";
 import { SymbolReveal } from "../../src/components/SymbolReveal";
@@ -53,7 +56,11 @@ import { REVEAL_FRAMES } from "../../src/reveal";
 import { TITLE_SCENE_FRAMES } from "../../src/video-scene";
 import { computeChoropleth } from "../../src/choropleth-geo";
 import { computeRouteReveal, routeRevealFrames } from "../../src/route-geo";
-import { deriveMapStory } from "../../src/map-story";
+import {
+  deriveMapStory,
+  beatsForMode,
+  resolveRevealMode,
+} from "../../src/map-story";
 import { deriveSymbolStory } from "../../src/symbol-story";
 import { deriveLocatorStory } from "../../src/locator-story";
 import { buildTimeline } from "../../src/story-timeline";
@@ -78,9 +85,41 @@ const sampleBeats = deriveMapStory(sampleLayout, world as any, "iso_a3", {
 const STORY_FRAMES = buildTimeline(
   sampleBeats.map((b) => b.kind),
   30,
+  AREAL_TIMELINE_OPTS,
 ).totalFrames;
 
 const choroplethDefaultProps = { config: sampleConfig };
+
+// Mode-aware composition duration. `sequential` drops the establish beat (beatsForMode), so the
+// length must be recomputed from the INJECTED config — otherwise the sequential MP4 ends with a
+// frozen tail. Mirrors ChoroplethStory's own layout+beats setup so the counts match exactly.
+const storyMeta = ({ props }: { props: { config: any } }) => {
+  const cfg = props.config;
+  const layout = computeChoropleth(cfg, world as any, "iso_a3", {
+    bins: 5,
+    scaleType: cfg.scaleType ?? "sequential",
+    palette: cfg.palette,
+    labelField: cfg.labelField,
+  });
+  const beats = beatsForMode(
+    deriveMapStory(layout, world as any, "iso_a3", {
+      title: cfg.title ?? "",
+      insight: cfg.insight ?? cfg.title ?? "",
+      unit: cfg.valueUnit ?? "",
+      valueField: cfg.valueField,
+      narrativePattern: cfg.valueKind,
+      lang: cfg.lang,
+    }),
+    resolveRevealMode(cfg),
+  );
+  return {
+    durationInFrames: buildTimeline(
+      beats.map((b) => b.kind),
+      30,
+      AREAL_TIMELINE_OPTS,
+    ).totalFrames,
+  };
+};
 
 const scrollyMeta = ({ props }: { props: { config: any } }) => ({
   durationInFrames: scrollyFrames(
@@ -174,6 +213,7 @@ export const RemotionRoot: React.FC = () => (
       id="ChoroplethStory"
       component={ChoroplethStory}
       durationInFrames={STORY_FRAMES}
+      calculateMetadata={storyMeta}
       fps={30}
       width={1280}
       height={720}
@@ -183,6 +223,7 @@ export const RemotionRoot: React.FC = () => (
       id="ChoroplethStorySquare"
       component={ChoroplethStory}
       durationInFrames={STORY_FRAMES}
+      calculateMetadata={storyMeta}
       fps={30}
       width={1080}
       height={1080}
@@ -192,6 +233,7 @@ export const RemotionRoot: React.FC = () => (
       id="ChoroplethStoryPortrait"
       component={ChoroplethStory}
       durationInFrames={STORY_FRAMES}
+      calculateMetadata={storyMeta}
       fps={30}
       width={1080}
       height={1920}

@@ -48,6 +48,24 @@ export function resolveRevealMode(config: { revealMode?: string }): RevealMode {
   return config.revealMode === "sequential" ? "sequential" : "context";
 }
 
+/**
+ * Adjust a beat list for the reveal mode. In `sequential` the base fill is 0, so the
+ * establish beat would be an overview dwell on an empty map (dead air after the title) —
+ * drop it so the story cuts straight into the first region. `context` is unchanged.
+ *
+ * SINGLE SOURCE OF TRUTH: both the component (animation) and Root.tsx (composition
+ * durationInFrames via calculateMetadata) must apply this so the video length matches the
+ * animation — otherwise the sequential MP4 ends with a frozen tail.
+ */
+export function beatsForMode<T extends { kind: Beat["kind"] }>(
+  beats: T[],
+  mode: RevealMode,
+): T[] {
+  return mode === "sequential"
+    ? beats.filter((b) => b.kind !== "establish")
+    : beats;
+}
+
 export interface MapStoryMeta {
   title: string;
   insight: string;
