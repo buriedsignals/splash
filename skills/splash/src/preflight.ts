@@ -85,9 +85,46 @@ export const ENGINE_REQUIREMENTS: Record<Producer, EngineRequirements> = {
 // The embed DELIVERY FORM's requirement (not an engine's): deploy-embed.mjs owns the
 // fail-fast; exported here so its message and the parity test share the single list.
 export const EMBED_DELIVERY_ENV = [
-  "FLY_API_TOKEN",
-  "SPLASH_EMBED_APP",
+  "CLOUDFLARE_API_TOKEN",
+  "CLOUDFLARE_ACCOUNT_ID",
+  "SPLASH_EMBED_PROJECT",
 ] as const;
+
+// Where the journalist gets each one — the embed form's equivalent of an engine's envHelp, so
+// a missing embed credential is COLLECTED in the flow (like MapTiler or Datawrapper) instead of
+// silently downgrading the delivery to the standalone-file form.
+export const EMBED_DELIVERY_ENV_HELP: Record<string, string> = {
+  CLOUDFLARE_API_TOKEN:
+    'create an account API token with the "Cloudflare Pages: Edit" permission at https://dash.cloudflare.com (Manage Account → API Tokens → Create Token)',
+  CLOUDFLARE_ACCOUNT_ID:
+    "copy it from the Workers & Pages page at https://dash.cloudflare.com (Account details → Account ID)",
+  SPLASH_EMBED_PROJECT:
+    'choose a Cloudflare Pages project name that identifies the newsroom (e.g. "heidi-news-splash") — it becomes the public URL <visual>.<project>.pages.dev, so it must not be generic',
+};
+
+export interface EmbedDeliveryStatus {
+  ready: boolean;
+  missing: string[];
+  /** Empty when ready; otherwise one actionable sentence per missing credential. */
+  reason: string;
+}
+
+// The embed DELIVERY FORM's readiness — deliberately NOT an engine: it gates a delivery form,
+// not a producer, so it has its own status rather than being folded into ENGINE_REQUIREMENTS.
+export function embedDeliveryStatus(
+  opts: PreflightOpts = {},
+): EmbedDeliveryStatus {
+  const env = opts.env ?? defaultEnv();
+  const missing = EMBED_DELIVERY_ENV.filter((name) => !isSet(env[name]));
+  if (missing.length === 0) return { ready: true, missing: [], reason: "" };
+  return {
+    ready: false,
+    missing: [...missing],
+    reason: missing
+      .map((name) => `${name} (${EMBED_DELIVERY_ENV_HELP[name]})`)
+      .join("; "),
+  };
+}
 
 function defaultResolveDep(pkg: string, fromDir: string): boolean {
   try {

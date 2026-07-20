@@ -16,8 +16,9 @@ const base = {
   maptiler: "MT",
   datawrapper: "DW",
   anthropic: "",
-  embedApp: "",
-  flyToken: "",
+  embedProject: "",
+  cloudflareToken: "",
+  cloudflareAccount: "",
 };
 
 test('serializeEnv emits every service key in double-quoted KEY="value" form', () => {
@@ -41,38 +42,40 @@ test("serializeEnv INCLUDES ANTHROPIC_API_KEY when provided (API-key path)", () 
   );
 });
 
-test("serializeEnv quotes a value containing a space (modern fly.io token) intact", () => {
-  const env = serializeEnv({ ...base, flyToken: "FlyV1 fm2_abc==,fm1r_xyz" });
-  expect(env).toContain('FLY_API_TOKEN="FlyV1 fm2_abc==,fm1r_xyz"');
+test("serializeEnv quotes a value containing a space intact", () => {
+  // Some provider credentials carry a literal space; unquoted values silently broke the
+  // POSIX launcher, so the quoting must survive regardless of which provider is configured.
+  const env = serializeEnv({ ...base, cloudflareToken: "tok en with spaces" });
+  expect(env).toContain('CLOUDFLARE_API_TOKEN="tok en with spaces"');
 });
 
 test("serializeEnv trims and strips quote/newline that would corrupt the .env file", () => {
   const env = serializeEnv({
     ...base,
     maptiler: "  MT  ",
-    embedApp: 'a"b\nc',
+    embedProject: 'a"b\nc',
   });
   expect(env).toContain('VITE_MAPTILER_KEY="MT"'); // trimmed
-  expect(env).toContain('SPLASH_EMBED_APP="abc"'); // " and \n dropped
+  expect(env).toContain('SPLASH_EMBED_PROJECT="abc"'); // " and \n dropped
   expect(env).not.toContain("\nc"); // no injected extra env line
 });
 
-test("serialized .env sources cleanly in bash with a spaced fly token (launcher contract)", () => {
+test("serialized .env sources cleanly in bash with a spaced token value (launcher contract)", () => {
   // The macOS/Linux launcher does `set -a && . ./.env` — the exact failure that unquoted values
   // caused. Prove the quoted form survives a real bash source.
   const env = serializeEnv({
     ...base,
     maptiler: "MTKEY",
-    flyToken: "FlyV1 fm2_realmacaroon==",
+    cloudflareToken: "tok en with spaces",
   });
   const p = join(tmpdir(), `splash-env-test-${process.pid}.env`);
   writeFileSync(p, env);
   try {
     // Mirror the launcher exactly: `set -a && . ./.env && set +a`.
-    const script = `set -a; . '${p}'; set +a; printf '%s|%s' "$VITE_MAPTILER_KEY" "$FLY_API_TOKEN"`;
+    const script = `set -a; . '${p}'; set +a; printf '%s|%s' "$VITE_MAPTILER_KEY" "$CLOUDFLARE_API_TOKEN"`;
     const r = Bun.spawnSync(["bash", "-c", script]);
     expect(r.exitCode).toBe(0); // unquoted space used to abort sourcing with exit 127
-    expect(r.stdout.toString()).toBe("MTKEY|FlyV1 fm2_realmacaroon==");
+    expect(r.stdout.toString()).toBe("MTKEY|tok en with spaces");
   } finally {
     rmSync(p, { force: true });
   }

@@ -1,12 +1,25 @@
-// EXPORT (embed-link path): upload a produced HTML to the JOURNALIST'S OWN fly.io host app and print
-// an iframe-ready URL. The host lives on the journalist's fly.io account, not a shared central one —
-// so the app name must be supplied (fly.io app names are globally unique; there is no shared default).
-// Requires a one-time host setup on the journalist's account (see skills/splash/SKILL.md).
-//   bun deploy-embed.mjs <htmlFile> <slug> --results <report.json> --id <proposalId> [appName]
-//   (appName falls back to $SPLASH_EMBED_APP)
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+// EXPORT (embed-link path): publish a produced artifact to the JOURNALIST'S OWN Cloudflare
+// Pages account and print an iframe-ready URL. The project lives on the journalist's account,
+// not a shared central one — SPLASH_EMBED_PROJECT names it and must identify the newsroom,
+// because it becomes the public URL <visual>.<project>.pages.dev.
+//   bun deploy-embed.mjs <htmlFileOrDir> <slug> --results <report.json> --id <proposalId>
+//
+// Pure fetch — no wrangler CLI, no Node.js runtime requirement. Protocol + measurements:
+// docs/superpowers/specs/2026-07-19-cloudflare-pages-embed-adapter-design.md
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
 import { assertShippable } from "../src/export-guard.ts";
+import {
+  deployDirectory,
+  embedSlug,
+  ensureProject,
+  resolveAliasUrl,
+  resolveEmbedConfig,
+  verifyServed,
+} from "../src/cloudflare-pages.ts";
+
+export { embedSlug, embedTokenConfigured } from "../src/cloudflare-pages.ts";
 
 // Splits argv into positionals and `--flag value` pairs, so the required --results/--id
 // flags can sit alongside the existing positional args in any order.
@@ -21,42 +34,35 @@ function parseArgs(argv) {
   return { positional, flags };
 }
 
-export function slugify(s) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+// Cloudflare serves a directory, so a single self-contained artifact is staged as index.html.
+// Accepts a directory unchanged, for the day an artifact ships with sibling assets.
+export function stageArtifact(pathArg, stageDir) {
+  if (statSync(pathArg).isDirectory()) {
+    cpSync(pathArg, stageDir, { recursive: true });
+    return;
+  }
+  mkdirSync(stageDir, { recursive: true });
+  cpSync(pathArg, join(stageDir, "index.html"));
 }
 
-// The journalist's own fly.io app name — from the CLI arg or $SPLASH_EMBED_APP. Required: there is
-// no shared fallback, because a fixed name could only ever belong to one fly.io account worldwide.
-export function resolveApp(argApp, env = process.env) {
-  const app = (argApp ?? env.SPLASH_EMBED_APP ?? env.ATELIER_EMBED_APP ?? "").trim();
-  if (!app)
-    throw new Error(
-      "no fly.io app: pass the journalist's own app name as the 3rd argument or set $SPLASH_EMBED_APP (see skills/splash/SKILL.md for one-time setup)",
-    );
-  return app;
-}
-
-export function embedUrl(app, slug) {
-  return `https://${app}.fly.dev/${slug}/`;
-}
-
-// Whether a fly.io deploy is even POSSIBLE here: flyctl authenticates via FLY_API_TOKEN. Without
-// it the upload stalls, so a self-hosted embed cannot be delivered — the caller must refuse up
-// front rather than half-deploy or hand back a placeholder URL that fakes "delivered".
-export function flyTokenConfigured(env = process.env) {
-  return (env.FLY_API_TOKEN ?? "").trim() !== "";
+// The delivery proof. The upload endpoints are undocumented, so a 200 alone is not evidence
+// the RIGHT bytes landed — the served body must carry a distinctive slice of the artifact.
+export function servedMatcher(sourceHtml) {
+  const marker = sourceHtml.replace(/\s+/g, " ").trim().slice(0, 120);
+  return (body) => body.includes(marker) || body.length === sourceHtml.length;
 }
 
 if (import.meta.main) {
   const { positional, flags } = parseArgs(process.argv.slice(2));
-  const [htmlFile, rawSlug, argApp] = positional;
+  const [artifactPath, rawSlug] = positional;
   const { results: resultsPath, id } = flags;
-  if (!htmlFile || !rawSlug || !resultsPath || !id) {
+  if (!artifactPath || !rawSlug || !resultsPath || !id) {
     console.error(
-      "usage: deploy-embed.mjs <htmlFile> <slug> --results <report.json> --id <proposalId> [appName]",
+      "usage: deploy-embed.mjs <htmlFileOrDir> <slug> --results <report.json> --id <proposalId>",
     );
     process.exit(1);
   }
+
   // The one mechanical gate, before any upload: refuse unless this exact proposal was
   // actually produced AND the human approved the render.
   let hostedUrl = null;
@@ -68,42 +74,47 @@ if (import.meta.main) {
     console.error(e.message);
     process.exit(1);
   }
-  // FAIL-FAST, before any flyctl call: a self-hosted embed needs FLY_API_TOKEN to deploy. Without
-  // it (and with no already-live hosted publicUrl to fall back to), refuse now with an actionable
-  // message — never let the upload stall mid-deploy or hand back a placeholder that fakes delivery.
-  if (!flyTokenConfigured() && !hostedUrl) {
-    console.error(
-      "embed delivery needs FLY_API_TOKEN (create a deploy token with `flyctl tokens create deploy`) — add it to /splash/.env, or choose the standalone HTML form (b) instead",
-    );
-    process.exit(1);
-  }
-  let APP;
+
+  // FAIL-FAST, before any network call: without credentials the embed cannot be delivered.
+  // Never let the upload stall mid-deploy or hand back a placeholder that fakes delivery.
+  let cfg;
   try {
-    APP = resolveApp(argApp);
+    cfg = resolveEmbedConfig();
   } catch (e) {
-    console.error(e.message);
-    process.exit(1);
+    if (!hostedUrl) {
+      console.error(e.message);
+      process.exit(1);
+    }
   }
-  // htmlFile is interpolated unquoted into the sftp command stream below — whitespace would
-  // break the `put` line, a newline could inject a second sftp command. Reject rather than
-  // quote: a valid built artifact path should never contain either.
-  if (/\s/.test(htmlFile)) {
-    console.error(
-      `refusing to upload: htmlFile path contains whitespace/newline ("${htmlFile}") — this would break or inject into the sftp command stream. Move the file to a path without spaces.`,
-    );
-    process.exit(1);
+
+  if (hostedUrl && !cfg) {
+    console.log("EMBED_URL " + hostedUrl);
+    process.exit(0);
   }
-  const slug = slugify(rawSlug);
-  // Upload htmlFile → /data/<slug>/index.html on the host app via flyctl sftp.
+
+  const slug = embedSlug(rawSlug);
+  const stageDir = join(mkdtempSync(join(tmpdir(), "splash-embed-")), "site");
   try {
-    execFileSync(
-      "flyctl",
-      ["ssh", "sftp", "shell", "-a", APP],
-      { input: `put ${htmlFile} /data/${slug}/index.html\n`, stdio: ["pipe", "inherit", "inherit"] },
-    );
+    stageArtifact(artifactPath, stageDir);
   } catch (e) {
-    console.error("fly upload failed — is the host app set up? see skills/splash/SKILL.md");
+    console.error(`cannot stage ${artifactPath} for upload: ${e.message}`);
     process.exit(1);
   }
-  console.log("EMBED_URL " + embedUrl(APP, slug));
+
+  try {
+    await ensureProject(cfg);
+    const { deploymentId } = await deployDirectory(stageDir, slug, cfg);
+    const url = await resolveAliasUrl(deploymentId, cfg);
+
+    // A brand-new project needs ~100s of edge provisioning; this can legitimately take a
+    // while on a newsroom's FIRST embed, and silence would read as a hang.
+    console.error(`embed uploaded — waiting for ${url} to serve the artifact...`);
+    // Always verify against the staged entry point — that is literally what the edge serves.
+    await verifyServed(url, servedMatcher(readFileSync(join(stageDir, "index.html"), "utf8")));
+
+    console.log("EMBED_URL " + url);
+  } catch (e) {
+    console.error(`cloudflare pages deploy failed: ${e.message}`);
+    process.exit(1);
+  }
 }

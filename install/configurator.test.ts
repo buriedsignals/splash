@@ -59,8 +59,9 @@ test("POST /submit (all-blank, soft path) writes a double-quoted .env + runtime"
       maptiler: "",
       datawrapper: "",
       anthropic: "",
-      embedApp: "",
-      flyToken: "",
+      embedProject: "",
+      cloudflareToken: "",
+      cloudflareAccount: "",
     });
     const r = await fetch(`http://127.0.0.1:${port}/submit`, {
       method: "POST",
