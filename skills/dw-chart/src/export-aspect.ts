@@ -87,6 +87,31 @@ export const ROW_DRIVEN_TYPES = new Set<ChartType>([
   "tables",
 ]);
 
+// A row-driven chart with FEW rows inherits Datawrapper's default export height (~800px
+// delivered at the web width) even though its content — title + a couple of bars + source —
+// fills far less, leaving a large empty band below (observed: a 2-bar chart shipped 1200×800
+// with the bottom ~440px blank). This resolves a CONTENT-FITTING delivered height from the row
+// count so the export box tracks the bars instead of DW's tall default.
+//
+// SAFETY — it must NEVER crop a row (the whole reason row-driven types are width-only): the
+// constants ERR TALL (a generous per-row band + a furniture allowance sized for a multi-line
+// title/intro/axis/source), and it only engages when the computed height is SHORTER than DW's
+// default — for many rows it returns undefined so the caller keeps the safe width-only path and
+// DW grows the height naturally. Worst case is a little residual whitespace, never lost data.
+const ROW_DRIVEN_FURNITURE_PX = 420; // delivered px reserved for title+intro+axis+source (generous)
+const ROW_DRIVEN_PER_ROW_PX = 60; // delivered px per bar (generous — DW bars are ~40px, +gap)
+const ROW_DRIVEN_DEFAULT_PX = 800; // DW's default row-driven export height at the web width
+
+// The DELIVERED export height for a FEW-ROW row-driven chart, or undefined when the chart has
+// enough rows that DW's natural (width-only) height is the safer choice. Pure.
+export function rowDrivenDeliveredHeight(rows: number): number | undefined {
+  if (!Number.isFinite(rows) || rows < 1) return undefined;
+  const fitted = ROW_DRIVEN_FURNITURE_PX + rows * ROW_DRIVEN_PER_ROW_PX;
+  // Only shrink — never pin a height ≥ the default (that path is DW's natural width-only, which
+  // for many rows grows past the default without cropping).
+  return fitted < ROW_DRIVEN_DEFAULT_PX ? fitted : undefined;
+}
+
 // True when the export height MUST follow the row count (never be pinned). Pure.
 export function isRowDriven(type?: ChartType): boolean {
   return !!type && ROW_DRIVEN_TYPES.has(type);

@@ -14,6 +14,9 @@ import { checkValueLabelContrast } from "./value-label-safety";
 import {
   channelToExportSize,
   channelToExportRequestSize,
+  isRowDriven,
+  rowDrivenDeliveredHeight,
+  DW_EXPORT_PIXEL_RATIO,
 } from "./export-aspect";
 import {
   assertRenderedSize,
@@ -122,6 +125,22 @@ export async function produceChart(
   // applies (deviceScaleFactor:2). Resolved here with exportSize, BEFORE createChart
   // (same pure inputs, same fail-closed ordering).
   const requestBox = channelToExportRequestSize(spec.channel, spec.type);
+  // ROW-DRIVEN HEIGHT (few rows): channelToExportRequestSize leaves the height OMITTED for a
+  // row-driven type so DW renders width-only — but for FEW rows DW's default is far too tall,
+  // shipping a big empty band below the bars. Pin a content-fitting REQUEST height (delivered/2)
+  // derived from the row count so the box tracks the content. Errs tall + only shrinks below DW's
+  // default, so it never crops a row (see rowDrivenDeliveredHeight). Many-row charts keep the
+  // untouched width-only path.
+  if (requestBox.height === undefined && isRowDriven(spec.type)) {
+    const rowCount =
+      resolveData(spec)
+        .trim()
+        .split("\n")
+        .filter((l) => l.trim() !== "").length - 1;
+    const deliveredHeight = rowDrivenDeliveredHeight(rowCount);
+    if (deliveredHeight !== undefined)
+      requestBox.height = Math.round(deliveredHeight / DW_EXPORT_PIXEL_RATIO);
+  }
   const channel = normalizeChannel(spec.channel);
 
   const patch = specToMetadata(spec);

@@ -3,6 +3,7 @@ import {
   channelToAspect,
   channelToExportSize,
   isRowDriven,
+  rowDrivenDeliveredHeight,
   ROW_DRIVEN_TYPES,
   EXPORT_SIZES,
 } from "../src/export-aspect";
@@ -158,5 +159,36 @@ describe("channelToAspect / channelToExportSize now delegate to the shared splas
         entry.mediaSize,
       );
     }
+  });
+});
+
+describe("rowDrivenDeliveredHeight — content-fitting height for FEW-row row-driven charts", () => {
+  it("shrinks below DW's ~800px default for a 2-bar chart (the whitespace bug)", () => {
+    const h = rowDrivenDeliveredHeight(2);
+    expect(h).toBeDefined();
+    expect(h!).toBeLessThan(800);
+    expect(h!).toBeGreaterThan(420); // furniture floor — never below the header/footer allowance
+  });
+
+  it("grows with the row count", () => {
+    expect(rowDrivenDeliveredHeight(6)!).toBeGreaterThan(rowDrivenDeliveredHeight(2)!);
+  });
+
+  it("returns undefined once the fitted height reaches DW's default (many rows keep width-only)", () => {
+    // Beyond the crossover the safe width-only path (undefined) must win, never a pinned height
+    // that could crop as rows keep growing.
+    expect(rowDrivenDeliveredHeight(50)).toBeUndefined();
+  });
+
+  it("errs TALL — the per-row band is generous enough that a real bar never overflows", () => {
+    // 2 rows -> 420 + 120 = 540 delivered px for content DW draws in ~360; the surplus is the
+    // anti-crop margin. This pins the constant so a future tightening cannot silently risk data.
+    expect(rowDrivenDeliveredHeight(2)).toBe(540);
+  });
+
+  it("ignores a non-positive / non-finite row count (defensive)", () => {
+    expect(rowDrivenDeliveredHeight(0)).toBeUndefined();
+    expect(rowDrivenDeliveredHeight(-3)).toBeUndefined();
+    expect(rowDrivenDeliveredHeight(NaN)).toBeUndefined();
   });
 });
