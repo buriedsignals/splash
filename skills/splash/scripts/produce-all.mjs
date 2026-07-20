@@ -10,6 +10,8 @@ import {
   extractCandidateProducers,
   narrativeConsiderationWarning,
 } from "../src/candidate-provenance.ts";
+import { readDecisions } from "./save-decision.mjs";
+import { evaluateDecisions } from "../src/flow-decisions.ts";
 
 const acceptedPath = process.argv[2];
 const outDir = process.argv[3];
@@ -50,6 +52,17 @@ if (existsSync(candidatesPath)) {
     // proposal then fails provenance loudly rather than silently skipping the gate.
     candidateProvenance = { present: false, producers: new Set() };
   }
+}
+
+// Flow-decision gate: decisions.jsonl sits beside accepted.json, like candidates.json. A required
+// decision never recorded fails the run; an optional one warns. Staged: the first-cut trio ships
+// required:false, so this is warnings-only until each is flipped.
+const loggedDecisionIds = new Set(readDecisions(dirname(acceptedPath)).map((d) => d.id));
+const decisionOutcome = evaluateDecisions(dirname(acceptedPath), loggedDecisionIds);
+for (const w of decisionOutcome.warnings) console.error(`[flow-decision] warning: ${w}`);
+if (decisionOutcome.errors.length) {
+  console.error("[flow-decision] BLOCKED:\n  " + decisionOutcome.errors.join("\n  "));
+  process.exit(1);
 }
 
 const report = await produceAll(
