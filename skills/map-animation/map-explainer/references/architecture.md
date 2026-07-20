@@ -7,13 +7,15 @@ The full runnable code is `../assets/RiverReveal.tsx` + `../assets/CountryLabel.
 ## 1. The render harness (per frame)
 
 Init the MapTiler map once (ref guard). On `load`: strip clutter (see `geo-prep.md`), add sources/layers,
-`jumpTo(START)`, `once('idle') → continueRender`. Per frame:
+wait for `once('idle') → continueRender`. Per frame:
 
 ```
-delayRender → setData/setPaintProperty/jumpTo → map.once('idle', continueRender) → triggerRepaint
+delayRender → setData/setPaintProperty → map.once('idle', continueRender) → triggerRepaint
 ```
 
 `preserveDrawingBuffer:true` so Remotion's screenshot captures the canvas. Render `--gl=angle`.
+For an animated camera, read `render-stability.md`: the MapTiler renderer remains static and a CSS plate
+transform supplies the camera choreography.
 
 ## 2. Timing model — time-based; beat length derived from the sequences
 

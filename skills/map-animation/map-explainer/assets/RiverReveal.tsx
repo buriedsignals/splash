@@ -17,11 +17,8 @@ import countryMeta from "../geo/country-meta.json";
 import { COLORS, COUNTRY, COUNTRY_DARK, FILL_OPACITY } from "../theme/tokens";
 import { CountryLabel } from "./CountryLabel";
 
-// Pilot A — the Yarlung Tsangpo → Brahmaputra draws on (Tibet → Bangladesh). As the river flows INTO
-// each country it animates in, sequentially: (1) the entire visible border draws on over a constant
-// ~2.5s, led by a glowing comet-head and settling to a darker shade of the country's colour, then
-// (2) the fill blooms in, then (3) the Space Grotesk label rises in at the country's centre.
-// Basemap (MapTiler) labels are stripped. Beat length is set by the sequences, not the other way round.
+// Sample route reveal. Replace the imported sample geometry, names, timing, and visual tokens in the
+// consuming production. The renderer stays static; approved centre/zoom motion is a CSS plate transform.
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -29,7 +26,7 @@ const line = turf.lineString(flowCoords as [number, number][]);
 const lineKm = turf.length(line);
 
 const START = { center: [89.6, 27.7] as [number, number], zoom: 4.75, pitch: 0, bearing: 0 };
-const END = { center: [90.2, 27.0] as [number, number], zoom: 5.05, pitch: 10, bearing: 0 };
+const END = { center: [90.2, 27.0] as [number, number], zoom: 5.05, pitch: 0, bearing: 0 };
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
@@ -78,6 +75,7 @@ export const RiverReveal: React.FC = () => {
   const { fps, durationInFrames, width, height } = useVideoConfig();
   const [map, setMap] = useState<any>(null);
   const [labels, setLabels] = useState<Record<string, { x: number; y: number; reveal: number }>>({});
+  const [plate, setPlate] = useState({ x: 0, y: 0, scale: 1 });
   const [handle] = useState(() => delayRender("maptiler init A"));
 
   useEffect(() => {
@@ -85,11 +83,11 @@ export const RiverReveal: React.FC = () => {
     started.current = true;
     const m = new maptilersdk.Map({
       container: ref.current,
-      style: maptilersdk.MapStyle.DATAVIZ.DARK,
-      center: START.center,
-      zoom: START.zoom,
-      pitch: START.pitch,
-      bearing: START.bearing,
+      style: maptilersdk.MapStyle.BASIC,
+      center: END.center,
+      zoom: Math.max(START.zoom, END.zoom),
+      pitch: END.pitch,
+      bearing: END.bearing,
       interactive: false,
       attributionControl: false,
       navigationControl: false,
@@ -135,7 +133,6 @@ export const RiverReveal: React.FC = () => {
       m.addLayer({ id: "river-headglow", type: "line", source: "river-head", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": COLORS.riverHeadGlow, "line-width": 16, "line-opacity": 0, "line-blur": 9 } });
       m.addLayer({ id: "river-head", type: "line", source: "river-head", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": COLORS.riverHead, "line-width": 4.5, "line-opacity": 0 } });
 
-      m.jumpTo(START);
       m.once("idle", () => { setMap(m); continueRender(handle); });
     });
   }, [handle]);
@@ -161,6 +158,15 @@ export const RiverReveal: React.FC = () => {
     map.setPaintProperty("river-headglow", "line-opacity", 0.85 * riverHeadFade);
     map.setPaintProperty("river-head", "line-opacity", riverHeadFade);
 
+    const camera = {
+      center: [lerp(START.center[0], END.center[0], tt), lerp(START.center[1], END.center[1], tt)] as [number, number],
+      zoom: lerp(START.zoom, END.zoom, tt),
+    };
+    const cameraPoint = map.project(camera.center);
+    const plateScale = 2 ** (camera.zoom - Math.max(START.zoom, END.zoom));
+    const plateX = width / 2 - cameraPoint.x * plateScale;
+    const plateY = height / 2 - cameraPoint.y * plateScale;
+
     const pos: Record<string, { x: number; y: number; reveal: number }> = {};
     for (const c of ORDER) {
       const d = DRAW[c];
@@ -180,24 +186,19 @@ export const RiverReveal: React.FC = () => {
       // 3) label rises in after the fill
       const lp = clamp01((lt - BORDER_S - FILL_S) / LABEL_S);
       const p = map.project(META[c].anchor);
-      pos[c] = { x: p.x, y: p.y, reveal: lp };
+      pos[c] = { x: p.x * plateScale + plateX, y: p.y * plateScale + plateY, reveal: lp };
     }
     setLabels(pos);
 
-    map.jumpTo({
-      center: [lerp(START.center[0], END.center[0], tt), lerp(START.center[1], END.center[1], tt)],
-      zoom: lerp(START.zoom, END.zoom, tt),
-      pitch: lerp(START.pitch, END.pitch, tt),
-      bearing: 0,
-    });
+    setPlate({ x: plateX, y: plateY, scale: plateScale });
     map.once("idle", () => continueRender(h));
     map.triggerRepaint();
-  }, [map, frame, fps, durationInFrames]);
+  }, [map, frame, fps, durationInFrames, width, height]);
 
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
       <style>{`.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-attrib,.maptiler-logo{display:none!important}`}</style>
-      <div ref={ref} style={{ width, height, position: "absolute" }} />
+      <div ref={ref} style={{ width: width * 3, height: height * 3, position: "absolute", transform: `translate(${plate.x}px, ${plate.y}px) scale(${plate.scale})`, transformOrigin: "0 0" }} />
       <AbsoluteFill style={{ pointerEvents: "none" }}>
         {ORDER.map((c) =>
           labels[c] ? (

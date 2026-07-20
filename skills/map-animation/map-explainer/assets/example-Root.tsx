@@ -2,8 +2,8 @@
 // blank template), this is `src/Root.tsx`; `src/index.ts` is just `registerRoot(RemotionRoot)`.
 //
 // The Composition sets DURATION (the beat) and dimensions. The component reads durationInFrames / width /
-// height from useVideoConfig(). The beat must be long enough for the LAST country's full sequence after
-// the river reaches it — water-wars used 12 s @ 30 fps. See references/architecture.md §2 (timing model).
+// height from useVideoConfig(). The beat must be long enough for the last country's full sequence after
+// the river reaches it. See references/architecture.md §2 (timing model).
 // Render with: npx remotion render src/index.ts MapExplainer out.mp4 --gl=angle --concurrency=1 --timeout=120000
 
 import React from "react";

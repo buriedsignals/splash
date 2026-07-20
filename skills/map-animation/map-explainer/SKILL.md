@@ -88,7 +88,7 @@ borders, bbox/nudge tuning) → **`references/geo-prep.md`**.
 2. Supply a river GeoJSON (**one clean source→mouth LineString** — route braided OSM first; see
    `references/geo-prep.md`) + one polygon GeoJSON per country. Edit `scripts/prep-geo.mjs` `CONFIG`
    (`COUNTRIES`, input paths, `FRAME_BBOX`/`ANCHOR_BBOX`/`NUDGE`), run it → river line + `country-meta.json`
-   + `borders.geojson`. (Or use the sample outputs in `assets/sample-data/` to render water-wars as-is.)
+   + `borders.geojson`. (Or use the sample outputs in `assets/sample-data/` to verify the component.)
 3. Keep the country keys identical across `prep-geo.mjs`, `RiverReveal.tsx` `ORDER`, and `tokens.ts` (the
    four-file contract in `assets/README.md`). Set `REMOTION_MAPTILER_KEY`; add a font package only if the
    project's typography requires one.

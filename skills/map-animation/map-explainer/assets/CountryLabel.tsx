@@ -1,11 +1,8 @@
 import React from "react";
 import { Easing, interpolate } from "remotion";
-import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 
-const { fontFamily } = loadFont();
-
-// Reusable Buried Signals country label — Space Grotesk, an accent rule that draws in above the name,
-// and a rise-and-fade entrance. Positioned by its centre (x,y in screen px); `reveal` 0→1 drives entry.
+// Reusable country label. Supply typography and final values from the consuming project; the CSS custom
+// properties below provide neutral fallbacks. Positioned by its centre (x,y in screen px).
 export const CountryLabel: React.FC<{
   name: string;
   color: string;
@@ -53,15 +50,15 @@ export const CountryLabel: React.FC<{
         />
         <div
           style={{
-            fontFamily,
-            fontWeight: 600,
-            fontSize: 34,
-            letterSpacing: "0.22em",
+            fontFamily: "var(--map-label-font, system-ui, sans-serif)",
+            fontWeight: "var(--map-label-weight, 600)",
+            fontSize: "var(--map-label-size, 34px)",
+            letterSpacing: "var(--map-label-tracking, 0.16em)",
             textTransform: "uppercase",
-            color: "#F5F2ED",
-            textShadow: "0 2px 18px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7)",
+            color: "var(--map-label-color, #ffffff)",
+            textShadow: "var(--map-label-shadow, 0 2px 18px rgba(0,0,0,0.9))",
             marginTop: 13,
-            paddingLeft: "0.22em", // balance the trailing letter-spacing so the word stays centred
+            paddingLeft: "var(--map-label-tracking, 0.16em)",
             whiteSpace: "nowrap",
           }}
         >

@@ -7,8 +7,8 @@ The runnable example. Copy into a Remotion project and adapt.
 | File | What | Goes to (in your project) |
 | --- | --- | --- |
 | `RiverReveal.tsx` | Main component (river reveal + electric head + sequenced country animate-ins). | `src/components/` |
-| `CountryLabel.tsx` | Reusable Space Grotesk label. | `src/components/` |
-| `tokens.ts` | Palette + durations the components import (`import … from "../theme/tokens"`). | `src/theme/` |
+| `CountryLabel.tsx` | Reusable label mechanics; typography comes from project CSS variables. | `src/components/` |
+| `tokens.ts` | Example palette + durations; replace with project tokens. | `src/theme/` |
 | `example-Root.tsx` | Minimal `<Composition>` scaffold (duration = the beat). | `src/Root.tsx` |
 | `sample-data/yarlung-flow.json` | Pre-generated river line → run the component without prep. | `src/geo/` |
 | `sample-data/country-meta.json` | Pre-generated per-country `{stop, anchor, border}`. | `src/geo/` |
@@ -50,16 +50,16 @@ The label text is `country.toUpperCase()`. So for the Nile: `["ethiopia","sudan"
 ## Generic vs project-specific
 
 **Generic:** the choreography (river reveal, electric head, border→fill→label sequence), `CountryLabel.tsx`,
-the geo algorithms (entry stops, pole of inaccessibility, single-segment border), the overlay-labels-via-
-`map.project` pattern.
+the geo algorithms (entry stops, pole of inaccessibility, complete source border), the overlay-labels-via-
+`map.project` pattern, and the fixed-map-plate renderer pattern.
 
 **Change for a new river + countries:**
 
 | In | Change |
 | --- | --- |
 | `prep-geo.mjs` | `COUNTRIES`, `RIVER`/`BORDER` input paths, `FRAME_BBOX`, `ANCHOR_BBOX`, `NUDGE` (all `[W,S,E,N]` / `[lng,lat]`). |
-| `RiverReveal.tsx` | `ORDER`, the `START`/`END` camera (frame your geography), the timing window + sequence durations. |
-| `tokens.ts` | `COUNTRY` / `COUNTRY_DARK` keys + hex (each dark = a manually darkened fill); `COLORS.river`. NB the river *glow* colour is hardcoded in `RiverReveal.tsx` (`#49C6FF`), not read from `COLORS.riverGlow`. |
+| `RiverReveal.tsx` | `ORDER`, the `START`/`END` framing, timing window + sequence durations. Keep the fixed-map-plate structure for a moving camera. |
+| `tokens.ts` | Replace every example visual token with project-local values. |
 | env | `REMOTION_MAPTILER_KEY` — unrestricted MapTiler key. |
 
 ## Run
@@ -74,7 +74,6 @@ npx remotion still   src/index.ts MapExplainer out.png --frame=N --gl=angle --ti
 npx remotion render  src/index.ts MapExplainer out.mp4  --gl=angle --concurrency=1 --timeout=120000
 ```
 
-Deps: `remotion` (4.0.x), `@maptiler/sdk` (^4), `@turf/turf` (^7), and `@remotion/google-fonts` **version-
-matched to your remotion** (`npm i @remotion/google-fonts@<remotion-version>`) for Space Grotesk — swapping
-fonts means changing the `@remotion/google-fonts/SpaceGrotesk` import in `CountryLabel.tsx`. The river input
-must be a single clean source→mouth LineString — see `../references/geo-prep.md` (routing prerequisite).
+Deps: `remotion` (4.0.x), `@maptiler/sdk` (^4), and `@turf/turf` (^7). Add the font package selected by
+the consuming production if needed. The river input must be a single clean source→mouth LineString — see
+`../references/geo-prep.md` (routing prerequisite).
