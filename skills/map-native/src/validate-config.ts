@@ -5,6 +5,7 @@ import type { LocatorMarker } from "./locator-geo";
 import { PALETTES, isCvdSafeRamp } from "./theme/scale";
 import { BASEMAP_NAMES } from "./basemaps";
 import { validateMapFilters, type MapFilter } from "./core/map-filter";
+import type { RevealMode } from "./map-story";
 
 // Shared palette/scaleType validation for any config that carries a colour scale.
 // Errors block: a scaleType must be known, a named palette must exist AND match the
@@ -53,6 +54,9 @@ export type ChoroplethConfigShape = ChoroplethData & {
   /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
    * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
   themeBg?: string;
+  /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
+   * resolveRevealMode — unset/unknown falls back to "context". */
+  revealMode?: RevealMode;
   title: string;
   description?: string;
   unit?: string;
@@ -124,6 +128,11 @@ export function validateChoroplethConfig(
     !(MAP_STYLES as readonly string[]).includes(s.mapStyle as string)
   )
     errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
+  if (
+    s.revealMode !== undefined &&
+    !["context", "sequential"].includes(s.revealMode as string)
+  )
+    errors.push("revealMode must be one of: context, sequential");
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
   errors.push(...paletteErrors(s));

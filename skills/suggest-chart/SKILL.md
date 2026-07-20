@@ -504,6 +504,7 @@ back to `map-dw` or a sorted bar chart (`d3-bars`, `sort:"desc"`) and state why 
   "subject": "<the topic hint, e.g. 'electricity access' — drives the subject-fit ramp>",
   "scaleType": "sequential",
   "palette": "<subject-fit registry ramp — see the Map colour rule below; NEVER default blue for a non-water subject>",
+  "revealMode": "context",
   "source": { "name": "<honest source>", "url": "<URL>" }
 }
 ```
@@ -523,6 +524,9 @@ Field notes:
   `subject` left on the default blue ramp — so a warm subject (energy) MUST carry `palette:"oranges"`, water
   keeps `"blues"`, vegetation `"greens"`. Emitting `subject` without a subject-fit `palette` blocks produce.
 - `source.name` + `source.url`: required (furniture standard; missing is a warning).
+- `revealMode`: `"context"` (default) — emit it explicitly. Journey/progression narratives (a route or
+  ordered sequence the story deliberately walks) may set `"sequential"`; do NOT infer it heuristically —
+  leave it on `"context"` unless the editorial framing is genuinely a guided journey.
 - `unit` / `valueUnit`: **EMIT them whenever the measured quantity has a short unit (mm, %, €, t,
   hab.)** — the unit feeds the legend and the hover/caption surfaces and is part of faithful data
   representation, not decoration (same rule as the map-dw `unit` field note above). Omit only when the
@@ -652,6 +656,7 @@ cannot be matched to ISO-A3 → fall back to `map-dw` or a sorted bar chart and 
   "scaleType": "sequential",
   "palette": "<subject-fit registry ramp — see the Map colour rule; energy → 'oranges', water → 'blues'>",
   "valueKind": "temporal | magnitude",
+  "revealMode": "context",
   "lang": "<deliverable language, e.g. 'fr' — localizes numbers, 'Source', beat descriptors>",
   "source": { "name": "<honest source>", "url": "<URL>" }
 }
@@ -663,6 +668,8 @@ is the surface where an English basemap name or a blue energy ramp is most visib
   it so a French scrolly says `"Éthiopie"`, not the basemap's `"Ethiopia"`.
 - **`subject` + `palette`**: pick the subject-fit ramp (energy → `"oranges"`); the scrolly audit FAILS a
   declared subject on the default blue.
+- **`revealMode`**: `"context"` (default) — leave it unless the story is genuinely a journey/progression;
+  do not infer `"sequential"` heuristically (see the `map-native` field note above).
 - **`lang`**: localizes the auto-generated beat descriptors, numbers, and the concluding takeaway.
 
 **Narrative pattern hint — `valueKind` (set it):** when the value field is a **year / date / ordinal

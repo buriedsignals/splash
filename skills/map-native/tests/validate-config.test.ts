@@ -104,6 +104,15 @@ describe("validateChoroplethConfig", () => {
     expect(bad.ok).toBe(false);
     if (!bad.ok) expect(bad.errors.some((e) => /mapStyle/.test(e))).toBe(true);
   });
+  it("accepts a known revealMode and rejects an unknown one", () => {
+    expect(
+      validateChoroplethConfig({ ...ok, revealMode: "sequential" }).ok,
+    ).toBe(true);
+    const bad = validateChoroplethConfig({ ...ok, revealMode: "shuffle" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok)
+      expect(bad.errors.some((e) => /revealMode/.test(e))).toBe(true);
+  });
 });
 
 const okSymbol = {

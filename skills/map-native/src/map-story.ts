@@ -38,6 +38,16 @@ export interface Beat {
   rankRole?: "leader" | "tail";
 }
 
+// The choreography a reveal beat's camera follows. "context" (default) keeps the
+// establishing bounds in view around each reveal (the current areal behaviour);
+// "sequential" is a journey/progression choreography read by later map-native tasks
+// (Choropleth). Fail-safe: any unset/unknown value resolves to "context".
+export type RevealMode = "context" | "sequential";
+
+export function resolveRevealMode(config: { revealMode?: string }): RevealMode {
+  return config.revealMode === "sequential" ? "sequential" : "context";
+}
+
 export interface MapStoryMeta {
   title: string;
   insight: string;
