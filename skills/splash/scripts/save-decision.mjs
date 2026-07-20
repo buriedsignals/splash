@@ -16,6 +16,32 @@ export function readDecisions(runDir) {
     .map((l) => JSON.parse(l));
 }
 
+// Pure write-eligibility policy, extracted so the untested branches (prerequisite refusal,
+// missing-artifactCheck refusal) can be exercised directly without shelling out to the CLI.
+// loggedIds: Set of decision ids already recorded in this run's decisions.jsonl.
+export function checkWriteEligibility(decision, loggedIds, runDir, payload) {
+  // Prerequisites (lever 2): every declared prerequisite must already be logged.
+  const missingPrereqs = decision.prerequisites.filter((p) => !loggedIds.has(p));
+  if (missingPrereqs.length) {
+    return {
+      ok: false,
+      reason: `prerequisite decision(s) not yet logged: ${missingPrereqs.join(", ")}`,
+    };
+  }
+
+  // Write-time corroboration.
+  if (decision.evidenceKind === "artifact") {
+    if (!decision.artifactCheck) {
+      return {
+        ok: false,
+        reason: `decision ${decision.id} is artifact-kind but declares no artifactCheck`,
+      };
+    }
+    return decision.artifactCheck(runDir, payload);
+  }
+  return decision.writeGuard?.(payload) ?? { ok: true };
+}
+
 if (import.meta.main) {
   const argv = process.argv.slice(2);
   const [decisionId, runDir] = argv;
@@ -32,23 +58,10 @@ if (import.meta.main) {
     process.exit(1);
   }
 
-  // Prerequisites (lever 2): every declared prerequisite must already be logged.
-  const logged = new Set(readDecisions(runDir).map((d) => d.id));
-  const missingPrereqs = decision.prerequisites.filter((p) => !logged.has(p));
-  if (missingPrereqs.length) {
-    console.error(
-      `cannot record "${decisionId}" — prerequisite decision(s) not yet logged: ${missingPrereqs.join(", ")}`,
-    );
-    process.exit(1);
-  }
-
-  // Write-time corroboration.
-  const check =
-    decision.evidenceKind === "artifact"
-      ? decision.artifactCheck(runDir, payload)
-      : (decision.writeGuard?.(payload) ?? { ok: true });
-  if (!check.ok) {
-    console.error(`cannot record "${decisionId}" — ${check.reason}`);
+  const loggedIds = new Set(readDecisions(runDir).map((d) => d.id));
+  const eligibility = checkWriteEligibility(decision, loggedIds, runDir, payload);
+  if (!eligibility.ok) {
+    console.error(`cannot record "${decisionId}" — ${eligibility.reason}`);
     process.exit(1);
   }
 

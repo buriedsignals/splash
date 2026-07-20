@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { readDecisions } from "./save-decision.mjs";
+import { checkWriteEligibility, readDecisions } from "./save-decision.mjs";
 
 const script = join(import.meta.dir, "save-decision.mjs");
 function run(args: string[], cwd?: string) {
@@ -66,6 +66,54 @@ describe("save-decision.mjs — sanctioned journal writer", () => {
       expect(p.stderr.toString()).toMatch(/unknown decision/i);
     } finally {
       rmSync(runDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("checkWriteEligibility — pure write-eligibility policy", () => {
+  const syntheticDecision = {
+    id: "x",
+    evidenceKind: "transcript" as const,
+    prerequisites: ["gate-1b"],
+    required: false,
+    writeGuard: () => ({ ok: true }) as const,
+  };
+
+  it("refuses when a declared prerequisite is not yet logged", () => {
+    const result = checkWriteEligibility(
+      syntheticDecision,
+      new Set(),
+      "/unused",
+      {},
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toContain("gate-1b");
+    }
+  });
+
+  it("passes once the declared prerequisite is logged", () => {
+    const result = checkWriteEligibility(
+      syntheticDecision,
+      new Set(["gate-1b"]),
+      "/unused",
+      {},
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("refuses cleanly (no throw) when an artifact-kind decision declares no artifactCheck", () => {
+    const decision = {
+      id: "y",
+      evidenceKind: "artifact" as const,
+      prerequisites: [],
+      required: false,
+    };
+    const result = checkWriteEligibility(decision, new Set(), "/unused", {});
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toContain("y");
+      expect(result.reason).toContain("artifactCheck");
     }
   });
 });
