@@ -13,8 +13,9 @@
 //   4. Camera flies per beat via buildTimeline/cameraForFrame (jumpTo, never flyTo). Per-subject
 //      entrance — border trail draws on, fill blooms — via the shared areal choreography
 //      (story-choreography.ts), same fluid interwoven envelope as ChoroplethStory. A projected
-//      CountryLabel (cell centroid — cells are convex, no pole needed) carries name + value;
-//      CaptionCard(beat.copy) still carries the fuller rank/value/id sentence.
+//      CountryLabel (cell pole of inaccessibility — the `scaled` variant's polygon is a
+//      real, often-concave coastline, so a centroid can fall outside it) carries name +
+//      value; CaptionCard(beat.copy) still carries the fuller rank/value/id sentence.
 //   5. sequential/diverging bin legend; title scene via resolveScene.
 // Harness:
 //   delayRender → fetch world.geojson → build cells (+__id) + beats + entrance layers + jumpTo
@@ -34,8 +35,8 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import { centroid } from "@turf/turf";
 import { continueWhenMapSettles } from "../core/frame-ready";
+import { poleOfInaccessibility } from "../core/label-anchor";
 import { computeCartogram, type CartogramCell } from "../cartogram-geo";
 import { deriveCartogramStory } from "../cartogram-story";
 import { applyCartogramBasemap } from "../theme/cartogram-basemap";
@@ -244,11 +245,14 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
           const kinds = beats.map((b) => b.kind);
           const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
 
-          // Cells are convex (scaled real-region polygons or grid squares — never
-          // MultiPolygon, see cartogram-geo.ts) — a plain centroid anchor is safe, no pole
-          // computation needed. Only build border/anchor entries for the FEW cells a reveal
-          // beat actually visits (triggerFrameByRegion keys are exactly the beats' highlight
-          // values), never the whole cell set.
+          // Cells are single Polygons (scaled real-region polygons or grid squares — never
+          // MultiPolygon, see cartogram-geo.ts), but the `scaled` variant's polygon is a
+          // scaled copy of the region's real mainland coastline and is frequently CONCAVE
+          // (Norway, Japan's largest island, Chile…) — a centroid can fall outside the
+          // shape and drop the label into empty space. Use the pole of inaccessibility
+          // (most-interior point), same as ChoroplethStory. Only build border/anchor
+          // entries for the FEW cells a reveal beat actually visits (triggerFrameByRegion
+          // keys are exactly the beats' highlight values), never the whole cell set.
           const triggers = triggerFrameByRegion(beats, phases);
           const cellById = new Map(layout.cells.map((c) => [c.id, c]));
           const borderByKey = new Map<string, DrawEntry>();
@@ -260,10 +264,16 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
               key,
               buildDraw([cell.feature.geometry.coordinates[0]]),
             );
-            anchorByKey.set(
-              key,
-              centroid(cell.feature).geometry.coordinates as [number, number],
-            );
+            try {
+              anchorByKey.set(
+                key,
+                poleOfInaccessibility(
+                  cell.feature as GeoJSON.Feature<GeoJSON.Polygon>,
+                ),
+              );
+            } catch {
+              // Skip a subject where the pole computation fails (e.g., degenerate geometry).
+            }
           }
 
           // Per-subject emphasis: border trail (draws on) + fill bloom (brief overshoot on top

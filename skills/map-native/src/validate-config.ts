@@ -703,12 +703,21 @@ export function validateHexGridConfig(
 
 export type CartogramConfigShape = {
   type: "cartogram";
-  values: { id: string; value: number }[];
+  // Extra string-keyed columns are allowed (and read) per-row when `labelField` names one.
+  values: ({ id: string; value: number } & Record<string, string | number>)[];
   variant?: "scaled" | "grid";
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
   bins?: number;
   valueLabel?: string;
+  // The short value suffix for callouts (e.g. "%") — mirrors ChoroplethConfigShape's
+  // `valueUnit`.
+  valueUnit?: string;
+  // Data column (on each `values` row) holding a human-readable region NAME in the
+  // deliverable's language. When set, the narration (deriveCartogramStory) uses the
+  // DATA name instead of the basemap's ISO/English feature name — mirrors
+  // ChoroplethConfigShape's `labelField`.
+  labelField?: string;
   mapStyle?: string;
   /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
    * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */

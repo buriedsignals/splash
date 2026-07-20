@@ -85,6 +85,76 @@ describe("computeCartogram — grid", () => {
   });
 });
 
+describe("computeCartogram — display name", () => {
+  it("falls back to the region id when no name is reachable", () => {
+    const layout = computeCartogram(
+      { variant: "scaled", values, valueLabel: "pop" },
+      features,
+    );
+    expect(layout.cells.find((c) => c.id === "B")!.name).toBe("B");
+  });
+
+  it("uses the matched basemap feature's `name` property when present", () => {
+    const namedFeatures: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: features.features.map((f) => ({
+        ...f,
+        properties: {
+          ...f.properties,
+          name: `Region ${f.properties!.iso_a3}`,
+        },
+      })),
+    };
+    const layout = computeCartogram(
+      { variant: "scaled", values, valueLabel: "pop" },
+      namedFeatures,
+    );
+    expect(layout.cells.find((c) => c.id === "B")!.name).toBe("Region B");
+  });
+
+  it("prefers the data's `labelField` over the basemap feature name", () => {
+    const namedFeatures: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: features.features.map((f) => ({
+        ...f,
+        properties: {
+          ...f.properties,
+          name: `Basemap ${f.properties!.iso_a3}`,
+        },
+      })),
+    };
+    const valuesWithLabel = values.map((v) => ({
+      ...v,
+      displayName: `Data ${v.id}`,
+    }));
+    const layout = computeCartogram(
+      {
+        variant: "scaled",
+        values: valuesWithLabel,
+        valueLabel: "pop",
+        labelField: "displayName",
+      },
+      namedFeatures,
+    );
+    expect(layout.cells.find((c) => c.id === "B")!.name).toBe("Data B");
+  });
+
+  it("carries the display name through the grid variant too", () => {
+    const namedFeatures: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: features.features.map((f) => ({
+        ...f,
+        properties: { ...f.properties, name: `Region ${f.properties!.iso_a3}` },
+      })),
+    };
+    const layout = computeCartogram(
+      { variant: "grid", values, valueLabel: "pop" },
+      namedFeatures,
+    );
+    expect(layout.cells.find((c) => c.id === "B")!.name).toBe("Region B");
+  });
+});
+
 describe("computeCartogram — colour + guards", () => {
   it("assigns a bin colour to every cell and carries the value label", () => {
     const layout = computeCartogram(

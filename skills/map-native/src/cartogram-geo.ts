@@ -9,6 +9,10 @@ import { computeChoropleth, mainlandFeature } from "./choropleth-geo";
 export interface CartogramCell {
   feature: GeoJSON.Feature;
   id: string;
+  // Display name — the data's `labelField` when provided, else the matched basemap
+  // feature's `name` property, else `id`. Mirrors choropleth's `layout.labels` fallback
+  // (deriveMapStory's `nameOf`) so the cartogram never narrates a bare ISO/region code.
+  name: string;
   value: number;
   color: string;
   binIdx: number;
@@ -19,16 +23,25 @@ export interface CartogramLayout {
   variant: "scaled" | "grid";
   bounds: [number, number, number, number];
   valueLabel: string;
+  // The short value suffix for callouts (e.g. "%"), mirrors ChoroplethMap's `valueUnit`.
+  valueUnit: string;
   scaleType: "sequential" | "diverging";
 }
 export interface CartogramData {
   variant?: "scaled" | "grid";
   joinKey?: string;
-  values: { id: string; value: number }[];
+  // Extra string-keyed columns are allowed (and read) per-row when `labelField` names one.
+  values: ({ id: string; value: number } & Record<string, string | number>)[];
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
   bins?: number;
   valueLabel?: string;
+  valueUnit?: string;
+  // The data column (on each `values` row) holding a human-readable display name, in
+  // the deliverable's language. Mirrors ChoroplethData's `labelField` — when set, the
+  // cartogram narration (deriveCartogramStory) uses the DATA name instead of the
+  // basemap's ISO/English feature name.
+  labelField?: string;
   brandHue?: string; // newsroom house hue → derived house ramp (via computeChoropleth)
 }
 
@@ -59,7 +72,12 @@ export function computeCartogram(
     },
     features,
     joinKey,
-    { bins: data.bins ?? 5, scaleType, palette: data.palette },
+    {
+      bins: data.bins ?? 5,
+      scaleType,
+      palette: data.palette,
+      labelField: data.labelField,
+    },
   );
 
   // Map region key → value (matched only).
@@ -73,6 +91,13 @@ export function computeCartogram(
 
   if (matched.length === 0)
     throw new Error("cartogram: no region matched the data");
+
+  // Display name — the data's `labelField` (deliverable-language), else the matched
+  // basemap feature's `name` property (ISO/English), else the bare key. Mirrors
+  // deriveMapStory's `nameOf` fallback chain.
+  const featByKey = new Map(matched.map(({ f, key }) => [key, f]));
+  const nameOf = (key: string) =>
+    cho.labels?.[key] ?? String(featByKey.get(key)?.properties?.name ?? key);
 
   const maxValue = Math.max(
     ...matched.map(({ key }) => valueByKey.get(key)!),
@@ -93,7 +118,14 @@ export function computeCartogram(
       const factor = Math.sqrt(Math.max(value, 0) / maxValue) || 1e-3; // area ∝ value; floor avoids 0-area
       const scaled = transformScale(src, factor, { origin: centroid(src) });
       const { binIdx, color } = colorFor(value);
-      return { feature: scaled, id: key, value, color, binIdx };
+      return {
+        feature: scaled,
+        id: key,
+        name: nameOf(key),
+        value,
+        color,
+        binIdx,
+      };
     });
   } else {
     // grid auto-layout: choose dims, map centroids to ideal (row,col), assign nearest FREE cell.
@@ -163,7 +195,14 @@ export function computeCartogram(
         ],
       ]);
       const { binIdx, color } = colorFor(a.value);
-      return { feature, id: a.key, value: a.value, color, binIdx };
+      return {
+        feature,
+        id: a.key,
+        name: nameOf(a.key),
+        value: a.value,
+        color,
+        binIdx,
+      };
     });
   }
 
@@ -179,6 +218,7 @@ export function computeCartogram(
     variant,
     bounds,
     valueLabel: data.valueLabel ?? "value",
+    valueUnit: data.valueUnit ?? "",
     scaleType,
   };
 }

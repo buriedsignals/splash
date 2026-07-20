@@ -122,6 +122,34 @@ describe("deriveCartogramStory", () => {
     const again = deriveCartogramStory(layout, meta);
     expect(JSON.stringify(again)).toBe(JSON.stringify(beats));
   });
+
+  it("callout.name uses the cell's display name, not the bare id", () => {
+    const namedFeatures: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: features.features.map((f) => ({
+        ...f,
+        properties: { ...f.properties, name: `Region ${f.properties!.iso_a3}` },
+      })),
+    };
+    const namedLayout = computeCartogram(
+      { variant: "scaled", values, valueLabel: "pop" },
+      namedFeatures,
+    );
+    const namedBeats = deriveCartogramStory(namedLayout, meta);
+    const top = namedBeats.filter((b) => b.kind === "reveal")[0];
+    expect(top.callout!.name).toBe("Region B");
+    expect(top.callout!.region).toBe("B"); // highlight/lookup key stays the id
+  });
+
+  it("callout.value appends valueUnit when the config provides one", () => {
+    const unitLayout = computeCartogram(
+      { variant: "scaled", values, valueLabel: "pop", valueUnit: "%" },
+      features,
+    );
+    const unitBeats = deriveCartogramStory(unitLayout, meta);
+    const top = unitBeats.filter((b) => b.kind === "reveal")[0];
+    expect(top.callout!.value).toBe("16%");
+  });
 });
 
 // Mode-aware duration — the same threading CartogramStory.tsx and Root.tsx's

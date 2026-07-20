@@ -73,14 +73,16 @@ export function deriveCartogramStory(
         : rank === 1
           ? "the 2nd highest"
           : `#${rank + 1}`;
-    const value = fmt(c.value);
-    const text = `${value} ${layout.valueLabel} — ${rankDesc} — ${c.id}`;
+    // Display value with its unit (e.g. "16%") — mirrors ChoroplethMap's callout
+    // formatting (`${shownValue}${valueUnit}`).
+    const value = `${fmt(c.value)}${layout.valueUnit}`;
+    const text = `${value} ${layout.valueLabel} — ${rankDesc} — ${c.name}`;
     beats.push({
       kind: "reveal",
       camera: frameCell(cellBbox, full, 0.5),
       highlight: [c.id],
       dim: true,
-      callout: { region: c.id, name: c.id, value, text },
+      callout: { region: c.id, name: c.name, value, text },
       copy: text,
     });
   });
