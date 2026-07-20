@@ -87,3 +87,22 @@ describe("source-fidelity decision", () => {
     expect(r.ok).toBe(false);
   });
 });
+
+describe("producer-escalation decision", () => {
+  it("write-guard refuses an empty escalationReason", () => {
+    const d = getDecision("producer-escalation")!;
+    const r = d.writeGuard!({ escalationReason: "  " });
+    expect(r.ok).toBe(false);
+  });
+  it("write-guard accepts a stated reason", () => {
+    const d = getDecision("producer-escalation")!;
+    expect(
+      d.writeGuard!({
+        escalationReason: "journalist asked for hover on every city",
+      }),
+    ).toEqual({ ok: true });
+  });
+  it("is a transcript-kind decision", () => {
+    expect(getDecision("producer-escalation")!.evidenceKind).toBe("transcript");
+  });
+});

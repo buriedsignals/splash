@@ -66,6 +66,25 @@ export const FLOW_DECISIONS: FlowDecision[] = [
       return { ok: true };
     },
   },
+  {
+    id: "producer-escalation",
+    evidenceKind: "transcript",
+    prerequisites: [],
+    required: false,
+    // No disk artifact: escalating to chart-native on a dw-reachable type is only justified by a
+    // journalist motion/interactivity ask, which lives in the conversation. The spine enforces that
+    // a reason was stated; the harness cross-checks it against the real transcript.
+    writeGuard: (payload) => {
+      const reason = String(payload.escalationReason ?? "").trim();
+      return reason
+        ? { ok: true }
+        : {
+            ok: false,
+            reason:
+              "escalationReason is required to escalate to chart-native on a dw-reachable type",
+          };
+    },
+  },
 ];
 
 export function getDecision(id: string): FlowDecision | undefined {
