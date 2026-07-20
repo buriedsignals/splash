@@ -556,9 +556,11 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
           />
         )}
 
-      {/* Caption lower-third — carries the fuller sentence (incl. "mostly X" for multivariate) */}
+      {/* Caption lower-third — only for takeaway beats (reveal beats show the value via the
+          central CountryLabel; title beat uses the full TitleCard) */}
       {overlay &&
         beat?.kind !== "title" &&
+        beat?.kind !== "reveal" &&
         beat?.copy &&
         overlay.captionReveal > 0 && (
           <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />

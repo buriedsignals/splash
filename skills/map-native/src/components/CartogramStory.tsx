@@ -532,9 +532,11 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
           />
         )}
 
-      {/* Caption lower-third — for reveal/takeaway beats with copy */}
+      {/* Caption lower-third — only for takeaway beats (reveal beats show the value via the
+          central CountryLabel; title beat uses the full TitleCard) */}
       {overlay &&
         beat?.kind !== "title" &&
+        beat?.kind !== "reveal" &&
         beat?.copy &&
         overlay.captionReveal > 0 && (
           <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />

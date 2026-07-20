@@ -3,8 +3,13 @@
 
 import React from "react";
 import { interpolate } from "remotion";
+import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 
-// Caption lower-third card — semi-opaque, WCAG-contrasted.
+const { fontFamily } = loadFont();
+
+// Caption lower-third card — semi-opaque, WCAG-contrasted. Typography mirrors CountryLabel
+// (same Space Grotesk font-var + shadow-var) so the reveal-beat central label and the
+// takeaway caption read as one concordant design language, not two unrelated text styles.
 export const CaptionCard: React.FC<{ text: string; reveal: number }> = ({
   text,
   reveal,
@@ -33,12 +38,14 @@ export const CaptionCard: React.FC<{ text: string; reveal: number }> = ({
         style={{
           margin: 0,
           color: "#F5F2ED",
+          fontFamily: `var(--map-label-font, ${fontFamily})`,
           fontSize: 28,
           fontWeight: 600,
           lineHeight: 1.35,
           textAlign: "center",
           letterSpacing: "0.01em",
-          textShadow: "0 1px 8px rgba(0,0,0,0.7)",
+          textShadow:
+            "var(--map-label-shadow, 0 2px 18px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7))",
         }}
       >
         {text}

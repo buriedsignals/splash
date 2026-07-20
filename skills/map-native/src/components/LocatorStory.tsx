@@ -58,6 +58,7 @@ import {
 } from "../story-choreography";
 import { stagedEntrance } from "../core/staged-reveal";
 import type { LocatorConfigShape } from "../validate-config";
+import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
@@ -132,10 +133,16 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
     delayRender("locator-story-init", { timeoutInMilliseconds: 120000 }),
   );
 
-  // Per-frame overlay state: the caption reveal ramp for the active beat.
+  // Per-frame overlay state: the caption reveal ramp for the active beat, plus the central
+  // category/place label's projected position + reveal + colour (reveal-beat only — null
+  // callout on title/establish/takeaway beats, mirrors ChoroplethStory/SymbolStory).
   const [overlay, setOverlay] = useState<{
     beatIndex: number;
     captionReveal: number;
+    calloutPt: { x: number; y: number } | null;
+    calloutColor: string;
+    calloutValue: string;
+    labelReveal: number;
   } | null>(null);
 
   const lastBeatIndex = useRef<number>(-1);
@@ -412,6 +419,39 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
       });
     }
 
+    // Central category/place label — the beat's highlighted subject, mirrors the CountryLabel
+    // callout every other beat-driven story comp shows (Choropleth/Symbol/Cartogram/HexGrid/
+    // DotDensity). Positioned at the simple centroid (average lon/lat) of the beat's
+    // highlighted markers, projected to screen coords — a category can span several markers,
+    // unlike those single-subject comps. Reveal reuses the SAME per-marker staged-entrance
+    // label timing computed just above (every marker in beat.highlight shares one
+    // __triggerFrame, so any one of them gives the group's __labelOpacity — already at full
+    // strength since a highlighted marker's dim multiplier is 1, see the loop above).
+    let calloutPt: { x: number; y: number } | null = null;
+    let calloutColor = "#ffffff";
+    let labelReveal = 0;
+    if (beat.callout && beat.highlight.length > 0) {
+      const highlightSet = new Set(beat.highlight);
+      const highlighted = geo.markers.filter((mk) =>
+        highlightSet.has(mk.label),
+      );
+      if (highlighted.length > 0) {
+        const lon =
+          highlighted.reduce((sum, mk) => sum + mk.lon, 0) / highlighted.length;
+        const lat =
+          highlighted.reduce((sum, mk) => sum + mk.lat, 0) / highlighted.length;
+        const pt = map.project([lon, lat] as [number, number]);
+        calloutPt = { x: pt.x, y: pt.y };
+        calloutColor = highlighted[0].color;
+        const subjectProps = markerFeatures.find(
+          (f) =>
+            (f.properties as unknown as LocatorFeatureProps).label ===
+            highlighted[0].label,
+        )?.properties as unknown as LocatorFeatureProps | undefined;
+        labelReveal = subjectProps?.__labelOpacity ?? 0;
+      }
+    }
+
     // Caption reveal: ease over first ~0.5s of the beat's hold.
     const holdStart = phase.startFrame + phase.moveFrames;
     const halfSecFrames = Math.max(1, Math.round(fps * 0.5));
@@ -422,7 +462,14 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
       { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
     );
 
-    setOverlay({ beatIndex, captionReveal });
+    setOverlay({
+      beatIndex,
+      captionReveal,
+      calloutPt,
+      calloutColor,
+      calloutValue: beat.callout?.value ?? "",
+      labelReveal,
+    });
 
     continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
@@ -494,14 +541,30 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         />
       )}
 
-      {/* No on-map callout: the markers already carry their own decluttered labels (naming each
-          place), so a projected name callout would duplicate them and can overflow the frame near
-          the edges. The caption below carries the value-add — the marker's note / the category
-          count — which the map does not otherwise show. */}
+      {/* Central category/place label — the beat's subject (category name in the categorized
+          regime, place name in few-annotated), centred on the highlighted markers' centroid.
+          Each marker keeps its own small decluttered label too, but the giant projected label
+          is the visual narration beat (Tom-style): a reveal shows WHAT you're looking at, not
+          just a lower-third sentence. */}
+      {overlay &&
+        beat?.callout &&
+        overlay.calloutPt &&
+        overlay.labelReveal > 0 && (
+          <CountryLabel
+            name={beat.callout.name}
+            color={overlay.calloutColor}
+            reveal={overlay.labelReveal}
+            x={overlay.calloutPt.x}
+            y={overlay.calloutPt.y}
+            value={overlay.calloutValue}
+          />
+        )}
 
-      {/* Caption lower-third — for reveal/takeaway beats with copy */}
+      {/* Caption lower-third — only for takeaway beats (reveal beats show the value via the
+          central CountryLabel above; title beat uses the full TitleCard) */}
       {overlay &&
         beat?.kind !== "title" &&
+        beat?.kind !== "reveal" &&
         beat?.copy &&
         overlay.captionReveal > 0 && (
           <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />
