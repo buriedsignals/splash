@@ -10,10 +10,21 @@ import { getDecision } from "../src/flow-decisions.ts";
 export function readDecisions(runDir) {
   const path = join(runDir, "decisions.jsonl");
   if (!existsSync(path)) return [];
-  return readFileSync(path, "utf8")
+  const lines = readFileSync(path, "utf8")
     .split("\n")
-    .filter((l) => l.trim() !== "")
-    .map((l) => JSON.parse(l));
+    .filter((l) => l.trim() !== "");
+  const decisions = [];
+  for (const l of lines) {
+    // An interrupted appendFileSync (not atomic) can leave a partial/corrupt trailing line.
+    // Skip it rather than throwing — a garbled last line must not crash every subsequent
+    // produce-all run nor discard the well-formed decisions already recorded before it.
+    try {
+      decisions.push(JSON.parse(l));
+    } catch {
+      // skip corrupt line
+    }
+  }
+  return decisions;
 }
 
 // Pure write-eligibility policy, extracted so the untested branches (prerequisite refusal,

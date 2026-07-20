@@ -58,6 +58,22 @@ describe("save-decision.mjs — sanctioned journal writer", () => {
     }
   });
 
+  it("skips a corrupt trailing line rather than throwing, keeping the well-formed decisions", () => {
+    const runDir = mkdtempSync(join(tmpdir(), "sd-"));
+    try {
+      writeFileSync(
+        join(runDir, "decisions.jsonl"),
+        '{"id":"a","payload":{},"at":"recorded"}\n' +
+          "{not valid json\n" +
+          '{"id":"b","payload":{},"at":"recorded"}\n',
+      );
+      const decisions = readDecisions(runDir);
+      expect(decisions.map((d) => d.id)).toEqual(["a", "b"]);
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  });
+
   it("refuses an unknown decision id", () => {
     const runDir = mkdtempSync(join(tmpdir(), "sd-"));
     try {

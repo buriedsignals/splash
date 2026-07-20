@@ -58,6 +58,12 @@ if (existsSync(candidatesPath)) {
 // decision never recorded fails the run; an optional one warns. Staged: the first-cut trio ships
 // required:false, so this is warnings-only until each is flipped.
 const loggedDecisionIds = new Set(readDecisions(dirname(acceptedPath)).map((d) => d.id));
+// No `only` is passed: this intentionally evaluates ALL registered decisions, which is safe only
+// while every decision is required:false (missing ones warn, never block). Before flipping ANY
+// decision to required:true, this call must pass an `only` set scoped to the decisions actually
+// applicable to THIS run's accepted proposals (e.g. only require producer-escalation when an
+// escalation actually happened, only require source-fidelity when a source was actually cited) —
+// otherwise a legitimate run that never escalated / never cited a source would fail here.
 const decisionOutcome = evaluateDecisions(dirname(acceptedPath), loggedDecisionIds);
 for (const w of decisionOutcome.warnings) console.error(`[flow-decision] warning: ${w}`);
 if (decisionOutcome.errors.length) {
