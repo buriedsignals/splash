@@ -27,10 +27,11 @@
 import React from "react";
 import { Composition } from "remotion";
 import { HarnessCheck } from "../../src/components/HarnessCheck";
+import { ChoroplethStory } from "../../src/components/ChoroplethStory";
 import {
-  ChoroplethStory,
   AREAL_TIMELINE_OPTS,
-} from "../../src/components/ChoroplethStory";
+  makeStoryMeta,
+} from "../../src/story-choreography";
 import { SymbolStory } from "../../src/components/SymbolStory";
 import type { SymbolConfig } from "../../src/SymbolMap";
 import { SymbolReveal } from "../../src/components/SymbolReveal";
@@ -93,8 +94,7 @@ const choroplethDefaultProps = { config: sampleConfig };
 // Mode-aware composition duration. `sequential` drops the establish beat (beatsForMode), so the
 // length must be recomputed from the INJECTED config — otherwise the sequential MP4 ends with a
 // frozen tail. Mirrors ChoroplethStory's own layout+beats setup so the counts match exactly.
-const storyMeta = ({ props }: { props: { config: any } }) => {
-  const cfg = props.config;
+const storyMeta = makeStoryMeta((cfg) => {
   const layout = computeChoropleth(cfg, world as any, "iso_a3", {
     bins: 5,
     scaleType: cfg.scaleType ?? "sequential",
@@ -112,14 +112,12 @@ const storyMeta = ({ props }: { props: { config: any } }) => {
     }),
     resolveRevealMode(cfg),
   );
-  return {
-    durationInFrames: buildTimeline(
-      beats.map((b) => b.kind),
-      30,
-      AREAL_TIMELINE_OPTS,
-    ).totalFrames,
-  };
-};
+  return buildTimeline(
+    beats.map((b) => b.kind),
+    30,
+    AREAL_TIMELINE_OPTS,
+  ).totalFrames;
+});
 
 const scrollyMeta = ({ props }: { props: { config: any } }) => ({
   durationInFrames: scrollyFrames(

@@ -44,7 +44,11 @@ import { legendTheme } from "../theme/legend-theme";
 import { resolveMapStyle } from "../route-geo";
 import { fmtBinRange } from "../core/legend-format";
 import { triggerFrameByRegion } from "../story-triggers";
-import { stagedEntrance, type StagedEntrance } from "../core/staged-reveal";
+import {
+  AREAL_TIMELINE_OPTS,
+  stagedByKey,
+  addSubjectEmphasisLayers,
+} from "../story-choreography";
 import {
   buildDraw,
   sliceBorder,
@@ -55,35 +59,6 @@ import {
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
 const NUM_BINS = 5;
-
-// --- Areal entrance pacing (tuning knobs — each a number) --------------------
-// The choropleth is a beat-TOUR: each region is visited for one hold, then the
-// camera leaves. So the label (the payload) must land EARLY and stay readable
-// within the hold — unlike RouteReveal, where labels accumulate over a long
-// story. These durations are passed to stagedEntrance/buildTimeline so the core
-// defaults (which RouteReveal depends on for parity) are never touched.
-// The phases INTERWEAVE (overlap) instead of running strictly one-after-another,
-// so the entrance reads as one fluid gesture rather than three discrete steps:
-// the fill begins while the border is still drawing (AREAL_FILL_START_S), and the
-// label rises while the fill is still blooming (AREAL_LABEL_START_S). The border
-// draws during the camera glide-in (trigger = beat start = when the move begins),
-// so motion is continuous. Label reaches full at AREAL_LABEL_START_S + AREAL_LABEL_S;
-// AREAL_REVEAL_HOLD_S gives ~1s of readable stillness after that before the next move.
-const AREAL_BORDER_S = 1.3; // border draw-on seconds (was core default 2.5)
-const AREAL_FILL_S = 0.8; // fill-bloom seconds
-const AREAL_FILL_START_S = 0.5; // fill begins ~40% into the border draw (overlap)
-const AREAL_LABEL_S = 1.1; // label rise seconds — a gentle fade/rise-in, not a fast pop
-const AREAL_LABEL_START_S = 1.0; // label begins while the fill blooms (overlap) → full at ~2.1s
-const AREAL_REVEAL_HOLD_S = 3.0; // per-region hold → gentle entrance ~2.1s + ~0.9s readable stillness
-const AREAL_MOVE_S = 1.3; // camera move seconds — snappy but eased glide
-
-// Single source of truth for the beat-timeline pacing. MUST be used both here
-// (component animation) and in remotion/src/Root.tsx (composition durationInFrames):
-// if they diverge, the composition is too short and the story is cut off.
-export const AREAL_TIMELINE_OPTS = {
-  revealHold: AREAL_REVEAL_HOLD_S,
-  move: AREAL_MOVE_S,
-} as const;
 
 // Enriched GeoJSON world — adds __value, __hasData, __binIdx.
 function enrichWorld(
@@ -388,36 +363,12 @@ export const ChoroplethStory: React.FC<{
           // staged over the beat's first ~2.5-4.2s. Bloom sits above the base fill so its
           // opacity reads as an additive brightening; the trail sits above the bloom so the
           // drawn border stays visible through it.
-          for (const key of triggers.keys()) {
-            m.addSource(`choro-bloom-${key}`, {
-              type: "geojson",
-              data: singleRegionFeature(key),
-            });
-            m.addLayer({
-              id: `choro-bloom-${key}`,
-              type: "fill",
-              source: `choro-bloom-${key}`,
-              paint: {
-                "fill-color": binColorForKey(key),
-                "fill-opacity": 0,
-              },
-            });
-
-            m.addSource(`choro-trail-${key}`, {
-              type: "geojson",
-              data: EMPTY_FEATURE,
-            });
-            m.addLayer({
-              id: `choro-trail-${key}`,
-              type: "line",
-              source: `choro-trail-${key}`,
-              paint: {
-                "line-color": dark ? "#f4f4f5" : "#1a1a1a",
-                "line-width": 2.5,
-                "line-opacity": 0.95,
-              },
-            });
-          }
+          addSubjectEmphasisLayers(m, [...triggers.keys()], {
+            idPrefix: "choro",
+            featureFor: singleRegionFeature,
+            colorFor: binColorForKey,
+            dark,
+          });
 
           // Position to beat 0 (global establish view).
           m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
@@ -477,18 +428,9 @@ export const ChoroplethStory: React.FC<{
     // own trigger frame (constant seconds, never a global fraction). Staged per key once,
     // reused below for the callout's label-rise.
     const BLOOM_BASE = 0.9; // matches the base choropleth-fill target (fillReveal*0.9 at full reveal)
-    const stagedByKey = new Map<string, StagedEntrance>();
-    for (const [key, triggerFrame] of triggers) {
-      const localSeconds = (frame - triggerFrame) / fps;
-      const staged = stagedEntrance(localSeconds, {
-        fillOpacity: BLOOM_BASE,
-        borderS: AREAL_BORDER_S,
-        fillS: AREAL_FILL_S,
-        labelS: AREAL_LABEL_S,
-        fillStart: AREAL_FILL_START_S,
-        labelStart: AREAL_LABEL_START_S,
-      });
-      stagedByKey.set(key, staged);
+    const stagedMap = stagedByKey(triggers, frame, fps, BLOOM_BASE);
+    for (const key of triggers.keys()) {
+      const staged = stagedMap.get(key)!;
 
       const d = borderByRegion.get(key);
       if (d) {
@@ -581,7 +523,7 @@ export const ChoroplethStory: React.FC<{
         const pt = map.project(lngLat as [number, number]);
         calloutPt = { x: pt.x, y: pt.y };
       }
-      const staged = stagedByKey.get(regionKey);
+      const staged = stagedMap.get(regionKey);
       if (staged) labelReveal = staged.labelReveal;
       // Resolve the highlighted region's bin color.
       if (beat.highlight.length > 0) {
