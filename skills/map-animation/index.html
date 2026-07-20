@@ -592,7 +592,7 @@ npx remotion render src/index.ts CesiumFlyover out.mp4 <span class="k">--gl=angl
       electric head, and each country lights up the moment the water reaches it — border draws, fill
       blooms, label rises. For "where is this?", "what's the path?", and "who is upstream of whom?"</p>
       <div class="meta-chips">
-        <span class="chip">Basemap <b>MapTiler dataviz-dark</b></span>
+        <span class="chip">Basemap <b>MapTiler vector or satellite</b></span>
         <span class="chip">Geometry <b>GeoJSON layers</b></span>
         <span class="chip">Labels <b>React overlay</b></span>
         <span class="chip">Render harness <b>Remotion</b></span>
@@ -646,8 +646,8 @@ npx remotion render src/index.ts CesiumFlyover out.mp4 <span class="k">--gl=angl
         <div class="card">
           <p class="role">Draws the map</p>
           <h3>MapTiler SDK</h3>
-          <p>The dataviz-dark basemap, stripped of its own labels and inner admin borders, plus
-          GeoJSON layers for the river, fills, and borders — all in one WebGL canvas.</p>
+          <p>A deliberately chosen vector or satellite basemap, stripped of its own labels and inner
+          admin borders, plus GeoJSON layers for the river, fills, and borders — all in one WebGL canvas.</p>
         </div>
         <div class="card">
           <p class="role">Runs the clock</p>
@@ -667,6 +667,35 @@ npx remotion render src/index.ts CesiumFlyover out.mp4 <span class="k">--gl=angl
 
   <section class="block">
     <div class="wrap">
+      <p class="eyebrow"><span class="tick">/</span> Basemap</p>
+      <h2>Basemap and camera choices</h2>
+      <p class="lede">Basemap choice is a storytelling decision. Keep the generic skill neutral;
+      select project-specific palettes and styling in that project's own configuration.</p>
+      <div class="cards-3">
+        <div class="card">
+          <p class="role">Default vector mode</p>
+          <h3>MapTiler Basic</h3>
+          <p>Use <code>MapStyle.BASIC</code> as the default styled vector basemap. Remove labels and
+          inner admin borders, then let project configuration decide any additional colour treatment.</p>
+        </div>
+        <div class="card">
+          <p class="role">Surface truth</p>
+          <h3>Satellite</h3>
+          <p>Use satellite imagery when terrain, land use, construction, or a river's physical course
+          carries narrative evidence. Keep overlays sparse so imagery remains legible.</p>
+        </div>
+        <div class="card">
+          <p class="role">Documentary framing</p>
+          <h3>Subtle tilt</h3>
+          <p>For a little depth without a flythrough, use a restrained camera pitch of 6–12° and a
+          bearing offset of roughly ±6–12°. Ease both with the camera move and verify all labels at render size.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
       <p class="eyebrow"><span class="tick">/</span> Pipeline</p>
       <h2>From raw geodata to a finished beat</h2>
       <div class="steps">
@@ -675,7 +704,7 @@ npx remotion render src/index.ts CesiumFlyover out.mp4 <span class="k">--gl=angl
           <p>The prep script reads a clean river line plus one polygon per country and computes, for
           each country: <em>when</em> the river enters it (its trigger), <em>where</em> its label sits
           (the most-interior point of the story region — centroids drift to the edges), and <em>which</em>
-          single border segment to draw (the longest visible one, so no confusing second border).</p>
+          complete named bilateral boundary or complete country boundary to draw. Never trim a line to the viewport.</p>
         </div></div>
         <div class="step"><div class="num" aria-hidden="true"></div><div class="body">
           <h3>Strip the basemap</h3>
