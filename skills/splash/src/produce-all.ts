@@ -111,7 +111,8 @@ export async function produceAll(
     : accepted;
 
   const results: ProposalResult[] = [];
-  for (const p of batch) {
+  for (let i = 0; i < batch.length; i++) {
+    const p = batch[i];
     const base = {
       id: p.id,
       producer: p.producer,
@@ -268,11 +269,14 @@ export async function produceAll(
         // came from — is the first link of the export-stage chain-verification: at
         // export time, re-hashing the accepted spec on disk and comparing it here
         // proves the artifact was produced from the sanctioned spec, not a spec edited
-        // (or forged) after production. Computed from `p.spec` (the accepted proposal's
-        // ORIGINAL spec, pre-channel-normalization) so it matches whatever accepted.json
-        // record the export stage re-reads.
+        // (or forged) after production. Computed from `accepted[i].spec` — the PRE-MERGE
+        // accepted spec, NOT `p.spec` (which, when a profile is active, is the
+        // profile-merged batch spec dispatch just rendered with brand defaults folded
+        // in). accepted.json on disk is never rewritten with the merged spec, so the
+        // hash must be taken from the same pre-merge object that file holds, or the
+        // export stage's re-hash of accepted.json would never match a branded run.
         const acceptedConfigHash = createHash("sha256")
-          .update(canonicalJson(p.spec))
+          .update(canonicalJson(accepted[i].spec))
           .digest("hex");
         results.push({
           ...base,
