@@ -30,6 +30,11 @@ For 3D terrain fly-overs use the **cesium-flyover** skill; for plain animated ma
 
 Env `REMOTION_MAPTILER_KEY` (unrestricted). Init the map once (ref guard); update imperatively per frame.
 
+When constructing MapLibre/MapTiler layer objects, omit optional properties that are absent. In particular,
+use `...(layer.filter ? {filter: layer.filter} : {})`; do not pass `filter: undefined`. An undefined filter
+can suppress the layer while separately created halo or border layers continue rendering, producing missing
+country fills and dark marker halos with no coloured cores.
+
 Choose the basemap by evidence: begin styled-vector work with `MapStyle.BASIC`; use satellite when terrain,
 land use, construction, or a river's physical course is itself evidence. The skill owns no fixed palette,
 font, or branded treatment—put those in the production's local configuration.
