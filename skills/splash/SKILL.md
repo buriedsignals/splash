@@ -273,6 +273,19 @@ this Stage-2 announce is the FIRST and ONLY place the single format is surfaced 
 double-ask. **Hard rule:** a non-article/embed channel lands on image or video only, never
 interactive/scrolly; point back to the Q6 pick rather than escalating.
 
+**★ Colour/palette — name the subject-encoding HERE, for the same veto.** When the emitted spec
+carries a **subject-motivated** palette — an auto subject-fit ramp (no house profile), or a colour
+chosen to ENCODE the subject (sequential for magnitude, a diverging scale around a midpoint, a domain
+hue) — announce the palette AND *why it fits the subject* in the same breath as the format, so the
+journalist consciously confirms the colour reads right for the topic (« je code l'intensité en vert
+séquentiel — ça te va ? » · « une échelle divergente rouge↔bleu centrée sur zéro »). This makes
+palette-fit — the one axis no code can judge (green≠politically-loaded, sequential-for-ordered-data, no
+rainbow) — a NAMED, vetoable editorial confirm, not a silent default. **No call-out for a default
+CVD-safe categorical palette or a confirmed house palette** — they carry no subject claim (the house
+palette is already veto'd at profile-merge; a categorical set encodes identity, not a subject scale).
+The semantic *correctness* of the fit stays the journalist's call (and a Gate-3a render-review concern);
+this rule only guarantees the choice is surfaced, never buried.
+
 **Narrative sub-format — who picks it reuses the CADRAGE branch:**
 - **interactive** → the sub-format is **explore-libre** (pan/zoom/hover) vs **scrolly** (sequential).
 - **video** → the sub-format is the camera/reveal mode (reveal-simple, guided-tour, zoom-out, pan,
