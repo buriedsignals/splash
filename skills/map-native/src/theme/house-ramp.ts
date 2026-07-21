@@ -3,6 +3,16 @@
 // single fill. A house ramp is a monotonic-LUMINANCE ramp of the house hue — CVD-safe by
 // construction (colour-blind readers separate sequential bins by lightness), so it needs no
 // whitelist waiver. Pure, dependency-free (hand-rolled sRGB↔OKLab, Björn Ottosson's matrices).
+//
+// relativeLuminance (WCAG contrast purpose) now comes from lib/core/contrast.ts — this file
+// used to define its own copy using the sRGB spec's 0.04045 transfer-function breakpoint,
+// whereas core uses WCAG's documented 0.03928. Unified onto core's 0.03928 (coordinator
+// decision). srgbToLinear below is UNCHANGED and stays local — it is a different concern (the
+// OKLab colourspace round-trip used by houseRamp/houseRouteAccent's hue math), not a duplicate
+// of the WCAG luminance calc.
+
+import { relativeLuminance } from "../../../../lib/core/contrast";
+export { relativeLuminance };
 
 function parseHex(hex: string): [number, number, number] {
   const h = hex.trim().replace(/^#/, "");
@@ -32,16 +42,6 @@ function toHex(r: number, g: number, b: number): string {
       .map((x) => x.toString(16).padStart(2, "0"))
       .join("")
       .toLowerCase()
-  );
-}
-
-// WCAG relative luminance of a #rrggbb colour (0 = black, 1 = white).
-export function relativeLuminance(hex: string): number {
-  const [r, g, b] = parseHex(hex);
-  return (
-    0.2126 * srgbToLinear(r) +
-    0.7152 * srgbToLinear(g) +
-    0.0722 * srgbToLinear(b)
   );
 }
 

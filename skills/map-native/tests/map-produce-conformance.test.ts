@@ -132,11 +132,22 @@ describe("runProduceMapConformance — type-less default normalization", () => {
   });
 });
 
+// Full #rrggbb hex — the ONLY colour form this codebase's registries/guards accept
+// (VETTED_COLORS, PALETTES, etc. are all 6-digit). A prior version of this fixture used
+// 3-digit shorthand (#f00/#0f0/#00f); it happened to still fail as "not CVD-safe" only
+// because the pre-refactor house-ramp `relativeLuminance` parsed hex via an UNVALIDATED
+// bit-shift (no length check) that silently mis-decoded a 3-digit string into the wrong
+// RGB triple. lib/core/contrast's relativeLuminance validates its input (throws on
+// anything but #rrggbb) — correctly, but it means a 3-digit string now throws instead of
+// silently misparsing, which this test's ramp-arm try/catch turns into a DIFFERENT
+// ("not a #rrggbb colour") violation than the one under test. Fixed at the fixture: real
+// 6-digit red/green/blue primaries exercise the exact same "non-CVD-safe custom palette"
+// assertion, correctly this time.
 describe("runProduceMapConformance — ramp palette arm (produce-time)", () => {
   it("flags a non-CVD-safe custom palette on hex-grid", () => {
     const result = runProduceMapConformance("hex-grid", {
       ...configs["hex-grid"],
-      palette: ["#f00", "#0f0", "#00f"],
+      palette: ["#ff0000", "#00ff00", "#0000ff"],
     });
     expect(result.checked).toBe(true);
     expect(result.violations.some((m) => /CVD-safe/.test(m))).toBe(true);
@@ -145,7 +156,7 @@ describe("runProduceMapConformance — ramp palette arm (produce-time)", () => {
   it("flags a non-CVD-safe custom palette on cartogram", () => {
     const result = runProduceMapConformance("cartogram", {
       ...configs.cartogram,
-      palette: ["#f00", "#0f0", "#00f"],
+      palette: ["#ff0000", "#00ff00", "#0000ff"],
     });
     expect(result.checked).toBe(true);
     expect(result.violations.some((m) => /CVD-safe/.test(m))).toBe(true);
@@ -154,7 +165,7 @@ describe("runProduceMapConformance — ramp palette arm (produce-time)", () => {
   it("flags a non-CVD-safe custom palette on choropleth", () => {
     const result = runProduceMapConformance("choropleth", {
       ...configs.choropleth,
-      palette: ["#f00", "#0f0", "#00f"],
+      palette: ["#ff0000", "#00ff00", "#0000ff"],
     });
     expect(result.checked).toBe(true);
     expect(result.violations.some((m) => /CVD-safe/.test(m))).toBe(true);
@@ -164,7 +175,7 @@ describe("runProduceMapConformance — ramp palette arm (produce-time)", () => {
     // symbol has no scale palette at all — passing a bogus `palette` key must be a no-op.
     const result = runProduceMapConformance("symbol", {
       ...configs.symbol,
-      palette: ["#f00", "#0f0", "#00f"],
+      palette: ["#ff0000", "#00ff00", "#0000ff"],
     });
     expect(result.violations).toEqual([]);
   });
@@ -281,7 +292,8 @@ describe("runProduceMapConformance — themeBg ground resolution matches the ren
     valueField: "value",
     basemap: "x",
   };
-  const furnitureFail = (v: string[]) => v.some((m) => /4\.5:1|contrast/.test(m));
+  const furnitureFail = (v: string[]) =>
+    v.some((m) => /4\.5:1|contrast/.test(m));
 
   it("a light/invalid themeBg on a dark basemap does NOT spuriously fail (renders the light pill)", () => {
     for (const themeBg of ["#FFFFFF", "light", "not-a-hex"]) {

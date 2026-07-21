@@ -13,6 +13,8 @@ import {
   DEFAULT_SEQUENTIAL,
   DEFAULT_DIVERGING,
 } from "./theme/scale";
+import { relativeLuminance, contrastRatio } from "../../../lib/core/contrast";
+import { conformanceL0 } from "../../../lib/core/conformance-l0";
 
 export interface RevealConformanceResult {
   violations: string[];
@@ -41,28 +43,16 @@ export function checkRevealConformance(input: {
   return { violations: v };
 }
 
-function channel(c: number): number {
-  const s = c / 255;
-  return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-}
-export function relativeLuminance(hex: string): number {
-  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) throw new Error(`not a #rrggbb colour: ${hex}`);
-  const n = parseInt(m[1], 16);
-  return (
-    0.2126 * channel((n >> 16) & 255) +
-    0.7152 * channel((n >> 8) & 255) +
-    0.0722 * channel(n & 255)
-  );
-}
-export function contrastRatio(a: string, b: string): number {
-  const la = relativeLuminance(a),
-    lb = relativeLuminance(b);
-  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-}
+// relativeLuminance/contrastRatio now live in lib/core/contrast.ts (single source,
+// previously duplicated here) — re-exported so existing importers of this module are
+// unaffected.
+export { relativeLuminance, contrastRatio };
 
-// Shared L0 — the header rules every map type + format must satisfy (mirrors chart-native's
-// checkGlobalConformance). Both per-type guards call this first, then add their own rules.
+// Shared L0 — the header rules every map type + format must satisfy, extracted into
+// lib/core/conformance-l0.ts (mirrors chart-native's checkGlobalConformance — see that
+// file's header comment for the one reconciled divergence, the letters-gated ALL-CAPS
+// check). This function keeps the map-only `description` rule (chart-native has no
+// description concept) layered on top of the shared L0 subset.
 export function checkGlobalMapConformance(
   input: {
     title: string;
@@ -71,26 +61,13 @@ export function checkGlobalMapConformance(
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
-  const v: string[] = [];
-  const title = input.title?.trim() ?? "";
-  if (title.length < 12) v.push(`title too short to be an insight: "${title}"`);
-  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
-    v.push(`title is a year range, not an insight: "${title}"`);
-  if (/[A-Za-z]/.test(title) && title === title.toUpperCase())
-    v.push(`title is ALL CAPS — write it as a sentence: "${title}"`);
+  const v = conformanceL0({
+    title: input.title,
+    source: input.source,
+    textColors,
+  });
   if (!input.description?.trim())
     v.push("missing description — a module must state what/when/where");
-  // Source NAME required (anti-fabrication); URL optional — an honest prose source has
-  // none (E2). Traceability against the article is the render-review's job, not a blind
-  // url-present check.
-  if (!input.source?.name?.trim()) v.push("missing source name");
-  for (const t of textColors.text) {
-    const r = contrastRatio(t, textColors.bg);
-    if (r < 4.5)
-      v.push(
-        `text colour ${t} contrast ${r.toFixed(2)}:1 on ${textColors.bg} < 4.5:1`,
-      );
-  }
   return v;
 }
 

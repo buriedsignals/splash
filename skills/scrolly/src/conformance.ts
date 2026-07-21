@@ -1,6 +1,16 @@
 import type { ScrollyStory } from "./chapters";
 import type { Beat } from "../../map-native/src/map-story";
 
+// NOT wired to lib/core/conformance-l0.ts's conformanceL0. That extraction covers the
+// header rules chart-native and map-native's checkGlobalMapConformance explicitly
+// mirror (title length/year-range/ALL-CAPS, source name, contrast) — this function's
+// title/source checks are deliberately LOOSER (any non-empty title passes; no
+// length/year-range/ALL-CAPS gate) and its source message is scrolly-specific
+// ("an embedded module must carry its own source"). Routing this through
+// conformanceL0 would newly fail previously-valid short/ALL-CAPS scrolly titles — a
+// real behaviour change outside this task's "behaviour-preserving" mandate. Left
+// as its own local rules; see task-6-report.md for the full note.
+//
 // Render-free conformance for a scrolly story. beatCount = the number of map
 // beats the map steps' refs must index into.
 export function checkScrollyConformance(

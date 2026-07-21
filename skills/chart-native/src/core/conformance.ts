@@ -11,6 +11,7 @@ import {
   contrastRatio,
   MIN_CONTRAST,
 } from "../../../../lib/core/contrast";
+import { conformanceL0 } from "../../../../lib/core/conformance-l0";
 
 export const OKABE_ITO_SET = new Set([
   "#0072B2",
@@ -315,16 +316,19 @@ export function checkGlobalConformance(input: {
    */
   subject?: string;
 }): string[] {
-  const v: string[] = [];
   const { colors } = input;
 
-  // 1. Title = the insight (not a bare year range, not ALL CAPS).
-  const title = input.title?.trim() ?? "";
-  if (title.length < 12) v.push(`title too short to be an insight: "${title}"`);
-  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
-    v.push(`title is a year range, not an insight: "${title}"`);
-  if (title.length > 0 && title === title.toUpperCase())
-    v.push("title is ALL CAPS (use sentence case)");
+  // L0 (title/source/altInsight/contrast) — shared with map-native, extracted into
+  // lib/core/conformance-l0.ts. See that file's header comment for the one reconciled
+  // divergence (the ALL-CAPS gate is now letters-aware, fixing a latent false positive
+  // where a year-range/digit-only title like "2015-2024" — its own uppercase form —
+  // used to ALSO be flagged as ALL CAPS).
+  const v: string[] = conformanceL0({
+    title: input.title,
+    source: input.source,
+    ...("altInsight" in input ? { altInsight: input.altInsight } : {}),
+    textColors: colors,
+  });
 
   // 2. Data colour ∈ Okabe-Ito.
   if (!isOkabeIto(colors.data))
@@ -344,27 +348,8 @@ export function checkGlobalConformance(input: {
       `subject "${input.subject}" has no subject-fit colour — ${colors.data} is a blue-family Okabe-Ito hue and must not stand in for a subject that is not water/cold/sky/marine (choose a deliberate hue instead, e.g. amber/green/vermilion/purple)`,
     );
 
-  // 5. Source cited: NAME required (anti-fabrication + attribution). URL is OPTIONAL —
-  //    an honest prose source ("Chiffres tels que rapportés dans cet article") or a
-  //    newsroom's own reporting legitimately has none, and requiring it hard-blocked the
-  //    prose path (E2 deadlock). Source traceability against the article is the
-  //    render-review's job, not a blind url-present check here.
-  if (!input.source?.name?.trim()) v.push("missing source name");
-
-  // 6. Alt text = the insight (WCAG 1.1.1), mirroring dw-chart's altInsight
-  // requirement (chart-spec.ts). Opt-in — see the field's doc comment above: only
-  // enforced when the caller declares the key. The produce gate does NOT rely on
-  // this opt-in — it calls requireAltInsight directly (produce-conformance.ts).
-  if ("altInsight" in input) v.push(...requireAltInsight(input.altInsight));
-
-  // 7. Contrast ≥ 4.5:1 for every text colour. Decorative gridlines are exempt.
-  for (const t of colors.text) {
-    const r = contrastRatio(t, colors.bg);
-    if (r < 4.5)
-      v.push(
-        `text colour ${t} contrast ${r.toFixed(2)}:1 on ${colors.bg} < 4.5:1`,
-      );
-  }
+  // Source name, altInsight (opt-in), and text contrast are L0 — handled by the
+  // conformanceL0(...) call above (rules 5/6/7 formerly inlined here).
   return v;
 }
 
