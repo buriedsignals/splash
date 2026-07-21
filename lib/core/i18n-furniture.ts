@@ -14,12 +14,13 @@
 // Deliberately does NOT reuse specToMetadata's own sourceNotes/usesNativeSourceCaption
 // helpers: a gate that recomputes with the very code it checks would inherit the
 // regression it exists to catch. The LABEL TABLE below (SOURCE_LABELS — pure data, the
-// exact bytes the furniture must carry) is a THIRD copy of the one already duplicated in
-// dw-chart's spec-to-metadata.ts / map-dw's spec-to-map-metadata.ts — this core module
-// can't import from those (skill-local, wrong dependency direction: core must not depend
-// on skills/*), so the bytes are inlined here too and pinned equal by
-// lib/core/i18n-furniture.test.ts. Those two skill-local tables are untouched by this
-// extraction (they still drive each producer's own note-composition).
+// exact bytes the furniture must carry) is now the SINGLE source: dw-chart's
+// spec-to-metadata.ts and map-dw's spec-to-map-metadata.ts both import it from here
+// (their note-composition helpers — sourceLabel/usesNativeSourceCaption/sourceNotes —
+// stay skill-local, only the byte table moved). Was inlined as a third physical copy
+// during the shared-core extraction (core can't depend on skills/*, and neither
+// skill-local table existed yet as an importable core export); consolidated once this
+// module became the natural home for both.
 //
 // Scrolly is NOT covered here (DW producers have no scrolly format); the scrolly
 // beats' language-consistency net lives harness-side in deep-verify.
@@ -43,7 +44,7 @@ export interface I18nSourcePatch {
   };
 }
 
-const SOURCE_LABELS: Record<string, string> = {
+export const SOURCE_LABELS: Record<string, string> = {
   fr: "Source :",
   de: "Quelle:",
   it: "Fonte:",

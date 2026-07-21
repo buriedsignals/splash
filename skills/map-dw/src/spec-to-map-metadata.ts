@@ -9,10 +9,8 @@ import {
 } from "./map-spec";
 import { normalizeNumberFormat } from "../../dw-chart/src/chart-spec";
 import { dwLocale } from "../../dw-chart/src/spec-to-metadata";
-// Cross-skill import (same pattern as dw-chart/src/csv above): map-dw has no colour-ramp
-// deriver of its own, and map-native's houseRamp is pure/dependency-free (hand-rolled
-// sRGB↔OKLab, no MapTiler/Remotion deps), so it is safe to reuse rather than fork.
-import { houseRamp } from "../../map-native/src/theme/house-ramp";
+import { houseRamp } from "../../../lib/core/house-ramp";
+import { SOURCE_LABELS } from "../../../lib/core/i18n-furniture";
 
 export interface MapPatch {
   title: string;
@@ -75,14 +73,11 @@ const CIRCLE_ICON = {
 // reads correctly) keeps the native source-name/source-url path, so its clickable
 // hyperlink in the interactive embed survives — only the genuinely-broken non-English
 // case pays the "notes, no hyperlink" trade-off notes can't render.
-// Exported: src/furniture-i18n.ts (the produce-time i18n gate) asserts the outgoing
-// metadata against THESE exact label bytes — one table, never a re-typed literal.
-export const SOURCE_LABELS: Record<string, string> = {
-  fr: "Source :", // spaced colon (French typography)
-  de: "Quelle:",
-  it: "Fonte:",
-  en: "Source:",
-};
+// Re-exported (imported above): src/furniture-i18n.ts (the produce-time i18n gate)
+// asserts the outgoing metadata against THESE exact label bytes — one table
+// (lib/core/i18n-furniture.ts, the single source shared with dw-chart), never a
+// re-typed literal.
+export { SOURCE_LABELS };
 
 function sourceLabel(lang?: string): string {
   if (!lang) return SOURCE_LABELS.en;

@@ -11,12 +11,18 @@ import {
   localizedSourceViolations as dwViolations,
   assertLocalizedSourceMetadata as dwAssert,
 } from "../../skills/dw-chart/src/furniture-i18n";
-import type { DwPatch } from "../../skills/dw-chart/src/spec-to-metadata";
+import {
+  type DwPatch,
+  SOURCE_LABELS as dwSourceLabels,
+} from "../../skills/dw-chart/src/spec-to-metadata";
 import {
   localizedSourceViolations as mdViolations,
   assertLocalizedSourceMetadata as mdAssert,
 } from "../../skills/map-dw/src/furniture-i18n";
-import type { MapPatch } from "../../skills/map-dw/src/spec-to-map-metadata";
+import {
+  type MapPatch,
+  SOURCE_LABELS as mdSourceLabels,
+} from "../../skills/map-dw/src/spec-to-map-metadata";
 
 function norm(s: string): string {
   return s.replace(/\bnon-English (chart|map|deliverable)\b/g, "non-English X");
@@ -65,6 +71,27 @@ function mapPatch(overrides: {
 }
 
 const LANGS = [undefined, "fr", "de", "it", "en", "fr-CH", "pt"];
+
+// Tier 2: SOURCE_LABELS used to be a THIRD physical copy of this exact table (inlined
+// here, plus dw-chart's and map-dw's own spec-to-*.ts each declaring it locally). Now
+// core is the single source and both skills re-export it — locking that in as an
+// identity check (not just equal values: the SAME object), so a future edit can't
+// silently re-fork the bytes.
+describe("core/i18n-furniture SOURCE_LABELS — single source (Tier 2)", () => {
+  it("dw-chart's and map-dw's exported SOURCE_LABELS are the SAME object as core's (re-exported, not re-declared)", () => {
+    expect(dwSourceLabels).toBe(core.SOURCE_LABELS);
+    expect(mdSourceLabels).toBe(core.SOURCE_LABELS);
+  });
+
+  it("carries the exact fr/de/it/en bytes", () => {
+    expect(core.SOURCE_LABELS).toEqual({
+      fr: "Source :",
+      de: "Quelle:",
+      it: "Fonte:",
+      en: "Source:",
+    });
+  });
+});
 
 describe("core/i18n-furniture parity with dw-chart (canonical)", () => {
   it("localizedSourceViolations matches on a clean patch, every lang", () => {
