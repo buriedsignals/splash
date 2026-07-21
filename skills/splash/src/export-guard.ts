@@ -1,6 +1,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ProduceReport, VisualFormat } from "./producer-spec";
+// The single-format media-shape rule + the hosted-URL check live in the shared produce contract
+// (lib/core/contract.ts); this EXPORT-stage guard delegates its static/video shape check to it so
+// one rule (and its exact error messages) lives once, and re-exports isHostedUrl for its own
+// callers (export-code.mjs, the tests). contract.ts imports nothing FROM here — no cycle.
+import { assertFileMedia, isHostedUrl } from "../../../lib/core/contract";
+
+export { isHostedUrl };
 
 // The one MECHANICAL gate: nothing ships unless it was actually produced AND the human
 // approved the render. Lives in the irreversible-action scripts so a lower-level call
@@ -25,29 +32,6 @@ export function assertShippable(report: ProduceReport, id: string): void {
 // The delivery FORM axis — orthogonal to `VisualFormat`. Only interactive/scrolly deliveries
 // choose one; static/video have exactly one shape, so `form` is always null there.
 export type DeliveryForm = "html" | "code-source" | "embed" | null;
-
-const IMAGE_EXTENSIONS = [".png", ".svg", ".jpg", ".jpeg"];
-
-// A recorded embed URL must LOOK resolvable before we let a form-c "embed" delivery claim it
-// shipped: a real https origin with a domain host, not blank / a placeholder / a bare local host.
-// This is the mechanical floor that stops a written-but-empty EMBED_URL.txt (or a stalled fly
-// deploy that never produced a URL) from faking "delivered". It is a shape check, not a network
-// probe — we do not fetch, we assert the string is a plausible hosted link.
-export function isHostedUrl(url: unknown): boolean {
-  if (typeof url !== "string") return false;
-  const u = url.trim();
-  if (!/^https:\/\//i.test(u)) return false;
-  let host: string;
-  try {
-    host = new URL(u).hostname;
-  } catch {
-    return false;
-  }
-  if (!host.includes(".")) return false; // must be a domain, not a bare/local host
-  if (/(^|\.)(localhost|example|invalid|placeholder|todo)(\.|$)/i.test(host))
-    return false;
-  return true;
-}
 
 // After EXPORT: a hand-over folder is a REAL delivery only if it matches the shape of the
 // spec's pinned `format` (single-format redesign — one element = one format, produced +
@@ -76,17 +60,11 @@ export function assertDelivered(
       throw new Error(
         `not a delivery: static format takes no form (got ${String(form)})`,
       );
-    if (files.some((f) => f.toLowerCase().endsWith(".html")))
-      throw new Error(
-        "not a delivery: static format must not include an .html file",
-      );
-    const media = files.filter((f) =>
-      IMAGE_EXTENSIONS.some((ext) => f.toLowerCase().endsWith(ext)),
-    );
-    if (media.length !== 1)
-      throw new Error(
-        `not a delivery: static format requires exactly one image file (.png/.svg/.jpg), found ${media.length}`,
-      );
+    // Shared single-format media shape (no .html, exactly one image) — the SAME rule the
+    // produce-stage contract runs, so it lives once (contract.ts). The export stage then adds
+    // its STRICTER "exactly the media file, no companions" floor (the produce stage is lenient
+    // about byproducts; a hand-over folder must be clean).
+    assertFileMedia("static", files);
     if (files.length !== 1)
       throw new Error(
         "not a delivery: static format delivery must be exactly the media file, no extra files",
@@ -99,11 +77,7 @@ export function assertDelivered(
       throw new Error(
         `not a delivery: video format takes no form (got ${String(form)})`,
       );
-    const media = files.filter((f) => f.toLowerCase().endsWith(".mp4"));
-    if (media.length !== 1)
-      throw new Error(
-        `not a delivery: video format requires exactly one .mp4 file, found ${media.length}`,
-      );
+    assertFileMedia("video", files);
     if (files.length !== 1)
       throw new Error(
         "not a delivery: video format delivery must be exactly the media file, no extra files",

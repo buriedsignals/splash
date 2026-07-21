@@ -70,26 +70,18 @@ import { join, resolve } from "node:path";
 // data-driven — without it the registry is empty at dispatch time. Module caching runs it once.
 import "./register-producers";
 import { getProducer } from "../../../lib/core/registry";
+import {
+  assertDeliveredContract,
+  type ProduceContext,
+} from "../../../lib/core/contract";
 import type { Channel } from "./channel";
 import { assertSafeId } from "./id-safety";
 import type { Dispatch } from "./produce-all";
 import type { AcceptedProposal, Producer, VisualFormat } from "./producer-spec";
 import type { NativeSpec } from "../../chart-native/src/spec-to-config";
-import type { ChartSpec } from "../../dw-chart/src/chart-spec";
-import type { MapSpec } from "../../map-dw/src/map-spec";
-import { produceChart } from "../../dw-chart/src/produce";
-import { produceMap } from "../../map-dw/src/produce";
 
 type FileBasedProducer =
   "chart-native" | "map-native" | "scrolly" | "image-native";
-
-// A producer is file-based (subprocess) when its registered manifest declares
-// execution:"subprocess" — the registry is now the single source of truth for this fork,
-// replacing the hard-coded name list. The four subprocess engines (chart-native, map-native,
-// scrolly, image-native) register exactly that, so the set is unchanged.
-function isFileBased(producer: Producer): producer is FileBasedProducer {
-  return getProducer(producer)?.execution === "subprocess";
-}
 
 // The subprocess dispatch data (entry script + skill cwd + channel threading) for a
 // file-based producer, read from its registered manifest. Throws if a file-based producer
@@ -108,6 +100,14 @@ function subprocessConfigFor(producer: FileBasedProducer): {
 }
 
 const DEFAULT_CHANNEL: Channel = "article-web";
+
+// The native engine that DOES own video/scrolly for each in-process (hosted-DW) producer —
+// used only to keep the format-gate refusal string byte-identical to the old per-producer
+// messages (dw-chart → chart-native's D3 core; map-dw → map-native's animated maps).
+const IN_PROCESS_NATIVE_FALLBACK: Record<string, string> = {
+  "dw-chart": "chart-native",
+  "map-dw": "map-native",
+};
 
 // Builds the extra env for a file-based dispatch: {} for a producer that doesn't
 // consume a channel (scrolly, and any future non-native file-based producer);
@@ -314,83 +314,107 @@ export const realDispatch: Dispatch = async (
 ): Promise<DispatchResult> => {
   // Path-safety, belt-and-suspenders (audit gap #1). produce-all gates p.id at the spine
   // BEFORE building this outDir, but realDispatch is an exported entry point and p.id is
-  // joined into a filesystem path directly here (the map-dw/map-native PNG below,
-  // `${p.id}.png`), and freshOutDir resolve+rmSyncs. Re-assert the slug so no direct
-  // caller can drive a traversal id into a delete/write outside outDir. Thrown here, it is
-  // caught by produce-all's dispatch try/catch and recorded as a failed result — never a
-  // silent delete (skills/splash/src/id-safety.ts).
+  // joined into a filesystem path directly (the in-process `${p.id}.png`, and freshOutDir
+  // resolve+rmSyncs). Re-assert the slug so no direct caller can drive a traversal id into a
+  // delete/write outside outDir. Thrown here, it is caught by produce-all's dispatch
+  // try/catch and recorded as a failed result — never a silent delete (id-safety.ts).
   assertSafeId(p.id);
-  if (isFileBased(p.producer)) {
-    const spec =
-      p.producer === "chart-native"
-        ? (p.spec as NativeSpec)
-        : (p.spec as Record<string, unknown>);
-    return dispatchFileBased(p.producer, spec, outDir, p.format, p.channel);
-  }
 
-  const absOutDir = freshOutDir(outDir);
-  const pngPath = join(absOutDir, `${p.id}.png`);
+  // ONE registry-driven path (Task 8) — no more per-producer switch. Look up the manifest;
+  // an unknown producer is a RECORDED failed result, NEVER a throw (a throw would break
+  // produce-all's drop-proof invariant on a hand-authored batch — see the Task-6 regressions;
+  // this is also why the OLD switch's map-dw fall-through could run produceMap on a garbage
+  // producer, now a clean fail). Then branch on the declared transport ONLY.
+  const manifest = getProducer(p.producer);
+  if (!manifest)
+    return {
+      status: "failed",
+      error: `unknown producer "${String(p.producer)}"`,
+    };
 
-  if (p.producer === "dw-chart") {
-    // dw-chart only builds "static" (PNG export) or "interactive" (hosted embed
-    // alone — see skills/dw-chart/src/produce.ts's DwChartFormat) — it has no
-    // video/scrolly renderer (those require chart-native's D3 core). Fail hard BEFORE
-    // any API call rather than silently defaulting to "static" for a pinned format it
-    // cannot honor (Task 4: thread `p.format`, don't ignore it).
-    if (p.format !== "static" && p.format !== "interactive") {
-      return {
-        status: "failed",
-        error:
-          `dw-chart cannot build format "${p.format}" — it supports "static" or ` +
-          `"interactive" only (video/scrolly require chart-native)`,
-      };
-    }
-    // `result.pngPath` is typed optional because dw-chart's own single-format contract
-    // omits it for "interactive" (no PNG is exported for that format). The proposal's
-    // canonical channel is injected so produceChart sizes against the spine's truth
-    // (see withProposalChannel above), never against a spec that forgot the field.
-    const result = await produceChart(
-      withProposalChannel(p.spec as ChartSpec, p.channel),
-      pngPath,
-      { format: p.format },
+  // SUBPROCESS producers (chart-native, map-native, scrolly, image-native) validate + own
+  // their error reporting IN-SCRIPT, format-scoped and canonical (image-native's v1/conformance
+  // messages, chart-native's exit-2 FALLBACK_TO_DW). A boundary manifest.validate here would
+  // PREEMPT those with the errors-only projection (weaker: image-native's validate is
+  // format-blind), so it is NOT run for subprocess — validation stays exactly where it was
+  // (the spine's validate-gate remains the upstream floor for the routed path). Behaviour
+  // unchanged: dispatch straight through, then contract-check a produced artifact.
+  if (manifest.execution === "subprocess") {
+    const outcome = dispatchFileBased(
+      p.producer as FileBasedProducer,
+      p.spec as NativeSpec | Record<string, unknown>,
+      outDir,
+      p.format,
+      p.channel,
     );
+    // needs-fallback / failed pass straight through (unchanged) — only a produced outcome has
+    // an artifact to contract-check.
+    if (outcome.status !== "produced") return outcome;
+    // A native produce writes byproducts (config.json / native-source.json / ephemeral review
+    // stills) beside the deliverable; the produce-stage contract is lenient about those and
+    // asserts only the single-format media shape. A violation throws → caught by produce-all's
+    // dispatch try/catch → recorded failed (like assertSafeId). Valid produces satisfy it.
+    assertDeliveredContract({
+      format: p.format,
+      form: "file",
+      files: outcome.outputs ?? [],
+      report: {},
+    });
     return {
       status: "produced",
-      outputs: result.pngPath ? [result.pngPath] : [],
-      publicUrl: result.publicUrl,
-      actualProducer: "dw-chart",
+      outputs: outcome.outputs,
+      actualProducer: outcome.actualProducer,
     };
   }
 
-  // Exhaustive by Producer's 5-member union: chart-native/map-native/scrolly handled
-  // above (isFileBased), dw-chart just above — only map-dw remains.
-  // Same single-format gate as dw-chart's: map-dw builds "static" (owned PNG at the
-  // channel box) or "interactive" (hosted embed alone) — it has no video/scrolly
-  // renderer (animated maps are map-native's). Fail hard BEFORE any API call rather
-  // than silently over-producing PNG+embed for a pinned format it cannot honor
-  // (map-dw floor: the dispatch used to ignore p.format entirely here).
-  if (p.format !== "static" && p.format !== "interactive") {
+  // IN-PROCESS (hosted-DW: dw-chart / map-dw). FORMAT GATE FIRST — exactly the old order (the
+  // per-producer branches checked p.format BEFORE calling produceChart/produceMap): these
+  // producers build "static" or "interactive" only (their manifest.formats); video/scrolly
+  // require the native engines. Reject a format they cannot honor BEFORE any API call. The two
+  // hard-coded per-producer gates collapse into this ONE data-driven check off manifest.formats;
+  // the error STRING stays byte-identical to the old per-producer messages (it named the native
+  // engine that DOES own video/scrolly — chart-native / map-native).
+  if (!manifest.formats.includes(p.format))
     return {
       status: "failed",
       error:
-        `map-dw cannot build format "${p.format}" — it supports "static" or ` +
-        `"interactive" only (video/scrolly require map-native)`,
+        `${p.producer} cannot build format "${p.format}" — it supports "static" or ` +
+        `"interactive" only (video/scrolly require ${IN_PROCESS_NATIVE_FALLBACK[p.producer] ?? "the native engine"})`,
     };
-  }
-  // `result.pngPath` is typed optional because map-dw's single-format contract omits
-  // it for "interactive" (no PNG is exported for that format) — same as dw-chart. The
-  // proposal's canonical channel is injected so produceMap sizes AND render-size-
-  // verifies against the spine's truth (see withProposalChannel above) — this is the
-  // path where suggest-chart's emitted MapSpec historically carried no channel at all.
-  const result = await produceMap(
-    withProposalChannel(p.spec as MapSpec, p.channel),
-    pngPath,
-    { format: p.format },
+  // Spec-in validation at the boundary. For these two producers the manifest validator IS the
+  // exact validator produceChart/produceMap run internally (validateChartSpec / validateMapSpec),
+  // so this is behaviour-equivalent — it just fails a bad spec cleanly (recorded failed) BEFORE
+  // the API call instead of letting the engine throw it (caught by produce-all). A NON-EMPTY
+  // error list → failed, NEVER a throw (the drop-proof invariant realDispatch must honor).
+  const validationErrors = manifest.validate(p.spec);
+  if (validationErrors.length)
+    return { status: "failed", error: validationErrors.join("; ") };
+
+  // The SPINE owns the outDir lifecycle (freshOutDir) + canonical-channel injection
+  // (withProposalChannel — the proposal's CADRAGE-Q3 channel WINS over any spec-level value, and
+  // an absent proposal channel leaves the spec untouched so a legacy spec-level channel
+  // survives). The manifest's inProcess owns ONLY the engine call (produceChart / produceMap),
+  // returning the DeliveredArtifact — no orchestrator logic leaks into the engine. The
+  // ProduceContext threads the same truth both transports get.
+  const absOutDir = freshOutDir(outDir);
+  const preparedSpec = withProposalChannel(
+    p.spec as { channel?: string },
+    p.channel,
   );
+  const ctx: ProduceContext = {
+    channel: p.channel ?? DEFAULT_CHANNEL,
+    format: p.format,
+    outDir: absOutDir,
+    id: p.id,
+    themeBg: (p.spec as { themeBg?: string } | null)?.themeBg,
+    locale: (p.spec as { lang?: string } | null)?.lang,
+  };
+  const artifact = await manifest.inProcess!(preparedSpec, ctx);
+  assertDeliveredContract(artifact);
   return {
     status: "produced",
-    outputs: result.pngPath ? [result.pngPath] : [],
-    publicUrl: result.publicUrl,
-    actualProducer: "map-dw",
+    outputs: artifact.files,
+    publicUrl: artifact.publicUrl,
+    actualProducer: p.producer,
   };
 };
