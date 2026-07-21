@@ -4,3 +4,4 @@
 // 2026-07-20-shared-core-registry-contracts-design.md.
 export const CORE_MARKER = "splash-core" as const;
 export * from "./contrast";
+export * from "./theme";

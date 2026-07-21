@@ -113,8 +113,16 @@ describe("traceClosure — map-native interactive entry", () => {
     expect(rel).toContain("skills/map-native/src/LocatorMap.tsx");
     expect(rel).toContain("skills/map-native/src/RouteMap.tsx");
   });
-  it("stays entirely within skills/map-native (no scrolly/chart-native)", () => {
-    expect(rel.every((r) => r.startsWith("skills/map-native/"))).toBe(true);
+  it("stays within skills/map-native or the shared core (no scrolly/chart-native)", () => {
+    // lib/core is the shared cross-engine package (theme/contrast/…), not another skill — every
+    // engine is expected to reach it. scrolly/chart-native's own src/ must still never appear.
+    expect(
+      rel.every(
+        (r) => r.startsWith("skills/map-native/") || r.startsWith("lib/core/"),
+      ),
+    ).toBe(true);
+    expect(rel.some((r) => r.startsWith("skills/scrolly/"))).toBe(false);
+    expect(rel.some((r) => r.startsWith("skills/chart-native/"))).toBe(false);
   });
   it("excludes the off-path files that import ../../scrolly", () => {
     expect(rel).not.toContain("skills/map-native/src/conformance.ts");
