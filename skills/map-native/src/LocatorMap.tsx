@@ -25,7 +25,6 @@ import {
   filterStateToExpression,
   type FilterState,
 } from "./core/map-filter";
-import { prefersReducedMotion } from "../../../lib/core/motion";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -429,16 +428,12 @@ export const LocatorMap: React.FC<Props> = ({
             const src = map.getSource("locator") as maptilersdk.GeoJSONSource;
             if (clusterId == null) return;
             src.getClusterExpansionZoom(clusterId).then((zoom) => {
-              // prefers-reduced-motion -> instant jump (duration 0), same contract as
-              // scrolly's flyToBeat: the reader still lands on the expanded cluster,
-              // just without the ease.
               map.easeTo({
                 center: (f.geometry as GeoJSON.Point).coordinates as [
                   number,
                   number,
                 ],
                 zoom,
-                duration: prefersReducedMotion() ? 0 : undefined,
               });
             });
           });
