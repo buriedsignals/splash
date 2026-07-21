@@ -10,3 +10,4 @@ export * from "./i18n-furniture";
 export * from "./text-fit";
 export * from "./video-verify";
 export * from "./conformance-l0";
+export * from "./motion";

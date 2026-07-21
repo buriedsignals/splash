@@ -8,6 +8,7 @@
 // future type — extracted once two real consumers (line + bar) proved it.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clamp01 } from "./math";
+import { prefersReducedMotion } from "../../../../lib/core/motion";
 
 /** When the intro reveal plays. A per-format knob (the journalist picks). */
 export type AnimateOn = "load" | "scroll" | "none";
@@ -18,14 +19,6 @@ export interface InteractiveChartProps {
   animateOn?: AnimateOn;
   durationMs?: number;
   minWidth?: number;
-}
-
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
 }
 
 export function InteractiveChart({

@@ -571,7 +571,7 @@ export const Scrolly: React.FC<{
       {/* ------------------------------------------------------------------ */}
       <div style={wrapperStyle}>
         {/* Sticky graphic — the map stays pinned while prose steps scroll above */}
-        <div style={stickyGraphicStyle}>
+        <div style={stickyGraphicStyle} data-testid="scrolly-sticky-graphic">
           {/* Dispatch on config.type: symbol → ScrollySymbolMap, hex-grid → ScrollyHexMap,
               else choropleth → ScrollyMap. */}
           {/* Pass the active step's BEAT ref (not the step index) — steps no longer

@@ -283,6 +283,12 @@ switch (format) {
       console.log(`[produce ${type}] checking tooltip stays in-viewport (snap-tooltip-viewport)…`);
       snap("scripts/snap-tooltip-viewport.mjs");
 
+      // render-time reduced-motion guard (WCAG 2.3.3) — under an emulated
+      // prefers-reduced-motion: reduce, the intro reveal must skip straight to its
+      // end-state on first paint and never keep animating. Fails the run before export.
+      console.log(`[produce ${type}] checking prefers-reduced-motion is honored (snap-reduced-motion)…`);
+      snap("scripts/snap-reduced-motion.mjs");
+
       result.interactive = interactiveDest;
       result.reviewStill = join(outDir, "interactive.png"); // ephemeral — not delivered
     } else {

@@ -67,6 +67,18 @@ execFileSync("bunx", ["vite", "build"], {
   cwd: root,
   env: { ...process.env, CONFIG: buildConfigPath },
 });
+// render-time reduced-motion guard (WCAG 2.3.3) — under an emulated
+// prefers-reduced-motion: reduce, the sticky graphic (map camera flight / chart
+// reveal / image crossfade) must already show its end-state and never keep
+// animating. Runs against the just-built dist before it is copied out. Fails the
+// run before export.
+console.log("[produce scrolly] checking prefers-reduced-motion is honored (snap-reduced-motion)…");
+execFileSync("bun", ["scripts/snap-reduced-motion.mjs"], {
+  stdio: "inherit",
+  cwd: root,
+  env: process.env,
+});
+
 const out = join(outDir, "scrolly.html");
 copyFileSync(join(root, "dist", "index.html"), out);
 const parsedConfig = JSON.parse(readFS(configPath, "utf8"));
