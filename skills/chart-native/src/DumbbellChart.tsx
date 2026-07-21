@@ -19,9 +19,15 @@ import {
   type DumbbellLayout,
 } from "./dumbbell-geometry";
 import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
-import { COLORS, TYPE, DUMBBELL_DOT_COLORS, themeColors, tooltipBorder } from "./core/tokens";
+import {
+  COLORS,
+  TYPE,
+  DUMBBELL_DOT_COLORS,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { formatLocaleNumber, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
 import { leftLabelGutterPx, wrapLabel, fitSideLabels } from "./core/text";
@@ -235,7 +241,8 @@ function DumbbellSvg({
     sc,
   ).items;
 
-  const fmt = (v: number) => String(v);
+  // localize via lib/core (French deliverable: "2.1" → "2,1"), not a re-implementation.
+  const fmt = (v: number) => formatLocaleNumber(v, config.lang);
   const dot = (r: number) => (interactive ? 6 : 5) * sc * r;
 
   // Category gutter labels: the gutter (padding.left) is sized to the widest name but
@@ -458,10 +465,11 @@ function Tooltip({
     >
       <strong>{r.rawLabel}</strong>{" "}
       <span style={{ opacity: 0.8 }}>
-        {config.leftLabel} {r.leftVal} · {config.rightLabel} {r.rightVal}
+        {config.leftLabel} {formatLocaleNumber(r.leftVal, config.lang)} ·{" "}
+        {config.rightLabel} {formatLocaleNumber(r.rightVal, config.lang)}
       </span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>
-        gap {Math.abs(r.gap)} {config.unit}
+        gap {formatLocaleNumber(Math.abs(r.gap), config.lang)} {config.unit}
       </div>
     </div>
   );

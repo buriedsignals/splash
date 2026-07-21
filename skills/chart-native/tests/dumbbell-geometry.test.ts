@@ -65,6 +65,28 @@ describe("computeDumbbellLayout", () => {
   });
 });
 
+describe("computeDumbbellLayout — endpoints keyed by column, never by magnitude", () => {
+  it("a DECREASING row (leftField value > rightField value) keeps xLeft on leftField and xRight on rightField (no swap)", () => {
+    const decreasing: DumbbellData = {
+      labelField: "cat",
+      leftField: "start",
+      rightField: "end",
+      rows: [{ cat: "A", start: 4, end: 2.1 }],
+    };
+    const l = computeDumbbellLayout(decreasing, dims, "none");
+    const row = l.rows[0];
+    expect(row.leftVal).toBe(4);
+    expect(row.rightVal).toBe(2.1);
+    // xLeft is ALWAYS x(leftVal) and xRight is ALWAYS x(rightVal) — position on
+    // the value axis, keyed by column identity. Since leftVal (4) > rightVal
+    // (2.1) here, xLeft must sit at the BIGGER pixel position — if endpoints
+    // were instead reordered by magnitude (e.g. min always on xLeft), this
+    // would flip and silently read as an increase.
+    expect(row.xLeft).toBeGreaterThan(row.xRight);
+    expect(row.gap).toBe(-1.9); // signed: rightVal - leftVal, a real decrease
+  });
+});
+
 describe("extendConnector — the gap opens up", () => {
   it("sits at the left dot at progress 0", () => {
     const l = computeDumbbellLayout(data, dims);
