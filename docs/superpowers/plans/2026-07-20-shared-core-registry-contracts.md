@@ -394,7 +394,7 @@ Append `export * from "./theme";` to `lib/core/index.ts`. In `tokens.ts` and `ma
   interface ProducerManifest {
     name: string;                       // e.g. "chart-native"
     formats: readonly VisualFormat[];
-    specSchema: import("zod").ZodTypeAny; // spec-in contract
+    validate: (spec: unknown) => string[]; // spec-in contract: error strings (empty = valid); delegates to the engine's EXISTING hand-written validator (no zod — codebase does not use it)
     execution: ExecutionModel;
     // subprocess: { scriptPath, skillDir, threadsChannel }
     // in-process: { produce(spec, ctx): Promise<DeliveredArtifact> }
@@ -406,10 +406,9 @@ Append `export * from "./theme";` to `lib/core/index.ts`. In `tokens.ts` and `ma
   function allProducers(): ProducerManifest[];
   ```
 
-- [ ] **Step 1: Verify `zod` is available**
+- [ ] **Step 1: Confirm the reuse-existing-validators approach (NO new dependency — decided 2026-07-21)**
 
-Run: `grep -rn '"zod"' skills/*/package.json package.json; bun pm ls 2>/dev/null | grep zod`
-Expected: zod present (dw-chart/map-dw use validators). If absent as a root dep, add it: `bun add zod`.
+The manifest's `validate` delegates to each engine's EXISTING hand-written validator; the codebase does not use zod and we do NOT add it (a consolidation refactor must not introduce a runtime dep). Find each engine's validator entry point: `rg -l "validateConfig|validateMapNative|validateChoroplethConfig|UnsupportedNativeType|validate" skills/*/src`. chart-native throws `UnsupportedNativeType` from `spec-to-config`; map-native has `validate-config.ts`; dw-chart/map-dw validate in their `chart-spec`/`produce`. Each manifest wraps its validator as `(spec) => string[]` (catch a throw → `[err.message]`, or return the validator's collected error list).
 
 - [ ] **Step 2: Write the registry unit test (fails — module absent)**
 
@@ -417,14 +416,13 @@ Expected: zod present (dw-chart/map-dw use validators). If absent as a root dep,
 ```ts
 import { describe, it, expect } from "bun:test";
 import { registerProducer, getProducer, allProducers } from "./registry";
-import { z } from "zod";
 
 describe("producer registry", () => {
   it("registers and retrieves a manifest with no other edits", () => {
     registerProducer({
       name: "fake-engine",
       formats: ["static"],
-      specSchema: z.object({ x: z.number() }),
+      validate: (spec) => (typeof spec === "object" && spec !== null ? [] : ["not an object"]),
       execution: "in-process",
       inProcess: async () => ({ format: "static", form: "file", files: [], report: {} }),
     });
@@ -441,14 +439,13 @@ describe("producer registry", () => {
 ```ts
 import type { VisualFormat } from "../../skills/splash/src/producer-spec";
 import type { ProduceContext, DeliveredArtifact } from "./contract";
-import type { ZodTypeAny } from "zod";
 
 export type ExecutionModel = "subprocess" | "in-process";
 
 export interface ProducerManifest {
   name: string;
   formats: readonly VisualFormat[];
-  specSchema: ZodTypeAny;
+  validate: (spec: unknown) => string[]; // error strings, empty = valid (delegates to engine's existing validator)
   execution: ExecutionModel;
   subprocess?: { scriptPath: string; skillDir: string; threadsChannel: boolean };
   inProcess?: (spec: unknown, ctx: ProduceContext) => Promise<DeliveredArtifact>;
@@ -475,14 +472,14 @@ export function allProducers(): ProducerManifest[] {
 
 - [ ] **Step 5: Create the five manifests** (one per engine), each importing its existing spec schema/validator and produce entry. Example `skills/dw-chart/src/manifest.ts`:
 ```ts
-import { z } from "zod";
 import { registerProducer } from "../../../lib/core/registry";
 import { produceChart } from "./produce";
-// ... reuse the engine's existing spec schema; wrap produceChart in the in-process contract in Task 8.
+import { validateChartSpec } from "./chart-spec"; // the engine's EXISTING validator — read chart-spec.ts for its real name/shape
+// reuse the engine's existing validator; wrap produceChart in the in-process contract in Task 8.
 registerProducer({
   name: "dw-chart",
   formats: ["static", "interactive"],
-  specSchema: z.any(), // replace with the real ChartSpec zod schema (read chart-spec.ts)
+  validate: (spec) => { try { validateChartSpec(spec); return []; } catch (e) { return [(e as Error).message]; } },
   execution: "in-process",
   inProcess: async () => { throw new Error("wired in Task 8"); },
 });
@@ -499,7 +496,7 @@ Subprocess engines (chart-native, map-native, scrolly) set `execution: "subproce
 
 ---
 
-### Task 8: Unified dispatcher + zod contracts
+### Task 8: Unified dispatcher + contracts
 
 **Files:**
 - Create/fill: `lib/core/contract.ts` (`ProduceContext`, `DeliveredArtifact`, `assertDeliveredContract`)
@@ -515,13 +512,13 @@ Subprocess engines (chart-native, map-native, scrolly) set `execution: "subproce
   ```
 - Consumes: registry (Task 7), `Channel`/`VisualFormat` (`producer-spec.ts`, `channel.ts`).
 
-- [ ] **Step 1: Write the contract test (fails).** Assert: a valid in-process artifact passes `assertDeliveredContract`; a static artifact with 2 files throws; a hosted artifact with no `publicUrl` throws. Assert `specSchema.parse` on a bad spec throws with a field-listing message.
+- [ ] **Step 1: Write the contract test (fails).** Assert: a valid in-process artifact passes `assertDeliveredContract`; a static artifact with 2 files throws; a hosted artifact with no `publicUrl` throws. Assert a manifest's `validate(badSpec)` returns a non-empty error list (not a throw).
 
 - [ ] **Step 2: Run → FAIL.**
 
 - [ ] **Step 3: Implement `lib/core/contract.ts`** (`ProduceContext`, `DeliveredArtifact`, `assertDeliveredContract` — port the current `assertDelivered` logic from `skills/splash/src/export-guard.ts:68` into the contract clause).
 
-- [ ] **Step 4: Rewrite `realDispatch` as one uniform path**: look up `getProducer(p.producer)`, `specSchema.parse(p.spec)` at the boundary, build `ProduceContext`, run `execution === "subprocess"` (spawn via the existing `dispatchFileBased`/`execFileSync`, threading channel per `threadsChannel`) or `inProcess(spec, ctx)`, then `assertDeliveredContract(result)`. Delete the per-producer `if (p.producer === "dw-chart")`/`map-dw` branches (`adapters.ts:325-387`) — they become one path. Wire each engine's real produce fn into its manifest (`produceChart`/`produceMap` in-process; the subprocess wrapper for natives returning a `DeliveredArtifact` from `collectOutputs`).
+- [ ] **Step 4: Rewrite `realDispatch` as one uniform path**: look up `getProducer(p.producer)`, run `manifest.validate(p.spec)` at the boundary (non-empty error list → return `status:"failed"` with the joined errors, NEVER throw — this dispatch is reachable unguarded from `produce-all`, see the Task 6 drop-proof regressions), build `ProduceContext`, run `execution === "subprocess"` (spawn via the existing `dispatchFileBased`/`execFileSync`, threading channel per `threadsChannel`) or `inProcess(spec, ctx)`, then `assertDeliveredContract(result)`. Delete the per-producer `if (p.producer === "dw-chart")`/`map-dw` branches (`adapters.ts:325-387`) — they become one path. Wire each engine's real produce fn into its manifest (`produceChart`/`produceMap` in-process; the subprocess wrapper for natives returning a `DeliveredArtifact` from `collectOutputs`).
 
 - [ ] **Step 5: Point `export-guard.ts` at the contract** (`assertDelivered` delegates to `assertDeliveredContract`), preserving its call sites in `export-code.mjs`.
 
