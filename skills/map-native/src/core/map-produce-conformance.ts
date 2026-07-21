@@ -214,14 +214,22 @@ export function runProduceMapConformance(
   const concerns: string[] = [];
   const houseHue =
     typeof config.brandHue === "string" ? config.brandHue : undefined;
-  if (
-    houseHue &&
-    paintsSingleHouseFill(type, config) &&
-    !contrastOk(houseHue, dark)
-  ) {
-    concerns.push(
-      `house fill ${houseHue} does not clear 3:1 non-text contrast on the ${dark ? "dark" : "light"} basemap — kept as chosen (policy b), verify legibility at render-review`,
-    );
+  if (houseHue && paintsSingleHouseFill(type, config)) {
+    // Defense-in-depth: `contrastOk` → `relativeLuminance` THROWS on a malformed hex.
+    // In the normal orchestrator flow this never fires — validate-gate's `brandHueError`
+    // rejects a malformed brandHue before produce ever runs — but a standalone
+    // `produce.mjs` CLI invocation can bypass that gate entirely. Never let a bad hex
+    // crash the produce run here: convert it to a clean violation (this IS a malformed
+    // config, unlike the low-contrast-but-valid case below, which is kept as chosen).
+    try {
+      if (!contrastOk(houseHue, dark)) {
+        concerns.push(
+          `house fill ${houseHue} does not clear 3:1 non-text contrast on the ${dark ? "dark" : "light"} basemap — kept as chosen (policy b), verify legibility at render-review`,
+        );
+      }
+    } catch (e) {
+      violations.push(`brandHue: ${(e as Error).message}`);
+    }
   }
 
   return { checked: true, violations, concerns };

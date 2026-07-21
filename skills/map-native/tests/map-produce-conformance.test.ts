@@ -267,6 +267,37 @@ describe("runProduceMapConformance — dark theme furniture", () => {
   });
 });
 
+// Defense-in-depth: validate-gate's `brandHueError` rejects a malformed brandHue before
+// produce ever runs in the normal orchestrator flow, but a standalone `produce.mjs` CLI
+// invocation bypasses that gate entirely. `contrastOk` -> `relativeLuminance` THROWS on a
+// malformed hex — this guard must convert that into a clean violation, never crash.
+describe("runProduceMapConformance — malformed brandHue on a single-fill type (standalone-CLI defense)", () => {
+  it("returns a violation instead of throwing when brandHue is not a #rrggbb hex", () => {
+    let result: ReturnType<typeof runProduceMapConformance> | undefined;
+    expect(() => {
+      result = runProduceMapConformance("symbol", {
+        ...configs.symbol,
+        brandHue: "not-a-hex",
+      });
+    }).not.toThrow();
+    expect(result?.checked).toBe(true);
+    expect(
+      result?.violations.some((m) => /brandHue/.test(m) && /not-a-hex/.test(m)),
+    ).toBe(true);
+  });
+
+  it("does not flag a malformed brandHue for a type that does not paint a single house fill (e.g. locator)", () => {
+    // locator cycles a palette, no single fill — paintsSingleHouseFill returns false, so the
+    // malformed hex is never even looked at.
+    const result = runProduceMapConformance("locator", {
+      ...configs.locator,
+      brandHue: "not-a-hex",
+    });
+    expect(result.checked).toBe(true);
+    expect(result.violations).toEqual([]);
+  });
+});
+
 describe("MAP_PRODUCE_GUARDED_TYPES / RAMP_TYPES", () => {
   it("names exactly the 3 ramp-driven types", () => {
     expect([...RAMP_TYPES].sort()).toEqual(
