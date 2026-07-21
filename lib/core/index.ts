@@ -7,3 +7,4 @@ export * from "./contrast";
 export * from "./theme";
 export * from "./locale";
 export * from "./i18n-furniture";
+export * from "./text-fit";

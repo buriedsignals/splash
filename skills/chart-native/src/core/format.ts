@@ -5,6 +5,7 @@
 // at a sane aspect by padding it into a centred band (so the data is never
 // vertically stretched). Shared by line / bar / scatter.
 import { TYPE } from "./tokens";
+import { sourceFooterReserve } from "../../../../lib/core/text-fit";
 
 export interface Pad {
   top: number;
@@ -156,23 +157,13 @@ const TALL_CANVAS_BOOST_CAP = 2.5; // never more than a 2.5x plotAspect multipli
 // bottom is measured from innerHeight, growing pad.bottom by this reserve lifts the
 // axis furniture by exactly the reserve, opening a clear band underneath for the
 // source — no per-type magic-number tuning, and it can never CREATE a bottom overlap.
-const SOURCE_FOOTER_BOTTOM_INSET = 12; // matches ChartFrame.tsx static bottom:12*scale
-const SOURCE_FOOTER_LINE_HEIGHT = 1.2; // one line of TYPE.source text
-const SOURCE_FOOTER_CLEARANCE = 8; // min visible gap: axis-title bottom → source box top
-
-/**
- * The vertical space (UNSCALED px) the ChartFrame static source footer must own at
- * the bottom of the frame, including a clearance gap above it. Added to basePad.bottom
- * by resolveFrameWithHeader (static/video); resolveFrame then applies `scale`.
- * Exported so the invariant is discoverable and testable (tests/footer-fit.test.ts).
- */
-export function sourceFooterReserve(): number {
-  return (
-    SOURCE_FOOTER_BOTTOM_INSET +
-    TYPE.source * SOURCE_FOOTER_LINE_HEIGHT +
-    SOURCE_FOOTER_CLEARANCE
-  );
-}
+//
+// The reserve formula itself (bottom-inset + one source-caption line + clearance) is
+// engine-agnostic geometry — moved to the shared core (lib/core/text-fit.ts) as
+// `sourceFooterReserve(sourceFontPx)`, parametrized on the UNSCALED source-caption
+// font size instead of closing over chart-native's local `TYPE.source` token, so core
+// stays free of engine-local design tokens. Exported (via the call below) so the
+// invariant is discoverable and testable (tests/footer-fit.test.ts).
 
 function boostPlotAspectForTallCanvas(
   width: number,
@@ -199,7 +190,7 @@ function boostPlotAspectForTallCanvas(
  * to resolveFrame with scale=1.
  *
  * @param reserveSourceFooter  static/video only: grow basePad.bottom by
- *   sourceFooterReserve() so the x-axis title clears the bottom source line
+ *   sourceFooterReserve(TYPE.source) so the x-axis title clears the bottom source line
  *   (default true). Pass false for a chart that ALREADY reserves the source band
  *   inside its own basePad.bottom (e.g. WaterfallChart, whose rotated-label
  *   descent budget is derived from that same reservation) — reserving twice would
@@ -221,7 +212,9 @@ export function resolveFrameWithHeader(
   // innerHeight both account for it, and the x-axis title clears the source line.
   const staticBasePad: Pad = {
     ...basePad,
-    bottom: basePad.bottom + (reserveSourceFooter ? sourceFooterReserve() : 0),
+    bottom:
+      basePad.bottom +
+      (reserveSourceFooter ? sourceFooterReserve(TYPE.source) : 0),
   };
 
   const frame = responsive
