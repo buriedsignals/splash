@@ -94,8 +94,10 @@ export interface ProposalResult {
   renderApproved: boolean; // Gate 3, default false
   approvedHash?: string; // sha256 of the approved artifact, set by the render gate
   // The sanctioned-spec provenance for the export chain check (S1 strict production
-  // seam): sha256 of the canonicalized AcceptedProposal.spec that produceAll dispatched
-  // to produce THIS result. Set on every PRODUCED result only — a failed/needs-fallback/
+  // seam): sha256 of the canonicalized PRE-merge AcceptedProposal.spec accepted for THIS
+  // result — NOT the profile-merged spec actually dispatched to the producer. The export
+  // stage re-hashes accepted.json on disk (which holds the pre-merge spec), so the two
+  // must match. Set on every PRODUCED result only — a failed/needs-fallback/
   // needs-confirmation result has no artifact to trace back to a spec. Optional only for
   // legacy-report back-compat; produceAll always sets it on a produced result.
   acceptedConfigHash?: string;
