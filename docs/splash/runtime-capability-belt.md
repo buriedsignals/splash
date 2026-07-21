@@ -9,7 +9,7 @@
 
 ## What Splash owns
 
-Splash is a skill: prose + scripts invoked by an actor (a Claude Code session) that already has its own
+Splash is a skill: prose + scripts invoked by an actor (an agentic coding session) that already has its own
 Bash/Grep/Write tools. Splash's `SKILL.md` can *ask* the actor not to hand-author a `spec.json` or hand-plant
 a file into a producer's output directory — but a prompt-level "Never" is guidance, not an execution boundary.
 The actor could, in principle, ignore it.
@@ -42,7 +42,7 @@ specifically:
 
 - Restrict the actor's tool allowlist so freehand file authoring under `skills/**/src`, `skills/**/scripts`,
   or `exports/**` is not available as an action at all — not merely discouraged.
-- Concretely, in Claude Code terms: a `--permission-mode` (or equivalent settings-level tool restriction)
+- Concretely: a permission-mode / settings-level tool restriction (whatever the hosting harness provides)
   scoped to the production phase of the flow, allowing only the sanctioned pipeline entry points
   (`produce-all`, `review-gate`, `gate-render`, `export-code`, and the producers' own scripts) and denying
   raw `Write`/`Edit`/`Bash` access to the skill's source tree.
