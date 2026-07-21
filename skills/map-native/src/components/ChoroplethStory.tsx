@@ -104,27 +104,29 @@ interface MapStory {
   borderByRegion: Map<string, DrawEntry>;
 }
 
+export type ChoroplethStoryConfig = ChoroplethData & {
+  title?: string;
+  description?: string;
+  unit?: string;
+  valueUnit?: string;
+  insight?: string;
+  source?: { name: string; url: string };
+  scaleType?: "sequential" | "diverging";
+  palette?: string | string[];
+  /** the topic hint (e.g. "electricity access") → drives the subject-fit ramp guard. */
+  subject?: string;
+  /** data column holding the region NAME in the deliverable language (beat narration). */
+  labelField?: string;
+  valueKind?: "temporal" | "magnitude" | "categorical";
+  mapStyle?: string;
+  /** deliverable language — localizes legend numbers + "Source". Default English. */
+  lang?: string;
+  /** context (default) blooms the subject over the full distribution; sequential — Task 9. */
+  revealMode?: string;
+};
+
 export const ChoroplethStory: React.FC<{
-  config: ChoroplethData & {
-    title?: string;
-    description?: string;
-    unit?: string;
-    valueUnit?: string;
-    insight?: string;
-    source?: { name: string; url: string };
-    scaleType?: "sequential" | "diverging";
-    palette?: string | string[];
-    /** the topic hint (e.g. "electricity access") → drives the subject-fit ramp guard. */
-    subject?: string;
-    /** data column holding the region NAME in the deliverable language (beat narration). */
-    labelField?: string;
-    valueKind?: "temporal" | "magnitude" | "categorical";
-    mapStyle?: string;
-    /** deliverable language — localizes legend numbers + "Source". Default English. */
-    lang?: string;
-    /** context (default) blooms the subject over the full distribution; sequential — Task 9. */
-    revealMode?: string;
-  };
+  config: ChoroplethStoryConfig;
 }> = ({ config }) => {
   const ref = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
@@ -517,7 +519,7 @@ export const ChoroplethStory: React.FC<{
 
     if (beat.callout) {
       const regionKey = beat.callout.region;
-      // invariant: beat.callout.region is always a reveal-beat highlight[0] (see map-story.ts) → always a triggers/anchorByKey/stagedByKey key.
+      // invariant: beat.callout.region is always a reveal-beat highlight[0] (see map-story.ts) → always a triggers/anchorByKey/stagedMap key.
       const lngLat = anchorByKey.get(regionKey);
       if (lngLat) {
         const pt = map.project(lngLat as [number, number]);

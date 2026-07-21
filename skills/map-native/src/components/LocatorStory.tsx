@@ -70,7 +70,7 @@ const DOT_RADIUS_PX = 6; // FIXED — uniform marker settled size, never value-s
 const MARKER_STROKE = "#ffffff";
 const GLYPH_LAYER = "locator-glyphs";
 const LABEL_LAYER = "locator-labels";
-const DIM_OPACITY = 0.25; // non-highlighted markers during a reveal beat (context mode)
+const DIM_OPACITY = 0.25; // non-highlighted markers, once appeared — both context and sequential modes
 
 // Per-feature properties carried on the `locator` GeoJSON source — the declutter-driven
 // `__highlight`/`__showLabel` (recomputed per beat) plus the staged-entrance channels this

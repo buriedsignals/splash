@@ -134,8 +134,8 @@ export function addSubjectEmphasisLayers(
  * establish beat) must recompute duration from the INJECTED config, not a static
  * default, or the mp4 ends with a frozen tail.
  */
-export function makeStoryMeta(
-  computeFrames: (config: any) => number,
-): (args: { props: { config: any } }) => { durationInFrames: number } {
+export function makeStoryMeta<TConfig>(
+  computeFrames: (config: TConfig) => number,
+): (arg: { props: { config: TConfig } }) => { durationInFrames: number } {
   return ({ props }) => ({ durationInFrames: computeFrames(props.config) });
 }

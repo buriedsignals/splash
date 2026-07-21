@@ -27,13 +27,22 @@
 import React from "react";
 import { Composition } from "remotion";
 import { HarnessCheck } from "../../src/components/HarnessCheck";
-import { ChoroplethStory } from "../../src/components/ChoroplethStory";
+import {
+  ChoroplethStory,
+  type ChoroplethStoryConfig,
+} from "../../src/components/ChoroplethStory";
 import {
   AREAL_TIMELINE_OPTS,
   makeStoryMeta,
 } from "../../src/story-choreography";
 import { SymbolStory } from "../../src/components/SymbolStory";
 import type { SymbolConfig } from "../../src/SymbolMap";
+import type {
+  LocatorConfigShape,
+  DotDensityConfigShape,
+  HexGridConfigShape,
+  CartogramConfigShape,
+} from "../../src/validate-config";
 import { SymbolReveal } from "../../src/components/SymbolReveal";
 import { ChoroplethReveal } from "../../src/components/ChoroplethReveal";
 import { RouteReveal } from "../../src/components/RouteReveal";
@@ -94,7 +103,7 @@ const choroplethDefaultProps = { config: sampleConfig };
 // Mode-aware composition duration. `sequential` drops the establish beat (beatsForMode), so the
 // length must be recomputed from the INJECTED config — otherwise the sequential MP4 ends with a
 // frozen tail. Mirrors ChoroplethStory's own layout+beats setup so the counts match exactly.
-const storyMeta = makeStoryMeta((cfg) => {
+const storyMeta = makeStoryMeta((cfg: ChoroplethStoryConfig) => {
   const layout = computeChoropleth(cfg, world as any, "iso_a3", {
     bins: 5,
     scaleType: cfg.scaleType ?? "sequential",
@@ -152,7 +161,7 @@ const SYMBOL_FRAMES = buildTimeline(
 // Mode-aware composition duration — mirrors `dotDensityStoryMeta`/`cartogramStoryMeta` above
 // (single source of truth with SymbolStory.tsx's own beats+beatsForMode setup, so the
 // sequential mp4 doesn't end with a frozen tail).
-const symbolStoryMeta = makeStoryMeta((cfg) => {
+const symbolStoryMeta = makeStoryMeta((cfg: SymbolConfig) => {
   const beats = beatsForMode(
     deriveSymbolStory(
       cfg.points,
@@ -186,21 +195,23 @@ const locatorDefaultProps = { config: sampleLocator };
 // Mode-aware composition duration — mirrors `symbolStoryMeta` above (single source of truth
 // with LocatorStory.tsx's own beats+beatsForMode setup, so the sequential mp4 doesn't end with
 // a frozen tail).
-const locatorStoryMeta = makeStoryMeta((cfg) => {
-  const beats = beatsForMode(
-    deriveLocatorStory(cfg.markers, {
-      title: cfg.title ?? "",
-      description: cfg.description,
-      insight: cfg.insight ?? cfg.title ?? "",
-    }),
-    resolveRevealMode(cfg),
-  );
-  return buildTimeline(
-    beats.map((b) => b.kind),
-    30,
-    AREAL_TIMELINE_OPTS,
-  ).totalFrames;
-});
+const locatorStoryMeta = makeStoryMeta(
+  (cfg: LocatorConfigShape & { insight?: string }) => {
+    const beats = beatsForMode(
+      deriveLocatorStory(cfg.markers, {
+        title: cfg.title ?? "",
+        description: cfg.description,
+        insight: cfg.insight ?? cfg.title ?? "",
+      }),
+      resolveRevealMode(cfg),
+    );
+    return buildTimeline(
+      beats.map((b) => b.kind),
+      30,
+      AREAL_TIMELINE_OPTS,
+    ).totalFrames;
+  },
+);
 
 const sampleDDLayout = computeDotDensity(
   sampleDotDensity as any,
@@ -222,23 +233,25 @@ const dotDensityDefaultProps = { config: sampleDotDensity };
 // Mode-aware composition duration — mirrors `storyMeta`/`cartogramStoryMeta` above (single
 // source of truth with DotDensityStory.tsx's own layout+beats+beatsForMode setup, so the
 // sequential mp4 doesn't end with a frozen tail).
-const dotDensityStoryMeta = makeStoryMeta((cfg) => {
-  const layout = computeDotDensity(cfg, world as any, "iso_a3");
-  const beats = beatsForMode(
-    deriveDotDensityStory(layout, {
-      title: cfg.title ?? "",
-      description: cfg.description,
-      insight: cfg.insight ?? cfg.title ?? "",
-      unit: cfg.valueUnit ?? "",
-    }),
-    resolveRevealMode(cfg),
-  );
-  return buildTimeline(
-    beats.map((b) => b.kind),
-    30,
-    AREAL_TIMELINE_OPTS,
-  ).totalFrames;
-});
+const dotDensityStoryMeta = makeStoryMeta(
+  (cfg: DotDensityConfigShape & { insight?: string; valueUnit?: string }) => {
+    const layout = computeDotDensity(cfg, world as any, "iso_a3");
+    const beats = beatsForMode(
+      deriveDotDensityStory(layout, {
+        title: cfg.title ?? "",
+        description: cfg.description,
+        insight: cfg.insight ?? cfg.title ?? "",
+        unit: cfg.valueUnit ?? "",
+      }),
+      resolveRevealMode(cfg),
+    );
+    return buildTimeline(
+      beats.map((b) => b.kind),
+      30,
+      AREAL_TIMELINE_OPTS,
+    ).totalFrames;
+  },
+);
 
 const sampleHGLayout = computeHexGrid(sampleHexGrid as any);
 const sampleHGBeats = deriveHexGridStory(sampleHGLayout, {
@@ -255,22 +268,24 @@ const hexGridDefaultProps = { config: sampleHexGrid };
 // Mode-aware composition duration — mirrors `cartogramStoryMeta` above (single source of truth
 // with HexGridStory.tsx's own layout+beats+beatsForMode setup, so the sequential mp4 doesn't end
 // with a frozen tail).
-const hexGridStoryMeta = makeStoryMeta((cfg) => {
-  const layout = computeHexGrid(cfg);
-  const beats = beatsForMode(
-    deriveHexGridStory(layout, {
-      title: cfg.title ?? "",
-      description: cfg.description,
-      insight: cfg.insight ?? cfg.title ?? "",
-    }),
-    resolveRevealMode(cfg),
-  );
-  return buildTimeline(
-    beats.map((b) => b.kind),
-    30,
-    AREAL_TIMELINE_OPTS,
-  ).totalFrames;
-});
+const hexGridStoryMeta = makeStoryMeta(
+  (cfg: HexGridConfigShape & { insight?: string }) => {
+    const layout = computeHexGrid(cfg);
+    const beats = beatsForMode(
+      deriveHexGridStory(layout, {
+        title: cfg.title ?? "",
+        description: cfg.description,
+        insight: cfg.insight ?? cfg.title ?? "",
+      }),
+      resolveRevealMode(cfg),
+    );
+    return buildTimeline(
+      beats.map((b) => b.kind),
+      30,
+      AREAL_TIMELINE_OPTS,
+    ).totalFrames;
+  },
+);
 
 const sampleCGLayout = computeCartogram(sampleCartogram as any, world as any);
 const sampleCGBeats = deriveCartogramStory(sampleCGLayout, {
@@ -288,22 +303,24 @@ const cartogramDefaultProps = { config: sampleCartogram };
 // Mode-aware composition duration — mirrors `storyMeta` above (single source of truth with
 // CartogramStory.tsx's own layout+beats+beatsForMode setup, so the sequential mp4 doesn't end
 // with a frozen tail).
-const cartogramStoryMeta = makeStoryMeta((cfg) => {
-  const layout = computeCartogram(cfg, world as any);
-  const beats = beatsForMode(
-    deriveCartogramStory(layout, {
-      title: cfg.title ?? "",
-      description: cfg.description,
-      insight: cfg.insight ?? cfg.title ?? "",
-    }),
-    resolveRevealMode(cfg),
-  );
-  return buildTimeline(
-    beats.map((b) => b.kind),
-    30,
-    AREAL_TIMELINE_OPTS,
-  ).totalFrames;
-});
+const cartogramStoryMeta = makeStoryMeta(
+  (cfg: CartogramConfigShape & { insight?: string }) => {
+    const layout = computeCartogram(cfg, world as any);
+    const beats = beatsForMode(
+      deriveCartogramStory(layout, {
+        title: cfg.title ?? "",
+        description: cfg.description,
+        insight: cfg.insight ?? cfg.title ?? "",
+      }),
+      resolveRevealMode(cfg),
+    );
+    return buildTimeline(
+      beats.map((b) => b.kind),
+      30,
+      AREAL_TIMELINE_OPTS,
+    ).totalFrames;
+  },
+);
 
 export const RemotionRoot: React.FC = () => (
   <>
