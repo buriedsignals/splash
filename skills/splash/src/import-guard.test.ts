@@ -94,4 +94,35 @@ describe("import-guard: no cross-engine src reach-in", () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  // Belt-and-suspenders against the per-line scan's own blind spot: OFFENDER is only ever
+  // tested against ONE line at a time (`contents.split("\n")`), so an import whose `from`
+  // keyword and specifier string land on DIFFERENT physical lines (a formatter- or
+  // hand-split multi-line import) would never appear on any single line the per-line loop
+  // inspects and would silently evade the guard above. Re-run OFFENDER as a GLOBAL match
+  // against the file's WHOLE content instead of per-line: `\s` inside OFFENDER already
+  // matches newlines, so this catches a reach-in regardless of how the import is wrapped.
+  // The precise per-line error messages stay owned by the first test; this one only proves
+  // nothing slips through.
+  it("no engine reaches into another engine's src via an import split across multiple lines", async () => {
+    const offenders: string[] = [];
+    const globalOffender = new RegExp(OFFENDER.source, "g");
+    for (const f of await scanEngineFiles()) {
+      const contents = readFileSync(f, "utf8");
+      globalOffender.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = globalOffender.exec(contents))) {
+        // A window around the match, newlines collapsed to spaces, so it reads like the
+        // single "line" the sanction checks below expect (they need to see past the
+        // "/src/" the OFFENDER match itself stops at, e.g. "/scrolly/src/chapters").
+        const window = contents
+          .slice(m.index, m.index + 200)
+          .replace(/\n/g, " ");
+        if (isScrollyComposition(f, window)) continue;
+        if (isMapDwSharedImport(f, window)) continue;
+        offenders.push(`${f}: ${window.trim().slice(0, 120)}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });
