@@ -350,122 +350,18 @@ Used when Gate 5 routes to a map AND the format ladder (Gates 1–4) yields **st
 Emits a **`MapSpec`** with `producer: "map-dw"` as the discriminator (the eval gate uses this field to
 identify the path).
 
-#### Emitted MapSpec fields (exact — validated by `validateMapSpec` in `map-dw/src/map-spec.ts`)
-
-```json
-{
-  "producer": "map-dw",
-  "mapType": "choropleth",
-  "basemap": "<DW basemap id — e.g. world-2019>",
-  "mapKeyAttr": "<the join key on that basemap — e.g. DW_STATE_CODE for ISO-A3 country codes>",
-  "regionKey": "<data column holding region codes/names>",
-  "valueColumn": "<data column holding the normalised rate>",
-  "data": "<CSV text>",
-  "title": "<the insight — sentence case, never a column label>",
-  "intro": "<description of the map for context>",
-  "altInsight": "<the insight — WCAG alt, same wording as title>",
-  "unit": "<the value's short unit as a literal suffix, e.g. ' mm' / '%' / ' €' — see the unit rule below>",
-  "source": { "name": "<honest source>", "url": "<its real URL>" },
-  "channel": "<the CADRAGE Q6 channel — social-vertical | social-feed | article-web>"
-}
-```
-
-Field notes:
-- `mapType` MUST be `"choropleth"` — required by the validator.
-- `basemap` + `mapKeyAttr`: pick the DW basemap whose key matches the region identifiers. Slice 1 supports
-  the common case — **countries by ISO-A3 → basemap `"world-2019"`, key `mapKeyAttr: "DW_STATE_CODE"`**
-  (`DW_STATE_CODE` is world-2019's ISO-A3 alpha-3 key; verified live it joins ~all ISO-A3 rows). **Do NOT
-  emit `mapKeyAttr: "ISO_A3"` on `world-2019`** — world-2019 has no `ISO_A3` join key (its keys are
-  `DW_NAME`, `NAME_SHORT`, `DW_STATE_CODE`, `ISO_2`, …), so that combo joins 0 rows and ships a fully grey,
-  dataless map. `validateMapSpec` now HARD-rejects it against the `map-dw/src/basemap-keys.ts` registry and
-  names the valid keys. Country *names* (English) join on `DW_NAME`; ISO-A2 codes on `ISO_2`. **French
-  départements → basemap `"france-metropolitan-departments"`, key `mapKeyAttr: "name"`** (accent-exact
-  department names: `"Ain"`, `"Haute-Savoie"`). Its other registered keys do NOT carry what their names
-  suggest (probed live): `postal` holds two-letter POSTAL ABBREVIATIONS (`"FF"`, `"CY"`) — **NOT INSEE
-  department numbers**, so joining `"01"…"95"` codes on `postal` matches 0 rows (a registered key can
-  still be the WRONG key for your columns — the registry only lists which keys exist, not which fits your
-  data; the dataless-join guard is the net); `fips` is `"FRB9"`-style; `code_hasc` is
-  `"FR.AI"`-style. **No key on this basemap carries INSEE codes** — convert INSEE codes to department
-  names first and join on `name`. For any registered basemap, read the valid keys off
-  `map-dw/src/basemap-keys.ts` verbatim; for an unregistered one, confirm the exact `mapKeyAttr` via the
-  basemap-key discovery `map-dw` documents (`GET /v3/basemaps/{id}` → `meta.keys`, and check the sample
-  `keys` VALUES match your data column, not just the key's name) — never assume `ISO_A3` exists on a
-  basemap; check its declared keys first. **Basemap SCOPE must match the data's coverage**: a
-  sub-national subset (one region's provinces/districts) prefers a region-scoped basemap or `map-native`
-  over the full-country cut — see the Choropleth BASEMAP FIT rule in Gate 4 (`validateMapSpec` warns on
-  a sparse subset).
-- `regionKey`: the data column holding the region codes (ISO-A2/A3, country name, …).
-- `valueColumn` (NOT `valueField`): the numeric column with the normalised rate per Gate 5.
-- `title`: the spatial finding as a sentence ("Nordic countries generate most of their electricity from
-  renewables") — NOT a label or column name.
-- `intro`: the description / context for the map.
-- `altInsight`: WCAG accessible alternative — the same insight as `title`.
-- `source`: the honest source the article names (prose-provenance rule). Never fabricated, and **never the
-  data FILENAME** (`youth_unemployment.csv` is not a public attribution) — use the publication the article
-  cites, or the honest prose label. **A NAMED dataset/publication (e.g. "Eurostat") MUST carry both its
-  name AND a real, verifiable URL — never ship the name alone, and never invent a URL to fill the field.**
-  **The URL MUST point to the SPECIFIC, traceable dataset/page the figures come from** (e.g. the Eurostat
-  dataset page for the exact table/code, the Insee series page) — a generic organisation homepage
-  (`eurostat.ec.europa.eu`, `insee.fr`) is NOT traceable and must be treated the same as a missing URL. If
-  the journalist only gives an organisation name, its homepage, or the true specific URL isn't known, ASK
-  for the specific dataset/page reference (free text, collecting name + the specific URL together) rather
-  than shipping it generic or incomplete. The only legitimate name-only case is the honest prose fallback
-  below, which names no separate dataset to link.
-- `channel`: the CADRAGE Q6 answer — the same structured channels as `ChartSpec.channel`
-  (`social-vertical | social-feed | article-web`, `skills/splash/src/channel.ts`). It sizes the static
-  PNG export box (social-feed→1080x1080 square, social-vertical→1080x1920 9:16, article-web→1200x675)
-  and the render-size floor verifies the delivered PNG against it. Emit it explicitly: the spine also
-  injects the proposal's confirmed channel at dispatch (`withProposalChannel` in
-  `skills/splash/src/adapters.ts`, proposal wins), but a spec run directly against `produceMap` has no
-  proposal to inherit from and would otherwise silently size against the article-web default.
-- `colorScale` (optional): an array of `{color: hex, position: 0..1}` stops, ascending. If omitted,
-  `map-dw` applies the default blue sequential scale. Choose the stops from a subject-fit ramp per the
-  **Map colour** rule below — do NOT leave every map blue.
-
-**Map colour — newsroom house palette FIRST, else subject-fit.** Same rule as the chart `baseColor`, for
-maps. If the project has a newsroom profile with a `palette` (NEWSROOM-PROFILE.md / brand.json — the F2
-house style), the **house colour drives the map** and you do NOT pick a subject-fit ramp:
-- **sequential** map (magnitude): still emit `subject` + `scaleType:"sequential"`, but do **NOT** emit a
-  `palette` (native) or `colorScale` stops (map-dw) — leave the colour UNSET so the produce merge derives
-  the house luminance ramp / fill from the house hue. (The merge enforces this regardless — it clears an
-  auto palette — but omitting it makes a truthful proposal, and it is the ONLY way map-dw becomes
-  house-coloured, since map-dw reads `colorScale`, not `palette`.)
-- **diverging** map (a signed anomaly around a midpoint): a single-hue house luminance ramp cannot encode a
-  signed divergence — so KEEP the subject-fit diverging `palette`/`colorScale` (the house colour is not
-  applied to diverging maps; a house diverging ramp is a follow-up).
-- The ONE exception (either scale): if the journalist EXPLICITLY names a colour/ramp for THIS map, honour it
-  AND set `baseColorExplicit: true` — that flag shields it from the house palette (mirrors the chart rule).
-
-No profile → choose the ramp by subject, as below.
-
-**Map colour — scaleType by semantic, palette by subject** (palette-freedom principle: free choice guarded
-by CVD-safety; the conformance guard FAILS a semantic↔scaleType mismatch, a non-CVD-safe ramp, and a clear
-subject left on the library default). Two decisions:
-1. **scaleType from the data semantic** — magnitude (all one sign, a rate/count/year) → `sequential`;
-   an anomaly / signed value around a meaningful midpoint (change, deviation, gain↔loss) → `diverging`;
-   unordered categories → a qualitative scheme (not a ramp).
-2. **`palette` from the subject** — a named registry palette from `map-native/src/theme/scale.ts` (the
-   choropleth mirror of the chart `baseColor` rule: the ramp HUE must fit the subject, never fall through
-   to blue by default):
-   - sequential: **energy / electricity / solar / heat / fire → `oranges`** (warm = light/power — a blue
-     ramp reads water/cold/generic, wrong for an energy story); water / rainfall / cold / marine → `blues`
-     (the ONE case blue is correct); environment / forest / vegetation → `greens`; culture /
-     politics-neutral magnitude → `purples`
-   - diverging: temperature/anomaly → `rdbu` (red = warm/high); environment deficit↔surplus → `brbg`;
-     neutral signed change → `puor`; legacy orange↔blue → `orbu`
-Emit `subject` + `scaleType` + `palette` on the map config (native) or subject-fit `colorScale` stops
-(map-dw). Every registry ramp is vetted CVD-safe (a single-hue sequential ramp is always CVD-safe), so any
-FITTING choice passes; the rule is the choice must FIT the subject — **NEVER the blue default for a
-non-water subject.** The produce guard (`checkPaletteConformance`) FAILS a declared `subject` sitting on the
-default blue, so an energy/electricity map MUST carry `palette:"oranges"` — the exact recurrence guarded.
-- `numberFormat` (optional): format string to strip noise from the value labels.
-- `unit` — **EMIT IT whenever the measured quantity has a short unit (mm, %, €, t, hab.)**; omit only
-  when the quantity truly has none (a count of people, an index). The unit is part of faithful data
-  representation, not decoration: it feeds the legend endpoints AND the hover tooltip — a reader hovering
-  a rainfall map must read "624 mm", never a bare "624". It is a LITERAL suffix with the leading-space semantics `map-dw/src/map-spec.ts`
-  documents: include a leading space unless the unit hugs the number (`" mm"` → "624 mm", `" €"` →
-  "17 600 €", `"%"` → "70%"). Do not double-declare a percent — either `unit:"%"` or a `"%"` `numberFormat`
-  token is enough on its own (map-dw suppresses the collision, but one declaration is the honest spec).
+**Exact `MapSpec` fields (JSON schema, per-field notes, and the Map colour rule) are in
+`references/map-dw-spec.md`** — read it before filling this spec. Essential gotchas to keep in
+mind even without opening it:
+- Never emit `mapKeyAttr:"ISO_A3"` on basemap `world-2019` (it has no such key — 0-row join,
+  fully grey map); use `DW_STATE_CODE` for ISO-A3 countries.
+- A NAMED dataset/publication source MUST carry both a name AND a real, verifiable, SPECIFIC URL
+  (never a generic org homepage, never an invented URL).
+- Map colour: newsroom house palette wins if one exists (leave `colorScale` UNSET on a
+  sequential map so the house ramp derives); else pick the `colorScale`/`palette` by subject —
+  **never leave the default blue for a non-water subject** (the produce guard FAILS it).
+- Emit `unit` whenever the quantity has a short unit (mm, %, €…) — it feeds the legend AND the
+  hover tooltip.
 
 **Basemap fallback rule:** if no known DW basemap matches the region identifiers in the data → do NOT
 force a map. Fall back to a **sorted bar chart** (`d3-bars`, `sort:"desc"`) and state why in the decision
@@ -487,73 +383,16 @@ case where a concrete reason prefers static over the interactive default.
 ISO-A3 (e.g. `NOR`, `DEU`, `FRA`). If the region codes in the data cannot be matched to ISO-A3 — fall
 back to `map-dw` or a sorted bar chart (`d3-bars`, `sort:"desc"`) and state why in the decision output.
 
-**Emitted config (exact — validated by `validateChoroplethConfig` in `map-native/src/validate-config.ts`):**
-
-```json
-{
-  "producer": "map-native",
-  "regionKey": "<data column holding ISO-A3 codes>",
-  "valueField": "<data column holding the normalised rate>",
-  "labelField": "<data column holding the region NAME in the deliverable language>",
-  "rows": [{ "<regionKey>": "<ISO-A3>", "<labelField>": "<region name>", "<valueField>": <number> }, "…"],
-  "basemap": "world",
-  "title": "<the spatial insight — sentence case, never a label>",
-  "description": "<what / when / where context>",
-  "unit": "<long legend label, e.g. 'Share of renewables (%)'>",
-  "valueUnit": "<short callout unit, e.g. '%'>",
-  "subject": "<the topic hint, e.g. 'electricity access' — drives the subject-fit ramp>",
-  "scaleType": "sequential",
-  "palette": "<subject-fit registry ramp — see the Map colour rule below; NEVER default blue for a non-water subject>",
-  "revealMode": "context",
-  "source": { "name": "<honest source>", "url": "<URL>" }
-}
-```
-
-Field notes:
-- `producer`: MUST be `"map-native"` — the routing discriminator.
-- `regionKey` / `valueField`: the data column names. `rows` is an **array of objects** (not CSV string).
-- **`labelField` (REQUIRED when the deliverable language is not English, recommended always)**: the data
-  column holding a human-readable region NAME **in the deliverable's language** (e.g. `"Éthiopie"`,
-  `"Soudan du Sud"`). The narration (scrolly/video beats) uses THIS name — without it, a French map narrates
-  the basemap's ENGLISH names (`"Ethiopia"`, `"S. Sudan"`), the exact defect. Put the name column in every
-  row alongside the ISO-A3 code. If the data has no name column, add one with the correct-language names.
-- `basemap`: `"world"` for world ISO-A3 preset (slice 1b; other presets are later scope).
-- `title`: the spatial finding as a sentence — NOT a label or year range (validator enforces ≥12 chars).
-- `description`: the what/when/where — required (furniture standard; a missing value is a warning).
-- **`subject` + `palette`**: set BOTH (see the Map colour rule below). The produce guard FAILS a declared
-  `subject` left on the default blue ramp — so a warm subject (energy) MUST carry `palette:"oranges"`, water
-  keeps `"blues"`, vegetation `"greens"`. Emitting `subject` without a subject-fit `palette` blocks produce.
-- `source.name` + `source.url`: required (furniture standard; missing is a warning).
-- `revealMode`: `"context"` (default) — emit it explicitly. Journey/progression narratives (a route or
-  ordered sequence the story deliberately walks) may set `"sequential"`; do NOT infer it heuristically —
-  leave it on `"context"` unless the editorial framing is genuinely a guided journey.
-- `unit` / `valueUnit`: **EMIT them whenever the measured quantity has a short unit (mm, %, €, t,
-  hab.)** — the unit feeds the legend and the hover/caption surfaces and is part of faithful data
-  representation, not decoration (same rule as the map-dw `unit` field note above). Omit only when the
-  quantity truly has none.
-
-**Filters (INTERACTIVE maps only — reader exploration).** When the format is **interactive** (Gate 2
-fired) AND the data shape supports it, add a `filters` array so the reader can explore. Emit a filter
-ONLY when it serves the story's exploration intent — never "all possible filters." **At most 2.** The
-bar derives its values from the data; you name the FIELD, not the values. Two kinds are supported today:
-
-```json
-"filters": [
-  { "kind": "category", "field": "<a categorical column, 2–8 distinct values>", "label": "<optional>" },
-  { "kind": "range",    "field": "<a numeric column>", "mode": "atLeast", "label": "<optional>" }
-]
-```
-- `category` → toggle chips (e.g. hospital type, party). `range` → a value-threshold slider
-  (`mode`: `atLeast` default / `atMost` / `between`).
-- **Do NOT emit `kind:"time"` yet** — the interactive time-scrub re-derivation is not wired for any map
-  type, so a time filter would render a control that does nothing. A temporal story stays a **video /
-  scrolly** (Gate 3/4), not an interactive time slider.
-- **Do NOT emit `kind:"category"` for a dot-density map** — category filters are unsupported for
-  dot-density; use a range filter on a numeric field, or drop filters entirely.
-- Filters are **interactive-only**: the static PNG and the video render the default (all categories,
-  full range) with no filter bar. If the format is static (`map-dw` or a static `map-native`), omit `filters`.
-- `validateChoroplethConfig` rejects a bad filters block (unknown field, category cardinality outside
-  2–8, non-numeric range, >2 filters) — fix any error it reports.
+**Exact config fields (JSON schema, per-field notes, and the `filters` shape) are in
+`references/map-native-spec.md`** — read it before filling this config. Essential gotchas to
+keep in mind even without opening it:
+- `labelField` is **REQUIRED when the deliverable language is not English** — the scrolly/video
+  narration uses this name; without it a French map narrates the basemap's English names
+  (`"Ethiopia"` instead of `"Éthiopie"`).
+- `subject` + `palette` must be set TOGETHER — the produce guard FAILS a declared `subject` left
+  on the default blue ramp.
+- Filters are interactive-only, **at most 2**; never emit `kind:"time"` (unwired) or
+  `kind:"category"` on a dot-density map.
 
 ### map-native (POINT / LOCATOR or SYMBOL path)
 
@@ -579,33 +418,10 @@ to a non-spatial visual (e.g. a sorted bar of the places by value). The same rul
 required value the source does not state — a date, a dimension label, a number: source it, look it up
 deterministically, or decline; never synthesize it.
 
-**Config shape — locator (discrete markers):**
-```json
-{
-  "type": "locator",
-  "markers": [
-    { "lon": 2.35, "lat": 48.85, "label": "Paris", "category": "capital" }
-  ],
-  "basemap": "world",
-  "title": "<the spatial insight — sentence case, ≥12 chars>",
-  "source": { "name": "<honest source>", "url": "<URL>" }
-}
-```
-`category` is optional (used for a `kind:"category"` filter). Validate with `validateLocatorConfig`.
-
-**Config shape — symbol (sized / valued points):**
-```json
-{
-  "type": "symbol",
-  "points": [
-    { "lon": 2.35, "lat": 48.85, "value": 1200, "label": "Paris" }
-  ],
-  "basemap": "world",
-  "title": "<the spatial insight — sentence case, ≥12 chars>",
-  "source": { "name": "<honest source>", "url": "<URL>" }
-}
-```
-Validate with `validateSymbolConfig`.
+**Config shapes (locator + symbol, exact JSON) are in `references/map-native-spec.md`** — note the
+`lon`/`lat` values shown there are ILLUSTRATIVE PLACEHOLDERS, never values to copy (see the
+coordinate-provenance HARD RULE above). Locator validates with `validateLocatorConfig`, symbol
+with `validateSymbolConfig`.
 
 **HARD RULE — basemap for point maps:** only `"world"` and `"us-states"` are registered. For ANY
 sub-national or regional point map (one country, a region, a city cluster), use **`"basemap":"world"`**
@@ -638,29 +454,8 @@ a **map** track (below) and a **chart** track (see *Chart scrolly* below). Both 
 cannot be matched to ISO-A3 → fall back to `map-dw` or a sorted bar chart and state why.
 
 **Emitted config:** the scrolly engine reuses the choropleth config `map-native` uses — emit
-`producer:"scrolly"` + the same ChoroplethConfig fields:
-
-```json
-{
-  "producer": "scrolly",
-  "regionKey": "<data column holding ISO-A3 codes>",
-  "valueField": "<data column holding the normalised rate>",
-  "labelField": "<data column holding the region NAME in the deliverable language>",
-  "rows": [{ "<regionKey>": "<ISO-A3>", "<labelField>": "<region name>", "<valueField>": <number> }, "…"],
-  "basemap": "world",
-  "title": "<the spatial insight — sentence case, ≥12 chars, not a label or year range>",
-  "description": "<what / when / where context>",
-  "unit": "<long legend label, e.g. 'Share of renewables (%)'>",
-  "valueUnit": "<short callout unit, e.g. '%'>",
-  "subject": "<the topic hint, e.g. 'electricity access' — drives the subject-fit ramp>",
-  "scaleType": "sequential",
-  "palette": "<subject-fit registry ramp — see the Map colour rule; energy → 'oranges', water → 'blues'>",
-  "valueKind": "temporal | magnitude",
-  "revealMode": "context",
-  "lang": "<deliverable language, e.g. 'fr' — localizes numbers, 'Source', beat descriptors>",
-  "source": { "name": "<honest source>", "url": "<URL>" }
-}
-```
+`producer:"scrolly"` + the same ChoroplethConfig fields. **Exact JSON shape: `references/scrolly-spec.md`**
+(Map track section).
 
 **Same subject-fit + labelField + lang discipline as `map-native` above** — a scrolly is a narration, so it
 is the surface where an English basemap name or a blue energy ramp is most visible:
@@ -701,24 +496,8 @@ head lands on each captioned point); **bar** = a ranked highlight walk (leaders 
 For those, route to a **static** chart-native (or `dw-chart`) instead — never emit a chart scrolly for them.
 
 **Emitted config:** `producer:"scrolly"` + the chart-native spec fields (`nativeType` is what routes the
-engine to the chart track), plus an `insight` for the closing takeaway:
-
-```json
-{
-  "producer": "scrolly",
-  "nativeType": "line | bar | scatter",
-  "title": "<the insight — sentence case, not a label or year range>",
-  "description": "<what / when context — shown on the intro card>",
-  "insight": "<the closing takeaway line>",
-  "unit": "<LONG axis label, e.g. 'Share of global CO₂ (%)' or 'Births per woman'>",
-  "valueUnit": "<SHORT callout unit for the scroll captions, e.g. '%' or 't' — keep it terse; a long unit is NOT repeated in every caption>",
-  "directLabel": "<line only: the y series column>",
-  "orientation": "horizontal",
-  "source": { "name": "<honest source>", "url": "<URL>" },
-  "data": "col1,col2\\n<CSV rows — line: x,y · bar: category,value · scatter: label,x,y>",
-  "beats": [{ "x": "<line: x value>", "xEnd": "<line, optional: range end>", "category": "<bar: category value>", "text": "<the confirmed step caption>" }, "… (OPTIONAL — only when the journalist confirmed an explicit beat plan; omit for the auto narrative)"]
-}
-```
+engine to the chart track), plus an `insight` for the closing takeaway. **Exact JSON shape:
+`references/scrolly-spec.md`** (Chart track section).
 
 **Narrative control — explicit `beats` (optional, line/bar only).** DEFAULT (field absent): the engine
 auto-picks the steps — line: first + last + the 2 biggest step-to-step moves; bar: top-3 leaders + the

@@ -683,23 +683,13 @@ article-web is the one channel that can host it**:
      JOURNALIST's to give, never splash's to presume: applying one element's answer (or no answer at all)
      "to both" is auto-deciding, the same named violation.
      The three forms are:
-     - **a) Code source** (`forms.a`) — the delivery depends on the producer:
-       - **chart-native** (`kind: "react-source-bundle"`) → a `<id>-source/` **runnable React source bundle**,
-         assembled ON DEMAND by `skills/chart-native/scripts/export-source.mjs` from the `config.json` +
-         `native-source.json` the producer drops in the build subdir: a self-contained Vite project (`src/` = a
-         copy of chart-native/src, `config.json`, `main.tsx`/`index.html` that import the chart + config
-         statically, `package.json` with the interactive deps only — no remotion, `vite.config.ts`,
-         `tsconfig.json`, `README.md`). The journalist runs `bun install && bun run build` → `dist/index.html`
-         (the interactive). THIS is the headline form-1 capability.
-       - **map-native / scrolly** (`kind: "react-source-bundle"` too) → a `<id>-source/` **runnable Vite
-         project**, assembled ON DEMAND by `skills/splash/scripts/bundle-source.mjs`, which closure-traces
-         from the `source-manifest.json` + `config.json` the producer drops (their `src/` is entangled —
-         map-native imports scrolly; scrolly imports chart-native + map-native + maptiler/turf — so the copy
-         PRESERVES the repo-relative `skills/<engine>/{src,assets}` layout and deps are DERIVED from the
-         traced closure, remotion included on the map path). `bun install && bun run build` → `dist/index.html`
-         — but the map fetches basemap tiles from MapTiler at runtime, so this bundle is **online-only** and
-         needs the journalist's OWN `VITE_MAPTILER_KEY` (never baked in; documented in the bundle's
-         `.env.example` + `README.md`).
+     - **a) Code source** (`forms.a`) — the delivery depends on the producer: **chart-native** assembles
+       ON DEMAND a `<id>-source/` runnable React/Vite bundle (`export-source.mjs`) — `bun install && bun run
+       build` → `dist/index.html` reproduces the interactive (THIS is the headline form-1 capability).
+       **map-native / scrolly** assembles ON DEMAND a `<id>-source/` runnable Vite project too
+       (`bundle-source.mjs`, closure-traced) — same build command, but **online-only** (needs the
+       journalist's OWN `VITE_MAPTILER_KEY`, never baked in). Per-producer bundle mechanics (closure-tracing,
+       exact file layout, deps) are in **`references/export-code-source-forms.md`**.
      - **b) HTML autonome** — JUST the single self-contained file: the JS-inlined `interactive.html`
        (`scrolly.html` for a scrolly). One file, drops into any CMS/email/offline.
      - **c) Embed (hébergé)** — deploy the html to the newsroom's own Cloudflare Pages project and share the returned URL
@@ -741,8 +731,8 @@ article-web is the one channel that can host it**:
   `interactive.png`, or the build subdir's byproducts are NOT a delivery. If the `--form` build did not run, the
   visual is NOT delivered, no matter how the run otherwise ended.
 
-  The one-time Cloudflare setup (on the newsroom's OWN account) + the token details are in the
-  **Reference** appendix at the end of this file — consult it only when a journalist first chooses the embed form.
+  The one-time Cloudflare setup (on the newsroom's OWN account) + the token details are in
+  **`references/cloudflare-setup.md`** — consult it only when a journalist first chooses the embed form.
 
 **Session close — after the handover.** Once the deliverable is handed over and the journalist signals
 completion — a pure thanks/goodbye with no new request ("Merci, tout est en ordre", "That is everything,
@@ -884,30 +874,8 @@ needs it — it is NOT part of the live decision ladder. Guard mechanics: `docs/
 
 ### One-time Cloudflare setup (only when a journalist first picks the embed form)
 
-No app, no container, no volume — three values in `.env`, on the NEWSROOM'S OWN Cloudflare account:
-
-```
-CLOUDFLARE_API_TOKEN="…"     # account API token, permission: Cloudflare Pages: Edit
-CLOUDFLARE_ACCOUNT_ID="…"    # Workers & Pages page → Account details
-SPLASH_EMBED_PROJECT="…"     # e.g. heidi-news-splash — becomes the PUBLIC url
-```
-
-Create the token at <https://dash.cloudflare.com> → **Manage Account → API Tokens → Create Token**,
-with the **Cloudflare Pages: Edit** permission. The installer collects and verifies all three.
-
-`deploy-embed.mjs` creates the Pages project on first use and deploys over plain HTTPS — **no wrangler
-CLI and no Node.js runtime**. Each visual becomes a branch of that project, published at
-`https://<visual-slug>.<project>.pages.dev`.
-
-Two rules the platform enforces, encoded in `src/cloudflare-pages.ts` (measured — see
-`docs/superpowers/specs/2026-07-19-cloudflare-pages-embed-adapter-design.md`):
-
-- **`SPLASH_EMBED_PROJECT` must identify the newsroom.** It is the public URL, so generic names
-  (`splash`, `embeds`, `demo`…) are refused: every newsroom would otherwise share one hostname.
-- **The visual slug is normalised before it is sent.** Cloudflare rewrites branch labels lossily —
-  it DELETES accented characters (`Élections` → `lections`), turns `_` into `-`, truncates at 28
-  chars and appends a random suffix on collision. Splash strips diacritics and appends its own
-  deterministic digest so a French title yields a readable, stable URL.
-
-A newsroom's FIRST embed takes ~100 s (Cloudflare provisions the project); later ones take seconds.
-The deploy is only reported as delivered once the URL actually serves the artifact's own bytes.
+Full setup steps (the three `.env` values, token creation, `deploy-embed.mjs` mechanics, and the
+two platform rules it enforces — project-name-must-identify-the-newsroom, slug normalisation) are
+in **`references/cloudflare-setup.md`** — open it the first time a journalist picks the embed
+form. Essential rule to keep in mind even without opening it: `SPLASH_EMBED_PROJECT` must be a
+name that identifies the newsroom (generic names like `splash`/`demo` are refused by the adapter).
