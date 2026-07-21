@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type {
   AcceptedProposal,
   ProduceReport,
@@ -14,6 +15,29 @@ import {
   candidateProvenanceIssue,
   type CandidateProvenance,
 } from "./candidate-provenance";
+
+// Deterministic stringify for provenance hashing: JSON.stringify's own key order is
+// insertion order, so two specs that carry the same content built via a different code
+// path (e.g. object literal vs spread-merge) can stringify differently and hash
+// differently even though they mean the same spec. Recursively sorting object keys
+// (arrays keep their order — position is meaningful there) before stringifying makes the
+// hash a function of CONTENT, not of how the spec object happened to be assembled.
+// Exported for tests that need to compute the same expected hash produceAll does.
+export function canonicalJson(x: unknown): string {
+  return JSON.stringify(sortKeysDeep(x));
+}
+
+function sortKeysDeep(x: unknown): unknown {
+  if (Array.isArray(x)) return x.map(sortKeysDeep);
+  if (x !== null && typeof x === "object") {
+    const sorted: Record<string, unknown> = {};
+    for (const key of Object.keys(x as Record<string, unknown>).sort()) {
+      sorted[key] = sortKeysDeep((x as Record<string, unknown>)[key]);
+    }
+    return sorted;
+  }
+  return x;
+}
 
 // Produce ONE proposal → its outcome (bookkeeping fields are added by produceAll).
 // `actualProducer` is the producer the dispatch actually ran (GUARD 1) — the real
@@ -240,7 +264,24 @@ export async function produceAll(
           });
           continue;
         }
-        results.push({ ...base, ...r, actualProducer, ...warned, ...reset });
+        // The provenance hash — sha256 of the canonicalized accepted spec THIS result
+        // came from — is the first link of the export-stage chain-verification: at
+        // export time, re-hashing the accepted spec on disk and comparing it here
+        // proves the artifact was produced from the sanctioned spec, not a spec edited
+        // (or forged) after production. Computed from `p.spec` (the accepted proposal's
+        // ORIGINAL spec, pre-channel-normalization) so it matches whatever accepted.json
+        // record the export stage re-reads.
+        const acceptedConfigHash = createHash("sha256")
+          .update(canonicalJson(p.spec))
+          .digest("hex");
+        results.push({
+          ...base,
+          ...r,
+          actualProducer,
+          ...warned,
+          ...reset,
+          acceptedConfigHash,
+        });
         continue;
       }
       results.push({ ...base, ...r, ...warned, ...reset });
