@@ -24,7 +24,7 @@ import { chartStoryToChapters } from "./chart-chapters";
 import { imageStoryToChapters } from "../../image-native/src/image-story";
 import { ScrollyImage, type ImageScrollyConfig } from "./ScrollyImage";
 import { deriveChartStory } from "../../chart-native/src/chart-story";
-import { deriveFurniture, bgIsDark } from "../../chart-native/src/core/tokens";
+import { deriveFurniture, bgIsDark } from "../../../lib/core/theme";
 import { ScrollyChart, type ChartScrollyConfig } from "./ScrollyChart";
 import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
 import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
@@ -43,7 +43,7 @@ import {
 } from "./ScrollyCartogramMap";
 
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
-import { sourceLabel, isFrench } from "../../map-native/src/core/locale";
+import { sourceLabel, isFrench } from "../../../lib/core/locale";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
 // The chart types the scrolly can narrate (deriveChartStory dispatches on these). Any other

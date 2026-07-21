@@ -1,5 +1,5 @@
 import type { Beat } from "../../map-native/src/map-story";
-import { isFrench } from "../../map-native/src/core/locale";
+import { isFrench } from "../../../lib/core/locale";
 
 export type VisualKind = "map" | "chart" | "image";
 export type StepAction = "flyTo" | "drawTo" | "crossfade";

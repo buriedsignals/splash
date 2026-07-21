@@ -10,9 +10,9 @@ import {
   computeChoropleth,
   type ChoroplethData,
 } from "../../map-native/src/choropleth-geo";
-import { deriveFurniture, bgIsDark } from "../../chart-native/src/core/tokens";
+import { deriveFurniture, bgIsDark } from "../../../lib/core/theme";
 import { deriveMapStory, type Beat } from "../../map-native/src/map-story";
-import { formatLocaleNumber } from "../../map-native/src/core/locale";
+import { formatLocaleNumber } from "../../../lib/core/locale";
 import { NO_DATA_COLOR } from "../../map-native/src/theme/colors";
 import {
   choroplethFillColor,
