@@ -81,6 +81,26 @@ describe("validateChoroplethConfig", () => {
       }).ok,
     ).toBe(false);
   });
+  it("errors on a custom ramp with a malformed hex, without throwing (drop-proof)", () => {
+    // Regression: relativeLuminance (lib/core/contrast) THROWS on any non-#rrggbb
+    // string — a malformed custom palette must surface as a validation error, never
+    // crash the whole produceAll batch.
+    expect(() =>
+      validateChoroplethConfig({
+        ...ok,
+        palette: ["#f00", "#0f0", "#00f"],
+      }),
+    ).not.toThrow();
+    const r = validateChoroplethConfig({
+      ...ok,
+      palette: ["#f00", "#0f0", "#00f"],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.some((e) => /palette/i.test(e) && /#f00/.test(e))).toBe(
+        true,
+      );
+  });
   it("warns (furniture) when description or source is missing", () => {
     const r1 = validateChoroplethConfig({ ...ok, description: undefined });
     expect(r1.ok && r1.warnings.some((w) => /description/i.test(w))).toBe(true);

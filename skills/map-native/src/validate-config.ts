@@ -37,10 +37,20 @@ export function paletteErrors(s: Record<string, unknown>): string[] {
     } else if (Array.isArray(s.palette)) {
       if (!s.palette.every((c) => typeof c === "string"))
         errors.push("custom palette must be an array of hex strings");
-      else if (!isCvdSafeRamp(s.palette as string[]))
-        errors.push(
-          "custom palette is not CVD-safe — use a registry palette or vetted colours",
-        );
+      else {
+        try {
+          if (!isCvdSafeRamp(s.palette as string[]))
+            errors.push(
+              "custom palette is not CVD-safe — use a registry palette or vetted colours",
+            );
+        } catch (e) {
+          // isCvdSafeRamp → isMonotonicLuminanceRamp → relativeLuminance THROWS on any
+          // non-#rrggbb string — convert to a clean validation error, never crash the
+          // whole produceAll batch (drop-proof invariant, mirrors
+          // core/map-produce-conformance.ts's guarded palette check).
+          errors.push(`palette: ${(e as Error).message}`);
+        }
+      }
     } else {
       errors.push("palette must be a registry name or a custom ramp array");
     }
