@@ -87,7 +87,7 @@ if (!type || !configPath || !outDir || !VALID_FORMATS.has(format)) {
 // ("feed", "Stories") to canonical BEFORE threading (produce-all's gate), so the
 // alias table lives once in normalizeChannel and is never duplicated here.
 // Absent/EMPTY keeps the article-web default (legacy/manual callers).
-const rawChannel = (process.env.SPLASH_CHANNEL ?? process.env.ATELIER_CHANNEL ?? "").trim();
+const rawChannel = (process.env.SPLASH_CHANNEL ?? "").trim();
 const channel = rawChannel === "" ? "article-web" : rawChannel;
 if (!ALL_CHANNELS.includes(channel)) {
   console.error(

@@ -81,6 +81,6 @@ test("keeps stderr on dependency install and guards each step (no silent dead-st
 
 test("skips the configurator on a re-run that already has a verified .env", () => {
   expect(sh).toMatch(
-    /if \[ ! -f "\$DEST\/\.env" \] \|\| \[ "\$\{SPLASH_RECONFIGURE:-\$\{ATELIER_RECONFIGURE:-0\}\}" = "1" \]; then/,
+    /if \[ ! -f "\$DEST\/\.env" \] \|\| \[ "\$\{SPLASH_RECONFIGURE:-0\}" = "1" \]; then/,
   );
 });

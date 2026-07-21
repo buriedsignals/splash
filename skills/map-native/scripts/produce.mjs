@@ -119,7 +119,7 @@ function readPngSize(pngPath) {
 // accepted: the spine normalizes aliases/case-variants ("feed", "Stories") to
 // canonical BEFORE threading, so the alias table lives once in normalizeChannel and
 // is never duplicated here. Absent/EMPTY keeps the article-web default.
-const rawChannel = (process.env.SPLASH_CHANNEL ?? process.env.ATELIER_CHANNEL ?? "").trim();
+const rawChannel = (process.env.SPLASH_CHANNEL ?? "").trim();
 const channel = rawChannel === "" ? "article-web" : rawChannel;
 if (!ALL_CHANNELS.includes(channel)) {
   console.error(

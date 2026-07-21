@@ -43,7 +43,7 @@ const refUnpinned = INSTALLER_SRC.filter((f) => {
   const s = readFileSync(f, "utf8");
   return (
     /REF\s*=\s*["']main["']/.test(s) || // commands.js: const REF = "main"
-    /SPLASH_REF:-[^"']*main/.test(s) || // bootstrap.sh: "${SPLASH_REF:-${ATELIER_REF:-main}}" (aliased)
+    /SPLASH_REF:-[^"']*main/.test(s) || // bootstrap.sh: "${SPLASH_REF:-main}"
     /\{\s*"main"\s*\}/.test(s) // bootstrap.ps1: else { "main" }
   );
 });

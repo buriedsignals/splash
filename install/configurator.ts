@@ -14,8 +14,7 @@ import {
 } from "./configurator-core.ts";
 
 const DEST = process.cwd(); // the bootstrap runs this from ~/Splash
-const NO_OPEN =
-  (process.env.SPLASH_NO_OPEN ?? process.env.ATELIER_NO_OPEN) === "1"; // testability seam
+const NO_OPEN = process.env.SPLASH_NO_OPEN === "1"; // testability seam
 
 function openBrowser(url: string): void {
   const cmd =
