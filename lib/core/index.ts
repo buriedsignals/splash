@@ -8,3 +8,4 @@ export * from "./theme";
 export * from "./locale";
 export * from "./i18n-furniture";
 export * from "./text-fit";
+export * from "./video-verify";
