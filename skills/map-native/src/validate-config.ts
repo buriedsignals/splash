@@ -102,6 +102,21 @@ function validateBasemap(basemap: unknown, errors: string[]): void {
     );
 }
 
+const HEX_RRGGBB = /^#[0-9a-fA-F]{6}$/;
+
+// Shared brandHue format check for any config that carries a house-style hue. brandHue
+// flows unguarded into a contrast check (map-produce-conformance.ts's single-hue
+// house-fill concern → house-ramp.ts's contrastOk → lib/core/contrast's
+// relativeLuminance), which THROWS on any non-#rrggbb string. Catch a malformed value
+// here, at validate() time, as a clean error — never let it surface as a throw
+// downstream in produce (mirrors the paletteErrors drop-proof pattern above).
+function brandHueError(s: Record<string, unknown>): string | null {
+  if (s.brandHue === undefined) return null;
+  if (typeof s.brandHue !== "string" || !HEX_RRGGBB.test(s.brandHue))
+    return `brandHue: not a #rrggbb colour: ${s.brandHue}`;
+  return null;
+}
+
 // If a config declares a camera mode, it must be one the engine knows. (route-reveal
 // is a valid mode that is not yet implemented — produce throws at render for it — but
 // a typo'd mode is caught here, before render.)
@@ -259,6 +274,8 @@ export function validateSymbolConfig(
     errors.push("revealMode must be one of: context, sequential");
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
+  const bhErrSymbol = brandHueError(s);
+  if (bhErrSymbol) errors.push(bhErrSymbol);
 
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)
@@ -357,6 +374,8 @@ export function validateRouteConfig(
     if (!(MAP_STYLES as readonly string[]).includes(s.mapStyle as string))
       errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
   }
+  const bhErrRoute = brandHueError(s);
+  if (bhErrRoute) errors.push(bhErrRoute);
 
   const route = s.route;
   if (!Array.isArray(route) || route.length < 2) {
@@ -445,6 +464,8 @@ export function validateLocatorConfig(
     !["context", "sequential"].includes(s.revealMode as string)
   )
     errors.push("revealMode must be one of: context, sequential");
+  const bhErrLocator = brandHueError(s);
+  if (bhErrLocator) errors.push(bhErrLocator);
 
   if (
     s.markerStyle !== undefined &&
@@ -564,6 +585,8 @@ export function validateDotDensityConfig(
     !["context", "sequential"].includes(s.revealMode as string)
   )
     errors.push("revealMode must be one of: context, sequential");
+  const bhErrDotDensity = brandHueError(s);
+  if (bhErrDotDensity) errors.push(bhErrDotDensity);
 
   const hasCats =
     Array.isArray(s.categories) && (s.categories as unknown[]).length > 0;
