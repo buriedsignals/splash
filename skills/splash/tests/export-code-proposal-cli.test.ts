@@ -1,7 +1,9 @@
 import { describe, it, expect, afterEach } from "bun:test";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { canonicalJson } from "../src/canonical-json.ts";
 
 // Phase 1 (no --form) of export-code.mjs emits the a/b/c delivery-form proposal. The emitted
 // EXPORT_FORMS_PROPOSAL block MUST carry an explicit WAIT instruction — the mechanical nudge at
@@ -17,12 +19,48 @@ const WORK = join(import.meta.dir, ".export-code-proposal-cli-work");
 
 afterEach(() => rmSync(WORK, { recursive: true, force: true }));
 
+// S1 strict production seam: assertChainProvenance (skills/splash/src/render-provenance.ts)
+// resolves accepted.json/candidates.json beside report.json (dirname(reportPath)). Every
+// legitimate report here needs a matching sanctioned chain, or the new export gate refuses it —
+// this is the "behaviour-preserving happy path" requirement, not new test surface for its own sake.
+function writeChainFixture(
+  dir: string,
+  id: string,
+  producer: string,
+  spec: unknown,
+): string {
+  writeFileSync(
+    join(dir, "accepted.json"),
+    JSON.stringify([
+      {
+        id,
+        producer,
+        format: "static",
+        spec,
+        confirmedTakeaway: "Test takeaway for " + id,
+      },
+    ]),
+  );
+  writeFileSync(
+    join(dir, "candidates.json"),
+    JSON.stringify({ candidates: [{ type: "bar", producer }] }),
+  );
+  return createHash("sha256").update(canonicalJson(spec)).digest("hex");
+}
+
 function writeReport(dir: string, result: Record<string, unknown>): string {
   const reportPath = join(dir, "report.json");
+  const producer = (result.producer as string | undefined) ?? "chart-native";
+  const id = result.id as string;
+  const spec = { nativeType: "bar", title: "Test", id };
+  const acceptedConfigHash = writeChainFixture(dir, id, producer, spec);
   writeFileSync(
     reportPath,
     JSON.stringify(
-      { generatedAt: new Date().toISOString(), results: [result] },
+      {
+        generatedAt: new Date().toISOString(),
+        results: [{ acceptedConfigHash, ...result }],
+      },
       null,
       2,
     ),
@@ -167,7 +205,9 @@ describe("export-code phase 1 — embed availability reflects Cloudflare configu
     );
     const payload = parseFormsJson(stdout);
     expect(payload.forms.c.available).toBe(false);
-    expect(String(payload.forms.c.reason)).toMatch(/CLOUDFLARE_API_TOKEN|cloudflare/i);
+    expect(String(payload.forms.c.reason)).toMatch(
+      /CLOUDFLARE_API_TOKEN|cloudflare/i,
+    );
     // form b (standalone HTML) is still offered as the deliverable alternative
     expect(payload.forms.b).toBeDefined();
     // the human relay block warns and points to b

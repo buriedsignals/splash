@@ -1,5 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   mkdtempSync,
   writeFileSync,
@@ -12,6 +13,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { isEphemeralPath } from "./export-code.mjs";
+import { canonicalJson } from "../src/canonical-json.ts";
 
 const scriptPath = join(import.meta.dir, "export-code.mjs");
 
@@ -26,24 +28,65 @@ function parseFormsProposal(stdout: string) {
   return JSON.parse(line.slice(marker.length));
 }
 
-// A produced + render-approved report for one proposal at a pinned VisualFormat.
+// S1 strict production seam: assertChainProvenance (skills/splash/src/render-provenance.ts)
+// resolves accepted.json/candidates.json beside report.json — i.e. in the SAME directory
+// report.json lives in (dirname(reportPath), never the exportDir delivery folder). Every
+// legitimate `report()` fixture below writes its sanctioned accepted.json + candidates.json into
+// that same `dir` so the new export gate does not refuse an otherwise-legitimate chain — this is
+// the "behaviour-preserving happy path" requirement, not new test surface for its own sake.
+function writeChainFixture(
+  dir: string,
+  id: string,
+  producer: string,
+  spec: unknown,
+): string {
+  writeFileSync(
+    join(dir, "accepted.json"),
+    JSON.stringify([
+      {
+        id,
+        producer,
+        format: "static",
+        spec,
+        confirmedTakeaway: "Test takeaway for " + id,
+      },
+    ]),
+  );
+  writeFileSync(
+    join(dir, "candidates.json"),
+    JSON.stringify({ candidates: [{ type: "bar", producer }] }),
+  );
+  return createHash("sha256").update(canonicalJson(spec)).digest("hex");
+}
+
+// A produced + render-approved report for one proposal at a pinned VisualFormat — pairs with a
+// sanctioned candidates.json/accepted.json chain (written into `dir`, report.json's directory) so
+// assertChainProvenance passes for every legitimate fixture in this file. `dir` is always the
+// directory the caller writes report.json into (join(dir, "report.json")).
 const report = (
+  dir: string,
   id: string,
   format: string,
   extra: Record<string, unknown> = {},
-) => ({
-  results: [
-    {
-      id,
-      producer: "chart-native",
-      format,
-      status: "produced",
-      reviewed: true,
-      renderApproved: true,
-      ...extra,
-    },
-  ],
-});
+) => {
+  const producer = (extra.producer as string | undefined) ?? "chart-native";
+  const spec = { nativeType: "bar", title: "Test", id };
+  const acceptedConfigHash = writeChainFixture(dir, id, producer, spec);
+  return {
+    results: [
+      {
+        id,
+        producer,
+        format,
+        status: "produced",
+        reviewed: true,
+        renderApproved: true,
+        acceptedConfigHash,
+        ...extra,
+      },
+    ],
+  };
+};
 
 function run(
   outDir: string,
@@ -95,7 +138,10 @@ describe("export-code CLI — --id path-safety (audit gap #1, same class as the 
       writeFileSync(join(outDir, "static.png"), Buffer.from("x"));
       const victim = join(exportDir, "..", "evil-source");
       const resultsPath = join(outDir, "report.json");
-      writeFileSync(resultsPath, JSON.stringify(report(badId, "static")));
+      writeFileSync(
+        resultsPath,
+        JSON.stringify(report(outDir, badId, "static")),
+      );
 
       let threw = false;
       try {
@@ -120,7 +166,10 @@ describe("export-code CLI — --id path-safety (audit gap #1, same class as the 
     );
     writeFileSync(join(outDir, "static.png"), Buffer.from("x"));
     const resultsPath = join(outDir, "report.json");
-    writeFileSync(resultsPath, JSON.stringify(report("co2-2026", "static")));
+    writeFileSync(
+      resultsPath,
+      JSON.stringify(report(outDir, "co2-2026", "static")),
+    );
     expect(() => run(outDir, exportDir, resultsPath, "co2-2026")).not.toThrow();
     rmSync(outDir, { recursive: true, force: true });
     rmSync(exportDir, { recursive: true, force: true });
@@ -132,7 +181,7 @@ describe("export-code CLI — STATIC delivery (media direct, no folder machinery
     const outDir = mkdtempSync(join(tmpdir(), "splash-export-static-"));
     writeFileSync(join(outDir, "static.png"), Buffer.from("fake-png-bytes"));
     const resultsPath = join(outDir, "report.json");
-    writeFileSync(resultsPath, JSON.stringify(report("p1", "static")));
+    writeFileSync(resultsPath, JSON.stringify(report(outDir, "p1", "static")));
     const exportDir = mkdtempSync(
       join(import.meta.dir, "export-static-fixture-"),
     );
@@ -161,7 +210,9 @@ describe("export-code CLI — STATIC delivery (media direct, no folder machinery
     writeFileSync(
       resultsPath,
       JSON.stringify(
-        report("wage-gap", "static", { outputs: [join(outDir, pngName)] }),
+        report(outDir, "wage-gap", "static", {
+          outputs: [join(outDir, pngName)],
+        }),
       ),
     );
     const exportDir = mkdtempSync(join(import.meta.dir, "export-static-dw-"));
@@ -178,7 +229,7 @@ describe("export-code CLI — STATIC delivery (media direct, no folder machinery
     const outDir = mkdtempSync(join(tmpdir(), "splash-export-static-form-"));
     writeFileSync(join(outDir, "static.png"), Buffer.from("x"));
     const resultsPath = join(outDir, "report.json");
-    writeFileSync(resultsPath, JSON.stringify(report("p1", "static")));
+    writeFileSync(resultsPath, JSON.stringify(report(outDir, "p1", "static")));
     const exportDir = join(import.meta.dir, "export-static-form-fixture");
     try {
       const proc = Bun.spawnSync(
@@ -215,7 +266,7 @@ describe("export-code CLI — VIDEO delivery (mp4 direct)", () => {
       Buffer.from("fake-still"),
     );
     const resultsPath = join(outDir, "report.json");
-    writeFileSync(resultsPath, JSON.stringify(report("p1", "video")));
+    writeFileSync(resultsPath, JSON.stringify(report(outDir, "p1", "video")));
     const exportDir = mkdtempSync(
       join(import.meta.dir, "export-video-fixture-"),
     );
@@ -247,7 +298,10 @@ describe("export-code CLI — INTERACTIVE phase 1 (proposal, builds nothing)", (
       JSON.stringify({ type: "bar" }),
     );
     const resultsPath = join(outDir, "report.json");
-    writeFileSync(resultsPath, JSON.stringify(report("p1", "interactive")));
+    writeFileSync(
+      resultsPath,
+      JSON.stringify(report(outDir, "p1", "interactive")),
+    );
     return { outDir, resultsPath };
   }
 
@@ -340,7 +394,7 @@ describe("export-code CLI — markerless outDir (no code-source bundle possible)
     const outDir = mkdtempSync(join(tmpdir(), "splash-export-markerless-"));
     writeFileSync(join(outDir, "scrolly.html"), "<html>scrolly</html>");
     const resultsPath = join(outDir, "report.json");
-    writeFileSync(resultsPath, JSON.stringify(report("p1", "scrolly")));
+    writeFileSync(resultsPath, JSON.stringify(report(outDir, "p1", "scrolly")));
     return { outDir, resultsPath };
   }
 
@@ -424,7 +478,7 @@ describe("export-code CLI — hosted Datawrapper interactive (embed-only)", () =
     writeFileSync(
       resultsPath,
       JSON.stringify(
-        report("wage-price-gap", "interactive", {
+        report(outDir, "wage-price-gap", "interactive", {
           producer: "dw-chart",
           publicUrl: hostedUrl,
           outputs: [join(outDir, pngName)],
@@ -480,7 +534,7 @@ describe("export-code CLI — the mechanical shippability gate", () => {
     const resultsPath = join(outDir, "report.json");
     writeFileSync(
       resultsPath,
-      JSON.stringify(report("p1", "static", { renderApproved: false })),
+      JSON.stringify(report(outDir, "p1", "static", { renderApproved: false })),
     );
     const exportDir = join(import.meta.dir, "export-unshipped-fixture");
     try {
@@ -511,7 +565,10 @@ describe("export-code CLI — the mechanical shippability gate", () => {
     const outDir = mkdtempSync(join(tmpdir(), "splash-export-badform-"));
     writeFileSync(join(outDir, "interactive.html"), "<html></html>");
     const resultsPath = join(outDir, "report.json");
-    writeFileSync(resultsPath, JSON.stringify(report("p1", "interactive")));
+    writeFileSync(
+      resultsPath,
+      JSON.stringify(report(outDir, "p1", "interactive")),
+    );
     const exportDir = join(import.meta.dir, "export-badform-fixture");
     try {
       const proc = Bun.spawnSync(
@@ -564,7 +621,10 @@ describe("export-code — map-native code-source builds a runnable bundle", () =
     );
     execFileSync("cp", [sample, join(outDir, "config.json")]);
     const reportPath = join(work, "report.json");
-    writeFileSync(reportPath, JSON.stringify(report("m1", "interactive")));
+    writeFileSync(
+      reportPath,
+      JSON.stringify(report(work, "m1", "interactive")),
+    );
     return { work, outDir, resultsPath: reportPath };
   }
 

@@ -1,6 +1,17 @@
-import { statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join, resolve, sep } from "node:path";
-import type { ProduceReport, ProposalResult } from "./producer-spec";
+import type {
+  AcceptedProposal,
+  ProduceReport,
+  ProposalResult,
+} from "./producer-spec";
+import { canonicalJson } from "./canonical-json";
+import {
+  candidateProvenanceIssue,
+  extractCandidateProducers,
+  type CandidateProvenance,
+} from "./candidate-provenance";
 
 // PROVENANCE for Gate 3b (gate-render): the file being approved must be traceable to
 // the CURRENT produce generation — either a file the pipeline itself emitted (listed
@@ -119,4 +130,116 @@ export function assertArtifactProvenance(opts: {
         : `. A hand-authored or stale file cannot be approved — and never write extra ` +
           `files into the producer's build subdir.`),
   );
+}
+
+// EXPORT-STAGE chain verification (S1 strict production seam): the load-bearing gate that makes
+// a hand-authored / pipeline-bypassing artifact UNSHIPPABLE by verifying the delivered result
+// traces the sanctioned chain candidates.json → accepted.json → produce-all → outputs. Three
+// checks, each delegated to its existing single source of truth rather than reimplemented here:
+//   1. Candidate-menu provenance (candidate-provenance.ts) — the accepted proposal's producer
+//      must appear in the candidates.json menu beside accepted.json, UNLESS the proposal is the
+//      direct-branch exemption (journalist NAMED the visual) — reuses candidateProvenanceIssue,
+//      mirroring exactly how produce-all.mjs builds the same CandidateProvenance context.
+//   2. Accepted-spec hash (canonical-json.ts) — accepted.json's spec for this id, canonicalized
+//      and sha256'd, must equal the produced result's acceptedConfigHash (Task 1's provenance
+//      stamp) — a spec hand-edited after acceptance mismatches and is refused.
+//   3. Artifact provenance (assertArtifactProvenance above) — every produced output must be
+//      traceable to THIS report's generation and unmodified since. Delegated, not duplicated: a
+//      hosted embed (publicUrl set, no local outputs) has nothing to check here.
+// Throws a clean refusal message (never a raw/unexpected error) on any failure — callers
+// (export-code.mjs) catch it into a failed, no-delivery exit, exactly like assertShippable.
+//
+// `exportDir` is kept in the signature to match the call site (export-code.mjs's positional
+// exportDir arg — the per-id DELIVERY folder, e.g. exports/<slug>/<id>-export) but is
+// deliberately NOT where this function looks for accepted.json/candidates.json: those live in
+// the RUN directory (exports/<slug>) beside report.json, not inside the delivery folder — see
+// SKILL.md §5c (`produce-all.mjs exports/<slug>/accepted.json exports/<slug> >
+// exports/<slug>/report.json`) and §6 (`export-code.mjs exports/<slug>/<id>
+// exports/<slug>/<id>-export --results exports/<slug>/report.json`), and produce-all.mjs's own
+// `candidatesPath = join(dirname(acceptedPath), "candidates.json")` convention. reportPath is
+// always in that run directory (produce-all's report.json redirect), so it — not exportDir — is
+// the reliable anchor; deriving the lookup from exportDir would refuse every real delivery
+// (exportDir never contains accepted.json), violating the behaviour-preserving happy path.
+export function assertChainProvenance(
+  report: ProduceReport,
+  id: string,
+  exportDir: string,
+  reportPath: string,
+): void {
+  void exportDir; // intentionally unused for path lookup — see comment above
+
+  const result = report.results.find((r) => r.id === id);
+  if (!result)
+    throw new Error(
+      `refusing to export ${id}: unknown proposal (not in report)`,
+    );
+
+  const runDir = dirname(resolve(reportPath));
+  const acceptedPath = join(runDir, "accepted.json");
+  let acceptedList: unknown;
+  try {
+    acceptedList = JSON.parse(readFileSync(acceptedPath, "utf8"));
+  } catch (e) {
+    throw new Error(
+      `refusing to export ${id}: accepted.json not found/unreadable at ${acceptedPath} ` +
+        `(${e instanceof Error ? e.message : String(e)}) — the sanctioned accepted-proposal ` +
+        `record is missing, so the shipped artifact cannot be traced to an accepted spec`,
+    );
+  }
+  const rawList = Array.isArray(acceptedList) ? acceptedList : [];
+  const apRaw = rawList.find(
+    (a) => a && typeof a === "object" && (a as { id?: unknown }).id === id,
+  );
+  if (!apRaw)
+    throw new Error(
+      `refusing to export ${id}: no entry for "${id}" in accepted.json at ${acceptedPath}`,
+    );
+  const ap = apRaw as AcceptedProposal;
+
+  // 1. Candidate-menu provenance — mirrors the CandidateProvenance context produce-all.mjs
+  // builds from the same candidates.json (skills/splash/scripts/produce-all.mjs): present:false
+  // when the file is absent or unparseable, which candidateProvenanceIssue turns into a refusal
+  // for any non-direct proposal.
+  const candidatesPath = join(runDir, "candidates.json");
+  let provenance: CandidateProvenance = {
+    present: false,
+    producers: new Set(),
+  };
+  if (existsSync(candidatesPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(candidatesPath, "utf8"));
+      provenance = {
+        present: true,
+        producers: extractCandidateProducers(parsed),
+      };
+    } catch {
+      provenance = { present: false, producers: new Set() };
+    }
+  }
+  const menuIssue = candidateProvenanceIssue(ap, provenance);
+  if (menuIssue) throw new Error(`refusing to export ${id}: ${menuIssue}`);
+
+  // 2. Accepted-spec hash — the shipped artifact must trace to the UNEDITED accepted spec.
+  if (!result.acceptedConfigHash)
+    throw new Error(
+      `refusing to export ${id}: produced result carries no acceptedConfigHash — cannot verify ` +
+        `it traces to the accepted spec (stale/legacy report? re-run produce-all)`,
+    );
+  const specHash = createHash("sha256")
+    .update(canonicalJson(ap.spec))
+    .digest("hex");
+  if (specHash !== result.acceptedConfigHash)
+    throw new Error(
+      `refusing to export ${id}: accepted.json's spec hash (${specHash}) does not match the ` +
+        `produced result's acceptedConfigHash (${result.acceptedConfigHash}) — the accepted ` +
+        `spec was edited after acceptance/production, so the shipped artifact no longer traces ` +
+        `to a sanctioned spec`,
+    );
+
+  // 3. Artifact provenance — delegate to assertArtifactProvenance (planted/stale detection),
+  // never reimplemented. A hosted embed (publicUrl set, no local outputs) has nothing left to
+  // check here; the menu + spec-hash checks above already cover it.
+  for (const artifactPath of result.outputs ?? []) {
+    assertArtifactProvenance({ report, result, reportPath, artifactPath });
+  }
 }

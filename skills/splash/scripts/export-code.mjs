@@ -41,6 +41,7 @@ import {
   assertDelivered,
   isHostedUrl,
 } from "../src/export-guard.ts";
+import { assertChainProvenance } from "../src/render-provenance.ts";
 import { embedDeliveryStatus } from "../src/preflight.ts";
 
 const SELF = fileURLToPath(import.meta.url);
@@ -144,11 +145,16 @@ function main() {
   }
 
   // The one MECHANICAL gate, before any copy/write: refuse unless this exact proposal was
-  // actually produced AND the human approved the render.
+  // actually produced AND the human approved the render. assertChainProvenance (S1 strict
+  // production seam) then verifies the delivered result traces the sanctioned chain
+  // candidates.json → accepted.json → produce-all → outputs — a hand-authored spec never on
+  // the suggester's menu, a spec edited after acceptance, or a planted/stale artifact is
+  // refused here too, before any copy/write.
   let result;
   try {
     const report = JSON.parse(readFileSync(resultsPath, "utf8"));
     assertShippable(report, id);
+    assertChainProvenance(report, id, exportDir, resultsPath);
     result = report.results.find((x) => x.id === id);
   } catch (e) {
     console.error(e.message);
