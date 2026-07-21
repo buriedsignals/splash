@@ -2,10 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
-import {
-  houseFill,
-  DEFAULT_MAP_FILL,
-} from "../../map-native/src/theme/house-ramp";
+import { houseFill, DEFAULT_MAP_FILL } from "../../../lib/core/house-ramp";
 import { locatorGeometry } from "../../map-native/src/locator-geo";
 import {
   univariateAccent,
@@ -122,7 +119,9 @@ describe("scrolly map renderers honour config.mapStyle (dark-mode bug fix)", () 
 
 // House colour: the symbol scrolly's circle fill was a hardcoded SYMBOL_FILL = "#2171b5"
 // constant, deaf to the newsroom's brandHue. Now it resolves via houseFill(config.brandHue),
-// which single-sources the default from house-ramp's DEFAULT_MAP_FILL so the hex can't drift.
+// which single-sources the default from lib/core/house-ramp's DEFAULT_MAP_FILL so the hex
+// can't drift. (Tier 2: houseFill moved map-native -> lib/core; scrolly now imports the
+// shared primitive directly instead of reaching into map-native's src/.)
 describe("ScrollySymbolMap honours brandHue for the circle fill (house colour)", () => {
   it("derives fillColor via houseFill(config.brandHue) — not a re-declared local hex", () => {
     const source = readFileSync(RENDERERS.ScrollySymbolMap, "utf-8");
@@ -131,7 +130,7 @@ describe("ScrollySymbolMap honours brandHue for the circle fill (house colour)",
     ).toBe(true);
     expect(/"circle-color":\s*fillColor/.test(source)).toBe(true);
     expect(
-      /import\s*\{\s*houseFill\s*\}\s*from\s*["']\.\.\/\.\.\/map-native\/src\/theme\/house-ramp["']/.test(
+      /import\s*\{\s*houseFill\s*\}\s*from\s*["']\.\.\/\.\.\/\.\.\/lib\/core\/house-ramp["']/.test(
         source,
       ),
     ).toBe(true);
@@ -140,7 +139,7 @@ describe("ScrollySymbolMap honours brandHue for the circle fill (house colour)",
   it("is non-vacuous: the #2171b5 literal is no longer re-declared in the file (single-sourced)", () => {
     const source = readFileSync(RENDERERS.ScrollySymbolMap, "utf-8");
     // The old defect: a local `const SYMBOL_FILL = "#2171b5"` (or the raw hex) re-declared here,
-    // free to drift from house-ramp's DEFAULT_MAP_FILL.
+    // free to drift from lib/core/house-ramp's DEFAULT_MAP_FILL.
     expect(/#2171b5/i.test(source)).toBe(false);
     expect(/const SYMBOL_FILL\b/.test(source)).toBe(false);
   });

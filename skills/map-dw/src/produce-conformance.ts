@@ -2,10 +2,10 @@
 // audit (it ships hosted Datawrapper maps straight to newsrooms). Before this, produce.ts
 // guarded i18n source metadata, rendered PNG size, and join-match rate — but NOTHING checked
 // furniture quality (title/source/alt-text) or mark-colour contrast/CVD-safety. Closes both
-// gaps by REUSING the shared lib/core primitives extracted in Tier 1 (conformanceL0,
-// isMonotonicLuminanceRamp via the one sanctioned map-dw -> map-native/theme/house-ramp
-// import) instead of re-mirroring chart-native's/map-native's own copies — the payoff the
-// refactor exists to demonstrate.
+// gaps by REUSING the shared lib/core primitives extracted in Tier 1/2 (conformanceL0,
+// isMonotonicLuminanceRamp — both from lib/core/house-ramp, ex map-native-local) instead
+// of re-mirroring chart-native's/map-native's own copies — the payoff the refactor exists
+// to demonstrate.
 //
 // CONFIG-LEVEL, not render-level: map-dw delegates rendering to the Datawrapper cloud (no
 // local canvas to snap a rendered-contrast check against, unlike chart-native/map-native's
@@ -37,21 +37,20 @@
 // RAMP CVD-SAFETY CRITERION: map-dw's colorScale is always a SEQUENTIAL light->dark gradient
 // (ChoroplethMapSpec has no diverging/scaleType concept, unlike map-native's ramp types) — so
 // the real CVD-safety criterion is STRICT MONOTONIC LUMINANCE (colour-blind readers separate
-// sequential bins by lightness alone), exactly the criterion house-ramp.ts's own
+// sequential bins by lightness alone), exactly the criterion lib/core/house-ramp.ts's own
 // isMonotonicLuminanceRamp documents as "the real CVD-safety criterion for a SEQUENTIAL
 // ramp" — the same test a derived house ramp must pass to skip map-native's registry
-// whitelist. Reused via the ONE import-guard-sanctioned map-dw -> map-native/src/theme/
-// house-ramp path (skills/splash/src/import-guard.test.ts) — the same sanctioned import
-// spec-to-map-metadata.ts already uses for houseRamp() itself. map-native's registry-
-// membership check (theme/scale.ts isCvdSafeRamp) is NOT reachable from map-dw — that file
-// is not on the sanctioned list — so the monotonic-luminance proxy is the correct,
-// gate-respecting check here, not a shortcut.
+// whitelist. Imported directly from lib/core (same as spec-to-map-metadata.ts's own
+// houseRamp() import) — no cross-engine reach-in needed since the Tier-2 move. map-
+// native's registry-membership check (theme/scale.ts isCvdSafeRamp) is still map-native-
+// local and not imported here — the monotonic-luminance proxy is the correct,
+// gate-respecting check for map-dw, not a shortcut.
 
 import { conformanceL0 } from "../../../lib/core/conformance-l0";
 import {
   houseRamp,
   isMonotonicLuminanceRamp,
-} from "../../map-native/src/theme/house-ramp";
+} from "../../../lib/core/house-ramp";
 import type { MapSpec } from "./map-spec";
 
 export interface MapDwConformanceResult {
