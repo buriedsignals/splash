@@ -263,12 +263,20 @@ switch (format) {
 
     // Theme guard — ONLY when the config asked for the dark basemap: assert the
     // static build actually rendered dark (furniture + basemap), not just that the
-    // config said so. map-native has no snap-contrast.mjs yet (a separate,
-    // not-yet-built satellite — see CLAUDE.md "parité harnais-contraste côté map").
+    // config said so. A coarse light/dark luminance CLASSIFIER, not a WCAG check.
     if (parsedConfig.mapStyle === "dataviz-dark") {
       console.log(`[produce map] snapping theme (dark)…`);
       snap("scripts/snap-theme.mjs", { OUTDIR: outDir, SERVE_DIR: staticDir });
     }
+
+    // Contrast guard (ALWAYS, not just dark) — render-time WCAG 1.4.3 check on every
+    // furniture text label (title/description/source/legend), sampled against its REAL
+    // composited background (GL canvas + overlay, alpha-blended as shipped — see
+    // snap-contrast.mjs's header for why a plain DOM background read cannot see this).
+    // Upgrades the config-time conformance gate above (a drift-defense on pre-vetted
+    // tokens against an assumed-opaque backdrop) to a live render-time fail.
+    console.log(`[produce map] snapping contrast (furniture text WCAG)…`);
+    snap("scripts/snap-contrast.mjs", { OUTDIR: outDir, SERVE_DIR: staticDir, MODE: "static" });
 
     // Render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
     // dimensions must equal the channel's exact media size. Fail-hard before export.
@@ -331,6 +339,11 @@ switch (format) {
 
     console.log(`[produce map] snapping a11y…`);
     snap("scripts/snap-a11y.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir });
+
+    // Contrast guard — same render-time WCAG 1.4.3 check as the static path, against the
+    // interactive dist (which can additionally show the filter bar). See snap-contrast.mjs.
+    console.log(`[produce map] snapping contrast (furniture text WCAG)…`);
+    snap("scripts/snap-contrast.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir, MODE: "interactive" });
 
     result.interactive = interactiveHtmlDest;
     result.reviewStill = join(outDir, "interactive.png"); // ephemeral — not delivered
