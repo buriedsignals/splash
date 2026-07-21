@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "check": "bun scripts/check.mjs",
+    "check:render": "bun scripts/check-render.mjs",
     "release:check": "bun scripts/preflight-release.mjs"
   },
   "devDependencies": {
