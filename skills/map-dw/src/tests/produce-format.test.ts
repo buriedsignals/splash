@@ -19,13 +19,15 @@ import type { MapSpec } from "../map-spec";
 // off to the API step.
 
 // A valid locator spec: the cheapest MapSpec that passes validateMapSpec (no data
-// table, no dataless-join guard), so the only thing standing between it and the
+// table, no dataless-join guard) AND the produce-time conformance floor (title/source/
+// altInsight — see produce-conformance.ts), so the only thing standing between it and the
 // Datawrapper API is the format/channel resolution under test.
 function locatorSpec(extra: Record<string, unknown> = {}): MapSpec {
   return {
     mapType: "locator",
     title: "Three sites along the Arve valley",
     altInsight: "Annemasse, Geneva and Chamonix marked along the Arve",
+    source: { name: "OpenStreetMap" },
     markers: [
       { lng: 6.2347, lat: 46.1939, label: "Annemasse" },
       { lng: 6.1432, lat: 46.2044, label: "Geneva" },

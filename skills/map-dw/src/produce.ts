@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { validateMapSpec, type MapSpec } from "./map-spec";
 import { specToMapMetadata } from "./spec-to-map-metadata";
 import { assertLocalizedSourceMetadata } from "./furniture-i18n";
+import { assertMapDwConformance } from "./produce-conformance";
 import {
   createChart,
   setData,
@@ -124,6 +125,14 @@ export async function produceMap(
   // with zero API side effects.
   const channel = normalizeChannel(spec.channel);
   const requestBox = mapExportSize(spec.channel);
+
+  // PRODUCE-TIME CONFORMANCE FLOOR (Tier-2 #10) — fail loud BEFORE any network call
+  // (including the dataless-join guard's live basemap-geometry fetch just below) on
+  // missing/malformed furniture (title quality, cited source, alt text) or a mark colour
+  // failing WCAG/CVD by the same keep-vs-reject policy map-native/dw-chart apply. See
+  // produce-conformance.ts for the full policy. A kept-as-chosen newsroom brand concern is
+  // logged, never thrown.
+  assertMapDwConformance(spec);
 
   // DATALESS-JOIN GUARD (the general net behind validateMapSpec's key check). Before touching
   // the API, confirm the choropleth's data rows actually join to the live basemap geometry. A
