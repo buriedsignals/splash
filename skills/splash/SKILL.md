@@ -1,6 +1,6 @@
 ---
 name: splash
-description: Use to run the whole splash pipeline end-to-end from an article and/or data to a finished, exported visual. Sequences ANALYSE → CADRAGE → PROPOSITION → PRODUCTION → EXPORT with human gates, invoking suggest-article, suggest-chart, and the producers. The single entry point for "make me a visual from this". Keywords splash, flow, pipeline, orchestrate, end-to-end, article to chart, produce a visual, embed, export.
+description: Use when turning an article and/or its data into a finished, exported data-visualization (chart, map, video, or interactive/scrolly) for a newsroom — the end-to-end entry point for "make me a visual from this". Keywords splash, flow, pipeline, orchestrate, end-to-end, article to chart, produce a visual, embed, export.
 ---
 
 # splash — the end-to-end flow

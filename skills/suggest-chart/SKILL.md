@@ -1,6 +1,6 @@
 ---
 name: suggest-chart
-description: Use to decide which visual ELEMENT (chart or map) + FORMAT + producer serves an article's intent, and emit the right spec. Routes to dw-chart (static chart, default), chart-native (motion/interactivity), map-dw (static choropleth map), or map-native (interactive/video choropleth map). Reads the data profile + the editorial intent, grounded on the KB references. Keywords suggest, choose chart, map, choropleth, geographic, map-dw, map-native, format selection, intent, dataviz, orchestration, producer, datawrapper, chart-native, video, interactive.
+description: Use when a data profile and an editorial intent need to become a visual-element decision — which chart or map, which format, and which producer — before a spec is emitted for production. Invoked as part of the splash flow, not called directly by a journalist. Keywords suggest, choose chart, map, choropleth, geographic, map-dw, map-native, format selection, intent, dataviz, orchestration, producer, datawrapper, chart-native, video, interactive.
 ---
 
 # suggest-chart — decide the visual element, format, and producer
