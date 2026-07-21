@@ -3,8 +3,8 @@
 # written straight to %USERPROFILE%\Splash\.env, never passed on the command line.
 $ErrorActionPreference = "Stop"
 
-$Repo = if ($env:SPLASH_REPO) { $env:SPLASH_REPO } elseif ($env:ATELIER_REPO) { $env:ATELIER_REPO } else { "https://github.com/buriedsignals/splash" }   # confirm before public release
-$Ref  = if ($env:SPLASH_REF) { $env:SPLASH_REF } elseif ($env:ATELIER_REF) { $env:ATELIER_REF } else { "main" }
+$Repo = if ($env:SPLASH_REPO) { $env:SPLASH_REPO } else { "https://github.com/buriedsignals/splash" }   # confirm before public release
+$Ref  = if ($env:SPLASH_REF) { $env:SPLASH_REF } else { "main" }
 $Dest = Join-Path $HOME "Splash"
 $NativeSkills = @("skills\chart-native", "skills\map-native")
 

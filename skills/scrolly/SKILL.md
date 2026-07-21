@@ -119,8 +119,15 @@ Scrolly.tsx  (scaffold)
 - Hover only on regions WITH data (no no-data hover). The map keeps its event system but disables the
   navigation handlers (`dragPan`/`scrollZoom`/etc. `false`) — the SCROLL drives the camera, so manual
   pan/zoom would fight the narrative; there is no `NavigationControl`.
-- `prefers-reduced-motion` → `jumpTo`; the scroll never steals focus to the map (disorients keyboard
-  users mid-scroll); the prose steps ARE the screen-reader narrative; source/credit always visible.
+- `prefers-reduced-motion` (WCAG 2.3.3, checked via `lib/core/motion.ts`) → the map camera jumps
+  instead of flying (`scrolly-camera.ts`'s `flyToBeat`) and the image track's crossfade becomes a hard
+  cut (`ScrollyImage.tsx`, `transition:none`) — every step's end-state still renders, just without the
+  tween. Enforced render-time by `scripts/snap-reduced-motion.mjs` (wired into `produce.mjs`): loads the
+  built `scrolly.html` under Playwright's emulated `reducedMotion:"reduce"` and asserts the sticky
+  graphic (map / chart / image, whichever the config produced) shows its informational end-state and
+  never keeps animating after a step settles. The scroll never steals focus to the map (disorients
+  keyboard users mid-scroll); the prose steps ARE the screen-reader narrative; source/credit always
+  visible. Scrolly has no video format — nothing to exempt there.
 
 ## Reused from map-native (relative import, never copied)
 
@@ -152,6 +159,7 @@ bun run smoke                                               # real-browser: scro
 - `src/conformance.ts` — `checkScrollyConformance` (≥3 steps, prose on every step, map refs in beat range).
 - `scripts/produce.mjs` — build the single-file `scrolly.html`.
 - `scripts/audit-scrolly.mjs` — render-free gate (`bun run audit:scrolly`).
+- `scripts/snap-reduced-motion.mjs` — render-time reduced-motion guard (fail-hard in `produce.mjs`, WCAG 2.3.3): loads the built `scrolly.html` under Playwright's emulated `reducedMotion:"reduce"`, track-agnostic (map/chart/image). Asserts the takeaway step's end-state isn't blank, and — using a genuine mid-story reveal transition, since establish/takeaway often share a camera (see `smoke.mjs` above) — that nothing keeps animating once a step settles.
 - `scripts/smoke.mjs` — real-browser scroll smoke (scrollable + camera moves; compares a reveal step,
   since the title and takeaway beats share a full-extent camera).
 - `assets/sample-data/scrolly.json` — runnable sample (EU renewables, same shape as map-native).

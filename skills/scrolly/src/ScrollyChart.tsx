@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { deriveFurniture } from "../../chart-native/src/core/tokens";
+import { deriveFurniture } from "../../../lib/core/theme";
 import { LineChart } from "../../chart-native/src/LineChart";
 import { BarChart } from "../../chart-native/src/BarChart";
 import { ScatterChart } from "../../chart-native/src/ScatterChart";

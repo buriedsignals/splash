@@ -84,8 +84,8 @@ describe("deriveSymbolStory — lang", () => {
       lang: "fr",
     });
     const chatelet = beats.find((b) => b.callout?.name === "Châtelet")!;
-    expect(chatelet.callout!.value).toBe("34 000 voyageurs/j"); // narrow no-break space
-    expect(chatelet.copy).toBe("Châtelet — 34 000 voyageurs/j");
+    expect(chatelet.callout!.value).toBe("34 000 voyageurs/j"); // narrow no-break space
+    expect(chatelet.copy).toBe("Châtelet — 34 000 voyageurs/j");
   });
 
   it("keeps the default English grouping when lang is unset", () => {

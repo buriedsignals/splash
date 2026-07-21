@@ -18,6 +18,7 @@ import {
   valueAt,
 } from "./csv";
 import { applyValueLabels, hasValueLabelControl } from "./value-label-safety";
+import { SOURCE_LABELS } from "../../../lib/core/i18n-furniture";
 
 // Line/area chart types whose default "direct labelling" puts the series name at
 // the line end — the clip/overlap source on a single series (the title + subtitle
@@ -436,14 +437,11 @@ export interface DwPatch {
 // reads correctly) keeps the native source-name/source-url path, so its clickable
 // hyperlink in the interactive embed survives — only the genuinely-broken non-English
 // case pays the "notes, no hyperlink" trade-off notes can't render.
-// Exported: src/furniture-i18n.ts (the produce-time i18n gate) asserts the outgoing
-// metadata against THESE exact label bytes — one table, never a re-typed literal.
-export const SOURCE_LABELS: Record<string, string> = {
-  fr: "Source :", // spaced colon (French typography)
-  de: "Quelle:",
-  it: "Fonte:",
-  en: "Source:",
-};
+// Re-exported (imported above): src/furniture-i18n.ts (the produce-time i18n gate)
+// asserts the outgoing metadata against THESE exact label bytes — one table
+// (lib/core/i18n-furniture.ts, the single source shared with map-dw), never a
+// re-typed literal.
+export { SOURCE_LABELS };
 
 function sourceLabel(lang?: string): string {
   if (!lang) return SOURCE_LABELS.en;

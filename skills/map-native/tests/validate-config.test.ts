@@ -81,6 +81,26 @@ describe("validateChoroplethConfig", () => {
       }).ok,
     ).toBe(false);
   });
+  it("errors on a custom ramp with a malformed hex, without throwing (drop-proof)", () => {
+    // Regression: relativeLuminance (lib/core/contrast) THROWS on any non-#rrggbb
+    // string — a malformed custom palette must surface as a validation error, never
+    // crash the whole produceAll batch.
+    expect(() =>
+      validateChoroplethConfig({
+        ...ok,
+        palette: ["#f00", "#0f0", "#00f"],
+      }),
+    ).not.toThrow();
+    const r = validateChoroplethConfig({
+      ...ok,
+      palette: ["#f00", "#0f0", "#00f"],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.some((e) => /palette/i.test(e) && /#f00/.test(e))).toBe(
+        true,
+      );
+  });
   it("warns (furniture) when description or source is missing", () => {
     const r1 = validateChoroplethConfig({ ...ok, description: undefined });
     expect(r1.ok && r1.warnings.some((w) => /description/i.test(w))).toBe(true);
@@ -497,4 +517,73 @@ describe("validateCartogramConfig — filters wiring", () => {
     if (!bad.ok)
       expect(bad.errors.some((e) => /revealMode/.test(e))).toBe(true);
   });
+});
+
+describe("brandHue format validation (drop-proof boundary)", () => {
+  // Regression: relativeLuminance (lib/core/contrast) THROWS on any non-#rrggbb
+  // string. brandHue flows unguarded into a house-fill contrast check inside
+  // map-produce-conformance.ts, outside its try/catch — a malformed brandHue must
+  // be caught here, at validate() time, as a clean error, never surface as a throw
+  // downstream in produce.
+  const locatorBase = {
+    type: "locator",
+    markers: [
+      { lon: 6.15, lat: 46.2, label: "Geneva" },
+      { lon: 7.45, lat: 46.95, label: "Bern" },
+    ],
+    basemap: "world",
+    title: "Two Swiss cities anchor the story",
+    description: "Key locations, 2024",
+    source: { name: "Source 2025", url: "https://example.org/x" },
+  };
+  const dotDensityBase = {
+    type: "dot-density",
+    regionKey: "iso",
+    boundaries: "world-countries",
+    rows: [
+      { iso: "FRA", population: 68000000 },
+      { iso: "DEU", population: 84000000 },
+    ],
+    valueField: "population",
+    basemap: "world",
+    title: "Western Europe's population clusters inland",
+    description: "Population distribution, 2024",
+    source: { name: "Source 2025", url: "https://example.org/x" },
+  };
+
+  function brandHueCases(
+    label: string,
+    validate: (
+      spec: unknown,
+    ) => { ok: true; warnings: string[] } | { ok: false; errors: string[] },
+    base: Record<string, unknown>,
+  ): void {
+    describe(label, () => {
+      it("accepts a well-formed brandHue", () => {
+        expect(validate({ ...base, brandHue: "#336699" }).ok).toBe(true);
+      });
+      it("rejects a malformed brandHue without throwing (drop-proof)", () => {
+        expect(() =>
+          validate({ ...base, brandHue: "not-a-hex" }),
+        ).not.toThrow();
+        const r = validate({ ...base, brandHue: "not-a-hex" });
+        expect(r.ok).toBe(false);
+        if (!r.ok) expect(r.errors.some((e) => /brandHue/i.test(e))).toBe(true);
+      });
+      it("rejects a 3-digit shorthand hex (not #rrggbb)", () => {
+        const r = validate({ ...base, brandHue: "#f00" });
+        expect(r.ok).toBe(false);
+        if (!r.ok) expect(r.errors.some((e) => /brandHue/i.test(e))).toBe(true);
+      });
+    });
+  }
+
+  brandHueCases("validateSymbolConfig", validateSymbolConfig, okSymbol);
+  brandHueCases("validateRouteConfig", validateRouteConfig, okRoute);
+  brandHueCases("validateLocatorConfig", validateLocatorConfig, locatorBase);
+  brandHueCases(
+    "validateDotDensityConfig",
+    validateDotDensityConfig,
+    dotDensityBase,
+  );
 });

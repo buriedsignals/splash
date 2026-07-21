@@ -37,10 +37,20 @@ export function paletteErrors(s: Record<string, unknown>): string[] {
     } else if (Array.isArray(s.palette)) {
       if (!s.palette.every((c) => typeof c === "string"))
         errors.push("custom palette must be an array of hex strings");
-      else if (!isCvdSafeRamp(s.palette as string[]))
-        errors.push(
-          "custom palette is not CVD-safe — use a registry palette or vetted colours",
-        );
+      else {
+        try {
+          if (!isCvdSafeRamp(s.palette as string[]))
+            errors.push(
+              "custom palette is not CVD-safe — use a registry palette or vetted colours",
+            );
+        } catch (e) {
+          // isCvdSafeRamp → isMonotonicLuminanceRamp → relativeLuminance THROWS on any
+          // non-#rrggbb string — convert to a clean validation error, never crash the
+          // whole produceAll batch (drop-proof invariant, mirrors
+          // core/map-produce-conformance.ts's guarded palette check).
+          errors.push(`palette: ${(e as Error).message}`);
+        }
+      }
     } else {
       errors.push("palette must be a registry name or a custom ramp array");
     }
@@ -90,6 +100,21 @@ function validateBasemap(basemap: unknown, errors: string[]): void {
     errors.push(
       `basemap "${basemap}" is not a shipped basemap — valid: ${BASEMAP_NAMES.join(", ")}`,
     );
+}
+
+const HEX_RRGGBB = /^#[0-9a-fA-F]{6}$/;
+
+// Shared brandHue format check for any config that carries a house-style hue. brandHue
+// flows unguarded into a contrast check (map-produce-conformance.ts's single-hue
+// house-fill concern → house-ramp.ts's contrastOk → lib/core/contrast's
+// relativeLuminance), which THROWS on any non-#rrggbb string. Catch a malformed value
+// here, at validate() time, as a clean error — never let it surface as a throw
+// downstream in produce (mirrors the paletteErrors drop-proof pattern above).
+function brandHueError(s: Record<string, unknown>): string | null {
+  if (s.brandHue === undefined) return null;
+  if (typeof s.brandHue !== "string" || !HEX_RRGGBB.test(s.brandHue))
+    return `brandHue: not a #rrggbb colour: ${s.brandHue}`;
+  return null;
 }
 
 // If a config declares a camera mode, it must be one the engine knows. (route-reveal
@@ -249,6 +274,8 @@ export function validateSymbolConfig(
     errors.push("revealMode must be one of: context, sequential");
   const cmErr = cameraModeError(s);
   if (cmErr) errors.push(cmErr);
+  const bhErrSymbol = brandHueError(s);
+  if (bhErrSymbol) errors.push(bhErrSymbol);
 
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)
@@ -347,6 +374,8 @@ export function validateRouteConfig(
     if (!(MAP_STYLES as readonly string[]).includes(s.mapStyle as string))
       errors.push(`mapStyle must be one of: ${MAP_STYLES.join(", ")}`);
   }
+  const bhErrRoute = brandHueError(s);
+  if (bhErrRoute) errors.push(bhErrRoute);
 
   const route = s.route;
   if (!Array.isArray(route) || route.length < 2) {
@@ -435,6 +464,8 @@ export function validateLocatorConfig(
     !["context", "sequential"].includes(s.revealMode as string)
   )
     errors.push("revealMode must be one of: context, sequential");
+  const bhErrLocator = brandHueError(s);
+  if (bhErrLocator) errors.push(bhErrLocator);
 
   if (
     s.markerStyle !== undefined &&
@@ -554,6 +585,8 @@ export function validateDotDensityConfig(
     !["context", "sequential"].includes(s.revealMode as string)
   )
     errors.push("revealMode must be one of: context, sequential");
+  const bhErrDotDensity = brandHueError(s);
+  if (bhErrDotDensity) errors.push(bhErrDotDensity);
 
   const hasCats =
     Array.isArray(s.categories) && (s.categories as unknown[]).length > 0;
@@ -847,4 +880,27 @@ export function validateCartogramConfig(
 
   if (errors.length) return { ok: false, errors };
   return { ok: true, spec: s as CartogramConfigShape, warnings };
+}
+
+// Errors-only family validation for the producer registry (skills/map-native/src/manifest.ts
+// and the map track of skills/scrolly/src/manifest.ts). Mirrors validate-gate.ts's
+// `validateMapNative`: map-native is a discriminated family — pick the validator by the
+// config's `type` (absent ⇒ choropleth, the mount default) and return its error list.
+export function mapNativeConfigErrors(spec: unknown): string[] {
+  const type = (spec as { type?: string } | null)?.type;
+  const r =
+    type === "symbol"
+      ? validateSymbolConfig(spec)
+      : type === "locator"
+        ? validateLocatorConfig(spec)
+        : type === "route"
+          ? validateRouteConfig(spec)
+          : type === "dot-density"
+            ? validateDotDensityConfig(spec)
+            : type === "hex-grid"
+              ? validateHexGridConfig(spec)
+              : type === "cartogram"
+                ? validateCartogramConfig(spec)
+                : validateChoroplethConfig(spec);
+  return r.ok ? [] : r.errors;
 }

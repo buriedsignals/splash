@@ -89,8 +89,8 @@ export interface ChoroplethMapSpec {
   lang?: string;
   /** Newsroom house hue (#rrggbb), set by the profile merge (skills/splash/src/brand-profile.ts).
    *  When present and `colorScale` is NOT given, the gradient is derived from it via `houseRamp`
-   *  (skills/map-native/src/theme/house-ramp.ts) — a monotonic-luminance, CVD-safe sequential
-   *  ramp of the house hue. An explicit colorScale always wins. */
+   *  (lib/core/house-ramp.ts) — a monotonic-luminance, CVD-safe sequential ramp of the house
+   *  hue. An explicit colorScale always wins. */
   brandHue?: string;
   /** Ordered newsroom brand palette (#rrggbb); unused by choropleth (see brandHue) but carried
    *  on every map spec by the profile merge. */

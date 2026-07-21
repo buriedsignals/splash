@@ -4,8 +4,8 @@
 # keys — they are written straight to ~/Splash/.env, never passed on the command line.
 set -euo pipefail
 
-REPO="${SPLASH_REPO:-${ATELIER_REPO:-https://github.com/buriedsignals/splash}}"   # confirm before public release (preflight-release.mjs)
-REF="${SPLASH_REF:-${ATELIER_REF:-main}}"
+REPO="${SPLASH_REPO:-https://github.com/buriedsignals/splash}"   # confirm before public release (preflight-release.mjs)
+REF="${SPLASH_REF:-main}"
 DEST="$HOME/Splash"
 NATIVE_SKILLS=("skills/chart-native" "skills/map-native")
 
@@ -42,7 +42,7 @@ fi
 # 3. Local configurator — pick runtime + enter keys (verified live); writes ~/Splash/.env.
 # Skip it on a re-run that already has a verified .env (set SPLASH_RECONFIGURE=1 to force it),
 # so recovering from a later failure doesn't force re-entering and re-verifying every key.
-if [ ! -f "$DEST/.env" ] || [ "${SPLASH_RECONFIGURE:-${ATELIER_RECONFIGURE:-0}}" = "1" ]; then
+if [ ! -f "$DEST/.env" ] || [ "${SPLASH_RECONFIGURE:-0}" = "1" ]; then
   echo "-> Opening the configurator in your browser to collect your keys…"
   if ! ( cd "$DEST" && bun install/configurator.ts ) || [ ! -f "$DEST/.env" ]; then
     echo "Configuration was not completed — re-run this installer." >&2

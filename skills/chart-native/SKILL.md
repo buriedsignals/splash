@@ -151,6 +151,16 @@ tooltip anchors on the DATA ELEMENT under cursor/focus (bar, dot, slice, cell, v
 THAT element's value; a LEGEND hover only brings a series forward (dims the others) — it never opens
 a tooltip. See `knowledge/references/formats/interactive.md`.
 
+**Reduced motion (WCAG 2.3.3):** the interactive intro reveal (`core/InteractiveChart.tsx`) checks
+`prefers-reduced-motion` (`lib/core/motion.ts`) on first render and, when set, skips straight to
+`progress=1` — the reader gets the full chart immediately, never a blank plot waiting on a reveal it
+will never see play. Enforced render-time by `scripts/snap-reduced-motion.mjs` (wired into
+`produce.mjs`'s interactive path): loads the built dist under Playwright's emulated
+`reducedMotion:"reduce"`, asserts marks are present on first paint and the SVG never mutates
+afterward. The **video** format is exempt — a baked mp4 cannot honor a CSS media query at playback
+time, and its reveal is the chart's essential content (WCAG 2.3.3's "essential" carve-out: the motion
+IS what's being shown, not decoration layered on top) — nothing to disable.
+
 ## How it works (the shape)
 
 1. **Geometry** — `computeChartLayout(data, dims)` → screen points + cumulative polyline length.
@@ -217,6 +227,7 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 - `src/video-watchdog.ts` — bounds every Remotion render/still subprocess (default 15 min, `SPLASH_VIDEO_TIMEOUT_MS`); kills a hung process tree instead of burning the run.
 - `scripts/snap-label-fit.mjs` — render-time label-fit guard (fail-hard in `produce.mjs`, static + interactive paths): every rendered text (svg labels — rotated included, the AABB is what must fit — plus the ChartFrame title/subtitle/source) must sit inside the chart card ∩ its svg viewport (svg overflow is hidden by default, so the svg rect IS the clip box) ∩ any ancestor `<clipPath>` rect (the reveal-wipe class: text cut mid-word by a clip rect ending inside the svg) within `LABEL_FIT_TOLERANCE_PX`; ZERO text found = fail (vacuity guard). The interactive (responsive) dist is asserted at a NARROW and a WIDE viewport (360 + 1100px — the responsive re-layout clipped at 360px what fit at 900px); the static dist is a fixed-size card, one viewport. Pure containment math in `src/core/label-fit.ts` (unit-tested); box measurement in `scripts/lib/collect-text-boxes.mjs` (clipPath scope: userSpaceOnUse rect-only children, anything else fails open — boundary documented there). Out of scope v1: label-vs-label overlap (`bun run audit` covers it at test time), contrast (the contrast snaps own it), video frames + map-native GL canvas text (no built page / no DOM to measure — indirect coverage only).
 - `scripts/snap-responsive.mjs` — proof harness: screenshots the interactive build at 360/768/1100px (responsive) + an early frame (reveal from 0).
+- `scripts/snap-reduced-motion.mjs` — render-time reduced-motion guard (fail-hard in `produce.mjs`'s interactive path, WCAG 2.3.3): loads the built dist under Playwright's emulated `reducedMotion:"reduce"` and asserts marks render on first paint (not blank) and the `<svg>` never mutates afterward (no lingering reveal animation).
 - `scripts/lib/furniture-i18n.mjs` — i18n furniture gate (fail-hard, runs inside `snap-contrast.mjs` + `snap-interactive-contrast.mjs`'s existing page load): a non-English config's rendered FURNITURE (title/subtitle/source — HTML outside the `<svg>`; data labels exempt) must carry the localized "Source" label from `src/core/locale.ts`, no `ENGLISH_FURNITURE_BLOCKLIST` caption, no unambiguously English-grouped number.
 - `assets/sample-data/series.json` — runnable sample (generic small-newsroom time series).
 - `tests/{chart-geometry,reveal-contract}.test.ts` — `bun:test` (geometry + the 3-format determinism contract).

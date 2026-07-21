@@ -28,8 +28,11 @@ const injectedConfig = process.env.CONFIG
 // that ships the wrong aspect with a clean exit. Only CANONICAL values are accepted
 // (the spine's normalizeChannel resolves aliases before threading; no alias table
 // here). Absent/EMPTY keeps the article-web default (legacy/manual callers).
-const rawChannel = (process.env.SPLASH_CHANNEL ?? process.env.ATELIER_CHANNEL ?? "").trim();
-if (rawChannel !== "" && !(ALL_CHANNELS as readonly string[]).includes(rawChannel)) {
+const rawChannel = (process.env.SPLASH_CHANNEL ?? "").trim();
+if (
+  rawChannel !== "" &&
+  !(ALL_CHANNELS as readonly string[]).includes(rawChannel)
+) {
   throw new Error(
     `unknown SPLASH_CHANNEL "${rawChannel}" — expected one of ${ALL_CHANNELS.join(", ")} ` +
       "(absent/empty defaults to article-web); refusing to default an unrecognized channel to article-web.",

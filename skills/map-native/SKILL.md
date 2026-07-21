@@ -224,6 +224,15 @@ the interactive scrolly play through the same beats. This is the difference betw
 | Interactive | **Vite + `vite-plugin-singlefile`** (`INTERACTIVE=1`) | One embeddable HTML file with pan/zoom + hover popup + legend. Verified live in the browser (hover + popup), not just a static PNG. |
 | Video | **Remotion** (`remotion/`) wrapping the SAME component | `useCurrentFrame` → eased `progress` → `<Type>Map`. `bunx remotion render --gl=angle --concurrency=1`. |
 
+**Reduced motion (WCAG 2.3.3):** the standalone interactive maps have no autoplay camera
+animation to begin with — every `fitBounds` call is `duration:0` (instant), so there is nothing to
+gate on page load. The one interaction-triggered animation (`LocatorMap.tsx`'s cluster-click
+`easeTo`, zooming into an expanded cluster) checks `prefers-reduced-motion`
+(`lib/core/motion.ts`) and eases instantly (`duration:0`) when set, matching scrolly's
+`flyToBeat` contract. The **video** format is exempt — a baked mp4 cannot honor a CSS media query
+at playback time, and the reveal is the map's essential content (WCAG 2.3.3's "essential"
+carve-out), nothing to disable.
+
 Conformance is enforced, not hand-baked: `src/conformance.ts` (`checkChoroplethConformance`)
 is the map-native equivalent of chart-native's `checkConformance` — it runs the global L0 guard
 (insight title, source name + url, WCAG contrast) plus type-specific map checks (CVD-safe scale,

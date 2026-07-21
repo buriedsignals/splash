@@ -17,7 +17,7 @@ import {
 import { deriveSymbolStory } from "../../map-native/src/symbol-story";
 import type { Beat } from "../../map-native/src/map-story";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
-import { houseFill } from "../../map-native/src/theme/house-ramp";
+import { houseFill } from "../../../lib/core/house-ramp";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -28,8 +28,8 @@ maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 // ---------------------------------------------------------------------------
 // Constants — mirror SymbolMap exactly. The single-hue fill default is NOT re-declared here;
-// it lives once in house-ramp.ts (DEFAULT_MAP_FILL) and is resolved via houseFill so the hex
-// can't drift across the symbol renderers.
+// it lives once in lib/core/house-ramp.ts (DEFAULT_MAP_FILL) and is resolved via houseFill so
+// the hex can't drift across the symbol renderers.
 // ---------------------------------------------------------------------------
 const LABEL_TEXT_SIZE = 13;
 const SYMBOL_STROKE = "#ffffff";

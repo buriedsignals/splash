@@ -6,7 +6,7 @@
 // opacity swap with no transition), the honest fallback for a motion-sensitive reader.
 import React, { useEffect, useState } from "react";
 import type { ImageStory } from "../../image-native/src/image-story";
-import { deriveFurniture } from "../../chart-native/src/core/tokens";
+import { deriveFurniture } from "../../../lib/core/theme";
 
 export interface ImageScrollyConfig {
   visual: "image";

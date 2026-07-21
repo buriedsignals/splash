@@ -1,5 +1,26 @@
 // Design tokens — Okabe-Ito colourblind-safe set (design-conformance.md).
 // #0072B2 is the default single-series colour. ≤2 colours.
+//
+// Theme/furniture derivation (COLORS, ColorTokens, resolveThemeBg, bgIsDark, deriveFurniture,
+// COLORS_DARK) lives in the shared core (lib/core/theme.ts) — re-exported here so every
+// chart-native component keeps its existing core/tokens import unchanged.
+import {
+  COLORS,
+  type ColorTokens,
+  HEX6,
+  resolveThemeBg,
+  bgIsDark,
+  deriveFurniture,
+  COLORS_DARK,
+} from "../../../../lib/core/theme";
+export {
+  COLORS,
+  type ColorTokens,
+  resolveThemeBg,
+  bgIsDark,
+  deriveFurniture,
+  COLORS_DARK,
+};
 
 export const OKABE_ITO = {
   blue: "#0072B2",
@@ -11,39 +32,6 @@ export const OKABE_ITO = {
   yellow: "#F0E442",
   black: "#000000",
 } as const;
-
-export const COLORS = {
-  line: OKABE_ITO.blue,
-  head: "#FFFFFF",
-  headGlow: OKABE_ITO.blue,
-  ink: "#1A1A1A", // WCAG ≥ 4.5:1 on white
-  muted: "#6B6B6B",
-  grid: "#E6E6E6",
-  axis: "#CFCFCF",
-  bg: "#FFFFFF",
-} as const;
-
-// ── Arbitrary-background theme derivation ────────────────────────────────────────────
-// A newsroom `theme` is "light", "dark", or ANY #rrggbb background (grey, pink, navy…). The
-// FURNITURE (ink/muted/axis/grid/line) is DERIVED from that ground by contrast — never a
-// hand-authored per-theme set — so the chrome always reads, on whatever colour the newsroom
-// picks. Light (#FFFFFF / undefined) short-circuits to the exact legacy COLORS, keeping the
-// untouched light path byte-identical. This mirrors the maps' principle (subject/house-derived,
-// no hardcoded hue): the theme adapts, it is not one of two presets.
-export type ColorTokens = { readonly [K in keyof typeof COLORS]: string };
-
-const PRESET_BG: Record<string, string> = { light: "#FFFFFF", dark: "#18181B" };
-const HEX6 = /^#[0-9a-fA-F]{6}$/;
-
-/** A `theme` value (preset name or #rrggbb) → a background hex, or null for the light default
- * (→ caller keeps the byte-identical legacy light path). */
-export function resolveThemeBg(theme?: string): string | null {
-  if (!theme) return null;
-  const t = theme.trim();
-  const bg =
-    PRESET_BG[t.toLowerCase()] ?? (HEX6.test(t) ? t.toUpperCase() : null);
-  return !bg || bg === "#FFFFFF" ? null : bg;
-}
 
 function _rgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
@@ -62,68 +50,6 @@ function _mix(a: string, b: string, t: number): string {
   const [br, bg, bb] = _rgb(b);
   return _hex(ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t);
 }
-// WCAG relative luminance (inlined to avoid a tokens↔conformance import cycle).
-function _lum(hex: string): number {
-  const lin = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  };
-  const [r, g, b] = _rgb(hex);
-  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-}
-/** `theme.dark` predicate for a resolved bg — a ground darker than mid-grey wants light chrome. */
-export function bgIsDark(bg?: string): boolean {
-  const b = resolveThemeBg(bg);
-  return b != null && _lum(b) < 0.4;
-}
-// WCAG contrast ratio between two hex colours (from their relative luminances).
-function _contrast(a: string, b: string): number {
-  const la = _lum(a);
-  const lb = _lum(b);
-  return la >= lb ? (la + 0.05) / (lb + 0.05) : (lb + 0.05) / (la + 0.05);
-}
-
-// The furniture set for an arbitrary background. ink = the max-contrast foreground (near-black or
-// near-white, whichever reads better on THIS ground); muted is mixed 38% toward the bg (still
-// body-text legible); axis/grid are faint hairlines (mixed most of the way to the bg). `line` (the
-// default series when no subject-fit baseColor is set) picks the Okabe-Ito blue vs skyblue that
-// clears the 3:1 non-text bar on this ground.
-export function deriveFurniture(bg?: string): ColorTokens {
-  const b = resolveThemeBg(bg);
-  if (!b) return COLORS; // light default — legacy tokens, byte-identical
-  // pick the ink WCAG-correctly at every luminance: a mid-luminance house ground (grey) picks the
-  // BETTER of near-black/near-white, not a fixed <0.4 flip that could pick the worse one. Byte-
-  // identical for the presets: #FFFFFF → near-black, #18181B → near-white.
-  const softDark = _contrast("#1A1A1A", b) >= _contrast("#F4F4F5", b);
-  // the softened extremes read best on clearly light/dark grounds (which they clear ≥ 4.5:1), but a
-  // narrow mid-luminance band (grey ≈ #717171–#818181) leaves the better softened extreme at only
-  // ~4.0:1 — below the WCAG text floor. Escalate to the PURE pole there (pure #000/#FFF clears
-  // ≥ 4.5:1 at EVERY ground luminance), so primary text never ships illegible on any house ground.
-  let fg = softDark ? "#1A1A1A" : "#F4F4F5";
-  if (_contrast(fg, b) < 4.5) fg = softDark ? "#000000" : "#FFFFFF";
-  const line =
-    _lum(OKABE_ITO.blue) < _lum(b) ? OKABE_ITO.blue : OKABE_ITO.skyblue;
-  return {
-    line,
-    head: "#FFFFFF",
-    headGlow: line,
-    ink: fg,
-    // muted is de-emphasized secondary text (subtitle/source/axis labels) that must still clear the
-    // 4.5:1 WCAG text floor. 30% toward the ground keeps it clearly softer than ink yet ≥ 4.5:1 with
-    // margin on every real house ground (incl. saturated dark blues/greens where 0.38 dipped to
-    // ~4.47:1); a genuinely illegible mid-grey ground still fails (muted ~3.7:1), which the produce
-    // guard surfaces so the newsroom picks a legible ground rather than shipping unreadable text.
-    muted: _mix(fg, b, 0.3),
-    axis: _mix(fg, b, 0.72),
-    grid: _mix(fg, b, 0.86),
-    bg: b,
-  };
-}
-
-// The dark PRESET furniture, derived once — kept as a named export for back-references (the a11y
-// test, the heatmap produce guard). It is exactly deriveFurniture("#18181B").
-export const COLORS_DARK: ColorTokens = deriveFurniture("#18181B");
-
 // On the dark furniture bg (#18181B) the Okabe-Ito BLACK entry of a DATA palette
 // vanishes (near-0 contrast — a black mark on a near-black ground). Every other
 // Okabe-Ito hue stays CVD-safe and reads acceptably on dark, so ONLY black is

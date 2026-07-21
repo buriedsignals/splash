@@ -1,6 +1,6 @@
 ---
 name: splash
-description: Use to run the whole splash pipeline end-to-end from an article and/or data to a finished, exported visual. Sequences ANALYSE → CADRAGE → PROPOSITION → PRODUCTION → EXPORT with human gates, invoking suggest-article, suggest-chart, and the producers. The single entry point for "make me a visual from this". Keywords splash, flow, pipeline, orchestrate, end-to-end, article to chart, produce a visual, embed, export.
+description: Use when turning an article and/or its data into a finished, exported data-visualization (chart, map, video, or interactive/scrolly) for a newsroom — the end-to-end entry point for "make me a visual from this". Keywords splash, flow, pipeline, orchestrate, end-to-end, article to chart, produce a visual, embed, export.
 ---
 
 # splash — the end-to-end flow
@@ -272,6 +272,19 @@ may change it, but to another single member of the channel's allowed set. Q6 set
 this Stage-2 announce is the FIRST and ONLY place the single format is surfaced — channel and format never
 double-ask. **Hard rule:** a non-article/embed channel lands on image or video only, never
 interactive/scrolly; point back to the Q6 pick rather than escalating.
+
+**★ Colour/palette — name the subject-encoding HERE, for the same veto.** When the emitted spec
+carries a **subject-motivated** palette — an auto subject-fit ramp (no house profile), or a colour
+chosen to ENCODE the subject (sequential for magnitude, a diverging scale around a midpoint, a domain
+hue) — announce the palette AND *why it fits the subject* in the same breath as the format, so the
+journalist consciously confirms the colour reads right for the topic (« je code l'intensité en vert
+séquentiel — ça te va ? » · « une échelle divergente rouge↔bleu centrée sur zéro »). This makes
+palette-fit — the one axis no code can judge (green≠politically-loaded, sequential-for-ordered-data, no
+rainbow) — a NAMED, vetoable editorial confirm, not a silent default. **No call-out for a default
+CVD-safe categorical palette or a confirmed house palette** — they carry no subject claim (the house
+palette is already veto'd at profile-merge; a categorical set encodes identity, not a subject scale).
+The semantic *correctness* of the fit stays the journalist's call (and a Gate-3a render-review concern);
+this rule only guarantees the choice is surfaced, never buried.
 
 **Narrative sub-format — who picks it reuses the CADRAGE branch:**
 - **interactive** → the sub-format is **explore-libre** (pan/zoom/hover) vs **scrolly** (sequential).
@@ -670,23 +683,13 @@ article-web is the one channel that can host it**:
      JOURNALIST's to give, never splash's to presume: applying one element's answer (or no answer at all)
      "to both" is auto-deciding, the same named violation.
      The three forms are:
-     - **a) Code source** (`forms.a`) — the delivery depends on the producer:
-       - **chart-native** (`kind: "react-source-bundle"`) → a `<id>-source/` **runnable React source bundle**,
-         assembled ON DEMAND by `skills/chart-native/scripts/export-source.mjs` from the `config.json` +
-         `native-source.json` the producer drops in the build subdir: a self-contained Vite project (`src/` = a
-         copy of chart-native/src, `config.json`, `main.tsx`/`index.html` that import the chart + config
-         statically, `package.json` with the interactive deps only — no remotion, `vite.config.ts`,
-         `tsconfig.json`, `README.md`). The journalist runs `bun install && bun run build` → `dist/index.html`
-         (the interactive). THIS is the headline form-1 capability.
-       - **map-native / scrolly** (`kind: "react-source-bundle"` too) → a `<id>-source/` **runnable Vite
-         project**, assembled ON DEMAND by `skills/splash/scripts/bundle-source.mjs`, which closure-traces
-         from the `source-manifest.json` + `config.json` the producer drops (their `src/` is entangled —
-         map-native imports scrolly; scrolly imports chart-native + map-native + maptiler/turf — so the copy
-         PRESERVES the repo-relative `skills/<engine>/{src,assets}` layout and deps are DERIVED from the
-         traced closure, remotion included on the map path). `bun install && bun run build` → `dist/index.html`
-         — but the map fetches basemap tiles from MapTiler at runtime, so this bundle is **online-only** and
-         needs the journalist's OWN `VITE_MAPTILER_KEY` (never baked in; documented in the bundle's
-         `.env.example` + `README.md`).
+     - **a) Code source** (`forms.a`) — the delivery depends on the producer: **chart-native** assembles
+       ON DEMAND a `<id>-source/` runnable React/Vite bundle (`export-source.mjs`) — `bun install && bun run
+       build` → `dist/index.html` reproduces the interactive (THIS is the headline form-1 capability).
+       **map-native / scrolly** assembles ON DEMAND a `<id>-source/` runnable Vite project too
+       (`bundle-source.mjs`, closure-traced) — same build command, but **online-only** (needs the
+       journalist's OWN `VITE_MAPTILER_KEY`, never baked in). Per-producer bundle mechanics (closure-tracing,
+       exact file layout, deps) are in **`references/export-code-source-forms.md`**.
      - **b) HTML autonome** — JUST the single self-contained file: the JS-inlined `interactive.html`
        (`scrolly.html` for a scrolly). One file, drops into any CMS/email/offline.
      - **c) Embed (hébergé)** — deploy the html to the newsroom's own Cloudflare Pages project and share the returned URL
@@ -728,8 +731,8 @@ article-web is the one channel that can host it**:
   `interactive.png`, or the build subdir's byproducts are NOT a delivery. If the `--form` build did not run, the
   visual is NOT delivered, no matter how the run otherwise ended.
 
-  The one-time Cloudflare setup (on the newsroom's OWN account) + the token details are in the
-  **Reference** appendix at the end of this file — consult it only when a journalist first chooses the embed form.
+  The one-time Cloudflare setup (on the newsroom's OWN account) + the token details are in
+  **`references/cloudflare-setup.md`** — consult it only when a journalist first chooses the embed form.
 
 **Session close — after the handover.** Once the deliverable is handed over and the journalist signals
 completion — a pure thanks/goodbye with no new request ("Merci, tout est en ordre", "That is everything,
@@ -841,6 +844,7 @@ The full scripted-guard inventory lives in `docs/splash/guardrails.md`.
 - Never name a chart type in the intent passed to suggest-article or suggest-chart (on the guided path).
 - Never ship a visual without the mandatory render-review (Gate 3a) — `assertShippable` refuses a visual with no review record; the review's concerns are advisory but running it is not optional.
 - Never call `gate-render` (Gate 3b) right after a re-produce (any re-run of 5c — a source fix, a fallback swap, a retry) without first re-running `review-gate` (Gate 3a) on the NEW render. `produce-all` always writes a WHOLLY FRESH `report.json` — every proposal in that run comes back unreviewed and unapproved (`renderApproved:false`), even one that was already signed off before the correction — so the review MUST run again on what actually changed. Do not treat the script's hard refusal ("not render-reviewed") as the safety net to rely on; redo Gate 3a → 3b in order every time, and never hand-edit `report.json` to restore a prior review/approval onto a new artifact. Likewise never hand-author a file into the producer's build subdir `exports/<slug>/<id>/` to give `gate-render` something to approve — its provenance check refuses any file the pipeline did not emit for the CURRENT produce generation; a hosted-DW interactive (no local render) is approved via a fresh capture under `exports/<slug>/_review-artifacts/<id>/`, never a stand-in file next to the producer outputs.
+- Never ask the journalist to validate/approve/"ship it" a render before it has been SURFACED to them (see 3b: `SendUserFile` the artifact, or state the live URL, on its own line, BEFORE the ask). A described render ("barres violettes, fracture 83/16") is not a shown render — the journalist must actually SEE the file/URL first, every time, with no exception for a re-produce, a small fix, or a format the orchestrator considers self-evident. This is a non-skippable step of Gate 3b, not advisory. (No live mechanical "the user saw it" signal exists mid-session — the QA harness `check:render-shown-before-validation` is the net that catches a described-not-shown render after the fact; do not treat its absence in a live run as license to skip surfacing.)
 - Never CREATE or edit ANY product source file (anything under `skills/` — a producer/component `src/*.ts`/`.tsx`, a `scripts/*.mjs`, a reference) during a journalist run — splash ORCHESTRATES and GATES; it does not author engine code. A bug is REPORTED and routed around, never patched in place. The "feedback → système" convention is for development sessions, not a live newsroom flow. This holds with NO exception for making a produce/conformance gate pass: never edit a producer/component's source code (`skills/*/src`, any `.tsx`/`.ts` producer file) mid-PRODUCTION to turn a failing gate green — a real newsroom journalist cannot patch the engine, so splash must not either. If a produce or conformance gate fails because of a genuine engine bug (not a spec/data problem), SURFACE the bug to the journalist, do NOT ship that visual, and do NOT patch the code — the bug is reported, never worked around. **The "create" half is not hypothetical: never AUTHOR a NEW ad-hoc script** — a case-named `verify-<case>.mjs` written into a skill's `scripts/` to satisfy a gate is the same violation as editing existing code. splash runs ONLY the scripts the pipeline ships (`produce-all` / `review-gate` / `gate-render` / `export-code` and the producers' own snaps); a gate that needs a script the pipeline does not provide means the FLOW is wrong — STOP and surface, never write the missing script yourself. (The QA harness `check:product-source-hot-patch` flags any Edit/Write under a skill's `src/`/`scripts/`; the rule is the product contract, that check is the net.)
 - Never hand-author or copy files into a producer's output directory (`exports/<slug>/<id>/` or any
   build subdir) to satisfy a gate. The file-based gates (`gate-render`, `assertDelivered`,
@@ -871,30 +875,8 @@ needs it — it is NOT part of the live decision ladder. Guard mechanics: `docs/
 
 ### One-time Cloudflare setup (only when a journalist first picks the embed form)
 
-No app, no container, no volume — three values in `.env`, on the NEWSROOM'S OWN Cloudflare account:
-
-```
-CLOUDFLARE_API_TOKEN="…"     # account API token, permission: Cloudflare Pages: Edit
-CLOUDFLARE_ACCOUNT_ID="…"    # Workers & Pages page → Account details
-SPLASH_EMBED_PROJECT="…"     # e.g. heidi-news-splash — becomes the PUBLIC url
-```
-
-Create the token at <https://dash.cloudflare.com> → **Manage Account → API Tokens → Create Token**,
-with the **Cloudflare Pages: Edit** permission. The installer collects and verifies all three.
-
-`deploy-embed.mjs` creates the Pages project on first use and deploys over plain HTTPS — **no wrangler
-CLI and no Node.js runtime**. Each visual becomes a branch of that project, published at
-`https://<visual-slug>.<project>.pages.dev`.
-
-Two rules the platform enforces, encoded in `src/cloudflare-pages.ts` (measured — see
-`docs/superpowers/specs/2026-07-19-cloudflare-pages-embed-adapter-design.md`):
-
-- **`SPLASH_EMBED_PROJECT` must identify the newsroom.** It is the public URL, so generic names
-  (`splash`, `embeds`, `demo`…) are refused: every newsroom would otherwise share one hostname.
-- **The visual slug is normalised before it is sent.** Cloudflare rewrites branch labels lossily —
-  it DELETES accented characters (`Élections` → `lections`), turns `_` into `-`, truncates at 28
-  chars and appends a random suffix on collision. Splash strips diacritics and appends its own
-  deterministic digest so a French title yields a readable, stable URL.
-
-A newsroom's FIRST embed takes ~100 s (Cloudflare provisions the project); later ones take seconds.
-The deploy is only reported as delivered once the URL actually serves the artifact's own bytes.
+Full setup steps (the three `.env` values, token creation, `deploy-embed.mjs` mechanics, and the
+two platform rules it enforces — project-name-must-identify-the-newsroom, slug normalisation) are
+in **`references/cloudflare-setup.md`** — open it the first time a journalist picks the embed
+form. Essential rule to keep in mind even without opening it: `SPLASH_EMBED_PROJECT` must be a
+name that identifies the newsroom (generic names like `splash`/`demo` are refused by the adapter).

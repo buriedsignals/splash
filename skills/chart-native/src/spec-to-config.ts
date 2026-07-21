@@ -916,3 +916,18 @@ export function specToNativeConfig(spec: NativeSpec): {
   if (spec.themeBg) out.config.themeBg = spec.themeBg;
   return out;
 }
+
+// Errors-only spec validation for the producer registry (skills/chart-native/src/manifest.ts).
+// Mirrors validate-gate.ts's `validateNative`: chart-native validates BY CONSTRUCTION —
+// specToNativeConfig runs the shape checks and throws UnsupportedNativeType for a type it
+// cannot map. An unmapped type is NOT a validation failure (it is the FALLBACK_TO_DW path
+// the dispatch handles), so it returns []; only a genuinely malformed spec yields an error.
+export function nativeSpecErrors(spec: unknown): string[] {
+  try {
+    specToNativeConfig(spec as NativeSpec);
+    return [];
+  } catch (e) {
+    if (e instanceof UnsupportedNativeType) return [];
+    return [e instanceof Error ? e.message : String(e)];
+  }
+}

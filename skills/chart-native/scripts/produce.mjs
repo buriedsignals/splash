@@ -87,7 +87,7 @@ if (!type || !configPath || !outDir || !VALID_FORMATS.has(format)) {
 // ("feed", "Stories") to canonical BEFORE threading (produce-all's gate), so the
 // alias table lives once in normalizeChannel and is never duplicated here.
 // Absent/EMPTY keeps the article-web default (legacy/manual callers).
-const rawChannel = (process.env.SPLASH_CHANNEL ?? process.env.ATELIER_CHANNEL ?? "").trim();
+const rawChannel = (process.env.SPLASH_CHANNEL ?? "").trim();
 const channel = rawChannel === "" ? "article-web" : rawChannel;
 if (!ALL_CHANNELS.includes(channel)) {
   console.error(
@@ -282,6 +282,12 @@ switch (format) {
       // export.
       console.log(`[produce ${type}] checking tooltip stays in-viewport (snap-tooltip-viewport)…`);
       snap("scripts/snap-tooltip-viewport.mjs");
+
+      // render-time reduced-motion guard (WCAG 2.3.3) — under an emulated
+      // prefers-reduced-motion: reduce, the intro reveal must skip straight to its
+      // end-state on first paint and never keep animating. Fails the run before export.
+      console.log(`[produce ${type}] checking prefers-reduced-motion is honored (snap-reduced-motion)…`);
+      snap("scripts/snap-reduced-motion.mjs");
 
       result.interactive = interactiveDest;
       result.reviewStill = join(outDir, "interactive.png"); // ephemeral — not delivered

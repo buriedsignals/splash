@@ -21,7 +21,7 @@ export const DEFAULT_VIDEO_TIMEOUT_MS = 900_000;
 export function videoTimeoutMs(
   env: Record<string, string | undefined> = process.env,
 ): number {
-  const raw = env.SPLASH_VIDEO_TIMEOUT_MS ?? env.ATELIER_VIDEO_TIMEOUT_MS;
+  const raw = env.SPLASH_VIDEO_TIMEOUT_MS;
   if (raw === undefined || raw.trim() === "") return DEFAULT_VIDEO_TIMEOUT_MS;
   const n = Number(raw);
   if (!Number.isFinite(n) || n <= 0) {

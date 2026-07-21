@@ -6,6 +6,12 @@
 
 import type { ChartConfig } from "../LineChart";
 import { COLORS, deriveFurniture } from "./tokens";
+import {
+  relativeLuminance,
+  contrastRatio,
+  MIN_CONTRAST,
+} from "../../../../lib/core/contrast";
+import { conformanceL0 } from "../../../../lib/core/conformance-l0";
 
 export const OKABE_ITO_SET = new Set([
   "#0072B2",
@@ -18,31 +24,7 @@ export const OKABE_ITO_SET = new Set([
   "#000000",
 ]);
 
-function channel(c: number): number {
-  const s = c / 255;
-  return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-}
-
-/** WCAG relative luminance of a #rrggbb colour. */
-export function relativeLuminance(hex: string): number {
-  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) throw new Error(`not a #rrggbb colour: ${hex}`);
-  const n = parseInt(m[1], 16);
-  return (
-    0.2126 * channel((n >> 16) & 255) +
-    0.7152 * channel((n >> 8) & 255) +
-    0.0722 * channel(n & 255)
-  );
-}
-
-/** WCAG contrast ratio between two #rrggbb colours (1..21). */
-export function contrastRatio(a: string, b: string): number {
-  const la = relativeLuminance(a);
-  const lb = relativeLuminance(b);
-  const hi = Math.max(la, lb);
-  const lo = Math.min(la, lb);
-  return (hi + 0.05) / (lo + 0.05);
-}
+export { relativeLuminance, contrastRatio, MIN_CONTRAST };
 
 export function isOkabeIto(hex: string): boolean {
   return OKABE_ITO_SET.has(hex.toUpperCase());
@@ -334,16 +316,19 @@ export function checkGlobalConformance(input: {
    */
   subject?: string;
 }): string[] {
-  const v: string[] = [];
   const { colors } = input;
 
-  // 1. Title = the insight (not a bare year range, not ALL CAPS).
-  const title = input.title?.trim() ?? "";
-  if (title.length < 12) v.push(`title too short to be an insight: "${title}"`);
-  if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
-    v.push(`title is a year range, not an insight: "${title}"`);
-  if (title.length > 0 && title === title.toUpperCase())
-    v.push("title is ALL CAPS (use sentence case)");
+  // L0 (title/source/altInsight/contrast) — shared with map-native, extracted into
+  // lib/core/conformance-l0.ts. See that file's header comment for the one reconciled
+  // divergence (the ALL-CAPS gate is now letters-aware, fixing a latent false positive
+  // where a year-range/digit-only title like "2015-2024" — its own uppercase form —
+  // used to ALSO be flagged as ALL CAPS).
+  const v: string[] = conformanceL0({
+    title: input.title,
+    source: input.source,
+    ...("altInsight" in input ? { altInsight: input.altInsight } : {}),
+    textColors: colors,
+  });
 
   // 2. Data colour ∈ Okabe-Ito.
   if (!isOkabeIto(colors.data))
@@ -363,27 +348,8 @@ export function checkGlobalConformance(input: {
       `subject "${input.subject}" has no subject-fit colour — ${colors.data} is a blue-family Okabe-Ito hue and must not stand in for a subject that is not water/cold/sky/marine (choose a deliberate hue instead, e.g. amber/green/vermilion/purple)`,
     );
 
-  // 5. Source cited: NAME required (anti-fabrication + attribution). URL is OPTIONAL —
-  //    an honest prose source ("Chiffres tels que rapportés dans cet article") or a
-  //    newsroom's own reporting legitimately has none, and requiring it hard-blocked the
-  //    prose path (E2 deadlock). Source traceability against the article is the
-  //    render-review's job, not a blind url-present check here.
-  if (!input.source?.name?.trim()) v.push("missing source name");
-
-  // 6. Alt text = the insight (WCAG 1.1.1), mirroring dw-chart's altInsight
-  // requirement (chart-spec.ts). Opt-in — see the field's doc comment above: only
-  // enforced when the caller declares the key. The produce gate does NOT rely on
-  // this opt-in — it calls requireAltInsight directly (produce-conformance.ts).
-  if ("altInsight" in input) v.push(...requireAltInsight(input.altInsight));
-
-  // 7. Contrast ≥ 4.5:1 for every text colour. Decorative gridlines are exempt.
-  for (const t of colors.text) {
-    const r = contrastRatio(t, colors.bg);
-    if (r < 4.5)
-      v.push(
-        `text colour ${t} contrast ${r.toFixed(2)}:1 on ${colors.bg} < 4.5:1`,
-      );
-  }
+  // Source name, altInsight (opt-in), and text contrast are L0 — handled by the
+  // conformanceL0(...) call above (rules 5/6/7 formerly inlined here).
   return v;
 }
 

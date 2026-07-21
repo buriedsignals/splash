@@ -8,7 +8,7 @@ import {
   type MapSpec,
   type SymbolMapSpec,
 } from "../map-spec";
-import { houseRamp } from "../../../map-native/src/theme/house-ramp";
+import { houseRamp } from "../../../../lib/core/house-ramp";
 
 const base: MapSpec = {
   mapType: "choropleth",

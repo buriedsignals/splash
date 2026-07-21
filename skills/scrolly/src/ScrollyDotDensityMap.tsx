@@ -16,7 +16,7 @@ import {
 } from "../../map-native/src/dot-density-geo";
 import { scatterInPolygon } from "../../map-native/src/dot-scatter";
 import { deriveDotDensityStory } from "../../map-native/src/dot-density-story";
-import { formatLocaleNumber } from "../../map-native/src/core/locale";
+import { formatLocaleNumber } from "../../../lib/core/locale";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
 import type { Beat } from "../../map-native/src/map-story";
 

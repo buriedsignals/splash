@@ -35,6 +35,78 @@ describe("withProposalChannel — the proposal's canonical channel is injected i
   });
 });
 
+// Regression pin (no network — the format gate rejects BEFORE any API call, see
+// realDispatch's "FORMAT GATE FIRST" comment): the in-process producers (dw-chart,
+// map-dw) build "static"/"interactive" only; video/scrolly are owned by their native
+// engine counterpart. The rejection error STRING is a behaviour-preservation contract
+// (carried byte-identical from the old per-producer branches) but had no test locking
+// it — this pins it so an edit that reflows the message is a RED, not a silent drift.
+describe("realDispatch — in-process format-gate error string (dw-chart / map-dw)", () => {
+  it('dw-chart rejects "video" with the exact byte-specific error string', async () => {
+    const p: AcceptedProposal = {
+      id: "format-gate-dwchart-video",
+      producer: "dw-chart",
+      format: "video",
+      confirmedTakeaway: "n/a — format-gate probe, never reaches the API",
+      spec: { chartType: "d3-bars", title: "t", rows: [] },
+    };
+    const r = await realDispatch(p, "/tmp/unused-outdir");
+    expect(r.status).toBe("failed");
+    expect(r.error).toBe(
+      'dw-chart cannot build format "video" — it supports "static" or ' +
+        '"interactive" only (video/scrolly require chart-native)',
+    );
+  });
+
+  it('dw-chart rejects "scrolly" with the exact byte-specific error string', async () => {
+    const p: AcceptedProposal = {
+      id: "format-gate-dwchart-scrolly",
+      producer: "dw-chart",
+      format: "scrolly",
+      confirmedTakeaway: "n/a — format-gate probe, never reaches the API",
+      spec: { chartType: "d3-bars", title: "t", rows: [] },
+    };
+    const r = await realDispatch(p, "/tmp/unused-outdir");
+    expect(r.status).toBe("failed");
+    expect(r.error).toBe(
+      'dw-chart cannot build format "scrolly" — it supports "static" or ' +
+        '"interactive" only (video/scrolly require chart-native)',
+    );
+  });
+
+  it('map-dw rejects "video" with the exact byte-specific error string', async () => {
+    const p: AcceptedProposal = {
+      id: "format-gate-mapdw-video",
+      producer: "map-dw",
+      format: "video",
+      confirmedTakeaway: "n/a — format-gate probe, never reaches the API",
+      spec: { mapType: "locator", title: "t", markers: [] },
+    };
+    const r = await realDispatch(p, "/tmp/unused-outdir");
+    expect(r.status).toBe("failed");
+    expect(r.error).toBe(
+      'map-dw cannot build format "video" — it supports "static" or ' +
+        '"interactive" only (video/scrolly require map-native)',
+    );
+  });
+
+  it('map-dw rejects "scrolly" with the exact byte-specific error string', async () => {
+    const p: AcceptedProposal = {
+      id: "format-gate-mapdw-scrolly",
+      producer: "map-dw",
+      format: "scrolly",
+      confirmedTakeaway: "n/a — format-gate probe, never reaches the API",
+      spec: { mapType: "locator", title: "t", markers: [] },
+    };
+    const r = await realDispatch(p, "/tmp/unused-outdir");
+    expect(r.status).toBe("failed");
+    expect(r.error).toBe(
+      'map-dw cannot build format "scrolly" — it supports "static" or ' +
+        '"interactive" only (video/scrolly require map-native)',
+    );
+  });
+});
+
 // Same render-free IHDR probe map-dw's own floor uses: width/height as big-endian
 // uint32 at bytes 16-19/20-23 (the file's dims, never the request's).
 function pngSize(path: string): { width: number; height: number } {

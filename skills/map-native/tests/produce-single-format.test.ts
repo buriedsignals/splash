@@ -37,7 +37,20 @@ const CHOROPLETH_CONFIG = "assets/sample-data/choropleth.json";
 // 180_000 — a single Remotion render on a different engine, already tuned + watchdog-guarded.
 const LIVE_RENDER_PRODUCE_TIMEOUT_MS = 240_000;
 
-describe("produce.mjs single-format dispatch", () => {
+// Token-free-gate honesty: produce.mjs shells real MapLibre/Remotion renders that need a
+// live MapTiler key (VITE_MAPTILER_KEY) to fetch vector tiles — without one every case
+// here would hard-fail (not skip), so `bun run check` was silently NOT green on a keyless
+// CI checkout. Self-skip the same way the DW-live suites do without DATAWRAPPER_API_TOKEN
+// (skills/dw-chart/tests/produce.test.ts).
+const hasMapTilerKey = !!process.env.VITE_MAPTILER_KEY;
+if (!hasMapTilerKey) {
+  console.warn(
+    "skills/map-native/tests/produce-single-format.test.ts: VITE_MAPTILER_KEY not set — skipping (live MapTiler-backed produce e2e)",
+  );
+}
+const d = hasMapTilerKey ? describe : describe.skip;
+
+d("produce.mjs single-format dispatch", () => {
   it(
     "produce interactive builds interactive.html and NOT the static/video artifacts",
     async () => {

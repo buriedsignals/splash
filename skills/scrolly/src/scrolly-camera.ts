@@ -31,6 +31,7 @@
 // to it. Extracted here so all six scrolly map types inherit one behaviour.
 
 import type * as maptilersdk from "@maptiler/sdk";
+import { prefersReducedMotion } from "../../../lib/core/motion";
 
 export interface BeatCamera {
   center: [number, number];
@@ -54,10 +55,7 @@ export function flyToBeat(
   map: InstanceType<typeof maptilersdk.Map>,
   cam: BeatCamera,
 ): void {
-  if (
-    typeof window !== "undefined" &&
-    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-  ) {
+  if (prefersReducedMotion()) {
     map.jumpTo({ center: cam.center, zoom: cam.zoom });
     return;
   }
