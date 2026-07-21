@@ -1,9 +1,21 @@
 {
   "name": "splash",
-  "description": "Open-source visual storytelling for every newsroom. From an article and/or data to a finished, exported visual (chart, map, scrolly, video) — orchestrates ANALYSE → CADRAGE → PROPOSITION → PRODUCTION → EXPORT with human gates. No code to write.",
-  "version": "0.1.0",
+  "description": "Open-source visual storytelling for every newsroom — turns an article and/or its data into a finished, exported visual (chart, map, scrolly, video). No code to write.",
+  "version": "0.2.0",
   "author": {
     "name": "Remy Dumas"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": [
+    "dataviz",
+    "data-journalism",
+    "newsroom",
+    "chart",
+    "map",
+    "scrollytelling",
+    "remotion",
+    "datawrapper",
+    "maplibre",
+    "visual-journalism"
+  ]
 }
