@@ -17,14 +17,18 @@
 //   - L0 furniture (title quality, source cited, altInsight) is ALWAYS a hard violation.
 //     Neither lib/core's conformanceL0 nor map-native's own checkGlobalMapConformance has a
 //     concept of "kept as chosen" for missing/malformed furniture.
-//   - Choropleth ramp CVD-safety is a HARD VIOLATION, UNLESS the ramp is the newsroom's own
-//     genuine house colour (spec.brandExplicit — set only by the profile merge, see
-//     map-spec.ts's ChoroplethMapSpec.brandExplicit doc, which flagged this exact hook as
-//     "informational only... no rendered-contrast a11y guard to downgrade [yet]"). In that
-//     case a CVD failure is KEPT AS CHOSEN and surfaced as a review concern, never rejected —
-//     this is dw-chart's F2 exactly ("a failure in a journalist-chosen brand colour is KEPT
-//     and recorded as a concern; every other failure still throws") and map-native's own
-//     "policy b" (a newsroom house fill that fails contrast is kept, not rejected).
+//   - Choropleth ramp CVD-safety is a HARD VIOLATION, UNCONDITIONALLY — brandExplicit does
+//     NOT downgrade it. This matches BOTH siblings for the ramp construct specifically:
+//     map-native's map-produce-conformance.ts pushes `checkPaletteConformance`'s result
+//     straight into `violations` for all 3 RAMP_TYPES (choropleth/hex-grid/cartogram), with
+//     no brandHue/brandExplicit downgrade path at all — "policy b" there covers ONLY the
+//     single-fill WCAG 1.4.11 contrast concern (symbol/route/dot-density), never the ramp
+//     CVD check. And chart-native's heatmap ramp CVD failure ("luminance is not monotonic")
+//     is likewise never matched by `reconcileBrandViolations`'s `CVD_VIOLATION` regex (which
+//     only downgrades the categorical "not in the Okabe-Ito set" message) — so a heatmap
+//     ramp CVD failure is always hard there too. A brand-explicit downgrade for the RAMP case
+//     would make map-dw MORE LENIENT than both siblings for the same construct; hard-
+//     rejecting instead keeps map-dw consistent with them.
 //   - Locator markers and symbol maps are OUT of scope for this contrast check, matching
 //     map-native's own documented exclusion: both cycle a PALETTE (brandPalette/OKABE_ITO),
 //     never paint a single house fill, so map-native's single-fill concern never applies to
@@ -52,9 +56,10 @@ import type { MapSpec } from "./map-spec";
 
 export interface MapDwConformanceResult {
   violations: string[];
-  // Non-blocking review flags: a genuine newsroom house colour (brandExplicit) kept as
-  // chosen despite failing the CVD-safety proxy — mirrors map-native's
-  // map-produce-conformance.ts `concerns` shape.
+  // Non-blocking review flags. Reserved for a future genuine single-fill contrast concern
+  // (mirrors map-native's map-produce-conformance.ts `concerns` shape) — map-dw currently
+  // has none: it refuses to produce symbol maps (see map-spec.ts) and the ramp CVD check
+  // below is always hard, so this is always empty today.
   concerns: string[];
 }
 
@@ -62,18 +67,13 @@ export interface MapDwConformanceResult {
 // choroplethMetadata (spec-to-map-metadata.ts) uses: an explicit colorScale always wins;
 // else a house hue derives a ramp; else the library DEFAULT_BLUE (2 vetted, monotonic
 // stops — CVD-safe by construction, nothing chosen to check, so `undefined` is returned and
-// no check runs). `isBrandChoice` mirrors spec.brandExplicit verbatim: the field is
-// documented as "true when the colour actually applied is a genuine house colour", so it
-// gates the keep-vs-reject decision regardless of which field (colorScale or brandHue)
-// carried that colour onto the spec.
-function resolveChoroplethRamp(
-  spec: MapSpec,
-): { colors: string[]; isBrandChoice: boolean } | undefined {
+// no check runs). brandExplicit no longer changes this resolution — a ramp CVD failure is
+// hard-rejected regardless of whose colour it is, matching map-native/chart-native.
+function resolveChoroplethRamp(spec: MapSpec): string[] | undefined {
   if (spec.mapType !== "choropleth") return undefined;
-  const isBrandChoice = spec.brandExplicit === true;
   if (spec.colorScale && spec.colorScale.length > 0)
-    return { colors: spec.colorScale.map((s) => s.color), isBrandChoice };
-  if (spec.brandHue) return { colors: houseRamp(spec.brandHue), isBrandChoice };
+    return spec.colorScale.map((s) => s.color);
+  if (spec.brandHue) return houseRamp(spec.brandHue);
   return undefined;
 }
 
@@ -89,32 +89,21 @@ export function runProduceMapDwConformance(
   });
   const concerns: string[] = [];
 
-  const resolved = resolveChoroplethRamp(spec);
-  if (
-    resolved &&
-    resolved.colors.length >= 2 &&
-    !isMonotonicLuminanceRamp(resolved.colors)
-  ) {
-    const msg =
+  const colors = resolveChoroplethRamp(spec);
+  if (colors && colors.length >= 2 && !isMonotonicLuminanceRamp(colors)) {
+    violations.push(
       `choropleth colour ramp is not CVD-safe (not monotonic-luminance, so ` +
-      `colour-blind readers cannot separate the sequential bins by lightness alone): ` +
-      `${resolved.colors.join(" -> ")}`;
-    if (resolved.isBrandChoice) {
-      concerns.push(
-        `${msg} -- kept as the newsroom's own house colour (brandExplicit), verify ` +
-          `legibility at render-review (policy b)`,
-      );
-    } else {
-      violations.push(msg);
-    }
+        `colour-blind readers cannot separate the sequential bins by lightness alone): ` +
+        `${colors.join(" -> ")}`,
+    );
   }
 
   return { violations, concerns };
 }
 
 // Fail-hard entry point for produce.ts: throws on any hard violation (title/source/alt-text
-// missing or malformed, a non-brand ramp failing CVD-safety); a kept-as-chosen brand concern
-// is logged, never thrown.
+// missing or malformed, ANY ramp failing CVD-safety, brand-explicit or not); `concerns` is
+// logged, never thrown, but is always empty today (see MapDwConformanceResult doc).
 export function assertMapDwConformance(spec: MapSpec): void {
   const { violations, concerns } = runProduceMapDwConformance(spec);
   for (const c of concerns) console.warn(`[map-dw] conformance concern: ${c}`);

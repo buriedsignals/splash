@@ -103,8 +103,8 @@ describe("runProduceMapDwConformance — L0 furniture floor", () => {
   });
 });
 
-describe("runProduceMapDwConformance — choropleth ramp CVD-safety (keep-vs-reject policy)", () => {
-  it("rejects a non-brand explicit colorScale that is not CVD-safe (hard violation)", () => {
+describe("runProduceMapDwConformance — choropleth ramp CVD-safety (always hard, no downgrade)", () => {
+  it("rejects an explicit colorScale that is not CVD-safe (hard violation)", () => {
     const result = runProduceMapDwConformance(
       choroplethSpec({ colorScale: NON_MONOTONIC_RAMP }),
     );
@@ -112,13 +112,21 @@ describe("runProduceMapDwConformance — choropleth ramp CVD-safety (keep-vs-rej
     expect(result.concerns).toEqual([]);
   });
 
-  it("downgrades the SAME failing ramp to a kept concern when it is the newsroom's own brand colour (policy b)", () => {
+  // Tier-2 #10 review finding: this used to downgrade a brand-explicit failing ramp to a
+  // kept concern, claiming to mirror map-native's "policy b" / dw-chart's F2 — but neither
+  // precedent covers the RAMP case. map-native pushes a RAMP_TYPES CVD failure straight into
+  // `violations` unconditionally (policy b there is ONLY the single-fill WCAG 1.4.11
+  // contrast concern for symbol/route/dot-density); chart-native's heatmap ramp CVD failure
+  // ("luminance is not monotonic") is never matched by reconcileBrandViolations's
+  // CVD_VIOLATION regex (categorical-only), so it too is always hard. The downgrade made
+  // map-dw MORE LENIENT than both siblings for the same construct. Tightened: brandExplicit
+  // no longer downgrades a ramp CVD failure — it is hard-rejected like its siblings.
+  it("hard-rejects a failing ramp even when it is the newsroom's own brand colour (matches map-native/chart-native — no lenient outlier)", () => {
     const result = runProduceMapDwConformance(
       choroplethSpec({ colorScale: NON_MONOTONIC_RAMP, brandExplicit: true }),
     );
-    expect(result.violations).toEqual([]);
-    expect(result.concerns.some((c) => /not CVD-safe/.test(c))).toBe(true);
-    expect(result.concerns.some((c) => /kept/.test(c))).toBe(true);
+    expect(result.violations.some((v) => /not CVD-safe/.test(v))).toBe(true);
+    expect(result.concerns).toEqual([]);
   });
 
   it("a CVD-safe explicit colorScale has no violations or concerns", () => {
