@@ -881,3 +881,26 @@ export function validateCartogramConfig(
   if (errors.length) return { ok: false, errors };
   return { ok: true, spec: s as CartogramConfigShape, warnings };
 }
+
+// Errors-only family validation for the producer registry (skills/map-native/src/manifest.ts
+// and the map track of skills/scrolly/src/manifest.ts). Mirrors validate-gate.ts's
+// `validateMapNative`: map-native is a discriminated family — pick the validator by the
+// config's `type` (absent ⇒ choropleth, the mount default) and return its error list.
+export function mapNativeConfigErrors(spec: unknown): string[] {
+  const type = (spec as { type?: string } | null)?.type;
+  const r =
+    type === "symbol"
+      ? validateSymbolConfig(spec)
+      : type === "locator"
+        ? validateLocatorConfig(spec)
+        : type === "route"
+          ? validateRouteConfig(spec)
+          : type === "dot-density"
+            ? validateDotDensityConfig(spec)
+            : type === "hex-grid"
+              ? validateHexGridConfig(spec)
+              : type === "cartogram"
+                ? validateCartogramConfig(spec)
+                : validateChoroplethConfig(spec);
+  return r.ok ? [] : r.errors;
+}

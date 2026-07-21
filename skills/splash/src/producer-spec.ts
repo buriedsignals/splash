@@ -1,5 +1,6 @@
 // The orchestration contract: what the agent hands the spine, and what it gets back.
 import type { Channel } from "./channel";
+import { getProducer } from "../../../lib/core/registry";
 
 export type Producer =
   | "dw-chart"
@@ -9,6 +10,16 @@ export type Producer =
   | "scrolly"
   | "image-native";
 export type VisualFormat = "static" | "interactive" | "video" | "scrolly";
+
+// Runtime counterpart of the `Producer` union, backed by the registry. The union above stays
+// the canonical COMPILE-TIME type (every hard-coded branch still narrows against it); this is
+// for code paths that receive an untyped producer string (JSON.parse at a CLI seam) and want
+// to check membership against the actually-registered set rather than a duplicated literal
+// list. Requires the registry to be populated (register-producers imported) before it is
+// called — true on any dispatch path, which imports adapters.ts.
+export function isRegisteredProducer(name: string): name is Producer {
+  return getProducer(name) !== undefined;
+}
 
 export interface AcceptedProposal {
   id: string; // stable, unique per run (keys the per-proposal outDir)

@@ -63,9 +63,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
+// Populate the producer registry (each engine's manifest self-registers on import) BEFORE
+// any getProducer call below. This one side-effect import is the wiring that makes dispatch
+// data-driven — without it the registry is empty at dispatch time. Module caching runs it once.
+import "./register-producers";
+import { getProducer } from "../../../lib/core/registry";
 import type { Channel } from "./channel";
 import { assertSafeId } from "./id-safety";
 import type { Dispatch } from "./produce-all";
@@ -76,28 +80,32 @@ import type { MapSpec } from "../../map-dw/src/map-spec";
 import { produceChart } from "../../dw-chart/src/produce";
 import { produceMap } from "../../map-dw/src/produce";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const SKILLS_ROOT = resolve(here, "../..");
-
 type FileBasedProducer =
   "chart-native" | "map-native" | "scrolly" | "image-native";
 
+// A producer is file-based (subprocess) when its registered manifest declares
+// execution:"subprocess" — the registry is now the single source of truth for this fork,
+// replacing the hard-coded name list. The four subprocess engines (chart-native, map-native,
+// scrolly, image-native) register exactly that, so the set is unchanged.
 function isFileBased(producer: Producer): producer is FileBasedProducer {
-  return (
-    producer === "chart-native" ||
-    producer === "map-native" ||
-    producer === "scrolly" ||
-    producer === "image-native"
-  );
+  return getProducer(producer)?.execution === "subprocess";
 }
 
-// The two NATIVE producers (chart-native, map-native) render at the channel's
-// size/aspect (Slice 2); scrolly rides its host engine's own render path and does
-// not read a channel today, so it is deliberately excluded here.
-const CHANNEL_THREADED_PRODUCERS = new Set<FileBasedProducer>([
-  "chart-native",
-  "map-native",
-]);
+// The subprocess dispatch data (entry script + skill cwd + channel threading) for a
+// file-based producer, read from its registered manifest. Throws if a file-based producer
+// somehow carries no subprocess config — a manifest bug, surfaced loud rather than at spawn.
+function subprocessConfigFor(producer: FileBasedProducer): {
+  scriptPath: string;
+  skillDir: string;
+  threadsChannel: boolean;
+} {
+  const sub = getProducer(producer)?.subprocess;
+  if (!sub)
+    throw new Error(
+      `no subprocess config registered for producer "${producer}"`,
+    );
+  return sub;
+}
 
 const DEFAULT_CHANNEL: Channel = "article-web";
 
@@ -115,30 +123,12 @@ export function channelEnvFor(
   producer: FileBasedProducer,
   channel: Channel | undefined,
 ): Record<string, string> {
-  if (!CHANNEL_THREADED_PRODUCERS.has(producer)) return {};
+  // Whether SPLASH_CHANNEL is threaded is the manifest's `threadsChannel` flag: the two
+  // NATIVE producers (chart-native, map-native) render at the channel's size/aspect (Slice
+  // 2) and set it; scrolly / image-native do not read a channel and leave it false.
+  if (!subprocessConfigFor(producer).threadsChannel) return {};
   return { SPLASH_CHANNEL: channel ?? DEFAULT_CHANNEL };
 }
-
-// Absolute so cwd never matters for resolution, even though we also set cwd (below)
-// to match the brief's call shape.
-const SCRIPT: Record<FileBasedProducer, string> = {
-  "chart-native": join(
-    SKILLS_ROOT,
-    "chart-native/scripts/produce-from-spec.mjs",
-  ),
-  "map-native": join(SKILLS_ROOT, "map-native/scripts/produce.mjs"),
-  scrolly: join(SKILLS_ROOT, "scrolly/scripts/produce.mjs"),
-  // image-native (C5): <image-story.json> <outDir> <format> — same single-format shape;
-  // v1 accepts "scrolly" only (its own CLI fails hard on anything else).
-  "image-native": join(SKILLS_ROOT, "image-native/scripts/produce.mjs"),
-};
-
-const SKILL_DIR: Record<FileBasedProducer, string> = {
-  "chart-native": join(SKILLS_ROOT, "chart-native"),
-  "map-native": join(SKILLS_ROOT, "map-native"),
-  scrolly: join(SKILLS_ROOT, "scrolly"),
-  "image-native": join(SKILLS_ROOT, "image-native"),
-};
 
 // CHANNEL INJECTION (cloud producers) — the spine's truth flows in MECHANICALLY.
 // dw-chart and map-dw size (and render-size-verify) their DW export against their own
@@ -294,10 +284,14 @@ function dispatchFileBased(
   const configPath = join(tmpDir, "config.json");
   writeFileSync(configPath, JSON.stringify(spec, null, 2));
 
+  // Entry script + skill cwd come from the producer's registered manifest (colocated with
+  // the engine), not a hard-coded map here. scriptPath is absolute, so cwd never matters for
+  // resolution — but we still set cwd to the skill dir to match each script's call shape.
+  const sub = subprocessConfigFor(producer);
   const outcome = runProducerScript(
     "bun",
-    [SCRIPT[producer], configPath, absOutDir, formatFlag(producer, format)],
-    SKILL_DIR[producer],
+    [sub.scriptPath, configPath, absOutDir, formatFlag(producer, format)],
+    sub.skillDir,
     channelEnvFor(producer, channel),
   );
   if (outcome.status !== "produced") return outcome;
