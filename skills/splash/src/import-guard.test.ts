@@ -39,18 +39,16 @@ function isScrollyComposition(file: string, line: string): boolean {
 }
 
 // SANCTIONED #2 — map-dw -> dw-chart (shared Datawrapper plumbing, e.g. export-aspect,
-// the one native->dw fallback) PLUS map-dw -> map-native/src/theme/house-ramp: a pure,
-// dependency-free colour-ramp deriver (hand-rolled sRGB<->OKLab, no MapTiler/Remotion
-// deps) that map-dw has no deriver of its own for — documented inline at the import site
-// (skills/map-dw/src/spec-to-map-metadata.ts) as the same reuse pattern as the dw-chart
-// import. Also pre-existing (introduced in f408afe/d474127, both before this branch's
-// merge-base 7362745; untouched by Tasks 1-8).
+// the one native->dw fallback). Pre-existing (introduced in f408afe/d474127, both before
+// this branch's merge-base 7362745; untouched by Tasks 1-8).
+// (Tier 2: the sibling exception this used to carry — map-dw -> map-native/src/theme/
+// house-ramp, a pure colour-ramp deriver map-dw had no copy of its own for — is GONE:
+// house-ramp moved to lib/core/house-ramp.ts, and map-dw's spec-to-map-metadata.ts /
+// produce-conformance.ts now import it from there like every other shared primitive. No
+// map-dw file reaches into map-native/src/ anymore.)
 function isMapDwSharedImport(file: string, line: string): boolean {
   if (!file.startsWith("skills/map-dw/")) return false;
-  return (
-    /\/dw-chart\/src\//.test(line) ||
-    /\/map-native\/src\/theme\/house-ramp["']/.test(line)
-  );
+  return /\/dw-chart\/src\//.test(line);
 }
 
 // Belt-and-suspenders: no engine may import a shared primitive (contrast, theme, locale,
