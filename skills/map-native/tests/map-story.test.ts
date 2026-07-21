@@ -90,7 +90,7 @@ describe("deriveMapStory — value grammar", () => {
       lang: "fr",
     });
     const nor = beats.find((b) => b.callout?.name === "Norway");
-    expect(nor?.callout?.value).toBe("33 900 MW"); // narrow no-break space
+    expect(nor?.callout?.value).toBe("33 900 MW"); // narrow no-break space
   });
   it("never touches a SYMBOL unit like ' %' at value 1", () => {
     const d: ChoroplethData = {

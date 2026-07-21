@@ -5,3 +5,5 @@
 export const CORE_MARKER = "splash-core" as const;
 export * from "./contrast";
 export * from "./theme";
+export * from "./locale";
+export * from "./i18n-furniture";

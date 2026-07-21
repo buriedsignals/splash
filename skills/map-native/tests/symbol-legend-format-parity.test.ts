@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { formatLocaleNumber } from "../src/core/locale";
 
 const SRC = join(import.meta.dir, "..", "src", "SymbolMap.tsx");
-const NBSP = " "; // U+202F narrow no-break space — the French thousands separator
+const NBSP = " "; // U+202F narrow no-break space — the French thousands separator
 
 // Extract the `renderLegend()` body: from its declaration through the end of the
 // `el.innerHTML = ...;` statement it feeds. Value FORMATTING happens there (the

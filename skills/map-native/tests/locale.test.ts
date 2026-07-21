@@ -8,7 +8,7 @@ import {
 } from "../src/core/locale";
 import { fmtBin } from "../src/core/legend-format";
 
-const NBSP = " ";
+const NBSP = " ";
 
 describe("locale — detection + full number formatting", () => {
   it("detects French language tags", () => {
