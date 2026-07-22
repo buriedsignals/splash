@@ -187,3 +187,17 @@ describe("core/house-ramp hueRampOklch is gate-safe for vivid house hues", () =>
       ).toEqual([]);
   });
 });
+
+import { hexToOklch, oklchToHex } from "./house-ramp";
+
+describe("core/house-ramp OKLCH round-trip primitives are exported", () => {
+  it("hexToOklch → oklchToHex round-trips a colour within 1 byte per channel", () => {
+    for (const hex of ["#0072b2", "#c8102e", "#6b6b6b", "#ffffff", "#000000"]) {
+      const back = oklchToHex(hexToOklch(hex));
+      const chan = (h: string, i: number) =>
+        parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+      for (let i = 0; i < 3; i++)
+        expect(Math.abs(chan(back, i) - chan(hex, i))).toBeLessThanOrEqual(1);
+    }
+  });
+});

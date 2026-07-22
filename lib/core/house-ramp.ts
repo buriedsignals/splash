@@ -53,13 +53,13 @@ function toHex(r: number, g: number, b: number): string {
   );
 }
 
-interface Oklch {
+export interface Oklch {
   L: number;
   C: number;
   h: number;
 }
 
-function hexToOklch(hex: string): Oklch {
+export function hexToOklch(hex: string): Oklch {
   const [r8, g8, b8] = parseHex(hex);
   const r = srgbToLinear(r8);
   const g = srgbToLinear(g8);
@@ -73,7 +73,7 @@ function hexToOklch(hex: string): Oklch {
   return { L, C: Math.hypot(A, B), h: Math.atan2(B, A) };
 }
 
-function oklchToHex({ L, C, h }: Oklch): string {
+export function oklchToHex({ L, C, h }: Oklch): string {
   const A = C * Math.cos(h);
   const B = C * Math.sin(h);
   const l_ = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
