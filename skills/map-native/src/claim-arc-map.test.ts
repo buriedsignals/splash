@@ -1,5 +1,10 @@
 import { describe, it, expect } from "bun:test";
-import { mapArcErrors, deriveMapStory, type MapArcBeat } from "./map-story.ts";
+import {
+  mapArcErrors,
+  deriveMapStory,
+  mapNarrativeFallbackWarning,
+  type MapArcBeat,
+} from "./map-story.ts";
 import { deriveSymbolStory } from "./symbol-story.ts";
 import { computeChoropleth, type ChoroplethData } from "./choropleth-geo.ts";
 import type { SymbolPoint } from "./symbol-geo.ts";
@@ -498,5 +503,73 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
         copy: "",
       },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Finding #1 — an arc region can be in the DATA but absent from the BASEMAP
+// (a partial join: computeChoropleth only throws when NOTHING matches). The gate
+// (validateChoroplethConfig) only ever sees the data rows, never the basemap, so it
+// cannot catch this — deriveMapStory must fail loud with an HONEST message, not the
+// misleading "should have been caught by validation" claim.
+// ---------------------------------------------------------------------------
+
+describe("deriveMapStory — arc region absent from the basemap (Finding #1)", () => {
+  it("throws a clean, honest error naming the offending region — not the old misleading wording", () => {
+    const dataWithOffBasemapRegion: ChoroplethData = {
+      regionKey: "region",
+      valueField: "value",
+      rows: [
+        ...choroplethData.rows,
+        // "Fribourg" is a real data row but has NO matching feature in
+        // choroplethFeatures — a partial join (computeChoropleth tolerates this).
+        { region: "Fribourg", value: 50 },
+      ],
+    };
+    const layoutWithGap = computeChoropleth(
+      dataWithOffBasemapRegion,
+      choroplethFeatures,
+      "region",
+    );
+    const callDerive = () =>
+      deriveMapStory(layoutWithGap, choroplethFeatures, "region", {
+        title: "Swiss cantons",
+        insight: "",
+        unit: " pts",
+        arcBeats: [
+          { region: "Fribourg", role: "establish", text: "Fribourg starts." },
+        ],
+      });
+
+    expect(callDerive).toThrow(/basemap|absent|did not/i);
+    expect(callDerive).not.toThrow(/should have been caught/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Finding #2 — arcBeats: [] must warn like an absent arcBeats (it still renders via
+// the salience fallback path — deriveMapStory/deriveSymbolStory gate on `?.length`).
+// ---------------------------------------------------------------------------
+
+describe("mapNarrativeFallbackWarning — empty arcBeats (Finding #2)", () => {
+  it("warns when arcBeats is an empty array (renders via salience, same as absent)", () => {
+    const warning = mapNarrativeFallbackWarning({
+      type: "choropleth",
+      arcBeats: [],
+    });
+    expect(warning).not.toBeNull();
+  });
+
+  it("stays silent when arcBeats is a non-empty confirmed arc", () => {
+    const warning = mapNarrativeFallbackWarning({
+      type: "choropleth",
+      arcBeats: [{ region: "Geneva", role: "establish", text: "sets" }],
+    });
+    expect(warning).toBeNull();
+  });
+
+  it("still warns when arcBeats is absent (behaviour-preserving)", () => {
+    const warning = mapNarrativeFallbackWarning({ type: "choropleth" });
+    expect(warning).not.toBeNull();
   });
 });

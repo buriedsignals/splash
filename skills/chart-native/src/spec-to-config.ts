@@ -7,6 +7,7 @@
 import { parseCsv, type ParsedCsv } from "./csv";
 import { validateShape } from "./shape-validation";
 import { humanizeColumn, seriesLabelFromColumn } from "./core/text";
+import type { ArcRole } from "../../../lib/core/claim-arc";
 
 /**
  * One journalist-confirmed narrative beat for a chart SCROLLY (NativeSpec.beats).
@@ -35,7 +36,7 @@ export interface NarrativeBeat {
    * auto-caption path, byte-identical. When ANY beat has a role, ALL must, and the arc
    * must be well-formed (see narrativeBeatErrors → arcErrors).
    */
-  role?: "establish" | "build" | "turn" | "payoff";
+  role?: ArcRole;
 }
 
 export interface NativeSpec {

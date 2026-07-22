@@ -104,9 +104,10 @@ export interface MapArcAnchor {
 // Beat is the shared shape, so the callout is ONE shape either way: { region; name;
 // value; text }. `copy`/`callout.text` is the arc beat's CLAIM (`text`), never a
 // derived "name — value" caption — the journalist's assertion is the caption.
-// A `resolve` returning null is unreachable in practice (mapArcErrors validates every
-// region against the data before this ever runs) but throws — defense in depth, never
-// a silently dropped/misplaced beat.
+// A `resolve` returning null should be unreachable — callers are expected to check
+// their region set against `resolve`'s key space BEFORE calling applyMapArc (see
+// deriveMapStory/deriveSymbolStory) — but this throws regardless: defense in depth,
+// never a silently dropped/misplaced beat.
 export function applyMapArc(
   arcBeats: MapArcBeat[],
   resolve: (region: string) => MapArcAnchor | null,
@@ -115,7 +116,7 @@ export function applyMapArc(
     const anchor = resolve(arcBeat.region);
     if (!anchor)
       throw new Error(
-        `applyMapArc: region "${arcBeat.region}" did not resolve to data — this should have been caught by mapArcErrors validation`,
+        `applyMapArc: region "${arcBeat.region}" did not resolve to an anchor`,
       );
     const text = arcBeat.text ?? "";
     return {
@@ -143,7 +144,10 @@ export function applyMapArc(
 // their own story unconditionally and never carry the field, so they never warn here.
 export function mapNarrativeFallbackWarning(config: unknown): string | null {
   const c = config as { type?: string; arcBeats?: unknown } | null;
-  if (c?.arcBeats !== undefined) return null;
+  // Mirror the deriver's gate exactly (`meta.arcBeats?.length`): a confirmed, NON-EMPTY
+  // arcBeats suppresses the warning. An empty array still renders via the salience path
+  // (see deriveMapStory/deriveSymbolStory), so it must still warn like an absent one.
+  if (Array.isArray(c?.arcBeats) && c.arcBeats.length > 0) return null;
   const type = c?.type;
   if (type !== undefined && type !== "choropleth" && type !== "symbol")
     return null;
@@ -281,10 +285,23 @@ export function deriveMapStory(
 
   if (meta.arcBeats?.length) {
     // Journalist-confirmed claim-arc override — the reveals follow the ARC order, not
-    // the salience selection below. mapArcErrors has already validated every arcBeat's
-    // region against the data, so valueByKey lookups here cannot miss (applyMapArc
-    // throws defensively if one somehow did).
+    // the salience selection below. mapArcErrors (run at the gate) has validated every
+    // arcBeat's region against the DATA rows — but the gate has no basemap, and
+    // computeChoropleth permits a PARTIAL join (it only throws when NOTHING matches;
+    // see choropleth-geo.ts). So a region present in the data but absent from the
+    // basemap (name mismatch, or a sub-region the basemap doesn't carry) can pass the
+    // gate yet have no entry here. Check against the basemap-joined key set before
+    // calling applyMapArc, and fail with an honest, journalist-facing message — never
+    // let it surface as applyMapArc's internal "did not resolve" defense-in-depth throw.
     const valueByKey = new Map(withData.map((j) => [j.key, j.value]));
+    const missingRegions = meta.arcBeats
+      .map((b) => b.region)
+      .filter((region) => !valueByKey.has(region));
+    if (missingRegions.length > 0) {
+      throw new Error(
+        `claim-arc region(s) [${missingRegions.join(", ")}] are in your data but absent from the map basemap (a name mismatch or a region the basemap lacks), so they can't anchor an arc beat — align the region name to the basemap or drop that beat.`,
+      );
+    }
     beats.push(
       ...applyMapArc(meta.arcBeats, (key) => {
         const v = valueByKey.get(key);
