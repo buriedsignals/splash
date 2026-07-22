@@ -149,6 +149,7 @@ export function ConnectedScatterChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -180,7 +181,7 @@ function ConnectedScatterSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const accent = config.baseColor ?? ACCENT; // subject-fit hue, else default
   const { innerWidth, innerHeight, points, totalLen } = layout;
 

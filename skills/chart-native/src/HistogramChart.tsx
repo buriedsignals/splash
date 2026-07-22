@@ -145,6 +145,7 @@ export function HistogramChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -176,7 +177,7 @@ function HistogramSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const BAR = config.baseColor ?? C.line; // subject-fit hue, else theme line (Okabe-Ito blue; skyblue on dark)
   const { innerWidth, innerHeight, base, bars, median, medianX } = layout;
   const n = bars.length;

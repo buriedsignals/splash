@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { BumpChart, type BumpConfig } from "../src/BumpChart";
 import { resolveBumpAccents } from "../src/bump-geometry";
-import { COLORS, OKABE_ITO, BUMP_ACCENT_COLORS } from "../src/core/tokens";
+import { OKABE_ITO, BUMP_ACCENT_COLORS } from "../src/core/tokens";
 
 // A bump chart must PAINT the subject-fit colour the journalist approved in the spec
 // (baseColor for a single tracked line, seriesColors for several), like every other
@@ -79,8 +79,9 @@ describe("BumpChart — honours the spec's subject-fit colour", () => {
     expect(svg).toContain(`stroke="${OKABE_ITO.purple}"`);
     // …and the old hardcoded blue accent never appears
     expect(svg).not.toContain(OKABE_ITO.blue);
-    // the untracked lines stay neutral grey context
-    expect(svg).toContain(`stroke="${COLORS.muted}"`);
+    // the untracked lines stay neutral grey context, now tinted by the
+    // house hue (S3 fan-out threaded baseColor into themeColors here too)
+    expect(svg).toContain(`stroke="#79646f"`); // tinted neutral (S3 fan-out)
   });
 
   it("paints multiple highlighted lines from seriesColors in order", () => {

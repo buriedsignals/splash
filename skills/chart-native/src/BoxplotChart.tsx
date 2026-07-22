@@ -154,6 +154,7 @@ export function BoxplotChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -185,7 +186,7 @@ function BoxplotSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const boxFill = config.baseColor ?? BOX; // subject-fit hue, else default
   const { innerWidth, innerHeight, rows } = layout;
   const n = rows.length;

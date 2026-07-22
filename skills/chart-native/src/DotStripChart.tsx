@@ -199,6 +199,7 @@ export function DotStripChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -232,7 +233,7 @@ function DotStripSvg({
   sc: number;
   legendWraps: boolean;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const MEAN_COLOR = C.ink; // neutral reference marker
   const dotColor = config.baseColor ?? DOT_COLOR; // subject-fit hue, else default
   const { innerWidth, innerHeight, rows } = layout;

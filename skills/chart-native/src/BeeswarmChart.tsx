@@ -23,7 +23,9 @@ import {
   FONT,
   TYPE,
   OKABE_ITO,
-  BEESWARM_CATEGORY_COLORS, tooltipBorder } from "./core/tokens";
+  BEESWARM_CATEGORY_COLORS,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { formatLocaleNumber, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -167,6 +169,7 @@ export function BeeswarmChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -200,7 +203,7 @@ function BeeswarmSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const { innerWidth, innerHeight, nodes, valueTicks, radius } = layout;
   const n = nodes.length;
   const chrome = easeOutCubic(p / 0.16);

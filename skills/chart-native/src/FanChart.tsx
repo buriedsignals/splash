@@ -71,7 +71,7 @@ export function FanChart({
   scale = 1,
 }: FanChartProps) {
   const p = clamp01(progress);
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
     8,
@@ -148,6 +148,7 @@ export function FanChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
