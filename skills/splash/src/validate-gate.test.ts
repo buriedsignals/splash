@@ -175,7 +175,7 @@ describe("validateAccepted — the spine validation gate", () => {
     if (!r.ok) expect(r.errors.join(" ")).toContain("2019");
   });
 
-  it("REJECTS explicit beats on a MAP scrolly track (chart-track override only — never silently ignored)", () => {
+  it("REJECTS explicit CHART beats on a MAP scrolly track (wrong field — arcBeats is the map override)", () => {
     const r = validateAccepted(
       accept("scrolly", {
         type: "symbol",
@@ -187,7 +187,94 @@ describe("validateAccepted — the spine validation gate", () => {
       }),
     );
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors.join(" ")).toMatch(/map/i);
+    if (!r.ok) expect(r.errors.join(" ")).toMatch(/arcBeats/);
+  });
+
+  // S2 — the map scrolly track un-rejected: a journalist-confirmed `arcBeats` claim-arc is
+  // accepted and validated (Task 2 wired mapArcErrors INTO validateChoroplethConfig /
+  // validateSymbolConfig; validateMapNative dispatches to those), and a map with none gets
+  // the same non-blocking salience-fallback flag the chart track already carries.
+  it("ACCEPTS a MAP choropleth scrolly with a valid arcBeats claim-arc (region anchored in the data)", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        regionKey: "iso",
+        valueField: "share",
+        rows: [
+          { iso: "NOR", share: 99 },
+          { iso: "SWE", share: 61 },
+          { iso: "FIN", share: 45 },
+        ],
+        basemap: "world",
+        title: "Nordic countries lead on renewable electricity",
+        description: "Share of renewables, 2023",
+        source: { name: "Eurostat", url: "https://ec.europa.eu/eurostat" },
+        arcBeats: [
+          { region: "NOR", role: "establish", text: "Norway leads by far" },
+          { region: "SWE", role: "build", text: "Sweden is close behind" },
+          {
+            region: "FIN",
+            role: "payoff",
+            text: "Finland trails but is rising",
+          },
+        ],
+      }),
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings.join(" ")).not.toMatch(/auto-picked|salience/i);
+  });
+
+  it("REJECTS a MAP choropleth scrolly's arcBeats when a beat anchors on an unknown region (typo tripwire)", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        regionKey: "iso",
+        valueField: "share",
+        rows: [{ iso: "NOR", share: 99 }],
+        basemap: "world",
+        title: "Nordic countries lead on renewable electricity",
+        description: "Share of renewables, 2023",
+        source: { name: "Eurostat", url: "https://ec.europa.eu/eurostat" },
+        arcBeats: [{ region: "ZZZ", text: "no such region" }],
+      }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("ZZZ");
+  });
+
+  it("WARNS that a MAP choropleth scrolly with no confirmed arcBeats used the salience fallback", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        regionKey: "iso",
+        valueField: "share",
+        rows: [{ iso: "NOR", share: 99 }],
+        basemap: "world",
+        title: "Nordic countries lead on renewable electricity",
+        description: "Share of renewables, 2023",
+        source: { name: "Eurostat", url: "https://ec.europa.eu/eurostat" },
+      }),
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings.join(" ")).toMatch(/auto-picked|salience/i);
+  });
+
+  // Guard the deferral — route/cartogram (and the other non-workhorse map types) do not
+  // support an arcBeats override yet, so a config with no arcBeats must NOT be flagged
+  // with the salience-fallback warning (there is no override to confirm instead).
+  it("does NOT warn on a MAP route scrolly with no arcBeats (route doesn't support an override yet)", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        type: "route",
+        route: [
+          [2.35, 48.85],
+          [4.35, 50.85],
+        ],
+        basemap: "world",
+        title: "The route the shipment took",
+        description: "Path from Paris to Brussels",
+        source: { name: "X", url: "https://x" },
+      }),
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings.join(" ")).not.toMatch(/auto-picked|salience/i);
   });
 
   it("returns a FAILURE (never a crash) for a producer outside the union", () => {

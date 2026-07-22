@@ -25,6 +25,7 @@ import {
   narrativeBeatWarnings,
   narrativeFallbackWarning,
 } from "../../chart-native/src/chart-story";
+import { mapNarrativeFallbackWarning } from "../../map-native/src/map-story";
 import {
   checkImageConformance,
   type ImageStory,
@@ -126,19 +127,29 @@ function validateScrolly(spec: unknown): ValidationOutcome {
     }
     return outcome;
   }
-  // The explicit `beats` override is CHART-track narrative control. The map track
-  // derives its own story (deriveMapStory) and would silently IGNORE the field —
-  // the exact flow failure the override exists to close — so reject it loud.
+  // The explicit `beats` field is CHART-track narrative control. A map uses `arcBeats`
+  // (region-anchored: { region, role, text }) instead — the map track derives its own
+  // story (deriveMapStory) and would silently IGNORE `beats`, the exact flow failure the
+  // override exists to close — so reject it loud, pointing at the right field.
   if ((spec as { beats?: unknown } | null)?.beats !== undefined)
     return {
       ok: false,
       errors: [
-        "explicit `beats` override is not supported on the map scrolly track " +
-          "(chart-track line/bar narrative control only) — remove it; map scrolly " +
-          "steps are derived from the data (deriveMapStory)",
+        "`beats` is chart-track narrative control — a MAP uses `arcBeats` " +
+          "(region-anchored: `{region, role, text}`). Move the plan to `arcBeats`.",
       ],
     };
-  return validateMapNative(spec);
+  // arcBeats (S2) is validated INSIDE validateMapNative (choropleth/symbol dispatch to
+  // validateChoroplethConfig/validateSymbolConfig, which call mapArcErrors) — its errors
+  // already flow through as ok:false here. On the OK path, flag the salience fallback
+  // (no confirmed arcBeats) the same way the chart track does above.
+  const mapOutcome = validateMapNative(spec);
+  if (mapOutcome.ok) {
+    const fallback = mapNarrativeFallbackWarning(spec);
+    if (fallback)
+      return { ok: true, warnings: [...mapOutcome.warnings, fallback] };
+  }
+  return mapOutcome;
 }
 
 // image-native (C5): the spec IS the ImageStory manifest — run the engine's own

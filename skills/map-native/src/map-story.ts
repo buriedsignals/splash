@@ -135,6 +135,25 @@ export function applyMapArc(
   });
 }
 
+// S2 flagged fallback — mirrors chart-native's narrativeFallbackWarning (chart-story.ts).
+// A choropleth/symbol map story with NO confirmed `arcBeats` derives its narrative from
+// data salience (deriveMapStory's own ranking), not a journalist-confirmed claim-arc —
+// never a hard fail, but never silent either. Only choropleth/symbol support an arcBeats
+// override (validate-config.ts) — route/locator/dot-density/hex-grid/cartogram derive
+// their own story unconditionally and never carry the field, so they never warn here.
+export function mapNarrativeFallbackWarning(config: unknown): string | null {
+  const c = config as { type?: string; arcBeats?: unknown } | null;
+  if (c?.arcBeats !== undefined) return null;
+  const type = c?.type;
+  if (type !== undefined && type !== "choropleth" && type !== "symbol")
+    return null;
+  return (
+    "narrative auto-picked by data salience (no confirmed claim-arc `arcBeats`) — the map " +
+    "scrolly walks the most salient regions, not a confirmed argument. If this ships as a " +
+    "story, confirm a region-anchored claim-arc at CADRAGE (establish → build → [turn] → payoff)."
+  );
+}
+
 // The choreography a reveal beat's camera follows. "context" (default) keeps the
 // establishing bounds in view around each reveal (the current areal behaviour);
 // "sequential" is a journey/progression choreography read by later map-native tasks
