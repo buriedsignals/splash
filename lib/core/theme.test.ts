@@ -114,6 +114,14 @@ describe("resolveFrameColors house-hue tint", () => {
   });
 
   it("is byte-identical to the dark preset with no house hue", () => {
+    // Independent literal oracle — FRAME_COLORS_DARK is itself resolveFrameColors(DARK_FRAME_BG),
+    // so asserting against it alone is a tautology. Pin the exact expected furniture so a future
+    // regression that tinted the no-hue dark path (and thus re-derived FRAME_COLORS_DARK) is caught.
+    expect(resolveFrameColors(DARK_FRAME_BG)).toEqual({
+      pill: "rgba(24,24,27,0.82)",
+      ink: "#f4f4f5",
+      muted: "#c4c4c5",
+    });
     expect(resolveFrameColors(DARK_FRAME_BG)).toEqual(FRAME_COLORS_DARK);
   });
 
