@@ -22,6 +22,7 @@ import { MAP_TYPES, type MapType } from "../map-types";
 import { resolveMapStyle } from "../route-geo";
 import {
   DARK_FRAME_BG,
+  type FrameColors,
   resolveFrameColors,
   resolveThemeBg,
 } from "../theme/map-tokens";
@@ -54,6 +55,33 @@ function resolveRampScaleType(
 // All 7 MAP_TYPES are furniture-guarded here — the parity target a later completeness
 // invariant (reachable ⟹ guarded) checks against.
 export const MAP_PRODUCE_GUARDED_TYPES: readonly MapType[] = MAP_TYPES;
+
+// The SAME furniture-colour resolution the guard validates — exported so a test can observe
+// exactly what the guard sees (the tinted `muted`, not the dead grey) without duplicating the
+// mapStyle/themeBg/brandHue plumbing. `resolveMapStyle`, `DARK_FRAME_BG`, `resolveFrameColors`
+// are the same tokens the furniture check below uses.
+export function furnitureColorsFor(config: {
+  mapStyle?: unknown;
+  themeBg?: unknown;
+  brandHue?: unknown;
+  brandPalette?: unknown;
+}): FrameColors {
+  const dark =
+    resolveMapStyle(
+      typeof config.mapStyle === "string" ? config.mapStyle : undefined,
+    ) === "dataviz-dark";
+  const themeBg =
+    typeof config.themeBg === "string" ? config.themeBg : undefined;
+  const furnitureBg = themeBg ?? (dark ? DARK_FRAME_BG : undefined);
+  const houseHue =
+    typeof config.brandHue === "string"
+      ? config.brandHue
+      : Array.isArray(config.brandPalette) &&
+          typeof config.brandPalette[0] === "string"
+        ? config.brandPalette[0]
+        : undefined;
+  return resolveFrameColors(furnitureBg, houseHue);
+}
 
 export interface MapConformanceRunResult {
   checked: boolean;
@@ -149,7 +177,7 @@ export function runProduceMapConformance(
   const themeBg =
     typeof config.themeBg === "string" ? config.themeBg : undefined;
   const furnitureBg = themeBg ?? (dark ? DARK_FRAME_BG : undefined);
-  const fc = resolveFrameColors(furnitureBg);
+  const fc = furnitureColorsFor(config);
   const textColors = {
     text: [fc.ink, fc.muted],
     bg: furnitureGround(furnitureBg),

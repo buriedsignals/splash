@@ -14,6 +14,8 @@ export interface MapFilterBarProps {
   dark?: boolean;
   /** Newsroom house ground — themes the bar off that ground; falls back to the `dark` binary. */
   themeBg?: string;
+  /** Newsroom house hue (#rrggbb) — tints the derived `muted` furniture toward this hue. */
+  houseHue?: string;
   onHeight?: (px: number) => void;
 }
 
@@ -23,6 +25,7 @@ export function MapFilterBar({
   onChange,
   dark = false,
   themeBg,
+  houseHue,
   onHeight,
 }: MapFilterBarProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -30,6 +33,7 @@ export function MapFilterBar({
   onHeightRef.current = onHeight;
   const colors = resolveFrameColors(
     themeBg ?? (dark ? DARK_FRAME_BG : undefined),
+    houseHue,
   );
 
   useEffect(() => {

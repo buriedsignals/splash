@@ -23,9 +23,13 @@ const LEGEND_STROKE = "rgba(0,0,0,.15)";
 // ground instead, so a coloured newsroom theme brands the legend chrome the same way it brands the
 // MapFrame furniture (both route through resolveFrameColors). No themeBg → the exact canonical
 // binary values (byte-identical; the untouched light/dark maps are unchanged).
-export function legendTheme(dark: boolean, themeBg?: string): LegendTheme {
+export function legendTheme(
+  dark: boolean,
+  themeBg?: string,
+  houseHue?: string,
+): LegendTheme {
   if (resolveThemeBg(themeBg)) {
-    const fc = resolveFrameColors(themeBg);
+    const fc = resolveFrameColors(themeBg, houseHue);
     return { ink: fc.ink, sub: fc.muted, bg: fc.pill, stroke: LEGEND_STROKE };
   }
   return dark

@@ -31,6 +31,9 @@ export interface MapFrameProps {
    * ground. Falls back to the `dark` binary (dark preset ground / light default) when unset, so
    * a map that only sets a dark `mapStyle` (no house theme) keeps its existing dark furniture. */
   themeBg?: string;
+  /** Newsroom house hue (#rrggbb) — tints the derived `muted` furniture toward this hue while
+   * preserving its lightness (hence its WCAG contrast). Defaults undefined (dead-neutral grey). */
+  houseHue?: string;
   /** Optional node rendered directly below the title/description block, inside the title band. */
   belowTitle?: ReactNode;
   /** deliverable language — localizes the "Source" furniture label. Default English. */
@@ -50,6 +53,7 @@ export function MapFrame({
   furnitureOpacity = 1,
   dark = false,
   themeBg,
+  houseHue,
   belowTitle,
   lang,
 }: MapFrameProps) {
@@ -83,7 +87,7 @@ export function MapFrame({
   // Effective furniture ground: the newsroom house `themeBg` when set, else the `dark` binary
   // (dark preset ground / light default). resolveFrameColors keeps light byte-identical.
   const furnitureBg = themeBg ?? (dark ? DARK_FRAME_BG : undefined);
-  const colors = resolveFrameColors(furnitureBg);
+  const colors = resolveFrameColors(furnitureBg, houseHue);
   // Video/no-pill mode uses a text-shadow; key its halo on whether the furniture ink is light
   // (dark ground → dark halo under light text) or dark (light ground → light halo).
   const furnitureDark = frameBgIsDark(furnitureBg);
