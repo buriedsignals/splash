@@ -168,6 +168,7 @@ export function LollipopChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -199,7 +200,7 @@ function LollipopSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const { innerWidth, innerHeight, rows } = layout;
   const n = rows.length;
 

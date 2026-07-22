@@ -166,6 +166,7 @@ export function TreemapChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -201,7 +202,7 @@ function TreemapSvg({
 }) {
   const { innerWidth, innerHeight, cells, total } = layout;
   const n = cells.length;
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.16);
   const cellP = (order: number) =>
     easeOutCubic(stagger(p, order, n, 0.1, 0.5 / n, 0.4));

@@ -218,6 +218,7 @@ export function LineChart({
       lang={config.lang}
       embedded={embedded}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>

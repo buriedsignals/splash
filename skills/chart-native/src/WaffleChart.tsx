@@ -158,6 +158,7 @@ export function WaffleChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -194,7 +195,7 @@ function WaffleSvg({
   const { cells, categories, gridN, gridX, gridY, cellStep } = layout;
   const n = cells.length;
   const chrome = easeOutCubic(p / 0.16);
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
 
   const legend = layoutLegend(
     categories.map((c) => `${c.label} ${fmt(c.value)}`),

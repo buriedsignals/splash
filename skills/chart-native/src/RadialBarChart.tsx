@@ -155,6 +155,7 @@ export function RadialBarChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -188,7 +189,7 @@ function RadialBarSvg({
 }) {
   const { cx, cy, innerR, outerR, bars, ticks } = layout;
   const n = bars.length;
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.18);
   const ox = padding.left + cx;
   const oy = padding.top + cy;

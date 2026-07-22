@@ -218,6 +218,7 @@ export function BarChart({
       embedded={embedded}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>

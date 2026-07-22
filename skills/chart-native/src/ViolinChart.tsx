@@ -163,6 +163,7 @@ export function ViolinChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -204,7 +205,7 @@ function ViolinSvg({
   legendTwoRows: boolean;
   legRow: number;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const violinFill = config.baseColor ?? FILL; // subject-fit hue, else default
   // the inner median tick punches the BACKGROUND colour through the (dark→light on
   // dark theme) IQR bar, so it flips with the theme — a fixed white would vanish on
