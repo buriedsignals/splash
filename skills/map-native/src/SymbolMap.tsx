@@ -132,7 +132,11 @@ export const SymbolMap: React.FC<Props> = ({
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-  const theme = legendTheme(dark, config.themeBg);
+  const theme = legendTheme(
+    dark,
+    config.themeBg,
+    config.brandHue ?? config.brandPalette?.[0],
+  );
 
   // Measure the root element size before map init.
   useEffect(() => {
@@ -602,6 +606,7 @@ export const SymbolMap: React.FC<Props> = ({
         onTitleHeight={handleTitleHeight}
         dark={dark}
         themeBg={config.themeBg}
+        houseHue={config.brandHue ?? config.brandPalette?.[0]}
         lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
@@ -612,6 +617,7 @@ export const SymbolMap: React.FC<Props> = ({
               onHeight={handleBarHeight}
               dark={dark}
               themeBg={config.themeBg}
+              houseHue={config.brandHue ?? config.brandPalette?.[0]}
             />
           ) : undefined
         }

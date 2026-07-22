@@ -209,8 +209,8 @@ export const CartogramScrolly: React.FC<{ config: CartogramConfigShape }> = ({
             title: config.title ?? "",
             description: config.description,
             source: config.source
-          ? { name: config.source.name ?? "", url: config.source.url }
-          : undefined,
+              ? { name: config.source.name ?? "", url: config.source.url }
+              : undefined,
             regionsWithData: layout.cells.length,
           });
           const stepKinds = story.steps.map((_, i) =>
@@ -333,6 +333,7 @@ export const CartogramScrolly: React.FC<{ config: CartogramConfigShape }> = ({
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        houseHue={config.brandHue ?? config.brandPalette?.[0]}
         lang={config.lang}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />

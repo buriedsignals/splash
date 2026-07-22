@@ -131,6 +131,9 @@ export const ChoroplethScrolly: React.FC<{
     mapStyle?: string;
     /** deliverable language — localizes legend numbers + "Source". Default English. */
     lang?: string;
+    /** Newsroom house hue — tints frame/legend furniture toward the house colour. */
+    brandHue?: string;
+    brandPalette?: string[];
   };
 }> = ({ config }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -139,7 +142,11 @@ export const ChoroplethScrolly: React.FC<{
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-  const theme = useMemo(() => legendTheme(dark), [dark]);
+  const houseHue = config.brandHue ?? config.brandPalette?.[0];
+  const theme = useMemo(
+    () => legendTheme(dark, undefined, houseHue),
+    [dark, houseHue],
+  );
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
     hasDescription: !!config.description,
@@ -454,6 +461,7 @@ export const ChoroplethScrolly: React.FC<{
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        houseHue={houseHue}
         lang={config.lang}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />

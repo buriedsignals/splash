@@ -365,6 +365,7 @@ export const DotDensityScrolly: React.FC<{ config: DotDensityConfigShape }> = ({
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        houseHue={config.brandHue ?? config.brandPalette?.[0]}
         lang={config.lang}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />

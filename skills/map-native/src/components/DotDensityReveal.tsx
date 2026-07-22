@@ -258,6 +258,7 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        houseHue={config.brandHue ?? config.brandPalette?.[0]}
         lang={config.lang}
       >
         {/* Map fills the full composition frame */}

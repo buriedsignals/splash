@@ -707,6 +707,9 @@ export type HexGridConfigShape = {
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
+  /** Newsroom house hue — tints frame/legend furniture toward the house colour. */
+  brandHue?: string;
+  brandPalette?: string[];
 };
 
 export function validateHexGridConfig(
@@ -833,6 +836,9 @@ export type CartogramConfigShape = {
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
+  /** Newsroom house hue — tints frame/legend furniture toward the house colour. */
+  brandHue?: string;
+  brandPalette?: string[];
 };
 
 export function validateCartogramConfig(

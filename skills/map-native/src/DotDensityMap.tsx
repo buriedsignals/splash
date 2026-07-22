@@ -76,7 +76,11 @@ export const DotDensityMap: React.FC<Props> = ({
   const [barHeightPx, setBarHeightPx] = useState(0);
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-  const theme = legendTheme(dark, config.themeBg);
+  const theme = legendTheme(
+    dark,
+    config.themeBg,
+    config.brandHue ?? config.brandPalette?.[0],
+  );
   // Legend rows: always the "1 dot = N" line; plus one row per category when multivariate.
   const legendRows =
     1 + (config.categories?.length ? config.categories.length : 0);
@@ -494,6 +498,7 @@ export const DotDensityMap: React.FC<Props> = ({
         onTitleHeight={handleTitleHeight}
         dark={dark}
         themeBg={config.themeBg}
+        houseHue={config.brandHue ?? config.brandPalette?.[0]}
         lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
@@ -504,6 +509,7 @@ export const DotDensityMap: React.FC<Props> = ({
               onHeight={handleBarHeight}
               dark={dark}
               themeBg={config.themeBg}
+              houseHue={config.brandHue ?? config.brandPalette?.[0]}
             />
           ) : undefined
         }

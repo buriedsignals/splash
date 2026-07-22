@@ -320,6 +320,7 @@ export const HexGridScrolly: React.FC<{ config: HexGridConfigShape }> = ({
         frame={mapFrame}
         furnitureOpacity={scene.furnitureOpacity}
         dark={dark}
+        houseHue={config.brandHue ?? config.brandPalette?.[0]}
         lang={config.lang}
       >
         <div ref={ref} style={{ width, height, position: "absolute" }} />

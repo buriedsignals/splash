@@ -116,7 +116,11 @@ export const LocatorMap: React.FC<Props> = ({
   });
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
-  const theme = legendTheme(dark, config.themeBg);
+  const theme = legendTheme(
+    dark,
+    config.themeBg,
+    config.brandHue ?? config.brandPalette?.[0],
+  );
   const usesSymbolLayer =
     geo.markerStyle === "pin" || geo.markerStyle === "icon";
   const GLYPH_LAYER = "locator-glyphs";
@@ -657,6 +661,7 @@ export const LocatorMap: React.FC<Props> = ({
         onTitleHeight={handleTitleHeight}
         dark={dark}
         themeBg={config.themeBg}
+        houseHue={config.brandHue ?? config.brandPalette?.[0]}
         lang={config.lang}
         belowTitle={
           interactive && filterOptions.length ? (
@@ -667,6 +672,7 @@ export const LocatorMap: React.FC<Props> = ({
               onHeight={handleBarHeight}
               dark={dark}
               themeBg={config.themeBg}
+              houseHue={config.brandHue ?? config.brandPalette?.[0]}
             />
           ) : undefined
         }
