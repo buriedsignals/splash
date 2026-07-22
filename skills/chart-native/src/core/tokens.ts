@@ -34,23 +34,6 @@ export const OKABE_ITO = {
   black: "#000000",
 } as const;
 
-function _rgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-function _hex(r: number, g: number, b: number): string {
-  const h = (v: number) =>
-    Math.max(0, Math.min(255, Math.round(v)))
-      .toString(16)
-      .padStart(2, "0");
-  return `#${h(r)}${h(g)}${h(b)}`;
-}
-// Linear sRGB blend (t=0→a, t=1→b) — good enough for neutral furniture greys.
-function _mix(a: string, b: string, t: number): string {
-  const [ar, ag, ab] = _rgb(a);
-  const [br, bg, bb] = _rgb(b);
-  return _hex(ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t);
-}
 // On the dark furniture bg (#18181B) the Okabe-Ito BLACK entry of a DATA palette
 // vanishes (near-0 contrast — a black mark on a near-black ground). Every other
 // Okabe-Ito hue stays CVD-safe and reads acceptably on dark, so ONLY black is
