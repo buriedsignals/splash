@@ -42,6 +42,10 @@ export interface BumpConfig {
   /** subject-fit hues for MULTIPLE tracked lines, in highlight order. Absent slots
    *  fall back to the BUMP_ACCENT_COLORS default. */
   seriesColors?: string[];
+  /** editorial-emphasis hue (brand-profile story accent) for the SINGLE-highlight
+   *  shared/peak accent slot only — wins over the BUMP_ACCENT_COLORS default, loses
+   *  to an explicit baseColor. Absent → byte-identical to today. */
+  accent?: string;
   items: { label: string; ranks: number[] }[];
 }
 
@@ -82,6 +86,7 @@ export function BumpChart({
   const accents = resolveBumpAccents(config.highlight, {
     baseColor: config.baseColor,
     seriesColors: config.seriesColors,
+    accent: config.accent,
   });
   const accentOf = new Map<string, string>();
   (config.highlight ?? []).forEach((label, i) =>
