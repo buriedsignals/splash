@@ -403,6 +403,72 @@ git commit -m "feat(chart-native): fail-hard ramp-uniformity tripwire in heatmap
 
 ---
 
+### Task 4b: Muted-chroma cap in the ramp engine (gate-safety, §4 lever pulled forward)
+
+The Task-4 review swept 24 saturated hues and found ~14 trip the new fail-hard uniformity tripwire (out-of-gamut clamping on a vivid house hue collapses the span / kinks the steps). `baseColor` is a free-form newsroom-brand hex with no saturation clamp, so a vivid-brand newsroom could have every heatmap fail-hard with no override. A muted-chroma cap (§4's "plafond chroma muté" lever) fixes it: swept, cap 0.12 → 0/24 fail on both grounds. This pulls that lever into this slice because the fail-hard gate REQUIRES it to be safe.
+
+**Files:**
+- Modify: `lib/core/house-ramp.ts` (add `RAMP_MUTED_CHROMA_CAP`; cap the peak chroma in `hueRampOklch`)
+- Test: `lib/core/house-ramp.test.ts` (add a vivid-hue gate-safety test)
+
+**Interfaces:** modifies `hueRampOklch` (signature unchanged). New test consumes `rampUniformityIssues` (Task 2).
+
+- [ ] **Step 1: Write the failing gate-safety test**
+
+Append to `lib/core/house-ramp.test.ts`:
+```ts
+import { rampUniformityIssues } from "./house-ramp";
+
+describe("core/house-ramp hueRampOklch is gate-safe for vivid house hues", () => {
+  const VIVID = ["#ff0000", "#ff00ff", "#00ffff", "#00c000", "#0000ff", "#ff7a00", "#c8102e", "#e4a400"];
+  it("every vivid hue's derived ramp passes rampUniformityIssues on a light ground (minSpan 0.60)", () => {
+    for (const hue of VIVID)
+      expect(rampUniformityIssues(hueRampOklch(hue, 7, "#ffffff"), { minSpan: 0.6 })).toEqual([]);
+  });
+  it("every vivid hue's derived ramp passes on a dark ground (minSpan 0.40)", () => {
+    for (const hue of VIVID)
+      expect(rampUniformityIssues(hueRampOklch(hue, 7, "#0b1220"), { minSpan: 0.4 })).toEqual([]);
+  });
+});
+```
+
+- [ ] **Step 2: Run to verify it fails**
+
+Run: `bun test lib/core/house-ramp.test.ts`
+Expected: FAIL — several vivid hues trip the span/kink check (uncapped chroma clamps out of gamut).
+
+- [ ] **Step 3: Add the muted-chroma cap in `hueRampOklch`**
+
+Add the constant next to the other ramp knobs:
+```ts
+const RAMP_MUTED_CHROMA_CAP = 0.12; // §4 "plafond chroma muté": ceiling the peak chroma keeps the ramp
+//                                     in-gamut for ANY house hue → perceptually uniform by construction,
+//                                     which makes the fail-hard uniformity gate safe (swept: 0/24 vivid
+//                                     hues fail at 0.12). Okabe-Ito hues (~0.14 chroma) are barely muted;
+//                                     only vivid/near-primary hues are pulled in. A render-proof knob.
+```
+In `hueRampOklch`, replace the two chroma poles' use of `b.C` with the capped peak:
+```ts
+  const cPeak = Math.min(b.C, RAMP_MUTED_CHROMA_CAP);
+  const cStart = dark ? cPeak : RAMP_C_LIGHT;
+  const cEnd = dark ? RAMP_C_LIGHT : cPeak;
+```
+
+- [ ] **Step 4: Run to verify it passes + no regression**
+
+Run: `bun test lib/core/house-ramp.test.ts`
+Expected: PASS — the two new gate-safety tests green, AND every pre-existing Task-1 test (light span ≥ 0.60, dark span ≥ 0.40, monotonic, 3:1 vs #0b1220, no collapse) still passes unchanged (the cap only lowers chroma, which preserves those L-based invariants; if a span/3:1 test now fails, that is a real interaction — report it, do not weaken the test).
+
+- [ ] **Step 5: Gate + commit**
+
+Run: `bun run check` → PASS (22/22; heatmap conformance now passes the derived ramp for vivid hues too).
+```bash
+git add lib/core/house-ramp.ts lib/core/house-ramp.test.ts
+git commit -m "feat(core): muted-chroma cap keeps derived ramps in-gamut (fail-hard uniformity gate safe for any house hue)"
+```
+
+---
+
 ### Task 5: Render-proof + branch gate (controller-run)
 
 **Files:** none (verification only). No code change unless the render exposes a defect.

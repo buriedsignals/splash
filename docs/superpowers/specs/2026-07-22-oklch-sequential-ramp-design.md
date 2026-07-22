@@ -138,9 +138,16 @@ real regression, never declared flake without proof.
 
 ## 7. Non-goals (later S3 slices)
 
-Accent/neutral discipline ("1 accent, rest grey"), a dedicated muted-chroma cap, saturation-as-f(background)
-beyond the theme orientation, tinted neutrals, and a story-level palette. Each is its own slice; this one is
-the perceptual-ramp foundation they build on.
+Accent/neutral discipline ("1 accent, rest grey"), saturation-as-f(background) beyond the theme orientation,
+tinted neutrals, and a story-level palette. Each is its own slice; this one is the perceptual-ramp foundation
+they build on.
+
+**Scope note (amended after the Task-4 review):** a **muted-chroma cap** (§4's lever, originally deferred)
+was pulled into THIS slice as Task 4b. The Task-4 review found the fail-hard uniformity tripwire would block
+~14/24 saturated house hues (their derived ramps clamp out of gamut → collapsed span / kinked steps), and
+`baseColor` is a free-form brand hex with no saturation clamp. Capping peak chroma (~0.12) keeps every hue's
+ramp in-gamut and uniform-by-construction (swept: 0/24 fail), which is a precondition for the fail-hard gate
+to be safe — so it belongs here, not in a later slice.
 
 ## 8. Risks
 
