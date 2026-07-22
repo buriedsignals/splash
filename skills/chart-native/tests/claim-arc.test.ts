@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   narrativeBeatErrors,
   narrativeFallbackWarning,
+  deriveChartStory,
 } from "../src/chart-story";
 import type { NativeSpec } from "../src/spec-to-config";
 
@@ -107,6 +108,84 @@ describe("claim-arc validation (narrativeBeatErrors)", () => {
       ]),
     );
     expect(errs.some((e) => /not found/i.test(e))).toBe(true);
+  });
+
+  it("rejects an arc with more than one establish (the scene is set once)", () => {
+    const errs = narrativeBeatErrors(
+      lineSpec([
+        { x: 2000, role: "establish", text: "sets first" },
+        { x: 2001, role: "establish", text: "sets again" },
+        { x: 2002, role: "build", text: "climbs" },
+        { x: 2003, role: "payoff", text: "lands" },
+      ]),
+    );
+    expect(errs.some((e) => /establish/i.test(e))).toBe(true);
+    expect(errs.some((e) => /set once|more than one/i.test(e))).toBe(true);
+  });
+
+  it("rejects an arc with more than one payoff (the argument lands once)", () => {
+    const errs = narrativeBeatErrors(
+      lineSpec([
+        { x: 2000, role: "establish", text: "sets" },
+        { x: 2001, role: "build", text: "climbs" },
+        { x: 2002, role: "payoff", text: "lands first" },
+        { x: 2003, role: "payoff", text: "lands again" },
+      ]),
+    );
+    expect(errs.some((e) => /payoff/i.test(e))).toBe(true);
+    expect(errs.some((e) => /lands once|more than one/i.test(e))).toBe(true);
+  });
+
+  it("rejects a beat with a role outside the enum (establish/build/turn/payoff)", () => {
+    const errs = narrativeBeatErrors(
+      lineSpec([
+        { x: 2000, role: "establish", text: "sets" },
+        { x: 2001, role: "climax", text: "not a real role" },
+        { x: 2003, role: "payoff", text: "lands" },
+      ]),
+    );
+    expect(errs.some((e) => /not one of|role/i.test(e))).toBe(true);
+  });
+
+  it("accepts a repeated `build` (multi-beat rising action is allowed)", () => {
+    const errs = narrativeBeatErrors(
+      lineSpec([
+        { x: 2000, role: "establish", text: "sets" },
+        { x: 2001, role: "build", text: "climbs" },
+        { x: 2002, role: "build", text: "climbs more" },
+        { x: 2003, role: "payoff", text: "lands" },
+      ]),
+    );
+    expect(errs).toEqual([]);
+  });
+});
+
+describe("deriveChartStory role threading (claim-arc, S2)", () => {
+  it("threads a source beat's role onto the emitted ChartBeat, and uses its claim (text) as the copy verbatim", () => {
+    const chartBeats = deriveChartStory(
+      lineSpec([
+        { x: 2000, role: "establish", text: "It starts low, in 2000." },
+        { x: 2001, role: "build", text: "It climbs through 2001." },
+        { x: 2003, role: "payoff", text: "And lands higher, by 2003." },
+      ]),
+    );
+    const roledReveals = chartBeats.filter(
+      (b) => b.kind === "reveal" && b.role !== undefined,
+    );
+    // (a) at least one emitted beat carries a role from a source beat
+    const establishReveal = roledReveals.find((b) => b.role === "establish");
+    expect(establishReveal).toBeDefined();
+    // (b) that beat's copy is the source beat's claim (text) verbatim — not an
+    // auto-generated "name — value" caption.
+    expect(establishReveal?.copy).toBe("It starts low, in 2000.");
+
+    const buildReveal = roledReveals.find((b) => b.role === "build");
+    expect(buildReveal).toBeDefined();
+    expect(buildReveal?.copy).toBe("It climbs through 2001.");
+
+    const payoffReveal = roledReveals.find((b) => b.role === "payoff");
+    expect(payoffReveal).toBeDefined();
+    expect(payoffReveal?.copy).toBe("And lands higher, by 2003.");
   });
 });
 
