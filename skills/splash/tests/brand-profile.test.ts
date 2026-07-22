@@ -585,6 +585,27 @@ describe("newsroom theme → chart/map themeBg (arbitrary ground)", () => {
   });
 });
 
+describe("mergeProfileDefaults seeds the story accent", () => {
+  const profileWithAccent = { palette: ["#0072B2"], accent: "#7A1FA2" } as any;
+  const profileNoAccent = { palette: ["#0072B2"] } as any;
+  it("sets spec.accent from profile.accent for a chart", () => {
+    const out = mergeProfileDefaults(
+      { nativeType: "slope" } as any,
+      profileWithAccent,
+      { producer: "chart-native" },
+    );
+    expect((out as any).accent).toBe("#7A1FA2");
+  });
+  it("leaves spec.accent absent when the profile has no accent (byte-identity)", () => {
+    const out = mergeProfileDefaults(
+      { nativeType: "slope" } as any,
+      profileNoAccent,
+      { producer: "chart-native" },
+    );
+    expect((out as any).accent).toBeUndefined();
+  });
+});
+
 describe("loadBrandProfile", () => {
   it("reads brand.json when present", () => {
     const dir = tmpProject('{"palette":["#E30613"]}');
@@ -628,7 +649,11 @@ describe("seedBrandColor", () => {
 });
 
 // Review F4 — image-native inherits the newsroom ground (same class as the chart/map threading).
-import { describe as describeF4, expect as expectF4, it as itF4 } from "bun:test";
+import {
+  describe as describeF4,
+  expect as expectF4,
+  it as itF4,
+} from "bun:test";
 import { mergeProfileDefaults as mergeF4 } from "../src/brand-profile";
 
 describeF4("image-native theme threading (review F4)", () => {
@@ -640,12 +665,16 @@ describeF4("image-native theme threading (review F4)", () => {
   } as any;
 
   itF4("should thread themeBg onto an image-native spec", () => {
-    const out = mergeF4({ title: "t" } as any, profile, { producer: "image-native" });
+    const out = mergeF4({ title: "t" } as any, profile, {
+      producer: "image-native",
+    });
     expectF4((out as any).themeBg).toBe("#101820");
   });
 
   itF4("should let a per-element themeBg win", () => {
-    const out = mergeF4({ title: "t", themeBg: "#FFFFFF" } as any, profile, { producer: "image-native" });
+    const out = mergeF4({ title: "t", themeBg: "#FFFFFF" } as any, profile, {
+      producer: "image-native",
+    });
     expectF4((out as any).themeBg).toBe("#FFFFFF");
   });
 });

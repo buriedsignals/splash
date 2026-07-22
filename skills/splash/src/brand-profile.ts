@@ -355,6 +355,7 @@ export function mergeProfileDefaults<
     type?: string;
     mapStyle?: string;
     themeBg?: string;
+    accent?: string;
     source?: { name: string; url?: string };
     lang?: string;
   },
@@ -398,6 +399,11 @@ export function mergeProfileDefaults<
       }
     }
   }
+  // Story accent: a brand accent becomes the editorial-emphasis hue for the charts that render one
+  // (Slope/Lollipop/Histogram/RadialBar/Bump read config.accent). Charts without an accent-use site
+  // ignore it; absent profile.accent → nothing set (byte-identical). Not applied to maps.
+  if (profile.accent && kind === "chart")
+    out = { ...out, accent: profile.accent };
   // Newsroom theme (house default): a newsroom pins `theme` ONCE (a "dark" preset or any #rrggbb
   // ground) → every visual inherits it. The resolved GROUND hex (null for the light default) drives
   // both branches; the ground's luminance snaps a map to its light/dark basemap.
