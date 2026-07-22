@@ -296,6 +296,12 @@ this rule only guarantees the choice is surfaced, never buried.
   `suggest-chart` (see "Only offer what is confirmed producible" below) — never offer a named sub-format
   that turns out not to be producible.
 
+**Story-warrant check (mechanical, before proposing scrolly/video).** When the routed candidate would
+be a chart scrolly or chart-video, CONSULT `assessStoryArc` (`skills/splash/src/story-warrant.ts` — a
+design heuristic, not credited literature) on the series; if it returns `hasArc:false`, PROPOSE the
+static annotated chart instead and say why (its `reason`) — the journalist may veto back to the
+scrolly/video.
+
 **Chart-scrolly BEAT MODEL — announce it honestly HERE, and carry a confirmed plan into the spec.**
 When the routed sub-format is a chart scrolly (line/bar/scatter), the PROPOSITION must state, up front,
 what is auto and what the journalist controls — the observed failure was a FLOW failure: the journalist
