@@ -88,6 +88,53 @@ export function mapArcErrors(
   return [...errors, ...arcErrors(arcBeats)];
 }
 
+// The anchor facts a deriver resolves for one arcBeat's region — enough to build a
+// reveal Beat's camera/highlight/callout. Each deriver supplies its own `resolve`
+// (choropleth: cameraOf/nameOf/fmt(value-by-key); symbol: the point's lon/lat box +
+// label + fmt(value)).
+export interface MapArcAnchor {
+  camera: [number, number, number, number];
+  highlight: string[];
+  name: string;
+  value: string;
+}
+
+// Turn a journalist-confirmed claim-arc into ORDERED reveal Beats — the shared
+// choreography for choropleth (deriveMapStory) and symbol (deriveSymbolStory) maps.
+// Beat is the shared shape, so the callout is ONE shape either way: { region; name;
+// value; text }. `copy`/`callout.text` is the arc beat's CLAIM (`text`), never a
+// derived "name — value" caption — the journalist's assertion is the caption.
+// A `resolve` returning null is unreachable in practice (mapArcErrors validates every
+// region against the data before this ever runs) but throws — defense in depth, never
+// a silently dropped/misplaced beat.
+export function applyMapArc(
+  arcBeats: MapArcBeat[],
+  resolve: (region: string) => MapArcAnchor | null,
+): Beat[] {
+  return arcBeats.map((arcBeat) => {
+    const anchor = resolve(arcBeat.region);
+    if (!anchor)
+      throw new Error(
+        `applyMapArc: region "${arcBeat.region}" did not resolve to data — this should have been caught by mapArcErrors validation`,
+      );
+    const text = arcBeat.text ?? "";
+    return {
+      kind: "reveal",
+      camera: anchor.camera,
+      highlight: anchor.highlight,
+      dim: true,
+      callout: {
+        region: arcBeat.region,
+        name: anchor.name,
+        value: anchor.value,
+        text,
+      },
+      copy: text,
+      role: arcBeat.role,
+    };
+  });
+}
+
 // The choreography a reveal beat's camera follows. "context" (default) keeps the
 // establishing bounds in view around each reveal (the current areal behaviour);
 // "sequential" is a journey/progression choreography read by later map-native tasks
@@ -128,6 +175,10 @@ export interface MapStoryMeta {
   narrativePattern?: NarrativePattern;
   /** deliverable language — localizes the callout numbers. Default English. */
   lang?: string;
+  // Journalist-confirmed claim-arc override (S2) — see mapArcErrors above. When
+  // present + non-empty, the reveal beats follow the arc (applyMapArc) instead of the
+  // salience selection; absent/empty leaves today's salience path byte-identical.
+  arcBeats?: MapArcBeat[];
 }
 
 export function deriveMapStory(
@@ -209,60 +260,81 @@ export function deriveMapStory(
     copy: "",
   });
 
-  // Choose the reveal rows per pattern.
-  //   temporal  → order by value earliest→latest; reveal the FIRST, one or two
-  //               notable middle steps/leaps, and the MOST RECENT (sequence).
-  //   magnitude → reveal the TOP leaders (the "who leads and by how much" story) plus
-  //               the tail — NOT just max & min. Two beats can't carry a distribution;
-  //               the message must adapt to the data (this was the scrolly-narrative
-  //               defect, now fixed for the video path too).
-  let revealRows: {
-    key: string;
-    value: number;
-    rank?: number;
-    rankRole?: "leader" | "tail";
-  }[];
-  if (pattern === "temporal") {
-    revealRows = temporalRevealRows(withData);
+  if (meta.arcBeats?.length) {
+    // Journalist-confirmed claim-arc override — the reveals follow the ARC order, not
+    // the salience selection below. mapArcErrors has already validated every arcBeat's
+    // region against the data, so valueByKey lookups here cannot miss (applyMapArc
+    // throws defensively if one somehow did).
+    const valueByKey = new Map(withData.map((j) => [j.key, j.value]));
+    beats.push(
+      ...applyMapArc(meta.arcBeats, (key) => {
+        const v = valueByKey.get(key);
+        return v === undefined
+          ? null
+          : {
+              camera: cameraOf(key),
+              highlight: [key],
+              name: nameOf(key),
+              value: fmt(v),
+            };
+      }),
+    );
   } else {
-    revealRows = magnitudeRevealRows(withData);
-  }
+    // Choose the reveal rows per pattern.
+    //   temporal  → order by value earliest→latest; reveal the FIRST, one or two
+    //               notable middle steps/leaps, and the MOST RECENT (sequence).
+    //   magnitude → reveal the TOP leaders (the "who leads and by how much" story) plus
+    //               the tail — NOT just max & min. Two beats can't carry a distribution;
+    //               the message must adapt to the data (this was the scrolly-narrative
+    //               defect, now fixed for the video path too).
+    let revealRows: {
+      key: string;
+      value: number;
+      rank?: number;
+      rankRole?: "leader" | "tail";
+    }[];
+    if (pattern === "temporal") {
+      revealRows = temporalRevealRows(withData);
+    } else {
+      revealRows = magnitudeRevealRows(withData);
+    }
 
-  const seqTotal = revealRows.length;
-  const firstRevealYear = revealRows[0]?.value;
-  revealRows.forEach(({ key, value, rank, rankRole }, seqIndex) => {
-    // The caption ADAPTS to the pattern: temporal keeps its "name — value" (the
-    // sequence descriptor is added by the scrolly/video layer via seq* fields);
-    // magnitude gets a rank-aware line ("Chile leads — 22%", "the long tail: …").
-    const copy =
-      pattern === "temporal" || rank === undefined
-        ? calloutText(key, value)
-        : magnitudeCaption(nameOf(key), fmt(value), rank, seqTotal, rankRole);
-    beats.push({
-      kind: "reveal",
-      camera: cameraOf(key),
-      highlight: [key],
-      dim: true,
-      callout: {
-        region: key,
-        name: nameOf(key),
-        value: fmt(value),
-        text: copy,
-      },
-      copy,
-      pattern,
-      ...(pattern === "temporal"
-        ? {
-            seqIndex,
-            seqTotal,
-            seqYear: value,
-            seqYearFirst: firstRevealYear,
-            seqYearPrev:
-              seqIndex > 0 ? revealRows[seqIndex - 1].value : undefined,
-          }
-        : { rank, rankRole }),
+    const seqTotal = revealRows.length;
+    const firstRevealYear = revealRows[0]?.value;
+    revealRows.forEach(({ key, value, rank, rankRole }, seqIndex) => {
+      // The caption ADAPTS to the pattern: temporal keeps its "name — value" (the
+      // sequence descriptor is added by the scrolly/video layer via seq* fields);
+      // magnitude gets a rank-aware line ("Chile leads — 22%", "the long tail: …").
+      const copy =
+        pattern === "temporal" || rank === undefined
+          ? calloutText(key, value)
+          : magnitudeCaption(nameOf(key), fmt(value), rank, seqTotal, rankRole);
+      beats.push({
+        kind: "reveal",
+        camera: cameraOf(key),
+        highlight: [key],
+        dim: true,
+        callout: {
+          region: key,
+          name: nameOf(key),
+          value: fmt(value),
+          text: copy,
+        },
+        copy,
+        pattern,
+        ...(pattern === "temporal"
+          ? {
+              seqIndex,
+              seqTotal,
+              seqYear: value,
+              seqYearFirst: firstRevealYear,
+              seqYearPrev:
+                seqIndex > 0 ? revealRows[seqIndex - 1].value : undefined,
+            }
+          : { rank, rankRole }),
+      });
     });
-  });
+  }
 
   // The concluding beat must be a DISTINCT takeaway, never a verbatim repeat of the
   // intro/description. Prefer an explicit editorial insight when the author gave a

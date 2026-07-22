@@ -1,5 +1,8 @@
 import { describe, it, expect } from "bun:test";
-import { mapArcErrors, type MapArcBeat } from "./map-story.ts";
+import { mapArcErrors, deriveMapStory, type MapArcBeat } from "./map-story.ts";
+import { deriveSymbolStory } from "./symbol-story.ts";
+import { computeChoropleth, type ChoroplethData } from "./choropleth-geo.ts";
+import type { SymbolPoint } from "./symbol-geo.ts";
 import { validateChoroplethConfig } from "./validate-config.ts";
 
 const validRegions = ["Geneva", "Vaud", "Zurich", "Bern"];
@@ -120,5 +123,380 @@ describe("mapArcErrors wired into validateChoroplethConfig", () => {
   it("validates exactly as today when arcBeats is absent (behaviour-preserving)", () => {
     const result = validateChoroplethConfig(baseSpec);
     expect(result.ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyMapArc wiring — deriveMapStory (choropleth) + deriveSymbolStory (symbol)
+// honour a confirmed arcBeats claim-arc; the salience path (no arcBeats) stays
+// byte-identical to today's output (captured on this fixture before wiring).
+// ---------------------------------------------------------------------------
+
+const choroplethFeatures: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: [
+    {
+      type: "Feature",
+      properties: { region: "Geneva", name: "Geneva" },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [6, 46],
+            [6.2, 46],
+            [6.2, 46.2],
+            [6, 46.2],
+            [6, 46],
+          ],
+        ],
+      },
+    },
+    {
+      type: "Feature",
+      properties: { region: "Vaud", name: "Vaud" },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [6.5, 46.5],
+            [6.7, 46.5],
+            [6.7, 46.7],
+            [6.5, 46.7],
+            [6.5, 46.5],
+          ],
+        ],
+      },
+    },
+    {
+      type: "Feature",
+      properties: { region: "Zurich", name: "Zurich" },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [8.5, 47.3],
+            [8.7, 47.3],
+            [8.7, 47.5],
+            [8.5, 47.5],
+            [8.5, 47.3],
+          ],
+        ],
+      },
+    },
+    {
+      type: "Feature",
+      properties: { region: "Bern", name: "Bern" },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [7.4, 46.9],
+            [7.6, 46.9],
+            [7.6, 47.1],
+            [7.4, 47.1],
+            [7.4, 46.9],
+          ],
+        ],
+      },
+    },
+  ],
+};
+
+const choroplethData: ChoroplethData = {
+  regionKey: "region",
+  valueField: "value",
+  rows: [
+    { region: "Geneva", value: 10 },
+    { region: "Vaud", value: 20 },
+    { region: "Zurich", value: 30 },
+    { region: "Bern", value: 40 },
+  ],
+};
+
+const choroplethLayout = computeChoropleth(
+  choroplethData,
+  choroplethFeatures,
+  "region",
+);
+
+const choroplethArc: MapArcBeat[] = [
+  { region: "Geneva", role: "establish", text: "Geneva starts low." },
+  { region: "Vaud", role: "build", text: "Vaud climbs." },
+  { region: "Zurich", role: "turn", text: "Zurich is the peak." },
+  { region: "Bern", role: "payoff", text: "Bern lands the argument." },
+];
+
+describe("deriveMapStory — applyMapArc wiring", () => {
+  it("with a confirmed arcBeats: reveals follow the ARC order, carry role, and copy is the claim text (not salience name — value)", () => {
+    const beats = deriveMapStory(
+      choroplethLayout,
+      choroplethFeatures,
+      "region",
+      {
+        title: "Swiss cantons",
+        insight: "",
+        unit: " pts",
+        arcBeats: choroplethArc,
+      },
+    );
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals.map((b) => b.highlight[0])).toEqual([
+      "Geneva",
+      "Vaud",
+      "Zurich",
+      "Bern",
+    ]);
+    expect(reveals.map((b) => b.role)).toEqual([
+      "establish",
+      "build",
+      "turn",
+      "payoff",
+    ]);
+    expect(reveals.map((b) => b.copy)).toEqual([
+      "Geneva starts low.",
+      "Vaud climbs.",
+      "Zurich is the peak.",
+      "Bern lands the argument.",
+    ]);
+    // The claim text, never the salience "name — value" caption.
+    for (const b of reveals) {
+      expect(b.copy).not.toMatch(/—/);
+      expect(b.callout?.text).toBe(b.copy);
+    }
+  });
+
+  it("without arcBeats: byte-identical to the captured salience baseline", () => {
+    const beats = deriveMapStory(
+      choroplethLayout,
+      choroplethFeatures,
+      "region",
+      {
+        title: "Swiss cantons",
+        insight: "",
+        unit: " pts",
+      },
+    );
+    expect(beats).toEqual([
+      {
+        kind: "title",
+        camera: [6, 46, 8.7, 47.5],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "Swiss cantons",
+      },
+      {
+        kind: "establish",
+        camera: [6, 46, 8.7, 47.5],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+      {
+        kind: "reveal",
+        camera: [7.4, 46.9, 7.6, 47.1],
+        highlight: ["Bern"],
+        dim: true,
+        callout: {
+          region: "Bern",
+          name: "Bern",
+          value: "40 pts",
+          text: "Bern leads — 40 pts",
+        },
+        copy: "Bern leads — 40 pts",
+        pattern: "magnitude",
+        rank: 1,
+        rankRole: "leader",
+      },
+      {
+        kind: "reveal",
+        camera: [8.5, 47.3, 8.7, 47.5],
+        highlight: ["Zurich"],
+        dim: true,
+        callout: {
+          region: "Zurich",
+          name: "Zurich",
+          value: "30 pts",
+          text: "Zurich — 30 pts, 2nd",
+        },
+        copy: "Zurich — 30 pts, 2nd",
+        pattern: "magnitude",
+        rank: 2,
+        rankRole: "leader",
+      },
+      {
+        kind: "reveal",
+        camera: [6.5, 46.5, 6.7, 46.7],
+        highlight: ["Vaud"],
+        dim: true,
+        callout: {
+          region: "Vaud",
+          name: "Vaud",
+          value: "20 pts",
+          text: "Vaud — 20 pts, 3rd",
+        },
+        copy: "Vaud — 20 pts, 3rd",
+        pattern: "magnitude",
+        rank: 3,
+        rankRole: "leader",
+      },
+      {
+        kind: "reveal",
+        camera: [6, 46, 6.2, 46.2],
+        highlight: ["Geneva"],
+        dim: true,
+        callout: {
+          region: "Geneva",
+          name: "Geneva",
+          value: "10 pts",
+          text: "The long tail — Geneva, 10 pts",
+        },
+        copy: "The long tail — Geneva, 10 pts",
+        pattern: "magnitude",
+        rank: 4,
+        rankRole: "tail",
+      },
+      {
+        kind: "takeaway",
+        camera: [6, 46, 8.7, 47.5],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "Bern: 40 pts, Geneva: 10 pts — a 4-fold gap",
+      },
+    ]);
+  });
+});
+
+const symbolPoints: SymbolPoint[] = [
+  { lon: 6.1, lat: 46.2, value: 40, label: "Geneva" },
+  { lon: 6.6, lat: 46.5, value: 30, label: "Lausanne" },
+  { lon: 8.5, lat: 47.4, value: 20, label: "Zurich" },
+  { lon: 7.4, lat: 46.9, value: 10, label: "Bern" },
+];
+
+const symbolArc: MapArcBeat[] = [
+  { region: "Geneva", role: "establish", text: "Geneva starts low." },
+  { region: "Lausanne", role: "build", text: "Lausanne climbs." },
+  { region: "Zurich", role: "turn", text: "Zurich is the peak." },
+  { region: "Bern", role: "payoff", text: "Bern lands the argument." },
+];
+
+describe("deriveSymbolStory — applyMapArc wiring", () => {
+  it("with a confirmed arcBeats: reveals follow the ARC order, carry role, and copy is the claim text (not salience name — value)", () => {
+    const beats = deriveSymbolStory(symbolPoints, {
+      title: "Swiss cities",
+      unit: " pts",
+      arcBeats: symbolArc,
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals.map((b) => b.highlight[0])).toEqual([
+      "Geneva",
+      "Lausanne",
+      "Zurich",
+      "Bern",
+    ]);
+    expect(reveals.map((b) => b.role)).toEqual([
+      "establish",
+      "build",
+      "turn",
+      "payoff",
+    ]);
+    expect(reveals.map((b) => b.copy)).toEqual([
+      "Geneva starts low.",
+      "Lausanne climbs.",
+      "Zurich is the peak.",
+      "Bern lands the argument.",
+    ]);
+    for (const b of reveals) {
+      expect(b.copy).not.toMatch(/—/);
+      expect(b.callout?.text).toBe(b.copy);
+    }
+  });
+
+  it("without arcBeats: byte-identical to the captured salience baseline", () => {
+    const beats = deriveSymbolStory(symbolPoints, {
+      title: "Swiss cities",
+      unit: " pts",
+    });
+    expect(beats).toEqual([
+      {
+        kind: "title",
+        camera: [6.1, 46.2, 8.5, 47.4],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "Swiss cities",
+      },
+      {
+        kind: "establish",
+        camera: [6.1, 46.2, 8.5, 47.4],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+      {
+        kind: "reveal",
+        camera: [4.6, 44.7, 7.6, 47.7],
+        highlight: ["Geneva"],
+        dim: true,
+        callout: {
+          region: "Geneva",
+          name: "Geneva",
+          value: "40 pts",
+          text: "Geneva — 40 pts",
+        },
+        copy: "Geneva — 40 pts",
+      },
+      {
+        kind: "reveal",
+        camera: [5.1, 45, 8.1, 48],
+        highlight: ["Lausanne"],
+        dim: true,
+        callout: {
+          region: "Lausanne",
+          name: "Lausanne",
+          value: "30 pts",
+          text: "Lausanne — 30 pts",
+        },
+        copy: "Lausanne — 30 pts",
+      },
+      {
+        kind: "reveal",
+        camera: [7, 45.9, 10, 48.9],
+        highlight: ["Zurich"],
+        dim: true,
+        callout: {
+          region: "Zurich",
+          name: "Zurich",
+          value: "20 pts",
+          text: "Zurich — 20 pts",
+        },
+        copy: "Zurich — 20 pts",
+      },
+      {
+        kind: "reveal",
+        camera: [5.9, 45.4, 8.9, 48.4],
+        highlight: ["Bern"],
+        dim: true,
+        callout: {
+          region: "Bern",
+          name: "Bern",
+          value: "10 pts",
+          text: "Bern — 10 pts",
+        },
+        copy: "Bern — 10 pts",
+      },
+      {
+        kind: "takeaway",
+        camera: [6.1, 46.2, 8.5, 47.4],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+    ]);
   });
 });

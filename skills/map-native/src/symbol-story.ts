@@ -4,7 +4,12 @@
 // bbox) → reveal each city (value desc, callout name+value, camera = a small bbox
 // around the city) → takeaway (points bbox).
 import type { SymbolPoint } from "./symbol-geo";
-import type { Beat, RevealMode } from "./map-story";
+import {
+  applyMapArc,
+  type Beat,
+  type MapArcBeat,
+  type RevealMode,
+} from "./map-story";
 import { formatLocaleNumber, labelWithUnit, type Lang } from "./core/locale";
 import { shortWayLongitudeExtent } from "./core/longitude";
 
@@ -14,6 +19,11 @@ export interface SymbolStoryMeta {
   unit?: string;
   /** deliverable language — localizes the callout numbers. Default English. */
   lang?: Lang;
+  // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
+  // Anchors on point labels. When present + non-empty, the reveal beats follow the
+  // arc (applyMapArc) instead of the sorted-cap salience selection below; absent/empty
+  // leaves today's salience path byte-identical.
+  arcBeats?: MapArcBeat[];
 }
 
 // Half-width (degrees) of the city framing box → a tight, legible city zoom.
@@ -69,28 +79,54 @@ export function deriveSymbolStory(
     copy: "",
   });
 
-  const sorted = [...points].sort((a, b) => b.value - a.value);
-  const cap = Math.max(
-    1,
-    Math.min(opts.maxReveals ?? DEFAULT_MAX_REVEALS, sorted.length),
-  );
-  for (const p of sorted.slice(0, cap)) {
-    const name = p.label ?? "";
-    const value = fmt(p.value);
-    const text = `${name} — ${value}`;
-    beats.push({
-      kind: "reveal",
-      camera: [
-        p.lon - CITY_DELTA,
-        p.lat - CITY_DELTA,
-        p.lon + CITY_DELTA,
-        p.lat + CITY_DELTA,
-      ],
-      highlight: [name],
-      dim: true,
-      callout: { region: name, name, value, text },
-      copy: text,
-    });
+  if (meta.arcBeats?.length) {
+    // Journalist-confirmed claim-arc override — the reveals follow the ARC order, not
+    // the sorted-cap salience selection below. mapArcErrors has already validated every
+    // arcBeat's region against the point labels, so the lookup here cannot miss
+    // (applyMapArc throws defensively if one somehow did).
+    const pointByLabel = new Map(points.map((p) => [p.label ?? "", p]));
+    beats.push(
+      ...applyMapArc(meta.arcBeats, (label) => {
+        const p = pointByLabel.get(label);
+        return p
+          ? {
+              camera: [
+                p.lon - CITY_DELTA,
+                p.lat - CITY_DELTA,
+                p.lon + CITY_DELTA,
+                p.lat + CITY_DELTA,
+              ],
+              highlight: [p.label ?? ""],
+              name: p.label ?? "",
+              value: fmt(p.value),
+            }
+          : null;
+      }),
+    );
+  } else {
+    const sorted = [...points].sort((a, b) => b.value - a.value);
+    const cap = Math.max(
+      1,
+      Math.min(opts.maxReveals ?? DEFAULT_MAX_REVEALS, sorted.length),
+    );
+    for (const p of sorted.slice(0, cap)) {
+      const name = p.label ?? "";
+      const value = fmt(p.value);
+      const text = `${name} — ${value}`;
+      beats.push({
+        kind: "reveal",
+        camera: [
+          p.lon - CITY_DELTA,
+          p.lat - CITY_DELTA,
+          p.lon + CITY_DELTA,
+          p.lat + CITY_DELTA,
+        ],
+        highlight: [name],
+        dim: true,
+        callout: { region: name, name, value, text },
+        copy: text,
+      });
+    }
   }
 
   beats.push({
