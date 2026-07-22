@@ -13,6 +13,7 @@ import {
   deriveFurniture,
   COLORS_DARK,
 } from "../../../../lib/core/theme";
+import { hueRampOklch } from "../../../../lib/core/house-ramp";
 export {
   COLORS,
   type ColorTokens,
@@ -264,16 +265,10 @@ export function themeWaterfallColors(themeBg?: string): readonly string[] {
 // runs pale→deep (low→high value, the sequential-heatmap convention); on a dark ground it runs
 // visible-mid→bright so high values read on the dark ground. Every stop is a lightness interpolation
 // of the base hue, so a newsroom house colour or a subject-fit hue drives the heatmap the same way it
-// drives the choropleth (houseRamp).
+// drives the choropleth (houseRamp). Delegates to hueRampOklch (lib/core/house-ramp) — the SAME
+// perceptual OKLCH engine the map ramp uses, so no muddy sRGB midpoints (was `_mix`-based).
 export function hueRamp(base: string, n: number, themeBg?: string): string[] {
-  const dark = bgIsDark(themeBg);
-  // endpoints: light ground → [pale … deep]; dark ground → [visible-mid … bright]. On a dark ground
-  // the LOW stop must stay a VISIBLE MID (a tint of the base, not the base darkened) so low-value
-  // cells clear the 3:1 non-text floor against the near-black ground instead of vanishing into it —
-  // the a11y guarantee the old hand-tuned dark ramp held (checkHeatmapConformance enforces it).
-  const lo = dark ? _mix(base, "#FFFFFF", 0.3) : _mix(base, "#FFFFFF", 0.88);
-  const hi = dark ? _mix(base, "#FFFFFF", 0.82) : _mix(base, "#000000", 0.5);
-  return Array.from({ length: n }, (_, i) => _mix(lo, hi, i / (n - 1)));
+  return hueRampOklch(base, n, themeBg);
 }
 
 // The heatmap ramp: derived from the chart's baseColor (subject-fit / house) via hueRamp, oriented
