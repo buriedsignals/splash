@@ -72,8 +72,14 @@ auto-pick for line and bar:
   back). `text` absent → the auto data-tied caption for that anchor.
 - **Fail-loud tripwire**: an anchor that does not exist in the data throws (`narrativeBeatErrors`,
   chart-native `chart-story.ts`) — surfaced at the orchestrator's spine validation gate before
-  production, and again at derive. Scatter and the MAP track have no override (`beats` on a map-track
-  config is rejected at the gate; map steps come from `deriveMapStory`'s temporal/magnitude ordering).
+  production, and again at derive. **Scatter has no override.** The chart-track `beats` field is
+  rejected on a map-track config (`beats` is chart-only narrative control; a map uses `arcBeats`
+  instead — a mis-placed `beats` on a map fails loud at the gate). **The MAP track's own override is
+  region-anchored `arcBeats`** (`{ region, role, text }` — `region` is the join-key/label value the
+  beat anchors on; same arc shape as chart-native, `mapArcErrors`) — but ONLY for choropleth and symbol
+  maps; absent ⇒ map steps come from `deriveMapStory`'s temporal/magnitude ordering. The other map
+  types (route, cartogram, dot-density, hex-grid, locator) have no confirmed-arc override yet — their
+  steps stay data-derived only.
 
 ## Architecture
 

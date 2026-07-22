@@ -126,11 +126,19 @@ the flow did not reach (a canned « Q6, toujours posée » when the flow did not
    zero `build`, two `turn`s, or a role beat with an empty claim) fails the proposal loud before
    production — on top of the existing anchor-must-exist-in-the-data check (see the beat-model rule at
    PROPOSITION, below).
-   **Map follow-up (not built yet) — say this plainly, never promise otherwise:** this claim-arc override
-   exists ONLY for chart-native today. A map-scrolly's beats still derive from the data alone (the
-   existing salience picker, `deriveMapStory`) — there is no `storyBeats`/role override on the map track
-   yet; that parity is a FOLLOW-UP slice, not a capability this SKILL ships. Never tell a journalist a map
-   story can be confirmed beat-by-beat the way a chart scrolly can.
+   **Map claim-arc — choropleth + symbol only, say the boundary plainly, never promise otherwise:** the
+   claim-arc override now ALSO exists for map-scrolly, but ONLY for the `choropleth` and `symbol` map
+   types. It is a SEPARATE field from chart-native's: a map arc is a **region-anchored `arcBeats`** plan
+   — `{ region, role, text }` per beat, where `region` is the join-key/label value the beat anchors on
+   (not an x-value/category) — same shape as the chart arc (`establish → build+ → [turn] → payoff`), same
+   journalist confirm/tweak/veto, same fail-loud shape check (`arcErrors`), pinned VERBATIM as `arcBeats`
+   once confirmed. **`arcBeats` and chart-native's `spec.beats` are never interchangeable — a chart
+   `beats` field submitted on a map spec is rejected loud, use `arcBeats` for a map.** **STILL a
+   follow-up, say this plainly, never promise otherwise:** the other map story types — `route`,
+   `cartogram`, `dot-density`, `hex-grid`, `locator` — do NOT accept a confirmed arc yet; their beats
+   still derive from the data alone (the existing salience picker, `deriveMapStory`). Never tell a
+   journalist one of those five types can be confirmed beat-by-beat the way a chart-scrolly or a
+   choropleth/symbol map-scrolly now can.
 3. **Prose table — GATE 2b (prose-extracted figures only):** when the figures come from the
    article's prose, show the reconstructed table (verbatim quotes) and get an explicit
    confirmation BEFORE anything is routed — a wrong table must never invalidate an
