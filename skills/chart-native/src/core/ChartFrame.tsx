@@ -121,6 +121,9 @@ export interface ChartFrameProps {
    *  (bg/ink/muted/axis/grid) is DERIVED from. The plot's own marks are themed by each component.
    *  Undefined = the light default (byte-identical legacy path). */
   themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the frame's furniture greys (muted/axis/grid)
+   *  toward the house colour, matching the plot body. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export function ChartFrame({
@@ -136,8 +139,9 @@ export function ChartFrame({
   embedded = false,
   lang,
   themeBg,
+  baseColor,
 }: ChartFrameProps) {
-  const C = themeColors(themeBg);
+  const C = themeColors(themeBg, baseColor);
   const srcLabel = sourceLabel(lang);
   // WCAG 1.1.1 — emit the altInsight (when provided) as a visually-hidden
   // description ONCE, in whichever layout branch renders. Sibling of the <svg>
