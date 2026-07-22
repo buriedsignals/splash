@@ -110,7 +110,8 @@ export function houseRamp(hex: string, n = 5): string[] {
 // low stop still clears the ≥3:1 non-text floor the old hand-tuned dark ramp held.
 const RAMP_L_LIGHT_HI = 0.95; // pale low-value end, light ground
 const RAMP_L_LIGHT_LO = 0.28; // deep high-value end, light ground
-const RAMP_L_DARK_LO = 0.48; // saturated-mid low-value end, dark ground (clears ≥3:1 on near-black)
+const RAMP_L_DARK_LO = 0.52; // saturated-mid low-value end, dark ground — clears ≥3:1 vs #0b1220 for
+//                             all house hues (swept), span 0.43 ≥ the theme-aware dark floor 0.40
 const RAMP_L_DARK_HI = 0.95; // bright high-value end, dark ground
 const RAMP_C_LIGHT = 0.03; // the LOW-chroma pole of the ramp (pale/near-white end)
 
