@@ -1,21 +1,111 @@
 import { describe, it, expect } from "bun:test";
 import { deriveFurniture, resolveFrameColors } from "./theme";
-// The current authoritative implementations we must stay behaviour-identical to:
-import { deriveFurniture as cnFurniture } from "../../skills/chart-native/src/core/tokens";
-import { resolveFrameColors as mnFrameColors } from "../../skills/map-native/src/theme/map-tokens";
 
-const BGS = ["#ffffff", "#0b1220", "#f4c9d7", "#36454f", "#71717a", "#009e73"];
-
-describe("core/theme parity with chart-native tokens", () => {
-  it("deriveFurniture matches on every background", () => {
-    for (const bg of BGS) expect(deriveFurniture(bg)).toEqual(cnFurniture(bg));
+describe("core/theme deriveFurniture golden table", () => {
+  it("deriveFurniture returns the pinned furniture for each background", () => {
+    const golden: Record<string, ReturnType<typeof deriveFurniture>> = {
+      "#ffffff": {
+        line: "#0072B2",
+        head: "#FFFFFF",
+        headGlow: "#0072B2",
+        ink: "#1A1A1A",
+        muted: "#6B6B6B",
+        grid: "#E6E6E6",
+        axis: "#CFCFCF",
+        bg: "#FFFFFF",
+      },
+      "#0b1220": {
+        line: "#56B4E9",
+        head: "#FFFFFF",
+        headGlow: "#56B4E9",
+        ink: "#F4F4F5",
+        muted: "#aeb0b5",
+        axis: "#4c515c",
+        grid: "#2c323e",
+        bg: "#0B1220",
+      },
+      "#f4c9d7": {
+        line: "#0072B2",
+        head: "#FFFFFF",
+        headGlow: "#0072B2",
+        ink: "#1A1A1A",
+        muted: "#5b4f53",
+        axis: "#b798a2",
+        grid: "#d5b1bd",
+        bg: "#F4C9D7",
+      },
+      "#36454f": {
+        line: "#56B4E9",
+        head: "#FFFFFF",
+        headGlow: "#56B4E9",
+        ink: "#F4F4F5",
+        muted: "#bbc0c3",
+        axis: "#6b767d",
+        grid: "#515e66",
+        bg: "#36454F",
+      },
+      "#71717a": {
+        line: "#0072B2",
+        head: "#FFFFFF",
+        headGlow: "#0072B2",
+        ink: "#FFFFFF",
+        muted: "#d4d4d7",
+        axis: "#99999f",
+        grid: "#85858d",
+        bg: "#71717A",
+      },
+      "#009e73": {
+        line: "#0072B2",
+        head: "#FFFFFF",
+        headGlow: "#0072B2",
+        ink: "#1A1A1A",
+        muted: "#124235",
+        axis: "#07795a",
+        grid: "#048c67",
+        bg: "#009E73",
+      },
+    };
+    for (const [bg, expected] of Object.entries(golden))
+      expect(deriveFurniture(bg)).toEqual(expected);
   });
 });
 
-describe("core/theme parity with map-native map-tokens", () => {
-  it("resolveFrameColors matches on every background", () => {
-    for (const bg of BGS)
-      expect(resolveFrameColors(bg)).toEqual(mnFrameColors(bg));
+describe("core/theme resolveFrameColors golden table", () => {
+  it("resolveFrameColors returns the pinned frame furniture for each background", () => {
+    const golden: Record<string, ReturnType<typeof resolveFrameColors>> = {
+      "#ffffff": {
+        pill: "rgba(255,255,255,0.92)",
+        ink: "#1a1a1a",
+        muted: "#5f5f5f",
+      },
+      "#0b1220": {
+        pill: "rgba(11,18,32,0.82)",
+        ink: "#f4f4f5",
+        muted: "#c1c2c6",
+      },
+      "#f4c9d7": {
+        pill: "rgba(244,201,215,0.82)",
+        ink: "#1a1a1a",
+        muted: "#4a4144",
+      },
+      "#36454f": {
+        pill: "rgba(54,69,79,0.82)",
+        ink: "#f4f4f5",
+        muted: "#caced0",
+      },
+      "#71717a": {
+        pill: "rgba(113,113,122,0.82)",
+        ink: "#ffffff",
+        muted: "#e0e0e2",
+      },
+      "#009e73": {
+        pill: "rgba(0,158,115,0.82)",
+        ink: "#1a1a1a",
+        muted: "#14372e",
+      },
+    };
+    for (const [bg, expected] of Object.entries(golden))
+      expect(resolveFrameColors(bg)).toEqual(expected);
   });
 });
 
