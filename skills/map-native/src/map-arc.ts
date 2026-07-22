@@ -62,7 +62,8 @@ export function mapNarrativeFallbackWarning(config: unknown): string | null {
   // Mirror the deriver's gate exactly (`meta.arcBeats?.length`): a confirmed, NON-EMPTY
   // arcBeats suppresses the warning. An empty array still renders via the salience path
   // (see deriveMapStory/deriveSymbolStory), so it must still warn like an absent one.
-  if (Array.isArray(c?.arcBeats) && c.arcBeats.length > 0) return null;
+  const ab = c?.arcBeats;
+  if (Array.isArray(ab) && ab.length > 0) return null;
   const type = c?.type;
   if (type !== undefined && type !== "choropleth" && type !== "symbol")
     return null;
