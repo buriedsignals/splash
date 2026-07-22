@@ -26,7 +26,9 @@ import {
   FONT,
   TYPE,
   SLOPE_LINE_COLORS,
-  themeColors, tooltipBorder } from "./core/tokens";
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -50,6 +52,8 @@ export interface SlopeConfig {
   rightPeriod: string;
   /** the one category to accent (the line that bucks the trend) */
   highlightLabel?: string;
+  /** subject-fit hue for the highlighted line. Absent → the OKABE_ITO.vermillion default. */
+  accent?: string;
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
   themeBg?: string;
   rows: Record<string, string | number>[];
@@ -382,7 +386,7 @@ function SlopeSvg({
             const lp = lineP(l.index);
             const end = extendLine(l, lp);
             const hi = isHi(l);
-            const color = hi ? ACCENT : CONTEXT;
+            const color = hi ? (config.accent ?? ACCENT) : CONTEXT;
             const focused = interactive && hover === l.index;
             const dim = interactive && hover !== null && !focused;
             const labelOp = clamp01((lp - 0.6) / 0.4);
