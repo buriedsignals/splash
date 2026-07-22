@@ -19,8 +19,14 @@ describe("core/theme parity with map-native map-tokens", () => {
   });
 });
 
-import { tintNeutral } from "./theme";
+import {
+  tintNeutral,
+  FRAME_COLORS,
+  FRAME_COLORS_DARK,
+  DARK_FRAME_BG,
+} from "./theme";
 import { hexToOklch } from "./house-ramp";
+import { contrastRatio } from "./contrast";
 
 // Independent sRGB-mix oracle (theme.ts's own `_mix` is module-private — recompute it here so the
 // byte-identity assertion isn't a self-comparison).
@@ -95,6 +101,78 @@ describe("core/theme deriveFurniture tinted-neutrals", () => {
       expect(
         Math.abs(cr(f.muted, bg) - cr(deriveFurniture(bg).muted, bg)),
       ).toBeLessThan(0.2); // delta small
+    }
+  });
+});
+
+describe("resolveFrameColors house-hue tint", () => {
+  const HUE = "#2E7D57"; // a green house hue
+
+  it("is byte-identical to FRAME_COLORS on the light default with no house hue", () => {
+    expect(resolveFrameColors()).toEqual(FRAME_COLORS);
+    expect(resolveFrameColors(undefined, undefined)).toEqual(FRAME_COLORS);
+  });
+
+  it("is byte-identical to the dark preset with no house hue", () => {
+    expect(resolveFrameColors(DARK_FRAME_BG)).toEqual(FRAME_COLORS_DARK);
+  });
+
+  it("ignores a non-#rrggbb house hue (byte-identical)", () => {
+    expect(resolveFrameColors(undefined, "purples")).toEqual(FRAME_COLORS);
+  });
+
+  it("tints muted toward the house hue on the light default, leaving pill and ink untouched", () => {
+    const tinted = resolveFrameColors(undefined, HUE);
+    expect(tinted.pill).toBe(FRAME_COLORS.pill);
+    expect(tinted.ink).toBe(FRAME_COLORS.ink);
+    expect(tinted.muted).not.toBe(FRAME_COLORS.muted);
+  });
+
+  it("tints muted on a derived ground too (dark preset), pill and ink unchanged", () => {
+    const tinted = resolveFrameColors(DARK_FRAME_BG, HUE);
+    expect(tinted.pill).toBe(FRAME_COLORS_DARK.pill);
+    expect(tinted.ink).toBe(FRAME_COLORS_DARK.ink);
+    expect(tinted.muted).not.toBe(FRAME_COLORS_DARK.muted);
+  });
+
+  it("preserves the muted OKLCH lightness (contrast-preservation oracle)", () => {
+    for (const bg of [undefined, DARK_FRAME_BG]) {
+      const base = resolveFrameColors(bg);
+      const tinted = resolveFrameColors(bg, HUE);
+      // independent oracle: tint re-hues at constant L, so L is unchanged within rounding
+      expect(hexToOklch(tinted.muted).L).toBeCloseTo(
+        hexToOklch(base.muted).L,
+        2,
+      );
+    }
+  });
+
+  it("muted clears its WCAG floor on every ground for representative house hues", () => {
+    const hues = [
+      "#2E7D57",
+      "#B4232A",
+      "#1F4FA2",
+      "#7A1FA2",
+      "#C98A00",
+      "#008080",
+    ];
+    const grounds: (string | undefined)[] = [
+      undefined,
+      DARK_FRAME_BG,
+      "#2B2B2B",
+      "#EDEDED",
+    ];
+    for (const hue of hues) {
+      for (const g of grounds) {
+        const fc = resolveFrameColors(g, hue);
+        const ground =
+          g && /^#[0-9a-f]{6}$/i.test(g)
+            ? g
+            : fc.pill.startsWith("rgba(255")
+              ? "#ffffff"
+              : "#18181b";
+        expect(contrastRatio(fc.muted, ground)).toBeGreaterThanOrEqual(4.5);
+      }
     }
   });
 });

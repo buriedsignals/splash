@@ -180,23 +180,28 @@ export const COLORS_DARK: ColorTokens = deriveFurniture("#18181B");
 // translucent branded backing that reads over the (light/dark) basemap it overlays. Light
 // (undefined / #FFFFFF / "light") short-circuits to the exact legacy FRAME_COLORS, keeping the
 // untouched light furniture byte-identical.
-export function resolveFrameColors(themeBg?: string): FrameColors {
+export function resolveFrameColors(
+  themeBg?: string,
+  houseHue?: string,
+): FrameColors {
+  const tint =
+    houseHue !== undefined && /^#[0-9a-f]{6}$/i.test(houseHue.trim());
   const bg = resolveThemeBg(themeBg);
-  if (!bg) return FRAME_COLORS; // light default — legacy tokens, byte-identical
-  // the softened extremes read best on clearly light/dark grounds (which they clear ≥ 4.5:1); on a
-  // narrow mid-luminance band (grey ≈ #717171–#818181) the better softened extreme is only ~4.0:1,
-  // so escalate to the PURE pole there (pure #000/#FFF clears ≥ 4.5:1 at every ground luminance) —
-  // mirrors deriveFurniture so map + chart furniture never ship illegible on a house ground.
-  // Byte-identical for the dark preset (#18181B → #f4f4f5, which clears 4.5:1 comfortably).
+  if (!bg) {
+    // light default — legacy tokens, byte-identical WITHOUT a house hue; tinted muted WITH one
+    if (!tint) return FRAME_COLORS;
+    return {
+      ...FRAME_COLORS,
+      muted: tintNeutral(FRAME_COLORS.muted, houseHue!),
+    };
+  }
   const softDark = contrastRatio("#1a1a1a", bg) >= contrastRatio("#f4f4f5", bg);
   let ink = softDark ? "#1a1a1a" : "#f4f4f5";
   if (contrastRatio(ink, bg) < 4.5) ink = softDark ? "#000000" : "#ffffff";
   const [r, g, b] = _rgb(bg);
-  return {
-    pill: `rgba(${r},${g},${b},0.82)`,
-    ink,
-    muted: _mix(ink, bg, 0.22),
-  };
+  let muted = _mix(ink, bg, 0.22);
+  if (tint) muted = tintNeutral(muted, houseHue!);
+  return { pill: `rgba(${r},${g},${b},0.82)`, ink, muted };
 }
 
 // The dark PRESET furniture, derived once — kept as a named export for back-references (the produce
