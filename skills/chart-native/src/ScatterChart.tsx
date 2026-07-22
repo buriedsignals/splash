@@ -175,7 +175,7 @@ function ScatterSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const { innerWidth, innerHeight, points } = layout;
   const dotColor = config.baseColor ?? C.line;
   const n = points.length;

@@ -27,7 +27,13 @@ import {
   stagger,
 } from "./core/math";
 import { unitSuffix, type Lang } from "./core/locale";
-import { COLORS, TYPE, themeColors, type ColorTokens, tooltipBorder } from "./core/tokens";
+import {
+  COLORS,
+  TYPE,
+  themeColors,
+  type ColorTokens,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import { resolveFrameWithHeader } from "./core/format";
 import {
@@ -262,7 +268,7 @@ function BarSvg({
    *  embedded scrolly host / for long units) — see BarChart body. */
   valueSuffix: string;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const { innerWidth, innerHeight, orientation, bars } = layout;
   const horizontal = orientation === "horizontal";
   const n = bars.length;

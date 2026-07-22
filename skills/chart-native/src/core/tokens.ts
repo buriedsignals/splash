@@ -63,8 +63,8 @@ export function tooltipBorder(themeBg?: string): string | undefined {
 // derives the furniture for the newsroom's background (light default / undefined → legacy COLORS,
 // byte-identical). Keep imports of the static `COLORS` only for PALETTE derivations that are
 // theme-independent (Okabe-Ito marks); FURNITURE (ink/muted/axis/grid/bg/line) must go through this.
-export function themeColors(themeBg?: string): ColorTokens {
-  return deriveFurniture(themeBg);
+export function themeColors(themeBg?: string, houseHue?: string): ColorTokens {
+  return deriveFurniture(themeBg, houseHue);
 }
 
 export const FONT =

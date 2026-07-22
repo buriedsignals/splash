@@ -256,7 +256,7 @@ function ChartSvg({
    *  scroll host: the frame is present before the line draws). Default false = wipe-in. */
   staticAxes?: boolean;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const lp = lineProgress;
   const revealed = revealLine(layout, lp);
   const head = revealHead(layout, lp);
