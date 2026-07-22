@@ -5,7 +5,7 @@ import type { LocatorMarker } from "./locator-geo";
 import { PALETTES, isCvdSafeRamp } from "./theme/scale";
 import { BASEMAP_NAMES } from "./basemaps";
 import { validateMapFilters, type MapFilter } from "./core/map-filter";
-import type { RevealMode } from "./map-story";
+import { mapArcErrors, type MapArcBeat, type RevealMode } from "./map-story";
 
 // Shared palette/scaleType validation for any config that carries a colour scale.
 // Errors block: a scaleType must be known, a named palette must exist AND match the
@@ -90,6 +90,9 @@ export type ChoroplethConfigShape = ChoroplethData & {
   // lowest"; "magnitude" → keep the ranking; "categorical" → ranking fallback.
   valueKind?: "temporal" | "magnitude" | "categorical";
   filters?: MapFilter[];
+  // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
+  // Anchors on regionKey values; validated by validateChoroplethConfig below.
+  arcBeats?: MapArcBeat[];
 };
 
 // Shared basemap validation — every map type must use a registered basemap.
@@ -205,6 +208,20 @@ export function validateChoroplethConfig(
   if (/^\d{4}(\s*[–-]\s*\d{4})?$/.test(title))
     errors.push(`title is a year range, not an insight: "${title}"`);
 
+  if (s.arcBeats !== undefined) {
+    if (!Array.isArray(s.arcBeats)) {
+      errors.push(
+        "arcBeats override must be an ARRAY of beat objects (see MapArcBeat)",
+      );
+    } else {
+      const validRegions =
+        Array.isArray(rows) && regionKey
+          ? (rows as Record<string, unknown>[]).map((r) => String(r[regionKey]))
+          : [];
+      errors.push(...mapArcErrors(s.arcBeats as MapArcBeat[], validRegions));
+    }
+  }
+
   // Furniture standard (warnings, not blockers).
   if (typeof s.description !== "string" || !s.description.trim())
     warnings.push(
@@ -247,6 +264,9 @@ export type SymbolConfigShape = {
   brandHue?: string;
   brandPalette?: string[];
   brandExplicit?: boolean;
+  // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
+  // Anchors on point labels; validated by validateSymbolConfig below.
+  arcBeats?: MapArcBeat[];
 };
 
 // Framework-free structural validation of a symbol-map config (pre-render — no
@@ -323,6 +343,19 @@ export function validateSymbolConfig(
     pointsForFilters,
   );
   if (!frSymbol.ok) errors.push(...frSymbol.errors);
+
+  if (s.arcBeats !== undefined) {
+    if (!Array.isArray(s.arcBeats)) {
+      errors.push(
+        "arcBeats override must be an ARRAY of beat objects (see MapArcBeat)",
+      );
+    } else {
+      const validRegions = Array.isArray(points)
+        ? (points as Record<string, unknown>[]).map((p) => String(p.label))
+        : [];
+      errors.push(...mapArcErrors(s.arcBeats as MapArcBeat[], validRegions));
+    }
+  }
 
   if (!(typeof s.description === "string" && s.description.trim()))
     warnings.push("missing description — a module must state what/when/where");

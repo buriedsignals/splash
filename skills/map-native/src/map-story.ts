@@ -5,6 +5,9 @@ import {
   classifyNarrativePattern,
   type NarrativePattern,
 } from "./narrative-pattern";
+// ArcRole/arcErrors live in lib/core/claim-arc (shared by chart-native + map-native —
+// see chart-native/src/chart-story.ts for the sibling import).
+import { arcErrors, type ArcRole } from "../../../lib/core/claim-arc";
 
 export interface Beat {
   kind: "title" | "establish" | "reveal" | "takeaway";
@@ -36,6 +39,53 @@ export interface Beat {
   // (top leaders + tail) rather than collapsing to just max & min.
   rank?: number;
   rankRole?: "leader" | "tail";
+  // Claim-arc role (S2), threaded from a journalist-confirmed `arcBeats` override —
+  // see MapArcBeat/mapArcErrors below. Optional: absent = no arc claimed.
+  role?: ArcRole;
+}
+
+// ---------------------------------------------------------------------------
+// Claim-arc — the journalist-confirmed override for map-native (choropleth +
+// symbol). Mirrors chart-native's beats: `region` anchors on a value the data
+// actually has (a region key for choropleth, a point label for symbol); `role`
+// (optional) claims a position in the establish→build→turn→payoff arc; `text`
+// is the beat's assertion. Validated by mapArcErrors below.
+// ---------------------------------------------------------------------------
+export interface MapArcBeat {
+  region: string;
+  role?: ArcRole;
+  text?: string;
+}
+
+// How many valid region values a fail-loud message lists before truncating —
+// mirrors chart-native's listValidAnchors (chart-story.ts): enough to spot a
+// typo at a glance, bounded so a 1 000-row dataset cannot flood the log.
+const ARC_BEAT_REGION_SAMPLE = 20;
+
+function listValidRegions(values: string[]): string {
+  const shown = values.slice(0, ARC_BEAT_REGION_SAMPLE);
+  const more = values.length - shown.length;
+  return shown.join(", ") + (more > 0 ? `, … (+${more} more)` : "");
+}
+
+// Validate an explicit arcBeats override against the map's own region values
+// (choropleth: the region key column; symbol: point labels). Returns human-
+// readable errors ([] = valid). Pure and throw-free — the same fail-loud
+// philosophy as chart-native's narrativeBeatErrors: an unknown region must
+// never silently drop or shift a confirmed beat.
+export function mapArcErrors(
+  arcBeats: MapArcBeat[],
+  validRegions: string[],
+): string[] {
+  if (!arcBeats || arcBeats.length === 0) return [];
+  const errors: string[] = [];
+  arcBeats.forEach((b, i) => {
+    if (!validRegions.includes(b.region))
+      errors.push(
+        `beat ${i + 1}: region "${b.region}" not found in the data — valid regions: ${listValidRegions(validRegions)}`,
+      );
+  });
+  return [...errors, ...arcErrors(arcBeats)];
 }
 
 // The choreography a reveal beat's camera follows. "context" (default) keeps the
