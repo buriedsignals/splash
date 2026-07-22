@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { checkHeatmapConformance } from "../src/core/conformance";
 import { computeHeatmapLayout } from "../src/heatmap-geometry";
-import { COLORS_DARK } from "../src/core/tokens";
+import { COLORS_DARK, heatmapRamp } from "../src/core/tokens";
 import sample from "../assets/sample-data/heatmap.json";
 
 const text = { text: ["#1A1A1A", "#6B6B6B"], bg: "#FFFFFF" };
@@ -98,5 +98,31 @@ describe("the shipped heatmap is conformant (global ++ heatmap)", () => {
       },
     );
     expect(v).toEqual([]);
+  });
+
+  it("flags a non-uniform (kinked) ramp", () => {
+    const violations = checkHeatmapConformance(
+      {
+        title: "Heatmap ramp uniformity test", // >= 12 chars — clear of the unrelated title-length rule
+        source: { name: "Src" },
+        rampStops: ["#f2f2f2", "#ededed", "#e8e8e8", "#111111"], // even-ish then a cliff = kink
+        valueDomain: [0, 10],
+      },
+      { text: ["#18181b"], bg: "#ffffff" },
+    );
+    expect(violations.some((r) => /step|kink|span/i.test(r))).toBe(true);
+  });
+
+  it("passes the derived OKLCH ramp (uniform)", () => {
+    const violations = checkHeatmapConformance(
+      {
+        title: "Heatmap ramp uniformity test", // >= 12 chars — clear of the unrelated title-length rule
+        source: { name: "Src" },
+        rampStops: heatmapRamp("#0072B2", "#ffffff"),
+        valueDomain: [0, 10],
+      },
+      { text: ["#18181b"], bg: "#ffffff" },
+    );
+    expect(violations).toEqual([]);
   });
 });

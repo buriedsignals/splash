@@ -12,6 +12,7 @@ import {
   MIN_CONTRAST,
 } from "../../../../lib/core/contrast";
 import { conformanceL0 } from "../../../../lib/core/conformance-l0";
+import { rampUniformityIssues } from "../../../../lib/core/house-ramp";
 
 export const OKABE_ITO_SET = new Set([
   "#0072B2",
@@ -1852,6 +1853,21 @@ export function checkHeatmapConformance(
         `heatmap dark-ground ramp: a stop is ${worst.toFixed(2)}:1 vs the ground (< 3:1) — low-value cells vanish`,
       );
   }
+  // Perceptual uniformity (S3): a wide-enough OKLCH L span with even steps. hueRampOklch satisfies
+  // this by construction, so this fires on a regression or a hand-set non-uniform ramp — a tripwire.
+  // THEME-AWARE span floor: on a near-black ground the a11y 3:1 non-text floor physically caps the
+  // achievable L range below the light-ground 0.60 (see the ramp engine), so a dark ground uses a
+  // lower floor (0.40) — enough to reject a collapsed ramp, not so high it fails a valid dark ramp.
+  // NB: the fixed calendar ramp (HEATMAP_RAMP_LIGHT / BLUES, ColorBrewer Blues) is NOT gated here —
+  // it flows through checkCalendarConformance, a separate function this task does not touch. Grand-
+  // father check (task-4-report.md): rampUniformityIssues(HEATMAP_RAMP_LIGHT) → non-empty (one
+  // "perceptual kink" issue) — that curated literal is trusted as-is; only the DERIVED heatmapRamp()
+  // output (the sole input this function ever receives, per produce-conformance.ts) is guarded.
+  const rampMinSpan = relativeLuminance(textColors.bg) < 0.2 ? 0.4 : 0.6;
+  for (const r of rampUniformityIssues(input.rampStops, {
+    minSpan: rampMinSpan,
+  }))
+    v.push(r);
   const [lo, hi] = input.valueDomain;
   if (!(hi > lo)) v.push(`heatmap value range is empty — [${lo}, ${hi}]`);
   return v;
