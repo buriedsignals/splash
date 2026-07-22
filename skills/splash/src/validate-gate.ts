@@ -25,7 +25,7 @@ import {
   narrativeBeatWarnings,
   narrativeFallbackWarning,
 } from "../../chart-native/src/chart-story";
-import { mapNarrativeFallbackWarning } from "../../map-native/src/map-story";
+import { mapNarrativeFallbackWarning } from "../../map-native/src/map-arc";
 import {
   checkImageConformance,
   type ImageStory,

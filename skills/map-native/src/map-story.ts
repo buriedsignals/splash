@@ -5,9 +5,22 @@ import {
   classifyNarrativePattern,
   type NarrativePattern,
 } from "./narrative-pattern";
-// ArcRole/arcErrors live in lib/core/claim-arc (shared by chart-native + map-native —
-// see chart-native/src/chart-story.ts for the sibling import).
-import { arcErrors, type ArcRole } from "../../../lib/core/claim-arc";
+// ArcRole lives in lib/core/claim-arc (shared by chart-native + map-native — see
+// chart-native/src/chart-story.ts for the sibling import). The pure claim-arc
+// validators (mapArcErrors, mapNarrativeFallbackWarning) live in ./map-arc — a
+// LIGHTWEIGHT module kept free of this file's heavy staged-reveal/remotion import
+// chain, so validate-config.ts / validate-gate.ts can value-import them without
+// pulling remotion into the validation import closure. Re-exported below so any
+// existing importer of these from map-story still resolves.
+import type { ArcRole } from "../../../lib/core/claim-arc";
+import {
+  mapArcErrors,
+  type MapArcBeat,
+  mapNarrativeFallbackWarning,
+} from "./map-arc";
+
+export { mapArcErrors, mapNarrativeFallbackWarning } from "./map-arc";
+export type { MapArcBeat } from "./map-arc";
 
 export interface Beat {
   kind: "title" | "establish" | "reveal" | "takeaway";
@@ -42,50 +55,6 @@ export interface Beat {
   // Claim-arc role (S2), threaded from a journalist-confirmed `arcBeats` override —
   // see MapArcBeat/mapArcErrors below. Optional: absent = no arc claimed.
   role?: ArcRole;
-}
-
-// ---------------------------------------------------------------------------
-// Claim-arc — the journalist-confirmed override for map-native (choropleth +
-// symbol). Mirrors chart-native's beats: `region` anchors on a value the data
-// actually has (a region key for choropleth, a point label for symbol); `role`
-// (optional) claims a position in the establish→build→turn→payoff arc; `text`
-// is the beat's assertion. Validated by mapArcErrors below.
-// ---------------------------------------------------------------------------
-export interface MapArcBeat {
-  region: string;
-  role?: ArcRole;
-  text?: string;
-}
-
-// How many valid region values a fail-loud message lists before truncating —
-// mirrors chart-native's listValidAnchors (chart-story.ts): enough to spot a
-// typo at a glance, bounded so a 1 000-row dataset cannot flood the log.
-const ARC_BEAT_REGION_SAMPLE = 20;
-
-function listValidRegions(values: string[]): string {
-  const shown = values.slice(0, ARC_BEAT_REGION_SAMPLE);
-  const more = values.length - shown.length;
-  return shown.join(", ") + (more > 0 ? `, … (+${more} more)` : "");
-}
-
-// Validate an explicit arcBeats override against the map's own region values
-// (choropleth: the region key column; symbol: point labels). Returns human-
-// readable errors ([] = valid). Pure and throw-free — the same fail-loud
-// philosophy as chart-native's narrativeBeatErrors: an unknown region must
-// never silently drop or shift a confirmed beat.
-export function mapArcErrors(
-  arcBeats: MapArcBeat[],
-  validRegions: string[],
-): string[] {
-  if (!arcBeats || arcBeats.length === 0) return [];
-  const errors: string[] = [];
-  arcBeats.forEach((b, i) => {
-    if (!validRegions.includes(b.region))
-      errors.push(
-        `beat ${i + 1}: region "${b.region}" not found in the data — valid regions: ${listValidRegions(validRegions)}`,
-      );
-  });
-  return [...errors, ...arcErrors(arcBeats)];
 }
 
 // The anchor facts a deriver resolves for one arcBeat's region — enough to build a
@@ -134,28 +103,6 @@ export function applyMapArc(
       role: arcBeat.role,
     };
   });
-}
-
-// S2 flagged fallback — mirrors chart-native's narrativeFallbackWarning (chart-story.ts).
-// A choropleth/symbol map story with NO confirmed `arcBeats` derives its narrative from
-// data salience (deriveMapStory's own ranking), not a journalist-confirmed claim-arc —
-// never a hard fail, but never silent either. Only choropleth/symbol support an arcBeats
-// override (validate-config.ts) — route/locator/dot-density/hex-grid/cartogram derive
-// their own story unconditionally and never carry the field, so they never warn here.
-export function mapNarrativeFallbackWarning(config: unknown): string | null {
-  const c = config as { type?: string; arcBeats?: unknown } | null;
-  // Mirror the deriver's gate exactly (`meta.arcBeats?.length`): a confirmed, NON-EMPTY
-  // arcBeats suppresses the warning. An empty array still renders via the salience path
-  // (see deriveMapStory/deriveSymbolStory), so it must still warn like an absent one.
-  if (Array.isArray(c?.arcBeats) && c.arcBeats.length > 0) return null;
-  const type = c?.type;
-  if (type !== undefined && type !== "choropleth" && type !== "symbol")
-    return null;
-  return (
-    "narrative auto-picked by data salience (no confirmed claim-arc `arcBeats`) — the map " +
-    "scrolly walks the most salient regions, not a confirmed argument. If this ships as a " +
-    "story, confirm a region-anchored claim-arc at CADRAGE (establish → build → [turn] → payoff)."
-  );
 }
 
 // The choreography a reveal beat's camera follows. "context" (default) keeps the

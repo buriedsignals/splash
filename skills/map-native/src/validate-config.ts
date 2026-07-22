@@ -5,7 +5,8 @@ import type { LocatorMarker } from "./locator-geo";
 import { PALETTES, isCvdSafeRamp } from "./theme/scale";
 import { BASEMAP_NAMES } from "./basemaps";
 import { validateMapFilters, type MapFilter } from "./core/map-filter";
-import { mapArcErrors, type MapArcBeat, type RevealMode } from "./map-story";
+import { mapArcErrors, type MapArcBeat } from "./map-arc";
+import type { RevealMode } from "./map-story";
 
 // Shared palette/scaleType validation for any config that carries a colour scale.
 // Errors block: a scaleType must be known, a named palette must exist AND match the
