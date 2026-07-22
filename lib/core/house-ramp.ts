@@ -158,6 +158,40 @@ export function isMonotonicLuminanceRamp(ramp: string[]): boolean {
   return inc || dec;
 }
 
+const RAMP_MIN_SPAN = 0.6; // OKLCH L span floor (spec §2.2)
+const RAMP_MAX_STEP_RATIO = 1.8; // largest ΔL ÷ smallest ΔL (anti-kink)
+
+// A sequential ramp is perceptually uniform when: it spans a wide-enough OKLCH L range, its
+// consecutive L-steps are all similar (no kink), and L is monotonic. Returns the reasons it is
+// NOT — [] when uniform. Pure. The tripwire in checkHeatmapConformance pushes any reason as a
+// conformance violation; hueRampOklch satisfies this by construction, so it fires on regressions.
+export function rampUniformityIssues(
+  ramp: string[],
+  opts?: { minSpan?: number; maxStepRatio?: number },
+): string[] {
+  const minSpan = opts?.minSpan ?? RAMP_MIN_SPAN;
+  const maxStepRatio = opts?.maxStepRatio ?? RAMP_MAX_STEP_RATIO;
+  const issues: string[] = [];
+  if (ramp.length < 3) return ["ramp needs ≥ 3 stops"];
+  const L = ramp.map((c) => hexToOklch(c).L);
+  const span = Math.abs(L[L.length - 1]! - L[0]!);
+  if (span < minSpan)
+    issues.push(
+      `ramp OKLCH L span ${span.toFixed(2)} < ${minSpan} — too flat to read as a scale`,
+    );
+  const steps: number[] = [];
+  for (let i = 1; i < L.length; i++) steps.push(Math.abs(L[i]! - L[i - 1]!));
+  const maxStep = Math.max(...steps);
+  const minStep = Math.min(...steps);
+  if (minStep <= 1e-6)
+    issues.push("ramp has a zero-length L step — a flat/duplicated stop");
+  else if (maxStep / minStep > maxStepRatio)
+    issues.push(
+      `ramp L steps are uneven (max/min ${(maxStep / minStep).toFixed(2)} > ${maxStepRatio}) — a perceptual kink`,
+    );
+  return issues;
+}
+
 function contrastRatio(l1: number, l2: number): number {
   const hi = Math.max(l1, l2);
   const lo = Math.min(l1, l2);

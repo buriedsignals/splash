@@ -140,3 +140,21 @@ describe("core/house-ramp hueRampOklch (perceptual sequential ramp)", () => {
     );
   });
 });
+
+describe("core/house-ramp rampUniformityIssues", () => {
+  it("accepts an even OKLCH ramp (no issues)", () => {
+    expect(
+      core.rampUniformityIssues(core.hueRampOklch("#0072B2", 7, "#ffffff")),
+    ).toEqual([]);
+  });
+  it("rejects a too-short span (< 0.60) with a span reason", () => {
+    // three near-identical light greys — L span far below 0.60
+    const issues = core.rampUniformityIssues(["#eeeeee", "#e4e4e4", "#dadada"]);
+    expect(issues.some((r) => /span/i.test(r))).toBe(true);
+  });
+  it("rejects a kinked ramp (one giant L-step) with a step reason", () => {
+    // pale, pale, then a cliff to near-black — one huge step, the rest tiny
+    const issues = core.rampUniformityIssues(["#f2f2f2", "#ededed", "#111111"]);
+    expect(issues.some((r) => /step|kink/i.test(r))).toBe(true);
+  });
+});
