@@ -41,7 +41,7 @@ describe("core/theme tintNeutral", () => {
       const t = tintNeutral(grey, hue);
       expect(hexToOklch(t).L).toBeCloseTo(hexToOklch(grey).L, 2); // lightness preserved
       expect(hexToOklch(t).h).toBeCloseTo(hexToOklch(hue).h, 1); // hue adopted
-      expect(hexToOklch(t).C).toBeLessThan(0.03); // a whisper, not a colour
+      expect(hexToOklch(t).C).toBeLessThan(0.05); // a whisper, not a colour
     }
   });
   it("returns the grey unchanged for a non-#rrggbb house hue", () => {

@@ -67,8 +67,8 @@ describe("BarChart — highlight honours baseColor", () => {
     // tinted neutral (S3): baseColor (purple) now threads into themeColors(), so the
     // context bars' muted grey is hue-tinted toward the subject colour, not the static
     // COLORS.muted. Value = themeColors(undefined, OKABE_ITO.purple).muted.
-    expect(fills[1]).toBe("#72686d");
-    expect(fills[2]).toBe("#72686d");
+    expect(fills[1]).toBe("#79646f");
+    expect(fills[2]).toBe("#79646f");
   });
 
   it("falls back to the default primary for the highlighted bar when no baseColor is set", () => {

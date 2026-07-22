@@ -91,7 +91,7 @@ function _mix(a: string, b: string, t: number): string {
   return _hex(ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t);
 }
 
-const TINT_CHROMA = 0.015; // OKLCH chroma of a tinted neutral — a whisper of the house hue, not a colour.
+const TINT_CHROMA = 0.03; // OKLCH chroma of a tinted neutral — a whisper of the house hue, not a colour.
 //                            Render-proof knob (spec §5): low enough to read as grey, enough to cohere.
 
 // A tinted neutral: the input grey's OWN OKLCH lightness, re-hued to the house hue at a low chroma.
