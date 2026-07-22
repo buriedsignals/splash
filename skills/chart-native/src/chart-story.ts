@@ -287,6 +287,28 @@ export function narrativeBeatWarnings(spec: NativeSpec): string[] {
   return [];
 }
 
+// S2 flagged fallback: when a scrolly-narrative chart (line/bar) ships with NO confirmed
+// `spec.beats`, its beats are auto-picked by DATA SALIENCE (lineNotableIndices /
+// barRankedReveals) — a reasonable default, but NOT a journalist-confirmed argument. This
+// surfaces that at the render gate so an un-authored narrative is never mistaken for a
+// confirmed claim-arc. Non-blocking (the fallback still ships) — it is made VISIBLE, not
+// blocked. Returns null when beats are confirmed or the type carries no scrolly narrative.
+export function narrativeFallbackWarning(spec: NativeSpec): string | null {
+  if (spec.beats !== undefined) return null;
+  let type: string;
+  try {
+    type = specToNativeConfig(spec).type;
+  } catch {
+    return null;
+  }
+  if (type !== "line" && type !== "bar") return null;
+  return (
+    "narrative auto-picked by data salience (no confirmed claim-arc `beats`) — the scrolly " +
+    "walks the most salient points, not a confirmed argument. If this ships as a story, " +
+    "confirm a claim-arc at CADRAGE (establish → build → [turn] → payoff)."
+  );
+}
+
 // English ordinal: 1st, 2nd, 3rd, 4th…
 function ordinalEn(n: number): string {
   const s = ["th", "st", "nd", "rd"];

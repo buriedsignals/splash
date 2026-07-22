@@ -1,5 +1,8 @@
 import { describe, it, expect } from "bun:test";
-import { narrativeBeatErrors } from "../src/chart-story";
+import {
+  narrativeBeatErrors,
+  narrativeFallbackWarning,
+} from "../src/chart-story";
 import type { NativeSpec } from "../src/spec-to-config";
 
 // A minimal line spec whose x column carries the anchors the beats use.
@@ -104,5 +107,35 @@ describe("claim-arc validation (narrativeBeatErrors)", () => {
       ]),
     );
     expect(errs.some((e) => /not found/i.test(e))).toBe(true);
+  });
+});
+
+describe("flagged salience fallback (narrativeFallbackWarning)", () => {
+  const spec = (beats?: unknown) =>
+    ({
+      nativeType: "line",
+      title: "T",
+      source: { name: "S" },
+      unit: "%",
+      data: "year,v\n2000,1\n2001,9\n",
+      ...(beats ? { beats } : {}),
+    }) as unknown as NativeSpec;
+
+  it("warns when a line scrolly has no confirmed beats (salience fallback)", () => {
+    const w = narrativeFallbackWarning(spec());
+    expect(w).not.toBeNull();
+    expect(w).toMatch(/auto-picked|salience|not.*confirmed|argument/i);
+  });
+
+  it("does not warn when beats are confirmed", () => {
+    expect(
+      narrativeFallbackWarning(
+        spec([
+          { x: 2000, role: "establish", text: "low" },
+          { x: 2001, role: "build", text: "up" },
+          { x: 2001, role: "payoff", text: "lands" },
+        ]),
+      ),
+    ).toBeNull();
   });
 });

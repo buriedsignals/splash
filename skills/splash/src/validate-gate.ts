@@ -23,6 +23,7 @@ import {
 import {
   narrativeBeatErrors,
   narrativeBeatWarnings,
+  narrativeFallbackWarning,
 } from "../../chart-native/src/chart-story";
 import {
   checkImageConformance,
@@ -109,12 +110,19 @@ function validateScrolly(spec: unknown): ValidationOutcome {
         errors: [...(outcome.ok ? [] : outcome.errors), ...beatErrors],
       };
     // Advisory: flag a bar walk whose rendered order does not follow the beats (an
-    // explicit sort contradicting the geographic beat order, or a regression) — a
-    // warning surfaced at the render gate, never a hard fail.
+    // explicit sort contradicting the geographic beat order, or a regression), AND flag
+    // a scrolly whose narrative was auto-picked by data salience (no confirmed
+    // `spec.beats` at all — S2) — both surfaced at the render gate, never a hard fail.
     if (outcome.ok) {
       const beatWarnings = narrativeBeatWarnings(spec as NativeSpec);
-      if (beatWarnings.length)
-        return { ok: true, warnings: [...outcome.warnings, ...beatWarnings] };
+      const fallbackWarning = narrativeFallbackWarning(spec as NativeSpec);
+      const allWarnings = [
+        ...outcome.warnings,
+        ...beatWarnings,
+        ...(fallbackWarning ? [fallbackWarning] : []),
+      ];
+      if (allWarnings.length !== outcome.warnings.length)
+        return { ok: true, warnings: allWarnings };
     }
     return outcome;
   }

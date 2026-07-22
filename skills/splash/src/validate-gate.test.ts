@@ -126,6 +126,40 @@ describe("validateAccepted — the spine validation gate", () => {
     expect(r.ok).toBe(true);
   });
 
+  // S2 flagged fallback: a chart-track scrolly with NO confirmed `beats` gets its
+  // narrative auto-picked by data salience — never a hard fail, but never silent either.
+  it("WARNS that a CHART scrolly with no confirmed beats used the salience fallback", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        nativeType: "line",
+        title: "How emissions per capita diverged since 1990",
+        source: { name: "X" },
+        unit: "t CO2",
+        data: "year,value\n1990,9\n2005,8\n2020,6",
+      }),
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings.join(" ")).toMatch(/auto-picked|salience/i);
+  });
+
+  it("does NOT warn when the CHART scrolly beats are journalist-confirmed", () => {
+    const r = validateAccepted(
+      accept("scrolly", {
+        nativeType: "line",
+        title: "How emissions per capita diverged since 1990",
+        source: { name: "X" },
+        unit: "t CO2",
+        data: "year,value\n1990,9\n2005,8\n2020,6",
+        beats: [
+          { x: "1990", xEnd: "2005", text: "The plateau years" },
+          { x: "2020", text: "The drop" },
+        ],
+      }),
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings.join(" ")).not.toMatch(/auto-picked|salience/i);
+  });
+
   it("REJECTS a CHART scrolly whose explicit beat anchors a value absent from the data (typo tripwire)", () => {
     const r = validateAccepted(
       accept("scrolly", {
