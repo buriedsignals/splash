@@ -114,6 +114,11 @@ const RAMP_L_DARK_LO = 0.52; // saturated-mid low-value end, dark ground — cle
 //                             all house hues (swept), span 0.43 ≥ the theme-aware dark floor 0.40
 const RAMP_L_DARK_HI = 0.95; // bright high-value end, dark ground
 const RAMP_C_LIGHT = 0.03; // the LOW-chroma pole of the ramp (pale/near-white end)
+const RAMP_MUTED_CHROMA_CAP = 0.12; // §4 "plafond chroma muté": ceiling the peak chroma keeps the ramp
+//                                     in-gamut for ANY house hue → perceptually uniform by construction,
+//                                     which makes the fail-hard uniformity gate safe (swept: 0/24 vivid
+//                                     hues fail at 0.12). Okabe-Ito hues (~0.14 chroma) are barely muted;
+//                                     only vivid/near-primary hues are pulled in. A render-proof knob.
 
 // A single-hue sequential ramp interpolated LINEARLY in OKLCH L (perceptual — no muddy sRGB
 // midpoints). Light ground runs pale→deep (chroma GROWS toward the deep high-value end). A dark
@@ -131,8 +136,9 @@ export function hueRampOklch(
   const lStart = dark ? RAMP_L_DARK_LO : RAMP_L_LIGHT_HI;
   const lEnd = dark ? RAMP_L_DARK_HI : RAMP_L_LIGHT_LO;
   // chroma poles by ground: light → [low@pale … base@deep]; dark → [base@mid … low@bright].
-  const cStart = dark ? b.C : RAMP_C_LIGHT;
-  const cEnd = dark ? RAMP_C_LIGHT : b.C;
+  const cPeak = Math.min(b.C, RAMP_MUTED_CHROMA_CAP);
+  const cStart = dark ? cPeak : RAMP_C_LIGHT;
+  const cEnd = dark ? RAMP_C_LIGHT : cPeak;
   const out: string[] = [];
   for (let i = 0; i < n; i++) {
     const t = n === 1 ? 0 : i / (n - 1);

@@ -158,3 +158,32 @@ describe("core/house-ramp rampUniformityIssues", () => {
     expect(issues.some((r) => /step|kink/i.test(r))).toBe(true);
   });
 });
+
+describe("core/house-ramp hueRampOklch is gate-safe for vivid house hues", () => {
+  const VIVID = [
+    "#ff0000",
+    "#ff00ff",
+    "#00ffff",
+    "#00c000",
+    "#0000ff",
+    "#ff7a00",
+    "#c8102e",
+    "#e4a400",
+  ];
+  it("every vivid hue's derived ramp passes rampUniformityIssues on a light ground (minSpan 0.60)", () => {
+    for (const hue of VIVID)
+      expect(
+        core.rampUniformityIssues(core.hueRampOklch(hue, 7, "#ffffff"), {
+          minSpan: 0.6,
+        }),
+      ).toEqual([]);
+  });
+  it("every vivid hue's derived ramp passes on a dark ground (minSpan 0.40)", () => {
+    for (const hue of VIVID)
+      expect(
+        core.rampUniformityIssues(core.hueRampOklch(hue, 7, "#0b1220"), {
+          minSpan: 0.4,
+        }),
+      ).toEqual([]);
+  });
+});
