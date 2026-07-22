@@ -107,12 +107,15 @@ describe("core/house-ramp hueRampOklch (perceptual sequential ramp)", () => {
     }
   });
 
-  it("dark ground: monotonic OKLCH L increasing (mid→bright), every stop clears 3:1 vs #0b1220", () => {
+  it("dark ground: monotonic OKLCH L increasing (mid→bright), span ≥ 0.40, every stop clears 3:1, no collapse", () => {
     for (const hue of HUES) {
       const ramp = core.hueRampOklch(hue, 7, DARK);
       const Ls = ramp.map(okL);
       for (let i = 1; i < Ls.length; i++)
         expect(Ls[i]!).toBeGreaterThan(Ls[i - 1]!); // increasing
+      // theme-aware span floor: the near-black a11y 3:1 floor caps the achievable L range below the
+      // light-ground 0.60, but a collapsed ramp (identical tints, e.g. clamped reds) must still fail.
+      expect(Math.abs(Ls[0]! - Ls[Ls.length - 1]!)).toBeGreaterThanOrEqual(0.4);
       for (const c of ramp) expect(core.contrastOk(c, true)).toBe(true); // ≥3:1 vs dark basemap
     }
   });

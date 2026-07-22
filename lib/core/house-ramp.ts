@@ -110,13 +110,16 @@ export function houseRamp(hex: string, n = 5): string[] {
 // low stop still clears the ≥3:1 non-text floor the old hand-tuned dark ramp held.
 const RAMP_L_LIGHT_HI = 0.95; // pale low-value end, light ground
 const RAMP_L_LIGHT_LO = 0.28; // deep high-value end, light ground
-const RAMP_L_DARK_LO = 0.76; // visible-mid low-value end, dark ground
-const RAMP_L_DARK_HI = 0.98; // bright high-value end, dark ground
-const RAMP_C_LIGHT = 0.03; // low chroma at the pale/mid end; grows to the hue's own chroma
+const RAMP_L_DARK_LO = 0.48; // saturated-mid low-value end, dark ground (clears ≥3:1 on near-black)
+const RAMP_L_DARK_HI = 0.95; // bright high-value end, dark ground
+const RAMP_C_LIGHT = 0.03; // the LOW-chroma pole of the ramp (pale/near-white end)
 
 // A single-hue sequential ramp interpolated LINEARLY in OKLCH L (perceptual — no muddy sRGB
-// midpoints). Light ground runs pale→deep; a dark ground (bg luminance < 0.2) inverts to
-// visible-mid→bright. Hue held constant. Replaces the sRGB `_mix` ramp in chart-native tokens.ts.
+// midpoints). Light ground runs pale→deep (chroma GROWS toward the deep high-value end). A dark
+// ground (bg luminance < 0.2) inverts to saturated-mid→bright: chroma SHRINKS toward the bright
+// high-value end, because a near-white stop cannot hold chroma — it clamps out of gamut and the ramp
+// collapses to near-identical tints (esp. reds). So on a dark ground the saturated pole is the LOW
+// (mid-L) stop and the bright pole is near-white. Hue held constant. Replaces the sRGB `_mix` ramp.
 export function hueRampOklch(
   base: string,
   n: number,
@@ -126,11 +129,14 @@ export function hueRampOklch(
   const dark = themeBg !== undefined && relativeLuminance(themeBg) < 0.2;
   const lStart = dark ? RAMP_L_DARK_LO : RAMP_L_LIGHT_HI;
   const lEnd = dark ? RAMP_L_DARK_HI : RAMP_L_LIGHT_LO;
+  // chroma poles by ground: light → [low@pale … base@deep]; dark → [base@mid … low@bright].
+  const cStart = dark ? b.C : RAMP_C_LIGHT;
+  const cEnd = dark ? RAMP_C_LIGHT : b.C;
   const out: string[] = [];
   for (let i = 0; i < n; i++) {
     const t = n === 1 ? 0 : i / (n - 1);
     const L = lStart + (lEnd - lStart) * t;
-    const C = RAMP_C_LIGHT + (b.C - RAMP_C_LIGHT) * t;
+    const C = cStart + (cEnd - cStart) * t;
     out.push(oklchToHex({ L, C, h: b.h }));
   }
   return out;
