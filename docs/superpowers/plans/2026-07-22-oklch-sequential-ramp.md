@@ -69,7 +69,20 @@ describe("core/house-ramp hueRampOklch (perceptual sequential ramp)", () => {
     }
   });
 
-  it("dark ground: monotonic OKLCH L increasing (mid→bright), span ≥ 0.40, every stop clears 3:1, no collapse", () => {
+  // Independent WCAG-contrast oracle (not the engine's own helper): the chart heatmap sits on the
+  // chart's themeBg (#0b1220), NOT on the MapTiler dark basemap that `contrastOk(_, true)` assumes
+  // (luminance 0.1) — so the dark-floor check must use the real ground, exactly as checkHeatmapConformance does.
+  const wcagLum = (hex: string) => {
+    const lin = (c: number) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4);
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    return 0.2126 * lin(r!) + 0.7152 * lin(g!) + 0.0722 * lin(b!);
+  };
+  const contrast = (a: string, b: string) => {
+    const [la, lb] = [wcagLum(a), wcagLum(b)].sort((x, y) => y - x);
+    return (la! + 0.05) / (lb! + 0.05);
+  };
+
+  it("dark ground: monotonic OKLCH L increasing (mid→bright), span ≥ 0.40, every stop clears 3:1 vs #0b1220, no collapse", () => {
     for (const hue of HUES) {
       const ramp = hueRampOklch(hue, 7, DARK);
       const Ls = ramp.map(okL);
@@ -77,7 +90,7 @@ describe("core/house-ramp hueRampOklch (perceptual sequential ramp)", () => {
       // theme-aware span floor: the near-black a11y 3:1 floor caps the achievable L range below the
       // light-ground 0.60, but a collapsed ramp (identical tints, e.g. clamped reds) must still fail.
       expect(Math.abs(Ls[0]! - Ls[Ls.length - 1]!)).toBeGreaterThanOrEqual(0.4);
-      for (const c of ramp) expect(core.contrastOk(c, true)).toBe(true); // ≥3:1 vs dark basemap
+      for (const c of ramp) expect(contrast(c, DARK)).toBeGreaterThanOrEqual(3); // ≥3:1 vs the real dark ground
     }
   });
 
@@ -103,7 +116,8 @@ Add after `houseRamp` (which stays unchanged):
 // low stop still clears the ≥3:1 non-text floor the old hand-tuned dark ramp held.
 const RAMP_L_LIGHT_HI = 0.95; // pale low-value end, light ground
 const RAMP_L_LIGHT_LO = 0.28; // deep high-value end, light ground
-const RAMP_L_DARK_LO = 0.48; // saturated-mid low-value end, dark ground (clears ≥3:1 on near-black)
+const RAMP_L_DARK_LO = 0.52; // saturated-mid low-value end, dark ground — clears ≥3:1 vs #0b1220 for
+//                             all house hues (swept), span 0.43 ≥ the theme-aware dark floor 0.40
 const RAMP_L_DARK_HI = 0.95; // bright high-value end, dark ground
 const RAMP_C_LIGHT = 0.03; // the LOW-chroma pole of the ramp (pale/near-white end)
 
