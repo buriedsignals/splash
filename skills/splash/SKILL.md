@@ -101,6 +101,36 @@ the flow did not reach (a canned « Q6, toujours posée » when the flow did not
    spatial-pattern framing when the data is not geographic. Offering an unsupported framing forces a
    later retraction and tempts a fabricated series to "back it up". If the journalist genuinely wants a
    trend, say the current data can't show it and ask for the time series — never invent one.
+   **★ Gate 1b WIDENS to the claim-arc when the routed candidate is a chart-scrolly or chart-video
+   (chart-native).** Confirming the takeaway is necessary but not sufficient for a narrative format: a
+   scrolly/video does not just STATE the claim, it PROVES it beat by beat. From the `confirmedTakeaway` +
+   the data, the orchestrator PROPOSES a beat plan — `establish → build+ → [turn] → payoff` (the role
+   sequence follows Cohn's Establisher/Initial/Peak/Release narrative grammar — Cohn, N. (2013), "Visual
+   Narrative Structure", Cognitive Science 37(3):413-452 — adapted to data-video by Amini, F. et al.
+   (2015), "Understanding Data Videos", CHI '15:1459-1468, whose dominant real-world pattern is `E+I+PR+`:
+   one `establish`, `build` REPEATABLE, `turn` OPTIONAL, one `payoff`) — where each beat names a **role**
+   (`establish`/`build`/`turn`/`payoff`), the **claim** it asserts (its own "so what", one sentence), and
+   its **anchor** in the data (the x-value/category/range the beat sits on). `suggest-chart` emits, per
+   role, CANDIDATE anchors scaffolded from the data (establish = the opening point, build = the
+   rising/falling stretch, turn = the largest swing/inflection, payoff = the point that carries the
+   confirmed takeaway) — a scaffold to propose FROM, never beats invented and sprung on the journalist
+   unseen. The journalist CONFIRMS, TWEAKS (moves an anchor, rewrites a claim, drops a build step), or
+   VETOES the whole plan back to auto-pick. The confirmed arc is pinned VERBATIM as chart-native's
+   `spec.beats` — each beat carrying `role` + `text` (the confirmed claim) alongside its existing anchor
+   (`x`/`xEnd`/`category`).
+   **WHICH point is the turn, and whether a given beat actually advances the argument, is the
+   JOURNALIST's call — non-mechanizable, never decided by the code.** The code enforces only the arc's
+   SHAPE, fail-loud (`arcErrors`, `skills/chart-native/src/chart-story.ts`): the arc opens on
+   `establish`, closes on `payoff`, carries **at least one** `build`, **at most one** `turn`, and every
+   role-bearing beat asserts a non-empty claim (`text`). A malformed shape (no `establish`, no `payoff`,
+   zero `build`, two `turn`s, or a role beat with an empty claim) fails the proposal loud before
+   production — on top of the existing anchor-must-exist-in-the-data check (see the beat-model rule at
+   PROPOSITION, below).
+   **Map follow-up (not built yet) — say this plainly, never promise otherwise:** this claim-arc override
+   exists ONLY for chart-native today. A map-scrolly's beats still derive from the data alone (the
+   existing salience picker, `deriveMapStory`) — there is no `storyBeats`/role override on the map track
+   yet; that parity is a FOLLOW-UP slice, not a capability this SKILL ships. Never tell a journalist a map
+   story can be confirmed beat-by-beat the way a chart scrolly can.
 3. **Prose table — GATE 2b (prose-extracted figures only):** when the figures come from the
    article's prose, show the reconstructed table (verbatim quotes) and get an explicit
    confirmation BEFORE anything is routed — a wrong table must never invalidate an
@@ -298,9 +328,20 @@ this rule only guarantees the choice is surfaced, never buried.
 
 **Story-warrant check (mechanical, before proposing scrolly/video).** When the routed candidate would
 be a chart scrolly or chart-video, CONSULT `assessStoryArc` (`skills/splash/src/story-warrant.ts` — a
-design heuristic, not credited literature) on the series; if it returns `hasArc:false`, PROPOSE the
-static annotated chart instead and say why (its `reason`) — the journalist may veto back to the
-scrolly/video.
+design heuristic, not credited literature: no source cited here claims "some data shapes don't deserve
+an arc" — Segel & Heer (2010, "Narrative Visualization", IEEE TVCG 16(6):1139-1148, the author↔reader
+axis), McKenna et al. (2017, "Visual Narrative Flow", Computer Graphics Forum 36(3):377-387), and Kosara
+& Mackinlay (2013, "Storytelling: The Next Step for Visualization", IEEE Computer 46(5):44-50) are
+adjacent design context that INFORMED this heuristic, never its authority) on the series; if it returns
+`hasArc:false`, PROPOSE the static annotated chart instead and say why (its `reason`) — the journalist
+may veto back to the scrolly/video.
+**Flagged fallback — say this at the same moment.** Absent a journalist-confirmed claim-arc (Gate 1b
+above), a chart-scrolly/chart-video still ships — it falls back to the salience auto-pick
+(`narrativeFallbackWarning`, `skills/chart-native/src/chart-story.ts`) — but that fallback is never
+silent: it surfaces as an advisory concern at the render-review (Gate 3a, below), read as "this
+narrative is auto-generated by salience, not confirmed as an argument". An un-confirmed, auto-picked
+narrative is not blocked — it is flagged. Confirm a claim-arc at Gate 1b to turn a sequence of salient
+points into an actual argument.
 
 **Chart-scrolly BEAT MODEL — announce it honestly HERE, and carry a confirmed plan into the spec.**
 When the routed sub-format is a chart scrolly (line/bar/scatter), the PROPOSITION must state, up front,
@@ -315,6 +356,10 @@ surfaced only at Gate 3 AFTER production. So:
   categories to walk — the walk length follows the list (5 confirmed steps = 5 walk steps), and a named
   entity the journalist wants in its own step (e.g. « Alpes-Maritimes ») is simply listed. Scatter has
   no override (auto outliers only) — say so instead of promising one.
+- **★ Claim-arc `role` (line/bar, since S2):** a controllable beat may ALSO carry a `role`
+  (`establish`/`build`/`turn`/`payoff`) alongside its anchor + caption — see the widened Gate 1b above for
+  how the plan is proposed/confirmed. A beat WITHOUT a `role` still works exactly as before (anchor +
+  caption only, byte-identical legacy path) — `role` is additive, never required to ship a scrolly.
 - **A confirmed plan MUST land in the spec** as the chart-scrolly `beats` field (see suggest-chart's
   Chart scrolly section) — never acknowledged in dialogue then dropped on the floor. The journalist's
   order is the emitted order (narrative order wins, even non-chronological).
