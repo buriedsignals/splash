@@ -12,3 +12,4 @@ export * from "./video-verify";
 export * from "./conformance-l0";
 export * from "./motion";
 export * from "./house-ramp";
+export * from "./claim-arc";
