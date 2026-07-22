@@ -4,6 +4,57 @@ import { computeChartLayout } from "./chart-geometry";
 import type { Dims } from "./chart-geometry";
 import { isFrench, localizeDecimal } from "./core/locale";
 
+export const ARC_ROLES = ["establish", "build", "turn", "payoff"] as const;
+export type ArcRole = (typeof ARC_ROLES)[number];
+
+// Validate the CLAIM-ARC structure of a beat plan (S2). Roles are OPTIONAL for
+// backward compat; but the moment any beat claims a role, the whole plan must form a
+// well-formed arc — establish opens, payoff closes, ≥1 build (rising action), ≤1 turn
+// (a single Peak — Cohn's E/I/P/R, Amini CHI '15's dominant E+I+PR+), and every role
+// beat asserts a non-empty claim (`text`). Pure, throw-free (mirrors narrativeBeatErrors).
+export function arcErrors(beats: NarrativeBeat[]): string[] {
+  const roled = beats.filter((b) => b.role !== undefined);
+  if (roled.length === 0) return []; // legacy anchor-only beats — no arc claimed
+  const errs: string[] = [];
+  if (roled.length !== beats.length)
+    errs.push(
+      "claim-arc: every beat must carry a `role` (establish/build/turn/payoff) or NONE — no half-arc",
+    );
+  beats.forEach((b, i) => {
+    if (b.role !== undefined && !ARC_ROLES.includes(b.role))
+      errs.push(
+        `beat ${i + 1}: role "${b.role}" is not one of ${ARC_ROLES.join("/")}`,
+      );
+    if (b.role !== undefined && (b.text === undefined || b.text.trim() === ""))
+      errs.push(
+        `beat ${i + 1} (${b.role}): a claim-arc beat must assert a claim (non-empty \`text\`)`,
+      );
+  });
+  const roles = beats.map((b) => b.role);
+  const count = (r: ArcRole) => roles.filter((x) => x === r).length;
+  if (roles[0] !== "establish")
+    errs.push("claim-arc must OPEN on an `establish` beat (set the scene)");
+  if (roles[roles.length - 1] !== "payoff")
+    errs.push("claim-arc must CLOSE on a `payoff` beat (land the argument)");
+  if (count("build") < 1)
+    errs.push(
+      "claim-arc needs at least one `build` beat between establish and payoff (the rising action)",
+    );
+  if (count("establish") > 1)
+    errs.push(
+      "claim-arc: the scene is set once — more than one `establish` beat",
+    );
+  if (count("payoff") > 1)
+    errs.push(
+      "claim-arc: the argument lands once — more than one `payoff` beat",
+    );
+  if (count("turn") > 1)
+    errs.push(
+      "claim-arc: a single Peak carries the story — more than one `turn` beat (Cohn E/I/P/R)",
+    );
+  return errs;
+}
+
 // Fixed canvas dims that match LineChart's defaults (width=840, height=480) and the
 // minimum right-padding (Math.max(140, labelGutter) where 140 is the floor). Using
 // these fixed values keeps deriveChartStory a pure function without needing a rendered
@@ -26,6 +77,7 @@ export interface ChartBeat {
   copy: string;
   rank?: number;
   rankRole?: "leader" | "tail";
+  role?: ArcRole; // claim-arc stage (S2) — only set when the source beat carried one
 }
 
 // Notable points on a line: ALWAYS the first and last, plus the interior points with the
@@ -162,7 +214,7 @@ export function narrativeBeatErrors(spec: NativeSpec): string[] {
           );
       }
     });
-    return errors;
+    return [...errors, ...arcErrors(beats)];
   }
   const catField = config.catField as string;
   const rows = config.rows as Record<string, string | number>[];
@@ -179,7 +231,7 @@ export function narrativeBeatErrors(spec: NativeSpec): string[] {
         `beat ${i + 1}: category "${b.category}" not found in the data — valid categories: ${listValidAnchors(categories)}`,
       );
   });
-  return errors;
+  return [...errors, ...arcErrors(beats)];
 }
 
 // ADVISORY (never a hard fail) companion to narrativeBeatErrors: for a bars-with-beats
@@ -342,7 +394,10 @@ export function deriveChartStory(
           kind: "reveal",
           progress: cum[i] / total, // CHART_DIMS fallback; the host prefers dataIndex
           dataIndex: i, // resolved to a path fraction at render width by the host
+          ...(nb.role ? { role: nb.role } : {}), // claim-arc stage (S2); no-role path untouched
           callout: { name, value, text: autoCopy },
+          // A role beat's `text` is a validated non-empty claim (arcErrors above), so this
+          // already picks it verbatim; no-role legacy beats keep the same fallback to autoCopy.
           copy: nb.text?.trim() ? nb.text : autoCopy,
         });
       }
@@ -408,11 +463,13 @@ export function deriveChartStory(
             role: (valueRank === valueRanked.length - 1 ? "tail" : "leader") as
               "leader" | "tail",
             text: nb.text,
+            arcRole: nb.role, // claim-arc stage (S2); undefined on legacy anchor-only beats
           };
         })
       : barRankedReveals(labelled).map((r) => ({
           ...r,
           text: undefined as string | undefined,
+          arcRole: undefined as ArcRole | undefined,
         }));
     // Connective wording is French/English-branched here — same locale as `ordinal`
     // and `fmt` above, sourced from `spec.lang` (never hardcode English for every
@@ -436,7 +493,10 @@ export function deriveChartStory(
         highlightIndex: r.sortedIndex,
         rank: r.rank,
         rankRole: r.role,
+        ...(r.arcRole ? { role: r.arcRole } : {}), // claim-arc stage (S2); no-role path untouched
         callout: { name: row.label, value, text: `${row.label} — ${value}` },
+        // A role beat's `text` is a validated non-empty claim (arcErrors above), so this
+        // already picks it verbatim; no-role legacy beats keep the same fallback to autoCopy.
         copy: r.text?.trim() ? r.text : autoCopy,
       });
     }

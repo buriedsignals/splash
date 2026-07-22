@@ -25,6 +25,17 @@ export interface NarrativeBeat {
   xEnd?: string | number;
   category?: string;
   text?: string;
+  /**
+   * CLAIM-ARC role (S2). When present, this beat asserts a narrative stage of the
+   * argument, not just a data point. The confirmed plan forms an arc:
+   * establish → build+ → [turn] → payoff — Cohn's Establisher/Initial/Peak/Release
+   * (Cohn 2013, "Visual Narrative Structure"; adapted to data video by Amini et al.,
+   * CHI '15, dominant pattern E+I+PR+). `text` carries the beat's CLAIM (the "so what").
+   * Optional for backward compatibility: anchor-only beats (no role) keep the legacy
+   * auto-caption path, byte-identical. When ANY beat has a role, ALL must, and the arc
+   * must be well-formed (see narrativeBeatErrors → arcErrors).
+   */
+  role?: "establish" | "build" | "turn" | "payoff";
 }
 
 export interface NativeSpec {
