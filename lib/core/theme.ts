@@ -4,6 +4,7 @@
 // furniture: pill/ink/muted) — same ink-picking algorithm, two different output shapes for two
 // different rendering contexts. Both now live here; each engine's tokens module re-exports.
 import { relativeLuminance, contrastRatio } from "./contrast";
+import { hexToOklch, oklchToHex } from "./house-ramp";
 
 // ── Chart furniture (chart-native) ────────────────────────────────────────────
 
@@ -90,6 +91,25 @@ function _mix(a: string, b: string, t: number): string {
   return _hex(ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t);
 }
 
+const TINT_CHROMA = 0.015; // OKLCH chroma of a tinted neutral — a whisper of the house hue, not a colour.
+//                            Render-proof knob (spec §5): low enough to read as grey, enough to cohere.
+
+// A tinted neutral: the input grey's OWN OKLCH lightness, re-hued to the house hue at a low chroma.
+// Lightness (hence luminance-based WCAG contrast) is preserved — the grey keeps its a11y role, it just
+// stops being dead-neutral. Returns the grey unchanged when houseHue is not a #rrggbb.
+export function tintNeutral(
+  greyHex: string,
+  houseHue: string,
+  chroma = TINT_CHROMA,
+): string {
+  if (!/^#[0-9a-f]{6}$/i.test(houseHue.trim())) return greyHex;
+  return oklchToHex({
+    L: hexToOklch(greyHex).L,
+    C: chroma,
+    h: hexToOklch(houseHue).h,
+  });
+}
+
 /** `theme.dark` predicate for a resolved bg — a ground darker than mid-grey wants light chrome. */
 export function bgIsDark(bg?: string): boolean {
   const b = resolveThemeBg(bg);
@@ -101,9 +121,20 @@ export function bgIsDark(bg?: string): boolean {
 // (still body-text legible); axis/grid are faint hairlines (mixed most of the way to the bg).
 // `line` (the default series when no subject-fit baseColor is set) picks the Okabe-Ito blue vs
 // skyblue that clears the 3:1 non-text bar on this ground.
-export function deriveFurniture(bg?: string): ColorTokens {
+export function deriveFurniture(bg?: string, houseHue?: string): ColorTokens {
   const b = resolveThemeBg(bg);
-  if (!b) return COLORS; // light default — legacy tokens, byte-identical
+  const tint =
+    houseHue !== undefined && /^#[0-9a-f]{6}$/i.test(houseHue.trim());
+  if (!b) {
+    // light default — legacy COLORS, byte-identical WITHOUT a house hue; tinted greys WITH one.
+    if (!tint) return COLORS;
+    return {
+      ...COLORS,
+      muted: tintNeutral(COLORS.muted, houseHue!),
+      axis: tintNeutral(COLORS.axis, houseHue!),
+      grid: tintNeutral(COLORS.grid, houseHue!),
+    };
+  }
   // pick the ink WCAG-correctly at every luminance: a mid-luminance house ground (grey) picks the
   // BETTER of near-black/near-white, not a fixed <0.4 flip that could pick the worse one. Byte-
   // identical for the presets: #FFFFFF → near-black, #18181B → near-white.
@@ -118,19 +149,22 @@ export function deriveFurniture(bg?: string): ColorTokens {
     relativeLuminance(LINE_BLUE) < relativeLuminance(b)
       ? LINE_BLUE
       : LINE_SKYBLUE;
+  // muted is de-emphasized secondary text (subtitle/source/axis labels) that must still clear the
+  // 4.5:1 WCAG text floor. 30% toward the ground keeps it clearly softer than ink yet ≥ 4.5:1 with
+  // margin on every real house ground (incl. saturated dark blues/greens where 0.38 dipped to
+  // ~4.47:1); a genuinely illegible mid-grey ground still fails (muted ~3.7:1), which the produce
+  // guard surfaces so the newsroom picks a legible ground rather than shipping unreadable text.
+  const muted0 = _mix(fg, b, 0.3);
+  const axis0 = _mix(fg, b, 0.72);
+  const grid0 = _mix(fg, b, 0.86);
   return {
     line,
     head: "#FFFFFF",
     headGlow: line,
     ink: fg,
-    // muted is de-emphasized secondary text (subtitle/source/axis labels) that must still clear the
-    // 4.5:1 WCAG text floor. 30% toward the ground keeps it clearly softer than ink yet ≥ 4.5:1 with
-    // margin on every real house ground (incl. saturated dark blues/greens where 0.38 dipped to
-    // ~4.47:1); a genuinely illegible mid-grey ground still fails (muted ~3.7:1), which the produce
-    // guard surfaces so the newsroom picks a legible ground rather than shipping unreadable text.
-    muted: _mix(fg, b, 0.3),
-    axis: _mix(fg, b, 0.72),
-    grid: _mix(fg, b, 0.86),
+    muted: tint ? tintNeutral(muted0, houseHue!) : muted0,
+    axis: tint ? tintNeutral(axis0, houseHue!) : axis0,
+    grid: tint ? tintNeutral(grid0, houseHue!) : grid0,
     bg: b,
   };
 }
