@@ -74,3 +74,52 @@ describe("core/house-ramp parity with the map-native shim (post-move)", () => {
     }
   });
 });
+
+describe("core/house-ramp hueRampOklch (perceptual sequential ramp)", () => {
+  const HUES = ["#0072B2", "#0A5C36", "#C8102E", "#4B2E83"];
+  const LIGHT = "#ffffff";
+  const DARK = "#0b1220";
+  const okL = (hex: string) => {
+    // OKLCH L via the same round-trip the engine uses — asserted through outputs, not re-exported.
+    const [r, g, b] = [1, 3, 5].map(
+      (i) => parseInt(hex.slice(i, i + 2), 16) / 255,
+    );
+    const lin = (c: number) =>
+      c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    const R = lin(r),
+      G = lin(g),
+      B = lin(b);
+    const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+    const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+    const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+    return 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+  };
+
+  it("light ground: 7 stops, pale→deep, monotonic OKLCH L decreasing, span ≥ 0.60", () => {
+    for (const hue of HUES) {
+      const ramp = core.hueRampOklch(hue, 7, LIGHT);
+      expect(ramp.length).toBe(7);
+      for (const c of ramp) expect(c).toMatch(HEX);
+      const Ls = ramp.map(okL);
+      for (let i = 1; i < Ls.length; i++)
+        expect(Ls[i]!).toBeLessThan(Ls[i - 1]!); // decreasing
+      expect(Math.abs(Ls[0]! - Ls[Ls.length - 1]!)).toBeGreaterThanOrEqual(0.6);
+    }
+  });
+
+  it("dark ground: monotonic OKLCH L increasing (mid→bright), every stop clears 3:1 vs #0b1220", () => {
+    for (const hue of HUES) {
+      const ramp = core.hueRampOklch(hue, 7, DARK);
+      const Ls = ramp.map(okL);
+      for (let i = 1; i < Ls.length; i++)
+        expect(Ls[i]!).toBeGreaterThan(Ls[i - 1]!); // increasing
+      for (const c of ramp) expect(core.contrastOk(c, true)).toBe(true); // ≥3:1 vs dark basemap
+    }
+  });
+
+  it("is deterministic", () => {
+    expect(core.hueRampOklch("#0072B2", 7, LIGHT)).toEqual(
+      core.hueRampOklch("#0072B2", 7, LIGHT),
+    );
+  });
+});

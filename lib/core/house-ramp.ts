@@ -104,6 +104,38 @@ export function houseRamp(hex: string, n = 5): string[] {
   return out;
 }
 
+// Perceptual sequential-ramp endpoints (OKLCH L). Tuning knobs — dialled against the render-proof
+// (spec §2.1/§5); the ENGINE is what's fixed. Light ground: pale low-value → deep high-value.
+// Dark ground: visible-mid low-value → bright high-value (high values read on near-black), and the
+// low stop still clears the ≥3:1 non-text floor the old hand-tuned dark ramp held.
+const RAMP_L_LIGHT_HI = 0.95; // pale low-value end, light ground
+const RAMP_L_LIGHT_LO = 0.28; // deep high-value end, light ground
+const RAMP_L_DARK_LO = 0.76; // visible-mid low-value end, dark ground
+const RAMP_L_DARK_HI = 0.98; // bright high-value end, dark ground
+const RAMP_C_LIGHT = 0.03; // low chroma at the pale/mid end; grows to the hue's own chroma
+
+// A single-hue sequential ramp interpolated LINEARLY in OKLCH L (perceptual — no muddy sRGB
+// midpoints). Light ground runs pale→deep; a dark ground (bg luminance < 0.2) inverts to
+// visible-mid→bright. Hue held constant. Replaces the sRGB `_mix` ramp in chart-native tokens.ts.
+export function hueRampOklch(
+  base: string,
+  n: number,
+  themeBg?: string,
+): string[] {
+  const b = hexToOklch(base);
+  const dark = themeBg !== undefined && relativeLuminance(themeBg) < 0.2;
+  const lStart = dark ? RAMP_L_DARK_LO : RAMP_L_LIGHT_HI;
+  const lEnd = dark ? RAMP_L_DARK_HI : RAMP_L_LIGHT_LO;
+  const out: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const t = n === 1 ? 0 : i / (n - 1);
+    const L = lStart + (lEnd - lStart) * t;
+    const C = RAMP_C_LIGHT + (b.C - RAMP_C_LIGHT) * t;
+    out.push(oklchToHex({ L, C, h: b.h }));
+  }
+  return out;
+}
+
 // Strictly monotonic in relative luminance (increasing OR decreasing) — the real CVD-safety
 // criterion for a SEQUENTIAL ramp, and what lets a derived house ramp pass validation without
 // the registry whitelist.
