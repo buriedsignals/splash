@@ -2,11 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ProduceReport, VisualFormat } from "./producer-spec";
 import type { BrandProfile } from "./brand-profile";
-import {
-  editorialPayload,
-  sha256Hex,
-  verifyEditorialSignature,
-} from "./editorial-signoff";
+import { sha256Hex, verifyEditorialSignature } from "./editorial-signoff";
 // The single-format media-shape rule + the hosted-URL check live in the shared produce contract
 // (lib/core/contract.ts); this EXPORT-stage guard delegates its static/video shape check to it so
 // one rule (and its exact error messages) lives once, and re-exports isHostedUrl for its own

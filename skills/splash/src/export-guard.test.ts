@@ -103,6 +103,34 @@ describe("assertEditoriallyCleared — verify editorial sign-offs against curren
       unsigned: false,
     });
   });
+
+  it("throws when signedHash matches current bytes but the signature fails re-verification", () => {
+    const { signer } = signerFor("yvan");
+    const profile: BrandProfile = {
+      palette: [],
+      signers: [signer],
+      requiredSigners: ["yvan"],
+    };
+    // signedHash forged to equal the current-bytes hash, but the signature is not a valid sig over the payload
+    const r = report([{ signerId: "yvan", signedHash: H, signature: "AAAA" }]);
+    expect(() => assertEditoriallyCleared(r, "p1", profile, BYTES)).toThrow(
+      /re-verification|failed/i,
+    );
+  });
+
+  it("with no requiredSigners excludes a stale (hash-mismatch) optional sign-off from signedBy", () => {
+    const { signer, signature } = signerFor("yvan");
+    const profile: BrandProfile = {
+      palette: [],
+      signers: [signer],
+    }; // registered, not required
+    const staleHash = sha256Hex(new TextEncoder().encode("old-artifact"));
+    const r = report([{ signerId: "yvan", signedHash: staleHash, signature }]);
+    expect(assertEditoriallyCleared(r, "p1", profile, BYTES)).toEqual({
+      signedBy: [],
+      unsigned: true,
+    });
+  });
 });
 
 describe("assertDelivered — code-source now requires a runnable bundle", () => {
