@@ -1,24 +1,79 @@
 import { describe, it, expect } from "bun:test";
 import * as core from "./house-ramp";
-// The pre-move canonical home (now a thin re-export shim, see its own header) — parity
-// check that the move changed nothing observable: same function identity, same outputs.
-// Function bodies were diffed byte-identical against the pre-move file at move time
-// (git show HEAD~:skills/map-native/src/theme/house-ramp.ts vs this file, past the
-// header comment + the relativeLuminance import line); this test locks the behavioural
-// side of that claim into the suite so a future edit to either copy can't silently drift.
-import * as shim from "../../skills/map-native/src/theme/house-ramp";
+// map-native/src/theme/house-ramp.ts (skills/map-native) is a thin re-export shim of these
+// same primitives (see this module's own header) — its own in-engine importers keep using
+// the local path unchanged, so the shim itself needs no dedicated behavioural test here:
+// `shim.fn === core.fn` by construction (a plain re-export), so comparing shim outputs to
+// core outputs can never fail and would only mask a real regression. What actually locks
+// the math down is pinning core's own outputs to golden values below.
 
 const HEX = /^#[0-9a-f]{6}$/;
 const HOUSE_HUES = ["#0A5C36", "#C8102E", "#E4A400", "#4B2E83", "#111111"];
 
-describe("core/house-ramp parity with the map-native shim (post-move)", () => {
-  it("the shim re-exports the SAME function objects (no fork)", () => {
-    expect(shim.houseRamp).toBe(core.houseRamp);
-    expect(shim.isMonotonicLuminanceRamp).toBe(core.isMonotonicLuminanceRamp);
-    expect(shim.contrastOk).toBe(core.contrastOk);
-    expect(shim.houseFill).toBe(core.houseFill);
-    expect(shim.houseRouteAccent).toBe(core.houseRouteAccent);
-    expect(shim.DEFAULT_MAP_FILL).toBe(core.DEFAULT_MAP_FILL);
+describe("core/house-ramp golden outputs", () => {
+  it("houseRamp: exact golden hex ramp per house hue (locks the OKLCH light->dark math, not just its shape)", () => {
+    expect(core.houseRamp("#0A5C36", 5)).toEqual([
+      "#dff5e6",
+      "#a4c5af",
+      "#6b977b",
+      "#326a4a",
+      "#00401c",
+    ]);
+    expect(core.houseRamp("#C8102E", 5)).toEqual([
+      "#ffe7e5",
+      "#e8a9a6",
+      "#c86b69",
+      "#a5262f",
+      "#7d0000",
+    ]);
+    expect(core.houseRamp("#E4A400", 5)).toEqual([
+      "#f9edd9",
+      "#d0b88f",
+      "#a88444",
+      "#815200",
+      "#592000",
+    ]);
+    expect(core.houseRamp("#4B2E83", 5)).toEqual([
+      "#efebff",
+      "#bdb5dd",
+      "#8e81b8",
+      "#624e94",
+      "#3b1a6f",
+    ]);
+    expect(core.houseRamp("#111111", 5)).toEqual([
+      "#f6eed8",
+      "#c1bbab",
+      "#8e8a81",
+      "#5e5d58",
+      "#333333",
+    ]);
+  });
+
+  it("houseRouteAccent: exact golden line/glow/head/headGlow hexes, light vs dark", () => {
+    expect(core.houseRouteAccent("#0A5C36", false)).toEqual({
+      line: "#0A5C36",
+      glow: "#4b8a65",
+      head: "#003512",
+      headGlow: "#8ebe9f",
+    });
+    expect(core.houseRouteAccent("#0A5C36", true)).toEqual({
+      line: "#0A5C36",
+      glow: "#6aa17e",
+      head: "#d8eade",
+      headGlow: "#abceb7",
+    });
+    expect(core.houseRouteAccent("#C8102E", false)).toEqual({
+      line: "#C8102E",
+      glow: "#fa6164",
+      head: "#960000",
+      headGlow: "#ffaca8",
+    });
+    expect(core.houseRouteAccent("#C8102E", true)).toEqual({
+      line: "#C8102E",
+      glow: "#ff8483",
+      head: "#fff2ef",
+      headGlow: "#ffcdc8",
+    });
   });
 
   it("houseRamp: 5 valid #rrggbb stops, light -> dark, deterministic, for several house hues", () => {
