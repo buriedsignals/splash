@@ -6,6 +6,7 @@ import {
   numericValuesOf,
   OKABE_ITO,
   DEFAULT_BASE_COLOR,
+  BLUE_FIT_SUBJECT,
 } from "../src/chart-spec";
 
 describe("normalizeNumberFormat", () => {
@@ -81,6 +82,86 @@ describe("validateChartSpec", () => {
   it("allows the default blue for a water subject (blue IS subject-fit)", () => {
     const r = validateChartSpec({ ...base, subject: "river water levels" });
     expect(r.ok).toBe(true);
+  });
+  // BUG F2 (grounded, caught live on a German rainfall chart) — BLUE_FIT_SUBJECT was
+  // English-only. Mirrors chart-native's core/conformance.ts BLUE_FIT_SUBJECT — same
+  // fix, same test shape, both engines must stay in sync.
+  it("allows the default blue for a German water subject (Niederschlag)", () => {
+    const r = validateChartSpec({ ...base, subject: "Niederschlag" });
+    expect(r.ok).toBe(true);
+  });
+  it("allows the default blue for a French water subject (pluie)", () => {
+    const r = validateChartSpec({ ...base, subject: "pluie" });
+    expect(r.ok).toBe(true);
+  });
+  it("allows the default blue for an Italian water subject (pioggia)", () => {
+    const r = validateChartSpec({ ...base, subject: "pioggia" });
+    expect(r.ok).toBe(true);
+  });
+  it("allows the default blue for an accented French water subject (rivière)", () => {
+    const r = validateChartSpec({ ...base, subject: "débit de la rivière" });
+    expect(r.ok).toBe(true);
+  });
+  it("allows the default blue for an accented French water subject (océan)", () => {
+    const r = validateChartSpec({ ...base, subject: "niveau de l'océan" });
+    expect(r.ok).toBe(true);
+  });
+  it("still rejects the default blue for a genuinely non-water French subject (chômage)", () => {
+    const r = validateChartSpec({ ...base, subject: "chômage" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/subject-fit|default blue/i);
+  });
+  it("still rejects the default blue for a genuinely non-water German subject (Arbeitslosigkeit)", () => {
+    const r = validateChartSpec({ ...base, subject: "Arbeitslosigkeit" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/subject-fit|default blue/i);
+  });
+  it("BLUE_FIT_SUBJECT regex matches DE/FR/IT water terms directly (single source of truth for the native mirror)", () => {
+    for (const term of [
+      "wasser",
+      "meer",
+      "ozean",
+      "fluss",
+      "regen",
+      "niederschlag",
+      "hochwasser",
+      "kälte",
+      "kalt",
+      "winter",
+      "eis",
+      "schnee",
+      "himmel",
+      "eau",
+      "mer",
+      "océan",
+      "ocean",
+      "rivière",
+      "riviere",
+      "fleuve",
+      "pluie",
+      "inondation",
+      "froid",
+      "hiver",
+      "glace",
+      "neige",
+      "ciel",
+      "marin",
+      "marine",
+      "acqua",
+      "mare",
+      "oceano",
+      "fiume",
+      "pioggia",
+      "alluvione",
+      "freddo",
+      "inverno",
+      "ghiaccio",
+      "neve",
+      "cielo",
+      "marino",
+    ]) {
+      expect(BLUE_FIT_SUBJECT.test(term)).toBe(true);
+    }
   });
   it("rejects a missing insight title", () => {
     const r = validateChartSpec({ ...base, title: "" });
@@ -384,9 +465,9 @@ describe("validateChartSpec — #4 valueLabels on horizontal bars renders direct
     });
     expect(r.ok).toBe(true);
     if (r.ok)
-      expect(
-        r.warnings.some((w) => /INSIDE horizontal bars/.test(w)),
-      ).toBe(false);
+      expect(r.warnings.some((w) => /INSIDE horizontal bars/.test(w))).toBe(
+        false,
+      );
   });
   it("does NOT emit the 'only honoured' warning for a horizontal bar (bars carry value labels)", () => {
     const r = validateChartSpec({
@@ -610,8 +691,7 @@ describe("validateChartSpec — strict top-level fields (fail-closed)", () => {
   it("suggests the closest field for a small typo (titel → title)", () => {
     const r = validateChartSpec({ ...rankedBar, titel: "a typo" });
     expect(r.ok).toBe(false);
-    if (!r.ok)
-      expect(r.errors.join(" | ")).toMatch(/did you mean "title"/);
+    if (!r.ok) expect(r.errors.join(" | ")).toMatch(/did you mean "title"/);
   });
 
   it("offers no suggestion for a field nothing is close to", () => {
@@ -688,15 +768,13 @@ describe("validateChartSpec — highlight (bar-family category accent)", () => {
       seriesColors: { beds: "#009E73" },
     });
     expect(r.ok).toBe(false);
-    if (!r.ok)
-      expect(r.errors.join(" | ")).toMatch(/highlight.*seriesColors/);
+    if (!r.ok) expect(r.errors.join(" | ")).toMatch(/highlight.*seriesColors/);
   });
 
   it("rejects a non-string highlight (an index breaks on re-sort — the value is the contract)", () => {
     const r = validateChartSpec({ ...rankedBar, highlight: 0 });
     expect(r.ok).toBe(false);
-    if (!r.ok)
-      expect(r.errors.join(" | ")).toMatch(/highlight must be/);
+    if (!r.ok) expect(r.errors.join(" | ")).toMatch(/highlight must be/);
   });
 
   // RFC 4180 — the membership check must PARSE the CSV, never split(","). Real repro

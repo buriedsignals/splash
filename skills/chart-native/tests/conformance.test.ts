@@ -191,3 +191,63 @@ describe("checkGlobalConformance — subject-fit colour (opt-in, blue-family awa
     expect(v).toEqual([]);
   });
 });
+
+// BUG F2 (grounded, caught live on a German rainfall chart) — BLUE_FIT_SUBJECT was
+// English-only, so a DE/FR/IT water/cold/sky subject was NOT recognised as blue-fit
+// and the guard wrongly rejected the correct default blue. Mirrors dw-chart's
+// chart-spec.ts BLUE_FIT_SUBJECT — same fix, same test shape, both engines.
+describe("checkGlobalConformance — subject-fit colour, DE/FR/IT water-subject recognition (F2)", () => {
+  const base = {
+    title: "A clear insight about the data over time",
+    source: { name: "Source" },
+    colors: {
+      data: OKABE_ITO.blue,
+      text: [COLORS.ink, COLORS.muted],
+      bg: COLORS.bg,
+    },
+  };
+
+  it("does NOT flag blue for a German water subject (Niederschlag)", () => {
+    const v = checkGlobalConformance({ ...base, subject: "Niederschlag" });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(false);
+  });
+
+  it("does NOT flag blue for a French water subject (pluie)", () => {
+    const v = checkGlobalConformance({ ...base, subject: "pluie" });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(false);
+  });
+
+  it("does NOT flag blue for an Italian water subject (pioggia)", () => {
+    const v = checkGlobalConformance({ ...base, subject: "pioggia" });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(false);
+  });
+
+  it("does NOT flag blue for an accented French water subject (rivière)", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      subject: "débit de la rivière",
+    });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(false);
+  });
+
+  it("does NOT flag blue for an accented French water subject (océan)", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      subject: "niveau de l'océan",
+    });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(false);
+  });
+
+  it("still flags blue for a genuinely non-water subject in French (chômage)", () => {
+    const v = checkGlobalConformance({ ...base, subject: "chômage" });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(true);
+  });
+
+  it("still flags blue for a genuinely non-water subject in German (Arbeitslosigkeit)", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      subject: "Arbeitslosigkeit",
+    });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(true);
+  });
+});

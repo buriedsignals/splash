@@ -23,8 +23,14 @@ export const DEFAULT_BASE_COLOR = "#0072B2";
 // with a subject must pick a non-default hue. Exported so the splash spine's
 // guardrail-parity gate re-applies the SAME blue-fit subject list to native specs at the
 // produce boundary (single source of truth — the two must never drift).
+// English, plus German/French/Italian equivalents (F2, grounded on a live German
+// rainfall chart — the guard was English-only and wrongly rejected the correct
+// default blue for a "Niederschlag" subject). rivière/riviere and océan/ocean are
+// both listed: JS `\b` is ASCII-based and a leading/trailing accented character can
+// break the boundary match, so the unaccented form is kept alongside the accented one
+// rather than relying on `\b` handling accents correctly.
 export const BLUE_FIT_SUBJECT =
-  /\b(water|sea|ocean|river|rain|flood|cold|winter|ice|snow|sky|marine|hydro)\b/i;
+  /\b(water|sea|ocean|river|rain|flood|cold|winter|ice|snow|sky|marine|hydro|wasser|meer|ozean|fluss|regen|niederschlag|hochwasser|kälte|kalt|eis|schnee|himmel|eau|mer|océan|ocean|rivière|riviere|fleuve|pluie|inondation|froid|hiver|glace|neige|ciel|marin|acqua|mare|oceano|fiume|pioggia|alluvione|freddo|inverno|ghiaccio|neve|cielo|marino)\b/i;
 
 // DW lists `waterfall` and `dual-axis` in /v3/visualizations but the create API rejects them
 // (400 Invalid visualization type) — excluded. 22 chart types actually producible.

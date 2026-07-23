@@ -54,8 +54,14 @@ export function labelInkOnFill(fill: string): string {
 // can hold on the native path; duplicated rather than imported — skills are
 // autonomous/self-contained (format-skill-autonome), chart-native does not reach
 // into dw-chart's internals.
+// English, plus German/French/Italian equivalents (F2, grounded on a live German
+// rainfall chart — the guard was English-only and wrongly rejected the correct
+// default blue for a "Niederschlag" subject). rivière/riviere and océan/ocean are
+// both listed: JS `\b` is ASCII-based and a leading/trailing accented character can
+// break the boundary match, so the unaccented form is kept alongside the accented one
+// rather than relying on `\b` handling accents correctly.
 const BLUE_FIT_SUBJECT =
-  /\b(water|sea|ocean|river|rain|flood|cold|winter|ice|snow|sky|marine|hydro)\b/i;
+  /\b(water|sea|ocean|river|rain|flood|cold|winter|ice|snow|sky|marine|hydro|wasser|meer|ozean|fluss|regen|niederschlag|hochwasser|kälte|kalt|eis|schnee|himmel|eau|mer|océan|ocean|rivière|riviere|fleuve|pluie|inondation|froid|hiver|glace|neige|ciel|marin|acqua|mare|oceano|fiume|pioggia|alluvione|freddo|inverno|ghiaccio|neve|cielo|marino)\b/i;
 
 // Both Okabe-Ito blues read as "blue" to a reader. Picking the lighter sky-blue for a
 // non-blue-fit subject is the SAME "left it blue" defect as the literal default — a
