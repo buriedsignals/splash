@@ -886,6 +886,246 @@ describe("export-code CLI — S4d editorial sign-off gate", () => {
   });
 });
 
+describe("export-code CLI — S4d PROFILE AUTO-DISCOVERY from cwd (no --profile flag)", () => {
+  // The whole-branch review finding this closes: the gate was "plumbed but dark" — nothing in
+  // the real flow ever passed --profile, so requiredSigners never enforced outside a test that
+  // explicitly wires the flag. Fix: absent --profile, export-code auto-discovers
+  // NEWSROOM-PROFILE.md from process.cwd(). This proves it end-to-end via a REAL child process
+  // whose cwd IS the newsroom project directory — the shape an orchestrator invocation actually
+  // has (cwd = the project, never a --profile flag).
+  function scaffoldCwdProfile(withProfileRequiring: boolean) {
+    const dir = mkdtempSync(join(tmpdir(), "splash-export-autodiscover-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    const media = Buffer.from("PNGBYTES-autodiscover-artifact");
+    writeFileSync(join(outDir, "static.png"), media);
+    const H = sha256Hex(media);
+    const id = "p1";
+    const producer = "chart-native";
+    const spec = { nativeType: "bar", title: "Test", id };
+    const acceptedConfigHash = writeChainFixture(dir, id, producer, spec);
+    const reportObj = {
+      results: [
+        {
+          id,
+          producer,
+          format: "static",
+          status: "produced",
+          reviewed: true,
+          renderApproved: true,
+          acceptedConfigHash,
+          approvedHash: H,
+        },
+      ],
+      generatedAt: new Date(0).toISOString(),
+    };
+    const { signersLine } = generateEditorKeypair("yvan");
+    // NEWSROOM-PROFILE.md lives AT THE PROJECT ROOT (`dir`) — the directory a real invocation's
+    // cwd would be — not passed via --profile anywhere in this test.
+    const profileMd =
+      `---\nsigners:\n${signersLine}\n` +
+      (withProfileRequiring ? "requiredSigners:\n  - yvan\n" : "") +
+      `---\n# N\n`;
+    writeFileSync(join(dir, "NEWSROOM-PROFILE.md"), profileMd);
+    const reportPath = join(dir, "report.json");
+    writeFileSync(reportPath, JSON.stringify(reportObj));
+    return { dir, outDir, reportPath };
+  }
+
+  it("REFUSES a static export with a requiredSigner unmet — NO --profile flag, cwd = the project dir", () => {
+    const s = scaffoldCwdProfile(true);
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-autodiscover-refuse-"),
+    );
+    try {
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          s.outDir,
+          exportDir,
+          "--results",
+          s.reportPath,
+          "--id",
+          "p1",
+          // Deliberately NO --profile flag — must auto-discover NEWSROOM-PROFILE.md from cwd.
+        ],
+        { stdout: "pipe", stderr: "pipe", cwd: s.dir },
+      );
+      expect(proc.exitCode).not.toBe(0);
+      expect(proc.stderr.toString()).toMatch(
+        /required editorial sign-off missing/,
+      );
+      // Refused before any write — the artifact never lands in exportDir.
+      if (existsSync(exportDir)) {
+        expect(readdirSync(exportDir)).not.toContain("static.png");
+      }
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(s.dir, { recursive: true, force: true });
+    }
+  });
+
+  it("control: the SAME run with cwd OUTSIDE the project dir does not see the profile (proceeds unsigned)", () => {
+    // Isolates the claim above: without cwd-discovery, this exact invocation has no way to find
+    // NEWSROOM-PROFILE.md and must proceed unsigned (opt-in default) rather than refuse — proving
+    // the refusal above genuinely comes from cwd auto-discovery, not some other gate.
+    const s = scaffoldCwdProfile(true);
+    const elsewhere = mkdtempSync(join(tmpdir(), "splash-export-elsewhere-"));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-autodiscover-control-"),
+    );
+    try {
+      const out = execFileSync(
+        "bun",
+        [
+          scriptPath,
+          s.outDir,
+          exportDir,
+          "--results",
+          s.reportPath,
+          "--id",
+          "p1",
+        ],
+        { encoding: "utf8", cwd: elsewhere },
+      );
+      expect(out).toMatch(/EDITORIAL: unsigned/);
+      expect(out).toMatch(/EXPORT_CODE_RESULT/);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(elsewhere, { recursive: true, force: true });
+      rmSync(s.dir, { recursive: true, force: true });
+    }
+  });
+
+  it("--profile still OVERRIDES auto-discovery when explicitly given", () => {
+    // A profile WITHOUT requiredSigners at cwd, but an explicit --profile pointing at a DIFFERENT
+    // profile that DOES require a signer — the explicit flag must win, proving override survives
+    // the new auto-discovery path (not just additive).
+    const s = scaffoldCwdProfile(false); // cwd profile: signers registered, nothing required
+    const strictDir = mkdtempSync(join(tmpdir(), "splash-export-strict-"));
+    const { signersLine } = generateEditorKeypair("rinny");
+    writeFileSync(
+      join(strictDir, "NEWSROOM-PROFILE.md"),
+      `---\nsigners:\n${signersLine}\nrequiredSigners:\n  - rinny\n---\n# N\n`,
+    );
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-autodiscover-override-"),
+    );
+    try {
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          s.outDir,
+          exportDir,
+          "--results",
+          s.reportPath,
+          "--id",
+          "p1",
+          "--profile",
+          join(strictDir, "NEWSROOM-PROFILE.md"),
+        ],
+        { stdout: "pipe", stderr: "pipe", cwd: s.dir },
+      );
+      expect(proc.exitCode).not.toBe(0);
+      expect(proc.stderr.toString()).toMatch(
+        /required editorial sign-off missing from rinny/,
+      );
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(strictDir, { recursive: true, force: true });
+      rmSync(s.dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("export-code CLI — S4d forwards the resolved profile into the --form embed subprocess", () => {
+  // CRITICAL 2: the `--form embed` branch shells out to deploy-embed.mjs via execFileSync.
+  // Previously that argv omitted --profile entirely, so the subprocess could never enforce even
+  // when export-code itself resolved a profile. This isolates the FORWARDING specifically: the
+  // profile lives in a directory that is NEITHER exportDir's cwd nor deploy-embed's inherited
+  // cwd — the only way deploy-embed can see it is if export-code explicitly forwards the path
+  // it resolved via its own --profile flag.
+  it("an unsigned --form embed REFUSES before any Cloudflare network call, because export-code forwards --profile to deploy-embed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-export-embed-fwd-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    const html = Buffer.from("<html>signed-interactive-embed</html>");
+    writeFileSync(join(outDir, "interactive.html"), html);
+    const H = sha256Hex(html);
+    const id = "p1";
+    const producer = "chart-native";
+    const spec = { nativeType: "bar", title: "Test", id };
+    const acceptedConfigHash = writeChainFixture(dir, id, producer, spec);
+    const reportObj = {
+      results: [
+        {
+          id,
+          producer,
+          format: "interactive",
+          status: "produced",
+          reviewed: true,
+          renderApproved: true,
+          acceptedConfigHash,
+          approvedHash: H,
+        },
+      ],
+      generatedAt: new Date(0).toISOString(),
+    };
+    const reportPath = join(dir, "report.json");
+    writeFileSync(reportPath, JSON.stringify(reportObj));
+
+    // The profile lives in ITS OWN directory — not `dir` (export-code's cwd below), not any
+    // directory deploy-embed would inherit unless export-code forwards the exact path.
+    const profileDir = mkdtempSync(
+      join(tmpdir(), "splash-export-embed-profile-"),
+    );
+    const { signersLine } = generateEditorKeypair("yvan");
+    const profilePath = join(profileDir, "NEWSROOM-PROFILE.md");
+    writeFileSync(
+      profilePath,
+      `---\nsigners:\n${signersLine}\nrequiredSigners:\n  - yvan\n---\n# N\n`,
+    );
+
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-embed-fwd-refuse-"),
+    );
+    try {
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          outDir,
+          exportDir,
+          "--results",
+          reportPath,
+          "--id",
+          "p1",
+          "--form",
+          "embed",
+          "--profile",
+          profilePath,
+        ],
+        // cwd = `dir`, which has NO NEWSROOM-PROFILE.md of its own — so if export-code failed to
+        // forward --profile, deploy-embed's own cwd auto-discovery would find nothing and
+        // proceed unsigned instead of refusing.
+        { stdout: "pipe", stderr: "pipe", cwd: dir },
+      );
+      expect(proc.exitCode).not.toBe(0);
+      expect(proc.stderr.toString()).toMatch(
+        /required editorial sign-off missing from yvan/,
+      );
+      // Refused before any deploy: no EMBED_URL.txt, no network artifact.
+      expect(existsSync(join(exportDir, "EMBED_URL.txt"))).toBe(false);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(profileDir, { recursive: true, force: true });
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("export-code CLI — S4d editorial sign-off gate on --form code-source (was ungated)", () => {
   // A chain-provenance-valid INTERACTIVE outDir (chart-native shape: interactive.html +
   // config.json + native-source.json, mirrors setupChartNativeInteractive above) whose
