@@ -17,7 +17,7 @@ import * as core from "./locale";
 // Intl.NumberFormat('fr-FR') and Datawrapper's fr-FR locale emit (see lib/core/locale.ts
 // header). Written as an escape (not the literal invisible glyph) so it stays visible
 // and diffable in this file.
-const NBSP = " ";
+const NBSP = "\u202f";
 
 const LANGS = [undefined, "fr", "de", "it", "en", "fr-CH", "de-CH", "pt"];
 const NUMS = [0, 42, 1900, -1900, 19.3, 12345.6, 890.2, 1_800_000, -0.5];
