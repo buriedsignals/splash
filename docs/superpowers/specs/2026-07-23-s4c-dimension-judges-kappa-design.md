@@ -17,7 +17,7 @@ reliability **measurable** via inter-rater agreement (κ).
 
 ## Goals
 
-1. Decompose judge opinion into **four semantic dimensions**, each judged independently.
+1. Decompose judge opinion into **five semantic dimensions** (four at build + `colour-semantics` per review #5), each judged independently.
 2. Provide **generic agreement math** (Cohen's κ for 2 raters, Fleiss' κ for N) over a label matrix,
    **rater-source-agnostic** — rows may be independent judge passes (inter-judge, autonomous) or
    human labels (calibration, later) with no code change.
@@ -59,8 +59,11 @@ runs/<runId>/{transcript.jsonl,meta.json}   (existing, persisted by a normal run
 
 ### Unit 1 — `src/dimension-judge.ts`
 
-The four dimensions, each with a focused prompt and an **ordinal label scale** shared across all
-dimensions so κ operates on a common categorical domain:
+The five dimensions, each with a focused prompt and an **ordinal label scale** shared across all
+dimensions so κ operates on a common categorical domain. (Dimensions 1-4 shipped in the initial
+build; `colour-semantics` was added per whole-branch-review finding #5 — the audit's named weak
+axis + the F2 water-subject bug class had no home, since `encoding-fit` excludes colour and `craft`
+is legibility beyond mechanical contrast.)
 
 ```ts
 export const DIMENSION_LABELS = ["pass", "minor", "major", "critical"] as const;
@@ -70,10 +73,11 @@ export type DimensionKey =
   | "encoding-fit"       // chart/map type ↔ data intent (FT Visual Vocabulary)
   | "editorial-fidelity" // title↔takeaway, claim-grounding, source honesty
   | "narrative"          // framing / arc / scrolly beats
-  | "craft";             // legibility, labels, polish beyond mechanical contrast
+  | "craft"              // legibility, labels, polish beyond mechanical contrast
+  | "colour-semantics";  // palette subject-fit, convention, seq-vs-diverging, CVD — SEMANTIC, not mechanical contrast
 
 export const DIMENSIONS: readonly DimensionKey[] = [
-  "encoding-fit", "editorial-fidelity", "narrative", "craft",
+  "encoding-fit", "editorial-fidelity", "narrative", "craft", "colour-semantics",
 ] as const;
 ```
 
@@ -174,7 +178,7 @@ export function agreement(matrix: string[][], categories?: string[]): KappaResul
   garbage yields `null`.
 
 `src/dimension-rubric.test.ts` (drift-guard):
-- `DIMENSIONS` enumerates exactly the four keys; every key has a working prompt-builder branch
+- `DIMENSIONS` enumerates exactly the five keys (drift-guard asserts `.length === 5`); every key has a working prompt-builder branch
   (no key falls through to a default/throw); `DIMENSION_LABELS` is the shared 4-level ordinal.
 
 ## Honest-framing invariant
