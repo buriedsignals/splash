@@ -269,6 +269,114 @@ describe("deploy-embed — editorial sign-off gate (S4d)", () => {
     }
   });
 
+  it("refuses (non-zero exit) a DIRECTORY artifact with requiredSigners set — no single artifact to re-verify", () => {
+    const dir = mkdtempSync(join(tmpdir(), "s4d-dep-dir-"));
+    try {
+      const artifactDir = join(dir, "scrolly-out");
+      mkdirSync(artifactDir, { recursive: true });
+      writeFileSync(join(artifactDir, "index.html"), "<html>scrolly</html>");
+      const { publicBase64 } = generateEditorKeypair("yvan");
+      const report = {
+        results: [
+          {
+            id: "p1",
+            producer: "scrolly",
+            format: "scrolly",
+            status: "produced",
+            reviewed: true,
+            renderApproved: true,
+            // deliberately NO editorialSignoffs — the required sign-off is missing.
+          },
+        ],
+      };
+      const reportPath = join(dir, "report.json");
+      writeFileSync(reportPath, JSON.stringify(report));
+      const profilePath = join(dir, "NEWSROOM-PROFILE.md");
+      writeFileSync(
+        profilePath,
+        `---\nsigners:\n  - yvan:${publicBase64}\nrequiredSigners:\n  - yvan\n---`,
+      );
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          artifactDir,
+          "slug",
+          "--results",
+          reportPath,
+          "--id",
+          "p1",
+          "--profile",
+          profilePath,
+        ],
+        {
+          stdout: "pipe",
+          stderr: "pipe",
+          env: { ...process.env, ...FAKE_ENV },
+        },
+      );
+      expect(proc.exitCode).not.toBe(0);
+      expect(proc.stderr.toString()).toMatch(
+        /refusing to deploy a directory artifact with requiredSigners set/,
+      );
+      // Refused before any staging/upload — no EMBED_URL was ever printed.
+      expect(proc.stdout.toString()).not.toContain("EMBED_URL");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("a DIRECTORY artifact with NO requiredSigners still proceeds unsigned (opt-in preserved)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "s4d-dep-dir-noreq-"));
+    try {
+      const artifactDir = join(dir, "scrolly-out");
+      mkdirSync(artifactDir, { recursive: true });
+      writeFileSync(join(artifactDir, "index.html"), "<html>scrolly</html>");
+      const report = {
+        results: [
+          {
+            id: "p1",
+            producer: "scrolly",
+            format: "scrolly",
+            status: "produced",
+            reviewed: true,
+            renderApproved: true,
+          },
+        ],
+      };
+      const reportPath = join(dir, "report.json");
+      writeFileSync(reportPath, JSON.stringify(report));
+      // No --profile at all — no requiredSigners in play.
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          artifactDir,
+          "slug",
+          "--results",
+          reportPath,
+          "--id",
+          "p1",
+        ],
+        {
+          stdout: "pipe",
+          stderr: "pipe",
+          env: { ...process.env, ...FAKE_ENV },
+        },
+      );
+      // Proceeds past the editorial gate (fails downstream at the fake Cloudflare API, proving
+      // the directory branch was never refused by the S4d gate).
+      expect(proc.stdout.toString()).toContain(
+        "EDITORIAL: skipped (artifact is a directory",
+      );
+      expect(proc.stderr.toString()).toContain(
+        "cloudflare pages deploy failed",
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("with no --profile, proceeds unsigned (opt-in default) — prints EDITORIAL: unsigned before the network step", () => {
     const dir = mkdtempSync(join(tmpdir(), "s4d-dep-"));
     try {

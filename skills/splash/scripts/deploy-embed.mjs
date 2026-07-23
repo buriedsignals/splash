@@ -8,7 +8,6 @@
 // docs/superpowers/specs/2026-07-19-cloudflare-pages-embed-adapter-design.md
 import {
   cpSync,
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -17,7 +16,7 @@ import {
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { assertEditoriallyCleared, assertShippable } from "../src/export-guard.ts";
-import { parseNewsroomMarkdown } from "../src/brand-profile.ts";
+import { resolveProfile } from "../src/resolve-profile.ts";
 import {
   deployDirectory,
   embedSlug,
@@ -41,23 +40,6 @@ function parseArgs(argv) {
     else positional.push(a);
   }
   return { positional, flags };
-}
-
-const NEWSROOM_PROFILE_FILENAME = "NEWSROOM-PROFILE.md";
-
-// S4d editorial gate: resolve which NEWSROOM-PROFILE.md governs THIS deploy. `--profile`
-// always OVERRIDES when given (export-code forwards its own resolved path here — see
-// export-code.mjs's resolveProfile). Absent, this AUTO-DISCOVERS `NEWSROOM-PROFILE.md` in the
-// invoking cwd, so a direct standalone run of this script (not just via export-code) also
-// enforces requiredSigners without needing --profile remembered. Neither present → empty
-// profile (opt-in preserved — never blocks).
-function resolveProfile(flags) {
-  const cwdProfile = join(process.cwd(), NEWSROOM_PROFILE_FILENAME);
-  const profilePath = flags.profile ?? (existsSync(cwdProfile) ? cwdProfile : null);
-  const profile = profilePath
-    ? (parseNewsroomMarkdown(readFileSync(profilePath, "utf8")) ?? { palette: [] })
-    : { palette: [] };
-  return { profilePath, profile };
 }
 
 // Cloudflare serves a directory, so a single self-contained artifact is staged as index.html.
@@ -100,10 +82,13 @@ if (import.meta.main) {
     // S4d editorial gate: re-verify human sign-offs against the exact bytes staged for upload,
     // BEFORE any network/staging step — a refusal must leave nothing partially deployed and no
     // faked URL. --profile OVERRIDES when given (export-code forwards its resolved path here);
-    // absent, auto-discovered from cwd (resolveProfile above); neither → empty profile (opt-in
+    // absent, auto-discovered from cwd (resolveProfile); neither → empty profile (opt-in
     // default, never blocks). When the positional is a directory (no single owned artifact)
-    // there is nothing to re-verify against.
-    const { profile } = resolveProfile(flags);
+    // there is nothing to re-verify a sign-off against — that IS a bypass when requiredSigners
+    // is set (an unsigned directory artifact would otherwise publish unchecked), so refuse
+    // outright rather than silently skip. With no requiredSigners the skip+proceed stays
+    // (opt-in preserved).
+    const profile = resolveProfile(flags);
     const bytes = statSync(artifactPath).isFile()
       ? readFileSync(artifactPath)
       : null;
@@ -118,6 +103,10 @@ if (import.meta.main) {
         unsigned
           ? "EDITORIAL: unsigned — LLM render-approval only"
           : `EDITORIAL: signed by ${signedBy.join(", ")}`,
+      );
+    } else if ((profile.requiredSigners ?? []).length > 0) {
+      throw new Error(
+        "refusing to deploy a directory artifact with requiredSigners set — no single artifact to re-verify (S4d)",
       );
     } else {
       console.log(

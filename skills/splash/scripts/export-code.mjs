@@ -44,7 +44,7 @@ import {
 } from "../src/export-guard.ts";
 import { assertChainProvenance } from "../src/render-provenance.ts";
 import { embedDeliveryStatus } from "../src/preflight.ts";
-import { parseNewsroomMarkdown } from "../src/brand-profile.ts";
+import { resolveProfile, resolveProfilePath } from "../src/resolve-profile.ts";
 
 const SELF = fileURLToPath(import.meta.url);
 // The chart-native source-bundle generator — form "code-source" for chart-native is a
@@ -66,25 +66,6 @@ const DEPLOY_EMBED_SCRIPT = join(dirname(SELF), "deploy-embed.mjs");
 const IMAGE_RE = /\.(png|svg|jpe?g)$/i;
 const VIDEO_RE = /\.mp4$/i;
 const VALID_FORMS = ["html", "code-source", "embed"];
-const NEWSROOM_PROFILE_FILENAME = "NEWSROOM-PROFILE.md";
-
-// S4d editorial gate: resolve which NEWSROOM-PROFILE.md governs THIS export. `--profile`
-// always OVERRIDES when given (an explicit path is never second-guessed). Absent, this
-// AUTO-DISCOVERS `NEWSROOM-PROFILE.md` in the invoking cwd — the gate was previously plumbed
-// but dark: no orchestrator call passes --profile, so requiredSigners never enforced in the
-// real flow. Auto-discovery makes it enforce live-by-default whenever a newsroom's profile
-// sets requiredSigners, with no flag to remember. Neither present → empty profile (opt-in
-// preserved — a directory with no profile still exports unsigned, never blocked). Returns
-// the resolved profile PATH (for forwarding into a subprocess, e.g. --form embed's
-// deploy-embed.mjs) alongside the parsed profile.
-function resolveProfile(flags) {
-  const cwdProfile = join(process.cwd(), NEWSROOM_PROFILE_FILENAME);
-  const profilePath = flags.profile ?? (existsSync(cwdProfile) ? cwdProfile : null);
-  const profile = profilePath
-    ? (parseNewsroomMarkdown(readFileSync(profilePath, "utf8")) ?? { palette: [] })
-    : { palette: [] };
-  return { profilePath, profile };
-}
 
 // Splits argv into positionals and `--flag value` pairs, so the required --results/--id and
 // the optional --form/--profile flags can sit alongside the positional args in any order.
@@ -210,7 +191,8 @@ function main() {
   // shape) when a requiredSigner is missing/stale/invalid; with no requiredSigners it never
   // blocks — just prints the honest signed/unsigned state so it is recorded in the export
   // transcript.
-  const { profilePath: resolvedProfilePath, profile } = resolveProfile(flags);
+  const resolvedProfilePath = resolveProfilePath(flags);
+  const profile = resolveProfile(flags);
   const editorialGate = (artifactBytes) => {
     try {
       const { signedBy, unsigned } = assertEditoriallyCleared(

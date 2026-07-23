@@ -184,6 +184,24 @@ export re-verify (Unit 4) is the defense-in-depth backstop even if that strip we
   journalist's own) but is **recorded unsigned** — the tool never asserts an editorial approval it
   cannot prove.
 
+**Operational precondition — the profile itself must be a trusted channel.** All of the above rests
+on `NEWSROOM-PROFILE.md` (the registered public keys under `signers:` / `requiredSigners:`) being
+**checked into version control and its diffs human-reviewed**, the same way any other change to the
+repo is. The gate only proves "the holder of the private key registered under id `X` in *this*
+profile signed these exact bytes" — it has no way to verify that id `X` really is the editor it
+claims to be. An actor with filesystem write access to the profile (the LLM orchestrator included, if
+ever given that access, or anyone else who can write to the working tree) could register their own
+freshly-generated key under a real editor's id (e.g. `yvan`) and then self-sign any artifact — the
+gate would verify that signature as genuine, because it only checks the signature against whatever
+key the profile currently lists, never against the *real* Yvan's actual key out-of-band. This is
+**not detectable in code** — there is no mechanism here that can distinguish a legitimately
+newsroom-registered key from a forged substitution written straight to disk. The non-forgeability
+claim above therefore holds only under the operational precondition that `NEWSROOM-PROFILE.md` lives
+in version control, is never written to by the automated flow, and every change to its `signers:` /
+`requiredSigners:` block goes through the same human review as any other commit (i.e. a newsroom that
+lets an agent edit `NEWSROOM-PROFILE.md` directly, or accepts profile changes without review, has
+opted out of the guarantee this gate is meant to provide).
+
 ## Testing (deterministic, zero real-human dependency)
 
 `editorial-signoff.test.ts`:
