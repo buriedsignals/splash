@@ -10,6 +10,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { embedSlug, servedMatcher, stageArtifact } from "./deploy-embed.mjs";
+import { generateEditorKeypair } from "./sign-artifact.mjs";
+import { sha256Hex } from "../src/editorial-signoff.ts";
 
 // Deliberately NOT the real credentials: this suite must never be able to deploy anything.
 // The repo-root .env holds live Cloudflare keys, so every spawn below overrides them.
@@ -202,5 +204,121 @@ describe("embedSlug re-export", () => {
     expect(embedSlug("Élections municipales")).toStartWith(
       "elections-municipales",
     );
+  });
+});
+
+describe("deploy-embed — editorial sign-off gate (S4d)", () => {
+  const scriptPath = join(import.meta.dir, "deploy-embed.mjs");
+
+  it("refuses (non-zero exit) when a requiredSigner has not signed the staged artifact", () => {
+    const dir = mkdtempSync(join(tmpdir(), "s4d-dep-"));
+    try {
+      const html = Buffer.from("<html>interactive</html>");
+      const artifactPath = join(dir, "interactive.html");
+      writeFileSync(artifactPath, html);
+      // A REAL Ed25519 keypair, so the profile parses cleanly — the point of this test is the
+      // ENFORCEMENT path (missing sign-off), not a profile-parse failure (an invalid key like
+      // "AAAA" would be dropped by parseNewsroomMarkdown and throw "not registered" instead).
+      const { publicBase64 } = generateEditorKeypair("yvan");
+      const report = {
+        results: [
+          {
+            id: "p1",
+            producer: "chart-native",
+            format: "interactive",
+            status: "produced",
+            reviewed: true,
+            renderApproved: true,
+            approvedHash: sha256Hex(html),
+            // deliberately NO editorialSignoffs — the required sign-off is missing.
+          },
+        ],
+      };
+      const reportPath = join(dir, "report.json");
+      writeFileSync(reportPath, JSON.stringify(report));
+      const profilePath = join(dir, "NEWSROOM-PROFILE.md");
+      writeFileSync(
+        profilePath,
+        `---\nsigners:\n  - yvan:${publicBase64}\nrequiredSigners:\n  - yvan\n---`,
+      );
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          artifactPath,
+          "slug",
+          "--results",
+          reportPath,
+          "--id",
+          "p1",
+          "--profile",
+          profilePath,
+        ],
+        {
+          stdout: "pipe",
+          stderr: "pipe",
+          env: { ...process.env, ...FAKE_ENV },
+        },
+      );
+      expect(proc.exitCode).not.toBe(0);
+      expect(proc.stderr.toString()).toContain(
+        "required editorial sign-off missing from yvan",
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("with no --profile, proceeds unsigned (opt-in default) — prints EDITORIAL: unsigned before the network step", () => {
+    const dir = mkdtempSync(join(tmpdir(), "s4d-dep-"));
+    try {
+      const html = Buffer.from("<html>interactive</html>");
+      const artifactPath = join(dir, "interactive.html");
+      writeFileSync(artifactPath, html);
+      const report = {
+        results: [
+          {
+            id: "p1",
+            producer: "chart-native",
+            format: "interactive",
+            status: "produced",
+            reviewed: true,
+            renderApproved: true,
+            approvedHash: sha256Hex(html),
+          },
+        ],
+      };
+      const reportPath = join(dir, "report.json");
+      writeFileSync(reportPath, JSON.stringify(report));
+      // No --profile flag at all.
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          artifactPath,
+          "slug",
+          "--results",
+          reportPath,
+          "--id",
+          "p1",
+        ],
+        {
+          stdout: "pipe",
+          stderr: "pipe",
+          env: { ...process.env, ...FAKE_ENV },
+        },
+      );
+      // The fake Cloudflare credentials mean the deploy still fails downstream — but only AFTER
+      // the editorial gate has run and printed the honest unsigned state, proving the gate sits
+      // before the network step rather than being skipped.
+      expect(proc.stdout.toString()).toContain(
+        "EDITORIAL: unsigned — LLM render-approval only",
+      );
+      expect(proc.stderr.toString()).toContain(
+        "cloudflare pages deploy failed",
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

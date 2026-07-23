@@ -9,7 +9,8 @@
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import { assertShippable } from "../src/export-guard.ts";
+import { assertEditoriallyCleared, assertShippable } from "../src/export-guard.ts";
+import { parseNewsroomMarkdown } from "../src/brand-profile.ts";
 import {
   deployDirectory,
   embedSlug,
@@ -28,7 +29,8 @@ function parseArgs(argv) {
   const flags = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--results" || a === "--id") flags[a.slice(2)] = argv[++i];
+    if (a === "--results" || a === "--id" || a === "--profile")
+      flags[a.slice(2)] = argv[++i];
     else positional.push(a);
   }
   return { positional, flags };
@@ -70,6 +72,35 @@ if (import.meta.main) {
     const report = JSON.parse(readFileSync(resultsPath, "utf8"));
     assertShippable(report, id);
     hostedUrl = report.results.find((x) => x.id === id)?.publicUrl ?? null;
+
+    // S4d editorial gate: re-verify human sign-offs against the exact bytes staged for upload,
+    // BEFORE any network/staging step — a refusal must leave nothing partially deployed and no
+    // faked URL. --profile absent → empty profile (opt-in default, never blocks). When the
+    // positional is a directory (no single owned artifact) there is nothing to re-verify against.
+    const profileMd = flags.profile ? readFileSync(flags.profile, "utf8") : null;
+    const profile = profileMd
+      ? (parseNewsroomMarkdown(profileMd) ?? { palette: [] })
+      : { palette: [] };
+    const bytes = statSync(artifactPath).isFile()
+      ? readFileSync(artifactPath)
+      : null;
+    if (bytes) {
+      const { signedBy, unsigned } = assertEditoriallyCleared(
+        report,
+        id,
+        profile,
+        bytes,
+      );
+      console.log(
+        unsigned
+          ? "EDITORIAL: unsigned — LLM render-approval only"
+          : `EDITORIAL: signed by ${signedBy.join(", ")}`,
+      );
+    } else {
+      console.log(
+        "EDITORIAL: skipped (artifact is a directory — no single owned artifact to re-verify; see S4d follow-up)",
+      );
+    }
   } catch (e) {
     console.error(e.message);
     process.exit(1);
