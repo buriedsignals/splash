@@ -228,6 +228,7 @@ export async function produceAll(
         reviewed: undefined,
         renderApproved: false,
         approvedHash: undefined,
+        editorialSignoffs: undefined,
       };
       // GUARD 1 — producer-match. Only a PRODUCED result can flip producers (a
       // needs-fallback/needs-confirmation/failed dispatch produced nothing). The producer

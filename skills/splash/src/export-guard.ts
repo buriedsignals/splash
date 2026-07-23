@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ProduceReport, VisualFormat } from "./producer-spec";
+import type { BrandProfile } from "./brand-profile";
+import {
+  editorialPayload,
+  sha256Hex,
+  verifyEditorialSignature,
+} from "./editorial-signoff";
 // The single-format media-shape rule + the hosted-URL check live in the shared produce contract
 // (lib/core/contract.ts); this EXPORT-stage guard delegates its static/video shape check to it so
 // one rule (and its exact error messages) lives once, and re-exports isHostedUrl for its own
@@ -27,6 +33,61 @@ export function assertShippable(report: ProduceReport, id: string): void {
     throw new Error(
       `refusing to export ${id}: not render-approved (run gate-render first)`,
     );
+}
+
+/**
+ * Re-verify editorial sign-offs at export against the CURRENT artifact bytes (S4d). When the
+ * profile declares requiredSigners, every one must have a recorded sign-off whose signedHash equals
+ * the current hash AND whose signature re-verifies — else throw. With no requiredSigners, never
+ * blocks: returns the honest signed/unsigned state so the caller can record it.
+ */
+export function assertEditoriallyCleared(
+  report: ProduceReport,
+  id: string,
+  profile: BrandProfile,
+  currentArtifactBytes: Uint8Array,
+): { signedBy: string[]; unsigned: boolean } {
+  const r = report.results.find((x) => x.id === id);
+  if (!r) throw new Error(`unknown proposal ${id}`);
+  const hash = sha256Hex(currentArtifactBytes);
+  const signers = profile.signers ?? [];
+  const signoffs = r.editorialSignoffs ?? [];
+  const validFor = (signerId: string): boolean => {
+    const so = signoffs.find((s) => s.signerId === signerId);
+    const signer = signers.find((s) => s.id === signerId);
+    return (
+      !!so &&
+      !!signer &&
+      so.signedHash === hash &&
+      verifyEditorialSignature({
+        proposalId: id,
+        sha256hex: hash,
+        signature: so.signature,
+        signer,
+      })
+    );
+  };
+  const required = profile.requiredSigners ?? [];
+  if (required.length > 0) {
+    for (const sid of required) {
+      const so = signoffs.find((s) => s.signerId === sid);
+      if (!so)
+        throw new Error(
+          `refusing to export ${id}: required editorial sign-off missing from ${sid}`,
+        );
+      if (so.signedHash !== hash)
+        throw new Error(
+          `refusing to export ${id}: ${sid}'s sign-off is for a different artifact (re-produced since sign-off) — re-sign required`,
+        );
+      if (!validFor(sid))
+        throw new Error(
+          `refusing to export ${id}: ${sid}'s editorial signature failed re-verification`,
+        );
+    }
+    return { signedBy: [...required], unsigned: false };
+  }
+  const signedBy = signers.map((s) => s.id).filter(validFor);
+  return { signedBy, unsigned: signedBy.length === 0 };
 }
 
 // The delivery FORM axis — orthogonal to `VisualFormat`. Only interactive/scrolly deliveries

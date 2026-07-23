@@ -131,12 +131,16 @@ describe("produceAll — Gate 3 reset on (re-)produce", () => {
         reviewed: true,
         renderApproved: true,
         approvedHash: "stale-hash-from-a-prior-approved-render",
+        editorialSignoffs: [
+          { signerId: "yvan", signedHash: "stale", signature: "stale" },
+        ],
       }) as unknown as Awaited<ReturnType<Dispatch>>;
     const { results } = await produceAll([p("p1")], "out", dispatch, PASS);
     expect(results[0].status).toBe("produced");
     expect(results[0].reviewed).toBeUndefined();
     expect(results[0].renderApproved).toBe(false);
     expect(results[0].approvedHash).toBeUndefined();
+    expect(results[0].editorialSignoffs).toBeUndefined();
   });
 });
 
