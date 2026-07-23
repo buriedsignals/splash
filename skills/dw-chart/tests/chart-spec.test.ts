@@ -128,7 +128,6 @@ describe("validateChartSpec", () => {
       "kälte",
       "kalt",
       "winter",
-      "eis",
       "schnee",
       "himmel",
       "eau",
@@ -142,13 +141,10 @@ describe("validateChartSpec", () => {
       "inondation",
       "froid",
       "hiver",
-      "glace",
       "neige",
       "ciel",
-      "marin",
       "marine",
       "acqua",
-      "mare",
       "oceano",
       "fiume",
       "pioggia",
@@ -156,11 +152,22 @@ describe("validateChartSpec", () => {
       "freddo",
       "inverno",
       "ghiaccio",
-      "neve",
       "cielo",
-      "marino",
     ]) {
       expect(BLUE_FIT_SUBJECT.test(term)).toBe(true);
+    }
+  });
+  it("does NOT match cross-language false-friends removed in the F2 review (freeform subject collisions)", () => {
+    // `mare` (IT sea ~ EN horse), `marin`/`marino` (FR/IT marine ~ Marin County / Dan Marino),
+    // `glace`/`eis` (FR/DE also "ice cream"), `neve` (IT snow ~ proper noun "Neve") were removed
+    // because they wrongly exempt unrelated English/proper-noun subjects. Mirrors the native guard.
+    for (const term of [
+      "wild mare population",
+      "Marin County housing",
+      "Dan Marino passing yards",
+      "ventes de glace",
+    ]) {
+      expect(BLUE_FIT_SUBJECT.test(term)).toBe(false);
     }
   });
   it("rejects a missing insight title", () => {

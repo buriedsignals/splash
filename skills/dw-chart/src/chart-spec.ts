@@ -25,12 +25,24 @@ export const DEFAULT_BASE_COLOR = "#0072B2";
 // produce boundary (single source of truth — the two must never drift).
 // English, plus German/French/Italian equivalents (F2, grounded on a live German
 // rainfall chart — the guard was English-only and wrongly rejected the correct
-// default blue for a "Niederschlag" subject). rivière/riviere and océan/ocean are
-// both listed: JS `\b` is ASCII-based and a leading/trailing accented character can
-// break the boundary match, so the unaccented form is kept alongside the accented one
-// rather than relying on `\b` handling accents correctly.
+// default blue for a "Niederschlag" subject). `riviere` (unaccented) is kept
+// alongside `rivière`: a journalist's subject string may be typed without
+// diacritics (ASCII-only input), and JS `\b` already matches the accented form
+// correctly on its own (the accent sits mid-word, never at the match boundary) —
+// the unaccented form is a real-world input fallback, not a `\b` workaround.
+// `océan`'s unaccented spelling ("ocean") was dropped as a duplicate — it is
+// byte-identical to the English "ocean" already earlier in this list.
+// Some added foreign terms were REMOVED (review, F2 follow-up) despite being
+// genuinely water/cold-related in their own language, because they collide with
+// unrelated common English/proper-noun terms in freeform subject strings — a
+// false positive (wrongly leaving a non-water subject on blue) is worse than
+// missing a foreign water word (the journalist can still colour it explicitly):
+// `mare` (IT "sea" ~ EN "mare", a female horse), `marin`/`marino` (FR/IT
+// "marine" ~ "Marin County", "Dan Marino"), `glace`/`eis` (FR/DE also mean "ice
+// cream"), `neve` (IT "snow" ~ the proper noun "Neve", e.g. Neve Campbell / the
+// AMS Neve audio-console brand).
 export const BLUE_FIT_SUBJECT =
-  /\b(water|sea|ocean|river|rain|flood|cold|winter|ice|snow|sky|marine|hydro|wasser|meer|ozean|fluss|regen|niederschlag|hochwasser|kälte|kalt|eis|schnee|himmel|eau|mer|océan|ocean|rivière|riviere|fleuve|pluie|inondation|froid|hiver|glace|neige|ciel|marin|acqua|mare|oceano|fiume|pioggia|alluvione|freddo|inverno|ghiaccio|neve|cielo|marino)\b/i;
+  /\b(water|sea|ocean|river|rain|flood|cold|winter|ice|snow|sky|marine|hydro|wasser|meer|ozean|fluss|regen|niederschlag|hochwasser|kälte|kalt|schnee|himmel|eau|mer|océan|rivière|riviere|fleuve|pluie|inondation|froid|hiver|neige|ciel|acqua|oceano|fiume|pioggia|alluvione|freddo|inverno|ghiaccio|cielo)\b/i;
 
 // DW lists `waterfall` and `dual-axis` in /v3/visualizations but the create API rejects them
 // (400 Invalid visualization type) — excluded. 22 chart types actually producible.

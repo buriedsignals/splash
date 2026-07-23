@@ -250,4 +250,37 @@ describe("checkGlobalConformance — subject-fit colour, DE/FR/IT water-subject 
     });
     expect(v.some((m) => m.includes("blue-family"))).toBe(true);
   });
+
+  // False-friend guards (F2 review follow-up): these foreign water/cold terms were
+  // REMOVED from BLUE_FIT_SUBJECT because they collide with unrelated common
+  // English/proper-noun words in freeform subject strings. The guard must still
+  // fire (default blue rejected) for these genuinely non-water subjects.
+  it("still flags blue for a subject containing the English word 'mare' (not the IT 'sea')", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      subject: "wild mare population",
+    });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(true);
+  });
+
+  it("still flags blue for 'Marin County' (not the FR/IT 'marine')", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      subject: "Marin County housing",
+    });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(true);
+  });
+
+  it("still flags blue for 'Dan Marino' (not the IT 'marine')", () => {
+    const v = checkGlobalConformance({
+      ...base,
+      subject: "Dan Marino passing yards",
+    });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(true);
+  });
+
+  it("still flags blue for 'ventes de glace' (ice cream sales, not water ice)", () => {
+    const v = checkGlobalConformance({ ...base, subject: "ventes de glace" });
+    expect(v.some((m) => m.includes("blue-family"))).toBe(true);
+  });
 });
