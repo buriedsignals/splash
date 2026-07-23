@@ -14,6 +14,9 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { isEphemeralPath } from "./export-code.mjs";
 import { canonicalJson } from "../src/canonical-json.ts";
+import { generateEditorKeypair, signArtifact } from "./sign-artifact.mjs";
+import { recordSignoff } from "./apply-signoff.mjs";
+import { sha256Hex } from "../src/editorial-signoff.ts";
 
 const scriptPath = join(import.meta.dir, "export-code.mjs");
 
@@ -682,6 +685,160 @@ describe("export-code — map-native code-source builds a runnable bundle", () =
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
       rmSync(work, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("export-code CLI — S4d editorial sign-off gate", () => {
+  // A chain-provenance-valid STATIC outDir + report (mirrors report()/writeChainFixture() above)
+  // whose approvedHash is the media bytes' sha256 — the exact input assertEditoriallyCleared
+  // re-verifies at export. `dir` holds report.json/accepted.json/candidates.json/the profile —
+  // `outDir` (a subdir of it) holds the produced static.png.
+  function scaffold(withProfileRequiring: boolean) {
+    const dir = mkdtempSync(join(tmpdir(), "splash-export-editorial-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    const media = Buffer.from("PNGBYTES-static-artifact");
+    writeFileSync(join(outDir, "static.png"), media);
+    const H = sha256Hex(media);
+    const id = "p1";
+    const producer = "chart-native";
+    const spec = { nativeType: "bar", title: "Test", id };
+    const acceptedConfigHash = writeChainFixture(dir, id, producer, spec);
+    const reportObj = {
+      results: [
+        {
+          id,
+          producer,
+          format: "static",
+          status: "produced",
+          reviewed: true,
+          renderApproved: true,
+          acceptedConfigHash,
+          approvedHash: H,
+        },
+      ],
+      generatedAt: new Date(0).toISOString(),
+    };
+    const { privatePem, publicBase64, signersLine } =
+      generateEditorKeypair("yvan");
+    const profileMd =
+      `---\nsigners:\n${signersLine}\n` +
+      (withProfileRequiring ? "requiredSigners:\n  - yvan\n" : "") +
+      `---\n# N\n`;
+    const profilePath = join(dir, "NEWSROOM-PROFILE.md");
+    writeFileSync(profilePath, profileMd);
+    const reportPath = join(dir, "report.json");
+    return {
+      dir,
+      outDir,
+      reportPath,
+      profilePath,
+      report: reportObj,
+      media,
+      privatePem,
+      publicBase64,
+      H,
+    };
+  }
+
+  it("REFUSES a static export when a requiredSigner has not signed", () => {
+    const s = scaffold(true);
+    writeFileSync(s.reportPath, JSON.stringify(s.report));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-editorial-refuse-"),
+    );
+    try {
+      expect(() =>
+        execFileSync(
+          "bun",
+          [
+            scriptPath,
+            s.outDir,
+            exportDir,
+            "--results",
+            s.reportPath,
+            "--id",
+            "p1",
+            "--profile",
+            s.profilePath,
+          ],
+          { stdio: "pipe" },
+        ),
+      ).toThrow(); // non-zero exit — required editorial sign-off missing
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(s.dir, { recursive: true, force: true });
+    }
+  });
+
+  it("PROCEEDS and records unsigned when no --profile is given", () => {
+    const s = scaffold(false);
+    writeFileSync(s.reportPath, JSON.stringify(s.report));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-editorial-unsigned-"),
+    );
+    try {
+      const out = execFileSync(
+        "bun",
+        [
+          scriptPath,
+          s.outDir,
+          exportDir,
+          "--results",
+          s.reportPath,
+          "--id",
+          "p1",
+        ],
+        { encoding: "utf8" },
+      );
+      expect(out).toMatch(/EDITORIAL: unsigned/);
+      expect(out).toMatch(/EXPORT_CODE_RESULT/);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(s.dir, { recursive: true, force: true });
+    }
+  });
+
+  it("PROCEEDS when the required sign-off is present (matching keypair)", () => {
+    const s = scaffold(true);
+    // Sign with scaffold's OWN keypair, and verify against the SAME profile file (s.profilePath)
+    // that already registers that exact publicBase64 under "yvan" — the brief's example
+    // mismatched keys (registered a freshly-generated, unrelated key instead of scaffold's own),
+    // which can never verify. The signature must check out against the key the export-time
+    // profile actually carries.
+    const { signature } = signArtifact(s.media, "p1", s.privatePem);
+    const signed = recordSignoff(
+      s.report,
+      "p1",
+      "yvan",
+      signature,
+      readFileSync(s.profilePath, "utf8"),
+    );
+    writeFileSync(s.reportPath, JSON.stringify(signed));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-editorial-signed-"),
+    );
+    try {
+      const out = execFileSync(
+        "bun",
+        [
+          scriptPath,
+          s.outDir,
+          exportDir,
+          "--results",
+          s.reportPath,
+          "--id",
+          "p1",
+          "--profile",
+          s.profilePath,
+        ],
+        { encoding: "utf8" },
+      );
+      expect(out).toMatch(/EDITORIAL: signed by yvan/);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(s.dir, { recursive: true, force: true });
     }
   });
 });

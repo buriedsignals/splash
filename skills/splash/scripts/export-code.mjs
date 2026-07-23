@@ -39,10 +39,12 @@ import { fileURLToPath } from "node:url";
 import {
   assertShippable,
   assertDelivered,
+  assertEditoriallyCleared,
   isHostedUrl,
 } from "../src/export-guard.ts";
 import { assertChainProvenance } from "../src/render-provenance.ts";
 import { embedDeliveryStatus } from "../src/preflight.ts";
+import { parseNewsroomMarkdown } from "../src/brand-profile.ts";
 
 const SELF = fileURLToPath(import.meta.url);
 // The chart-native source-bundle generator — form "code-source" for chart-native is a
@@ -66,13 +68,18 @@ const VIDEO_RE = /\.mp4$/i;
 const VALID_FORMS = ["html", "code-source", "embed"];
 
 // Splits argv into positionals and `--flag value` pairs, so the required --results/--id and
-// the optional --form flag can sit alongside the positional args in any order.
+// the optional --form/--profile flags can sit alongside the positional args in any order.
 function parseArgs(argv) {
   const positional = [];
   const flags = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--results" || a === "--id" || a === "--form")
+    if (
+      a === "--results" ||
+      a === "--id" ||
+      a === "--form" ||
+      a === "--profile"
+    )
       flags[a.slice(2)] = argv[++i];
     else positional.push(a);
   }
@@ -112,7 +119,7 @@ function main() {
   const { results: resultsPath, id, form: rawForm } = flags;
   if (!outDir || !exportDir || !resultsPath || !id) {
     console.error(
-      "usage: export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId> [--form <html|code-source|embed>]",
+      "usage: export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId> [--form <html|code-source|embed>] [--profile <NEWSROOM-PROFILE.md>]",
     );
     process.exit(1);
   }
@@ -151,8 +158,9 @@ function main() {
   // the suggester's menu, a spec edited after acceptance, or a planted/stale artifact is
   // refused here too, before any copy/write.
   let result;
+  let report; // hoisted out of the try so editorialGate (below) can read it
   try {
-    const report = JSON.parse(readFileSync(resultsPath, "utf8"));
+    report = JSON.parse(readFileSync(resultsPath, "utf8"));
     assertShippable(report, id);
     assertChainProvenance(report, id, exportDir, resultsPath);
     result = report.results.find((x) => x.id === id);
@@ -177,6 +185,33 @@ function main() {
   const done = (payload) =>
     console.log("EXPORT_CODE_RESULT " + JSON.stringify(payload));
 
+  // S4d editorial gate: re-verify human sign-offs against the exact bytes about to ship.
+  // Loads the profile from --profile (absent → empty profile, opt-in default). Throws (via
+  // fail(), matching the rest of this script's refusal shape) when a requiredSigner is
+  // missing/stale/invalid; with no requiredSigners it never blocks — just prints the honest
+  // signed/unsigned state so it is recorded in the export transcript.
+  const editorialGate = (artifactBytes) => {
+    const profileMd = flags.profile ? readFileSync(flags.profile, "utf8") : null;
+    const profile = profileMd
+      ? (parseNewsroomMarkdown(profileMd) ?? { palette: [] })
+      : { palette: [] };
+    try {
+      const { signedBy, unsigned } = assertEditoriallyCleared(
+        report,
+        id,
+        profile,
+        artifactBytes,
+      );
+      console.log(
+        unsigned
+          ? "EDITORIAL: unsigned — LLM render-approval only"
+          : `EDITORIAL: signed by ${signedBy.join(", ")}`,
+      );
+    } catch (e) {
+      fail(e.message);
+    }
+  };
+
   // ---- STATIC: hand over the lone media image directly. ----
   if (format === "static") {
     if (form !== null) fail(`static format takes no --form (got "${form}")`);
@@ -185,6 +220,7 @@ function main() {
     mkdirSync(exportDir, { recursive: true });
     copyFileSync(join(outDir, media), join(exportDir, media));
     assertDelivered(readdirSync(exportDir), { format, form: null });
+    editorialGate(readFileSync(join(outDir, media)));
     done({ format, media: join(absExportDir, media), exportDir: absExportDir });
     return;
   }
@@ -197,6 +233,7 @@ function main() {
     mkdirSync(exportDir, { recursive: true });
     copyFileSync(join(outDir, mp4), join(exportDir, mp4));
     assertDelivered(readdirSync(exportDir), { format, form: null });
+    editorialGate(readFileSync(join(outDir, mp4)));
     done({ format, media: join(absExportDir, mp4), exportDir: absExportDir });
     return;
   }
@@ -256,6 +293,7 @@ function main() {
       );
     copyFileSync(join(outDir, interactive), join(exportDir, interactive));
     assertDelivered(readdirSync(exportDir), { format, form: "html" });
+    editorialGate(readFileSync(join(outDir, interactive)));
     done({
       format,
       form: "html",
@@ -336,7 +374,12 @@ function main() {
     let url;
     if (isHostedEmbed) {
       // A hosted DW interactive is already published — no deploy step, record the live URL.
+      // No owned bytes exist to re-verify a sign-off against (the artifact lives on the
+      // provider's servers) — say so explicitly rather than silently skipping the gate.
       url = hostedUrl;
+      console.log(
+        "EDITORIAL: skipped (hosted embed — no owned bytes to re-verify; see S4d follow-up)",
+      );
     } else {
       if (!interactive)
         fail(`${format} form=embed found no html to deploy in ${outDir}`);
