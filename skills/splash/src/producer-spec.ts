@@ -93,6 +93,12 @@ export interface ProposalResult {
   reviewProbes?: ReviewProbe[]; // the review's probes ledger (Gate 3a), set by review-gate
   renderApproved: boolean; // Gate 3, default false
   approvedHash?: string; // sha256 of the approved artifact, set by the render gate
+  /** verified human editorial sign-offs over approvedHash (S4d); undefined = none */
+  editorialSignoffs?: {
+    signerId: string;
+    signedHash: string;
+    signature: string;
+  }[];
   // The sanctioned-spec provenance for the export chain check (S1 strict production
   // seam): sha256 of the canonicalized PRE-merge AcceptedProposal.spec accepted for THIS
   // result — NOT the profile-merged spec actually dispatched to the producer. The export
