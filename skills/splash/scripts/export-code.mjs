@@ -217,10 +217,12 @@ function main() {
     if (form !== null) fail(`static format takes no --form (got "${form}")`);
     const media = resolveStaticMedia(files, result);
     if (!media) fail(`no static image (.png/.svg/.jpg) found in ${outDir}`);
+    // Gate BEFORE any write: a requiredSigners refusal must leave exportDir untouched — the
+    // owned artifact never ships despite refusal (S4d fix — was gated after the copy).
+    editorialGate(readFileSync(join(outDir, media)));
     mkdirSync(exportDir, { recursive: true });
     copyFileSync(join(outDir, media), join(exportDir, media));
     assertDelivered(readdirSync(exportDir), { format, form: null });
-    editorialGate(readFileSync(join(outDir, media)));
     done({ format, media: join(absExportDir, media), exportDir: absExportDir });
     return;
   }
@@ -230,10 +232,11 @@ function main() {
     if (form !== null) fail(`video format takes no --form (got "${form}")`);
     const mp4 = files.find((f) => VIDEO_RE.test(f));
     if (!mp4) fail(`no .mp4 found in ${outDir}`);
+    // Gate BEFORE any write — see the static branch above for why.
+    editorialGate(readFileSync(join(outDir, mp4)));
     mkdirSync(exportDir, { recursive: true });
     copyFileSync(join(outDir, mp4), join(exportDir, mp4));
     assertDelivered(readdirSync(exportDir), { format, form: null });
-    editorialGate(readFileSync(join(outDir, mp4)));
     done({ format, media: join(absExportDir, mp4), exportDir: absExportDir });
     return;
   }
@@ -284,16 +287,19 @@ function main() {
   }
 
   // ---- Phase 2: materialise + deliver ONLY the chosen form. ----
-  mkdirSync(exportDir, { recursive: true });
+  // exportDir is created per-branch, AFTER its editorial gate — a requiredSigners refusal must
+  // leave no trace (not even an empty exportDir) rather than shipping the artifact first and
+  // throwing after (S4d fix — was created + populated, then gated).
 
   if (form === "html") {
     if (!interactive)
       fail(
         `${format} form=html has no standalone HTML file — a hosted Datawrapper interactive delivers via --form embed`,
       );
+    editorialGate(readFileSync(join(outDir, interactive)));
+    mkdirSync(exportDir, { recursive: true });
     copyFileSync(join(outDir, interactive), join(exportDir, interactive));
     assertDelivered(readdirSync(exportDir), { format, form: "html" });
-    editorialGate(readFileSync(join(outDir, interactive)));
     done({
       format,
       form: "html",
@@ -308,6 +314,13 @@ function main() {
       fail(
         `${format} form=code-source is not available for a hosted Datawrapper interactive (there is no React source to rebuild) — deliver via --form embed`,
       );
+    // The source bundle REPRODUCES the rendered interactive.html the editor signed off on — gate
+    // against those SAME local html bytes, before assembling/copying anything (S4d gap: this
+    // branch previously shipped an owned deliverable with no editorial gate at all). `interactive`
+    // is guaranteed non-null here (isHostedEmbed is false and the earlier
+    // `!isHostedEmbed && !interactive` check already refused a markerless-html outDir).
+    editorialGate(readFileSync(join(outDir, interactive)));
+    mkdirSync(exportDir, { recursive: true });
     if (hasNativeSource) {
       let bundleType = null;
       try {

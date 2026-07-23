@@ -800,6 +800,49 @@ describe("export-code CLI — S4d editorial sign-off gate", () => {
     }
   });
 
+  it("REGRESSION LOCK (ordering): a refused static export leaves NO artifact on disk — the gate ran before the write, not after", () => {
+    // Locks the S4d ordering fix: previously the branch did mkdir → copy → assertDelivered →
+    // gate, so a requiredSigners refusal threw only AFTER the owned media had already landed
+    // in exportDir — the artifact shipped despite the refusal. This asserts the LIVED artifact
+    // (on-disk exportDir listing), not just the non-zero exit, so a regression back to
+    // write-then-gate fails this test even though the process still exits non-zero either way.
+    const s = scaffold(true);
+    writeFileSync(s.reportPath, JSON.stringify(s.report));
+    const exportDir = join(
+      import.meta.dir,
+      "export-editorial-ordering-fixture",
+    );
+    try {
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          s.outDir,
+          exportDir,
+          "--results",
+          s.reportPath,
+          "--id",
+          "p1",
+          "--profile",
+          s.profilePath,
+        ],
+        { stdout: "pipe", stderr: "pipe" },
+      );
+      expect(proc.exitCode).not.toBe(0);
+      expect(proc.stderr.toString()).toMatch(
+        /required editorial sign-off missing/,
+      );
+      // The artifact must not be on disk: no exportDir at all, or (if it existed) no static.png
+      // inside it — either shape proves the copy never ran.
+      if (existsSync(exportDir)) {
+        expect(readdirSync(exportDir)).not.toContain("static.png");
+      }
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(s.dir, { recursive: true, force: true });
+    }
+  });
+
   it("PROCEEDS when the required sign-off is present (matching keypair)", () => {
     const s = scaffold(true);
     // Sign with scaffold's OWN keypair, and verify against the SAME profile file (s.profilePath)
@@ -836,6 +879,147 @@ describe("export-code CLI — S4d editorial sign-off gate", () => {
         { encoding: "utf8" },
       );
       expect(out).toMatch(/EDITORIAL: signed by yvan/);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(s.dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("export-code CLI — S4d editorial sign-off gate on --form code-source (was ungated)", () => {
+  // A chain-provenance-valid INTERACTIVE outDir (chart-native shape: interactive.html +
+  // config.json + native-source.json, mirrors setupChartNativeInteractive above) whose
+  // approvedHash is the LOCAL interactive.html bytes' sha256 — the editor signed the RENDERED
+  // artifact, and the source bundle reproduces that same render, so it is gated against the
+  // same bytes the html form gates against.
+  function scaffoldInteractive(withProfileRequiring: boolean) {
+    const dir = mkdtempSync(join(tmpdir(), "splash-export-editorial-src-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    const html = Buffer.from("<html>signed-interactive</html>");
+    writeFileSync(join(outDir, "interactive.html"), html);
+    writeFileSync(
+      join(outDir, "config.json"),
+      JSON.stringify({ title: "Power mix", rows: [{ x: "A", y: 1 }] }),
+    );
+    writeFileSync(
+      join(outDir, "native-source.json"),
+      JSON.stringify({ type: "bar" }),
+    );
+    const H = sha256Hex(html);
+    const id = "p1";
+    const producer = "chart-native";
+    const spec = { nativeType: "bar", title: "Test", id };
+    const acceptedConfigHash = writeChainFixture(dir, id, producer, spec);
+    const reportObj = {
+      results: [
+        {
+          id,
+          producer,
+          format: "interactive",
+          status: "produced",
+          reviewed: true,
+          renderApproved: true,
+          acceptedConfigHash,
+          approvedHash: H,
+        },
+      ],
+      generatedAt: new Date(0).toISOString(),
+    };
+    const { privatePem, publicBase64, signersLine } =
+      generateEditorKeypair("yvan");
+    const profileMd =
+      `---\nsigners:\n${signersLine}\n` +
+      (withProfileRequiring ? "requiredSigners:\n  - yvan\n" : "") +
+      `---\n# N\n`;
+    const profilePath = join(dir, "NEWSROOM-PROFILE.md");
+    writeFileSync(profilePath, profileMd);
+    const reportPath = join(dir, "report.json");
+    return {
+      dir,
+      outDir,
+      reportPath,
+      profilePath,
+      report: reportObj,
+      html,
+      privatePem,
+      H,
+    };
+  }
+
+  it("REFUSES --form code-source when a requiredSigner has not signed, and assembles no bundle", () => {
+    const s = scaffoldInteractive(true);
+    writeFileSync(s.reportPath, JSON.stringify(s.report));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-editorial-src-refuse-"),
+    );
+    try {
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          s.outDir,
+          exportDir,
+          "--results",
+          s.reportPath,
+          "--id",
+          "p1",
+          "--form",
+          "code-source",
+          "--profile",
+          s.profilePath,
+        ],
+        { stdout: "pipe", stderr: "pipe" },
+      );
+      expect(proc.exitCode).not.toBe(0);
+      expect(proc.stderr.toString()).toMatch(
+        /required editorial sign-off missing/,
+      );
+      // The refusal ran BEFORE bundle assembly: no <id>-source bundle landed anywhere.
+      expect(existsSync(join(exportDir, "p1-source"))).toBe(false);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(s.dir, { recursive: true, force: true });
+    }
+  });
+
+  it("PROCEEDS --form code-source and prints EDITORIAL: signed when the required sign-off is present", () => {
+    const s = scaffoldInteractive(true);
+    const { signature } = signArtifact(s.html, "p1", s.privatePem);
+    const signed = recordSignoff(
+      s.report,
+      "p1",
+      "yvan",
+      signature,
+      readFileSync(s.profilePath, "utf8"),
+    );
+    writeFileSync(s.reportPath, JSON.stringify(signed));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-editorial-src-signed-"),
+    );
+    try {
+      const out = execFileSync(
+        "bun",
+        [
+          scriptPath,
+          s.outDir,
+          exportDir,
+          "--results",
+          s.reportPath,
+          "--id",
+          "p1",
+          "--form",
+          "code-source",
+          "--profile",
+          s.profilePath,
+        ],
+        { encoding: "utf8" },
+      );
+      expect(out).toMatch(/EDITORIAL: signed by yvan/);
+      expect(out).toContain("EXPORT_CODE_RESULT");
+      expect(existsSync(join(exportDir, "p1-source", "package.json"))).toBe(
+        true,
+      );
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
       rmSync(s.dir, { recursive: true, force: true });
