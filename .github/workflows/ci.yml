@@ -37,3 +37,97 @@ jobs:
       # token, so this is green without secrets.
       - name: Check
         run: bun run check
+
+  # render-chart — T2 audit finding: bun run check (above) is typecheck + unit tests
+  # only, it never actually renders a chart, so a render regression (e.g. a snap
+  # guard like snap-contrast/snap-label-fit starting to fail, or produce.mjs
+  # crashing) can ship on a fully green gate. This job runs the real produce.mjs
+  # pipeline end to end for one golden chart-native config. Needs NO external key —
+  # chart-native has no live API/tiles dependency — so it always runs.
+  render-chart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install chart-native dependencies
+        run: cd skills/chart-native && bun install
+
+      - name: Install headless Chromium (Playwright)
+        run: cd skills/chart-native && bunx playwright install --with-deps chromium
+
+      # The exact command produce.mjs documents (bun scripts/produce.mjs <type>
+      # <config> <outDir> <format>) — proven locally before wiring here. "bar" +
+      # assets/sample-data/bars.json is the same golden case scripts/check-render.mjs
+      # (repo root, keyed lane) uses for chart-native.
+      - name: Render smoke — chart-native "bar" static
+        run: |
+          cd skills/chart-native
+          mkdir -p /tmp/render-smoke-chart
+          bun scripts/produce.mjs bar assets/sample-data/bars.json /tmp/render-smoke-chart static
+
+      - name: Assert the rendered PNG is real
+        run: |
+          f=/tmp/render-smoke-chart/static.png
+          test -f "$f" || { echo "::error::$f was not produced"; exit 1; }
+          size=$(wc -c < "$f")
+          echo "static.png: ${size} bytes"
+          [ "$size" -gt 1024 ] || { echo "::error::$f is only ${size} bytes (<=1KB, looks trivial/empty)"; exit 1; }
+
+      # Broader golden-render lane (scripts/check-render.mjs, repo root): re-runs the
+      # same chart-native golden through the full snap-guard chain (static +
+      # interactive: contrast, label-fit, tooltip, reduced-motion) via the documented
+      # `bun run check:render` entry point. Its map-native/scrolly/dw-chart/map-dw
+      # cases self-skip (not fail) without their keys — those keys are not
+      # provisioned in this job, so it stays green here on chart-native coverage
+      # alone.
+      - name: Golden render lane (bun run check:render)
+        run: bun run check:render
+
+  # render-map — same render-regression gap as render-chart, for map-native. Gated on
+  # a MapTiler key: map-native needs a live MapTiler basemap even for a static
+  # render, so this job only runs once a repo provisions the MAPTILER_KEY secret;
+  # without it, the job (and its checks) is skipped, keeping CI green with no
+  # secrets configured.
+  render-map:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.MAPTILER_KEY != '' }}
+    env:
+      # map-native's components read these two prefixed names directly (Vite exposes
+      # only VITE_-prefixed vars to the web bundle, Remotion only REMOTION_-prefixed
+      # vars to the video composition — see skills/map-native/scripts/produce.mjs).
+      # Both are wired from the one MAPTILER_KEY secret.
+      VITE_MAPTILER_KEY: ${{ secrets.MAPTILER_KEY }}
+      REMOTION_MAPTILER_KEY: ${{ secrets.MAPTILER_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install map-native dependencies
+        run: cd skills/map-native && bun install
+
+      - name: Install headless Chromium (Playwright)
+        run: cd skills/map-native && bunx playwright install --with-deps chromium
+
+      # produce.mjs signature: bun scripts/produce.mjs <config.json> <outDir>
+      # <format> (no type arg — the type is implicit in the config; the sample below
+      # has none, which map-native defaults to choropleth, its flagship type).
+      - name: Render smoke — map-native choropleth static
+        run: |
+          cd skills/map-native
+          mkdir -p /tmp/render-smoke-map
+          bun scripts/produce.mjs assets/sample-data/choropleth.json /tmp/render-smoke-map static
+
+      - name: Assert the rendered PNG is real
+        run: |
+          f=/tmp/render-smoke-map/static.png
+          test -f "$f" || { echo "::error::$f was not produced"; exit 1; }
+          size=$(wc -c < "$f")
+          echo "static.png: ${size} bytes"
+          [ "$size" -gt 1024 ] || { echo "::error::$f is only ${size} bytes (<=1KB, looks trivial/empty)"; exit 1; }
