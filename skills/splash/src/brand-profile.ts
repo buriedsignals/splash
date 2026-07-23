@@ -13,6 +13,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { resolveThemeBg, bgIsDark } from "../../chart-native/src/core/tokens";
+import { importSignerPublicKey, type EditorSigner } from "./editorial-signoff";
 
 export interface BrandProfile {
   /** ordered brand hues (#rrggbb); palette[0] is the primary house colour (may be empty) */
@@ -32,6 +33,10 @@ export interface BrandProfile {
    * Applied to chart-native + map-native + map-scrolly (map-dw + dw-chart have their own theming
    * — follow-up). A per-element mapStyle / themeBg always overrides it. */
   theme?: string;
+  /** registered editor public keys for the editorial sign-off gate (S4d) */
+  signers?: EditorSigner[];
+  /** signer ids whose editorial sign-off the export path REQUIRES (subset of signers' ids) */
+  requiredSigners?: string[];
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -40,7 +45,7 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
  * Assemble a validated BrandProfile from loosely-typed fields (shared by the JSON and the
  * markdown parsers). Non-hex palette entries are dropped; an accent alone (no palette) is not a
  * brand. Returns null unless at least ONE usable field is present (palette / source / lang /
- * credit) — so a newsroom that only wants a default source but no house colour is still valid.
+ * credit / signers) — so a newsroom that only wants a default source but no house colour is still valid.
  */
 function buildProfile(fields: {
   palette?: unknown;
@@ -49,6 +54,8 @@ function buildProfile(fields: {
   lang?: unknown;
   credit?: unknown;
   theme?: unknown;
+  signers?: unknown;
+  requiredSigners?: unknown;
 }): BrandProfile | null {
   const palette = Array.isArray(fields.palette)
     ? fields.palette.filter(
@@ -87,7 +94,47 @@ function buildProfile(fields: {
     (typeof themeRaw === "string" && HEX.test(themeRaw))
       ? themeRaw
       : undefined;
-  if (palette.length === 0 && !source && !lang && !credit && !theme)
+  const signers: EditorSigner[] = Array.isArray(fields.signers)
+    ? fields.signers.flatMap((s): EditorSigner[] => {
+        if (!s || typeof s !== "object") return [];
+        const id = (s as any).id;
+        const publicKey = (s as any).publicKey;
+        if (
+          typeof id !== "string" ||
+          !id.trim() ||
+          typeof publicKey !== "string"
+        )
+          return [];
+        if (!importSignerPublicKey(publicKey)) {
+          console.warn(
+            `brand-profile: dropping signer '${id}' — public key is not a valid Ed25519 SPKI key`,
+          );
+          return [];
+        }
+        return [{ id: id.trim(), publicKey }];
+      })
+    : [];
+  const requiredSigners: string[] = Array.isArray(fields.requiredSigners)
+    ? fields.requiredSigners
+        .filter(
+          (x): x is string => typeof x === "string" && x.trim().length > 0,
+        )
+        .map((x) => x.trim())
+    : [];
+  for (const req of requiredSigners) {
+    if (!signers.some((s) => s.id === req))
+      throw new Error(
+        `brand-profile: requiredSigner '${req}' not registered in signers`,
+      );
+  }
+  if (
+    palette.length === 0 &&
+    !source &&
+    !lang &&
+    !credit &&
+    !theme &&
+    signers.length === 0
+  )
     return null;
   const p: BrandProfile = { palette };
   if (accent) p.accent = accent;
@@ -95,6 +142,8 @@ function buildProfile(fields: {
   if (lang) p.lang = lang;
   if (credit) p.credit = credit;
   if (theme) p.theme = theme;
+  if (signers.length) p.signers = signers;
+  if (requiredSigners.length) p.requiredSigners = requiredSigners;
   return p;
 }
 
@@ -118,6 +167,8 @@ export function parseBrandProfile(text: string): BrandProfile | null {
     lang: o.lang,
     credit: o.credit,
     theme: o.theme,
+    signers: o.signers,
+    requiredSigners: o.requiredSigners,
   });
 }
 
@@ -195,7 +246,7 @@ function unquote(v: string): string {
 
 /**
  * Parse the YAML frontmatter of a NEWSROOM-PROFILE.md into a BrandProfile. Reads only the known
- * fields (palette list, accent, source.name/url, lang, credit); unknown keys are ignored. No
+ * fields (palette list, accent, source.name/url, lang, credit, signers, requiredSigners); unknown keys are ignored. No
  * frontmatter, or no usable field → null. Pure.
  */
 export function parseNewsroomMarkdown(md: string): BrandProfile | null {
@@ -209,6 +260,8 @@ export function parseNewsroomMarkdown(md: string): BrandProfile | null {
     lang?: string;
     credit?: string;
     theme?: string;
+    signers?: { id: string; publicKey: string }[];
+    requiredSigners?: string[];
   } = {};
   let i = 0;
   while (i < lines.length) {
@@ -253,6 +306,44 @@ export function parseNewsroomMarkdown(md: string): BrandProfile | null {
         i++;
       }
       fields.source = src;
+      continue;
+    }
+    if (key === "signers" && val === "") {
+      const items: { id: string; publicKey: string }[] = [];
+      i++;
+      while (i < lines.length) {
+        if (lines[i].trim() === "") {
+          i++;
+          continue;
+        }
+        const m = lines[i].match(/^[ \t]+-[ \t]*(.*)$/);
+        if (!m) break;
+        const raw = unquote(m[1]);
+        const colon = raw.indexOf(":"); // split on the FIRST colon (base64 has none)
+        if (colon > 0)
+          items.push({
+            id: raw.slice(0, colon).trim(),
+            publicKey: raw.slice(colon + 1).trim(),
+          });
+        i++;
+      }
+      fields.signers = items;
+      continue;
+    }
+    if (key === "requiredSigners" && val === "") {
+      const items: string[] = [];
+      i++;
+      while (i < lines.length) {
+        if (lines[i].trim() === "") {
+          i++;
+          continue;
+        }
+        const m = lines[i].match(/^[ \t]+-[ \t]*(.*)$/);
+        if (!m) break;
+        items.push(unquote(m[1]).trim());
+        i++;
+      }
+      fields.requiredSigners = items;
       continue;
     }
     if (
