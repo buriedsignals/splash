@@ -5,6 +5,7 @@ import {
   sha256Hex,
   verifyEditorialSignature,
   applyEditorialSignoff,
+  importSignerPublicKey,
   type EditorSigner,
 } from "./editorial-signoff.ts";
 import type { ProduceReport } from "./producer-spec.ts";
@@ -188,4 +189,16 @@ test("applyEditorialSignoff replaces (dedups) a re-sign by the same signer", () 
     [signer],
   );
   expect(twice.results[0].editorialSignoffs).toHaveLength(1);
+});
+
+test("importSignerPublicKey returns null on a non-importable key and rejects non-Ed25519 keys", () => {
+  expect(importSignerPublicKey("not-base64-or-a-real-key")).toBeNull();
+  const rsaPub = generateKeyPairSync("rsa", { modulusLength: 2048 })
+    .publicKey.export({ type: "spki", format: "der" })
+    .toString("base64");
+  expect(importSignerPublicKey(rsaPub)).toBeNull();
+  const ecPub = generateKeyPairSync("ec", { namedCurve: "P-256" })
+    .publicKey.export({ type: "spki", format: "der" })
+    .toString("base64");
+  expect(importSignerPublicKey(ecPub)).toBeNull();
 });

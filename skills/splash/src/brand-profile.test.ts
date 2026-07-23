@@ -43,6 +43,17 @@ describe("brand-profile", () => {
     ).toThrow(/requiredSigner .*rinny.* not registered/i);
   });
 
+  it("a requiredSigner whose key was malformed-and-dropped is a profile error", () => {
+    expect(() =>
+      parseBrandProfile(
+        JSON.stringify({
+          signers: [{ id: "bad", publicKey: "not-a-key" }],
+          requiredSigners: ["bad"],
+        }),
+      ),
+    ).toThrow(/requiredSigner .*bad.* not registered/i);
+  });
+
   it("parseNewsroomMarkdown reads the flattened signers list + requiredSigners", () => {
     const yvan = pub();
     const rinny = pub();

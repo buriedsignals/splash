@@ -97,8 +97,9 @@ function buildProfile(fields: {
   const signers: EditorSigner[] = Array.isArray(fields.signers)
     ? fields.signers.flatMap((s): EditorSigner[] => {
         if (!s || typeof s !== "object") return [];
-        const id = (s as any).id;
-        const publicKey = (s as any).publicKey;
+        const rec = s as Record<string, unknown>;
+        const id = rec.id;
+        const publicKey = rec.publicKey;
         if (
           typeof id !== "string" ||
           !id.trim() ||
