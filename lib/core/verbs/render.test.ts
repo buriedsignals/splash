@@ -31,7 +31,7 @@ describe("render — request validation happens before any filesystem or engine 
   });
 });
 
-import { mkdtempSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -107,4 +107,33 @@ describe("render — subprocess transport", () => {
     const png = r.value.files.find((f) => f.endsWith("static.png"))!;
     expect(readFileSync(png).length).toBeGreaterThan(1000);
   }, 300_000);
+
+  it("returns invalid-request (never throws) for a spec JSON.stringify cannot serialize, and leaves no temp spec dir behind", async () => {
+    // `spec` is opaque `unknown` by contract — a caller can hand us a cyclic object.
+    // Regression for a Critical finding: this used to escape render() as a rejected
+    // promise (I1 violation) AND leaked a `splash-verb-spec-*` dir in $TMPDIR.
+    const cyclic: Record<string, unknown> = { nativeType: "bar" };
+    cyclic.self = cyclic;
+
+    const before = readdirSync(tmpdir()).filter((n) =>
+      n.startsWith("splash-verb-spec-"),
+    );
+
+    const r = await render({
+      engine: "chart-native",
+      spec: cyclic,
+      format: "static",
+      channel: "article-web",
+      outDir: outDirFor("cyclic"),
+      id: "el1",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.code).toBe("invalid-request");
+
+    const after = readdirSync(tmpdir()).filter((n) =>
+      n.startsWith("splash-verb-spec-"),
+    );
+    expect(after.length).toBe(before.length);
+  });
 });
