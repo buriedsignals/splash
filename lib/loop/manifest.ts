@@ -142,19 +142,28 @@ export function appendEvent(
   return { ...run, events };
 }
 
-// State-driven next actions: run-level gates first (orient + honest off-ramp),
-// then the live element's routing. Multi-element aggregation arrives with Task 8;
-// the live path drives elements[0].
-export function nextActions(run: RunManifest): NextAction[] {
-  if (!run.orient) return ["orient"];
-  if (!run.orient.supportsPoint) return [];
-  const el = run.elements[0];
+// Per-element routing, shared by nextActions() (run-level, elements[0]) and
+// resume's per-element reporting (Task 7). Assumes the run-level gates (orient +
+// honest off-ramp) already passed — callers apply those first.
+export function nextActionsForElement(
+  run: RunManifest,
+  el: RunElement | undefined,
+): NextAction[] {
   if (!el || !el.angle) return ["confirm-angle"];
   if (!el.proposal) return ["propose"];
   if (el.proposal.options.length === 0) return [];
   if (!el.proposal.chosenId) return ["choose-form"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   return ["show"];
+}
+
+// State-driven next actions: run-level gates first (orient + honest off-ramp),
+// then the live element's routing. Multi-element aggregation arrives with Task 8;
+// the live path drives elements[0].
+export function nextActions(run: RunManifest): NextAction[] {
+  if (!run.orient) return ["orient"];
+  if (!run.orient.supportsPoint) return [];
+  return nextActionsForElement(run, run.elements[0]);
 }
 
 export type GateState =
