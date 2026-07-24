@@ -12,3 +12,9 @@ test("orient refuses honestly when there is no numeric data (no fabrication)", (
   expect(r.supportsPoint).toBe(false);
   expect(r.note).toContain("figures");
 });
+
+test("orient refuses when the data has a header but no rows", () => {
+  const r = orient("canton,2015,2024");
+  expect(r.supportsPoint).toBe(false);
+  expect(r.note).toContain("rows");
+});

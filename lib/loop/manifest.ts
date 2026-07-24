@@ -59,6 +59,7 @@ export function nextActions(m: RunManifest): NextAction[] {
   if (!m.orient.supportsPoint) return []; // honest off-ramp: nothing to visualise
   if (!m.angle) return ["confirm-angle"];
   if (!m.proposal) return ["propose"];
+  if (m.proposal.options.length === 0) return []; // no legal form for this data — honest off-ramp
   if (!m.proposal.chosenId) return ["choose-form"];
   if (!m.artifact || stalenessOf(m)) return ["produce"];
   return ["show"];

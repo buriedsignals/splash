@@ -40,6 +40,17 @@ test("revising the emphasis marks the artifact stale and routes back to produce"
   expect(stalenessOf(after)).toBe(true);
   expect(nextActions(after)).toEqual(["produce"]);
 });
+test("revising the takeaway updates it and marks the artifact stale", () => {
+  const before = produced();
+  const after = revise(before, {
+    kind: "takeaway",
+    confirmedTakeaway: "New point",
+    altInsight: "New alt",
+  });
+  expect(after.angle!.confirmedTakeaway).toBe("New point");
+  expect(after.angle!.altInsight).toBe("New alt");
+  expect(stalenessOf(after)).toBe(true);
+});
 test("revise throws before an angle exists", () => {
   const m: RunManifest = {
     runId: "r",

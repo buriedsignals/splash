@@ -54,6 +54,24 @@ test("nextActions routes to produce when the artifact is stale", () => {
   };
   expect(nextActions(full)).toEqual(["produce"]);
 });
+test("nextActions off-ramps when propose returned zero options", () => {
+  const m: RunManifest = {
+    runId: "r",
+    schemaVersion: 1,
+    input: { dataCsv: "city,pop\nA,1", statedPoint: "p" },
+    orient: {
+      profile: {
+        columns: ["city", "pop"],
+        numericColumns: ["pop"],
+        rowCount: 1,
+      },
+      supportsPoint: true,
+    },
+    angle: { confirmedTakeaway: "t", altInsight: "a", unit: "u" },
+    proposal: { options: [] },
+  };
+  expect(nextActions(m)).toEqual([]);
+});
 test("nextActions is show when a fresh artifact exists", () => {
   const full: RunManifest = {
     ...m,
