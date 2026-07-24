@@ -53,17 +53,9 @@
 //               fails hard here BEFORE any API call, mirroring the dw-chart gate below.
 //   Both ChartSpec.data and MapSpec.data are already CSV text set by the upstream
 //   suggester — no toCsv (Task 2) conversion is needed here.
-import { execFileSync } from "node:child_process";
-import {
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
 // Populate the producer registry (each engine's manifest self-registers on import) BEFORE
 // any getProducer call below. This one side-effect import is the wiring that makes dispatch
@@ -79,6 +71,19 @@ import { assertSafeId } from "./id-safety";
 import type { Dispatch } from "./produce-all";
 import type { AcceptedProposal, Producer, VisualFormat } from "./producer-spec";
 import type { NativeSpec } from "../../chart-native/src/spec-to-config";
+import {
+  channelEnvForEngine,
+  collectOutputs,
+  freshOutDir,
+  runProducerScript,
+  type ExecOutcome,
+} from "../../../lib/core/verbs/exec";
+
+// The subprocess mechanism now lives in lib/core/verbs/exec.ts (runtime-neutral). These
+// re-exports keep every existing importer and test working unchanged — including
+// tests/adapters.test.ts, which dynamically imports THIS module's URL in a spawned
+// process to exercise runProducerScript's env forwarding.
+export { runProducerScript, freshOutDir, collectOutputs, type ExecOutcome };
 
 type FileBasedProducer =
   "chart-native" | "map-native" | "scrolly" | "image-native";
@@ -109,25 +114,14 @@ const IN_PROCESS_NATIVE_FALLBACK: Record<string, string> = {
   "map-dw": "map-native",
 };
 
-// Builds the extra env for a file-based dispatch: {} for a producer that doesn't
-// consume a channel (scrolly, and any future non-native file-based producer);
-// otherwise SPLASH_CHANNEL, defaulting an absent proposal.channel to article-web
-// (back-compat — legacy proposals with no channel still dispatch fine). The channel
-// received here is CANONICAL: produce-all's gate normalizes the journalist's free
-// text (aliases, case variants) via normalizeChannel BEFORE dispatch and threads the
-// resolved value — required because both native producers' own SPLASH_CHANNEL
-// parsing is exact-match and fail-closed (they reject any non-canonical value rather
-// than defaulting it to article-web). Exported for unit testing (the "argv/env
-// builder").
+// Legacy shape: an AcceptedProposal's channel is optional, and an absent one defaults to
+// article-web (back-compat — legacy proposals without a channel still dispatch fine).
+// The mechanism itself takes a RESOLVED channel; the defaulting is this caller's policy.
 export function channelEnvFor(
   producer: FileBasedProducer,
   channel: Channel | undefined,
 ): Record<string, string> {
-  // Whether SPLASH_CHANNEL is threaded is the manifest's `threadsChannel` flag: the two
-  // NATIVE producers (chart-native, map-native) render at the channel's size/aspect (Slice
-  // 2) and set it; scrolly / image-native do not read a channel and leave it false.
-  if (!subprocessConfigFor(producer).threadsChannel) return {};
-  return { SPLASH_CHANNEL: channel ?? DEFAULT_CHANNEL };
+  return channelEnvForEngine(producer, channel ?? DEFAULT_CHANNEL);
 }
 
 // CHANNEL INJECTION (cloud producers) — the spine's truth flows in MECHANICALLY.
@@ -172,103 +166,6 @@ interface FileDispatchOutcome {
   reason?: string;
   error?: string;
   actualProducer?: Producer; // GUARD 1: the producer this dispatch actually ran
-}
-
-// Flat directory listing (none of the 3 file-based scripts write subdirectories into
-// outDir — static.png / interactive.html / *.mp4 / scrolly.html all land directly there).
-function collectOutputs(dir: string): string[] {
-  return readdirSync(dir)
-    .filter((name) => statSync(join(dir, name)).isFile())
-    .sort()
-    .map((name) => join(dir, name));
-}
-
-function toText(buf: Buffer | string | undefined): string {
-  return typeof buf === "string" ? buf : (buf?.toString("utf8") ?? "");
-}
-
-// Last N lines of a stream, for a bounded error/report dump (mirrors scripts/check.mjs's
-// own `.slice(-30)` convention for failure output).
-function tail(text: string, lines = 30): string {
-  return text.split("\n").slice(-lines).join("\n").trim();
-}
-
-type ExecOutcome =
-  | { status: "produced" }
-  | { status: "needs-fallback"; reason: string }
-  | { status: "failed"; error: string };
-
-// Runs a file-based producer script and normalizes its outcome. Captures BOTH stdout
-// and stderr — NEITHER is ever inherited — so a producer's own build/render logs
-// (chart-native's Vite output, map-native's "[produce map] building…", etc.) can never
-// interleave with produce-all's own final JSON.stringify(report) line on the real
-// stdout. Exit code 2 is chart-native's reliable FALLBACK_TO_DW signal; we still parse
-// the captured stderr for the human-readable reason line (present whenever the
-// fallback is chart-native's — the only producer that emits it) and fall back to a
-// generic reason if a future producer ever exits 2 without one.
-export function runProducerScript(
-  cmd: string,
-  args: string[],
-  cwd: string,
-  env: Record<string, string> = {},
-): ExecOutcome {
-  try {
-    execFileSync(cmd, args, {
-      cwd,
-      stdio: ["ignore", "pipe", "pipe"],
-      maxBuffer: 1024 * 1024 * 20,
-      // Merge onto the parent's own env (never replace it) — empty `env` is a no-op,
-      // matching the pre-Slice-2 behavior exactly (execFileSync inherits process.env
-      // when no `env` option is given at all).
-      env: { ...process.env, ...env },
-    });
-    return { status: "produced" };
-  } catch (e) {
-    const execErr = e as NodeJS.ErrnoException & {
-      stdout?: Buffer | string;
-      stderr?: Buffer | string;
-      status?: number | null;
-    };
-    const stdoutText = toText(execErr.stdout);
-    const stderrText = toText(execErr.stderr);
-    const fallbackLine = stderrText
-      .split("\n")
-      .find((line) => line.includes("FALLBACK_TO_DW"));
-    if (execErr.status === 2) {
-      return {
-        status: "needs-fallback",
-        reason:
-          fallbackLine?.trim() ??
-          "native type unsupported (exit code 2, FALLBACK_TO_DW)",
-      };
-    }
-    const dump = [
-      stdoutText && `stdout:\n${tail(stdoutText)}`,
-      stderrText && `stderr:\n${tail(stderrText)}`,
-    ]
-      .filter(Boolean)
-      .join("\n\n");
-    return { status: "failed", error: dump || execErr.message || String(e) };
-  }
-}
-
-// Wipes `dir` clean (if it exists) and recreates it empty — a WHOLLY FRESH outDir for
-// the dispatch about to write into it. Every proposal's `<outDir>/<id>` directory is
-// keyed purely by `id` (produce-all.ts), so a re-produce that swaps producer/format for
-// the same id (the sanctioned native→dw fallback, a source fix, a retry) would otherwise
-// dispatch into the SAME directory the superseded attempt already wrote into — leaving
-// its stray artifacts (e.g. a failed interactive map-native attempt's `interactive.html`
-// / `a11y.png` / `responsive-*.png`) sitting next to the new delivery. None of the 5
-// producers ever read pre-existing outDir contents before writing (no incremental/cached
-// build depends on a prior run's files), so clearing first — before EVERY dispatch, not
-// only a producer/format switch — is always safe and matches SKILL.md's own "every
-// re-produce writes a WHOLLY FRESH ..." invariant (5c), extended from `report.json` to
-// the artifact directory itself.
-export function freshOutDir(dir: string): string {
-  const abs = resolve(dir);
-  rmSync(abs, { recursive: true, force: true });
-  mkdirSync(abs, { recursive: true });
-  return abs;
 }
 
 function dispatchFileBased(
