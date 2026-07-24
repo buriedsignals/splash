@@ -4,8 +4,9 @@ import { join, resolve } from "node:path";
 import { getProducer } from "../registry";
 import type { Channel } from "../vocabulary";
 
-// Flat directory listing (none of the 3 file-based scripts write subdirectories into
-// outDir — static.png / interactive.html / *.mp4 / scrolly.html all land directly there).
+// Flat directory listing (none of the 4 file-based scripts — chart-native, map-native,
+// scrolly, image-native — write subdirectories into outDir: static.png /
+// interactive.html / *.mp4 / scrolly.html all land directly there).
 export function collectOutputs(dir: string): string[] {
   return readdirSync(dir)
     .filter((name) => statSync(join(dir, name)).isFile())

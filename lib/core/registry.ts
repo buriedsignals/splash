@@ -32,8 +32,9 @@ export interface ProducerManifest {
     skillDir: string;
     threadsChannel: boolean;
   };
-  // in-process: wired in Task 8 (the uniform produce path). Present as a typed slot now so
-  // the registry is complete; adapters.ts still calls produceChart / produceMap directly.
+  // in-process: the engine's own produce fn, imported and awaited by the render verb
+  // (lib/core/verbs/render.ts) — the two hosted-DW engines implement it, and no caller
+  // reaches produceChart / produceMap on its own any more.
   inProcess?: (
     spec: unknown,
     ctx: ProduceContext,

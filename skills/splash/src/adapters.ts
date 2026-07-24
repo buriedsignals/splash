@@ -1,58 +1,32 @@
-// realDispatch: the Dispatch (Task 3) injects to actually produce ONE accepted
-// proposal. The 5 producers split into two execution models, each with its own
-// I/O shape — read from the real entry points, not assumed:
+// The LEGACY orchestrator's TRANSLATOR onto the verb contract.
 //
-//   FILE-BASED (shell out, execFileSync, own build/render pipeline):
-//     chart-native  scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> <format>
-//                   format is the SINGLE VisualFormat to build — static|interactive|
-//                   video|scrolly — passed straight through (single-format-produce-
-//                   export, Tasks 2-3: no more "all"/style translation). "scrolly"
-//                   fails hard (see SCROLLY ROUTING below). exit 2 + "FALLBACK_TO_DW: ..."
-//                   on stderr when the native type isn't mapped (specToNativeConfig
-//                   throws UnsupportedNativeType) — the ONLY producer that emits this
-//                   fallback signal.
-//     map-native    scripts/produce.mjs <config.json> <outDir> <format>
-//                   same single-format vocabulary as chart-native, passed straight
-//                   through — builds EXACTLY that one format's artifacts, nothing else.
-//                   "scrolly" fails hard too. Never emits FALLBACK_TO_DW.
-//     scrolly       scripts/produce.mjs <config.json> <outDir> — takes NO format flag
-//                   (always builds one scrolly.html); a 4th argv is simply unread.
+// Dispatch mechanics no longer live here. The subprocess mechanism (runProducerScript's
+// bounded stdout/stderr capture, freshOutDir, collectOutputs, the exit-2 "the engine
+// declines this spec" signal) is lib/core/verbs/exec.ts; the dispatch itself — registry
+// lookup, transport branch, format gate, spec validation, delivered-contract assertion —
+// is lib/core/verbs/render.ts. Both are runtime-neutral and shared with the editorial
+// loop (lib/loop), which is the point: ONE execution path to an engine, for two callers.
+// See docs/superpowers/specs/2026-07-24-verb-contract-adapters-design.md.
 //
-//   SCROLLY ROUTING: a scrolly-format element is proposed with producer "scrolly"
-//   ITSELF (suggest-chart/suggest-article never emit chart-native/map-native paired
-//   with format:"scrolly" — both of those producers' own produce.mjs now fail hard on
-//   "scrolly", see their file-header comments). isFileBased/SCRIPT dispatch a "scrolly"
-//   producer straight to skills/scrolly, which hosts the moteur's renderer for the
-//   scroll-driven format — unchanged by Task 4, confirmed still correct here.
+// What is still THIS file's job:
+//   TRANSLATION — AcceptedProposal (produce-all's payload) → the contract's neutral
+//   RenderPayload, then VerbResult → DispatchResult.
 //
-//   CHANNEL THREADING (Slice 2, producer rendering — 2026-07-08): the proposal's
-//   confirmed CADRAGE Q3 channel (skills/splash/src/channel.ts) is forwarded to the
-//   two NATIVE producers (chart-native, map-native) ONLY, as an env var
-//   `SPLASH_CHANNEL` on the spawned process — NOT a 6th positional argv. Chosen
-//   because both entry scripts already read a sibling env fallback this way,
-//   and because an env var survives produce-from-spec.mjs's own inner
-//   execFileSync("bun", [...]) re-spawn of produce.mjs for free (inherited process.env)
-//   with no extra plumbing in that forwarding script. Absent channel (legacy
-//   proposals) defaults to "article-web", matching normalizeChannel's default.
-//   dw-chart / map-dw / scrolly dispatch is UNCHANGED — no channel is threaded to them.
+//   LEGACY POLICY, deliberately NOT hoisted into the contract (mechanism was hoisted,
+//   policy was not):
+//     · an absent proposal channel defaults to article-web (legacy proposals carry none);
+//     · the proposal's channel is injected INTO the spec for the hosted-DW engines, which
+//       size their export off spec.channel (withProposalChannel);
+//     · engine-declined → needs-fallback: the native→Datawrapper re-routing. The verb only
+//       REPORTS what the engine said; deciding to route elsewhere is this caller's policy.
 //
-//   CLOUD-PUBLISHING (import + await, hits the Datawrapper API):
-//     dw-chart  produceChart(spec: ChartSpec, pngPath, opts?) → { chartId, embed, pngPath?, publicUrl }
-//               opts.format ("static" default | "interactive") — single-format-produce-
-//               export (Task 3): "static" exports the media (pngPath present);
-//               "interactive" delivers the hosted embed alone (pngPath undefined).
-//               Task 4 threads `p.format` here; a format outside {static, interactive}
-//               (video/scrolly — dw-chart has no such renderer) fails hard before any
-//               API call rather than silently building "static".
-//     map-dw    produceMap(spec: MapSpec, pngPath, opts?) → { chartId, embed, pngPath?, publicUrl }
-//               opts.format ("static" default | "interactive") — the same single-format
-//               contract as dw-chart (map-dw floor): "static" exports the owned PNG at
-//               the channel's box (render-size fail-hard, IHDR readback); "interactive"
-//               delivers the hosted embed alone (pngPath undefined). A format outside
-//               {static, interactive} (video/scrolly — animated maps are map-native's)
-//               fails hard here BEFORE any API call, mirroring the dw-chart gate below.
-//   Both ChartSpec.data and MapSpec.data are already CSV text set by the upstream
-//   suggester — no toCsv (Task 2) conversion is needed here.
+//   The per-producer seams the legacy flow still exposes: formatFlag (the orchestrator's
+//   VisualFormat → a producer's own CLI vocabulary) and channelEnvFor (the legacy
+//   defaulting in front of the contract's channelEnvForEngine).
+//
+// Routing note (decided UPSTREAM, not here): a scrolly-format element is proposed with
+// producer "scrolly" itself — suggest-chart/suggest-article never pair chart-native or
+// map-native with format "scrolly", and both of those engines' produce.mjs fail hard on it.
 // Populate the producer registry (each engine's manifest self-registers on import) BEFORE
 // any getProducer call below. This one side-effect import is the wiring that makes dispatch
 // data-driven — without it the registry is empty at dispatch time. Module caching runs it once.

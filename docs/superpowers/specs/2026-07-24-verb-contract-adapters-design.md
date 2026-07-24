@@ -167,7 +167,7 @@ La boucle passe `channel: "article-web"` en **constante documentée**, pointant 
 
 Vérifié dans `buriedsignals/mycroft` : Goose consomme des **skills** markdown (`~/.local/share/goose/mycroft/source/skills`), des **recipes**, et des **extensions MCP** (`tools/validate-recipes.py` : `builtin`, `stdio`, `platform`, `streamable_http`, `frontend`, `inline_python`). Mais `extensions/manifest.json` montre que le pattern **dominant** du pack est le **CLI / REST** (`ft-cli`, `firecrawl-cli`, « No CLI — recipes call REST API via curl »). Et `llms.txt` annonce **« Splash for Visual Journalism is coming in September 2026 »** — le seam haut est aligné sur la date de la bourse.
 
-Une façade CLI marche donc dès aujourd'hui dans Goose **et** dans Claude Code (via Bash), sans dépendance protocole ni cycle de vie de serveur.
+Une façade CLI marche donc dès aujourd'hui dans Goose **et** dans n'importe quel hôte agentique en ligne de commande (via Bash), sans dépendance protocole ni cycle de vie de serveur.
 
 ### 4.2 La surface
 
