@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { readFileSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname } from "node:path";
 import { canonicalHash } from "./canonical-hash";
 
 const HashRef = z.object({ path: z.string(), sha256: z.string() });

@@ -80,6 +80,12 @@ test("nextActions is show when the artifact is fresh", () => {
   expect(nextActions(m)).toEqual(["show"]);
 });
 
+test("nextActions off-ramps ([]) when no legal form exists (zero proposal options)", () => {
+  const m = base();
+  m.elements[0].proposal = { options: [] };
+  expect(nextActions(m)).toEqual([]);
+});
+
 test("nextActions off-ramps ([]) when data supports no visual", () => {
   const m = base();
   m.orient = {
