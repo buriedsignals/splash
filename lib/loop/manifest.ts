@@ -2,6 +2,7 @@ import { z } from "zod";
 import { readFileSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { canonicalHash } from "./canonical-hash";
+import { migrate } from "./migrate";
 
 const HashRef = z.object({ path: z.string(), sha256: z.string() });
 const DataProfileSchema = z.object({
@@ -115,8 +116,19 @@ export function writeManifest(path: string, m: RunManifest): void {
   renameSync(tmp, path); // atomic replace on the same filesystem
 }
 
-export function readManifest(path: string): RunManifest {
-  return parseManifest(JSON.parse(readFileSync(path, "utf8")));
+export function readManifest(
+  path: string,
+  runDir = dirname(path),
+): RunManifest {
+  const raw = JSON.parse(readFileSync(path, "utf8"));
+  if (
+    raw &&
+    typeof raw === "object" &&
+    (raw as { schemaVersion?: number }).schemaVersion !== 2
+  ) {
+    return migrate(raw, runDir);
+  }
+  return parseManifest(raw);
 }
 
 // Append a bounded event. Failure events record what went wrong WITHOUT advancing any
