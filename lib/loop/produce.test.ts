@@ -1,17 +1,19 @@
 import { test, expect } from "bun:test";
-import { existsSync, statSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  statSync,
+  mkdtempSync,
+  writeFileSync,
+  readFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import "../../skills/splash/src/register-producers";
 import { produce } from "./produce";
-import {
-  appendEvent,
-  provenanceHash,
-  type RunManifest,
-  type RunEvent,
-} from "./manifest";
+import { provenanceHash, type RunManifest } from "./manifest";
 import { freezeInput } from "./freeze";
 
-test("produce renders a real static PNG through the chart-native seam", () => {
+test("produce renders a real static PNG through the chart-native seam", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-produce-run-"));
   const src = join(runDir, "src.csv");
   writeFileSync(
@@ -50,7 +52,9 @@ test("produce renders a real static PNG through the chart-native seam", () => {
     ],
     events: [],
   };
-  const after = produce(run, run.elements[0], runDir);
+  const result = await produce(run, run.elements[0], runDir);
+  if (!result.ok) throw new Error(result.message);
+  const after = result.value;
   const artifactAbs = join(runDir, after.artifact!.path);
   expect(after.artifact!.path).toBe(join("elements", "e1", "static.png"));
   expect(existsSync(artifactAbs)).toBe(true);
@@ -105,24 +109,27 @@ function makeBrokenRun(): { run: RunManifest; runDir: string } {
   return { run, runDir };
 }
 
-test("produce throws a descriptive error and the caller can log a bounded failure event without advancing", () => {
-  // A spec that chart-native will reject (no numeric data / bad type) makes produce throw.
+test("produce returns a descriptive typed failure and the caller logs a bounded event without advancing", async () => {
   const { run, runDir } = makeBrokenRun();
-  let caught: Error | null = null;
-  let manifest = run;
-  try {
-    produce(run, run.elements[0], runDir);
-  } catch (e) {
-    caught = e as Error;
-    const ev: RunEvent = {
-      at: "2026-01-01T00:00:00.000Z",
-      kind: "failure",
-      action: "produce",
-      message: caught.message.slice(0, 200),
-    };
-    manifest = appendEvent(manifest, ev);
-  }
-  expect(caught).not.toBeNull();
-  expect(manifest.events.length).toBe(1);
-  expect(manifest.elements[0].artifact).toBeUndefined(); // state did not advance
+  const result = await produce(run, run.elements[0], runDir);
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.message.length).toBeGreaterThan(0);
+  // The element is untouched: a failure never advances state.
+  expect(run.elements[0].artifact).toBeUndefined();
 }, 30000);
+
+test("produce goes through the verb contract — no engine path of its own", async () => {
+  const src = readFileSync(join(import.meta.dir, "produce.ts"), "utf8");
+  expect(src).not.toContain("execFileSync");
+  expect(src).not.toContain("skills");
+  expect(src).toContain("render(");
+});
+
+test("a refused render becomes a typed failure, not a throw", async () => {
+  const { run, runDir } = makeBrokenRun();
+  const r = await produce(run, run.elements[0], runDir);
+  expect(r.ok).toBe(false);
+  if (r.ok) throw new Error("unreachable");
+  expect(["engine-declined", "engine-failed"]).toContain(r.code);
+}, 120_000);
