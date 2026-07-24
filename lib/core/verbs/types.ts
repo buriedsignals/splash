@@ -13,14 +13,17 @@ export type RenderPayload = {
   id: string; // slug; checked before any path resolution
 };
 
-export type VerbErrorCode =
-  | "invalid-request" // verb outside the enum, or a malformed payload
-  | "unknown-engine" // no manifest registered under this key
-  | "unsupported-format" // the engine does not declare this format
-  | "invalid-spec" // the engine's validator returned errors
-  | "engine-declined" // the engine refuses THIS spec (chart-native exit 2)
-  | "engine-failed" // non-zero execution, or a broken delivery
-  | "not-implemented"; // declared verb, no body yet
+export const VERB_ERROR_CODES = [
+  "invalid-request", // verb outside the enum, or a malformed payload
+  "unknown-engine", // no manifest registered under this key
+  "unsupported-format", // the engine does not declare this format
+  "invalid-spec", // the engine's validator returned errors
+  "engine-declined", // the engine refuses THIS spec (chart-native exit 2)
+  "engine-failed", // non-zero execution, or a broken delivery
+  "not-implemented", // declared verb, no body yet
+] as const;
+
+export type VerbErrorCode = (typeof VERB_ERROR_CODES)[number];
 
 // Invariant I1: every path returns one of these. A verb NEVER throws — the legacy's
 // "drop-proof" discipline generalized, because a non-JS host has no catch.
