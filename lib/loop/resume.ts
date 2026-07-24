@@ -64,11 +64,10 @@ export function resumeReport(run: RunManifest, runDir: string): ResumeReport {
   const elements = run.elements.map((el) => {
     let artifact: ElementValidation["artifact"] = "none";
     if (el.artifact) {
+      const abs = join(runDir, el.artifact.path);
       if (stalenessOf(run, el)) artifact = "stale";
-      else if (!existsSync(el.artifact.path)) artifact = "missing";
-      else
-        artifact =
-          hashFile(el.artifact.path) === el.artifact.sha256 ? "ok" : "tampered";
+      else if (!existsSync(abs)) artifact = "missing";
+      else artifact = hashFile(abs) === el.artifact.sha256 ? "ok" : "tampered";
     }
     return {
       id: el.id,

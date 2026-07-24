@@ -2,12 +2,13 @@ import { execFileSync } from "node:child_process";
 import {
   writeFileSync,
   mkdtempSync,
+  mkdirSync,
   readFileSync,
   existsSync,
   rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { provenanceHash, type RunManifest, type RunElement } from "./manifest";
 
@@ -24,14 +25,16 @@ const CHART_NATIVE_PRODUCE = join(
 // The ONE craft verb of the loop. Assembles a NativeSpec from the manifest element and
 // renders it via chart-native's real CLI (subprocess — never a src/ import), then records
 // the artifact + its provenance so stalenessOf() can track it. Reads the FROZEN input by
-// path (relative to the run dir) — never inline content. On failure, throws a descriptive
-// error carrying the subprocess exit code + captured stderr; the caller is responsible for
-// recording a bounded failure event (appendEvent) without advancing element state.
+// path (relative to the run dir) — never inline content. The artifact is written UNDER the
+// run dir (elements/<id>/) and its recorded path is run-dir-relative, so the whole run dir
+// can be copied elsewhere and still resolve (see resume.ts). On failure, throws a
+// descriptive error carrying the subprocess exit code + captured stderr; the caller is
+// responsible for recording a bounded failure event (appendEvent) without advancing element
+// state.
 export function produce(
   run: RunManifest,
   el: RunElement,
   runDir: string,
-  outDir: string,
 ): RunElement {
   if (!el.angle || !el.proposal?.chosenId)
     throw new Error("produce: need an angle and a chosen form");
@@ -53,6 +56,9 @@ export function produce(
     format: "static",
     data: dataCsv,
   };
+
+  const outDir = join(runDir, "elements", el.id);
+  mkdirSync(outDir, { recursive: true });
 
   const specDir = mkdtempSync(join(tmpdir(), "loop-spec-"));
   const specPath = join(specDir, "spec.json");
@@ -78,7 +84,7 @@ export function produce(
   return {
     ...el,
     artifact: {
-      path: artifactPath,
+      path: relative(runDir, artifactPath),
       sha256: Buffer.from(sha256(artifactBytes)).toString("hex"),
       provenanceHash: provenanceHash(run, el),
       producedAt: new Date().toISOString(),

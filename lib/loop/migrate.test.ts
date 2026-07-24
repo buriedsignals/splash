@@ -54,3 +54,16 @@ test("migrate refuses an unknown / newer schema version", () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-mig-"));
   expect(() => migrate({ ...v1, schemaVersion: 99 }, runDir)).toThrow();
 });
+
+test("migrate refuses a non-object manifest with a clean message", () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-mig-"));
+  expect(() => migrate(null, runDir)).toThrow(
+    "migrate: manifest is not an object",
+  );
+});
+
+test("migrate drops the stale v1 artifact rather than carrying its absolute path forward", () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-mig-"));
+  const m = migrate(v1, runDir);
+  expect(m.elements[0].artifact).toBeUndefined();
+});

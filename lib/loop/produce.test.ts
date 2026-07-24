@@ -50,10 +50,11 @@ test("produce renders a real static PNG through the chart-native seam", () => {
     ],
     events: [],
   };
-  const outDir = mkdtempSync(join(tmpdir(), "loop-produce-out-"));
-  const after = produce(run, run.elements[0], runDir, outDir);
-  expect(existsSync(after.artifact!.path)).toBe(true);
-  expect(statSync(after.artifact!.path).size).toBeGreaterThan(5000);
+  const after = produce(run, run.elements[0], runDir);
+  const artifactAbs = join(runDir, after.artifact!.path);
+  expect(after.artifact!.path).toBe(join("elements", "e1", "static.png"));
+  expect(existsSync(artifactAbs)).toBe(true);
+  expect(statSync(artifactAbs).size).toBeGreaterThan(5000);
   expect(after.artifact!.provenanceHash).toBe(
     provenanceHash(run, run.elements[0]),
   );
@@ -110,7 +111,7 @@ test("produce throws a descriptive error and the caller can log a bounded failur
   let caught: Error | null = null;
   let manifest = run;
   try {
-    produce(run, run.elements[0], runDir, join(runDir, "out"));
+    produce(run, run.elements[0], runDir);
   } catch (e) {
     caught = e as Error;
     const ev: RunEvent = {

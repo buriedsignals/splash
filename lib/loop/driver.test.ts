@@ -1,15 +1,21 @@
 import { test, expect } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { advance } from "./driver";
 import { revise } from "./revise";
-import { nextActions, stalenessOf, type RunManifest } from "./manifest";
+import {
+  nextActions,
+  stalenessOf,
+  writeManifest,
+  readManifest,
+  type RunManifest,
+} from "./manifest";
 import { freezeInput } from "./freeze";
+import { resumeReport } from "./resume";
 
 test("full loop: orient → (human) → propose → (human) → produce → revise → produce, state always coherent", () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-e2e-run-"));
-  const outDir = mkdtempSync(join(tmpdir(), "loop-e2e-out-"));
   const src = join(runDir, "src.csv");
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   let run: RunManifest = {
@@ -20,7 +26,7 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
     events: [],
   };
 
-  run = advance(run, runDir, outDir); // orient
+  run = advance(run, runDir); // orient
   expect(run.orient!.supportsPoint).toBe(true);
   expect(nextActions(run)).toEqual(["confirm-angle"]);
 
@@ -40,7 +46,7 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   };
   expect(nextActions(run)).toEqual(["propose"]);
 
-  run = advance(run, runDir, outDir); // propose
+  run = advance(run, runDir); // propose
   expect(run.elements[0].proposal!.options.length).toBeGreaterThan(0);
   expect(nextActions(run)).toEqual(["choose-form"]);
 
@@ -56,7 +62,7 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   };
   expect(nextActions(run)).toEqual(["produce"]);
 
-  run = advance(run, runDir, outDir); // produce
+  run = advance(run, runDir); // produce
   expect(stalenessOf(run, run.elements[0])).toBe(false);
   expect(nextActions(run)).toEqual(["show"]);
 
@@ -70,14 +76,66 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   expect(stalenessOf(run, run.elements[0])).toBe(true); // never shown as current while stale
   expect(nextActions(run)).toEqual(["produce"]);
 
-  run = advance(run, runDir, outDir); // re-produce
+  run = advance(run, runDir); // re-produce
   expect(stalenessOf(run, run.elements[0])).toBe(false);
   expect(nextActions(run)).toEqual(["show"]);
 }, 90000);
 
+// Issue #8: the run dir must travel entire at handoff. Produce an artifact, copy the WHOLE
+// run dir to an unrelated path (as a journalist reopening on another machine would), and
+// confirm the artifact still resolves — proving the stored path is run-dir-relative, not
+// absolute.
+test("run dir handoff: copying the entire run dir elsewhere still resolves the artifact", () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-handoff-run-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  let run: RunManifest = {
+    runId: "handoff",
+    schemaVersion: 2,
+    input: { data: freezeInput(runDir, src, "data") },
+    elements: [{ id: "e1" }],
+    events: [],
+  };
+
+  run = advance(run, runDir); // orient
+  run = {
+    ...run,
+    elements: [
+      {
+        ...run.elements[0],
+        angle: {
+          confirmedTakeaway: "Premiums rose in both cantons",
+          altInsight: "Both cantons' adult premium rose from 2015 to 2024.",
+          unit: "CHF",
+        },
+      },
+    ],
+  };
+  run = advance(run, runDir); // propose
+  run = {
+    ...run,
+    elements: [
+      {
+        ...run.elements[0],
+        proposal: { ...run.elements[0].proposal!, chosenId: "slope" },
+      },
+    ],
+  };
+  run = advance(run, runDir); // produce
+  expect(stalenessOf(run, run.elements[0])).toBe(false);
+
+  writeManifest(join(runDir, "run.json"), run);
+
+  const newRunDir = mkdtempSync(join(tmpdir(), "loop-handoff-copy-"));
+  cpSync(runDir, newRunDir, { recursive: true });
+
+  const reopened = readManifest(join(newRunDir, "run.json"), newRunDir);
+  const report = resumeReport(reopened, newRunDir);
+  expect(report.elements[0].validation.artifact).toBe("ok");
+}, 90000);
+
 test("advance() records a produce failure as a bounded event without advancing state", () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-driver-broken-run-"));
-  const outDir = mkdtempSync(join(tmpdir(), "loop-driver-broken-out-"));
   const src = join(runDir, "src.csv");
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
@@ -116,7 +174,7 @@ test("advance() records a produce failure as a bounded event without advancing s
   };
   expect(nextActions(run)).toEqual(["produce"]);
 
-  const after = advance(run, runDir, outDir);
+  const after = advance(run, runDir);
 
   expect(after.events.length).toBe(1);
   expect(after.events[0].kind).toBe("failure");
