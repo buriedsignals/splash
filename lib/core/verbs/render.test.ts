@@ -1,6 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import "../../../skills/splash/src/register-producers";
 import { render } from "./render";
+import { registerProducer } from "../registry";
 import type { RenderPayload } from "./types";
 
 const base: RenderPayload = {
@@ -135,5 +136,130 @@ describe("render — subprocess transport", () => {
       n.startsWith("splash-verb-spec-"),
     );
     expect(after.length).toBe(before.length);
+  });
+});
+
+describe("render — in-process transport (hosted Datawrapper engines)", () => {
+  // The real ChartSpec shape (skills/dw-chart/src/chart-spec.ts requires type, title,
+  // data and altInsight; source is the furniture). Copied from the engine's own test
+  // fixtures, never invented.
+  const dwSpec = {
+    type: "d3-lines",
+    title: "Unemployment is at a five-year low",
+    data: "year,value\n2018,5.1\n2023,3.7",
+    source: { name: "Sample data" },
+    altInsight: "The rate falls from 5.1% in 2018 to 3.7% in 2023",
+  };
+
+  it('rejects "video" BEFORE any network call, with the byte-exact legacy string', async () => {
+    const r = await render({
+      engine: "dw-chart",
+      spec: dwSpec,
+      format: "video",
+      channel: "article-web",
+      outDir: outDirFor("dw-video"),
+      id: "p1",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.code).toBe("unsupported-format");
+    expect(r.message).toBe(
+      'dw-chart cannot build format "video" — it supports "static" or ' +
+        '"interactive" only (video/scrolly require chart-native)',
+    );
+  });
+
+  it('map-dw rejects "scrolly" naming map-native as the engine that owns it', async () => {
+    const r = await render({
+      engine: "map-dw",
+      spec: dwSpec,
+      format: "scrolly",
+      channel: "article-web",
+      outDir: outDirFor("mapdw-scrolly"),
+      id: "p1",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.message).toBe(
+      'map-dw cannot build format "scrolly" — it supports "static" or ' +
+        '"interactive" only (video/scrolly require map-native)',
+    );
+  });
+
+  it("reports a spec the engine's own validator rejects as invalid-spec", async () => {
+    const r = await render({
+      engine: "dw-chart",
+      spec: { type: "d3-lines" }, // no title, no data, no altInsight
+      format: "static",
+      channel: "article-web",
+      outDir: outDirFor("dw-invalid"),
+      id: "p1",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.code).toBe("invalid-spec");
+    expect(r.message.length).toBeGreaterThan(0);
+  });
+});
+
+describe("render — in-process transport never throws on an unguarded failure (I1)", () => {
+  it("returns invalid-spec, never throws, when the engine's own validator itself throws", async () => {
+    registerProducer({
+      name: "test-throwing-validate",
+      formats: ["static"],
+      validate: () => {
+        throw new Error("boom: validator exploded");
+      },
+      execution: "in-process",
+      inProcess: async () => {
+        throw new Error(
+          "unreachable: validate should have short-circuited first",
+        );
+      },
+    });
+
+    const r = await render({
+      engine: "test-throwing-validate",
+      spec: {},
+      format: "static",
+      channel: "article-web",
+      outDir: outDirFor("throwing-validate"),
+      id: "p1",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.code).toBe("invalid-spec");
+    expect(r.message).toMatch(/boom: validator exploded/);
+  });
+
+  it("returns engine-failed, never throws, when outDir cannot be created (fs failure)", async () => {
+    // A regular FILE sitting where a directory needs to be created: mkdirSync({recursive})
+    // throws ENOTDIR trying to descend through it. freshOutDir is called unguarded outside
+    // a try in the brief's prescribed code — this is the regression test for that gap
+    // (the same class of bug render.ts's subprocess branch already guards against).
+    const blockerFile = join(
+      mkdtempSync(join(tmpdir(), "render-blocker-")),
+      "not-a-dir",
+    );
+    writeFileSync(blockerFile, "x");
+
+    const r = await render({
+      engine: "dw-chart",
+      spec: {
+        type: "d3-lines",
+        title: "Unemployment is at a five-year low",
+        data: "year,value\n2018,5.1\n2023,3.7",
+        source: { name: "Sample data" },
+        altInsight: "The rate falls from 5.1% in 2018 to 3.7% in 2023",
+      },
+      format: "static",
+      channel: "article-web",
+      outDir: join(blockerFile, "el1"),
+      id: "p1",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.code).toBe("engine-failed");
+    expect(r.message.length).toBeGreaterThan(0);
   });
 });
