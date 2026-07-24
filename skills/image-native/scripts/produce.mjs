@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkImageConformance } from "../src/image-story.ts";
+import { IMAGE_NATIVE_V1_FORMAT_MESSAGE } from "../src/format-support.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = join(here, "..");
@@ -30,9 +31,7 @@ if (!storyPath || !outDir || !format) {
   process.exit(1);
 }
 if (format !== "scrolly") {
-  console.error(
-    'image-native builds "scrolly" only in v1 — static/video are follow-ups',
-  );
+  console.error(IMAGE_NATIVE_V1_FORMAT_MESSAGE);
   process.exit(1);
 }
 

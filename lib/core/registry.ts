@@ -19,6 +19,11 @@ export type ExecutionModel = "subprocess" | "in-process";
 export interface ProducerManifest {
   name: string; // e.g. "chart-native" — matches AcceptedProposal.producer
   formats: readonly VisualFormat[];
+  // The refusal this engine wants a caller to see when it is asked for a format it does
+  // not declare. Optional: without it the contract composes a generic message. It exists
+  // so a pre-dispatch gate does not silently replace wording a journalist may already
+  // know from the engine's own CLI (image-native's v1 message is the live case).
+  unsupportedFormatMessage?: string;
   // Spec-in validation: error strings (empty = valid). Delegates to the engine's EXISTING
   // hand-written validator (no zod — the codebase does not use it). Errors-only by
   // contract; validate-gate.ts keeps its own richer per-producer dispatch (warnings +

@@ -40,28 +40,26 @@ export async function render(
     return fail("unknown-engine", `unknown producer "${p.engine}"`);
 
   // FORMAT GATE — runs BEFORE the transport branch, from registry data alone, so no
-  // process is spawned and no API is called for a format the engine cannot honor.
+  // process is spawned and no API is called for a format the engine cannot honor. It
+  // covers BOTH transports: a host driving this contract directly (the CLI façade) has
+  // none of the upstream gates the legacy orchestrator sits behind, so this is the only
+  // place an undeclared format is caught.
   // `formats` is read defensively: a malformed manifest (no formats array) must not throw
   // a TypeError out of a verb (I1) — it declares nothing, so it supports nothing.
-  //
-  // KNOWN GAP, deliberately left: the gate applies to the IN-PROCESS transport only. A
-  // subprocess engine asked for an undeclared format still reaches its own CLI and comes
-  // back as engine-failed with a bounded stderr dump rather than the contract's
-  // unsupported-format. Extending the gate to the subprocess transport is a one-line
-  // change here (drop the `execution === "in-process"` conjunct and build the message from
-  // `declared`) — but skills/splash/tests/adapters.test.ts drives image-native with format
-  // "static" and asserts the ENGINE's own v1 refusal string, which a pre-dispatch gate
-  // pre-empts. That file is the hoist's frozen regression net, so closing this gap means
-  // re-pointing that assertion at the contract's refusal first — a deliberate decision,
-  // not a drive-by edit.
+  // An engine may declare its own refusal wording (unsupportedFormatMessage); the contract
+  // uses it rather than replacing words a journalist may already know from that engine's
+  // own CLI. The in-process default message is byte-frozen by two legacy suites.
   const declared: readonly string[] = Array.isArray(manifest.formats)
     ? manifest.formats
     : [];
-  if (manifest.execution === "in-process" && !declared.includes(p.format))
+  if (!declared.includes(p.format))
     return fail(
       "unsupported-format",
-      `${p.engine} cannot build format "${p.format}" — it supports "static" or ` +
-        `"interactive" only (video/scrolly require ${IN_PROCESS_NATIVE_FALLBACK[p.engine] ?? "the native engine"})`,
+      manifest.unsupportedFormatMessage ??
+        (manifest.execution === "in-process"
+          ? `${p.engine} cannot build format "${p.format}" — it supports "static" or ` +
+            `"interactive" only (video/scrolly require ${IN_PROCESS_NATIVE_FALLBACK[p.engine] ?? "the native engine"})`
+          : `${p.engine} cannot build format "${p.format}" — it declares ${declared.length ? declared.map((f) => `"${f}"`).join(", ") : "no formats"}`),
     );
 
   if (manifest.execution === "subprocess") {

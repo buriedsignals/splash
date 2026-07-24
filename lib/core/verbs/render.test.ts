@@ -263,3 +263,37 @@ describe("render — in-process transport never throws on an unguarded failure (
     expect(r.message.length).toBeGreaterThan(0);
   });
 });
+
+describe("the format gate covers BOTH transports", () => {
+  it("refuses a format a subprocess engine does not declare, before spawning anything", async () => {
+    // chart-native declares static/interactive/video; scrolly belongs to the scrolly engine.
+    const r = await render({
+      engine: "chart-native",
+      spec: { nativeType: "bar" },
+      format: "scrolly",
+      channel: "article-web",
+      outDir: outDirFor("subprocess-unsupported"),
+      id: "el1",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.code).toBe("unsupported-format");
+  });
+
+  it("uses the engine's OWN refusal message when its manifest declares one", async () => {
+    // image-native ships "scrolly" only in v1 and says so in its own words. The contract
+    // must not replace a message a journalist may already have seen with a generic one.
+    const r = await render({
+      engine: "image-native",
+      spec: { frames: [] },
+      format: "static",
+      channel: "article-web",
+      outDir: outDirFor("image-native-v1"),
+      id: "el1",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.code).toBe("unsupported-format");
+    expect(r.message).toContain('image-native builds "scrolly" only in v1');
+  });
+});
