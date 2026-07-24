@@ -188,6 +188,16 @@ Codes de sortie stables : `0` succès · `1` verbe refusé (`ok:false`) · `2` u
 
 C'est le rôle de-risk de la tranche. **Si le payload neutre ne suffit pas à `render` sans re-remonter du contexte legacy** (un champ d'`AcceptedProposal` qui revient par la fenêtre), alors la frontière verbe/appelant est mal placée — et B2 doit être re-conçu **avant** d'exposer une surface publique à Goose.
 
+### 4.4 Ce que B1 a effectivement révélé *(écrit après exécution, 2026-07-24)*
+
+**Réponse au de-risk : le payload neutre A SUFFI.** Aucun champ d'`AcceptedProposal` n'a dû remonter dans `RenderPayload` pour garder le legacy vert — `realDispatch` tient en traducteur et sa suite de tests passe **inchangée** (49 pass / 2 skip / 0 fail / 95 assertions, identique avant/après). La frontière verbe/appelant tient. **B2 peut être conçu sur ce contrat tel quel.**
+
+Trois apports neufs, qui n'étaient pas prévisibles au design et qui **conditionnent B2** :
+
+1. **L'enregistrement des moteurs a besoin d'une racine de composition — c'est un prérequis de la façade CLI, pas un nettoyage.** Le registre se peuple par import à effet de bord. B1 a livré `lib/loop/engines.ts` : un fichier unique, documenté, seul point de la boucle qui connaît `skills/`. La façade de B2 aura besoin de la sienne (ou de partager celle-ci) — sans elle, `runVerb` répond `unknown-engine` sur un registre vide. Le piège est vicieux : les tests importaient le registre eux-mêmes, donc la suite était verte pendant que le module livré était mort. **Une façade CLI doit prouver son câblage dans un processus qui n'importe QUE la façade.**
+2. **Le gate de format doit couvrir les deux transports avant qu'un hôte sans garde amont ne pilote le contrat.** Aujourd'hui il n'est appliqué qu'en in-process (cf. le commentaire `KNOWN GAP` dans `lib/core/verbs/render.ts`) : le legacy s'en tire parce que `produce-all` garde en amont, la boucle aussi parce qu'elle ne demande que `static` à chart-native. Un hôte Goose n'a **aucune** garde amont — il recevrait un `engine-failed` avec 30 lignes de stderr là où le contrat promet `unsupported-format`.
+3. **L'invariant « jamais de `throw` » ne se tient pas par relecture.** Trois instances distinctes ont échappé à la conception et à des reviews par tâche, chacune trouvée par exécution et non par lecture. B2 doit donc l'ancrer **structurellement** au bord : `runVerb` enveloppe désormais son corps, et toute façade doit appeler `runVerb`, jamais `render` directement.
+
 ---
 
 ## 5. Risques
