@@ -13,7 +13,8 @@ export function profileCsv(dataCsv: string): DataProfile {
     (_, i) =>
       rows.length > 0 &&
       rows.every(
-        (r) => r[i] !== "" && r[i] !== undefined && !Number.isNaN(Number(r[i])),
+        (r) =>
+          r[i] !== "" && r[i] !== undefined && Number.isFinite(Number(r[i])),
       ),
   );
   return { columns, numericColumns, rowCount: rows.length };

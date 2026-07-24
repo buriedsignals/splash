@@ -12,3 +12,8 @@ test("profileCsv treats a column with any non-number as non-numeric", () => {
   const p = profileCsv("name,note\nA,ok\nB,12");
   expect(p.numericColumns).toEqual([]);
 });
+
+test("profileCsv treats Infinity as non-numeric (finite only)", () => {
+  const p = profileCsv("city,val\nA,Infinity\nB,3");
+  expect(p.numericColumns).toEqual([]);
+});
