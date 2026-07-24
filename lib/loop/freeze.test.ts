@@ -39,3 +39,11 @@ test("freezeInput throws when the source file is missing", () => {
   const dir = runDir();
   expect(() => freezeInput(dir, join(dir, "nope.csv"), "data")).toThrow();
 });
+
+test("freezeInput preserves the source file extension", () => {
+  const dir = runDir();
+  const src = join(dir, "data.json");
+  writeFileSync(src, '{"key":"value"}');
+  const ref = freezeInput(dir, src, "data");
+  expect(ref.path.endsWith(".json")).toBe(true);
+});

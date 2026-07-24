@@ -1,6 +1,6 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, extname } from "node:path";
 
 // Copy a brought input into the run directory so the run is self-contained and the
 // manifest can reference it by path+hash only — never by content, never a secret.
@@ -14,7 +14,8 @@ export function freezeInput(
     throw new Error(`freezeInput: source not found: ${srcPath}`);
   const bytes = readFileSync(srcPath);
   const hash = Buffer.from(sha256(bytes)).toString("hex");
-  const ext = kind === "data" ? "csv" : "txt";
+  const sourceExt = extname(srcPath).slice(1).toLowerCase();
+  const ext = sourceExt || (kind === "data" ? "csv" : "txt");
   const rel = join("input", `${kind}-${hash.slice(0, 16)}.${ext}`);
   const dest = join(runDir, rel);
   mkdirSync(join(runDir, "input"), { recursive: true });
