@@ -10,6 +10,6 @@
     "types": ["node", "bun-types"],
     "allowImportingTsExtensions": true
   },
-  "include": ["core"],
+  "include": ["core", "loop"],
   "exclude": []
 }
