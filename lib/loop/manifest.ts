@@ -170,10 +170,11 @@ export function gateStateOf(run: RunManifest, el: RunElement): GateState {
     el.review.reviewedProvenanceHash === provenance
   )
     return "reviewed";
-  if (el.artifact) return stalenessOf(run, el) ? "stale" : "produced";
+  if (el.artifact) return fresh ? "produced" : "stale";
   if (el.proposal?.chosenId) return "chosen";
   if (el.proposal) return "proposed";
   if (el.angle) return "angled";
+  if (run.orient) return "oriented";
   return "empty";
 }
 
