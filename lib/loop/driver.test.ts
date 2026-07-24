@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { mkdtempSync, writeFileSync, cpSync } from "node:fs";
+import { mkdtempSync, writeFileSync, cpSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
@@ -179,6 +179,60 @@ test("advance() records a produce failure as a bounded event without advancing s
 
   expect(after.events.length).toBe(1);
   expect(after.events[0].kind).toBe("failure");
+  expect(after.elements[0].artifact).toBeUndefined(); // state did not advance
+  expect(nextActions(after)).toEqual(["produce"]);
+}, 30000);
+
+// Regression: an unreadable FROZEN INPUT is a bounded failure, not an exception. produce()
+// read the frozen CSV with an unguarded readFileSync, so a run dir missing its input threw
+// ENOENT straight out of advance() — past the driver, which no longer catches anything
+// because the verb contract promises never to throw. The failure event is the contract.
+test("advance() records a MISSING FROZEN INPUT as a bounded failure, never a throw", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-driver-missing-input-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const frozen = freezeInput(runDir, src, "data");
+  const run: RunManifest = {
+    runId: "missing-input",
+    schemaVersion: 2,
+    input: { data: frozen },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Premiums rose in both cantons",
+          altInsight: "Both cantons' adult premium rose from 2015 to 2024.",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            { id: "slope", nativeType: "slope", why: "two points in time" },
+          ],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+  expect(nextActions(run)).toEqual(["produce"]);
+
+  // The run dir travelled without its frozen input (a partial copy, a cleaned temp dir).
+  rmSync(join(runDir, frozen.path));
+
+  const after = await advance(run, runDir);
+
+  expect(after.events.length).toBe(1);
+  expect(after.events[0].kind).toBe("failure");
+  expect(after.events[0].action).toBe("produce");
+  expect(after.events[0].message).toContain("frozen input");
   expect(after.elements[0].artifact).toBeUndefined(); // state did not advance
   expect(nextActions(after)).toEqual(["produce"]);
 }, 30000);

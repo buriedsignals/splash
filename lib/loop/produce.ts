@@ -3,6 +3,10 @@ import { join, relative } from "node:path";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { fail, ok, render, type VerbResult } from "../core/verbs";
 import { provenanceHash, type RunManifest, type RunElement } from "./manifest";
+// Populates the producer registry the render verb dispatches from — without it every
+// render answers `unknown-engine`. The loop's ONE point of knowledge about skills/ lives
+// in that file, on purpose; see its header.
+import "./engines";
 
 // The décor is stubbed until the SETUP/preflight sub-project exists: every element of
 // this tranche renders for the web-article channel. Documented as a stub, not a default
@@ -36,7 +40,21 @@ export async function produce(
       `produce: no option with id ${el.proposal.chosenId}`,
     );
 
-  const dataCsv = readFileSync(join(runDir, run.input.data.path), "utf8");
+  // The frozen input is read from disk, and a run dir can be incomplete for reasons that
+  // have nothing to do with the request being malformed (the file was moved, the copy that
+  // travelled to another machine dropped it, the disk refused the read). An unguarded read
+  // here would throw ENOENT straight out of the verb, which is exactly what the never-throw
+  // invariant forbids: an unreadable input is a BOUNDED failure the caller records, not an
+  // exception the caller has to catch.
+  let dataCsv: string;
+  try {
+    dataCsv = readFileSync(join(runDir, run.input.data.path), "utf8");
+  } catch (e) {
+    return fail(
+      "engine-failed",
+      `produce: cannot read the frozen input ${run.input.data.path}: ${(e as Error).message}`,
+    );
+  }
   const nativeSpec = {
     nativeType: chosen.nativeType,
     title: el.angle.confirmedTakeaway,
@@ -61,15 +79,24 @@ export async function produce(
   const artifactPath = result.value.files.find((f) => f.endsWith("static.png"));
   if (!artifactPath)
     return fail("engine-failed", "produce: no static.png in the delivery");
-  const artifactBytes = readFileSync(artifactPath);
-
-  return ok({
-    ...el,
-    artifact: {
-      path: relative(runDir, artifactPath),
-      sha256: Buffer.from(sha256(artifactBytes)).toString("hex"),
-      provenanceHash: provenanceHash(run, el),
-      producedAt: new Date().toISOString(),
-    },
-  });
+  // Same discipline for the delivered artifact: reading it back to hash it, and hashing the
+  // provenance, are the last unguarded steps before the result — a failure in either is
+  // reported, never thrown (the engine DID run, so it is an engine-failed outcome).
+  try {
+    const artifactBytes = readFileSync(artifactPath);
+    return ok({
+      ...el,
+      artifact: {
+        path: relative(runDir, artifactPath),
+        sha256: Buffer.from(sha256(artifactBytes)).toString("hex"),
+        provenanceHash: provenanceHash(run, el),
+        producedAt: new Date().toISOString(),
+      },
+    });
+  } catch (e) {
+    return fail(
+      "engine-failed",
+      `produce: cannot record the delivered artifact ${artifactPath}: ${(e as Error).message}`,
+    );
+  }
 }

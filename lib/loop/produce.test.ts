@@ -119,11 +119,23 @@ test("produce returns a descriptive typed failure and the caller logs a bounded 
   expect(run.elements[0].artifact).toBeUndefined();
 }, 30000);
 
-test("produce goes through the verb contract — no engine path of its own", async () => {
+// Structural, not textual: what must hold is that produce.ts owns no engine path of its
+// own — it neither spawns a process nor IMPORTS skills/. So the import statements are
+// parsed and checked as specifiers, rather than grepping the whole file for the substring
+// "skills" (which any future comment mentioning a skills/ path would trip). That produce()
+// actually reaches an engine through the verb is proven by the e2e tests above and by
+// engines.test.ts, not by looking for the string "render(" in the source.
+test("produce owns no engine path of its own — no subprocess, no skills/ import", () => {
   const src = readFileSync(join(import.meta.dir, "produce.ts"), "utf8");
   expect(src).not.toContain("execFileSync");
-  expect(src).not.toContain("skills");
-  expect(src).toContain("render(");
+
+  const specifiers = [
+    ...src.matchAll(/^import\s+(?:[^;'"]*?\sfrom\s+)?["']([^"']+)["']/gm),
+  ].map((m) => m[1]);
+  expect(specifiers.length).toBeGreaterThan(0);
+  expect(specifiers.filter((s) => s.includes("skills"))).toEqual([]);
+  // The registry wiring is reached through the loop's ONE composition root, never inlined.
+  expect(specifiers).toContain("./engines");
 });
 
 test("a refused render becomes a typed failure, not a throw", async () => {
