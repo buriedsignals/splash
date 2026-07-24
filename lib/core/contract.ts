@@ -17,8 +17,8 @@
 //
 // Type-only imports of Channel / VisualFormat (never a runtime import) so this core module has no
 // runtime dependency on skills/splash — no import cycle with export-guard, which imports FROM here.
-import type { VisualFormat } from "../../skills/splash/src/producer-spec";
-import type { Channel } from "../../skills/splash/src/channel";
+import type { VisualFormat } from "./vocabulary";
+import type { Channel } from "./vocabulary";
 
 // What the spine hands a producer. Threaded identically for both transports: the subprocess
 // path forwards channel as SPLASH_CHANNEL + format/outDir on argv; the in-process path passes

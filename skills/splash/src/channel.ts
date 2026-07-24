@@ -4,12 +4,8 @@
 // {aspect, size, allowed formats} mapping has exactly one source of truth. See
 // docs/superpowers/specs/2026-07-08-channel-driven-format-export-design.md.
 
-// The three canonical distribution channels a journalist picks in CADRAGE Q3.
-export type Channel = "social-vertical" | "social-feed" | "article-web";
-
-// The producer-spec.ts vocabulary (kept in sync by hand — see producer-spec.ts:4 —
-// rather than imported, so this module stays dependency-free).
-export type VisualFormat = "static" | "interactive" | "video" | "scrolly";
+import type { Channel, VisualFormat } from "../../../lib/core/vocabulary";
+export type { Channel, VisualFormat };
 
 // The media aspect a channel targets. "responsive" is used for the interactive
 // sub-format, which fills its host rather than a fixed pixel box.

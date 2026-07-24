@@ -8,7 +8,10 @@ export type Producer =
   | "map-native"
   | "scrolly"
   | "image-native";
-export type VisualFormat = "static" | "interactive" | "video" | "scrolly";
+// Canonical definition lives in lib/core/vocabulary.ts (the contract's vocabulary);
+// re-exported here so this module's existing importers are unchanged.
+import type { VisualFormat } from "../../../lib/core/vocabulary";
+export type { VisualFormat };
 
 export interface AcceptedProposal {
   id: string; // stable, unique per run (keys the per-proposal outDir)

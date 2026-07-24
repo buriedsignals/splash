@@ -7,7 +7,7 @@
 // skills/splash/src/register-producers.ts), and dispatch reads that data instead. Adding
 // an engine is one file: its manifest. See docs/superpowers/specs/
 // 2026-07-20-shared-core-registry-contracts-design.md.
-import type { VisualFormat } from "../../skills/splash/src/producer-spec";
+import type { VisualFormat } from "./vocabulary";
 import type { ProduceContext, DeliveredArtifact } from "./contract";
 
 // How a producer is executed. "subprocess" = shell out to the engine's own build/render
