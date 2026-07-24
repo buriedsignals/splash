@@ -5,13 +5,14 @@ import {
   nextActions,
   provenanceHash,
   type RunManifest,
+  type RunElement,
 } from "./manifest";
 
-function produced(): RunManifest {
-  const m: RunManifest = {
+function producedRun(): RunManifest {
+  const run: RunManifest = {
     runId: "r",
-    schemaVersion: 1,
-    input: { dataCsv: "c,2015,2024\nA,1,2", statedPoint: "p" },
+    schemaVersion: 2,
+    input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     orient: {
       profile: {
         columns: ["c", "2015", "2024"],
@@ -20,28 +21,40 @@ function produced(): RunManifest {
       },
       supportsPoint: true,
     },
-    angle: { confirmedTakeaway: "t", altInsight: "a", unit: "u" },
-    proposal: {
-      options: [{ id: "slope", nativeType: "slope", why: "w" }],
-      chosenId: "slope",
-    },
+    elements: [
+      {
+        id: "e1",
+        angle: { confirmedTakeaway: "t", altInsight: "a", unit: "u" },
+        proposal: {
+          options: [{ id: "slope", nativeType: "slope", why: "w" }],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
   };
-  return {
-    ...m,
-    artifact: { path: "/x.png", provenanceHash: provenanceHash(m) },
+  const el = run.elements[0];
+  const artifact = {
+    path: "/x.png",
+    sha256: "b".repeat(64),
+    provenanceHash: provenanceHash(run, el),
+    producedAt: "2026-01-01T00:00:00.000Z",
   };
+  return { ...run, elements: [{ ...el, artifact }] };
 }
 
 test("revising the emphasis marks the artifact stale and routes back to produce", () => {
-  const before = produced();
-  expect(stalenessOf(before)).toBe(false);
+  const run = producedRun();
+  const before = run.elements[0];
+  expect(stalenessOf(run, before)).toBe(false);
   const after = revise(before, { kind: "emphasis", emphasis: "A" });
   expect(after.angle!.emphasis).toBe("A");
-  expect(stalenessOf(after)).toBe(true);
-  expect(nextActions(after)).toEqual(["produce"]);
+  expect(stalenessOf(run, after)).toBe(true);
+  expect(nextActions({ ...run, elements: [after] })).toEqual(["produce"]);
 });
 test("revising the takeaway updates it and marks the artifact stale", () => {
-  const before = produced();
+  const run = producedRun();
+  const before = run.elements[0];
   const after = revise(before, {
     kind: "takeaway",
     confirmedTakeaway: "New point",
@@ -49,13 +62,9 @@ test("revising the takeaway updates it and marks the artifact stale", () => {
   });
   expect(after.angle!.confirmedTakeaway).toBe("New point");
   expect(after.angle!.altInsight).toBe("New alt");
-  expect(stalenessOf(after)).toBe(true);
+  expect(stalenessOf(run, after)).toBe(true);
 });
 test("revise throws before an angle exists", () => {
-  const m: RunManifest = {
-    runId: "r",
-    schemaVersion: 1,
-    input: { dataCsv: "x", statedPoint: "p" },
-  };
-  expect(() => revise(m, { kind: "emphasis", emphasis: "A" })).toThrow();
+  const el: RunElement = { id: "e1" };
+  expect(() => revise(el, { kind: "emphasis", emphasis: "A" })).toThrow();
 });
