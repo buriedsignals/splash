@@ -236,3 +236,36 @@ test("advance() records a MISSING FROZEN INPUT as a bounded failure, never a thr
   expect(after.elements[0].artifact).toBeUndefined(); // state did not advance
   expect(nextActions(after)).toEqual(["produce"]);
 }, 30000);
+
+// A run whose frozen input is referenced by the manifest but gone from disk — the shape a
+// run takes when its directory is moved, restored partially, or hand-edited. No orient
+// yet, so nextActions() routes to `orient`.
+function makeRunMissingFrozenInput(): { run: RunManifest; runDir: string } {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-missing-input-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const data = freezeInput(runDir, src, "data");
+  rmSync(join(runDir, data.path)); // the manifest still points at it
+  return {
+    run: {
+      runId: "missing-input",
+      schemaVersion: 2,
+      input: { data },
+      elements: [{ id: "e1" }],
+      events: [],
+    },
+    runDir,
+  };
+}
+
+test("a missing frozen input at the orient step is a bounded event, not a throw", async () => {
+  // Same guarantee the produce step already has. Build a run whose frozen data file has
+  // been removed, with NO orient yet so nextActions() routes to `orient`.
+  const { run, runDir } = makeRunMissingFrozenInput();
+  const after = await advance(run, runDir);
+  expect(after.orient).toBeUndefined();
+  const failures = after.events.filter((e) => e.kind === "failure");
+  expect(failures).toHaveLength(1);
+  expect(failures[0].action).toBe("orient");
+  expect(failures[0].message).toMatch(/ENOENT|cannot read/i);
+});

@@ -297,3 +297,40 @@ describe("the format gate covers BOTH transports", () => {
     expect(r.message).toContain('image-native builds "scrolly" only in v1');
   });
 });
+
+describe("render — the never-throw invariant is structural, not audited (I1)", () => {
+  it("returns rather than throws even when a registered manifest is hostile (I1 is structural)", async () => {
+    // The hostile member must be one `registerProducer` itself never reads, or the throw
+    // fires at registration instead of inside render and the test proves nothing.
+    // registerProducer reads name / execution / subprocess / inProcess; it never reads
+    // unsupportedFormatMessage, which the format gate reads on the refusal path.
+    const { registerProducer } = await import("../registry");
+    registerProducer({
+      name: "hostile-message-engine",
+      formats: ["static"],
+      validate: () => [],
+      execution: "subprocess",
+      subprocess: {
+        scriptPath: "/nonexistent",
+        skillDir: "/tmp",
+        threadsChannel: false,
+      },
+      get unsupportedFormatMessage(): string {
+        throw new Error("hostile manifest");
+      },
+    });
+    // Ask for a format it does not declare → the gate fires → it reads the throwing member.
+    const r = await render({
+      engine: "hostile-message-engine",
+      spec: {},
+      format: "video",
+      channel: "article-web",
+      outDir: outDirFor("hostile"),
+      id: "el1",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.code).toBe("engine-failed");
+    expect(r.message).toContain("hostile manifest");
+  });
+});

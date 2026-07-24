@@ -14,8 +14,21 @@ export async function advance(
 ): Promise<RunManifest> {
   const [next] = nextActions(run);
   switch (next) {
-    case "orient":
-      return { ...run, orient: orient(readData(run, runDir)) };
+    case "orient": {
+      let data: string;
+      try {
+        data = readData(run, runDir);
+      } catch (e) {
+        return appendEvent(run, {
+          at: new Date().toISOString(),
+          kind: "failure",
+          elementId: run.elements[0].id,
+          action: "orient",
+          message: (e as Error).message.slice(0, 200),
+        });
+      }
+      return { ...run, orient: orient(data) };
+    }
     case "propose": {
       const el = run.elements[0];
       const options = propose(run);
