@@ -570,6 +570,8 @@ export function revise(el: RunElement, change: ReviseChange): RunElement {
 Replace `lib/loop/driver.ts`:
 
 ```ts
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { nextActions, type RunManifest } from "./manifest";
 import { orient } from "./orient";
 import { propose } from "./propose";
@@ -599,7 +601,7 @@ export function advance(run: RunManifest, runDir: string, outDir: string): RunMa
 
 function readData(run: RunManifest, runDir: string): string {
   if (!run.input.data) throw new Error("advance: no frozen data input to orient");
-  return require("node:fs").readFileSync(require("node:path").join(runDir, run.input.data.path), "utf8");
+  return readFileSync(join(runDir, run.input.data.path), "utf8");
 }
 ```
 
@@ -706,7 +708,7 @@ const proposal = { options: [{ id: "slope", nativeType: "slope", why: "w" }], ch
 
 test("empty element is 'empty'", () => {
   const r = run({ id: "e" });
-  expect(gateStateOf(r, r.elements[0])).toBe("angled" === "angled" ? "empty" : "empty");
+  expect(gateStateOf(r, r.elements[0])).toBe("empty");
 });
 test("angle only → 'angled'", () => {
   const r = run({ id: "e", angle });
@@ -804,8 +806,6 @@ export function assertInvariants(run: RunManifest): void {
   }
 }
 ```
-
-Fix the first test's tautological placeholder: replace its body with `expect(gateStateOf(r, r.elements[0])).toBe("empty");` (the `"angled" === "angled"` guard was only to make the intent obvious while writing — the assertion is `"empty"`).
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1171,7 +1171,7 @@ import { mkdtempSync, writeFileSync, readFileSync, appendFileSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resumeReport } from "./resume";
-import { writeManifest, freezeInput as _f, type RunManifest } from "./manifest";
+import { writeManifest, type RunManifest } from "./manifest";
 import { freezeInput } from "./freeze";
 
 function seed(): { run: RunManifest; runDir: string } {
@@ -1211,8 +1211,6 @@ test("resumeReport never mutates the manifest file", () => {
   expect(readFileSync(p, "utf8")).toBe(before);
 });
 ```
-
-(Remove the unused `_f` import if your linter objects — it is only there to show the manifest module still re-exports nothing extra; use `freezeInput` from `./freeze`.)
 
 - [ ] **Step 2: Run test to verify it fails**
 
