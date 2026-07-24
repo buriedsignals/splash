@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { nextActions, type RunManifest } from "./manifest";
+import { appendEvent, nextActions, type RunManifest } from "./manifest";
 import { orient } from "./orient";
 import { propose } from "./propose";
 import { produce } from "./produce";
@@ -26,8 +26,18 @@ export function advance(
       };
     }
     case "produce": {
-      const el = produce(run, run.elements[0], runDir, outDir);
-      return { ...run, elements: [el, ...run.elements.slice(1)] };
+      try {
+        const el = produce(run, run.elements[0], runDir, outDir);
+        return { ...run, elements: [el, ...run.elements.slice(1)] };
+      } catch (e) {
+        return appendEvent(run, {
+          at: new Date().toISOString(),
+          kind: "failure",
+          elementId: run.elements[0].id,
+          action: "produce",
+          message: (e as Error).message.slice(0, 200),
+        });
+      }
     }
     default:
       return run; // confirm-angle / choose-form / show / [] are human turns

@@ -74,3 +74,52 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   expect(stalenessOf(run, run.elements[0])).toBe(false);
   expect(nextActions(run)).toEqual(["show"]);
 }, 90000);
+
+test("advance() records a produce failure as a bounded event without advancing state", () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-driver-broken-run-"));
+  const outDir = mkdtempSync(join(tmpdir(), "loop-driver-broken-out-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "broken",
+    schemaVersion: 2,
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Health premiums rose",
+          altInsight: "Between 2015 and 2024 the adult premium rose.",
+          unit: "Monthly adult premium (CHF)",
+        },
+        proposal: {
+          options: [
+            {
+              id: "bogus",
+              nativeType: "not-a-real-native-type",
+              why: "unsupported by design",
+            },
+          ],
+          chosenId: "bogus",
+        },
+      },
+    ],
+    events: [],
+  };
+  expect(nextActions(run)).toEqual(["produce"]);
+
+  const after = advance(run, runDir, outDir);
+
+  expect(after.events.length).toBe(1);
+  expect(after.events[0].kind).toBe("failure");
+  expect(after.elements[0].artifact).toBeUndefined(); // state did not advance
+  expect(nextActions(after)).toEqual(["produce"]);
+}, 30000);

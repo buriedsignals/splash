@@ -57,6 +57,7 @@ test("produce renders a real static PNG through the chart-native seam", () => {
   expect(after.artifact!.provenanceHash).toBe(
     provenanceHash(run, run.elements[0]),
   );
+  expect(after.artifact!.sha256).toMatch(/^[0-9a-f]{64}$/);
 }, 60000);
 
 // A run whose chosen option's nativeType chart-native does not map. specToNativeConfig
