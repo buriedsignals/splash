@@ -108,6 +108,7 @@ export function stalenessOf(run: RunManifest, el: RunElement): boolean {
 }
 
 export function writeManifest(path: string, m: RunManifest): void {
+  assertInvariants(m);
   mkdirSync(dirname(path), { recursive: true });
   const tmp = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
   writeFileSync(tmp, JSON.stringify(m, null, 2));
@@ -131,4 +132,75 @@ export function nextActions(run: RunManifest): NextAction[] {
   if (!el.proposal.chosenId) return ["choose-form"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   return ["show"];
+}
+
+export type GateState =
+  | "empty"
+  | "oriented"
+  | "angled"
+  | "proposed"
+  | "chosen"
+  | "produced"
+  | "stale"
+  | "reviewed"
+  | "approved"
+  | "delivered"
+  | "blocked"
+  | "dropped";
+
+// Pure function of present fields + explicit verdict markers. Priority is descending:
+// verdicts first, then the derived lifecycle. Review/approval never inherit across a
+// provenance change — they are only honored when their frozen hash still matches.
+export function gateStateOf(run: RunManifest, el: RunElement): GateState {
+  if (el.dropped) return "dropped";
+  if (el.blocked) return "blocked";
+  const fresh = el.artifact != null && !stalenessOf(run, el);
+  const provenance = fresh ? el.artifact!.provenanceHash : null;
+  if (el.delivery && el.delivery.delivered.length > 0 && fresh)
+    return "delivered";
+  if (
+    el.approved &&
+    provenance &&
+    el.approved.approvedProvenanceHash === provenance
+  )
+    return "approved";
+  if (
+    el.review &&
+    provenance &&
+    el.review.reviewedProvenanceHash === provenance
+  )
+    return "reviewed";
+  if (el.artifact) return stalenessOf(run, el) ? "stale" : "produced";
+  if (el.proposal?.chosenId) return "chosen";
+  if (el.proposal) return "proposed";
+  if (el.angle) return "angled";
+  return "empty";
+}
+
+// state ↔ data must not desync. Throws on contradictions the derivation cannot express.
+export function assertInvariants(run: RunManifest): void {
+  for (const el of run.elements) {
+    if (
+      el.proposal?.chosenId &&
+      !el.proposal.options.some((o) => o.id === el.proposal!.chosenId)
+    ) {
+      throw new Error(
+        `invariant: element ${el.id} chosenId '${el.proposal.chosenId}' not among options`,
+      );
+    }
+    if (el.artifact && !el.angle)
+      throw new Error(
+        `invariant: element ${el.id} has an artifact without an angle`,
+      );
+    if (el.approved && !el.artifact)
+      throw new Error(
+        `invariant: element ${el.id} approved without an artifact`,
+      );
+    if (el.review && !el.artifact)
+      throw new Error(
+        `invariant: element ${el.id} reviewed without an artifact`,
+      );
+    if (el.blocked && el.dropped)
+      throw new Error(`invariant: element ${el.id} both blocked and dropped`);
+  }
 }
