@@ -50,7 +50,10 @@ describe("one verb, two transports — the abstraction is not a one-off", () => 
     // future CLI façade over this verb contract carries a real DeliveredArtifact across
     // the process boundary, not a plain-string failure. Proving it here — on a success
     // result produced by the subprocess transport — is what makes that façade buildable.
-    expect(JSON.parse(JSON.stringify(r))).toEqual(r);
+    // toStrictEqual, never toEqual: a key present with an `undefined` value (which
+    // JSON.stringify DROPS) compares equal under toEqual, so the loose form would assert
+    // nothing about the one failure mode this invariant exists to catch.
+    expect(JSON.parse(JSON.stringify(r))).toStrictEqual(r);
   }, 300_000);
 });
 

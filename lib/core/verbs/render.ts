@@ -39,6 +39,31 @@ export async function render(
   if (!manifest)
     return fail("unknown-engine", `unknown producer "${p.engine}"`);
 
+  // FORMAT GATE — runs BEFORE the transport branch, from registry data alone, so no
+  // process is spawned and no API is called for a format the engine cannot honor.
+  // `formats` is read defensively: a malformed manifest (no formats array) must not throw
+  // a TypeError out of a verb (I1) — it declares nothing, so it supports nothing.
+  //
+  // KNOWN GAP, deliberately left: the gate applies to the IN-PROCESS transport only. A
+  // subprocess engine asked for an undeclared format still reaches its own CLI and comes
+  // back as engine-failed with a bounded stderr dump rather than the contract's
+  // unsupported-format. Extending the gate to the subprocess transport is a one-line
+  // change here (drop the `execution === "in-process"` conjunct and build the message from
+  // `declared`) — but skills/splash/tests/adapters.test.ts drives image-native with format
+  // "static" and asserts the ENGINE's own v1 refusal string, which a pre-dispatch gate
+  // pre-empts. That file is the hoist's frozen regression net, so closing this gap means
+  // re-pointing that assertion at the contract's refusal first — a deliberate decision,
+  // not a drive-by edit.
+  const declared: readonly string[] = Array.isArray(manifest.formats)
+    ? manifest.formats
+    : [];
+  if (manifest.execution === "in-process" && !declared.includes(p.format))
+    return fail(
+      "unsupported-format",
+      `${p.engine} cannot build format "${p.format}" — it supports "static" or ` +
+        `"interactive" only (video/scrolly require ${IN_PROCESS_NATIVE_FALLBACK[p.engine] ?? "the native engine"})`,
+    );
+
   if (manifest.execution === "subprocess") {
     const sub = manifest.subprocess!;
 
@@ -99,20 +124,20 @@ export async function render(
     } catch (e) {
       return fail("engine-failed", (e as Error).message);
     } finally {
-      if (specDir) rmSync(specDir, { recursive: true, force: true });
+      // A `finally` is OUTSIDE the reach of its own `catch`: a throw here (a read-only
+      // TMPDIR, a racing cleaner) would escape the verb past every guard above. Cleanup is
+      // best-effort by nature — the temp dir is outside outDir and holds only the spec —
+      // so a failure to remove it is swallowed rather than allowed to break I1.
+      try {
+        if (specDir) rmSync(specDir, { recursive: true, force: true });
+      } catch {
+        /* best-effort cleanup: never turn a delivered render into a throw */
+      }
     }
   }
 
   // in-process: the hosted-Datawrapper engines (dw-chart, map-dw) — imported and awaited
-  // rather than shelled out to.
-
-  // FORMAT GATE FIRST — reject a format the engine cannot honor BEFORE any API call.
-  if (!manifest.formats.includes(p.format))
-    return fail(
-      "unsupported-format",
-      `${p.engine} cannot build format "${p.format}" — it supports "static" or ` +
-        `"interactive" only (video/scrolly require ${IN_PROCESS_NATIVE_FALLBACK[p.engine] ?? "the native engine"})`,
-    );
+  // rather than shelled out to. The format gate already ran above, for both transports.
 
   // Spec-in validation at the boundary: for these engines the manifest validator IS the
   // one produceChart/produceMap run internally, so this fails a bad spec cleanly before
@@ -125,6 +150,15 @@ export async function render(
   } catch (e) {
     return fail("invalid-spec", (e as Error).message);
   }
+  // The validator's RETURN is untrusted too: a malformed manifest whose validate() answers
+  // something other than an array of strings would throw a TypeError on `.length` — outside
+  // the try above, so past every guard (I1). That is a broken engine declaration, not a bad
+  // spec, hence engine-failed.
+  if (!Array.isArray(validationErrors))
+    return fail(
+      "engine-failed",
+      `${p.engine}: manifest validate() must return an array of error strings, got ${typeof validationErrors}`,
+    );
   if (validationErrors.length)
     return fail("invalid-spec", validationErrors.join("; "));
 
