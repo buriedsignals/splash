@@ -3,7 +3,12 @@ import { existsSync, statSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { produce } from "./produce";
-import { provenanceHash, type RunManifest } from "./manifest";
+import {
+  appendEvent,
+  provenanceHash,
+  type RunManifest,
+  type RunEvent,
+} from "./manifest";
 import { freezeInput } from "./freeze";
 
 test("produce renders a real static PNG through the chart-native seam", () => {
@@ -53,3 +58,69 @@ test("produce renders a real static PNG through the chart-native seam", () => {
     provenanceHash(run, run.elements[0]),
   );
 }, 60000);
+
+// A run whose chosen option's nativeType chart-native does not map. specToNativeConfig
+// throws UnsupportedNativeType, produce-from-spec.mjs falls back with a distinct non-zero
+// exit code — deterministic real subprocess rejection, not a stub.
+function makeBrokenRun(): { run: RunManifest; runDir: string } {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-broken-run-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "t-broken",
+    schemaVersion: 2,
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Health premiums rose",
+          altInsight: "Between 2015 and 2024 the adult premium rose.",
+          unit: "Monthly adult premium (CHF)",
+        },
+        proposal: {
+          options: [
+            {
+              id: "bogus",
+              nativeType: "not-a-real-native-type",
+              why: "unsupported by design",
+            },
+          ],
+          chosenId: "bogus",
+        },
+      },
+    ],
+    events: [],
+  };
+  return { run, runDir };
+}
+
+test("produce throws a descriptive error and the caller can log a bounded failure event without advancing", () => {
+  // A spec that chart-native will reject (no numeric data / bad type) makes produce throw.
+  const { run, runDir } = makeBrokenRun();
+  let caught: Error | null = null;
+  let manifest = run;
+  try {
+    produce(run, run.elements[0], runDir, join(runDir, "out"));
+  } catch (e) {
+    caught = e as Error;
+    const ev: RunEvent = {
+      at: "2026-01-01T00:00:00.000Z",
+      kind: "failure",
+      action: "produce",
+      message: caught.message.slice(0, 200),
+    };
+    manifest = appendEvent(manifest, ev);
+  }
+  expect(caught).not.toBeNull();
+  expect(manifest.events.length).toBe(1);
+  expect(manifest.elements[0].artifact).toBeUndefined(); // state did not advance
+}, 30000);

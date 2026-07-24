@@ -1,7 +1,14 @@
 import { execFileSync } from "node:child_process";
-import { writeFileSync, mkdtempSync, readFileSync } from "node:fs";
+import {
+  writeFileSync,
+  mkdtempSync,
+  readFileSync,
+  existsSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { sha256 } from "@noble/hashes/sha2.js";
 import { provenanceHash, type RunManifest, type RunElement } from "./manifest";
 
 const CHART_NATIVE_PRODUCE = join(
@@ -17,8 +24,9 @@ const CHART_NATIVE_PRODUCE = join(
 // The ONE craft verb of the loop. Assembles a NativeSpec from the manifest element and
 // renders it via chart-native's real CLI (subprocess — never a src/ import), then records
 // the artifact + its provenance so stalenessOf() can track it. Reads the FROZEN input by
-// path (relative to the run dir) — never inline content. Artifact hashing/robust exit come
-// in Task 5.
+// path (relative to the run dir) — never inline content. On failure, throws a descriptive
+// error carrying the subprocess exit code + captured stderr; the caller is responsible for
+// recording a bounded failure event (appendEvent) without advancing element state.
 export function produce(
   run: RunManifest,
   el: RunElement,
@@ -46,17 +54,32 @@ export function produce(
     data: dataCsv,
   };
 
-  const specPath = join(mkdtempSync(join(tmpdir(), "loop-spec-")), "spec.json");
+  const specDir = mkdtempSync(join(tmpdir(), "loop-spec-"));
+  const specPath = join(specDir, "spec.json");
   writeFileSync(specPath, JSON.stringify(nativeSpec));
-  execFileSync("bun", [CHART_NATIVE_PRODUCE, specPath, outDir, "static"], {
-    stdio: "pipe",
-  });
+  try {
+    execFileSync("bun", [CHART_NATIVE_PRODUCE, specPath, outDir, "static"], {
+      stdio: "pipe",
+    });
+  } catch (e) {
+    const err = e as { status?: number; stderr?: Buffer };
+    throw new Error(
+      `produce failed (exit ${err.status ?? "?"}): ${err.stderr?.toString().slice(0, 500) ?? ""}`,
+    );
+  } finally {
+    rmSync(specDir, { recursive: true, force: true });
+  }
+
+  const artifactPath = join(outDir, "static.png");
+  if (!existsSync(artifactPath))
+    throw new Error(`produce: expected artifact not found at ${artifactPath}`);
+  const artifactBytes = readFileSync(artifactPath);
 
   return {
     ...el,
     artifact: {
-      path: join(outDir, "static.png"),
-      sha256: "", // filled in Task 5
+      path: artifactPath,
+      sha256: Buffer.from(sha256(artifactBytes)).toString("hex"),
       provenanceHash: provenanceHash(run, el),
       producedAt: new Date().toISOString(),
     },

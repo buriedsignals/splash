@@ -119,6 +119,17 @@ export function readManifest(path: string): RunManifest {
   return parseManifest(JSON.parse(readFileSync(path, "utf8")));
 }
 
+// Append a bounded event. Failure events record what went wrong WITHOUT advancing any
+// element's progression. Ring-capped so the ledger can never grow unbounded.
+export function appendEvent(
+  run: RunManifest,
+  ev: RunEvent,
+  cap = 50,
+): RunManifest {
+  const events = [...run.events, ev].slice(-cap);
+  return { ...run, events };
+}
+
 // State-driven next actions: run-level gates first (orient + honest off-ramp),
 // then the live element's routing. Multi-element aggregation arrives with Task 8;
 // the live path drives elements[0].
