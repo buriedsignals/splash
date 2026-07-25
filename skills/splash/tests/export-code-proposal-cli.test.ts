@@ -125,10 +125,14 @@ function envWithoutEmbedCredentials(): NodeJS.ProcessEnv {
 
 // The instruction must be PRESENT and verbatim — in whatever language this install resolves
 // to. Pinning the French wording here would re-introduce exactly the defect issue #6 reports.
+// Mirrors uiCopy() in export-code.mjs exactly: an explicit overrideUi wins, otherwise the
+// ambient SPLASH_UI_LANG (the real script's per-run override, inherited by runPhase1's default
+// `env: process.env`) — dropping that fallback here would desync this helper's expectation from
+// what the actual script run resolves to whenever a caller's shell exports SPLASH_UI_LANG.
 function resolvedUi(overrideUi?: string): string {
   const root = join(import.meta.dir, "../../..");
   return resolveLanguage({
-    override: { ui: overrideUi },
+    override: { ui: overrideUi ?? process.env.SPLASH_UI_LANG },
     uiLang: readNewsroomState(root).uiLang,
   }).ui;
 }
