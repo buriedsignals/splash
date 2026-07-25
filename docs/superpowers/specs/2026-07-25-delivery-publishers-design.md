@@ -471,7 +471,17 @@ avant qu'une rédaction s'appuie dessus en production** : la politique d'accès 
 chaque provider (ACL vs policy vs domaine attaché — AWS bloque désormais l'accès public au niveau du
 compte par défaut), le style d'URL servi par défaut, et le `Content-Type` par défaut de R2/AWS
 (F1 est mesuré sur MinIO). Ces trois points ne changent **pas** la forme de l'adapter — ils changent
-ce qu'une rédaction doit configurer, ce que F5 rend déjà explicite.
+ce qu'une rédaction doit configurer.
+
+**Correctif (2026-07-25, revue finale L2) :** cette dernière phrase disait « ce que F5 rend déjà
+explicite ». C'est vrai de l'URL **publique** — F5 la fait configurer (`publicBaseUrl`) au lieu de la
+construire — et faux de l'URL d'**upload** : le PUT est bâti en `{endpoint}/{bucket}/{key}`, donc
+l'adapter **suppose le path-style** pour son propre chemin signé. Une rédaction qui colle l'URL
+virtual-host de son bucket (`https://bucket.s3.amazonaws.com`) obtient `/bucket/bucket/key` et un
+404/403 indiagnosticable. Le style d'URL n'est donc pas seulement « ce qu'une rédaction configure » :
+c'est une **contrainte sur `endpoint`**, désormais portée par le libellé du champ
+(`capabilities.ts`, `embed-s3` → `endpoint`). Supporter le virtual-host demanderait une variante de
+construction de chemin, non mesurée et hors L2.
 
 ### 5.3 Forme
 

@@ -200,7 +200,12 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
       },
       {
         name: "endpoint",
-        label: "S3-compatible endpoint URL",
+        // Path-style is not a preference here: the adapter builds the upload path as
+        // {endpoint}/{bucket}/{key}, so a virtual-host URL pasted in ("https://bucket.s3.
+        // amazonaws.com") yields /bucket/bucket/key and an undiagnosable 404. F5 covers the
+        // PUBLIC url, which is configured separately; this one has to be the plain host.
+        label:
+          "S3-compatible endpoint URL, path-style (the server's own host, not the bucket's hostname)",
         secret: false,
       },
       {
