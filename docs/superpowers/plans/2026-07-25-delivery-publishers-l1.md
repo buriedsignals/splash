@@ -56,7 +56,7 @@
 
 **Interfaces:**
 - Consumes: `VerbResult` from `lib/core/verbs/types.ts` (already exists: `{ ok: true; value: T } | { ok: false; code: VerbErrorCode; message: string }`).
-- Produces: the types `DeliveryMetadata`, `PublishRequest`, `PublishOutcome`, `Publisher`, and the functions `registerPublisher(p: Publisher): void`, `lookupPublisher(id: string): Publisher | undefined`, `allPublishers(): Publisher[]`. Every later task uses these names verbatim.
+- Produces: the types `DeliveryMetadata`, `PublishRequest`, `PublishOutcome`, `Publisher`, and the functions `registerPublisher(p: Publisher): void`, `lookupPublisher(id: string): Publisher | undefined`, `allPublishers(): Publisher[]`, `resetPublishersForTest(): void`. Every later task uses these names verbatim.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1029,16 +1029,28 @@ git commit -m "feat(delivery): a portable zip publisher with reproducible bytes"
 
 **Interfaces:**
 - Consumes: `Publisher`, `registerPublisher` (Task 1); `renderSnippet` (Task 3); `zipPublisher` (Task 5).
-- Produces: `export const cloudflarePublisher: Publisher` (id `"embed-cloudflare"`, kind `"hosted"`), the moved functions (`embedSlug`, `assertEmbedProject`, `embedTokenConfigured`, `resolveEmbedConfig`, `contentTypeFor`, `hashAsset`, `ensureProject`, `deployDirectory`, `resolveAliasUrl`, `verifyServed`, `stageArtifact`, `servedMatcher`, and the types `EmbedConfig`, `DeployResult`), and `export const PUBLISHERS_REGISTERED = true` from `lib/delivery/index.ts`.
+- Produces: `export const cloudflarePublisher: Publisher` (id `"embed-cloudflare"`, kind `"hosted"`), the moved functions (`embedSlug`, `assertEmbedProject`, `embedTokenConfigured`, `resolveEmbedConfig`, `contentTypeFor`, `hashAsset`, `ensureProject`, `deployDirectory`, `resolveAliasUrl`, `verifyServed`, `stageArtifact`, `servedMatcher`, and the types `EmbedConfig`, `DeployResult`), and, from `lib/delivery/index.ts`, `export function registerAllPublishers(): void` plus `export const PUBLISHERS_REGISTERED = true`.
 
 - [ ] **Step 1: Write the failing test**
 
 Create `lib/delivery/index.test.ts`:
 
 ```ts
-import { describe, it, expect } from "bun:test";
-import { PUBLISHERS_REGISTERED } from "./index";
-import { lookupPublisher, allPublishers } from "../core/publishers";
+import { describe, it, expect, beforeEach } from "bun:test";
+import { PUBLISHERS_REGISTERED, registerAllPublishers } from "./index";
+import {
+  lookupPublisher,
+  allPublishers,
+  resetPublishersForTest,
+} from "../core/publishers";
+
+// The registry is global and bun test shares one process: any earlier file that reset it
+// would leave this one empty, because module caching means the root's side effect never runs
+// twice. Resetting and re-registering here makes this file independent of test file order.
+beforeEach(() => {
+  resetPublishersForTest();
+  registerAllPublishers();
+});
 
 describe("the delivery composition root", () => {
   it("should be load-bearing rather than a bare side-effect import", () => {
@@ -1207,8 +1219,16 @@ import { registerPublisher } from "../core/publishers";
 import { cloudflarePublisher } from "./adapters/cloudflare-pages";
 import { zipPublisher } from "./adapters/zip";
 
-registerPublisher(cloudflarePublisher);
-registerPublisher(zipPublisher);
+// Exported as a function, not only as a module-level side effect: the registry is global to
+// the module and `bun test` shares one process across files, so a test file that calls
+// resetPublishersForTest() would otherwise leave every LATER file with an empty registry —
+// module caching means the side effect never runs twice. A test resets, then calls this.
+export function registerAllPublishers(): void {
+  registerPublisher(cloudflarePublisher);
+  registerPublisher(zipPublisher);
+}
+
+registerAllPublishers();
 
 export const PUBLISHERS_REGISTERED = true;
 ```
@@ -1628,10 +1648,16 @@ import { deliver } from "./deliver";
 import { provenanceHash, type RunElement, type RunManifest } from "./manifest";
 import { neutralDecor, type Decor } from "../newsroom/decor";
 import { DEFAULT_NEWSROOM_STATE } from "../newsroom/state";
+import { registerAllPublishers } from "../delivery";
+import { resetPublishersForTest } from "../core/publishers";
 
 let runDir: string;
 
 beforeEach(() => {
+  // bun test shares one process, and lib/core/verbs/publish.test.ts resets the global
+  // registry: re-register here so this file does not depend on test file order.
+  resetPublishersForTest();
+  registerAllPublishers();
   runDir = mkdtempSync(join(tmpdir(), "splash-deliver-"));
   mkdirSync(join(runDir, "elements", "e1"), { recursive: true });
   writeFileSync(join(runDir, "elements", "e1", "static.png"), "not-a-png");
@@ -1948,10 +1974,15 @@ import { advance } from "./driver";
 import { gateStateOf, nextActions, type RunManifest } from "./manifest";
 import { neutralDecor } from "../newsroom/decor";
 import { DEFAULT_NEWSROOM_STATE } from "../newsroom/state";
+import { registerAllPublishers } from "../delivery";
+import { resetPublishersForTest } from "../core/publishers";
 
 let runDir: string;
 
 beforeEach(() => {
+  // Independent of test file order — see lib/loop/deliver.test.ts for why.
+  resetPublishersForTest();
+  registerAllPublishers();
   runDir = mkdtempSync(join(tmpdir(), "splash-e2e-deliver-"));
   mkdirSync(join(runDir, "elements", "e1"), { recursive: true });
   writeFileSync(join(runDir, "elements", "e1", "static.png"), "artifact-bytes");
