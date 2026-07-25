@@ -40,15 +40,16 @@ export async function publish(
   payload: PublishRequest,
 ): Promise<VerbResult<PublishOutcome>> {
   const id = payload.settings.publisherId;
-  // A missing/empty id also falls through as "unknown-publisher": no id names no adapter,
-  // so it is the same refusal as a stale one — there is nothing separately "invalid" about
-  // the shape here (that gate already ran in isPublishPayload, before this function saw it).
-  const adapter =
-    typeof id === "string" && id !== "" ? lookupPublisher(id) : undefined;
+  if (typeof id !== "string" || id === "")
+    return fail(
+      "invalid-request",
+      "publish: settings.publisherId names the destination and was missing",
+    );
+  const adapter = lookupPublisher(id);
   if (!adapter)
     return fail(
       "unknown-publisher",
-      `publish: no publisher registered as "${String(id)}"`,
+      `publish: no publisher registered as "${id}"`,
     );
   if (!adapter.implemented)
     return fail(

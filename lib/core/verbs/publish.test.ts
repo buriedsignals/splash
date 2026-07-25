@@ -51,8 +51,20 @@ describe("the publish verb", () => {
   beforeEach(() => resetPublishersForTest());
 
   it("should refuse an id no adapter registered, with unknown-publisher", async () => {
-    const r = await runVerb("publish", request({ id: "e1" }));
+    const r = await runVerb("publish", {
+      ...request(),
+      settings: { publisherId: "embed-nowhere" },
+    });
     expect(r).toMatchObject({ ok: false, code: "unknown-publisher" });
+    expect((r as { message: string }).message).toContain("embed-nowhere");
+  });
+
+  it("should name the omitted field when no destination was given at all", async () => {
+    // A missing publisherId is a MALFORMED request, not an unknown destination: answering
+    // `no publisher registered as "undefined"` tells a host nothing about what to fix.
+    const r = await runVerb("publish", request());
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("publisherId");
   });
 
   it("should refuse a declared-but-unimplemented publisher without touching the filesystem", async () => {
