@@ -44,6 +44,24 @@ function trimSlashes(s: string): string {
   return s.replace(/^\/+/, "").replace(/\/+$/, "");
 }
 
+/**
+ * The refusal message for an unusable `prefix`, or `undefined` when it is fine. Segments are
+ * read after the same `trimSlashes` the key builder applies, so what is validated is exactly
+ * what `withPrefix` will join.
+ */
+function prefixProblem(prefix: string | undefined): string | undefined {
+  if (prefix === undefined) return undefined;
+  const trimmed = trimSlashes(prefix);
+  if (!trimmed) return undefined; // "" or "/" — no prefix at all, which is legitimate
+  for (const segment of trimmed.split("/")) {
+    if (segment === "")
+      return `s3: settings.prefix "${prefix}" has an empty path segment — a doubled slash would address a different object key than the one it reads back`;
+    if (segment.includes(".."))
+      return `s3: settings.prefix "${prefix}" contains ".." — a relative segment is signed literally but normalised away on the wire, which yields an unexplained SignatureDoesNotMatch instead of a delivery`;
+  }
+  return undefined;
+}
+
 // The one place "prefix + filename" is joined, so the S3 object key written by the PUT and the
 // URL segment read back by the anonymous GET can never drift apart — both call this.
 function withPrefix(prefix: string | undefined, filename: string): string {
@@ -99,18 +117,24 @@ async function publish(
   req: PublishRequest,
 ): Promise<VerbResult<PublishOutcome>> {
   // Step 1: validate settings — endpoint, region, bucket, publicBaseUrl. Refuse naming the
-  // missing one; never guess or default a destination.
+  // missing one; never guess or default a destination. The refusal also names WHERE the value
+  // belongs, the way envHelp names where a credential is obtained: a newsroom that has only put
+  // the two S3 keys in .env has an enabled destination that refuses every delivery here, and
+  // "settings.endpoint is required" alone gives it nowhere to go.
   for (const name of REQUIRED_SETTINGS) {
     if (!(req.settings[name] ?? "").trim())
       return fail(
         "invalid-request",
-        `s3: settings.${name} is required — the newsroom's S3-compatible destination must be fully configured before Splash uploads anything`,
+        `s3: settings.${name} is required — the newsroom's S3-compatible destination must be fully configured before Splash uploads anything. ` +
+          `It is set in newsroom.json under capabilities["embed-s3"].settings.${name} (credentials stay in .env).`,
       );
   }
 
-  // Still settings validation: a malformed endpoint is a config problem, not a runtime one, so
-  // it is parsed here — alongside the rest of Step 1 — rather than after the artifact read.
-  // Nothing here is irreversible either way, but this is the right place for it.
+  // Still settings validation: a malformed endpoint or public base is a config problem, not a
+  // runtime one, so both are parsed here — alongside the rest of Step 1 — rather than after the
+  // artifact read. publicBaseUrl was previously checked for presence only, so a malformed one
+  // degraded into a post-upload "verifying … failed": a config refusal delivered past the point
+  // of no return.
   let endpointUrl: URL;
   try {
     endpointUrl = new URL(req.settings.endpoint);
@@ -120,6 +144,24 @@ async function publish(
       `s3: settings.endpoint "${req.settings.endpoint}" is not a valid URL: ${(e as Error).message}`,
     );
   }
+  try {
+    new URL(req.settings.publicBaseUrl);
+  } catch (e) {
+    return fail(
+      "invalid-request",
+      `s3: settings.publicBaseUrl "${req.settings.publicBaseUrl}" is not a valid URL: ${(e as Error).message}`,
+    );
+  }
+
+  // `prefix` becomes a path segment of the signed key and of the public URL, and it was the one
+  // setting nobody validated — trimSlashes strips the outer slashes and nothing else. A `..`
+  // segment is signed literally while the WHATWG URL parser normalises it away on the wire, so
+  // the server recomputes a different canonical request: a SignatureDoesNotMatch 403 at a
+  // newsroom with nothing in the message pointing at the prefix (and, absent that
+  // normalisation, an object addressed outside the bucket). Same defence-in-depth as the
+  // isSafeId re-assertion below, applied to the other value that reaches the same place.
+  const prefixRefusal = prefixProblem(req.settings.prefix);
+  if (prefixRefusal) return fail("invalid-request", prefixRefusal);
 
   // Step 2: validate credentials — refuse naming the missing VARIABLE, never a value. Checked
   // one at a time and returned on the FIRST miss, so a message about one variable never

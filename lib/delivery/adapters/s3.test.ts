@@ -119,6 +119,68 @@ describe("the s3 publisher, before it reaches the network", () => {
     expect((r as { message: string }).message).toContain("publicBaseUrl");
   });
 
+  it("should say WHERE a missing setting belongs, not only that it is missing", async () => {
+    // A newsroom that put the two S3 keys in .env gets an enabled destination whose every
+    // delivery refuses on settings. The refusal has to name the file and the key path the way
+    // envHelp names where a credential is obtained, or the journalist has nowhere to go.
+    const r = await s3Publisher.publish({
+      ...request(),
+      settings: { ...request().settings, endpoint: "" },
+    });
+    expect(r).toMatchObject({ ok: false });
+    const m = (r as { message: string }).message;
+    expect(m).toContain("newsroom.json");
+    expect(m).toContain('capabilities["embed-s3"].settings');
+  });
+
+  it("should refuse a prefix that climbs out of its own path, before any upload", async () => {
+    // `..` in a prefix is signed literally but normalised away on the wire, so the server
+    // recomputes a different canonical request and answers a cryptic SignatureDoesNotMatch 403
+    // that says nothing about the prefix — and without that normalisation it would address an
+    // object outside the bucket. Refuse it here, naming the setting.
+    const r = await s3Publisher.publish({
+      ...request(),
+      settings: { ...request().settings, prefix: "../evil" },
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("prefix");
+  });
+
+  it("should refuse a prefix with an empty segment, which would double a separator in the key", async () => {
+    const r = await s3Publisher.publish({
+      ...request(),
+      settings: { ...request().settings, prefix: "splash//embeds" },
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("prefix");
+  });
+
+  it("should still accept an ordinary prefix, slashes and all", async () => {
+    // The guard must not refuse what F5's own URL tests already accept: the refusal below is
+    // the CREDENTIAL one, i.e. execution went past the settings block.
+    const r = await s3Publisher.publish({
+      ...request(),
+      settings: { ...request().settings, prefix: "/splash/embeds/" },
+      credentials: {},
+    });
+    expect(r).toMatchObject({ ok: false });
+    expect((r as { message: string }).message).toContain(
+      "SPLASH_S3_ACCESS_KEY_ID",
+    );
+  });
+
+  it("should refuse a malformed publicBaseUrl before any I/O, as it does for the endpoint", async () => {
+    // Presence alone was checked, so a malformed base only surfaced AFTER the upload, as
+    // "verifying … failed" — a config problem reported as a runtime one, past the point of no
+    // return.
+    const r = await s3Publisher.publish({
+      ...request(),
+      settings: { ...request().settings, publicBaseUrl: "embeds.example.org" },
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("publicBaseUrl");
+  });
+
   it("should refuse missing credentials by naming the variable, never a value", async () => {
     const r = await s3Publisher.publish({ ...request(), credentials: {} });
     expect(r).toMatchObject({ ok: false });
