@@ -17,6 +17,7 @@ describe("capabilities — the contract describes itself", () => {
     expect(c.verbs.map((v) => v.name)).toEqual([...VERBS]);
     expect(c.verbs.filter((v) => v.implemented).map((v) => v.name)).toEqual([
       "render",
+      "publish",
     ]);
   });
 

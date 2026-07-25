@@ -8,7 +8,7 @@ import {
   type Publisher,
   type PublishRequest,
 } from "../publishers";
-import { runVerb } from "./index";
+import { publish, runVerb } from "./index";
 import { ok } from "./types";
 
 const NEVER_CREATED = join(tmpdir(), "splash-publish-must-not-exist");
@@ -57,6 +57,7 @@ describe("the publish verb", () => {
     });
     expect(r).toMatchObject({ ok: false, code: "unknown-publisher" });
     expect((r as { message: string }).message).toContain("embed-nowhere");
+    expect(existsSync(NEVER_CREATED)).toBe(false);
   });
 
   it("should name the omitted field when no destination was given at all", async () => {
@@ -98,6 +99,21 @@ describe("the publish verb", () => {
     });
     expect(r).toMatchObject({ ok: false, code: "engine-failed" });
     expect((r as { message: string }).message).toContain("boom");
+  });
+
+  it("should turn a rejecting adapter into engine-failed even called directly, bypassing runVerb (I1)", async () => {
+    registerPublisher(
+      publisher({
+        id: "zip-direct",
+        publish: () => Promise.reject(new Error("direct-boom")),
+      }),
+    );
+    const r = await publish({
+      ...request(),
+      settings: { publisherId: "zip-direct" },
+    });
+    expect(r).toMatchObject({ ok: false, code: "engine-failed" });
+    expect((r as { message: string }).message).toContain("direct-boom");
   });
 
   it("should return an outcome that survives a JSON round trip (I6)", async () => {

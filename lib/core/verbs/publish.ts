@@ -33,28 +33,37 @@ export function isPublishPayload(p: unknown): p is PublishRequest {
   );
 }
 
-// Both refusals below land BEFORE any I/O: an unknown or unimplemented destination must not
-// create a directory, stage a file, or open a socket. That is the decor's second bite
-// (preflight spec §3.4) expressed in the contract.
+// All three refusals below land BEFORE any I/O: a malformed, unknown, or unimplemented
+// destination must not create a directory, stage a file, or open a socket. That is the
+// decor's second bite (preflight spec §3.4) expressed in the contract.
 export async function publish(
   payload: PublishRequest,
 ): Promise<VerbResult<PublishOutcome>> {
-  const id = payload.settings.publisherId;
-  if (typeof id !== "string" || id === "")
-    return fail(
-      "invalid-request",
-      "publish: settings.publisherId names the destination and was missing",
-    );
-  const adapter = lookupPublisher(id);
-  if (!adapter)
-    return fail(
-      "unknown-publisher",
-      `publish: no publisher registered as "${id}"`,
-    );
-  if (!adapter.implemented)
-    return fail(
-      "not-implemented",
-      `publish: "${id}" is declared but has no adapter yet`,
-    );
-  return adapter.publish(payload);
+  // The whole body sits inside one try/catch, mirroring render()'s own guard and for the
+  // same reason: publish() is re-exported for direct calling (lib/core/publishers.ts already
+  // anticipates it; the future lib/loop/deliver.ts will do it), bypassing runVerb's wrapper.
+  // A rejected adapter promise must become engine-failed HERE too, not only at runVerb's
+  // boundary, or a direct caller would see it escape with no catch of its own (I1).
+  try {
+    const id = payload.settings.publisherId;
+    if (typeof id !== "string" || id === "")
+      return fail(
+        "invalid-request",
+        "publish: settings.publisherId names the destination and was missing",
+      );
+    const adapter = lookupPublisher(id);
+    if (!adapter)
+      return fail(
+        "unknown-publisher",
+        `publish: no publisher registered as "${id}"`,
+      );
+    if (!adapter.implemented)
+      return fail(
+        "not-implemented",
+        `publish: "${id}" is declared but has no adapter yet`,
+      );
+    return await adapter.publish(payload);
+  } catch (e) {
+    return fail("engine-failed", (e as Error)?.message ?? String(e));
+  }
 }
