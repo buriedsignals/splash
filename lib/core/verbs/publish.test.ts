@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterAll } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -49,6 +49,11 @@ function publisher(over: Partial<Publisher> & { id: string }): Publisher {
 
 describe("the publish verb", () => {
   beforeEach(() => resetPublishersForTest());
+  // The registry is global and `bun test` shares one process across files: without this, the
+  // last test's stub publishers outlive the file and land in whatever runs next. Clean up
+  // after yourself — the composition root is idempotent now, but a file that leaves state
+  // behind is still a file whose neighbours pass or fail by ordering luck.
+  afterAll(() => resetPublishersForTest());
 
   it("should refuse a path-unsafe id before any adapter is reached", async () => {
     // An adapter that throws if invoked is the clean way to prove "never reached" — if the
