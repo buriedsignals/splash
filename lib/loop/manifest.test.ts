@@ -99,3 +99,21 @@ test("parseManifest rejects a manifest missing elements", () => {
   const bad = { runId: "r", schemaVersion: 2, input: {}, events: [] };
   expect(() => parseManifest(bad)).toThrow();
 });
+
+test("a stored proposal from before the capability axis still parses", () => {
+  const raw = {
+    runId: "r",
+    schemaVersion: 2,
+    input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
+    elements: [
+      {
+        id: "e1",
+        proposal: {
+          options: [{ id: "slope", nativeType: "slope", why: "because" }],
+        },
+      },
+    ],
+    events: [],
+  };
+  expect(() => parseManifest(raw)).not.toThrow();
+});

@@ -6,6 +6,7 @@ import {
   type RunElement,
   type RunManifest,
 } from "./manifest";
+import { loadDecor, type Decor } from "../newsroom/decor";
 import { orient } from "./orient";
 import { propose } from "./propose";
 import { produce } from "./produce";
@@ -16,6 +17,7 @@ import { produce } from "./produce";
 export async function advance(
   run: RunManifest,
   runDir: string,
+  decor: Decor = loadDecor(),
 ): Promise<RunManifest> {
   const [next] = nextActions(run);
   // `elements: []` is valid per RunManifestSchema, so the live element is OPTIONAL here.
@@ -41,7 +43,7 @@ export async function advance(
     }
     case "propose": {
       if (!live) return run;
-      const options = propose(run);
+      const options = propose(run, decor);
       return {
         ...run,
         elements: [

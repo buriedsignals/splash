@@ -14,6 +14,15 @@ const FormOptionSchema = z.object({
   id: z.string(),
   nativeType: z.string(),
   why: z.string(),
+  /** Capability ids this form needs — the decor's CAPACITÉ axis. */
+  requires: z.array(z.string()).optional(),
+  /** Filled when the offer was made with a decor: what stands in the way, if anything. */
+  readiness: z
+    .object({
+      status: z.enum(["ready", "missing", "unverified", "disabled"]),
+      reason: z.string(),
+    })
+    .optional(),
 });
 const RunEventSchema = z.object({
   at: z.string(),

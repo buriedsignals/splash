@@ -1,6 +1,7 @@
 import { test, expect } from "bun:test";
 import { propose } from "./propose";
 import type { RunManifest } from "./manifest";
+import type { Decor } from "../newsroom/decor";
 
 function withNumeric(numericColumns: string[]): RunManifest {
   return {
@@ -39,4 +40,50 @@ test("propose returns nothing before orient has run", () => {
       events: [],
     }),
   ).toEqual([]);
+});
+
+function decorWith(status: "ready" | "missing"): Decor {
+  return {
+    root: "/nowhere",
+    state: {
+      schemaVersion: 1,
+      runtime: "claude",
+      uiLang: "en",
+      capabilities: { "chart-native": { enabled: status === "ready" } },
+    },
+    language: { ui: "en", content: "en" },
+    readiness: [
+      {
+        id: "chart-native",
+        label: "Charts built in-house (no account needed)",
+        status,
+        reason: status === "missing" ? "chart-native is not installed" : "",
+        help: [],
+      },
+    ],
+  };
+}
+
+test("every offered form names the capability it needs", () => {
+  for (const option of propose(withNumeric(["a", "b"])))
+    expect(option.requires).toEqual(["chart-native"]);
+});
+
+test("a form whose capability is missing is offered MARKED, never removed", () => {
+  const offered = propose(withNumeric(["a", "b"]), decorWith("missing"));
+  expect(offered.map((o) => o.id)).toEqual(["slope", "dumbbell"]);
+  for (const option of offered) {
+    expect(option.readiness?.status).toBe("missing");
+    expect(option.readiness?.reason).toContain("not installed");
+  }
+});
+
+test("a ready capability annotates without a reason", () => {
+  for (const option of propose(withNumeric(["a", "b"]), decorWith("ready")))
+    expect(option.readiness).toEqual({ status: "ready", reason: "" });
+});
+
+test("without a decor the offer is unannotated, exactly as before", () => {
+  for (const option of propose(withNumeric(["a", "b"])))
+    expect(option.readiness).toBeUndefined();
 });
