@@ -304,3 +304,18 @@ Repris tels quels de `install/configurator.ts`, parce que ce sont des pièges d�
 | #6 « route **all** CLI/user-facing strings through the same locale layer » | **Borné** | Fait pour la copie **émise mécaniquement** (le bug observé : le bloc a/b/c d'`export-code`). La prose de conversation vient de l'agent, pas d'un script : le correctif y est une ligne d'instruction (« conduis dans la langue résolue »), pas une couche locale. |
 | #5 « newsroom CMS integration, Fly, or another selected publisher adapter » | **Déclaré, pas implémenté** | Le modèle porte ces entrées avec `implemented: false` ; le sous-projet Livraison (#4) les remplit. Un seul adapter réel ship ici : Cloudflare Pages, déjà écrit et vérifié. |
 | Logo et police dans le profil | **Déféré** | Compositing + typographie sur tous les producteurs — déjà noté comme lot séparé par le design de profil (2026-07-13). |
+
+---
+
+## 9. Suites parkées à la sortie de P1 (revue finale, 2026-07-25)
+
+La revue de branche a rendu **« ready to merge »** ; ces trois points sont réels, non bloquants, et parkés
+avec leur raison plutôt que corrigés dans une seconde vague.
+
+| Point | Où | Ruling |
+|---|---|---|
+| `decor.test.ts` a perdu la moitié `ui: "en"` d'une assertion — la seule qui épinglait « une install fraîche avec un profil FR garde des menus anglais » | `lib/newsroom/decor.test.ts` (le cas « profil → langue de contenu ») | À restaurer : c'est exactement la frontière fraîche-vs-migrée que le fix I4 trace. Une ligne. |
+| Deux tests atteignent le chemin d'écriture par défaut sur la **vraie** racine d'install (`advance(run, runDir)` sans décor, `tryLoadDecor()`) — sur une machine portant `.splash-runtime` sans `newsroom.json`, `bun test` exécute la vraie migration | `lib/loop/driver.test.ts`, `lib/newsroom/decor.test.ts` | Contenu inoffensif et gitignoré, mais ça inverse l'invariant posé en Task 6 (« `bun test` ne touche jamais l'arbre »). À trancher : soit ces deux cas passent une racine temporaire, soit l'invariant est explicitement assoupli. |
+| Le correctif I4 (langue héritée du profil) n'est **pas atteignable par le chemin skill** : `export-code.mjs` lit `readNewsroomState(root).uiLang` en direct et ne déclenche jamais la migration | `skills/splash/scripts/export-code.mjs` | Une install FR legacy pilotée par le skill imprime donc l'anglais jusqu'à ce que quelque chose appelle `loadDecor`. À fermer en P2, avec l'obligation `runtime` du §5.1. |
+
+**Report intégral de la vague de fix + verdicts par finding :** l'historique git de la branche (6 commits de fix, `680bf84`..`9afdcfa`).
