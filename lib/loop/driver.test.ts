@@ -1,5 +1,5 @@
-import { test, expect } from "bun:test";
-import { mkdtempSync, writeFileSync, cpSync, rmSync } from "node:fs";
+import { test, expect, beforeEach } from "bun:test";
+import { mkdtempSync, mkdirSync, writeFileSync, cpSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
@@ -7,6 +7,7 @@ import { advance } from "./driver";
 import { revise } from "./revise";
 import {
   nextActions,
+  provenanceHash,
   stalenessOf,
   writeManifest,
   readManifest,
@@ -15,6 +16,16 @@ import {
 import { freezeInput } from "./freeze";
 import { resumeReport } from "./resume";
 import type { Decor } from "../newsroom/decor";
+import { registerAllPublishers } from "../delivery";
+import { resetPublishersForTest } from "../core/publishers";
+
+// The deliver branch dispatches through the publish verb's registry, same discipline as
+// deliver.test.ts: bun test shares one process across files, so re-register here rather than
+// depend on this file happening to run after one that already did.
+beforeEach(() => {
+  resetPublishersForTest();
+  registerAllPublishers();
+});
 
 // A decor with nothing to check against the real filesystem: `advance()` defaults to
 // `tryLoadDecor()`, which reads this checkout's own root — every test in this file passes
@@ -380,4 +391,90 @@ test("the element-driven branches never dereference a missing element", async ()
   expect(nextActions(oriented)).toEqual(["confirm-angle"]);
   const after = await advance(oriented, runDir, NEUTRAL_DECOR);
   expect(after).toEqual(oriented); // a human turn, returned untouched
+});
+
+// Task 9's own deliverable (the `deliver` case in advance()'s switch) had no coverage of its
+// own — every assertion above exercises produce, not deliver. Builds a manifest whose live
+// element already carries a fresh artifact plus a requested destination, so nextActions()
+// routes straight to "deliver" without going through the rest of the loop first.
+function deliverableRun(runDir: string): {
+  run: RunManifest;
+  el: RunManifest["elements"][0];
+} {
+  mkdirSync(join(runDir, "elements", "e1"), { recursive: true });
+  writeFileSync(join(runDir, "elements", "e1", "static.png"), "not-a-real-png");
+  const base: RunManifest = {
+    runId: "deliver-branch",
+    schemaVersion: 3,
+    input: { data: { path: "input/data.csv", sha256: "abc" } },
+    orient: {
+      profile: { columns: ["a"], numericColumns: ["a"], rowCount: 2 },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: { confirmedTakeaway: "T", altInsight: "A", unit: "u" },
+        proposal: {
+          options: [{ id: "o1", nativeType: "line", why: "w" }],
+          chosenId: "o1",
+        },
+      },
+    ],
+    events: [],
+  };
+  const el = base.elements[0]!;
+  const artifact = {
+    path: "elements/e1/static.png",
+    sha256: "d",
+    provenanceHash: provenanceHash(base, el),
+    producedAt: "1980-01-01T00:00:00.000Z",
+  };
+  return { run: base, el: { ...el, artifact } };
+}
+
+test("advance() delivers a requested destination, merging the delivery record onto the element", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-driver-deliver-ok-"));
+  const { run: base, el } = deliverableRun(runDir);
+  const run: RunManifest = {
+    ...base,
+    elements: [{ ...el, delivery: { requested: ["zip"], delivered: [] } }],
+  };
+  expect(nextActions(run)).toEqual(["deliver"]);
+
+  const decorWithZip: Decor = {
+    ...NEUTRAL_DECOR,
+    state: { ...NEUTRAL_DECOR.state, capabilities: { zip: { enabled: true } } },
+  };
+  const after = await advance(run, runDir, decorWithZip);
+
+  expect(after.events).toHaveLength(0); // no bounded failure recorded
+  const delivered = after.elements[0].delivery!.delivered;
+  expect(delivered).toHaveLength(1);
+  expect(delivered[0]).toMatchObject({ publisherId: "zip", kind: "package" });
+  expect(nextActions(after)).toEqual(["show"]);
+});
+
+test("advance() records a deliver failure as a bounded event, without advancing the element's delivery", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-driver-deliver-fail-"));
+  const { run: base, el } = deliverableRun(runDir);
+  // "embed-s3" is DECLARED in NEWSROOM_CAPABILITIES but not yet implemented — readiness
+  // refuses it deterministically, with no dependency on credentials or the network, so this
+  // failure path can't flake on whatever happens to be in the real environment.
+  const run: RunManifest = {
+    ...base,
+    elements: [{ ...el, delivery: { requested: ["embed-s3"], delivered: [] } }],
+  };
+  expect(nextActions(run)).toEqual(["deliver"]);
+
+  const after = await advance(run, runDir, NEUTRAL_DECOR);
+
+  expect(after.events).toHaveLength(1);
+  expect(after.events[0]).toMatchObject({
+    kind: "failure",
+    action: "deliver",
+    elementId: "e1",
+  });
+  expect(after.elements[0].delivery!.delivered).toHaveLength(0); // state did not advance
+  expect(nextActions(after)).toEqual(["deliver"]); // still pending, unresolved
 });

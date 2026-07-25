@@ -236,10 +236,24 @@ export function gateStateOf(run: RunManifest, el: RunElement): GateState {
   if (el.blocked) return "blocked";
   const fresh = el.artifact != null && !stalenessOf(run, el);
   const provenance = fresh ? el.artifact!.provenanceHash : null;
+  // "delivered" means EVERY requested destination has landed for the artifact currently
+  // fresh — never just "at least one has". `requested.length > 0` is not redundant with the
+  // `every()` below: `[].every(...)` is vacuously true, so without this guard an element that
+  // requested nothing (but still carries stale `delivered` records from an earlier request)
+  // would misreport "delivered" having delivered nothing for the current request. This is
+  // what makes gateStateOf's "delivered" the exact complement of needsDelivery() === true —
+  // the whole reason the question was parked (Task 7) until this step existed to make the
+  // partial-delivery case reachable in practice.
   if (
     el.delivery &&
     provenance &&
-    el.delivery.delivered.some((d) => d.deliveredProvenanceHash === provenance)
+    el.delivery.requested.length > 0 &&
+    el.delivery.delivered.length > 0 &&
+    el.delivery.requested.every((id) =>
+      el.delivery!.delivered.some(
+        (d) => d.publisherId === id && d.deliveredProvenanceHash === provenance,
+      ),
+    )
   )
     return "delivered";
   if (

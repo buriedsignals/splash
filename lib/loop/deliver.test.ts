@@ -13,8 +13,14 @@ import { deliver } from "./deliver";
 import { provenanceHash, type RunElement, type RunManifest } from "./manifest";
 import { neutralDecor, type Decor } from "../newsroom/decor";
 import { DEFAULT_NEWSROOM_STATE } from "../newsroom/state";
+import { NEWSROOM_CAPABILITIES } from "../newsroom/capabilities";
 import { registerAllPublishers } from "../delivery";
-import { resetPublishersForTest } from "../core/publishers";
+import {
+  registerPublisher,
+  resetPublishersForTest,
+  type Publisher,
+} from "../core/publishers";
+import { ok } from "../core/verbs";
 
 let runDir: string;
 
@@ -153,6 +159,77 @@ describe("deliver", () => {
     expect(JSON.stringify((r as { value: RunElement }).value)).not.toContain(
       "SECRET-TOKEN-VALUE",
     );
+  });
+
+  // Rebuilt per review: the test above only exercises "zip", whose cap.env is [] and whose
+  // adapter never looks at req.credentials at all — it would stay green through any
+  // credential-scoping regression in deliver.ts's own collection loop. This one registers a
+  // throwaway capability that DECLARES one env var, and a publisher that echoes back exactly
+  // what it received (via the outcome's own `snippet` field, so the answer is visible in the
+  // returned RunElement) — proving the collection loop forwards a declared variable and never
+  // an undeclared one, even when both sit in the same injected environment.
+  it("forwards only a destination's own declared credential, never an undeclared one from the same env", async () => {
+    const TEST_CAP_ID = "test-echo-cap";
+    NEWSROOM_CAPABILITIES[TEST_CAP_ID] = {
+      id: TEST_CAP_ID,
+      label: "Test echo (throwaway, this test only)",
+      kind: "delivery",
+      env: [["DECLARED_TOKEN"]],
+      envHelp: {},
+      criticalDeps: null,
+      implemented: true,
+    };
+    const echoPublisher: Publisher = {
+      id: TEST_CAP_ID,
+      kind: "package",
+      implemented: true,
+      async publish(req) {
+        return ok({
+          publisherId: TEST_CAP_ID,
+          kind: "package" as const,
+          snippet: JSON.stringify(req.credentials),
+          publishedAt: new Date().toISOString(),
+        });
+      },
+    };
+    registerPublisher(echoPublisher);
+
+    try {
+      const { run, el } = runWith({
+        delivery: { requested: [TEST_CAP_ID], delivered: [] },
+      });
+      const decor = decorWith({
+        state: {
+          ...DEFAULT_NEWSROOM_STATE,
+          capabilities: { [TEST_CAP_ID]: { enabled: true } },
+        },
+      });
+      const r = await deliver(
+        run,
+        el,
+        runDir,
+        decor,
+        {},
+        {
+          env: {
+            DECLARED_TOKEN: "DECLARED-VALUE",
+            DECOY_TOKEN: "DECOY-SECRET-VALUE",
+          },
+        },
+      );
+      expect(r.ok).toBe(true);
+      const value = (r as { value: RunElement }).value;
+      const snippet = value.delivery!.delivered[0]!.snippet;
+      expect(snippet).toContain("DECLARED-VALUE");
+      expect(snippet).not.toContain("DECOY-SECRET-VALUE");
+      expect(JSON.stringify(value)).not.toContain("DECOY-SECRET-VALUE");
+    } finally {
+      // The registry resets in the next beforeEach, but NEWSROOM_CAPABILITIES is a shared
+      // module-level object with no reset seam of its own — bun test shares one process
+      // across every file, so leaving this throwaway entry behind would leak into whatever
+      // test in whatever file runs next (e.g. a whole-registry size assertion elsewhere).
+      delete NEWSROOM_CAPABILITIES[TEST_CAP_ID];
+    }
   });
 
   // Probing beyond the brief's 5 mandated tests — see task-9-report.md for the reasoning.
