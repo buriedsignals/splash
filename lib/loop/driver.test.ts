@@ -269,3 +269,47 @@ test("a missing frozen input at the orient step is a bounded event, not a throw"
   expect(failures[0].action).toBe("orient");
   expect(failures[0].message).toMatch(/ENOENT|cannot read/i);
 });
+
+// `elements: []` is VALID per RunManifestSchema (lib/loop/manifest.ts) and nextActions()
+// routes such a run to `orient` regardless — so the orient guard's own failure event has to
+// survive a run with no live element. It built `elementId: run.elements[0].id`.
+test("a run with no elements orients without throwing, and its failure event carries no elementId", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-no-elements-"));
+  const after = await advance(
+    {
+      runId: "no-elements",
+      schemaVersion: 2,
+      input: {},
+      elements: [],
+      events: [],
+    },
+    runDir,
+  );
+  const failures = after.events.filter((e) => e.kind === "failure");
+  expect(failures).toHaveLength(1);
+  expect(failures[0].action).toBe("orient");
+  expect(failures[0].message).toContain("frozen data input");
+  expect(failures[0].elementId).toBeUndefined();
+  expect(after.orient).toBeUndefined();
+});
+
+// Every element-driven branch reads elements[0]. `produce` is unreachable with an empty
+// elements array today (nextActions routes to confirm-angle), but the branch must not depend
+// on that routing detail to be safe.
+test("the element-driven branches never dereference a missing element", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-no-elements-2-"));
+  const oriented: RunManifest = {
+    runId: "no-elements-oriented",
+    schemaVersion: 2,
+    input: {},
+    orient: {
+      profile: { columns: ["a"], numericColumns: [], rowCount: 1 },
+      supportsPoint: true,
+    },
+    elements: [],
+    events: [],
+  };
+  expect(nextActions(oriented)).toEqual(["confirm-angle"]);
+  const after = await advance(oriented, runDir);
+  expect(after).toEqual(oriented); // a human turn, returned untouched
+});
