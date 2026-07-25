@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -99,6 +100,172 @@ describe("checkOutDir — the destructive boundary of the façade", () => {
     expect(existsSync(join(dir, "sub", "deep.txt"))).toBe(true);
   });
 
+  // The probe matches by ARTIFACT NAME, not by extension. An extension allowlist
+  // (`png|html|mp4|json`) accepts a photo library, a budget spreadsheet and a wedding
+  // video, and — worst case — a run directory whose only entry is `run.json`, the
+  // manifest the README calls the run's single source of truth. Each case below pairs
+  // the verdict with a filesystem assertion, because a guard that refuses while the
+  // files are already gone has refused nothing.
+  it("refuses — without deleting — a run directory whose only entry is run.json", () => {
+    const dir = join(scratch(), "runs", "2026-07-24-annemasse");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "run.json"), '{"elements":[]}');
+
+    const r = checkOutDir(dir);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.message).toContain("run.json");
+    expect(readdirSync(dir)).toEqual(["run.json"]);
+    expect(readFileSync(join(dir, "run.json"), "utf8")).toBe('{"elements":[]}');
+  });
+
+  it("refuses — without deleting — user files whose extensions a produce uses but whose names it never writes", () => {
+    const dir = join(scratch(), "Pictures", "2026");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "IMG_0001.png"), "photo");
+    writeFileSync(join(dir, "budget-2026.json"), '{"eur":1}');
+    writeFileSync(join(dir, "wedding.mp4"), "video");
+    writeFileSync(join(dir, "index.html"), "<p>album</p>");
+
+    const r = checkOutDir(dir);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    for (const name of [
+      "IMG_0001.png",
+      "budget-2026.json",
+      "wedding.mp4",
+      "index.html",
+    ])
+      expect(existsSync(join(dir, name))).toBe(true);
+    expect(readdirSync(dir).sort()).toEqual([
+      "IMG_0001.png",
+      "budget-2026.json",
+      "index.html",
+      "wedding.mp4",
+    ]);
+  });
+
+  it("refuses — without deleting — a frames/ subdirectory holding something no produce wrote", () => {
+    const dir = join(scratch(), "elements", "el1");
+    mkdirSync(join(dir, "frames", "originals"), { recursive: true });
+    writeFileSync(join(dir, "scrolly.html"), "<html></html>");
+    writeFileSync(join(dir, "frames", "f0.jpg"), "jpeg");
+    writeFileSync(join(dir, "frames", "originals", "negative.dng"), "raw");
+
+    const r = checkOutDir(dir);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.message).toContain("frames/originals");
+    expect(existsSync(join(dir, "frames", "originals", "negative.dng"))).toBe(
+      true,
+    );
+    expect(existsSync(join(dir, "frames", "f0.jpg"))).toBe(true);
+  });
+
+  it("refuses — without deleting — a non-producible FILE directly inside frames/", () => {
+    const dir = join(scratch(), "elements", "el1");
+    mkdirSync(join(dir, "frames"), { recursive: true });
+    writeFileSync(join(dir, "frames", "negative.dng"), "raw");
+
+    const r = checkOutDir(dir);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.message).toContain("frames/negative.dng");
+    expect(existsSync(join(dir, "frames", "negative.dng"))).toBe(true);
+  });
+
+  // The counterweight: the fix must not be "refuse everything". Each name below is
+  // written by a real produce (see the ARTIFACT NAMES table in path-safety.ts), so a
+  // re-produce over a prior output set has to keep working.
+  it("accepts a genuine prior produce output set — a re-produce must keep working", () => {
+    const cases: Record<string, string[]> = {
+      "chart-native static": [
+        "static.png",
+        "config.json",
+        "native-source.json",
+        "brand-concerns.json",
+      ],
+      "chart-native interactive": [
+        "interactive.html",
+        "interactive.png",
+        "config.json",
+        "native-source.json",
+      ],
+      "chart-native video": [
+        "landscape.mp4",
+        "video-landscape-still.png",
+        "video-landscape-final.png",
+        "video-verify.json",
+        "config.json",
+        "native-source.json",
+      ],
+      "map-native static": ["static.png", "theme.png", "contrast-static.png"],
+      "map-native interactive": [
+        "interactive.html",
+        "interactive.png",
+        "contrast-interactive.png",
+        "source-manifest.json",
+        "config.json",
+        "responsive-360.png",
+        "responsive-768.png",
+        "responsive-1100.png",
+        "responsive-1600.png",
+        "a11y.png",
+      ],
+      "map-native video": [
+        "portrait.mp4",
+        "video-portrait-still.png",
+        "video-verify.json",
+      ],
+      scrolly: ["scrolly.html", "source-manifest.json", "config.json"],
+    };
+    for (const [label, names] of Object.entries(cases)) {
+      const dir = join(scratch(), "elements", "el1");
+      mkdirSync(dir, { recursive: true });
+      for (const n of names) writeFileSync(join(dir, n), "x");
+      const r = checkOutDir(dir);
+      if (!r.ok) throw new Error(`${label} was refused: ${r.message}`);
+      // Non-destructive probe: accepting does not delete either.
+      expect(readdirSync(dir).sort()).toEqual([...names].sort());
+    }
+  });
+
+  it("accepts an image-native output set, frames/*.jpg included", () => {
+    const dir = join(scratch(), "elements", "el1");
+    mkdirSync(join(dir, "frames"), { recursive: true });
+    writeFileSync(join(dir, "scrolly.html"), "<html></html>");
+    writeFileSync(join(dir, "prep-report.json"), "{}");
+    writeFileSync(join(dir, "source-manifest.json"), "{}");
+    writeFileSync(join(dir, "config.json"), "{}");
+    for (const f of ["f0.jpg", "f1.jpg", "frame_2.jpg", "frame-3.jpg"])
+      writeFileSync(join(dir, "frames", f), "jpeg");
+    const r = checkOutDir(dir);
+    if (!r.ok) throw new Error(`refused: ${r.message}`);
+    expect(readdirSync(join(dir, "frames")).length).toBe(4);
+  });
+
+  // dw-chart / map-dw name their static PNG `<id>.png` from the request's own id
+  // (skills/dw-chart/src/manifest.ts:27, skills/map-dw/src/manifest.ts:28), so the
+  // producible name depends on the id the request carries — and ONLY on that id.
+  it("accepts <id>.png for the id the request names, and refuses another id's png", () => {
+    const dir = join(scratch(), "elements", "el1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "el1.png"), "x");
+    expect(checkOutDir(dir, "el1").ok).toBe(true);
+
+    const other = checkOutDir(dir, "el2");
+    expect(other.ok).toBe(false);
+    if (other.ok) throw new Error("unreachable");
+    expect(other.message).toContain("el1.png");
+    expect(existsSync(join(dir, "el1.png"))).toBe(true);
+
+    // No id in the request: an arbitrary png stem stays a stranger.
+    expect(checkOutDir(dir).ok).toBe(false);
+    // An unsafe id is not honoured as a name source either.
+    expect(checkOutDir(dir, "../el1").ok).toBe(false);
+    expect(existsSync(join(dir, "el1.png"))).toBe(true);
+  });
+
   it("refuses a path that exists and is not a directory", () => {
     const dir = scratch();
     const file = join(dir, "notes.md");
@@ -182,5 +349,43 @@ describe("the reviewer's reproductions, through the CLI", () => {
     expect(body.message).toContain("absolute");
     expect(existsSync(join(cwd, "keep.txt"))).toBe(true);
     expect(existsSync(join(cwd, "sub", "deep.txt"))).toBe(true);
+  });
+
+  // The two reproductions from the residual review, which the extension allowlist
+  // answered with {"ok": true} and exit 0 while the files went away.
+  it("a run directory holding only run.json is refused, and run.json survives", async () => {
+    const dir = join(scratch(), "runs", "2026-07-24-annemasse");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "run.json"), '{"elements":[]}');
+
+    const r = await cli(["verb", "render"], renderRequest(dir));
+    expect(r.code).toBe(1);
+    const body = JSON.parse(r.out);
+    expect(body.ok).toBe(false);
+    expect(body.code).toBe("invalid-request");
+    expect(body.message).toContain("run.json");
+    expect(readdirSync(dir)).toEqual(["run.json"]);
+    expect(readFileSync(join(dir, "run.json"), "utf8")).toBe('{"elements":[]}');
+  });
+
+  it("a photo/document folder is refused, and every user file survives", async () => {
+    const dir = join(scratch(), "Pictures", "2026");
+    mkdirSync(join(dir, "frames", "originals"), { recursive: true });
+    writeFileSync(join(dir, "IMG_0001.png"), "photo");
+    writeFileSync(join(dir, "budget-2026.json"), '{"eur":1}');
+    writeFileSync(join(dir, "wedding.mp4"), "video");
+    writeFileSync(join(dir, "frames", "originals", "negative.dng"), "raw");
+
+    const r = await cli(["verb", "render"], renderRequest(dir));
+    expect(r.code).toBe(1);
+    const body = JSON.parse(r.out);
+    expect(body.ok).toBe(false);
+    expect(body.code).toBe("invalid-request");
+    expect(existsSync(join(dir, "IMG_0001.png"))).toBe(true);
+    expect(existsSync(join(dir, "budget-2026.json"))).toBe(true);
+    expect(existsSync(join(dir, "wedding.mp4"))).toBe(true);
+    expect(existsSync(join(dir, "frames", "originals", "negative.dng"))).toBe(
+      true,
+    );
   });
 });

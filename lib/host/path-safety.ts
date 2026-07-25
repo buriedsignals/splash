@@ -18,6 +18,7 @@
 import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
+import { isSafeId } from "../core/id-safety";
 import { fail, type VerbResult } from "../core/verbs/types";
 
 export type OutDirCheck =
@@ -28,19 +29,97 @@ export type OutDirCheck =
 // is unrecoverable.
 const MIN_SEGMENTS = 2;
 
-// Every filename the five producers write into an outDir, gathered from their own sources
-// (`static.png`, `interactive.html`, `scrolly.html`, `<name>.mp4`, `config.json`,
-// `native-source.json`, `report.json`, `source-manifest.json`, `a11y.png`,
-// `responsive-<w>.png`, `contrast-<mode>.png`, `video-*-still.png`, `theme.png`,
-// `<id>.png`, …) reduces to these four extensions — plus the one subdirectory any of them
-// creates, `frames/`, for the video renderers. Anything else in the directory was NOT put
-// there by a produce, so wiping it would destroy a host's own data.
-const PRODUCIBLE_EXTENSIONS = new Set(["png", "html", "mp4", "json"]);
-const PRODUCIBLE_DIRECTORIES = new Set(["frames"]);
+// ARTIFACT NAMES — the whole point of the probe, so it is matched by NAME, never by
+// extension. An extension allowlist (`png|html|mp4|json`) accepts a photo library, a
+// budget spreadsheet, a wedding video, and — worst case — a run directory whose only
+// entry is `run.json`, the manifest that IS the run. Every one of those would be wiped
+// while the façade answered `{"ok": true}`.
+//
+// The list below is the closed set of basenames the five producers actually write into an
+// outDir, each verified against the producing source:
+//
+//   chart-native  scripts/produce.mjs:165  config.json                  (all formats)
+//                                    :166  native-source.json           (all formats)
+//                                    :173  brand-concerns.json          (conditional)
+//                 scripts/snap-proof.mjs:59   static.png                (static)
+//                        produce.mjs:245  interactive.html              (interactive)
+//                 scripts/snap-proof.mjs:91   interactive.png           (interactive)
+//                        produce.mjs:357-359  video-<aspect>-still.png,
+//                                             video-<aspect>-final.png,
+//                                             <aspect>.mp4              (video)
+//                 scripts/snap-video.mjs:220  video-verify.json         (video)
+//   map-native    scripts/snap-static.mjs:119   static.png              (static)
+//                 scripts/snap-theme.mjs:246    theme.png               (static+dark)
+//                 scripts/snap-contrast.mjs:178 contrast-<mode>.png
+//                        produce.mjs:321-333  interactive.html,
+//                                             source-manifest.json, config.json
+//                 scripts/snap-proof.mjs:422   interactive.png          (interactive)
+//                 scripts/snap-responsive.mjs:63 responsive-<w>.png     (interactive)
+//                 scripts/snap-a11y.mjs:324    a11y.png                (interactive)
+//                        produce.mjs:408-409  video-<aspect>-still.png, <aspect>.mp4
+//                 scripts/snap-video.mjs:221   video-verify.json        (video)
+//   scrolly       scripts/produce.mjs:82-86  scrolly.html,
+//                                            source-manifest.json, config.json
+//   image-native  scripts/prep-images.mjs:150 prep-report.json
+//                 scripts/prep-images.mjs:69  frames/  (the ONE subdirectory)
+//                 scripts/prep-images.mjs:126 frames/<frame-id>.jpg
+//   dw-chart      src/manifest.ts:27          <id>.png   (static only)
+//   map-dw        src/manifest.ts:28          <id>.png   (static only)
+//
+// `<aspect>` is closed to landscape|square|portrait (chart-native produce.mjs:308-312,
+// map-native produce.mjs:219-241) — so `wedding.mp4` is NOT a producible name. `<mode>`
+// is closed to static|interactive (snap-contrast.mjs:83). `report.json` is deliberately
+// ABSENT: it belongs to the RUN directory, the parent of outDir, never to outDir itself
+// (skills/splash/src/render-provenance.ts:155-160).
+const ASPECT = "(?:landscape|square|portrait)";
+const PRODUCIBLE_NAMES: ReadonlySet<string> = new Set([
+  "a11y.png",
+  "brand-concerns.json",
+  "config.json",
+  "contrast-interactive.png",
+  "contrast-static.png",
+  "interactive.html",
+  "interactive.png",
+  "native-source.json",
+  "prep-report.json",
+  "scrolly.html",
+  "source-manifest.json",
+  "static.png",
+  "theme.png",
+  "video-verify.json",
+]);
+const PRODUCIBLE_PATTERNS: readonly RegExp[] = [
+  new RegExp(`^${ASPECT}\\.mp4$`),
+  new RegExp(`^video-${ASPECT}-(?:still|final)\\.png$`),
+  // The width set lives in map-native's snap-responsive.mjs and may grow; the shape is
+  // what identifies it, and no plausible user file is named `responsive-<digits>.png`.
+  /^responsive-\d+\.png$/,
+];
 
-// A produced filename is a plain artifact name: no separators, no leading dot, one of the
-// extensions above.
-const PRODUCIBLE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+// `frames/` is the only subdirectory a produce creates inside an outDir. It is NOT
+// trusted wholesale — that is how `frames/originals/negative.dng` survived the previous
+// guard. Its contents are probed too, and image-native writes exactly one shape there:
+// `<frame-id>.jpg`, where the frame id is already slug-guarded
+// (skills/image-native/src/image-story.ts:402, the same `[A-Za-z0-9_-]+` as an element
+// id). No nested directory, no other extension.
+const FRAMES_DIRECTORY = "frames";
+const PRODUCIBLE_FRAME = /^[A-Za-z0-9_-]+\.jpg$/;
+
+// `<id>.png` is producible ONLY for the id the request itself carries: the DW producers
+// derive the stem from `ctx.id`, so nothing wider is justified. Without an id in the
+// payload there is no producible png stem at all.
+function producibleIdPng(id: unknown): string | undefined {
+  return isSafeId(id) ? `${id}.png` : undefined;
+}
+
+function isProducibleFileName(
+  name: string,
+  idPng: string | undefined,
+): boolean {
+  if (PRODUCIBLE_NAMES.has(name)) return true;
+  if (idPng !== undefined && name === idPng) return true;
+  return PRODUCIBLE_PATTERNS.some((re) => re.test(name));
+}
 
 function segmentsOf(abs: string): string[] {
   return abs.split(sep).filter((s) => s.length > 0);
@@ -88,8 +167,9 @@ function protectedRoots(): string[] {
 }
 
 // The probe: what is already in there, and could a produce have written it? Read-only by
-// construction — `readdirSync` + `statSync`, never a delete.
-function unproducibleEntries(dir: string): string[] {
+// construction — `readdirSync` + `statSync`, never a delete. Reported names are prefixed
+// with their subdirectory so the refusal message says WHERE the stranger is.
+function unproducibleEntries(dir: string, idPng: string | undefined): string[] {
   let entries: string[];
   try {
     entries = readdirSync(dir);
@@ -106,21 +186,51 @@ function unproducibleEntries(dir: string): string[] {
       continue;
     }
     if (isDir) {
-      if (!PRODUCIBLE_DIRECTORIES.has(name)) strangers.push(`${name}/`);
+      // The one producible subdirectory is still PROBED, not trusted: a `frames/` a host
+      // filled with its own originals is the host's data, whatever the directory is named.
+      if (name !== FRAMES_DIRECTORY) strangers.push(`${name}/`);
+      else
+        strangers.push(
+          ...unproducibleFrames(join(dir, name)).map((n) => `${name}/${n}`),
+        );
       continue;
     }
-    const ext = name.includes(".")
-      ? name.slice(name.lastIndexOf(".") + 1).toLowerCase()
-      : "";
-    if (!PRODUCIBLE_NAME.test(name) || !PRODUCIBLE_EXTENSIONS.has(ext))
-      strangers.push(name);
+    if (!isProducibleFileName(name, idPng)) strangers.push(name);
   }
   return strangers.sort();
 }
 
+// Inside `frames/`: flat `<frame-id>.jpg` files and nothing else — no nested directory
+// (`frames/originals/` is a stranger), no other extension.
+function unproducibleFrames(dir: string): string[] {
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch (e) {
+    return [`<unreadable: ${(e as Error).message}>`];
+  }
+  const strangers: string[] = [];
+  for (const name of entries) {
+    let isDir = false;
+    try {
+      isDir = statSync(join(dir, name)).isDirectory();
+    } catch {
+      strangers.push(name);
+      continue;
+    }
+    if (isDir) strangers.push(`${name}/`);
+    else if (!PRODUCIBLE_FRAME.test(name)) strangers.push(name);
+  }
+  return strangers;
+}
+
 // The whole guard, as a value. Never throws — the façade answers a non-JS host that has no
 // `catch`, so a refusal has to be data all the way down.
-export function checkOutDir(outDir: unknown): OutDirCheck {
+//
+// `id` is the request's own element id, and it only ever WIDENS the probe by exactly one
+// name (`<id>.png`, the DW producers' output). It is optional and never trusted beyond the
+// slug guard, so a caller that omits it gets the strictest probe.
+export function checkOutDir(outDir: unknown, id?: unknown): OutDirCheck {
   if (typeof outDir !== "string" || outDir.trim().length === 0)
     return {
       ok: false,
@@ -188,7 +298,7 @@ export function checkOutDir(outDir: unknown): OutDirCheck {
       };
     // Probe BEFORE the destroy: a directory already holding things no produce writes is
     // somebody's data, not a stale render.
-    const strangers = unproducibleEntries(abs);
+    const strangers = unproducibleEntries(abs, producibleIdPng(id));
     if (strangers.length)
       return {
         ok: false,
@@ -215,6 +325,6 @@ export function outDirRefusal(payload: unknown): VerbResult<never> | undefined {
   if (typeof payload !== "object" || payload === null) return undefined;
   const outDir = (payload as Record<string, unknown>).outDir;
   if (typeof outDir !== "string") return undefined;
-  const verdict = checkOutDir(outDir);
+  const verdict = checkOutDir(outDir, (payload as Record<string, unknown>).id);
   return verdict.ok ? undefined : fail("invalid-request", verdict.message);
 }

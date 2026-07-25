@@ -411,6 +411,14 @@ deleted (`lib/host/path-safety.ts`):
 }
 ```
 
+```json
+{
+  "ok": false,
+  "code": "invalid-request",
+  "message": "outDir \"/tmp/host-run-demo\" resolves to \"/private/tmp/host-run-demo\", which already holds 1 entry no produce writes (run.json) — the contract wipes outDir before rendering, so it refuses rather than delete content it did not create; point outDir at a new or previously produced directory"
+}
+```
+
 What is refused: a relative path (it would resolve against the host's own working directory),
 a filesystem root or anything immediately below one, a home / temp / working directory or any
 ancestor of one, a path that exists and is not a directory, and a directory already holding
@@ -418,6 +426,19 @@ entries no produce writes. Symlinks and `..` segments are resolved *before* the 
 the "already holds" check is a read-only probe — nothing is deleted on the way to a refusal.
 Re-rendering into a directory a previous produce wrote is allowed, which is the point of
 wiping it.
+
+"Entries no produce writes" is decided by **artifact name, not by file extension**. The
+producible set is the closed list of basenames the five engines actually write — `static.png`,
+`interactive.html`, `interactive.png`, `scrolly.html`, `config.json`, `native-source.json`,
+`source-manifest.json`, `a11y.png`, `theme.png`, `prep-report.json`, `brand-concerns.json`,
+`video-verify.json`, `contrast-static.png`, `contrast-interactive.png`,
+`responsive-<digits>.png`, `{landscape,square,portrait}.mp4`,
+`video-{landscape,square,portrait}-{still,final}.png`, plus `<id>.png` for the id **this
+request** carries (the Datawrapper engines' one output) — with `frames/` as the single
+producible subdirectory, itself probed for the `<frame-id>.jpg` files image-native writes
+there. Matching on extension instead would accept a photo library, a budget spreadsheet, a
+wedding video, or a run directory whose only entry is `run.json`, and wipe them while
+reporting success; the third example above is exactly that case, refused.
 
 #### `verb` deliberately takes no `--run` flag
 
