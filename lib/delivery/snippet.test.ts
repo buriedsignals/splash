@@ -62,4 +62,57 @@ describe("renderSnippet", () => {
     expect((r as { value: string }).value).toContain("aspect-ratio");
     expect((r as { value: string }).value).not.toContain('height="responsive"');
   });
+
+  it("should refuse a placeholder name carrying underscores or digits, not just letters", () => {
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: META,
+      template: '<iframe src="{url}" data-x="{utm_source}"></iframe>',
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("{utm_source}");
+  });
+
+  it("should HTML-escape substituted metadata so quotes and markup cannot break the attribute", () => {
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: { ...META, title: 'Primes "cantonales" <b>en hausse</b>' },
+    });
+    expect(r.ok).toBe(true);
+    const value = (r as { value: string }).value;
+    expect(value).toContain(
+      'title="Primes &quot;cantonales&quot; &lt;b&gt;en hausse&lt;/b&gt;"',
+    );
+    expect(value).not.toContain('cantonales"');
+    expect(value).not.toContain("<b>");
+  });
+
+  it("should refuse a custom template that still demands a fixed {height} under a responsive sizing rule", () => {
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: { ...META, height: "responsive" },
+      template:
+        '<iframe src="{url}" title="{title}" height="{height}"></iframe>',
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("responsive");
+    expect((r as { message: string }).message).toContain("{height}");
+  });
+
+  it("should render a custom template without {height} under a responsive sizing rule", () => {
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: { ...META, height: "responsive" },
+      template: '<iframe src="{url}" title="{title}"></iframe>',
+    });
+    expect(r).toEqual({
+      ok: true,
+      value:
+        '<iframe src="https://a.example.pages.dev" title="Primes cantonales"></iframe>',
+    });
+  });
 });
