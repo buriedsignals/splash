@@ -382,6 +382,63 @@ Rôle de-risk de la tranche, à écrire dans ce spec après exécution (comme le
   §4.9 du Préflight (lister les projets existants d'un compte plutôt que saisir un identifiant).
   Cloudflare ne l'a pas exigée ; S3 non plus a priori ; **Fly, si**. Réponse attendue en L3.
 
+### Ce que L1 a effectivement révélé
+
+**L'interface a tenu les deux familles sans champ de circonstance.** `zip` (local, sans clé) et
+`embed-cloudflare` (hébergé, réseau vérifié) satisfont `Publisher` tels quels : aucun champ n'a été
+ajouté pour l'un que l'autre n'utilise, et aucune échappatoire hors interface n'a été nécessaire.
+Le critère du §3.1 tient donc sur le fond. **Mais il tient à un défaut près, et c'est le vrai
+enseignement :** `settings` est un sac partagé que l'appelant remplit pour **tous** les publishers,
+et un adapter peut en **ignorer un champ en silence**. C'est exactement ce qui s'est produit —
+`deliver` posait `snippetTemplate` pour chaque destination, seul Cloudflare le lisait, et une
+rédaction dont le CMS refuse les iframes recevait un `<iframe>` dans son `EMBED.txt` sans qu'aucun
+test ne s'en émeuve. **Règle pour L2/L3 : un adapter consomme explicitement chaque champ que
+`deliver` peut poser, ou déclare explicitement qu'il l'ignore.** Un champ non lu doit être une
+décision écrite, jamais un oubli.
+
+**Le critère « un adapter = un fichier + une ligne de registry » est faux à la marge : c'est deux
+fichiers + une ligne.** Un 3ᵉ adapter doit aussi porter son entrée dans `NEWSROOM_CAPABILITIES`
+(`lib/loop/deliver.ts` refuse une destination que le décor ne connaît pas), et
+`lib/delivery/index.test.ts` épingle l'ensemble exact des publishers enregistrés. Les trois entrées
+`embed-s3`/`embed-cms`/`embed-fly` sont pré-déclarées mais avec `env: []` et sans `settingsFields` :
+il faut donc les **éditer**, pas seulement les activer. C'est un coût de bookkeeping, pas un échec de
+conception — l'interface elle-même n'a rien exigé de circonstanciel.
+
+**La provenance a suffi à modéliser « publié puis périmé », après une correction.** La première
+formulation (`delivered` dès qu'**une** livraison porte la provenance courante) faisait dire
+`delivered` à `gateStateOf` pendant que `nextActions` disait encore `deliver` — deux dérivations en
+contradiction sur le même état. Verrouillé : `delivered` exige `requested.length > 0`, au moins un
+enregistrement, et que **toutes** les destinations demandées portent la provenance courante ; le
+`requested.length > 0` n'est pas cosmétique, `[].every()` vaut `true` et aurait fait dire
+« livré » à un élément n'ayant rien livré. `gateStateOf === "delivered"` est désormais le complément
+exact de `needsDelivery`, et un test épingle cette complémentarité plutôt que chaque moitié.
+
+**Deux défauts de forme que L2/L3 doivent hériter, pas re-découvrir :**
+
+1. **Une livraison réussie ne doit jamais être perdue par l'échec d'une autre.** La forme initiale
+   (boucler sur toutes les destinations dans un seul appel) jetait un enregistrement déjà obtenu dès
+   qu'une destination suivante refusait. `deliver` traite **une destination par appel**, ce qui colle
+   à la forme « un pas par `advance()` » de tous les autres steps de la boucle.
+2. **Le repli universel ne doit pas pouvoir être affamé par ce qu'il replie.** Tant que `deliver`
+   reprenait toujours la **première** destination non satisfaite, un Cloudflare non configuré
+   bloquait le `zip` indéfiniment — le repli rendu inatteignable par la panne qu'il existe pour
+   couvrir. `deliver` saute désormais à la destination suivante en attente, sans avaler le refus.
+
+**Enseignement structurel, hors interface.** Le registry est un **état global** partagé par tous les
+fichiers de test d'un même process `bun test`. Un fichier qui le réinitialisait sans nettoyer laissait
+le suivant vide, la composition root throwait sur le doublon, et `PUBLISHERS_REGISTERED` restait en
+TDZ — si bien que **la garde écrite pour prouver que le registry avait chargé était précisément ce
+qui throwait quand il n'avait pas chargé**. Conséquence mesurée : `bun run check` était vert
+uniquement parce qu'il lance `bun test` avec `cwd: lib` ; depuis la racine du repo, les mêmes
+58 fichiers donnaient 13 échecs. L'enregistrement est désormais idempotent et non-fatal. **Pour
+L2/L3 : ajouter un adapter ajoute un id au registry global — tout fichier de test qui le
+réinitialise doit le restaurer.**
+
+**Résidus parkés à la sortie de L1** (réels, non bloquants, avec leurs rulings) :
+`docs/splash/delivery-l1-followups.md`. Le plus sournois pour la suite : §3.10 **échoue ouvert** —
+un `NEWSROOM-PROFILE.md` malformé fait throw le parseur, `tryLoadDecor` rattrape, et le décor neutre
+n'a pas de `requiredSigners` : le gate de sign-off disparaît en silence.
+
 ---
 
 ## 5. L2 — S3-compatible *(conçu ici, planifié ensuite)*
