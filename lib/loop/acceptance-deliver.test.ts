@@ -30,7 +30,8 @@ import {
   provenanceHash,
   type RunManifest,
 } from "./manifest";
-import { neutralDecor } from "../newsroom/decor";
+import { generateKeyPairSync } from "node:crypto";
+import { loadDecor, neutralDecor } from "../newsroom/decor";
 import { DEFAULT_NEWSROOM_STATE } from "../newsroom/state";
 import { registerAllPublishers } from "../delivery";
 import { resetPublishersForTest } from "../core/publishers";
@@ -139,5 +140,104 @@ describe("delivering a produced element, end to end and offline", () => {
     };
     expect(gateStateOf(revised, revised.elements[0]!)).toBe("stale");
     expect(nextActions(revised)).toEqual(["produce"]);
+  });
+
+  // The driver is the ONLY production caller of deliver(), and it used to leave the profile at
+  // its `{}` default — so spec §3.5 (source/credit/lang come from NEWSROOM-PROFILE.md) held
+  // only for tests that passed a profile by hand. A French newsroom's package said
+  // "Provided by the newsroom" and lang "en". The profile now rides on the decor the driver
+  // already receives, which is why this test goes through advance(), not through deliver().
+  it("carries the newsroom's own source, credit and content language into the delivered package", async () => {
+    const install = mkdtempSync(join(tmpdir(), "splash-newsroom-fr-"));
+    writeFileSync(
+      join(install, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        "lang: fr",
+        "source:",
+        "  name: Heidi.news",
+        'credit: "Graphique : Heidi.news"',
+        "---",
+        "",
+      ].join("\n"),
+    );
+    try {
+      // The real decor of that install, read from disk — not a hand-built literal.
+      const decor = loadDecor(install, { env: {} });
+      const produced = producedRun();
+      const run: RunManifest = {
+        ...produced,
+        elements: [
+          {
+            ...produced.elements[0]!,
+            delivery: { requested: ["zip"], delivered: [] },
+          },
+        ],
+      };
+
+      const after = await advance(run, runDir, decor);
+      expect(after.events).toHaveLength(0);
+      const rec = after.elements[0]!.delivery!.delivered[0]!;
+      const archive = unzipSync(readFileSync(join(runDir, rec.artifact!.path)));
+      const meta = JSON.parse(
+        new TextDecoder().decode(archive["metadata.json"]!),
+      );
+      expect(meta).toMatchObject({
+        lang: "fr",
+        source: "Heidi.news",
+        credit: "Graphique : Heidi.news",
+      });
+    } finally {
+      rmSync(install, { recursive: true, force: true });
+    }
+  });
+
+  // The opt-in editorial gate of spec §3.10 was unreachable in production for the same reason:
+  // requiredSigners lives in NEWSROOM-PROFILE.md, and the driver never read it. The legacy
+  // path this supersedes (skills/splash/scripts/deploy-embed.mjs) DID enforce it, so the new
+  // path was strictly weaker than the old one until the decor carried it.
+  it("refuses to publish, through advance(), when the newsroom profile requires a sign-off", async () => {
+    const install = mkdtempSync(join(tmpdir(), "splash-newsroom-signers-"));
+    // A REAL Ed25519 SPKI key: brand-profile drops a signer whose key does not import, and a
+    // requiredSigner with no registered signer is a parse error, not the gate under test.
+    const publicBase64 = generateKeyPairSync("ed25519")
+      .publicKey.export({ type: "spki", format: "der" })
+      .toString("base64");
+    writeFileSync(
+      join(install, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        "signers:",
+        `  - yvan:${publicBase64}`,
+        "requiredSigners:",
+        "  - yvan",
+        "---",
+        "",
+      ].join("\n"),
+    );
+    try {
+      const decor = loadDecor(install, { env: {} });
+      const produced = producedRun();
+      const run: RunManifest = {
+        ...produced,
+        elements: [
+          {
+            ...produced.elements[0]!,
+            delivery: { requested: ["zip"], delivered: [] },
+          },
+        ],
+      };
+
+      const after = await advance(run, runDir, decor);
+      expect(after.elements[0]!.delivery!.delivered).toHaveLength(0);
+      expect(after.events).toHaveLength(1);
+      expect(after.events[0]).toMatchObject({
+        kind: "failure",
+        action: "deliver",
+      });
+      expect(after.events[0]!.message).toContain("sign-off");
+    } finally {
+      rmSync(install, { recursive: true, force: true });
+    }
   });
 });

@@ -67,6 +67,7 @@ function decorWith(status: "ready" | "missing" | "disabled"): Decor {
         help: [],
       },
     ],
+    profile: { lang: "en" },
   };
 }
 

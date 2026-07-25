@@ -8,7 +8,10 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadNewsroomProfile } from "../../skills/splash/src/brand-profile";
+import {
+  loadNewsroomProfile,
+  type BrandProfile,
+} from "../../skills/splash/src/brand-profile";
 import {
   DEFAULT_UI_LANG,
   resolveLanguage,
@@ -31,11 +34,33 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * The newsroom facts a DELIVERY carries: the source line and credit printed on the package,
+ * the CONTENT language it is written in, and the opt-in sign-off requirement (spec §3.10).
+ *
+ * It rides on the decor because the decor is what every caller already threads: the driver
+ * hands its decor to `deliver`, and without these facts on it the only production caller had
+ * no way to supply them — source/credit/lang never reached the delivered artifact, and
+ * `requiredSigners` was enforced in tests only. Structurally the same shape as
+ * lib/delivery/metadata.ts's `ProfileFacts`, deliberately NOT imported from it: lib/newsroom
+ * must not grow a dependency on lib/delivery.
+ */
+export type DeliveryProfile = {
+  source?: string;
+  credit?: string;
+  /** BCP-47, the CONTENT language — already resolved through language.content. */
+  lang?: string;
+  /** Signer ids whose editorial sign-off publishing REQUIRES. Absent ⇒ nothing is asked. */
+  requiredSigners?: string[];
+};
+
 export type Decor = {
   root: string;
   state: NewsroomState;
   language: ResolvedLanguage;
   readiness: CapabilityReadiness[];
+  /** What a delivery prints and what it requires. Empty when the install has no profile. */
+  profile: DeliveryProfile;
 };
 
 export function installRoot(): string {
@@ -74,11 +99,44 @@ export function loadDecor(dir?: string, opts: LoadDecorOpts = {}): Decor {
   const mayWrite = dir === undefined;
   const env = opts.env ?? decorEnv(root);
   const state = resolveState(root, env, mayWrite);
+  const profile = loadNewsroomProfile(root);
   const language = resolveLanguage({
     uiLang: state.uiLang,
-    profileLang: loadNewsroomProfile(root)?.lang,
+    profileLang: profile?.lang,
   });
-  return { root, state, language, readiness: decorReadiness(state, { env }) };
+  return {
+    root,
+    state,
+    language,
+    readiness: decorReadiness(state, { env }),
+    profile: deliveryProfile(profile, language.content),
+  };
+}
+
+/**
+ * The delivery-facing view of a newsroom profile. `lang` is the RESOLVED content language,
+ * not the raw profile field: a newsroom that set only `uiLang` still publishes in the
+ * language it reads, which is exactly what `resolveLanguage` already decided.
+ */
+function deliveryProfile(
+  profile: BrandProfile | null,
+  contentLang: string,
+): DeliveryProfile {
+  if (!profile) return { lang: contentLang };
+  // `{name}` is the documented placeholder of the credit template. Substituting it here means
+  // a newsroom that used the documented form never finds a literal "{name}" in its package;
+  // a credit without the placeholder is untouched.
+  const credit = profile.source?.name
+    ? profile.credit?.replaceAll("{name}", profile.source.name)
+    : profile.credit;
+  return {
+    lang: contentLang,
+    ...(profile.source?.name ? { source: profile.source.name } : {}),
+    ...(credit ? { credit } : {}),
+    ...(profile.requiredSigners?.length
+      ? { requiredSigners: profile.requiredSigners }
+      : {}),
+  };
 }
 
 function resolveState(
@@ -126,5 +184,6 @@ export function neutralDecor(): Decor {
     state: { ...DEFAULT_NEWSROOM_STATE, capabilities: {} },
     language: { ui: DEFAULT_UI_LANG, content: DEFAULT_UI_LANG },
     readiness: [],
+    profile: { lang: DEFAULT_UI_LANG },
   };
 }

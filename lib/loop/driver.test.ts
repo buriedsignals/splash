@@ -43,6 +43,7 @@ const NEUTRAL_DECOR: Decor = {
   },
   language: { ui: "en", content: "en" },
   readiness: [],
+  profile: { lang: "en" },
 };
 
 test("full loop: orient → (human) → propose → (human) → produce → revise → produce, state always coherent", async () => {

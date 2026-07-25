@@ -49,7 +49,14 @@ export async function deliver(
   el: RunElement,
   runDir: string,
   decor: Decor,
-  profile: ProfileFacts & { requiredSigners?: string[] } = {},
+  // Defaulted from the DECOR, never from `{}`: the driver is the only production caller and
+  // it passes a decor, so an empty default meant the live loop published packages that said
+  // "Provided by the newsroom" in English whatever the newsroom's profile said (spec §3.5),
+  // and made the requiredSigners off-ramp below unreachable outside a test (spec §3.10) —
+  // strictly weaker than the legacy deploy-embed.mjs it replaces, which auto-discovered
+  // NEWSROOM-PROFILE.md. Deriving the default from an argument the function already receives
+  // is what keeps a future caller from having to remember.
+  profile: ProfileFacts & { requiredSigners?: string[] } = decor.profile,
   opts: DeliverOpts = {},
 ): Promise<VerbResult<RunElement>> {
   if (!PUBLISHERS_REGISTERED)
