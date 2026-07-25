@@ -41,10 +41,26 @@ describe("the whole journey through the façade", () => {
     // 1. The host discovers the contract.
     const verbs = await cli(["verbs"]);
     expect(verbs.code).toBe(0);
-    const declared = (
-      verbs.body as { verbs: { name: string; implemented: boolean }[] }
-    ).verbs;
-    expect(declared.find((v) => v.name === "render")!.implemented).toBe(true);
+    // The shared envelope: `verbs` answers { ok, value } like every other command.
+    const capabilities = (
+      verbs.body as {
+        ok: boolean;
+        value: {
+          verbs: { name: string; implemented: boolean }[];
+          vocabulary: { engines: { name: string; formats: string[] }[] };
+        };
+      }
+    ).value;
+    expect((verbs.body as { ok: boolean }).ok).toBe(true);
+    expect(
+      capabilities.verbs.find((v) => v.name === "render")!.implemented,
+    ).toBe(true);
+    // The engine the host is about to name, and the format it is about to ask for, are both
+    // discoverable from the declaration alone — no reading of our source.
+    const chartNative = capabilities.vocabulary.engines.find(
+      (e) => e.name === "chart-native",
+    )!;
+    expect(chartNative.formats).toContain("static");
 
     // 2. It reads where the run stands — no artifact yet.
     const before = await cli(["state", "--run", dir]);
