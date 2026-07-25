@@ -48,18 +48,20 @@ import { resolveProfile, resolveProfilePath } from "../src/resolve-profile.ts";
 import { readNewsroomState } from "../../../lib/newsroom/state.ts";
 import { resolveLanguage } from "../../../lib/newsroom/language.ts";
 import { exportProposalCopy } from "../../../lib/newsroom/ui-copy.ts";
-import { loadNewsroomProfile } from "../src/brand-profile.ts";
 
 const SELF = fileURLToPath(import.meta.url);
 // The interface language for everything this script PRINTS. A fresh install resolves to
 // English (issue #6); a newsroom that saved a preference gets it without being asked again;
 // SPLASH_UI_LANG overrides both for ONE run and writes nothing.
+//
+// The profile's `lang:` is deliberately NOT consulted here: it is the DELIVERABLES' language
+// (`resolveLanguage`'s `content`), and passing it in would read as if it were a fallback for
+// the interface — which it is not, and never was: `resolveLanguage` cannot let it reach `ui`.
 function uiCopy() {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const { ui } = resolveLanguage({
     override: { ui: process.env.SPLASH_UI_LANG },
     uiLang: readNewsroomState(root).uiLang,
-    profileLang: loadNewsroomProfile(root)?.lang,
   });
   return exportProposalCopy(ui);
 }
