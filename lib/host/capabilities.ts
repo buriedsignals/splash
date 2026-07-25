@@ -1,5 +1,7 @@
+import { allProducers } from "../core/registry";
 import { CHANNELS, VERBS, VISUAL_FORMATS } from "../core/vocabulary";
-import { VERB_ERROR_CODES } from "../core/verbs/types";
+import { VERB_ERROR_CODES, type RenderPayload } from "../core/verbs/types";
+import { HOST_ERROR_CODES } from "./errors";
 
 export type PayloadField = {
   name: string;
@@ -8,11 +10,30 @@ export type PayloadField = {
   enum?: readonly string[];
 };
 
+// One engine as a host sees it: the registry key it must pass as `engine`, and the formats
+// that engine's own manifest declares. Without the second half a host can discover the
+// engine names but not which of them can honour the format it wants — and the format gate
+// in render() answers `unsupported-format` from exactly this data.
+export type EngineDeclaration = {
+  name: string;
+  formats: readonly string[];
+};
+
 export type Capabilities = {
   contract: "splash-verbs/1";
   verbs: { name: string; implemented: boolean; payload?: PayloadField[] }[];
-  vocabulary: { formats: readonly string[]; channels: readonly string[] };
-  errorCodes: readonly string[];
+  vocabulary: {
+    formats: readonly string[];
+    channels: readonly string[];
+    engines: readonly EngineDeclaration[];
+  };
+  // Split, because a host meets two families and they arrive differently: `verb` codes come
+  // in a VerbResult body, `host` codes come from the façade's own commands. Each has ONE
+  // declared source (lib/core/verbs/types.ts, lib/host/errors.ts) — neither is retyped here.
+  errorCodes: {
+    verb: readonly string[];
+    host: readonly string[];
+  };
 };
 
 // Verbs with a body today. The vocabulary is CLOSED and declared in full — a host must be
@@ -20,29 +41,73 @@ export type Capabilities = {
 // than discovering it as an error.
 const IMPLEMENTED = new Set<string>(["render"]);
 
-const RENDER_PAYLOAD: PayloadField[] = [
-  { name: "engine", type: "string", required: true },
-  // OPAQUE by contract (I3): only the engine's own validator understands it, so the
-  // declaration says it exists and stops there.
-  { name: "spec", type: "unknown", required: true },
-  { name: "format", type: "string", required: true, enum: VISUAL_FORMATS },
-  { name: "channel", type: "string", required: true, enum: CHANNELS },
-  { name: "outDir", type: "string", required: true },
-  { name: "id", type: "string", required: true },
-];
+// The declaration of render's payload, KEYED BY THE PAYLOAD TYPE. `Record<keyof
+// RenderPayload, …>` is the whole point: adding a field to RenderPayload (lib/core/verbs/
+// types.ts) makes this object miss a key and stops compiling, so the declaration cannot
+// silently keep describing the previous shape. Before this, the two agreed only by hand and
+// a test's hardcoded name list passed against itself. §4.4 of the spec records the
+// predecessor branch being bitten by exactly this drift class.
+//
+// A function, not a constant, because the engine enum is read from the registry at call
+// time — the registry is populated by the composition root the caller binds.
+function renderPayloadFields(): Record<
+  keyof RenderPayload,
+  Omit<PayloadField, "name">
+> {
+  return {
+    engine: {
+      type: "string",
+      required: true,
+      enum: engineDeclarations().map((e) => e.name),
+    },
+    // OPAQUE by contract (I3): only the engine's own validator understands it, so the
+    // declaration says it exists and stops there.
+    spec: { type: "unknown", required: true },
+    format: { type: "string", required: true, enum: VISUAL_FORMATS },
+    channel: { type: "string", required: true, enum: CHANNELS },
+    outDir: {
+      type: "string",
+      required: true,
+      // Not an enum but a constraint, and the façade enforces it (lib/host/path-safety.ts):
+      // the contract wipes and recreates outDir, so a relative path would resolve against
+      // the host's own working directory.
+    },
+    id: { type: "string", required: true },
+  };
+}
 
-// The machine-readable contract. Every enumeration is DERIVED from the vocabulary, never
-// re-typed here: a local copy would drift from the union the payload type is built on, and
-// this declaration is exactly what a host trusts instead of reading our source.
+function payloadFields(): PayloadField[] {
+  return Object.entries(renderPayloadFields()).map(([name, field]) => ({
+    name,
+    ...field,
+  }));
+}
+
+// Derived from the registry, never a hand-written list: engines self-register their manifest
+// (skills/<engine>/src/manifest.ts) and `allProducers()` is already the single source dispatch
+// reads. Sorted so the declaration is stable across registration order.
+function engineDeclarations(): EngineDeclaration[] {
+  return allProducers()
+    .map((m) => ({ name: m.name, formats: [...m.formats] }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// The machine-readable contract. Every enumeration is DERIVED from the vocabulary or the
+// registry, never re-typed here: a local copy would drift from the union the payload type is
+// built on, and this declaration is exactly what a host trusts instead of reading our source.
 export function capabilities(): Capabilities {
   return {
     contract: "splash-verbs/1",
     verbs: VERBS.map((name) => ({
       name,
       implemented: IMPLEMENTED.has(name),
-      ...(name === "render" ? { payload: RENDER_PAYLOAD } : {}),
+      ...(name === "render" ? { payload: payloadFields() } : {}),
     })),
-    vocabulary: { formats: VISUAL_FORMATS, channels: CHANNELS },
-    errorCodes: VERB_ERROR_CODES,
+    vocabulary: {
+      formats: VISUAL_FORMATS,
+      channels: CHANNELS,
+      engines: engineDeclarations(),
+    },
+    errorCodes: { verb: VERB_ERROR_CODES, host: HOST_ERROR_CODES },
   };
 }
