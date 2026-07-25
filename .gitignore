@@ -8,3 +8,8 @@ node_modules
 # git worktrees created by the harness (EnterWorktree)
 .claude/worktrees/
 .splash-preflight.json
+
+# per-install decor (lib/newsroom/state.ts) — written at the install root, never shared.
+# Committing one would make every install of the release believe it is already migrated.
+newsroom.json
+.splash-runtime

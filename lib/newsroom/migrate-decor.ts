@@ -1,17 +1,27 @@
 // migrate-decor.ts — a one-time absorption, so an existing install is RECOGNISED instead of
 // re-interrogated (#5: "existing configurator installations migrate without losing .env
-// values"). Two legacy supports fold into newsroom.json and are then removed:
+// values"). Two legacy supports fold into newsroom.json:
 //   .splash-runtime        → state.runtime
 //   .splash-preflight.json → state.capabilities[id].lastVerified (green stamps only)
+//
+// ABSORBED IN P1, REMOVED IN P2. This migration deliberately deletes nothing: both files
+// still have live readers and writers that P1 does not move. `install/bootstrap.sh` reads
+// .splash-runtime on EVERY invocation — including its documented "re-run this installer to
+// resume" path — so deleting it would silently reinstall a goose/codex/gemini newsroom under
+// a different runtime and rewrite its launcher. `install/configurator.ts` still writes it,
+// and `skills/splash/scripts/preflight.mjs` still writes .splash-preflight.json. Removal
+// belongs with the move of those writers (P2, when the configurator becomes the preflight
+// page); until then the legacy files stay, and this reads them.
+//
 // .env is NEVER touched: it is and stays the single home of every credential.
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { NEWSROOM_CAPABILITIES } from "./capabilities";
+import { loadNewsroomProfile } from "../../skills/splash/src/brand-profile";
 import {
   DEFAULT_NEWSROOM_STATE,
   NEWSROOM_STATE_FILE,
+  defaultCapabilities,
   writeNewsroomState,
-  type CapabilityState,
   type NewsroomState,
 } from "./state";
 
@@ -24,22 +34,6 @@ export function needsDecorMigration(dir: string): boolean {
     existsSync(join(dir, LEGACY_RUNTIME_FILE)) ||
     existsSync(join(dir, LEGACY_PREFLIGHT_FILE))
   );
-}
-
-function isSet(v: string | undefined): boolean {
-  return typeof v === "string" && v.trim() !== "";
-}
-
-// A capability an existing install can already exercise was, in effect, already chosen: the
-// journalist supplied its key. Enabling exactly those is what stops the migration from
-// asking a working install to configure itself again.
-function enabledByEnv(
-  capId: string,
-  env: Record<string, string | undefined>,
-): boolean {
-  const cap = NEWSROOM_CAPABILITIES[capId]!;
-  if (!cap.implemented) return false;
-  return cap.env.every((group) => group.some((name) => isSet(env[name])));
 }
 
 function readGreenStamps(dir: string): Record<string, string> {
@@ -59,12 +53,15 @@ function readGreenStamps(dir: string): Record<string, string> {
   }
 }
 
-export function migrateDecor(
+/**
+ * The state an existing install migrates TO, derived and returned without being written.
+ * Pure enough to be the answer a read-only caller gets (`loadDecor` with an explicit dir):
+ * the decor a host reads must not depend on whether anyone was allowed to persist it.
+ */
+export function migratedDecorState(
   dir: string,
   env: Record<string, string | undefined>,
-): { state: NewsroomState; removed: string[] } {
-  const removed: string[] = [];
-
+): NewsroomState {
   let runtime = DEFAULT_NEWSROOM_STATE.runtime;
   const runtimePath = join(dir, LEGACY_RUNTIME_FILE);
   if (existsSync(runtimePath)) {
@@ -73,27 +70,27 @@ export function migrateDecor(
   }
 
   const stamps = readGreenStamps(dir);
-  const capabilities: Record<string, CapabilityState> = {};
-  for (const id of Object.keys(NEWSROOM_CAPABILITIES)) {
-    const entry: CapabilityState = { enabled: enabledByEnv(id, env) };
-    if (stamps[id]) entry.lastVerified = { at: stamps[id]!, result: "ok" };
-    capabilities[id] = entry;
-  }
+  const capabilities = defaultCapabilities(env);
+  for (const [id, at] of Object.entries(stamps))
+    if (capabilities[id]) capabilities[id]!.lastVerified = { at, result: "ok" };
 
-  const state: NewsroomState = {
-    schemaVersion: 1,
-    runtime,
-    uiLang: DEFAULT_NEWSROOM_STATE.uiLang,
-    capabilities,
-  };
+  // An EXISTING newsroom keeps the language it already works in. English is the default for a
+  // FRESH install (issue #6 asks for that, and only that); flipping a French newsroom's menus
+  // to English on the day it upgrades would be a regression dressed as a default. The
+  // deliverable language it declared in NEWSROOM-PROFILE.md is the only evidence P1 has of
+  // which language it works in, so it seeds the interface language once, here.
+  const uiLang =
+    loadNewsroomProfile(dir)?.lang?.trim() || DEFAULT_NEWSROOM_STATE.uiLang;
+
+  return { schemaVersion: 1, runtime, uiLang, capabilities };
+}
+
+/** Derive the migrated state and persist it. The state file is the only thing written. */
+export function migrateDecor(
+  dir: string,
+  env: Record<string, string | undefined>,
+): NewsroomState {
+  const state = migratedDecorState(dir, env);
   writeNewsroomState(dir, state);
-
-  for (const file of [LEGACY_RUNTIME_FILE, LEGACY_PREFLIGHT_FILE]) {
-    const path = join(dir, file);
-    if (existsSync(path)) {
-      rmSync(path);
-      removed.push(file);
-    }
-  }
-  return { state, removed };
+  return state;
 }

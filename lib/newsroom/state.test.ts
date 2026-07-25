@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   DEFAULT_NEWSROOM_STATE,
   NEWSROOM_STATE_FILE,
+  defaultCapabilities,
   readNewsroomState,
   writeNewsroomState,
   type NewsroomState,
@@ -83,5 +84,58 @@ describe("the newsroom state file", () => {
     const d = dir();
     writeNewsroomState(d, FILLED);
     expect(readdirSync(d)).toEqual([NEWSROOM_STATE_FILE]);
+  });
+});
+
+// The ONE home of the enablement default (C1): a key that is already present IS the choice.
+// Both callers use this — `loadDecor` on a fresh install, and the legacy migration, which
+// adds only `runtime` and the green stamps on top of it.
+describe("defaultCapabilities", () => {
+  it("enables a capability whose key is present, and nothing else", () => {
+    const caps = defaultCapabilities({ DATAWRAPPER_API_TOKEN: "dw-token" });
+    expect(caps["dw-chart"]?.enabled).toBe(true);
+    expect(caps["map-dw"]?.enabled).toBe(true);
+    expect(caps["map-native"]?.enabled).toBe(false);
+    expect(caps["embed-cloudflare"]?.enabled).toBe(false);
+  });
+
+  it("enables the key-free engines on an empty environment", () => {
+    const enabled = Object.entries(defaultCapabilities({}))
+      .filter(([, c]) => c.enabled)
+      .map(([id]) => id)
+      .sort();
+    expect(enabled).toEqual(["chart-native", "image-native"]);
+  });
+
+  it("accepts EITHER member of an alternatives group (the MapTiler mirror rule)", () => {
+    expect(
+      defaultCapabilities({ REMOTION_MAPTILER_KEY: "mt" })["map-native"]
+        ?.enabled,
+    ).toBe(true);
+  });
+
+  it("treats a whitespace-only value as no key at all", () => {
+    expect(
+      defaultCapabilities({ DATAWRAPPER_API_TOKEN: "   " })["dw-chart"]
+        ?.enabled,
+    ).toBe(false);
+  });
+
+  it("never enables a capability that is only declared, however many keys are set", () => {
+    const caps = defaultCapabilities({
+      DATAWRAPPER_API_TOKEN: "x",
+      VITE_MAPTILER_KEY: "x",
+      CLOUDFLARE_API_TOKEN: "x",
+      CLOUDFLARE_ACCOUNT_ID: "x",
+      SPLASH_EMBED_PROJECT: "x",
+    });
+    for (const id of ["embed-cms", "embed-s3", "embed-fly"])
+      expect(caps[id]?.enabled).toBe(false);
+    expect(caps["embed-cloudflare"]?.enabled).toBe(true);
+  });
+
+  it("carries no verification stamp of its own — enablement is a want, not a check", () => {
+    for (const c of Object.values(defaultCapabilities({})))
+      expect(c.lastVerified).toBeUndefined();
   });
 });

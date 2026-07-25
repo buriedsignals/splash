@@ -15,6 +15,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { NEWSROOM_CAPABILITIES } from "./capabilities";
+import { isSet } from "./probe";
 
 export const NEWSROOM_STATE_FILE = "newsroom.json";
 
@@ -50,6 +52,31 @@ export const DEFAULT_NEWSROOM_STATE: NewsroomState = {
   uiLang: "en",
   capabilities: {},
 };
+
+/**
+ * A capability an install can already exercise was, in effect, already chosen: someone
+ * supplied its key. Enabling exactly those — and nothing else — is the ENABLEMENT DEFAULT of
+ * the whole decor (spec §4.5): it is what stops a working install from being asked to
+ * configure itself again, and what stops a fresh clone with a hand-written `.env` from
+ * reporting every capability disabled with an empty reason.
+ *
+ * One home, two callers: `loadDecor` when no `newsroom.json` exists, and the legacy
+ * migration, which only adds `runtime` and the green stamps on top of this.
+ */
+export function defaultCapabilities(
+  env: Record<string, string | undefined>,
+): Record<string, CapabilityState> {
+  const capabilities: Record<string, CapabilityState> = {};
+  for (const [id, cap] of Object.entries(NEWSROOM_CAPABILITIES))
+    capabilities[id] = {
+      // A capability that is only DECLARED (its adapter is not built) can never be enabled by
+      // the presence of a key, however many are set.
+      enabled:
+        cap.implemented &&
+        cap.env.every((group) => group.some((name) => isSet(env[name]))),
+    };
+  return capabilities;
+}
 
 export function newsroomStatePath(dir: string): string {
   return join(dir, NEWSROOM_STATE_FILE);

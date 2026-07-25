@@ -55,7 +55,7 @@ Le modèle déclaratif, lui, **existe déjà** : `ENGINE_REQUIREMENTS` (groupes 
 | `newsroom.json` | Préflight | capacités activées · publisher choisi + identifiants **non-secrets** · langue d'**interface** · runtime · horodatage de vérification | Préflight |
 | `NEWSROOM-PROFILE.md` | la rédaction | palette · source par défaut · crédit · langue des **visuels** | créé 1× depuis un gabarit, puis édité à la main |
 
-`newsroom.json` **absorbe** `.splash-runtime` et `.splash-preflight.json`, qui disparaissent (migration au §4.5).
+`newsroom.json` **absorbe** `.splash-runtime` et `.splash-preflight.json` en **P1** ; ces deux fichiers ne **disparaissent qu'en P2**, quand leurs écrivains déménagent avec la page (le configurator écrit encore `.splash-runtime`, `preflight.mjs` écrit encore `.splash-preflight.json`, et `bootstrap.sh` lit `.splash-runtime` à chaque lancement). Les supprimer en P1 casserait le chemin de reprise de l'installeur (migration au §4.5).
 
 **Invariant mécaniquement testable : aucune valeur de `.env` n'atterrit dans `newsroom.json`.** Le test écrit un état complet à partir d'une configuration porteuse de secrets et vérifie qu'aucune de leurs valeurs n'apparaît dans le JSON sérialisé.
 
@@ -165,9 +165,10 @@ Sans consommateur, le cœur serait une abstraction non prouvée. Trois sont câb
 Une install existante ne perd rien :
 
 - `.env` : **inchangé**, jamais réécrit par la migration. C'est et ça reste le domicile des secrets.
-- `.splash-runtime` → `newsroom.json.runtime`, puis suppression.
-- `.splash-preflight.json` → `newsroom.json.capabilities[].lastVerified`, puis suppression.
-- Aucun fichier présent : état par défaut — toutes capacités `enabled: false` sauf celles dont les clés sont **déjà** dans `.env` (une install existante est donc reconnue comme configurée, sans qu'on redemande quoi que ce soit).
+- `.splash-runtime` → `newsroom.json.runtime`. **Absorbé en P1, supprimé en P2** : `install/bootstrap.sh` le lit à *chaque* lancement, y compris sur le chemin de reprise documenté (« re-run this installer ») — le supprimer en P1 réinstallerait silencieusement une rédaction `goose`/`codex`/`gemini` sous un autre runtime.
+- `.splash-preflight.json` → `newsroom.json.capabilities[].lastVerified`. **Absorbé en P1, supprimé en P2**, pour la même raison : `skills/splash/scripts/preflight.mjs` l'écrit encore.
+- La langue d'**interface** d'une install existante est amorcée depuis le `lang:` de son `NEWSROOM-PROFILE.md` : une rédaction francophone qui migre garde ses menus en français. Le défaut anglais du §3.3 vaut pour une install **fraîche** (#6 demande ça, et rien de plus).
+- Aucun fichier présent : état par défaut — toutes capacités `enabled: false` sauf celles dont les clés sont **déjà** dans `.env` (une install existante est donc reconnue comme configurée, sans qu'on redemande quoi que ce soit). **Cette dérivation est la même fonction que celle de la migration** (`defaultCapabilities(env)`, `lib/newsroom/state.ts`) : un clone frais avec un `.env` écrit à la main est configuré exactement comme une install migrée, jamais « tout désactivé, sans raison ».
 - Fichier corrompu : état vide, aucun throw, la page de P2 permet de reconfigurer.
 
 ### 4.6 Erreurs et off-ramps (first-class)
@@ -252,6 +253,8 @@ Les 4 `verify*` sont **déplacées ici** depuis `install/configurator-core.ts` v
 Repris tels quels de `install/configurator.ts`, parce que ce sont des pièges déjà payés : `127.0.0.1` + port libre (`:44-46`) · ouverture navigateur avec repli silencieux (`:19-31`) · timeout d'inactivité qui ne laisse jamais pendre le bootstrap (`:133-140`) · échec d'écriture qui rapporte la cause réelle et sort non-zéro (`:93-108`).
 
 `install/configurator.ts` **reste et délègue** : `bootstrap.sh` ne bouge pas.
+
+**Obligation P2 — fermer les deux domiciles de `runtime`.** P1 absorbe `.splash-runtime` sans le supprimer (§4.5), donc le champ a temporairement **deux écrivains** : `install/configurator.ts:89-92` écrit encore le fichier legacy, et la migration ne se rejoue jamais (`needsDecorMigration` est faux dès que `newsroom.json` existe) — une reconfiguration met donc à jour `.splash-runtime` pendant que `newsroom.json.runtime` rancit. C'est une entorse assumée et bornée à l'invariant « un champ, un seul domicile » (§3.1). P2 la ferme, et ce n'est pas optionnel : la page écrit `newsroom.json` (via `writeNewsroomState`) au lieu du fichier legacy, `install/bootstrap.sh` lit le runtime depuis `newsroom.json`, et les deux fichiers legacy sont alors supprimés — même geste pour `.splash-preflight.json` avec `skills/splash/scripts/preflight.mjs`. Tant que ce n'est pas fait, la suppression n'a pas le droit d'être faite ailleurs.
 
 ### 5.2 Les sections, dans l'ordre où une rédaction les vit
 

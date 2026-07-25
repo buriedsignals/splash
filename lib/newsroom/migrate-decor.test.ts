@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   LEGACY_PREFLIGHT_FILE,
   LEGACY_RUNTIME_FILE,
+  migratedDecorState,
   migrateDecor,
   needsDecorMigration,
 } from "./migrate-decor";
@@ -40,20 +41,25 @@ describe("absorbing the legacy decor", () => {
     expect(needsDecorMigration(dir())).toBe(false);
   });
 
-  it("carries the chosen runtime over and removes the legacy file", () => {
+  // ABSORBED, NOT REMOVED (P1). install/bootstrap.sh reads .splash-runtime on EVERY
+  // invocation, including its documented "re-run this installer" recovery path, and
+  // install/configurator.ts still writes it. Deleting it here silently reinstalled a
+  // goose/codex/gemini newsroom under a different runtime. Removal moves to P2, with the
+  // writers.
+  it("carries the chosen runtime over and LEAVES the legacy file in place", () => {
     const d = dir();
     writeFileSync(join(d, LEGACY_RUNTIME_FILE), "goose\n");
-    const { state, removed } = migrateDecor(d, {});
+    const state = migrateDecor(d, {});
     expect(state.runtime).toBe("goose");
-    expect(removed).toContain(LEGACY_RUNTIME_FILE);
-    expect(existsSync(join(d, LEGACY_RUNTIME_FILE))).toBe(false);
+    expect(existsSync(join(d, LEGACY_RUNTIME_FILE))).toBe(true);
+    expect(readFileSync(join(d, LEGACY_RUNTIME_FILE), "utf8")).toBe("goose\n");
     expect(readNewsroomState(d).runtime).toBe("goose");
   });
 
   it("enables what an existing install already has keys for, and nothing else", () => {
     const d = dir();
     writeFileSync(join(d, LEGACY_RUNTIME_FILE), "claude\n");
-    const { state } = migrateDecor(d, FULL_ENV);
+    const state = migrateDecor(d, FULL_ENV);
     const enabled = Object.entries(state.capabilities)
       .filter(([, c]) => c.enabled)
       .map(([id]) => id)
@@ -72,7 +78,7 @@ describe("absorbing the legacy decor", () => {
   it("enables only the key-free engines when the environment is empty", () => {
     const d = dir();
     writeFileSync(join(d, LEGACY_RUNTIME_FILE), "claude\n");
-    const { state } = migrateDecor(d, {});
+    const state = migrateDecor(d, {});
     const enabled = Object.entries(state.capabilities)
       .filter(([, c]) => c.enabled)
       .map(([id]) => id)
@@ -83,7 +89,7 @@ describe("absorbing the legacy decor", () => {
   it("never enables a capability that is only declared", () => {
     const d = dir();
     writeFileSync(join(d, LEGACY_RUNTIME_FILE), "claude\n");
-    const { state } = migrateDecor(d, FULL_ENV);
+    const state = migrateDecor(d, FULL_ENV);
     for (const id of ["embed-cms", "embed-s3", "embed-fly"])
       expect(state.capabilities[id]?.enabled).toBe(false);
   });
@@ -113,7 +119,7 @@ describe("absorbing the legacy decor", () => {
         },
       }),
     );
-    const { state, removed } = migrateDecor(d, FULL_ENV);
+    const state = migrateDecor(d, FULL_ENV);
     expect(state.capabilities["dw-chart"]?.lastVerified).toEqual({
       at: "2026-07-20T09:00:00.000Z",
       result: "ok",
@@ -122,14 +128,51 @@ describe("absorbing the legacy decor", () => {
     // environment on every read, so carrying them would only make the state stale.
     expect(state.capabilities["map-native"]?.lastVerified).toBeUndefined();
     expect(state.capabilities["scrolly"]?.lastVerified).toBeUndefined();
-    expect(removed).toContain(LEGACY_PREFLIGHT_FILE);
+    expect(existsSync(join(d, LEGACY_PREFLIGHT_FILE))).toBe(true);
   });
 
   it("ignores a corrupt persisted status file", () => {
     const d = dir();
     writeFileSync(join(d, LEGACY_PREFLIGHT_FILE), "not json at all");
     expect(() => migrateDecor(d, {})).not.toThrow();
-    expect(existsSync(join(d, LEGACY_PREFLIGHT_FILE))).toBe(false);
+    expect(existsSync(join(d, LEGACY_PREFLIGHT_FILE))).toBe(true);
+  });
+
+  // I4: issue #6 asks a FRESH install to lead in English. An install that already exists is
+  // not fresh: flipping a French newsroom's menus to English on the day it upgrades is a
+  // regression. Its NEWSROOM-PROFILE.md is the only evidence P1 has of the language it works
+  // in, so it seeds the interface language — once, here.
+  it("keeps an existing French newsroom in French, seeding uiLang from its profile", () => {
+    const d = dir();
+    writeFileSync(join(d, LEGACY_RUNTIME_FILE), "claude\n");
+    writeFileSync(
+      join(d, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        'lang: "fr"',
+        "source:",
+        '  name: "Heidi"',
+        "---",
+        "",
+        "# guide",
+        "",
+      ].join("\n"),
+    );
+    expect(migrateDecor(d, {}).uiLang).toBe("fr");
+  });
+
+  it("leaves a migrating newsroom with no profile in English", () => {
+    const d = dir();
+    writeFileSync(join(d, LEGACY_RUNTIME_FILE), "claude\n");
+    expect(migrateDecor(d, {}).uiLang).toBe("en");
+  });
+
+  it("derives the same state without writing when nobody may write", () => {
+    const d = dir();
+    writeFileSync(join(d, LEGACY_RUNTIME_FILE), "goose\n");
+    const derived = migratedDecorState(d, FULL_ENV);
+    expect(existsSync(join(d, NEWSROOM_STATE_FILE))).toBe(false);
+    expect(derived).toEqual(migrateDecor(d, FULL_ENV));
   });
 
   it("leaves .env byte-identical", () => {
