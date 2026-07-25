@@ -7,6 +7,7 @@ import {
   type RunManifest,
 } from "./manifest";
 import { tryLoadDecor, type Decor } from "../newsroom/decor";
+import { deliver } from "./deliver";
 import { orient } from "./orient";
 import { propose } from "./propose";
 import { produce } from "./produce";
@@ -68,6 +69,19 @@ export async function advance(
         kind: "failure",
         elementId: live.id,
         action: "produce",
+        message: result.message.slice(0, 200),
+      });
+    }
+    case "deliver": {
+      if (!live) return run;
+      const result = await deliver(run, live, runDir, decor);
+      if (result.ok)
+        return { ...run, elements: [result.value, ...run.elements.slice(1)] };
+      return appendEvent(run, {
+        at: new Date().toISOString(),
+        kind: "failure",
+        elementId: live.id,
+        action: "deliver",
         message: result.message.slice(0, 200),
       });
     }
