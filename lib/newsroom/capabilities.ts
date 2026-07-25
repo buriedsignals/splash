@@ -152,6 +152,17 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
     criticalDeps: null,
     implemented: true,
   },
+  // The universal fallback: it publishes to disk, so it needs no key and is therefore ALWAYS
+  // ready. That is what makes "no host configured" a working path rather than a dead end.
+  zip: {
+    id: "zip",
+    label: "Download a portable package (works everywhere)",
+    kind: "delivery",
+    env: [],
+    envHelp: {},
+    criticalDeps: null,
+    implemented: true,
+  },
   // Declared, not built — the publisher adapters the Livraison sub-project (#4) fills in.
   // Readiness never reports an unimplemented capability as ready (readiness.ts).
   "embed-cms": {

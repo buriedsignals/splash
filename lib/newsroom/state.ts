@@ -41,6 +41,18 @@ const NewsroomStateSchema = z.object({
   capabilities: z.record(z.string(), CapabilityStateSchema),
   /** The delivery capability id the newsroom publishes through, when it has chosen one. */
   publisher: z.string().optional(),
+  /**
+   * The three transverse delivery preferences. Everything else a publisher needs is declared
+   * BY that publisher through settingsFields — no generic field without a reader
+   * (spec 2026-07-25 §3.6). Optional, so a state file written before they existed still reads.
+   */
+  delivery: z
+    .object({
+      snippetTemplate: z.string().optional(),
+      maxWidth: z.number().optional(),
+      height: z.union([z.number(), z.literal("responsive")]).optional(),
+    })
+    .optional(),
 });
 
 export type CapabilityState = z.infer<typeof CapabilityStateSchema>;

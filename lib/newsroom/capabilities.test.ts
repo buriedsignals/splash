@@ -74,4 +74,10 @@ describe("the newsroom capability registry", () => {
       cf.settingsFields?.find((f) => f.name === "SPLASH_EMBED_PROJECT")?.secret,
     ).toBe(false);
   });
+
+  it("should declare zip as an implemented delivery capability that needs no key", () => {
+    const zip = NEWSROOM_CAPABILITIES.zip!;
+    expect(zip).toMatchObject({ kind: "delivery", implemented: true, env: [] });
+    expect(deliveryCapabilities().map((c) => c.id)).toContain("zip");
+  });
 });

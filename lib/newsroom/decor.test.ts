@@ -70,15 +70,16 @@ describe("loading the decor", () => {
   });
 
   // The other half of C1: with NO key anywhere, the fresh default must still not claim the
-  // install is fine. The key-free engines are enabled (and usable); the rest are honestly
+  // install is fine. The key-free capabilities are enabled (and usable) — the two engines and
+  // zip, the universal delivery fallback, both need nothing from .env; the rest are honestly
   // not enabled, which readiness reports as `disabled` — never as a silent `ready`.
-  it("enables only the key-free engines when nothing is configured at all", () => {
+  it("enables only the key-free capabilities when nothing is configured at all", () => {
     const decor = loadDecor(dir(), NO_ENV);
     const enabled = Object.entries(decor.state.capabilities)
       .filter(([, c]) => c.enabled)
       .map(([id]) => id)
       .sort();
-    expect(enabled).toEqual(["chart-native", "image-native"]);
+    expect(enabled).toEqual(["chart-native", "image-native", "zip"]);
     expect(decor.readiness.find((r) => r.id === "dw-chart")?.status).toBe(
       "disabled",
     );

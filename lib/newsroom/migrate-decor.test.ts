@@ -72,10 +72,11 @@ describe("absorbing the legacy decor", () => {
       "map-dw",
       "map-native",
       "scrolly",
+      "zip",
     ]);
   });
 
-  it("enables only the key-free engines when the environment is empty", () => {
+  it("enables only the key-free capabilities when the environment is empty", () => {
     const d = dir();
     writeFileSync(join(d, LEGACY_RUNTIME_FILE), "claude\n");
     const state = migrateDecor(d, {});
@@ -83,7 +84,7 @@ describe("absorbing the legacy decor", () => {
       .filter(([, c]) => c.enabled)
       .map(([id]) => id)
       .sort();
-    expect(enabled).toEqual(["chart-native", "image-native"]);
+    expect(enabled).toEqual(["chart-native", "image-native", "zip"]);
   });
 
   it("never enables a capability that is only declared", () => {

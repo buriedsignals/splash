@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -85,6 +91,37 @@ describe("the newsroom state file", () => {
     writeNewsroomState(d, FILLED);
     expect(readdirSync(d)).toEqual([NEWSROOM_STATE_FILE]);
   });
+
+  it("should round-trip the delivery preferences", () => {
+    const d = mkdtempSync(join(tmpdir(), "newsroom-delivery-"));
+    writeNewsroomState(d, {
+      ...DEFAULT_NEWSROOM_STATE,
+      delivery: {
+        snippetTemplate: '<iframe src="{url}"></iframe>',
+        maxWidth: 640,
+      },
+    });
+    expect(readNewsroomState(d).delivery).toEqual({
+      snippetTemplate: '<iframe src="{url}"></iframe>',
+      maxWidth: 640,
+    });
+    rmSync(d, { recursive: true, force: true });
+  });
+
+  it("should keep reading a state file written before delivery preferences existed", () => {
+    const d = mkdtempSync(join(tmpdir(), "newsroom-delivery-old-"));
+    writeFileSync(
+      join(d, NEWSROOM_STATE_FILE),
+      JSON.stringify({
+        schemaVersion: 1,
+        runtime: "claude",
+        uiLang: "en",
+        capabilities: {},
+      }),
+    );
+    expect(readNewsroomState(d).delivery).toBeUndefined();
+    rmSync(d, { recursive: true, force: true });
+  });
 });
 
 // The ONE home of the enablement default (C1): a key that is already present IS the choice.
@@ -99,12 +136,12 @@ describe("defaultCapabilities", () => {
     expect(caps["embed-cloudflare"]?.enabled).toBe(false);
   });
 
-  it("enables the key-free engines on an empty environment", () => {
+  it("enables the key-free capabilities on an empty environment", () => {
     const enabled = Object.entries(defaultCapabilities({}))
       .filter(([, c]) => c.enabled)
       .map(([id]) => id)
       .sort();
-    expect(enabled).toEqual(["chart-native", "image-native"]);
+    expect(enabled).toEqual(["chart-native", "image-native", "zip"]);
   });
 
   it("accepts EITHER member of an alternatives group (the MapTiler mirror rule)", () => {
