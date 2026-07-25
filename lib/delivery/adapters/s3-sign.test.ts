@@ -10,7 +10,12 @@
 // (fetched 2026-07-25; canonical request template, canonical-headers rule, string-to-sign
 // template, and the SigV4 signing-key HMAC chain quoted from that page).
 import { describe, it, expect } from "bun:test";
-import { signS3Request, canonicalRequest, stringToSign } from "./s3-sign";
+import {
+  signS3Request,
+  canonicalRequest,
+  stringToSign,
+  canonicalUri,
+} from "./s3-sign";
 
 const BASE = {
   method: "PUT",
@@ -80,6 +85,35 @@ const FULL_STRING_TO_SIGN = [
   // lowercase region+service+terminator per spec
   CANONICAL_REQUEST_SHA256, // {{HashedCanonicalRequest}} — last line, no trailing newline
 ].join("\n");
+
+// canonicalUri is exported specifically so lib/delivery/adapters/s3.ts can encode the ACTUAL
+// fetch() request path the identical way this module encodes it internally for the signature —
+// s3.ts used to keep its own byte-for-byte copy of this logic, which is exactly the drift
+// hazard these tests exist to close off (its failure mode is a cryptic signature-mismatch 403
+// on a real server, hard to trace back to "two encoders disagree"). Pinned directly here, on
+// the exported function itself, rather than only indirectly through canonicalRequest() above.
+describe("canonicalUri", () => {
+  it("should percent-encode a space and a plus, unlike encodeURIComponent", () => {
+    expect(canonicalUri("/bucket/a key+1.html")).toBe(
+      "/bucket/a%20key%2B1.html",
+    );
+  });
+
+  it("should percent-encode non-ASCII bytes as their UTF-8 byte sequence", () => {
+    // "é" is 2 UTF-8 bytes (0xC3 0xA9) — this pins byte-level encoding, not code-point encoding.
+    expect(canonicalUri("/bucket/élections.html")).toBe(
+      "/bucket/%C3%A9lections.html",
+    );
+  });
+
+  it("should preserve slashes as segment separators, never encoding them", () => {
+    expect(canonicalUri("/a/b/c.html")).toBe("/a/b/c.html");
+  });
+
+  it("should leave the unreserved set (letters, digits, - . _ ~) untouched", () => {
+    expect(canonicalUri("/a-b_c.d~e/F1.html")).toBe("/a-b_c.d~e/F1.html");
+  });
+});
 
 describe("signS3Request", () => {
   it("should put the payload hash, the amz date and the host in the canonical request", () => {

@@ -20,7 +20,7 @@ import type {
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { isSafeId, unsafeIdMessage } from "../../core/id-safety";
 import { renderSnippet } from "../snippet";
-import { signS3Request } from "./s3-sign";
+import { signS3Request, canonicalUri } from "./s3-sign";
 import { contentTypeFor } from "./cloudflare-pages";
 
 // F5: the public URL is NOT constructible from the endpoint — path-style, virtual-host and an
@@ -68,28 +68,6 @@ export function publicUrlFor(
   return `${base}/${withPrefix(settings.prefix, key)}`;
 }
 
-// Percent-encoding for the ACTUAL request path, mirroring s3-sign.ts's own (unexported)
-// canonicalUri/uriEncode byte-for-byte: percent-encode every byte outside the unreserved set
-// (A-Z a-z 0-9 - . _ ~), per segment, slashes preserved as separators. signS3Request receives
-// the RAW (non-percent-encoded) path and encodes it internally for the signature — the fetch()
-// URL below must be encoded the identical way, or a key containing a character outside that
-// set would sign one string while requesting a differently-escaped one, breaking the signature
-// against a real server.
-function percentEncodeByte(byte: number): string {
-  const ch = String.fromCharCode(byte);
-  if (/[A-Za-z0-9\-._~]/.test(ch)) return ch;
-  return "%" + byte.toString(16).toUpperCase().padStart(2, "0");
-}
-function percentEncodeSegment(segment: string): string {
-  return Buffer.from(segment, "utf8")
-    .toJSON()
-    .data.map(percentEncodeByte)
-    .join("");
-}
-function encodePathForRequest(path: string): string {
-  return path.split("/").map(percentEncodeSegment).join("/");
-}
-
 function parseS3ErrorCode(body: string): string {
   // F6: errors come back as XML with a <Code>. The body can also be empty, truncated, or (a
   // proxy in front of the real endpoint) not XML at all — the regex simply fails to match
@@ -121,6 +99,19 @@ async function publish(
         "invalid-request",
         `s3: settings.${name} is required — the newsroom's S3-compatible destination must be fully configured before Splash uploads anything`,
       );
+  }
+
+  // Still settings validation: a malformed endpoint is a config problem, not a runtime one, so
+  // it is parsed here — alongside the rest of Step 1 — rather than after the artifact read.
+  // Nothing here is irreversible either way, but this is the right place for it.
+  let endpointUrl: URL;
+  try {
+    endpointUrl = new URL(req.settings.endpoint);
+  } catch (e) {
+    return fail(
+      "invalid-request",
+      `s3: settings.endpoint "${req.settings.endpoint}" is not a valid URL: ${(e as Error).message}`,
+    );
   }
 
   // Step 2: validate credentials — refuse naming the missing VARIABLE, never a value. Checked
@@ -168,15 +159,6 @@ async function publish(
   const filename = `${req.id}.html`;
   const key = withPrefix(req.settings.prefix, filename);
 
-  let endpointUrl: URL;
-  try {
-    endpointUrl = new URL(req.settings.endpoint);
-  } catch (e) {
-    return fail(
-      "invalid-request",
-      `s3: settings.endpoint "${req.settings.endpoint}" is not a valid URL: ${(e as Error).message}`,
-    );
-  }
   // basePath: normally "" (root endpoint). Kept because an S3-compatible service can be
   // reverse-proxied under a path (e.g. "https://host/s3proxy") — dropping it would silently
   // request the wrong resource on such a deployment.
@@ -210,7 +192,11 @@ async function publish(
       `s3: could not sign the request: ${(e as Error).message}`,
     );
   }
-  const requestUrl = `${endpointUrl.protocol}//${endpointUrl.host}${encodePathForRequest(path)}`;
+  // canonicalUri is IMPORTED from s3-sign.ts, not re-implemented here: signS3Request signs the
+  // RAW (unencoded) `path` internally via that same function, so the actual fetch() URL below
+  // must be percent-encoded the identical way or the signature this module computed would not
+  // match what a real server recomputes from the bytes on the wire.
+  const requestUrl = `${endpointUrl.protocol}//${endpointUrl.host}${canonicalUri(path)}`;
 
   let putStatus: number;
   try {
@@ -239,6 +225,16 @@ async function publish(
   // Step 7: verify anonymous serving (F3) — "upload succeeded" is not "the embed works". An
   // unauthenticated GET of the public URL must return 2xx AND the served bytes must match the
   // artifact, exactly as verifyServed does for the Cloudflare adapter.
+  //
+  // Deliberately a SINGLE attempt, no retry/poll window: unlike Cloudflare's cold-start (a
+  // MEASURED ~100s DNS-propagation window, spec 2026-07-19), no fact was measured about a fresh
+  // S3 upload being transiently invisible before this 403 check runs (spec §5.2 — F7 only
+  // measured that an OVERWRITE is immediately consistent). Do not "fix" a future flake here by
+  // adding a retry on 403: that would conflate "permanently unauthorized" (F4 — the real,
+  // common case, since Splash never sets a bucket policy) with "not yet visible" without any
+  // measurement backing the second case, and would delay or mask exactly the F4 refusal this
+  // adapter exists to surface. If Task 4's live proof shows real propagation delay, add a
+  // bounded window sized from THAT measurement — not a guessed number.
   const url = publicUrlFor(req.settings, filename);
   try {
     const res = await fetch(url, { headers: { "cache-control": "no-cache" } });

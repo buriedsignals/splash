@@ -60,7 +60,14 @@ function uriEncode(segment: string): string {
 // encode the / in the absolute path"). Splitting on "/" and re-joining after encoding each
 // piece keeps the separators literal while still encoding a "/"-adjacent character inside a
 // segment (there are none in practice, since "/" only ever appears as a separator here).
-function canonicalUri(path: string): string {
+//
+// EXPORTED, not just an internal helper of canonicalRequest(): a caller that signs a PUT/GET
+// with this module and then issues the actual fetch() must request the IDENTICAL path a real
+// S3-compatible server will re-derive to check the signature — encoding it a second, separately
+// maintained way is a drift hazard whose failure mode is a cryptic signature-mismatch 403 that
+// is hard to trace back to "two encoders disagree" (s3.ts used to keep its own byte-for-byte
+// copy for exactly this; it now imports this function instead).
+export function canonicalUri(path: string): string {
   return path.split("/").map(uriEncode).join("/");
 }
 
