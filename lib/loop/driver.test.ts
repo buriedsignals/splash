@@ -17,10 +17,11 @@ import { resumeReport } from "./resume";
 import type { Decor } from "../newsroom/decor";
 
 // A decor with nothing to check against the real filesystem: `advance()` defaults to
-// `tryLoadDecor()`, which reads this checkout's own root — the produce-driven tests below
-// pass this instead, so they can never depend on (or migrate) the real install's
-// .env / newsroom.json. The single test that DOES exercise the default parameter is the
-// last one in this file, and it asserts nothing that varies with the machine.
+// `tryLoadDecor()`, which reads this checkout's own root — every test in this file passes
+// this instead, so `bun test` can never depend on (or migrate) the real install's
+// .env / newsroom.json, even on a machine carrying a legacy `.splash-runtime` with no
+// `newsroom.json` yet. `tryLoadDecor()`'s own never-throws contract (success and thrown-
+// resolver, both) is covered directly in decor.test.ts.
 const NEUTRAL_DECOR: Decor = {
   root: "/nowhere",
   state: {
@@ -315,11 +316,12 @@ test("a run with no elements orients without throwing, and its failure event car
 // Every element-driven branch reads elements[0]. `produce` is unreachable with an empty
 // elements array today (nextActions routes to confirm-angle), but the branch must not depend
 // on that routing detail to be safe.
-// The PRODUCTION shape of the decor argument: every test above passes NEUTRAL_DECOR, so the
-// default parameter — the one every real caller uses — had no coverage at all. It resolves
-// this install's own decor through tryLoadDecor, which cannot throw: a read-only or full
-// install root must not escape advance() ahead of the bounded-failure machinery it owns.
-test("advance() resolves this install's decor by default, and never throws doing it", async () => {
+// This mirrors production shape (a proposal built against a decor), still through
+// NEUTRAL_DECOR: `advance()`'s real default parameter resolves this install's own root via
+// tryLoadDecor, which cannot throw — but exercising that for real here would make `bun test`
+// depend on (and possibly migrate) whatever install root happens to run it. That never-throws
+// contract is covered directly in decor.test.ts instead.
+test("advance() builds a proposal annotated against a decor, and never throws doing it", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-default-decor-"));
   const src = join(runDir, "src.csv");
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
@@ -349,8 +351,7 @@ test("advance() resolves this install's decor by default, and never throws doing
   };
   expect(nextActions(run)).toEqual(["propose"]);
 
-  // No third argument: the default parameter runs for real.
-  const after = await advance(run, runDir);
+  const after = await advance(run, runDir, NEUTRAL_DECOR);
 
   const options = after.elements[0].proposal!.options;
   expect(options.map((o) => o.id)).toEqual(["slope", "dumbbell"]);

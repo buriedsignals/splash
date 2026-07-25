@@ -100,7 +100,10 @@ describe("loading the decor", () => {
       ].join("\n"),
     );
     const decor = loadDecor(d, NO_ENV);
-    expect(decor.language.content).toBe("fr");
+    // A FRESH install (no state file yet) still resolves `ui` to "en" — only `content`
+    // follows the profile's `lang:`. A migrated FR install keeps FR for both; that boundary
+    // lives in the migration path, not here.
+    expect(decor.language).toEqual({ ui: "en", content: "fr" });
   });
 
   it("reads .env from the install root, with the process environment winning", () => {
@@ -191,8 +194,15 @@ describe("tryLoadDecor", () => {
     );
   });
 
-  it("resolves this install without throwing, the shape the driver actually defaults to", () => {
-    expect(() => tryLoadDecor()).not.toThrow();
-    expect(tryLoadDecor().root).toBe(installRoot());
+  // The shape the driver actually defaults to: `tryLoadDecor()` called bare, resolving
+  // `loadDecor()` at its own default (no `dir`). That default reads `installRoot()` — this
+  // checkout's own root — so calling it bare here would make `bun test` depend on (and, on a
+  // machine carrying a legacy `.splash-runtime` with no `newsroom.json` yet, migrate) the
+  // real install. A neutral temp root stands in for it instead; the resolver function is the
+  // one piece under test, not the real filesystem it would otherwise touch.
+  it("resolves without throwing, the shape the driver actually defaults to", () => {
+    const d = dir();
+    expect(() => tryLoadDecor(() => loadDecor(d, NO_ENV))).not.toThrow();
+    expect(tryLoadDecor(() => loadDecor(d, NO_ENV)).root).toBe(d);
   });
 });
