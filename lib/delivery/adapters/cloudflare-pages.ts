@@ -402,9 +402,34 @@ export function servedMatcher(sourceHtml: string): (body: string) => boolean {
 // (docs/superpowers/specs/2026-07-19-cloudflare-pages-embed-adapter-design.md). Nothing about
 // the protocol changes here — the wrapper only turns thrown errors into typed refusals (I1)
 // and reads its credentials from the request instead of the environment (I5).
+// A URL that cannot resolve, used only to render the snippet ONCE before any upload: the
+// refusals renderSnippet owns (an unfillable placeholder, a responsive sizing rule colliding
+// with a template that still demands {height}) depend on the template and the metadata, never
+// on the URL, so they are all knowable before a byte moves.
+const PREFLIGHT_URL = "https://preflight.invalid/";
+
+function embedSnippet(req: PublishRequest, url: string): VerbResult<string> {
+  return renderSnippet({
+    url,
+    id: req.id,
+    metadata: req.metadata,
+    ...(req.settings.snippetTemplate
+      ? { template: req.settings.snippetTemplate }
+      : {}),
+  });
+}
+
 async function publishToPages(
   req: PublishRequest,
 ): Promise<VerbResult<PublishOutcome>> {
+  // BEFORE the credentials, the staging and the deploy — the same first move zip.ts makes.
+  // Rendering the snippet only after deployDirectory + verifyServed meant a misconfigured
+  // template produced a real deployment, verified bytes, a live URL, and THEN an
+  // invalid-request: nothing recorded in `delivered`, `nextActions` answering "deliver"
+  // again, and the same irreversible deploy repeating on every call.
+  const preflight = embedSnippet(req, PREFLIGHT_URL);
+  if (!preflight.ok) return preflight;
+
   let cfg: EmbedConfig;
   try {
     cfg = resolveEmbedConfig(req.credentials);
@@ -447,14 +472,11 @@ async function publishToPages(
       url,
       servedMatcher(readFileSync(join(stageDir, "index.html"), "utf8")),
     );
-    const snippet = renderSnippet({
-      url,
-      id: req.id,
-      metadata: req.metadata,
-      ...(req.settings.snippetTemplate
-        ? { template: req.settings.snippetTemplate }
-        : {}),
-    });
+    // The real URL this time. It cannot refuse where the pre-flight above passed — same
+    // template, same metadata, only the substituted URL differs — but the result is still
+    // checked rather than asserted away: a refusal here would mean the pre-flight's guarantee
+    // had been broken, and that must surface as a typed failure, not as a cast.
+    const snippet = embedSnippet(req, url);
     if (!snippet.ok) return snippet;
     return ok({
       publisherId: "embed-cloudflare",
