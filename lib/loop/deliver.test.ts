@@ -141,33 +141,15 @@ describe("deliver", () => {
     expect((r as { message: string }).message).toContain("sign-off");
   });
 
-  it("should keep every credential out of the recorded element", async () => {
-    const { run, el } = runWith({
-      delivery: { requested: ["zip"], delivered: [] },
-    });
-    const r = await deliver(
-      run,
-      el,
-      runDir,
-      decorWith(),
-      {},
-      {
-        env: { CLOUDFLARE_API_TOKEN: "SECRET-TOKEN-VALUE" },
-      },
-    );
-    expect(r.ok).toBe(true);
-    expect(JSON.stringify((r as { value: RunElement }).value)).not.toContain(
-      "SECRET-TOKEN-VALUE",
-    );
-  });
-
-  // Rebuilt per review: the test above only exercises "zip", whose cap.env is [] and whose
-  // adapter never looks at req.credentials at all — it would stay green through any
-  // credential-scoping regression in deliver.ts's own collection loop. This one registers a
-  // throwaway capability that DECLARES one env var, and a publisher that echoes back exactly
-  // what it received (via the outcome's own `snippet` field, so the answer is visible in the
-  // returned RunElement) — proving the collection loop forwards a declared variable and never
-  // an undeclared one, even when both sit in the same injected environment.
+  // The secret invariant of spec §3.10, proven where it can actually fail. (A predecessor of
+  // this test delivered to "zip" with a secret in the injected env and asserted it was absent
+  // from the record: tautological — zip's cap.env is [], so `credentials` is `{}` and the
+  // adapter never reads it, leaving the assertion green through any regression in deliver.ts's
+  // own collection loop. A misleading green is worse than no test, so it is gone.) This one
+  // registers a throwaway capability that DECLARES one env var, and a publisher that echoes
+  // back exactly what it received (via the outcome's own `snippet` field, so the answer is
+  // visible in the returned RunElement) — proving the collection loop forwards a declared
+  // variable and never an undeclared one, even when both sit in the same injected environment.
   it("forwards only a destination's own declared credential, never an undeclared one from the same env", async () => {
     const TEST_CAP_ID = "test-echo-cap";
     NEWSROOM_CAPABILITIES[TEST_CAP_ID] = {

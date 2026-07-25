@@ -114,7 +114,7 @@ $ bun lib/host/cli.ts verbs
       },
       {
         "name": "publish",
-        "implemented": false
+        "implemented": true
       }
     ],
     "vocabulary": {
@@ -198,9 +198,13 @@ $ bun lib/host/cli.ts verbs
 
 Exit code `0`. Notes on what a host can read out of that:
 
-- `capture`/`review`/`publish` are declared as part of the closed vocabulary even though
-  they are not callable yet — a host sees they exist and are not wired, rather than
-  discovering that as an error from `verb`.
+- `capture`/`review` are declared as part of the closed vocabulary even though they are not
+  callable yet — a host sees they exist and are not wired, rather than discovering that as an
+  error from `verb`. `publish` used to sit in that list and no longer does: the Livraison
+  sub-project gave it a body (`lib/core/verbs/publish.ts`), so it reports `implemented: true`
+  and dispatches to the publisher registry. Its payload shape is not self-described here yet —
+  a host builds it from the spec (`PublishRequest`, plus `settings.publisherId` naming the
+  destination) rather than from this output.
 - `vocabulary.engines` is derived from the producer registry each engine self-registers into,
   paired with the formats that engine's own manifest declares. `payload.engine.enum` is the
   same list. Asking an engine for a format it does not declare is refused as
@@ -264,7 +268,7 @@ $ bun lib/host/cli.ts state --run /tmp/host-readme-v1
 {
   "ok": false,
   "code": "stale-schema",
-  "message": "/tmp/host-readme-v1/run.json declares schemaVersion 1, not 2 — state and next are read-only and will not migrate it, because migrating writes a frozen input file into the run directory. Run the migration explicitly, then read the run again"
+  "message": "/tmp/host-readme-v1/run.json declares schemaVersion 1, not 3 — state and next are read-only and will not migrate it, because migrating writes a frozen input file into the run directory. Run the migration explicitly, then read the run again"
 }
 ```
 
@@ -507,7 +511,7 @@ $ bun lib/host/cli.ts newsroom
 }
 ```
 
-(`capabilities` above is truncated to two entries for the example; a real run lists all ten.)
+(`capabilities` above is truncated to two entries for the example; a real run lists all eleven.)
 
 Those two entries are the whole enablement model in miniature, on an install that has no
 Datawrapper token: what needs no key is `ready`, what needs one nobody supplied is
