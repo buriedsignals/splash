@@ -50,11 +50,11 @@ describe("the newsroom capability registry", () => {
     const declared = Object.values(NEWSROOM_CAPABILITIES).filter(
       (c) => !c.implemented,
     );
-    // The publisher adapters the Livraison sub-project (#4) will fill in.
+    // The publisher adapters the Livraison sub-project (#4) will fill in. embed-s3 is now
+    // built (Task 3) and no longer belongs to this still-declared-only set.
     expect(declared.map((c) => c.id).sort()).toEqual([
       "embed-cms",
       "embed-fly",
-      "embed-s3",
     ]);
     for (const cap of declared) expect(cap.kind).toBe("delivery");
   });
@@ -79,5 +79,36 @@ describe("the newsroom capability registry", () => {
     const zip = NEWSROOM_CAPABILITIES.zip!;
     expect(zip).toMatchObject({ kind: "delivery", implemented: true, env: [] });
     expect(deliveryCapabilities().map((c) => c.id)).toContain("zip");
+  });
+
+  it("should declare embed-s3 as an implemented delivery capability with its own settings", () => {
+    const s3 = NEWSROOM_CAPABILITIES["embed-s3"]!;
+    expect(s3).toMatchObject({ kind: "delivery", implemented: true });
+    // Both secrets must be declared, or deliver() cannot forward them: it only forwards
+    // variables the capability itself declares (lib/loop/deliver.ts).
+    expect(s3.env.flat()).toEqual(
+      expect.arrayContaining([
+        "SPLASH_S3_ACCESS_KEY_ID",
+        "SPLASH_S3_SECRET_ACCESS_KEY",
+      ]),
+    );
+    const secretFields = (s3.settingsFields ?? [])
+      .filter((f) => f.secret)
+      .map((f) => f.name);
+    expect(secretFields).toEqual(
+      expect.arrayContaining([
+        "SPLASH_S3_ACCESS_KEY_ID",
+        "SPLASH_S3_SECRET_ACCESS_KEY",
+      ]),
+    );
+    // And the non-secret settings the adapter needs must be askable.
+    const allFields = (s3.settingsFields ?? []).map((f) => f.name);
+    for (const n of ["endpoint", "region", "bucket", "publicBaseUrl"])
+      expect(allFields).toContain(n);
+  });
+
+  it("should give every declared env var a help string, so a missing key is actionable", () => {
+    const s3 = NEWSROOM_CAPABILITIES["embed-s3"]!;
+    for (const name of s3.env.flat()) expect(s3.envHelp[name]).toBeTruthy();
   });
 });

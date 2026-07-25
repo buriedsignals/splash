@@ -9,10 +9,16 @@
 import { lookupPublisher, registerPublisher } from "../core/publishers";
 import type { Publisher } from "../core/publishers";
 import { cloudflarePublisher } from "./adapters/cloudflare-pages";
+import { s3Publisher } from "./adapters/s3";
 import { zipPublisher } from "./adapters/zip";
 
-/** The adapters L1 ships. One line per adapter is the whole cost of a new destination (§3.1). */
-const DELIVERY_PUBLISHERS: Publisher[] = [cloudflarePublisher, zipPublisher];
+/** The adapters this install ships. One line per adapter is the whole cost of a new
+ * destination (§3.1). */
+const DELIVERY_PUBLISHERS: Publisher[] = [
+  cloudflarePublisher,
+  s3Publisher,
+  zipPublisher,
+];
 
 // Exported as a function, not only as a module-level side effect: the registry is global to
 // the module and `bun test` shares one process across files, so a test file that calls

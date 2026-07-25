@@ -23,12 +23,12 @@ describe("the delivery composition root", () => {
     expect(PUBLISHERS_REGISTERED).toBe(true);
   });
 
-  it("should register the two publishers L1 ships", () => {
+  it("should register the publishers this install ships", () => {
     expect(
       allPublishers()
         .map((p) => p.id)
         .sort(),
-    ).toEqual(["embed-cloudflare", "zip"]);
+    ).toEqual(["embed-cloudflare", "embed-s3", "zip"]);
   });
 
   it("should expose the cloudflare adapter as a hosted publisher", () => {

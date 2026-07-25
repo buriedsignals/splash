@@ -178,10 +178,54 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
     id: "embed-s3",
     label: "Publish to the newsroom's own object storage",
     kind: "delivery",
-    env: [],
-    envHelp: {},
+    // Two single-member groups — S3 needs BOTH, not one of several, the same shape
+    // embed-cloudflare uses for its three.
+    env: [["SPLASH_S3_ACCESS_KEY_ID"], ["SPLASH_S3_SECRET_ACCESS_KEY"]],
+    envHelp: {
+      SPLASH_S3_ACCESS_KEY_ID:
+        "the access key id for the newsroom's S3-compatible bucket, from its provider's console (AWS IAM, Cloudflare R2, or the self-hosted server's admin panel)",
+      SPLASH_S3_SECRET_ACCESS_KEY:
+        "the secret access key paired with the access key id above — issued once by the same provider, store it only in /splash/.env",
+    },
+    settingsFields: [
+      {
+        name: "SPLASH_S3_ACCESS_KEY_ID",
+        label: "S3 access key ID",
+        secret: true,
+      },
+      {
+        name: "SPLASH_S3_SECRET_ACCESS_KEY",
+        label: "S3 secret access key",
+        secret: true,
+      },
+      {
+        name: "endpoint",
+        label: "S3-compatible endpoint URL",
+        secret: false,
+      },
+      {
+        name: "region",
+        label: "Region",
+        secret: false,
+      },
+      {
+        name: "bucket",
+        label: "Bucket name",
+        secret: false,
+      },
+      {
+        name: "prefix",
+        label: "Object key prefix (optional)",
+        secret: false,
+      },
+      {
+        name: "publicBaseUrl",
+        label: "Public URL the bucket serves from",
+        secret: false,
+      },
+    ],
     criticalDeps: null,
-    implemented: false,
+    implemented: true,
   },
   "embed-fly": {
     id: "embed-fly",
