@@ -127,6 +127,78 @@ describe("the newsroom state file", () => {
     );
   });
 
+  // settingsFields is ONE flat list per capability, mixing the two `secret: true` S3 keys with
+  // endpoint/bucket/region — and `settings` is keyed by those same names. Whoever fills the bag
+  // reads that list, so the temptation is structural, and the invariant ".env values never land
+  // in newsroom.json" cannot rest on a writer that does not exist yet. Both doors are closed
+  // mechanically: a secret-named key is dropped on READ (so no consumer ever sees it, whoever
+  // hand-edited the file) and on WRITE (so it cannot reach the disk in the first place).
+  it("drops a secret-named settings key on read, keeping the non-secret ones beside it", () => {
+    const d = dir();
+    writeFileSync(
+      join(d, NEWSROOM_STATE_FILE),
+      JSON.stringify({
+        schemaVersion: 1,
+        runtime: "claude",
+        uiLang: "en",
+        capabilities: {
+          "embed-s3": {
+            enabled: true,
+            settings: {
+              endpoint: "http://127.0.0.1:9000",
+              bucket: "splash-embeds",
+              SPLASH_S3_ACCESS_KEY_ID: "AKIDSHOULDNOTSURVIVE",
+              SPLASH_S3_SECRET_ACCESS_KEY: "secret-should-not-survive",
+            },
+          },
+        },
+      }),
+    );
+    expect(readNewsroomState(d).capabilities["embed-s3"]).toEqual({
+      enabled: true,
+      settings: {
+        endpoint: "http://127.0.0.1:9000",
+        bucket: "splash-embeds",
+      },
+    });
+  });
+
+  it("never writes a secret-named settings key to disk, even when handed one", () => {
+    const d = dir();
+    writeNewsroomState(d, {
+      ...DEFAULT_NEWSROOM_STATE,
+      capabilities: {
+        "embed-s3": {
+          enabled: true,
+          settings: {
+            endpoint: "http://127.0.0.1:9000",
+            SPLASH_S3_SECRET_ACCESS_KEY: "secret-should-not-survive",
+          },
+        },
+      },
+    });
+    const onDisk = readFileSync(join(d, NEWSROOM_STATE_FILE), "utf8");
+    expect(onDisk).toContain("http://127.0.0.1:9000");
+    expect(onDisk).not.toContain("secret-should-not-survive");
+    expect(onDisk).not.toContain("SPLASH_S3_SECRET_ACCESS_KEY");
+  });
+
+  it("leaves a capability that declares no secret field untouched", () => {
+    // The guard keys off `secret: true` in that capability's OWN settingsFields — it must not
+    // become a blunt name filter that eats a legitimate setting from another capability.
+    const d = dir();
+    writeNewsroomState(d, {
+      ...DEFAULT_NEWSROOM_STATE,
+      capabilities: {
+        zip: { enabled: true, settings: { SPLASH_S3_SECRET_ACCESS_KEY: "x" } },
+      },
+    });
+    expect(readNewsroomState(d).capabilities["zip"]).toEqual({
+      enabled: true,
+      settings: { SPLASH_S3_SECRET_ACCESS_KEY: "x" },
+    });
+  });
+
   it("round-trips a capability's own persisted settings", () => {
     const d = dir();
     const state: NewsroomState = {

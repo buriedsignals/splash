@@ -25,10 +25,11 @@ const CapabilityStateSchema = z.object({
   enabled: z.boolean(),
   /**
    * NON-secret provider identifiers this capability's own settingsFields ask for (an S3
-   * endpoint, a bucket name, a project id — never a credential: that lives in .env, and this
-   * is a plain string map, so nothing here can be schema-typed as "must not be a secret" — the
-   * boundary is held by the WRITER, never by this field. Optional, so a state file written
-   * before this field existed still reads (spec 2026-07-24 §3.2).
+   * endpoint, a bucket name, a project id) — never a credential: that lives in .env. The map is
+   * plain strings, so the type system cannot express "must not be a secret"; `stripSecretSettings`
+   * enforces it instead, on both doors (read and write), against the capability's OWN declared
+   * `secret: true` fields. Optional, so a state file written before this field existed still
+   * reads (spec 2026-07-24 §3.2).
    */
   settings: z.record(z.string(), z.string()).optional(),
   /** The last live provider check, when one has run (the setup page performs it). */
@@ -46,7 +47,12 @@ const NewsroomStateSchema = z.object({
   runtime: z.string(),
   /** INTERFACE language (BCP-47). The deliverables' language lives in NEWSROOM-PROFILE.md. */
   uiLang: z.string(),
-  capabilities: z.record(z.string(), CapabilityStateSchema),
+  // The strip runs INSIDE the schema, not in readNewsroomState: parsing is the only way into
+  // this shape, so a secret hand-written into the file cannot be seen by any reader — including
+  // one that parses the schema itself rather than going through readNewsroomState.
+  capabilities: z
+    .record(z.string(), CapabilityStateSchema)
+    .transform(stripSecretSettings),
   /** The delivery capability id the newsroom publishes through, when it has chosen one. */
   publisher: z.string().optional(),
   /**
@@ -98,6 +104,43 @@ export function defaultCapabilities(
   return capabilities;
 }
 
+/**
+ * Drop, from every capability's `settings`, any key that capability's OWN `settingsFields`
+ * declares `secret: true`.
+ *
+ * `settingsFields` is one flat list per capability, mixing SPLASH_S3_SECRET_ACCESS_KEY with
+ * endpoint/bucket/region, and `settings` is keyed by those same names — so whoever fills the bag
+ * reads a list that puts the credentials in the same column as the endpoint. The Préflight
+ * invariant "no .env value lands in newsroom.json" therefore cannot be left to the writer's
+ * discipline (today there is no writer at all: the file is hand-edited).
+ *
+ * Applied on BOTH doors — inside the schema, so no reader of the file can see a secret whatever
+ * path it took, and in `writeNewsroomState`, so an in-memory state carrying one cannot reach the
+ * disk. Scoped per capability rather than by name pattern: a key is secret only where its own
+ * capability says so.
+ */
+function stripSecretSettings(
+  capabilities: Record<string, CapabilityState>,
+): Record<string, CapabilityState> {
+  const cleaned: Record<string, CapabilityState> = {};
+  for (const [id, state] of Object.entries(capabilities)) {
+    const secretNames = (NEWSROOM_CAPABILITIES[id]?.settingsFields ?? [])
+      .filter((f) => f.secret)
+      .map((f) => f.name);
+    if (!state.settings || secretNames.length === 0) {
+      cleaned[id] = state;
+      continue;
+    }
+    const settings = Object.fromEntries(
+      Object.entries(state.settings).filter(
+        ([name]) => !secretNames.includes(name),
+      ),
+    );
+    cleaned[id] = { ...state, settings };
+  }
+  return cleaned;
+}
+
 export function newsroomStatePath(dir: string): string {
   return join(dir, NEWSROOM_STATE_FILE);
 }
@@ -124,6 +167,12 @@ export function writeNewsroomState(dir: string, state: NewsroomState): void {
   mkdirSync(dir, { recursive: true });
   const path = newsroomStatePath(dir);
   const tmp = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
-  writeFileSync(tmp, JSON.stringify(state, null, 2) + "\n");
+  // The write door: a secret held in memory (a caller that read one from .env and merged it in)
+  // never reaches the file, so the invariant does not depend on every writer remembering it.
+  const safe: NewsroomState = {
+    ...state,
+    capabilities: stripSecretSettings(state.capabilities),
+  };
+  writeFileSync(tmp, JSON.stringify(safe, null, 2) + "\n");
   renameSync(tmp, path); // atomic replace on the same filesystem
 }
