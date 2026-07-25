@@ -87,12 +87,34 @@ describe("absorbing the legacy decor", () => {
     expect(enabled).toEqual(["chart-native", "image-native", "zip"]);
   });
 
+  // embed-s3 is deliberately NOT in this list any more: it is implemented, so it would pass
+  // here only because FULL_ENV happens to carry no SPLASH_S3_* key — i.e. for a reason that has
+  // nothing to do with the only-declared rule, and it would keep passing if that rule were
+  // deleted. Its own case is asserted below instead. (Same defect the task review fixed in
+  // driver.test.ts; this sibling was missed.)
   it("never enables a capability that is only declared", () => {
     const d = dir();
     writeFileSync(join(d, LEGACY_RUNTIME_FILE), "claude\n");
     const state = migrateDecor(d, FULL_ENV);
-    for (const id of ["embed-cms", "embed-s3", "embed-fly"])
+    for (const id of ["embed-cms", "embed-fly"])
       expect(state.capabilities[id]?.enabled).toBe(false);
+  });
+
+  // The other half of the rule, on an IMPLEMENTED capability: the keys decide. Both halves are
+  // asserted on the same capability, so neither can pass by accident.
+  it("enables an implemented capability once its keys are there, and not before", () => {
+    const d = dir();
+    writeFileSync(join(d, LEGACY_RUNTIME_FILE), "claude\n");
+    expect(migrateDecor(d, FULL_ENV).capabilities["embed-s3"]?.enabled).toBe(
+      false,
+    );
+
+    const withKeys = migrateDecor(d, {
+      ...FULL_ENV,
+      SPLASH_S3_ACCESS_KEY_ID: "s3-key-id",
+      SPLASH_S3_SECRET_ACCESS_KEY: "s3-secret",
+    });
+    expect(withKeys.capabilities["embed-s3"]?.enabled).toBe(true);
   });
 
   it("carries a green persisted status as a verification stamp, and drops the rest", () => {
