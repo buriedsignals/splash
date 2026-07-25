@@ -6,6 +6,10 @@
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  NEWSROOM_CAPABILITIES,
+  engineCapabilities,
+} from "../../../lib/newsroom/capabilities";
 import type { Producer } from "./producer-spec";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -30,77 +34,32 @@ export interface PreflightOpts {
   resolveDep?: (pkg: string, fromDir: string) => boolean;
 }
 
-const DW_HELP =
-  "create a token at https://app.datawrapper.de/account/api-tokens (free account works)";
-const MT_HELP = "create a free key at https://cloud.maptiler.com/account/keys/";
-
-export const ENGINE_REQUIREMENTS: Record<Producer, EngineRequirements> = {
-  "dw-chart": {
-    env: [["DATAWRAPPER_API_TOKEN"]],
-    envHelp: { DATAWRAPPER_API_TOKEN: DW_HELP },
-    criticalDeps: null, // cloud producer: fetch only, no heavy local deps
-  },
-  "map-dw": {
-    env: [["DATAWRAPPER_API_TOKEN"]],
-    envHelp: { DATAWRAPPER_API_TOKEN: DW_HELP },
-    criticalDeps: null,
-  },
-  "chart-native": {
-    env: [],
-    envHelp: {},
-    criticalDeps: { fromSkillDir: "chart-native", packages: ["react", "vite"] },
-  },
-  "map-native": {
-    env: [["VITE_MAPTILER_KEY", "REMOTION_MAPTILER_KEY"]],
-    envHelp: {
-      VITE_MAPTILER_KEY: MT_HELP,
-      REMOTION_MAPTILER_KEY: MT_HELP,
-    },
-    criticalDeps: {
-      fromSkillDir: "map-native",
-      // @maptiler/sdk (a DIRECT map-native dependency), never maplibre-gl: the latter only
-      // resolves via hoisting through the SDK's dep graph — a phantom check that would go
-      // permanently red on a healthy install if the SDK ever re-arranged its deps (review F4).
-      packages: ["react", "remotion", "@maptiler/sdk"],
-    },
-  },
-  scrolly: {
-    env: [["VITE_MAPTILER_KEY", "REMOTION_MAPTILER_KEY"]],
-    envHelp: {
-      VITE_MAPTILER_KEY: MT_HELP,
-      REMOTION_MAPTILER_KEY: MT_HELP,
-    },
-    criticalDeps: { fromSkillDir: "scrolly", packages: ["react", "vite"] },
-  },
-  // image-native (C5): prep + build are local — no API key of its own (the scrolly host
-  // build's MapTiler need is the scrolly entry's concern). sharp is the critical native
-  // dep (the exact "binary missing after a bare clone" crash class C2 exists for).
-  "image-native": {
-    env: [],
-    envHelp: {},
-    criticalDeps: { fromSkillDir: "image-native", packages: ["sharp"] },
-  },
-};
+// The engine half of the newsroom capability registry, in this module's original shape. The
+// registry is the single declaration (lib/newsroom/capabilities.ts); this is a projection of
+// it, so the two cannot drift (skills/splash/tests/capability-parity.test.ts).
+export const ENGINE_REQUIREMENTS: Record<Producer, EngineRequirements> =
+  Object.fromEntries(
+    engineCapabilities().map((cap) => [
+      cap.id,
+      {
+        env: cap.env,
+        envHelp: cap.envHelp,
+        criticalDeps: cap.criticalDeps,
+      },
+    ]),
+  ) as Record<Producer, EngineRequirements>;
 
 // The embed DELIVERY FORM's requirement (not an engine's): deploy-embed.mjs owns the
 // fail-fast; exported here so its message and the parity test share the single list.
-export const EMBED_DELIVERY_ENV = [
-  "CLOUDFLARE_API_TOKEN",
-  "CLOUDFLARE_ACCOUNT_ID",
-  "SPLASH_EMBED_PROJECT",
-] as const;
+const EMBED_CAPABILITY = NEWSROOM_CAPABILITIES["embed-cloudflare"]!;
+export const EMBED_DELIVERY_ENV: readonly string[] =
+  EMBED_CAPABILITY.env.flat();
 
 // Where the journalist gets each one — the embed form's equivalent of an engine's envHelp, so
 // a missing embed credential is COLLECTED in the flow (like MapTiler or Datawrapper) instead of
 // silently downgrading the delivery to the standalone-file form.
-export const EMBED_DELIVERY_ENV_HELP: Record<string, string> = {
-  CLOUDFLARE_API_TOKEN:
-    'create an account API token with the "Cloudflare Pages: Edit" permission at https://dash.cloudflare.com (Manage Account → API Tokens → Create Token)',
-  CLOUDFLARE_ACCOUNT_ID:
-    "copy it from the Workers & Pages page at https://dash.cloudflare.com (Account details → Account ID)",
-  SPLASH_EMBED_PROJECT:
-    'choose a Cloudflare Pages project name that identifies the newsroom (e.g. "heidi-news-splash") — it becomes the public URL <visual>.<project>.pages.dev, so it must not be generic',
-};
+export const EMBED_DELIVERY_ENV_HELP: Record<string, string> =
+  EMBED_CAPABILITY.envHelp;
 
 export interface EmbedDeliveryStatus {
   ready: boolean;
