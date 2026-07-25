@@ -14,6 +14,22 @@ import {
 } from "./manifest";
 import { freezeInput } from "./freeze";
 import { resumeReport } from "./resume";
+import type { Decor } from "../newsroom/decor";
+
+// A decor with nothing to check against the real filesystem: `advance()` defaults to
+// `loadDecor()`, which reads this checkout's own root — every call in this file passes this
+// instead, so `bun test` can never touch (or migrate) the real install's .env / newsroom.json.
+const NEUTRAL_DECOR: Decor = {
+  root: "/nowhere",
+  state: {
+    schemaVersion: 1,
+    runtime: "claude",
+    uiLang: "en",
+    capabilities: {},
+  },
+  language: { ui: "en", content: "en" },
+  readiness: [],
+};
 
 test("full loop: orient → (human) → propose → (human) → produce → revise → produce, state always coherent", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-e2e-run-"));
@@ -27,7 +43,7 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
     events: [],
   };
 
-  run = await advance(run, runDir); // orient
+  run = await advance(run, runDir, NEUTRAL_DECOR); // orient
   expect(run.orient!.supportsPoint).toBe(true);
   expect(nextActions(run)).toEqual(["confirm-angle"]);
 
@@ -47,7 +63,7 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   };
   expect(nextActions(run)).toEqual(["propose"]);
 
-  run = await advance(run, runDir); // propose
+  run = await advance(run, runDir, NEUTRAL_DECOR); // propose
   expect(run.elements[0].proposal!.options.length).toBeGreaterThan(0);
   expect(nextActions(run)).toEqual(["choose-form"]);
 
@@ -63,7 +79,7 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   };
   expect(nextActions(run)).toEqual(["produce"]);
 
-  run = await advance(run, runDir); // produce
+  run = await advance(run, runDir, NEUTRAL_DECOR); // produce
   expect(stalenessOf(run, run.elements[0])).toBe(false);
   expect(nextActions(run)).toEqual(["show"]);
 
@@ -77,7 +93,7 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   expect(stalenessOf(run, run.elements[0])).toBe(true); // never shown as current while stale
   expect(nextActions(run)).toEqual(["produce"]);
 
-  run = await advance(run, runDir); // re-produce
+  run = await advance(run, runDir, NEUTRAL_DECOR); // re-produce
   expect(stalenessOf(run, run.elements[0])).toBe(false);
   expect(nextActions(run)).toEqual(["show"]);
 }, 90000);
@@ -98,7 +114,7 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
     events: [],
   };
 
-  run = await advance(run, runDir); // orient
+  run = await advance(run, runDir, NEUTRAL_DECOR); // orient
   run = {
     ...run,
     elements: [
@@ -112,7 +128,7 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
       },
     ],
   };
-  run = await advance(run, runDir); // propose
+  run = await advance(run, runDir, NEUTRAL_DECOR); // propose
   run = {
     ...run,
     elements: [
@@ -122,7 +138,7 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
       },
     ],
   };
-  run = await advance(run, runDir); // produce
+  run = await advance(run, runDir, NEUTRAL_DECOR); // produce
   expect(stalenessOf(run, run.elements[0])).toBe(false);
 
   writeManifest(join(runDir, "run.json"), run);
@@ -175,7 +191,7 @@ test("advance() records a produce failure as a bounded event without advancing s
   };
   expect(nextActions(run)).toEqual(["produce"]);
 
-  const after = await advance(run, runDir);
+  const after = await advance(run, runDir, NEUTRAL_DECOR);
 
   expect(after.events.length).toBe(1);
   expect(after.events[0].kind).toBe("failure");
@@ -227,7 +243,7 @@ test("advance() records a MISSING FROZEN INPUT as a bounded failure, never a thr
   // The run dir travelled without its frozen input (a partial copy, a cleaned temp dir).
   rmSync(join(runDir, frozen.path));
 
-  const after = await advance(run, runDir);
+  const after = await advance(run, runDir, NEUTRAL_DECOR);
 
   expect(after.events.length).toBe(1);
   expect(after.events[0].kind).toBe("failure");
@@ -262,7 +278,7 @@ test("a missing frozen input at the orient step is a bounded event, not a throw"
   // Same guarantee the produce step already has. Build a run whose frozen data file has
   // been removed, with NO orient yet so nextActions() routes to `orient`.
   const { run, runDir } = makeRunMissingFrozenInput();
-  const after = await advance(run, runDir);
+  const after = await advance(run, runDir, NEUTRAL_DECOR);
   expect(after.orient).toBeUndefined();
   const failures = after.events.filter((e) => e.kind === "failure");
   expect(failures).toHaveLength(1);
@@ -284,6 +300,7 @@ test("a run with no elements orients without throwing, and its failure event car
       events: [],
     },
     runDir,
+    NEUTRAL_DECOR,
   );
   const failures = after.events.filter((e) => e.kind === "failure");
   expect(failures).toHaveLength(1);
@@ -310,6 +327,6 @@ test("the element-driven branches never dereference a missing element", async ()
     events: [],
   };
   expect(nextActions(oriented)).toEqual(["confirm-angle"]);
-  const after = await advance(oriented, runDir);
+  const after = await advance(oriented, runDir, NEUTRAL_DECOR);
   expect(after).toEqual(oriented); // a human turn, returned untouched
 });
