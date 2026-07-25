@@ -11,6 +11,7 @@
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NEWSROOM_CAPABILITIES, type NewsroomCapability } from "./capabilities";
+import { defaultResolveDep, isSet } from "./probe";
 import type { NewsroomState } from "./state";
 
 export type ReadinessStatus = "ready" | "missing" | "unverified" | "disabled";
@@ -34,19 +35,6 @@ export type ReadinessOpts = {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_SKILLS_ROOT = resolve(here, "../../skills");
-
-function defaultResolveDep(pkg: string, fromDir: string): boolean {
-  try {
-    Bun.resolveSync(pkg, fromDir);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isSet(v: string | undefined): boolean {
-  return typeof v === "string" && v.trim() !== "";
-}
 
 export function capabilityReadiness(
   cap: NewsroomCapability,

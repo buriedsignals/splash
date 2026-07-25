@@ -88,7 +88,7 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
       fromSkillDir: "map-native",
       // @maptiler/sdk (a DIRECT map-native dependency), never maplibre-gl: the latter only
       // resolves via hoisting through the SDK's dep graph — a phantom check that would go
-      // permanently red on a healthy install if the SDK ever re-arranged its deps.
+      // permanently red on a healthy install if the SDK ever re-arranged its deps (review F4).
       packages: ["react", "remotion", "@maptiler/sdk"],
     },
     implemented: true,
@@ -103,6 +103,9 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
     criticalDeps: { fromSkillDir: "scrolly", packages: ["react", "vite"] },
     implemented: true,
   },
+  // image-native (C5): prep + build are local — no API key of its own (the scrolly host
+  // build's MapTiler need is the scrolly entry's concern). sharp is the critical native
+  // dep (the exact "binary missing after a bare clone" crash class C2 exists for).
   "image-native": {
     id: "image-native",
     label: "Photo narratives",

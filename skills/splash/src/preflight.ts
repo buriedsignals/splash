@@ -3,13 +3,17 @@
 // not-ready engines in the ranked list) and produce-all's blocking gate (fail-fast in
 // journalist language BEFORE production, replacing the lazy deep throws: dw-chart's
 // token() at the first API call, map-native's key throw at component load).
-import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   NEWSROOM_CAPABILITIES,
   engineCapabilities,
 } from "../../../lib/newsroom/capabilities";
+import {
+  defaultResolveDep,
+  isSet,
+  parseEnvFile,
+} from "../../../lib/newsroom/probe";
 import type { Producer } from "./producer-spec";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -85,19 +89,6 @@ export function embedDeliveryStatus(
   };
 }
 
-function defaultResolveDep(pkg: string, fromDir: string): boolean {
-  try {
-    Bun.resolveSync(pkg, fromDir);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isSet(v: string | undefined): boolean {
-  return typeof v === "string" && v.trim() !== "";
-}
-
 // Repo-root .env fallback (review F2): Bun auto-loads .env from the CWD only, while the
 // standard install keeps keys in /splash/.env and produce-all may run from anywhere (the
 // harness sandbox, an exports dir). The native producers self-load this file; the gate's
@@ -106,17 +97,7 @@ function isSet(v: string | undefined): boolean {
 // lazily, once per process; injected opts.env (tests, CLI) bypasses it entirely.
 let rootEnvCache: Record<string, string> | null = null;
 function defaultEnv(): Record<string, string | undefined> {
-  if (rootEnvCache === null) {
-    rootEnvCache = {};
-    try {
-      for (const line of readFileSync(ROOT_ENV_PATH, "utf8").split("\n")) {
-        const m = line.match(/^([A-Z_][A-Z0-9_]*)\s*=\s*"?([^"\n]*)"?\s*$/);
-        if (m) rootEnvCache[m[1]] = m[2];
-      }
-    } catch {
-      // no root .env — process.env alone decides
-    }
-  }
+  if (rootEnvCache === null) rootEnvCache = parseEnvFile(ROOT_ENV_PATH);
   return { ...rootEnvCache, ...process.env };
 }
 
