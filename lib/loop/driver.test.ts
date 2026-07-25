@@ -17,8 +17,10 @@ import { resumeReport } from "./resume";
 import type { Decor } from "../newsroom/decor";
 
 // A decor with nothing to check against the real filesystem: `advance()` defaults to
-// `loadDecor()`, which reads this checkout's own root — every call in this file passes this
-// instead, so `bun test` can never touch (or migrate) the real install's .env / newsroom.json.
+// `tryLoadDecor()`, which reads this checkout's own root — the produce-driven tests below
+// pass this instead, so they can never depend on (or migrate) the real install's
+// .env / newsroom.json. The single test that DOES exercise the default parameter is the
+// last one in this file, and it asserts nothing that varies with the machine.
 const NEUTRAL_DECOR: Decor = {
   root: "/nowhere",
   state: {
@@ -313,6 +315,54 @@ test("a run with no elements orients without throwing, and its failure event car
 // Every element-driven branch reads elements[0]. `produce` is unreachable with an empty
 // elements array today (nextActions routes to confirm-angle), but the branch must not depend
 // on that routing detail to be safe.
+// The PRODUCTION shape of the decor argument: every test above passes NEUTRAL_DECOR, so the
+// default parameter — the one every real caller uses — had no coverage at all. It resolves
+// this install's own decor through tryLoadDecor, which cannot throw: a read-only or full
+// install root must not escape advance() ahead of the bounded-failure machinery it owns.
+test("advance() resolves this install's decor by default, and never throws doing it", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-default-decor-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "default-decor",
+    schemaVersion: 2,
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Premiums rose in both cantons",
+          altInsight: "Both cantons' adult premium rose from 2015 to 2024.",
+          unit: "CHF",
+        },
+      },
+    ],
+    events: [],
+  };
+  expect(nextActions(run)).toEqual(["propose"]);
+
+  // No third argument: the default parameter runs for real.
+  const after = await advance(run, runDir);
+
+  const options = after.elements[0].proposal!.options;
+  expect(options.map((o) => o.id)).toEqual(["slope", "dumbbell"]);
+  // Annotated against a real decor, or unannotated under the neutral fallback — never a
+  // dropped option, and never a throw. The status itself is the machine's business.
+  for (const o of options)
+    if (o.readiness)
+      expect(["ready", "missing", "unverified", "disabled"]).toContain(
+        o.readiness.status,
+      );
+});
+
 test("the element-driven branches never dereference a missing element", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-no-elements-2-"));
   const oriented: RunManifest = {

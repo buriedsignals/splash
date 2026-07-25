@@ -6,7 +6,7 @@ import {
   type RunElement,
   type RunManifest,
 } from "./manifest";
-import { loadDecor, type Decor } from "../newsroom/decor";
+import { tryLoadDecor, type Decor } from "../newsroom/decor";
 import { orient } from "./orient";
 import { propose } from "./propose";
 import { produce } from "./produce";
@@ -14,10 +14,14 @@ import { produce } from "./produce";
 // State-driven: read the manifest, ask nextActions() what is valid, run the matching
 // deterministic step on the live element (elements[0]). Human decisions (confirm-angle,
 // choose-form, revise) are supplied by the caller between advances.
+// The decor defaults to this install's own (production ergonomics: no caller has to thread
+// it), through the never-throwing resolver — a default parameter is evaluated before the
+// body, so a decor that threw here would escape `advance` ahead of every bounded-failure
+// path it owns, against the loop's never-throw discipline.
 export async function advance(
   run: RunManifest,
   runDir: string,
-  decor: Decor = loadDecor(),
+  decor: Decor = tryLoadDecor(),
 ): Promise<RunManifest> {
   const [next] = nextActions(run);
   // `elements: []` is valid per RunManifestSchema, so the live element is OPTIONAL here.

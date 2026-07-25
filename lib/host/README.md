@@ -459,6 +459,18 @@ chosen), every capability's readiness, and — the field a host actually needs t
 optional; without it the decor resolves from the install root, the same default `loadDecor`
 uses everywhere else in this repo.
 
+`language.ui` is the **saved** interface preference, read from `newsroom.json` — a fresh
+install resolves to English, and an install migrated from a pre-decor layout inherits the
+language its `NEWSROOM-PROFILE.md` declares. `language.content` — the deliverables' own
+language — is `NEWSROOM-PROFILE.md`'s `lang:`, never an environment variable.
+
+**`SPLASH_UI_LANG` overrides the interface language for ONE run**, without rewriting the
+saved preference: `SPLASH_UI_LANG=fr` makes the delivery proposal
+(`skills/splash/scripts/export-code.mjs`) speak French this time and nothing else changes on
+disk. It takes a BCP-47 tag; an unknown one is accepted as given and reads as English
+wherever no copy exists for it. It is a per-run override of the emitted copy, so this command
+deliberately keeps reporting the **saved** preference rather than the override.
+
 ```
 $ bun lib/host/cli.ts newsroom
 ```
@@ -496,12 +508,21 @@ and an absent or unreadable `newsroom.json` yields the default decor rather than
 There is no `1`: `newsroom` reads, it refuses no verb, so there is nothing for that code to
 mean here.
 
-`newsroom` is **read-only**, with one deliberate exception: the first read of an install that
-still carries a pre-decor `.splash-runtime` file performs the one-time legacy migration
-(`lib/newsroom/migrate-decor.ts`), writing `newsroom.json` so every read after it is a pure
-read. That write happens at most once per install and is not something a host requests —
-it is a consequence of decor's own `loadDecor`, shared by every caller, not a `newsroom`-only
-behaviour.
+**`newsroom --dir <dir>` writes nothing at all.** `--dir` comes from the host, and a host
+payload is untrusted here exactly as `outDir` is in `verb`: the decor is read and derived
+from that directory, but no directory is created, no migration is persisted and no legacy
+file is touched. A host cannot make a directory appear by pointing this command at it.
+
+Without `--dir`, one write is possible, once: the first read of an install that still carries
+a pre-decor `.splash-runtime` or `.splash-preflight.json` performs the legacy migration
+(`lib/newsroom/migrate-decor.ts`), writing `newsroom.json` at the install root so every read
+after it is a pure read. The legacy files themselves are left in place — the installer still
+reads `.splash-runtime` on every run. That write is not something a host requests: it is a
+consequence of decor's own `loadDecor`, shared by every caller, not a `newsroom`-only
+behaviour. (A `NEWSROOM-PROFILE.md`, if one is present in the directory read, refreshes its
+own `brand.json` cache beside it — `loadNewsroomProfile`'s long-standing best-effort
+behaviour, and the one write `--dir` can still reach, into a directory that already exists
+and already holds the profile it caches.)
 
 #### What a failure message may contain
 

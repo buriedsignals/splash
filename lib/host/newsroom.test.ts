@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describeNewsroom } from "./newsroom";
@@ -21,9 +26,14 @@ function newsroomDir(uiLang: string): string {
   return d;
 }
 
+// The readiness environment is INJECTED: install/runtimes/*.sh source the install's .env
+// before launching the agent, so ambient process.env is not neutral — a shell that did would
+// otherwise turn "dw-chart is a blocker" green and this assertion red on a real machine.
+const NO_ENV = { env: {} };
+
 describe("describeNewsroom", () => {
   it("answers with the decor in the shared envelope", () => {
-    const r = describeNewsroom(newsroomDir("de"));
+    const r = describeNewsroom(newsroomDir("de"), NO_ENV);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const value = r.value as {
@@ -40,8 +50,23 @@ describe("describeNewsroom", () => {
   });
 
   it("never throws on a directory that holds nothing", () => {
-    const r = describeNewsroom(mkdtempSync(join(tmpdir(), "host-empty-")));
+    const r = describeNewsroom(mkdtempSync(join(tmpdir(), "host-empty-")), NO_ENV);
     expect(r.ok).toBe(true);
+  });
+
+  // `--dir` is host input, and host input is untrusted here exactly as `verb`'s outDir is.
+  // It used to mkdirSync and write newsroom.json into whatever path it was handed, while the
+  // README called this command read-only.
+  it("writes nothing into the directory it is handed, and does not create it", () => {
+    const d = mkdtempSync(join(tmpdir(), "host-readonly-"));
+    writeFileSync(join(d, ".splash-runtime"), "goose\n");
+    const r = describeNewsroom(d, NO_ENV);
+    expect(r.ok).toBe(true);
+    expect(readdirSync(d)).toEqual([".splash-runtime"]);
+
+    const absent = join(d, "nope", "not-here");
+    expect(describeNewsroom(absent, NO_ENV).ok).toBe(true);
+    expect(existsSync(absent)).toBe(false);
   });
 });
 
