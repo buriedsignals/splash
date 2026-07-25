@@ -1,9 +1,18 @@
 import { describe, it, expect, afterEach } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { canonicalJson } from "../src/canonical-json.ts";
+import { resolveLanguage } from "../../../lib/newsroom/language";
+import { exportProposalCopy } from "../../../lib/newsroom/ui-copy";
+import { readNewsroomState } from "../../../lib/newsroom/state";
 
 // Phase 1 (no --form) of export-code.mjs emits the a/b/c delivery-form proposal. The emitted
 // EXPORT_FORMS_PROPOSAL block MUST carry an explicit WAIT instruction — the mechanical nudge at
@@ -114,19 +123,26 @@ function envWithoutEmbedCredentials(): NodeJS.ProcessEnv {
   };
 }
 
-/** The wait instruction the emitted block must carry, split into its load-bearing parts. */
-const WAIT_LINE_PARTS = [
-  /ATTENDRE la réponse du journaliste/,
-  /ne jamais choisir à sa place/,
-  /pour les deux » présumé/,
-];
+// The instruction must be PRESENT and verbatim — in whatever language this install resolves
+// to. Pinning the French wording here would re-introduce exactly the defect issue #6 reports.
+function resolvedUi(overrideUi?: string): string {
+  const root = join(import.meta.dir, "../../..");
+  return resolveLanguage({
+    override: { ui: overrideUi },
+    uiLang: readNewsroomState(root).uiLang,
+  }).ui;
+}
 
-function expectWaitInstruction(stdout: string): void {
+function expectedWaitInstruction(overrideUi?: string): string {
+  return exportProposalCopy(resolvedUi(overrideUi)).waitInstruction;
+}
+
+function expectWaitInstruction(stdout: string, overrideUi?: string): void {
   const block = stdout.slice(
     stdout.indexOf("EXPORT_FORMS_PROPOSAL"),
     stdout.indexOf("END_EXPORT_FORMS_PROPOSAL"),
   );
-  for (const part of WAIT_LINE_PARTS) expect(block).toMatch(part);
+  expect(block).toContain(expectedWaitInstruction(overrideUi));
 }
 
 describe("export-code phase 1 — emitted proposal carries the WAIT instruction", () => {
@@ -218,9 +234,14 @@ describe("export-code phase 1 — embed availability reflects Cloudflare configu
     // A missing embed key is COLLECTABLE, not a dead end: the relay must name the missing
     // credentials and offer to collect them, while still leaving b) as the alternative if the
     // journalist declines. (Before 2026-07-19 this said "INDISPONIBLE" and steered to b —
-    // a silent downgrade of the delivery the journalist actually asked for.)
+    // a silent downgrade of the delivery the journalist actually asked for.) Checked against
+    // the resolved copy layer, not pinned wording — same trap as the WAIT instruction.
     expect(block).toMatch(/CLOUDFLARE_API_TOKEN/);
-    expect(block).toMatch(/demander|enregistrer/i);
+    expect(block).toContain(
+      exportProposalCopy(resolvedUi()).formEmbedMissingKeys(
+        (payload.forms.c.missingKeys as string[]).join(", "),
+      ),
+    );
     expect(block).toMatch(/\bb\)/);
   });
 
@@ -262,5 +283,74 @@ describe("export-code phase 1 — embed availability reflects Cloudflare configu
     expect(payload.forms.c.url).toBe("https://datawrapper.dwcdn.net/XXXXX/1/");
     // a live hosted embed needs no deploy of ours — never flagged unavailable
     expect(payload.forms.c.available).not.toBe(false);
+  });
+});
+
+// The defect this locks (issue #6): an English conversation reached a French export menu,
+// because emitProposal printed French string literals. The block now follows the resolved
+// interface language — English on a fresh install, and a per-run SPLASH_UI_LANG override.
+describe("export-code phase 1 — the proposal follows the newsroom's language", () => {
+  function nativeInteractive(name: string): {
+    outDir: string;
+    exportDir: string;
+    reportPath: string;
+  } {
+    const outDir = join(WORK, name, "el");
+    const exportDir = join(WORK, name, "el-export");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "interactive.html"), "<html></html>");
+    const reportPath = writeReport(join(WORK, name), {
+      id: "el",
+      producer: "chart-native",
+      format: "interactive",
+      status: "produced",
+      reviewed: true,
+      renderApproved: true,
+    });
+    return { outDir, exportDir, reportPath };
+  }
+
+  it("speaks English when no preference is saved and none is overridden", () => {
+    const { outDir, exportDir, reportPath } = nativeInteractive("lang-default");
+    const stdout = runPhase1(outDir, exportDir, reportPath, "el", {
+      ...process.env,
+      SPLASH_UI_LANG: "",
+    });
+    expect(stdout).toContain(exportProposalCopy("en").intro);
+    expect(stdout).not.toContain(exportProposalCopy("fr").intro);
+  });
+
+  it("honours a per-run override without touching what is saved", () => {
+    const root = join(import.meta.dir, "../../..");
+    const before = existsSync(join(root, "newsroom.json"))
+      ? readFileSync(join(root, "newsroom.json"), "utf8")
+      : null;
+    const { outDir, exportDir, reportPath } = nativeInteractive("lang-fr");
+    const stdout = runPhase1(outDir, exportDir, reportPath, "el", {
+      ...process.env,
+      SPLASH_UI_LANG: "fr",
+    });
+    expect(stdout).toContain(exportProposalCopy("fr").intro);
+    expectWaitInstruction(stdout, "fr");
+    // The override is per-run: the saved preference is byte-identical afterwards (and an
+    // install that had none still has none).
+    const after = existsSync(join(root, "newsroom.json"))
+      ? readFileSync(join(root, "newsroom.json"), "utf8")
+      : null;
+    expect(after).toBe(before);
+  });
+
+  it("keeps the machine markers out of the locale layer", () => {
+    const { outDir, exportDir, reportPath } = nativeInteractive("lang-markers");
+    const stdout = runPhase1(outDir, exportDir, reportPath, "el", {
+      ...process.env,
+      SPLASH_UI_LANG: "fr",
+    });
+    for (const marker of [
+      "EXPORT_FORMS_JSON",
+      "EXPORT_FORMS_PROPOSAL",
+      "END_EXPORT_FORMS_PROPOSAL",
+    ])
+      expect(stdout).toContain(marker);
   });
 });

@@ -45,8 +45,25 @@ import {
 import { assertChainProvenance } from "../src/render-provenance.ts";
 import { embedDeliveryStatus } from "../src/preflight.ts";
 import { resolveProfile, resolveProfilePath } from "../src/resolve-profile.ts";
+import { readNewsroomState } from "../../../lib/newsroom/state.ts";
+import { resolveLanguage } from "../../../lib/newsroom/language.ts";
+import { exportProposalCopy } from "../../../lib/newsroom/ui-copy.ts";
+import { loadNewsroomProfile } from "../src/brand-profile.ts";
 
 const SELF = fileURLToPath(import.meta.url);
+// The interface language for everything this script PRINTS. A fresh install resolves to
+// English (issue #6); a newsroom that saved a preference gets it without being asked again;
+// SPLASH_UI_LANG overrides both for ONE run and writes nothing.
+function uiCopy() {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+  const { ui } = resolveLanguage({
+    override: { ui: process.env.SPLASH_UI_LANG },
+    uiLang: readNewsroomState(root).uiLang,
+    profileLang: loadNewsroomProfile(root)?.lang,
+  });
+  return exportProposalCopy(ui);
+}
+
 // The chart-native source-bundle generator — form "code-source" for chart-native is a
 // self-contained, runnable Vite project (bun install && bun run build), NOT a built-files
 // copy. Resolved relative to this script so it works regardless of cwd.
@@ -511,7 +528,7 @@ function emitProposal(ctx) {
       ...(embedReady
         ? {}
         : {
-            reason: `Clé(s) manquante(s) pour l'embed hébergé : ${embedStatus.reason}. Fournissez-la/les (elles seront enregistrées via save-key.mjs) pour livrer en c), ou choisissez b) (HTML autonome).`,
+            reason: uiCopy().missingEmbedKeysReason(embedStatus.reason),
             missingKeys: embedStatus.missing,
           }),
       command: `bun ${DEPLOY_EMBED_SCRIPT} ${join(absExportDir, interactive)} ${id} --results ${resolve(resultsPath)} --id ${id}`,
@@ -532,37 +549,31 @@ function emitProposal(ctx) {
   );
 
   // A clean, human-readable relay block (same content) — the orchestrator prints it verbatim,
-  // asks which form (a / b / c), then re-runs export-code with --form <choice>.
-  const relay = [
-    "EXPORT_FORMS_PROPOSAL",
-    "Le visuel est produit. Choisissez la forme de livraison (rien n'est encore construit — la forme choisie est générée à la demande) :",
-  ];
+  // asks which form (a / b / c), then re-runs export-code with --form <choice>. Localised via
+  // the interface-language copy layer (issue #6): a fresh install speaks English here, never
+  // the shipped French literals of before.
+  const copy = uiCopy();
+  const relay = ["EXPORT_FORMS_PROPOSAL", copy.intro];
   // forms.a, when present, is always the runnable React source bundle (a markerless outDir has
   // no code-source deliverable, so form a is simply omitted — see above).
-  if (forms.a)
-    relay.push(
-      `  a) Code source — projet React autonome à rebuilder/personnaliser (bun install && bun run build) : ${forms.a.path}`,
-    );
-  if (forms.b)
-    relay.push(
-      `  b) HTML autonome — un seul fichier autonome à déposer n'importe où : ${forms.b.path}`,
-    );
+  if (forms.a) relay.push(copy.formCodeSource(forms.a.path));
+  if (forms.b) relay.push(copy.formHtml(forms.b.path));
   if (forms.c)
     relay.push(
       forms.c.url
-        ? `  c) Embed (hébergé) — lien déjà en ligne, réutilisable partout : ${forms.c.url}`
+        ? copy.formEmbedLive(forms.c.url)
         : forms.c.available === false
-          ? `  c) Embed (hébergé) — nécessite une clé manquante (${forms.c.missingKeys.join(", ")}). Je peux vous la demander et l'enregistrer, puis livrer en c) ; sinon prenez b) (fichier HTML autonome équivalent).`
-          : `  c) Embed (hébergé) — publier sur votre projet Cloudflare Pages pour obtenir un lien à réutiliser`,
+          ? copy.formEmbedMissingKeys(forms.c.missingKeys.join(", "))
+          : copy.formEmbedAvailable,
     );
   relay.push(
-    `Quelle forme souhaitez-vous ? (${Object.keys(forms).join(" / ")}) — puis relancer export-code avec --form <html|code-source|embed>.`,
+    copy.question(Object.keys(forms).join(" / ")),
     // The explicit WAIT instruction, at the point of temptation. Observed violation (QA wave 10,
     // w9-double-opportunite-energie): the orchestrator emitted this proposal for two hosted-DW
     // elements, announced "Je finalise la livraison sous cette forme pour les deux", and ran
     // --form embed for both without a single journalist turn in between. The choice is the
     // journalist's — even when only one form is offered, and never presumed across elements.
-    "ATTENDRE la réponse du journaliste à CETTE proposition avant tout --form : ne jamais choisir à sa place — même quand une seule forme est possible, c'est le journaliste qui la confirme, et sur plusieurs éléments jamais de « pour les deux » présumé (une réponse groupée n'est valable que si c'est LUI qui la donne).",
+    copy.waitInstruction,
     "END_EXPORT_FORMS_PROPOSAL",
   );
   console.log(relay.join("\n"));
