@@ -441,22 +441,50 @@ n'a pas de `requiredSigners` : le gate de sign-off disparaît en silence.
 
 ---
 
-## 5. L2 — S3-compatible *(conçu ici, planifié ensuite)*
+## 5. L2 — S3-compatible *(mesuré, prêt à planifier)*
 
 `lib/delivery/adapters/s3.ts` : signature **SigV4 en `fetch` pur** (pas d'aws-sdk — même discipline
 que le refus de wrangler au spike Cloudflare : pas de CLI, pas d'exigence de runtime Node), `PUT`
-d'objet, URL publique dérivée de la configuration de bucket.
+d'objet, URL publique **configurée** (voir F5). C'est le « non-Fly static-host adapter » que
+l'acceptance criteria d'#4 demande, et il couvre la rédaction qui héberge déjà chez elle.
 
-Prouvé **live** contre un bucket réel (Cloudflare R2, Scaleway, AWS ou MinIO local) — c'est le
-« non-Fly static-host adapter » que l'acceptance criteria d'#4 demande, et il couvre la rédaction qui
-héberge déjà chez elle.
+### 5.1 Faits mesurés (spike, 2026-07-25)
 
-Points à mesurer avant d'écrire (le spike d'abord, comme Cloudflare) : le `Content-Type` que le
-provider applique par défaut à un `index.html`, sa politique d'accès public (ACL vs policy de bucket
-vs domaine attaché), et si l'URL publique est prédictible ou doit être lue en retour.
+Mesurés contre un **vrai serveur S3** (MinIO en conteneur local, vrai SigV4 signé à la main, vraies
+réponses XML) — pas lus dans une doc, pas supposés. Le spike a aussi validé le point le plus risqué :
+**SigV4 écrit à la main en `fetch` pur fonctionne**, création de bucket, PUT et policy compris.
 
-`settingsFields` attendus : endpoint · région · bucket · préfixe · domaine public (non-secrets) ;
-access key id + secret access key (secrets, `.env`).
+| # | Fait | Conséquence sur l'adapter |
+|---|---|---|
+| **F1** | Un `PUT` **sans `Content-Type`** est servi en `binary/octet-stream` | Un navigateur **télécharge** l'embed au lieu de l'afficher. Le `Content-Type` est **obligatoire**, jamais optionnel — `contentTypeFor()` existe déjà (`lib/delivery/adapters/cloudflare-pages.ts`) et se réutilise |
+| **F2** | Avec un `Content-Type` explicite, il est rendu tel quel | Le seul remède à F1, et il suffit |
+| **F3** | Un objet fraîchement uploadé répond **403 à un GET anonyme** | **« Upload réussi » ≠ « l'embed marche ».** C'est l'analogue S3 de la leçon Cloudflare (« un 200 n'est pas la preuve que les bons octets ont atterri ») |
+| **F4** | Une bucket policy d'accès anonyme rend l'objet public (204, puis 200 anonyme, octets identiques) | **L'adapter ne DOIT PAS la poser.** Rendre public un bucket est une modification de l'infrastructure de la rédaction, avec une portée qui dépasse l'objet livré. L'adapter **vérifie** l'accès anonyme et **refuse avec un message actionnable** s'il n'est pas servi — il ne se donne pas les droits |
+| **F5** | L'URL path-style est `{endpoint}/{bucket}/{key}` | Prédictible **seulement si** on connaît le style de service. Virtual-host (`{bucket}.{endpoint}`) et domaine public attaché donnent autre chose. L'URL publique est donc **configurée par la rédaction** (`publicBaseUrl`), jamais construite depuis l'endpoint — variante de la leçon Cloudflare « ne jamais construire l'URL » |
+| **F6** | Une erreur revient en **XML** (`<Code>…</Code>`), pas en JSON | Le parsing d'erreur lit le `<Code>` ; un refus doit porter ce code, sinon la rédaction ne sait pas si c'est une clé, une horloge ou un droit |
+| **F7** | Réécrire la même clé sert le nouveau contenu **à la même URL** | L'idempotence est **gratuite**, comme l'alias déterministe de Cloudflare : republier après révision met à jour le même lien, sans mécanique dédiée |
+
+### 5.2 Ce qui reste NON mesuré (dette honnête)
+
+MinIO est un vrai serveur S3, mais ce n'est pas AWS ni R2. Restent non mesurés, et **doivent l'être
+avant qu'une rédaction s'appuie dessus en production** : la politique d'accès public par défaut de
+chaque provider (ACL vs policy vs domaine attaché — AWS bloque désormais l'accès public au niveau du
+compte par défaut), le style d'URL servi par défaut, et le `Content-Type` par défaut de R2/AWS
+(F1 est mesuré sur MinIO). Ces trois points ne changent **pas** la forme de l'adapter — ils changent
+ce qu'une rédaction doit configurer, ce que F5 rend déjà explicite.
+
+### 5.3 Forme
+
+`settingsFields` (non-secrets) : `endpoint` · `region` · `bucket` · `prefix` · `publicBaseUrl`.
+Secrets (`.env`) : `SPLASH_S3_ACCESS_KEY_ID` · `SPLASH_S3_SECRET_ACCESS_KEY`.
+
+L'adapter est `kind: "hosted"`. Il suit les deux leçons de L1 (§4.6) : il **consomme explicitement**
+chaque champ que `deliver` peut poser dans `settings` — `snippetTemplate` compris, l'oubli qui a
+produit le défaut C3 — et il ajoute son entrée `NEWSROOM_CAPABILITIES` en même temps que son fichier.
+
+**Preuve :** signature vérifiée hors-ligne contre les **vecteurs de test SigV4 publiés par AWS**
+(purs, déterministes, dans le gate), plus un e2e **live opt-in** contre un vrai serveur S3 (MinIO
+local ou un bucket réel), hors du gate — même régime que `verify-embed-delivery.mjs`.
 
 ---
 
