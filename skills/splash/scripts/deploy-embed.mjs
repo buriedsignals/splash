@@ -6,13 +6,7 @@
 //
 // Pure fetch — no wrangler CLI, no Node.js runtime requirement. Protocol + measurements:
 // docs/superpowers/specs/2026-07-19-cloudflare-pages-embed-adapter-design.md
-import {
-  cpSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  statSync,
-} from "node:fs";
+import { mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { assertEditoriallyCleared, assertShippable } from "../src/export-guard.ts";
@@ -23,10 +17,17 @@ import {
   ensureProject,
   resolveAliasUrl,
   resolveEmbedConfig,
+  servedMatcher,
+  stageArtifact,
   verifyServed,
 } from "../src/cloudflare-pages.ts";
 
-export { embedSlug, embedTokenConfigured } from "../src/cloudflare-pages.ts";
+export {
+  embedSlug,
+  embedTokenConfigured,
+  servedMatcher,
+  stageArtifact,
+} from "../src/cloudflare-pages.ts";
 
 // Splits argv into positionals and `--flag value` pairs, so the required --results/--id
 // flags can sit alongside the existing positional args in any order.
@@ -40,24 +41,6 @@ function parseArgs(argv) {
     else positional.push(a);
   }
   return { positional, flags };
-}
-
-// Cloudflare serves a directory, so a single self-contained artifact is staged as index.html.
-// Accepts a directory unchanged, for the day an artifact ships with sibling assets.
-export function stageArtifact(pathArg, stageDir) {
-  if (statSync(pathArg).isDirectory()) {
-    cpSync(pathArg, stageDir, { recursive: true });
-    return;
-  }
-  mkdirSync(stageDir, { recursive: true });
-  cpSync(pathArg, join(stageDir, "index.html"));
-}
-
-// The delivery proof. The upload endpoints are undocumented, so a 200 alone is not evidence
-// the RIGHT bytes landed — the served body must carry a distinctive slice of the artifact.
-export function servedMatcher(sourceHtml) {
-  const marker = sourceHtml.replace(/\s+/g, " ").trim().slice(0, 120);
-  return (body) => body.includes(marker) || body.length === sourceHtml.length;
 }
 
 if (import.meta.main) {
