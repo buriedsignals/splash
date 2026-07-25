@@ -9,6 +9,7 @@ import {
   type Publisher,
 } from "../core/publishers";
 import { fail } from "../core/verbs/types";
+import { NEWSROOM_CAPABILITIES } from "../newsroom/capabilities";
 
 // The registry is global and bun test shares one process: any earlier file that reset it
 // would leave this one empty, because module caching means the root's side effect never runs
@@ -93,6 +94,19 @@ describe("the delivery composition root", () => {
       registered: true,
       result: { ok: false, code: "invalid-request" },
     });
+  });
+
+  // Two declarations of "is this destination usable": the publisher registry (this file) and
+  // NEWSROOM_CAPABILITIES (the decor's declarative model). Nothing else locks them together —
+  // a disagreement would make readiness answer "ready" for a destination the publish verb
+  // still answers "not-implemented" for. Read-only: it only reads both registries, so it needs
+  // no afterAll to restore shared state.
+  it("agrees with NEWSROOM_CAPABILITIES on `implemented` for every registered publisher", () => {
+    for (const publisher of allPublishers()) {
+      const capability = NEWSROOM_CAPABILITIES[publisher.id];
+      expect(capability).toBeDefined();
+      expect(capability!.implemented).toBe(publisher.implemented);
+    }
   });
 
   it("should refuse to deploy without credentials, before opening a socket", async () => {

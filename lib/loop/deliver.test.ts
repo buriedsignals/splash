@@ -130,6 +130,27 @@ describe("deliver", () => {
     );
   });
 
+  // The module's whole contract is "bounded VerbResult refusals, never a throw" (see the
+  // header comment of deliver.ts). A Decor missing `profile` entirely — reachable if a future
+  // caller builds one by hand instead of through loadDecor/neutralDecor, both of which always
+  // set it — must not turn that contract into a TypeError on `profile.requiredSigners`.
+  it("should refuse rather than throw when the decor carries no profile at all", async () => {
+    const { run, el } = runWith({
+      delivery: { requested: ["zip"], delivered: [] },
+    });
+    const decorNoProfile = decorWith() as unknown as Record<string, unknown>;
+    delete decorNoProfile.profile;
+    const r = await deliver(
+      run,
+      el,
+      runDir,
+      decorNoProfile as unknown as Decor,
+    );
+    // No requiredSigners means nothing is gated: the call proceeds and zip is always ready, so
+    // the bounded answer is a success, not a refusal — the point being that it IS bounded.
+    expect(r.ok).toBe(true);
+  });
+
   it("should refuse when the profile requires signers and the element carries no matching approval", async () => {
     const { run, el } = runWith({
       delivery: { requested: ["zip"], delivered: [] },

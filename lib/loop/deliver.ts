@@ -60,7 +60,10 @@ export async function deliver(
   // strictly weaker than the legacy deploy-embed.mjs it replaces, which auto-discovered
   // NEWSROOM-PROFILE.md. Deriving the default from an argument the function already receives
   // is what keeps a future caller from having to remember.
-  profile: ProfileFacts & { requiredSigners?: string[] } = decor.profile,
+  // `?? {}`: this module's whole contract is a bounded VerbResult, never a throw — a decor
+  // built by hand without `profile` must not turn the requiredSigners read below into a
+  // TypeError.
+  profile: ProfileFacts & { requiredSigners?: string[] } = decor.profile ?? {},
   opts: DeliverOpts = {},
 ): Promise<VerbResult<RunElement>> {
   if (!PUBLISHERS_REGISTERED)
