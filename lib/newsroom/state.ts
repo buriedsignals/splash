@@ -23,6 +23,14 @@ export const NEWSROOM_STATE_FILE = "newsroom.json";
 const CapabilityStateSchema = z.object({
   /** What the newsroom WANTS. A disabled capability is never reported as a failure. */
   enabled: z.boolean(),
+  /**
+   * NON-secret provider identifiers this capability's own settingsFields ask for (an S3
+   * endpoint, a bucket name, a project id — never a credential: that lives in .env, and this
+   * is a plain string map, so nothing here can be schema-typed as "must not be a secret" — the
+   * boundary is held by the WRITER, never by this field. Optional, so a state file written
+   * before this field existed still reads (spec 2026-07-24 §3.2).
+   */
+  settings: z.record(z.string(), z.string()).optional(),
   /** The last live provider check, when one has run (the setup page performs it). */
   lastVerified: z
     .object({

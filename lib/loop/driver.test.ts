@@ -459,12 +459,17 @@ test("advance() delivers a requested destination, merging the delivery record on
 test("advance() records a deliver failure as a bounded event, without advancing the element's delivery", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-driver-deliver-fail-"));
   const { run: base, el } = deliverableRun(runDir);
-  // "embed-s3" is DECLARED in NEWSROOM_CAPABILITIES but not yet implemented — readiness
+  // "embed-fly" is DECLARED in NEWSROOM_CAPABILITIES but not yet implemented — readiness
   // refuses it deterministically, with no dependency on credentials or the network, so this
-  // failure path can't flake on whatever happens to be in the real environment.
+  // failure path can't flake on whatever happens to be in the real environment. (embed-s3
+  // used to be this case; it is implemented now, so its refusal here would come from
+  // `enabled !== true`, not from the declared-but-unimplemented branch this test means to
+  // exercise.)
   const run: RunManifest = {
     ...base,
-    elements: [{ ...el, delivery: { requested: ["embed-s3"], delivered: [] } }],
+    elements: [
+      { ...el, delivery: { requested: ["embed-fly"], delivered: [] } },
+    ],
   };
   expect(nextActions(run)).toEqual(["deliver"]);
 

@@ -166,11 +166,23 @@ export async function deliver(
         if (v !== undefined) credentials[name] = v;
       }
 
+    // Non-secret provider settings (an S3 endpoint, a bucket name…) are the newsroom's own
+    // persisted decor — never the environment. A capability that declares settingsFields but
+    // has nothing wired to carry their values would read "ready" (its secrets are present) and
+    // still refuse at the adapter ("settings.endpoint is required"): the gap this closes.
+    //
+    // Precedence, spelled out because two layers can in principle name the same key:
+    // `publisherId` is fixed LAST among the capability-owned spread so nothing in a
+    // newsroom-configured settings bag can shadow it; the transverse `decor.state.delivery`
+    // preferences (spec 2026-07-25 §3.6 — snippetTemplate, applied across every destination by
+    // design) are spread LAST of all, so a newsroom-wide override the journalist deliberately
+    // set is never silently shadowed by a capability's own, narrower settings.
     const result = await runVerb("publish", {
       artifactPath: join(runDir, el.artifact.path),
       id: el.id,
       metadata: metadata.value,
       settings: {
+        ...(decor.state.capabilities[publisherId]?.settings ?? {}),
         publisherId,
         ...(decor.state.delivery?.snippetTemplate
           ? { snippetTemplate: decor.state.delivery.snippetTemplate }

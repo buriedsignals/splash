@@ -214,6 +214,85 @@ describe("deliver", () => {
     }
   });
 
+  // Review fix (Task 3-4, round 1, Critical): settingsFields declared for a capability
+  // (embed-s3's endpoint/region/bucket/prefix/publicBaseUrl) had no channel to reach the
+  // adapter at all — capabilityReadiness reports "ready" once the secrets are present, but
+  // `deliver`'s settings object carried only `publisherId` and the transverse
+  // snippetTemplate, so the adapter always refused with "settings.endpoint is required" for a
+  // fully-configured newsroom. This proves the persisted per-capability `settings` (spec
+  // 2026-07-24 §3.2) now reach `req.settings` through a REAL `deliver()` call — not a
+  // hand-built PublishRequest, which is exactly what let the gap ship unnoticed the first
+  // time — and that they never come from the environment, even when a decoy env var of the
+  // same shape is present.
+  it("merges a capability's own persisted settings into the publish request, never from the environment", async () => {
+    const echoS3: Publisher = {
+      id: "embed-s3",
+      kind: "hosted",
+      implemented: true,
+      async publish(req) {
+        return ok({
+          publisherId: "embed-s3",
+          kind: "hosted" as const,
+          url: "https://s3-echo.invalid/proof",
+          snippet: JSON.stringify(req.settings),
+          publishedAt: new Date().toISOString(),
+        });
+      },
+    };
+    // The real embed-s3 adapter is registered by the outer beforeEach; swap in an echo stub
+    // for just this test so the assertion is about the SETTINGS-MERGING PATH, not the network.
+    resetPublishersForTest();
+    registerPublisher(echoS3);
+
+    const { run, el } = runWith({
+      delivery: { requested: ["embed-s3"], delivered: [] },
+    });
+    const decor = decorWith({
+      state: {
+        ...DEFAULT_NEWSROOM_STATE,
+        capabilities: {
+          "embed-s3": {
+            enabled: true,
+            settings: {
+              endpoint: "http://127.0.0.1:9000",
+              region: "us-east-1",
+              bucket: "splash-embeds",
+              publicBaseUrl: "http://127.0.0.1:9000/splash-embeds",
+            },
+          },
+        },
+      },
+    });
+    const r = await deliver(
+      run,
+      el,
+      runDir,
+      decor,
+      {},
+      {
+        env: {
+          SPLASH_S3_ACCESS_KEY_ID: "key-id",
+          SPLASH_S3_SECRET_ACCESS_KEY: "secret-key",
+          DECOY_SETTING: "should-never-appear",
+        },
+      },
+    );
+    expect(r.ok).toBe(true);
+    const value = (r as { value: RunElement }).value;
+    const snippet = value.delivery!.delivered[0]!.snippet;
+    const settings = JSON.parse(snippet);
+    expect(settings).toMatchObject({
+      publisherId: "embed-s3",
+      endpoint: "http://127.0.0.1:9000",
+      region: "us-east-1",
+      bucket: "splash-embeds",
+      publicBaseUrl: "http://127.0.0.1:9000/splash-embeds",
+    });
+    expect(snippet).not.toContain("should-never-appear");
+    // The full recorded element (event log, delivery record…) must not carry the decoy either.
+    expect(JSON.stringify(value)).not.toContain("should-never-appear");
+  });
+
   // Probing beyond the brief's 5 mandated tests — see task-9-report.md for the reasoning.
 
   it("never throws when the just-delivered package cannot be read back for hashing", async () => {

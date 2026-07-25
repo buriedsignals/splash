@@ -86,6 +86,84 @@ describe("the newsroom state file", () => {
     expect(onDisk).not.toContain("also-should-not-survive");
   });
 
+  // A per-capability settings bag is exactly where someone would be tempted to put a secret
+  // (spec 2026-07-24 §3.2). It is legitimate, DECLARED storage now — unlike the sibling
+  // `apiKey` above, its values are meant to survive — but any OTHER, still-undeclared field
+  // beside it must keep being stripped exactly as before: adding `settings` must not have
+  // widened the schema's tolerance for anything else.
+  it("keeps a capability's own declared settings values, while still stripping any other undeclared field beside them", () => {
+    const d = dir();
+    writeFileSync(
+      join(d, NEWSROOM_STATE_FILE),
+      JSON.stringify({
+        schemaVersion: 1,
+        runtime: "claude",
+        uiLang: "en",
+        capabilities: {
+          "embed-s3": {
+            enabled: true,
+            settings: {
+              endpoint: "http://127.0.0.1:9000",
+              bucket: "splash-embeds",
+            },
+            apiKey: "still-should-not-survive-not-a-declared-field",
+          },
+        },
+      }),
+    );
+    const state = readNewsroomState(d);
+    expect(state.capabilities["embed-s3"]).toEqual({
+      enabled: true,
+      settings: {
+        endpoint: "http://127.0.0.1:9000",
+        bucket: "splash-embeds",
+      },
+    });
+    writeNewsroomState(d, state);
+    const onDisk = readFileSync(join(d, NEWSROOM_STATE_FILE), "utf8");
+    expect(onDisk).toContain("http://127.0.0.1:9000");
+    expect(onDisk).not.toContain(
+      "still-should-not-survive-not-a-declared-field",
+    );
+  });
+
+  it("round-trips a capability's own persisted settings", () => {
+    const d = dir();
+    const state: NewsroomState = {
+      ...FILLED,
+      capabilities: {
+        ...FILLED.capabilities,
+        "embed-s3": {
+          enabled: true,
+          settings: {
+            endpoint: "http://127.0.0.1:9000",
+            region: "us-east-1",
+            bucket: "splash-embeds",
+            publicBaseUrl: "http://127.0.0.1:9000/splash-embeds",
+          },
+        },
+      },
+    };
+    writeNewsroomState(d, state);
+    expect(readNewsroomState(d)).toEqual(state);
+  });
+
+  it("still reads a newsroom.json written before capability settings existed", () => {
+    const d = dir();
+    writeFileSync(
+      join(d, NEWSROOM_STATE_FILE),
+      JSON.stringify({
+        schemaVersion: 1,
+        runtime: "claude",
+        uiLang: "en",
+        capabilities: { "embed-cloudflare": { enabled: true } },
+      }),
+    );
+    expect(readNewsroomState(d).capabilities["embed-cloudflare"]).toEqual({
+      enabled: true,
+    });
+  });
+
   it("writes atomically and leaves no temporary file behind", () => {
     const d = dir();
     writeNewsroomState(d, FILLED);
