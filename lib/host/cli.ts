@@ -22,6 +22,7 @@
 import { ENGINES_REGISTERED } from "../loop/engines";
 import { runVerb } from "../core/verbs";
 import { capabilities } from "./capabilities";
+import { describeNewsroom } from "./newsroom";
 import { outDirRefusal } from "./path-safety";
 import { describeNext, describeState, type HostResponse } from "./state";
 import type { HostErrorCode } from "./errors";
@@ -141,6 +142,14 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : 2);
   }
 
+  if (command === "newsroom") {
+    const parsed = parseFlags(rest, ["--dir"]);
+    if (!parsed.ok) usage(parsed.message);
+    // --dir is optional: without it the decor resolves from the install root.
+    const r = describeNewsroom(parsed.flags["--dir"]);
+    emit(r, r.ok ? 0 : 2);
+  }
+
   if (command === "verb") {
     const name = rest[0];
     if (!name || name.startsWith("--"))
@@ -169,7 +178,7 @@ async function main(): Promise<never> {
   }
 
   usage(
-    `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next or verb`,
+    `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, verb or newsroom`,
   );
 }
 

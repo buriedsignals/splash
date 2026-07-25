@@ -83,6 +83,11 @@ describe("the CLI façade — JSON in, JSON out, stable exit codes", () => {
     const body = JSON.parse(r.out);
     expect(body.ok).toBe(false);
     expect(body.code).toBe("usage");
+    // Pinned exactly, not a substring: the wording — including the full command list — is
+    // part of the surface a host reads, not an implementation detail.
+    expect(body.message).toBe(
+      'unknown command "explode" — expected verbs, state, next, verb or newsroom',
+    );
     // The real assertion: the DOCUMENT the host reads carries no stack trace either. stderr
     // being empty on this path made the old `r.err` version trivially true.
     expect(r.out).not.toMatch(STACK_FRAME);

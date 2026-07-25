@@ -30,7 +30,7 @@ These three are exhaustive, and they hold for every input: an unreadable stdin, 
 flag, a hostile payload, or a residual defect inside the façade all still leave one JSON
 document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
-## The four commands
+## The five commands
 
 ### `verbs`
 
@@ -449,6 +449,59 @@ are the loop-aware commands, `verb` is not. Passing one is a `usage` refusal rat
 silently ignored argument. Calling `verb render` a second time against the same run does not
 touch `run.json` — `state` before and after are identical — because the contract writes
 artifacts and the loop writes state, and the CLI keeps that boundary.
+
+### `newsroom [--dir <dir>]`
+
+Reports the newsroom's decor: the runtime it installed under, the interface/content
+languages it resolves to, the delivery capability it publishes through (`null` until one is
+chosen), every capability's readiness, and — the field a host actually needs to act on —
+`blockers`, the subset of those that are enabled but not currently usable. `--dir` is
+optional; without it the decor resolves from the install root, the same default `loadDecor`
+uses everywhere else in this repo.
+
+```
+$ bun lib/host/cli.ts newsroom
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "root": "/Users/rmdms/Sites/Professional/splash-preflight",
+    "runtime": "claude",
+    "language": {
+      "ui": "en",
+      "content": "en"
+    },
+    "publisher": null,
+    "capabilities": [
+      {
+        "id": "dw-chart",
+        "label": "Datawrapper charts",
+        "help": [],
+        "status": "disabled",
+        "reason": ""
+      }
+    ],
+    "blockers": []
+  }
+}
+```
+
+(`capabilities` above is truncated to one entry for the example; a real run lists all ten.)
+
+Exit code `0` on a readable install; `2` on a usage error (an unknown flag, or a value-less
+`--dir`) — `newsroom` never fails any other way, because `loadDecor` is written not to throw
+and an absent or unreadable `newsroom.json` yields the default decor rather than an error.
+There is no `1`: `newsroom` reads, it refuses no verb, so there is nothing for that code to
+mean here.
+
+`newsroom` is **read-only**, with one deliberate exception: the first read of an install that
+still carries a pre-decor `.splash-runtime` file performs the one-time legacy migration
+(`lib/newsroom/migrate-decor.ts`), writing `newsroom.json` so every read after it is a pure
+read. That write happens at most once per install and is not something a host requests —
+it is a consequence of decor's own `loadDecor`, shared by every caller, not a `newsroom`-only
+behaviour.
 
 #### What a failure message may contain
 
