@@ -24,7 +24,7 @@ describe("runVerb — the vocabulary is CLOSED (invariant I4)", () => {
   });
 
   it("answers not-implemented for a DECLARED verb with no body yet", async () => {
-    for (const verb of ["capture", "review", "publish"]) {
+    for (const verb of ["capture", "review"]) {
       const r = await runVerb(verb, {});
       expect(r.ok).toBe(false);
       if (r.ok) throw new Error("unreachable");

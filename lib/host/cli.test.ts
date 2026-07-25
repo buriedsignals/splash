@@ -114,7 +114,7 @@ describe("the CLI façade — JSON in, JSON out, stable exit codes", () => {
   });
 
   it("a declared but unimplemented verb exits 1 with not-implemented", async () => {
-    const r = await run(["verb", "publish"], JSON.stringify({}));
+    const r = await run(["verb", "capture"], JSON.stringify({}));
     expect(r.code).toBe(1);
     expect(JSON.parse(r.out).code).toBe("not-implemented");
   });

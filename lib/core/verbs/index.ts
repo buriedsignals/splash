@@ -1,9 +1,11 @@
 import { isChannel, isVerb, isVisualFormat, VERBS } from "../vocabulary";
+import { isPublishPayload, publish } from "./publish";
 import { render } from "./render";
 import { fail, type RenderPayload, type VerbResult } from "./types";
 
 export * from "./types";
 export { render } from "./render";
+export { isPublishPayload, publish } from "./publish";
 
 // Shape gate for the neutral payload. Explicit rather than schema-driven: the contract
 // has one payload today, and every field must be checked before anything touches the
@@ -43,6 +45,14 @@ export async function runVerb(
         "invalid-request",
         `unknown verb "${verb}" — the contract declares ${VERBS.join(", ")}`,
       );
+    if (verb === "publish") {
+      if (!isPublishPayload(payload))
+        return fail(
+          "invalid-request",
+          "publish: payload must carry artifactPath, id, metadata, settings, credentials and outDir",
+        );
+      return await publish(payload);
+    }
     if (verb !== "render")
       return fail(
         "not-implemented",

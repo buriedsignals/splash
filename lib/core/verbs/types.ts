@@ -21,6 +21,7 @@ export const VERB_ERROR_CODES = [
   "engine-declined", // the engine refuses THIS spec (chart-native exit 2)
   "engine-failed", // non-zero execution, or a broken delivery
   "not-implemented", // declared verb, no body yet
+  "unknown-publisher", // no adapter registered under this publisher id
 ] as const;
 
 export type VerbErrorCode = (typeof VERB_ERROR_CODES)[number];
