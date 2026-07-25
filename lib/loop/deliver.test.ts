@@ -297,6 +297,69 @@ describe("deliver", () => {
     expect(afterFirst.delivery!.delivered).toHaveLength(1);
   });
 
+  it("skips a destination it cannot satisfy instead of starving the universal fallback", async () => {
+    // The head-of-line case, and the natural request that hits it: "give me the link, and a
+    // zip as backup". Retrying the FIRST unsatisfied destination on every call means an
+    // unconfigured host refuses identically forever, nextActions keeps answering ["deliver"],
+    // and the zip — which exists precisely so "no host configured" is a working path — is
+    // never written.
+    const { run, el } = runWith({
+      delivery: { requested: ["embed-cloudflare", "zip"], delivered: [] },
+    });
+    const decor = decorWith({
+      state: {
+        ...DEFAULT_NEWSROOM_STATE,
+        capabilities: {
+          zip: { enabled: true },
+          "embed-cloudflare": { enabled: true },
+        },
+      },
+    });
+
+    const first = await deliver(run, el, runDir, decor, {}, { env: {} });
+    expect(first.ok).toBe(true);
+    const afterFirst = (first as { value: RunElement }).value;
+    expect(afterFirst.delivery!.delivered.map((d) => d.publisherId)).toEqual([
+      "zip",
+    ]);
+    expect(existsSync(join(runDir, "elements", "e1", "e1.zip"))).toBe(true);
+
+    // …and the refusal is NOT swallowed: the cloudflare destination is still unsatisfied, so
+    // the very next call is the bounded refusal naming the variable the journalist must set.
+    const second = await deliver(
+      { ...run, elements: [afterFirst] },
+      afterFirst,
+      runDir,
+      decor,
+      {},
+      { env: {} },
+    );
+    expect(second).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((second as { message: string }).message).toContain(
+      "CLOUDFLARE_API_TOKEN",
+    );
+  });
+
+  it("names every destination it could not satisfy when none of them could be published", async () => {
+    const { run, el } = runWith({
+      delivery: {
+        requested: ["embed-cloudflare", "embed-s3"],
+        delivered: [],
+      },
+    });
+    const decor = decorWith({
+      state: {
+        ...DEFAULT_NEWSROOM_STATE,
+        capabilities: { "embed-cloudflare": { enabled: true } },
+      },
+    });
+    const r = await deliver(run, el, runDir, decor, {}, { env: {} });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    const message = (r as { message: string }).message;
+    expect(message).toContain("CLOUDFLARE_API_TOKEN");
+    expect(message).toContain("embed-s3");
+  });
+
   it("does not re-publish an already-delivered destination on a repeat call", async () => {
     const { run, el } = runWith({
       delivery: { requested: ["zip"], delivered: [] },

@@ -5,24 +5,28 @@
 // Every refusal below lands before the verb is called, so a refused delivery leaves nothing
 // staged, nothing uploaded, and no record written.
 //
-// One destination per call, by design — not "deliver everything requested in one go". An
-// element's `delivery.requested` can name several destinations, and a naive loop that walks
-// all of them inside one call discards an earlier SUCCESS the moment a later one cannot be
-// validated: destination #1 publishes for real (a file lands on disk, or a hosted deploy goes
-// out), then destination #2 refuses on a readiness check, and the whole call returns a single
-// `fail` — the caller only merges an `ok` result, so #1's outcome is never recorded anywhere,
-// yet the side effect already happened. A retry would then re-publish #1 too. Processing
-// exactly the first not-yet-delivered destination per call — the same "one deterministic step
-// per advance()" shape every other loop step already follows — makes each call atomic: either
-// nothing happens (refused before any verb, all earlier records untouched) or exactly one new
-// record is appended. `gateStateOf`/`needsDelivery` already express "more destinations still
-// pending" as another "deliver" next-action, so a caller that calls this repeatedly converges
-// on delivering every requested destination with no window for a completed publish to go
-// unrecorded.
+// One RECORD per call, by design — not "deliver everything requested in one go". An element's
+// `delivery.requested` can name several destinations, and a naive loop that publishes all of
+// them inside one call discards an earlier SUCCESS the moment a later one cannot be validated:
+// destination #1 publishes for real (a file lands on disk, or a hosted deploy goes out), then
+// destination #2 refuses on a readiness check, and the whole call returns a single `fail` —
+// the caller only merges an `ok` result, so #1's outcome is never recorded anywhere, yet the
+// side effect already happened. A retry would then re-publish #1 too. Returning as soon as one
+// destination publishes — the same "one deterministic step per advance()" shape every other
+// loop step already follows — makes each call atomic: either nothing happens (refused before
+// any record is written, all earlier records untouched) or exactly one new record is appended.
+// `gateStateOf`/`needsDelivery` already express "more destinations still pending" as another
+// "deliver" next-action, so a caller that calls this repeatedly converges on delivering every
+// requested destination with no window for a completed publish to go unrecorded.
+//
+// What the call does NOT do is stop at the first destination that refuses: it skips to the
+// next pending one (see the loop below for why that matters, and how the skipped refusal is
+// still surfaced).
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { fail, ok, runVerb, type VerbResult } from "../core/verbs";
+import type { VerbErrorCode } from "../core/verbs/types";
 // Populates the publisher registry the publish verb dispatches from — without it every
 // publish answers `unknown-publisher`. Same discipline as produce.ts importing ./engines.
 import { PUBLISHERS_REGISTERED } from "../delivery";
@@ -89,7 +93,7 @@ export async function deliver(
   }
 
   const delivered: DeliveryRecord[] = el.delivery?.delivered ?? [];
-  const publisherId = requested.find(
+  const pending = requested.filter(
     (id) =>
       !delivered.some(
         (d) => d.publisherId === id && d.deliveredProvenanceHash === current,
@@ -98,19 +102,11 @@ export async function deliver(
   // Every requested destination already has a matching record: nothing to do. A no-op
   // returns unchanged, without touching the environment or looking up a single capability —
   // the same idempotent shape a repeat call must have.
-  if (!publisherId) return ok(el);
+  if (pending.length === 0) return ok(el);
 
   const env = opts.env ?? decorEnv(decor.root);
-  const cap = NEWSROOM_CAPABILITIES[publisherId];
-  if (!cap)
-    return fail(
-      "invalid-request",
-      `deliver: "${publisherId}" is not a delivery capability this install knows`,
-    );
-  const readiness = capabilityReadiness(cap, decor.state, { env });
-  if (readiness.status !== "ready")
-    return fail("invalid-request", `deliver: ${readiness.reason}`);
-
+  // Element-wide, not per-destination: every publisher describes the SAME visual, so a
+  // refusal here (no angle, blank alt text) applies to all of them and stops the whole call.
   const metadata = deliveryMetadata(el, profile, {
     ...(decor.state.delivery?.maxWidth !== undefined
       ? { width: decor.state.delivery.maxWidth }
@@ -121,58 +117,115 @@ export async function deliver(
   });
   if (!metadata.ok) return metadata;
 
-  // Credentials are collected HERE and handed to the contract explicitly. They are read from
-  // the capability's own declared variables — never a blanket copy of the environment.
-  const credentials: Record<string, string> = {};
-  for (const group of cap.env)
-    for (const name of group) {
-      const v = env[name];
-      if (v !== undefined) credentials[name] = v;
+  // Walk the pending destinations in the order the journalist asked for them, and SKIP one
+  // that refuses rather than refusing the whole call. Retrying only the first unsatisfied
+  // destination starved the universal fallback: with `["embed-cloudflare", "zip"]` and no
+  // Cloudflare credentials every call refused identically, `nextActions` kept answering
+  // ["deliver"], and the zip archive — the thing that exists so "no host configured" is a
+  // working path — was never written.
+  //
+  // Two properties are held at once, and they are the reason this is a loop with an early
+  // return rather than "publish everything that can be published":
+  //   · A SUCCESS is never discarded. The first destination that publishes ends the call with
+  //     `ok`, so exactly one new record is appended and no completed publish can be lost by a
+  //     later refusal (the defect this module already fixed once).
+  //   · A REFUSAL is never swallowed. A refused destination stays unsatisfied, so
+  //     `needsDelivery` keeps it pending and `nextActions` keeps answering ["deliver"] — the
+  //     immediately following call has nothing left to publish and therefore returns exactly
+  //     that refusal, which the driver records as a bounded failure event naming the missing
+  //     variable. The journalist learns Cloudflare is unconfigured AND keeps the archive.
+  // When NOTHING could be published, every refusal is reported at once rather than only the
+  // first: a journalist fixing two unconfigured destinations should see both.
+  const refusals: { code: VerbErrorCode; message: string }[] = [];
+  for (const publisherId of pending) {
+    const cap = NEWSROOM_CAPABILITIES[publisherId];
+    if (!cap) {
+      refusals.push({
+        code: "invalid-request",
+        message: `"${publisherId}" is not a delivery capability this install knows`,
+      });
+      continue;
+    }
+    const readiness = capabilityReadiness(cap, decor.state, { env });
+    if (readiness.status !== "ready") {
+      refusals.push({
+        code: "invalid-request",
+        // Named by id, because a message listing several refusals must say WHICH destination
+        // each one is about — and a capability disabled by choice carries an empty reason.
+        message: `${publisherId}: ${readiness.reason || `${cap.label} is not enabled for this newsroom`}`,
+      });
+      continue;
     }
 
-  const result = await runVerb("publish", {
-    artifactPath: join(runDir, el.artifact.path),
-    id: el.id,
-    metadata: metadata.value,
-    settings: {
-      publisherId,
-      ...(decor.state.delivery?.snippetTemplate
-        ? { snippetTemplate: decor.state.delivery.snippetTemplate }
-        : {}),
-    },
-    credentials,
-    outDir: join(runDir, "elements", el.id),
-  });
-  if (!result.ok) return result;
+    // Credentials are collected HERE and handed to the contract explicitly. They are read from
+    // the capability's own declared variables — never a blanket copy of the environment.
+    const credentials: Record<string, string> = {};
+    for (const group of cap.env)
+      for (const name of group) {
+        const v = env[name];
+        if (v !== undefined) credentials[name] = v;
+      }
 
-  const outcome = result.value as PublishOutcome;
-  // The publisher DID run — a failure recording its outcome (reading the package back to hash
-  // it) is therefore an engine-failed result, never a throw, exactly the discipline
-  // produce.ts already applies to its own "read the delivered artifact back" step. Nothing
-  // upstream of this catches a throw here: the driver awaits `deliver()` unguarded, the same
-  // way it awaits `produce()` unguarded, trusting the never-throw invariant.
-  let record: DeliveryRecord;
-  try {
-    record = {
-      publisherId: outcome.publisherId,
-      kind: outcome.kind,
-      ...(outcome.url ? { url: outcome.url } : {}),
-      ...(outcome.path ? { artifact: hashRef(outcome.path, runDir) } : {}),
-      snippet: outcome.snippet,
-      publishedAt: outcome.publishedAt,
-      deliveredProvenanceHash: current,
-    };
-  } catch (e) {
-    return fail(
-      "engine-failed",
-      `deliver: "${publisherId}" published but its outcome could not be recorded: ${(e as Error).message}`,
-    );
+    const result = await runVerb("publish", {
+      artifactPath: join(runDir, el.artifact.path),
+      id: el.id,
+      metadata: metadata.value,
+      settings: {
+        publisherId,
+        ...(decor.state.delivery?.snippetTemplate
+          ? { snippetTemplate: decor.state.delivery.snippetTemplate }
+          : {}),
+      },
+      credentials,
+      outDir: join(runDir, "elements", el.id),
+    });
+    if (!result.ok) {
+      refusals.push({
+        code: result.code,
+        message: `${publisherId}: ${result.message}`,
+      });
+      continue;
+    }
+
+    const outcome = result.value as PublishOutcome;
+    // The publisher DID run — a failure recording its outcome (reading the package back to
+    // hash it) is therefore an engine-failed result, never a throw, exactly the discipline
+    // produce.ts already applies to its own "read the delivered artifact back" step. Nothing
+    // upstream of this catches a throw here: the driver awaits `deliver()` unguarded, the same
+    // way it awaits `produce()` unguarded, trusting the never-throw invariant. It ends the
+    // call rather than moving on: the artifact is already published, and the honest answer is
+    // the failure to record it, not a different destination's success on top of it.
+    let record: DeliveryRecord;
+    try {
+      record = {
+        publisherId: outcome.publisherId,
+        kind: outcome.kind,
+        ...(outcome.url ? { url: outcome.url } : {}),
+        ...(outcome.path ? { artifact: hashRef(outcome.path, runDir) } : {}),
+        snippet: outcome.snippet,
+        publishedAt: outcome.publishedAt,
+        deliveredProvenanceHash: current,
+      };
+    } catch (e) {
+      return fail(
+        "engine-failed",
+        `deliver: "${publisherId}" published but its outcome could not be recorded: ${(e as Error).message}`,
+      );
+    }
+
+    return ok({
+      ...el,
+      delivery: { requested, delivered: [...delivered, record] },
+    });
   }
 
-  return ok({
-    ...el,
-    delivery: { requested, delivered: [...delivered, record] },
-  });
+  // Nothing landed. The code of the FIRST refusal is kept — the destinations are in the
+  // journalist's own order of preference, so that is the answer about the one they asked for
+  // first — while the message carries every refusal.
+  return fail(
+    refusals[0]!.code,
+    `deliver: ${refusals.map((r) => r.message).join("; ")}`,
+  );
 }
 
 // A run dir must stay portable, so a delivered package is recorded run-dir-relative — the same
