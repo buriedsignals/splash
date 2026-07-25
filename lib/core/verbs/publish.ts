@@ -9,6 +9,7 @@ import {
   type PublishOutcome,
   type PublishRequest,
 } from "../publishers";
+import { isSafeId, unsafeIdMessage } from "../id-safety";
 import { fail, type VerbResult } from "./types";
 
 export function isPublishPayload(p: unknown): p is PublishRequest {
@@ -45,6 +46,15 @@ export async function publish(
   // A rejected adapter promise must become engine-failed HERE too, not only at runVerb's
   // boundary, or a direct caller would see it escape with no catch of its own (I1).
   try {
+    // Path-safety BEFORE any adapter is even looked up — same shape as render.ts's own guard.
+    // A "package" publisher (zip today, more later) builds its output path directly from
+    // `payload.id`; PublishRequest's own doc comment claims this is "checked before any path
+    // resolution", but nothing upstream of an adapter actually enforced that until now. Zip
+    // keeps its own copy of this check too (defence in depth for a direct caller), but the verb
+    // is where it must not be optional — every future publisher inherits it for free here.
+    if (!isSafeId(payload.id))
+      return fail("invalid-request", unsafeIdMessage(payload.id));
+
     const id = payload.settings.publisherId;
     if (typeof id !== "string" || id === "")
       return fail(

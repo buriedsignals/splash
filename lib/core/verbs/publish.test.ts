@@ -50,6 +50,26 @@ function publisher(over: Partial<Publisher> & { id: string }): Publisher {
 describe("the publish verb", () => {
   beforeEach(() => resetPublishersForTest());
 
+  it("should refuse a path-unsafe id before any adapter is reached", async () => {
+    // An adapter that throws if invoked is the clean way to prove "never reached" — if the
+    // path-safety check ran AFTER dispatch instead of before, this test would fail with
+    // engine-failed/"must not be called", not invalid-request.
+    registerPublisher(
+      publisher({
+        id: "zip",
+        publish: async () => {
+          throw new Error("adapter must not be called for an unsafe id");
+        },
+      }),
+    );
+    const r = await runVerb("publish", {
+      ...request({ id: "../../evil" }),
+      settings: { publisherId: "zip" },
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("../../evil");
+  });
+
   it("should refuse an id no adapter registered, with unknown-publisher", async () => {
     const r = await runVerb("publish", {
       ...request(),

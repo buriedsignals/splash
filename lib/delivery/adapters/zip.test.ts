@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { execFileSync } from "node:child_process";
 import {
   existsSync,
   mkdtempSync,
@@ -68,6 +69,64 @@ describe("the zip publisher", () => {
     expect(digest(a)).toEqual(digest(b));
   });
 
+  // The in-process determinism test above cannot catch a byte encoding that depends on the
+  // host's local-time getters — both publishes there share one process, one TZ. This one runs
+  // the SAME publish in three real subprocesses, each pinned to a different TZ (a positive
+  // offset, a negative one, and the +14 extreme), and compares the resulting archive bytes.
+  // Regression target: fflate's DOS-time encoder reads local-time getters off whatever Date
+  // FIXED_MTIME is; a UTC-instant-derived Date (`Date.UTC(...)`) yields different local
+  // components — and therefore different encoded bytes — per timezone.
+  it("should produce byte-identical archives across different host timezones (real subprocess)", () => {
+    const zipModulePath = new URL("./zip.ts", import.meta.url).pathname;
+    const script = `
+      import { zipPublisher } from ${JSON.stringify(zipModulePath)};
+      import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
+      import { join } from "node:path";
+      import { tmpdir } from "node:os";
+      import { sha256 } from "@noble/hashes/sha2.js";
+
+      const root = mkdtempSync(join(tmpdir(), "splash-zip-tz-"));
+      const artifact = join(root, "interactive.html");
+      writeFileSync(artifact, "<html><body>chart</body></html>");
+      const outDir = join(root, "out");
+      mkdirSync(outDir, { recursive: true });
+      const r = await zipPublisher.publish({
+        artifactPath: artifact,
+        id: "primes",
+        metadata: {
+          title: "Primes cantonales",
+          altText: "Les primes montent",
+          source: "OFSP",
+          credit: "Heidi.news",
+          lang: "fr",
+          width: 700,
+          height: 420,
+        },
+        settings: { publisherId: "zip" },
+        credentials: {},
+        outDir,
+      });
+      if (!r.ok) {
+        console.error(JSON.stringify(r));
+        process.exit(1);
+      }
+      process.stdout.write(Buffer.from(sha256(readFileSync(r.value.path))).toString("hex"));
+    `;
+
+    const digestUnderTz = (tz: string) =>
+      execFileSync("bun", ["-e", script], {
+        env: { ...process.env, TZ: tz },
+        encoding: "utf8",
+      }).trim();
+
+    const utc = digestUnderTz("UTC");
+    const mexicoCity = digestUnderTz("America/Mexico_City"); // UTC-6
+    const kiritimati = digestUnderTz("Pacific/Kiritimati"); // UTC+14, the extreme
+
+    expect(mexicoCity).toEqual(utc);
+    expect(kiritimati).toEqual(utc);
+  });
+
   it("should carry the alt text into metadata.json", async () => {
     const r = await zipPublisher.publish(request());
     const zipPath = (r as { value: { path: string } }).value.path;
@@ -85,6 +144,7 @@ describe("the zip publisher", () => {
       artifactPath: join(root, "absent.html"),
     });
     expect(r).toMatchObject({ ok: false, code: "engine-failed" });
+    expect(existsSync(join(req.outDir, "primes.zip"))).toBe(false);
   });
 
   it("should report kind package with no url", async () => {

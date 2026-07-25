@@ -22,16 +22,25 @@ import { renderSnippet } from "../snippet";
 // clock, or the golden determinism test becomes a clock test. A Date object also avoids any
 // falsy-zero handling inside the encoder.
 //
-// Noon UTC, not midnight: fflate reads the DOS date fields off `Date#getFullYear()`, which is
-// LOCAL time, and rejects any year outside 1980-2099 (err code 10). Midnight UTC on the epoch
-// floor rolls back to 1979 in every negative-UTC-offset zone — all of the Americas — so a
-// journalist running this on a laptop set to e.g. America/Mexico_City would crash inside the
-// encoder on every publish. Noon UTC survives the full real-world offset range (UTC-12..+14)
-// without crossing into 1979 or 1981.
-const FIXED_MTIME = new Date(Date.UTC(1980, 0, 1, 12, 0, 0));
-// Same reason the mtime is pinned: the recorded publication instant must not vary between two
-// otherwise identical runs, which is what makes an archive reproducible end to end.
-const FIXED_PUBLISHED_AT = FIXED_MTIME.toISOString();
+// LOCAL-time constructor, deliberately — NOT `Date.UTC(...)`. fflate's DOS-time encoder reads
+// getFullYear()/getMonth()/getDate()/getHours()/getMinutes()/getSeconds(), which are all
+// LOCAL-time getters. Building the Date from a fixed UTC INSTANT (`Date.UTC(1980, 0, 1, 12, 0,
+// 0)`) means those getters return different local components on machines in different
+// timezones — the archive is then reproducible per-machine, not reproducible: measured four
+// different byte streams for UTC / Mexico City / Tokyo / Kiritimati (+14) on that instant. The
+// local-time constructor `new Date(1980, 0, 1, 12, 0, 0)` instead pins the LOCAL COMPONENTS
+// themselves — every timezone's getFullYear()/getMonth()/… returns exactly 1980/0/1/12/0/0,
+// which is what the encoder reads, so the encoded bytes are identical everywhere. Do not "fix"
+// this back to `Date.UTC` — that reintroduces the cross-machine drift this comment exists to
+// prevent. Noon (not midnight) still matters for the reason it always did: fflate rejects a
+// year outside 1980-2099 (err code 10), and with the local-time constructor the year is now
+// pinned outright (1980 everywhere) — the noon choice is belt-and-braces against any future
+// change that reintroduces a UTC-instant-derived Date.
+const FIXED_MTIME = new Date(1980, 0, 1, 12, 0, 0);
+// Deliberately a literal, not `FIXED_MTIME.toISOString()`: that conversion goes back through
+// the instant, which — per the comment above — differs by machine for a local-time Date. This
+// string is the one piece of output that is genuinely fixed everywhere, independent of TZ.
+const FIXED_PUBLISHED_AT = "1980-01-01T12:00:00.000Z";
 
 export function zipReadme(
   m: DeliveryMetadata,
