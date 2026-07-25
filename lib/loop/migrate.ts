@@ -5,15 +5,29 @@ import { freezeInput } from "./freeze";
 import { parseManifest, type RunManifest, type RunElement } from "./manifest";
 
 // Upgrade an on-disk manifest to the current schema. v1 stored inline CSV content and a
-// single top-level element; v2 freezes the content (path+hash) and wraps it in elements[].
+// single top-level element; v2 freezes the content (path+hash) and wraps it in elements[];
+// v3 drops the dormant, unconvertible v2 delivery slot. v1 chains through v2 to v3.
 export function migrate(raw: unknown, runDir: string): RunManifest {
   if (!raw || typeof raw !== "object")
     throw new Error("migrate: manifest is not an object");
   const obj = raw as { schemaVersion?: number };
-  if (obj.schemaVersion === 2) return parseManifest(raw);
+  if (obj.schemaVersion === 3) return parseManifest(raw);
+  if (obj.schemaVersion === 2) return parseManifest(migrateV2toV3(raw));
   if (obj.schemaVersion !== 1)
     throw new Error(`migrate: unsupported schemaVersion ${obj.schemaVersion}`);
-  return parseManifest(migrateV1toV2(raw as V1Manifest, runDir));
+  return parseManifest(migrateV2toV3(migrateV1toV2(raw as V1Manifest, runDir)));
+}
+
+// v2's delivery slot was DORMANT: no live path ever wrote it, and its `delivered: HashRef[]`
+// carries neither a publisher nor a provenance hash — there is nothing to convert honestly.
+// Dropping it is written down here rather than left as a silent loss.
+function migrateV2toV3(v2: unknown): unknown {
+  const m = v2 as { elements?: Record<string, unknown>[] };
+  return {
+    ...(v2 as object),
+    schemaVersion: 3,
+    elements: (m.elements ?? []).map(({ delivery, ...rest }) => rest),
+  };
 }
 
 type V1Manifest = {
@@ -29,7 +43,9 @@ type V1Manifest = {
   artifact?: { path: string; provenanceHash: string };
 };
 
-function migrateV1toV2(v1: V1Manifest, runDir: string): RunManifest {
+// Returns `unknown`, not `RunManifest`: its output now feeds migrateV2toV3 rather than being
+// the final shape, so it no longer has to satisfy the current schema by itself.
+function migrateV1toV2(v1: V1Manifest, runDir: string): unknown {
   const scratch = mkdtempSync(join(tmpdir(), "loop-mig-src-"));
   const src = join(scratch, "data.csv");
   writeFileSync(src, v1.input.dataCsv);

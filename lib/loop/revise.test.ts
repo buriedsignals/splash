@@ -11,7 +11,7 @@ import {
 function producedRun(): RunManifest {
   const run: RunManifest = {
     runId: "r",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     orient: {
       profile: {

@@ -1,5 +1,5 @@
-import { test, expect } from "bun:test";
-import { mkdtempSync, existsSync } from "node:fs";
+import { test, expect, it } from "bun:test";
+import { mkdtempSync, existsSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { migrate } from "./migrate";
@@ -28,11 +28,11 @@ const v1 = {
   artifact: { path: "/old/static.png", provenanceHash: "old" },
 };
 
-test("migrate upgrades a v1 manifest to a valid v2 manifest", () => {
+test("migrate upgrades a v1 manifest to a valid current-schema manifest", () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-mig-"));
   const m = migrate(v1, runDir);
   expect(() => parseManifest(m)).not.toThrow();
-  expect(m.schemaVersion).toBe(2);
+  expect(m.schemaVersion).toBe(3);
 });
 
 test("migrate freezes the v1 inline dataCsv into the run dir", () => {
@@ -66,4 +66,28 @@ test("migrate drops the stale v1 artifact rather than carrying its absolute path
   const runDir = mkdtempSync(join(tmpdir(), "loop-mig-"));
   const m = migrate(v1, runDir);
   expect(m.elements[0].artifact).toBeUndefined();
+});
+
+it("should drop the dormant v2 delivery slot rather than carry an unconvertible shape forward", () => {
+  const dir = mkdtempSync(join(tmpdir(), "loop-mig-v3-"));
+  const v2 = {
+    runId: "r1",
+    schemaVersion: 2,
+    input: { data: { path: "input/data.csv", sha256: "abc" } },
+    elements: [
+      {
+        id: "e1",
+        delivery: {
+          requested: ["embed"],
+          delivered: [{ path: "x", sha256: "y" }],
+        },
+      },
+    ],
+    events: [],
+  };
+  writeFileSync(join(dir, "input.csv"), "a\n1\n");
+  const out = migrate(v2, dir);
+  expect(out.schemaVersion).toBe(3);
+  expect(out.elements[0]!.delivery).toBeUndefined();
+  rmSync(dir, { recursive: true, force: true });
 });

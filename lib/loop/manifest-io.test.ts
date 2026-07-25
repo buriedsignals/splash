@@ -11,7 +11,7 @@ function freshRun(): { run: RunManifest; runDir: string } {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583");
   const run: RunManifest = {
     runId: "r1",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: freezeInput(runDir, src, "data") },
     elements: [{ id: "e1" }],
     events: [],

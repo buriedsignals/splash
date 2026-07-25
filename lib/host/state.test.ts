@@ -47,7 +47,7 @@ function makeRun(): { dir: string; run: RunManifest } {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "host-state",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: freezeInput(dir, src, "data") },
     elements: [{ id: "e1" }],
     events: [],

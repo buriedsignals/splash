@@ -10,7 +10,7 @@ import {
 function run(el: RunElement): RunManifest {
   return {
     runId: "r",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: { path: "input/d.csv", sha256: "a".repeat(64) } },
     orient: {
       profile: { columns: ["a", "b"], numericColumns: ["a", "b"], rowCount: 2 },
@@ -29,7 +29,7 @@ const proposal = {
 test("element with no run-orient is 'empty'", () => {
   const r: RunManifest = {
     runId: "r",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: { path: "input/d.csv", sha256: "a".repeat(64) } },
     elements: [{ id: "e" }],
     events: [],
@@ -134,10 +134,42 @@ test("fresh delivered → 'delivered'", () => {
     producedAt: "2026-01-01T00:00:00.000Z",
   };
   r.elements[0].delivery = {
-    requested: [],
-    delivered: [{ path: "/x.png", sha256: "b".repeat(64) }],
+    requested: ["zip"],
+    delivered: [
+      {
+        publisherId: "zip",
+        kind: "package",
+        artifact: { path: "out/e.zip", sha256: "c".repeat(64) },
+        snippet: "",
+        publishedAt: "2026-01-01T00:00:00.000Z",
+        deliveredProvenanceHash: ph,
+      },
+    ],
   };
   expect(gateStateOf(r, r.elements[0])).toBe("delivered");
+});
+test("delivered is not inherited once provenance moved (falls back to stale)", () => {
+  const r = run({ id: "e", angle, proposal });
+  r.elements[0].artifact = {
+    path: "/x.png",
+    sha256: "b".repeat(64),
+    provenanceHash: "old",
+    producedAt: "2026-01-01T00:00:00.000Z",
+  };
+  r.elements[0].delivery = {
+    requested: ["zip"],
+    delivered: [
+      {
+        publisherId: "zip",
+        kind: "package",
+        artifact: { path: "out/e.zip", sha256: "c".repeat(64) },
+        snippet: "",
+        publishedAt: "2026-01-01T00:00:00.000Z",
+        deliveredProvenanceHash: "old",
+      },
+    ],
+  };
+  expect(gateStateOf(r, r.elements[0])).toBe("stale");
 });
 test("blocked element → 'blocked'", () => {
   const r = run({

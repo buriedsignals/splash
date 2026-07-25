@@ -1,8 +1,9 @@
-import { test, expect } from "bun:test";
+import { test, expect, describe, it } from "bun:test";
 import {
   provenanceHash,
   stalenessOf,
   nextActions,
+  gateStateOf,
   parseManifest,
   type RunManifest,
 } from "./manifest";
@@ -10,7 +11,7 @@ import {
 function base(): RunManifest {
   return {
     runId: "r1",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     orient: {
       profile: {
@@ -96,14 +97,14 @@ test("nextActions off-ramps ([]) when data supports no visual", () => {
 });
 
 test("parseManifest rejects a manifest missing elements", () => {
-  const bad = { runId: "r", schemaVersion: 2, input: {}, events: [] };
+  const bad = { runId: "r", schemaVersion: 3, input: {}, events: [] };
   expect(() => parseManifest(bad)).toThrow();
 });
 
 test("a stored proposal from before the capability axis still parses", () => {
   const raw = {
     runId: "r",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     elements: [
       {
@@ -116,4 +117,105 @@ test("a stored proposal from before the capability axis still parses", () => {
     events: [],
   };
   expect(() => parseManifest(raw)).not.toThrow();
+});
+
+describe("the delivery slot", () => {
+  const base = (): RunManifest => ({
+    runId: "r1",
+    schemaVersion: 3,
+    input: { data: { path: "input/data.csv", sha256: "abc" } },
+    orient: {
+      profile: { columns: ["a"], numericColumns: ["a"], rowCount: 2 },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: { confirmedTakeaway: "T", altInsight: "A", unit: "u" },
+        proposal: {
+          options: [{ id: "o1", nativeType: "line", why: "w" }],
+          chosenId: "o1",
+        },
+      },
+    ],
+    events: [],
+  });
+
+  const produced = (): RunManifest => {
+    const m = base();
+    const el = m.elements[0]!;
+    return {
+      ...m,
+      elements: [
+        {
+          ...el,
+          artifact: {
+            path: "elements/e1/static.png",
+            sha256: "d",
+            provenanceHash: provenanceHash(m, el),
+            producedAt: "1980-01-01T00:00:00.000Z",
+          },
+        },
+      ],
+    };
+  };
+
+  it("should stay on show while the journalist has requested no destination", () => {
+    expect(nextActions(produced())).toEqual(["show"]);
+  });
+
+  it("should ask for deliver once a destination has been requested", () => {
+    const m = produced();
+    const el = {
+      ...m.elements[0]!,
+      delivery: { requested: ["zip"], delivered: [] },
+    };
+    expect(nextActions({ ...m, elements: [el] })).toEqual(["deliver"]);
+  });
+
+  it("should report delivered when a record carries the current provenance", () => {
+    const m = produced();
+    const el = m.elements[0]!;
+    const delivered = {
+      ...el,
+      delivery: {
+        requested: ["zip"],
+        delivered: [
+          {
+            publisherId: "zip",
+            kind: "package" as const,
+            artifact: { path: "out/e1.zip", sha256: "z" },
+            snippet: "<iframe></iframe>",
+            publishedAt: "1980-01-01T00:00:00.000Z",
+            deliveredProvenanceHash: el.artifact!.provenanceHash,
+          },
+        ],
+      },
+    };
+    const run = { ...m, elements: [delivered] };
+    expect(gateStateOf(run, delivered)).toBe("delivered");
+  });
+
+  it("should fall back out of delivered when the angle changes after publication", () => {
+    const m = produced();
+    const el = m.elements[0]!;
+    const delivered = {
+      ...el,
+      angle: { ...el.angle!, emphasis: "Genève" },
+      delivery: {
+        requested: ["zip"],
+        delivered: [
+          {
+            publisherId: "zip",
+            kind: "package" as const,
+            snippet: "",
+            publishedAt: "1980-01-01T00:00:00.000Z",
+            deliveredProvenanceHash: el.artifact!.provenanceHash,
+          },
+        ],
+      },
+    };
+    const run = { ...m, elements: [delivered] };
+    expect(gateStateOf(run, delivered)).toBe("stale");
+  });
 });

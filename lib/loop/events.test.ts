@@ -4,7 +4,7 @@ import { appendEvent, type RunManifest, type RunEvent } from "./manifest";
 function base(): RunManifest {
   return {
     runId: "r",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: {},
     elements: [{ id: "e" }],
     events: [],

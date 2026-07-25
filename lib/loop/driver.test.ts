@@ -40,7 +40,7 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   let run: RunManifest = {
     runId: "e2e",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: freezeInput(runDir, src, "data") },
     elements: [{ id: "e1" }],
     events: [],
@@ -111,7 +111,7 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   let run: RunManifest = {
     runId: "handoff",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: freezeInput(runDir, src, "data") },
     elements: [{ id: "e1" }],
     events: [],
@@ -160,7 +160,7 @@ test("advance() records a produce failure as a bounded event without advancing s
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "broken",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: freezeInput(runDir, src, "data") },
     orient: {
       profile: {
@@ -213,7 +213,7 @@ test("advance() records a MISSING FROZEN INPUT as a bounded failure, never a thr
   const frozen = freezeInput(runDir, src, "data");
   const run: RunManifest = {
     runId: "missing-input",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: frozen },
     orient: {
       profile: {
@@ -268,7 +268,7 @@ function makeRunMissingFrozenInput(): { run: RunManifest; runDir: string } {
   return {
     run: {
       runId: "missing-input",
-      schemaVersion: 2,
+      schemaVersion: 3,
       input: { data },
       elements: [{ id: "e1" }],
       events: [],
@@ -297,7 +297,7 @@ test("a run with no elements orients without throwing, and its failure event car
   const after = await advance(
     {
       runId: "no-elements",
-      schemaVersion: 2,
+      schemaVersion: 3,
       input: {},
       elements: [],
       events: [],
@@ -327,7 +327,7 @@ test("advance() builds a proposal annotated against a decor, and never throws do
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "default-decor",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: freezeInput(runDir, src, "data") },
     orient: {
       profile: {
@@ -368,7 +368,7 @@ test("the element-driven branches never dereference a missing element", async ()
   const runDir = mkdtempSync(join(tmpdir(), "loop-no-elements-2-"));
   const oriented: RunManifest = {
     runId: "no-elements-oriented",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: {},
     orient: {
       profile: { columns: ["a"], numericColumns: [], rowCount: 1 },

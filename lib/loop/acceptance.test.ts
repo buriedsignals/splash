@@ -23,7 +23,7 @@ function twoElementRun(): { run: RunManifest; runDir: string } {
   };
   const run: RunManifest = {
     runId: "r1",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: freezeInput(runDir, src, "data") },
     orient: {
       profile: {

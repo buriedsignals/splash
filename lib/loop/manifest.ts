@@ -62,7 +62,24 @@ const RunElementSchema = z.object({
     })
     .optional(),
   delivery: z
-    .object({ requested: z.array(z.string()), delivered: z.array(HashRef) })
+    .object({
+      /** The publisher ids the JOURNALIST chose. Setting this is what makes `deliver` valid. */
+      requested: z.array(z.string()),
+      delivered: z.array(
+        z.object({
+          publisherId: z.string(),
+          kind: z.enum(["hosted", "package"]),
+          url: z.string().optional(),
+          artifact: HashRef.optional(),
+          snippet: z.string(),
+          publishedAt: z.string(),
+          // A delivery NEVER inherits across a provenance change — the same discipline
+          // review and approved already follow. This is what makes "published, but no longer
+          // what you are looking at" a state the manifest can express.
+          deliveredProvenanceHash: z.string(),
+        }),
+      ),
+    })
     .optional(),
   blocked: z.object({ reason: z.string(), at: z.string() }).optional(),
   dropped: z.object({ reason: z.string(), at: z.string() }).optional(),
@@ -72,7 +89,7 @@ const RunElementSchema = z.object({
 });
 const RunManifestSchema = z.object({
   runId: z.string(),
-  schemaVersion: z.literal(2),
+  schemaVersion: z.literal(3),
   input: z.object({ data: HashRef.optional(), article: HashRef.optional() }),
   cadrage: z.object({ answers: z.record(z.string(), z.string()) }).optional(),
   orient: z
@@ -91,9 +108,18 @@ export type FormOption = z.infer<typeof FormOptionSchema>;
 export type RunEvent = z.infer<typeof RunEventSchema>;
 export type RunElement = z.infer<typeof RunElementSchema>;
 export type RunManifest = z.infer<typeof RunManifestSchema>;
+export type DeliveryRecord = NonNullable<
+  RunElement["delivery"]
+>["delivered"][number];
 
 export type NextAction =
-  "orient" | "confirm-angle" | "propose" | "choose-form" | "produce" | "show";
+  | "orient"
+  | "confirm-angle"
+  | "propose"
+  | "choose-form"
+  | "produce"
+  | "show"
+  | "deliver";
 
 export function parseManifest(raw: unknown): RunManifest {
   return RunManifestSchema.parse(raw);
@@ -133,7 +159,7 @@ export function readManifest(
   if (
     raw &&
     typeof raw === "object" &&
-    (raw as { schemaVersion?: number }).schemaVersion !== 2
+    (raw as { schemaVersion?: number }).schemaVersion !== 3
   ) {
     return migrate(raw, runDir);
   }
@@ -163,7 +189,20 @@ export function nextActionsForElement(
   if (el.proposal.options.length === 0) return [];
   if (!el.proposal.chosenId) return ["choose-form"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
+  // `deliver` is a step a DECISION triggers, never an automatic advance — the symmetric of
+  // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.
+  if (el.delivery && needsDelivery(run, el)) return ["deliver"];
   return ["show"];
+}
+
+function needsDelivery(run: RunManifest, el: RunElement): boolean {
+  const current = provenanceHash(run, el);
+  return el.delivery!.requested.some(
+    (id) =>
+      !el.delivery!.delivered.some(
+        (d) => d.publisherId === id && d.deliveredProvenanceHash === current,
+      ),
+  );
 }
 
 // State-driven next actions: run-level gates first (orient + honest off-ramp),
@@ -197,7 +236,11 @@ export function gateStateOf(run: RunManifest, el: RunElement): GateState {
   if (el.blocked) return "blocked";
   const fresh = el.artifact != null && !stalenessOf(run, el);
   const provenance = fresh ? el.artifact!.provenanceHash : null;
-  if (el.delivery && el.delivery.delivered.length > 0 && fresh)
+  if (
+    el.delivery &&
+    provenance &&
+    el.delivery.delivered.some((d) => d.deliveredProvenanceHash === provenance)
+  )
     return "delivered";
   if (
     el.approved &&

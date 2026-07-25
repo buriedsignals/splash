@@ -22,7 +22,7 @@ test("produce renders a real static PNG through the chart-native seam", async ()
   );
   const run: RunManifest = {
     runId: "t",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: freezeInput(runDir, src, "data") },
     orient: {
       profile: {
@@ -74,7 +74,7 @@ function makeBrokenRun(): { run: RunManifest; runDir: string } {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "t-broken",
-    schemaVersion: 2,
+    schemaVersion: 3,
     input: { data: freezeInput(runDir, src, "data") },
     orient: {
       profile: {
