@@ -40,6 +40,16 @@ describe("deliveryMetadata", () => {
     expect((r as { message: string }).message).toContain("alt");
   });
 
+  it("should refuse a blank confirmed takeaway rather than publish an empty title", () => {
+    const r = deliveryMetadata(
+      { ...EL, angle: { ...EL.angle!, confirmedTakeaway: "   " } },
+      {},
+      {},
+    );
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("takeaway");
+  });
+
   it("should fall back to neutral source, credit and English when the profile says nothing", () => {
     const r = deliveryMetadata(EL, {}, {});
     expect(r).toMatchObject({

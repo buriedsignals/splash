@@ -29,9 +29,22 @@ export function deliveryMetadata(
       "invalid-request",
       `metadata: element ${el.id} carries a blank alt text — the accessibility description cannot be empty`,
     );
+  // Same reasoning, symmetric field: the schema guarantees confirmedTakeaway EXISTS, not that
+  // it says anything. A blank title is as visible to a reader as a blank alt text is to a
+  // screen-reader user, so it gets the same pre-construction refusal.
+  if (el.angle.confirmedTakeaway.trim() === "")
+    return fail(
+      "invalid-request",
+      `metadata: element ${el.id} carries a blank confirmed takeaway — the title cannot be empty`,
+    );
   return ok({
     title: el.angle.confirmedTakeaway,
     altText: el.angle.altInsight,
+    // `||` vs `??` here are deliberately different jobs, not an inconsistency: a blank lang
+    // should fall back to English same as an absent one (`||`), but credit's fallback IS the
+    // empty string, so an absent credit and a blank credit must land on the same "" either way
+    // (`??` reads identically here because the RHS is "" — do not "normalize" this to `||`/`??`
+    // uniformly, it would change behaviour for source/lang).
     source: profile.source?.trim() || NEUTRAL_SOURCE,
     credit: profile.credit?.trim() ?? "",
     lang: profile.lang?.trim() || "en",
