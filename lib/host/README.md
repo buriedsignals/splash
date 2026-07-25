@@ -493,6 +493,13 @@ $ bun lib/host/cli.ts newsroom
         "help": [],
         "status": "disabled",
         "reason": ""
+      },
+      {
+        "id": "chart-native",
+        "label": "Charts built in-house (no account needed)",
+        "help": [],
+        "status": "ready",
+        "reason": ""
       }
     ],
     "blockers": []
@@ -500,7 +507,15 @@ $ bun lib/host/cli.ts newsroom
 }
 ```
 
-(`capabilities` above is truncated to one entry for the example; a real run lists all ten.)
+(`capabilities` above is truncated to two entries for the example; a real run lists all ten.)
+
+Those two entries are the whole enablement model in miniature, on an install that has no
+Datawrapper token: what needs no key is `ready`, what needs one nobody supplied is
+`disabled` — the newsroom never asked for it, so it is not a failure and not a blocker.
+Supply the key (in `.env`) and the same capability reads `ready` on the next call, with no
+setup step in between: **a key that is already there IS the choice** (`defaultCapabilities`,
+`lib/newsroom/state.ts`). `blockers` stays empty here because nothing enabled is unusable —
+it fills when a capability the newsroom DID enable has lost its key or its dependencies.
 
 Exit code `0` on a readable install; `2` on a usage error (an unknown flag, or a value-less
 `--dir`) — `newsroom` never fails any other way, because `loadDecor` is written not to throw
