@@ -204,6 +204,41 @@ Rôle de-risk de la tranche, à écrire dans ce spec après exécution (comme §
 - **Le modèle de capacité tient-il la livraison autant que les moteurs ?** Un moteur se satisfait de clés + deps ; un publisher a des identifiants non-secrets et une notion de projet. Si `settingsFields` ne suffit pas, c'est la forme de la page qui change.
 - **La readiness pure suffit-elle sans vérification réseau ?** Si « la clé est présente » ne prédit pas « ça marchera », la page doit vérifier en direct à chaque ouverture, et ce n'est plus le même produit.
 
+### Ce que P1 a effectivement révélé
+
+**Le modèle de capacité a tenu la livraison, sans extension de forme.** `embed-cloudflare`
+(`lib/newsroom/capabilities.ts`) est le seul publisher implémenté en P1, et sa forme est
+exactement celle prévue pour un moteur : `env` reste des groupes d'alternatives — ici trois
+groupes à un seul membre chacun, parce que Cloudflare exige les trois valeurs ensemble plutôt
+qu'une clé parmi plusieurs — et `settingsFields` portait déjà `secret: boolean` par champ,
+donc `CLOUDFLARE_ACCOUNT_ID` et `SPLASH_EMBED_PROJECT` (non-secrets, l'un un identifiant de
+compte, l'autre un nom de projet choisi par la rédaction) se déclarent sans changer le type.
+Aucun champ neuf n'a été nécessaire pour distinguer "identifiant à afficher en clair" de
+"secret à masquer" — la forme le portait déjà. Les trois publishers restants
+(`embed-cms`/`embed-s3`/`embed-fly`) sont déclarés `implemented: false` : la question reste
+ouverte pour un publisher qui porterait une notion de *projet distant existant* (lister les
+projets Fly d'un compte, par exemple) plutôt qu'un simple identifiant saisi — ce cas n'a pas
+été rencontré en P1, donc pas prouvé.
+
+**La readiness pure a montré ses limites, exactement comme la question l'anticipait.**
+`lastVerified` (le seul canal par lequel un `missing`/`ready` peut se nuancer en `unverified`
+ou capter un rejet du fournisseur) n'est écrit nulle part en P1 en dehors de la migration
+ponctuelle des anciens tampons verts de `.splash-preflight.json`
+(`lib/newsroom/migrate-decor.ts:79`) — aucun appelant neuf ne fait de vérification réseau ;
+les quatre `verify*` restent dans `install/configurator-core.ts`, non déplacées, non
+branchées sur le décor. Conséquence directe : sur une install fraîche, `capabilityReadiness`
+répond `ready` dès que la clé est **présente**, jamais dès qu'elle est **valide** — une clé
+révoquée ou mal collée lit `ready` jusqu'à ce que quelque chose déclenche un vrai appel
+réseau et écrive `lastVerified`. C'est le comportement décrit au §3 (readiness volontairement
+pure, injectée, jamais réseau) et il tient sa promesse ; mais il confirme que P2 ne peut pas
+se contenter d'afficher le décor tel quel au chargement — la page doit appeler `verify*` au
+moins une fois par ouverture pour que "prêt" affiché à la rédaction corresponde à "ça va
+marcher", pas seulement à "quelque chose est rempli". C'est le même produit décrit en §5.1
+(déplacement des `verify*` vers `lib/newsroom/verify.ts`, P2 leur premier appelant hors
+configurator) — la réponse n'est donc pas "ce n'est plus le même produit", mais "P2 doit
+faire ce que sa conception prévoyait déjà, et ne peut pas s'en dispenser en s'appuyant
+seulement sur ce que P1 a livré".
+
 ---
 
 ## 5. P2 — la page brandée *(conçue ici, planifiée ensuite)*
