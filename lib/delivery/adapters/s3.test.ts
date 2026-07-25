@@ -1,7 +1,7 @@
 // Offline tests: refusals and URL/key construction, which need no server. The network path
 // (F1-F7, all measured against a real MinIO server — spec §5.1) is proven live in Task 4.
 import { describe, it, expect } from "bun:test";
-import { s3Publisher, publicUrlFor } from "./s3";
+import { s3Publisher, publicUrlFor, parseS3ErrorCode } from "./s3";
 import type { PublishRequest } from "../../core/publishers";
 
 const META = {
@@ -71,6 +71,33 @@ describe("publicUrlFor", () => {
         "primes.html",
       ),
     ).toBe("https://e.org/splash/primes.html");
+  });
+});
+
+// F6: a non-2xx PUT answers with an XML <Code>, and that code is the only thing that tells a
+// newsroom a bad key from a clock skew from a permissions problem. Its DOCUMENTED degradation
+// ("empty, truncated, or not XML at all → Unknown") is a claim about a pure string function, so
+// it belongs in an offline test rather than being reachable only over the network.
+describe("parseS3ErrorCode", () => {
+  it("should read the code out of a well-formed S3 error body", () => {
+    expect(
+      parseS3ErrorCode(
+        '<?xml version="1.0" encoding="UTF-8"?><Error><Code>SignatureDoesNotMatch</Code>' +
+          "<Message>The request signature we calculated does not match</Message></Error>",
+      ),
+    ).toBe("SignatureDoesNotMatch");
+  });
+
+  it("should degrade to Unknown on an empty body rather than throwing", () => {
+    expect(parseS3ErrorCode("")).toBe("Unknown");
+  });
+
+  it("should degrade to Unknown when a proxy answers with HTML instead of XML", () => {
+    expect(
+      parseS3ErrorCode(
+        "<html><head><title>502 Bad Gateway</title></head><body><h1>502 Bad Gateway</h1></body></html>",
+      ),
+    ).toBe("Unknown");
   });
 });
 

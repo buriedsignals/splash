@@ -68,7 +68,14 @@ export function publicUrlFor(
   return `${base}/${withPrefix(settings.prefix, key)}`;
 }
 
-function parseS3ErrorCode(body: string): string {
+/**
+ * The `<Code>` of an S3 error body (F6), or `"Unknown"`.
+ *
+ * Exported for its own tests: this is a pure string function implementing a measured fact, and
+ * the only way to reach it through `publish()` is a non-2xx PUT from a real server — so left
+ * private its documented degradation would be a claim nothing checks.
+ */
+export function parseS3ErrorCode(body: string): string {
   // F6: errors come back as XML with a <Code>. The body can also be empty, truncated, or (a
   // proxy in front of the real endpoint) not XML at all — the regex simply fails to match
   // rather than throwing, so a malformed body degrades to "Unknown" instead of crashing the
