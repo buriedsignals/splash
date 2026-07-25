@@ -106,12 +106,20 @@ describe("loading the decor", () => {
   it("reads .env from the install root, with the process environment winning", () => {
     const d = dir();
     writeFileSync(join(d, ".env"), 'DATAWRAPPER_API_TOKEN="from-file"\n');
-    expect(decorEnv(d).DATAWRAPPER_API_TOKEN).toBe("from-file");
-    process.env.DATAWRAPPER_API_TOKEN = "from-process";
+    // The ambient value is REMOVED first and restored after: a shell that sourced the real
+    // .env (install/runtimes/*.sh does, before launching the agent) already carries this
+    // exact variable, and it would win over the file — turning the first assertion red on a
+    // real machine while staying green in CI. Same hazard the injected env closes elsewhere
+    // in this file; here the seam under test IS the ambient merge, so it is staged instead.
+    const ambient = process.env.DATAWRAPPER_API_TOKEN;
     try {
+      delete process.env.DATAWRAPPER_API_TOKEN;
+      expect(decorEnv(d).DATAWRAPPER_API_TOKEN).toBe("from-file");
+      process.env.DATAWRAPPER_API_TOKEN = "from-process";
       expect(decorEnv(d).DATAWRAPPER_API_TOKEN).toBe("from-process");
     } finally {
-      delete process.env.DATAWRAPPER_API_TOKEN;
+      if (ambient === undefined) delete process.env.DATAWRAPPER_API_TOKEN;
+      else process.env.DATAWRAPPER_API_TOKEN = ambient;
     }
   });
 });
