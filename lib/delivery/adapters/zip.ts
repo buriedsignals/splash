@@ -83,10 +83,18 @@ async function publish(
 
   // The URL is unknown for an owned package — the newsroom decides where it lands — so the
   // snippet carries the documented placeholder the README tells them to replace.
+  //
+  // The newsroom's own template applies HERE too (spec §3.3), not only to a hosted embed: a
+  // CMS that strips iframes strips them whether the file was uploaded by Splash or by the
+  // journalist. Reading it only in the cloudflare adapter meant a configured template was
+  // silently dropped for everyone who chose the portable package.
   const snippet = renderSnippet({
     url: "YOUR-URL-HERE",
     id: req.id,
     metadata: req.metadata,
+    ...(req.settings.snippetTemplate
+      ? { template: req.settings.snippetTemplate }
+      : {}),
   });
   if (!snippet.ok) return snippet;
 

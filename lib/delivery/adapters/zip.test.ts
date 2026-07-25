@@ -46,6 +46,36 @@ function request(): PublishRequest {
 }
 
 describe("the zip publisher", () => {
+  // lib/loop/deliver.ts puts the newsroom's snippetTemplate in `settings` for EVERY publisher,
+  // and only the cloudflare adapter read it: a newsroom whose CMS strips iframes configured a
+  // template, asked for a portable package, and found an <iframe> in EMBED.txt anyway. Spec
+  // §3.3: EMBED.txt is the snippet rendered from the profile's template.
+  it("should render EMBED.txt from the newsroom's own template when one is configured", async () => {
+    const r = await zipPublisher.publish({
+      ...request(),
+      settings: {
+        publisherId: "zip",
+        snippetTemplate:
+          '<div data-splash="{id}" data-src="{url}">{title}</div>',
+      },
+    });
+    expect(r.ok).toBe(true);
+    const zipPath = (r as { value: { path: string } }).value.path;
+    const embed = strFromU8(
+      unzipSync(readFileSync(zipPath))["EMBED.txt"] as Uint8Array,
+    );
+    expect(embed.trim()).toBe(
+      '<div data-splash="primes" data-src="YOUR-URL-HERE">Primes cantonales</div>',
+    );
+    expect(embed).not.toContain("<iframe");
+    // The same snippet is what the README tells the newsroom to paste, and what the outcome
+    // carries back to the manifest — one rendering, not three.
+    const readme = strFromU8(
+      unzipSync(readFileSync(zipPath))["README.md"] as Uint8Array,
+    );
+    expect(readme).toContain('<div data-splash="primes"');
+  });
+
   it("should write an archive holding exactly the four documented entries", async () => {
     const r = await zipPublisher.publish(request());
     expect(r.ok).toBe(true);
