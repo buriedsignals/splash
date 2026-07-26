@@ -4,12 +4,12 @@
 // produced artifact whose format is the one the offer promised.
 //
 // What this deliberately does NOT exercise: dw-chart / map-native / map-dw production
-// (produce.ts only wires chart-native in this tranche — an option naming another engine
-// is refused loud, not a silent no-op, per produce.ts's own guard) and delivery. Which
-// nativeType ends up top-ranked is NOT pinned — the ranking has already changed twice
-// during this tranche and will again the next time a sheet is edited; this test walks the
-// ranked options and produces the first one this tranche can actually render, rather than
-// assuming a fixed winner.
+// (lib/loop/buildable.ts names the engines production can build through — anything else is
+// MARKED in the offer and refused loud at produce, and this test asserts that pairing rather
+// than stepping around it) and delivery. Which nativeType ends up top-ranked is NOT pinned —
+// the ranking has already changed twice during this tranche and will again the next time a
+// sheet is edited; this test walks the ranked options and produces the first one production
+// can actually render, rather than assuming a fixed winner.
 import { test, expect } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -21,7 +21,8 @@ import {
   type RunManifest,
   type FormOption,
 } from "../loop/manifest";
-import { verifyOffer, type PhrasedOption } from "./verify-offer";
+import { type PhrasedOption } from "./verify-offer";
+import { applyPhrasing } from "../loop/phrase";
 import { assertFileMedia } from "../core/contract";
 import { isLoopBuildable } from "../loop/buildable";
 
@@ -102,23 +103,16 @@ test("a real run reaches an offer that carries its discards and can be phrased",
   for (const o of proposal.options) expect(o.whySource).toBeDefined();
   for (const e of proposal.excluded) expect(e.reason.length).toBeGreaterThan(0);
 
-  // The phrasing seam: a faithful rendering of the WHOLE offer, in order, passes its guard —
-  // this is what a real phrasing step must clear before a journalist ever sees the prose.
-  const phrased = proposal.options.map(phrase);
-  expect(() =>
-    verifyOffer(phrased, {
-      options: proposal.options.map((o) => ({
-        id: o.id,
-        nativeType: o.nativeType,
-        engine: o.engine!,
-        format: o.format!,
-        intent: o.intent!,
-        ...(o.readiness ? { readiness: o.readiness } : {}),
-        whySource: o.whySource!,
-      })),
-      excluded: proposal.excluded ?? [],
-    }),
-  ).not.toThrow();
+  // Un-phrased, an option carries NO why: the sheet's fragments are English and the journalist
+  // reads French — an offer arrives as grounding, never as prose.
+  for (const o of proposal.options) expect(o.why).toBe("");
+
+  // The phrasing seam, driven through its real production path: applyPhrasing runs verifyOffer
+  // (spec §7, "non optionnelle") and only then writes the desk's prose onto the manifest. This
+  // is what a phrasing step must clear before a journalist ever sees the offer.
+  m = applyPhrasing(m, "e1", proposal.options.map(phrase));
+  for (const o of m.elements[0].proposal!.options)
+    expect(o.why.length).toBeGreaterThan(0);
 
   expect(nextActions(m)).toEqual(["choose-form"]);
 
@@ -141,12 +135,13 @@ test("a real run reaches an offer that carries its discards and can be phrased",
   // as a journalist choosing down the offer would.
   let produced: RunManifest | undefined;
   let chosen: FormOption | undefined;
-  for (const o of proposal.options) {
+  const phrasedProposal = m.elements[0].proposal!;
+  for (const o of phrasedProposal.options) {
     if (!isLoopBuildable(o.engine)) continue;
     const attempt: RunManifest = {
       ...m,
       elements: [
-        { ...m.elements[0], proposal: { ...proposal, chosenId: o.id } },
+        { ...m.elements[0], proposal: { ...phrasedProposal, chosenId: o.id } },
         ...m.elements.slice(1),
       ],
     };

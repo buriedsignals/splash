@@ -71,7 +71,7 @@ verb-contract lui a donnée : **rien sous `lib/loop/` ne connaît `skills/` sauf
 |---|---|---|
 | `intents.ts` | Le **vocabulaire fermé** des intentions (le canon FT). Une constante, rien d'autre. | — |
 | `typology.ts` | Charge les fiches KB → `TypeSheet[]` validé zod ; joint aux catalogues moteurs. | `intents`, registre |
-| `eligibility.ts` | Pur : `(facts, channel, decor, route) → { eligible[], excluded[] }`. Toute exclusion porte sa raison. | `typology` |
+| `eligibility.ts` | Pur : `(facts, channel, decor) → { eligible[], excluded[] }`. Toute exclusion porte sa raison. | `typology` |
 | `rank.ts` | Pur : ordonne les éligibles. Heuristique, dégradable. | `intents` |
 | `offer.ts` | Assemble l'offre : top-3 + écartées + fragments groundés + faits calculés. | tous |
 | `verify-offer.ts` | La garde mécanique sur ce que le modèle a rédigé. | — |
@@ -254,7 +254,7 @@ type FormOption = {
   engine: string;                 // qui rendra
   format: VisualFormat;           // lib/core/vocabulary — un élément = un format (décision verrouillée)
   intent: Intent[];               // ce que la forme sert
-  why: string;                    // rédigé par le modèle, vérifié (§7)
+  why: string;                    // rédigé par le modèle, vérifié (§7) — VIDE tant qu'il ne l'est pas
   whySource: { sheet: string; fragments: string[]; facts: Record<string, string> };
   requires?: string[];            // capacités + "article-branch"
   readiness?: { status: "ready" | "missing" | "unverified" | "disabled"; reason: string };
@@ -262,6 +262,13 @@ type FormOption = {
 ```
 
 `proposal` s'étend de `excluded: { id: string; reason: string }[]`.
+
+**`why` naît VIDE.** `whySource.fragments` sont les phrases ANGLAISES de la fiche et le produit
+parle français, allemand, italien : recopier un fragment dans `why` livrerait la mauvaise langue
+*et* rendrait une option non rédigée indistinguable d'une rédigée. `why` reste donc vide jusqu'à
+l'étape de rédaction, qui passe par `applyPhrasing` (`lib/loop/phrase.ts`) — le seul chemin qui
+écrit un `why` au manifest, qui appelle `verifyOffer` (§7) avant, et qui refuse un `why` vide.
+Le contrat côté desk est écrit dans `skills/splash/SKILL.md` (§4, PHRASING CONTRACT).
 
 **Les écartées sont de l'état, pas une phrase.** Persistées au manifest, elles survivent à un
 `resume`, le journaliste peut y revenir et en réclamer une, et une revue peut lire ce que le
@@ -298,6 +305,14 @@ non optionnelle, et elle **throw** :
 C'est cette garde, et non une phrase d'intention dans un SKILL.md, qui fait tenir « le code
 décide, le modèle rédige ».
 
+**Où elle est appelée.** `applyPhrasing` (`lib/loop/phrase.ts`) — le seul chemin qui écrit un
+`why` au manifest. Il appelle `verifyOffer`, puis refuse en plus un `why` vide (la limitation
+que la garde documente : elle laisse passer un `why` vide sur une option non marquée, or c'est
+d'ici que l'offre part à l'écran). Une garde sans appelant ne garde rien : le contrat côté desk
+— rédiger depuis `whySource` seul, dans la langue du journaliste, `markAcknowledged` **et**
+`readiness.reason` imprimé à côté d'une option marquée — est écrit dans `skills/splash/SKILL.md`
+§4 (PHRASING CONTRACT).
+
 ---
 
 ## 8. Le routage prose/data
@@ -313,6 +328,13 @@ mécanique de readiness d'une capacité manquante : même champ, même sévérit
 
 Deux bénéfices : le journaliste **découvre** que la voie existe (P1 — l'outil offre, il décide) ;
 et le spec 2 la débloque en fournissant la capacité, **sans retoucher le cerveau**.
+
+**La marque porte sur l'EXISTENCE de la branche, jamais sur la route demandée.** `route` est un
+champ de manifest qu'un appelant pose librement ; le conditionner dessus rendait `route:
+"article"` suffisant pour *dé-marquer* une forme que personne ne sait produire. `eligibility.ts`
+ne lit donc plus `route` du tout. Même règle pour un **moteur que la boucle ne sait pas encore
+construire** (`lib/loop/buildable.ts`, la seule liste — `produce.ts` refuse dessus, le cerveau
+marque dessus) : marqué, jamais retiré, et jamais offert propre.
 
 ---
 

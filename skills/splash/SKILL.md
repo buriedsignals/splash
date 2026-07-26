@@ -433,6 +433,36 @@ source (one of the three states — name+URL verbatim, named org name-only, or t
 fallback) goes onto every accepted proposal's spec at 5b, with `suggest-article`'s `sourceHint`
 copied verbatim alongside it.
 
+**★ PHRASING CONTRACT — when the offer comes from the proposal brain (`lib/brain`).** The brain
+hands over an offer as **data**, never as prose: each option carries `id` · `engine` · `format` ·
+`intent` · `whySource` (the sheet's own `bestFor`/`notFor` fragments + the computed facts) · and,
+when something stands in the way, `readiness: { status, reason }`. Alongside it comes `excluded` —
+every discarded form with the reason it was discarded. **The code decides; the model only writes.**
+Four rules, all mechanical:
+
+1. **`why` is rendered, not inherited.** A brain-built option arrives with `why: ""` — deliberately
+   empty, because `whySource.fragments` are the KB's ENGLISH sentences and the journalist reads
+   French, German or Italian. Write each `why` in the journalist's language **from that option's
+   `whySource` only** (its fragments and its facts) — no other source, no number that is not in
+   `whySource.facts` / `fragments` / `readiness.reason`. Never show, and never persist, an option
+   whose `why` is still empty.
+2. **`verifyOffer(phrased, offer)` runs BEFORE the offer is shown — it is not optional** (spec §7).
+   It throws on an id that was not offered, a discarded id presented as offered, and on ANY change
+   to the list or its order (dropping an option — including dropping them all — is a silent removal
+   and fails exactly like reordering). Go through `applyPhrasing()` (`lib/loop/phrase.ts`): it is
+   the one path that calls the guard and then writes the `why` back onto the manifest.
+3. **A marked option is presented marked.** Set `markAcknowledged: true` on the phrasing of every
+   option carrying a `readiness` (the guard refuses the phrasing otherwise, and equally refuses the
+   flag on an unmarked option), **and print `readiness.reason` beside that option's `why`** — the
+   mark's own words are emitted by the code, never left to the model to restate. The guard checks
+   the acknowledgement STRUCTURALLY; it cannot verify meaning across languages, so printing the
+   reason is what makes the disclosure real.
+4. **A marked form is still offered — and it is never chosen silently.** Marks come from three
+   places: a capability the newsroom has not turned on, the whole-article branch (not built yet),
+   and an engine production cannot build yet (`lib/loop/buildable.ts`). All three MARK, none
+   removes. If the journalist picks a marked-unbuildable form, the loop routes back to the choice
+   rather than looping on a refusal — say so plainly and offer the ranked alternatives again.
+
 Only accepted proposals continue.
 
 ### 5. PRODUCTION

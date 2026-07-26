@@ -32,8 +32,12 @@ export function propose(
       format: o.format,
       intent: o.intent,
       // The brain hands over GROUNDING; the phrasing is the desk's turn, behind verifyOffer.
-      // Until it has been phrased, the why IS the sheet's own first fragment — never blank.
-      why: o.whySource.fragments[0],
+      // EMPTY until then, deliberately: `whySource.fragments` are the KB's ENGLISH sentences
+      // and the product ships French, German and Italian, so using one as the journalist-facing
+      // `why` shipped the wrong language AND made an un-phrased option indistinguishable from a
+      // phrased one. An empty why is honest about the state, and applyPhrasing (lib/loop/
+      // phrase.ts) refuses to leave one empty — so nothing can be SHOWN un-phrased either.
+      why: "",
       whySource: o.whySource,
       ...(o.requires ? { requires: o.requires } : {}),
       ...(o.readiness ? { readiness: o.readiness } : {}),
