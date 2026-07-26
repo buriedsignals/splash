@@ -6,6 +6,7 @@ import type { TypeSheet } from "./typology";
 // lib/core/registry — the same side-effect import lib/brain/eligibility.test.ts and
 // lib/brain/rank.test.ts use.
 import "../loop/engines";
+import { DELIVERABLE_KIND } from "../core/vocabulary";
 
 const INPUT = {
   facts: deriveFacts({
@@ -80,4 +81,44 @@ test("nothing legal ⇒ an empty offer that still explains itself", () => {
   );
   expect(offer.options).toEqual([]);
   expect(offer.excluded.length).toBeGreaterThan(0);
+});
+
+test("the last row is reserved for a deliverable kind the earlier rows do not cover", () => {
+  const options = buildOffer(INPUT).options;
+  expect(options.length).toBe(3);
+  const kinds = options.map((o) => DELIVERABLE_KIND[o.format]);
+  // The real KB offers video on article-web, so the reserved row must not be a third element.
+  expect(new Set(kinds).size).toBeGreaterThan(1);
+  expect(kinds[2]).not.toBe(kinds[0]);
+});
+
+test("a social channel gets a motion row too — the rule is not article-web-only", () => {
+  const options = buildOffer({ ...INPUT, channel: "social-vertical" }).options;
+  expect(options.map((o) => DELIVERABLE_KIND[o.format])).toContain("motion");
+});
+
+test("ids stay unique even with the reserved row — chosenId resolves to exactly one option", () => {
+  const ids = buildOffer(INPUT).options.map((o) => o.id);
+  expect(new Set(ids).size).toBe(ids.length);
+});
+
+test("no candidate of an uncovered kind ⇒ the last row falls back, and the offer keeps its length", () => {
+  // Three single-format fixture sheets: every candidate is `static`, so no second kind exists.
+  const pairs = ["fx-a", "fx-b", "fx-c"].map((id) => ({
+    sheet: fakeSheet(id, {}),
+    engine: "fake-engine",
+    key: "fake-key",
+  }));
+  const offer = buildOffer(INPUT, pairs);
+  expect(offer.options.length).toBe(3);
+  expect(new Set(offer.options.map((o) => o.id)).size).toBe(3);
+});
+
+test("max 1 reserves nothing — there is no last row distinct from the first", () => {
+  const offer = buildOffer({ ...INPUT, max: 1 });
+  expect(offer.options.length).toBe(1);
+  // With max 1 the single row is simply the top-ranked candidate.
+  expect(offer.options[0]!.id).toBe(
+    buildOffer({ ...INPUT, max: 3 }).options[0]!.id,
+  );
 });
