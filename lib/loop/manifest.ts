@@ -149,13 +149,33 @@ export function parseManifest(raw: unknown): RunManifest {
 }
 
 // The artifact depends on exactly these. Any change ⇒ the produced artifact is stale.
+//
+// `channel` and the chosen option's `format` are here because produce.ts reads BOTH: it renders
+// the pinned format (never a hard-coded static any more) AT the run's channel, which fixes the
+// artifact's aspect and size. Without them, moving a run from article-web to social-vertical
+// left the existing 1200x675 landscape artifact "fresh" — nextActions said "show" and the run
+// shipped a landscape image for a 9:16 channel. `chosenId` alone does not cover the format: the
+// same option can be re-offered in another format, and the id would not move.
+//
+// Widening the hash re-values every hash: an artifact recorded before this change reads STALE
+// once and is re-produced. That is the safe direction (never "fresh" for a run whose channel
+// the artifact was not built at), and no test or on-disk fixture pins a literal hash value —
+// they all recompute it — so there is nothing to migrate, only this note to leave.
 export function provenanceHash(run: RunManifest, el: RunElement): string {
+  const chosen = el.proposal?.chosenId
+    ? el.proposal.options.find((o) => o.id === el.proposal!.chosenId)
+    : undefined;
   return canonicalHash({
     inputData: run.input.data?.sha256 ?? null,
     inputArticle: run.input.article?.sha256 ?? null,
     cadrage: run.cadrage?.answers ?? null,
     angle: el.angle ?? null,
     chosenId: el.proposal?.chosenId ?? null,
+    channel: run.channel,
+    // An option carrying no `format` at all (fixtures, hand-authored manifests predating the
+    // brain) hashes as null rather than as produce's "static" default: what matters is that the
+    // value MOVES when the pinned format moves, and a null that never changes is stable.
+    format: chosen?.format ?? null,
   });
 }
 

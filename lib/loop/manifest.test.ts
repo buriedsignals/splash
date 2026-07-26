@@ -58,6 +58,41 @@ test("provenanceHash changes when the angle changes", () => {
   expect(provenanceHash(m, el2)).not.toBe(h1);
 });
 
+// This branch made two more things artifact-determining: `run.channel` (produce renders AT the
+// channel — its aspect and size) and the chosen option's `format` (produce builds THAT format,
+// not a hard-coded static). Neither was hashed, so a 1200x675 landscape artifact stayed "fresh"
+// after the run moved to social-vertical: nextActions said "show" and the run shipped a
+// landscape image for a 9:16 channel.
+test("provenanceHash covers the channel — an artifact does not survive a channel change", () => {
+  const m = base();
+  const h1 = provenanceHash(m, m.elements[0]);
+  expect(
+    provenanceHash({ ...m, channel: "social-vertical" }, m.elements[0]),
+  ).not.toBe(h1);
+});
+
+test("provenanceHash covers the CHOSEN option's format, not just its id", () => {
+  const m = base();
+  m.elements[0].proposal!.options[0].format = "static";
+  const h1 = provenanceHash(m, m.elements[0]);
+  m.elements[0].proposal!.options[0].format = "interactive";
+  expect(provenanceHash(m, m.elements[0])).not.toBe(h1);
+});
+
+test("a produced artifact goes stale when the run changes channel", () => {
+  const m = base();
+  m.elements[0].artifact = {
+    path: "elements/e1/static.png",
+    sha256: "b".repeat(64),
+    provenanceHash: provenanceHash(m, m.elements[0]),
+    producedAt: "2026-01-01T00:00:00.000Z",
+  };
+  expect(nextActions(m)).toEqual(["show"]);
+  const moved = { ...m, channel: "social-vertical" as const };
+  expect(stalenessOf(moved, moved.elements[0])).toBe(true);
+  expect(nextActions(moved)).toEqual(["produce"]);
+});
+
 test("stalenessOf is true when artifact provenance no longer matches", () => {
   const m = base();
   m.elements[0].artifact = {
