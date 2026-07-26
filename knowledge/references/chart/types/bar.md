@@ -5,7 +5,7 @@ engines:
   dw-chart: d3-bars
 intent: [magnitude, ranking]
 shape: single
-limits: { maxCategories: 30 }
+limits: { maxCategories: 25 }
 formats: [static, interactive, video]
 bestFor:
   - "comparing sizes across categories on a common baseline"

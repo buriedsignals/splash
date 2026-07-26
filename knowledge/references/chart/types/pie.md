@@ -6,7 +6,7 @@ engines:
 intent: [part-to-whole]
 shape: single
 limits: { maxCategories: 5 }
-formats: [static, interactive]
+formats: [static, interactive, video]
 bestFor:
   - "the components of one whole, with few slices and clearly different sizes"
 notFor:

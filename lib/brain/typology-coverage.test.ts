@@ -1,8 +1,27 @@
 // lib/brain/typology-coverage.test.ts
 import { test, expect } from "bun:test";
-import { loadTypology } from "./typology";
+import { mkdtempSync, mkdirSync, copyFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadTypology, type TypeSheet } from "./typology";
 import { engineTypes } from "../core/registry";
 import "../loop/engines";
+
+const KB = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../knowledge/references",
+);
+
+// Load a named subset of one family, so each authoring task can prove ITS sheets while its
+// siblings are still header-less. The real whole-KB load is Task 9's drift test.
+function loadFamily(family: string, ids: string[]): Map<string, TypeSheet> {
+  const root = mkdtempSync(join(tmpdir(), "kb-family-"));
+  mkdirSync(join(root, family), { recursive: true });
+  for (const id of ids)
+    copyFileSync(join(KB, family, `${id}.md`), join(root, family, `${id}.md`));
+  return new Map(loadTypology(root).map((s) => [s.id, s]));
+}
 
 const SINGLE = [
   "bar",
@@ -19,7 +38,7 @@ const SINGLE = [
 ];
 
 test("every single-shape chart sheet carries a complete, engine-true header", () => {
-  const byId = new Map(loadTypology().map((s) => [s.id, s]));
+  const byId = loadFamily("chart/types", SINGLE);
   const chartNative = new Set(engineTypes("chart-native").map((t) => t.id));
   for (const id of SINGLE) {
     const sheet = byId.get(id);
