@@ -5,7 +5,11 @@ import { fail, ok, render, type VerbResult } from "../core/verbs";
 import { IMAGE_EXTENSIONS } from "../core/contract";
 import type { VisualFormat } from "../core/vocabulary";
 import { provenanceHash, type RunManifest, type RunElement } from "./manifest";
-import { isLoopBuildable, unbuildableEngineReason } from "./buildable";
+import {
+  isLoopBuildable,
+  unbuildableEngineReason,
+  LOOP_BUILDABLE_ENGINES,
+} from "./buildable";
 // Populates the producer registry the render verb dispatches from — without it every
 // render answers `unknown-engine`. The loop's ONE point of knowledge about skills/ lives
 // in that file, on purpose; see its header.
@@ -107,7 +111,14 @@ export async function produce(
   };
 
   const result = await render({
-    engine: "chart-native",
+    // Dispatch follows the CHOSEN engine, never a second hard-coded name: the guard above
+    // already refused anything outside LOOP_BUILDABLE_ENGINES, so this can only be one of
+    // them, and the day that list grows the dispatch grows with it. (The spec assembled just
+    // above is still chart-native-shaped — that is the promise buildable.ts's header records
+    // for adding an engine; a premature addition fails at the engine's own validator rather
+    // than rendering the wrong thing silently.) An option with no engine at all is a pre-brain
+    // manifest, and the default path has always been chart-native.
+    engine: chosen.engine ?? LOOP_BUILDABLE_ENGINES[0]!,
     spec: nativeSpec,
     format,
     channel,
