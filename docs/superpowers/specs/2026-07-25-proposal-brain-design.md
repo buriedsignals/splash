@@ -141,6 +141,12 @@ Le classement combine : correspondance d'intention (la fiche déclare les intent
 · adéquation aux faits (une forme dont les seuils sont confortablement tenus passe devant une
 forme à la limite) · statut de readiness (une forme prête passe devant une forme marquée).
 
+**Grounding (étoile polaire arrêtée au brainstorming du socle, 2026-07-24).** La liaison
+intention→forme suit le FT Visual Vocabulary ; le **filtre est dur**, le **rang est souple**,
+ordonné par efficacité-par-tâche (Saket, TVCG 2019 · Kim & Heer). Il n'y a **ni solveur ni poids
+appris**, et le **classement n'est jamais confié au modèle** — DracoGPT est la preuve publiée que
+c'est ce qu'il fait le moins bien. Le modèle ne fait donc que rédiger (§7).
+
 **Vocabulaire fermé des intentions** — le canon FT Visual Vocabulary, déclaré une fois dans
 `lib/brain/intents.ts` :
 `deviation` · `correlation` · `ranking` · `distribution` · `change-over-time` · `magnitude` ·
