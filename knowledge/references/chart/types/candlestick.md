@@ -1,3 +1,19 @@
+---
+id: candlestick
+engines:
+  chart-native: candlestick
+intent: [change-over-time]
+shape: structural
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "a market/price-like series where the within-period range and the open-to-close direction both matter"
+notFor:
+  - "a single value per period — that's a line/bar; don't fake OHLC"
+  - "hundreds of periods on a small chart — bodies vanish; aggregate or use a line"
+  - "a non-expert audience who only needs the trend — a line is clearer; reserve candles for finance-literate readers"
+---
+
 # Candlestick / OHLC — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "change over time" candlestick/OHLC · the market-data

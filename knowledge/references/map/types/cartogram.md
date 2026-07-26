@@ -1,3 +1,19 @@
+---
+id: cartogram
+engines:
+  map-native: cartogram
+intent: [spatial, magnitude]
+shape: spatial
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "which regions dominate the total (scaled variant) — area distortion makes the biggest contributors unmissable; best when magnitudes span at least an order of magnitude"
+  - "equal visual weight per region while roughly preserving spatial arrangement (grid variant) — useful when small regions are invisible on a choropleth"
+notFor:
+  - "stories where real boundaries matter visually (rivers, coastlines) — use a choropleth with real polygons"
+  - "raw point-cloud data with no pre-aggregated region values — use a hex-grid to aggregate and visualise the point cloud"
+---
+
 # Cartogram — per-type best practice
 
 > Sources: data-to-viz.com (cartogram) — https://www.data-to-viz.com/graph/cartogram.html ·

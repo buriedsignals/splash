@@ -1,3 +1,18 @@
+---
+id: dot-density
+engines:
+  map-native: dot-density
+intent: [spatial, magnitude]
+shape: spatial
+limits: { maxCategories: 6 }
+formats: [static, interactive, video]
+bestFor:
+  - "absolute totals (population, emissions, cases) where the distribution within regions is the story — the dot scatter makes density visible at a glance"
+notFor:
+  - "normalised values (rate, share, index) — redraws population geography; use a choropleth instead"
+  - "precise magnitudes — readers cannot count thousands of dots; add a label or use a proportional symbol if exact values matter"
+---
+
 # Dot-Density Map — per-type best practice
 
 > Sources: data-to-viz.com (dot-density) — https://www.data-to-viz.com/graph/density.html ·

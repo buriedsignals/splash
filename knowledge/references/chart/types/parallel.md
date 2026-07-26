@@ -1,3 +1,19 @@
+---
+id: parallel
+engines:
+  chart-native: parallel
+intent: [magnitude]
+shape: wide
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "comparing items across 3-8 numeric dimensions where the trade-offs and clusters are the story"
+notFor:
+  - "precise reading of one value — position on an axis is approximate; label or hover for exact values"
+  - "many items at once — the lines become a hairball; filter or highlight"
+  - "a single dimension — that's a bar/dot plot"
+---
+
 # Parallel coordinates — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "magnitude" / multivariate parallel coordinates ·

@@ -1,3 +1,19 @@
+---
+id: locator
+engines:
+  map-native: locator
+  map-dw: locator
+intent: [spatial]
+shape: spatial
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "placing named points of interest — 'which places, and where?' — the map is the story, the markers are the nouns"
+notFor:
+  - "communicating a quantity at a point location — that is a proportional symbol map (circle area = value); if you're sizing markers by a field, you need a symbol map"
+  - "rates or shares aggregated to regions — that is a choropleth; locator markers have no regional boundary"
+---
+
 # Locator Map — per-type best practice
 
 > Sources: data-to-viz.com (dot map) — https://www.data-to-viz.com/graph/map.html ·

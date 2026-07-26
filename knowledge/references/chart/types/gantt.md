@@ -1,3 +1,19 @@
+---
+id: gantt
+engines:
+  chart-native: gantt
+intent: [change-over-time]
+shape: structural
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "a handful of dated spans where duration and overlap are the story — phases of a programme, stages of an inquiry, overlapping terms"
+notFor:
+  - "instants with no duration — use a dot/event timeline; a Gantt bar of zero width is a dot"
+  - "many rows — it becomes a wall; group or filter to the spans that matter"
+  - "magnitude — the bar's length is duration (time), never a quantity; don't mix the two"
+---
+
 # Gantt / timeline (time spans) — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "change over time" / spans · Priestley (the timeline of

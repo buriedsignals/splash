@@ -1,3 +1,19 @@
+---
+id: choropleth
+engines:
+  map-native: choropleth
+  map-dw: choropleth
+intent: [spatial, magnitude]
+shape: spatial
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "a rate, share, density, index, or per-capita figure already normalised for the size of the region"
+notFor:
+  - "raw counts — a count choropleth redraws population and area, not the phenomenon; use a proportional symbol for counts at locations"
+  - "point data — choropleth needs values bound to a region polygon; geocoded points belong on a symbol or dot-density map"
+---
+
 # Choropleth Map — per-type best practice
 
 > Sources: data-to-viz.com (choropleth) — https://www.data-to-viz.com/graph/choropleth.html ·

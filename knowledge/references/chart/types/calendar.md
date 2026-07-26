@@ -1,3 +1,19 @@
+---
+id: calendar
+engines:
+  chart-native: calendar
+intent: [change-over-time]
+shape: structural
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "a long run of daily values where seasonality, day-of-week pattern, and outlier days are the story — cases, crimes, hires, temperatures over a year"
+notFor:
+  - "precise day-to-day comparison — colour is read approximately; use a line and label, or rely on hover, for exact values"
+  - "sparse/irregular data — a calendar implies every day; gaps mislead"
+  - "a short span — a few weeks is better as a bar or line"
+---
+
 # Calendar heatmap — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "change over time" / temporal heatmap · the GitHub

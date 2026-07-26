@@ -1,3 +1,19 @@
+---
+id: radar
+engines:
+  chart-native: radar
+intent: [ranking]
+shape: wide
+limits: { maxSeries: 3 }
+formats: [static, interactive, video]
+bestFor:
+  - "comparing up to about three entities across 4-8 comparable dimensions, where the profile (the shape) is the message"
+notFor:
+  - "precise comparison — area scales with the square of the value, exaggerating large values; use a grouped bar or a dot plot instead"
+  - "many series — the polygons overlap into mush; or non-comparable axes with different units/scales — the shape becomes meaningless"
+  - "ordinal/ranked data where the axis order is arbitrary — reordering axes changes the shape and can mislead"
+---
+
 # Radar / spider chart — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "ranking" / multivariate radar ·

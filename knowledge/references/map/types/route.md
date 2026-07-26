@@ -1,3 +1,20 @@
+---
+id: route
+engines:
+  map-native: route
+intent: [spatial, flow]
+shape: spatial
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "a linear geographic story — following any path-like feature across space (river, road trip, trade route, migration corridor, pipeline, flight path, disputed border); the route is the protagonist, territories are supporting context"
+notFor:
+  - "regional magnitudes (rates, shares, densities) — use a choropleth"
+  - "quantities at discrete locations (counts, magnitudes at named places) — use a proportional symbol map"
+  - "a static list of locations with no directional or sequential relationship — use a locator or symbol map"
+  - "contours / isolines (closed iso-value lines) — a route is an A-to-B path, not an iso-line; that is a distinct type"
+---
+
 # Route Map — per-type best practice
 
 > Sources: data-to-viz.com (connection map) — https://www.data-to-viz.com/graph/connection.html ·

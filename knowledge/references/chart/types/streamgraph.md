@@ -1,3 +1,19 @@
+---
+id: streamgraph
+engines:
+  chart-native: streamgraph
+intent: [change-over-time, part-to-whole]
+shape: wide
+limits: { maxSeries: 7 }
+formats: [static, interactive, video]
+bestFor:
+  - "many series (5-10) over a continuous time axis where the shift in composition and the overall ebb/flow is the story"
+notFor:
+  - "reading precise values — with no shared baseline only the thickest bands are readable; use a stacked area or small multiples if exact values matter"
+  - "few series — a stacked area or lines are clearer"
+  - "data with negatives or gaps — the stack needs a clean positive composition per step"
+---
+
 # Streamgraph — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "change over time" / "part-to-whole" streamgraph ·

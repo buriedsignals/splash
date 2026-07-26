@@ -1,3 +1,19 @@
+---
+id: lorenz
+engines:
+  chart-native: lorenz
+intent: [distribution]
+shape: distribution
+limits: { maxSeries: 3 }
+formats: [static, interactive, video]
+bestFor:
+  - "showing inequality of a distribution — income, wealth, emissions — and comparing it (before/after tax, two places, two years)"
+notFor:
+  - "the level/amount — a Lorenz shows shares, never totals; pair with a number for scale"
+  - "many overlapping curves — they tangle; show at most a few"
+  - "small n where quantiles are noisy — say so"
+---
+
 # Lorenz curve (inequality) — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "distribution" / inequality · Lorenz (the curve) + Gini

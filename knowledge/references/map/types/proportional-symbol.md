@@ -1,3 +1,18 @@
+---
+id: proportional-symbol
+engines:
+  map-native: symbol
+intent: [spatial, magnitude]
+shape: spatial
+limits: { maxPoints: 30 }
+formats: [static, interactive, video]
+bestFor:
+  - "counts or magnitudes tied to a discrete location — 'how much, and where?' at named places"
+notFor:
+  - "rates over areal units (share, density, index) — that is a choropleth; don't use a symbol map when data is already aggregated to regions with no point coordinate"
+  - "flows between locations — use a flow / OD map"
+---
+
 # Proportional Symbol Map — per-type best practice
 
 > Sources: data-to-viz.com (bubble map) — https://www.data-to-viz.com/graph/bubblemap.html ·

@@ -1,3 +1,19 @@
+---
+id: sankey
+engines:
+  chart-native: sankey
+intent: [flow]
+shape: structural
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "a flow with a handful of nodes per stage and 2-4 stages, where the size of each path is the story — proportions splitting and merging"
+notFor:
+  - "many nodes / dense many-to-many links — the ribbons tangle into spaghetti; aggregate small flows into an 'Other'"
+  - "precise comparison of two ribbons far apart — thickness is read approximately; label the values"
+  - "flows that don't conserve — a stage that invents or loses quantity unexplained; show the loss as its own node so the books balance"
+---
+
 # Sankey / flow diagram — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "flow" Sankey · data-to-viz.com (the Sankey — and its

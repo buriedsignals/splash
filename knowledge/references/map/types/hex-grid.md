@@ -1,3 +1,18 @@
+---
+id: hex-grid
+engines:
+  map-native: hex-grid
+intent: [spatial, magnitude]
+shape: spatial
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "a point cloud where raw markers would overlap into illegibility — reveals the density / aggregate magnitude pattern, not the exact location of each record"
+notFor:
+  - "data already bound to administrative regions — use a choropleth for rate/ratio per region"
+  - "the magnitude of a phenomenon within existing regions — use a dot-density map instead"
+---
+
 # Hex-Grid / Spatial Bins Map — per-type best practice
 
 > Sources: data-to-viz.com (density map) — https://www.data-to-viz.com/graph/density2d.html ·

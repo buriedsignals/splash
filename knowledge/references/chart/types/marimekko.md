@@ -1,3 +1,18 @@
+---
+id: marimekko
+engines:
+  chart-native: marimekko
+intent: [part-to-whole]
+shape: structural
+limits: { maxSeries: 5, maxCategories: 6 }
+formats: [static, interactive, video]
+bestFor:
+  - "a total split two ways at once — spend by channel x category, market by segment x brand — where both the group sizes and their internal mix matter"
+notFor:
+  - "a single split — use a stacked bar / pie; the Marimekko only earns its width axis when the group sizes differ and matter"
+  - "precise reading — variable widths make exact comparison hard; label the shares"
+---
+
 # Marimekko / mosaic — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "part-to-whole" Marimekko / mosaic —

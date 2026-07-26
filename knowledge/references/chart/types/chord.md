@@ -1,3 +1,19 @@
+---
+id: chord
+engines:
+  chart-native: chord
+intent: [flow]
+shape: structural
+limits: { maxCategories: 8 }
+formats: [static, interactive, video]
+bestFor:
+  - "a small set (up to about 8) of entities with a flow/relationship matrix, where the big bilateral links are the story"
+notFor:
+  - "a directed source-to-destination pipeline through stages — that's a Sankey"
+  - "many entities or a dense matrix — the ribbons become an unreadable knot; aggregate"
+  - "precise comparison — ribbon widths are read approximately; label the big ones"
+---
+
 # Chord diagram — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "flow" chord · Circos/d3-chord (the form) · data-to-viz.com

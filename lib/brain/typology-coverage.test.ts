@@ -98,3 +98,35 @@ test("every paired/distribution chart sheet carries a complete header", () => {
     expect(sheet!.notFor.length).toBeGreaterThan(0);
   }
 });
+
+const MAPS = [
+  "choropleth",
+  "proportional-symbol",
+  "locator",
+  "route",
+  "dot-density",
+  "hex-grid",
+  "cartogram",
+];
+
+test("every map sheet is spatial and engine-true", () => {
+  const byId = loadFamily("map/types", MAPS);
+  const mapNative = new Set(engineTypes("map-native").map((t) => t.id));
+  for (const id of MAPS) {
+    const sheet = byId.get(id);
+    expect(sheet, `${id}.md must load`).toBeDefined();
+    expect(sheet!.intent).toContain("spatial");
+    for (const [engine, key] of Object.entries(sheet!.engines))
+      if (engine === "map-native")
+        expect(mapNative.has(key), `${id} → map-native:${key}`).toBe(true);
+  }
+});
+
+test("the image-scrolly sheet exists and is scrolly-only", () => {
+  const sheet = loadFamily("image/types", ["image-scrolly"]).get(
+    "image-scrolly",
+  );
+  expect(sheet).toBeDefined();
+  expect(sheet!.formats).toEqual(["scrolly"]);
+  expect(sheet!.engines["image-native"]).toBe("image-scrolly");
+});

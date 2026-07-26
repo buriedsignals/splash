@@ -1,3 +1,19 @@
+---
+id: sunburst
+engines:
+  chart-native: sunburst
+intent: [part-to-whole]
+shape: structural
+limits: {}
+formats: [static, interactive, video]
+bestFor:
+  - "a hierarchy of 2-3 levels where the nested shares are the story, in a compact radial form"
+notFor:
+  - "precise comparison — angle, and especially area on outer rings, is read poorly; use a bar/treemap for exact ranking"
+  - "deep or wide trees — the outer rings become unreadable slivers; collapse or use an icicle"
+  - "flat data (one level) — that's a pie/donut"
+---
+
 # Sunburst — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "part-to-whole" / hierarchy sunburst · the radial
