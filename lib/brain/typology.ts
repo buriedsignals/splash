@@ -58,6 +58,20 @@ export type TypeSheet = z.infer<typeof HeaderSchema> & {
   body: string;
 };
 
+// The path a journalist or reviewer follows to go read the source. `relative(REPO_ROOT, path)`
+// is right when the loaded root lives inside the repo (production's DEFAULT_ROOT does) — it
+// yields a clean "knowledge/references/..." path. It degrades badly for any root OUTSIDE the
+// repo (every test fixture uses a tmpdir): `relative` still succeeds, but climbs out with a
+// `../../../../var/folders/.../slope.md` chain onto an absolute, machine-specific path — the
+// exact failure mode this field exists to remove, just displaced from "KB-root-relative" to
+// "climbs onto an absolute machine path." A leading `..` is the tell: it means the repo-root
+// path escaped the repo, so fall back to a path relative to the root that was ACTUALLY loaded
+// (never an absolute path, never a `../..` escape) instead.
+function sheetPathFor(root: string, path: string): string {
+  const fromRepoRoot = relative(REPO_ROOT, path);
+  return fromRepoRoot.startsWith("..") ? relative(root, path) : fromRepoRoot;
+}
+
 export function loadTypology(root: string = DEFAULT_ROOT): TypeSheet[] {
   const sheets: TypeSheet[] = [];
   for (const family of FAMILIES) {
@@ -79,7 +93,7 @@ export function loadTypology(root: string = DEFAULT_ROOT): TypeSheet[] {
         );
       sheets.push({
         ...parsed.data,
-        sheetPath: relative(REPO_ROOT, path),
+        sheetPath: sheetPathFor(root, path),
         body,
       });
     }

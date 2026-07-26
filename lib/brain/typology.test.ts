@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { loadTypology } from "./typology";
 
 function fixture(sheets: Record<string, string>): string {
@@ -37,6 +37,23 @@ test("it loads a sheet into typed facets and keeps the body for grounding", () =
   expect(sheet.limits.maxSeries).toBe(12);
   expect(sheet.body).toContain("Body.");
   expect(sheet.sheetPath.endsWith("chart/types/slope.md")).toBe(true);
+});
+
+test("sheetPath never climbs out of its loaded root as a `../..` chain onto an absolute path — an `.endsWith` check alone would miss this, since the garbage prefix still ends in the right filename", () => {
+  // The fixture root is a tmpdir OUTSIDE the repo — production never loads from one, but this
+  // is exactly the shape every existing fixture test already exercises, so a real regression
+  // here would already be live in this file without this assertion.
+  const [outsideRepo] = loadTypology(fixture({ "slope.md": SLOPE }));
+  expect(outsideRepo.sheetPath.startsWith("..")).toBe(false);
+  expect(isAbsolute(outsideRepo.sheetPath)).toBe(false);
+  expect(outsideRepo.sheetPath).toBe("chart/types/slope.md");
+
+  // The production root DOES live inside the repo, so it gets the richer, genuinely
+  // repo-root-relative path — this is the value whySource.sheet hands a journalist/reviewer.
+  const [insideRepo] = loadTypology().filter((s) => s.id === "slope");
+  expect(insideRepo.sheetPath).toBe(
+    "knowledge/references/chart/types/slope.md",
+  );
 });
 
 test("a scalar engine value normalises to a single-element list", () => {
