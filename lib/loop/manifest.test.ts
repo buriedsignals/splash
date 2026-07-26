@@ -440,6 +440,27 @@ test("a proposal records what was discarded, with its reason", () => {
   expect(m.elements[0].proposal!.excluded![0].id).toBe("pie");
 });
 
+test("an element may carry an explicitly requested format, and a manifest without one still loads", () => {
+  const raw = base();
+  const withFormat = parseManifest({
+    ...raw,
+    elements: [{ ...raw.elements[0], requestedFormat: "video" }],
+  });
+  expect(withFormat.elements[0]!.requestedFormat).toBe("video");
+  const without = parseManifest(raw);
+  expect(without.elements[0]!.requestedFormat).toBeUndefined();
+});
+
+test("a requested format outside the vocabulary is refused at parse time", () => {
+  const raw = base();
+  expect(() =>
+    parseManifest({
+      ...raw,
+      elements: [{ ...raw.elements[0], requestedFormat: "gif" }],
+    }),
+  ).toThrow();
+});
+
 test("an unknown channel is refused", () => {
   expect(() =>
     parseManifest({

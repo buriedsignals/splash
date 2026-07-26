@@ -11,7 +11,7 @@ import type { Excluded } from "../brain/eligibility";
 export function propose(
   m: RunManifest,
   decor?: Decor,
-): { options: FormOption[]; excluded: Excluded[] } {
+): { options: FormOption[]; excluded: Excluded[]; refusal?: string } {
   const profile = m.orient?.profile;
   if (!profile) return { options: [], excluded: [] };
   const el = m.elements[0];
@@ -22,6 +22,7 @@ export function propose(
     // that the whole-article branch exists, and the brain's mark is about existence (I2).
     ...(decor ? { readiness: decor.readiness } : {}),
     ...(decor?.theme ? { themeBg: decor.theme } : {}),
+    ...(el?.requestedFormat ? { requestedFormat: el.requestedFormat } : {}),
     intents: intentsFromAngle(el?.angle?.confirmedTakeaway ?? ""),
   });
   return {
@@ -43,5 +44,9 @@ export function propose(
       ...(o.readiness ? { readiness: o.readiness } : {}),
     })),
     excluded: offer.excluded,
+    // Carried through, not dropped: the brain names the exact reason a requested format was
+    // refused (lib/brain/eligibility.ts), and a caller with no slot for it could not tell a
+    // refusal apart from "nothing to offer" — the silent degradation this slice removes.
+    ...(offer.refusal ? { refusal: offer.refusal } : {}),
   };
 }

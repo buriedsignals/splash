@@ -63,3 +63,25 @@ test("the channel constrains the offer", () => {
   const { options } = propose({ ...m, channel: "social-vertical" });
   expect(options.every((o) => o.format !== "interactive")).toBe(true);
 });
+
+test("the element's requested format reaches the brain — every option honours it", () => {
+  const m = run(["2019", "2024"]);
+  m.elements[0]!.requestedFormat = "video";
+  const { options } = propose(m);
+  expect(options.length).toBeGreaterThan(0);
+  expect(options.every((o) => o.format === "video")).toBe(true);
+});
+
+// lib/loop/propose.ts used to drop `offer.refusal` on the floor — the brain names the exact
+// reason a requested format was refused, and this layer's return type simply had no slot for
+// it, so a refused offer arrived at the caller looking identical to "nothing to offer" (empty
+// options, no sentence). This is the silent degradation the whole slice exists to remove.
+test("a refusal computed by the brain arrives at propose()'s caller, with its sentence", () => {
+  const m = run(["2019", "2024"]);
+  m.elements[0]!.requestedFormat = "scrolly";
+  const { options, refusal } = propose({ ...m, channel: "social-vertical" });
+  expect(options).toEqual([]);
+  expect(refusal).toBeTruthy();
+  expect(refusal).toContain("social-vertical");
+  expect(refusal).toContain("scrolly");
+});

@@ -47,6 +47,10 @@ const RunEventSchema = z.object({
 });
 const RunElementSchema = z.object({
   id: z.string(),
+  // A format the journalist asked for explicitly, at CADRAGE. State, not a remembered
+  // instruction: the brain applies it as a HARD filter (lib/brain/eligibility.ts), which is
+  // what makes "an explicit format signal WINS" mechanical rather than documentary.
+  requestedFormat: z.enum(VISUAL_FORMATS).optional(),
   angle: z
     .object({
       confirmedTakeaway: z.string(),
