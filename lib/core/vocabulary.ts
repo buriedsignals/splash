@@ -42,6 +42,23 @@ export function isChannel(v: unknown): v is Channel {
   return typeof v === "string" && (CHANNELS as readonly string[]).includes(v);
 }
 
+// What a journalist actually walks away with. Two formats can differ (static vs interactive)
+// and still be the SAME decision — an element embedded in the article. A video is a different
+// artifact entirely (the only format whose file is not HTML — see lib/loop/produce.ts's
+// artifactFileFor), and a scrolly is a whole narrative page rather than an embeddable element
+// (the distinction lib/brain/eligibility.ts's ARTICLE_BRANCH_ENGINES comment already draws).
+// lib/brain/offer.ts uses this to keep the offer from being mono-format.
+export type DeliverableKind = "element" | "motion" | "page";
+
+// TOTAL over VisualFormat on purpose: adding a format to VISUAL_FORMATS must force a decision
+// here rather than fall into a silent default.
+export const DELIVERABLE_KIND: Record<VisualFormat, DeliverableKind> = {
+  static: "element",
+  interactive: "element",
+  video: "motion",
+  scrolly: "page",
+};
+
 // The CLOSED verb vocabulary. A closed enum is what makes "bounded verbs" mechanical
 // rather than documentary: an operation outside this list is a refusal, not an
 // improvisation. Only `render` has a body in B1 — capture (issue #10), review (#9) and

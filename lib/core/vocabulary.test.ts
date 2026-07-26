@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, test } from "bun:test";
 import {
   CHANNELS,
   VERBS,
@@ -6,6 +6,7 @@ import {
   isChannel,
   isVerb,
   isVisualFormat,
+  DELIVERABLE_KIND,
 } from "./vocabulary";
 import type { Channel, VisualFormat } from "./vocabulary";
 
@@ -60,4 +61,18 @@ describe("VISUAL_FORMATS / CHANNELS — one declaration, type DERIVED from it", 
     expect(isChannel("newsletter")).toBe(false);
     expect(isChannel(7)).toBe(false);
   });
+});
+
+test("every visual format has a deliverable kind — the map is TOTAL, not partial", () => {
+  for (const f of VISUAL_FORMATS) expect(DELIVERABLE_KIND[f]).toBeDefined();
+  expect(Object.keys(DELIVERABLE_KIND).sort()).toEqual(
+    [...VISUAL_FORMATS].sort(),
+  );
+});
+
+test("the three kinds separate an embeddable element, a motion asset and a narrative page", () => {
+  expect(DELIVERABLE_KIND.static).toBe("element");
+  expect(DELIVERABLE_KIND.interactive).toBe("element");
+  expect(DELIVERABLE_KIND.video).toBe("motion");
+  expect(DELIVERABLE_KIND.scrolly).toBe("page");
 });
