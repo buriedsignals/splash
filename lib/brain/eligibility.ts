@@ -3,7 +3,7 @@
 // excludes. Nothing semantic happens here — the intent never reaches this file, which is what
 // guarantees a mis-read intent cannot change what is legal (spec §4.2).
 import type { Channel, VisualFormat } from "../core/vocabulary";
-import { isFormatAllowed } from "../core/channel-policy";
+import { allowedFormats, isFormatAllowed } from "../core/channel-policy";
 import { getProducer, producerForFormat } from "../core/registry";
 import { bgIsDark } from "../core/theme";
 import type { CapabilityReadiness } from "../newsroom/readiness";
@@ -41,6 +41,10 @@ export type EligibilityInput = {
   /** The house background: "dark" · "light" · or a #rrggbb hex colour. Absent or light ⇒ no
    *  style exclusion. Anything else throws — see isDark. */
   themeBg?: string;
+  /** A format the journalist asked for explicitly. A FACT of the run, not an intent read from
+   *  prose — so it constrains legality, not order (CLAUDE.md, Wave 7: "an explicit journalist
+   *  format signal WINS"). Absent ⇒ no constraint. */
+  requestedFormat?: VisualFormat;
 };
 
 // The engines whose output is a narrative page rather than an embeddable element. Until the
@@ -51,7 +55,19 @@ const ARTICLE_BRANCH = "article-branch";
 export function eligible(
   input: EligibilityInput,
   pairs: RenderableSheet[] = renderableSheets(),
-): { eligible: Candidate[]; excluded: Excluded[] } {
+): { eligible: Candidate[]; excluded: Excluded[]; refusal?: string } {
+  // A format the channel does not allow is one refusal about the run, not 45 identical
+  // refusals about 45 sheets. Named loudly; never silently downgraded to the default.
+  if (
+    input.requestedFormat &&
+    !isFormatAllowed(input.channel, input.requestedFormat)
+  )
+    return {
+      eligible: [],
+      excluded: [],
+      refusal: `you asked for a ${input.requestedFormat}, and the ${input.channel} channel does not carry that format — it allows ${allowedFormats(input.channel).join(", ")}`,
+    };
+
   const out: Candidate[] = [];
   const excluded: Excluded[] = [];
   const seenExclusion = new Set<string>();
@@ -79,6 +95,21 @@ export function eligible(
       );
       continue;
     }
+    // The requested format, applied per sheet: a form that does not come in it is excluded
+    // with a reason of its own, which is genuinely useful information.
+    if (
+      input.requestedFormat &&
+      !channelFormats.includes(input.requestedFormat)
+    ) {
+      exclude(
+        sheet.id,
+        `you asked for a ${input.requestedFormat}, and this form does not come in that format (it comes in ${sheet.formats.join(", ")})`,
+      );
+      continue;
+    }
+    const wanted = input.requestedFormat
+      ? channelFormats.filter((f) => f === input.requestedFormat)
+      : channelFormats;
     // The KB sheet's `formats` is what the TYPE can conceptually be shown as; the engine's
     // OWN producer.formats is what it can actually build (dw-chart and map-dw have no
     // video producer, for instance). Without this second filter the legal set can rank a
@@ -91,17 +122,17 @@ export function eligible(
     // The format's EFFECTIVE producer, not the sheet's engine: skills/scrolly hosts a native
     // engine's track, so a chart-native or map-native sheet declaring `scrolly` is built by
     // the scrolly producer and must not be dropped for a format its host engine never claims.
-    const formats = channelFormats.filter(
+    const formats = wanted.filter(
       (f) =>
         getProducer(producerForFormat(engine, f))?.formats?.includes(f) ?? true,
     );
     if (formats.length === 0) {
-      const renders = channelFormats
+      const renders = wanted
         .map((f) => `${f}: ${producerForFormat(engine, f)}`)
         .join(", ");
       exclude(
         sheet.id,
-        `nothing renders this form in a format the ${input.channel} channel allows — the channel needs one of ${channelFormats.join(", ")} (${renders})`,
+        `nothing renders this form in a format the ${input.channel} channel allows — the channel needs one of ${wanted.join(", ")} (${renders})`,
       );
       continue;
     }

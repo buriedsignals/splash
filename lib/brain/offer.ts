@@ -31,7 +31,11 @@ export type OfferOption = {
   };
 };
 
-export type Offer = { options: OfferOption[]; excluded: Excluded[] };
+export type Offer = {
+  options: OfferOption[];
+  excluded: Excluded[];
+  refusal?: string;
+};
 
 const DEFAULT_MAX = 3;
 
@@ -39,7 +43,7 @@ export function buildOffer(
   input: EligibilityInput & { intents: Intent[]; max?: number },
   pairs?: RenderableSheet[],
 ): Offer {
-  const { eligible: legal, excluded } = eligible(input, pairs);
+  const { eligible: legal, excluded, refusal } = eligible(input, pairs);
   const ordered = rank(legal, input.intents);
   const max = input.max ?? DEFAULT_MAX;
   const options: OfferOption[] = [];
@@ -74,7 +78,7 @@ export function buildOffer(
     const last = reserved ?? fallback;
     if (last) take(last);
   }
-  return { options, excluded };
+  return { options, excluded, ...(refusal ? { refusal } : {}) };
 }
 
 function toOption(c: Candidate, input: EligibilityInput): OfferOption {

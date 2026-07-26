@@ -358,3 +358,36 @@ test("a mark can never carry an empty reason, even for a capability disabled wit
   // …and no mark anywhere is wordless.
   for (const c of ok) if (c.readiness) expect(c.readiness.reason).not.toBe("");
 });
+
+test("a requested format is a hard filter — only that format survives", () => {
+  const { eligible: legal } = eligible({
+    facts: TWO_POINTS,
+    channel: "article-web",
+    requestedFormat: "video",
+  });
+  expect(legal.length).toBeGreaterThan(0);
+  expect(legal.every((c) => c.format === "video")).toBe(true);
+});
+
+test("a requested format the channel forbids is refused by name, with no exclusion spam", () => {
+  const res = eligible({
+    facts: TWO_POINTS,
+    channel: "social-vertical",
+    requestedFormat: "scrolly",
+  });
+  expect(res.eligible).toEqual([]);
+  expect(res.excluded).toEqual([]);
+  expect(res.refusal).toContain("social-vertical");
+  expect(res.refusal).toContain("scrolly");
+});
+
+test("a form that does not come in the requested format is excluded with its own reason", () => {
+  const sheet = fakeSheet("fx-static-only", ["static"]);
+  const res = eligible(
+    { facts: TWO_POINTS, channel: "article-web", requestedFormat: "video" },
+    [{ sheet, engine: "fake-engine", key: "fake-key" }],
+  );
+  expect(res.eligible).toEqual([]);
+  expect(res.excluded.length).toBe(1);
+  expect(res.excluded[0]!.reason).toContain("video");
+});

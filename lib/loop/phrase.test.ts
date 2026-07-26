@@ -4,7 +4,7 @@ import { test, expect } from "bun:test";
 import "./engines";
 import { propose } from "./propose";
 import { applyPhrasing } from "./phrase";
-import type { RunManifest } from "./manifest";
+import type { RunManifest, FormOption } from "./manifest";
 
 function run(): RunManifest {
   return {
@@ -41,6 +41,18 @@ function proposed(): RunManifest {
   return {
     ...m,
     elements: [{ ...m.elements[0], proposal: { options, excluded } }],
+  };
+}
+
+// A run whose element already carries a proposal — e.g. a channel-format refusal, which leaves
+// `options` empty by design (eligibility.ts's requestedFormat refusal, task 8). Distinct from
+// `run()` (no proposal at all): this is the "offered, and the offer says no" shape, not the
+// "never proposed" shape — the two must throw the same guard for different reasons.
+function makeRunWithProposal(options: FormOption[]): RunManifest {
+  const m = run();
+  return {
+    ...m,
+    elements: [{ ...m.elements[0], proposal: { options, excluded: [] } }],
   };
 }
 
@@ -118,4 +130,9 @@ test("applyPhrasing refuses an empty why — an option nobody phrased is not sho
 test("applyPhrasing refuses an element that has no offer to phrase", () => {
   expect(() => applyPhrasing(run(), "e1", [])).toThrow(/no offer/);
   expect(() => applyPhrasing(proposed(), "nope", [])).toThrow(/nope/);
+});
+
+test("a refused offer is refused LOUD by phrasing — a refusal never travels as a why", () => {
+  const run = makeRunWithProposal([]); // reuse the file's own fixture helper
+  expect(() => applyPhrasing(run, "e1", [])).toThrow(/no offer to phrase/);
 });

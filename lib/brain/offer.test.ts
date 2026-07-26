@@ -122,3 +122,19 @@ test("max 1 reserves nothing — there is no last row distinct from the first", 
     buildOffer({ ...INPUT, max: 3 }).options[0]!.id,
   );
 });
+
+test("a refusal rides on the offer, and there is nothing to choose", () => {
+  const offer = buildOffer({
+    ...INPUT,
+    channel: "social-vertical",
+    requestedFormat: "scrolly",
+  });
+  expect(offer.options).toEqual([]);
+  expect(offer.refusal).toBeTruthy();
+});
+
+test("a requested format makes every row that format — no interactive default sneaks back", () => {
+  const offer = buildOffer({ ...INPUT, requestedFormat: "video" });
+  expect(offer.options.length).toBeGreaterThan(0);
+  expect(offer.options.every((o) => o.format === "video")).toBe(true);
+});
