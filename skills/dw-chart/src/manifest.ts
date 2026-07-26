@@ -14,21 +14,21 @@ import { produceChart, type DwChartFormat } from "./produce";
 // will build. Per spec §5.1, a sheet's `engines[dw-chart]` may name SEVERAL of them (the
 // horizontal/vertical pair bar.md claims as `[d3-bars, column-chart]`, etc. — see bar.md,
 // grouped-bar.md, stacked-bar.md). The remaining ten are each a DW visualization no sheet
-// claims at all — verified below against this file's own `value-label-safety.ts` /
-// `chart-spec.ts` groupings, not guessed. They remain fully producible —
-// validateChartSpec/produceChart accept them unconditionally if asked for by name —
-// `deferred` only states a fact about the ENGINE surface the KB does not curate, never a
-// missing KB sheet as such (spec §5.1's own distinction). See DRIFT 2 in
+// claims at all — every symbol and file cited below was grep-verified against this codebase
+// (`value-label-safety.ts`, `chart-spec.ts`, `export-aspect.ts`), never invented. They remain
+// fully producible — validateChartSpec/produceChart accept them unconditionally if asked for
+// by name — `deferred` only states a fact about the ENGINE surface the KB does not curate,
+// never a missing KB sheet as such (spec §5.1's own distinction). See DRIFT 2 in
 // lib/brain/typology-drift.test.ts, which is what caught this gap.
 const NOT_KB_MODELED: Record<string, string> = {
   tables:
-    "a data table (validateChartSpec's TABLE_TYPES), not a chart type in the KB's typology",
+    "a data table (one of chart-spec.ts's own CHART_TYPES entries) — Datawrapper's table renders rows of text with, per ANNOTATION_UNSUPPORTED_TYPES's own comment (chart-spec.ts), 'no plot to anchor' anything to; not a chart type in the KB's typology",
   "d3-area":
     "Datawrapper's SINGLE-series filled area chart (chart-spec.ts's own 'single-series' CHART_TYPES grouping; absent from MULTI_SERIES_TYPES) — considered for stacked-area.md, but that sheet is a multi-series composition (≤5 stacked bands, part-to-whole intent) a single-series area cannot render; no KB sheet models a single-series area distinct from line.md's line rendering",
   "election-donut-chart":
     "Datawrapper's dedicated parliament/seat-allocation donut (PART_TO_WHOLE_TYPES, chart-spec.ts) — a distinct chart type for seat counts, no KB sheet models it",
   "d3-donuts":
-    "the donut-hole style variant of pie.md's chosen d3-pies key (both PART_TO_WHOLE_TYPES) — a rendering style, not a separate KB concept",
+    "the donut-hole style variant of pie.md's chosen d3-pies key (both PART_TO_WHOLE_TYPES, chart-spec.ts) — a rendering style, not a separate KB concept",
   "multiple-columns":
     "Datawrapper's small-multiples column chart (one mini chart per series; MULTI_SERIES_TYPES, chart-spec.ts) — distinct from grouped-column-chart's single combined chart; no KB sheet models the small-multiples layout",
   "multiple-lines":
@@ -40,7 +40,7 @@ const NOT_KB_MODELED: Record<string, string> = {
   "d3-bars-split":
     "a horizontal multi-series bar variant in the d3-bars family (HORIZONTAL_BAR_TYPES + MULTI_SERIES_TYPES, value-label-safety.ts/chart-spec.ts) — no KB sheet models this layout; its exact visual distinction from d3-bars-grouped could not be verified beyond that family membership, flagged for the reviewer rather than guessed",
   "d3-arrow-plot":
-    "Datawrapper's arrow-plot variant of the row-driven, category-y/value-x family (ROW_DRIVEN_TYPES alongside d3-range-plot/d3-dot-plot, chart-spec.ts) — dumbbell.md's chosen key is d3-range-plot, not this; no KB sheet models the arrow-specific variant",
+    "Datawrapper's arrow-plot variant of the row-driven, category-y/value-x family (ROW_DRIVEN_TYPES alongside d3-range-plot/d3-dot-plot, export-aspect.ts) — dumbbell.md's chosen key is d3-range-plot, not this; no KB sheet models the arrow-specific variant",
 };
 
 registerProducer({
