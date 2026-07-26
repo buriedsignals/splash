@@ -834,7 +834,8 @@ These four tasks are **authoring**, not coding: they add a header to sheets whos
 
 Rules that hold across all four tasks:
 
-- **Never invent a threshold.** If the prose has no number, the facet has no key — an absent limit means "not constrained", and that is the honest reading.
+- **Never invent a threshold.** If the prose has no number, the facet has no key — an absent limit means "not constrained", and that is the honest reading. If the prose gives a range ("~20-25"), take the upper bound.
+- **The sheet wins over this plan.** Where a worked example below disagrees with the sheet it illustrates, the sheet's own prose governs and the example is wrong — say so in the report. The examples show the SHAPE of a header, not approved values.
 - **Never edit the body.** These tasks only prepend a header.
 - Sheets whose type no registered engine declares (e.g. `gantt.md`, `lorenz.md` if absent from every catalogue) get `engines: {}` — which the loader rejects. For those, **omit the header entirely and list the sheet in the task's commit message**; Task 9's drift test tolerates a sheet with no header only if no engine declares its type, and fails loudly otherwise.
 
@@ -854,12 +855,37 @@ Each task ends with the same scoped verification and its own commit.
 
 - [ ] **Step 1: Write the failing test**
 
+The loader fails hard on any sheet without a header — by design. So a family test must load
+only ITS family's sheets, copied into a temp root; loading the whole KB cannot pass until the
+last authoring task lands, and weakening the loader to skip header-less sheets would destroy
+the very property it exists for. The shared helper below is created here and reused by Tasks
+6-8.
+
 ```ts
 // lib/brain/typology-coverage.test.ts
 import { test, expect } from "bun:test";
-import { loadTypology } from "./typology";
+import { mkdtempSync, mkdirSync, copyFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadTypology, type TypeSheet } from "./typology";
 import { engineTypes } from "../core/registry";
 import "../loop/engines";
+
+const KB = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../knowledge/references",
+);
+
+// Load a named subset of one family, so each authoring task can prove ITS sheets while its
+// siblings are still header-less. The real whole-KB load is Task 9's drift test.
+function loadFamily(family: string, ids: string[]): Map<string, TypeSheet> {
+  const root = mkdtempSync(join(tmpdir(), "kb-family-"));
+  mkdirSync(join(root, family), { recursive: true });
+  for (const id of ids)
+    copyFileSync(join(KB, family, `${id}.md`), join(root, family, `${id}.md`));
+  return new Map(loadTypology(root).map((s) => [s.id, s]));
+}
 
 const SINGLE = [
   "bar",
@@ -876,7 +902,7 @@ const SINGLE = [
 ];
 
 test("every single-shape chart sheet carries a complete, engine-true header", () => {
-  const byId = new Map(loadTypology().map((s) => [s.id, s]));
+  const byId = loadFamily("chart/types", SINGLE);
   const chartNative = new Set(engineTypes("chart-native").map((t) => t.id));
   for (const id of SINGLE) {
     const sheet = byId.get(id);
@@ -983,7 +1009,7 @@ const WIDE = [
 ];
 
 test("every wide-shape chart sheet carries a complete, engine-true header", () => {
-  const byId = new Map(loadTypology().map((s) => [s.id, s]));
+  const byId = loadFamily("chart/types", WIDE); // the helper Task 5 created
   const chartNative = new Set(engineTypes("chart-native").map((t) => t.id));
   for (const id of WIDE) {
     const sheet = byId.get(id);
@@ -1082,7 +1108,7 @@ const PAIRED_AND_DISTRIBUTION = [
 ];
 
 test("every paired/distribution chart sheet carries a complete header", () => {
-  const byId = new Map(loadTypology().map((s) => [s.id, s]));
+  const byId = loadFamily("chart/types", PAIRED_AND_DISTRIBUTION);
   for (const id of PAIRED_AND_DISTRIBUTION) {
     const sheet = byId.get(id);
     expect(sheet, `${id}.md must load`).toBeDefined();
@@ -1180,7 +1206,7 @@ const MAPS = [
 ];
 
 test("every map sheet is spatial and engine-true", () => {
-  const byId = new Map(loadTypology().map((s) => [s.id, s]));
+  const byId = loadFamily("map/types", MAPS);
   const mapNative = new Set(engineTypes("map-native").map((t) => t.id));
   for (const id of MAPS) {
     const sheet = byId.get(id);
@@ -1193,7 +1219,7 @@ test("every map sheet is spatial and engine-true", () => {
 });
 
 test("the image-scrolly sheet exists and is scrolly-only", () => {
-  const sheet = loadTypology().find((s) => s.id === "image-scrolly");
+  const sheet = loadFamily("image/types", ["image-scrolly"]).get("image-scrolly");
   expect(sheet).toBeDefined();
   expect(sheet!.formats).toEqual(["scrolly"]);
   expect(sheet!.engines["image-native"]).toBe("image-scrolly");
