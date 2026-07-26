@@ -9,7 +9,11 @@ import { bgIsDark } from "../core/theme";
 import type { CapabilityReadiness } from "../newsroom/readiness";
 // The ONE list of engines production can build through — the same module produce.ts guards
 // with, so a form this file offers unmarked is a form produce.ts accepts (C1).
-import { isLoopBuildable, unbuildableEngineReason } from "../loop/buildable";
+import {
+  isLoopBuildable,
+  unbuildableEngineReason,
+  LOOP_BUILDABLE_ENGINES,
+} from "../loop/buildable";
 import {
   renderableSheets,
   type RenderableSheet,
@@ -169,10 +173,25 @@ export function eligible(
   // (downstream contracts depend on that shape), so the fix is applied at return time: an id
   // that made it into `out` by any route is not "excluded", full stop.
   const stillEligible = new Set(out.map((c) => c.id));
-  return {
-    eligible: out,
-    excluded: excluded.filter((e) => !stillEligible.has(e.id)),
-  };
+  const finalExcluded = excluded.filter((e) => !stillEligible.has(e.id));
+  // A requested format can be channel-legal and still be a dead end: every surviving row is
+  // marked unbuildable (buildabilityMark, the same resolveBuilder/isLoopBuildable path produce
+  // and the offer's mark already use — no fourth resolution here). Without this, the offer
+  // carried rows but no refusal, so nextActionsForElement routed back to choose-form forever
+  // with no verb to escape a request the loop can never satisfy. The rows are NOT removed —
+  // "marked, never removed" still holds — this refusal is an ADDITIONAL sentence explaining
+  // the dead end, exactly like the channel-illegal refusal above explains a different one.
+  if (
+    input.requestedFormat &&
+    out.length > 0 &&
+    out.every((c) => buildabilityMark(c.engine, c.format) != null)
+  )
+    return {
+      eligible: out,
+      excluded: finalExcluded,
+      refusal: `you asked for a ${input.requestedFormat}, and nothing on the ${input.channel} channel can build one yet — production only builds through ${LOOP_BUILDABLE_ENGINES.join(", ")} today`,
+    };
+  return { eligible: out, excluded: finalExcluded };
 }
 
 // A limit is only checked when the sheet declares it: an absent limit means "not constrained",

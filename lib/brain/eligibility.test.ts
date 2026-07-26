@@ -391,3 +391,33 @@ test("a form that does not come in the requested format is excluded with its own
   expect(res.excluded.length).toBe(1);
   expect(res.excluded[0]!.reason).toContain("video");
 });
+
+// requestedFormat:"scrolly" on article-web is CHANNEL-legal (article-web allows scrolly), so
+// the channel-legality refusal above never fires — but every scrolly candidate is unbuildable
+// today (LOOP_BUILDABLE_ENGINES has no scrolly host), which used to leave the offer with rows
+// but no refusal: nextActionsForElement would route back to choose-form forever with no verb
+// to escape it. The rows stay OFFERED and MARKED (never removed) — this refusal is an
+// ADDITIONAL sentence naming the dead end.
+test("a requested format that is channel-legal but leaves zero buildable candidates is refused by name too", () => {
+  const res = eligible({
+    facts: TWO_POINTS,
+    channel: "article-web",
+    requestedFormat: "scrolly",
+  });
+  // The rows are NOT removed — every real KB scrolly candidate is still offered, marked.
+  expect(res.eligible.length).toBeGreaterThan(0);
+  expect(res.eligible.every((c) => c.format === "scrolly")).toBe(true);
+  expect(res.refusal).toBeDefined();
+  expect(res.refusal).toContain("scrolly");
+  expect(res.refusal).toContain("article-web");
+});
+
+test("a requested format with at least one buildable candidate is not refused", () => {
+  const res = eligible({
+    facts: TWO_POINTS,
+    channel: "article-web",
+    requestedFormat: "video",
+  });
+  expect(res.eligible.some((c) => isLoopBuildable(c.engine))).toBe(true);
+  expect(res.refusal).toBeUndefined();
+});

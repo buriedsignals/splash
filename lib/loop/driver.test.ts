@@ -15,6 +15,7 @@ import {
 } from "./manifest";
 import { freezeInput } from "./freeze";
 import { resumeReport } from "./resume";
+import { isLoopBuildable } from "./buildable";
 import type { Decor } from "../newsroom/decor";
 import { registerAllPublishers } from "../delivery";
 import { resetPublishersForTest } from "../core/publishers";
@@ -464,6 +465,104 @@ test("advance() persists the brain's refusal on the element when the requested f
   expect(after.elements[0].proposal!.refusal).toContain("social-vertical");
   expect(after.elements[0].proposal!.refusal).toContain("scrolly");
 });
+
+// A requestedFormat can be channel-legal (article-web carries scrolly) and STILL strand the
+// run: every surviving candidate is a scrolly, and LOOP_BUILDABLE_ENGINES has no scrolly host
+// today, so choosing one and calling produce() refuses forever while nextActionsForElement
+// keeps routing back to choose-form — no NextAction verb existed to get out. This is the exact
+// dead end the whole-branch review found reproducible end to end through advance(); it proves
+// both halves of the fix together: eligibility.ts's new refusal (a sentence the desk could
+// show even before choosing) and revise.ts's clear-requested-format (the actual way out).
+test("a channel-legal but zero-buildable requested format strands the run, and clearing it is the way out", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-strand-run-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  let run: RunManifest = {
+    runId: "strand",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web", // scrolly IS allowed on this channel
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        requestedFormat: "scrolly",
+        angle: {
+          confirmedTakeaway: "Premiums rose in both cantons",
+          altInsight: "Both cantons' adult premium rose from 2015 to 2024.",
+          unit: "CHF",
+        },
+      },
+    ],
+    events: [],
+  };
+  expect(nextActions(run)).toEqual(["propose"]);
+
+  run = await advance(run, runDir, NEUTRAL_DECOR); // propose
+  const proposal = run.elements[0].proposal!;
+  // The rows are OFFERED and MARKED — never removed — but the run already carries the extra
+  // sentence naming the dead end, before the journalist even chooses.
+  expect(proposal.options.length).toBeGreaterThan(0);
+  expect(proposal.options.every((o) => o.format === "scrolly")).toBe(true);
+  expect(proposal.refusal).toBeTruthy();
+  expect(proposal.refusal).toContain("scrolly");
+  expect(proposal.refusal).toContain("article-web");
+
+  // Choosing the marked row is still legal (the offer never forbids choosing a marked
+  // option) — and produce refuses it, exactly the mark promised.
+  run = {
+    ...run,
+    elements: [
+      {
+        ...run.elements[0],
+        proposal: { ...proposal, chosenId: proposal.options[0]!.id },
+      },
+    ],
+  };
+  expect(nextActions(run)).toEqual(["choose-form"]); // stranded: not "produce"
+
+  run = await advance(run, runDir, NEUTRAL_DECOR); // a no-op: "choose-form" is a human turn
+  expect(nextActions(run)).toEqual(["choose-form"]); // still stranded — the loop, proven
+
+  // THE WAY OUT: clear the request. It drops requestedFormat and the stale proposal built
+  // under it in one step, routing back to a fresh "propose".
+  run = {
+    ...run,
+    elements: [revise(run.elements[0], { kind: "clear-requested-format" })],
+  };
+  expect(run.elements[0].requestedFormat).toBeUndefined();
+  expect(nextActions(run)).toEqual(["propose"]);
+
+  run = await advance(run, runDir, NEUTRAL_DECOR); // propose, unconstrained this time
+  const freeProposal = run.elements[0].proposal!;
+  expect(freeProposal.refusal).toBeUndefined();
+  expect(freeProposal.options.some((o) => o.format !== "scrolly")).toBe(true);
+
+  // Walk to a buildable row and prove the run actually escapes, all the way to an artifact.
+  const buildable = freeProposal.options.find((o) => isLoopBuildable(o.engine));
+  expect(buildable).toBeDefined();
+  run = {
+    ...run,
+    elements: [
+      {
+        ...run.elements[0],
+        proposal: { ...freeProposal, chosenId: buildable!.id },
+      },
+    ],
+  };
+  expect(nextActions(run)).toEqual(["produce"]);
+  run = await advance(run, runDir, NEUTRAL_DECOR); // produce
+  expect(run.events).toEqual([]);
+  expect(run.elements[0].artifact).toBeDefined();
+}, 90000);
 
 test("the element-driven branches never dereference a missing element", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-no-elements-2-"));

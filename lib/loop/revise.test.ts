@@ -71,3 +71,36 @@ test("revise throws before an angle exists", () => {
   const el: RunElement = { id: "e1" };
   expect(() => revise(el, { kind: "emphasis", emphasis: "A" })).toThrow();
 });
+
+// A requestedFormat can be channel-legal but leave zero buildable candidates (lib/brain/
+// eligibility.ts's new refusal), stranding the run in choose-form forever with no NextAction
+// verb to escape it. clear-requested-format is the way out: it drops requestedFormat AND the
+// proposal built under it, so nextActionsForElement's own existing "no proposal -> propose"
+// rule (manifest.ts) routes back to a fresh offer — no new invalidation rule invented, the
+// same "clear a field the next step is conditioned on" mechanism the angle-changing kinds
+// already use for staleness.
+test("clearing the requested format drops it and the stale proposal built under it", () => {
+  const el: RunElement = {
+    id: "e1",
+    requestedFormat: "scrolly",
+    angle: { confirmedTakeaway: "t", altInsight: "a", unit: "u" },
+    proposal: {
+      options: [{ id: "choropleth", nativeType: "choropleth", why: "w" }],
+      excluded: [],
+      chosenId: "choropleth",
+    },
+  };
+  const after = revise(el, { kind: "clear-requested-format" });
+  expect(after.requestedFormat).toBeUndefined();
+  expect(after.proposal).toBeUndefined();
+  // The angle survives untouched — only the request and what was offered under it are gone.
+  expect(after.angle).toEqual(el.angle);
+});
+
+// clear-requested-format does not need an angle to exist — a request can be cleared before
+// CADRAGE ever confirms an angle, unlike emphasis/takeaway which revise the angle itself.
+test("clearing the requested format does not require an angle to already exist", () => {
+  const el: RunElement = { id: "e1", requestedFormat: "video" };
+  const after = revise(el, { kind: "clear-requested-format" });
+  expect(after.requestedFormat).toBeUndefined();
+});
