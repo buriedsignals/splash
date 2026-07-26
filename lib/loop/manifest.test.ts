@@ -84,6 +84,30 @@ test("nextActions is show when the artifact is fresh", () => {
   expect(nextActions(m)).toEqual(["show"]);
 });
 
+// The offer MARKS a form production cannot build (lib/brain/eligibility.ts) rather than
+// hiding it, so a journalist can still choose one. When they do, the run must lead somewhere:
+// answering "produce" forever means produce refuses, the driver records a failure event, and
+// nextActions says "produce" again — a permanent dead end with no way back to the offer.
+test("nextActions routes BACK to the choice when the chosen form's engine cannot be built", () => {
+  const m = base();
+  m.elements[0].proposal = {
+    options: [
+      {
+        id: "choropleth",
+        nativeType: "choropleth",
+        engine: "map-native",
+        why: "w",
+      },
+      { id: "slope", nativeType: "slope", engine: "chart-native", why: "w" },
+    ],
+    excluded: [],
+    chosenId: "choropleth",
+  };
+  expect(nextActions(m)).toEqual(["choose-form"]);
+  m.elements[0].proposal.chosenId = "slope";
+  expect(nextActions(m)).toEqual(["produce"]);
+});
+
 test("nextActions off-ramps ([]) when no legal form exists (zero proposal options)", () => {
   const m = base();
   m.elements[0].proposal = { options: [], excluded: [] };

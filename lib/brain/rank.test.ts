@@ -16,7 +16,6 @@ const BASE = {
     rowCount: 8,
   }),
   channel: "article-web",
-  route: "embed",
 } as const;
 
 // A minimal, valid TypeSheet + Candidate fixture, for tests that need to pin an exact

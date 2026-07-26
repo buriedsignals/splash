@@ -14,7 +14,6 @@ const INPUT = {
     rowCount: 8,
   }),
   channel: "article-web" as const,
-  route: "embed" as const,
   intents: ["change-over-time" as const],
 };
 

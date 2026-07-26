@@ -9,6 +9,7 @@ import type { VisualFormat } from "../core/vocabulary";
 // eligibility.ts itself stays engine-agnostic; the composition root (or, here, the test) is
 // what makes the registry non-empty.
 import "../loop/engines";
+import { isLoopBuildable } from "../loop/buildable";
 
 const TWO_POINTS = deriveFacts({
   columns: ["canton", "2019", "2024"],
@@ -19,7 +20,6 @@ const TWO_POINTS = deriveFacts({
 const BASE = {
   facts: TWO_POINTS,
   channel: "article-web",
-  route: "embed",
 } as const;
 
 // A minimal, valid TypeSheet fixture for tests that need to isolate one engine pairing from
@@ -130,7 +130,7 @@ test("a form still offered through ANOTHER engine is not reported excluded, even
 test("an engine that has no producer for a format the channel allows is excluded, naming the engine and the formats", () => {
   const videoOnly = fakeSheet("video-only-form", ["video"]);
   const { eligible: ok, excluded } = eligible(
-    { facts: TWO_POINTS, channel: "article-web", route: "embed" },
+    { facts: TWO_POINTS, channel: "article-web" },
     [{ sheet: videoOnly, engine: "dw-chart", key: "fake-key" }],
   );
   expect(ok.length).toBe(0);
@@ -167,7 +167,6 @@ test("check order is pinned: a channel refusal is reported even when the data wo
   const { excluded } = eligible({
     facts: TWO_POINTS,
     channel: "social-vertical",
-    route: "embed",
   });
   const why = excluded.find((e) => e.id === "image-scrolly");
   expect(why?.reason).toMatch(/social-vertical/);
@@ -188,8 +187,13 @@ test("an unparseable themeBg throws rather than silently reading as light", () =
   expect(() => eligible({ ...BASE, themeBg: "midnight" })).toThrow();
 });
 
-test('the article branch marks MISSING until the route is "article", and marking never removes the form', () => {
-  // image-scrolly needs 3-6 points and only article-web allows its scrolly format.
+// The mark is about whether the branch EXISTS in this build, never about what the run asked
+// for. It used to fire only when `input.route !== "article"` — so a manifest declaring
+// route:"article" (a plain field any caller may set) got image-scrolly offered CLEAN: no
+// readiness at all, buildable by nobody. `EligibilityInput` no longer carries `route`, so the
+// condition cannot be re-introduced by accident.
+test("the article branch MARKS every form that needs it, whatever the run declared — and marking never removes the form", () => {
+  // image-scrolly is the KB's narrative sheet; only article-web allows its scrolly format.
   const facts = deriveFacts({
     columns: ["step", "note", "alt"],
     numericColumns: ["step", "note", "alt"],
@@ -198,7 +202,6 @@ test('the article branch marks MISSING until the route is "article", and marking
   const { eligible: ok } = eligible({
     facts,
     channel: "article-web",
-    route: "embed",
     readiness: [
       {
         id: "image-native",
@@ -215,36 +218,22 @@ test('the article branch marks MISSING until the route is "article", and marking
   // worst of {article-branch: missing, image-native: unverified} is missing (3 > 1) — the
   // rule this pins, not just image-scrolly's own readiness.
   expect(scrolly!.readiness?.status).toBe("missing");
+  // …and the sentence a journalist reads is the branch's, not a deeper wiring detail.
+  expect(scrolly!.readiness!.reason).toMatch(/whole-article branch/);
 });
 
-test("on the article route the article-branch mark disappears, and the worst-status rule reflects only what still applies", () => {
-  const facts = deriveFacts({
-    columns: ["step", "note", "alt"],
-    numericColumns: ["step", "note", "alt"],
-    rowCount: 4,
-  });
-  const { eligible: ok } = eligible({
-    facts,
-    channel: "article-web",
-    route: "article",
-    readiness: [
-      {
-        id: "image-native",
-        label: "Local images",
-        status: "unverified",
-        reason: "image-native could not be reached when it was last checked",
-        help: [],
-      },
-    ],
-  });
-  const scrolly = ok.find((c) => c.id === "image-scrolly");
-  expect(scrolly).toBeDefined();
-  // `requires` still names "article-branch" (the format is scrolly regardless of route —
-  // that's a fact about the form, not the run); what changes on the article route is that
-  // it no longer MARKS, because withMarks only pushes the article-branch mark when
-  // `input.route !== "article"`.
-  expect(scrolly!.requires).toContain("article-branch");
-  expect(scrolly!.readiness?.status).toBe("unverified"); // only the engine mark remains
+test("a form whose engine the loop cannot build through is MARKED, never offered clean", () => {
+  const { eligible: ok } = eligible({ ...BASE });
+  const unbuildable = ok.filter((c) => !isLoopBuildable(c.engine));
+  expect(unbuildable.length).toBeGreaterThan(0); // the KB actually exercises the path
+  for (const c of unbuildable) {
+    expect(c.readiness?.status).toBe("missing");
+    expect(c.readiness!.reason).toContain(c.engine); // names what cannot be built
+  }
+  // …and the mark never removes: every buildable form is still there, unmarked by THIS rule.
+  expect(ok.some((c) => c.engine === "chart-native" && !c.readiness)).toBe(
+    true,
+  );
 });
 
 test("every exclusion carries a non-empty reason — no silent drop", () => {
@@ -265,10 +254,15 @@ test("a mark can never carry an empty reason, even for a capability disabled wit
       },
     ],
   });
-  const marked = ok.filter((c) => c.readiness);
+  // Scoped to the engine the fixture actually disabled: a candidate on ANOTHER engine now
+  // carries the "production cannot build this" mark instead, whose reason is a different (also
+  // non-empty) sentence. What is pinned here is the empty-reason repair, not which mark wins.
+  const marked = ok.filter((c) => c.engine === "chart-native" && c.readiness);
   expect(marked.length).toBeGreaterThan(0); // the fixture actually exercised the path
   for (const c of marked) {
     expect(c.readiness!.reason.length).toBeGreaterThan(0);
     expect(c.readiness!.reason).toMatch(/Charts built in-house/);
   }
+  // …and no mark anywhere is wordless.
+  for (const c of ok) if (c.readiness) expect(c.readiness.reason).not.toBe("");
 });

@@ -5,6 +5,7 @@ import { canonicalHash } from "./canonical-hash";
 import { migrate } from "./migrate";
 import { INTENTS } from "../brain/intents";
 import { VISUAL_FORMATS, CHANNELS as CHANNEL_KEYS } from "../core/vocabulary";
+import { isLoopBuildable } from "./buildable";
 
 const HashRef = z.object({ path: z.string(), sha256: z.string() });
 const DataProfileSchema = z.object({
@@ -210,6 +211,14 @@ export function nextActionsForElement(
   if (!el.proposal) return ["propose"];
   if (el.proposal.options.length === 0) return [];
   if (!el.proposal.chosenId) return ["choose-form"];
+  // A form production cannot build is OFFERED (marked) — so it can be chosen. Choosing one
+  // must not strand the run: `produce` would refuse it on every advance, the driver would
+  // record the same bounded failure again, and this function would keep answering `produce`.
+  // Routing back to the choice is the way back to the offer the marked form promised.
+  const chosen = el.proposal.options.find(
+    (o) => o.id === el.proposal!.chosenId,
+  );
+  if (chosen && !isLoopBuildable(chosen.engine)) return ["choose-form"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   // `deliver` is a step a DECISION triggers, never an automatic advance — the symmetric of
   // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.

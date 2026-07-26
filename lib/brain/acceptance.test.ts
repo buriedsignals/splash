@@ -23,6 +23,7 @@ import {
 } from "../loop/manifest";
 import { verifyOffer, type PhrasedOption } from "./verify-offer";
 import { assertFileMedia } from "../core/contract";
+import { isLoopBuildable } from "../loop/buildable";
 
 const CSV = `canton,2019,2024
 Genève,1200,1850
@@ -121,14 +122,27 @@ test("a real run reaches an offer that carries its discards and can be phrased",
 
   expect(nextActions(m)).toEqual(["choose-form"]);
 
-  // The choice, and a rendered artifact. Only chart-native is wired to produce in this
-  // tranche (produce.ts refuses any other engine loud), and which nativeType ranks first is
-  // not pinned here — so walk the ranked options and produce the first one this tranche can
-  // actually build, exactly as a journalist choosing down the offer would.
+  // THE RULE, asserted rather than routed around: nothing is offered that production cannot
+  // build — and a form it cannot build is MARKED, never offered clean. An earlier version of
+  // this test walked past every non-chart-native option to find something buildable, which
+  // stepped over the very rule the acceptance test exists to prove: the offer could rank an
+  // unbuildable form FIRST, unmarked, and this test would still pass.
+  for (const o of proposal.options) {
+    if (isLoopBuildable(o.engine)) continue;
+    expect(o.readiness?.status).toBe("missing");
+    expect(o.readiness!.reason).toContain(o.engine!);
+  }
+  // Rank 1 in particular — what a journalist reads first is buildable, or says it is not.
+  const top = proposal.options[0]!;
+  expect(isLoopBuildable(top.engine) || top.readiness != null).toBe(true);
+
+  // The choice, and a rendered artifact. Which nativeType ranks first is not pinned here — so
+  // walk the ranked options and produce the first one production can actually build, exactly
+  // as a journalist choosing down the offer would.
   let produced: RunManifest | undefined;
   let chosen: FormOption | undefined;
   for (const o of proposal.options) {
-    if (o.engine !== "chart-native") continue;
+    if (!isLoopBuildable(o.engine)) continue;
     const attempt: RunManifest = {
       ...m,
       elements: [

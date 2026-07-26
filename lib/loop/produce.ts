@@ -5,6 +5,7 @@ import { fail, ok, render, type VerbResult } from "../core/verbs";
 import { IMAGE_EXTENSIONS } from "../core/contract";
 import type { VisualFormat } from "../core/vocabulary";
 import { provenanceHash, type RunManifest, type RunElement } from "./manifest";
+import { isLoopBuildable, unbuildableEngineReason } from "./buildable";
 // Populates the producer registry the render verb dispatches from — without it every
 // render answers `unknown-engine`. The loop's ONE point of knowledge about skills/ lives
 // in that file, on purpose; see its header.
@@ -61,14 +62,16 @@ export async function produce(
   const channel = run.channel;
 
   // The brain offers across engines (chart-native, map-native, dw-chart, map-dw…), but this
-  // verb only knows how to build through chart-native — wiring the rest is a separate tranche.
-  // Without this guard a chosen option naming another engine was handed to chart-native
-  // anyway (its nativeType meaningless there), producing a WRONG artifact silently. Refusing
-  // loud, naming what was chosen, is what a journalist can actually act on.
-  if (chosen.engine && chosen.engine !== "chart-native")
+  // verb only knows how to build through the engines LOOP_BUILDABLE_ENGINES names — wiring the
+  // rest is a separate tranche. Without this guard a chosen option naming another engine was
+  // handed to chart-native anyway (its nativeType meaningless there), producing a WRONG
+  // artifact silently. Refusing loud, naming what was chosen, is what a journalist can act on.
+  // The list is NOT re-stated here: lib/loop/buildable.ts is the one source, and the brain
+  // marks the offer from that same list, so the journalist is told BEFORE choosing.
+  if (!isLoopBuildable(chosen.engine))
     return fail(
       "not-implemented",
-      `produce: "${chosen.id}" is a ${chosen.engine} form (${chosen.format ?? "static"}) — only chart-native is wired to produce in this tranche`,
+      `produce: "${chosen.id}" is a ${chosen.engine} form (${chosen.format ?? "static"}) — ${unbuildableEngineReason(chosen.engine!)}`,
     );
 
   // The frozen input is read from disk, and a run dir can be incomplete for reasons that

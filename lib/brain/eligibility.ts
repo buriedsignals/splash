@@ -6,6 +6,9 @@ import type { Channel, VisualFormat } from "../core/vocabulary";
 import { isFormatAllowed } from "../core/channel-policy";
 import { getProducer } from "../core/registry";
 import type { CapabilityReadiness } from "../newsroom/readiness";
+// The ONE list of engines production can build through — the same module produce.ts guards
+// with, so a form this file offers unmarked is a form produce.ts accepts (C1).
+import { isLoopBuildable, unbuildableEngineReason } from "../loop/buildable";
 import {
   renderableSheets,
   type RenderableSheet,
@@ -37,7 +40,6 @@ export type EligibilityInput = {
   /** The house background: "dark" · "light" · or a #rrggbb hex colour. Absent or light ⇒ no
    *  style exclusion. Anything else throws — see isDark. */
   themeBg?: string;
-  route: "embed" | "article";
 };
 
 // The engines whose output is a narrative page rather than an embeddable element. Until the
@@ -201,12 +203,32 @@ function withMarks(c: Candidate, input: EligibilityInput): Candidate {
       ? [ARTICLE_BRANCH]
       : []),
   ];
+  // Order matters: `worst` below keeps the FIRST mark of the highest severity, and several
+  // marks can share it. The article-branch mark leads because it is the one that tells the
+  // journalist what they would be GETTING (a whole narrative page, not an embeddable element);
+  // the engine-wiring reason below is the same "not yet" said in production's terms.
   const marks: { status: CapabilityReadiness["status"]; reason: string }[] = [];
-  if (requires.includes(ARTICLE_BRANCH) && input.route !== "article")
+  // The branch does not exist yet — and whether it exists is a fact about THIS BUILD, never
+  // about what the run asked for. This used to fire only when `input.route !== "article"`,
+  // i.e. it was conditioned on the journalist's declared intent: a manifest saying
+  // route:"article" got the narrative forms offered CLEAN, buildable by nobody. `route` is
+  // gone from this file's input entirely, so the condition cannot come back by accident.
+  if (requires.includes(ARTICLE_BRANCH))
     marks.push({
       status: "missing",
       reason:
         "this is the whole-article branch — it is not built yet, and it changes what gets delivered",
+    });
+  // The engine exists and renders this type — but the loop's produce verb cannot assemble a
+  // spec for it yet, so choosing it would dead-end. MARKED, exactly like a missing capability:
+  // the journalist still learns the form is the right one for this data (P1 — the tool offers,
+  // the journalist decides), and the day produce wires the engine the mark disappears with no
+  // change here. NOT added to `requires`: that list is the decor's CAPACITÉ axis (ids a
+  // newsroom can turn on), and no newsroom setting can make this true.
+  if (!isLoopBuildable(c.engine))
+    marks.push({
+      status: "missing",
+      reason: unbuildableEngineReason(c.engine),
     });
   for (const r of input.readiness ?? [])
     if (requires.includes(r.id) && r.status !== "ready")

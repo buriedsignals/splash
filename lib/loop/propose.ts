@@ -18,7 +18,8 @@ export function propose(
   const offer = buildOffer({
     facts: deriveFacts(profile),
     channel: m.channel,
-    route: m.route,
+    // `m.route` is deliberately NOT threaded: what the run declares it wants is not evidence
+    // that the whole-article branch exists, and the brain's mark is about existence (I2).
     ...(decor ? { readiness: decor.readiness } : {}),
     ...(decor?.theme ? { themeBg: decor.theme } : {}),
     intents: intentsFromAngle(el?.angle?.confirmedTakeaway ?? ""),
