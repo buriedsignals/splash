@@ -336,6 +336,15 @@ ne lit donc plus `route` du tout. Même règle pour un **moteur que la boucle ne
 construire** (`lib/loop/buildable.ts`, la seule liste — `produce.ts` refuse dessus, le cerveau
 marque dessus) : marqué, jamais retiré, et jamais offert propre.
 
+**Conséquence sur la machine à états.** Marquer ne suffisait pas : un journaliste pouvait choisir
+une forme marquée, et `nextActions` répondait encore `produce` — donc `produce` refusait, en
+boucle, sans issue. Choisir une forme que la boucle ne sait pas construire renvoie désormais à
+**`choose-form`**, pas à `produce` : l'état revient au point de décision au lieu de s'enfoncer
+dans un cul-de-sac. `advance()` y est un no-op total (manifeste inchangé, aucun rendu tenté), et
+la raison du marquage reste persistée sur l'option, donc rien n'est caché. *Résidu connu :* aucun
+événement n'est écrit lors de ce refus — un manifeste relu après coup montre `chosen → choose-form`
+sans trace du refus (suivi, cf. `docs/splash/proposal-brain-followups.md`).
+
 ---
 
 ## 9. Ce qui est retiré
