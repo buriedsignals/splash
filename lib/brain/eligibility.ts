@@ -4,6 +4,7 @@
 // guarantees a mis-read intent cannot change what is legal (spec §4.2).
 import type { Channel, VisualFormat } from "../core/vocabulary";
 import { isFormatAllowed } from "../core/channel-policy";
+import { getProducer } from "../core/registry";
 import type { CapabilityReadiness } from "../newsroom/readiness";
 import {
   renderableSheets,
@@ -33,7 +34,8 @@ export type EligibilityInput = {
   channel: Channel;
   /** The decor's capability readiness. Absent ⇒ no CAPACITÉ marking (spec §10). */
   readiness?: CapabilityReadiness[];
-  /** The house background. Absent or light ⇒ no style exclusion. */
+  /** The house background: "dark" · "light" · or a #rrggbb hex colour. Absent or light ⇒ no
+   *  style exclusion. Anything else throws — see isDark. */
   themeBg?: string;
   route: "embed" | "article";
 };
@@ -61,14 +63,36 @@ export function eligible(
     // sheet's declared formats and the channel, never on the facts, so a form whose EVERY
     // format is off-channel is off-channel regardless of whether the data would also have
     // broken one of its limits — the journalist should read the reason that actually drove
-    // the refusal for this channel, not an unrelated data limit that happened to run first.
-    const formats = sheet.formats.filter((f) =>
+    // the refusal for this channel, not an unrelated data limit that happened to run first
+    // (a bad limit is fixable with different data; a wrong channel needs a channel this
+    // engine already renders — the cheaper, in-session fix is named first).
+    const channelFormats = sheet.formats.filter((f) =>
       isFormatAllowed(input.channel, f),
     );
-    if (formats.length === 0) {
+    if (channelFormats.length === 0) {
       exclude(
         sheet.id,
         `the ${input.channel} channel allows none of the formats this form comes in (${sheet.formats.join(", ")})`,
+      );
+      continue;
+    }
+    // The KB sheet's `formats` is what the TYPE can conceptually be shown as; the engine's
+    // OWN producer.formats is what it can actually build (dw-chart and map-dw have no
+    // video producer, for instance). Without this second filter the legal set can rank a
+    // format to the top that then dies at dispatch on unsupportedFormatMessage — the mirror
+    // image of a silent drop: a loud offer of something that cannot be built. Narrowed here,
+    // not merged with the channel check above, because a producer-format miss and a
+    // channel-format miss are different refusals with different reasons; only an EMPTY
+    // result after both is worth excluding the id over — a producer missing just ONE of
+    // several still-legal formats leaves the id offered through its other formats.
+    const producerFormats = getProducer(engine)?.formats;
+    const formats = producerFormats
+      ? channelFormats.filter((f) => producerFormats.includes(f))
+      : channelFormats;
+    if (formats.length === 0) {
+      exclude(
+        sheet.id,
+        `${engine} does not render this form in a format the ${input.channel} channel allows — ${engine} renders ${producerFormats!.join(", ")}, and the channel needs one of ${channelFormats.join(", ")}`,
       );
       continue;
     }
@@ -77,7 +101,14 @@ export function eligible(
       exclude(sheet.id, limit);
       continue;
     }
-    if (isDark(input.themeBg) && engine === "dw-chart") {
+    // Both Datawrapper engines share one physical limit: their background is plan-gated and
+    // render-proven light-only (skills/splash/src/brand-profile.ts:33). "dw-chart only" was
+    // the spec's first cut (§4.1); the governing condition is "physically impossible", which
+    // is equally true of a Datawrapper MAP, so map-dw is excluded on the same reason.
+    if (
+      isDark(input.themeBg) &&
+      (engine === "dw-chart" || engine === "map-dw")
+    ) {
       exclude(
         sheet.id,
         "the house theme has a dark background and Datawrapper only renders on a light one",
@@ -90,7 +121,18 @@ export function eligible(
         withMarks({ id: sheet.id, engine, key, format, sheet, fill }, input),
       );
   }
-  return { eligible: out, excluded };
+  // A sheet can pass through this loop more than once (one pass per engine it names), and a
+  // refusal on ONE engine's pairing (a dark-theme dw-chart variant, say) must not read as
+  // "this form is unavailable" when another engine's pairing for the SAME id came through
+  // clean — a journalist has no interest in which of two interchangeable renderers was
+  // refused, only in whether the form is offered at all. `Excluded` stays `{ id, reason }`
+  // (downstream contracts depend on that shape), so the fix is applied at return time: an id
+  // that made it into `out` by any route is not "excluded", full stop.
+  const stillEligible = new Set(out.map((c) => c.id));
+  return {
+    eligible: out,
+    excluded: excluded.filter((e) => !stillEligible.has(e.id)),
+  };
 }
 
 // A limit is only checked when the sheet declares it: an absent limit means "not constrained",
@@ -151,16 +193,24 @@ function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   return { ...c, requires, readiness: worst };
 }
 
-// The house ground is "light", "dark", or any #rrggbb (skills/splash/src/brand-profile.ts:35).
-// Relative luminance against the WCAG mid point — the same split the producers use to pick a
-// basemap. A background below it is "dark", and dark is where Datawrapper cannot follow.
+// The house ground is "light", "dark", or any #rrggbb (skills/splash/src/brand-profile.ts:35)
+// — exactly three accepted forms. brand-profile.ts validates its own load path down to those
+// three and silently drops anything else to the light default; EligibilityInput.themeBg is a
+// bare `string` a caller can hand ANYTHING, so this file re-asserts the same three forms
+// itself, failing loud rather than failing open. A silently-accepted "midnight" would fall
+// through to isDark's dead-end regex and read as light, offering Datawrapper on a background
+// it cannot actually render on — exactly the physically-impossible case this check exists to
+// catch, just reached via a malformed value instead of a real dark colour.
 function isDark(themeBg?: string): boolean {
   if (!themeBg) return false;
   const t = themeBg.trim();
   if (t === "dark") return true;
   if (t === "light") return false;
   const m = /^#?([0-9a-f]{6})$/i.exec(t);
-  if (!m) return false;
+  if (!m)
+    throw new Error(
+      `themeBg must be "dark", "light", or a #rrggbb hex colour — got ${JSON.stringify(themeBg)}`,
+    );
   const n = parseInt(m[1], 16);
   const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
     const s = v / 255;
