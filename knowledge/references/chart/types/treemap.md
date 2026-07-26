@@ -4,6 +4,7 @@ engines:
   chart-native: treemap
 intent: [part-to-whole, magnitude]
 shape: single
+limits: { minRows: 6 }
 formats: [static, interactive, video]
 bestFor:
   - "a part-to-whole with many items (more than ~6, where a pie fails) where relative size is the message — budgets, market share, catalogue breakdowns"

@@ -8,11 +8,11 @@ shape: single
 limits: { maxCategories: 25 }
 formats: [static, interactive, video]
 bestFor:
-  - "comparing sizes across categories on a common baseline"
-  - "a ranking where the order itself is the message"
+  - "comparing magnitudes across categories, ranking items, or a single series keyed by a category or a few periods"
 notFor:
-  - "a trend over many time points — that is a line"
-  - "a baseline that does not start at zero — length encodes the value"
+  - "a continuous trend over many time points — that is a line"
+  - "part-to-whole where the components matter — use a stacked bar or, sparingly, a pie"
+  - "more than ~20–25 categories — the chart becomes a comb; filter, group into Other, or use a dot plot / small multiples"
 ---
 
 # Bar / Column — per-type best practice (L2)
