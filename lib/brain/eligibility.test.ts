@@ -272,6 +272,38 @@ test("every exclusion carries a non-empty reason — no silent drop", () => {
   for (const e of excluded) expect(e.reason.length).toBeGreaterThan(0);
 });
 
+test("a scrolly candidate is never clean — nothing can build it yet, and the offer says so", () => {
+  const sheet = fakeSheet("fx-scrolly", ["scrolly"]);
+  // The point of this fixture: chart-native itself IS loop-buildable, so a naive check on
+  // c.engine alone would see this candidate as clean. It is the EFFECTIVE producer
+  // (scrolly, via producerForFormat) that cannot be built through yet.
+  expect(isLoopBuildable("chart-native")).toBe(true);
+  const { eligible: legal } = eligible(
+    { facts: TWO_POINTS, channel: "article-web" },
+    [{ sheet, engine: "chart-native", key: "line" }],
+  );
+  expect(legal.length).toBe(1);
+  expect(legal[0]!.format).toBe("scrolly");
+  // Every scrolly candidate also carries the article-branch mark (unconditional on format,
+  // regardless of engine — see withMarks), and that mark is pushed first, so it wins the
+  // same-severity tie against the effective-producer buildability mark this task adds.
+  // Both marks are real; only one is surfaced (the SEVERITY "worst, first-wins" rule already
+  // governs every other mark in this file). What this test pins is that the candidate is
+  // offered MARKED, never clean.
+  expect(legal[0]!.readiness?.status).toBe("missing");
+  expect(legal[0]!.readiness?.reason.length).toBeGreaterThan(0);
+});
+
+test("a producer that genuinely lacks a format still loses it — map-dw has no video", () => {
+  const sheet = fakeSheet("fx-dw-video", ["video"]);
+  const { eligible: legal, excluded } = eligible(
+    { facts: TWO_POINTS, channel: "article-web" },
+    [{ sheet, engine: "map-dw", key: "choropleth" }],
+  );
+  expect(legal).toEqual([]);
+  expect(excluded.length).toBe(1);
+});
+
 test("a mark can never carry an empty reason, even for a capability disabled with no reason (readiness.ts:54)", () => {
   const { eligible: ok } = eligible({
     ...BASE,

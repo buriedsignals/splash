@@ -4,7 +4,7 @@
 // guarantees a mis-read intent cannot change what is legal (spec §4.2).
 import type { Channel, VisualFormat } from "../core/vocabulary";
 import { isFormatAllowed } from "../core/channel-policy";
-import { getProducer } from "../core/registry";
+import { getProducer, producerForFormat } from "../core/registry";
 import { bgIsDark } from "../core/theme";
 import type { CapabilityReadiness } from "../newsroom/readiness";
 // The ONE list of engines production can build through — the same module produce.ts guards
@@ -88,14 +88,20 @@ export function eligible(
     // channel-format miss are different refusals with different reasons; only an EMPTY
     // result after both is worth excluding the id over — a producer missing just ONE of
     // several still-legal formats leaves the id offered through its other formats.
-    const producerFormats = getProducer(engine)?.formats;
-    const formats = producerFormats
-      ? channelFormats.filter((f) => producerFormats.includes(f))
-      : channelFormats;
+    // The format's EFFECTIVE producer, not the sheet's engine: skills/scrolly hosts a native
+    // engine's track, so a chart-native or map-native sheet declaring `scrolly` is built by
+    // the scrolly producer and must not be dropped for a format its host engine never claims.
+    const formats = channelFormats.filter(
+      (f) =>
+        getProducer(producerForFormat(engine, f))?.formats?.includes(f) ?? true,
+    );
     if (formats.length === 0) {
+      const renders = channelFormats
+        .map((f) => `${f}: ${producerForFormat(engine, f)}`)
+        .join(", ");
       exclude(
         sheet.id,
-        `${engine} does not render this form in a format the ${input.channel} channel allows — ${engine} renders ${producerFormats!.join(", ")}, and the channel needs one of ${channelFormats.join(", ")}`,
+        `nothing renders this form in a format the ${input.channel} channel allows — the channel needs one of ${channelFormats.join(", ")} (${renders})`,
       );
       continue;
     }
@@ -226,10 +232,11 @@ function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   // the journalist decides), and the day produce wires the engine the mark disappears with no
   // change here. NOT added to `requires`: that list is the decor's CAPACITÉ axis (ids a
   // newsroom can turn on), and no newsroom setting can make this true.
-  if (!isLoopBuildable(c.engine))
+  const builder = producerForFormat(c.engine, c.format);
+  if (!isLoopBuildable(builder))
     marks.push({
       status: "missing",
-      reason: unbuildableEngineReason(c.engine),
+      reason: unbuildableEngineReason(builder),
     });
   for (const r of input.readiness ?? [])
     if (requires.includes(r.id) && r.status !== "ready")
