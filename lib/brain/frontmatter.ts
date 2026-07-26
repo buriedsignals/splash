@@ -23,6 +23,7 @@ function parseBlock(block: string): Record<string, unknown> {
     if (key == null) return;
     if (list) out[key] = list;
     else if (map) out[key] = map;
+    else throw new Error(`frontmatter: key "${key}" declares nothing`);
     key = null;
     list = null;
     map = null;

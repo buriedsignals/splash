@@ -47,3 +47,9 @@ test("a construct outside the supported subset throws rather than being guessed"
     splitFrontmatter("---\nnested:\n  - a: 1\n    b: 2\n---\nbody\n"),
   ).toThrow(/unsupported/);
 });
+
+test("a key that opens a block but never populates it is a hard error, never a silently dropped facet", () => {
+  expect(() => splitFrontmatter("---\nid: x\nengines:\n---\nbody\n")).toThrow(
+    /declares nothing/,
+  );
+});
