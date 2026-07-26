@@ -167,7 +167,14 @@ function fillRatio(sheet: TypeSheet, f: Facts): number {
 
 // CAPACITÉ and the article branch MARK, they never remove: the worst status among what a form
 // requires is the status of the form (the rule already in lib/loop/propose.ts).
-const SEVERITY = { ready: 0, unverified: 1, disabled: 2, missing: 3 } as const;
+// Exported: rank.ts grades its readiness penalty on this same ordinal, rather than defining a
+// second one that could drift from it.
+export const SEVERITY = {
+  ready: 0,
+  unverified: 1,
+  disabled: 2,
+  missing: 3,
+} as const;
 
 function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   const requires = [
