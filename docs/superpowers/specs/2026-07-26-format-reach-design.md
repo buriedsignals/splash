@@ -187,6 +187,22 @@ filtre canal, avant le filtre producteur** :
 Le type de retour de `eligible()` gagne donc `refusal?: string` en plus de `{ eligible, excluded }`,
 et `Offer` gagne le champ correspondant : `{ options, excluded, refusal?: string }`.
 
+**Un troisième cas, découvert à l'exécution et fermé sur ruling** (review finale, 2026-07-26). Un
+format demandé peut être **autorisé par le canal** et ne laisser pourtant **aucun candidat
+constructible aujourd'hui** — `requestedFormat: "scrolly"` sur `article-web` en est le cas réel :
+toutes les lignes survivantes sont des scrolly, toutes marquées `missing`, et `nextActions`
+renvoyait `choose-form` indéfiniment sans verbe pour en sortir. Donc :
+
+- `refusal` est **aussi** posé dans ce cas, en nommant le format demandé et ce que le canal sait
+  réellement construire — mais ici **`options` n'est PAS vide** : les lignes restent offertes et
+  marquées (« marqué, jamais retiré » n'est pas affaibli), et le refus est une phrase **en plus**
+  qui explique l'impasse au lieu de la laisser subir. `refusal` ne signifie donc pas
+  « `options: []` » : il signifie « ce que tu as demandé ne peut pas aboutir, voici pourquoi ».
+- `ReviseChange` gagne de quoi **effacer** `requestedFormat` (`clear-requested-format`), qui
+  invalide la proposition par le chemin d'invalidation existant — il y a donc une sortie.
+- L'enum fermée `NextAction` n'est **pas** touchée : l'exposer comme un pas de boucle relève du
+  chantier façade-hôte, pas d'une tranche du cerveau.
+
 **Pourquoi dans la légalité et pas dans le classement.** Une demande de format est un **fait du
 run**, pas une intention lue dans de la prose. La rendre soft affaiblirait la décision verrouillée
 Wave 7 en la ramenant au niveau d'un signal faillible. Rien de sémantique n'entre dans
@@ -288,6 +304,7 @@ qu'un troisième registre à la main.
 | situation | comportement |
 |---|---|
 | `requestedFormat` hors du canal | `Offer.refusal` posé, `options: []`, aucune exclusion ; le desk affiche la phrase |
+| `requestedFormat` légal mais **aucun candidat constructible** | `Offer.refusal` posé **et `options` non vide** — les lignes restent offertes marquées ; sortie par `revise` (`clear-requested-format`) |
 | `requestedFormat` légal, aucune fiche ne le décline | `options: []`, exclusions **par fiche** avec leur raison |
 | offre vide passée à `applyPhrasing` | **jette**, comme aujourd'hui (`lib/loop/phrase.ts:57`). Une offre vide n'a rien à rédiger ; le refus est porté par `Offer.refusal` et affiché par le desk, jamais par une phrase de modèle |
 | aucun candidat d'un genre non représenté | repli silencieux sur la règle normale ; l'offre garde sa longueur |
