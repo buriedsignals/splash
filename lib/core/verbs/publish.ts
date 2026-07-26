@@ -10,6 +10,7 @@ import {
   type PublishRequest,
 } from "../publishers";
 import { isSafeId, unsafeIdMessage } from "../id-safety";
+import { isVisualFormat } from "../vocabulary";
 import { fail, type VerbResult } from "./types";
 
 export function isPublishPayload(p: unknown): p is PublishRequest {
@@ -19,6 +20,7 @@ export function isPublishPayload(p: unknown): p is PublishRequest {
   return (
     typeof r.artifactPath === "string" &&
     typeof r.id === "string" &&
+    isVisualFormat(r.format) &&
     typeof r.outDir === "string" &&
     typeof r.settings === "object" &&
     r.settings !== null &&

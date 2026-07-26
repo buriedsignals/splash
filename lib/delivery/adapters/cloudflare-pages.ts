@@ -21,13 +21,15 @@ import {
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { extname, join, relative } from "node:path";
-import type {
-  Publisher,
-  PublishOutcome,
-  PublishRequest,
+import {
+  artifactMediaFor,
+  type Publisher,
+  type PublishOutcome,
+  type PublishRequest,
 } from "../../core/publishers";
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { renderSnippet } from "../snippet";
+import type { VisualFormat } from "../../core/vocabulary";
 
 const API = "https://api.cloudflare.com/client/v4";
 
@@ -379,15 +381,28 @@ export async function verifyServed(
   );
 }
 
-// Cloudflare serves a directory, so a single self-contained artifact is staged as index.html.
-// Accepts a directory unchanged, for the day an artifact ships with sibling assets.
-export function stageArtifact(pathArg: string, stageDir: string): void {
+// Cloudflare serves a directory, so a single self-contained artifact is staged as an "index"
+// file — its EXTENSION follows the artifact's real format (artifactMediaFor, the mapping
+// shared with zip.ts and s3.ts), so a static PNG or an mp4 is no longer staged as index.html.
+// Returns the staged filename, since the caller needs it to read the SAME file back (the
+// served-bytes proof) rather than a hard-coded "index.html" that may no longer exist.
+//
+// Accepts a directory unchanged, for the day an artifact ships with sibling assets — that
+// bundle is assumed to already contain its own "index.html" at the root (unchanged from
+// before this function took a `format`; only the single-file branch below is format-aware).
+export function stageArtifact(
+  pathArg: string,
+  stageDir: string,
+  format: VisualFormat,
+): string {
   if (statSync(pathArg).isDirectory()) {
     cpSync(pathArg, stageDir, { recursive: true });
-    return;
+    return "index.html";
   }
   mkdirSync(stageDir, { recursive: true });
-  cpSync(pathArg, join(stageDir, "index.html"));
+  const filename = `index.${artifactMediaFor(format).extension}`;
+  cpSync(pathArg, join(stageDir, filename));
+  return filename;
 }
 
 // The delivery proof. The upload endpoints are undocumented, so a 200 alone is not evidence
@@ -443,10 +458,11 @@ async function publishToPages(
   // id-safety to guard.
   let tmpBase: string | undefined;
   let stageDir: string;
+  let stagedName: string;
   try {
     tmpBase = mkdtempSync(join(tmpdir(), "splash-embed-"));
     stageDir = join(tmpBase, "site");
-    stageArtifact(req.artifactPath, stageDir);
+    stagedName = stageArtifact(req.artifactPath, stageDir, req.format);
   } catch (e) {
     // A half-created temp dir from a failed stage must not linger either.
     if (tmpBase) {
@@ -468,9 +484,18 @@ async function publishToPages(
     const url = await resolveAliasUrl(deploymentId, cfg);
     // The delivery proof: a 200 is not evidence the right bytes landed. Without this check no
     // outcome is recorded at all.
+    //
+    // KNOWN GAP for a non-HTML artifact: Cloudflare Pages only auto-resolves "index.html" at a
+    // deploy's bare alias root. `stagedName` now staged the artifact under its real extension
+    // (index.png / index.mp4 for static/video), so the right bytes and content-type DO land on
+    // Cloudflare, but `url` alone will not address them — this verifyServed call (and the
+    // `outcome.url` returned below) will 404/refuse for a non-HTML format until the URL this
+    // adapter returns is taught to point at `${url}/${stagedName}` (or a Pages `_redirects`
+    // rule is added). Left as a follow-up rather than guessed at here — see
+    // docs/splash/proposal-brain-followups.md.
     await verifyServed(
       url,
-      servedMatcher(readFileSync(join(stageDir, "index.html"), "utf8")),
+      servedMatcher(readFileSync(join(stageDir, stagedName), "utf8")),
     );
     // The real URL this time. It cannot refuse where the pre-flight above passed — same
     // template, same metadata, only the substituted URL differs — but the result is still

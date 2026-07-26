@@ -20,13 +20,19 @@
   `scrolly` et le producteur `scrolly` n'enregistre aucun type (par design : c'est un mécanisme,
   pas un moteur pair). Pourtant `dot-density.md` liste interactive-scrolly et video-scrolly comme
   livrés, et la page publique promet du map-scrolly live. Le modèle de facettes doit trancher.
-- **Les publishers servent tout artefact comme du HTML** (préexistant, hors de ce chantier).
-  `zip.ts:117` écrit toujours `index.html`, `s3.ts:208` force `${id}.html` et en dérive le
-  content-type, `cloudflare-pages.ts:390` copie vers `index.html`. Cause racine : `PublishRequest`
-  (`lib/core/publishers.ts`) **ne porte aucun champ `format`**. Avant ce chantier `produce` sortait
-  toujours un `static.png`, donc toute livraison était déjà silencieusement corrompue ; ce chantier
-  rend le cas courant (interactif) correct et laisse static/vidéo mal servis. Fermer = threader
-  `format` sur `PublishRequest` et brancher les trois adapters.
+- ~~**Les publishers servent tout artefact comme du HTML.**~~ **Fermé** (branche
+  `feat/proposal-brain`, commit « fix(delivery): a publisher serves the artifact's real format,
+  not always html »). `PublishRequest` porte désormais `format: VisualFormat`, résolu par
+  `deliver.ts` depuis le MÊME `proposal.chosenId` que `produce.ts` lit (`chosenOption`,
+  `lib/loop/manifest.ts`) — refus explicite plutôt que défaut silencieux si aucune option n'est
+  résolvable. Les trois adapters branchent sur un mapping partagé unique
+  (`artifactMediaFor`, `lib/core/publishers.ts`) : `zip.ts` archive sous `index.<ext>`, `s3.ts`
+  upload `<id>.<ext>` avec le bon content-type, `cloudflare-pages.ts` stage `index.<ext>`.
+  **Résidu cloudflare-pages** (documenté en commentaire à l'appel de `verifyServed`) : Cloudflare
+  Pages ne résout `index.html` qu'à la racine de l'alias — un artefact non-HTML est maintenant
+  staged avec la bonne extension et le bon content-type, mais l'URL retournée par cet adapter ne
+  l'adresse pas encore (`${url}/index.png` ou une règle `_redirects` resterait à câbler). zip et
+  s3 sont pleinement corrigés ; cloudflare-pages est partiel (staging correct, adressage à finir).
 
 ## Correctness — réels, non bloquants
 

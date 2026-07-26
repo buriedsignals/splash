@@ -1,6 +1,6 @@
 // Offline tests: refusals and URL/key construction, which need no server. The network path
 // (F1-F7, all measured against a real MinIO server — spec §5.1) is proven live in Task 4.
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, afterEach } from "bun:test";
 import { s3Publisher, publicUrlFor, parseS3ErrorCode } from "./s3";
 import type { PublishRequest } from "../../core/publishers";
 
@@ -16,6 +16,7 @@ function request(over: Partial<PublishRequest> = {}): PublishRequest {
   return {
     artifactPath: import.meta.path,
     id: "primes",
+    format: "interactive",
     metadata: META,
     settings: {
       publisherId: "embed-s3",
@@ -227,5 +228,57 @@ describe("the s3 publisher, before it reaches the network", () => {
       kind: "hosted",
       implemented: true,
     });
+  });
+});
+
+// Regression: before PublishRequest carried `format`, the adapter always PUT the artifact as
+// "<id>.html" with a text/html content-type — a static PNG or an mp4 uploaded (and served) as
+// if it were the interactive HTML build. global.fetch is mocked here (no real network, per the
+// file's own offline-tests discipline) purely to observe the PUT the adapter would make — the
+// live protocol itself (F1-F7) stays proven in Task 4.
+describe("the s3 publisher's served filename and content-type (fetch mocked)", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  // Captures the PUT the adapter makes, and echoes the exact bytes it uploaded back on the
+  // follow-up anonymous GET (F3) so the adapter's own byte-equality check passes.
+  function mockFetch(): { url: string; contentType: string | undefined }[] {
+    const puts: { url: string; contentType: string | undefined }[] = [];
+    let uploaded: Uint8Array | undefined;
+    globalThis.fetch = (async (
+      url: string | URL,
+      init?: RequestInit,
+    ): Promise<Response> => {
+      if (init?.method === "PUT") {
+        const headers = init.headers as Record<string, string>;
+        uploaded = init.body as Uint8Array;
+        puts.push({ url: String(url), contentType: headers["content-type"] });
+        return new Response(null, { status: 200 });
+      }
+      return new Response(uploaded, { status: 200 });
+    }) as typeof fetch;
+    return puts;
+  }
+
+  it("serves a static artifact as .png with an image/png content-type", async () => {
+    const puts = mockFetch();
+    const r = await s3Publisher.publish({ ...request(), format: "static" });
+    expect(r).toMatchObject({ ok: true });
+    expect(puts).toHaveLength(1);
+    expect(puts[0]!.url).toMatch(/\.png$/);
+    expect(puts[0]!.contentType).toBe("image/png");
+  });
+
+  it("still serves an interactive artifact as .html with a text/html content-type", async () => {
+    const puts = mockFetch();
+    const r = await s3Publisher.publish({
+      ...request(),
+      format: "interactive",
+    });
+    expect(r).toMatchObject({ ok: true });
+    expect(puts[0]!.url).toMatch(/\.html$/);
+    expect(puts[0]!.contentType).toBe("text/html");
   });
 });

@@ -3,13 +3,27 @@
 // proven live (docs/superpowers/specs/2026-07-19-cloudflare-pages-embed-adapter-design.md);
 // no request is mocked here, none is made.
 import { describe, it, expect } from "bun:test";
-import { cloudflarePublisher } from "./cloudflare-pages";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import {
+  cloudflarePublisher,
+  contentTypeFor,
+  stageArtifact,
+} from "./cloudflare-pages";
 import type { PublishRequest } from "../../core/publishers";
 
 function request(overrides: Partial<PublishRequest> = {}): PublishRequest {
   return {
     artifactPath: import.meta.path,
     id: "primes",
+    format: "interactive",
     metadata: {
       title: "Primes cantonales",
       altText: "Les primes montent",
@@ -66,5 +80,45 @@ describe("the cloudflare adapter's pre-flight", () => {
     expect((r as { message: string }).message).toContain(
       "CLOUDFLARE_API_TOKEN",
     );
+  });
+});
+
+// Pure, offline, no network — same discipline as the rest of this file: stageArtifact is the
+// one function that decides what filename the artifact is staged under before a directory is
+// deployed. Regression: before it took a `format`, every artifact was staged as "index.html" —
+// a static PNG or an mp4 staged (and thus served, since Cloudflare derives content-type from
+// the extension of the file it finds) as if it were the interactive HTML build.
+describe("stageArtifact", () => {
+  it("stages a static artifact as index.png, not index.html", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-cf-stage-"));
+    try {
+      const artifact = join(dir, "chart.png");
+      writeFileSync(artifact, "not-real-png-bytes");
+      const stageDir = join(dir, "site");
+      const staged = stageArtifact(artifact, stageDir, "static");
+      expect(staged).toBe("index.png");
+      expect(existsSync(join(stageDir, "index.png"))).toBe(true);
+      expect(existsSync(join(stageDir, "index.html"))).toBe(false);
+      expect(readFileSync(join(stageDir, staged))).toEqual(
+        readFileSync(artifact),
+      );
+      expect(contentTypeFor(staged)).toBe("image/png");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("still stages an interactive artifact as index.html", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-cf-stage-"));
+    try {
+      const artifact = join(dir, "chart.html");
+      writeFileSync(artifact, "<html><body>chart</body></html>");
+      const stageDir = join(dir, "site");
+      const staged = stageArtifact(artifact, stageDir, "interactive");
+      expect(staged).toBe("index.html");
+      expect(contentTypeFor(staged)).toBe("text/html");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

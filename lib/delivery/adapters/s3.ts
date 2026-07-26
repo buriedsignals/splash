@@ -12,16 +12,16 @@
 //        far wider than the one object being delivered. It refuses with an actionable message
 //        instead — a deliberate limit on what this tool does to someone else's infrastructure.
 import { readFileSync } from "node:fs";
-import type {
-  Publisher,
-  PublishOutcome,
-  PublishRequest,
+import {
+  artifactMediaFor,
+  type Publisher,
+  type PublishOutcome,
+  type PublishRequest,
 } from "../../core/publishers";
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { isSafeId, unsafeIdMessage } from "../../core/id-safety";
 import { renderSnippet } from "../snippet";
 import { signS3Request, canonicalUri } from "./s3-sign";
-import { contentTypeFor } from "./cloudflare-pages";
 
 // F5: the public URL is NOT constructible from the endpoint — path-style, virtual-host and an
 // attached custom domain all produce a different URL, and MinIO's own path-style shape is only
@@ -205,7 +205,12 @@ async function publish(
     );
   }
 
-  const filename = `${req.id}.html`;
+  // The uploaded filename and its content-type both follow the artifact's REAL format
+  // (artifactMediaFor, shared with zip.ts and cloudflare-pages.ts) — before this, every
+  // artifact was uploaded as "<id>.html" with a text/html content-type regardless of what it
+  // actually was, silently corrupting a static PNG or an mp4.
+  const { extension, contentType } = artifactMediaFor(req.format);
+  const filename = `${req.id}.${extension}`;
   const key = withPrefix(req.settings.prefix, filename);
 
   // basePath: normally "" (root endpoint). Kept because an S3-compatible service can be
@@ -213,7 +218,6 @@ async function publish(
   // request the wrong resource on such a deployment.
   const basePath = endpointUrl.pathname.replace(/\/+$/, "");
   const path = `${basePath}/${req.settings.bucket}/${key}`;
-  const contentType = contentTypeFor(key);
 
   // Step 5: PUT, signed by signS3Request with `new Date()` supplied HERE — the signer itself
   // stays pure (no clock, no I/O; that is what makes its golden tests deterministic). Wrapped

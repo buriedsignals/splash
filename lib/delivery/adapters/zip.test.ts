@@ -30,6 +30,7 @@ function request(): PublishRequest {
   return {
     artifactPath: artifact,
     id: "primes",
+    format: "interactive",
     metadata: {
       title: "Primes cantonales",
       altText: "Les primes montent",
@@ -89,6 +90,36 @@ describe("the zip publisher", () => {
     ]);
   });
 
+  // Regression: before PublishRequest carried `format`, every artifact was archived as
+  // "index.html" regardless of what it actually was — a static PNG served (and named) as HTML.
+  it("should archive a static artifact as index.png, not index.html", async () => {
+    const artifact = join(root, "chart.png");
+    writeFileSync(artifact, "not-real-png-bytes");
+    const outDir = join(root, "out");
+    mkdirSync(outDir, { recursive: true });
+    const r = await zipPublisher.publish({
+      ...request(),
+      artifactPath: artifact,
+      format: "static",
+    });
+    expect(r.ok).toBe(true);
+    const zipPath = (r as { value: { path: string } }).value.path;
+    const entries = Object.keys(unzipSync(readFileSync(zipPath))).sort();
+    expect(entries).toContain("index.png");
+    expect(entries).not.toContain("index.html");
+  });
+
+  it("should keep archiving an interactive artifact as index.html", async () => {
+    const r = await zipPublisher.publish({
+      ...request(),
+      format: "interactive",
+    });
+    expect(r.ok).toBe(true);
+    const zipPath = (r as { value: { path: string } }).value.path;
+    const entries = Object.keys(unzipSync(readFileSync(zipPath))).sort();
+    expect(entries).toContain("index.html");
+  });
+
   it("should produce byte-identical archives across two runs", async () => {
     const a = await zipPublisher.publish(request());
     const b = await zipPublisher.publish(request());
@@ -123,6 +154,7 @@ describe("the zip publisher", () => {
       const r = await zipPublisher.publish({
         artifactPath: artifact,
         id: "primes",
+        format: "interactive",
         metadata: {
           title: "Primes cantonales",
           altText: "Les primes montent",

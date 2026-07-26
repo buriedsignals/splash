@@ -8,6 +8,7 @@
 //
 // See docs/superpowers/specs/2026-07-25-delivery-publishers-design.md §3.1.
 import type { VerbResult } from "./verbs/types";
+import type { VisualFormat } from "./vocabulary";
 
 /** What a destination needs to know about the visual. Assembled by lib/delivery/metadata.ts. */
 export type DeliveryMetadata = {
@@ -27,6 +28,10 @@ export type PublishRequest = {
   artifactPath: string;
   /** Slug source; checked before any path resolution. */
   id: string;
+  /** What produce.ts rendered `artifactPath` as — an adapter must serve it as THAT (filename +
+   * content-type), never assume HTML: before this field existed every publisher served every
+   * artifact as `index.html`/`text/html`, silently corrupting a static PNG or an mp4. */
+  format: VisualFormat;
   metadata: DeliveryMetadata;
   /** NON-secret provider identifiers, from newsroom.json. */
   settings: Record<string, string>;
@@ -46,6 +51,22 @@ export type PublishOutcome = {
   snippet: string;
   publishedAt: string;
 };
+
+// The served extension + MIME type for a produced artifact, keyed by its pinned format — the
+// ONE place this mapping lives. zip.ts, s3.ts and cloudflare-pages.ts all call this instead of
+// each keeping its own copy: this codebase has already been bitten twice by two registries of
+// the same fact disagreeing (see docs/splash/proposal-brain-followups.md), and a format→media
+// mapping is exactly that kind of fact.
+export function artifactMediaFor(format: VisualFormat): {
+  extension: string;
+  contentType: string;
+} {
+  if (format === "static")
+    return { extension: "png", contentType: "image/png" };
+  if (format === "video") return { extension: "mp4", contentType: "video/mp4" };
+  // interactive | scrolly — both are the self-contained produced HTML file.
+  return { extension: "html", contentType: "text/html" };
+}
 
 export interface Publisher {
   /** Matches the decor's capability id ("embed-cloudflare", "zip", …). */

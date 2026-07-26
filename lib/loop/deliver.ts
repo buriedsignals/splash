@@ -27,6 +27,7 @@ import { join, relative } from "node:path";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { fail, ok, runVerb, type VerbResult } from "../core/verbs";
 import type { VerbErrorCode } from "../core/verbs/types";
+import type { VisualFormat } from "../core/vocabulary";
 // Populates the publisher registry the publish verb dispatches from — without it every
 // publish answers `unknown-publisher`. Same discipline as produce.ts importing ./engines.
 import { PUBLISHERS_REGISTERED } from "../delivery";
@@ -36,6 +37,7 @@ import { NEWSROOM_CAPABILITIES } from "../newsroom/capabilities";
 import { decorEnv, type Decor } from "../newsroom/decor";
 import { capabilityReadiness } from "../newsroom/readiness";
 import {
+  chosenOption,
   provenanceHash,
   stalenessOf,
   type DeliveryRecord,
@@ -106,6 +108,22 @@ export async function deliver(
   // returns unchanged, without touching the environment or looking up a single capability —
   // the same idempotent shape a repeat call must have.
   if (pending.length === 0) return ok(el);
+
+  // The format produce.ts rendered `el.artifact` as — resolved from the SAME proposal.chosenId
+  // produce.ts reads (chosenOption, lib/loop/manifest.ts), never a second guess: every
+  // publisher must serve the artifact as what it actually is, not assume HTML (the defect this
+  // resolution exists to close). produce.ts cannot have built el.artifact without a resolvable
+  // chosen option, so a missing one here means the manifest is corrupt — refused rather than
+  // silently guessed at.
+  const chosen = chosenOption(el);
+  if (!chosen)
+    return fail(
+      "invalid-request",
+      `deliver: element ${el.id} has an artifact but no resolvable chosen option to read its format from`,
+    );
+  // An option carrying no `format` at all (fixtures, hand-authored manifests predating the
+  // brain) defaults to "static" — the same default produce.ts has always rendered for them.
+  const format: VisualFormat = chosen.format ?? "static";
 
   const env = opts.env ?? decorEnv(decor.root);
   // Element-wide, not per-destination: every publisher describes the SAME visual, so a
@@ -183,6 +201,7 @@ export async function deliver(
     const result = await runVerb("publish", {
       artifactPath: join(runDir, el.artifact.path),
       id: el.id,
+      format,
       metadata: metadata.value,
       settings: {
         ...(decor.state.capabilities[publisherId]?.settings ?? {}),

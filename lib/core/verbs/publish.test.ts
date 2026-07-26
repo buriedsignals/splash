@@ -17,6 +17,7 @@ function request(overrides: Partial<PublishRequest> = {}): PublishRequest {
   return {
     artifactPath: join(import.meta.dir, "publish.test.ts"),
     id: "e1",
+    format: "interactive",
     metadata: {
       title: "T",
       altText: "A",

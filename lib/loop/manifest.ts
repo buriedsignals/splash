@@ -148,6 +148,16 @@ export function parseManifest(raw: unknown): RunManifest {
   return RunManifestSchema.parse(raw);
 }
 
+// The option `proposal.chosenId` names, or undefined if nothing is chosen yet. provenanceHash
+// below and lib/loop/deliver.ts both need to resolve "the chosen option" from the same
+// `chosenId` — kept here once so a caller cannot build a second, subtly different lookup
+// (the class of drift this codebase has already been bitten by).
+export function chosenOption(el: RunElement): FormOption | undefined {
+  return el.proposal?.chosenId
+    ? el.proposal.options.find((o) => o.id === el.proposal!.chosenId)
+    : undefined;
+}
+
 // The artifact depends on exactly these. Any change ⇒ the produced artifact is stale.
 //
 // `channel` and the chosen option's `format` are here because produce.ts reads BOTH: it renders
@@ -162,9 +172,7 @@ export function parseManifest(raw: unknown): RunManifest {
 // the artifact was not built at), and no test or on-disk fixture pins a literal hash value —
 // they all recompute it — so there is nothing to migrate, only this note to leave.
 export function provenanceHash(run: RunManifest, el: RunElement): string {
-  const chosen = el.proposal?.chosenId
-    ? el.proposal.options.find((o) => o.id === el.proposal!.chosenId)
-    : undefined;
+  const chosen = chosenOption(el);
   return canonicalHash({
     inputData: run.input.data?.sha256 ?? null,
     inputArticle: run.input.article?.sha256 ?? null,

@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { zipSync, strToU8 } from "fflate";
 import {
+  artifactMediaFor,
   type DeliveryMetadata,
   type Publisher,
   type PublishOutcome,
@@ -46,6 +47,7 @@ export function zipReadme(
   m: DeliveryMetadata,
   id: string,
   snippet: string,
+  entryName: string,
 ): string {
   return [
     `# ${m.title}`,
@@ -54,7 +56,7 @@ export function zipReadme(
     "",
     "## How to integrate",
     "",
-    "1. Upload `index.html` anywhere your newsroom serves static files.",
+    `1. Upload \`${entryName}\` anywhere your newsroom serves static files.`,
     "2. Paste the snippet below into your article, replacing the URL with where you uploaded it.",
     "",
     "```html",
@@ -110,14 +112,18 @@ async function publish(
 
   const metadata = { ...req.metadata, id: req.id };
   const opts = { mtime: FIXED_MTIME };
+  // The archive entry follows the artifact's REAL format (artifactMediaFor, shared with s3.ts
+  // and cloudflare-pages.ts) — an "index.html" entry only makes sense when the artifact is
+  // actually HTML; a static PNG or an mp4 archived under that name used to be silently wrong.
+  const entryName = `index.${artifactMediaFor(req.format).extension}`;
   let archive: Uint8Array;
   try {
     archive = zipSync(
       {
-        "index.html": [artifact, opts],
+        [entryName]: [artifact, opts],
         "EMBED.txt": [strToU8(snippet.value + "\n"), opts],
         "README.md": [
-          strToU8(zipReadme(req.metadata, req.id, snippet.value)),
+          strToU8(zipReadme(req.metadata, req.id, snippet.value, entryName)),
           opts,
         ],
         "metadata.json": [

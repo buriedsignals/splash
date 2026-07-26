@@ -37,6 +37,7 @@ if (!publisher) {
 const result = await publisher.publish({
   artifactPath: artifact,
   id: `delivery-proof-${process.pid}`,
+  format: "interactive",
   metadata: {
     title: "Delivery proof",
     altText: "A page proving the embed path delivers real bytes",

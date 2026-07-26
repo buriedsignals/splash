@@ -123,10 +123,15 @@ describe("delivering a produced element, end to end and offline", () => {
 
     const rec = run.elements[0]!.delivery!.delivered[0]!;
     const archive = unzipSync(readFileSync(join(runDir, rec.artifact!.path)));
+    // The fixture's chosen option carries no `format` (defaults to "static", same as
+    // produce.ts), and its recorded artifact is elements/e1/static.png — so the archive entry
+    // is index.png, never index.html. This used to read "index.html" regardless: the exact bug
+    // docs/splash/proposal-brain-followups.md's "publishers serve everything as HTML" entry
+    // described, caught here once PublishRequest started carrying a real `format`.
     expect(Object.keys(archive).sort()).toEqual([
       "EMBED.txt",
       "README.md",
-      "index.html",
+      "index.png",
       "metadata.json",
     ]);
 

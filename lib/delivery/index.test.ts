@@ -114,6 +114,7 @@ describe("the delivery composition root", () => {
     const r = await p.publish({
       artifactPath: import.meta.path,
       id: "e1",
+      format: "interactive",
       metadata: {
         title: "T",
         altText: "A",
