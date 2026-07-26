@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { CHART_SCROLLY_TYPES, MAP_SCROLLY_TYPES } from "../src/Scrolly";
+import { CHART_SCROLLY_TYPES, MAP_SCROLLY_TYPES } from "../src/scrolly-types";
 
 test("the chart track hosts exactly the three narrative chart types", () => {
   expect([...CHART_SCROLLY_TYPES].sort()).toEqual(["bar", "line", "scatter"]);

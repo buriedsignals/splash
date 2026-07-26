@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadTypology } from "../../../lib/brain/typology";
-import { CHART_SCROLLY_TYPES, MAP_SCROLLY_TYPES } from "../src/Scrolly";
+import { CHART_SCROLLY_TYPES, MAP_SCROLLY_TYPES } from "../src/scrolly-types";
 
 // Only these three engines ever build a scrolly track (Scrolly.tsx's own dispatch). Extracted
 // so the fixture test below can call the exact same check against a temporary root — a

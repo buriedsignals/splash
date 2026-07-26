@@ -46,21 +46,11 @@ import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
 import { sourceLabel, isFrench } from "../../../lib/core/locale";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
-// The types each track actually hosts. EXPORTED because they are the source of truth for two
-// readers that must never disagree: this dispatch, and the KB drift test that checks which
-// sheets may declare the `scrolly` format.
-export const CHART_SCROLLY_TYPES = new Set(["line", "bar", "scatter"]);
-// `choropleth` is the dispatch's default branch (ScrollyMap + computeChoropleth), so it is
-// hosted — but the default must not swallow types that are NOT. `route` has no branch and was
-// being drawn as a choropleth: a wrong render, silently.
-export const MAP_SCROLLY_TYPES = new Set([
-  "symbol",
-  "hex-grid",
-  "dot-density",
-  "locator",
-  "cartogram",
-  "choropleth",
-]);
+// The types each track actually hosts, defined in a leaf module (imports nothing) so they can be
+// read without pulling in ScrollyMap.tsx's module-scope VITE_MAPTILER_KEY throw. Re-exported here
+// so existing importers of "../src/Scrolly" keep working unchanged.
+export { CHART_SCROLLY_TYPES, MAP_SCROLLY_TYPES } from "./scrolly-types";
+import { CHART_SCROLLY_TYPES, MAP_SCROLLY_TYPES } from "./scrolly-types";
 
 // ---------------------------------------------------------------------------
 // Scrolly
