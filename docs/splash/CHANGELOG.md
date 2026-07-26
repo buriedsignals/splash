@@ -4,6 +4,11 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-26 — format-reach, tâche 10 : la preuve mp4 réelle du seam propose→produce
+
+Preuve opt-in `lib/loop/video-e2e.test.ts` (`SPLASH_VIDEO_E2E=1`, sinon skip — gate inchangée) : `propose()` sur le fixture 2 lignes de `driver.test.ts` offre bien une option `chart-native`/`video`, choisie puis rendue via `produce()` par le vrai seam Remotion. Rendu réel obtenu : `elements/e1/landscape.mp4`, 371 116 octets, en 11,69 s (run à froid).
+- Détail de route : le fixture 3 lignes de `produce.test.ts` avec un `confirmedTakeaway` différent fait basculer l'offre vers du `map-native` pur (aucune option `chart-native`) — non buildable via `LOOP_BUILDABLE_ENGINES` aujourd'hui ; le fixture 2 lignes de `driver.test.ts` est celui qui prouve la ligne vidéo réellement construisible.
+
 ## Session 2026-07-21 — AUDIT #2 (orchestration stricte + qualité) → S1 seam de production strict + S2-slice-1 claim-arc narratif (2 piliers mergés main)
 
 Rémy : « les tests n'ont jamais testé le bon fonctionnement du flow, thèmes/formats réutilisés (un type = même thème/format), le narratif scrolly/story = data-dump, colorimétrie parfois pas top, échanges du flow moyens. Tom dit que Spotlight a un orchestrateur STRICT (plan étape-par-étape, pas de hors-route, appelle des outils/skills/templates préconçus, inspiré de superpowers). » → **Audit #2** (6 agents //, `docs/splash/audit-2026-07-21-orchestration-and-quality.md`, score B-, la thèse du SEAM : front éditorial flexible model-driven, back production strict code-owned). 4 piliers S1-S4 + dette test T1-T4. Superpowers brainstorming→spec→plan→subagent-driven pour chaque.
