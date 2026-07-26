@@ -10,7 +10,9 @@ import {
 function run(el: RunElement): RunManifest {
   return {
     runId: "r",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: { path: "input/d.csv", sha256: "a".repeat(64) } },
     orient: {
       profile: { columns: ["a", "b"], numericColumns: ["a", "b"], rowCount: 2 },
@@ -23,13 +25,16 @@ function run(el: RunElement): RunManifest {
 const angle = { confirmedTakeaway: "t", altInsight: "a", unit: "u" };
 const proposal = {
   options: [{ id: "slope", nativeType: "slope", why: "w" }],
+  excluded: [],
   chosenId: "slope",
 };
 
 test("element with no run-orient is 'empty'", () => {
   const r: RunManifest = {
     runId: "r",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: { path: "input/d.csv", sha256: "a".repeat(64) } },
     elements: [{ id: "e" }],
     events: [],
@@ -45,7 +50,11 @@ test("angle only → 'angled'", () => {
   expect(gateStateOf(r, r.elements[0])).toBe("angled");
 });
 test("proposal without choice → 'proposed'", () => {
-  const r = run({ id: "e", angle, proposal: { options: proposal.options } });
+  const r = run({
+    id: "e",
+    angle,
+    proposal: { options: proposal.options, excluded: [] },
+  });
   expect(gateStateOf(r, r.elements[0])).toBe("proposed");
 });
 test("chosen form, no artifact → 'chosen'", () => {
@@ -191,7 +200,7 @@ test("assertInvariants throws when chosenId is not among options", () => {
   const r = run({
     id: "e",
     angle,
-    proposal: { options: proposal.options, chosenId: "ghost" },
+    proposal: { options: proposal.options, excluded: [], chosenId: "ghost" },
   });
   expect(() => assertInvariants(r)).toThrow();
 });

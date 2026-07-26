@@ -11,7 +11,9 @@ import {
 function producedRun(): RunManifest {
   const run: RunManifest = {
     runId: "r",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     orient: {
       profile: {
@@ -27,6 +29,7 @@ function producedRun(): RunManifest {
         angle: { confirmedTakeaway: "t", altInsight: "a", unit: "u" },
         proposal: {
           options: [{ id: "slope", nativeType: "slope", why: "w" }],
+          excluded: [],
           chosenId: "slope",
         },
       },

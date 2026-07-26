@@ -19,7 +19,9 @@ function seed(): { run: RunManifest; runDir: string } {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583");
   const run: RunManifest = {
     runId: "r1",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
     orient: {
       profile: {
@@ -35,6 +37,7 @@ function seed(): { run: RunManifest; runDir: string } {
         angle: { confirmedTakeaway: "t", altInsight: "a", unit: "CHF" },
         proposal: {
           options: [{ id: "slope", nativeType: "slope", why: "w" }],
+          excluded: [],
           chosenId: "slope",
         },
       },

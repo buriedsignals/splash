@@ -3,6 +3,8 @@ import { readFileSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { canonicalHash } from "./canonical-hash";
 import { migrate } from "./migrate";
+import { INTENTS } from "../brain/intents";
+import { VISUAL_FORMATS, CHANNELS as CHANNEL_KEYS } from "../core/vocabulary";
 
 const HashRef = z.object({ path: z.string(), sha256: z.string() });
 const DataProfileSchema = z.object({
@@ -10,10 +12,21 @@ const DataProfileSchema = z.object({
   numericColumns: z.array(z.string()),
   rowCount: z.number(),
 });
+const WhySourceSchema = z.object({
+  sheet: z.string(),
+  fragments: z.array(z.string()),
+  facts: z.record(z.string(), z.string()),
+});
 const FormOptionSchema = z.object({
   id: z.string(),
   nativeType: z.string(),
+  /** Which engine will render it — the brain offers across engines, not just chart-native. */
+  engine: z.string().optional(),
+  format: z.enum(VISUAL_FORMATS).optional(),
+  intent: z.array(z.enum(INTENTS)).optional(),
   why: z.string(),
+  /** Where the why came from. Present on anything the brain built (spec §6). */
+  whySource: WhySourceSchema.optional(),
   /** Capability ids this form needs — the decor's CAPACITÉ axis. */
   requires: z.array(z.string()).optional(),
   /** Filled when the offer was made with a decor: what stands in the way, if anything. */
@@ -44,6 +57,11 @@ const RunElementSchema = z.object({
   proposal: z
     .object({
       options: z.array(FormOptionSchema),
+      // What the brain refused to offer, and why. State, not a sentence: it survives a resume
+      // and the journalist can ask for one back (spec §6).
+      excluded: z
+        .array(z.object({ id: z.string(), reason: z.string() }))
+        .default([]),
       chosenId: z.string().optional(),
     })
     .optional(),
@@ -89,7 +107,11 @@ const RunElementSchema = z.object({
 });
 const RunManifestSchema = z.object({
   runId: z.string(),
-  schemaVersion: z.literal(3),
+  schemaVersion: z.literal(4),
+  /** The relationship to the text: an embeddable element, or the visual article itself. */
+  route: z.enum(["embed", "article"]).default("embed"),
+  /** Where this run publishes — the SCOPE axis, and what produce renders at. */
+  channel: z.enum(CHANNEL_KEYS).default("article-web"),
   input: z.object({ data: HashRef.optional(), article: HashRef.optional() }),
   cadrage: z.object({ answers: z.record(z.string(), z.string()) }).optional(),
   orient: z
@@ -159,7 +181,7 @@ export function readManifest(
   if (
     raw &&
     typeof raw === "object" &&
-    (raw as { schemaVersion?: number }).schemaVersion !== 3
+    (raw as { schemaVersion?: number }).schemaVersion !== 4
   ) {
     return migrate(raw, runDir);
   }

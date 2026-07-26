@@ -55,14 +55,14 @@ function loadRun(
     raw && typeof raw === "object"
       ? (raw as { schemaVersion?: unknown }).schemaVersion
       : undefined;
-  if (declared !== 3)
+  if (declared !== 4)
     return {
       fail: {
         ok: false,
         code: "stale-schema",
         message:
           `${manifestPath} declares schemaVersion ${JSON.stringify(declared ?? null)}, ` +
-          `not 3 — state and next are read-only and will not migrate it, because ` +
+          `not 4 — state and next are read-only and will not migrate it, because ` +
           `migrating writes a frozen input file into the run directory. Run the migration ` +
           `explicitly, then read the run again`,
       },

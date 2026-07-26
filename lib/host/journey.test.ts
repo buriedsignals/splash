@@ -31,7 +31,9 @@ describe("the whole journey through the façade", () => {
     writeFileSync(src, "canton,growth\nGeneva,4.1\nVaud,2.8\nBern,1.9\n");
     const run: RunManifest = {
       runId: "journey",
-      schemaVersion: 3,
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
       input: { data: freezeInput(dir, src, "data") },
       elements: [{ id: "el1" }],
       events: [],

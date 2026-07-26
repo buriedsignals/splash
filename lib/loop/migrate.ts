@@ -6,16 +6,38 @@ import { parseManifest, type RunManifest, type RunElement } from "./manifest";
 
 // Upgrade an on-disk manifest to the current schema. v1 stored inline CSV content and a
 // single top-level element; v2 freezes the content (path+hash) and wraps it in elements[];
-// v3 drops the dormant, unconvertible v2 delivery slot. v1 chains through v2 to v3.
+// v3 drops the dormant, unconvertible v2 delivery slot; v4 adds the run's route and channel
+// and the proposal's excluded list. v1 chains through v2 and v3 to v4.
 export function migrate(raw: unknown, runDir: string): RunManifest {
   if (!raw || typeof raw !== "object")
     throw new Error("migrate: manifest is not an object");
   const obj = raw as { schemaVersion?: number };
-  if (obj.schemaVersion === 3) return parseManifest(raw);
-  if (obj.schemaVersion === 2) return parseManifest(migrateV2toV3(raw));
+  if (obj.schemaVersion === 4) return parseManifest(raw);
+  if (obj.schemaVersion === 3) return parseManifest(migrateV3toV4(raw));
+  if (obj.schemaVersion === 2)
+    return parseManifest(migrateV3toV4(migrateV2toV3(raw)));
   if (obj.schemaVersion !== 1)
     throw new Error(`migrate: unsupported schemaVersion ${obj.schemaVersion}`);
-  return parseManifest(migrateV2toV3(migrateV1toV2(raw as V1Manifest, runDir)));
+  return parseManifest(
+    migrateV3toV4(migrateV2toV3(migrateV1toV2(raw as V1Manifest, runDir))),
+  );
+}
+
+// v3 had neither a route nor a channel: every v3 run was an embeddable element rendered for
+// the web article, which is exactly what produce.ts hard-coded as STUBBED_CHANNEL. Writing
+// those two defaults down is the migration — nothing is lost, a stub becomes state.
+function migrateV3toV4(v3: unknown): unknown {
+  const m = v3 as { elements?: Record<string, unknown>[] };
+  return {
+    ...(v3 as object),
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    elements: (m.elements ?? []).map((el) => {
+      const proposal = el.proposal as Record<string, unknown> | undefined;
+      return proposal ? { ...el, proposal: { excluded: [], ...proposal } } : el;
+    }),
+  };
 }
 
 // v2's delivery slot was DORMANT: no live path ever wrote it, and its `delivered: HashRef[]`

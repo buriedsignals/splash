@@ -6,7 +6,9 @@ import type { Decor } from "../newsroom/decor";
 function withNumeric(numericColumns: string[]): RunManifest {
   return {
     runId: "r",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     orient: {
       profile: {
@@ -34,7 +36,9 @@ test("propose returns nothing before orient has run", () => {
   expect(
     propose({
       runId: "r",
-      schemaVersion: 3,
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
       input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
       elements: [{ id: "e1" }],
       events: [],

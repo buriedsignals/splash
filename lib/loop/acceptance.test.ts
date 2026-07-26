@@ -19,11 +19,14 @@ function twoElementRun(): { run: RunManifest; runDir: string } {
   const angle = { confirmedTakeaway: "t", altInsight: "a", unit: "CHF" };
   const proposal = {
     options: [{ id: "slope", nativeType: "slope", why: "w" }],
+    excluded: [],
     chosenId: "slope",
   };
   const run: RunManifest = {
     runId: "r1",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
     orient: {
       profile: {

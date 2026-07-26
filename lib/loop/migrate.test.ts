@@ -32,7 +32,7 @@ test("migrate upgrades a v1 manifest to a valid current-schema manifest", () => 
   const runDir = mkdtempSync(join(tmpdir(), "loop-mig-"));
   const m = migrate(v1, runDir);
   expect(() => parseManifest(m)).not.toThrow();
-  expect(m.schemaVersion).toBe(3);
+  expect(m.schemaVersion).toBe(4);
 });
 
 test("migrate freezes the v1 inline dataCsv into the run dir", () => {
@@ -87,7 +87,23 @@ it("should drop the dormant v2 delivery slot rather than carry an unconvertible 
   };
   writeFileSync(join(dir, "input.csv"), "a\n1\n");
   const out = migrate(v2, dir);
-  expect(out.schemaVersion).toBe(3);
+  expect(out.schemaVersion).toBe(4);
   expect(out.elements[0]!.delivery).toBeUndefined();
   rmSync(dir, { recursive: true, force: true });
+});
+
+test("a v3 manifest migrates to v4 with the embed route and the web channel", () => {
+  const dir = mkdtempSync(join(tmpdir(), "mig-v4-"));
+  const v3 = {
+    runId: "r",
+    schemaVersion: 3,
+    input: {},
+    elements: [{ id: "e1", proposal: { options: [], chosenId: undefined } }],
+    events: [],
+  };
+  const m = migrate(v3, dir);
+  expect(m.schemaVersion).toBe(4);
+  expect(m.route).toBe("embed");
+  expect(m.channel).toBe("article-web");
+  expect(m.elements[0].proposal!.excluded).toEqual([]);
 });

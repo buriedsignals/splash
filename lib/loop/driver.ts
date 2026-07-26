@@ -52,7 +52,7 @@ export async function advance(
       return {
         ...run,
         elements: [
-          { ...live, proposal: { options } },
+          { ...live, proposal: { options, excluded: [] } },
           ...run.elements.slice(1),
         ],
       };

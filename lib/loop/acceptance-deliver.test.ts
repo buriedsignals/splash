@@ -61,7 +61,9 @@ const decor = () => ({
 function producedRun(): RunManifest {
   const base: RunManifest = {
     runId: "r-e2e-deliver",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "input-sha" } },
     orient: {
       profile: { columns: ["a"], numericColumns: ["a"], rowCount: 3 },
@@ -77,6 +79,7 @@ function producedRun(): RunManifest {
         },
         proposal: {
           options: [{ id: "o1", nativeType: "line", why: "trend over time" }],
+          excluded: [],
           chosenId: "o1",
         },
       },

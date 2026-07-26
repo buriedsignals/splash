@@ -11,7 +11,9 @@ import {
 function base(): RunManifest {
   return {
     runId: "r1",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     orient: {
       profile: {
@@ -32,6 +34,7 @@ function base(): RunManifest {
         },
         proposal: {
           options: [{ id: "slope", nativeType: "slope", why: "w" }],
+          excluded: [],
           chosenId: "slope",
         },
       },
@@ -83,7 +86,7 @@ test("nextActions is show when the artifact is fresh", () => {
 
 test("nextActions off-ramps ([]) when no legal form exists (zero proposal options)", () => {
   const m = base();
-  m.elements[0].proposal = { options: [] };
+  m.elements[0].proposal = { options: [], excluded: [] };
   expect(nextActions(m)).toEqual([]);
 });
 
@@ -97,14 +100,14 @@ test("nextActions off-ramps ([]) when data supports no visual", () => {
 });
 
 test("parseManifest rejects a manifest missing elements", () => {
-  const bad = { runId: "r", schemaVersion: 3, input: {}, events: [] };
+  const bad = { runId: "r", schemaVersion: 4, input: {}, events: [] };
   expect(() => parseManifest(bad)).toThrow();
 });
 
 test("a stored proposal from before the capability axis still parses", () => {
   const raw = {
     runId: "r",
-    schemaVersion: 3,
+    schemaVersion: 4,
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     elements: [
       {
@@ -122,7 +125,9 @@ test("a stored proposal from before the capability axis still parses", () => {
 describe("the delivery slot", () => {
   const base = (): RunManifest => ({
     runId: "r1",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "abc" } },
     orient: {
       profile: { columns: ["a"], numericColumns: ["a"], rowCount: 2 },
@@ -134,6 +139,7 @@ describe("the delivery slot", () => {
         angle: { confirmedTakeaway: "T", altInsight: "A", unit: "u" },
         proposal: {
           options: [{ id: "o1", nativeType: "line", why: "w" }],
+          excluded: [],
           chosenId: "o1",
         },
       },
@@ -294,4 +300,69 @@ describe("the delivery slot", () => {
     const run = { ...m, elements: [emptyRequest] };
     expect(gateStateOf(run, emptyRequest)).not.toBe("delivered");
   });
+});
+
+test("v4 carries the route and the channel at run level", () => {
+  const m = parseManifest({
+    runId: "r",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: {},
+    elements: [],
+    events: [],
+  });
+  expect(m.route).toBe("embed");
+  expect(m.channel).toBe("article-web");
+});
+
+test("a proposal records what was discarded, with its reason", () => {
+  const m = parseManifest({
+    runId: "r",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: {},
+    elements: [
+      {
+        id: "e1",
+        proposal: {
+          options: [
+            {
+              id: "slope",
+              nativeType: "slope",
+              engine: "chart-native",
+              format: "static",
+              intent: ["change-over-time"],
+              why: "…",
+              whySource: {
+                sheet: "chart/types/slope.md",
+                fragments: ["a before/after"],
+                facts: { rows: "8" },
+              },
+            },
+          ],
+          excluded: [
+            { id: "pie", reason: "8 categories — a pie takes at most 5" },
+          ],
+        },
+      },
+    ],
+    events: [],
+  });
+  expect(m.elements[0].proposal!.excluded![0].id).toBe("pie");
+});
+
+test("an unknown channel is refused", () => {
+  expect(() =>
+    parseManifest({
+      runId: "r",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "billboard",
+      input: {},
+      elements: [],
+      events: [],
+    }),
+  ).toThrow();
 });

@@ -52,7 +52,9 @@ function runWith(el: Partial<RunElement>): {
 } {
   const base: RunManifest = {
     runId: "r1",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "abc" } },
     orient: {
       profile: { columns: ["a"], numericColumns: ["a"], rowCount: 2 },
@@ -64,6 +66,7 @@ function runWith(el: Partial<RunElement>): {
         angle: { confirmedTakeaway: "T", altInsight: "A", unit: "u" },
         proposal: {
           options: [{ id: "o1", nativeType: "line", why: "w" }],
+          excluded: [],
           chosenId: "o1",
         },
       },

@@ -22,7 +22,9 @@ test("produce renders a real static PNG through the chart-native seam", async ()
   );
   const run: RunManifest = {
     runId: "t",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
     orient: {
       profile: {
@@ -46,6 +48,7 @@ test("produce renders a real static PNG through the chart-native seam", async ()
           options: [
             { id: "slope", nativeType: "slope", why: "two points in time" },
           ],
+          excluded: [],
           chosenId: "slope",
         },
       },
@@ -74,7 +77,9 @@ function makeBrokenRun(): { run: RunManifest; runDir: string } {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "t-broken",
-    schemaVersion: 3,
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
     orient: {
       profile: {
@@ -100,6 +105,7 @@ function makeBrokenRun(): { run: RunManifest; runDir: string } {
               why: "unsupported by design",
             },
           ],
+          excluded: [],
           chosenId: "bogus",
         },
       },
