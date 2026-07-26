@@ -48,11 +48,11 @@ export async function advance(
     }
     case "propose": {
       if (!live) return run;
-      const options = propose(run, decor);
+      const { options, excluded } = propose(run, decor);
       return {
         ...run,
         elements: [
-          { ...live, proposal: { options, excluded: [] } },
+          { ...live, proposal: { options, excluded } },
           ...run.elements.slice(1),
         ],
       };

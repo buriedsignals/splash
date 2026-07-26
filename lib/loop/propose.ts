@@ -1,60 +1,42 @@
+// lib/loop/propose.ts
+// The loop's door onto the brain. It threads state in and shapes the offer out — every rule
+// about WHAT may be offered lives in lib/brain (spec §3).
 import type { Decor } from "../newsroom/decor";
 import type { RunManifest, FormOption } from "./manifest";
+import { buildOffer } from "../brain/offer";
+import { deriveFacts } from "../brain/facts";
+import { intentsFromAngle } from "../brain/rank-intent";
+import type { Excluded } from "../brain/eligibility";
 
-// Thin proposal for the data→chart branch: legal chart-native forms, each with a grounded WHY
-// the journalist can judge. It OFFERS — it never chooses (P1: instrument). The full typology
-// + FT/perception grounding is the proposal-cerveau sub-project.
-//
-// The decor supplies the CAPACITÉ axis (spec §3.4): a form whose capability is not ready is
-// offered MARKED, never silently dropped and never silently offered. Dropping it would decide
-// for the journalist; offering it bare would promise something the install cannot do.
-const CHART_NATIVE = "chart-native";
-
-export function propose(m: RunManifest, decor?: Decor): FormOption[] {
+export function propose(
+  m: RunManifest,
+  decor?: Decor,
+): { options: FormOption[]; excluded: Excluded[] } {
   const profile = m.orient?.profile;
-  if (!profile) return [];
-  const cols = profile.numericColumns;
-  const options: FormOption[] = [];
-  if (cols.length === 2) {
-    options.push(
-      {
-        id: "slope",
-        nativeType: "slope",
-        why: `Two points in time (${cols[0]} → ${cols[1]}) — a slope shows each row's change and whether the gap widens or narrows.`,
-        requires: [CHART_NATIVE],
-      },
-      {
-        id: "dumbbell",
-        nativeType: "dumbbell",
-        why: "A dumbbell marks the two endpoints per row — better when the size of each gap matters more than the trajectory.",
-        requires: [CHART_NATIVE],
-      },
-    );
-  } else if (cols.length >= 3) {
-    options.push({
-      id: "line",
-      nativeType: "line",
-      why: `${cols.length} points over time — a line traces each series' trajectory.`,
-      requires: [CHART_NATIVE],
-    });
-  }
-  return decor ? options.map((o) => annotate(o, decor)) : options;
-}
-
-// The worst status among what the form requires is the status of the form: a form is only as
-// available as its least available capability.
-const SEVERITY = { ready: 0, unverified: 1, disabled: 2, missing: 3 } as const;
-
-function annotate(option: FormOption, decor: Decor): FormOption {
-  const relevant = decor.readiness.filter((r) =>
-    (option.requires ?? []).includes(r.id),
-  );
-  if (!relevant.length) return option;
-  const worst = relevant.reduce((a, b) =>
-    SEVERITY[b.status] > SEVERITY[a.status] ? b : a,
-  );
+  if (!profile) return { options: [], excluded: [] };
+  const el = m.elements[0];
+  const offer = buildOffer({
+    facts: deriveFacts(profile),
+    channel: m.channel,
+    route: m.route,
+    ...(decor ? { readiness: decor.readiness } : {}),
+    ...(decor?.theme ? { themeBg: decor.theme } : {}),
+    intents: intentsFromAngle(el?.angle?.confirmedTakeaway ?? ""),
+  });
   return {
-    ...option,
-    readiness: { status: worst.status, reason: worst.reason },
+    options: offer.options.map((o) => ({
+      id: o.id,
+      nativeType: o.nativeType,
+      engine: o.engine,
+      format: o.format,
+      intent: o.intent,
+      // The brain hands over GROUNDING; the phrasing is the desk's turn, behind verifyOffer.
+      // Until it has been phrased, the why IS the sheet's own first fragment — never blank.
+      why: o.whySource.fragments[0],
+      whySource: o.whySource,
+      ...(o.requires ? { requires: o.requires } : {}),
+      ...(o.readiness ? { readiness: o.readiness } : {}),
+    })),
+    excluded: offer.excluded,
   };
 }

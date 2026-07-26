@@ -8,11 +8,6 @@ import { provenanceHash, type RunManifest, type RunElement } from "./manifest";
 // in that file, on purpose; see its header.
 import "./engines";
 
-// The décor is stubbed until the SETUP/preflight sub-project exists: every element of
-// this tranche renders for the web-article channel. Documented as a stub, not a default
-// buried in a call — the contract requires a RESOLVED channel (no ambient env, I5).
-const STUBBED_CHANNEL = "article-web" as const;
-
 // The ONE craft verb of the loop. Assembles a NativeSpec from the manifest element and
 // renders it via the shared render verb (lib/core/verbs) — the same execution path the
 // legacy orchestrator uses, never a hand-rolled subprocess call — then records the
@@ -39,6 +34,10 @@ export async function produce(
       "invalid-request",
       `produce: no option with id ${el.proposal.chosenId}`,
     );
+
+  // The channel is STATE now (manifest v4), not a stub: the brain offered within it, so produce
+  // must render within the same one.
+  const channel = run.channel;
 
   // The frozen input is read from disk, and a run dir can be incomplete for reasons that
   // have nothing to do with the request being malformed (the file was moved, the copy that
@@ -70,7 +69,7 @@ export async function produce(
     engine: "chart-native",
     spec: nativeSpec,
     format: "static",
-    channel: STUBBED_CHANNEL,
+    channel,
     outDir: join(runDir, "elements", el.id),
     id: el.id,
   });

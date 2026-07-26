@@ -61,6 +61,10 @@ export type Decor = {
   readiness: CapabilityReadiness[];
   /** What a delivery prints and what it requires. Empty when the install has no profile. */
   profile: DeliveryProfile;
+  /** The house ground: "light" | "dark" | "#rrggbb". Absent ⇒ the install declared none.
+   *  It is the STYLE axis's only input: a dark ground is what makes a Datawrapper form
+   *  physically unrenderable (spec §4.1). */
+  theme?: string;
 };
 
 export function installRoot(): string {
@@ -110,6 +114,7 @@ export function loadDecor(dir?: string, opts: LoadDecorOpts = {}): Decor {
     language,
     readiness: decorReadiness(state, { env }),
     profile: deliveryProfile(profile, language.content),
+    ...(profile?.theme ? { theme: profile.theme } : {}),
   };
 }
 

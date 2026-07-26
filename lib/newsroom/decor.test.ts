@@ -107,6 +107,20 @@ describe("loading the decor", () => {
     expect(decor.language).toEqual({ ui: "en", content: "fr" });
   });
 
+  it("the decor carries the house theme so the offer can judge what is renderable", () => {
+    const d = dir();
+    writeFileSync(
+      join(d, "NEWSROOM-PROFILE.md"),
+      ["---", 'theme: "#12233A"', "---", "", "# guide", ""].join("\n"),
+    );
+    const decor = loadDecor(d, NO_ENV);
+    expect(decor.theme).toBe("#12233A");
+  });
+
+  it("an install with no profile has no theme, not a fabricated light one", () => {
+    expect(loadDecor(dir(), NO_ENV).theme).toBeUndefined();
+  });
+
   it("reads .env from the install root, with the process environment winning", () => {
     const d = dir();
     writeFileSync(join(d, ".env"), 'DATAWRAPPER_API_TOKEN="from-file"\n');
