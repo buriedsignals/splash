@@ -271,3 +271,66 @@ test("a refused render becomes a typed failure, not a throw", async () => {
   if (r.ok) throw new Error("unreachable");
   expect(["engine-declined", "engine-failed"]).toContain(r.code);
 }, 120_000);
+
+// A chosen option can name engine "chart-native" and format "scrolly" — chart-native
+// declares no "scrolly" format (it belongs to skills/scrolly, the shared mechanism that
+// hosts a native engine's track; see lib/core/registry.ts's producerForFormat). Before
+// this fix, produce.ts guarded on `chosen.engine` alone, so this option looked buildable
+// (chart-native IS in LOOP_BUILDABLE_ENGINES) and was handed straight to chart-native,
+// which refuses "scrolly" with its OWN engine-internal message — a different sentence
+// than the one the brain's offer already marked it with (lib/brain/eligibility.ts). The
+// invariant lib/loop/buildable.ts's header states is that the two must be the SAME
+// sentence, so a journalist reads one story.
+test("a chosen scrolly option is refused with the mark's own sentence, never handed to chart-native", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-scrolly-format-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(
+    src,
+    "canton,2015,2024\nGenève,449,583\nVaud,412,531\nAppenzell RI,289,352",
+  );
+  const run: RunManifest = {
+    runId: "t-scrolly-format",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 3,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Health premiums rose in every canton shown",
+          altInsight:
+            "Between 2015 and 2024 the adult premium rose in all three cantons shown; Geneva stays the most expensive.",
+          unit: "Monthly adult premium (CHF)",
+        },
+        proposal: {
+          options: [
+            {
+              id: "line",
+              nativeType: "line",
+              engine: "chart-native",
+              format: "scrolly",
+              why: "a trend over time",
+            },
+          ],
+          excluded: [],
+          chosenId: "line",
+        },
+      },
+    ],
+    events: [],
+  };
+  const result = await produce(run, run.elements[0], runDir);
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.code).toBe("not-implemented");
+  expect(result.message).toContain("scrolly");
+});
