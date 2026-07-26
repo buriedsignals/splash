@@ -30,3 +30,16 @@ test("dw-chart uses ITS OWN render keys, which differ from the KB ids", () => {
   expect(ids).toContain("d3-lines");
   expect(ids).not.toContain("line");
 });
+
+// map-dw's validateMapSpec pushes an unconditional error on its "symbol" branch (DW symbol
+// maps are hover-only, no always-visible labels) — no path returns ok, so map-dw can never
+// actually produce one. The manifest declares "symbol" but marks it deferred, the same shape
+// as chart-native's "sankey" above, so isRenderable tells the truth instead of the registry
+// lying about a type the validator always refuses.
+test("map-dw declares symbol but it is deferred — never actually producible", () => {
+  const symbol = engineTypes("map-dw").find((t) => t.id === "symbol");
+  expect(symbol?.deferred).toBeTruthy();
+  expect(isRenderable("map-dw", "symbol")).toBe(false);
+  expect(isRenderable("map-dw", "choropleth")).toBe(true);
+  expect(isRenderable("map-dw", "locator")).toBe(true);
+});

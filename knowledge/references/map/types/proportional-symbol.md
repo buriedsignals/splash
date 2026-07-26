@@ -4,7 +4,7 @@ engines:
   map-native: symbol
 intent: [spatial, magnitude]
 shape: spatial
-limits: { maxPoints: 30 }
+limits: {}
 formats: [static, interactive, video]
 bestFor:
   - "counts or magnitudes tied to a discrete location — 'how much, and where?' at named places"

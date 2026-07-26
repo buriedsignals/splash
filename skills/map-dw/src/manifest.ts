@@ -14,7 +14,21 @@ registerProducer({
   name: "map-dw",
   // Animated maps are map-native's — map-dw builds only static / interactive.
   formats: ["static", "interactive"],
-  types: MAP_DW_TYPES.map((id) => ({ id })),
+  // MAP_DW_TYPES stays the validation union (validateMapSpec's error string names all three
+  // ids, and that string must stay accurate) — but "symbol" is declared here as `deferred`:
+  // validateMapSpec's symbol branch pushes an unconditional error (map-spec.ts, the symbol
+  // branch — no path returns ok), so map-dw can never actually produce a symbol map. Without
+  // this, isRenderable("map-dw", "symbol") lies to the proposal brain. Route symbol to
+  // map-native instead (see knowledge/references/map/types/proportional-symbol.md).
+  types: MAP_DW_TYPES.map((id) =>
+    id === "symbol"
+      ? {
+          id,
+          deferred:
+            "not producible — DW symbol maps are hover-only; route to map-native",
+        }
+      : { id },
+  ),
   validate: (spec) => {
     const r = validateMapSpec(spec);
     return r.ok ? [] : r.errors;
