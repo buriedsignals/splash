@@ -289,7 +289,7 @@ qu'un troisième registre à la main.
 |---|---|
 | `requestedFormat` hors du canal | `Offer.refusal` posé, `options: []`, aucune exclusion ; le desk affiche la phrase |
 | `requestedFormat` légal, aucune fiche ne le décline | `options: []`, exclusions **par fiche** avec leur raison |
-| offre vide passée à `applyPhrasing` | ne jette pas, ne produit aucun `why` — testé |
+| offre vide passée à `applyPhrasing` | **jette**, comme aujourd'hui (`lib/loop/phrase.ts:57`). Une offre vide n'a rien à rédiger ; le refus est porté par `Offer.refusal` et affiché par le desk, jamais par une phrase de modèle |
 | aucun candidat d'un genre non représenté | repli silencieux sur la règle normale ; l'offre garde sa longueur |
 | ligne scrolly choisie | `produce` refuse **loud**, avec la phrase déjà affichée dans la marque de l'offre |
 | fiche déclarant `scrolly` pour un type que le dispatch ne connaît pas | test de dérive **rouge** au gate |
@@ -318,7 +318,8 @@ qu'un troisième registre à la main.
    déclare sans dispatch échoue, un type dispatché sans fiche échoue.
 8. `propose` / `manifest` — threading de `requestedFormat`, round-trip du champ optionnel,
    compatibilité d'un manifest qui ne le porte pas.
-9. `phrase` — une offre en refus ne casse pas `applyPhrasing`.
+9. `phrase` — une offre en refus est refusée **loud** par `applyPhrasing`, avec le message
+   existant. Le test verrouille que le refus n'emprunte jamais le chemin d'un `why`.
 10. `produce` — une option scrolly est refusée avec la **même phrase** que la marque de l'offre.
 
 **Opt-in, hors gate** : la preuve e2e (§10).
