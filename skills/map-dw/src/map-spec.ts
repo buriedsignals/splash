@@ -172,6 +172,11 @@ export interface LocatorMapSpec {
 
 export type MapSpec = ChoroplethMapSpec | SymbolMapSpec | LocatorMapSpec;
 
+// The canonical map-dw type catalogue — the single home for the three mapType values,
+// read by both validateMapSpec below and the producer manifest's registry declaration.
+export const MAP_DW_TYPES = ["choropleth", "symbol", "locator"] as const;
+export type MapDwType = (typeof MAP_DW_TYPES)[number];
+
 const HEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 function isStop(v: unknown): v is GradientStop {
@@ -350,11 +355,7 @@ export function validateMapSpec(
     return { ok: false, errors: ["spec must be an object"] };
   const s = input as Record<string, unknown>;
 
-  if (
-    s.mapType !== "choropleth" &&
-    s.mapType !== "symbol" &&
-    s.mapType !== "locator"
-  ) {
+  if (!(MAP_DW_TYPES as readonly string[]).includes(s.mapType as string)) {
     return {
       ok: false,
       errors: ['mapType must be "choropleth", "symbol", or "locator"'],

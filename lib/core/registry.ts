@@ -16,9 +16,17 @@ import type { ProduceContext, DeliveredArtifact } from "./contract";
 // producers). This is exactly the fork adapters.ts's isFileBased used to hard-code.
 export type ExecutionModel = "subprocess" | "in-process";
 
+// One renderable type of an engine, in the engine's OWN render-key vocabulary (chart-native
+// says "slope", dw-chart says "d3-range-plot" for the same KB sheet). `deferred` carries the
+// reason a type is declared but not reachable — declaring it is what lets the proposal brain
+// say "not offered, and here is why" instead of pretending the type does not exist.
+export type EngineType = { id: string; deferred?: string };
+
 export interface ProducerManifest {
   name: string; // e.g. "chart-native" — matches AcceptedProposal.producer
   formats: readonly VisualFormat[];
+  /** What this engine can render. Absent/empty ⇒ the engine owns no type of its own. */
+  types?: readonly EngineType[];
   // The refusal this engine wants a caller to see when it is asked for a format it does
   // not declare. Optional: without it the contract composes a generic message. It exists
   // so a pre-dispatch gate does not silently replace wording a journalist may already
@@ -69,4 +77,15 @@ export function getProducer(name: string): ProducerManifest | undefined {
 
 export function allProducers(): ProducerManifest[] {
   return [...REGISTRY.values()];
+}
+
+export function engineTypes(name: string): readonly EngineType[] {
+  return REGISTRY.get(name)?.types ?? [];
+}
+
+// Renderable = declared by that engine AND not deferred. Both halves matter: an undeclared
+// type has no mapper, a deferred one has no guard.
+export function isRenderable(engine: string, typeId: string): boolean {
+  const t = engineTypes(engine).find((e) => e.id === typeId);
+  return t != null && t.deferred == null;
 }

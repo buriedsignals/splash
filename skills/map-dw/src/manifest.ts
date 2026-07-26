@@ -7,13 +7,14 @@
 import { join } from "node:path";
 import { registerProducer } from "../../../lib/core/registry";
 import type { DeliveredArtifact } from "../../../lib/core/contract";
-import { validateMapSpec, type MapSpec } from "./map-spec";
+import { validateMapSpec, MAP_DW_TYPES, type MapSpec } from "./map-spec";
 import { produceMap, type DwMapFormat } from "./produce";
 
 registerProducer({
   name: "map-dw",
   // Animated maps are map-native's — map-dw builds only static / interactive.
   formats: ["static", "interactive"],
+  types: MAP_DW_TYPES.map((id) => ({ id })),
   validate: (spec) => {
     const r = validateMapSpec(spec);
     return r.ok ? [] : r.errors;

@@ -5,6 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { registerProducer } from "../../../lib/core/registry";
 import { mapNativeConfigErrors } from "./validate-config";
+import { MAP_TYPES } from "./map-types";
 
 const skillDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -13,6 +14,7 @@ registerProducer({
   // Single-format CLI vocabulary map-native's produce.mjs accepts (scrolly is the scrolly
   // engine's; it fails hard here too — see adapters.ts header).
   formats: ["static", "interactive", "video"],
+  types: MAP_TYPES.map((id) => ({ id })),
   validate: mapNativeConfigErrors,
   execution: "subprocess",
   subprocess: {

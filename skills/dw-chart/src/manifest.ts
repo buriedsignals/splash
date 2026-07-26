@@ -7,13 +7,14 @@
 import { join } from "node:path";
 import { registerProducer } from "../../../lib/core/registry";
 import type { DeliveredArtifact } from "../../../lib/core/contract";
-import { validateChartSpec, type ChartSpec } from "./chart-spec";
+import { validateChartSpec, CHART_TYPES, type ChartSpec } from "./chart-spec";
 import { produceChart, type DwChartFormat } from "./produce";
 
 registerProducer({
   name: "dw-chart",
   // dw-chart has no video/scrolly renderer (those require chart-native's D3 core).
   formats: ["static", "interactive"],
+  types: CHART_TYPES.map((id) => ({ id })),
   validate: (spec) => {
     const r = validateChartSpec(spec);
     return r.ok ? [] : r.errors;

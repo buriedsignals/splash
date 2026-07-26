@@ -21,6 +21,7 @@ registerProducer({
   name: "image-native",
   // The engine's grid is static/video/scrolly (never interactive); v1 CLI ships scrolly.
   formats: ["scrolly"],
+  types: [{ id: "image-scrolly" }],
   unsupportedFormatMessage: IMAGE_NATIVE_V1_FORMAT_MESSAGE,
   validate: (spec) =>
     checkImageConformance(spec as ImageStory, { format: "scrolly" }),

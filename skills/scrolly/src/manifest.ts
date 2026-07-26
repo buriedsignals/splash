@@ -45,6 +45,8 @@ function scrollySpecErrors(spec: unknown): string[] {
 registerProducer({
   name: "scrolly",
   formats: ["scrolly"],
+  // No `types`: scrolly is the shared MECHANISM, not a type owner — the scrolly sub-format
+  // belongs to the host engine and inherits its furniture (see CLAUDE.md, engine taxonomy).
   validate: scrollySpecErrors,
   execution: "subprocess",
   subprocess: {
