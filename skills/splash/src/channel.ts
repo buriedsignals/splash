@@ -7,79 +7,28 @@
 import type { Channel, VisualFormat } from "../../../lib/core/vocabulary";
 export type { Channel, VisualFormat };
 
-// The media aspect a channel targets. "responsive" is used for the interactive
-// sub-format, which fills its host rather than a fixed pixel box.
-export type ChannelAspect = "portrait" | "square" | "landscape" | "responsive";
+import {
+  CHANNEL_POLICY,
+  ALL_CHANNELS,
+  type ChannelAspect,
+  type ChannelSize,
+  type ChannelEntry,
+} from "../../../lib/core/channel-policy";
 
-export interface ChannelSize {
-  width: number;
-  height: number;
-}
+export {
+  ALL_CHANNELS,
+  allowedFormats,
+  isFormatAllowed,
+  assertFormatAllowed,
+} from "../../../lib/core/channel-policy";
+export type {
+  ChannelAspect,
+  ChannelSize,
+  ChannelEntry,
+} from "../../../lib/core/channel-policy";
 
-export interface ChannelEntry {
-  aspect: ChannelAspect; // media aspect for image/video
-  mediaSize: ChannelSize; // portrait 1080x1920 · square 1080x1080 · landscape 1200x675
-  allowedFormats: VisualFormat[];
-  interactiveDefault: boolean; // true ONLY for article-web
-  interactiveAspect: ChannelAspect; // "responsive"
-}
-
-export const CHANNELS: Record<Channel, ChannelEntry> = {
-  "social-vertical": {
-    aspect: "portrait",
-    mediaSize: { width: 1080, height: 1920 },
-    allowedFormats: ["static", "video"],
-    interactiveDefault: false,
-    interactiveAspect: "responsive",
-  },
-  "social-feed": {
-    aspect: "square",
-    mediaSize: { width: 1080, height: 1080 },
-    allowedFormats: ["static", "video"],
-    interactiveDefault: false,
-    interactiveAspect: "responsive",
-  },
-  "article-web": {
-    aspect: "landscape",
-    mediaSize: { width: 1200, height: 675 },
-    allowedFormats: ["static", "interactive", "video", "scrolly"],
-    interactiveDefault: true,
-    interactiveAspect: "responsive",
-  },
-};
-
-// Stable order: vertical → feed → web (matches CADRAGE Q3's presentation order).
-export const ALL_CHANNELS: Channel[] = [
-  "social-vertical",
-  "social-feed",
-  "article-web",
-];
-
-export function allowedFormats(channel: Channel): VisualFormat[] {
-  return CHANNELS[channel].allowedFormats;
-}
-
-export function isFormatAllowed(
-  channel: Channel,
-  format: VisualFormat,
-): boolean {
-  return CHANNELS[channel].allowedFormats.includes(format);
-}
-
-// The PROPOSITION gate (splash/SKILL.md §Gate 2) pins exactly ONE VisualFormat on the
-// accepted spec — not the whole allowed set. This guard is the produce-time check that
-// the pinned format is actually a member of its channel's allowed set, throwing (rather
-// than returning a boolean) so a bad pin fails hard at produce, mirroring
-// assertRenderedSize below.
-export function assertFormatAllowed(
-  channel: Channel,
-  format: VisualFormat,
-): void {
-  if (!isFormatAllowed(channel, format))
-    throw new Error(
-      `format "${format}" not allowed for channel "${channel}" (allowed: ${allowedFormats(channel).join(", ")})`,
-    );
-}
+// Historical name kept for this file's ~46 importers: the table is CHANNEL_POLICY upstream.
+export const CHANNELS: Record<Channel, ChannelEntry> = CHANNEL_POLICY;
 
 export function mediaSize(channel: Channel): ChannelSize {
   return CHANNELS[channel].mediaSize;
