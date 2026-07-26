@@ -68,6 +68,62 @@ test("produce renders a real static PNG through the chart-native seam", async ()
   expect(after.artifact!.sha256).toMatch(/^[0-9a-f]{64}$/);
 }, 60000);
 
+// The brain offers across engines, and today produce() only knows how to build through
+// chart-native — wiring map-native / dw-chart / map-dw into this seam is a separate tranche.
+// Before this guard, a chosen option naming another engine was silently rendered as if it
+// were a chart-native spec (the option's nativeType handed to chart-native regardless of
+// what engine it actually belongs to) — a WRONG artifact, not a missing one. A loud, typed
+// refusal is the correct failure mode until that wiring exists.
+test("produce refuses a chosen option whose engine is not chart-native, instead of rendering it wrong", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-wrong-engine-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,value\nGenève,449\nVaud,412");
+  const run: RunManifest = {
+    runId: "wrong-engine",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "value"],
+        numericColumns: ["value"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Geneva pays more",
+          altInsight: "Geneva's premium is higher than Vaud's.",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            {
+              id: "choropleth",
+              nativeType: "choropleth",
+              engine: "map-native",
+              format: "static",
+              why: "a map form",
+            },
+          ],
+          excluded: [],
+          chosenId: "choropleth",
+        },
+      },
+    ],
+    events: [],
+  };
+  const result = await produce(run, run.elements[0], runDir);
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.message).toContain("map-native");
+  expect(result.message).toContain("static");
+});
+
 // A run whose chosen option's nativeType chart-native does not map. specToNativeConfig
 // throws UnsupportedNativeType, produce-from-spec.mjs falls back with a distinct non-zero
 // exit code — deterministic real subprocess rejection, not a stub.

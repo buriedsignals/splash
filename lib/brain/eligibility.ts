@@ -156,11 +156,14 @@ function limitFailure(sheet: TypeSheet, f: Facts): string | null {
 
 // How close a form runs to its own readability cap. A slope carrying 11 of its 12 lines is
 // legal and cramped; one carrying 4 is legal and comfortable, and that difference is worth an
-// ordering nudge (never a legality one). No cap declared ⇒ 0: an unconstrained form must not
-// win a fit it never claimed.
+// ordering nudge (never a legality one). No cap declared ⇒ NEUTRAL (0.5), not best: `fill`
+// means "how cramped, lower is better" on [0,1] — 0 would claim a roominess the sheet never
+// earned, letting every uncapped sheet automatically out-rank every capped one (including the
+// FT-canonical slope/dumbbell for two-point data) regardless of how comfortably either actually
+// fits. 0.5 claims nothing: it sits below a genuinely roomy capped form and above a cramped one.
 function fillRatio(sheet: TypeSheet, f: Facts): number {
   const cap = sheet.limits.maxSeries ?? sheet.limits.maxCategories;
-  if (cap == null || cap <= 0) return 0;
+  if (cap == null || cap <= 0) return 0.5;
   const used = sheet.limits.maxSeries != null ? f.series : f.rows;
   return Math.min(1, used / cap);
 }

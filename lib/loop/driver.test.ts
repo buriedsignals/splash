@@ -84,27 +84,24 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   expect(run.elements[0].proposal!.options.length).toBeGreaterThan(0);
   expect(nextActions(run)).toEqual(["choose-form"]);
 
-  // human turn: choose a form — from the brain's real offer, not a hard-coded id, since the
-  // offer itself now comes from the brain rather than a fixed slope/dumbbell rule. "bump" is
-  // skipped deliberately: it has no declared limits.maxSeries/maxCategories, so it wins the
-  // ranking's fill tie-break on almost any dataset, but chart-native's own WCAG contrast snap
-  // gate currently refuses to render it for this fixture (label-on-fill contrast) — a
-  // pre-existing chart-native defect, unrelated to and out of scope for this wiring task.
-  const chosenOption =
-    run.elements[0].proposal!.options.find((o) => o.id !== "bump") ??
-    run.elements[0].proposal!.options[0]!;
+  // human turn: choose a form — the brain's own top-ranked offer, not a hard-coded id, since
+  // the offer itself now comes from the brain rather than a fixed slope/dumbbell rule. This is
+  // the property the loop promises: whatever the brain offers FIRST, production can build.
+  const firstOfferedId = run.elements[0].proposal!.options[0]!.id;
   run = {
     ...run,
     elements: [
       {
         ...run.elements[0],
-        proposal: { ...run.elements[0].proposal!, chosenId: chosenOption.id },
+        proposal: { ...run.elements[0].proposal!, chosenId: firstOfferedId },
       },
     ],
   };
   expect(nextActions(run)).toEqual(["produce"]);
 
   run = await advance(run, runDir, NEUTRAL_DECOR); // produce
+  expect(run.events).toEqual([]); // no bounded produce failure
+  expect(run.elements[0].artifact).toBeDefined(); // the top offer actually rendered
   expect(stalenessOf(run, run.elements[0])).toBe(false);
   expect(nextActions(run)).toEqual(["show"]);
 
@@ -156,10 +153,6 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
     ],
   };
   run = await advance(run, runDir, NEUTRAL_DECOR); // propose
-  // "bump" is skipped deliberately — see the full-loop test above for why.
-  const handoffOption =
-    run.elements[0].proposal!.options.find((o) => o.id !== "bump") ??
-    run.elements[0].proposal!.options[0]!;
   run = {
     ...run,
     elements: [
@@ -167,12 +160,13 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
         ...run.elements[0],
         proposal: {
           ...run.elements[0].proposal!,
-          chosenId: handoffOption.id,
+          chosenId: run.elements[0].proposal!.options[0]!.id,
         },
       },
     ],
   };
   run = await advance(run, runDir, NEUTRAL_DECOR); // produce
+  expect(run.elements[0].artifact).toBeDefined(); // the top offer actually rendered
   expect(stalenessOf(run, run.elements[0])).toBe(false);
 
   writeManifest(join(runDir, "run.json"), run);
@@ -397,9 +391,10 @@ test("advance() builds a proposal annotated against a decor, and never throws do
   const after = await advance(run, runDir, NEUTRAL_DECOR);
 
   const options = after.elements[0].proposal!.options;
-  // Which forms the brain picks is its own business (lib/brain/rank.test.ts covers that) —
-  // this test only cares that advance() threads a real offer through, never an empty or
-  // thrown one.
+  // Which forms the brain picks and ranks first is its own business (lib/brain/rank.test.ts
+  // covers the ordering) — this test cares that advance() threads a real, USABLE offer
+  // through: not empty, never a throw, and its top-ranked option is something production can
+  // actually build (the property the driver exists to deliver on).
   expect(options.length).toBeGreaterThan(0);
   // Annotated against a real decor, or unannotated under the neutral fallback — never a
   // dropped option, and never a throw. The status itself is the machine's business.
@@ -408,7 +403,20 @@ test("advance() builds a proposal annotated against a decor, and never throws do
       expect(["ready", "missing", "unverified", "disabled"]).toContain(
         o.readiness.status,
       );
-});
+
+  const chosen = {
+    ...after,
+    elements: [
+      {
+        ...after.elements[0],
+        proposal: { ...after.elements[0].proposal!, chosenId: options[0]!.id },
+      },
+    ],
+  };
+  const produced = await advance(chosen, runDir, NEUTRAL_DECOR);
+  expect(produced.events).toEqual([]); // no bounded produce failure
+  expect(produced.elements[0].artifact).toBeDefined();
+}, 90000);
 
 test("the element-driven branches never dereference a missing element", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-no-elements-2-"));

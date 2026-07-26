@@ -39,6 +39,17 @@ export async function produce(
   // must render within the same one.
   const channel = run.channel;
 
+  // The brain offers across engines (chart-native, map-native, dw-chart, map-dw…), but this
+  // verb only knows how to build through chart-native — wiring the rest is a separate tranche.
+  // Without this guard a chosen option naming another engine was handed to chart-native
+  // anyway (its nativeType meaningless there), producing a WRONG artifact silently. Refusing
+  // loud, naming what was chosen, is what a journalist can actually act on.
+  if (chosen.engine && chosen.engine !== "chart-native")
+    return fail(
+      "not-implemented",
+      `produce: "${chosen.id}" is a ${chosen.engine} form (${chosen.format ?? "static"}) — only chart-native is wired to produce in this tranche`,
+    );
+
   // The frozen input is read from disk, and a run dir can be incomplete for reasons that
   // have nothing to do with the request being malformed (the file was moved, the copy that
   // travelled to another machine dropped it, the disk refused the read). An unguarded read
