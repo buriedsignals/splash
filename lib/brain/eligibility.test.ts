@@ -1,7 +1,7 @@
 // lib/brain/eligibility.test.ts
 import { test, expect } from "bun:test";
 import { deriveFacts } from "./facts";
-import { eligible } from "./eligibility";
+import { eligible, buildabilityMark } from "./eligibility";
 import type { TypeSheet } from "./typology";
 import type { VisualFormat } from "../core/vocabulary";
 // renderableSheets() only sees a type once its engine has self-registered into
@@ -302,6 +302,29 @@ test("a producer that genuinely lacks a format still loses it — map-dw has no 
   );
   expect(legal).toEqual([]);
   expect(excluded.length).toBe(1);
+});
+
+// Direct seam on the buildability mark: inside a full eligible() call, this mark is masked
+// for every scrolly candidate by the article-branch mark (same severity, pushed first — see
+// the comment at eligibility.ts:207-211), so no black-box call through eligible() can tell
+// whether this mark was resolved on the sheet's engine or on the effective producer. Testing
+// the exported function directly is the only level at which a revert of the effective-producer
+// fix is observable.
+test("buildabilityMark resolves the EFFECTIVE producer, not the sheet's engine — a chart-native form in the scrolly format is a scrolly build", () => {
+  const mark = buildabilityMark("chart-native", "scrolly");
+  expect(mark).not.toBeNull();
+  expect(mark!.status).toBe("missing");
+  expect(mark!.reason).toContain("scrolly");
+});
+
+test("buildabilityMark is null when the loop can already build through the producer", () => {
+  expect(buildabilityMark("chart-native", "video")).toBeNull();
+});
+
+test("buildabilityMark names the actual unbuildable engine when there is no format redirect", () => {
+  const mark = buildabilityMark("map-native", "static");
+  expect(mark).not.toBeNull();
+  expect(mark!.reason).toContain("map-native");
 });
 
 test("a mark can never carry an empty reason, even for a capability disabled with no reason (readiness.ts:54)", () => {

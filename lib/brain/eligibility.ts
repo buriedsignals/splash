@@ -203,6 +203,21 @@ function markReason(r: {
   return `${r.label} is not turned on for this newsroom`;
 }
 
+/** The mark a form earns when nothing in the loop can build it. Resolved on the EFFECTIVE
+ *  producer, not the sheet's engine: skills/scrolly hosts a native engine's track, so a
+ *  chart-native form in the scrolly format is not a chart-native build. Exported because the
+ *  mark it returns is masked inside a full `eligible()` call — the article-branch mark shares
+ *  its severity and is pushed first — so this is the only level at which the rule is
+ *  observable. */
+export function buildabilityMark(
+  engine: string,
+  format: VisualFormat,
+): { status: CapabilityReadiness["status"]; reason: string } | null {
+  const builder = producerForFormat(engine, format);
+  if (isLoopBuildable(builder)) return null;
+  return { status: "missing", reason: unbuildableEngineReason(builder) };
+}
+
 function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   const requires = [
     c.engine,
@@ -232,12 +247,8 @@ function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   // the journalist decides), and the day produce wires the engine the mark disappears with no
   // change here. NOT added to `requires`: that list is the decor's CAPACITÉ axis (ids a
   // newsroom can turn on), and no newsroom setting can make this true.
-  const builder = producerForFormat(c.engine, c.format);
-  if (!isLoopBuildable(builder))
-    marks.push({
-      status: "missing",
-      reason: unbuildableEngineReason(builder),
-    });
+  const engineMark = buildabilityMark(c.engine, c.format);
+  if (engineMark) marks.push(engineMark);
   for (const r of input.readiness ?? [])
     if (requires.includes(r.id) && r.status !== "ready")
       marks.push({ status: r.status, reason: markReason(r) });
