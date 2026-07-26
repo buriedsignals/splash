@@ -163,8 +163,9 @@ reste intact et sert de grounding. Aucun drift savoir↔règle possible : il n'y
 
 ```yaml
 ---
-id: slope                                 # clé de RENDU — doit exister dans un catalogue moteur
-engines: [chart-native]                   # vérifié contre le registre
+id: slope                                 # id canonique de la fiche (= son nom de fichier)
+engines:                                  # moteur → SA clé de rendu ; vérifié contre le registre
+  chart-native: slope
 intent: [change-over-time, ranking]       # vocabulaire fermé (§4.2)
 shape: wide                               # miroir de NativeTypeEntry.shape
 limits: { points: 2, maxSeries: 12 }      # mesurables sur le DataProfile
@@ -190,7 +191,9 @@ notFor:
 
 **Trois tests de dérive**, portés sur les trois catalogues moteurs :
 
-1. tout `id` de fiche existe dans le catalogue d'au moins un moteur enregistré ;
+1. toute clé de rendu déclarée dans `engines` existe dans le catalogue du moteur nommé —
+   les ids **divergent** d'un moteur à l'autre (`slope` côté chart-native, `d3-range-plot`
+   côté dw-chart), c'est pourquoi `engines` est une table et non une liste ;
 2. tout type **atteignable** (non déféré) d'un moteur enregistré **a sa fiche** — extension du
    test de complétude qui existe déjà côté chart-native (`tests/completeness.test.ts`, où le
    backfill `LEGACY_KB_FAMILY_BACKFILL` doit **rétrécir, jamais grandir**) ;
