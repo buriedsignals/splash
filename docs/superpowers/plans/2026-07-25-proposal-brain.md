@@ -1599,6 +1599,10 @@ export type Candidate = {
   sheet: TypeSheet;
   readiness?: { status: CapabilityReadiness["status"]; reason: string };
   requires?: string[];
+  /** How full this form is against its own cap, 0..1 (0 when the sheet declares no cap).
+   *  Computed here because this is where both the facts and the limits are in hand; the
+   *  ranking consumes the number without needing either. */
+  fill: number;
 };
 
 export type Excluded = { id: string; reason: string };
@@ -1654,8 +1658,11 @@ export function eligible(
       );
       continue;
     }
+    const fill = fillRatio(sheet, input.facts);
     for (const format of formats)
-      out.push(withMarks({ id: sheet.id, engine, key, format, sheet }, input));
+      out.push(
+        withMarks({ id: sheet.id, engine, key, format, sheet, fill }, input),
+      );
   }
   return { eligible: out, excluded };
 }
@@ -1677,6 +1684,17 @@ function limitFailure(sheet: TypeSheet, f: Facts): string | null {
   if (l.minRows != null && f.rows < l.minRows)
     return `this form needs at least ${l.minRows} rows to read as one, and the data has ${f.rows}`;
   return null;
+}
+
+// How close a form runs to its own readability cap. A slope carrying 11 of its 12 lines is
+// legal and cramped; one carrying 4 is legal and comfortable, and that difference is worth an
+// ordering nudge (never a legality one). No cap declared ⇒ 0: an unconstrained form must not
+// win a fit it never claimed.
+function fillRatio(sheet: TypeSheet, f: Facts): number {
+  const cap = sheet.limits.maxSeries ?? sheet.limits.maxCategories;
+  if (cap == null || cap <= 0) return 0;
+  const used = sheet.limits.maxSeries != null ? f.series : f.rows;
+  return Math.min(1, used / cap);
 }
 
 // CAPACITÉ and the article branch MARK, they never remove: the worst status among what a form
@@ -1805,6 +1823,16 @@ test("a marked form ranks below an equally-fitting ready one", () => {
   if (firstMarked !== -1) expect(firstMarked).toBeGreaterThan(lastReady - 1);
 });
 
+test("between two forms that serve the intent equally, the roomier one leads", () => {
+  const { eligible: legal } = eligible({ ...BASE });
+  const ordered = rank(legal, ["ranking"]);
+  const scores = ordered
+    .filter((c) => c.sheet.intent.includes("ranking"))
+    .map((c) => c.fill);
+  // fill is a 0..1 ratio, and the ordering is non-decreasing in it among equal-intent peers
+  expect(scores).toEqual([...scores].sort((a, b) => a - b));
+});
+
 test("ranking never mutates its input", () => {
   const { eligible: legal } = eligible({ ...BASE });
   const before = legal.map((c) => c.id);
@@ -1852,17 +1880,12 @@ function score(c: Candidate, intents: Intent[]): number {
   // A form that serves the stated intent comes first; among those, one that serves it with
   // fewer other purposes is the more specific answer.
   const intentScore = matches > 0 ? -matches : 1;
-  const headroom = fitHeadroom(c);
   const marked = c.readiness ? MARK_PENALTY : 0;
-  return intentScore * 4 + headroom + marked + (FORMAT_ORDER[c.format] ?? 4) * 0.1;
-}
-
-// A form used well within its limits reads better than one at its edge: 0 when the sheet sets
-// no limit at all, so an unconstrained form never wins on a fit it does not have.
-function fitHeadroom(c: Candidate): number {
-  const cap = c.sheet.limits.maxSeries ?? c.sheet.limits.maxCategories;
-  if (cap == null) return 0;
-  return 1;
+  // c.fill (0..1, computed in eligibility) nudges a form that runs close to its own
+  // readability cap below a roomier peer — never enough to outweigh serving the intent.
+  return (
+    intentScore * 4 + c.fill + marked + (FORMAT_ORDER[c.format] ?? 4) * 0.1
+  );
 }
 ```
 
@@ -2853,7 +2876,7 @@ git commit -m "feat(brain): prove the offer end to end, and leave one source of 
 
 **Spec coverage.** §3 architecture → Tasks 3-4, 10-13 (one file per unit) · §3 registry-sourced catalogue → Task 2 · §4.1 legality, four axes → Task 10 (data shape, channel, capability, style) with the channel hoist in Task 1 · §4.2 soft ranking + the invariant → Task 11, plus `rank-intent.ts` in Task 15 · §5 frontmatter contract → Tasks 3-8 · §5 three drift tests → Task 9 · §6 manifest contract (FormOption, excluded, route, channel, v4 + migration) → Task 14 · §7 model seam + guard → Task 13 · §8 prose/data routing → Task 10 (`ARTICLE_BRANCH_ENGINES` marking) + Task 14 (`route`) · §9 retiring suggest-chart → Task 16 · §10 off-ramps → Task 10 (reasons), Task 4 (fail-hard load), Task 12 (empty offer that explains itself) · §11 tests → each task's test block · §12 success criteria → Task 16 acceptance.
 
-**Known gaps, named rather than hidden.** (1) The STYLE axis needed a field that did not exist: `Decor` reads the `BrandProfile` but exposed only a delivery view, so Task 15 Step 3 adds `Decor.theme` with its own failing test rather than reaching through a path that was never there. (2) Task 8's sweep depends on which types each catalogue actually declares; the step includes the exact command that prints the truth before any sheet is written. (3) `fitHeadroom` in Task 11 is deliberately coarse (present/absent limit) — the test that matters is the invariant, not the tie-break.
+**Known gaps, named rather than hidden.** (1) The STYLE axis needed a field that did not exist: `Decor` reads the `BrandProfile` but exposed only a delivery view, so Task 15 Step 3 adds `Decor.theme` with its own failing test rather than reaching through a path that was never there. (2) Task 8's sweep depends on which types each catalogue actually declares; the step includes the exact command that prints the truth before any sheet is written. (3) The fit nudge is a plain 0..1 ratio computed once in eligibility (`Candidate.fill`) and consumed by the ranking — deliberately simple. The test that matters in Task 11 is the invariant, not the tie-break.
 
 ## Execution Handoff
 
