@@ -119,13 +119,25 @@ export async function produce(
   };
 
   const result = await render({
-    // Dispatch follows the CHOSEN engine, never a second hard-coded name: the guard above
-    // already refused anything outside LOOP_BUILDABLE_ENGINES, so this can only be one of
-    // them, and the day that list grows the dispatch grows with it. (The spec assembled just
-    // above is still chart-native-shaped — that is the promise buildable.ts's header records
-    // for adding an engine; a premature addition fails at the engine's own validator rather
-    // than rendering the wrong thing silently.) An option with no engine at all is a pre-brain
-    // manifest, and the default path has always been chart-native.
+    // Dispatch follows the CHOSEN engine (chosen.engine), never the RESOLVED builder — the
+    // guard above checks `builder` (resolveBuilder: the EFFECTIVE producer, which redirects
+    // `scrolly` to skills/scrolly regardless of chosen.engine), but this dispatch still reads
+    // the raw `chosen.engine`. That is safe ONLY by the narrow coincidence that today
+    // LOOP_BUILDABLE_ENGINES is exactly ["chart-native"] and the sole redirecting format is
+    // `scrolly`, which is unbuildable — so a candidate that clears the guard above always has
+    // builder === chosen.engine already; the two names never actually diverge in a case that
+    // reaches this line. (The spec assembled just above is still chart-native-shaped — that is
+    // the promise buildable.ts's header records for adding an engine; a premature addition
+    // fails at the engine's own validator rather than rendering the wrong thing silently.) An
+    // option with no engine at all is a pre-brain manifest, and the default path has always
+    // been chart-native.
+    //
+    // THIS BREAKS the day `scrolly` enters LOOP_BUILDABLE_ENGINES: a chart-native option in
+    // the scrolly format would then clear the guard above (builder = "scrolly", buildable),
+    // but this line would still dispatch `engine: "chart-native"` — render.ts:58-69 reads
+    // chart-native's OWN manifest, which does not declare `scrolly`, and refuses the build as
+    // "unsupported-format" for a form the guard just promised was buildable. Fix at that
+    // point: dispatch on `builder`, not `chosen.engine`.
     engine: chosen.engine ?? LOOP_BUILDABLE_ENGINES[0]!,
     spec: nativeSpec,
     format,
