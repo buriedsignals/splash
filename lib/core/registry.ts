@@ -79,6 +79,28 @@ export function allProducers(): ProducerManifest[] {
   return [...REGISTRY.values()];
 }
 
+// The `scrolly` format belongs to no engine. skills/scrolly HOSTS its host engine's track,
+// keeping that engine's own render key — the taxonomy the project already locked ("scrolly is
+// the shared MECHANISM, not a peer engine; the format belongs to the host and inherits its
+// furniture"). Both native produce scripts say the same thing at runtime by refusing the
+// format and NAMING this producer (skills/chart-native/scripts/produce.mjs:400,
+// skills/map-native/scripts/produce.mjs:467). This is that rule, machine-readable, so the
+// proposal brain stops silently dropping a format it can legitimately offer.
+const FORMAT_HOST: Partial<Record<VisualFormat, string>> = {
+  scrolly: "scrolly",
+};
+
+/** Which producer actually builds `format` for `engine`. */
+export function producerForFormat(
+  engine: string,
+  format: VisualFormat,
+): string {
+  // An engine that declares the format builds it itself — image-native owns image-scrolly and
+  // must not be handed to the scrolly producer, which has no type of its own.
+  if (getProducer(engine)?.formats.includes(format)) return engine;
+  return FORMAT_HOST[format] ?? engine;
+}
+
 export function engineTypes(name: string): readonly EngineType[] {
   return REGISTRY.get(name)?.types ?? [];
 }

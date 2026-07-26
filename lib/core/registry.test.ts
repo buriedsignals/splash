@@ -3,8 +3,10 @@ import {
   registerProducer,
   getProducer,
   allProducers,
+  producerForFormat,
   type ProducerManifest,
 } from "./registry";
+import "../loop/engines"; // self-registers every engine manifest
 
 describe("producer registry", () => {
   it("registers and retrieves a manifest with no other edits", () => {
@@ -113,4 +115,19 @@ describe("producer registry", () => {
     expect(m.subprocess?.skillDir).toBe("/skills/new-native-engine");
     expect(m.subprocess?.threadsChannel).toBe(true);
   });
+});
+
+it("scrolly is built by the scrolly producer hosting the engine's track", () => {
+  expect(producerForFormat("chart-native", "scrolly")).toBe("scrolly");
+  expect(producerForFormat("map-native", "scrolly")).toBe("scrolly");
+});
+
+it("an engine that declares the format builds it itself — image-native is not redirected", () => {
+  expect(producerForFormat("image-native", "scrolly")).toBe("image-native");
+});
+
+it("every other pairing is the identity", () => {
+  expect(producerForFormat("chart-native", "video")).toBe("chart-native");
+  expect(producerForFormat("map-dw", "static")).toBe("map-dw");
+  expect(producerForFormat("unknown-engine", "static")).toBe("unknown-engine");
 });
