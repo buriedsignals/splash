@@ -10,6 +10,7 @@ import type { VisualFormat } from "../core/vocabulary";
 // what makes the registry non-empty.
 import "../loop/engines";
 import { isLoopBuildable } from "../loop/buildable";
+import { bgIsDark } from "../core/theme";
 
 const TWO_POINTS = deriveFacts({
   columns: ["canton", "2019", "2024"],
@@ -185,6 +186,28 @@ test('themeBg "light" does not exclude Datawrapper', () => {
 
 test("an unparseable themeBg throws rather than silently reading as light", () => {
   expect(() => eligible({ ...BASE, themeBg: "midnight" })).toThrow();
+});
+
+// "Is this ground dark" had TWO answers: this file's own luminance < 0.5, and lib/core/theme's
+// bgIsDark (< 0.4), the resolver every renderer already routes through. On the band between
+// them a newsroom lost both Datawrapper engines on a false premise — and because a form offered
+// through another engine is deduped out of `excluded`, the loss never even showed up as a
+// discard. One predicate now, so the brain and the renderer cannot disagree about one ground.
+test("the dark-ground decision agrees with the renderer's own predicate, at every ground", () => {
+  for (const bg of [
+    "#B4B4B4",
+    "#AAAAAA",
+    "#FFFFFF",
+    "#18181B",
+    "#12233A",
+    "#717171",
+    "dark",
+    "light",
+  ]) {
+    const { eligible: ok } = eligible({ ...BASE, themeBg: bg });
+    const offersDw = ok.some((c) => c.engine === "dw-chart");
+    expect({ bg, offersDw }).toEqual({ bg, offersDw: !bgIsDark(bg) });
+  }
 });
 
 // The mark is about whether the branch EXISTS in this build, never about what the run asked

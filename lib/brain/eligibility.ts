@@ -5,6 +5,7 @@
 import type { Channel, VisualFormat } from "../core/vocabulary";
 import { isFormatAllowed } from "../core/channel-policy";
 import { getProducer } from "../core/registry";
+import { bgIsDark } from "../core/theme";
 import type { CapabilityReadiness } from "../newsroom/readiness";
 // The ONE list of engines production can build through — the same module produce.ts guards
 // with, so a form this file offers unmarked is a form produce.ts accepts (C1).
@@ -248,20 +249,24 @@ function withMarks(c: Candidate, input: EligibilityInput): Candidate {
 // through to isDark's dead-end regex and read as light, offering Datawrapper on a background
 // it cannot actually render on — exactly the physically-impossible case this check exists to
 // catch, just reached via a malformed value instead of a real dark colour.
+//
+// Validation is this file's job; the DECISION is not. "Is this ground dark" is answered for the
+// whole codebase by lib/core/theme's bgIsDark — the resolver every renderer routes through when
+// it picks a basemap or derives furniture. This function once carried its own luminance test at
+// a different threshold (< 0.5 against bgIsDark's < 0.4), so on the band between them (#B4B4B4,
+// #AAAAAA…) the brain called a ground dark and dropped both Datawrapper engines while the
+// renderer treated the same ground as light: a newsroom on a light-grey house ground silently
+// lost dw-chart/map-dw on a false premise. Failing loud and delegating are not in conflict —
+// the three accepted FORMS are still asserted here, and only the luminance call is delegated.
 function isDark(themeBg?: string): boolean {
   if (!themeBg) return false;
   const t = themeBg.trim();
-  if (t === "dark") return true;
-  if (t === "light") return false;
-  const m = /^#?([0-9a-f]{6})$/i.exec(t);
-  if (!m)
+  // A bare 6-hex (no "#") has always been accepted here; normalise it so the shared resolver,
+  // which requires the "#", sees the same colour rather than silently reading it as light.
+  const hex = /^#?([0-9a-f]{6})$/i.exec(t);
+  if (t !== "dark" && t !== "light" && !hex)
     throw new Error(
       `themeBg must be "dark", "light", or a #rrggbb hex colour — got ${JSON.stringify(themeBg)}`,
     );
-  const n = parseInt(m[1], 16);
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.5;
+  return bgIsDark(hex ? `#${hex[1]}` : t);
 }
