@@ -92,42 +92,60 @@ test("a marked form ranks below an equally-fitting ready one", () => {
     ],
   });
   const ordered = rank(legal, ["magnitude"]);
-  const firstMarked = ordered.findIndex((c) => c.readiness);
-  const lastReady = ordered.map((c) => !c.readiness).lastIndexOf(true);
+  // "equally-fitting" means the same intent tier: readiness only orders WITHIN a match count
+  // (see the property test below), it does not compare across match counts — a marked form
+  // that also matches "magnitude" can rank ahead of a ready form that does not, by design, so
+  // this check is scoped to the forms that actually fit magnitude.
+  const fitting = ordered.filter((c) => c.sheet.intent.includes("magnitude"));
+  const firstMarked = fitting.findIndex((c) => c.readiness);
+  const lastReady = fitting.map((c) => !c.readiness).lastIndexOf(true);
   expect(firstMarked).toBeGreaterThan(lastReady - 1); // unconditional: this fixture always marks something
 });
 
-test("a marked form that serves the intent twice still outranks a ready form that serves it not at all", () => {
-  // Pins the graded trade-off: readiness is a penalty WITHIN the intent tier, not a tier of
-  // its own above it — a capability check timing out must not bury the form that best serves
-  // the journalist's angle (spec §3.4: marked, never silently removed).
-  const marked = fakeCandidate("marked-two-match", ["spatial", "flow"], {
-    readiness: { status: "missing", reason: "capability check failed" },
+test("intent match count dominates readiness completely; readiness only orders equal match counts", () => {
+  // One scenario, six candidates, exercising the full rule at once rather than isolated
+  // fixtures: a single-match marked form must never fall behind a no-match ready one (at ANY
+  // severity, including the mildest — missing, the worst — since a still-worse case cannot
+  // fail if the mildest already doesn't); a higher match count wins outright over a lower one
+  // regardless of readiness; and within one match count, readiness orders by eligibility.ts's
+  // SEVERITY — ready, then unverified (could not be REACHED, may well work), then disabled
+  // (the newsroom deliberately did not turn it on), then missing (cannot be built right now).
+  const noMatchReady = fakeCandidate("no-match-ready", ["magnitude"]);
+  const oneMatchReady = fakeCandidate("one-match-ready", ["spatial"]);
+  const oneMatchUnverified = fakeCandidate(
+    "one-match-unverified",
+    ["spatial"],
+    {
+      readiness: { status: "unverified", reason: "could not reach provider" },
+    },
+  );
+  const oneMatchDisabled = fakeCandidate("one-match-disabled", ["spatial"], {
+    readiness: { status: "disabled", reason: "" },
   });
-  const readyNoMatch = fakeCandidate("ready-no-match", ["magnitude"]);
-  const ordered = rank([readyNoMatch, marked], ["spatial", "flow"]);
-  expect(ordered.map((c) => c.id)).toEqual([
-    "marked-two-match",
-    "ready-no-match",
-  ]);
-});
-
-test("missing is penalised more than unverified, and both rank below ready", () => {
-  // readiness.ts: "unverified" only means the provider could not be REACHED and may well
-  // work; "missing" is the one status that means the form cannot be built now. A binary
-  // marked/unmarked penalty would tie these two — graded by SEVERITY, it must not.
-  const missing = fakeCandidate("missing-form", ["ranking"], {
+  const oneMatchMissing = fakeCandidate("one-match-missing", ["spatial"], {
     readiness: { status: "missing", reason: "no credential" },
   });
-  const unverified = fakeCandidate("unverified-form", ["ranking"], {
-    readiness: { status: "unverified", reason: "could not reach provider" },
-  });
-  const ready = fakeCandidate("ready-form", ["ranking"]);
-  const ordered = rank([missing, unverified, ready], ["ranking"]);
+  const twoMatchReady = fakeCandidate("two-match-ready", ["spatial", "flow"]);
+
+  const ordered = rank(
+    [
+      noMatchReady,
+      oneMatchMissing,
+      twoMatchReady,
+      oneMatchDisabled,
+      oneMatchUnverified,
+      oneMatchReady,
+    ],
+    ["spatial", "flow"],
+  );
+
   expect(ordered.map((c) => c.id)).toEqual([
-    "ready-form",
-    "unverified-form",
-    "missing-form",
+    "two-match-ready", // higher match count wins outright
+    "one-match-ready",
+    "one-match-unverified",
+    "one-match-disabled",
+    "one-match-missing", // even the worst severity still outranks...
+    "no-match-ready", // ...a ready form that serves the intent not at all
   ]);
 });
 

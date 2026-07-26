@@ -16,46 +16,43 @@ const FORMAT_ORDER: Record<string, number> = {
   scrolly: 3,
 };
 
-// Readiness MARKS, it does not remove (spec §3.4) — a capability that is missing, disabled, or
-// merely unverified still gets offered, just penalised, so a graded readiness check must never
-// be able to out-rank intent fit into oblivion. MARK_PENALTY=10 against an intent spread of 4
-// per match is the brief's own scale: a marked form matching two intents (-2*4 + 10 = +2) still
-// beats a ready form matching none (+1*4 = +4). Graded by SEVERITY (eligibility.ts) rather than
-// binary, because the statuses are not interchangeable — readiness.ts is explicit that
-// "unverified" only means the last check could not REACH the provider and may well work, while
-// "missing" is the one status that means the form cannot be built right now. Scaled so the
-// worst severity (missing) lands on the brief's original 10, and lesser severities land
-// proportionally below it — the invariant above holds for every graded value, not just the
-// ceiling.
-const MARK_PENALTY = 10;
-const WORST_SEVERITY = SEVERITY.missing;
-
-function markPenalty(c: Candidate): number {
-  if (!c.readiness) return 0;
-  return (MARK_PENALTY / WORST_SEVERITY) * SEVERITY[c.readiness.status];
-}
-
-// Three tiers, checked in this order, each only breaking a tie the tier above left standing:
-// 1. intent fit combined with the readiness penalty — a form that serves the stated intent
-//    (and serves it with fewer other purposes — the more specific answer) comes first; a
-//    marked form is penalised within this same tier, graded by how severe the mark is, never
-//    enough on its own to bury a form that clearly serves the intent (see markPenalty above).
-// 2. fill (0..1, computed in eligibility) — among equally-fitting, equally-ready forms, one
-//    running close to its own readability cap ranks below a roomier peer.
-// 3. format preference — interactive over static over video over scrolly, as a last resort.
+// Four tiers, checked strictly in this order — each only breaks a tie the tier above left
+// standing, and NONE are blended into a shared number. That is not a style choice: an earlier
+// version blended a graded readiness penalty into the intent score (matching the brief's own
+// scale, a constant against an intent spread of 4 per match) and it held for a form matching
+// two intents, but broke at one match — the common case, since most KB sheets declare a single
+// intent (a missing single-match form scored worse than a ready zero-match form). Any constant
+// chosen to survive one match count is eventually crossed by enough marks or matches at some
+// other count; blending is the wrong shape of fix regardless of the constant. The actual rule
+// is categorical, not a trade-off: intent fit dominates readiness completely, at every match
+// count. That is exactly the lesson tiers 3/4 below already teach this file (format must never
+// leak into the fill decision) applied one level up — kept as a separate tier, not summed in.
 //
-// Tier 1 is intentionally a blended sum (matching the brief's graded trade-off) but tiers 1, 2
-// and 3 are compared as separate tiers, not blended together: a single float across ALL four
-// factors risks a low-priority weight (format) leaking into a higher-priority decision (fill)
-// whenever their gaps are close — exactly the bug the brief's own reference formula had, and
-// exactly the failure a "roomier form leads" guarantee cannot tolerate. Splitting fill and
-// format into their own tiers below the intent/readiness blend keeps that guarantee airtight
-// while still letting intent and readiness trade off against each other by degree, as designed.
-function tiers(c: Candidate, intents: Intent[]): [number, number, number] {
+// 1. intent fit — a form that serves the stated intent, and serves it with fewer other
+//    purposes (the more specific answer), outranks EVERY form that serves it less well or not
+//    at all — regardless of readiness. A journalist's angle is never buried by a credential
+//    check, at any match count (spec §3.4: marked, never silently removed).
+// 2. readiness — among forms that fit the intent equally, a ready one leads. Ties are broken
+//    by eligibility.ts's SEVERITY ordinal (`unverified` < `disabled` < `missing`) reused
+//    as-is, not redefined: for RANKING (this file) as for "worst status wins" (eligibility.ts),
+//    a deliberately-off capability (`disabled` — the newsroom chose not to enable it, never a
+//    failure per readiness.ts) is a firmer "not now" than a probably-working one the last check
+//    simply could not REACH (`unverified`), so `disabled` ranks below `unverified` in both
+//    places for the same underlying reason — this is the same ordinal answering two different
+//    questions, not a contradiction of readiness.ts calling `disabled` "never a failure".
+// 3. fill (0..1, computed in eligibility) — among equally-fitting, equally-ready forms, one
+//    running close to its own readability cap ranks below a roomier peer.
+// 4. format preference — interactive over static over video over scrolly, as a last resort.
+function tiers(
+  c: Candidate,
+  intents: Intent[],
+): [number, number, number, number] {
   const matches = c.sheet.intent.filter((i) => intents.includes(i)).length;
-  const intentComponent = (matches > 0 ? -matches : 1) * 4;
-  const intentTier = intentComponent + markPenalty(c);
-  return [intentTier, c.fill, FORMAT_ORDER[c.format] ?? 4];
+  const intentTier = matches > 0 ? -matches : 1;
+  const readinessTier = c.readiness
+    ? SEVERITY[c.readiness.status]
+    : SEVERITY.ready;
+  return [intentTier, readinessTier, c.fill, FORMAT_ORDER[c.format] ?? 4];
 }
 
 export function rank(candidates: Candidate[], intents: Intent[]): Candidate[] {
