@@ -1,3 +1,20 @@
+---
+id: line
+engines:
+  chart-native: line
+  dw-chart: d3-lines
+intent: [change-over-time]
+shape: single
+limits: { maxSeries: 5 }
+formats: [static, interactive, video]
+bestFor:
+  - "a continuous trend over many time points (more than about 8 periods)"
+notFor:
+  - "a handful of periods (≤ ~8) with no in-between trend to read — columns compare magnitudes more precisely"
+  - "two variables' joint trajectory (x and y both changing) — that is a connected scatter"
+  - "more than ~4-5 series on one chart — overlapping lines become spaghetti"
+---
+
 # Line — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "change over time" line charts —

@@ -1,3 +1,19 @@
+---
+id: lollipop
+engines:
+  chart-native: lollipop
+  dw-chart: d3-dot-plot
+intent: [ranking, magnitude]
+shape: single
+limits: { maxCategories: 20 }
+formats: [static, interactive, video]
+bestFor:
+  - "ranking many categories by one value, where a bar chart would feel ink-heavy"
+notFor:
+  - "tiny differences where the dot's position is hard to read precisely, or a value that is a part of a whole"
+  - "two values per category (the gap) — that is a dumbbell"
+---
+
 # Lollipop / dot plot — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "ranking" / "magnitude" lollipop —

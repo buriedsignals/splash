@@ -1,3 +1,20 @@
+---
+id: bar
+engines:
+  chart-native: bar
+  dw-chart: d3-bars
+intent: [magnitude, ranking]
+shape: single
+limits: { maxCategories: 30 }
+formats: [static, interactive, video]
+bestFor:
+  - "comparing sizes across categories on a common baseline"
+  - "a ranking where the order itself is the message"
+notFor:
+  - "a trend over many time points — that is a line"
+  - "a baseline that does not start at zero — length encodes the value"
+---
+
 # Bar / Column — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — magnitude & ranking columns —

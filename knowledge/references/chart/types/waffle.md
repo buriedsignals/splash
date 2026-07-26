@@ -1,3 +1,19 @@
+---
+id: waffle
+engines:
+  chart-native: waffle
+intent: [part-to-whole]
+shape: single
+limits: { maxCategories: 6 }
+formats: [static, interactive, video]
+bestFor:
+  - "a single composition with a few categories where the proportion should feel countable — a budget split, a 1-in-N share, a modal split"
+notFor:
+  - "precise sub-percent differences — the grid's granularity is one cell (1%)"
+  - "many categories — the cells fragment into confetti; group the tail into Other"
+  - "change over time — use a stacked area; a waffle is one snapshot"
+---
+
 # Waffle / square-pie chart — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "part-to-whole" waffle/isotype · data-to-viz.com · the

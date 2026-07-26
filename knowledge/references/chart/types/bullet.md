@@ -1,3 +1,18 @@
+---
+id: bullet
+engines:
+  chart-native: bullet
+  dw-chart: d3-bars-bullet
+intent: [magnitude]
+shape: single
+formats: [static, interactive, video]
+bestFor:
+  - "a metric vs a target with context bands — service targets, budgets vs plan, a KPI dashboard rendered for print/embed"
+notFor:
+  - "comparing many categories' raw magnitudes — that is a plain bar"
+  - "a distribution or a trend — use a histogram or a line"
+---
+
 # Bullet chart — per-type best practice (L2)
 
 > Sources: Stephen Few (the inventor of the bullet graph) · FT Visual Vocabulary

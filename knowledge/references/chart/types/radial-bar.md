@@ -1,3 +1,18 @@
+---
+id: radial-bar
+engines:
+  chart-native: radial-bar
+intent: [magnitude, ranking]
+shape: single
+formats: [static, interactive, video]
+bestFor:
+  - "a magnitude per category where the categories form a natural cycle and that cyclicality is part of the story — trips per hour of day, sales per month of year, wind observations per compass direction"
+notFor:
+  - "a non-cyclical ranking or magnitude comparison — that is a plain bar, which lets lengths be compared directly on a shared baseline"
+  - "precise value comparison between two bars far apart around the circle — the eye compares chords/angles worse than bars on a line"
+  - "many non-adjacent categories where you need to read exact differences — reserve this for the shape of the cycle, not a data-lookup task"
+---
+
 # Radial bar / radial column — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "magnitude / ranking" radial bar/column —

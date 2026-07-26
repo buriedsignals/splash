@@ -1,3 +1,17 @@
+---
+id: diverging-bar
+engines:
+  chart-native: diverging
+intent: [deviation]
+shape: single
+formats: [static, interactive, video]
+bestFor:
+  - "signed values across categories — net jobs added/lost, budget surplus/deficit, poll swing, above/below an average"
+notFor:
+  - "all-positive magnitudes — that is a plain bar; the diverging form only earns its keep when values cross zero"
+  - "composition or part-to-whole — the bars don't sum to a whole, use stacked instead"
+---
+
 # Diverging bar — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "deviation" diverging bars —

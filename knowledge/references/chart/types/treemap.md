@@ -1,3 +1,18 @@
+---
+id: treemap
+engines:
+  chart-native: treemap
+intent: [part-to-whole, magnitude]
+shape: single
+formats: [static, interactive, video]
+bestFor:
+  - "a part-to-whole with many items (more than ~6, where a pie fails) where relative size is the message — budgets, market share, catalogue breakdowns"
+notFor:
+  - "precise ranking or comparison — area (and aspect ratio) is read poorly; use a bar or dot plot"
+  - "a few parts — a bar or pie is clearer"
+  - "negative or zero values — area can't be negative"
+---
+
 # Treemap — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "part-to-whole" / "magnitude" treemap · data-to-viz.com

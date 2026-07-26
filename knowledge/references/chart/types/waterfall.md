@@ -1,3 +1,17 @@
+---
+id: waterfall
+engines:
+  chart-native: waterfall
+intent: [flow, magnitude]
+shape: single
+formats: [static, interactive, video]
+bestFor:
+  - "a bridge from one total to another — opening to closing balance, revenue build, a variance broken into contributions"
+notFor:
+  - "independent magnitudes with no running total — that is a plain bar; a waterfall only earns its keep when the steps accumulate"
+  - "part-to-whole of a single total — use stacked or pie; the waterfall's steps are signed changes, not slices"
+---
+
 # Waterfall — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "flow" / "magnitude" waterfall —

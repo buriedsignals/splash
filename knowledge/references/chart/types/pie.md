@@ -1,3 +1,19 @@
+---
+id: pie
+engines:
+  chart-native: pie
+  dw-chart: d3-pies
+intent: [part-to-whole]
+shape: single
+limits: { maxCategories: 5 }
+formats: [static, interactive]
+bestFor:
+  - "the components of one whole, with few slices and clearly different sizes"
+notFor:
+  - "more than about five slices — use bars"
+  - "comparing angles precisely, or anything that is not a part of one whole"
+---
+
 # Pie / Donut — part-to-whole (L2)
 
 > Sources: FT Visual Vocabulary (Part-to-whole — pie, donut) —

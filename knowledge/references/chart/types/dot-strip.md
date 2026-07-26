@@ -1,3 +1,20 @@
+---
+id: dot-strip
+engines:
+  chart-native: dot-strip
+intent: [distribution]
+shape: single
+formats: [static, interactive, video]
+bestFor:
+  - "comparing the SPREAD of raw observations across a few categories when the shape — not just a single summary number — is the story"
+notFor:
+  - "a single value per category — that is a bar or lollipop, not a distribution"
+  - "dozens of categories at once — the strips stack up and become tall and hard to scan; keep it to a handful"
+  - "very large n where dots saturate into a solid band even with transparency — switch to a histogram or violin"
+  - "confusing this with the FT 'dot plot' — a min/max range per category, closer to a dumbbell"
+  - "confusing this with beeswarm — beeswarm dodges points off the line so none overlap; a dot strip keeps every point on its own line and shows overlap via transparency"
+---
+
 # Dot strip plot — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "distribution" dot strip plot —
