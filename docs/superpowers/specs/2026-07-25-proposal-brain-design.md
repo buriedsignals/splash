@@ -121,8 +121,17 @@ mesurable, et **chaque exclusion produit une raison lisible** — jamais de retr
 4. **STYLE = seulement l'impossible physique.** STYLE n'introduit **aucune préférence maison
    nouvelle** (ce serait étendre le sous-projet Préflight). Il n'écarte que là où le rendu est
    réellement impossible — cas connu et render-prouvé : un `themeBg` non-clair ne peut pas être
-   rendu par Datawrapper (fond plan-gated, cf. CLAUDE.md § session 2026-07-14/15), donc les types
-   dw-chart sont écartés avec « thème maison sombre — Datawrapper ne rend que sur fond clair ».
+   rendu par Datawrapper (fond plan-gated, cf. CLAUDE.md § session 2026-07-14/15), donc **les deux
+   moteurs Datawrapper — `dw-chart` ET `map-dw`** — sont écartés avec « thème maison sombre —
+   Datawrapper ne rend que sur fond clair ». (Corrigé le 2026-07-25 : le premier jet ne nommait que
+   `dw-chart`, alors que la limite est identique pour une carte DW — `brand-profile.ts:33` l'acte
+   pour les deux.)
+
+   **Corollaire mécanique de l'axe SCOPE.** Le canal dit quels formats sont *autorisés* ; le
+   **moteur** dit lesquels il sait *produire*. Ni `dw-chart` ni `map-dw` ne déclarent `video`. Sans
+   intersection des deux, l'ensemble légal offre une vidéo Datawrapper qui meurt au dispatch — le
+   miroir exact du drop silencieux que cette couche existe pour empêcher. La légalité intersecte
+   donc **canal × moteur**.
 
 ### 4.2 Couche CLASSEMENT — heuristique, dégradable
 
