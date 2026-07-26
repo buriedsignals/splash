@@ -5,6 +5,11 @@ description: Use when a data profile and an editorial intent need to become a vi
 
 # suggest-chart — decide the visual element, format, and producer
 
+> Type selection is NOT decided here. `lib/brain` computes the legal set from the KB sheets
+> (`knowledge/references/**/types/*.md` frontmatter) and offers it to the journalist; this
+> skill only emits a spec for the form that was chosen. Adding or changing a type is an edit
+> to its sheet, never to this file.
+
 ## Overview
 
 The visual-element suggester. Given a **data profile** (columns, types, cardinality) and an **editorial
@@ -204,19 +209,15 @@ invalid — silent absence of the narrative option is not a possible state.
    **Chart format ladder:** static → `dw-chart`; motion/rich interactivity → `chart-native` (see Producer
    section).
 
-5. **Choose chart family** (chart path only): use the shared KB
-   `<repo-root>/knowledge/references/chart-selection.md` — map intent → family → the *simplest* type that
-   serves it. When in doubt, bars/columns on a common baseline.
-
-6. **Fill the spec** (chart or map — see sections below) applying
+5. **Fill the spec** (chart or map — see sections below) applying
    `<repo-root>/knowledge/references/design-conformance.md`.
 
-7. **Self-check**: the spec MUST pass the relevant validator (`validateChartSpec` for charts,
+6. **Self-check**: the spec MUST pass the relevant validator (`validateChartSpec` for charts,
    `validateMapSpec` for maps — run it). Read all returned `warnings` and fix them — do not ignore them.
 
-8. **Produce**: call the producer for the chosen path (see Producer section).
+7. **Produce**: call the producer for the chosen path (see Producer section).
 
-9. **Or `no-chart`**: if no visual serves the data and intent (data too thin, or the intent is not a
+8. **Or `no-chart`**: if no visual serves the data and intent (data too thin, or the intent is not a
    visualisation question), emit `{ "decision": "no-chart", "reason": "..." }` instead of forcing a visual.
 
 **Image-scrolly recognition (C5).** When the claim is NARRATIVE (a place, a process, a
@@ -234,11 +235,10 @@ image to its article passage (vision = matching/ordering ONLY), and emits the
 `image-story.json` manifest behind its own mandatory journalist gate; production is
 `bun skills/image-native/scripts/produce.mjs <image-story.json> <outDir> scrolly`.
 
-## How it decides
+## Emitting the ChartSpec (dw-chart path)
 
-1. Read the shared KB `<repo-root>/knowledge/references/chart-selection.md` (at the splash repo root, not under this skill) → map **intent → DW type** (intent first, simplest type that serves it).
-2. Read `<repo-root>/knowledge/references/design-conformance.md` (shared KB, repo root) → fill the conformance fields.
-3. Emit a **ChartSpec** (the exact shape `dw-chart/src/chart-spec.ts` validates):
+1. Read `<repo-root>/knowledge/references/design-conformance.md` (shared KB, repo root) → fill the conformance fields.
+2. Emit a **ChartSpec** (the exact shape `dw-chart/src/chart-spec.ts` validates):
    `{ type, title (the insight, sentence case), intro?, data (CSV), subject (the topic hint, e.g. "solar"),
    baseColor (a subject-fit Okabe-Ito hue — see Colour below), seriesColors? (multi-series: series → hue),
    highlight? (bar-family accent — see below), seriesLabels? (machine column → human name), valueLabels?,
@@ -256,7 +256,7 @@ image to its article passage (vision = matching/ordering ONLY), and emits the
    bar). The same CADRAGE-framing discipline as the native `highlight` applies: only accent a category the
    confirmed insight singles out; omit it for a neutral overview. There is NO `highlightColor` field —
    the accent IS `baseColor`; `validateChartSpec` is STRICT and rejects any unknown top-level field.
-4. Guardrails: **≤2 colours**; **CHOOSE `baseColor` by subject — NEVER leave a chart on a blue-family hue
+3. Guardrails: **≤2 colours**; **CHOOSE `baseColor` by subject — NEVER leave a chart on a blue-family hue
    for a subject that is not water/cold/sky/marine** (the validator FAILS a declared `subject` whose
    `baseColor` is absent or the default `#0072B2`); if the data is too complex for a clean chart, return
    `{ "decision": "no-chart", "reason": "..." }` instead of forcing one.
@@ -530,7 +530,6 @@ If `beats` is present, confirm every `x`/`xEnd`/`category` appears verbatim in t
 
 ## Guardrails (the code enforces these — propose within them)
 
-- **Type:** pick from the 22 supported types (single-series, multi-series, or two-value per the data shape).
 - **Sort:** for ranking intents (bars/columns where order matters), set `"sort": "desc"` — the producer sorts the CSV.
 - **Colours:** single-series → at most 2 Okabe-Ito colours (default `#0072B2`); multi-series → one Okabe-Ito colour per series in `seriesColors`, at most 8.
 - **Pie/donut:** at most 5 slices — if more, group into "Other" or choose bars.
@@ -541,7 +540,6 @@ If `beats` is present, confirm every `x`/`xEnd`/`category` appears verbatim in t
   that excludes an entity the visual itself shows, e.g. an Alpine country on the same map). If the data
   supports more than the title states, widen the title's wording rather than narrowing the claim.
 - **Multi-series orientation:** `transpose:true` is ONLY for stacked/grouped **categorical** charts (e.g. stacked `year, Coal, Gas, Renewables`) where the x-category, not the series, belongs on the axis. **Never transpose a line/time chart** — a multi-series time trend (`year, France, Switzerland`) is `d3-lines` with one line per column and NO transpose. `multiple-lines`/`multiple-columns` = deliberate small multiples (one panel per series), not a single trend.
-- **Two-point comparison (prose-extracted):** a claim with exactly two values (e.g. 2019 vs 2024) renders as a **slope**, **dumbbell**, or **paired columns** — NEVER a continuous line, which would imply a trend from two points.
 - **Honest source label (prose):** when the data is `provenance: "prose"`, the chart's source reads "Figures as reported in this article" (or the source the article itself names) — never a fabricated dataset attribution.
 - **`numberFormat` = a Datawrapper numeral token, NOT printf/Python.** Use `"0.0"` (one decimal), `"0.00"` (two), `"0,0"` (thousands), `"0%"`, `"$0,0"`. NEVER `".1f"` / `".2f"` — a printf token ships silently-wrong value labels (".1f" renders 8.4 as ".40"). The producer auto-corrects the common printf mistakes and `validateChartSpec` warns, but emit the numeral token directly.
 - **`"%"` APPENDS the percent sign — it does NOT multiply by 100 (empirically verified against real rendered exports).** A value already in percentage points (e.g. `41`) with `numberFormat:"0%"` renders `"41%"` — correct, no ×100 to worry about. A 0–1 FRACTION (e.g. `0.41`) with `"0%"` renders `"0%"` — precision destroyed, because Datawrapper never multiplies. So: **always pre-scale a fraction to a percentage point before emitting it** (`0.41` → `41`, i.e. `value * 100`) whenever you set a `%` format (on either `numberFormat` or the axis `valueFormat`) — never emit raw 0–1 fractions alongside a `%` token. `validateChartSpec` now hard-rejects (not just warns) a `%` format applied to data that looks like 0–1 fractions, so this is caught before publish — but fix it at the source (scale the data) rather than relying on the guard.
@@ -592,7 +590,7 @@ channel is KNOWN at both stages (CADRAGE Q6 precedes this call).
   intéressante") — no bare names.
 - The orchestrator batches ALL opportunities' candidate lists into ONE journalist message.
 - Nothing reachable → emit the `no-chart` decision with a reason, as before — UNLESS the
-  Image-scrolly recognition rule (C5, Runtime procedure step 9) fires: a NARRATIVE claim
+  Image-scrolly recognition rule (C5, Runtime procedure step 8) fires: a NARRATIVE claim
   that fails the chart data test on an article-web channel emits the `image-scrolly`
   candidate (`{ "type": "image-scrolly", "producer": "image-native", "tier": "...",
   "why": "..." }`, its `why` stating what the journalist supplies) instead of a dead-end.
