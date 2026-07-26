@@ -8,6 +8,7 @@ import { z } from "zod";
 import { INTENTS } from "./intents";
 import { splitFrontmatter } from "./frontmatter";
 import { VISUAL_FORMATS } from "../core/vocabulary";
+import { isRenderable } from "../core/registry";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = resolve(here, "../../knowledge/references");
@@ -62,4 +63,19 @@ export function loadTypology(root: string = DEFAULT_ROOT): TypeSheet[] {
     }
   }
   return sheets;
+}
+
+export type RenderableSheet = { sheet: TypeSheet; engine: string; key: string };
+
+// A sheet is only offerable through an engine that can render it TODAY. This is the join
+// that makes a deferred type structurally unofferable (spec §3): nothing downstream has to
+// remember to filter it, because it never enters the candidate set.
+export function renderableSheets(
+  sheets: TypeSheet[] = loadTypology(),
+): RenderableSheet[] {
+  const out: RenderableSheet[] = [];
+  for (const sheet of sheets)
+    for (const [engine, key] of Object.entries(sheet.engines))
+      if (isRenderable(engine, key)) out.push({ sheet, engine, key });
+  return out;
 }
