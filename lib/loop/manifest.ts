@@ -5,7 +5,7 @@ import { canonicalHash } from "./canonical-hash";
 import { migrate } from "./migrate";
 import { INTENTS } from "../brain/intents";
 import { VISUAL_FORMATS, CHANNELS as CHANNEL_KEYS } from "../core/vocabulary";
-import { isLoopBuildable } from "./buildable";
+import { isLoopBuildable, resolveBuilder } from "./buildable";
 
 const HashRef = z.object({ path: z.string(), sha256: z.string() });
 const DataProfileSchema = z.object({
@@ -243,10 +243,17 @@ export function nextActionsForElement(
   // must not strand the run: `produce` would refuse it on every advance, the driver would
   // record the same bounded failure again, and this function would keep answering `produce`.
   // Routing back to the choice is the way back to the offer the marked form promised.
+  //
+  // Resolved on the EFFECTIVE producer (resolveBuilder), not `chosen.engine` alone — a
+  // chart-native option in the scrolly format is actually built by skills/scrolly, and
+  // chart-native being in LOOP_BUILDABLE_ENGINES must not make that option look buildable
+  // here while produce.ts refuses it every time. The same resolution produce.ts and
+  // lib/brain/eligibility.ts use, so the three readers cannot drift.
   const chosen = el.proposal.options.find(
     (o) => o.id === el.proposal!.chosenId,
   );
-  if (chosen && !isLoopBuildable(chosen.engine)) return ["choose-form"];
+  if (chosen && !isLoopBuildable(resolveBuilder(chosen)))
+    return ["choose-form"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   // `deliver` is a step a DECISION triggers, never an automatic advance — the symmetric of
   // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.

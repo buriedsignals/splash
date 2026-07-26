@@ -1,20 +1,30 @@
+import { producerForFormat } from "../core/registry";
+import type { VisualFormat } from "../core/vocabulary";
+
 // Which engines the editorial loop can actually BUILD through today — ONE list, read by
 // everything that has to know.
 //
-// Two readers, and they must never disagree:
-//   - lib/loop/produce.ts refuses a chosen option whose engine is not in this list (rendering
-//     a map spec through the chart renderer produces a WRONG artifact silently);
+// Three readers, and they must never disagree:
+//   - lib/loop/produce.ts refuses a chosen option whose EFFECTIVE producer is not in this list
+//     (rendering a map spec through the chart renderer produces a WRONG artifact silently);
 //   - lib/brain/eligibility.ts MARKS such a form in the offer instead of dropping it (spec §8:
-//     "jamais silencieusement retirée"), with the same sentence produce refuses with.
+//     "jamais silencieusement retirée"), with the same sentence produce refuses with;
+//   - lib/loop/manifest.ts's nextActionsForElement routes back to "choose-form" instead of
+//     answering "produce" forever on a choice that can never succeed.
 // Before this file the list was hard-coded in produce.ts alone and the brain knew nothing of
 // it, so the offer could rank an unbuildable form FIRST, unmarked: the journalist chose it,
-// produce answered `not-implemented`, and the run had nothing to say for itself.
+// produce answered `not-implemented`, and the run had nothing to say for itself. Before
+// resolveBuilder existed, manifest.ts checked `chosen.engine` directly (not its EFFECTIVE
+// producer), so an option naming a buildable engine in an unbuildable format (chart-native in
+// the scrolly format, built by skills/scrolly) looked buildable here while produce() refused
+// it every time — the exact dead-end this file exists to prevent, just one level down.
 //
 // It lives under lib/loop/ because it is a fact about the loop's produce verb (which engines
 // it can assemble a spec for), not about the engines themselves — lib/core/registry.ts already
 // answers "what does this engine render", and that is a different question. lib/brain reads it
-// the way lib/brain/facts.ts already reads lib/loop/manifest: this module imports nothing, so
-// no cycle is possible.
+// the way lib/brain/facts.ts already reads lib/loop/manifest, and no cycle is possible: this
+// module's only outside import is lib/core/registry's producerForFormat, and lib/core never
+// imports lib/loop or lib/brain.
 //
 // Adding an engine here is a promise: produce.ts must be able to assemble that engine's spec.
 export const LOOP_BUILDABLE_ENGINES: readonly string[] = ["chart-native"];
@@ -30,4 +40,20 @@ export function isLoopBuildable(engine?: string): boolean {
 // happen, not which module is missing.
 export function unbuildableEngineReason(engine: string): string {
   return `nothing can build a ${engine} form yet — production is wired for ${LOOP_BUILDABLE_ENGINES.join(", ")} only`;
+}
+
+// The EFFECTIVE producer for a chosen (or offered) option — the one thing all three readers
+// above must resolve identically, or they drift. `engine`/`format` are optional because
+// FormOption's schema still admits hand-authored options predating the brain (manifest.ts);
+// the defaults are the same ones produce.ts always rendered before format threading landed.
+// Kept here (not duplicated at each call site) after a fix round found the resolution written
+// out twice already and about to become three: one function, three callers.
+export function resolveBuilder(chosen: {
+  engine?: string;
+  format?: VisualFormat;
+}): string {
+  return producerForFormat(
+    chosen.engine ?? "chart-native",
+    chosen.format ?? "static",
+  );
 }

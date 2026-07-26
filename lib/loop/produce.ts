@@ -8,9 +8,9 @@ import { provenanceHash, type RunManifest, type RunElement } from "./manifest";
 import {
   isLoopBuildable,
   unbuildableEngineReason,
+  resolveBuilder,
   LOOP_BUILDABLE_ENGINES,
 } from "./buildable";
-import { producerForFormat } from "../core/registry";
 // Populates the producer registry the render verb dispatches from — without it every
 // render answers `unknown-engine`. The loop's ONE point of knowledge about skills/ lives
 // in that file, on purpose; see its header.
@@ -75,13 +75,11 @@ export async function produce(
   // marks the offer from that same list, so the journalist is told BEFORE choosing.
   //
   // The producer that would ACTUALLY build this — skills/scrolly hosts a native engine's track,
-  // so a chart-native option in the scrolly format is not a chart-native build. Resolved the
-  // same way lib/brain/eligibility.ts resolves it, so the refusal a journalist reads here is
-  // the sentence the offer already showed them.
-  const builder = producerForFormat(
-    chosen.engine ?? "chart-native",
-    chosen.format ?? "static",
-  );
+  // so a chart-native option in the scrolly format is not a chart-native build. Resolved by
+  // resolveBuilder (lib/loop/buildable.ts), the same helper lib/brain/eligibility.ts and
+  // manifest.ts's nextActionsForElement resolve through, so the refusal a journalist reads
+  // here is the sentence the offer already showed them.
+  const builder = resolveBuilder(chosen);
   if (!isLoopBuildable(builder))
     return fail(
       "not-implemented",

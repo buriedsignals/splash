@@ -143,6 +143,34 @@ test("nextActions routes BACK to the choice when the chosen form's engine cannot
   expect(nextActions(m)).toEqual(["produce"]);
 });
 
+// The same dead-end applies when the chosen option's ENGINE is buildable but its FORMAT is
+// not one that engine's manifest declares — chart-native is in LOOP_BUILDABLE_ENGINES, but a
+// "scrolly" format on it is actually built by skills/scrolly (producerForFormat), which is
+// not. Before this fix nextActionsForElement only checked isLoopBuildable(chosen.engine)
+// directly, so this exact option (buildable engine, unbuildable effective producer) looked
+// buildable here while produce() refused it every time — routing "produce" forever, with no
+// way back to the choice.
+test("nextActions routes BACK to the choice when the chosen option's engine is buildable but its format's effective producer is not", () => {
+  const m = base();
+  m.elements[0].proposal = {
+    options: [
+      {
+        id: "line-scrolly",
+        nativeType: "line",
+        engine: "chart-native",
+        format: "scrolly",
+        why: "w",
+      },
+      { id: "slope", nativeType: "slope", engine: "chart-native", why: "w" },
+    ],
+    excluded: [],
+    chosenId: "line-scrolly",
+  };
+  expect(nextActions(m)).toEqual(["choose-form"]);
+  m.elements[0].proposal.chosenId = "slope";
+  expect(nextActions(m)).toEqual(["produce"]);
+});
+
 test("nextActions off-ramps ([]) when no legal form exists (zero proposal options)", () => {
   const m = base();
   m.elements[0].proposal = { options: [], excluded: [] };
