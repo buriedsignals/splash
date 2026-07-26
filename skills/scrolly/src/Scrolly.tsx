@@ -46,11 +46,21 @@ import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
 import { sourceLabel, isFrench } from "../../../lib/core/locale";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
-// The chart types the scrolly can narrate (deriveChartStory dispatches on these). Any other
-// nativeType (pie, etc.) has no progressive-reveal / ranked-walk narrative — the routing layer
-// (② suggest-chart) must never emit one, and if one slips through we degrade gracefully rather
-// than crash the render (deriveChartStory would otherwise throw inside the story useMemo).
-const CHART_SCROLLY_TYPES = new Set(["line", "bar", "scatter"]);
+// The types each track actually hosts. EXPORTED because they are the source of truth for two
+// readers that must never disagree: this dispatch, and the KB drift test that checks which
+// sheets may declare the `scrolly` format.
+export const CHART_SCROLLY_TYPES = new Set(["line", "bar", "scatter"]);
+// `choropleth` is the dispatch's default branch (ScrollyMap + computeChoropleth), so it is
+// hosted — but the default must not swallow types that are NOT. `route` has no branch and was
+// being drawn as a choropleth: a wrong render, silently.
+export const MAP_SCROLLY_TYPES = new Set([
+  "symbol",
+  "hex-grid",
+  "dot-density",
+  "locator",
+  "cartogram",
+  "choropleth",
+]);
 
 // ---------------------------------------------------------------------------
 // Scrolly
@@ -145,6 +155,21 @@ export const Scrolly: React.FC<{
         description: (config as { description?: string }).description,
         source: (config as { source?: { name: string; url: string } }).source,
       });
+    }
+
+    // Unsupported MAP type → an empty but valid story, mirroring the chart track above. Without
+    // this the ternary chain's final `else` renders any unknown type as a choropleth.
+    // `config.type` is undefined for the default choropleth config (ScrollyMapConfig's `type` is
+    // optional — choropleth is the un-typed default), so it is normalized before the lookup: the
+    // omitted-type default is a real supported config, not an unknown one.
+    if (!MAP_SCROLLY_TYPES.has(config.type ?? "choropleth")) {
+      return {
+        title: config.title ?? "",
+        description: config.description,
+        source: config.source,
+        visual: "map",
+        steps: [],
+      } as ReturnType<typeof mapStoryToChapters>;
     }
 
     if (config.type === "symbol") {
@@ -292,6 +317,18 @@ export const Scrolly: React.FC<{
     "nativeType" in config &&
     !CHART_SCROLLY_TYPES.has((config as { nativeType: string }).nativeType)
       ? (config as { nativeType: string }).nativeType
+      : null;
+
+  // Same flag for the map track. `config.type` is undefined for the default (un-typed)
+  // choropleth config, so it is normalized to "choropleth" before the lookup — mirrors the
+  // useMemo guard above, and keeps the omitted-type default out of this flag.
+  const unsupportedMapType =
+    !("visual" in config) && !("nativeType" in config)
+      ? ((config as { type?: string }).type ?? "choropleth")
+      : null;
+  const unsupportedMap =
+    unsupportedMapType !== null && !MAP_SCROLLY_TYPES.has(unsupportedMapType)
+      ? unsupportedMapType
       : null;
 
   // For a LINE chart track: the data index the line head must reach when each RENDERED card
@@ -513,9 +550,9 @@ export const Scrolly: React.FC<{
     pointerEvents: "auto",
   };
 
-  // Defense-in-depth: an unsupported chart type reached the scrolly. Never crash — show a
-  // clear message (the ② routing layer is what should have prevented this).
-  if (unsupportedChart) {
+  // Defense-in-depth: an unsupported chart or map type reached the scrolly. Never crash — show
+  // a clear message (the ② routing layer is what should have prevented this).
+  if (unsupportedChart ?? unsupportedMap) {
     return (
       <div
         style={{
@@ -538,9 +575,20 @@ export const Scrolly: React.FC<{
             </div>
           )}
           <div style={{ color: cardSub, fontSize: 14, lineHeight: 1.5 }}>
-            A &ldquo;{unsupportedChart}&rdquo; chart is not supported in a
-            scrolly (only line, bar and scatter). Render it as a static chart
-            instead.
+            {unsupportedChart ? (
+              <>
+                A &ldquo;{unsupportedChart}&rdquo; chart is not supported in a
+                scrolly (only line, bar and scatter). Render it as a static
+                chart instead.
+              </>
+            ) : (
+              <>
+                A &ldquo;{unsupportedMap}&rdquo; map is not supported in a
+                scrolly (only symbol, hex-grid, dot-density, locator, cartogram
+                and choropleth). Render it as a static or interactive map
+                instead.
+              </>
+            )}
           </div>
         </div>
       </div>
