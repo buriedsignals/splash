@@ -1,3 +1,19 @@
+---
+id: stacked-area
+engines:
+  chart-native: stacked-area
+intent: [change-over-time, part-to-whole]
+shape: wide
+limits: { minPoints: 5, maxSeries: 5 }
+formats: [static, interactive, video]
+bestFor:
+  - "a composition over many time points — energy mix, viewing share, budget split over years"
+notFor:
+  - "a few discrete time periods — a stacked bar reads more precisely"
+  - "comparing the inner (non-baseline) bands precisely across time — use lines, or a 100%-stacked area, instead"
+  - "more than about 5 series — the bands blur"
+---
+
 # Stacked area — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "change over time" / "part-to-whole"

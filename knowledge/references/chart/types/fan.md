@@ -1,3 +1,18 @@
+---
+id: fan
+engines:
+  chart-native: fan
+intent: [change-over-time]
+shape: wide
+formats: [static, interactive, video]
+bestFor:
+  - "a projection where the uncertainty is the story — economic forecasts, debt/population projections, scenario ranges"
+notFor:
+  - "a point forecast with no uncertainty — that is just a line, do not fake bands"
+  - "many overlapping fans — they muddy the read; show one, or small-multiple them"
+  - "implying false precision — the central line is one path among many, never label it as the answer"
+---
+
 # Fan chart (forecast uncertainty) — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "change over time" with uncertainty · Bank of England

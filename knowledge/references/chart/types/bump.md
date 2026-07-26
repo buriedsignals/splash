@@ -1,3 +1,19 @@
+---
+id: bump
+engines:
+  chart-native: bump
+intent: [ranking, change-over-time]
+shape: wide
+limits: { minPoints: 2 }
+formats: [static, interactive, video]
+bestFor:
+  - "the rank race of a few tracked items over time — overtakes, climbs, collapses"
+notFor:
+  - "magnitude — rank spacing is constant, so the size of a gap can't be read; plot the values (line / slope) if the gap is the story"
+  - "many items — the lines tangle into spaghetti; track a few, grey the rest"
+  - "a single period — that is a ranked bar, not a bump"
+---
+
 # Bump chart — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "ranking" / change-over-time bump · data-to-viz.com

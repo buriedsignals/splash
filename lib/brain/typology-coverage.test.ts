@@ -52,3 +52,29 @@ test("every single-shape chart sheet carries a complete, engine-true header", ()
         expect(chartNative.has(key), `${id} → chart-native:${key}`).toBe(true);
   }
 });
+
+const WIDE = [
+  "grouped-bar",
+  "stacked-bar",
+  "stacked-area",
+  "slope",
+  "population-pyramid",
+  "bump",
+  "diverging-stacked",
+  "fan",
+  "heatmap",
+];
+
+test("every wide-shape chart sheet carries a complete, engine-true header", () => {
+  const byId = loadFamily("chart/types", WIDE);
+  const chartNative = new Set(engineTypes("chart-native").map((t) => t.id));
+  for (const id of WIDE) {
+    const sheet = byId.get(id);
+    expect(sheet, `${id}.md must load`).toBeDefined();
+    expect(sheet!.shape).toBe("wide");
+    expect(sheet!.bestFor.length).toBeGreaterThan(0);
+    for (const [engine, key] of Object.entries(sheet!.engines))
+      if (engine === "chart-native")
+        expect(chartNative.has(key), `${id} → chart-native:${key}`).toBe(true);
+  }
+});

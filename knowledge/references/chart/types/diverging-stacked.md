@@ -1,3 +1,18 @@
+---
+id: diverging-stacked
+engines:
+  chart-native: diverging-stacked
+intent: [deviation]
+shape: wide
+formats: [static, interactive, video]
+bestFor:
+  - "ordered categorical responses (agreement, satisfaction, frequency) across several items, to compare the balance of sentiment item to item"
+notFor:
+  - "unordered categories — there is no left/right meaning; use a plain stacked bar"
+  - "a single item — one stacked bar is enough"
+  - "exact value reading of the middle categories — only the bars' ends align across rows; use grouped bars if exact middles matter"
+---
+
 # Diverging stacked bar / Likert — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "deviation" diverging stacked bar · data-to-viz.com ·

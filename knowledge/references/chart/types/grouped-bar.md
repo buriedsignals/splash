@@ -1,3 +1,20 @@
+---
+id: grouped-bar
+engines:
+  chart-native: grouped
+  dw-chart: d3-bars-grouped
+intent: [magnitude]
+shape: wide
+limits: { maxSeries: 3, maxCategories: 6 }
+formats: [static, interactive, video]
+bestFor:
+  - "comparing 2-3 series side by side across a handful of categories (e.g. two years per region, men vs women per age band)"
+notFor:
+  - "composition / part-to-whole where the bars should sum to a meaningful total — that is a stacked bar"
+  - "more than about 3 series, or many categories — the groups turn into a picket fence, use small multiples or a dot plot"
+  - "a continuous trend over many time points — that is a line chart"
+---
+
 # Grouped bar / column — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "comparison" grouped columns —

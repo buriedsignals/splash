@@ -1,3 +1,18 @@
+---
+id: heatmap
+engines:
+  chart-native: heatmap
+intent: [magnitude, spatial]
+shape: wide
+formats: [static, interactive, video]
+bestFor:
+  - "a value over two categorical/temporal dimensions — activity by day x hour, a correlation matrix, intensity over region x year"
+notFor:
+  - "a value over one dimension — a bar reads length more precisely than colour"
+  - "precise value comparison — colour is read less precisely than position/length; pair with in-cell value labels when exact numbers matter"
+  - "too-fine grids that become noise — aggregate the bins first"
+---
+
 # Heatmap — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "magnitude" / "spatial" heatmap —

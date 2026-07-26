@@ -1,3 +1,21 @@
+---
+id: slope
+engines:
+  chart-native: slope
+intent: [change-over-time, ranking]
+shape: wide
+limits: { points: 2, maxSeries: 12 }
+formats: [static, interactive, video]
+bestFor:
+  - "a before/after across a handful of categories"
+  - "a rank change between two periods"
+  - "an 'every X did A except Y' story where one line bucks the trend"
+notFor:
+  - "more than two points in time — that is a line chart"
+  - "many categories with similar values — the lines tangle into a hairball"
+  - "part-to-whole, or magnitude from zero"
+---
+
 # Slope chart — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "change over time" / "ranking"

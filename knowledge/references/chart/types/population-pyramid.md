@@ -1,3 +1,18 @@
+---
+id: population-pyramid
+engines:
+  chart-native: pyramid
+intent: [distribution, magnitude]
+shape: wide
+limits: { maxSeries: 2 }
+formats: [static, interactive, video]
+bestFor:
+  - "a magnitude across ordered categories split into two groups — age x sex, a metric by band for two regions/years"
+notFor:
+  - "unordered categories ranked by value — a diverging bar sorts by value; a pyramid keeps the natural category order so the shape is the message"
+  - "a single group — that is a bar; more than two groups — use a grouped bar or small multiples"
+---
+
 # Population pyramid — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "distribution" / "magnitude"

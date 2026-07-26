@@ -1,3 +1,20 @@
+---
+id: stacked-bar
+engines:
+  chart-native: stacked
+  dw-chart: d3-bars-stacked
+intent: [part-to-whole, change-over-time]
+shape: wide
+limits: { maxCategories: 8, maxSeries: 5 }
+formats: [static, interactive, video]
+bestFor:
+  - "composition of a total across a few categories or periods, showing both the total (bar length) and its parts in one mark"
+notFor:
+  - "precise comparison of the inner (non-baseline) segments across columns — only the bottom segment shares a baseline; use a grouped bar or small multiples/lines if the inner series is the story"
+  - "more than about 5 series — the stack becomes an unreadable ribbon"
+  - "part-to-whole of a single total — that is a pie/donut, or a single bar"
+---
+
 # Stacked bar / column — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "part-to-whole" & "change over time"
