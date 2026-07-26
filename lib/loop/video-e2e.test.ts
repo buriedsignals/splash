@@ -7,7 +7,6 @@ import { test, expect } from "bun:test";
 import { existsSync, statSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import "../../skills/splash/src/register-producers";
 import "./engines";
 import { propose } from "./propose";
 import { produce } from "./produce";
@@ -66,7 +65,7 @@ test.skipIf(!RUN)(
     const { run, el, runDir } = makeProducibleRun();
     const { options } = propose(run);
     const motion = options.find(
-      (o) => DELIVERABLE_KIND[o.format!] === "motion",
+      (o) => o.format != null && DELIVERABLE_KIND[o.format] === "motion",
     );
     expect(motion, "the offer must contain a motion row").toBeDefined();
     el.proposal = { options, excluded: [], chosenId: motion!.id };

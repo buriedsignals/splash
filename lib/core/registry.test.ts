@@ -130,4 +130,11 @@ it("every other pairing is the identity", () => {
   expect(producerForFormat("chart-native", "video")).toBe("chart-native");
   expect(producerForFormat("map-dw", "static")).toBe("map-dw");
   expect(producerForFormat("unknown-engine", "static")).toBe("unknown-engine");
+  // NOT actually the identity: dw-chart declares no scrolly track of its own, so it redirects
+  // to the scrolly producer exactly like chart-native/map-native do above — the redirection is
+  // unconditional on `format === "scrolly"`, with no check that the engine hosts a scrolly
+  // track at all. This documents CURRENT behaviour, not a deliberate design choice; narrowing
+  // producerForFormat's redirection to engines that actually host a scrolly track is a named
+  // follow-up (final whole-branch review, 2026-07-26), explicitly out of scope here.
+  expect(producerForFormat("dw-chart", "scrolly")).toBe("scrolly");
 });

@@ -304,10 +304,6 @@ pour ta Story — ok ? ». An explicit journalist format signal (« une image
 statique », « pour le print ») WINS over the default. The accepted spec pins exactly ONE
 `format`; `assertFormatAllowed(channel, format)` re-checks it at produce time, unchanged.
 
-Recording it is what makes it win: write that format to the element's `requestedFormat` on the run
-manifest BEFORE the proposal is built. The brain then filters the whole offer down to it and names
-a refusal if the channel does not carry it — an unrecorded signal is a signal the offer never sees.
-
 `suggest-chart` pins exactly ONE `VisualFormat` from `allowedFormats(channel)` (never the whole set);
 `interactiveDefault` (`skills/splash/src/channel.ts`) only steers the article-web default. The journalist
 may change it, but to another single member of the channel's allowed set. Q6 set only the ALLOWED SET, so
@@ -442,6 +438,14 @@ hands over an offer as **data**, never as prose: each option carries `id` · `en
 `intent` · `whySource` (the sheet's own `bestFor`/`notFor` fragments + the computed facts) · and,
 when something stands in the way, `readiness: { status, reason }`. Alongside it comes `excluded` —
 every discarded form with the reason it was discarded. **The code decides; the model only writes.**
+
+**An explicit journalist format signal wins here too — but only if it is RECORDED.** Write it to
+the element's `requestedFormat` on the run manifest BEFORE `propose()` builds the offer: the brain
+then filters the whole offer down to it and names a refusal if the channel does not carry it — an
+unrecorded signal is a signal the offer never sees. (This pipeline is the one with a run manifest
+to write it onto; Stage 2's `suggest-chart` above has none — its own format announcement is pinned
+straight onto that spec instead.)
+
 Four rules, all mechanical:
 
 1. **`why` is rendered, not inherited.** A brain-built option arrives with `why: ""` — deliberately

@@ -8,7 +8,11 @@ import type { VisualFormat } from "../core/vocabulary";
 //   - lib/loop/produce.ts refuses a chosen option whose EFFECTIVE producer is not in this list
 //     (rendering a map spec through the chart renderer produces a WRONG artifact silently);
 //   - lib/brain/eligibility.ts MARKS such a form in the offer instead of dropping it (spec §8:
-//     "jamais silencieusement retirée"), with the same sentence produce refuses with;
+//     "jamais silencieusement retirée") — the SAME sentence produce refuses with for most
+//     engines, though not for every scrolly candidate: eligibility.ts's `withMarks` pushes the
+//     higher-priority article-branch mark first, which masks this one's wording, so the offer
+//     reads "this is the whole-article branch…" while produce still refuses with the plain
+//     unbuildableEngineReason sentence below. Both name the same dead end, in different words;
 //   - lib/loop/manifest.ts's nextActionsForElement routes back to "choose-form" instead of
 //     answering "produce" forever on a choice that can never succeed.
 // Before this file the list was hard-coded in produce.ts alone and the brain knew nothing of
