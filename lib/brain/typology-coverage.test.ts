@@ -136,4 +136,13 @@ test("the image-scrolly sheet exists and is scrolly-only", () => {
   expect(sheet).toBeDefined();
   expect(sheet!.formats).toEqual(["scrolly"]);
   expect(sheet!.engines["image-native"]).toEqual(["image-scrolly"]);
+  // Its 3-6 range counts IMAGE FRAMES, and nothing in lib/brain/facts.ts measures those —
+  // `points` is the numeric COLUMN count. Declared as `limits`, that range gated an image
+  // narrative on an unrelated number: a 2-column CSV excluded it with "this form needs at
+  // least 3 points, and the data has 2", while a 4-numeric-column chart CSV made it legal.
+  // A limit that cannot be measured from the facts must not masquerade as one, so the frame
+  // range lives in the sheet's prose (its own Correctness section), where the engine's
+  // conformance check and the orchestrator's cull are what actually hold it.
+  expect(sheet!.limits).toEqual({});
+  expect(sheet!.body).toMatch(/3.{0,3}6 frames/);
 });

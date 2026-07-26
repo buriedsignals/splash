@@ -161,15 +161,19 @@ test("real KB: dw-chart and map-dw never offer video — they have no video prod
 });
 
 test("check order is pinned: a channel refusal is reported even when the data would ALSO break a limit", () => {
-  // image-scrolly: formats=[scrolly] (killed by social-vertical, which allows neither
-  // scrolly nor interactive) AND limits minPoints:3 (also killed by TWO_POINTS' points:2).
-  // Channel-format is checked first — the journalist reads the channel-agnostic reason,
-  // not the data-specific one that happened to also apply.
-  const { excluded } = eligible({
-    facts: TWO_POINTS,
-    channel: "social-vertical",
+  // A form that fails BOTH: formats=[scrolly] (killed by social-vertical, which allows neither
+  // scrolly nor interactive) AND minPoints:3 (killed by TWO_POINTS' points:2). Channel-format
+  // is checked first — the journalist reads the channel-agnostic reason, not the data-specific
+  // one that happened to also apply. A fixture, not a real sheet: the KB's only scrolly sheet
+  // (image-scrolly) carries no data limit any more, so no real sheet fails both at once.
+  const doublyRefused = fakeSheet("doubly-refused-form", ["scrolly"], {
+    minPoints: 3,
   });
-  const why = excluded.find((e) => e.id === "image-scrolly");
+  const { excluded } = eligible(
+    { facts: TWO_POINTS, channel: "social-vertical" },
+    [{ sheet: doublyRefused, engine: "image-native", key: "fake-key" }],
+  );
+  const why = excluded.find((e) => e.id === "doubly-refused-form");
   expect(why?.reason).toMatch(/social-vertical/);
   expect(why?.reason).not.toMatch(/points/);
 });
@@ -251,7 +255,11 @@ test("a form whose engine the loop cannot build through is MARKED, never offered
   expect(unbuildable.length).toBeGreaterThan(0); // the KB actually exercises the path
   for (const c of unbuildable) {
     expect(c.readiness?.status).toBe("missing");
-    expect(c.readiness!.reason).toContain(c.engine); // names what cannot be built
+    // …and it names what cannot be built — unless the form ALSO sits on the unbuilt article
+    // branch, whose mark is the one a journalist needs to read first (it changes what would
+    // be delivered, not just which renderer runs).
+    if (!c.requires?.includes("article-branch"))
+      expect(c.readiness!.reason).toContain(c.engine);
   }
   // …and the mark never removes: every buildable form is still there, unmarked by THIS rule.
   expect(ok.some((c) => c.engine === "chart-native" && !c.readiness)).toBe(

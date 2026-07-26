@@ -4,7 +4,7 @@ engines:
   image-native: image-scrolly
 intent: [spatial, change-over-time]
 shape: narrative
-limits: { minPoints: 3, maxPoints: 6 }
+limits: {}
 formats: [scrolly]
 bestFor:
   - "a place or an object the reader should look at while the text explains it"
@@ -46,7 +46,13 @@ generates them.
    string. `checkImageConformance` returns a violation string for a missing/blank `alt`, an
    `alt` equal to the `caption`, or a missing `credit.name` — the producer refuses to render
    while that list is non-empty.
-2. **Scrolly ships 3–6 frames.** Below the floor there is no narrative arc to advance through;
+2. **Scrolly ships 3-6 frames** — and this is a PROSE rule on purpose, not a `limits` entry.
+   The header's `limits` are checked against the data facts (`lib/brain/facts.ts`: rows, series,
+   numeric columns), and an image count is none of those — declaring `minPoints: 3` here gated an
+   image narrative on the number of NUMERIC COLUMNS in a CSV, which is unrelated to how many
+   pictures the journalist has. The floor and ceiling are held where they can actually be
+   measured: `checkImageConformance` in the engine, and the orchestrator's cull below.
+   Below the floor there is no narrative arc to advance through;
    above the ceiling the orchestrator's cull must surface and trim the excess before the manifest
    reaches this engine — never a silent truncation here.
 3. **`prefers-reduced-motion` is a hard-cut, not a slower fade.** The frame transition is a knob
