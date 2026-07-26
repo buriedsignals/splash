@@ -44,7 +44,24 @@ const HeaderSchema = z.object({
     ),
   intent: z.array(z.enum(INTENTS)).min(1),
   shape: z.string().min(1),
-  limits: z.record(z.string(), z.number()).default({}),
+  // CLOSED, and closed for the same reason `intent` and `formats` are: a facet the loader
+  // accepts but nothing measures is a facet silently dropped. These six keys are exactly what
+  // eligibility.ts's limitFailure() checks, and each one is measurable from lib/brain/facts.ts
+  // — nothing else is. An open `z.record(z.string(), z.number())` let a typo (`maxSerie: 5`)
+  // or a limit measuring something the facts do not carry (`maxAxes: 3`) validate cleanly and
+  // then vanish, making the form offerable where its own sheet says it should not be. A strict
+  // object refuses the unknown key BY NAME instead. Adding a key here is a promise that
+  // limitFailure() checks it.
+  limits: z
+    .strictObject({
+      points: z.number().optional(),
+      minPoints: z.number().optional(),
+      maxPoints: z.number().optional(),
+      maxSeries: z.number().optional(),
+      maxCategories: z.number().optional(),
+      minRows: z.number().optional(),
+    })
+    .default({}),
   formats: z.array(z.enum(VISUAL_FORMATS)).min(1),
   bestFor: z.array(z.string().min(1)).min(1),
   notFor: z.array(z.string().min(1)).min(1),

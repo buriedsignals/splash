@@ -88,6 +88,39 @@ test("an unknown format is a hard error", () => {
   expect(() => loadTypology(fixture({ "slope.md": bad }))).toThrow(/format/i);
 });
 
+// `limits` was an OPEN vocabulary in the schema and a CLOSED one in the checker: any key
+// parsed, six were honoured. A sheet writing `maxSerie: 5` (typo) or `maxAxes: 3` loaded
+// clean and its cap simply vanished — the form became offerable where its own sheet says it
+// should not be. That is the opposite of the fail-hard-rather-than-drop-a-facet discipline
+// frontmatter.ts states one layer up, and it is silent by construction.
+test("a limit key the checker cannot measure is a hard error, not a silently dropped cap", () => {
+  const typo = SLOPE.replace("{ points: 2, maxSeries: 12 }", "{ maxSerie: 5 }");
+  expect(() => loadTypology(fixture({ "slope.md": typo }))).toThrow(/maxSerie/);
+  const unmeasurable = SLOPE.replace(
+    "{ points: 2, maxSeries: 12 }",
+    "{ maxAxes: 3 }",
+  );
+  expect(() => loadTypology(fixture({ "slope.md": unmeasurable }))).toThrow(
+    /maxAxes/,
+  );
+});
+
+test("the six measurable limit keys all load", () => {
+  const all = SLOPE.replace(
+    "{ points: 2, maxSeries: 12 }",
+    "{ points: 2, minPoints: 1, maxPoints: 4, maxSeries: 12, maxCategories: 8, minRows: 2 }",
+  );
+  const [sheet] = loadTypology(fixture({ "slope.md": all }));
+  expect(sheet.limits).toEqual({
+    points: 2,
+    minPoints: 1,
+    maxPoints: 4,
+    maxSeries: 12,
+    maxCategories: 8,
+    minRows: 2,
+  });
+});
+
 test("a sheet whose id disagrees with its filename is a hard error", () => {
   const bad = SLOPE.replace("id: slope", "id: dumbbell");
   expect(() => loadTypology(fixture({ "slope.md": bad }))).toThrow(/filename/);
