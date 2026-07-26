@@ -5,7 +5,7 @@ engines:
   dw-chart: d3-scatter-plot
 intent: [correlation]
 shape: paired
-formats: [static, interactive, video]
+formats: [static, interactive, video, scrolly]
 bestFor:
   - "whether two numeric measures move together — correlation, clusters, and outliers across many items, one dot per item"
   - "mapping a third value to bubble size, for context rather than the headline number"

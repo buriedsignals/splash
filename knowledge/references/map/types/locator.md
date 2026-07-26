@@ -6,7 +6,7 @@ engines:
 intent: [spatial]
 shape: spatial
 limits: {}
-formats: [static, interactive, video]
+formats: [static, interactive, video, scrolly]
 bestFor:
   - "placing named points of interest — 'which places, and where?' — the map is the story, the markers are the nouns"
 notFor:

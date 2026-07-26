@@ -6,7 +6,7 @@ engines:
 intent: [change-over-time]
 shape: single
 limits: { maxSeries: 5 }
-formats: [static, interactive, video]
+formats: [static, interactive, video, scrolly]
 bestFor:
   - "a continuous trend over many time points (more than about 8 periods)"
 notFor:

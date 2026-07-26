@@ -5,7 +5,7 @@ engines:
 intent: [spatial, magnitude]
 shape: spatial
 limits: {}
-formats: [static, interactive, video]
+formats: [static, interactive, video, scrolly]
 bestFor:
   - "a point cloud where raw markers would overlap into illegibility — reveals the density / aggregate magnitude pattern, not the exact location of each record"
 notFor:

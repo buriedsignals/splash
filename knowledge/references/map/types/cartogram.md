@@ -5,7 +5,7 @@ engines:
 intent: [spatial, magnitude]
 shape: spatial
 limits: {}
-formats: [static, interactive, video]
+formats: [static, interactive, video, scrolly]
 bestFor:
   - "which regions dominate the total (scaled variant) — area distortion makes the biggest contributors unmissable; best when magnitudes span at least an order of magnitude"
   - "equal visual weight per region while roughly preserving spatial arrangement (grid variant) — useful when small regions are invisible on a choropleth"

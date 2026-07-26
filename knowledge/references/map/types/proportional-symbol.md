@@ -5,7 +5,7 @@ engines:
 intent: [spatial, magnitude]
 shape: spatial
 limits: {}
-formats: [static, interactive, video]
+formats: [static, interactive, video, scrolly]
 bestFor:
   - "counts or magnitudes tied to a discrete location — 'how much, and where?' at named places"
 notFor:

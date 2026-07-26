@@ -6,7 +6,7 @@ engines:
 intent: [spatial, magnitude]
 shape: spatial
 limits: {}
-formats: [static, interactive, video]
+formats: [static, interactive, video, scrolly]
 bestFor:
   - "a rate, share, density, index, or per-capita figure already normalised for the size of the region"
 notFor:

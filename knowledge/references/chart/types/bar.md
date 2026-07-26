@@ -6,7 +6,7 @@ engines:
 intent: [magnitude, ranking]
 shape: single
 limits: { maxCategories: 25 }
-formats: [static, interactive, video]
+formats: [static, interactive, video, scrolly]
 bestFor:
   - "comparing magnitudes across categories, ranking items, or a single series keyed by a category or a few periods"
 notFor:

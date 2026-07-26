@@ -5,7 +5,7 @@ engines:
 intent: [spatial, magnitude]
 shape: spatial
 limits: { maxCategories: 6 }
-formats: [static, interactive, video]
+formats: [static, interactive, video, scrolly]
 bestFor:
   - "absolute totals (population, emissions, cases) where the distribution within regions is the story — the dot scatter makes density visible at a glance"
 notFor:

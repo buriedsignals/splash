@@ -343,7 +343,13 @@ test("a mark can never carry an empty reason, even for a capability disabled wit
   // Scoped to the engine the fixture actually disabled: a candidate on ANOTHER engine now
   // carries the "production cannot build this" mark instead, whose reason is a different (also
   // non-empty) sentence. What is pinned here is the empty-reason repair, not which mark wins.
-  const marked = ok.filter((c) => c.engine === "chart-native" && c.readiness);
+  // A chart-native candidate in the scrolly format is excluded too: its EFFECTIVE producer is
+  // skills/scrolly, so it carries the masking article-branch mark (severity `missing`, always
+  // pushed first — see `withMarks` in eligibility.ts) instead of this readiness mark; that
+  // masking is exercised directly by "buildabilityMark resolves the EFFECTIVE producer..." above.
+  const marked = ok.filter(
+    (c) => c.engine === "chart-native" && c.format !== "scrolly" && c.readiness,
+  );
   expect(marked.length).toBeGreaterThan(0); // the fixture actually exercised the path
   for (const c of marked) {
     expect(c.readiness!.reason.length).toBeGreaterThan(0);
