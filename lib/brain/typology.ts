@@ -11,7 +11,8 @@ import { VISUAL_FORMATS } from "../core/vocabulary";
 import { isRenderable } from "../core/registry";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_ROOT = resolve(here, "../../knowledge/references");
+const REPO_ROOT = resolve(here, "../..");
+const DEFAULT_ROOT = resolve(REPO_ROOT, "knowledge/references");
 // The families of sheets, in load order. A family with no directory is skipped, so a KB
 // that does not ship maps still loads.
 const FAMILIES = ["chart/types", "map/types", "image/types"];
@@ -50,6 +51,9 @@ const HeaderSchema = z.object({
 });
 
 export type TypeSheet = z.infer<typeof HeaderSchema> & {
+  /** Repo-relative path to the sheet, e.g. "knowledge/references/chart/types/slope.md" —
+   *  genuinely resolvable from the repo root, not just from the KB root, because whySource.sheet
+   *  hands this to a journalist or reviewer to go read the source. */
   sheetPath: string;
   body: string;
 };
@@ -75,7 +79,7 @@ export function loadTypology(root: string = DEFAULT_ROOT): TypeSheet[] {
         );
       sheets.push({
         ...parsed.data,
-        sheetPath: join(family, file),
+        sheetPath: relative(REPO_ROOT, path),
         body,
       });
     }
