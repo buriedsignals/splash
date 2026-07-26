@@ -1,3 +1,18 @@
+---
+id: boxplot
+engines:
+  chart-native: boxplot
+intent: [distribution]
+shape: distribution
+formats: [static, interactive, video]
+bestFor:
+  - "comparing the distribution of a continuous variable across a handful of categories — spread and skew at a glance, with outliers called out"
+notFor:
+  - "small samples — a box of n≈5 hides how little data there is; show the points instead (strip / beeswarm) or overlay them"
+  - "multimodal data — a box plot cannot show two humps; a histogram, violin, or beeswarm reveals the shape the box hides"
+  - "a single number per group — that is a bar or dot plot, not a distribution"
+---
+
 # Box plot / box-and-whisker — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "distribution" box plot · data-to-viz.com (the boxplot —

@@ -78,3 +78,23 @@ test("every wide-shape chart sheet carries a complete, engine-true header", () =
         expect(chartNative.has(key), `${id} → chart-native:${key}`).toBe(true);
   }
 });
+
+const PAIRED_AND_DISTRIBUTION = [
+  "scatter",
+  "dumbbell",
+  "connected-scatter",
+  "histogram",
+  "boxplot",
+  "beeswarm",
+  "violin",
+];
+
+test("every paired/distribution chart sheet carries a complete header", () => {
+  const byId = loadFamily("chart/types", PAIRED_AND_DISTRIBUTION);
+  for (const id of PAIRED_AND_DISTRIBUTION) {
+    const sheet = byId.get(id);
+    expect(sheet, `${id}.md must load`).toBeDefined();
+    expect(["paired", "distribution"]).toContain(sheet!.shape);
+    expect(sheet!.notFor.length).toBeGreaterThan(0);
+  }
+});

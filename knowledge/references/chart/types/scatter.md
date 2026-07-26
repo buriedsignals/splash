@@ -1,3 +1,18 @@
+---
+id: scatter
+engines:
+  chart-native: scatter
+  dw-chart: d3-scatter-plot
+intent: [correlation]
+shape: paired
+formats: [static, interactive, video]
+bestFor:
+  - "whether two numeric measures move together — correlation, clusters, and outliers across many items, one dot per item"
+  - "mapping a third value to bubble size, for context rather than the headline number"
+notFor:
+  - "change over time of one series — that is a line; magnitude across categories — that is a bar; one variable's distribution — use a histogram or dot plot"
+---
+
 # Scatter / Bubble — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (Correlation — scatterplot, bubble) —

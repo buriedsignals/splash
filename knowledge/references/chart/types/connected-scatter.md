@@ -1,3 +1,18 @@
+---
+id: connected-scatter
+engines:
+  chart-native: connected-scatter
+intent: [change-over-time, correlation]
+shape: paired
+formats: [static, interactive, video]
+bestFor:
+  - "the joint path of two metrics over time — rent vs vacancy, inflation vs unemployment, debt vs deficit — where the shape of the trajectory is the story"
+notFor:
+  - "a plain correlation snapshot with no time order — that is a scatter; the path is meaningless without ordering"
+  - "one variable over time — that is a line"
+  - "a tangled path with many crossings — it stops reading; thin the points or facet"
+---
+
 # Connected scatter — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "change over time" / "correlation"

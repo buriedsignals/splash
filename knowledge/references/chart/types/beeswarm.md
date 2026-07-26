@@ -1,3 +1,18 @@
+---
+id: beeswarm
+engines:
+  chart-native: beeswarm
+intent: [distribution]
+shape: distribution
+formats: [static, interactive, video]
+bestFor:
+  - "modest sample sizes (dozens to a few hundred) where the shape and the individual units matter — the box plot's blind spots become visible; colour by category to compare groups"
+notFor:
+  - "huge n — the swarm overplots into a blob; use a histogram or density plot instead"
+  - "when only the summary matters — a box plot is denser (often paired: box behind, swarm in front)"
+  - "precise reading of one unit — after the dodge the value position is approximate; that is what hover/labels are for"
+---
+
 # Beeswarm / strip plot — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "distribution" beeswarm · data-to-viz.com (the

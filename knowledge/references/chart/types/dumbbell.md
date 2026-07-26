@@ -1,3 +1,20 @@
+---
+id: dumbbell
+engines:
+  chart-native: dumbbell
+  dw-chart: d3-range-plot
+intent: [ranking]
+shape: paired
+limits: { points: 2, maxCategories: 20 }
+formats: [static, interactive, video]
+bestFor:
+  - "the gap between two values across several categories — pay gap by sector, before/after by region, min-max ranges (works well up to ~15-20 rows)"
+notFor:
+  - "a single value per category — that is a bar; the gap is the whole point of a dumbbell"
+  - "more than two values per category, or a trajectory across many periods — that is a slope or a line; a dumbbell is exactly two endpoints"
+  - "part-to-whole — the two dots don't sum to a meaningful total"
+---
+
 # Dumbbell / range plot — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "comparison" / "ranking" dumbbell &

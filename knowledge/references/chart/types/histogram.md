@@ -1,3 +1,17 @@
+---
+id: histogram
+engines:
+  chart-native: histogram
+intent: [distribution]
+shape: distribution
+formats: [static, interactive, video]
+bestFor:
+  - "the shape of one continuous variable's distribution — sale prices, commute times, ages — to show the mode, spread, and skew"
+notFor:
+  - "a categorical comparison — that is a bar; a bar has gaps and discrete categories, a histogram has touching bars and a continuous axis"
+  - "comparing two distributions precisely — use small-multiple histograms or a density plot"
+---
+
 # Histogram — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "distribution" histogram —

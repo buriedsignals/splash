@@ -1,3 +1,20 @@
+---
+id: violin
+engines:
+  chart-native: violin
+intent: [distribution]
+shape: distribution
+limits: { minPoints: 2 }
+formats: [static, interactive, video]
+bestFor:
+  - "comparing distribution shape, not just centre/spread, across several categories at once — when each category has enough observations (dozens+) for a density estimate to be meaningful and the data may be multimodal or skewed in a way a box's five-number summary would hide"
+notFor:
+  - "very small n per category — a KDE from a handful of points is a smoothing artefact, not a real shape; use a box plot with the raw points overlaid, a dot strip, or a beeswarm instead"
+  - "a single number per group — that is a bar or lollipop, not a distribution"
+  - "precise, exact reporting of quantiles/outlier cutoffs — a box plot draws the five-number summary and individual outliers more legibly"
+  - "only a couple of categories — a ridgeline chart often reads better there, but this engine has none yet; prefer boxplot, dot-strip, or beeswarm for 1-2 categories"
+---
+
 # Violin plot — per-type best practice (L2)
 
 > Sources: FT Visual Vocabulary (the canon) — "distribution" violin plot, "similar to a box plot but
