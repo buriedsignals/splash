@@ -1,9 +1,43 @@
 // The seam guard. The model writes the offer's prose; this decides whether what came back is
 // still the offer. It throws rather than returning a verdict, for the reason
 // assertFormatAllowed throws: a caller that wants to be lenient has to say so out loud.
+//
+// The order check is EXACT (same ids, same count, same positions) — not a subsequence check.
+// A phrasing that drops an option is a silent removal, and the spec forbids that twice over
+// (§7 "does not reorder, does not add, does NOT remove"; §8 "never silently removed"). The
+// candidate most likely to be dropped is also the one the ranking penalises for being marked —
+// the very form whose entire point is that the journalist gets told the path exists. Deleting
+// the offer down to `[]` must throw exactly like reordering it does; both are the same
+// violation (the model rewrote the list), so they share the same check and the same error.
+//
+// The readiness mark is STRUCTURAL, not textual. An earlier version tried to verify "the why
+// discloses the mark" by keyword-matching the reason string, in a product whose prose ships in
+// French, German and Italian. That failed three independent ways: an empty `reason` (a
+// capability the newsroom simply switched off — readiness.ts:54, before eligibility.ts's fix)
+// made every possible `why` throw; a `why` that named the dependency while claiming the
+// OPPOSITE ("chart-native est déjà là, tout est prêt") satisfied it anyway, because the check
+// only asked whether a word was present, never what the sentence did with it; and a faithful
+// non-English disclosure that never happened to repeat the English reason string was refused.
+// The guard cannot verify MEANING across languages, so it no longer tries to. Instead it
+// verifies that the phrasing step consciously handled the mark: `PhrasedOption.markAcknowledged`
+// is a boolean the phrasing step must set to `true` for a marked option, and the mark's own
+// words — status, reason, help — are emitted by the CODE beside the why (by whatever renders
+// the offer to the journalist), never left for the model to remember or restate.
+//
+// Accepted limitations — known and deliberate, not oversights:
+//   - CROSS-ATTRIBUTION: two options' `why` bodies swapped still passes. There is no textual
+//     tie to check against — the sheet fragments are English and the prose is the journalist's
+//     language, so nothing here can tell "this why was actually written for that option."
+//   - SPELLED-OUT NUMBERS ("vingt-six cantons") bypass claim-grounding entirely. Only
+//     digit-shaped claims are checked.
+//   - AN EMPTY `why` passes for an unmarked option. There is no substance floor.
 import type { Offer } from "./offer";
 
-export type PhrasedOption = { id: string; why: string };
+export type PhrasedOption = {
+  id: string;
+  why: string;
+  markAcknowledged?: true;
+};
 
 export function verifyOffer(phrased: PhrasedOption[], offer: Offer): void {
   const offered = offer.options.map((o) => o.id);
@@ -17,15 +51,14 @@ export function verifyOffer(phrased: PhrasedOption[], offer: Offer): void {
     if (!offered.includes(p.id))
       throw new Error(`verifyOffer: "${p.id}" was not offered`);
   }
-  // A phrasing may offer fewer options than the brain did (it never adds one — that already
-  // throws above), so this checks the RELATIVE order survives, not that every option is present:
-  // the ids the model kept must appear in strictly increasing offered-position.
-  const positions = phrased.map((p) => offered.indexOf(p.id));
-  for (let i = 1; i < positions.length; i++)
-    if (positions[i] <= positions[i - 1])
-      throw new Error(
-        `verifyOffer: the order changed — offered ${offered.join(", ")}, phrased ${phrased.map((p) => p.id).join(", ")}`,
-      );
+  // Exact match: same ids, same count, same order. Dropping an option (including dropping ALL
+  // of them, phrased = []) fails this exactly like reordering does — a shorter list is still a
+  // list that no longer matches, position for position.
+  const got = phrased.map((p) => p.id);
+  if (got.length !== offered.length || got.some((id, i) => id !== offered[i]))
+    throw new Error(
+      `verifyOffer: the order changed — offered ${offered.join(", ")}, phrased ${got.join(", ")}`,
+    );
 
   for (const p of phrased) {
     const option = offer.options.find((o) => o.id === p.id)!;
@@ -41,25 +74,30 @@ export function verifyOffer(phrased: PhrasedOption[], offer: Offer): void {
         throw new Error(
           `verifyOffer: "${p.id}" claims the number ${n}, which is in neither the facts nor the sheet`,
         );
-    // A marked form must SAY it is marked: offering it bare promises what the install cannot do.
-    if (option.readiness && !mentionsMark(p.why, option.readiness.reason))
+    // Structural acknowledgement, not textual disclosure — see the header. A marked option
+    // must set markAcknowledged; an unmarked one must not (there is nothing to acknowledge).
+    if (option.readiness && p.markAcknowledged !== true)
       throw new Error(
-        `verifyOffer: "${p.id}" is marked (${option.readiness.status}) and its why does not say so`,
+        `verifyOffer: "${p.id}" is marked (${option.readiness.status}) and the phrasing did not acknowledge it`,
+      );
+    if (!option.readiness && p.markAcknowledged)
+      throw new Error(
+        `verifyOffer: "${p.id}" is not marked, so there is no mark for it to acknowledge`,
       );
   }
 }
 
-function numbersIn(s: string): string[] {
-  return (s.match(/\d+(?:[.,]\d+)?/g) ?? []).map((n) => n.replace(",", "."));
+// A digit-group separator — ordinary space, non-breaking space, narrow no-break space — sitting
+// between a digit and a following exactly-three-digit chunk is thousands grouping ("8 000",
+// "1 234 567"), not two different numbers. Collapsed before numbers are extracted, on BOTH the
+// prose and the grounding sources, so correct French/German/Italian prose at ordinary data
+// sizes (>= 1000 rows) is not refused for how it writes a number it got right.
+function collapseDigitGroups(s: string): string {
+  return s.replace(/(\d)[\u0020\u00a0\u202f](?=\d{3}(?:\D|$))/g, "$1");
 }
 
-// The mark has to survive translation, so this cannot match on wording: it asks that the why
-// carry a content word of the reason the brain produced.
-function mentionsMark(why: string, reason: string): boolean {
-  const words = reason
-    .toLowerCase()
-    .split(/[^a-z0-9-]+/)
-    .filter((w) => w.length > 3);
-  const hay = why.toLowerCase();
-  return words.some((w) => hay.includes(w));
+function numbersIn(s: string): string[] {
+  return (collapseDigitGroups(s).match(/\d+(?:[.,]\d+)?/g) ?? []).map((n) =>
+    n.replace(",", "."),
+  );
 }

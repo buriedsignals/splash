@@ -176,6 +176,21 @@ export const SEVERITY = {
   missing: 3,
 } as const;
 
+// readiness.ts:54 deliberately returns reason:"" for a capability the newsroom simply switched
+// off — "disabled" is not a failure, so it earns no actionable sentence there. But a mark on a
+// candidate is read by a journalist, and a mark with nothing to say is exactly the silent
+// degradation this design refuses (spec §8, "jamais silencieusement retirée" — the same
+// principle applies to a mark left wordless). So the empty case is repaired HERE, at the one
+// place a bare status becomes a sentence a journalist reads.
+function markReason(r: {
+  status: CapabilityReadiness["status"];
+  reason: string;
+  label: string;
+}): string {
+  if (r.reason) return r.reason;
+  return `${r.label} is not turned on for this newsroom`;
+}
+
 function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   const requires = [
     c.engine,
@@ -192,7 +207,7 @@ function withMarks(c: Candidate, input: EligibilityInput): Candidate {
     });
   for (const r of input.readiness ?? [])
     if (requires.includes(r.id) && r.status !== "ready")
-      marks.push({ status: r.status, reason: r.reason });
+      marks.push({ status: r.status, reason: markReason(r) });
   if (marks.length === 0) return { ...c, requires };
   const worst = marks.reduce((a, b) =>
     SEVERITY[b.status] > SEVERITY[a.status] ? b : a,

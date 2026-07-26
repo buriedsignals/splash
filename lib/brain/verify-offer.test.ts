@@ -44,6 +44,7 @@ test("a faithful phrasing passes", () => {
         {
           id: "dumbbell",
           why: "Marque l'écart aux deux bouts. Nécessite chart-native, qui n'est pas installé.",
+          markAcknowledged: true,
         },
       ],
       OFFER,
@@ -53,13 +54,30 @@ test("a faithful phrasing passes", () => {
 
 test("an option the brain never offered is refused", () => {
   expect(() =>
-    verifyOffer([{ id: "sankey", why: "joli" }, ...[]], OFFER),
+    verifyOffer(
+      [
+        { id: "sankey", why: "joli" },
+        {
+          id: "dumbbell",
+          why: "l'écart aux deux bouts",
+          markAcknowledged: true,
+        },
+      ],
+      OFFER,
+    ),
   ).toThrow(/not offered|sankey/i);
 });
 
 test("a discarded form presented as offered is refused", () => {
   expect(() =>
-    verifyOffer([{ id: "pie", why: "un camembert" }], OFFER),
+    verifyOffer(
+      [
+        { id: "pie", why: "un camembert" },
+        { id: "slope", why: "la pente" },
+        { id: "dumbbell", why: "l'écart", markAcknowledged: true },
+      ],
+      OFFER,
+    ),
   ).toThrow(/discarded|pie/i);
 });
 
@@ -67,7 +85,11 @@ test("reordering is refused — the ranking is not the model's to change", () =>
   expect(() =>
     verifyOffer(
       [
-        { id: "dumbbell", why: "l'écart aux deux bouts" },
+        {
+          id: "dumbbell",
+          why: "l'écart aux deux bouts",
+          markAcknowledged: true,
+        },
         { id: "slope", why: "la pente entre deux dates" },
       ],
       OFFER,
@@ -75,20 +97,109 @@ test("reordering is refused — the ranking is not the model's to change", () =>
   ).toThrow(/order/i);
 });
 
-test("a number that is in neither the facts nor the offer is refused", () => {
+test("dropping an offered option — even down to an empty list — is refused as an order change, never a silent removal", () => {
+  expect(() => verifyOffer([], OFFER)).toThrow(/order/i);
   expect(() =>
-    verifyOffer([{ id: "slope", why: "La pente couvre 26 cantons." }], OFFER),
+    verifyOffer([{ id: "slope", why: "la pente entre deux dates" }], OFFER),
+  ).toThrow(/order/i);
+});
+
+test("a number that is in neither the facts nor the offer is refused, with both options phrased so nothing masks it", () => {
+  // Both options are phrased, in the offered order, so the exact-match order check passes and
+  // the number loop reaches every phrased option — the invented number on slope cannot hide
+  // behind an incomplete phrasing (that would fail the order check first, for a different
+  // reason, and mask this one).
+  expect(() =>
+    verifyOffer(
+      [
+        { id: "slope", why: "La pente couvre 26 cantons." },
+        {
+          id: "dumbbell",
+          why: "Marque l'écart aux deux bouts. Nécessite chart-native, qui n'est pas installé.",
+          markAcknowledged: true,
+        },
+      ],
+      OFFER,
+    ),
   ).toThrow(/26/);
 });
 
-test("a marked form phrased as if it were ready is refused", () => {
+test("a marked form phrased without acknowledging the mark is refused", () => {
   expect(() =>
     verifyOffer(
       [
         { id: "slope", why: "8 cantons, 2 dates." },
-        { id: "dumbbell", why: "Marque l'écart aux deux bouts." }, // says nothing about the gap
+        { id: "dumbbell", why: "Marque l'écart aux deux bouts." }, // no markAcknowledged
       ],
       OFFER,
     ),
-  ).toThrow(/readiness|marked/i);
+  ).toThrow(/marked|acknowledge/i);
+});
+
+test("markAcknowledged on an option that carries no readiness is refused — there is no mark to acknowledge", () => {
+  expect(() =>
+    verifyOffer(
+      [
+        { id: "slope", why: "8 cantons, 2 dates.", markAcknowledged: true },
+        {
+          id: "dumbbell",
+          why: "l'écart aux deux bouts",
+          markAcknowledged: true,
+        },
+      ],
+      OFFER,
+    ),
+  ).toThrow(/not marked|acknowledge/i);
+});
+
+test("grouped thousands (8 000) ground against a fact written without the separator (8000)", () => {
+  const bigOffer: Offer = {
+    options: [
+      {
+        id: "slope",
+        nativeType: "slope",
+        engine: "chart-native",
+        format: "static",
+        intent: ["change-over-time"],
+        whySource: {
+          sheet: "chart/types/slope.md",
+          fragments: ["a before/after across a handful of categories"],
+          facts: { rows: "8000", series: "2", points: "2" },
+        },
+      },
+    ],
+    excluded: [],
+  };
+  expect(() =>
+    verifyOffer(
+      [{ id: "slope", why: "La pente couvre 8 000 lignes de données." }],
+      bigOffer,
+    ),
+  ).not.toThrow();
+});
+
+test("a genuinely invented grouped number still throws", () => {
+  const bigOffer: Offer = {
+    options: [
+      {
+        id: "slope",
+        nativeType: "slope",
+        engine: "chart-native",
+        format: "static",
+        intent: ["change-over-time"],
+        whySource: {
+          sheet: "chart/types/slope.md",
+          fragments: ["a before/after across a handful of categories"],
+          facts: { rows: "8000", series: "2", points: "2" },
+        },
+      },
+    ],
+    excluded: [],
+  };
+  expect(() =>
+    verifyOffer(
+      [{ id: "slope", why: "La pente couvre 9 000 lignes de données." }],
+      bigOffer,
+    ),
+  ).toThrow(/9000/);
 });

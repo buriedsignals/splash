@@ -251,3 +251,24 @@ test("every exclusion carries a non-empty reason — no silent drop", () => {
   const { excluded } = eligible({ ...BASE, channel: "social-feed" });
   for (const e of excluded) expect(e.reason.length).toBeGreaterThan(0);
 });
+
+test("a mark can never carry an empty reason, even for a capability disabled with no reason (readiness.ts:54)", () => {
+  const { eligible: ok } = eligible({
+    ...BASE,
+    readiness: [
+      {
+        id: "chart-native",
+        label: "Charts built in-house",
+        status: "disabled",
+        reason: "", // the real shape readiness.ts returns for a switched-off capability
+        help: [],
+      },
+    ],
+  });
+  const marked = ok.filter((c) => c.readiness);
+  expect(marked.length).toBeGreaterThan(0); // the fixture actually exercised the path
+  for (const c of marked) {
+    expect(c.readiness!.reason.length).toBeGreaterThan(0);
+    expect(c.readiness!.reason).toMatch(/Charts built in-house/);
+  }
+});
