@@ -634,7 +634,7 @@ git commit -m "fix(scrolly): export the hosted-type sets and refuse an unknown m
   - `knowledge/references/map/types/dot-density.md`
   - `knowledge/references/map/types/locator.md`
   - `knowledge/references/map/types/cartogram.md`
-- Test: `lib/brain/typology-drift.test.ts` (append DRIFT 3)
+- Test: `skills/scrolly/tests/kb-scrolly-drift.test.ts` (create)
 
 **Interfaces:**
 - Consumes: `CHART_SCROLLY_TYPES`, `MAP_SCROLLY_TYPES` (Task 6); `loadTypology()` (`lib/brain/typology.ts`).
@@ -642,20 +642,16 @@ git commit -m "fix(scrolly): export the hosted-type sets and refuse an unknown m
 
 **Context:** only ONE sheet of 45 declares `scrolly` today (`image/types/image-scrolly.md`), while the BODY of several map sheets documents shipped scrolly components (`dot-density.md:201-202`, `cartogram.md:191-204`, `hex-grid.md:143-145`). This task moves that knowledge from prose into the facets. `route.md` deliberately does NOT get it.
 
-**Import note:** `lib/` must not import from `skills/`. The drift test is a TEST, and `lib/brain/typology-drift.test.ts` already imports `../loop/engines`, which is the sanctioned composition root; import the two sets **through a relative path to the skill** in the test file only, and add a one-line comment saying why it is acceptable here (test-only, mirroring the existing engines import). If review objects, the fallback is to move this test to `skills/scrolly/tests/kb-scrolly-drift.test.ts` and have it load the typology from `lib` instead — the assertion is identical either way.
+**Where this test lives, and why (decided before execution):** it goes in `skills/scrolly/tests/`, NOT beside its DRIFT 1/2 siblings in `lib/brain/`. The Global Constraint forbids `lib/ → skills/`; the reverse direction is the normal one and already practised (`skills/scrolly/src/manifest.ts` imports `lib/core/registry`). So the test reads the engine's exported sets directly and imports `loadTypology` from `lib`. `skills/scrolly` is already in the gate's `TEST_DIRS`. Do NOT put this test in `lib/brain/typology-drift.test.ts`.
 
 - [ ] **Step 1: Write the failing test**
 
-Append to `lib/brain/typology-drift.test.ts`:
+Create `skills/scrolly/tests/kb-scrolly-drift.test.ts`:
 
 ```ts
-// Test-only import from skills/: this assertion exists precisely to tie a KB facet to the
-// engine dispatch, so it must read the engine's own exported sets rather than a third copy.
-// (lib/ source still never imports skills/ — only this test does, like ../loop/engines above.)
-import {
-  CHART_SCROLLY_TYPES,
-  MAP_SCROLLY_TYPES,
-} from "../../skills/scrolly/src/Scrolly";
+import { test, expect } from "bun:test";
+import { loadTypology } from "../../../lib/brain/typology";
+import { CHART_SCROLLY_TYPES, MAP_SCROLLY_TYPES } from "../src/Scrolly";
 
 test("DRIFT 3: a sheet may declare the scrolly format exactly when a track hosts its type", () => {
   const hosted = new Set([
@@ -674,7 +670,7 @@ test("DRIFT 3: a sheet may declare the scrolly format exactly when a track hosts
 
 - [ ] **Step 2: Run it and watch it fail**
 
-Run: `bun test lib/brain/typology-drift.test.ts`
+Run: `cd skills/scrolly && bun test tests/kb-scrolly-drift.test.ts`
 Expected: FAIL — the second assertion lists the 9 hosted types whose sheets do not declare `scrolly`.
 
 - [ ] **Step 3: Amend the nine sheets**
@@ -689,8 +685,8 @@ Change ONLY that line. Do not touch the body, the limits, the intents, or `route
 
 - [ ] **Step 4: Run it and watch it pass**
 
-Run: `bun test lib/brain/`
-Expected: PASS. `DRIFT 1` and `DRIFT 2` must still pass — the render keys are untouched.
+Run: `cd skills/scrolly && bun test && cd ../.. && bun test lib/brain/`
+Expected: PASS both. `DRIFT 1` and `DRIFT 2` in `lib/brain/typology-drift.test.ts` must still pass — the render keys are untouched.
 
 - [ ] **Step 5: Verify the format is now genuinely reachable**
 
@@ -713,7 +709,7 @@ Run it, then delete it. Expected: **more than one** candidate (it was 1 before),
 - [ ] **Step 6: Commit**
 
 ```bash
-git add knowledge/references lib/brain/typology-drift.test.ts
+git add knowledge/references skills/scrolly/tests/kb-scrolly-drift.test.ts
 git commit -m "feat(kb): nine sheets declare the scrolly format, locked by a drift test"
 ```
 
@@ -1078,7 +1074,7 @@ git commit --allow-empty -m "chore: format-reach slice verified against its succ
 
 ## Self-Review
 
-**Spec coverage.** §3 → Task 1. §4 → Task 2. §5.1 → Task 9. §5.2 → Task 8. §5.3 → Task 9. §6.1 → Task 3. §6.2 → Tasks 4 and 5. §6.3 → Task 7. §6.4 → Task 6. §7 (nothing moves) → asserted by the regression locks in Tasks 2, 4 and 11 step 2. §8 → the error table is covered by Tasks 4, 5, 8. §9 tests 1-10 → Tasks 1, 2, 3, 4, 6, 7, 8, 9. §10 → Task 10. §11 → Task 11. §12/§13 → Global Constraints and Task 6 step 5.
+**Spec coverage.** §3 → Task 1. §4 → Task 2. §5.1 → Task 9. §5.2 → Task 8. §5.3 → Task 9. §6.1 → Task 3. §6.2 → Tasks 4 and 5. §6.3 → Task 7 (drift test in skills/scrolly/tests, per the pre-flight ruling). §6.4 → Task 6. §7 (nothing moves) → asserted by the regression locks in Tasks 2, 4 and 11 step 2. §8 → the error table is covered by Tasks 4, 5, 8. §9 tests 1-10 → Tasks 1, 2, 3, 4, 6, 7, 8, 9. §10 → Task 10. §11 → Task 11. §12/§13 → Global Constraints and Task 6 step 5.
 
 **Known gaps the implementer must close by reading, not guessing.** Three tasks reuse fixture helpers this plan names but does not reproduce (`fakeSheet`/`FACTS` in `eligibility.test.ts`, `makeRunWithChosenOption` in `produce.test.ts`, `makeProducibleRun` in the loop e2e tests). That is deliberate: inventing a second fixture where one exists is the more expensive mistake. Read the neighbouring test file's top before writing.
 
