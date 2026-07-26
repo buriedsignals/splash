@@ -164,8 +164,11 @@ reste intact et sert de grounding. Aucun drift savoir↔règle possible : il n'y
 ```yaml
 ---
 id: slope                                 # id canonique de la fiche (= son nom de fichier)
-engines:                                  # moteur → SA clé de rendu ; vérifié contre le registre
+engines:                                  # moteur → SA/SES clé(s) de rendu ; vérifié contre le registre
   chart-native: slope
+  # une valeur peut être une LISTE quand un moteur nomme plusieurs variantes du même concept
+  # éditorial (Datawrapper sépare d3-bars horizontal et column-chart vertical) ; la première
+  # est la préférée. Sans ça, une variante légitime devient inoffrable — cf. §5.1.
 intent: [change-over-time, ranking]       # vocabulaire fermé (§4.2)
 shape: wide                               # miroir de NativeTypeEntry.shape
 limits: { points: 2, maxSeries: 12 }      # mesurables sur le DataProfile
@@ -198,6 +201,21 @@ notFor:
    test de complétude qui existe déjà côté chart-native (`tests/completeness.test.ts`, où le
    backfill `LEGACY_KB_FAMILY_BACKFILL` doit **rétrécir, jamais grandir**) ;
 3. tout `intent` déclaré appartient au vocabulaire fermé de `intents.ts`.
+
+### 5.1 Pourquoi une fiche peut nommer plusieurs clés d'un même moteur
+
+Un moteur peut nommer **plusieurs variantes d'un seul concept éditorial** : Datawrapper distingue
+`d3-bars` (barres horizontales) de `column-chart` (colonnes verticales), et `bar.md` — intitulée
+« Bar / Column » — recommande justement les colonnes pour peu de périodes. Avec une seule clé par
+(fiche, moteur), la variante non nommée devient **inoffrable**, et le seul moyen de faire passer
+le test de dérive 2 est de la marquer `deferred` — ce qui fait dire au registre « le moteur ne
+sait pas rendre ça » alors qu'il le rend très bien. C'est le mensonge symétrique de celui que la
+typologie existe pour empêcher.
+
+Donc : `engines[moteur]` vaut **une clé ou une liste de clés**, la première étant la préférée
+(celle qu'on offre quand plusieurs sont rendables). `deferred` conserve son sens unique et
+strict — **une affirmation sur le moteur** : « déclaré, mais pas rendable/gardé ». Il ne code
+jamais une lacune de savoir.
 
 **Coût honnête.** Écrire ce frontmatter pour ~38 fiches chart + 7 fiches carto + les types
 dw-chart est du **travail d'auteur**, pas du code : c'est là que la qualité de l'offre se joue.
