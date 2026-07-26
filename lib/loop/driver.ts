@@ -48,11 +48,19 @@ export async function advance(
     }
     case "propose": {
       if (!live) return run;
-      const { options, excluded } = propose(run, decor);
+      const { options, excluded, refusal } = propose(run, decor);
       return {
         ...run,
         elements: [
-          { ...live, proposal: { options, excluded } },
+          {
+            ...live,
+            // Conditional, not `refusal: refusal` — an element with nothing refused keeps
+            // exactly the proposal shape it had before this field existed (no `refusal:
+            // undefined` key riding along; nothing here hashes or walks the object's own
+            // key set, but the rest of this codebase's discipline is to never introduce a
+            // present-but-empty marker where "absent" already says the same thing).
+            proposal: { options, excluded, ...(refusal ? { refusal } : {}) },
+          },
           ...run.elements.slice(1),
         ],
       };

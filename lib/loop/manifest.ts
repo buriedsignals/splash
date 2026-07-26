@@ -68,6 +68,12 @@ const RunElementSchema = z.object({
         .array(z.object({ id: z.string(), reason: z.string() }))
         .default([]),
       chosenId: z.string().optional(),
+      // The brain's own sentence for why a REQUESTED format was refused (lib/brain/
+      // eligibility.ts, lib/loop/propose.ts). State, not a message: it survives a resume the
+      // same way `excluded` does, so the desk can display it later without re-deriving it —
+      // and so `options: []` reads as "refused" rather than being indistinguishable from
+      // "nothing to offer".
+      refusal: z.string().optional(),
     })
     .optional(),
   artifact: z

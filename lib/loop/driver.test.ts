@@ -418,6 +418,53 @@ test("advance() builds a proposal annotated against a decor, and never throws do
   expect(produced.elements[0].artifact).toBeDefined();
 }, 90000);
 
+// lib/loop/propose.ts (task 9) carries a refusal computed by the brain (lib/brain/
+// eligibility.ts, task 8) through its return value — but advance()'s "propose" case was the
+// ONLY production caller of propose(), and it destructured just `{ options, excluded }`, with
+// nowhere on RunElementSchema's `proposal` to put a refusal even if it had read one. A run
+// driven through advance() persisted `options: []` indistinguishable from "nothing to offer" —
+// the exact silent degradation this slice exists to remove.
+test("advance() persists the brain's refusal on the element when the requested format is off-channel", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-refusal-run-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "refusal",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "social-vertical", // allows only static/video (lib/core/channel-policy.ts)
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        requestedFormat: "scrolly", // not in social-vertical's allowed set
+        angle: {
+          confirmedTakeaway: "Premiums rose in both cantons",
+          altInsight: "Both cantons' adult premium rose from 2015 to 2024.",
+          unit: "CHF",
+        },
+      },
+    ],
+    events: [],
+  };
+  expect(nextActions(run)).toEqual(["propose"]);
+
+  const after = await advance(run, runDir, NEUTRAL_DECOR);
+
+  expect(after.elements[0].proposal!.options).toEqual([]);
+  expect(after.elements[0].proposal!.refusal).toBeTruthy();
+  expect(after.elements[0].proposal!.refusal).toContain("social-vertical");
+  expect(after.elements[0].proposal!.refusal).toContain("scrolly");
+});
+
 test("the element-driven branches never dereference a missing element", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-no-elements-2-"));
   const oriented: RunManifest = {
