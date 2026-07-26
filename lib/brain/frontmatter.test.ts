@@ -53,3 +53,13 @@ test("a key that opens a block but never populates it is a hard error, never a s
     /declares nothing/,
   );
 });
+
+test("a nested map value can itself be an inline list — a moteur naming several render keys", () => {
+  const { data } = splitFrontmatter(
+    "---\nid: bar\nengines:\n  chart-native: bar\n  dw-chart: [d3-bars, column-chart]\n---\nbody\n",
+  );
+  expect(data.engines).toEqual({
+    "chart-native": "bar",
+    "dw-chart": ["d3-bars", "column-chart"],
+  });
+});

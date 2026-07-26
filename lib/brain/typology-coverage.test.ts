@@ -47,9 +47,12 @@ test("every single-shape chart sheet carries a complete, engine-true header", ()
     expect(sheet!.bestFor.length).toBeGreaterThan(0);
     expect(sheet!.notFor.length).toBeGreaterThan(0);
     // every declared render key must exist in that engine's catalogue
-    for (const [engine, key] of Object.entries(sheet!.engines))
+    for (const [engine, keys] of Object.entries(sheet!.engines))
       if (engine === "chart-native")
-        expect(chartNative.has(key), `${id} → chart-native:${key}`).toBe(true);
+        for (const key of keys)
+          expect(chartNative.has(key), `${id} → chart-native:${key}`).toBe(
+            true,
+          );
   }
 });
 
@@ -73,9 +76,12 @@ test("every wide-shape chart sheet carries a complete, engine-true header", () =
     expect(sheet, `${id}.md must load`).toBeDefined();
     expect(sheet!.shape).toBe("wide");
     expect(sheet!.bestFor.length).toBeGreaterThan(0);
-    for (const [engine, key] of Object.entries(sheet!.engines))
+    for (const [engine, keys] of Object.entries(sheet!.engines))
       if (engine === "chart-native")
-        expect(chartNative.has(key), `${id} → chart-native:${key}`).toBe(true);
+        for (const key of keys)
+          expect(chartNative.has(key), `${id} → chart-native:${key}`).toBe(
+            true,
+          );
   }
 });
 
@@ -116,9 +122,10 @@ test("every map sheet is spatial and engine-true", () => {
     const sheet = byId.get(id);
     expect(sheet, `${id}.md must load`).toBeDefined();
     expect(sheet!.intent).toContain("spatial");
-    for (const [engine, key] of Object.entries(sheet!.engines))
+    for (const [engine, keys] of Object.entries(sheet!.engines))
       if (engine === "map-native")
-        expect(mapNative.has(key), `${id} → map-native:${key}`).toBe(true);
+        for (const key of keys)
+          expect(mapNative.has(key), `${id} → map-native:${key}`).toBe(true);
   }
 });
 
@@ -128,5 +135,5 @@ test("the image-scrolly sheet exists and is scrolly-only", () => {
   );
   expect(sheet).toBeDefined();
   expect(sheet!.formats).toEqual(["scrolly"]);
-  expect(sheet!.engines["image-native"]).toBe("image-scrolly");
+  expect(sheet!.engines["image-native"]).toEqual(["image-scrolly"]);
 });

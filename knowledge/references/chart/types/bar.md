@@ -2,7 +2,7 @@
 id: bar
 engines:
   chart-native: bar
-  dw-chart: d3-bars
+  dw-chart: [d3-bars, column-chart]
 intent: [magnitude, ranking]
 shape: single
 limits: { maxCategories: 25 }

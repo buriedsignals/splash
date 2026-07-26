@@ -2,7 +2,7 @@
 id: grouped-bar
 engines:
   chart-native: grouped
-  dw-chart: d3-bars-grouped
+  dw-chart: [d3-bars-grouped, grouped-column-chart]
 intent: [magnitude]
 shape: wide
 limits: { maxSeries: 3, maxCategories: 6 }

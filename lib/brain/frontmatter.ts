@@ -47,7 +47,11 @@ function parseBlock(block: string): Record<string, unknown> {
       if (!key)
         throw new Error(`frontmatter: nested value outside a key: ${t}`);
       if (list) throw new Error(`frontmatter: unsupported construct: ${t}`);
-      (map ??= {})[kv[1]] = scalar(kv[2]);
+      // A nested map's own value can itself be an inline list (`engines: { dw-chart: [a,
+      // b] }`) — a moteur may name several render keys of one concept (spec §5.1). `value`
+      // already parses `[...]`/`{...}`/scalars; only `scalar` was used here before, which
+      // silently kept a bracketed list as one opaque string.
+      (map ??= {})[kv[1]] = value(kv[2]);
       continue;
     }
 

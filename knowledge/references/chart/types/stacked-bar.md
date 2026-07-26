@@ -2,7 +2,7 @@
 id: stacked-bar
 engines:
   chart-native: stacked
-  dw-chart: d3-bars-stacked
+  dw-chart: [d3-bars-stacked, stacked-column-chart]
 intent: [part-to-whole, change-over-time]
 shape: wide
 limits: { maxCategories: 8, maxSeries: 5 }

@@ -32,11 +32,33 @@ Body.
 test("it loads a sheet into typed facets and keeps the body for grounding", () => {
   const [sheet] = loadTypology(fixture({ "slope.md": SLOPE }));
   expect(sheet.id).toBe("slope");
-  expect(sheet.engines["chart-native"]).toBe("slope");
+  expect(sheet.engines["chart-native"]).toEqual(["slope"]);
   expect(sheet.intent).toEqual(["change-over-time", "ranking"]);
   expect(sheet.limits.maxSeries).toBe(12);
   expect(sheet.body).toContain("Body.");
   expect(sheet.sheetPath.endsWith("chart/types/slope.md")).toBe(true);
+});
+
+test("a scalar engine value normalises to a single-element list", () => {
+  const [sheet] = loadTypology(fixture({ "slope.md": SLOPE }));
+  expect(Array.isArray(sheet.engines["chart-native"])).toBe(true);
+});
+
+test("a list-valued engine loads, preferred key first", () => {
+  const twoKeys = SLOPE.replace(
+    "  chart-native: slope",
+    "  chart-native: slope\n  dw-chart: [d3-range-plot, d3-arrow-plot]",
+  );
+  const [sheet] = loadTypology(fixture({ "slope.md": twoKeys }));
+  expect(sheet.engines["dw-chart"]).toEqual(["d3-range-plot", "d3-arrow-plot"]);
+});
+
+test("an empty engines list is a hard error", () => {
+  const bad = SLOPE.replace(
+    "  chart-native: slope",
+    "  chart-native: slope\n  dw-chart: []",
+  );
+  expect(() => loadTypology(fixture({ "slope.md": bad }))).toThrow();
 });
 
 test("an intent outside the closed vocabulary is a hard error", () => {

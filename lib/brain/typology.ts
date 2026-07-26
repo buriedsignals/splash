@@ -16,13 +16,31 @@ const DEFAULT_ROOT = resolve(here, "../../knowledge/references");
 // that does not ship maps still loads.
 const FAMILIES = ["chart/types", "map/types", "image/types"];
 
+// A moteur can name SEVERAL render keys for one editorial concept — Datawrapper splits
+// horizontal `d3-bars` from vertical `column-chart`, both "bar" (spec §5.1). A sheet may
+// therefore write a scalar OR a list per engine; the loader normalises both to a list so
+// every downstream reader (renderableSheets, the drift tests) sees one shape. The first key
+// is the preferred one — offered ahead of its siblings when more than one is renderable.
+const EngineKeys = z.union([
+  z.string().min(1),
+  z.array(z.string().min(1)).min(1),
+]);
+
 const HeaderSchema = z.object({
   id: z.string().min(1),
   engines: z
-    .record(z.string(), z.string())
+    .record(z.string(), EngineKeys)
     .refine((e) => Object.keys(e).length > 0, {
       message: "engines: a sheet must name at least one engine",
-    }),
+    })
+    .transform((e) =>
+      Object.fromEntries(
+        Object.entries(e).map(([engine, keys]) => [
+          engine,
+          Array.isArray(keys) ? keys : [keys],
+        ]),
+      ),
+    ),
   intent: z.array(z.enum(INTENTS)).min(1),
   shape: z.string().min(1),
   limits: z.record(z.string(), z.number()).default({}),
@@ -69,13 +87,18 @@ export type RenderableSheet = { sheet: TypeSheet; engine: string; key: string };
 
 // A sheet is only offerable through an engine that can render it TODAY. This is the join
 // that makes a deferred type structurally unofferable (spec §3): nothing downstream has to
-// remember to filter it, because it never enters the candidate set.
+// remember to filter it, because it never enters the candidate set. When a sheet names
+// several keys for one engine (spec §5.1), the pair fires on the FIRST one that is
+// renderable — the sheet's own order is the preference order — so a deferred preferred key
+// (were that ever the case) falls through to a renderable sibling instead of hiding it.
 export function renderableSheets(
   sheets: TypeSheet[] = loadTypology(),
 ): RenderableSheet[] {
   const out: RenderableSheet[] = [];
   for (const sheet of sheets)
-    for (const [engine, key] of Object.entries(sheet.engines))
-      if (isRenderable(engine, key)) out.push({ sheet, engine, key });
+    for (const [engine, keys] of Object.entries(sheet.engines)) {
+      const key = keys.find((k) => isRenderable(engine, k));
+      if (key) out.push({ sheet, engine, key });
+    }
   return out;
 }
