@@ -2,7 +2,7 @@
 id: heatmap
 engines:
   chart-native: heatmap
-intent: [magnitude, spatial]
+intent: [magnitude, correlation]
 shape: wide
 formats: [static, interactive, video]
 bestFor:
@@ -15,7 +15,7 @@ notFor:
 
 # Heatmap — per-type best practice (L2)
 
-> Sources: FT Visual Vocabulary (the canon) — "magnitude" / "spatial" heatmap —
+> Sources: FT Visual Vocabulary (the canon) — "magnitude" / "correlation" heatmap —
 > https://github.com/Financial-Times/chart-doctor/tree/main/visual-vocabulary ·
 > data-to-viz.com (heatmap) · ColorBrewer (sequential CVD-safe ramps, Brewer/Harrower) ·
 > credited.
