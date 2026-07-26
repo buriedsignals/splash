@@ -2,11 +2,32 @@ import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { fail, ok, render, type VerbResult } from "../core/verbs";
+import { IMAGE_EXTENSIONS } from "../core/contract";
+import type { VisualFormat } from "../core/vocabulary";
 import { provenanceHash, type RunManifest, type RunElement } from "./manifest";
 // Populates the producer registry the render verb dispatches from — without it every
 // render answers `unknown-engine`. The loop's ONE point of knowledge about skills/ lives
 // in that file, on purpose; see its header.
 import "./engines";
+
+// Which delivered file IS the artifact, for a given format — the same shape
+// assertDeliveredContract (lib/core/contract.ts) already validated is present before this
+// runs, so this only has to LOCATE it, not re-validate it. Kept in step with
+// assertFileMedia's naming (interactive.html / scrolly.html / one image / one .mp4) rather
+// than re-deriving its own convention.
+function artifactFileFor(
+  format: VisualFormat,
+  files: string[],
+): string | undefined {
+  if (format === "static")
+    return files.find((f) =>
+      IMAGE_EXTENSIONS.some((ext) => f.toLowerCase().endsWith(ext)),
+    );
+  if (format === "video")
+    return files.find((f) => f.toLowerCase().endsWith(".mp4"));
+  const htmlName = format === "scrolly" ? "scrolly.html" : "interactive.html";
+  return files.find((f) => f.split("/").pop() === htmlName);
+}
 
 // The ONE craft verb of the loop. Assembles a NativeSpec from the manifest element and
 // renders it via the shared render verb (lib/core/verbs) — the same execution path the
@@ -65,6 +86,12 @@ export async function produce(
       `produce: cannot read the frozen input ${run.input.data.path}: ${(e as Error).message}`,
     );
   }
+  // The pinned format: what the brain offered and the journalist chose, not a stub — the
+  // manifest must not promise "interactive" and receive a static PNG. Options built before
+  // the brain existed (fixtures, hand-authored manifests) carry no `format` at all; "static"
+  // is the same default produce.ts always rendered before this format threading landed.
+  const format: VisualFormat = chosen.format ?? "static";
+
   const nativeSpec = {
     nativeType: chosen.nativeType,
     title: el.angle.confirmedTakeaway,
@@ -72,23 +99,26 @@ export async function produce(
     unit: el.angle.unit,
     source: { name: "Provided by the newsroom" },
     ...(el.angle.emphasis ? { highlight: el.angle.emphasis } : {}),
-    format: "static",
+    format,
     data: dataCsv,
   };
 
   const result = await render({
     engine: "chart-native",
     spec: nativeSpec,
-    format: "static",
+    format,
     channel,
     outDir: join(runDir, "elements", el.id),
     id: el.id,
   });
   if (!result.ok) return result;
 
-  const artifactPath = result.value.files.find((f) => f.endsWith("static.png"));
+  const artifactPath = artifactFileFor(format, result.value.files);
   if (!artifactPath)
-    return fail("engine-failed", "produce: no static.png in the delivery");
+    return fail(
+      "engine-failed",
+      `produce: no ${format} artifact in the delivery`,
+    );
   // Same discipline for the delivered artifact: reading it back to hash it, and hashing the
   // provenance, are the last unguarded steps before the result — a failure in either is
   // reported, never thrown (the engine DID run, so it is an engine-failed outcome).
