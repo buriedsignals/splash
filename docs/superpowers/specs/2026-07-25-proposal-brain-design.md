@@ -146,9 +146,20 @@ Une intention mal classée dérange l'ordre des deux ou trois options posées su
 journaliste voit toujours l'ensemble légal complet, écartées comprises, et tranche. C'est la
 dégradation gracieuse qui rend acceptable d'avoir du sémantique dans la boucle.
 
-Le classement combine : correspondance d'intention (la fiche déclare les intentions qu'elle sert)
-· adéquation aux faits (une forme dont les seuils sont confortablement tenus passe devant une
-forme à la limite) · statut de readiness (une forme prête passe devant une forme marquée).
+Le classement est **lexicographique**, dans cet ordre strict : correspondance d'intention (la
+fiche déclare les intentions qu'elle sert) → statut de readiness (une forme prête passe devant une
+forme marquée ; `ready > unverified > disabled > missing`) → adéquation aux faits (une forme dont
+les seuils sont confortablement tenus passe devant une forme à la limite) → format.
+
+**Pourquoi lexicographique et non pondéré** (établi par la mesure, 2026-07-25) : le premier jet
+mélangeait ces facteurs en un score additif. Comme l'offre est **tronquée au top 3**, toute
+constante de pénalité bornée est franchissable à un certain nombre de correspondances — un poids
+qui protégeait une forme marquée à deux intentions l'enterrait à une seule, sous des formes qui
+n'en servaient aucune. Or enterrer, ici, c'est **retirer**. Seule la dominance stricte garantit la
+règle du §3.4 à tout rang : **toute forme qui sert l'intention passe devant toute forme qui ne la
+sert pas, quel que soit son readiness** ; le readiness n'arbitre qu'à correspondance égale.
+(`disabled` sous `unverified` est délibéré : « désactivé » = l'install ne l'a volontairement pas,
+« non vérifié » = ça marche probablement mais le fournisseur n'a pas répondu.)
 
 **Grounding (étoile polaire arrêtée au brainstorming du socle, 2026-07-24).** La liaison
 intention→forme suit le FT Visual Vocabulary ; le **filtre est dur**, le **rang est souple**,
