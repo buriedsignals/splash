@@ -87,3 +87,29 @@ export function confirmAngle(
     },
   });
 }
+
+/**
+ * Carry a just-confirmed angle to the deliverables declared as siblings of that element.
+ *
+ * One story, several outputs, ONE editorial point: that is the whole multi-deliverable model
+ * (`docs/superpowers/specs/2026-07-26-cadrage-deliverables-design.md`), and `deliverables.ts`
+ * already copies the angle when it PLANS siblings from a master. But `init` lets a host declare
+ * `deliverableOf` directly, which reaches no such code — so on a real run the master got its
+ * takeaway and the declared sibling got none, and a second `confirm-angle` accepted a
+ * contradictory one for the same story. The discipline "the title IS the confirmed takeaway"
+ * cannot hold if one run carries two.
+ *
+ * It fills a blank and never overrules: a sibling that confirmed its own angle made a deliberate
+ * decision (the back-edge revise.ts owns), and inheritance is not entitled to undo it.
+ */
+export function inheritAngle(
+  elements: RunElement[],
+  master: RunElement,
+): RunElement[] {
+  if (!master.angle) return elements;
+  return elements.map((el) =>
+    el.deliverableOf === master.id && !el.angle
+      ? { ...el, angle: master.angle }
+      : el,
+  );
+}

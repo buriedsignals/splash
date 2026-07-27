@@ -15,7 +15,7 @@ import {
   loadNewsroomProfile,
   type BrandProfile,
 } from "../../skills/splash/src/brand-profile";
-import { confirmAngle, type AngleParts } from "../loop/angle";
+import { confirmAngle, inheritAngle, type AngleParts } from "../loop/angle";
 import { approve, type ApprovalCeremony } from "../loop/approve";
 import { chooseForm } from "../loop/choose";
 import { advanceStep } from "../loop/driver";
@@ -490,12 +490,20 @@ function decide(
   // Captured BEFORE the map: `result` is a `let`, and TypeScript's narrowing from the `!result.ok`
   // guard above does not survive into a closure over a mutable binding.
   const decided = result.value;
+  // A confirmed angle reaches the deliverables declared as siblings of this element. `decide`
+  // resolves ONE element by design, so without this the master got its takeaway and a sibling
+  // declared at `init` got none — measured on a real run, where a second confirm-angle then
+  // accepted a contradictory takeaway for the same story. inheritAngle fills a blank and never
+  // overrules one a sibling confirmed for itself.
+  const spread = (els: RunElement[]): RunElement[] => inheritAngle(els, decided);
   // Replace the decided element IN PLACE. `[result, ...rest]` moved it to the front, silently
   // reordering the deliverables — and the order is the production order the plan chose, web
   // first as the editorial master. The driver already learned this; the façade had not.
   const run: RunManifest = {
     ...loaded.run,
-    elements: loaded.run.elements.map((e) => (e.id === el.id ? decided : e)),
+    elements: spread(
+      loaded.run.elements.map((e) => (e.id === el.id ? decided : e)),
+    ),
   };
   return persist(runDir, run, report);
 }

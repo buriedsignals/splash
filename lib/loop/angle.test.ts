@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { confirmAngle } from "./angle";
+import { confirmAngle, inheritAngle } from "./angle";
 import {
   gateStateOf,
   provenanceHash,
@@ -123,4 +123,58 @@ test("re-confirming an angle stales a produced artifact", () => {
   });
   if (!second.ok) throw new Error("unreachable");
   expect(stalenessOf(run(second.value), second.value)).toBe(true);
+});
+
+// --- a sibling deliverable inherits the master's confirmed takeaway --------------------------
+//
+// The cadrage design states it plainly: "Siblings inherit the confirmed takeaway and nothing
+// else: each re-enters the brain at its own channel." lib/loop/deliverables.ts:208 implements
+// that copy — and nothing in production calls it, because `init` lets a host declare a sibling
+// (`deliverableOf`) directly. Measured on a real run: confirming the master's angle left the
+// declared sibling with none, and a second confirm-angle happily gave the SAME story a
+// contradictory takeaway ("Genève paie la prime la plus lourde" beside "Fribourg est le moins
+// cher"), with nothing refusing it. One story, several outputs, one editorial point — that is
+// the whole model, and the discipline "the title IS the confirmed takeaway" exists to hold it.
+const parts = {
+  takeaway: "Genève paie la prime la plus lourde des cantons romands",
+  altInsight: "En 2024 la prime adulte atteint 583 francs à Genève, contre 468 à Fribourg.",
+  unit: "CHF",
+};
+const master: RunElement = { id: "web" };
+const sibling: RunElement = {
+  id: "social",
+  deliverableOf: "web",
+  deliverable: { destination: "social" },
+};
+
+test("gives a sibling that has no angle of its own the one just confirmed", () => {
+  const confirmed = confirmAngle(master, parts);
+  expect(confirmed.ok).toBe(true);
+  if (!confirmed.ok) throw new Error("unreachable");
+  const after = inheritAngle([confirmed.value, sibling], confirmed.value);
+  expect(after[1]!.angle?.confirmedTakeaway).toBe(parts.takeaway);
+  expect(after[1]!.angle?.altInsight).toBe(parts.altInsight);
+});
+
+test("leaves an element that is not its sibling alone", () => {
+  const confirmed = confirmAngle(master, parts);
+  if (!confirmed.ok) throw new Error("unreachable");
+  const other: RunElement = { id: "autre" };
+  const after = inheritAngle([confirmed.value, other], confirmed.value);
+  expect(after[1]!.angle).toBeUndefined();
+});
+
+test("never overwrites an angle a sibling already confirmed for itself", () => {
+  const confirmed = confirmAngle(master, parts);
+  if (!confirmed.ok) throw new Error("unreachable");
+  const own = {
+    confirmedTakeaway: "Fribourg est le canton romand le moins cher",
+    altInsight: "En 2024 Fribourg affiche 468 francs, la prime la plus basse des six.",
+    unit: "CHF",
+  };
+  const decided: RunElement = { ...sibling, angle: own };
+  const after = inheritAngle([confirmed.value, decided], confirmed.value);
+  // Confirming its own angle is a deliberate act — the back-edge, not a mistake. Inheritance
+  // fills a blank; it does not overrule a decision the journalist already made.
+  expect(after[1]!.angle?.confirmedTakeaway).toBe(own.confirmedTakeaway);
 });
