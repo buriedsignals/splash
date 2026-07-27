@@ -170,16 +170,53 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
     criticalDeps: null,
     implemented: true,
   },
-  // Declared, not built — the publisher adapters the Livraison sub-project (#4) fills in.
-  // Readiness never reports an unimplemented capability as ready (readiness.ts).
+  // We.Publish — the CMS of the FJM grant deliverable. Measured against a real instance stood
+  // up locally (spec 2026-07-27-l3-wepublish-design.md §3); the adapter is
+  // lib/delivery/adapters/wepublish.ts.
   "embed-cms": {
     id: "embed-cms",
-    label: "Publish through the newsroom's CMS",
+    label: "Publish through the newsroom's CMS (We.Publish)",
     kind: "delivery",
-    env: [],
-    envHelp: {},
+    // Two single-member groups: both are required, the same shape embed-s3 uses.
+    env: [["SPLASH_WEPUBLISH_EMAIL"], ["SPLASH_WEPUBLISH_PASSWORD"]],
+    envHelp: {
+      // W3: a `createToken` API token is REFUSED for createArticle — the editorial mutations
+      // need a user session, so this is an account rather than a key. Which makes WHICH
+      // account it is a real instruction, not a formality: a human editor's admin password in
+      // a .env file is the wrong answer, and it is the answer someone reaches for by default.
+      SPLASH_WEPUBLISH_EMAIL:
+        "the address of a We.Publish user created FOR Splash (in the editor, under Users) — not a person's own account. It needs permission to create and publish articles",
+      SPLASH_WEPUBLISH_PASSWORD:
+        "that user's password. We.Publish has no scoped API token for editorial actions, so this is an account password — store it only in /splash/.env, and give the account nothing beyond article rights",
+    },
+    settingsFields: [
+      {
+        name: "SPLASH_WEPUBLISH_EMAIL",
+        label: "We.Publish user for Splash (email)",
+        secret: true,
+      },
+      {
+        name: "SPLASH_WEPUBLISH_PASSWORD",
+        label: "That user's password",
+        secret: true,
+      },
+      {
+        name: "endpoint",
+        // W1: the path is /v1, not /graphql. Someone pasting the editor's address, or the
+        // site's, gets a 404 with nothing in it pointing at the path — so the label carries it.
+        label:
+          "We.Publish GraphQL address — the full URL, ending in /v1 (for example https://cms.example.org/v1)",
+        secret: false,
+      },
+      {
+        name: "slugPrefix",
+        label:
+          'Slug prefix for the articles Splash creates (optional, defaults to "splash-")',
+        secret: false,
+      },
+    ],
     criticalDeps: null,
-    implemented: false,
+    implemented: true,
   },
   "embed-s3": {
     id: "embed-s3",

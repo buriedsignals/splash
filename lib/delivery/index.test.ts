@@ -33,12 +33,31 @@ describe("the delivery composition root", () => {
       allPublishers()
         .map((p) => p.id)
         .sort(),
-    ).toEqual(["embed-cloudflare", "embed-s3", "zip"]);
+    ).toEqual(["embed-cloudflare", "embed-cms", "embed-s3", "zip"]);
   });
 
   it("should expose the cloudflare adapter as a hosted publisher", () => {
     const p = lookupPublisher("embed-cloudflare");
     expect(p).toMatchObject({ kind: "hosted", implemented: true });
+  });
+
+  it("should expose the We.Publish adapter as a hosted publisher", () => {
+    const p = lookupPublisher("embed-cms");
+    expect(p).toMatchObject({ kind: "hosted", implemented: true });
+  });
+
+  // The decor and the registry are two files (spec §3.1 says adding an adapter costs exactly
+  // that), so they are the pair that can drift: a capability marked implemented with no
+  // publisher behind it dead-ends at `unknown-publisher` in deliver(), and a publisher whose
+  // capability still says `implemented: false` is never offered by readiness. Neither failure
+  // is visible at compile time.
+  it("should agree with the decor about which delivery capabilities are built", () => {
+    for (const cap of Object.values(NEWSROOM_CAPABILITIES)) {
+      if (cap.kind !== "delivery") continue;
+      const publisher = lookupPublisher(cap.id);
+      expect(!!publisher).toBe(cap.implemented);
+      if (publisher) expect(publisher.implemented).toBe(cap.implemented);
+    }
   });
 
   // The composition root runs as a module-level side effect, so anything it throws kills the

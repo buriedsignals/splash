@@ -10,6 +10,7 @@ import { lookupPublisher, registerPublisher } from "../core/publishers";
 import type { Publisher } from "../core/publishers";
 import { cloudflarePublisher } from "./adapters/cloudflare-pages";
 import { s3Publisher } from "./adapters/s3";
+import { wepublishPublisher } from "./adapters/wepublish";
 import { zipPublisher } from "./adapters/zip";
 
 /** The adapters this install ships. One line per adapter is the whole cost of a new
@@ -17,6 +18,7 @@ import { zipPublisher } from "./adapters/zip";
 const DELIVERY_PUBLISHERS: Publisher[] = [
   cloudflarePublisher,
   s3Publisher,
+  wepublishPublisher,
   zipPublisher,
 ];
 
