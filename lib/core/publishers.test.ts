@@ -4,9 +4,11 @@ import {
   lookupPublisher,
   allPublishers,
   resetPublishersForTest,
+  deliveryGenreFor,
   type Publisher,
 } from "./publishers";
 import { ok } from "./verbs/types";
+import { VISUAL_FORMATS } from "./vocabulary";
 
 function stub(id: string, implemented = true): Publisher {
   return {
@@ -52,5 +54,22 @@ describe("publisher registry", () => {
         .map((p) => p.id)
         .sort(),
     ).toEqual(["embed-fly", "zip"]);
+  });
+});
+
+describe("deliveryGenreFor", () => {
+  it("should deliver a static image and a video as a file", () => {
+    expect(deliveryGenreFor("static")).toBe("file");
+    expect(deliveryGenreFor("video")).toBe("file");
+  });
+
+  it("should deliver an interactive and a scrolly as an embed", () => {
+    expect(deliveryGenreFor("interactive")).toBe("embed");
+    expect(deliveryGenreFor("scrolly")).toBe("embed");
+  });
+
+  it("should answer for every format in the vocabulary", () => {
+    for (const f of VISUAL_FORMATS)
+      expect(["file", "embed"]).toContain(deliveryGenreFor(f));
   });
 });

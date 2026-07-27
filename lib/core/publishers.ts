@@ -68,6 +68,32 @@ export function artifactMediaFor(format: VisualFormat): {
   return { extension: "html", contentType: "text/html" };
 }
 
+/** Where an artifact of a given format is delivered: handed over as a file, or hosted. */
+export type DeliveryGenre = "file" | "embed";
+
+// The genre table — deliberately in the same file and keyed the same way as artifactMediaFor
+// above. Two registries of the same fact drifting apart has already bitten this codebase twice
+// (docs/splash/proposal-brain-followups.md), and "what a format is delivered as" is exactly
+// that kind of fact.
+//
+// Not to be confused with DELIVERABLE_KIND (lib/core/vocabulary.ts): that one classifies a
+// format for the OFFER's diversity (element | motion | page). `static` and `interactive` are
+// both "element" there and land in DIFFERENT genres here — the two tables answer different
+// questions and must not be merged.
+//
+// TOTAL over VisualFormat on purpose: a fifth format cannot compile without deciding where it
+// is delivered.
+const DELIVERY_GENRE: Record<VisualFormat, DeliveryGenre> = {
+  static: "file",
+  video: "file",
+  interactive: "embed",
+  scrolly: "embed",
+};
+
+export function deliveryGenreFor(format: VisualFormat): DeliveryGenre {
+  return DELIVERY_GENRE[format];
+}
+
 export interface Publisher {
   /** Matches the decor's capability id ("embed-cloudflare", "zip", …). */
   id: string;
