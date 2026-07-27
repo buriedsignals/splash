@@ -128,8 +128,13 @@ describe("delivering a produced element, end to end and offline", () => {
     // is index.png, never index.html. This used to read "index.html" regardless: the exact bug
     // docs/splash/proposal-brain-followups.md's "publishers serve everything as HTML" entry
     // described, caught here once PublishRequest started carrying a real `format`.
+    //
+    // "static" is a FILE genre (deliveryGenreFor), not an embed one: the CMS has a native image
+    // field with its own alt-text field beside it, so the archive hands over the alt text
+    // (ALT.txt) instead of an embed snippet — there is no EMBED.txt and no `snippet` on the
+    // outcome for this format.
     expect(Object.keys(archive).sort()).toEqual([
-      "EMBED.txt",
+      "ALT.txt",
       "README.md",
       "index.png",
       "metadata.json",
