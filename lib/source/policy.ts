@@ -11,7 +11,13 @@
 // It never infers. An absent declaration is `source-undeclared`, not "public by default" and not
 // "unknown, decide later" — inferring is exactly what makes "no URL exists" indistinguishable
 // from "the URL was not collected".
-import type { SourceDeclaration, SourceKind, RunMode } from "./kinds";
+import {
+  SOURCE_SLOTS,
+  type SourceDeclaration,
+  type SourceKind,
+  type SourceLedger,
+  type RunMode,
+} from "./kinds";
 import { publishedSourceFor, type PublishedSource } from "./furniture";
 import { requirementsFor, type SourceRequirements } from "./requirements";
 import { sourceFail, sourceOk, type SourceResult } from "./result";
@@ -106,4 +112,68 @@ export function validateSourcePolicy(
     requirements: rules,
     published: publishedSourceFor(decl, ctx.lang),
   });
+}
+
+/**
+ * The ONE targeted question the preflight/CADRAGE flow should ask when the class or a required
+ * field cannot be determined from what was supplied (issue #7). One question, never a form: the
+ * kind first, then the first required field still missing. `null` means nothing is missing —
+ * which is also the signal not to ask anything at all.
+ */
+export function sourceQuestion(
+  decl: Partial<SourceDeclaration> | undefined,
+): string | null {
+  if (!decl?.kind)
+    return "Where does this data come from? A published dataset (public), a file you were given or built (local), an internal newsroom dataset (private), figures quoted in your article (prose), or demo data (synthetic)?";
+  const rules = requirementsFor(decl.kind as SourceKind);
+  if (rules.label === "required" && !decl.label?.trim())
+    return `How should this ${decl.kind} source be credited to the reader?`;
+  if (rules.url === "required" && !decl.url?.trim())
+    return "What is the exact page or dataset URL for this source? (the document itself, not the site's home page)";
+  if (
+    rules.url !== "forbidden" &&
+    decl.url?.trim() &&
+    sourceUrlVerdict(decl.url) !== "specific"
+  )
+    return `"${decl.url.trim()}" points at a site, not a document — what is the exact page for this source, or should the link be dropped?`;
+  return null;
+}
+
+/**
+ * The manifest-level invariant: every declared slot is policy-valid at the ledger's own mode.
+ *
+ * Takes the frozen-input FLAGS, not the RunManifest — lib/loop/manifest.ts imports this module,
+ * so importing its types back would close a cycle for nothing. Two slot-level rules live here
+ * rather than in validateSourcePolicy because only the ledger knows them:
+ *   - a frozen DATA input is factual data by definition, so `none` is a contradiction on it;
+ *   - `local` means "the provenance is the frozen input", so that input has to exist.
+ *
+ * Throws, like assertInvariants around it: this is an invariant, not a request being validated.
+ */
+export function assertSourceLedger(
+  ledger: SourceLedger,
+  frozen: { data: boolean; article: boolean },
+): void {
+  for (const slot of SOURCE_SLOTS) {
+    const decl = ledger[slot];
+    if (!decl) continue;
+    if (slot === "data" && decl.kind === "none")
+      throw new Error(
+        `invariant: the data input is declared "none", but a frozen data input is factual data`,
+      );
+    if (decl.kind === "local" && !frozen[slot])
+      throw new Error(
+        `invariant: the ${slot} source is declared "local", but no ${slot} input is frozen in this run — a local source's provenance IS the frozen input`,
+      );
+    const verdict = validateSourcePolicy(decl, {
+      mode: ledger.mode,
+      // Ledger level: a declared input is data the run brought in. `none` on the article slot
+      // is the only "no facts" case here, and it is legal — an article is not a dataset.
+      carriesFactualData: decl.kind !== "none",
+    });
+    if (!verdict.ok)
+      throw new Error(
+        `invariant: the ${slot} source is invalid (${verdict.code}): ${verdict.message}`,
+      );
+  }
 }
