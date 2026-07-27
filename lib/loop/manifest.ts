@@ -538,6 +538,16 @@ export function assertInvariants(run: RunManifest): void {
         `invariant: element ${el.id} chosenId '${el.proposal.chosenId}' not among options`,
       );
     }
+    // NOT asserted here, and deliberately: "a CHOSEN option must carry a non-empty `why`".
+    // It is the right rule — applyPhrasing (lib/loop/phrase.ts) refuses an empty why and
+    // skills/splash/SKILL.md says never to persist one — but this codebase cannot honour it
+    // yet, and the measurement is worth more than the intention (residual sweep 2026-07-27,
+    // docs/superpowers/specs/2026-07-27-residual-sweep-design.md §3). propose() writes EVERY
+    // option's why empty on purpose (the brain hands over grounding, the desk writes the
+    // language), phrasing happens ABOVE lib/ in skills/splash, and no façade command phrases —
+    // so lib/host's choose-form would become structurally unreachable for the non-JS host the
+    // façade exists for. Asserting it here breaks lib/host/journey.test.ts and
+    // lib/loop/driver.test.ts:219. Where it belongs: a phrasing step the façade can call.
     if (el.artifact && !el.angle)
       throw new Error(
         `invariant: element ${el.id} has an artifact without an angle`,
@@ -549,6 +559,14 @@ export function assertInvariants(run: RunManifest): void {
     if (el.review && !el.artifact)
       throw new Error(
         `invariant: element ${el.id} reviewed without an artifact`,
+      );
+    // The third member of that family, missing until now (docs/splash/delivery-l1-followups.md):
+    // a record saying something was PUBLISHED, on an element that produced nothing. Judged on
+    // `delivered`, never on `requested` — asking for a destination before the artifact exists
+    // is an ordinary run, and it is the delivered record that makes the claim.
+    if (el.delivery && el.delivery.delivered.length > 0 && !el.artifact)
+      throw new Error(
+        `invariant: element ${el.id} records ${el.delivery.delivered.length} delivered artifact(s) without having produced one`,
       );
     if (el.blocked && el.dropped)
       throw new Error(`invariant: element ${el.id} both blocked and dropped`);

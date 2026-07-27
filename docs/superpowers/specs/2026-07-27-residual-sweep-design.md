@@ -65,3 +65,55 @@ contient `"remotion"` (scrolly, react+vite, n'est pas concerné), et **seulement
 paquets résolvent — un `remotion` non résolu se répare par un `bun install`, et empiler l'ordre
 `bunx remotion browser ensure` par-dessus donnerait deux commandes pour un seul problème.
 6 tests, dont les deux bornes négatives (moteur sans vidéo, paquet manquant).
+
+---
+
+## 3. `why` non vide sur l'option choisie *(mesuré, PAS livré — et c'est le résultat)*
+
+Le résidu : `assertInvariants` (`lib/loop/manifest.ts`) n'exige pas un `why` non vide sur l'option
+**choisie**. Le seam de phrasage est tenu par `applyPhrasing` (`lib/loop/phrase.ts`, seul écrivain
+sanctionné, qui refuse un `why` vide) et par un contrat en prose dans `skills/splash/SKILL.md`
+(« Never show, and never persist, an option whose `why` is still empty ») — mais un appelant qui
+écrit le manifeste directement passe à côté des deux. Une option enregistrée comme **choisie** sur
+une phrase vide dit qu'un journaliste a choisi quelque chose que personne ne lui a montré.
+
+La règle est juste. **Le code ne peut pas encore l'honorer, et c'est ça le résultat de l'item.**
+Implémentée (une ligne, 4 tests, verts en isolation), elle casse **deux chemins existants et
+légitimes** :
+
+1. `lib/host/journey.test.ts` — le parcours de la façade : `advance` (propose) → `choose-form`
+   refuse désormais avec exit 2. Cause : **aucune commande de la façade ne phrase**. Le phrasage
+   est le tour du desk et vit *au-dessus* de `lib/`, dans `skills/splash` ; `propose()` écrit
+   délibérément `why: ""` sur **toutes** les options (`lib/loop/propose.ts` : le cerveau livre le
+   grounding, le desk écrit la langue). Sous cet invariant, `choose-form` devient
+   **structurellement inatteignable** pour l'hôte non-JS pour lequel la façade existe (Goose).
+2. `lib/loop/driver.test.ts:219` — un test de boucle qui pose `chosenId` à la main sur une offre
+   construite par le cerveau. C'est littéralement « un appelant qui écrit le manifeste
+   directement » que le résidu vise… mais c'est un test, pas la production, et ce fichier est hors
+   du périmètre de cette session.
+
+Arbitrage : ne pas livrer. Un invariant qui rend un parcours documenté impossible n'est pas un
+garde-fou, c'est une régression — et le faire passer demanderait soit d'affaiblir des tests
+existants (interdit), soit d'ouvrir un chantier « la façade sait phraser », qui n'est pas une
+ligne. **Le trou réel n'est pas dans `assertInvariants`, il est un cran plus haut : il n'existe
+aucun pas de phrasage qu'un hôte puisse exécuter.** Tant que c'est vrai, l'invariant ne peut pas
+tenir. Écrit à l'endroit où le prochain regardera : un commentaire à l'emplacement exact où
+l'invariant irait, dans `assertInvariants`, qui nomme la raison et les deux tests. À rouvrir avec
+le chantier phrasage-façade, où il devient une ligne gratuite.
+
+---
+
+## 4. Un enregistrement de livraison sans artefact *(fermé)*
+
+Même classe que les deux gardes juste à côté — `assertInvariants` refuse `review` et `approved`
+sans artefact, mais rien ne refusait `delivery.delivered`. Un enregistrement qui dit « publié » sur
+un élément qui n'a rien produit est incohérent. Noté dans
+`docs/splash/delivery-l1-followups.md` (§ Résidus mineurs). Vérifié : les deux gardes voisines
+étaient bien là, la troisième bien absente.
+
+Fait : une garde jumelle, jugée sur `delivered` et **jamais** sur `requested` — décider d'une
+destination avant que l'artefact existe est un run parfaitement ordinaire (`request-delivery` est
+justement séparé de `deliver` pour que la décision survive à un échec de publication) ; c'est
+l'enregistrement **livré** qui porte la revendication. 3 tests, dont la borne négative
+(`requested` seul ne déclenche rien). Aucun autre test de la suite n'a bougé : rien en production
+ne produisait cet état — c'était un trou d'expression, pas un bug vivant.

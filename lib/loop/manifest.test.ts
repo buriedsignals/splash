@@ -997,3 +997,68 @@ it("allows a format one of the destination's shapes carries while the aspect is 
   };
   expect(() => assertInvariants({ ...m, elements: [el] })).not.toThrow();
 });
+
+// --- the invariant the writer was missing (residual sweep, 2026-07-27) ---
+
+describe("assertInvariants: a delivery record needs the artifact it delivered", () => {
+  // Same class as the `review`/`approved` guards right beside it: a published record on an
+  // element that produced nothing is incoherent, and until now nothing refused it.
+  function delivered(el: Partial<RunElement>): RunManifest {
+    const m = base();
+    return {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          delivery: {
+            requested: ["zip"],
+            delivered: [
+              {
+                publisherId: "zip",
+                kind: "package" as const,
+                publishedAt: "2026-07-27T10:00:00.000Z",
+                deliveredProvenanceHash: "h",
+              },
+            ],
+          },
+          ...el,
+        },
+      ],
+    };
+  }
+
+  it("refuses a delivered record on an element with no artifact", () => {
+    expect(() => assertInvariants(delivered({}))).toThrow(/delivered/i);
+  });
+
+  it("accepts the same record once the artifact is there", () => {
+    expect(() =>
+      assertInvariants(
+        delivered({
+          artifact: {
+            path: "elements/e1/static.png",
+            sha256: "b".repeat(64),
+            provenanceHash: "h",
+            producedAt: "2026-07-27T09:00:00.000Z",
+          },
+        }),
+      ),
+    ).not.toThrow();
+  });
+
+  it("says nothing about a REQUESTED destination that has not been delivered yet", () => {
+    // The decision is recorded before the artifact exists in perfectly ordinary runs — it is
+    // the DELIVERED record, not the request, that claims something was published.
+    const m = base();
+    const requestedOnly: RunManifest = {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          delivery: { requested: ["zip"], delivered: [] },
+        },
+      ],
+    };
+    expect(() => assertInvariants(requestedOnly)).not.toThrow();
+  });
+});
