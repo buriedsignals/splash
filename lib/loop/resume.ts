@@ -11,6 +11,7 @@ import {
   type RunElement,
   type GateState,
   type NextAction,
+  type FormOption,
 } from "./manifest";
 import { aspectOf, defaultAspectFor, destinationOf } from "../core/channel-policy";
 import type { Channel, Destination, MediaAspect } from "../core/vocabulary";
@@ -37,6 +38,24 @@ export type ResumeReport = {
     channel?: Channel;
     /** The master this deliverable shares its takeaway with, when it is a sibling. */
     deliverableOf?: string;
+    /** THE OFFER, present exactly when the element carries one.
+     *
+     *  It was the omission of this report: an element said `nextActions: ["choose-form"]` and
+     *  carried no forms, so the host was told to make a decision it could not see the terms of.
+     *  Carried WHOLE — options with their `whySource`, the discards with their reasons, the
+     *  chosen id, the brain's refusal — because a host has three things to do with it: show it,
+     *  PHRASE it (and the phrasing must be written from `whySource` alone, guarded number by
+     *  number), and name an id. Amputating the grounding would leave `phrase` undriveable from
+     *  `state` and send the host back to reading run.json itself.
+     *
+     *  A pure projection of persisted state, never a derivation, so it cannot drift from what
+     *  the loop reads. */
+    proposal?: {
+      options: FormOption[];
+      excluded: { id: string; reason: string }[];
+      chosenId?: string;
+      refusal?: string;
+    };
   }[];
 };
 
@@ -98,6 +117,7 @@ export function resumeReport(run: RunManifest, runDir: string): ResumeReport {
       ...(aspect ? { aspect } : {}),
       ...(channel ? { channel } : {}),
       ...(el.deliverableOf ? { deliverableOf: el.deliverableOf } : {}),
+      ...(el.proposal ? { proposal: el.proposal } : {}),
     };
   });
 

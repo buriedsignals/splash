@@ -150,3 +150,85 @@ it("names the destination and shape of every deliverable in the run", () => {
   expect(report.elements[2]!.channel).toBe("print-page");
   rmSync(runDir, { recursive: true, force: true });
 });
+
+// --- the offer (host-journey slice) --------------------------------------------------------
+// `state` told a host "choose-form" and showed it no forms: resumeReport carried id, gateState,
+// nextActions, validation, destination, aspect and channel, and never the proposal. A host that
+// cannot see the offer cannot show it, cannot phrase it, and cannot name an id — so the one
+// command it was being told to run was the one it could not build.
+
+test("resumeReport carries no proposal key for an element that has none", () => {
+  const { run, runDir } = seed();
+  const bare: RunManifest = {
+    ...run,
+    elements: [{ id: "e1", angle: run.elements[0]!.angle }],
+  };
+  expect("proposal" in resumeReport(bare, runDir).elements[0]!).toBe(false);
+});
+
+test("resumeReport carries the offer exactly as the manifest persisted it", () => {
+  const { run, runDir } = seed();
+  const offered: RunManifest = {
+    ...run,
+    elements: [
+      {
+        ...run.elements[0]!,
+        proposal: {
+          options: [
+            {
+              id: "bar",
+              nativeType: "bar",
+              engine: "chart-native",
+              format: "static",
+              intent: ["magnitude"],
+              why: "",
+              whySource: {
+                sheet: "knowledge/references/chart/types/bar.md",
+                fragments: ["comparing magnitudes across categories"],
+                facts: { rows: "2" },
+              },
+              requires: ["chart-native"],
+            },
+          ],
+          excluded: [{ id: "treemap", reason: "needs at least 6 rows" }],
+          refusal: "scrolly is not carried by article-web",
+        },
+      },
+    ],
+  };
+  // Compared against the manifest's own value, not retyped: this is a PROJECTION, so a test
+  // that restated the offer could pass while the projection dropped a field.
+  expect(resumeReport(offered, runDir).elements[0]!.proposal).toEqual(
+    offered.elements[0]!.proposal,
+  );
+});
+
+// The grounding is the load-bearing half: `phrase` requires that every number in the prose come
+// from THIS option's whySource. A host that could not read it from `state` would have to open
+// run.json itself — which is the same "the façade does not know what the loop knows" disease,
+// one level down.
+test("resumeReport carries the grounding a phrasing has to be written from", () => {
+  const { run, runDir } = seed();
+  const offered: RunManifest = {
+    ...run,
+    elements: [
+      {
+        ...run.elements[0]!,
+        proposal: {
+          options: [
+            {
+              id: "bar",
+              nativeType: "bar",
+              why: "",
+              whySource: { sheet: "s.md", fragments: ["f"], facts: { rows: "2" } },
+            },
+          ],
+          excluded: [],
+        },
+      },
+    ],
+  };
+  const reported = resumeReport(offered, runDir).elements[0]!.proposal!;
+  expect(reported.options[0]!.whySource!.facts).toEqual({ rows: "2" });
+  expect(reported.chosenId).toBeUndefined();
+});
