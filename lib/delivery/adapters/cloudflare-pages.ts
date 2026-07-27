@@ -23,6 +23,10 @@ import { tmpdir } from "node:os";
 import { extname, join, relative } from "node:path";
 import {
   artifactMediaFor,
+  DEFAULT_NETWORK_TIMEOUT_MS,
+  DEFAULT_UPLOAD_TIMEOUT_MS,
+  fetchBounded,
+  timeoutFromSettings,
   type Publisher,
   type PublishOutcome,
   type PublishRequest,
@@ -181,15 +185,28 @@ export function hashAsset(contents: Buffer, filepath: string): string {
     .slice(0, 32);
 }
 
-async function cf(
+// Bounded time (docs/superpowers/specs/2026-07-26-bounded-time-design.md): every Cloudflare API
+// call goes through this one function, so bounding it here closes the class for
+// get/create-project, upload-token, check-missing, asset upload and create-deployment in one
+// place. `timeoutMs` defaults to the generic control-call budget — deployDirectory raises it
+// only for the one call that actually carries the artifact's bytes (`/pages/assets/upload`).
+// `base` defaults to the real API and exists ONLY so this function is testable against a real
+// hung local server instead of the live Cloudflare API — no production caller overrides it.
+export async function cf(
   path: string,
   init: RequestInit,
   bearer: string,
+  timeoutMs: number = DEFAULT_NETWORK_TIMEOUT_MS,
+  base: string = API,
 ): Promise<any> {
-  const res = await fetch(`${API}${path}`, {
-    ...init,
-    headers: { Authorization: `Bearer ${bearer}`, ...(init.headers ?? {}) },
-  });
+  const res = await fetchBounded(
+    `${base}${path}`,
+    {
+      ...init,
+      headers: { Authorization: `Bearer ${bearer}`, ...(init.headers ?? {}) },
+    },
+    timeoutMs,
+  );
   const body = (await res.json()) as {
     success?: boolean;
     result?: unknown;
@@ -214,12 +231,16 @@ function walk(root: string): string[] {
 // instead and has no alias at all — a visual pinned there would be unreachable by slug.
 export const RESERVED_PRODUCTION_BRANCH = "splash-production-unused";
 
-export async function ensureProject(cfg: EmbedConfig): Promise<void> {
+export async function ensureProject(
+  cfg: EmbedConfig,
+  timeoutMs: number = DEFAULT_NETWORK_TIMEOUT_MS,
+): Promise<void> {
   try {
     await cf(
       `/accounts/${cfg.accountId}/pages/projects/${cfg.project}`,
       {},
       cfg.token,
+      timeoutMs,
     );
     return;
   } catch {
@@ -237,6 +258,7 @@ export async function ensureProject(cfg: EmbedConfig): Promise<void> {
       }),
     },
     cfg.token,
+    timeoutMs,
   );
 }
 
@@ -250,6 +272,8 @@ export async function deployDirectory(
   dir: string,
   branch: string,
   cfg: EmbedConfig,
+  timeoutMs: number = DEFAULT_NETWORK_TIMEOUT_MS,
+  uploadTimeoutMs: number = DEFAULT_UPLOAD_TIMEOUT_MS,
 ): Promise<DeployResult> {
   const files = walk(dir).map((filepath) => {
     const contents = readFileSync(filepath);
@@ -267,6 +291,7 @@ export async function deployDirectory(
     `/accounts/${cfg.accountId}/pages/projects/${cfg.project}/upload-token`,
     {},
     cfg.token,
+    timeoutMs,
   );
 
   const missing: string[] = await cf(
@@ -277,6 +302,7 @@ export async function deployDirectory(
       body: JSON.stringify({ hashes: files.map((f) => f.key) }),
     },
     jwt,
+    timeoutMs,
   );
 
   // Measured: Cloudflare does NOT dedupe — identical bytes come back as missing every time.
@@ -290,6 +316,8 @@ export async function deployDirectory(
       base64: true,
     }));
   if (payload.length > 0) {
+    // The one call in this function that actually carries the artifact's bytes (base64
+    // asset contents) — the wider upload budget, not the control-call one.
     await cf(
       "/pages/assets/upload",
       {
@@ -298,6 +326,7 @@ export async function deployDirectory(
         body: JSON.stringify(payload),
       },
       jwt,
+      uploadTimeoutMs,
     );
   }
 
@@ -313,6 +342,7 @@ export async function deployDirectory(
     `/accounts/${cfg.accountId}/pages/projects/${cfg.project}/deployments`,
     { method: "POST", body: form },
     cfg.token,
+    timeoutMs,
   );
   return {
     deploymentId: deployment.id,
@@ -333,13 +363,23 @@ export async function resolveAliasUrl(
   deploymentId: string,
   cfg: EmbedConfig,
   timeoutMs = COLD_START_WINDOW_MS,
+  perAttemptTimeoutMs: number = DEFAULT_NETWORK_TIMEOUT_MS,
 ): Promise<string> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
+    // Bounded time: each poll attempt gets its OWN bound, capped by whatever is left of this
+    // loop's overall deadline — otherwise a single stuck attempt blocks `while (Date.now() <
+    // deadline)` from ever being re-checked, and the outer deadline this loop already promised
+    // never actually fires. Never larger than perAttemptTimeoutMs either.
+    const attemptTimeoutMs = Math.min(
+      perAttemptTimeoutMs,
+      Math.max(1, deadline - Date.now()),
+    );
     const list: any[] = await cf(
       `/accounts/${cfg.accountId}/pages/projects/${cfg.project}/deployments`,
       {},
       cfg.token,
+      attemptTimeoutMs,
     );
     const alias = list.find((d) => d.id === deploymentId)?.aliases?.[0];
     if (alias) return alias;
@@ -360,15 +400,27 @@ export async function verifyServed(
   url: string,
   expected: (body: string) => boolean,
   timeoutMs = COLD_START_WINDOW_MS,
+  perAttemptTimeoutMs: number = DEFAULT_NETWORK_TIMEOUT_MS,
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   let last: string | number = "no response";
   while (Date.now() < deadline) {
     try {
-      const res = await fetch(url, {
-        redirect: "follow",
-        headers: { "cache-control": "no-cache" },
-      });
+      // Bounded time: same reasoning as resolveAliasUrl above — an unbounded attempt would
+      // block this loop's own `while (Date.now() < deadline)` from ever being re-checked,
+      // defeating the deadline this function already promised its callers.
+      const attemptTimeoutMs = Math.min(
+        perAttemptTimeoutMs,
+        Math.max(1, deadline - Date.now()),
+      );
+      const res = await fetchBounded(
+        url,
+        {
+          redirect: "follow",
+          headers: { "cache-control": "no-cache" },
+        },
+        attemptTimeoutMs,
+      );
       last = res.status;
       if (res.ok && expected(await res.text())) return;
     } catch (err) {
@@ -479,10 +531,38 @@ async function publishToPages(
     );
   }
 
+  // Bounded time (docs/superpowers/specs/2026-07-26-bounded-time-design.md): control calls get
+  // the generic budget, the one call that carries the artifact's bytes (asset upload, inside
+  // deployDirectory) gets the wider one. Both overridable per-newsroom/per-call via settings,
+  // same tolerant knob s3.ts reads. COLD_START_WINDOW_MS (the OVERALL poll deadline for
+  // resolveAliasUrl/verifyServed) is untouched — it is a measured fact about Cloudflare's own
+  // provisioning, not a network-reachability budget.
+  const controlTimeoutMs = timeoutFromSettings(
+    req.settings,
+    "timeoutMs",
+    DEFAULT_NETWORK_TIMEOUT_MS,
+  );
+  const uploadTimeoutMs = timeoutFromSettings(
+    req.settings,
+    "uploadTimeoutMs",
+    DEFAULT_UPLOAD_TIMEOUT_MS,
+  );
+
   try {
-    await ensureProject(cfg);
-    const { deploymentId } = await deployDirectory(stageDir, slug, cfg);
-    const url = await resolveAliasUrl(deploymentId, cfg);
+    await ensureProject(cfg, controlTimeoutMs);
+    const { deploymentId } = await deployDirectory(
+      stageDir,
+      slug,
+      cfg,
+      controlTimeoutMs,
+      uploadTimeoutMs,
+    );
+    const url = await resolveAliasUrl(
+      deploymentId,
+      cfg,
+      COLD_START_WINDOW_MS,
+      controlTimeoutMs,
+    );
     // The delivery proof: a 200 is not evidence the right bytes landed. Without this check no
     // outcome is recorded at all.
     //
@@ -495,6 +575,8 @@ async function publishToPages(
     await verifyServed(
       url,
       servedMatcher(readFileSync(join(stageDir, stagedName), "utf8")),
+      COLD_START_WINDOW_MS,
+      controlTimeoutMs,
     );
     // The real URL this time. It cannot refuse where the pre-flight above passed — same
     // template, same metadata, only the substituted URL differs — but the result is still

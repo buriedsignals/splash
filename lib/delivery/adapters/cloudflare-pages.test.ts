@@ -13,9 +13,11 @@ import {
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
+  cf,
   cloudflarePublisher,
   contentTypeFor,
   stageArtifact,
+  verifyServed,
 } from "./cloudflare-pages";
 import type { PublishRequest } from "../../core/publishers";
 
@@ -121,4 +123,75 @@ describe("stageArtifact", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+});
+
+// Bounded time — docs/superpowers/specs/2026-07-26-bounded-time-design.md. REAL servers, not a
+// mocked clock, each accepting the connection and then going silent forever: exactly the case
+// the parked residual named ("cf() is identical" to the unbounded S3 fetch).
+describe("cf against a real hung endpoint", () => {
+  function hungServer() {
+    return Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch: () => new Promise<Response>(() => {}), // accepts, never answers
+    });
+  }
+
+  it("refuses instead of hanging when the Cloudflare API never responds", async () => {
+    const server = hungServer();
+    try {
+      const start = Date.now();
+      let caught: unknown;
+      try {
+        await cf(
+          "/accounts/x/pages/projects/y",
+          {},
+          "token",
+          150,
+          `http://127.0.0.1:${server.port}`,
+        );
+      } catch (e) {
+        caught = e;
+      }
+      expect(Date.now() - start).toBeLessThan(2_000);
+      expect((caught as Error).message).toContain(
+        `http://127.0.0.1:${server.port}`,
+      );
+      expect((caught as Error).message).toContain("150");
+    } finally {
+      server.stop(true);
+    }
+  }, 3_000);
+});
+
+// verifyServed already had its OWN overall deadline (COLD_START_WINDOW_MS by default) — the gap
+// was that a single stuck attempt inside the loop never let that deadline get re-checked, since
+// the raw fetch it awaited had no bound of its own. A small overall timeoutMs against a real hung
+// server reproduces exactly that: before the fix this call hangs well past its own 300ms budget
+// (the loop never gets back to `while (Date.now() < deadline)`); after, a bounded per-attempt
+// fetch lets the loop's own promise hold.
+describe("verifyServed against a real hung endpoint", () => {
+  it("refuses within its own overall deadline instead of hanging on a single stuck attempt", async () => {
+    const server = Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch: () => new Promise<Response>(() => {}),
+    });
+    try {
+      const start = Date.now();
+      let caught: unknown;
+      try {
+        await verifyServed(`http://127.0.0.1:${server.port}/`, () => true, 300);
+      } catch (e) {
+        caught = e;
+      }
+      const elapsed = Date.now() - start;
+      expect(caught).toBeInstanceOf(Error);
+      // Generous margin over the 300ms deadline for the poll-interval sleep after the one
+      // attempt, but nowhere near COLD_START_WINDOW_MS (200s) — the old, unbounded behaviour.
+      expect(elapsed).toBeLessThan(5_000);
+    } finally {
+      server.stop(true);
+    }
+  }, 8_000);
 });
