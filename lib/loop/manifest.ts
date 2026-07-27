@@ -4,7 +4,19 @@ import { dirname } from "node:path";
 import { canonicalHash } from "./canonical-hash";
 import { migrate } from "./migrate";
 import { INTENTS } from "../brain/intents";
-import { VISUAL_FORMATS, CHANNELS as CHANNEL_KEYS } from "../core/vocabulary";
+import {
+  VISUAL_FORMATS,
+  CHANNELS as CHANNEL_KEYS,
+  DESTINATIONS,
+  MEDIA_ASPECTS,
+  type Channel,
+} from "../core/vocabulary";
+import {
+  channelFor,
+  defaultAspectFor,
+  isFormatAllowed,
+  allowedFormats,
+} from "../core/channel-policy";
 import { isLoopBuildable, resolveBuilder } from "./buildable";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
@@ -51,8 +63,26 @@ const RunEventSchema = z.object({
   action: z.string(),
   message: z.string(),
 });
+// WHERE this element lands and WHAT SHAPE it takes — the two axes issue #1 found welded into
+// `channel`. Sitting on the ELEMENT rather than on the run is what makes a run multi-deliverable:
+// an element already carries its own offer, pinned format, artifact, provenance, review, delivery
+// and gate state, so the only thing it lacked in order to BE a deliverable was a destination.
+//
+// `aspect` is optional on purpose (issue #1, stage 3): it is asked only on the branch that needs
+// it, and only after the editorial format is chosen — see nextActionsForElement's confirm-aspect.
+const DeliverableSchema = z.object({
+  destination: z.enum(DESTINATIONS),
+  aspect: z.enum(MEDIA_ASPECTS).optional(),
+});
+
 const RunElementSchema = z.object({
   id: z.string(),
+  /** Where this element goes. Absent ⇒ the run's own `channel` (every manifest written before
+   *  issue #1). */
+  deliverable: DeliverableSchema.optional(),
+  /** The element this one is a second deliverable OF: same confirmed takeaway, another
+   *  destination. What tells two DELIVERABLES apart from two unrelated VISUALS. */
+  deliverableOf: z.string().optional(),
   // A format the journalist asked for explicitly, at CADRAGE. State, not a remembered
   // instruction: the brain applies it as a HARD filter (lib/brain/eligibility.ts), which is
   // what makes "an explicit format signal WINS" mechanical rather than documentary.
@@ -128,7 +158,12 @@ export const RunManifestSchema = z.object({
   schemaVersion: z.literal(4),
   /** The relationship to the text: an embeddable element, or the visual article itself. */
   route: z.enum(["embed", "article"]).default("embed"),
-  /** Where this run publishes — the SCOPE axis, and what produce renders at. */
+  /** The run's DEFAULT destination, in render-channel form — what an element that declares no
+   *  `deliverable` of its own is produced at. Before issue #1 this was the run's ONE channel;
+   *  it keeps that meaning exactly for every manifest already on disk, which is what makes the
+   *  extension an identity migration (see migrate.ts's materializeDeliverables). The live
+   *  question "what channel is THIS element rendered at" is answered in one place only:
+   *  channelForElement(). */
   channel: z.enum(CHANNEL_KEYS).default("article-web"),
   input: z.object({ data: HashRef.optional(), article: HashRef.optional() }),
   // --- source policy (lib/source) ---
@@ -176,6 +211,30 @@ export function parseManifest(raw: unknown): RunManifest {
 // below and lib/loop/deliver.ts both need to resolve "the chosen option" from the same
 // `chosenId` — kept here once so a caller cannot build a second, subtly different lookup
 // (the class of drift this codebase has already been bitten by).
+export type Deliverable = z.infer<typeof DeliverableSchema>;
+
+/** The render channel this element's deliverable resolves to, or undefined while it still owes
+ *  an answer (a social deliverable whose aspect has not been confirmed — 9:16 or 1:1 is not a
+ *  guess this codebase gets to make). An element with no deliverable at all resolves to the
+ *  run's default channel, which is exactly what it meant before issue #1. */
+export function resolvedChannelForElement(
+  run: RunManifest,
+  el: RunElement,
+): Channel | undefined {
+  if (!el.deliverable) return run.channel;
+  const { destination } = el.deliverable;
+  const aspect = el.deliverable.aspect ?? defaultAspectFor(destination);
+  return aspect ? channelFor(destination, aspect) : undefined;
+}
+
+/** The TOTAL form: never undefined, never throws. provenanceHash and every read-only reporter
+ *  need an answer for any element in any state; the run's default stands in while an aspect is
+ *  still owed. Production does NOT go through this — produce.ts requires the resolved one, so an
+ *  unanswered aspect is a refusal there rather than a silently substituted channel. */
+export function channelForElement(run: RunManifest, el: RunElement): Channel {
+  return resolvedChannelForElement(run, el) ?? run.channel;
+}
+
 export function chosenOption(el: RunElement): FormOption | undefined {
   return el.proposal?.chosenId
     ? el.proposal.options.find((o) => o.id === el.proposal!.chosenId)
@@ -203,7 +262,17 @@ export function provenanceHash(run: RunManifest, el: RunElement): string {
     cadrage: run.cadrage?.answers ?? null,
     angle: el.angle ?? null,
     chosenId: el.proposal?.chosenId ?? null,
-    channel: run.channel,
+    // The channel of THIS deliverable, not of the run: a run can now carry several, and hashing
+    // the run-level default would let a social still and a web still of the same angle share a
+    // provenance — the exact "looks fresh at a destination it was never built for" failure the
+    // channel was added to this hash to prevent, one level down.
+    channel: channelForElement(run, el),
+    // The two axes, hashed as themselves. `undefined` (never null) for an element that carries
+    // no deliverable: canonicalStringify goes through JSON.stringify, which OMITS undefined
+    // values, so a legacy element's canonical string — and therefore its hash — is byte-identical
+    // to what it was before issue #1. No artifact already on disk is re-valued by this widening.
+    destination: el.deliverable?.destination,
+    aspect: el.deliverable?.aspect,
     // An option carrying no `format` at all (fixtures, hand-authored manifests predating the
     // brain) hashes as null rather than as produce's "static" default: what matters is that the
     // value MOVES when the pinned format moves, and a null that never changes is stable.

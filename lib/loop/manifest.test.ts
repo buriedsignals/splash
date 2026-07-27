@@ -1,6 +1,9 @@
 import { test, expect, describe, it } from "bun:test";
+import { canonicalHash } from "./canonical-hash";
 import {
   provenanceHash,
+  channelForElement,
+  resolvedChannelForElement,
   stalenessOf,
   nextActions,
   gateStateOf,
@@ -525,4 +528,118 @@ test("an unknown channel is refused", () => {
       events: [],
     }),
   ).toThrow();
+});
+
+// ---------------------------------------------------------------------------------------
+// Issue #1 — several deliverables in one run: destination × format × aspect, de-welded.
+// ---------------------------------------------------------------------------------------
+
+describe("a deliverable's own channel", () => {
+  it("resolves from the element's destination and aspect, not from the run's channel", () => {
+    const m = base();
+    const el = {
+      ...m.elements[0]!,
+      deliverable: { destination: "social" as const, aspect: "square" as const },
+    };
+    expect(m.channel).toBe("article-web");
+    expect(channelForElement(m, el)).toBe("social-feed");
+  });
+
+  it("falls back to the run's channel for an element that declares no deliverable", () => {
+    const m = { ...base(), channel: "social-vertical" as const };
+    expect(channelForElement(m, m.elements[0]!)).toBe("social-vertical");
+  });
+
+  it("answers undefined while a social deliverable still owes its aspect", () => {
+    const m = base();
+    const el = {
+      ...m.elements[0]!,
+      deliverable: { destination: "social" as const },
+    };
+    expect(resolvedChannelForElement(m, el)).toBeUndefined();
+    // ...but the total resolver never throws — provenance has to stay computable.
+    expect(channelForElement(m, el)).toBe("article-web");
+  });
+
+  it("takes the destination's only aspect when there is nothing to ask", () => {
+    const m = base();
+    const web = {
+      ...m.elements[0]!,
+      deliverable: { destination: "article-web" as const },
+    };
+    const print = {
+      ...m.elements[0]!,
+      deliverable: { destination: "print" as const },
+    };
+    expect(resolvedChannelForElement(m, web)).toBe("article-web");
+    expect(resolvedChannelForElement(m, print)).toBe("print-page");
+  });
+});
+
+describe("provenance covers the deliverable", () => {
+  it("leaves a legacy element's hash byte-identical (no deliverable ⇒ no new hash inputs)", () => {
+    const m = base();
+    // The value this test pins is the hash of the SAME inputs the pre-issue-#1 hash covered.
+    // Recomputed, never a literal: what matters is that adding the two optional keys did not
+    // re-value an element that carries neither.
+    const expected = canonicalHash({
+      inputData: m.input.data!.sha256,
+      inputArticle: null,
+      cadrage: null,
+      angle: m.elements[0]!.angle,
+      chosenId: "slope",
+      channel: "article-web",
+      format: null,
+    });
+    expect(provenanceHash(m, m.elements[0]!)).toBe(expected);
+  });
+
+  it("moves when the destination moves — an artifact cannot look fresh at a new destination", () => {
+    const m = base();
+    const web = {
+      ...m.elements[0]!,
+      deliverable: { destination: "article-web" as const },
+    };
+    const print = {
+      ...m.elements[0]!,
+      deliverable: { destination: "print" as const },
+    };
+    expect(provenanceHash(m, print)).not.toBe(provenanceHash(m, web));
+  });
+
+  it("moves when only the aspect moves — a 9:16 still is not a 1:1 still", () => {
+    const m = base();
+    const portrait = {
+      ...m.elements[0]!,
+      deliverable: { destination: "social" as const, aspect: "portrait" as const },
+    };
+    const square = {
+      ...m.elements[0]!,
+      deliverable: { destination: "social" as const, aspect: "square" as const },
+    };
+    expect(provenanceHash(m, portrait)).not.toBe(provenanceHash(m, square));
+  });
+
+  it("gives two siblings of one takeaway two different hashes", () => {
+    const m = base();
+    const a = {
+      ...m.elements[0]!,
+      deliverable: { destination: "article-web" as const },
+    };
+    const b = {
+      ...m.elements[0]!,
+      id: "e2",
+      deliverableOf: "e1",
+      deliverable: { destination: "social" as const, aspect: "portrait" as const },
+    };
+    expect(provenanceHash(m, a)).not.toBe(provenanceHash(m, b));
+  });
+
+  it("still moves with the run's channel for a legacy element", () => {
+    const m = base();
+    const h = provenanceHash(m, m.elements[0]!);
+    expect(
+      provenanceHash({ ...m, channel: "social-feed" }, m.elements[0]!),
+    ).not.toBe(h);
+  });
 });
