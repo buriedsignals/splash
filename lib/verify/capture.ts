@@ -243,12 +243,28 @@ function measureInPage(args: {
         .join("")
     );
   };
+  // Which colours a READER has to tell apart — not every colour on the canvas. Measured on
+  // a real loop-produced slope: its gridlines are 1px strokes at #e6e6e6 and #cfcfcf, close
+  // enough on any adjacency metric to fire on essentially every chart. A risk lane that
+  // fires every time is one people learn to click past, so furniture rules are excluded by
+  // what they ARE (hairline strokes) rather than by a colour heuristic, which would also
+  // throw away a legitimately grey categorical series.
+  const NON_FILLING = new Set(["line", "polyline"]);
   const colours: string[] = [];
   for (const el of marks) {
     const cs = getComputedStyle(el);
-    for (const raw of [cs.fill, cs.stroke]) {
+    const tag = el.tagName.toLowerCase();
+    const candidates: string[] = [];
+    // A <line> computes fill as black even though it paints none of it.
+    if (!NON_FILLING.has(tag)) candidates.push(cs.fill);
+    // Hairlines are rules, not encodings. A series stroke is drawn thicker precisely so a
+    // reader can follow it.
+    if (parseFloat(cs.strokeWidth || "0") > 1) candidates.push(cs.stroke);
+    for (const raw of candidates) {
       if (!raw || raw === "none") continue;
       const hex = toHex(raw);
+      // Pure black is the SVG default fill: an outline-only shape that never set `fill`
+      // would otherwise contribute a colour nothing on screen is painted with.
       if (hex && hex !== "#000000" && !colours.includes(hex)) colours.push(hex);
     }
   }

@@ -280,6 +280,40 @@ describe("capture — the real deliverable at the real publication container", (
     expect(r.value.images[0]!.rootSelector).toBe("body");
   }, 120_000);
 
+  it("harvests the colours a reader must tell apart, not the gridline tints", async () => {
+    // Measured on the real loop-produced slope: its gridlines are 1px strokes at
+    // #e6e6e6 and #cfcfcf, 69 apart on the adjacency metric — close enough to trip a
+    // naive harvest on EVERY chart, which would make the human-eye lane noise people
+    // learn to click past. Furniture rules are not an encoding a reader must decode.
+    const artifactPath = writeDoc(
+      "grid.html",
+      `<!doctype html><html><body><div id="root"><div>
+          <svg width="600" height="300">
+            <line x1="0" y1="10" x2="600" y2="10" stroke="#e6e6e6" stroke-width="1"/>
+            <line x1="0" y1="40" x2="600" y2="40" stroke="#cfcfcf" stroke-width="1"/>
+            <line class="series" x1="0" y1="200" x2="600" y2="80" stroke="#1b7f79" stroke-width="2"/>
+            <circle cx="30" cy="200" r="4" fill="#d95f02"/>
+          </svg>
+        </div></div></body></html>`,
+    );
+    const r = await capture({
+      artifactPath,
+      format: "interactive",
+      channel: "article-web",
+      outDir: join(dir, "out-grid"),
+      id: "e1",
+      settleMs: 0,
+    });
+    if (!r.ok) throw new Error(r.message);
+    const colours = r.value.images[0]!.markColours;
+    expect(colours).toContain("#1b7f79");
+    expect(colours).toContain("#d95f02");
+    expect(colours).not.toContain("#e6e6e6");
+    expect(colours).not.toContain("#cfcfcf");
+    // The mark COUNT still sees everything — density is about how much is drawn.
+    expect(r.value.images[0]!.marks).toBe(4);
+  }, 120_000);
+
   it("reports an unopenable deliverable as a typed failure, never a throw", async () => {
     const r = await capture({
       artifactPath: join(dir, "gone.html"),
