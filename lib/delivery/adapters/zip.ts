@@ -7,9 +7,10 @@
 // green. See the spec §2 decision 8.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { zipSync, strToU8 } from "fflate";
+import { zipSync, strToU8, type Zippable } from "fflate";
 import {
   artifactMediaFor,
+  deliveryGenreFor,
   type DeliveryMetadata,
   type Publisher,
   type PublishOutcome,
@@ -18,7 +19,7 @@ import {
 import { isSafeId, unsafeIdMessage } from "../../core/id-safety";
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { renderSnippet } from "../snippet";
-import { VISUAL_FORMATS } from "../../core/vocabulary";
+import { VISUAL_FORMATS, type VisualFormat } from "../../core/vocabulary";
 
 // The ZIP epoch floor, as a Date rather than 0: the archive's bytes must not depend on the
 // clock, or the golden determinism test becomes a clock test. A Date object also avoids any
@@ -73,6 +74,36 @@ export function zipReadme(
     .join("\n");
 }
 
+// The file genre's README. It never mentions hosting or an embed code: the CMS has a native
+// image/video field, with its own alternative-text field next to it. Splash cannot fill that
+// field — handing the text over is the whole a11y answer here (spec §2).
+export function filePackageReadme(
+  m: DeliveryMetadata,
+  id: string,
+  entryName: string,
+  format: VisualFormat,
+): string {
+  const field = format === "video" ? "video" : "image";
+  return [
+    `# ${m.title}`,
+    "",
+    m.altText,
+    "",
+    "## How to integrate",
+    "",
+    `1. Upload \`${entryName}\` through your CMS's ${field} field.`,
+    "2. Paste the text from `ALT.txt` into the alternative-text field next to it — that is what",
+    "   a screen reader announces, and Splash cannot put it there for you.",
+    "",
+    `Source: ${m.source}`,
+    m.credit ? `Credit: ${m.credit}` : "",
+    `Identifier: ${id}`,
+    "",
+  ]
+    .filter((line, i, all) => !(line === "" && all[i - 1] === ""))
+    .join("\n");
+}
+
 async function publish(
   req: PublishRequest,
 ): Promise<VerbResult<PublishOutcome>> {
@@ -84,23 +115,32 @@ async function publish(
   if (!isSafeId(req.id))
     return fail("invalid-request", unsafeIdMessage(req.id));
 
+  const genre = deliveryGenreFor(req.format);
+  // The archive entry follows the artifact's REAL format (artifactMediaFor, shared with s3.ts
+  // and cloudflare-pages.ts) — an "index.html" entry only makes sense when the artifact is
+  // actually HTML; a static PNG or an mp4 archived under that name used to be silently wrong.
+  const entryName = `index.${artifactMediaFor(req.format).extension}`;
+
+  // The embed genre keeps its snippet — and the newsroom's own template still applies to it,
+  // exactly as before (§3.3 of the delivery-publishers spec). The file genre has no snippet
+  // at all, so nothing is rendered and nothing can refuse.
+  //
   // The URL is unknown for an owned package — the newsroom decides where it lands — so the
   // snippet carries the documented placeholder the README tells them to replace.
-  //
-  // The newsroom's own template applies HERE too (spec §3.3), not only to a hosted embed: a
-  // CMS that strips iframes strips them whether the file was uploaded by Splash or by the
-  // journalist. Reading it only in the cloudflare adapter meant a configured template was
-  // silently dropped for everyone who chose the portable package.
-  const snippet = renderSnippet({
-    url: "YOUR-URL-HERE",
-    id: req.id,
-    metadata: req.metadata,
-    format: req.format,
-    ...(req.settings.snippetTemplate
-      ? { template: req.settings.snippetTemplate }
-      : {}),
-  });
-  if (!snippet.ok) return snippet;
+  let snippetValue: string | undefined;
+  if (genre === "embed") {
+    const snippet = renderSnippet({
+      url: "YOUR-URL-HERE",
+      id: req.id,
+      metadata: req.metadata,
+      format: req.format,
+      ...(req.settings.snippetTemplate
+        ? { template: req.settings.snippetTemplate }
+        : {}),
+    });
+    if (!snippet.ok) return snippet;
+    snippetValue = snippet.value;
+  }
 
   let artifact: Uint8Array;
   try {
@@ -114,27 +154,43 @@ async function publish(
 
   const metadata = { ...req.metadata, id: req.id };
   const opts = { mtime: FIXED_MTIME };
-  // The archive entry follows the artifact's REAL format (artifactMediaFor, shared with s3.ts
-  // and cloudflare-pages.ts) — an "index.html" entry only makes sense when the artifact is
-  // actually HTML; a static PNG or an mp4 archived under that name used to be silently wrong.
-  const entryName = `index.${artifactMediaFor(req.format).extension}`;
+
+  // Annotated with fflate's own `Zippable` — not a homegrown shape — because without a target
+  // type here (the ternary sits in its own statement, not directly inside the zipSync() call)
+  // TS widens each `[artifact, opts]` pair to a plain array and rejects it against ZippableFile's
+  // tuple member.
+  const files: Zippable =
+    genre === "embed"
+      ? {
+          [entryName]: [artifact, opts],
+          "EMBED.txt": [strToU8(snippetValue! + "\n"), opts],
+          "README.md": [
+            strToU8(zipReadme(req.metadata, req.id, snippetValue!, entryName)),
+            opts,
+          ],
+          "metadata.json": [
+            strToU8(JSON.stringify(metadata, null, 2) + "\n"),
+            opts,
+          ],
+        }
+      : {
+          [entryName]: [artifact, opts],
+          "ALT.txt": [strToU8(req.metadata.altText + "\n"), opts],
+          "README.md": [
+            strToU8(
+              filePackageReadme(req.metadata, req.id, entryName, req.format),
+            ),
+            opts,
+          ],
+          "metadata.json": [
+            strToU8(JSON.stringify(metadata, null, 2) + "\n"),
+            opts,
+          ],
+        };
+
   let archive: Uint8Array;
   try {
-    archive = zipSync(
-      {
-        [entryName]: [artifact, opts],
-        "EMBED.txt": [strToU8(snippet.value + "\n"), opts],
-        "README.md": [
-          strToU8(zipReadme(req.metadata, req.id, snippet.value, entryName)),
-          opts,
-        ],
-        "metadata.json": [
-          strToU8(JSON.stringify(metadata, null, 2) + "\n"),
-          opts,
-        ],
-      },
-      { level: 6 },
-    );
+    archive = zipSync(files, { level: 6 });
   } catch (e) {
     // A publisher never throws (I1) — the encoder itself is not I/O, but it CAN throw (proven:
     // fflate rejects mtimes outside 1980-2099, which a local-time date conversion can produce),
@@ -159,7 +215,7 @@ async function publish(
     kind: "package",
     url: undefined,
     path,
-    snippet: snippet.value,
+    ...(snippetValue !== undefined ? { snippet: snippetValue } : {}),
     publishedAt: FIXED_PUBLISHED_AT,
   });
 }

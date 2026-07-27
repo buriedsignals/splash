@@ -46,6 +46,81 @@ function request(): PublishRequest {
   };
 }
 
+function staticRequest(): PublishRequest {
+  const artifact = join(root, "static.png");
+  writeFileSync(artifact, "PNG-BYTES");
+  const outDir = join(root, "out");
+  mkdirSync(outDir, { recursive: true });
+  return {
+    artifactPath: artifact,
+    id: "primes",
+    format: "static",
+    metadata: {
+      title: "Primes cantonales",
+      altText: "Les primes montent",
+      source: "OFSP",
+      credit: "Heidi.news",
+      lang: "fr",
+      width: 700,
+      height: 420,
+    },
+    settings: { publisherId: "zip" },
+    credentials: {},
+    outDir,
+  };
+}
+
+describe("the zip publisher, file genre", () => {
+  it("should package the file and the alt text, and no embed code at all", async () => {
+    const r = await zipPublisher.publish(staticRequest());
+    expect(r.ok).toBe(true);
+    const outcome = (r as { value: { path: string; snippet?: string } }).value;
+    expect(outcome.snippet).toBeUndefined();
+
+    const entries = unzipSync(new Uint8Array(readFileSync(outcome.path)));
+    expect(Object.keys(entries).sort()).toEqual([
+      "ALT.txt",
+      "README.md",
+      "index.png",
+      "metadata.json",
+    ]);
+    expect(strFromU8(entries["ALT.txt"]!)).toBe("Les primes montent\n");
+    const readme = strFromU8(entries["README.md"]!);
+    expect(readme).toContain("image field");
+    expect(readme).toContain("ALT.txt");
+    expect(readme).not.toContain("<iframe");
+    expect(readme).not.toContain("Upload `index.png` anywhere");
+  });
+
+  it("should name the video field for a video", async () => {
+    const req = { ...staticRequest(), format: "video" as const };
+    const r = await zipPublisher.publish(req);
+    expect(r.ok).toBe(true);
+    const entries = unzipSync(
+      new Uint8Array(
+        readFileSync((r as { value: { path: string } }).value.path),
+      ),
+    );
+    expect(Object.keys(entries)).toContain("index.mp4");
+    expect(strFromU8(entries["README.md"]!)).toContain("video field");
+  });
+
+  it("should leave the embed genre's archive byte-identical", async () => {
+    const a = await zipPublisher.publish(request());
+    const first = readFileSync((a as { value: { path: string } }).value.path);
+    const b = await zipPublisher.publish(request());
+    const second = readFileSync((b as { value: { path: string } }).value.path);
+    expect(Buffer.from(first).equals(Buffer.from(second))).toBe(true);
+    const entries = unzipSync(new Uint8Array(first));
+    expect(Object.keys(entries).sort()).toEqual([
+      "EMBED.txt",
+      "README.md",
+      "index.html",
+      "metadata.json",
+    ]);
+  });
+});
+
 describe("the zip publisher", () => {
   // lib/loop/deliver.ts puts the newsroom's snippetTemplate in `settings` for EVERY publisher,
   // and only the cloudflare adapter read it: a newsroom whose CMS strips iframes configured a
