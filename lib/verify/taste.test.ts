@@ -137,6 +137,135 @@ describe("title vs confirmed takeaway", () => {
   });
 });
 
+// The bench the floor is calibrated on. Every pair is a REAL string from this repo's own
+// fixtures or from a real run — the contradictory French pair is the one commit 4b07c1d
+// records ("Genève paie la prime la plus lourde" beside "Fribourg est le moins cher": one
+// story, two editorial points, and nothing refusing it at the time).
+//
+// Three families, because the detector has to survive all three: the loop's own wiring (the
+// title IS the takeaway, verbatim), a real divergence, and a legitimate editorial rewrite of
+// the SAME point. A detector that cannot tell the third from the second is noise.
+const CALIBRATION: {
+  label: string;
+  takeaway: string;
+  title: string;
+  fires: boolean;
+}[] = [
+  // --- what produce.ts:168 actually renders today: the takeaway, verbatim ----------------
+  {
+    label: "verbatim fr",
+    takeaway: "Genève paie la prime la plus lourde des cantons romands",
+    title: "Genève paie la prime la plus lourde des cantons romands",
+    fires: false,
+  },
+  {
+    label: "verbatim en",
+    takeaway: "Health premiums rose in every canton shown",
+    title: "Health premiums rose in every canton shown",
+    fires: false,
+  },
+  {
+    label: "verbatim de",
+    takeaway: "Die über 55-Jährigen übersteigen 55 % der Fälle",
+    title: "Die über 55-Jährigen übersteigen 55 % der Fälle",
+    fires: false,
+  },
+  {
+    label: "verbatim it",
+    takeaway: "Gli over 55 superano il 55% dei casi",
+    title: "Gli over 55 superano il 55% dei casi",
+    fires: false,
+  },
+  // The accessible name map-native declares is PREFIXED ("Interactive map: <title>",
+  // ChoroplethMap.tsx:485). Harmless by construction: the metric is the share of the
+  // TAKEAWAY's words the title carries, so extra words on the title side dilute nothing.
+  {
+    label: "engine prefix",
+    takeaway: "Les primes ont augmenté dans les six cantons",
+    title: "Interactive map: Les primes ont augmenté dans les six cantons",
+    fires: false,
+  },
+  // --- real divergences ------------------------------------------------------------------
+  {
+    label: "the 4b07c1d pair — one story, two takeaways",
+    takeaway: "Fribourg est le canton romand le moins cher",
+    title: "Genève paie la prime la plus lourde",
+    fires: true,
+  },
+  {
+    // English-only stopwords score this 0.33 and stay QUIET: "der/die/das/über/mehr" count as
+    // content words and inflate the overlap. This is the case that justifies the fr/de/it
+    // function words — a newsroom publishing in German would never have seen the lane fire.
+    label: "divergence de",
+    takeaway: "Der Anteil erreicht 70 %",
+    title: "Die über 55-Jährigen übersteigen 55 % der Fälle",
+    fires: true,
+  },
+  {
+    label: "divergence it",
+    takeaway: "La quota raggiunge il 70%",
+    title: "Gli over 55 superano il 55% dei casi",
+    fires: true,
+  },
+  {
+    label: "divergence fr — a section headline instead of the point",
+    takeaway: "Les primes ont augmenté dans les six cantons",
+    title: "Le coût de la santé en Suisse romande",
+    fires: true,
+  },
+  {
+    // DELIBERATELY not caught, and recorded here rather than hidden: same subject nouns
+    // (packaging, recycling), inverted claim. It scores 0.33. Raising the floor to 0.5 to
+    // catch it would fire on the German rewrite below, which also scores 0.33 — and a lane
+    // that fires on legitimate rewrites is one people learn to click past (the gridline-tint
+    // lesson, capture.ts:235-240). A token metric does not see an inverted claim; recall is
+    // traded for silence on purpose.
+    label: "divergence en, NOT caught — shared subject, inverted claim",
+    takeaway: "Malta lags far behind on packaging recycling",
+    title: "Estonia leads packaging recycling in Europe",
+    fires: false,
+  },
+  // --- legitimate editorial rewrites of the same point -----------------------------------
+  {
+    label: "rewrite fr",
+    takeaway: "Les primes ont augmenté dans les six cantons",
+    title: "Les primes augmentent dans les six cantons",
+    fires: false,
+  },
+  {
+    label: "rewrite fr, shorter",
+    takeaway: "L'écart entre cantons se creuse entre 2019 et 2024",
+    title: "L'écart se creuse entre 2019 et 2024",
+    fires: false,
+  },
+  {
+    label: "rewrite en",
+    takeaway: "Housing costs rose fastest in Annemasse.",
+    title: "Housing costs rose fastest in Annemasse",
+    fires: false,
+  },
+  {
+    label: "rewrite de",
+    takeaway: "Die über 55-Jährigen übersteigen 55 % der Fälle",
+    title: "Über 55-Jährige: mehr als 55 % der Fälle",
+    fires: false,
+  },
+];
+
+describe("title/takeaway calibration, on real strings", () => {
+  for (const c of CALIBRATION)
+    it(`${c.fires ? "fires" : "stays quiet"}: ${c.label}`, () => {
+      const risks = detectTasteRisks({
+        captures: [captureRecord()],
+        confirmedTakeaway: c.takeaway,
+        renderedTitle: c.title,
+      });
+      expect(
+        risks.some((r) => r.dimension === "title-takeaway-divergence"),
+      ).toBe(c.fires);
+    });
+});
+
 describe("whitespace", () => {
   it("flags a component that barely fills the container it publishes into", () => {
     const risks = detectTasteRisks({
