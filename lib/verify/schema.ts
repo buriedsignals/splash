@@ -101,6 +101,22 @@ export const ReviewerAttributionSchema = z.object({
   independentSemanticReview: z.enum(["available", "unavailable", "declined"]),
 });
 
+// What `capture` measured, held on the element in its OWN slot rather than folded into the
+// review one. Two verbs produce two facts, and gateStateOf reads `review` to answer
+// "reviewed": writing a half-filled review record at capture time would make the manifest
+// claim an artifact had been REVIEWED when no finding had been produced yet.
+//
+// `unsupported` carries the verb's own reason when capture cannot cover this format at all
+// (video: frame extraction needs ffmpeg). The slot is then EMPTY and says why — which is what
+// lets review emit its blocking `no-capture` finding instead of the run stalling forever on a
+// step that can never succeed.
+export const CaptureSlotSchema = z.object({
+  images: z.array(CaptureRecordSchema),
+  checks: z.array(CaptureCheckSchema),
+  capturedProvenanceHash: z.string(),
+  unsupported: z.string().optional(),
+});
+
 // The slot's schema: the legacy two fields required, everything this layer adds optional
 // and defaulted, so an old manifest and a new one are both valid values of one type.
 export const ReviewSlotSchema = z.object({

@@ -360,3 +360,38 @@ test("writeManifest carries the refusal — an unwritten choice never reaches di
   expect(() => writeManifest(join(dir, "run.json"), run(el))).toThrow();
   expect(existsSync(join(dir, "run.json"))).toBe(false);
 });
+
+// The rung that was missing from an already-written ladder: produced → captured → reviewed →
+// approved → delivered. Three of those five were unreachable until the loop routed to them.
+test("fresh capture, no review yet → 'captured'", () => {
+  const r = run({ id: "e", angle, proposal });
+  const ph = provenanceHash(r, r.elements[0]);
+  r.elements[0].artifact = {
+    path: "/x.png",
+    sha256: "b".repeat(64),
+    provenanceHash: ph,
+    producedAt: "2026-01-01T00:00:00.000Z",
+  };
+  r.elements[0].capture = {
+    images: [],
+    checks: [],
+    capturedProvenanceHash: ph,
+  };
+  expect(gateStateOf(r, r.elements[0])).toBe("captured");
+});
+test("a capture of an earlier provenance leaves the element 'produced'", () => {
+  const r = run({ id: "e", angle, proposal });
+  const ph = provenanceHash(r, r.elements[0]);
+  r.elements[0].artifact = {
+    path: "/x.png",
+    sha256: "b".repeat(64),
+    provenanceHash: ph,
+    producedAt: "2026-01-01T00:00:00.000Z",
+  };
+  r.elements[0].capture = {
+    images: [],
+    checks: [],
+    capturedProvenanceHash: "old",
+  };
+  expect(gateStateOf(r, r.elements[0])).toBe("produced");
+});

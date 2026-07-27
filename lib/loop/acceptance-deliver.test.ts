@@ -24,6 +24,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { unzipSync } from "fflate";
 import { advance } from "./driver";
+import { deliver } from "./deliver";
 import {
   gateStateOf,
   nextActions,
@@ -87,6 +88,7 @@ function producedRun(): RunManifest {
     events: [],
   };
   const el = base.elements[0]!;
+  const provenance = provenanceHash(base, el);
   return {
     ...base,
     elements: [
@@ -95,8 +97,17 @@ function producedRun(): RunManifest {
         artifact: {
           path: "elements/e1/static.png",
           sha256: "artifact-sha",
-          provenanceHash: provenanceHash(base, el),
+          provenanceHash: provenance,
           producedAt: "2026-07-25T00:00:00.000Z",
+        },
+        // Produced AND approved. Publishing is gated on an approval covering these exact bytes
+        // now (lib/loop/deliver.ts), and this file's subject is the delivery itself — the
+        // approval ceremony that WRITES this record is driven for real in
+        // lib/loop/approve.test.ts and, end to end through spawned CLI calls, in
+        // lib/host/journey.test.ts.
+        approved: {
+          signoffPath: "signoffs/e1.json",
+          approvedProvenanceHash: provenance,
         },
       },
     ],
@@ -231,24 +242,34 @@ describe("delivering a produced element, end to end and offline", () => {
     try {
       const decor = loadDecor(install, { env: {} });
       const produced = producedRun();
+      // The approval removed: this is the run of a newsroom whose editor has NOT signed off.
+      const { approved: _approved, ...unapproved } = produced.elements[0]!;
       const run: RunManifest = {
         ...produced,
         elements: [
-          {
-            ...produced.elements[0]!,
-            delivery: { requested: ["zip"], delivered: [] },
-          },
+          { ...unapproved, delivery: { requested: ["zip"], delivered: [] } },
         ],
       };
 
+      // Two independent refusals, and both matter. First the ROUTER: an unapproved artifact
+      // owes the verification chain, so advance() never reaches the deliver branch at all —
+      // whatever it does run, nothing is published.
+      expect(nextActions(run)).toEqual(["capture"]);
       const after = await advance(run, runDir, decor);
       expect(after.elements[0]!.delivery!.delivered).toHaveLength(0);
-      expect(after.events).toHaveLength(1);
-      expect(after.events[0]).toMatchObject({
-        kind: "failure",
-        action: "deliver",
-      });
-      expect(after.events[0]!.message).toContain("sign-off");
+
+      // Then the GATE itself, called directly, because a router is not a gate: deliver()
+      // refuses in this newsroom's own terms, naming the sign-off it requires. This is the
+      // half that proves the decor still reaches deliver — the reason this test exists.
+      const refused = await deliver(
+        run,
+        run.elements[0]!,
+        runDir,
+        decor,
+        decor.profile,
+      );
+      expect(refused.ok).toBe(false);
+      if (!refused.ok) expect(refused.message).toContain("sign-off");
     } finally {
       rmSync(install, { recursive: true, force: true });
     }

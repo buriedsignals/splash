@@ -157,6 +157,13 @@ export type CaptureResult = {
   checks: CaptureCheck[];
 };
 
+// What an element carries once capture has run: the result, pinned to the provenance it was
+// taken for, plus the verb's reason when this format cannot be captured at all.
+export type CaptureSlot = CaptureResult & {
+  capturedProvenanceHash: string;
+  unsupported?: string;
+};
+
 // ---------------------------------------------------------------------------------------
 // Preview (issue #3)
 // ---------------------------------------------------------------------------------------

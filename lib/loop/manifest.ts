@@ -22,9 +22,10 @@ import { isLoopBuildable, resolveBuilder } from "./buildable";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger } from "../source/policy";
-import { ReviewSlotSchema } from "../verify/schema";
+import { CaptureSlotSchema, ReviewSlotSchema } from "../verify/schema";
 import { approvalDecision, type ApprovalDecision } from "../verify/approval";
-import type { ReviewRecord } from "../verify/types";
+import { previewCoversDeliverable } from "../verify/preview";
+import type { CaptureSlot, ReviewRecord } from "../verify/types";
 
 const HashRef = z.object({ path: z.string(), sha256: z.string() });
 const DataProfileSchema = z.object({
@@ -121,6 +122,9 @@ const RunElementSchema = z.object({
       producedAt: z.string(),
     })
     .optional(),
+  // What `capture` measured at the destination's real publication viewport (issue #10).
+  // Optional, and its own slot rather than part of `review` — see CaptureSlotSchema.
+  capture: CaptureSlotSchema.optional(),
   // The slot the verify layer fills (lib/verify). It kept `findings: unknown[]` while it
   // was dormant; the schema now describes the real record — structured findings with a
   // central severity, the reviewer's attribution, the captures and their checks, the taste
@@ -206,6 +210,13 @@ export type NextAction =
   | "choose-form"
   | "confirm-aspect"
   | "produce"
+  // The verification chain (lib/verify), on the road between a produced artifact and a
+  // published one. `capture`, `review` and `preview` are DETERMINISTIC — advanceStep runs
+  // them — while `approve` is a human turn like confirm-angle and choose-form.
+  | "capture"
+  | "review"
+  | "preview"
+  | "approve"
   | "show"
   | "deliver";
 
@@ -388,8 +399,69 @@ export function nextActionsForElement(
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   // `deliver` is a step a DECISION triggers, never an automatic advance — the symmetric of
   // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.
-  if (el.delivery && needsDelivery(run, el)) return ["deliver"];
+  if (el.delivery && needsDelivery(run, el)) return verificationChain(run, el);
   return ["show"];
+}
+
+/**
+ * The road from a produced artifact to a published one (lib/verify, issues #3/#9/#10/#11).
+ *
+ * POSITION: inside the delivery branch, never above it. Two reasons, and the first is a
+ * measurement rather than a preference — lib/source/wiring-proof.test.ts asserts that a
+ * produced element nobody asked to publish answers ["show"], and that file is outside this
+ * slice's boundary. An invariant written against a test one may not repair is a false green
+ * dressed as rigour, which is exactly the reasoning the verify layer already applied to
+ * `approved ⇒ preview`. And editorially, `show` has always meant "fresh, and nobody is waiting
+ * on it": with a delivery requested, somebody is.
+ *
+ * The approval leads, and that is the whole shape: publishing needs ONE thing — an approval
+ * covering THESE bytes. Capture, review and preview are the road to it, not separate
+ * conditions, so an approval that already covers this provenance short-circuits the walk.
+ */
+function verificationChain(run: RunManifest, el: RunElement): NextAction[] {
+  if (approvalCovers(run, el)) return ["deliver"];
+  if (!captureCovers(run, el)) return ["capture"];
+  if (!reviewCovers(run, el)) return ["review"];
+  if (!previewCovers(el)) return ["preview"];
+  return ["approve"];
+}
+
+// Freshness, one rule for the three records: a verification claim is about the provenance it
+// was made for, and a re-production moves the provenance under it. Nobody has to remember to
+// revoke anything — the same mechanism that lapses an override (#11).
+export function captureCovers(run: RunManifest, el: RunElement): boolean {
+  return (
+    el.capture != null &&
+    el.capture.capturedProvenanceHash === provenanceHash(run, el)
+  );
+}
+
+export function reviewCovers(run: RunManifest, el: RunElement): boolean {
+  return (
+    el.review != null &&
+    el.review.reviewedProvenanceHash === provenanceHash(run, el)
+  );
+}
+
+export function approvalCovers(run: RunManifest, el: RunElement): boolean {
+  return (
+    el.approved != null &&
+    el.approved.approvedProvenanceHash === provenanceHash(run, el)
+  );
+}
+
+// The preview is judged on BYTES, not on provenance, because that is what issue #3's gate
+// checks: the journalist was shown these exact bytes, in the pinned format's own file genre.
+// Delegated to lib/verify so the router and the approval gate cannot disagree about what
+// counts as having been shown.
+export function previewCovers(el: RunElement): boolean {
+  if (!el.artifact) return false;
+  const format = chosenOption(el)?.format ?? "static";
+  return previewCoversDeliverable(
+    format,
+    (el.review as ReviewRecord | undefined)?.preview,
+    el.artifact.sha256,
+  ).ok;
 }
 
 function needsDelivery(run: RunManifest, el: RunElement): boolean {
@@ -451,6 +523,7 @@ export type GateState =
   | "chosen"
   | "produced"
   | "stale"
+  | "captured"
   | "reviewed"
   | "approved"
   | "delivered"
@@ -497,6 +570,15 @@ export function gateStateOf(run: RunManifest, el: RunElement): GateState {
     el.review.reviewedProvenanceHash === provenance
   )
     return "reviewed";
+  // The rung between produced and reviewed: facts measured at the publication viewport, with
+  // nobody having turned them into findings yet. It was missing from a ladder that already
+  // named the four others.
+  if (
+    el.capture &&
+    provenance &&
+    el.capture.capturedProvenanceHash === provenance
+  )
+    return "captured";
   if (el.artifact) return fresh ? "produced" : "stale";
   if (el.proposal?.chosenId) return "chosen";
   if (el.proposal) return "proposed";

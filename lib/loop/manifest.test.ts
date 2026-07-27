@@ -294,9 +294,14 @@ describe("the delivery slot", () => {
     events: [],
   });
 
+  // Produced AND approved. The approval is the new precondition of delivery (the verification
+  // chain, above): these tests are about the delivered/deliver complementarity, so they declare
+  // an artifact a journalist has signed off on and keep asking their own question — which is
+  // now also an assertion that an approved element routes straight to `deliver`.
   const produced = (): RunManifest => {
     const m = base();
     const el = m.elements[0]!;
+    const provenance = provenanceHash(m, el);
     return {
       ...m,
       elements: [
@@ -305,8 +310,12 @@ describe("the delivery slot", () => {
           artifact: {
             path: "elements/e1/static.png",
             sha256: "d",
-            provenanceHash: provenanceHash(m, el),
+            provenanceHash: provenance,
             producedAt: "1980-01-01T00:00:00.000Z",
+          },
+          approved: {
+            signoffPath: "signoffs/e1.json",
+            approvedProvenanceHash: provenance,
           },
         },
       ],
@@ -595,7 +604,10 @@ describe("a deliverable's own channel", () => {
     const m = base();
     const el = {
       ...m.elements[0]!,
-      deliverable: { destination: "social" as const, aspect: "square" as const },
+      deliverable: {
+        destination: "social" as const,
+        aspect: "square" as const,
+      },
     };
     expect(m.channel).toBe("article-web");
     expect(channelForElement(m, el)).toBe("social-feed");
@@ -673,11 +685,17 @@ describe("provenance covers the deliverable", () => {
     const m = base();
     const portrait = {
       ...m.elements[0]!,
-      deliverable: { destination: "social" as const, aspect: "portrait" as const },
+      deliverable: {
+        destination: "social" as const,
+        aspect: "portrait" as const,
+      },
     };
     const square = {
       ...m.elements[0]!,
-      deliverable: { destination: "social" as const, aspect: "square" as const },
+      deliverable: {
+        destination: "social" as const,
+        aspect: "square" as const,
+      },
     };
     expect(provenanceHash(m, portrait)).not.toBe(provenanceHash(m, square));
   });
@@ -692,7 +710,10 @@ describe("provenance covers the deliverable", () => {
       ...m.elements[0]!,
       id: "e2",
       deliverableOf: "e1",
-      deliverable: { destination: "social" as const, aspect: "portrait" as const },
+      deliverable: {
+        destination: "social" as const,
+        aspect: "portrait" as const,
+      },
     };
     expect(provenanceHash(m, a)).not.toBe(provenanceHash(m, b));
   });
@@ -744,7 +765,10 @@ describe("confirm-aspect — the aspect question, at the moment it is actually n
     const m = social();
     const el = {
       ...m.elements[0]!,
-      deliverable: { destination: "social" as const, aspect: "portrait" as const },
+      deliverable: {
+        destination: "social" as const,
+        aspect: "portrait" as const,
+      },
     };
     expect(nextActions({ ...m, elements: [el] })).toEqual(["produce"]);
   });
@@ -793,7 +817,10 @@ describe("nextActions across several deliverables", () => {
 
   it("does not read as done while a requested deliverable is still unproduced", () => {
     const m = twoDeliverables();
-    const run = { ...m, elements: [produced(m, m.elements[0]!), m.elements[1]!] };
+    const run = {
+      ...m,
+      elements: [produced(m, m.elements[0]!), m.elements[1]!],
+    };
     // Before issue #1 this answered ["show"] — elements[0] was the whole run — so a two-output
     // request shipped with one output and called itself finished.
     expect(nextActions(run)).toEqual(["produce"]);
@@ -842,7 +869,10 @@ describe("nextActions across several deliverables", () => {
         produced(m, m.elements[0]!),
         {
           ...m.elements[1]!,
-          dropped: { reason: "the desk cut the social post", at: "1980-01-01T00:00:00.000Z" },
+          dropped: {
+            reason: "the desk cut the social post",
+            at: "1980-01-01T00:00:00.000Z",
+          },
         },
       ],
     };
@@ -899,7 +929,9 @@ describe("a deliverable cannot be written with a format its own destination refu
       assertInvariants(withChosen({ destination: "print" }, "static")),
     ).not.toThrow();
     expect(() =>
-      assertInvariants(withChosen({ destination: "article-web" }, "interactive")),
+      assertInvariants(
+        withChosen({ destination: "article-web" }, "interactive"),
+      ),
     ).not.toThrow();
   });
 
@@ -1060,5 +1092,197 @@ describe("assertInvariants: a delivery record needs the artifact it delivered", 
       ],
     };
     expect(() => assertInvariants(requestedOnly)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------------------
+// The verification chain, wired into the state machine (verify-in-journey slice).
+//
+// lib/verify built capture, review, the preview gate and approveElement — and nothing in the
+// loop routed to any of them: a produced artifact went straight to `deliver`. These tests hold
+// the cascade that closes that, and the one property the closure must NOT break: an element
+// nobody asked to publish still answers "show".
+// ---------------------------------------------------------------------------------------
+describe("the verification chain in nextActions", () => {
+  const ARTIFACT_SHA = "c".repeat(64);
+
+  function produced(): RunManifest {
+    const m = base();
+    const el = m.elements[0]!;
+    const withArtifact: RunElement = {
+      ...el,
+      artifact: {
+        path: "elements/e1/static.png",
+        sha256: ARTIFACT_SHA,
+        provenanceHash: provenanceHash(m, el),
+        producedAt: "2026-07-27T09:00:00.000Z",
+      },
+    };
+    return { ...m, elements: [withArtifact] };
+  }
+
+  function requesting(el: Partial<RunElement> = {}): RunManifest {
+    const m = produced();
+    return {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          delivery: { requested: ["zip"], delivered: [] },
+          ...el,
+        },
+      ],
+    };
+  }
+
+  function hashOf(m: RunManifest): string {
+    return provenanceHash(m, m.elements[0]!);
+  }
+
+  const captureSlot = (m: RunManifest) => ({
+    images: [],
+    checks: [],
+    capturedProvenanceHash: hashOf(m),
+  });
+  const reviewSlot = (m: RunManifest) => ({
+    findings: [],
+    reviewedProvenanceHash: hashOf(m),
+  });
+  const previewSlot = {
+    deliverablePath: "elements/e1/static.png",
+    deliverableSha256: ARTIFACT_SHA,
+    presentedAs: "path-printed" as const,
+    presentedAt: "2026-07-27T09:05:00.000Z",
+    fallbackReason: "no viewer on this machine",
+  };
+
+  it("a produced element nobody asked to publish still answers show", () => {
+    // The contract lib/source/wiring-proof.test.ts asserts, and the reason the chain lives
+    // inside the delivery branch rather than above it.
+    expect(nextActions(produced())).toEqual(["show"]);
+  });
+
+  it("routes to capture once a delivery is pending and nothing has been captured", () => {
+    expect(nextActions(requesting())).toEqual(["capture"]);
+  });
+
+  it("routes to review once the capture covers this artifact", () => {
+    const m = requesting();
+    m.elements[0]!.capture = captureSlot(m);
+    expect(nextActions(m)).toEqual(["review"]);
+  });
+
+  it("routes to preview once the review covers this artifact", () => {
+    const m = requesting();
+    m.elements[0]!.capture = captureSlot(m);
+    m.elements[0]!.review = reviewSlot(m);
+    expect(nextActions(m)).toEqual(["preview"]);
+  });
+
+  it("routes to approve once the preview covers the deliverable's bytes", () => {
+    const m = requesting();
+    m.elements[0]!.capture = captureSlot(m);
+    m.elements[0]!.review = { ...reviewSlot(m), preview: previewSlot };
+    expect(nextActions(m)).toEqual(["approve"]);
+  });
+
+  it("a preview of OTHER bytes does not clear the gate", () => {
+    const m = requesting();
+    m.elements[0]!.capture = captureSlot(m);
+    m.elements[0]!.review = {
+      ...reviewSlot(m),
+      preview: { ...previewSlot, deliverableSha256: "d".repeat(64) },
+    };
+    // Not "approve": the preview covered an artifact this run is no longer looking at.
+    expect(nextActions(m)).toEqual(["preview"]);
+  });
+
+  it("routes to deliver only once the approval covers this provenance", () => {
+    const m = requesting();
+    m.elements[0]!.approved = {
+      signoffPath: "signoffs/e1.json",
+      approvedProvenanceHash: hashOf(m),
+    };
+    expect(nextActions(m)).toEqual(["deliver"]);
+  });
+
+  it("an approval of an EARLIER provenance sends the run back through the chain", () => {
+    const m = requesting();
+    m.elements[0]!.approved = {
+      signoffPath: "signoffs/e1.json",
+      approvedProvenanceHash: "stale-hash",
+    };
+    expect(nextActions(m)).toEqual(["capture"]);
+  });
+
+  it("re-confirming the angle unseats an approved artifact entirely", () => {
+    const m = requesting();
+    m.elements[0]!.approved = {
+      signoffPath: "signoffs/e1.json",
+      approvedProvenanceHash: hashOf(m),
+    };
+    const moved: RunManifest = {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          angle: { ...m.elements[0]!.angle!, confirmedTakeaway: "another" },
+        },
+      ],
+    };
+    expect(nextActions(moved)).toEqual(["produce"]);
+  });
+});
+
+describe("the capture slot", () => {
+  it("parses a well-formed capture record", () => {
+    const m = base();
+    const el = m.elements[0]!;
+    const parsed = parseManifest({
+      ...m,
+      elements: [
+        {
+          ...el,
+          artifact: {
+            path: "elements/e1/static.png",
+            sha256: "c".repeat(64),
+            provenanceHash: provenanceHash(m, el),
+            producedAt: "2026-07-27T09:00:00.000Z",
+          },
+          capture: {
+            images: [],
+            checks: [
+              {
+                id: "capture:fits-viewport",
+                breakpoint: "primary",
+                outcome: "pass",
+                detail: "fits",
+              },
+            ],
+            capturedProvenanceHash: provenanceHash(m, el),
+          },
+        },
+      ],
+    });
+    expect(parsed.elements[0]!.capture!.checks).toHaveLength(1);
+  });
+
+  it("refuses a capture slot whose images are not a list", () => {
+    const m = base();
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [
+          {
+            ...m.elements[0]!,
+            capture: {
+              images: "nope",
+              checks: [],
+              capturedProvenanceHash: "h",
+            },
+          },
+        ],
+      }),
+    ).toThrow();
   });
 });

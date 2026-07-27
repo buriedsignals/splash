@@ -227,7 +227,18 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
   run = {
     ...run,
     elements: [
-      { ...run.elements[0], delivery: { requested: ["zip"], delivered: [] } },
+      {
+        ...run.elements[0],
+        delivery: { requested: ["zip"], delivered: [] },
+        // Publishing needs an approval covering these exact bytes (the verification chain).
+        // This test's subject is the run dir travelling whole, not the approval ceremony —
+        // which lib/loop/approve.test.ts and lib/host/journey.test.ts drive for real — so the
+        // approval is declared here as the precondition it is.
+        approved: {
+          signoffPath: "signoffs/e1.json",
+          approvedProvenanceHash: provenanceHash(run, run.elements[0]!),
+        },
+      },
     ],
   };
   const zipDecor: Decor = {
@@ -727,7 +738,20 @@ function deliverableRun(runDir: string): {
     provenanceHash: provenanceHash(base, el),
     producedAt: "1980-01-01T00:00:00.000Z",
   };
-  return { run: base, el: { ...el, artifact } };
+  // Approved for exactly this provenance: publishing has a gate now (lib/loop/deliver.ts, the
+  // verification chain in nextActions), and these two tests are about the DELIVER branch of
+  // the driver, so they hand it an element a journalist has signed off on.
+  return {
+    run: base,
+    el: {
+      ...el,
+      artifact,
+      approved: {
+        signoffPath: "signoffs/e1.json",
+        approvedProvenanceHash: artifact.provenanceHash,
+      },
+    },
+  };
 }
 
 test("advance() delivers a requested destination, merging the delivery record onto the element", async () => {
