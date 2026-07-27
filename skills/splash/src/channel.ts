@@ -101,8 +101,12 @@ const CHANNEL_KEYWORDS: Record<string, Channel> = {
   article: "article-web",
   embed: "article-web",
   landscape: "article-web",
-  print: "article-web",
   youtube: "article-web",
+  // print — a destination of its own since issue #1. It used to alias to article-web, which
+  // silently answered a print request with a 1200x675 screen PNG at 72 dpi.
+  print: "print-page",
+  paper: "print-page",
+  page: "print-page",
 };
 
 const DEFAULT_CHANNEL: Channel = "article-web";

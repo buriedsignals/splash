@@ -5,7 +5,12 @@ import { fail, ok, render, type VerbResult } from "../core/verbs";
 import { IMAGE_EXTENSIONS } from "../core/contract";
 import type { VisualFormat } from "../core/vocabulary";
 import { toVerbResult, validateSourcePolicy } from "../source";
-import { provenanceHash, type RunManifest, type RunElement } from "./manifest";
+import {
+  provenanceHash,
+  resolvedChannelForElement,
+  type RunManifest,
+  type RunElement,
+} from "./manifest";
 import {
   isLoopBuildable,
   unbuildableEngineReason,
@@ -79,8 +84,19 @@ export async function produce(
     );
 
   // The channel is STATE now (manifest v4), not a stub: the brain offered within it, so produce
-  // must render within the same one.
-  const channel = run.channel;
+  // must render within the same one. Since issue #1 it is the channel of THIS DELIVERABLE —
+  // resolved from its own destination and aspect — rather than the run's single channel, because
+  // a run can carry a web chart and a social video at once.
+  //
+  // The RESOLVED form, never the total fallback: a social deliverable whose aspect has not been
+  // confirmed has no channel yet, and rendering it at the run's default would silently answer
+  // "Stories or feed?" on the journalist's behalf — the exact decision issue #1 moved later.
+  const channel = resolvedChannelForElement(run, el);
+  if (!channel)
+    return fail(
+      "invalid-request",
+      `produce: the ${el.deliverable?.destination} deliverable has no shape yet — confirm the aspect ratio before producing it`,
+    );
 
   // The brain offers across engines (chart-native, map-native, dw-chart, map-dw…), but this
   // verb only knows how to build through the engines LOOP_BUILDABLE_ENGINES names — wiring the

@@ -14,7 +14,7 @@ import { test, expect } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { advance } from "../loop/driver";
+import { advance, advanceStep } from "../loop/driver";
 import { freezeInput } from "../loop/freeze";
 import {
   nextActions,
@@ -140,8 +140,16 @@ test("a real run reaches an offer that carries its discards and can be phrased",
   // The choice, and a rendered artifact. Which nativeType ranks first is not pinned here — so
   // walk the ranked options and produce the first one production can actually build, exactly
   // as a journalist choosing down the offer would.
+  //
+  // Every refusal along the way is KEPT, not swallowed. An earlier version of this walk dropped
+  // each failed attempt on the floor and asserted `expect(chosen).toBeDefined()` at the end, so a
+  // walk where all three candidates were refused reported itself as `undefined` — a value, not a
+  // reason. Diagnosing that meant re-instrumenting the loop by hand to recover what the run had
+  // already recorded. `advanceStep` hands back the refusal the ledger got (lib/loop/driver.ts),
+  // so when nothing renders this test says which forms were tried and why each one said no.
   let produced: RunManifest | undefined;
   let chosen: FormOption | undefined;
+  const refusals: string[] = [];
   const phrasedProposal = m.elements[0].proposal!;
   for (const o of phrasedProposal.options) {
     if (!isLoopBuildable(o.engine)) continue;
@@ -152,14 +160,20 @@ test("a real run reaches an offer that carries its discards and can be phrased",
         ...m.elements.slice(1),
       ],
     };
-    const result = await advance(attempt, dir);
-    if (result.elements[0].artifact) {
-      produced = result;
+    const step = await advanceStep(attempt, dir);
+    if (step.run.elements[0].artifact) {
+      produced = step.run;
       chosen = o;
       break;
     }
+    refusals.push(
+      `${o.id} (${o.engine}/${o.format}): ${step.failure?.message ?? "produced no artifact and recorded no refusal"}`,
+    );
   }
-  expect(chosen).toBeDefined();
+  if (!chosen)
+    throw new Error(
+      `no offered form produced an artifact — every buildable candidate was refused:\n${refusals.join("\n\n")}`,
+    );
   expect(produced).toBeDefined();
 
   const artifact = produced!.elements[0].artifact!;

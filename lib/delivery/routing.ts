@@ -5,7 +5,7 @@
 // PURE: the ready destination ids are passed in, never read from the environment or from a
 // decor (invariant I5). The caller — lib/loop/request-delivery.ts — owns that resolution.
 import { deliveryGenreFor } from "../core/publishers";
-import type { VisualFormat } from "../core/vocabulary";
+import type { Destination, VisualFormat } from "../core/vocabulary";
 
 /** The portable package: no key, always ready, therefore always a possible answer. */
 export const PORTABLE_PACKAGE = "zip";
@@ -29,7 +29,16 @@ export const HOSTED_PREFERENCE: readonly string[] = [
 export function defaultDestinationsFor(
   format: VisualFormat,
   readyIds: string[],
+  destination?: Destination,
 ): string[] {
+  // A print deliverable is a FILE — there is no URL on a page. Today this is also true by way
+  // of the format (print carries `static` only, and static is of the file genre), so this line
+  // changes no current answer. It is written anyway, and above the genre test, because the rule
+  // belongs to the DESTINATION: "hosting is a property of the format" is the right model for
+  // screen channels, and print is the one destination where it is the wrong question entirely.
+  // Leaving it implicit would make the day a printable non-file format appears a silent
+  // regression rather than a no-op.
+  if (destination === "print") return [PORTABLE_PACKAGE];
   // A file IS the deliverable: the CMS has a native image/video field with its own alt-text
   // field. Hosting a PNG in order to iframe it was the wrong idea from the start (spec §2).
   if (deliveryGenreFor(format) === "file") return [PORTABLE_PACKAGE];

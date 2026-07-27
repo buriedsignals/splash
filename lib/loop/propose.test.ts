@@ -85,3 +85,43 @@ test("a refusal computed by the brain arrives at propose()'s caller, with its se
   expect(refusal).toContain("social-vertical");
   expect(refusal).toContain("scrolly");
 });
+
+test("a print deliverable is offered static forms only, and never through Datawrapper", () => {
+  const m = run(["2019", "2024"]);
+  const withPrint: RunManifest = {
+    ...m,
+    elements: [
+      {
+        ...m.elements[0]!,
+        deliverable: { destination: "print" },
+        requestedFormat: "static",
+      },
+    ],
+  };
+  const { options, excluded } = propose(withPrint, undefined, withPrint.elements[0]);
+  expect(options.length).toBeGreaterThan(0);
+  for (const o of options) {
+    expect(o.format).toBe("static");
+    expect(o.engine).not.toBe("dw-chart");
+    expect(o.engine).not.toBe("map-dw");
+  }
+  expect(excluded.map((e) => e.reason).join(" | ")).toMatch(/print/i);
+});
+
+test("two deliverables of one run are offered at their own channels", () => {
+  const m = run(["2019", "2024"]);
+  const web = { ...m.elements[0]!, deliverable: { destination: "article-web" as const } };
+  const social = {
+    ...m.elements[0]!,
+    id: "e2",
+    deliverableOf: "e1",
+    deliverable: { destination: "social" as const, aspect: "portrait" as const },
+  };
+  const two: RunManifest = { ...m, elements: [web, social] };
+  const webOffer = propose(two, undefined, web);
+  const socialOffer = propose(two, undefined, social);
+  // article-web is the only channel that carries an interactive; a Stories post cannot.
+  expect(socialOffer.options.every((o) => o.format !== "interactive")).toBe(true);
+  expect(socialOffer.options.every((o) => o.format !== "scrolly")).toBe(true);
+  expect(webOffer.options.length).toBeGreaterThan(0);
+});

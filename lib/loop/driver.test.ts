@@ -10,7 +10,12 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
-import { advance, advanceStep } from "./driver";
+import {
+  advance,
+  advanceStep,
+  boundEventMessage,
+  MAX_EVENT_MESSAGE_CHARS,
+} from "./driver";
 import { revise } from "./revise";
 import {
   nextActions,
@@ -923,4 +928,41 @@ test("advance() is exactly advanceStep's manifest — the wrapper adds nothing",
   const viaWrapper = await advance(run, runDir, NEUTRAL_DECOR);
   const viaStep = await advanceStep(run, runDir, NEUTRAL_DECOR);
   expect(viaWrapper).toStrictEqual(viaStep.run);
+});
+
+// A refusal that fits is recorded whole — most of them are one sentence a verb wrote itself
+// (produce: need an angle and a chosen form), and bounding must not touch those.
+test("a refusal short enough to fit is recorded exactly as the verb worded it", () => {
+  const short = "produce: need an angle and a chosen form";
+  expect(boundEventMessage(short)).toBe(short);
+  expect(boundEventMessage("x".repeat(MAX_EVENT_MESSAGE_CHARS))).toHaveLength(
+    MAX_EVENT_MESSAGE_CHARS,
+  );
+});
+
+// Regression, from a real hour lost: an ENGINE refusal does not arrive as a sentence, it arrives
+// as a subprocess dump (lib/core/verbs/exec.ts tails 30 lines of stdout and 30 of stderr) whose
+// REASON is its last lines — everything above is the producer's ordinary progress log. The
+// ledger used to keep `raw.slice(0, 200)`, i.e. exactly the uninformative head: a failed
+// connected-scatter video render was recorded as "conformance: OK (0 violations)" followed by an
+// informational render-size line, and the sentence naming the cause never made it into the
+// manifest at all. Reading that event sent the diagnosis at the wrong file for an hour. Bounded
+// from the END is what makes a recorded failure diagnosable.
+test("a long engine dump is bounded from the END, so the reason a producer prints last survives", () => {
+  const noise = Array.from(
+    { length: 400 },
+    (_, i) => `[produce connected-scatter] step ${i}: OK`,
+  ).join("\n");
+  const reason =
+    "Error: Command failed: bun scripts/produce.mjs connected-scatter config.json out video";
+  const raw = `${noise}\n${reason}`;
+  expect(raw.length).toBeGreaterThan(MAX_EVENT_MESSAGE_CHARS);
+
+  const bounded = boundEventMessage(raw);
+  expect(bounded).toContain(reason);
+  expect(bounded).not.toContain("step 0: OK");
+  // Bounded means bounded: a manifest is persisted JSON and an unbounded dump would bloat it.
+  expect(bounded.length).toBeLessThanOrEqual(MAX_EVENT_MESSAGE_CHARS);
+  // And it SAYS it was cut, so nobody reads a tail as if it were the whole story.
+  expect(bounded.startsWith("…")).toBe(true);
 });

@@ -1,12 +1,18 @@
 import { test, expect, describe, it } from "bun:test";
+import { canonicalHash } from "./canonical-hash";
 import {
   provenanceHash,
+  channelForElement,
+  liveElementFor,
+  assertInvariants,
+  resolvedChannelForElement,
   stalenessOf,
   nextActions,
   gateStateOf,
   parseManifest,
   RunManifestSchema,
   type RunManifest,
+  type RunElement,
 } from "./manifest";
 
 function base(): RunManifest {
@@ -578,4 +584,416 @@ test("an unknown channel is refused", () => {
       events: [],
     }),
   ).toThrow();
+});
+
+// ---------------------------------------------------------------------------------------
+// Issue #1 — several deliverables in one run: destination × format × aspect, de-welded.
+// ---------------------------------------------------------------------------------------
+
+describe("a deliverable's own channel", () => {
+  it("resolves from the element's destination and aspect, not from the run's channel", () => {
+    const m = base();
+    const el = {
+      ...m.elements[0]!,
+      deliverable: { destination: "social" as const, aspect: "square" as const },
+    };
+    expect(m.channel).toBe("article-web");
+    expect(channelForElement(m, el)).toBe("social-feed");
+  });
+
+  it("falls back to the run's channel for an element that declares no deliverable", () => {
+    const m = { ...base(), channel: "social-vertical" as const };
+    expect(channelForElement(m, m.elements[0]!)).toBe("social-vertical");
+  });
+
+  it("answers undefined while a social deliverable still owes its aspect", () => {
+    const m = base();
+    const el = {
+      ...m.elements[0]!,
+      deliverable: { destination: "social" as const },
+    };
+    expect(resolvedChannelForElement(m, el)).toBeUndefined();
+    // ...but the total resolver never throws — provenance has to stay computable.
+    expect(channelForElement(m, el)).toBe("article-web");
+  });
+
+  it("takes the destination's only aspect when there is nothing to ask", () => {
+    const m = base();
+    const web = {
+      ...m.elements[0]!,
+      deliverable: { destination: "article-web" as const },
+    };
+    const print = {
+      ...m.elements[0]!,
+      deliverable: { destination: "print" as const },
+    };
+    expect(resolvedChannelForElement(m, web)).toBe("article-web");
+    expect(resolvedChannelForElement(m, print)).toBe("print-page");
+  });
+});
+
+describe("provenance covers the deliverable", () => {
+  it("leaves a legacy element's hash byte-identical (no deliverable ⇒ no new hash inputs)", () => {
+    const m = base();
+    // The value this test pins is the hash of the SAME inputs the pre-issue-#1 hash covered.
+    // Recomputed, never a literal: what matters is that adding the two optional keys did not
+    // re-value an element that carries neither.
+    const expected = canonicalHash({
+      inputData: m.input.data!.sha256,
+      inputArticle: null,
+      cadrage: null,
+      angle: m.elements[0]!.angle,
+      chosenId: "slope",
+      channel: "article-web",
+      format: null,
+      // Added by the source-policy wiring, not by issue #1: the rendered credit is an artifact
+      // input, so correcting a source label must invalidate the artifact carrying the old one.
+      // Listed here so this test keeps proving ITS invariant — that the two optional deliverable
+      // keys re-value nothing — instead of failing whenever another slice legitimately widens
+      // the hash.
+      sources: m.sources ?? null,
+    });
+    expect(provenanceHash(m, m.elements[0]!)).toBe(expected);
+  });
+
+  it("moves when the destination moves — an artifact cannot look fresh at a new destination", () => {
+    const m = base();
+    const web = {
+      ...m.elements[0]!,
+      deliverable: { destination: "article-web" as const },
+    };
+    const print = {
+      ...m.elements[0]!,
+      deliverable: { destination: "print" as const },
+    };
+    expect(provenanceHash(m, print)).not.toBe(provenanceHash(m, web));
+  });
+
+  it("moves when only the aspect moves — a 9:16 still is not a 1:1 still", () => {
+    const m = base();
+    const portrait = {
+      ...m.elements[0]!,
+      deliverable: { destination: "social" as const, aspect: "portrait" as const },
+    };
+    const square = {
+      ...m.elements[0]!,
+      deliverable: { destination: "social" as const, aspect: "square" as const },
+    };
+    expect(provenanceHash(m, portrait)).not.toBe(provenanceHash(m, square));
+  });
+
+  it("gives two siblings of one takeaway two different hashes", () => {
+    const m = base();
+    const a = {
+      ...m.elements[0]!,
+      deliverable: { destination: "article-web" as const },
+    };
+    const b = {
+      ...m.elements[0]!,
+      id: "e2",
+      deliverableOf: "e1",
+      deliverable: { destination: "social" as const, aspect: "portrait" as const },
+    };
+    expect(provenanceHash(m, a)).not.toBe(provenanceHash(m, b));
+  });
+
+  it("still moves with the run's channel for a legacy element", () => {
+    const m = base();
+    const h = provenanceHash(m, m.elements[0]!);
+    expect(
+      provenanceHash({ ...m, channel: "social-feed" }, m.elements[0]!),
+    ).not.toBe(h);
+  });
+});
+
+describe("confirm-aspect — the aspect question, at the moment it is actually needed", () => {
+  const social = (extra: Partial<RunElement> = {}): RunManifest => {
+    const m = base();
+    return {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          deliverable: { destination: "social" },
+          ...extra,
+        },
+      ],
+    };
+  };
+
+  it("asks for the aspect once a form is chosen and before anything is produced", () => {
+    expect(nextActions(social())).toEqual(["confirm-aspect"]);
+  });
+
+  it("never asks before the editorial format is chosen", () => {
+    const m = social({
+      proposal: {
+        options: [{ id: "slope", nativeType: "slope", why: "w" }],
+        excluded: [],
+      },
+    });
+    expect(nextActions(m)).toEqual(["choose-form"]);
+  });
+
+  it("never asks before the angle is confirmed either", () => {
+    const m = social({ angle: undefined, proposal: undefined });
+    expect(nextActions(m)).toEqual(["confirm-angle"]);
+  });
+
+  it("moves on to produce once the aspect is answered", () => {
+    const m = social();
+    const el = {
+      ...m.elements[0]!,
+      deliverable: { destination: "social" as const, aspect: "portrait" as const },
+    };
+    expect(nextActions({ ...m, elements: [el] })).toEqual(["produce"]);
+  });
+
+  it("never asks on a branch that has one shape — web and print go straight to produce", () => {
+    const m = base();
+    for (const destination of ["article-web", "print"] as const) {
+      const el = { ...m.elements[0]!, deliverable: { destination } };
+      expect(nextActions({ ...m, elements: [el] })).toEqual(["produce"]);
+    }
+  });
+
+  it("never asks on a legacy element that has no deliverable at all", () => {
+    expect(nextActions(base())).toEqual(["produce"]);
+  });
+});
+
+describe("nextActions across several deliverables", () => {
+  const produced = (m: RunManifest, el: RunElement): RunElement => ({
+    ...el,
+    artifact: {
+      path: `elements/${el.id}/static.png`,
+      sha256: "d".repeat(64),
+      provenanceHash: provenanceHash(m, el),
+      producedAt: "1980-01-01T00:00:00.000Z",
+    },
+  });
+
+  const twoDeliverables = (): RunManifest => {
+    const m = base();
+    const web = {
+      ...m.elements[0]!,
+      deliverable: { destination: "article-web" as const },
+    };
+    const social = {
+      ...m.elements[0]!,
+      id: "e2",
+      deliverableOf: "e1",
+      deliverable: {
+        destination: "social" as const,
+        aspect: "portrait" as const,
+      },
+    };
+    return { ...m, elements: [web, social] };
+  };
+
+  it("does not read as done while a requested deliverable is still unproduced", () => {
+    const m = twoDeliverables();
+    const run = { ...m, elements: [produced(m, m.elements[0]!), m.elements[1]!] };
+    // Before issue #1 this answered ["show"] — elements[0] was the whole run — so a two-output
+    // request shipped with one output and called itself finished.
+    expect(nextActions(run)).toEqual(["produce"]);
+    expect(liveElementFor(run)?.id).toBe("e2");
+  });
+
+  it("says show only when every deliverable is there", () => {
+    const m = twoDeliverables();
+    const run = {
+      ...m,
+      elements: m.elements.map((el) => produced(m, el)),
+    };
+    expect(nextActions(run)).toEqual(["show"]);
+    expect(liveElementFor(run)?.id).toBe("e1");
+  });
+
+  it("surfaces the human turn a later deliverable owes", () => {
+    const m = twoDeliverables();
+    const run = {
+      ...m,
+      elements: [
+        produced(m, m.elements[0]!),
+        { ...m.elements[1]!, deliverable: { destination: "social" as const } },
+      ],
+    };
+    expect(nextActions(run)).toEqual(["confirm-aspect"]);
+    expect(liveElementFor(run)?.id).toBe("e2");
+  });
+
+  it("leaves a single-element run answering exactly what it answered before", () => {
+    const m = base();
+    expect(nextActions(m)).toEqual(["produce"]);
+    expect(nextActions({ ...m, elements: [] })).toEqual(["confirm-angle"]);
+    expect(nextActions({ ...m, orient: undefined })).toEqual(["orient"]);
+    expect(
+      nextActions({ ...m, orient: { ...m.orient!, supportsPoint: false } }),
+    ).toEqual([]);
+    expect(liveElementFor(m)?.id).toBe("e1");
+  });
+
+  it("skips a deliverable that was dropped rather than stalling the whole run", () => {
+    const m = twoDeliverables();
+    const run = {
+      ...m,
+      elements: [
+        produced(m, m.elements[0]!),
+        {
+          ...m.elements[1]!,
+          dropped: { reason: "the desk cut the social post", at: "1980-01-01T00:00:00.000Z" },
+        },
+      ],
+    };
+    expect(nextActions(run)).toEqual(["show"]);
+  });
+});
+
+describe("a deliverable cannot be written with a format its own destination refuses", () => {
+  const withChosen = (
+    deliverable: RunManifest["elements"][number]["deliverable"],
+    format: "static" | "interactive" | "video" | "scrolly",
+  ): RunManifest => {
+    const m = base();
+    return {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          deliverable,
+          proposal: {
+            options: [
+              {
+                id: "slope",
+                nativeType: "slope",
+                engine: "chart-native",
+                format,
+                why: "w",
+              },
+            ],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+    };
+  };
+
+  it("refuses an interactive pinned on a print deliverable", () => {
+    expect(() =>
+      assertInvariants(withChosen({ destination: "print" }, "interactive")),
+    ).toThrow(/print-page/);
+  });
+
+  it("refuses a scrolly pinned on a social deliverable", () => {
+    expect(() =>
+      assertInvariants(
+        withChosen({ destination: "social", aspect: "portrait" }, "scrolly"),
+      ),
+    ).toThrow(/social-vertical/);
+  });
+
+  it("accepts what the destination does carry", () => {
+    expect(() =>
+      assertInvariants(withChosen({ destination: "print" }, "static")),
+    ).not.toThrow();
+    expect(() =>
+      assertInvariants(withChosen({ destination: "article-web" }, "interactive")),
+    ).not.toThrow();
+  });
+
+  it("says nothing about an element that declares no deliverable", () => {
+    // A legacy element is judged by the run's channel exactly as before — this check is only
+    // about rows that name their own destination.
+    const m = base();
+    const legacy: RunManifest = {
+      ...m,
+      channel: "social-feed",
+      elements: [
+        {
+          ...m.elements[0]!,
+          proposal: {
+            options: [
+              {
+                id: "slope",
+                nativeType: "slope",
+                format: "interactive",
+                why: "w",
+              },
+            ],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+    };
+    expect(() => assertInvariants(legacy)).not.toThrow();
+  });
+
+  it("refuses a sibling pointing at an element the run does not have", () => {
+    const m = base();
+    const orphan: RunManifest = {
+      ...m,
+      elements: [{ ...m.elements[0]!, id: "e2", deliverableOf: "ghost" }],
+    };
+    expect(() => assertInvariants(orphan)).toThrow(/ghost/);
+  });
+
+  it("refuses an element that says it is a deliverable of itself", () => {
+    const m = base();
+    expect(() =>
+      assertInvariants({
+        ...m,
+        elements: [{ ...m.elements[0]!, deliverableOf: "e1" }],
+      }),
+    ).toThrow(/itself/);
+  });
+});
+
+it("refuses a format no shape of the destination could carry, even before the aspect is answered", () => {
+  const m = base();
+  const el = {
+    ...m.elements[0]!,
+    // Social, aspect still owed — so there is no single channel to judge against yet. Neither
+    // of its shapes carries a scrolly, so the answer is knowable anyway, and waiting for the
+    // aspect would let a manifest sit on disk asserting a scrolly Instagram Story.
+    deliverable: { destination: "social" as const },
+    proposal: {
+      options: [
+        {
+          id: "slope",
+          nativeType: "slope",
+          engine: "chart-native",
+          format: "scrolly" as const,
+          why: "w",
+        },
+      ],
+      excluded: [],
+      chosenId: "slope",
+    },
+  };
+  expect(() => assertInvariants({ ...m, elements: [el] })).toThrow(/social/);
+});
+
+it("allows a format one of the destination's shapes carries while the aspect is still owed", () => {
+  const m = base();
+  const el = {
+    ...m.elements[0]!,
+    deliverable: { destination: "social" as const },
+    proposal: {
+      options: [
+        {
+          id: "slope",
+          nativeType: "slope",
+          engine: "chart-native",
+          format: "video" as const,
+          why: "w",
+        },
+      ],
+      excluded: [],
+      chosenId: "slope",
+    },
+  };
+  expect(() => assertInvariants({ ...m, elements: [el] })).not.toThrow();
 });

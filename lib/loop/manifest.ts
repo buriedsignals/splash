@@ -4,7 +4,20 @@ import { dirname } from "node:path";
 import { canonicalHash } from "./canonical-hash";
 import { migrate } from "./migrate";
 import { INTENTS } from "../brain/intents";
-import { VISUAL_FORMATS, CHANNELS as CHANNEL_KEYS } from "../core/vocabulary";
+import {
+  VISUAL_FORMATS,
+  CHANNELS as CHANNEL_KEYS,
+  DESTINATIONS,
+  MEDIA_ASPECTS,
+  type Channel,
+} from "../core/vocabulary";
+import {
+  channelFor,
+  defaultAspectFor,
+  isFormatAllowed,
+  allowedFormats,
+  DESTINATION_POLICY,
+} from "../core/channel-policy";
 import { isLoopBuildable, resolveBuilder } from "./buildable";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
@@ -51,8 +64,26 @@ const RunEventSchema = z.object({
   action: z.string(),
   message: z.string(),
 });
+// WHERE this element lands and WHAT SHAPE it takes — the two axes issue #1 found welded into
+// `channel`. Sitting on the ELEMENT rather than on the run is what makes a run multi-deliverable:
+// an element already carries its own offer, pinned format, artifact, provenance, review, delivery
+// and gate state, so the only thing it lacked in order to BE a deliverable was a destination.
+//
+// `aspect` is optional on purpose (issue #1, stage 3): it is asked only on the branch that needs
+// it, and only after the editorial format is chosen — see nextActionsForElement's confirm-aspect.
+const DeliverableSchema = z.object({
+  destination: z.enum(DESTINATIONS),
+  aspect: z.enum(MEDIA_ASPECTS).optional(),
+});
+
 const RunElementSchema = z.object({
   id: z.string(),
+  /** Where this element goes. Absent ⇒ the run's own `channel` (every manifest written before
+   *  issue #1). */
+  deliverable: DeliverableSchema.optional(),
+  /** The element this one is a second deliverable OF: same confirmed takeaway, another
+   *  destination. What tells two DELIVERABLES apart from two unrelated VISUALS. */
+  deliverableOf: z.string().optional(),
   // A format the journalist asked for explicitly, at CADRAGE. State, not a remembered
   // instruction: the brain applies it as a HARD filter (lib/brain/eligibility.ts), which is
   // what makes "an explicit format signal WINS" mechanical rather than documentary.
@@ -128,7 +159,12 @@ export const RunManifestSchema = z.object({
   schemaVersion: z.literal(4),
   /** The relationship to the text: an embeddable element, or the visual article itself. */
   route: z.enum(["embed", "article"]).default("embed"),
-  /** Where this run publishes — the SCOPE axis, and what produce renders at. */
+  /** The run's DEFAULT destination, in render-channel form — what an element that declares no
+   *  `deliverable` of its own is produced at. Before issue #1 this was the run's ONE channel;
+   *  it keeps that meaning exactly for every manifest already on disk, which is what makes the
+   *  extension an identity migration (see migrate.ts's materializeDeliverables). The live
+   *  question "what channel is THIS element rendered at" is answered in one place only:
+   *  channelForElement(). */
   channel: z.enum(CHANNEL_KEYS).default("article-web"),
   input: z.object({ data: HashRef.optional(), article: HashRef.optional() }),
   // --- source policy (lib/source) ---
@@ -164,12 +200,37 @@ export type NextAction =
   | "confirm-angle"
   | "propose"
   | "choose-form"
+  | "confirm-aspect"
   | "produce"
   | "show"
   | "deliver";
 
 export function parseManifest(raw: unknown): RunManifest {
   return RunManifestSchema.parse(raw);
+}
+
+export type Deliverable = z.infer<typeof DeliverableSchema>;
+
+/** The render channel this element's deliverable resolves to, or undefined while it still owes
+ *  an answer (a social deliverable whose aspect has not been confirmed — 9:16 or 1:1 is not a
+ *  guess this codebase gets to make). An element with no deliverable at all resolves to the
+ *  run's default channel, which is exactly what it meant before issue #1. */
+export function resolvedChannelForElement(
+  run: RunManifest,
+  el: RunElement,
+): Channel | undefined {
+  if (!el.deliverable) return run.channel;
+  const { destination } = el.deliverable;
+  const aspect = el.deliverable.aspect ?? defaultAspectFor(destination);
+  return aspect ? channelFor(destination, aspect) : undefined;
+}
+
+/** The TOTAL form: never undefined, never throws. provenanceHash and every read-only reporter
+ *  need an answer for any element in any state; the run's default stands in while an aspect is
+ *  still owed. Production does NOT go through this — produce.ts requires the resolved one, so an
+ *  unanswered aspect is a refusal there rather than a silently substituted channel. */
+export function channelForElement(run: RunManifest, el: RunElement): Channel {
+  return resolvedChannelForElement(run, el) ?? run.channel;
 }
 
 // The option `proposal.chosenId` names, or undefined if nothing is chosen yet. provenanceHash
@@ -203,7 +264,19 @@ export function provenanceHash(run: RunManifest, el: RunElement): string {
     cadrage: run.cadrage?.answers ?? null,
     angle: el.angle ?? null,
     chosenId: el.proposal?.chosenId ?? null,
-    channel: run.channel,
+    // The channel of THIS deliverable, not of the run: a run can now carry several, and hashing
+    // the run-level default would let a social still and a web still of the same angle share a
+    // provenance — the exact "looks fresh at a destination it was never built for" failure the
+    // channel was added to this hash to prevent, one level down.
+    //
+    // The destination and the aspect are NOT hashed alongside it, and that is deliberate rather
+    // than an omission: a channel IS a (destination, aspect) pair, the mapping is a bijection
+    // (channel-policy.test.ts's round-trip holds it that way), so hashing them too would add no
+    // discrimination and would cost the one property that makes the migration honest — writing
+    // down the destination a run always had (migrate.ts's materializeDeliverables) must not
+    // re-value the hash and send every already-produced artifact back through produce. Moving a
+    // deliverable's destination or aspect moves its channel, and the hash moves with it.
+    channel: channelForElement(run, el),
     // The source ledger is artifact-determining for the same reason the channel is: since
     // produce.ts reads the declared credit instead of a placeholder, the credit is RENDERED
     // INTO the artifact. Without this line, correcting a source label leaves a stale credit on
@@ -288,6 +361,12 @@ export function nextActionsForElement(
   );
   if (chosen && !isLoopBuildable(resolveBuilder(chosen)))
     return ["choose-form"];
+  // Issue #1, stage 3: "ask aspect ratio only when entering an export that needs it, and after
+  // the editorial format is chosen". Both halves of that sentence are this line's POSITION —
+  // below choose-form, above produce — rather than a rule written down somewhere for an
+  // orchestrator to obey. A destination with one shape (web, print) never reaches it, because
+  // resolvedChannelForElement answers from the destination's default.
+  if (!resolvedChannelForElement(run, el)) return ["confirm-aspect"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   // `deliver` is a step a DECISION triggers, never an automatic advance — the symmetric of
   // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.
@@ -305,13 +384,45 @@ function needsDelivery(run: RunManifest, el: RunElement): boolean {
   );
 }
 
-// State-driven next actions: run-level gates first (orient + honest off-ramp),
-// then the live element's routing. Multi-element aggregation arrives with Task 8;
-// the live path drives elements[0].
+// "show" is the only TERMINAL action: it means this element is fresh and nobody is waiting on
+// it. Everything else is work outstanding — including the human turns, which are work the
+// journalist owes. `[]` is the honest off-ramp (an empty offer), also terminal.
+function isPending(actions: NextAction[]): boolean {
+  return actions.length > 0 && actions[0] !== "show";
+}
+
+// An element carrying an explicit verdict is not waiting for anything: it was cut (dropped) or
+// it is stuck behind something named (blocked), and gateStateOf reports it as such. Scanning
+// over it is what keeps ONE cut deliverable from stalling a whole run.
+function isSettled(el: RunElement): boolean {
+  return el.dropped != null || el.blocked != null;
+}
+
+/**
+ * The element `nextActions` is answering ABOUT — the first one with work outstanding.
+ *
+ * A run carries several deliverables now (issue #1), so "the live element" can no longer be
+ * elements[0] by definition: with the first deliverable produced and the second not, elements[0]
+ * answers "show" and the run reads as finished having shipped half of what was asked for. That
+ * is the acceptance criterion "no requested output is silently dropped", and it is decided here
+ * rather than in the schema.
+ *
+ * Falls back to elements[0] so that a run where nothing is pending keeps answering exactly what
+ * it answered before — a single-element run is byte-for-byte unchanged by this function.
+ */
+export function liveElementFor(run: RunManifest): RunElement | undefined {
+  const pending = run.elements.find(
+    (el) => !isSettled(el) && isPending(nextActionsForElement(run, el)),
+  );
+  return pending ?? run.elements[0];
+}
+
+// State-driven next actions: run-level gates first (orient + honest off-ramp), then the routing
+// of the element that still owes something (liveElementFor).
 export function nextActions(run: RunManifest): NextAction[] {
   if (!run.orient) return ["orient"];
   if (!run.orient.supportsPoint) return [];
-  return nextActionsForElement(run, run.elements[0]);
+  return nextActionsForElement(run, liveElementFor(run));
 }
 
 export type GateState =
@@ -378,7 +489,47 @@ export function gateStateOf(run: RunManifest, el: RunElement): GateState {
 
 // state ↔ data must not desync. Throws on contradictions the derivation cannot express.
 export function assertInvariants(run: RunManifest): void {
+  const ids = new Set(run.elements.map((el) => el.id));
   for (const el of run.elements) {
+    // --- deliverables (issue #1) ---
+    // A sibling names the master whose confirmed takeaway it shares. A name that resolves to
+    // nothing — or to itself — makes the whole notion of "the same takeaway, another
+    // destination" unverifiable, and deliverablePlan's drift report silently blind.
+    if (el.deliverableOf === el.id)
+      throw new Error(
+        `invariant: element ${el.id} declares itself a deliverable of itself`,
+      );
+    if (el.deliverableOf && !ids.has(el.deliverableOf))
+      throw new Error(
+        `invariant: element ${el.id} is a deliverable of '${el.deliverableOf}', which is not in this run`,
+      );
+    // The mechanical half of "one output cannot inherit an incompatible format from another".
+    // Checked at the WRITE, not only at produce: a manifest asserting a printable interactive is
+    // already wrong on disk, whether or not anyone tries to build it. Scoped to rows that DECLARE
+    // a destination — a legacy element is judged by the run's channel, exactly as before, and
+    // this check must not retro-fail a manifest written before the axis existed.
+    if (el.deliverable) {
+      const channel = resolvedChannelForElement(run, el);
+      const format = chosenOption(el)?.format;
+      if (channel && format && !isFormatAllowed(channel, format))
+        throw new Error(
+          `invariant: element ${el.id} pins the "${format}" format on a deliverable rendered at "${channel}", which carries ${allowedFormats(channel).join(", ")}`,
+        );
+      // An aspect still owed leaves no single channel to judge against — but the answer can
+      // already be known: if NO shape of the destination carries the format, no future answer
+      // will make it legal. Waiting for the aspect would let a manifest sit on disk asserting a
+      // scrolly Instagram Story, which is exactly the state this invariant exists to forbid.
+      const { destination } = el.deliverable;
+      if (!channel && format) {
+        const anywhere = DESTINATION_POLICY[destination].channels.some((c) =>
+          isFormatAllowed(c, format),
+        );
+        if (!anywhere)
+          throw new Error(
+            `invariant: element ${el.id} pins the "${format}" format on a "${destination}" deliverable, and no shape of that destination carries it`,
+          );
+      }
+    }
     if (
       el.proposal?.chosenId &&
       !el.proposal.options.some((o) => o.id === el.proposal!.chosenId)

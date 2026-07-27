@@ -5,12 +5,15 @@ import {
   readManifest,
   gateStateOf,
   nextActionsForElement,
+  resolvedChannelForElement,
   stalenessOf,
   type RunManifest,
   type RunElement,
   type GateState,
   type NextAction,
 } from "./manifest";
+import { aspectOf, defaultAspectFor, destinationOf } from "../core/channel-policy";
+import type { Channel, Destination, MediaAspect } from "../core/vocabulary";
 
 export type HashCheck = { ref: string; status: "ok" | "missing" | "tampered" };
 export type ElementValidation = {
@@ -24,6 +27,16 @@ export type ResumeReport = {
     gateState: GateState;
     nextActions: NextAction[];
     validation: ElementValidation;
+    // WHERE this element goes — issue #1's "every requested deliverable appears in the final
+    // report". Always answered, even for an element that declares none: a run written before
+    // deliverables existed still HAS a destination, it is the run's own channel.
+    destination: Destination;
+    /** The shape, once it is known. Absent while the branch still owes the answer. */
+    aspect?: MediaAspect;
+    /** The render channel it resolves to. Absent for the same reason — never guessed. */
+    channel?: Channel;
+    /** The master this deliverable shares its takeaway with, when it is a sibling. */
+    deliverableOf?: string;
   }[];
 };
 
@@ -69,11 +82,22 @@ export function resumeReport(run: RunManifest, runDir: string): ResumeReport {
       else if (!existsSync(abs)) artifact = "missing";
       else artifact = hashFile(abs) === el.artifact.sha256 ? "ok" : "tampered";
     }
+    const destination = el.deliverable
+      ? el.deliverable.destination
+      : destinationOf(run.channel);
+    const aspect = el.deliverable
+      ? (el.deliverable.aspect ?? defaultAspectFor(destination))
+      : aspectOf(run.channel);
+    const channel = resolvedChannelForElement(run, el);
     return {
       id: el.id,
       gateState: gateStateOf(run, el),
       nextActions: elementNextActions(run, el),
       validation: { artifact },
+      destination,
+      ...(aspect ? { aspect } : {}),
+      ...(channel ? { channel } : {}),
+      ...(el.deliverableOf ? { deliverableOf: el.deliverableOf } : {}),
     };
   });
 
@@ -87,9 +111,11 @@ function printReport(r: ResumeReport): void {
   for (const iv of r.inputValidation)
     console.log(`  input:${iv.ref} — ${iv.status}`);
   for (const el of r.elements) {
+    const shape = el.channel ?? `${el.aspect ?? "shape"} not confirmed`;
     console.log(
       `  element ${el.id}: ${el.gateState}  (artifact: ${el.validation.artifact})`,
     );
+    console.log(`    deliverable: ${el.destination} — ${shape}`);
     console.log(
       `    next: ${el.nextActions.length ? el.nextActions.join(", ") : "— nothing valid (off-ramp)"}`,
     );

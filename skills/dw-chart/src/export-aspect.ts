@@ -55,11 +55,20 @@ export const DEFAULT_EXPORT_ASPECT: ExportAspect = "landscape";
 // channel THROWS (normalizeChannel is fail-closed — a typo must not silently ship
 // the landscape box). Pure.
 export function channelToAspect(channel?: string): ExportAspect {
-  const aspect = CHANNELS[normalizeChannel(channel)].aspect;
-  // CHANNELS' base `aspect` is always "portrait" | "square" | "landscape" for the
-  // three channels this table covers — "responsive" is reserved for the interactive
-  // sub-format (article-web only) and never appears here, so this narrows safely
-  // onto ExportAspect (keyof EXPORT_SIZES, a static-PNG-only concern).
+  const resolved = normalizeChannel(channel);
+  const aspect = CHANNELS[resolved].aspect;
+  // Datawrapper exports through THIS table and no other. Its three boxes are screen boxes;
+  // the print channel's "page" aspect (issue #1) is a 300 dpi box it has no export for, and
+  // an unchecked cast used to make that a TypeError on `box.width` two calls later. Refusing
+  // by name is the same sentence lib/brain/eligibility.ts gives when it keeps Datawrapper out
+  // of a print offer in the first place, so a journalist never meets this twice.
+  if (!(aspect in EXPORT_SIZES))
+    throw new Error(
+      `Datawrapper cannot export the "${aspect}" aspect of channel "${resolved}" — ` +
+        `its export boxes are ${Object.keys(EXPORT_SIZES).join(", ")}, all screen-density`,
+    );
+  // "responsive" is reserved for the interactive sub-format (article-web only) and never
+  // appears here, so the guard above narrows safely onto ExportAspect.
   return aspect as ExportAspect;
 }
 

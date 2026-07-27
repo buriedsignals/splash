@@ -73,6 +73,7 @@ Trop gros pour un spec. Chaque pièce a un chez-soi ; **on n'implémente que la 
 | Sous-projet | Contenu | Issues Tom |
 |---|---|---|
 | **Boucle éditoriale (1ʳᵉ tranche — §5)** | L'état-centre + orient→propose→produce→revise, data→chart, moteur intact | — |
+| CADRAGE multi-livrables | `destination × format × aspect` dé-soudés, plusieurs livrables par run, `print` première classe, aspect différé (`confirm-aspect`) — spec `2026-07-26-cadrage-deliverables-design.md` | #1 |
 | Substrat complet | Run manifest complet + `resume` + contrat de verbes + adapters | #8 |
 | Préflight (SETUP) | Page brandée clés + style + livraison | #5, #6 |
 | Proposal-cerveau | `RAISON×SCOPE×CAPACITÉ×STYLE`, typologie complète, routage prose/data | #2 |

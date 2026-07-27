@@ -22,15 +22,52 @@ export const VISUAL_FORMATS = [
 ] as const;
 export type VisualFormat = (typeof VISUAL_FORMATS)[number];
 
-// The three canonical distribution channels a journalist picks in CADRAGE Q3.
+// The canonical RENDER targets. A channel is no longer something a journalist picks: it is the
+// resolution of a DESTINATION and a MEDIA ASPECT (channel-policy.ts's channelFor), which is the
+// de-welding issue #1 asks for — "the current single-choice channel model conflates destination,
+// format, and aspect ratio". The keys stay, because the whole render layer is addressed by them
+// (SPLASH_CHANNEL, lib/verify/viewport.ts, assertRenderedSize); what changed is that they are
+// DERIVED rather than chosen.
 // (Distinct from skills/splash/src/channel.ts's CHANNELS map, which hangs each channel's
 // aspect/size POLICY off these keys — the vocabulary is the keys, not the policy.)
 export const CHANNELS = [
   "social-vertical",
   "social-feed",
   "article-web",
+  "print-page",
 ] as const;
 export type Channel = (typeof CHANNELS)[number];
+
+// WHERE a deliverable lands. The first axis of issue #1, and the one that did not exist:
+// `print` was not a channel at all, and the word was aliased onto article-web
+// (skills/splash/src/channel.ts's CHANNEL_KEYWORDS), so asking for print silently returned a
+// 1200x675 screen PNG.
+export const DESTINATIONS = ["article-web", "social", "print"] as const;
+export type Destination = (typeof DESTINATIONS)[number];
+
+// WHAT SHAPE it has. The third axis — asked only on the branches that need it, and only after
+// the editorial format is chosen (issue #1, stage 3). "responsive" is deliberately NOT here: it
+// is what an interactive DOES inside its host, not a shape a journalist picks (see
+// ChannelAspect in channel-policy.ts, which is the wider render-side union).
+export const MEDIA_ASPECTS = [
+  "portrait",
+  "square",
+  "landscape",
+  "page",
+] as const;
+export type MediaAspect = (typeof MEDIA_ASPECTS)[number];
+
+export function isDestination(v: unknown): v is Destination {
+  return (
+    typeof v === "string" && (DESTINATIONS as readonly string[]).includes(v)
+  );
+}
+
+export function isMediaAspect(v: unknown): v is MediaAspect {
+  return (
+    typeof v === "string" && (MEDIA_ASPECTS as readonly string[]).includes(v)
+  );
+}
 
 export function isVisualFormat(v: unknown): v is VisualFormat {
   return (
