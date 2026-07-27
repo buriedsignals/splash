@@ -259,20 +259,38 @@ Unitaires / assemblage :
 Findings réels de l'auto-review (relecture du diff + exécution de la séquence complète), chacun
 avec son arbitrage.
 
-### R1 — Un re-produce EFFACE le package déjà livré *(vérifié empiriquement, non corrigé)*
+### R1 — Un re-produce EFFACE le package déjà livré *(fermé)*
 
 `render` passe par `freshOutDir` (`lib/core/verbs/exec.ts:98`) qui fait `rmSync(recursive)` sur
-`outDir` ; `deliver()` écrit son package dans **le même** `elements/<id>/`. Donc : livrer en zip,
-réviser l'angle, `advance` (re-produce) → **`elements/el1/el1.zip` a disparu du disque** alors que
-`delivery.delivered[0].artifact` le référence toujours avec son hash. Probé, pas déduit : `true`
-avant, `false` après.
+`outDir` ; `deliver()` écrivait son package dans **le même** `elements/<id>/`. Donc : livrer en
+zip, réviser l'angle, `advance` (re-produce) → **`elements/el1/el1.zip` disparaissait du disque**
+alors que `delivery.delivered[0].artifact` le référençait toujours avec son hash. Probé, pas
+déduit : `true` avant, `false` après.
 
-Arbitrage : **rapporté, pas corrigé.** La machine à états s'en remet (la provenance a bougé, donc
-`needsDelivery` redevient vrai et `nextActions` répond `["deliver"]` — une re-livraison réécrit le
-fichier), et le hazard est **antérieur** à cette tranche : il vit dans `lib/core/verbs/exec.ts` et
-dans le choix d'`outDir` de `lib/loop/deliver.ts`, deux fichiers hors de mes frontières. Ce que la
-tranche change, c'est qu'il est désormais **atteignable en trois commandes**, ce qui vaut d'être
-écrit ici. Le correctif propre est un dossier de livraison distinct de celui du rendu.
+**Correctif** (branche `feat/decision-surface`, hors des frontières listées ci-dessus pour cette
+tranche — traité comme un chantier séparé) : `deliver()` écrit désormais dans un dossier de
+livraison DISTINCT du rendu — `deliveries/<id>/`, un sibling de `elements/<id>/`, déclaré une
+seule fois (`elementDeliveryDir` dans `lib/loop/produce.ts`, à côté d'`elementRenderDir`, pour
+qu'un futur appelant ne redérive plus le même fait à deux endroits) et importé par
+`lib/loop/deliver.ts`. `freshOutDir` ne wipe jamais que le dossier de rendu ; le paquet livré ne
+peut plus se trouver sur son chemin. Le chemin enregistré reste run-dir-relatif (même discipline
+que `produce.ts`), donc la propriété de handoff (§ tests) tient aussi pour le paquet livré, pas
+seulement pour l'artefact — prouvé par l'extension du test de handoff existant
+(`lib/loop/driver.test.ts`) et par une régression dédiée qui rejoue la vraie séquence
+produce→deliver→re-produce (`lib/loop/deliver.test.ts`).
+
+Un manifeste déjà écrit avant ce correctif peut porter un `delivery.delivered[].artifact.path`
+sous l'ancien `elements/<id>/…` — un chemin dont on ne peut plus garantir qu'il existe encore
+(le tout premier re-produce après l'écriture peut déjà l'avoir effacé). Plutôt que de le
+« migrer » en réécrivant juste la chaîne (un mensonge : le fichier lui-même n'a jamais bougé vers
+`deliveries/`), `lib/loop/migrate.ts` expose `dropLegacyElementsDelivery`, appelée par
+`deliver()` à chaque lecture de `el.delivery.delivered` : un enregistrement encore ancré dans
+`elements/` est abandonné (même discipline que `migrateV1toV2` pour un artefact v1 déjà jugé
+non fiable) — la destination correspondante redevient simplement « jamais livrée » pour sa
+provenance courante, et la prochaine livraison réécrit proprement dans `deliveries/`. Pas de
+bump de `schemaVersion` : la forme du champ n'a pas changé, et `readManifest` ne route vers
+`migrate()` que quand `schemaVersion !== 4` — un correctif calé sur la version n'aurait jamais
+tourné sur les manifestes v4 déjà sur disque, qui sont exactement ceux qui portent le risque.
 
 ### R2 — Aucun verrou de run : deux `advance` concurrents peuvent publier deux fois
 

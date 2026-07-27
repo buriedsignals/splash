@@ -22,7 +22,7 @@
 // What the call does NOT do is stop at the first destination that refuses: it skips to the
 // next pending one (see the loop below for why that matters, and how the skipped refusal is
 // still surfaced).
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { fail, ok, runVerb, type VerbResult } from "../core/verbs";
@@ -44,6 +44,14 @@ import {
   type RunElement,
   type RunManifest,
 } from "./manifest";
+// The delivery directory is declared ONCE, in produce.ts, alongside the render directory it
+// must never collide with — see that module's comment for why (freshOutDir wipes the render
+// directory before every re-produce; a package published into the same directory used to be
+// collateral damage). dropLegacyElementsDelivery discards a delivery record this module wrote
+// before that fix existed — a record still pointing at the old, shared directory cannot be
+// trusted to still be on disk (see migrate.ts for the full reasoning).
+import { elementDeliveryDir } from "./produce";
+import { dropLegacyElementsDelivery } from "./migrate";
 
 export type DeliverOpts = {
   /** The environment credentials are read from. Defaults to the decor's. */
@@ -97,7 +105,9 @@ export async function deliver(
       );
   }
 
-  const delivered: DeliveryRecord[] = el.delivery?.delivered ?? [];
+  const delivered: DeliveryRecord[] = dropLegacyElementsDelivery(
+    el.delivery?.delivered ?? [],
+  );
   const pending = requested.filter(
     (id) =>
       !delivered.some(
@@ -137,6 +147,22 @@ export async function deliver(
       : {}),
   });
   if (!metadata.ok) return metadata;
+
+  // The dedicated delivery directory (see the import comment above). Created here, not left
+  // to the adapter: zip.ts (the only adapter that writes into outDir) has always assumed the
+  // directory already exists — true by accident when outDir was produce.ts's own render
+  // directory, which freshOutDir always creates first. A verb never throws (I1): an unguarded
+  // mkdirSync failure (a read-only run dir, a name collision with a plain file) is reported as
+  // engine-failed rather than escaping.
+  const deliveryDir = elementDeliveryDir(runDir, el.id);
+  try {
+    mkdirSync(deliveryDir, { recursive: true });
+  } catch (e) {
+    return fail(
+      "engine-failed",
+      `deliver: cannot create the delivery directory: ${(e as Error).message}`,
+    );
+  }
 
   // Walk the pending destinations in the order the journalist asked for them, and SKIP one
   // that refuses rather than refusing the whole call. Retrying only the first unsatisfied
@@ -231,7 +257,7 @@ export async function deliver(
           : {}),
       },
       credentials,
-      outDir: join(runDir, "elements", el.id),
+      outDir: deliveryDir,
     });
     if (!result.ok) {
       refusals.push({

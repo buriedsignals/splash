@@ -1,5 +1,12 @@
 import { test, expect, beforeEach } from "bun:test";
-import { mkdtempSync, mkdirSync, writeFileSync, cpSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  cpSync,
+  rmSync,
+  existsSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
@@ -121,11 +128,13 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   expect(nextActions(run)).toEqual(["show"]);
 }, 90000);
 
-// Issue #8: the run dir must travel entire at handoff. Produce an artifact, copy the WHOLE
-// run dir to an unrelated path (as a journalist reopening on another machine would), and
-// confirm the artifact still resolves — proving the stored path is run-dir-relative, not
-// absolute.
-test("run dir handoff: copying the entire run dir elsewhere still resolves the artifact", async () => {
+// Issue #8: the run dir must travel entire at handoff. Produce an artifact, DELIVER it, copy
+// the WHOLE run dir to an unrelated path (as a journalist reopening on another machine would),
+// and confirm both the artifact AND the delivered package still resolve — proving the stored
+// paths are run-dir-relative, not absolute, for produce.ts's own artifact and for deliver.ts's
+// package alike (the property a produce/deliver directory collision would have broken: see
+// lib/loop/deliver.test.ts's "re-producing an element after it was delivered…" regression).
+test("run dir handoff: copying the entire run dir elsewhere still resolves the artifact and the delivered package", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-handoff-run-"));
   const src = join(runDir, "src.csv");
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
@@ -170,6 +179,24 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
   expect(run.elements[0].artifact).toBeDefined(); // the top offer actually rendered
   expect(stalenessOf(run, run.elements[0])).toBe(false);
 
+  run = {
+    ...run,
+    elements: [
+      { ...run.elements[0], delivery: { requested: ["zip"], delivered: [] } },
+    ],
+  };
+  const zipDecor: Decor = {
+    ...NEUTRAL_DECOR,
+    state: {
+      ...NEUTRAL_DECOR.state,
+      capabilities: { zip: { enabled: true } },
+    },
+  };
+  run = await advance(run, runDir, zipDecor); // deliver
+  expect(run.elements[0].delivery!.delivered.map((d) => d.publisherId)).toEqual(
+    ["zip"],
+  );
+
   writeManifest(join(runDir, "run.json"), run);
 
   const newRunDir = mkdtempSync(join(tmpdir(), "loop-handoff-copy-"));
@@ -178,6 +205,9 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
   const reopened = readManifest(join(newRunDir, "run.json"), newRunDir);
   const report = resumeReport(reopened, newRunDir);
   expect(report.elements[0].validation.artifact).toBe("ok");
+
+  const packageRec = reopened.elements[0]!.delivery!.delivered[0]!;
+  expect(existsSync(join(newRunDir, packageRec.artifact!.path))).toBe(true);
 }, 90000);
 
 test("advance() records a produce failure as a bounded event without advancing state", async () => {
