@@ -24,9 +24,8 @@ export type EngineDeclaration = {
 // undiscoverable: a host would build a valid request and meet a refusal it could not have
 // anticipated. Declared here, read by cli.ts — one source, so the refusal and the declaration
 // cannot describe different worlds.
-export const HOST_ONLY_VERBS: Record<
-  string,
-  { why: string; commands: string[] }
+export const HOST_ONLY_VERBS: Readonly<
+  Record<string, { why: string; commands: readonly string[] }>
 > = {
   publish: {
     why: "publishing goes through the editorial loop, which applies the sign-off, provenance and readiness gates the neutral contract cannot see",
@@ -125,9 +124,12 @@ export function capabilities(): Capabilities {
       // detour below changes is the path a host takes to reach it, not whether it exists.
       implemented: IMPLEMENTED.has(name),
       ...(name === "render" ? { payload: payloadFields() } : {}),
+      // The command that actually PERFORMS the verb — the last of the detour's sequence, since
+      // the ones before it record the decisions that make it valid. The full sequence is in
+      // HOST_ONLY_VERBS and in the refusal cli.ts prints; this field is the one word a host acts
+      // on, and it is derived rather than retyped so the two can never disagree.
       ...(HOST_ONLY_VERBS[name]
-        ? // The command a host runs first; the detour's own entry names the whole sequence.
-          { hostCommand: HOST_ONLY_VERBS[name]!.commands.at(-1)!.split(" ")[0] }
+        ? { hostCommand: HOST_ONLY_VERBS[name]!.commands.at(-1)!.split(" ")[0] }
         : {}),
     })),
     vocabulary: {

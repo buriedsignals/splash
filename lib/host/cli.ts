@@ -5,7 +5,8 @@
 //
 // Exit codes are part of the contract:
 //   0  success
-//   1  the verb was refused (a well-formed request the contract declined)
+//   1  refused — a well-formed request the contract or the loop declined (a verb, a loop step,
+//      or a decision)
 //   2  usage error, unparseable input, or an unreadable run
 //
 // stdout carries ONLY the JSON document, so a host can parse it whole. Anything humans
@@ -26,6 +27,7 @@ import { advanceRun, chooseFormIn, requestDeliveryIn } from "./drive";
 import { describeNewsroom } from "./newsroom";
 import { outDirRefusal } from "./path-safety";
 import { describeNext, describeState, type HostResponse } from "./state";
+import type { VerbErrorCode } from "../core/verbs/types";
 import type { HostErrorCode } from "./errors";
 
 function emit(body: unknown, code: number): never {
@@ -250,7 +252,7 @@ async function main(): Promise<never> {
 // INPUT problem (2) — the same answer `state` gives for it — while a refused step or decision is
 // a well-formed request the loop declined (1). Driven by the code rather than by the call site so
 // the two families cannot drift apart per command.
-function refusalExit(code: string): number {
+function refusalExit(code: HostErrorCode | VerbErrorCode): number {
   return code === "no-run" ||
     code === "invalid-run" ||
     code === "stale-schema" ||

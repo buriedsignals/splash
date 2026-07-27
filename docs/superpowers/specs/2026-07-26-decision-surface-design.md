@@ -256,4 +256,72 @@ Unitaires / assemblage :
 
 ## 6. Risques assumés
 
-*(rempli à l'auto-review de fin de tranche — findings réels, chacun avec son arbitrage)*
+Findings réels de l'auto-review (relecture du diff + exécution de la séquence complète), chacun
+avec son arbitrage.
+
+### R1 — Un re-produce EFFACE le package déjà livré *(vérifié empiriquement, non corrigé)*
+
+`render` passe par `freshOutDir` (`lib/core/verbs/exec.ts:98`) qui fait `rmSync(recursive)` sur
+`outDir` ; `deliver()` écrit son package dans **le même** `elements/<id>/`. Donc : livrer en zip,
+réviser l'angle, `advance` (re-produce) → **`elements/el1/el1.zip` a disparu du disque** alors que
+`delivery.delivered[0].artifact` le référence toujours avec son hash. Probé, pas déduit : `true`
+avant, `false` après.
+
+Arbitrage : **rapporté, pas corrigé.** La machine à états s'en remet (la provenance a bougé, donc
+`needsDelivery` redevient vrai et `nextActions` répond `["deliver"]` — une re-livraison réécrit le
+fichier), et le hazard est **antérieur** à cette tranche : il vit dans `lib/core/verbs/exec.ts` et
+dans le choix d'`outDir` de `lib/loop/deliver.ts`, deux fichiers hors de mes frontières. Ce que la
+tranche change, c'est qu'il est désormais **atteignable en trois commandes**, ce qui vaut d'être
+écrit ici. Le correctif propre est un dossier de livraison distinct de celui du rendu.
+
+### R2 — Aucun verrou de run : deux `advance` concurrents peuvent publier deux fois
+
+`writeManifest` est atomique (rename), donc pas de manifeste corrompu — mais deux processus qui
+lisent le même run puis avancent chacun un pas peuvent tous deux voir `["deliver"]` et publier,
+le second écrasant l'enregistrement du premier. En in-process le problème n'existait pas : un seul
+appelant. La façade rend le parallélisme trivial (`for run in *; do advance & done`).
+
+Arbitrage : **assumé.** Un verrou par run (lockfile + refus `busy`) est une capacité à part
+entière, avec ses propres questions (verrou périmé, timeout, un code de plus). Le local-first
+mono-journaliste ne l'exige pas aujourd'hui, et l'inventer à la va-vite produirait des runs bloqués
+par un verrou que rien ne nettoie.
+
+### R3 — `verb publish` refusé en `usage` (exit 2), pas en `invalid-request` (exit 1)
+
+C'est un jugement, pas une évidence. Exit 2 dit « mauvaise commande » (même famille qu'une commande
+inconnue, et le refus tombe avant même la lecture de stdin) ; exit 1 aurait dit « requête refusée ».
+Choisi 2 parce que la charge utile n'est pas en cause — aucune requête `publish`, même parfaite, ne
+passe par ce chemin. Un hôte qui traite 2 comme « mon appel est mal formé » lit juste ; c'est
+verrouillé par un test et documenté dans le README.
+
+### R4 — Le gate de sign-off reste infranchissable depuis un hôte
+
+Si le profil de la rédaction déclare des `requiredSigners`, `deliver()` exige `el.approved` — et
+aucune commande de façade ne pose ce champ (§5). `advance` répondra donc `step-refused` avec le
+message de `deliver()`, indéfiniment. C'est **honnête** (rien n'est publié sans signature) et
+**bloquant** (un hôte non-JS ne peut pas terminer un run sur une telle rédaction). Le sign-off
+humain est un sous-projet à part ; le noter ici évite qu'on le découvre comme un bug.
+
+### R5 — `advance` peut produire un artefact puis échouer à écrire le manifeste
+
+Si `writeManifest` échoue après un `produce` réussi, le PNG existe et le run ne le sait pas.
+Réponse : `invalid-run`, et le prochain `advance` re-produira (l'artefact n'est pas dans le
+manifeste, donc rien n'est « stale », juste absent) — l'état reste cohérent, au prix d'un rendu
+refait. Assumé : la seule alternative serait un journal en deux phases, hors de proportion avec un
+échec d'écriture disque.
+
+### R6 — `chooseForm` n'exige pas d'angle confirmé
+
+Un manifeste écrit à la main peut porter une `proposal` sans `angle` ; `chooseForm` écrira le choix
+et `nextActions` répondra `confirm-angle`. Aucun invariant n'est violé (`assertInvariants` n'exige
+un angle que pour un artefact) et le chemin n'est pas atteignable via la boucle (`propose` ne tourne
+qu'après un angle). Laissé tel quel : ajouter un refus ici défendrait contre un état que le loop ne
+produit pas, au prix d'un troisième endroit qui décide de l'ordre des beats.
+
+### R7 — Élément vivant seulement, et le décor n'est pas paramétrable
+
+Rappelés depuis §5 parce qu'ils se voient à l'usage : un run multi-éléments ne se décide que sur
+`elements[0]`, et le décor vient toujours de `tryLoadDecor()` (l'install courant) — il n'y a pas de
+`--dir` sur les commandes neuves, alors que `newsroom` en a un. Assumé tant que `nextActions` lui-
+même ne parle que de l'élément vivant : une commande qui déciderait pour `elements[2]` déciderait
+d'une chose que `next` ne sait pas rapporter.
