@@ -28,7 +28,9 @@ function state(capabilities: NewsroomState["capabilities"]): NewsroomState {
 const DW = NEWSROOM_CAPABILITIES["dw-chart"]!;
 const MAP = NEWSROOM_CAPABILITIES["map-native"]!;
 const CHART = NEWSROOM_CAPABILITIES["chart-native"]!;
-const CMS = NEWSROOM_CAPABILITIES["embed-cms"]!;
+// The declared-but-unbuilt exemplar. Was embed-cms until L3 built it (2026-07-27); embed-fly
+// is now the only capability still waiting for its own tranche.
+const UNBUILT = NEWSROOM_CAPABILITIES["embed-fly"]!;
 
 describe("capability readiness", () => {
   it("is ready when enabled, keyed and installed", () => {
@@ -131,8 +133,8 @@ describe("capability readiness", () => {
 
   it("is disabled for a capability that is only declared", () => {
     const r = capabilityReadiness(
-      CMS,
-      state({ "embed-cms": { enabled: true } }),
+      UNBUILT,
+      state({ "embed-fly": { enabled: true } }),
       { env: {}, resolveDep: ALL_DEPS_PRESENT },
     );
     expect(r.status).toBe("disabled");

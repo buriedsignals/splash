@@ -50,12 +50,10 @@ describe("the newsroom capability registry", () => {
     const declared = Object.values(NEWSROOM_CAPABILITIES).filter(
       (c) => !c.implemented,
     );
-    // The publisher adapters the Livraison sub-project (#4) will fill in. embed-s3 is now
-    // built (Task 3) and no longer belongs to this still-declared-only set.
-    expect(declared.map((c) => c.id).sort()).toEqual([
-      "embed-cms",
-      "embed-fly",
-    ]);
+    // The publisher adapters the Livraison sub-project (#4) will fill in. embed-s3 left this
+    // set in L2, and embed-cms in L3 (measured against a real We.Publish, 2026-07-27) — so
+    // embed-fly is the last one still declared without a body.
+    expect(declared.map((c) => c.id).sort()).toEqual(["embed-fly"]);
     for (const cap of declared) expect(cap.kind).toBe("delivery");
   });
 
