@@ -2,7 +2,12 @@ import { describe, it, expect } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { advanceRun, chooseFormIn, requestDeliveryIn } from "./drive";
+import {
+  advanceRun,
+  approveIn,
+  chooseFormIn,
+  requestDeliveryIn,
+} from "./drive";
 import {
   provenanceHash,
   writeManifest,
@@ -394,5 +399,203 @@ describe("the façade addresses the deliverable the loop is talking about", () =
     const run = JSON.parse(bytes(dir)) as RunManifest;
     expect(run.elements[0]!.delivery?.requested?.length).toBeGreaterThan(0);
     expect(run.elements[1]!.delivery).toBeUndefined();
+  });
+});
+
+describe("approveIn — the human gate, through the run directory", () => {
+  // A produced element that has been captured, reviewed and previewed: everything the gate
+  // needs except the decision itself. Written by hand because this file's subject is the
+  // FAÇADE — the real chain is driven step by step in lib/loop/approve.test.ts and, through
+  // spawned CLI calls only, in lib/host/journey.test.ts.
+  function readyToApprove(over: Partial<RunElement> = {}): string {
+    const dir = producedRun();
+    const path = join(dir, "run.json");
+    const run = JSON.parse(readFileSync(path, "utf8")) as RunManifest;
+    const el = run.elements[0]!;
+    const provenance = provenanceHash(run, el);
+    const ready: RunManifest = {
+      ...run,
+      elements: [
+        {
+          ...el,
+          delivery: { requested: ["zip"], delivered: [] },
+          capture: {
+            images: [],
+            checks: [],
+            capturedProvenanceHash: provenance,
+          },
+          review: {
+            findings: [],
+            reviewedProvenanceHash: provenance,
+            reviewer: {
+              mode: "mechanical",
+              name: "lib/verify/mechanical",
+              version: "1.0.0",
+              inputsHash: "",
+              outputHash: "",
+              independentSemanticReview: "unavailable",
+            },
+            captures: [],
+            checks: [],
+            tasteRisk: [],
+            overrides: [],
+            acknowledged: [],
+            preview: {
+              deliverablePath: join(dir, "elements/e1/static.png"),
+              deliverableSha256: el.artifact!.sha256,
+              presentedAs: "path-printed",
+              presentedAt: "2026-07-27T09:00:00.000Z",
+              fallbackReason: "the host presented it itself",
+            },
+          },
+          ...over,
+        },
+      ],
+    };
+    writeManifest(path, ready);
+    return dir;
+  }
+
+  it("records the approval and answers with what became valid", () => {
+    const dir = readyToApprove();
+    const r = approveIn(dir, { actorLabel: "Yvan" });
+    expect(r.ok).toBe(true);
+    expect(r).toMatchObject({
+      ok: true,
+      value: { approved: "e1", nextActions: ["deliver"] },
+    });
+    expect(JSON.parse(bytes(dir)).elements[0].approved).toBeDefined();
+  });
+
+  it("refuses an artifact nobody has been shown, and writes NOTHING", () => {
+    const dir = readyToApprove();
+    const path = join(dir, "run.json");
+    const run = JSON.parse(readFileSync(path, "utf8")) as RunManifest;
+    const el = run.elements[0]!;
+    const { preview: _preview, ...review } = el.review as Record<
+      string,
+      unknown
+    >;
+    writeManifest(path, {
+      ...run,
+      elements: [{ ...el, review } as RunElement],
+    });
+    const before = bytes(dir);
+
+    const r = approveIn(dir, {});
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain(
+      "preview-not-presented",
+    );
+    // A refused decision leaves the run byte-identical — the property that makes a refusal
+    // safe to retry, held by every acting command on this surface.
+    expect(bytes(dir)).toBe(before);
+  });
+
+  it("refuses a ceremony that is not the shape it declares", () => {
+    const dir = readyToApprove();
+    const r = approveIn(dir, { overrides: "all of them" });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toMatch(/override/i);
+  });
+
+  it("names an element that is not in the run, listing the ones that are", () => {
+    const dir = readyToApprove();
+    const r = approveIn(dir, {}, "e9");
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain('"e1"');
+  });
+
+  it("refuses an unreadable run the same way every other command does", () => {
+    expect(approveIn(emptyDir("drive-approve-norun-"), {})).toMatchObject({
+      ok: false,
+      code: "no-run",
+    });
+  });
+});
+
+describe("advanceRun — the human turn it cannot perform", () => {
+  it("names the approve command when the approval is what is owed", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "drive-approve-owed-"));
+    // Re-uses the shape above through the exported command rather than duplicating it: the
+    // point here is only the SENTENCE advance answers with.
+    const src = join(dir, "src.csv");
+    writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
+    const run: RunManifest = {
+      runId: "approve-owed",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: { data: freezeInput(dir, src, "data") },
+      orient: {
+        profile: {
+          columns: ["canton", "2015", "2024"],
+          numericColumns: ["2015", "2024"],
+          rowCount: 2,
+        },
+        supportsPoint: true,
+      },
+      elements: [
+        {
+          id: "e1",
+          angle: {
+            confirmedTakeaway: "Premiums rose in both cantons",
+            altInsight: "Both cantons' adult premium rose from 2015 to 2024.",
+            unit: "CHF",
+          },
+          proposal: {
+            options: [
+              {
+                id: "slope",
+                nativeType: "slope",
+                engine: "chart-native",
+                format: "static",
+                why: "two points, one line each",
+              },
+            ],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+      events: [],
+    };
+    const el = run.elements[0]!;
+    const provenance = provenanceHash(run, el);
+    writeManifest(join(dir, "run.json"), {
+      ...run,
+      elements: [
+        {
+          ...el,
+          artifact: {
+            path: "elements/e1/static.png",
+            sha256: "abc",
+            provenanceHash: provenance,
+            producedAt: "2026-07-27T09:00:00.000Z",
+          },
+          delivery: { requested: ["zip"], delivered: [] },
+          capture: {
+            images: [],
+            checks: [],
+            capturedProvenanceHash: provenance,
+          },
+          review: {
+            findings: [],
+            reviewedProvenanceHash: provenance,
+            preview: {
+              deliverablePath: "/tmp/x/static.png",
+              deliverableSha256: "abc",
+              presentedAs: "path-printed",
+              presentedAt: "2026-07-27T09:00:00.000Z",
+              fallbackReason: "no viewer",
+            },
+          },
+        },
+      ],
+    });
+
+    const r = await advanceRun(dir);
+    expect(r).toMatchObject({ ok: false, code: "step-refused" });
+    expect((r as { message: string }).message).toContain("approve --run <dir>");
   });
 });

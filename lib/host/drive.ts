@@ -11,7 +11,12 @@
 // is that these commands WRITE — and only ever into the run.json the caller named, plus the
 // artifacts the loop's own steps produce beneath it.
 import { join } from "node:path";
+import {
+  loadNewsroomProfile,
+  type BrandProfile,
+} from "../../skills/splash/src/brand-profile";
 import { confirmAngle, type AngleParts } from "../loop/angle";
+import { approve, type ApprovalCeremony } from "../loop/approve";
 import { chooseForm } from "../loop/choose";
 import { advanceStep } from "../loop/driver";
 import { initRun } from "../loop/init";
@@ -107,6 +112,18 @@ function refusedDecision(
   return { ok: false, code: result.code, message: result.message };
 }
 
+// The newsroom's registered signers. `loadNewsroomProfile` reads a file that may not exist and
+// parses YAML-ish frontmatter that may be malformed — and a profile problem must not turn a
+// façade command into a throw at the process edge. No profile means no signers, which is the
+// same thing `decor.profile.requiredSigners` already answers for the other half of the pair.
+function tryLoadNewsroomProfile(root: string): BrandProfile | null {
+  try {
+    return loadNewsroomProfile(root);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * CREATE a run from a declaration — the one command that does not load one first.
  *
@@ -198,6 +215,12 @@ function nothingToRun(
     return (
       "advance: the next act is the journalist's — confirm the angle with " +
       '"confirm-angle --run <dir> --takeaway <s> --alt-insight <s> --unit <s>"'
+    );
+  if (action === "approve")
+    return (
+      "advance: the next act is the journalist's — the visual has been captured, reviewed and " +
+      'presented, and publishing it is a human decision: "approve --run <dir>" (read the ' +
+      "findings and what the gate will ask for from state --run <dir>)"
     );
   if (action === "show") {
     // "show" covers two very different situations, and telling them apart is the difference
@@ -306,6 +329,94 @@ export function phraseOfferIn(
     };
   }
   return persist(runDir, run, { phrased: selected.el.id });
+}
+
+/**
+ * APPROVE the produced visual — the human turn the façade could not perform at all.
+ *
+ * This is the gate the lived journey had no step for: a run went init → … → produce →
+ * request-delivery → deliver with nothing having looked at the visual. `approveElement` was
+ * built as the only sanctioned writer of `approved` and had no production caller; the
+ * verification chain that leads to it (capture → review → preview) had none either.
+ *
+ * The ceremony arrives as a DOCUMENT rather than as flags, and for the same reason `phrase`
+ * does: a list of overrides, each with its own reason, has no shape in flags, and its
+ * cardinality comes from the review record rather than from the host. What the host may NOT
+ * supply is which bytes an override covers — lib/loop/approve.ts writes that from the run.
+ *
+ * The signing policy is read from the newsroom's own profile, the same file `deliver`'s
+ * `requiredSigners` comes from: with signers declared, no approval is written without a
+ * verified Ed25519 signature over the artifact's bytes.
+ */
+export function approveIn(
+  runDir: string,
+  ceremony: unknown,
+  elementId?: string,
+): HostResponse {
+  const parsed = parseCeremony(ceremony);
+  if ("fail" in parsed) return { ok: false, ...parsed.fail };
+  const decor = tryLoadDecor();
+  const profile = tryLoadNewsroomProfile(decor.root);
+  return decide(runDir, elementId, (run, el) => {
+    const result = approve(run, el, runDir, parsed.ceremony, {
+      signers: profile?.signers ?? [],
+      // From the DECOR, exactly like deliver() reads it — one source, so the gate that writes
+      // the approval and the gate that publishes it cannot ask for different signers.
+      requiredSigners: decor.profile.requiredSigners ?? [],
+    });
+    if (!result.ok) return result;
+    return { ok: true, value: result.value, report: { approved: el.id } };
+  });
+}
+
+// The ceremony's shape, checked before the loop is met with a TypeError. An absent body is
+// `{}`: approving a visual with nothing open to acknowledge must not require a ceremony.
+function parseCeremony(
+  raw: unknown,
+):
+  | { ceremony: ApprovalCeremony }
+  | { fail: { code: "invalid-request"; message: string } } {
+  const shape = {
+    code: "invalid-request" as const,
+    message:
+      'approve reads an optional ceremony on stdin: {"actorLabel": "<who>", ' +
+      '"acknowledged": ["<finding id>"], "overrides": [{"findingId": "<id>", "reason": "<why>"}], ' +
+      '"signoff": {"signerId": "<id>", "signature": "<base64>"}}',
+  };
+  if (raw === undefined || raw === null) return { ceremony: {} };
+  if (typeof raw !== "object" || Array.isArray(raw)) return { fail: shape };
+  const r = raw as Record<string, unknown>;
+  if (r.actorLabel !== undefined && typeof r.actorLabel !== "string")
+    return { fail: shape };
+  if (
+    r.acknowledged !== undefined &&
+    (!Array.isArray(r.acknowledged) ||
+      r.acknowledged.some((id) => typeof id !== "string"))
+  )
+    return { fail: shape };
+  if (
+    r.overrides !== undefined &&
+    (!Array.isArray(r.overrides) ||
+      r.overrides.some(
+        (o) =>
+          o == null ||
+          typeof o !== "object" ||
+          typeof (o as { findingId?: unknown }).findingId !== "string" ||
+          typeof (o as { reason?: unknown }).reason !== "string",
+      ))
+  )
+    return { fail: shape };
+  if (r.signoff !== undefined) {
+    const s = r.signoff as Record<string, unknown>;
+    if (
+      s == null ||
+      typeof s !== "object" ||
+      typeof s.signerId !== "string" ||
+      typeof s.signature !== "string"
+    )
+      return { fail: shape };
+  }
+  return { ceremony: r as ApprovalCeremony };
 }
 
 /** Record the form the journalist chose, and persist it. */

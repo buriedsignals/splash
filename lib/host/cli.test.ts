@@ -89,7 +89,7 @@ describe("the CLI façade — JSON in, JSON out, stable exit codes", () => {
     // part of the surface a host reads, not an implementation detail.
     expect(body.message).toBe(
       'unknown command "explode" — expected verbs, state, next, init, advance, ' +
-        "confirm-angle, phrase, choose-form, request-delivery, verb or newsroom",
+        "confirm-angle, phrase, choose-form, approve, request-delivery, verb or newsroom",
     );
     // The real assertion: the DOCUMENT the host reads carries no stack trace either. stderr
     // being empty on this path made the old `r.err` version trivially true.
@@ -490,5 +490,57 @@ describe("publish does not go around the loop", () => {
         .hostCommand,
     ).toBeUndefined();
     expect(body.value.errorCodes.host).toContain("step-refused");
+  });
+});
+
+describe("approve — the human gate at the process edge", () => {
+  it("needs --run, like every other acting command", async () => {
+    const r = await run(["approve"]);
+    expect(r.code).toBe(2);
+    const body = JSON.parse(r.out);
+    expect(body).toMatchObject({ ok: false, code: "usage" });
+    expect(body.message).toContain("--run <dir>");
+  });
+
+  it("refuses an unreadable run with exit 2", async () => {
+    const r = await run(["approve", "--run", mkdtempSync(join(tmpdir(), "cli-approve-norun-"))]);
+    expect(r.code).toBe(2);
+    expect(JSON.parse(r.out)).toMatchObject({ ok: false, code: "no-run" });
+  });
+
+  it("treats an EMPTY stdin as an empty ceremony, not as a usage error", async () => {
+    // The one document on this surface a command may legitimately be given none of: a visual
+    // with nothing open to acknowledge is approved without a ceremony.
+    const dir = mkdtempSync(join(tmpdir(), "cli-approve-empty-"));
+    const src = join(dir, "src.csv");
+    writeFileSync(src, "a,b\n1,2\n");
+    writeManifest(join(dir, "run.json"), {
+      runId: "approve-empty",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: { data: freezeInput(dir, src, "data") },
+      elements: [{ id: "e1" }],
+      events: [],
+    } as RunManifest);
+    const r = await run(["approve", "--run", dir], "");
+    // Refused because there is nothing produced to approve — NOT because stdin was empty.
+    expect(r.code).toBe(1);
+    const body = JSON.parse(r.out);
+    expect(body).toMatchObject({ ok: false, code: "invalid-request" });
+    expect(body.message).not.toMatch(/stdin/i);
+  });
+
+  it("refuses a ceremony that is not JSON, with exit 2", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "cli-approve-badjson-"));
+    const r = await run(["approve", "--run", dir], "{not json");
+    expect(r.code).toBe(2);
+    expect(JSON.parse(r.out)).toMatchObject({ ok: false, code: "usage" });
+  });
+
+  it("refuses an unknown flag rather than ignoring it", async () => {
+    const r = await run(["approve", "--run", "/tmp", "--sign-it"]);
+    expect(r.code).toBe(2);
+    expect(JSON.parse(r.out).message).toContain("--sign-it");
   });
 });

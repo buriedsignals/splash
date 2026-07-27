@@ -25,6 +25,7 @@ import { runVerb } from "../core/verbs";
 import { capabilities, HOST_ONLY_VERBS } from "./capabilities";
 import {
   advanceRun,
+  approveIn,
   chooseFormIn,
   confirmAngleIn,
   initRunIn,
@@ -140,6 +141,26 @@ async function readJsonRequest(what: string, how: string): Promise<unknown> {
     return JSON.parse(stdin.text);
   } catch (e) {
     return usage(`stdin is not valid JSON: ${(e as Error).message}`);
+  }
+}
+
+// The same reader, for a document a command can legitimately be given none of. An empty stdin
+// is `undefined` rather than a usage refusal; malformed JSON is still a usage refusal, because
+// a host that MEANT to send a ceremony and mistyped it must not be told its approval went
+// through with none.
+async function readOptionalJsonRequest(
+  what: string,
+  how: string,
+): Promise<unknown> {
+  const stdin = await readStdin();
+  if (!stdin.ok) usage(stdin.message);
+  if (!stdin.text.trim()) return undefined;
+  try {
+    return JSON.parse(stdin.text);
+  } catch (e) {
+    return usage(
+      `${what}: stdin is not valid JSON: ${(e as Error).message} (${how})`,
+    );
   }
 }
 
@@ -278,6 +299,23 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 
+  if (command === "approve") {
+    // A DOCUMENT on stdin, like `phrase` — a list of overrides, each with its own reason, has
+    // no shape in flags — and OPTIONAL, unlike every other document on this surface: approving
+    // a visual with nothing open to acknowledge must not require a ceremony, so an empty stdin
+    // means "nothing to declare" rather than a usage error.
+    const parsed = parseFlags(rest, ["--run", "--element"]);
+    if (!parsed.ok) usage(parsed.message);
+    const runDir = parsed.flags["--run"];
+    if (!runDir) usage("approve needs --run <dir>");
+    const ceremony = await readOptionalJsonRequest(
+      "approve",
+      "approve --run <dir> < ceremony.json",
+    );
+    const r = approveIn(runDir, ceremony, parsed.flags["--element"]);
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
   if (command === "request-delivery") {
     const parsed = parseFlags(rest, ["--run", "--to", "--element"]);
     if (!parsed.ok) usage(parsed.message);
@@ -336,10 +374,7 @@ async function main(): Promise<never> {
     const parsed = parseFlags(rest.slice(1), []);
     if (!parsed.ok) usage(`verb ${name}: ${parsed.message}`);
 
-    const payload = await readJsonRequest(
-      "verb",
-      "verb <name> < request.json",
-    );
+    const payload = await readJsonRequest("verb", "verb <name> < request.json");
     // Path-safety at the untrusted boundary, BEFORE the contract can resolve or delete
     // anything (lib/host/path-safety.ts). A refusal is a well-formed answer in the verb's
     // own shape — invalid-request, exit 1 — so the host needs no second parser.
@@ -365,7 +400,7 @@ async function main(): Promise<never> {
 
   usage(
     `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, init, ` +
-      `advance, confirm-angle, phrase, choose-form, request-delivery, verb or newsroom`,
+      `advance, confirm-angle, phrase, choose-form, approve, request-delivery, verb or newsroom`,
   );
 }
 
