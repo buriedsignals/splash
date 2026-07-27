@@ -1119,3 +1119,85 @@ test("advance() carries capture then review on the road to a requested delivery"
   if (priorNoViewer === undefined) delete process.env.SPLASH_NO_VIEWER;
   else process.env.SPLASH_NO_VIEWER = priorNoViewer;
 }, 300_000);
+
+// ---------------------------------------------------------------------------
+// The article branch's two turns (article beats) — see docs/superpowers/specs/
+// 2026-07-27-article-beats-design.md §8.
+//
+// `author-beats` is a HUMAN turn and it is REACHABLE today: any element carrying a plan with an
+// unwritten beat routes to it. `draft-beats` is NOT — it sits below the buildability gate and
+// scrolly is not in LOOP_BUILDABLE_ENGINES, so advanceStep is deliberately left WITHOUT a
+// `case "draft-beats"`: an unreachable switch arm is dead code, and this codebase has just spent
+// a slice curing "the mechanism exists and nothing invokes it". Wiring it is three lines in the
+// shape of `case "propose"`, on the day the whole-article branch lands.
+// ---------------------------------------------------------------------------
+
+test("author-beats is a human turn — the driver runs nothing and changes nothing", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-driver-beats-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "d-beats",
+    schemaVersion: 4,
+    route: "article",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Premiums rose in both cantons",
+          altInsight: "Both cantons' adult premium rose from 2015 to 2024.",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            {
+              id: "slope",
+              nativeType: "slope",
+              engine: "chart-native",
+              format: "static",
+              why: "two points in time",
+            },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+        narrative: {
+          beats: [
+            {
+              id: "beat-1",
+              anchor: { kind: "category", value: "Genève" },
+              role: "establish",
+              text: "",
+              draftText: "Genève — 583",
+              beatSource: {
+                facts: { category: "Genève", value: "583" },
+                shared: { rows: "2" },
+              },
+            },
+          ],
+        },
+      },
+    ],
+    events: [],
+  };
+  expect(nextActions(run)).toEqual(["author-beats"]);
+  const out = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(out.ran).toBeNull();
+  expect(out.failure).toBeUndefined();
+  expect(out.run).toEqual(run);
+  rmSync(runDir, { recursive: true, force: true });
+});

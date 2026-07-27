@@ -225,8 +225,16 @@ un autre plan) et aucun test ni aucune fixture sur disque ne fige une valeur lit
 
 **Deux `NextAction` neuves**, et leurs noms disent qui agit :
 
-- **`draft-beats`** — déterministe, le driver l'exécute (comme `propose`) ;
+- **`draft-beats`** — déterministe, du même type que `propose` : une dérivation pure de la donnée ;
 - **`author-beats`** — tour humain, il tombe dans le `default:` d'`advanceStep` (comme `phrase`).
+
+> **Et `advanceStep` n'a délibérément PAS de `case "draft-beats"`.** L'action n'est pas
+> atteignable tant que `scrolly` n'est pas constructible (voir juste en dessous), et un bras de
+> `switch` inatteignable est du code mort — exactement la maladie que le slice précédent vient de
+> soigner (« le mécanisme existe et rien ne l'invoque »). Le câblage est **nommé** : trois lignes
+> dans la forme de `case "propose"`, appelant `draftBeats`, le jour où la branche article atterrit.
+> `author-beats`, lui, **est** atteignable (n'importe quel élément portant un plan non écrit y
+> route) et son comportement de tour humain est testé pour de vrai.
 
 **Leur position dans `nextActionsForElement`, et pourquoi elle est là :** *sous* le contrôle de
 constructibilité et *sous* `confirm-aspect`, *au-dessus* de `produce`.

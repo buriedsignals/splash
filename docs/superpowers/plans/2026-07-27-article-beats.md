@@ -130,17 +130,22 @@ endroit du slice qui traverse la frontière moteur, et c'est ce que font déjà
 
 ---
 
-## Tâche 7 — Le driver exécute le brouillon
+## Tâche 7 — Le driver face aux deux tours
 
-**Fichiers :** `lib/loop/driver.ts`, `lib/loop/driver.test.ts`.
+**Fichiers :** `lib/loop/driver.test.ts` seulement.
 
-**Tests rouges d'abord :**
-- `advanceStep` sur un élément dont `nextActions` dit `draft-beats` **exécute** `draftBeats` et
-  rapporte `ran: "draft-beats"` ;
-- un refus de `draftBeats` est enregistré comme événement borné, sans faire avancer l'élément ;
-- `author-beats` est un **tour humain** : `advanceStep` rapporte `ran: null` (le `default:`).
+**Corrigé en cours de route, et c'est un constat, pas un raccourci.** Le plan prévoyait un
+`case "draft-beats"` dans `advanceStep`. En l'écrivant, il s'avère **inatteignable** :
+`nextActionsForElement` ne peut répondre `draft-beats` que pour un `scrolly`, et un `scrolly`
+sort au gate de constructibilité juste au-dessus (§5 du spec). Un bras de `switch` inatteignable
+est du code mort — la maladie même que le slice précédent vient de soigner. Le `case` n'est donc
+**pas** ajouté ; le câblage est nommé dans le spec et dans le test.
 
-**Vert :** le `case "draft-beats"` dans `advanceStep`.
+**Test rouge d'abord :** un élément portant un plan à beat non écrit route vers `author-beats`
+(**atteignable**), et `advanceStep` n'exécute rien : `ran: null`, manifeste inchangé.
+
+**Vert :** déjà couvert par le routage de la tâche 4 ; le test le prouve de bout en bout à travers
+le driver plutôt qu'au niveau de la fonction de routage.
 
 ---
 
