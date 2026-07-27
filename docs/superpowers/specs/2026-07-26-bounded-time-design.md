@@ -119,16 +119,51 @@ promesse (accepte la connexion, ne répond jamais). Le test assert que `fetchBou
 `NetworkTimeoutError` DANS la fenêtre bornée (pas juste "un jour"), pas qu'il hangue. C'est la preuve
 demandée — un timeout qu'aucun test ne déclenche est une intention, pas un comportement.
 
-Les preuves live existantes (`SPLASH_S3_E2E=1` contre MinIO réel, `lib/loop/delivery-genre-e2e.test.ts`)
-tournent inchangées avec le mécanisme en place — mesure au §6 du rapport de tâche, pas ici.
+Même discipline reproduite au niveau adapter, contre de vrais serveurs `Bun.serve` accrochés — pas
+un clock mocké — pour les quatre sites du tableau §2 qui étaient réellement atteignables hors-ligne :
+`s3.test.ts` (PUT hors budget upload, GET de vérification hors budget réseau — deux serveurs
+distincts, endpoint et publicBaseUrl séparés, pour reproduire le cas réaliste où l'un répond et
+l'autre pas) et `cloudflare-pages.test.ts` (`cf()` via son override `base` réservé aux tests,
+`verifyServed` directement sur son propre paramètre `url`). `resolveAliasUrl` partage exactement la
+même formule de plafonnement que `verifyServed` (revue de code, pas de second test dupliqué) et
+n'est pas testée séparément contre un serveur accroché — voir Risques assumés.
+
+`SPLASH_S3_E2E=1 SPLASH_S3_ACCESS_KEY_ID=minioadmin SPLASH_S3_SECRET_ACCESS_KEY=minioadmin bun test
+lib/loop/delivery-genre-e2e.test.ts` contre MinIO réel (colima) — **1 pass / 0 fail, 6.7s** — prouve
+que `DEFAULT_UPLOAD_TIMEOUT_MS` (120s) n'est pas assez serré pour faire échouer un upload réel : le
+default n'est pas devenu une régression.
 
 ## 6. Risques assumés
 
-Voir la fin du rapport de tâche (section "Risques assumés" du commit final) pour le détail par
-finding — reproduit ici pour mémoire :
-
-- Pas de timeout d'inactivité (suivi d'octets) — flat wall-clock seulement, mitigé par le budget
-  upload séparé (§3.2). Réel, jugé suffisant : fermer la classe "aucun budget" prime sur l'affiner.
-- `lib/newsroom/verify.ts` reste sans budget — même classe, hors périmètre de fichiers de cette
-  tâche (§2).
-- Pas de configuration par-rédaction du timeout — décision délibérée (§4), pas un oubli.
+- **Pas de timeout d'inactivité (suivi d'octets)** — `fetchBounded` est un mur-à-mur, jamais réarmé
+  sur progression. Mitigé par le budget upload séparé (§3.2). Réel, jugé suffisant : fermer la
+  classe "aucun budget du tout" prime sur l'affiner en timeout glissant, qui demanderait un suivi de
+  flux hors scope de cette passe.
+- **`lib/newsroom/verify.ts` reste sans budget** — même classe exacte (4 `fetch` vers MapTiler,
+  Datawrapper, Cloudflare, Anthropic, aucun borné), mais `lib/newsroom/**` est explicitement hors
+  périmètre de fichiers de cette tâche (§2). Trouvé, non touché, à signaler comme suite — même
+  remède (`fetchBounded`), même défauts, un sous-projet différent.
+- **`resolveAliasUrl` n'a pas de preuve live dédiée** contre un serveur accroché — seule sa jumelle
+  `verifyServed` (formule de plafonnement identique, revue de code) l'a. `resolveAliasUrl` appelle
+  `cf()` qui EST testée contre un serveur accroché (via l'override `base`) ; ce qui n'est pas
+  exercé en test, c'est spécifiquement le plafonnement PAR TENTATIVE dans SA boucle à elle. Jugé
+  acceptable : code identique ligne pour ligne à celui de `verifyServed`, dupliquer le test
+  n'aurait prouvé que la même formule deux fois.
+- **Aucune preuve live pour Cloudflare** (l'équivalent du test MinIO pour S3) — les instructions de
+  cette tâche en mentionnaient une ("SPLASH_S3_E2E=1, et une Cloudflare") mais **elle n'existe pas
+  dans ce dépôt** : `cloudflare-pages.test.ts` est intégralement hors-ligne (voir son propre
+  commentaire d'en-tête, "no request is mocked here, none is made" — la preuve live du protocole a
+  été faite une fois, en 2026-07-19, contre l'API réelle, et consignée dans la spec de l'époque, pas
+  rejouée en test). Rien à "ne pas casser" ici puisque rien de tel n'était vert avant cette tâche —
+  signalé tel quel plutôt que d'inventer un test contre l'API Cloudflare réelle sans que ça ait été
+  demandé.
+- **`cf` exporté avec un 5ᵉ paramètre `base`, réservé aux tests** — c'était le seul moyen de prouver
+  le timeout contre un vrai serveur accroché plutôt qu'un mock, sans quoi cette tâche aurait dû se
+  contenter d'un test de plus haut niveau contre l'API Cloudflare réelle (hors de question sans
+  compte de test dédié) ou d'aucune preuve directe pour ce site précis. Défaut `= API` : zéro
+  changement de comportement pour tout appelant de production.
+- **Pas de configuration par-rédaction du timeout dans `newsroom.json`** — décision délibérée (§4).
+  `settings.timeoutMs`/`settings.uploadTimeoutMs` couvrent le besoin ("configurable, per-call
+  override") sans ouvrir une nouvelle surface de setup ; une rédaction qui veut vraiment relever le
+  défaut n'a qu'à poser ces deux clés dans `capabilities[id].settings`, déjà le canal existant pour
+  `snippetTemplate`/`prefix`.
