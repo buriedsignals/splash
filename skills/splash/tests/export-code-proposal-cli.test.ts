@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { canonicalJson } from "../src/canonical-json.ts";
 import { resolveLanguage } from "../../../lib/newsroom/language";
 import { exportProposalCopy } from "../../../lib/newsroom/ui-copy";
-import { readNewsroomState } from "../../../lib/newsroom/state";
+import { readDecorState } from "../../../lib/newsroom/decor";
 
 // Phase 1 (no --form) of export-code.mjs emits the a/b/c delivery-form proposal. The emitted
 // EXPORT_FORMS_PROPOSAL block MUST carry an explicit WAIT instruction — the mechanical nudge at
@@ -133,7 +133,7 @@ function resolvedUi(overrideUi?: string): string {
   const root = join(import.meta.dir, "../../..");
   return resolveLanguage({
     override: { ui: overrideUi ?? process.env.SPLASH_UI_LANG },
-    uiLang: readNewsroomState(root).uiLang,
+    uiLang: readDecorState(root).uiLang,
   }).ui;
 }
 

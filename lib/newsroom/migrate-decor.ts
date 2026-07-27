@@ -16,7 +16,10 @@
 // .env is NEVER touched: it is and stays the single home of every credential.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { loadNewsroomProfile } from "../../skills/splash/src/brand-profile";
+import {
+  loadBrandProfile,
+  parseNewsroomMarkdown,
+} from "../../skills/splash/src/brand-profile";
 import {
   DEFAULT_NEWSROOM_STATE,
   NEWSROOM_STATE_FILE,
@@ -54,6 +57,25 @@ function readGreenStamps(dir: string): Record<string, string> {
 }
 
 /**
+ * The deliverables' language an install declares, read WITHOUT the cache write that
+ * `loadNewsroomProfile` performs (it rewrites `brand.json` on every call). This derivation is on
+ * a read path — `readDecorState`, which the export script calls just to pick a menu language —
+ * and a language lookup has no business refreshing a brand cache. Same precedence as the
+ * loader: the journalist's markdown wins, the machine cache answers when it is all there is.
+ */
+function profileLang(dir: string): string | undefined {
+  const mdPath = join(dir, "NEWSROOM-PROFILE.md");
+  if (existsSync(mdPath)) {
+    try {
+      return parseNewsroomMarkdown(readFileSync(mdPath, "utf8"))?.lang?.trim();
+    } catch {
+      return undefined; // a broken profile must not break the migration
+    }
+  }
+  return loadBrandProfile(dir)?.lang?.trim();
+}
+
+/**
  * The state an existing install migrates TO, derived and returned without being written.
  * Pure enough to be the answer a read-only caller gets (`loadDecor` with an explicit dir):
  * the decor a host reads must not depend on whether anyone was allowed to persist it.
@@ -79,8 +101,7 @@ export function migratedDecorState(
   // to English on the day it upgrades would be a regression dressed as a default. The
   // deliverable language it declared in NEWSROOM-PROFILE.md is the only evidence P1 has of
   // which language it works in, so it seeds the interface language once, here.
-  const uiLang =
-    loadNewsroomProfile(dir)?.lang?.trim() || DEFAULT_NEWSROOM_STATE.uiLang;
+  const uiLang = profileLang(dir) || DEFAULT_NEWSROOM_STATE.uiLang;
 
   return { schemaVersion: 1, runtime, uiLang, capabilities };
 }

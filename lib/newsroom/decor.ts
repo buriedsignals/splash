@@ -144,6 +144,22 @@ function deliveryProfile(
   };
 }
 
+/**
+ * The decor's STATE alone, derived read-only — the migration is applied but never persisted.
+ *
+ * For a caller that needs one field (the skill path resolves `uiLang` and nothing else) and must
+ * not acquire a write side effect. `loadDecor()` without a dir is allowed to persist the legacy
+ * migration; a script that merely prints a menu is not, and `readNewsroomState` alone was worse
+ * still: it skips the migration entirely, so a legacy French install read as English (P1's
+ * parked finding #3).
+ */
+export function readDecorState(
+  root: string,
+  env: Record<string, string | undefined> = decorEnv(root),
+): NewsroomState {
+  return resolveState(root, env, false);
+}
+
 function resolveState(
   root: string,
   env: Record<string, string | undefined>,

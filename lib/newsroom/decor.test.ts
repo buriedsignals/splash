@@ -2,7 +2,13 @@ import { describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { decorEnv, installRoot, loadDecor, tryLoadDecor } from "./decor";
+import {
+  decorEnv,
+  installRoot,
+  loadDecor,
+  readDecorState,
+  tryLoadDecor,
+} from "./decor";
 import { LEGACY_PREFLIGHT_FILE, LEGACY_RUNTIME_FILE } from "./migrate-decor";
 import { NEWSROOM_STATE_FILE } from "./state";
 
@@ -219,5 +225,49 @@ describe("tryLoadDecor", () => {
     const d = dir();
     expect(() => tryLoadDecor(() => loadDecor(d, NO_ENV))).not.toThrow();
     expect(tryLoadDecor(() => loadDecor(d, NO_ENV)).root).toBe(d);
+  });
+});
+
+// P1 parked finding #3: the skill path (`export-code.mjs`) read `readNewsroomState(root).uiLang`
+// straight, so a legacy FRENCH install printed ENGLISH until something happened to call
+// `loadDecor` — the migration never fired on that path. It cannot simply call `loadDecor()`
+// either: that WRITES newsroom.json, and an export script must not create state as a side
+// effect. `readDecorState` is the read-only derivation, which is all a language lookup needs.
+describe("readDecorState — the migration-aware read that writes nothing", () => {
+  it("keeps a legacy FRENCH install in French, without creating newsroom.json", () => {
+    const d = dir();
+    writeFileSync(join(d, LEGACY_RUNTIME_FILE), "goose\n");
+    writeFileSync(
+      join(d, "NEWSROOM-PROFILE.md"),
+      ["---", 'lang: "fr"', "---", "", "# guide", ""].join("\n"),
+    );
+    const before = readdirSync(d).sort();
+
+    const state = readDecorState(d, {});
+
+    expect(state.uiLang).toBe("fr");
+    expect(state.runtime).toBe("goose");
+    expect(readdirSync(d).sort()).toEqual(before);
+    expect(existsSync(join(d, NEWSROOM_STATE_FILE))).toBe(false);
+  });
+
+  it("prefers a saved state over the legacy files", () => {
+    const d = dir();
+    writeFileSync(join(d, LEGACY_RUNTIME_FILE), "goose\n");
+    writeFileSync(
+      join(d, NEWSROOM_STATE_FILE),
+      JSON.stringify({
+        schemaVersion: 1,
+        runtime: "codex",
+        uiLang: "it",
+        capabilities: {},
+      }),
+    );
+    expect(readDecorState(d, {}).uiLang).toBe("it");
+    expect(readDecorState(d, {}).runtime).toBe("codex");
+  });
+
+  it("answers English on a bare directory — the fresh-install default (#6)", () => {
+    expect(readDecorState(dir(), {}).uiLang).toBe("en");
   });
 });

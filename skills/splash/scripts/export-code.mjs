@@ -45,7 +45,7 @@ import {
 import { assertChainProvenance } from "../src/render-provenance.ts";
 import { embedDeliveryStatus } from "../src/preflight.ts";
 import { resolveProfile, resolveProfilePath } from "../src/resolve-profile.ts";
-import { readNewsroomState } from "../../../lib/newsroom/state.ts";
+import { readDecorState } from "../../../lib/newsroom/decor.ts";
 import { resolveLanguage } from "../../../lib/newsroom/language.ts";
 import { exportProposalCopy } from "../../../lib/newsroom/ui-copy.ts";
 
@@ -57,11 +57,17 @@ const SELF = fileURLToPath(import.meta.url);
 // The profile's `lang:` is deliberately NOT consulted here: it is the DELIVERABLES' language
 // (`resolveLanguage`'s `content`), and passing it in would read as if it were a fallback for
 // the interface — which it is not, and never was: `resolveLanguage` cannot let it reach `ui`.
+//
+// `readDecorState`, not `readNewsroomState`: an install that predates newsroom.json has its
+// interface language recorded nowhere yet, and reading the state file alone skipped the legacy
+// migration — so a French newsroom driven through the skill printed English until something else
+// happened to call `loadDecor` (P1 parked finding #3). The read-only derivation applies that
+// migration and still writes nothing: this script must never create state as a side effect.
 function uiCopy() {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const { ui } = resolveLanguage({
     override: { ui: process.env.SPLASH_UI_LANG },
-    uiLang: readNewsroomState(root).uiLang,
+    uiLang: readDecorState(root).uiLang,
   });
   return exportProposalCopy(ui);
 }
