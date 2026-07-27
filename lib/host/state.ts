@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { nextActions, parseManifest, type RunManifest } from "../loop/manifest";
 import { orderingIntents } from "../loop/propose";
 import { resumeReport } from "../loop/resume";
-import { tryLoadDecor } from "../newsroom/decor";
+import { installRoot, loadDecor } from "../newsroom/decor";
 import { intentCopy, intentCopyLanguage } from "./intent-copy";
 import type { VerbErrorCode } from "../core/verbs/types";
 import type { HostErrorCode } from "./errors";
@@ -95,6 +95,29 @@ export function loadRun(
   }
 }
 
+/**
+ * The newsroom's interface language, resolved WITHOUT the write.
+ *
+ * `loadDecor()` called with no directory may WRITE — it persists the one-time legacy decor
+ * migration into the install root — and `tryLoadDecor()` takes exactly that path. `state` and
+ * `next` promise the opposite (lib/host/README.md), which is why they refuse to migrate a stale
+ * manifest rather than migrating it quietly; resolving a language must not smuggle a write back
+ * in through a different door. Naming the root explicitly is the read-only shape decor.ts
+ * documents: "with an explicit dir the decor is read and derived but NOTHING is written".
+ *
+ * A decor that cannot be read yields "" rather than a throw: the choices are a constant and only
+ * their language is at stake, and `state` is the command a host reaches for when things are
+ * already wrong. Shared with `suggest-intent`, the other read-only command that needs it, so the
+ * two cannot end up resolving the language by different rules.
+ */
+export function readOnlyUiLanguage(load: typeof loadDecor = loadDecor): string {
+  try {
+    return load(installRoot()).language.ui;
+  } catch {
+    return "";
+  }
+}
+
 // WHAT ORDERED THIS ELEMENT'S OFFER, per element that has an angle.
 //
 // The offer is ranked around one semantic input, and until this slice that input was GUESSED
@@ -145,15 +168,7 @@ export function describeState(runDir: string): HostResponse {
     // which does not exist in the run yet — `suggest-intent` is where a host gets one.
     const owed = elements.some((e) => e.nextActions.includes("confirm-angle"));
     if (!owed) return { ok: true, value: { ...report, elements } };
-    // A decor problem must not make the run unreadable — `state` is the command a host reaches
-    // for when things are wrong. The choices are a constant; only their language is at stake.
-    let uiLanguage = "";
-    try {
-      uiLanguage = tryLoadDecor().language.ui;
-    } catch {
-      uiLanguage = "";
-    }
-    const language = intentCopyLanguage(uiLanguage);
+    const language = intentCopyLanguage(readOnlyUiLanguage());
     const copy = intentCopy(language);
     return {
       ok: true,

@@ -434,7 +434,9 @@ own language. It is the same omission the missing offer once was, one gate earli
 `nextActions: ["confirm-angle"]` had no way to put the question without inventing the wording, and
 the wording is exactly what the socle constrains. It disappears once every element has answered.
 There is no suggestion here — that is read from the *draft* takeaway, which is not in the run yet
-(`suggest-intent`).
+(`suggest-intent`). Resolving the newsroom's language for this block keeps the read-only promise:
+the decor is asked for a **named** root, the shape that derives the same answer without persisting
+the one-time legacy migration a bare `loadDecor()` is allowed to write.
 
 And once an element has an angle, it carries **`intent`** — what ordered its offer, and where that
 came from:

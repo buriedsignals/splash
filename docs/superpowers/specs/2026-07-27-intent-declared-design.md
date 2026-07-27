@@ -245,6 +245,68 @@ design :
 - **`skills/splash/SKILL.md:493`** documente `confirm-angle` sans `--intent`. Fichier hors
   frontière ; à mettre à jour par le propriétaire de `skills/**`.
 
-## 7. Risques assumés
+## 7. Mesure avant/après — sur la vraie CLI
 
-*(renseigné à l'issue de l'implémentation)*
+Deux runs réels conduits par `lib/host/cli.ts` (`init → advance → confirm-angle → advance`),
+mêmes données (7 cantons × 1 colonne numérique), même canal `article-web`.
+
+**Cas 1 — le no-op mesuré du §1.** Takeaway : « Genève paie la prime la plus lourde des cantons
+romands ». La passe rend `[]`, et `suggest-intent --language fr` le dit à voix haute
+(« Votre formulation ne penche vers aucune de ces réponses, donc rien n'est supposé »). Le
+journaliste déclare **« Qui est en tête, qui est en queue »** (`ranking`) :
+
+| rang | AVANT (`basis: none`) | APRÈS (`basis: declared` = `ranking`) |
+|---|---|---|
+| 1 | `bar` interactive — sert magnitude, **ranking** | `bar` interactive — sert magnitude, **ranking** |
+| 2 | `lollipop` interactive — sert **ranking**, magnitude | `lollipop` interactive — sert **ranking**, magnitude |
+| 3 | `scatter` **video** — sert `correlation` | `radial-bar` **video** — sert magnitude, **ranking** |
+
+Le run « avant » est un `run.json` écrit avant la tranche : relu aujourd'hui, `state` le rapporte
+`{"basis":"none","guessed":[]}` — l'état muet, désormais dit.
+
+**Cas 2 — le contre-sens du §1**, le plus démonstratif. Takeaway : « La prime varie de 115 francs
+entre le canton le plus cher et le moins cher » (une affirmation d'**étendue**).
+
+| rang | AVANT — `basis: guessed` = `["spatial"]` | APRÈS — `basis: declared` = `distribution` |
+|---|---|---|
+| 1 | `hex-grid` map-native interactive | `dot-strip` chart-native interactive |
+| 2 | `choropleth` map-native interactive | `boxplot` chart-native interactive |
+| 3 | `cartogram` map-native video | `beeswarm` chart-native video |
+
+**Trois cartes** offertes pour une phrase sur l'écart entre deux valeurs, parce que le mot
+« canton » l'emportait — contre trois formes qui montrent effectivement l'étalement. L'offre
+change en entier, y compris de **moteur**.
+
+## 8. Risques assumés
+
+- **Déclarer (ou re-déclarer) une intention périme un artefact déjà produit.** `angle` est hashé
+  entier par `provenanceHash` (`lib/loop/manifest.ts`), donc le champ neuf y entre. **Ruling :
+  accepté, direction sûre.** Re-confirmer réécrit déjà l'angle entier (les quatre parties sont
+  requises) — un `confirm-angle` qui ne changerait *que* l'intention est un cas de bord, et le
+  coût est un re-produce identique, jamais une livraison périmée annoncée fraîche. Le sortir du
+  hash exigerait de modifier `provenanceHash`, hors de la frontière ajout-seul.
+- **Un angle hérité (sans intention) n'est pas re-routé vers `confirm-angle`.**
+  `nextActionsForElement` le laisse filer. **Ruling : rapporté, pas réparé.** Le corriger est une
+  modification d'un fichier en ajout-seul, et refuser ces runs les échouerait sur un champ qui
+  n'existait pas quand ils ont été écrits. `state` répond `basis: "guessed" | "none"` — l'ordre
+  repose sur une devinette, ou sur rien, et ça se lit.
+- **`de` et `it` manquent à la table éditoriale.** **Ruling : différé assumé**, parité stricte
+  avec `lib/newsroom/ui-copy.ts` (en/fr). Une langue non livrée retombe sur `en` et le dit
+  (`language` dans la réponse) ; ajouter une entrée fait passer toutes les gardes existantes.
+- **La règle « ne jamais montrer l'id » n'est mécanique que du côté de la COPIE.**
+  `intent-copy.test.ts` interdit tout mot du vocabulaire de graphique et tout id brut dans les
+  labels/exemples ; rien n'empêche un host d'afficher `choices[i].id` à la place du label.
+  **Ruling : accepté** — c'est de la présentation, hors du process ; le README le dit en gras et
+  la garde couvre la seule partie que ce dépôt écrit.
+- **`skills/splash/SKILL.md:493` documente `confirm-angle` sans `--intent`.** **Ruling : hors
+  frontière** (`skills/**` appartient à un autre agent) — à reprendre par son propriétaire ; la
+  commande, elle, refuse loud, donc la doc périmée coûte un aller-retour, pas une erreur muette.
+- **`suggest-intent` n'apparaît pas dans `verbs`.** La déclaration de capacités énumère les
+  *verbes* du contrat, pas les commandes de la façade — aucune commande n'y figure. **Ruling :
+  cohérent avec l'existant** ; découvrable par le message d'usage et par `lib/host/README.md`.
+- **Trouvé en self-review et corrigé, noté ici parce que c'est une classe :** la résolution de la
+  langue a failli faire écrire `state`. `loadDecor()` **sans** dossier persiste la migration
+  legacy du décor dans la racine d'install, et `tryLoadDecor()` prend cette porte — alors que
+  `state`/`next` promettent le contraire (au point de refuser de migrer un manifeste périmé).
+  Fermé par `readOnlyUiLanguage` (racine nommée = forme lecture seule), partagé par les deux
+  commandes en lecture seule, et **testé à la couture** (l'appel doit passer `installRoot()`).

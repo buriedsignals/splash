@@ -8,7 +8,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describeState, describeNext } from "./state";
+import { describeState, describeNext, readOnlyUiLanguage } from "./state";
+import { installRoot } from "../newsroom/decor";
 import { writeManifest, nextActions, type RunManifest } from "../loop/manifest";
 import { freezeInput } from "../loop/freeze";
 
@@ -237,5 +238,34 @@ describe("state serves the intent question, and says what ordered the offer", ()
 
   it("reports no intent for an element that has no angle yet", () => {
     expect("intent" in stateOf(runWithAngle()).elements[0]).toBe(false);
+  });
+});
+
+// `state` and `next` are STRICTLY read-only — the promise in lib/host/README.md, and the reason
+// they refuse to migrate a stale manifest rather than migrating it quietly. Resolving the
+// newsroom's interface language put that promise at risk: `loadDecor()` called with NO directory
+// is allowed to WRITE (it persists the one-time legacy decor migration into the install root),
+// and `tryLoadDecor()` takes exactly that path. Naming the root explicitly is what makes the same
+// answer arrive without the side effect — decor.ts: "with an explicit dir the decor is read and
+// derived but NOTHING is written".
+//
+// Asserted at the seam, because the write only happens on an install that still carries the
+// legacy files and no test may fabricate one inside the real install root.
+describe("resolving the interface language cannot write", () => {
+  it("asks the decor for a named root, which is the read-only shape", () => {
+    const seen: (string | undefined)[] = [];
+    readOnlyUiLanguage(((dir?: string) => {
+      seen.push(dir);
+      return { language: { ui: "fr", content: "fr" } } as never;
+    }) as never);
+    expect(seen).toEqual([installRoot()]);
+  });
+
+  it("falls back to no language rather than throwing, so a broken decor never hides the run", () => {
+    expect(
+      readOnlyUiLanguage((() => {
+        throw new Error("unreadable install");
+      }) as never),
+    ).toBe("");
   });
 });

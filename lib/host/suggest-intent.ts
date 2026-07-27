@@ -12,13 +12,12 @@
 // choices plus the reading.
 import { suggestIntents } from "../brain/rank-intent";
 import type { Intent } from "../brain/intents";
-import { tryLoadDecor } from "../newsroom/decor";
 import {
   intentCopy,
   intentCopyLanguage,
   type IntentChoice,
 } from "./intent-copy";
-import type { HostResponse } from "./state";
+import { readOnlyUiLanguage, type HostResponse } from "./state";
 
 export type IntentQuestion = {
   /** The language this was actually answered in — not the one asked for, when we do not ship it. */
@@ -76,16 +75,11 @@ export function describeIntentQuestion(
         "suggest-intent needs --takeaway <s> — the claim the journalist is making, which is what " +
         "the suggestion is read from (the choices themselves do not depend on it)",
     };
-  // A decor problem must not make the question unaskable: the choices are a constant, and the
-  // only thing the decor decides is which language they are shown in.
-  let uiLanguage = "";
-  try {
-    uiLanguage = tryLoadDecor().language.ui;
-  } catch {
-    uiLanguage = "";
-  }
+  // Read-only, like `state`: the shared resolver never takes the door `loadDecor()` opens for a
+  // one-time migration write. A decor problem does not make the question unaskable either — the
+  // choices are a constant, and the only thing the decor decides is which language they wear.
   return {
     ok: true,
-    value: suggestIntentFor(takeaway, language ?? uiLanguage),
+    value: suggestIntentFor(takeaway, language ?? readOnlyUiLanguage()),
   };
 }
