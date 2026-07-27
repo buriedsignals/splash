@@ -13,6 +13,7 @@ import { deliver } from "./deliver";
 import { orient } from "./orient";
 import { propose } from "./propose";
 import { produce } from "./produce";
+import { previewStep } from "./preview";
 import { captureStep, reviewStep } from "./verify";
 
 // How much of a refusal the ledger keeps. A manifest is persisted JSON that accumulates events,
@@ -172,6 +173,18 @@ export async function advanceStep(
           ran: "review",
         };
       return refused("review", result.message, live.id);
+    }
+    case "preview": {
+      if (!live) return { run, ran: null };
+      // Synchronous: presenting is a spawn and a hash, not an engine. Kept in the same shape
+      // as its neighbours so the switch reads as one thing.
+      const result = previewStep(run, live, runDir);
+      if (result.ok)
+        return {
+          run: { ...run, elements: withLive(result.value) },
+          ran: "preview",
+        };
+      return refused("preview", result.message, live.id);
     }
     case "deliver": {
       if (!live) return { run, ran: null };

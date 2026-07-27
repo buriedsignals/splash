@@ -1023,6 +1023,11 @@ test("a long engine dump is bounded from the END, so the reason a producer print
 // produces and delivers is what runs them. Before this, a produced artifact went straight to
 // deliver and the whole of lib/verify had no production caller at all.
 test("advance() carries capture then review on the road to a requested delivery", async () => {
+  // No journalist is sitting in front of a test process, so no viewer is launched — the same
+  // flag a host that presents the deliverable itself sets (lib/loop/preview.ts). Scoped and
+  // restored: `bun test` shares one process across files.
+  const priorNoViewer = process.env.SPLASH_NO_VIEWER;
+  process.env.SPLASH_NO_VIEWER = "1";
   const runDir = mkdtempSync(join(tmpdir(), "loop-driver-verify-"));
   const src = join(runDir, "src.csv");
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
@@ -1096,6 +1101,21 @@ test("advance() carries capture then review on the road to a requested delivery"
     "unavailable",
   );
 
-  // …and it stops at the preview, which is where the human turn begins.
   expect(nextActions(run)).toEqual(["preview"]);
+  step = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(step.failure).toBeUndefined();
+  expect(step.ran).toBe("preview");
+  run = step.run;
+  expect(run.elements[0]!.review!.preview!.deliverableSha256).toBe(
+    run.elements[0]!.artifact!.sha256,
+  );
+
+  // …and it stops at the approval, which is where the human turn begins. `advance` cannot
+  // perform it, and says so rather than doing nothing quietly.
+  expect(nextActions(run)).toEqual(["approve"]);
+  step = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(step.ran).toBeNull();
+
+  if (priorNoViewer === undefined) delete process.env.SPLASH_NO_VIEWER;
+  else process.env.SPLASH_NO_VIEWER = priorNoViewer;
 }, 300_000);
