@@ -20,7 +20,9 @@
 //      the run back on "produce". Before provenanceHash covered the ledger this stayed false:
 //      a stale credit on an artifact reporting itself fresh.
 //   3. The delivered package's README credits the declared source, and the placeholder string
-//      appears nowhere in it.
+//      appears nowhere in it. Reaching a delivery means walking the whole verification chain
+//      (capture → review → preview → approve) on the real artifact, because deliver() refuses
+//      unapproved bytes — see the second test.
 import { test, expect } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -29,6 +31,9 @@ import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
 import { produce } from "../loop/produce";
 import { deliver } from "../loop/deliver";
+import { captureStep, reviewStep } from "../loop/verify";
+import { previewStep } from "../loop/preview";
+import { approve } from "../loop/approve";
 import { freezeInput } from "../loop/freeze";
 import {
   nextActions,
@@ -99,6 +104,43 @@ function makeRun(
   };
 }
 
+/**
+ * Take a produced element all the way to `approved`, through the real steps — nothing here
+ * writes `approved` by hand, because approveElement is the manifest's only sanctioned writer and
+ * a fixture that forged the record would prove the archive credits a source it never gated.
+ * SPLASH_NO_VIEWER keeps `preview` from opening a window on a test machine.
+ */
+async function walkToApproval(
+  run: RunManifest,
+  runDir: string,
+): Promise<RunManifest["elements"][number]> {
+  const el = run.elements[0]!;
+  const captured = await captureStep(run, el, runDir);
+  if (!captured.ok) throw new Error(`capture: ${captured.message}`);
+  const reviewed = await reviewStep(
+    { ...run, elements: [captured.value] },
+    captured.value,
+    runDir,
+  );
+  if (!reviewed.ok) throw new Error(`review: ${reviewed.message}`);
+  const previewed = previewStep(
+    { ...run, elements: [reviewed.value] },
+    reviewed.value,
+    runDir,
+    { env: { SPLASH_NO_VIEWER: "1" } },
+  );
+  if (!previewed.ok) throw new Error(`preview: ${previewed.message}`);
+  const decided = approve(
+    { ...run, elements: [previewed.value] },
+    previewed.value,
+    runDir,
+    { actorLabel: "source-wiring-proof" },
+    { signers: [], requiredSigners: [] },
+  );
+  if (!decided.ok) throw new Error(`approve: ${decided.message}`);
+  return decided.value;
+}
+
 test.skipIf(!RUN)(
   "the declared source is painted into the raster, and correcting it makes the artifact stale",
   async () => {
@@ -160,10 +202,20 @@ test.skipIf(!RUN)(
     const p = await produce(run, run.elements[0]!, runDir);
     if (!p.ok) throw new Error(p.message);
 
+    // The verification chain, walked on the REAL artifact. deliver() refuses bytes nobody
+    // approved ("capture it, review it, preview it and approve it before it is published"), and
+    // that refusal is the product working: an attribution proof that published without the gate
+    // would be describing a loop that no longer exists. Same sequence lib/loop/approve.test.ts
+    // drives, run here so the zip below comes out of a real delivery rather than around one.
+    const approved = await walkToApproval(
+      { ...run, elements: [p.value] },
+      runDir,
+    );
+
     const withDelivery = {
       ...run,
       elements: [
-        { ...p.value, delivery: { requested: ["zip"], delivered: [] } },
+        { ...approved, delivery: { requested: ["zip"], delivered: [] } },
       ],
     };
     const decor = {
