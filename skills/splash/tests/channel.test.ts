@@ -17,11 +17,14 @@ import {
 } from "../src/channel";
 
 describe("ALL_CHANNELS / CHANNELS", () => {
-  it("lists the 3 canonical channels in a stable order", () => {
+  it("lists the 4 canonical channels in a stable order", () => {
+    // print-page joined with issue #1 — print was a real destination with no channel, and the
+    // word used to be aliased onto article-web (see the normalizeChannel case below).
     expect(ALL_CHANNELS).toEqual([
       "social-vertical",
       "social-feed",
       "article-web",
+      "print-page",
     ]);
   });
 
@@ -137,7 +140,10 @@ describe("normalizeChannel", () => {
     ["embed", "article-web"],
     ["article embed", "article-web"],
     ["landscape", "article-web"],
-    ["print", "article-web"],
+    // Was "article-web" until issue #1: asking for print returned a 1200x675 screen PNG.
+    ["print", "print-page"],
+    ["print-page", "print-page"],
+    ["page", "print-page"],
     ["youtube", "article-web"],
     [undefined, "article-web"],
     ["", "article-web"],

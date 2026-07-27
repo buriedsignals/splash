@@ -152,13 +152,26 @@ describe("channelToAspect / channelToExportSize now delegate to the shared splas
   // splash's CHANNELS[ch].mediaSize (keyed by channel) encode the SAME pixel
   // dimensions in two places — this pins them together so they can't silently
   // diverge (portrait 1080×1920 · square 1080×1080 · landscape 1200×675).
-  it("EXPORT_SIZES[aspect] matches CHANNELS[channel].mediaSize for every channel (no dimension drift)", () => {
-    for (const ch of ALL_CHANNELS) {
+  it("EXPORT_SIZES[aspect] matches CHANNELS[channel].mediaSize for every channel it exports (no dimension drift)", () => {
+    const exported = ALL_CHANNELS.filter(
+      (ch) => CHANNELS[ch].aspect in EXPORT_SIZES,
+    );
+    // The guard only means something if it still covers the three screen channels.
+    expect(exported).toEqual(["social-vertical", "social-feed", "article-web"]);
+    for (const ch of exported) {
       const entry = CHANNELS[ch];
       expect(EXPORT_SIZES[entry.aspect as keyof typeof EXPORT_SIZES]).toEqual(
         entry.mediaSize,
       );
     }
+  });
+
+  // Print (issue #1) is NOT a Datawrapper export: its boxes are screen-density. Refused by
+  // name rather than crashing on an undefined box two calls later.
+  it("refuses the print channel by name instead of casting onto a box that does not exist", () => {
+    expect(() => channelToAspect("print")).toThrow(
+      /Datawrapper cannot export the "page" aspect of channel "print-page"/,
+    );
   });
 });
 

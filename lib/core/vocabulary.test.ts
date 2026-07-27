@@ -28,17 +28,20 @@ describe("VERBS — the closed verb vocabulary", () => {
 });
 
 describe("VISUAL_FORMATS / CHANNELS — one declaration, type DERIVED from it", () => {
-  it("declares the four visual formats and the three channels", () => {
+  it("declares the four visual formats and the four render channels", () => {
     expect([...VISUAL_FORMATS]).toEqual([
       "static",
       "interactive",
       "video",
       "scrolly",
     ]);
+    // print-page joined the render targets with issue #1: print was the one destination with
+    // no channel at all, and the word was aliased onto article-web.
     expect([...CHANNELS]).toEqual([
       "social-vertical",
       "social-feed",
       "article-web",
+      "print-page",
     ]);
   });
 
