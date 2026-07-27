@@ -314,6 +314,131 @@ describe("capture — the real deliverable at the real publication container", (
     expect(r.value.images[0]!.marks).toBe(4);
   }, 120_000);
 
+  // --- the title the render itself declares ------------------------------------------
+  //
+  // Not the title the CALLER commissioned: the furniture roles are declared as expected
+  // TEXT (types.ts:112), so asking for the title that way can only answer "it is there" or
+  // "it is not" — never "here is what is there instead", which is the only thing a
+  // divergence detector can use. So the read walks a candidate ladder, exactly like
+  // ROOT_SELECTORS, and RECORDS which candidate answered.
+
+  it("reads the accessible name the render declares — the title chart-native really ships", async () => {
+    // Measured on the engine, not assumed: all 42 chart-native components end on
+    // `<svg role="img" aria-label={config.title}>` (e.g. BarChart.tsx:289-290). ChartFrame
+    // paints the VISIBLE title in an unclassed, unattributed <div> (ChartFrame.tsx:167-176),
+    // so the accessible name is the only title this DOM actually names.
+    const declared = "Health premiums rose in every canton shown";
+    const artifactPath = writeDoc(
+      "aria.html",
+      `<!doctype html><html><body><div id="root"><div>
+          <div class="title">a different visible string</div>
+          <svg width="600" height="300" role="img" aria-label="${declared}">
+            <circle cx="30" cy="200" r="4" fill="#d95f02"/>
+          </svg>
+        </div></div></body></html>`,
+    );
+    const r = await capture({
+      artifactPath,
+      format: "interactive",
+      channel: "article-web",
+      outDir: join(dir, "out-aria"),
+      id: "e1",
+      settleMs: 0,
+    });
+    if (!r.ok) throw new Error(r.message);
+    for (const img of r.value.images) {
+      expect(img.renderedTitle).toBe(declared);
+      expect(img.titleSource).toBe("svg[role='img'][aria-label]");
+    }
+  }, 120_000);
+
+  it("falls back to a heading when nothing names a title, and says which candidate answered", async () => {
+    const artifactPath = writeDoc(
+      "heading.html",
+      `<!doctype html><html><body><div id="root"><div>
+          <h1>Rents rose across the region</h1>
+          <svg width="600" height="300"><circle cx="30" cy="200" r="4" fill="#d95f02"/></svg>
+        </div></div></body></html>`,
+    );
+    const r = await capture({
+      artifactPath,
+      format: "interactive",
+      channel: "article-web",
+      outDir: join(dir, "out-heading"),
+      id: "e1",
+      settleMs: 0,
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(r.value.images[0]!.renderedTitle).toBe(
+      "Rents rose across the region",
+    );
+    expect(r.value.images[0]!.titleSource).toBe("h1");
+  }, 120_000);
+
+  it("records that NO candidate answered rather than guessing from the biggest text", async () => {
+    // The fixture used by every other test in this file: an unclassed title div, an <svg>
+    // with role="img" but no aria-label. Nothing here NAMES a title, and "the largest text
+    // near the top" would just as happily return a value label.
+    const artifactPath = writeDoc("untitled.html", componentHtml());
+    const r = await capture({
+      artifactPath,
+      format: "interactive",
+      channel: "article-web",
+      outDir: join(dir, "out-untitled"),
+      id: "e1",
+      settleMs: 0,
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(r.value.images[0]!.titleSource).toBe("none");
+    expect(r.value.images[0]!.renderedTitle).toBeUndefined();
+  }, 120_000);
+
+  it("refuses a candidate that returns a document dump instead of a headline", async () => {
+    const dump = "prose ".repeat(120); // 720 chars — a section, not a title
+    const artifactPath = writeDoc(
+      "dump.html",
+      `<!doctype html><html><body><div id="root"><div>
+          <h2>${dump}</h2>
+          <svg width="600" height="300"><circle cx="30" cy="200" r="4" fill="#d95f02"/></svg>
+        </div></div></body></html>`,
+    );
+    const r = await capture({
+      artifactPath,
+      format: "interactive",
+      channel: "article-web",
+      outDir: join(dir, "out-dump"),
+      id: "e1",
+      settleMs: 0,
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(r.value.images[0]!.titleSource).toBe("none");
+    expect(r.value.images[0]!.renderedTitle).toBeUndefined();
+  }, 120_000);
+
+  it("prefers an explicit marker over every degradation below it", async () => {
+    const artifactPath = writeDoc(
+      "marker.html",
+      `<!doctype html><html><body><div id="root"><div>
+          <div data-splash-title>The marked title</div>
+          <h1>A heading that is not the title</h1>
+          <svg width="600" height="300" role="img" aria-label="An accessible name">
+            <circle cx="30" cy="200" r="4" fill="#d95f02"/>
+          </svg>
+        </div></div></body></html>`,
+    );
+    const r = await capture({
+      artifactPath,
+      format: "interactive",
+      channel: "article-web",
+      outDir: join(dir, "out-marker"),
+      id: "e1",
+      settleMs: 0,
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(r.value.images[0]!.renderedTitle).toBe("The marked title");
+    expect(r.value.images[0]!.titleSource).toBe("[data-splash-title]");
+  }, 120_000);
+
   it("reports an unopenable deliverable as a typed failure, never a throw", async () => {
     const r = await capture({
       artifactPath: join(dir, "gone.html"),

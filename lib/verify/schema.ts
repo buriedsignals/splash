@@ -65,6 +65,10 @@ export const CaptureRecordSchema = z.object({
   capturedAt: z.string(),
   marks: z.number(),
   markColours: z.array(z.string()),
+  // Optional, like everything this layer adds: a run whose capture slot was written before
+  // the title was read must still parse. The compatibility rule of this file, unchanged.
+  renderedTitle: z.string().optional(),
+  titleSource: z.string().optional(),
 });
 
 export const CaptureCheckSchema = z.object({

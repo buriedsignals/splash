@@ -56,6 +56,44 @@ export const ROOT_SELECTORS = [
   "body",
 ] as const;
 
+// WHICH text is the title, in order. The same ladder discipline as ROOT_SELECTORS, and for
+// the same reason: which candidate answered is RECORDED, so a wrong extraction is readable
+// in the evidence instead of quietly standing in for the real headline.
+//
+// This cannot go through the furniture mechanism. Furniture is declared as expected TEXT
+// (types.ts:112) — the only description true of all six engines at once — so looking the
+// title up that way can only answer "the commissioned text is there" or "it is not". A
+// divergence detector needs the text that IS painted, whatever it turns out to be.
+//
+// Measured on the engines rather than assumed:
+//   - chart-native's 42 components all end on `<svg role="img" aria-label={config.title}>`
+//     (e.g. skills/chart-native/src/BarChart.tsx:289-290). That accessible name is the only
+//     title this DOM NAMES: ChartFrame paints the visible one in an unclassed, unattributed
+//     <div> (ChartFrame.tsx:167-176), and "the biggest text near the top" would just as
+//     happily return a value label.
+//   - map-native / scrolly declare the same thing PREFIXED ("Interactive map: <title>",
+//     ChoroplethMap.tsx:485). Harmless to the metric, which counts the share of the
+//     TAKEAWAY's words the title carries — extra words on the title side dilute nothing.
+//   - `[data-splash-title]` exists nowhere yet, exactly like `[data-splash-root]` above it.
+//     It is the convention of this file: an engine that marks its title one day wins here
+//     without a line changing.
+//
+// It reads the accessible NAME, not the pixels. A title present in the accessible tree but
+// visually clipped is a FURNITURE question, and furnitureChecks already measures that.
+export const TITLE_SOURCES = [
+  { selector: "[data-splash-title]", read: "text" },
+  { selector: "svg[role='img'][aria-label]", read: "aria-label" },
+  { selector: "h1", read: "text" },
+  { selector: "h2", read: "text" },
+] as const;
+
+// A candidate whose text is longer than this is not a headline — it is a section, and
+// recording it would put a document dump where a title belongs. Real titles in this project
+// reach 110+ characters (the "titre trop long" backlog note), so the bound discards a page,
+// not a wordy headline. Over it, the ladder continues; if nothing qualifies the record says
+// "none" rather than carrying prose.
+export const MAX_RENDERED_TITLE_CHARS = 300;
+
 export type CapturePayload = {
   artifactPath: string;
   format: VisualFormat;
@@ -66,7 +104,6 @@ export type CapturePayload = {
   furniture?: FurnitureExpectation[];
   settleMs?: number;
 };
-
 
 function hashFile(path: string): string {
   return Buffer.from(sha256(readFileSync(path))).toString("hex");
@@ -145,6 +182,12 @@ async function captureStatic(
     capturedAt: new Date().toISOString(),
     marks: 0,
     markColours: [],
+    // A png has no DOM, so there is no text to read. Two things this deliberately does NOT
+    // do: OCR the pixels (a layer of uncertainty nothing in this record accounts for), and
+    // copy the commissioned title in as a stand-in — which would make the divergence
+    // detector compare a string with itself, guaranteeing silence while looking like a
+    // measurement. The record says WHY there is no title instead.
+    titleSource: "static-image",
   };
   const checks: CaptureCheck[] = [
     sizeCheck(target, size, scale),
@@ -171,6 +214,11 @@ type Measured = {
   documentScroll: { width: number; height: number };
   marks: number;
   markColours: string[];
+  /** The candidate that answered, or "none". Always set — an absent title is a FACT worth
+   *  recording, not a missing measurement. */
+  titleSource: string;
+  /** Absent when titleSource is "none". */
+  renderedTitle?: string;
   furniture: {
     role: FurnitureRole;
     text: string;
@@ -185,6 +233,8 @@ type Measured = {
 /* c8 ignore start — executed in the page context, not in the test process */
 function measureInPage(args: {
   rootSelectors: string[];
+  titleSources: { selector: string; read: string }[];
+  maxTitleChars: number;
   furniture: { role: string; text: string }[];
 }): Measured {
   const round = (n: number) => Math.round(n * 100) / 100;
@@ -258,6 +308,28 @@ function measureInPage(args: {
     }
   }
 
+  // The title the render DECLARES, walked down the ladder. Same visit, same root — no second
+  // traversal, and nothing here decides whether the title is any good.
+  let titleSource = "none";
+  let renderedTitle: string | undefined;
+  for (const candidate of args.titleSources) {
+    const el = root.matches(candidate.selector)
+      ? root
+      : root.querySelector(candidate.selector);
+    if (!el) continue;
+    const raw =
+      candidate.read === "aria-label"
+        ? (el.getAttribute("aria-label") ?? "")
+        : (el.textContent ?? "");
+    const text = raw.replace(/\s+/g, " ").trim();
+    // A candidate that answers with a whole section is the WRONG candidate, so the ladder
+    // keeps going rather than recording prose as a headline.
+    if (!text || text.length > args.maxTitleChars) continue;
+    titleSource = candidate.selector;
+    renderedTitle = text;
+    break;
+  }
+
   const furniture = args.furniture.map((f) => {
     const needle = f.text.trim();
     // The DEEPEST element carrying the text: an ancestor also "contains" it, and measuring
@@ -303,6 +375,10 @@ function measureInPage(args: {
     },
     marks: marks.length,
     markColours: colours,
+    titleSource,
+    // Conditional so an absent title is an ABSENT KEY, not `undefined` — the round-trip
+    // invariant (I6) the whole payload is held to.
+    ...(renderedTitle ? { renderedTitle } : {}),
     furniture,
   };
 }
@@ -412,6 +488,11 @@ async function captureHtml(
 
         const m = (await page.evaluate(measureInPage, {
           rootSelectors: [...ROOT_SELECTORS],
+          titleSources: TITLE_SOURCES.map((t) => ({
+            selector: t.selector,
+            read: t.read,
+          })),
+          maxTitleChars: MAX_RENDERED_TITLE_CHARS,
           furniture,
         })) as Measured;
 
@@ -442,6 +523,8 @@ async function captureHtml(
           capturedAt: new Date().toISOString(),
           marks: m.marks,
           markColours: m.markColours,
+          titleSource: m.titleSource,
+          ...(m.renderedTitle ? { renderedTitle: m.renderedTitle } : {}),
         });
         checks.push(...furnitureChecks(target, m));
         const rootBottom = m.rootBox.y + m.rootBox.height;

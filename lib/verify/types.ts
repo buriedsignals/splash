@@ -134,6 +134,14 @@ export type CaptureRecord = {
   capturedAt: string;
   marks: number; // rendered mark elements — density input, not a verdict
   markColours: string[]; // colours actually painted — palette-adjacency input
+  /** The title the RENDER itself declares, read off the live DOM — evidence, not a claim an
+   *  upstream caller makes about what it commissioned. Absent when the deliverable has no DOM
+   *  (a static image) or when no candidate named a title. */
+  renderedTitle?: string;
+  /** WHICH candidate answered, or "none" / "static-image". Same discipline as `rootSelector`:
+   *  a wrong extraction stays readable in the proof instead of silently standing in for the
+   *  real headline. */
+  titleSource?: string;
 };
 
 export type CaptureCheckId =

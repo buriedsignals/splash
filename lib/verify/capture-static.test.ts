@@ -107,6 +107,25 @@ describe("capture — a static deliverable IS its own review image", () => {
     expect(c?.detail).toContain("1200x675");
   });
 
+  it("says WHY it read no title, instead of inventing one from the commissioned text", async () => {
+    // A png has no DOM. Reading a title out of it would mean OCR — a layer of uncertainty
+    // nothing in the record accounts for — and copying `angle.confirmedTakeaway` in as a
+    // stand-in would make the divergence detector compare a string with itself: guaranteed
+    // silence, presented as having looked. The honest answer is an absent title and a
+    // recorded reason.
+    const r = await capture({
+      artifactPath: staticPngAt("titleless.png", 1200, 675),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-title"),
+      id: "e1",
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(r.value.images[0]!.titleSource).toBe("static-image");
+    expect(r.value.images[0]!.renderedTitle).toBeUndefined();
+    expect("renderedTitle" in r.value.images[0]!).toBe(false);
+  });
+
   it("follows the channel: a social-vertical static is checked against 1080x1920", async () => {
     const r = await capture({
       artifactPath: staticPngAt("landscape-on-vertical.png", 1200, 675),
