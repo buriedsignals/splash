@@ -1016,3 +1016,86 @@ test("a long engine dump is bounded from the END, so the reason a producer print
   // And it SAYS it was cut, so nobody reads a tail as if it were the whole story.
   expect(bounded.startsWith("…")).toBe(true);
 });
+
+// --- the verification chain, carried by advance() -----------------------------------------
+//
+// capture and review are DETERMINISTIC steps, so the same `advance` that orients, proposes,
+// produces and delivers is what runs them. Before this, a produced artifact went straight to
+// deliver and the whole of lib/verify had no production caller at all.
+test("advance() carries capture then review on the road to a requested delivery", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-driver-verify-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  let run: RunManifest = {
+    runId: "verify-chain",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Premiums rose in both cantons",
+          altInsight: "The adult premium rose in both cantons, 2015 to 2024.",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            {
+              id: "slope",
+              nativeType: "slope",
+              engine: "chart-native",
+              format: "static" as const,
+              why: "two points in time",
+            },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+
+  run = await advance(run, runDir, NEUTRAL_DECOR); // produce
+  expect(run.elements[0]!.artifact).toBeDefined();
+  run = {
+    ...run,
+    elements: [
+      { ...run.elements[0]!, delivery: { requested: ["zip"], delivered: [] } },
+    ],
+  };
+
+  // A requested delivery does not reach `deliver`: the artifact owes the chain first.
+  expect(nextActions(run)).toEqual(["capture"]);
+  let step = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(step.failure).toBeUndefined();
+  expect(step.ran).toBe("capture");
+  run = step.run;
+  expect(run.elements[0]!.capture!.images).toHaveLength(1);
+
+  expect(nextActions(run)).toEqual(["review"]);
+  step = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(step.failure).toBeUndefined();
+  expect(step.ran).toBe("review");
+  run = step.run;
+  expect(run.elements[0]!.review!.reviewer!.independentSemanticReview).toBe(
+    "unavailable",
+  );
+
+  // …and it stops at the preview, which is where the human turn begins.
+  expect(nextActions(run)).toEqual(["preview"]);
+}, 300_000);

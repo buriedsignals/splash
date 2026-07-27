@@ -54,8 +54,27 @@ export type ReviewRequest = {
   reviewedProvenanceHash: string;
   /** The destination the DELIVERY was accepted for. A still taken elsewhere is not proof. */
   acceptedDestinationId: string;
+  /** Why nothing could be captured, when nothing could. It becomes the EVIDENCE of the
+   *  `no-capture` finding: "there is no rendered evidence" and "there is no rendered evidence
+   *  BECAUSE this format's frames cannot be extracted yet" are different things to a
+   *  journalist deciding whether to override. */
+  captureUnavailable?: string;
   adapter?: ReviewerAdapter;
 };
+
+// The criteria a review is conducted against, shared by every caller so the same defect is
+// judged against the same list wherever it is found (#9: "shared review rubric and source
+// policy"). Wording is journalist-facing: it travels to a reviewer and, through the record,
+// into what a newsroom reads.
+export const DEFAULT_REVIEW_RUBRIC: readonly string[] = [
+  "source: every figure is attributed to the source the run declared, and that attribution is real",
+  "accessibility: the alternative description states the insight, not the chart's structure (WCAG 1.1.1)",
+  "title-fidelity: the title states something the visual actually shows",
+  "data-fidelity: every claim in the furniture is supported by the data behind it",
+  "furniture: title, unit, source and credit are present, visible, and inside the published component",
+  "viewport: the render represents the container this deliverable publishes into",
+  "interaction: an interaction the format requires works at every reviewed breakpoint",
+];
 
 const MECHANICAL_REVIEWER = { name: "lib/verify/mechanical", version: "1.0.0" };
 
@@ -130,7 +149,7 @@ function findingsFromEvidence(req: ReviewRequest): Finding[] {
         criterion: "provenance",
         summary:
           "nothing was captured — there is no rendered evidence to review",
-        evidence: [],
+        evidence: req.captureUnavailable ? [req.captureUnavailable] : [],
         provenance: "mechanical",
       }),
     );

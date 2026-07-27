@@ -13,6 +13,7 @@ import { deliver } from "./deliver";
 import { orient } from "./orient";
 import { propose } from "./propose";
 import { produce } from "./produce";
+import { captureStep, reviewStep } from "./verify";
 
 // How much of a refusal the ledger keeps. A manifest is persisted JSON that accumulates events,
 // so the message is bounded — but bounded from the END, not the start.
@@ -147,6 +148,31 @@ export async function advanceStep(
       // records the bounded failure event directly.
       return refused("produce", result.message, live.id);
     }
+    // The verification chain (lib/verify, wired here). Deterministic, one per advance, exactly
+    // like produce: the artifact is measured at its publication container, the measurements
+    // become severity-bearing findings, and the deliverable is presented before anyone is
+    // asked to approve it. `approve` itself is NOT here — it is a human turn, and it falls
+    // through to the `default:` below with confirm-angle and choose-form.
+    case "capture": {
+      if (!live) return { run, ran: null };
+      const result = await captureStep(run, live, runDir);
+      if (result.ok)
+        return {
+          run: { ...run, elements: withLive(result.value) },
+          ran: "capture",
+        };
+      return refused("capture", result.message, live.id);
+    }
+    case "review": {
+      if (!live) return { run, ran: null };
+      const result = await reviewStep(run, live, runDir);
+      if (result.ok)
+        return {
+          run: { ...run, elements: withLive(result.value) },
+          ran: "review",
+        };
+      return refused("review", result.message, live.id);
+    }
     case "deliver": {
       if (!live) return { run, ran: null };
       const result = await deliver(run, live, runDir, decor);
@@ -158,7 +184,7 @@ export async function advanceStep(
       return refused("deliver", result.message, live.id);
     }
     default:
-      // confirm-angle / choose-form / confirm-aspect / show / [] are human turns
+      // confirm-angle / choose-form / confirm-aspect / approve / show / [] are human turns
       return { run, ran: null };
   }
 }
