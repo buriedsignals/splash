@@ -36,6 +36,15 @@ function makeProducibleRun(): {
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // The CSV this test writes into its own run dir is a `local` source — the file the
+    // journalist brought. produce() refuses an undeclared run outright ("the class of a source
+    // is declared, never guessed"), and it is right to: since the source policy landed, the
+    // declared credit is RENDERED into the frames this proof measures, so a fixture with no
+    // ledger is a fixture asking for a video crediting nobody.
+    sources: {
+      mode: "real" as const,
+      data: { kind: "local" as const, label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
