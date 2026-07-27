@@ -38,3 +38,30 @@ qui dit d'où il vient (le ledger, comme la boucle) et ce que fait `produce.ts` 
 déclaré. La charge utile exacte du README a été rejouée à travers `bun lib/host/cli.ts verb render`
 et le PNG rendu porte bien « Source: Relevés cantonaux 2024 » — l'exemple est vérifié, pas
 seulement corrigé.
+
+---
+
+## 2. La CLI de production ne recevait pas le probe browser *(fermé)*
+
+`lib/newsroom/probe.ts` a gagné `probeRemotionBrowser` et `lib/newsroom/readiness.ts` l'appelle
+pour toute capacité dont `criticalDeps.packages` contient `"remotion"` — mais seul le chemin de la
+**page** `install/preflight` en profitait. La CLI de production `skills/splash/src/preflight.ts`
+était hors du périmètre de ce slice, et son propre §5 « Risques assumés » le nomme. Vérifié :
+`preflight.ts` importait bien `defaultResolveDep`/`isSet`/`parseEnvFile` du probe partagé, et pas
+`probeRemotionBrowser` — le résidu était exact.
+
+Ce qui rend le trou coûteux : `preflightFindings` est le gate qui tourne **juste avant la
+production** (`produce-all.ts:160`, fail-fast en langue journaliste). C'est précisément là que
+l'incident se paie — la résolution de paquet répond « installé » pendant qu'un téléchargement
+interrompu a laissé le headless-shell à moitié extrait, et le rendu vidéo meurt en plein produce
+avec un dump de sous-process illisible. La page d'install le voyait, le gate de production non.
+
+Fait : `PreflightOpts` gagne un `probeBrowser?` injectable (défaut = le vrai
+`probeRemotionBrowser`, jamais une seconde implémentation), et `preflightFindings` pousse un
+finding `deps` — donc statut **red**, un problème d'install et pas de clé — quand le probe ne
+répond pas `ready`. Deux choix de portée, tous deux copiés de `readiness.ts` pour que les deux
+consommateurs ne puissent pas diverger : le probe ne tourne **que** si `criticalDeps.packages`
+contient `"remotion"` (scrolly, react+vite, n'est pas concerné), et **seulement** si tous les
+paquets résolvent — un `remotion` non résolu se répare par un `bun install`, et empiler l'ordre
+`bunx remotion browser ensure` par-dessus donnerait deux commandes pour un seul problème.
+6 tests, dont les deux bornes négatives (moteur sans vidéo, paquet manquant).

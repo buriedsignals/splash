@@ -174,3 +174,8 @@ but n'est pas expliqué est une étape qu'on saute) :
 Voir le rapport final de la session pour la section `## Risques assumés` complète (granularité
 capacité-vs-format, pas de check de version Remotion, la CLI de production `skills/splash/src/
 preflight.ts` ne reçoit pas encore le probe browser).
+
+> **Mise à jour 2026-07-27 :** le dernier de ces risques est **fermé** — `preflightFindings`
+> appelle désormais le même `probeRemotionBrowser`, sous la même condition
+> (`criticalDeps.packages` contient `"remotion"`). Voir
+> `2026-07-27-residual-sweep-design.md` §2.

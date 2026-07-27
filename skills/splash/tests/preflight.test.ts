@@ -57,6 +57,88 @@ describe("preflightFindings", () => {
     );
   });
 
+  // The same incident readiness.ts's probe was written for, on the OTHER consumer: a stalled
+  // fetch leaves a partial download unextracted while `remotion` itself still resolves, and
+  // every dependent video render then dies mid-production with an unreadable subprocess dump.
+  // Package resolution cannot see it, so the production-time gate has to ask the filesystem.
+  const browserReady = () => ({
+    status: "ready" as const,
+    executablePath: "/x/shell",
+  });
+  const browserMissing = () => ({
+    status: "missing" as const,
+    executablePath: "/x/shell",
+  });
+
+  it("should flag chart-native's Remotion browser when it is missing though every package resolves", () => {
+    const findings = preflightFindings("chart-native", {
+      env: ALL_SET,
+      resolveDep: resolves,
+      probeBrowser: browserMissing,
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0].kind).toBe("deps");
+    expect(findings[0].message).toContain("remotion browser ensure");
+    expect(findings[0].message).toContain("skills/chart-native");
+  });
+
+  it("should flag map-native's Remotion browser too — the probe follows the dep, not the engine", () => {
+    const findings = preflightFindings("map-native", {
+      env: ALL_SET,
+      resolveDep: resolves,
+      probeBrowser: browserMissing,
+    });
+    expect(
+      findings.filter((f) => f.message.includes("remotion browser ensure")),
+    ).toHaveLength(1);
+  });
+
+  it("should stay clean when the browser is there", () => {
+    expect(
+      preflightFindings("chart-native", {
+        env: ALL_SET,
+        resolveDep: resolves,
+        probeBrowser: browserReady,
+      }),
+    ).toEqual([]);
+  });
+
+  it("should not probe the browser for an engine that does not render video", () => {
+    // scrolly's criticalDeps carry react+vite, no remotion: a missing headless shell is not
+    // its problem, and reporting it would send a journalist to fix an unrelated install.
+    expect(
+      preflightFindings("scrolly", {
+        env: ALL_SET,
+        resolveDep: resolves,
+        probeBrowser: browserMissing,
+      }),
+    ).toEqual([]);
+  });
+
+  it("should say `bun install` rather than the browser when remotion itself is missing", () => {
+    // One instruction at a time: an unresolved package is fixed by an install, and the browser
+    // question cannot even be asked meaningfully until the package it belongs to is there.
+    const findings = preflightFindings("chart-native", {
+      env: ALL_SET,
+      resolveDep: neverResolves,
+      probeBrowser: browserMissing,
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0].message).toContain("bun install");
+    expect(findings[0].message).not.toContain("remotion browser ensure");
+  });
+
+  it("should be red on a missing browser — an install problem, not a key problem", () => {
+    const s = enginePreflightStatus("chart-native", {
+      env: ALL_SET,
+      resolveDep: resolves,
+      probeBrowser: browserMissing,
+      now: "2026-07-27T12:00:00Z",
+    });
+    expect(s.status).toBe("red");
+    expect(s.reason).toContain("remotion browser ensure");
+  });
+
   it("should treat an empty-string env var as missing", () => {
     const findings = preflightFindings("dw-chart", {
       env: { DATAWRAPPER_API_TOKEN: "  " },
@@ -118,7 +200,8 @@ describe("installer parity", () => {
     // which is precisely why this parity is asserted against it rather than against a list.
     const credentials: Record<string, string> = {};
     for (const cap of Object.values(NEWSROOM_CAPABILITIES))
-      for (const field of cap.settingsFields ?? []) credentials[field.name] = "x";
+      for (const field of cap.settingsFields ?? [])
+        credentials[field.name] = "x";
     const writtenNames = new Set(
       Object.keys(
         envUpdates({

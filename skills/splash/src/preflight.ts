@@ -10,9 +10,11 @@ import {
   engineCapabilities,
 } from "../../../lib/newsroom/capabilities";
 import {
+  type BrowserProbeResult,
   defaultResolveDep,
   isSet,
   parseEnvFile,
+  probeRemotionBrowser,
 } from "../../../lib/newsroom/probe";
 import type { Producer } from "./producer-spec";
 
@@ -36,6 +38,11 @@ export interface PreflightFinding {
 export interface PreflightOpts {
   env?: Record<string, string | undefined>;
   resolveDep?: (pkg: string, fromDir: string) => boolean;
+  /** Is a fully extracted Remotion headless-shell browser present for that skill dir? Runs
+   *  only for an engine whose criticalDeps carry "remotion" — the same gate
+   *  lib/newsroom/readiness.ts applies, and the same probe. Defaults to a real filesystem
+   *  stat; injected by tests. */
+  probeBrowser?: (fromDir: string) => BrowserProbeResult;
 }
 
 // The engine half of the newsroom capability registry, in this module's original shape. The
@@ -140,6 +147,26 @@ export function preflightFindings(
           `${producer}'s dependencies are not installed (${missing.join(", ")} missing) — ` +
           `run \`bun install\` in skills/${req.criticalDeps.fromSkillDir}, then retry`,
       });
+    } else if (req.criticalDeps.packages.includes("remotion")) {
+      // The half of "installed" package resolution cannot see: a stalled fetch leaves a
+      // partial download unextracted while `remotion` itself resolves fine, and the video
+      // render then dies mid-production with an unreadable subprocess dump — the incident
+      // lib/newsroom/probe.ts was written for. Only the install/preflight PAGE consulted it;
+      // this gate, the one that runs immediately before production, did not (runtime-readiness
+      // design spec §5, named there as an accepted risk). Same probe, not a second opinion.
+      //
+      // Gated on the packages resolving, exactly like readiness.ts: an unresolved `remotion`
+      // is fixed by an install, and stacking a browser instruction on top of it would hand the
+      // journalist two commands for one problem.
+      const probeBrowser = opts.probeBrowser ?? probeRemotionBrowser;
+      if (probeBrowser(fromDir).status !== "ready")
+        findings.push({
+          kind: "deps",
+          message:
+            `${producer}'s video renderer needs its Remotion browser, which looks missing or ` +
+            `half-downloaded — run \`bunx remotion browser ensure\` in ` +
+            `skills/${req.criticalDeps.fromSkillDir}, then retry`,
+        });
     }
   }
 
