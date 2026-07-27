@@ -25,6 +25,58 @@ async function offline<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
+// Bounded time (docs/superpowers/specs/2026-07-26-bounded-time-design.md): a provider that
+// accepts the connection and never answers is the class this closes. `base` is a test-only seam
+// (same convention as lib/delivery/adapters/cloudflare-pages.ts's `cf()`) so the real hang comes
+// from an actual server, not a mocked clock or a fetch stub.
+describe("verify* against a real hung endpoint", () => {
+  function hungServer() {
+    return Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch: () => new Promise<Response>(() => {}), // accepts, never answers
+    });
+  }
+
+  it("refuses within the configured bound instead of hanging, and reads as unreachable — never as an invalid key", async () => {
+    const server = hungServer();
+    try {
+      const base = `http://127.0.0.1:${server.port}`;
+      const start = Date.now();
+      const results = await Promise.all([
+        verifyMapTiler("some-key", 150, base),
+        verifyDatawrapper("some-token", 150, base),
+        verifyCloudflare("tok", "acct", 150, base),
+        verifyAnthropic("sk-ant-some", 150, base),
+      ]);
+      expect(Date.now() - start).toBeLessThan(2_000);
+      // null is the tri-state's "could not reach" — the honest bucket. `false` would mean the
+      // provider actively rejected the credential, which is the lie a hung endpoint must not tell.
+      expect(results).toEqual([null, null, null, null]);
+    } finally {
+      server.stop(true);
+    }
+  }, 3_000);
+
+  it("propagates as VerifyOutcome 'unreachable' through verifyCapability, not 'rejected'", async () => {
+    const server = hungServer();
+    try {
+      const base = `http://127.0.0.1:${server.port}`;
+      const start = Date.now();
+      const outcome = await verifyCapability(
+        "dw-chart",
+        { DATAWRAPPER_API_TOKEN: "tok" },
+        150,
+        base,
+      );
+      expect(Date.now() - start).toBeLessThan(2_000);
+      expect(outcome).toBe("unreachable");
+    } finally {
+      server.stop(true);
+    }
+  }, 3_000);
+});
+
 describe("verify* (moved here from install/configurator-core.ts, tri-state intact)", () => {
   it("returns null — unreachable, NOT false — when the provider cannot be reached", async () => {
     await offline(async () => {

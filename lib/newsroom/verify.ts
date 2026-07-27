@@ -13,16 +13,34 @@
 //   null  — the provider could not be REACHED (offline, filtering proxy, corporate TLS
 //           interception). This must NEVER be shown as invalid: a valid key behind a proxy
 //           would be, and the newsroom would be blocked for life.
+import { fetchBounded } from "../core/publishers";
 import { NEWSROOM_CAPABILITIES } from "./capabilities";
 
 /** The decor's own vocabulary for a check's verdict — what `lastVerified.result` records. */
 export type VerifyOutcome = "ok" | "rejected" | "unreachable";
 
-export async function verifyMapTiler(key: string): Promise<boolean | null> {
+// Bounded time (docs/superpowers/specs/2026-07-26-bounded-time-design.md): these four `fetch`
+// calls were the residual the delivery-substrate pass left open — same class (a provider that
+// accepts the connection and never answers), different call site. They reuse `fetchBounded`
+// rather than DEFAULT_NETWORK_TIMEOUT_MS: that default is sized for a background publish nobody
+// is watching. This is the ONE call site in the codebase a human sits in front of — the setup
+// page's "Check my keys" button — and a shorter bound serves that human better: a credential
+// check round-trips in low hundreds of ms in practice, so 8s is already generous slack for a slow
+// or congested connection, while capping how long a non-technical journalist stares at a spinner
+// before the honest "couldn't reach it" reads on screen instead of the full 20s control budget.
+const VERIFY_TIMEOUT_MS = 8_000;
+
+export async function verifyMapTiler(
+  key: string,
+  timeoutMs: number = VERIFY_TIMEOUT_MS,
+  base: string = "https://api.maptiler.com",
+): Promise<boolean | null> {
   if (!key.trim()) return false;
   try {
-    const r = await fetch(
-      `https://api.maptiler.com/maps/streets-v2/style.json?key=${encodeURIComponent(key.trim())}`,
+    const r = await fetchBounded(
+      `${base}/maps/streets-v2/style.json?key=${encodeURIComponent(key.trim())}`,
+      {},
+      timeoutMs,
     );
     return r.ok;
   } catch {
@@ -32,12 +50,16 @@ export async function verifyMapTiler(key: string): Promise<boolean | null> {
 
 export async function verifyDatawrapper(
   token: string,
+  timeoutMs: number = VERIFY_TIMEOUT_MS,
+  base: string = "https://api.datawrapper.de",
 ): Promise<boolean | null> {
   if (!token.trim()) return false;
   try {
-    const r = await fetch("https://api.datawrapper.de/v3/me", {
-      headers: { Authorization: `Bearer ${token.trim()}` },
-    });
+    const r = await fetchBounded(
+      `${base}/v3/me`,
+      { headers: { Authorization: `Bearer ${token.trim()}` } },
+      timeoutMs,
+    );
     return r.ok;
   } catch {
     return null;
@@ -52,12 +74,15 @@ export async function verifyDatawrapper(
 export async function verifyCloudflare(
   token: string,
   accountId: string,
+  timeoutMs: number = VERIFY_TIMEOUT_MS,
+  base: string = "https://api.cloudflare.com",
 ): Promise<boolean | null> {
   if (!token.trim() || !accountId.trim()) return false;
   try {
-    const r = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId.trim())}/pages/projects`,
+    const r = await fetchBounded(
+      `${base}/client/v4/accounts/${encodeURIComponent(accountId.trim())}/pages/projects`,
       { headers: { Authorization: `Bearer ${token.trim()}` } },
+      timeoutMs,
     );
     if (!r.ok) return false;
     const body = (await r.json()) as { success?: boolean };
@@ -67,12 +92,20 @@ export async function verifyCloudflare(
   }
 }
 
-export async function verifyAnthropic(key: string): Promise<boolean | null> {
+export async function verifyAnthropic(
+  key: string,
+  timeoutMs: number = VERIFY_TIMEOUT_MS,
+  base: string = "https://api.anthropic.com",
+): Promise<boolean | null> {
   if (!key.trim()) return false;
   try {
-    const r = await fetch("https://api.anthropic.com/v1/models", {
-      headers: { "x-api-key": key.trim(), "anthropic-version": "2023-06-01" },
-    });
+    const r = await fetchBounded(
+      `${base}/v1/models`,
+      {
+        headers: { "x-api-key": key.trim(), "anthropic-version": "2023-06-01" },
+      },
+      timeoutMs,
+    );
     return r.ok;
   } catch {
     return null;
@@ -80,7 +113,15 @@ export async function verifyAnthropic(key: string): Promise<boolean | null> {
 }
 
 type CredentialValues = Record<string, string | undefined>;
-type CapabilityVerifier = (values: CredentialValues) => Promise<boolean | null>;
+// `timeoutMs`/`base` are the same test-only override pair each verify* function takes — threaded
+// through so verifyCapability can be proven against a real hung server too, not just the
+// functions it delegates to. Undefined in every production call site: each verifier falls back to
+// its own default budget and its own provider host.
+type CapabilityVerifier = (
+  values: CredentialValues,
+  timeoutMs?: number,
+  base?: string,
+) => Promise<boolean | null>;
 
 function first(values: CredentialValues, ...names: string[]): string {
   for (const n of names) {
@@ -96,18 +137,30 @@ function first(values: CredentialValues, ...names: string[]): string {
 // embed-s3 is absent on purpose: a HEAD against an arbitrary S3-compatible endpoint is not a
 // credential check, and guessing one would produce a verdict its adapter does not share.
 const VERIFIERS: Record<string, CapabilityVerifier> = {
-  "dw-chart": (v) => verifyDatawrapper(first(v, "DATAWRAPPER_API_TOKEN")),
-  "map-dw": (v) => verifyDatawrapper(first(v, "DATAWRAPPER_API_TOKEN")),
+  "dw-chart": (v, timeoutMs, base) =>
+    verifyDatawrapper(first(v, "DATAWRAPPER_API_TOKEN"), timeoutMs, base),
+  "map-dw": (v, timeoutMs, base) =>
+    verifyDatawrapper(first(v, "DATAWRAPPER_API_TOKEN"), timeoutMs, base),
   // Either mirror name answers: the two hold the same MapTiler key (Vite reads one, Remotion the
   // other), which is exactly how the capability declares its env group.
-  "map-native": (v) =>
-    verifyMapTiler(first(v, "VITE_MAPTILER_KEY", "REMOTION_MAPTILER_KEY")),
-  scrolly: (v) =>
-    verifyMapTiler(first(v, "VITE_MAPTILER_KEY", "REMOTION_MAPTILER_KEY")),
-  "embed-cloudflare": (v) =>
+  "map-native": (v, timeoutMs, base) =>
+    verifyMapTiler(
+      first(v, "VITE_MAPTILER_KEY", "REMOTION_MAPTILER_KEY"),
+      timeoutMs,
+      base,
+    ),
+  scrolly: (v, timeoutMs, base) =>
+    verifyMapTiler(
+      first(v, "VITE_MAPTILER_KEY", "REMOTION_MAPTILER_KEY"),
+      timeoutMs,
+      base,
+    ),
+  "embed-cloudflare": (v, timeoutMs, base) =>
     verifyCloudflare(
       first(v, "CLOUDFLARE_API_TOKEN"),
       first(v, "CLOUDFLARE_ACCOUNT_ID"),
+      timeoutMs,
+      base,
     ),
 };
 
@@ -127,9 +180,11 @@ export function capabilityVerifiable(id: string): boolean {
 export async function verifyCapability(
   id: string,
   values: CredentialValues,
+  timeoutMs?: number,
+  base?: string,
 ): Promise<VerifyOutcome | undefined> {
   if (!capabilityVerifiable(id)) return undefined;
-  const result = await VERIFIERS[id]!(values);
+  const result = await VERIFIERS[id]!(values, timeoutMs, base);
   if (result === null) return "unreachable";
   return result ? "ok" : "rejected";
 }

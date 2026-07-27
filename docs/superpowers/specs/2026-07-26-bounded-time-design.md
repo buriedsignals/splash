@@ -139,10 +139,25 @@ default n'est pas devenu une régression.
   sur progression. Mitigé par le budget upload séparé (§3.2). Réel, jugé suffisant : fermer la
   classe "aucun budget du tout" prime sur l'affiner en timeout glissant, qui demanderait un suivi de
   flux hors scope de cette passe.
-- **`lib/newsroom/verify.ts` reste sans budget** — même classe exacte (4 `fetch` vers MapTiler,
-  Datawrapper, Cloudflare, Anthropic, aucun borné), mais `lib/newsroom/**` est explicitement hors
-  périmètre de fichiers de cette tâche (§2). Trouvé, non touché, à signaler comme suite — même
-  remède (`fetchBounded`), même défauts, un sous-projet différent.
+- **`lib/newsroom/verify.ts` — FERMÉ dans une passe suivante, même branche.** Les 4 `fetch` (MapTiler,
+  Datawrapper, Cloudflare, Anthropic) passent maintenant par `fetchBounded`, avec un budget dédié
+  plus court que `DEFAULT_NETWORK_TIMEOUT_MS` : `VERIFY_TIMEOUT_MS = 8_000` (interne à `verify.ts`,
+  pas une troisième constante exportée par `publishers.ts`). Raison de descendre sous 20s : c'est
+  le seul site d'appel du dépôt où un humain regarde l'écran — le bouton « Check my keys » de la
+  page de setup — et un check de credential fait un aller-retour en quelques centaines de ms en
+  pratique ; 8s reste une marge large pour une connexion lente tout en bornant le temps qu'un
+  journaliste non-technique fixe un spinner avant qu'un « injoignable » honnête ne s'affiche.
+  Chaque `verifyXxx` gagne un `base` optionnel réservé aux tests (même convention que `cf()` dans
+  `cloudflare-pages.ts`) et un `timeoutMs` optionnel — tous deux avec défauts de production
+  inchangés, aucun appelant existant (`install/preflight/server.ts`,
+  `install/configurator-core.ts`) n'a dû changer. Le `try/catch` déjà en place dans chaque
+  fonction absorbait déjà toute erreur en `null` — brancher `fetchBounded` a suffi à faire
+  atterrir un timeout dans le SEUL bucket honnête : `NetworkTimeoutError` → `catch` → `null` →
+  `verifyCapability` traduit en `"unreachable"`, jamais `"rejected"`. Preuve :
+  `lib/newsroom/verify.test.ts`, describe "verify* against a real hung endpoint" — un vrai
+  `Bun.serve` qui accepte et ne répond jamais, budget de test à 150ms, assertion sur les 4
+  fonctions ET sur `verifyCapability("dw-chart", …)` (le chemin complet jusqu'au `VerifyOutcome`),
+  refus sous la fenêtre bornée avec le résultat `null`/`"unreachable"`, jamais `false`/`"rejected"`.
 - **`resolveAliasUrl` n'a pas de preuve live dédiée** contre un serveur accroché — seule sa jumelle
   `verifyServed` (formule de plafonnement identique, revue de code) l'a. `resolveAliasUrl` appelle
   `cf()` qui EST testée contre un serveur accroché (via l'override `base`) ; ce qui n'est pas
