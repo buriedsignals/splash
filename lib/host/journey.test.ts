@@ -14,6 +14,11 @@ async function cli(
     stdin: new TextEncoder().encode(stdin),
     stdout: "pipe",
     stderr: "pipe",
+    // No journalist is sitting in front of a test process, so the spine prints the path
+    // instead of launching a viewer — the same flag a host that presents the deliverable
+    // itself sets (lib/loop/preview.ts). It is the run's environment, not a stub: the
+    // presentation is performed for real and recorded truthfully as what it was.
+    env: { ...process.env, SPLASH_NO_VIEWER: "1" },
   });
   const out = await new Response(p.stdout).text();
   const code = await p.exited;
@@ -142,13 +147,15 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
   // `advance`, because there was no command that could create a run and none that could record
   // an angle. A host outside JavaScript could therefore drive a run it had no way to begin.
   //
-  // Each of the four new commands is NECESSARY here, which is what stops any of them from going
-  // dead again: without `init` there is no run, without `confirm-angle` the loop stops at step 2
-  // of 6, without the offer in `state` the phrasing cannot be written, and without `phrase` the
-  // manifest refuses the choice.
+  // Each command is NECESSARY here, which is what stops any of them from going dead again:
+  // without `init` there is no run, without `confirm-angle` the loop stops at step 2 of 6,
+  // without the offer in `state` the phrasing cannot be written, without `phrase` the manifest
+  // refuses the choice — and without capture, review, preview and `approve`, the artifact
+  // cannot be PUBLISHED at all. That last one is asserted directly (step 9b): a produced visual
+  // nobody has approved is refused by deliver() itself, not merely routed around.
   //
   // The publisher is `zip` — offline, no credentials — so the proof needs no account anywhere.
-  it("init → orient → angle → propose → phrase → choose → produce → deliver", async () => {
+  it("init → orient → angle → propose → phrase → choose → produce → capture → review → preview → approve → deliver", async () => {
     const dir = mkdtempSync(join(tmpdir(), "host-journey-full-"));
     const src = join(dir, "premiums.csv");
     writeFileSync(
@@ -305,11 +312,111 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
     ).toEqual(["show"]);
 
     // 9. REQUEST-DELIVERY — where it goes. A static image is handed over as a package.
+    //    It does NOT make `deliver` valid: the road to publication starts at the verification
+    //    chain, and the answer says so in the same breath as the decision.
     const asked = await cli(["request-delivery", "--run", dir]);
     expect(asked.code).toBe(0);
     expect(
       (asked.body as { value: { requested: string[] } }).value,
-    ).toMatchObject({ requested: ["zip"], nextActions: ["deliver"] });
+    ).toMatchObject({ requested: ["zip"], nextActions: ["capture"] });
+
+    // 9b. DELIVERY IS UNREACHABLE WITHOUT THE CHAIN. This is the property the whole slice
+    //     exists for, so it is asserted before anything else runs: a produced artifact that
+    //     nobody has captured, reviewed, seen or approved cannot be published, and it is not
+    //     the router alone that says so — deliver() itself refuses. `verb publish` is refused
+    //     at this façade, so the only path to publication is `advance`, and here it does the
+    //     next thing that is actually valid: it captures.
+    const tooEarly = await cli(["advance", "--run", dir]);
+    expect(tooEarly.code).toBe(0);
+    expect((tooEarly.body as { value: { ran: string } }).value.ran).toBe(
+      "capture",
+    );
+    const beforeApproval = JSON.parse(
+      readFileSync(join(dir, "run.json"), "utf8"),
+    ) as RunManifest;
+    expect(beforeApproval.elements[0]!.delivery!.delivered).toEqual([]);
+    expect(beforeApproval.elements[0]!.approved).toBeUndefined();
+
+    // 9c. CAPTURE, measured at the container this deliverable publishes into. A REAL
+    //     measurement of a REAL file: the png the loop rendered, read at its own IHDR.
+    const captured = beforeApproval.elements[0]!.capture!;
+    expect(captured.images).toHaveLength(1);
+    const image = captured.images[0]!;
+    expect(image.artifactSha256).toBe(
+      beforeApproval.elements[0]!.artifact!.sha256,
+    );
+    expect(image.destinationId).toBe("channel:article-web");
+    expect(image.cssViewport).toEqual({ width: 1200, height: 675 });
+    expect(
+      captured.checks.find((c) => c.id === "capture:size-matches-destination")!
+        .outcome,
+    ).toBe("pass");
+
+    // 9d. REVIEW — the facts become findings, with the reviewer named for what it is.
+    const reviewedStep = await cli(["advance", "--run", dir]);
+    expect(reviewedStep.code).toBe(0);
+    expect((reviewedStep.body as { value: { ran: string } }).value.ran).toBe(
+      "review",
+    );
+    expect(
+      (reviewedStep.body as { value: { nextActions: string[] } }).value
+        .nextActions,
+    ).toEqual(["preview"]);
+
+    // 9e. PREVIEW — issue #3, mechanically: the deliverable is presented before anyone is
+    //     asked to approve it, and the record says which bytes were shown and how.
+    const previewed = await cli(["advance", "--run", dir]);
+    expect(previewed.code).toBe(0);
+    expect((previewed.body as { value: { ran: string } }).value.ran).toBe(
+      "preview",
+    );
+    expect(
+      (previewed.body as { value: { nextActions: string[] } }).value.nextActions,
+    ).toEqual(["approve"]);
+
+    // 9f. THE HOST READS WHAT THE GATE WILL ASK FOR, from `state` — not from run.json.
+    const atTheGate = await cli(["state", "--run", dir]);
+    const verification = (
+      atTheGate.body as {
+        value: {
+          elements: {
+            gateState: string;
+            verification?: {
+              findings: { id: string; severity: string }[];
+              preview?: { presentedAs: string; deliverableSha256: string };
+              independentSemanticReview: string;
+              approval: { approvable: boolean; reasons: { code: string }[] };
+            };
+          }[];
+        };
+      }
+    ).value.elements[0]!.verification!;
+    expect(verification.findings).toEqual([]);
+    expect(verification.preview!.deliverableSha256).toBe(
+      beforeApproval.elements[0]!.artifact!.sha256,
+    );
+    // The absence of an independent semantic reviewer is RECORDED, never converted into a
+    // pass: no unpublished reporting leaves this machine, so nothing claims independence.
+    expect(verification.independentSemanticReview).toBe("unavailable");
+    expect(verification.approval.approvable).toBe(true);
+
+    // 9g. ADVANCE CANNOT PERFORM THE APPROVAL, and names who does.
+    const humanTurn = await cli(["advance", "--run", dir]);
+    expect(humanTurn.code).toBe(1);
+    expect((humanTurn.body as { message: string }).message).toContain(
+      "approve --run <dir>",
+    );
+
+    // 9h. APPROVE — the human decision, recorded against these exact bytes.
+    const approved = await cli(
+      ["approve", "--run", dir],
+      JSON.stringify({ actorLabel: "Yvan Pandelé" }),
+    );
+    expect(approved.code).toBe(0);
+    expect(
+      (approved.body as { value: { approved: string; nextActions: string[] } })
+        .value,
+    ).toEqual({ approved: "el1", nextActions: ["deliver"] });
 
     // 10. DELIVER.
     const delivered = await cli(["advance", "--run", dir]);
@@ -356,5 +463,25 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
     // The angle the host confirmed by flags is the title the run carries.
     expect(el.angle!.confirmedTakeaway).toBe(TAKEAWAY);
     expect(el.angle!.altInsight).toBe(ALT);
+
+    // And the sign-off document the approval points at is a real file, carrying what was
+    // approved and by whom — the durable evidence the gate leaves behind.
+    const signoff = JSON.parse(
+      readFileSync(join(dir, el.approved!.signoffPath), "utf8"),
+    ) as {
+      elementId: string;
+      artifactSha256: string;
+      actorLabel: string;
+      independentSemanticReview: string;
+    };
+    expect(signoff).toMatchObject({
+      elementId: "el1",
+      artifactSha256: el.artifact!.sha256,
+      actorLabel: "Yvan Pandelé",
+      independentSemanticReview: "unavailable",
+    });
+    expect(el.approved!.approvedProvenanceHash).toBe(
+      el.delivery!.delivered[0]!.deliveredProvenanceHash,
+    );
   }, 300_000);
 });
