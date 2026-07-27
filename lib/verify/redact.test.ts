@@ -61,6 +61,51 @@ function contaminatedSource(): ReviewerSource {
   };
 }
 
+describe("the rendered title is evidence, never a caller's claim", () => {
+  it("takes the title off the capture, so no caller can assert what was painted", () => {
+    const input = buildReviewerInput({
+      ...contaminatedSource(),
+      captures: [
+        {
+          ...captureRecord(),
+          renderedTitle: "Swiss cantons compared",
+          titleSource: "svg[role='img'][aria-label]",
+        },
+      ],
+    });
+    expect(input.renderedTitle).toBe("Swiss cantons compared");
+  });
+
+  it("reads the PRIMARY breakpoint — the container the deliverable publishes into", () => {
+    const input = buildReviewerInput({
+      ...contaminatedSource(),
+      captures: [
+        {
+          ...captureRecord(),
+          breakpoint: "narrow",
+          renderedTitle: "the narrow one",
+        },
+        {
+          ...captureRecord(),
+          breakpoint: "primary",
+          renderedTitle: "the published one",
+        },
+        {
+          ...captureRecord(),
+          breakpoint: "wide",
+          renderedTitle: "the wide one",
+        },
+      ],
+    });
+    expect(input.renderedTitle).toBe("the published one");
+  });
+
+  it("leaves the key absent when nothing was captured to read it from", () => {
+    const input = buildReviewerInput(contaminatedSource());
+    expect("renderedTitle" in input).toBe(false);
+  });
+});
+
 describe("buildReviewerInput — the reviewer sees the artifact, not the process", () => {
   it("carries the evidence a critique actually needs", () => {
     const input = buildReviewerInput(contaminatedSource());

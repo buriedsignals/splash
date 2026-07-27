@@ -11,6 +11,7 @@
 //     record never blends the two into an undifferentiated "reviewed" (#9).
 //  3. The absence of an independent reviewer is RECORDED, never converted into a pass.
 //     Silence is not evidence — the whole reason this layer exists.
+import { renderedTitleOf } from "./capture";
 import { makeFinding } from "./severity";
 import { detectTasteRisks } from "./taste";
 import {
@@ -219,6 +220,7 @@ function findingsFromEvidence(req: ReviewRequest): Finding[] {
  * which is the one thing this layer cannot afford.
  */
 export async function runReview(req: ReviewRequest): Promise<ReviewRecord> {
+  const renderedTitle = renderedTitleOf(req.source.captures);
   const mechanical = [
     ...findingsFromChecks(req.checks),
     ...findingsFromEvidence(req),
@@ -318,12 +320,13 @@ export async function runReview(req: ReviewRequest): Promise<ReviewRecord> {
     // The lane that is deliberately NOT graded: risks, with the measurement that raised
     // them, routed to the human sign-off. Kept in its own field so nothing can read a
     // taste risk as a cleared finding, or a cleared finding as a taste risk.
+    // The title comes off the CAPTURES, not off the request: the caller commissioned a
+    // title, the browser painted one, and only the second answers "what does this visual
+    // actually say". Same derivation buildReviewerInput uses, from the same function.
     tasteRisk: detectTasteRisks({
       captures: req.source.captures,
       confirmedTakeaway: req.source.confirmedTakeaway,
-      ...(req.source.renderedTitle
-        ? { renderedTitle: req.source.renderedTitle }
-        : {}),
+      ...(renderedTitle ? { renderedTitle } : {}),
     }),
     overrides: [],
     acknowledged: [],

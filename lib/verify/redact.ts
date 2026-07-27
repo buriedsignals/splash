@@ -14,6 +14,7 @@
 //     reviewed and what came back, without storing private reasoning.
 import { basename } from "node:path";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { renderedTitleOf } from "./capture";
 import type {
   CaptureRecord,
   EvidenceExtract,
@@ -35,9 +36,11 @@ export type ReviewerSource = {
   captures: CaptureRecord[];
   interactionResults: InteractionResult[];
   rubric: string[];
-  /** The title as actually RENDERED — artifact content, so it travels to the reviewer:
-   *  judging title-fidelity without the title would be judging the caller's intent. */
-  renderedTitle?: string;
+  // NOTE: there is deliberately no `renderedTitle` here. The title as RENDERED is artifact
+  // content, so it travels to the reviewer — but it is derived from `captures`, never
+  // declared by the caller. A caller able to state what was painted is a caller able to be
+  // wrong about it, and this codebase has already been burned by exactly that shape: a grep
+  // of a single-file bundle once "proved" a palette that was not the one on screen.
   // Below: present on the caller's side, never forwarded. Typed here so that dropping them
   // is a visible decision in this file rather than an accident of what the caller passed.
   runDir?: string;
@@ -52,6 +55,7 @@ export type ReviewerSource = {
 
 /** The reviewer's ONLY input. Built field by field: an unknown key cannot ride along. */
 export function buildReviewerInput(s: ReviewerSource): ReviewerInput {
+  const title = renderedTitleOf(s.captures);
   return {
     format: s.format,
     channel: s.channel,
@@ -79,9 +83,10 @@ export function buildReviewerInput(s: ReviewerSource): ReviewerInput {
       detail: i.detail,
     })),
     rubric: [...s.rubric],
-    // Conditional so an absent title is an ABSENT KEY: a `renderedTitle: undefined` would
-    // vanish across JSON and break the round-trip invariant (I6).
-    ...(s.renderedTitle ? { renderedTitle: s.renderedTitle } : {}),
+    // Derived from the same captures `renders` above is derived from — the whitelist stays a
+    // whitelist. Conditional so an absent title is an ABSENT KEY: a `renderedTitle:
+    // undefined` would vanish across JSON and break the round-trip invariant (I6).
+    ...(title ? { renderedTitle: title } : {}),
   };
 }
 

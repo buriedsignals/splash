@@ -294,10 +294,14 @@ describe("the lane reaches the review record, separated from the findings", () =
         altText: "a description",
         sourceName: "the newsroom",
         evidenceExtracts: [],
-        captures: [captureRecord({ markColours: ["#1b7f79", "#1d8a80"] })],
+        captures: [
+          captureRecord({
+            markColours: ["#1b7f79", "#1d8a80"],
+            renderedTitle: "Swiss cantons compared",
+          }),
+        ],
         interactionResults: [],
         rubric: [],
-        renderedTitle: "Swiss cantons compared",
       },
       checks: [],
       reviewedProvenanceHash: "prov-1",
@@ -309,5 +313,85 @@ describe("the lane reaches the review record, separated from the findings", () =
     for (const t of r.tasteRisk)
       expect(r.findings.some((f) => f.id === t.dimension)).toBe(false);
     expect(JSON.parse(JSON.stringify(r.tasteRisk))).toStrictEqual(r.tasteRisk);
+  });
+
+  it("fires the title detector from the CAPTURE alone — no caller supplies the title", async () => {
+    // The gap this closes: `renderedTitle` was declared on three types and assigned by
+    // nobody in production, so the divergence branch was structurally dead inside the loop.
+    // The title now travels on the evidence line, which means the loop's existing
+    // reviewStep — which already passes `captures: el.capture.images` — reaches it without
+    // a line of lib/loop changing.
+    const r = await runReview({
+      source: {
+        format: "interactive",
+        channel: "article-web",
+        confirmedTakeaway: TAKEAWAY,
+        unit: "CHF",
+        altText: "a description",
+        sourceName: "the newsroom",
+        evidenceExtracts: [],
+        captures: [captureRecord({ renderedTitle: "Swiss cantons compared" })],
+        interactionResults: [],
+        rubric: [],
+      },
+      checks: [],
+      reviewedProvenanceHash: "prov-1",
+      acceptedDestinationId: "channel:article-web",
+    });
+    const t = r.tasteRisk.find(
+      (x) => x.dimension === "title-takeaway-divergence",
+    );
+    expect(t).toBeDefined();
+    // The evidence names BOTH strings, so the editor reading the sign-off document can see
+    // what was painted next to what they confirmed — the whole point of routing it to a
+    // human instead of grading it.
+    expect(t!.evidence.join(" ")).toContain("Swiss cantons compared");
+    expect(t!.evidence.join(" ")).toContain(TAKEAWAY);
+  });
+
+  it("stays quiet when the capture shows the title IS the confirmed takeaway", async () => {
+    const r = await runReview({
+      source: {
+        format: "interactive",
+        channel: "article-web",
+        confirmedTakeaway: TAKEAWAY,
+        unit: "CHF",
+        altText: "a description",
+        sourceName: "the newsroom",
+        evidenceExtracts: [],
+        captures: [captureRecord({ renderedTitle: TAKEAWAY })],
+        interactionResults: [],
+        rubric: [],
+      },
+      checks: [],
+      reviewedProvenanceHash: "prov-1",
+      acceptedDestinationId: "channel:article-web",
+    });
+    expect(
+      r.tasteRisk.some((x) => x.dimension === "title-takeaway-divergence"),
+    ).toBe(false);
+  });
+
+  it("says nothing about the title of a static deliverable — a png has no text to read", async () => {
+    const r = await runReview({
+      source: {
+        format: "static",
+        channel: "article-web",
+        confirmedTakeaway: TAKEAWAY,
+        unit: "CHF",
+        altText: "a description",
+        sourceName: "the newsroom",
+        evidenceExtracts: [],
+        captures: [captureRecord({ titleSource: "static-image", marks: 0 })],
+        interactionResults: [],
+        rubric: [],
+      },
+      checks: [],
+      reviewedProvenanceHash: "prov-1",
+      acceptedDestinationId: "channel:article-web",
+    });
+    expect(
+      r.tasteRisk.some((x) => x.dimension === "title-takeaway-divergence"),
+    ).toBe(false);
   });
 });

@@ -608,6 +608,26 @@ export function captureDir(outDir: string, id: string): string {
   return dir;
 }
 
+/**
+ * The title these captures show, or none.
+ *
+ * The `primary` breakpoint wins: that is the container the deliverable actually publishes
+ * into, and it is the one a reader sees. The others stand in only when it carries nothing.
+ *
+ * One resolution, exported, so no caller builds a second subtly different one — the drift
+ * class this codebase has already paid for (manifest.ts:251-254 records the same rule for
+ * "the chosen option").
+ */
+export function renderedTitleOf(captures: CaptureRecord[]): string | undefined {
+  const primary = captures.find(
+    (c) => c.breakpoint === "primary" && c.renderedTitle?.trim(),
+  );
+  return (
+    primary?.renderedTitle ??
+    captures.find((c) => c.renderedTitle?.trim())?.renderedTitle
+  );
+}
+
 export function fileUrlOf(path: string): string {
   return pathToFileURL(resolve(path)).href;
 }
