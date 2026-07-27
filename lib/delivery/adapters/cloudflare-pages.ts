@@ -486,14 +486,12 @@ async function publishToPages(
     // The delivery proof: a 200 is not evidence the right bytes landed. Without this check no
     // outcome is recorded at all.
     //
-    // KNOWN GAP for a non-HTML artifact: Cloudflare Pages only auto-resolves "index.html" at a
-    // deploy's bare alias root. `stagedName` now staged the artifact under its real extension
-    // (index.png / index.mp4 for static/video), so the right bytes and content-type DO land on
-    // Cloudflare, but `url` alone will not address them — this verifyServed call (and the
-    // `outcome.url` returned below) will 404/refuse for a non-HTML format until the URL this
-    // adapter returns is taught to point at `${url}/${stagedName}` (or a Pages `_redirects`
-    // rule is added). Left as a follow-up rather than guessed at here — see
-    // docs/splash/proposal-brain-followups.md.
+    // Pages only auto-resolves "index.html" at a deployment's bare alias root, so this adapter
+    // serves the embed genre only — declared as `serves: ["interactive", "scrolly"]` below, and
+    // enforced by lib/loop/deliver.ts BEFORE any staging or deploy. A non-HTML artifact can no
+    // longer reach this line, which is why the URL returned here does not need to address a
+    // staged filename. If Pages ever has to serve assets, that is an addressing slice of its
+    // own (`${url}/${stagedName}` or a `_redirects` rule) — see the genre-routing spec §7.
     await verifyServed(
       url,
       servedMatcher(readFileSync(join(stageDir, stagedName), "utf8")),

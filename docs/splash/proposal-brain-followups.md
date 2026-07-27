@@ -28,11 +28,20 @@
   résolvable. Les trois adapters branchent sur un mapping partagé unique
   (`artifactMediaFor`, `lib/core/publishers.ts`) : `zip.ts` archive sous `index.<ext>`, `s3.ts`
   upload `<id>.<ext>` avec le bon content-type, `cloudflare-pages.ts` stage `index.<ext>`.
-  **Résidu cloudflare-pages** (documenté en commentaire à l'appel de `verifyServed`) : Cloudflare
-  Pages ne résout `index.html` qu'à la racine de l'alias — un artefact non-HTML est maintenant
+  ~~**Résidu cloudflare-pages** (documenté en commentaire à l'appel de `verifyServed`) :
+  Cloudflare Pages ne résout `index.html` qu'à la racine de l'alias — un artefact non-HTML est
   staged avec la bonne extension et le bon content-type, mais l'URL retournée par cet adapter ne
-  l'adresse pas encore (`${url}/index.png` ou une règle `_redirects` resterait à câbler). zip et
-  s3 sont pleinement corrigés ; cloudflare-pages est partiel (staging correct, adressage à finir).
+  l'adresse pas encore. zip et s3 sont pleinement corrigés ; cloudflare-pages est partiel.~~
+  **Fermé autrement** (spec `docs/superpowers/specs/2026-07-26-delivery-genre-routing-design.md`,
+  branche `feat/delivery-genre-routing`) : l'adressage n'a pas été câblé — le résidu a été retiré
+  par construction plutôt que fermé par un `${url}/index.png`. L'hébergement est devenu une
+  propriété du FORMAT (`deliveryGenreFor`, `lib/core/publishers.ts`) : `static`/`video` sont le
+  genre `file` (jamais hébergés — toujours routés vers le paquet zip portable par défaut,
+  `lib/delivery/routing.ts`), `interactive`/`scrolly` le genre `embed`. `Publisher.serves`
+  déclare que `embed-cloudflare` ne sert que l'embed, et `lib/loop/deliver.ts` refuse une
+  destination qui ne sert pas le format AVANT tout I/O. Un artefact non-HTML ne peut donc plus
+  atteindre l'appel `verifyServed` de `cloudflare-pages.ts` — l'adressage `${url}/${stagedName}`
+  reste vrai mais devient hors-scope (commentaire mis à jour sur place).
 
 ## Correctness — réels, non bloquants
 
