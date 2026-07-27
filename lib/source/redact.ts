@@ -82,9 +82,21 @@ export function assertNoPrivateLeak(
   ledger: SourceLedger,
   opts: { alsoRedact?: string[] } = {},
 ): void {
-  const text = (
-    typeof payload === "string" ? payload : (JSON.stringify(payload) ?? "")
-  ).toLowerCase();
+  let text: string;
+  if (typeof payload === "string") {
+    text = payload.toLowerCase();
+  } else {
+    // A payload that cannot be serialized cannot be inspected. Answering "no throw" would read
+    // as "clean", and answering with a leak message would report a leak that is not there — so
+    // the guard says exactly what happened and leaves the caller to fix the payload.
+    try {
+      text = (JSON.stringify(payload) ?? "").toLowerCase();
+    } catch (e) {
+      throw new Error(
+        `private leak check: the payload cannot be inspected (${(e as Error).message}) — a value that cannot be serialized cannot be cleared for publication`,
+      );
+    }
+  }
   if (text === "") return;
 
   for (const token of leakTokens(ledger, opts.alsoRedact ?? []))

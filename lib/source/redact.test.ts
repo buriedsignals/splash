@@ -91,3 +91,14 @@ test("should ignore a short path segment that would false-positive", () => {
   expect(() => assertNoPrivateLeak({ quarter: "q1" }, ledger)).not.toThrow();
   expect(() => assertNoPrivateLeak({ p: "/nas/q1.csv" }, ledger)).toThrow();
 });
+
+test("should say verification was impossible rather than imply a leak", () => {
+  // A payload that cannot be serialized cannot be checked. The guard must not answer that
+  // silently (a caller would read "no throw" as "clean"), and must not answer it with a leak
+  // message either (a caller would report a leak that is not there).
+  const circular: Record<string, unknown> = {};
+  circular.self = circular;
+  expect(() => assertNoPrivateLeak(circular, LEDGER)).toThrow(
+    /cannot be inspected/,
+  );
+});

@@ -12,6 +12,7 @@
 // "unknown, decide later" — inferring is exactly what makes "no URL exists" indistinguishable
 // from "the URL was not collected".
 import {
+  SOURCE_KINDS,
   SOURCE_SLOTS,
   type SourceDeclaration,
   type SourceKind,
@@ -123,7 +124,10 @@ export function validateSourcePolicy(
 export function sourceQuestion(
   decl: Partial<SourceDeclaration> | undefined,
 ): string | null {
-  if (!decl?.kind)
+  // A kind outside the vocabulary lands here from a half-parsed answer — TypeScript does not
+  // guard a value that arrived as JSON. Asking the kind question again is the honest move;
+  // reading a requirements row that does not exist would crash on the next line.
+  if (!decl?.kind || !SOURCE_KINDS.includes(decl.kind as SourceKind))
     return "Where does this data come from? A published dataset (public), a file you were given or built (local), an internal newsroom dataset (private), figures quoted in your article (prose), or demo data (synthetic)?";
   const rules = requirementsFor(decl.kind as SourceKind);
   if (rules.label === "required" && !decl.label?.trim())

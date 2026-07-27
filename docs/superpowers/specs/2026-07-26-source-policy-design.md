@@ -317,5 +317,64 @@ matched?: number }`, et `eligibility.ts` refuse tout candidat `map-native` quand
 
 ## 7. Risques assumés
 
-Section tenue à jour à la fin de l'implémentation (self-review). Voir le fichier de plan pour le
-détail par tâche.
+Relecture du diff après implémentation. Chaque point avec son arbitrage.
+
+**R1 — `provenanceHash` n'inclut PAS `sources`. (le plus important)**
+`provenanceHash` (`lib/loop/manifest.ts:184`) hache `input × cadrage × angle × chosenId ×
+channel × format`. Changer le label ou la classe d'une source **n'invalide donc pas** un artefact
+déjà produit. Aujourd'hui c'est inoffensif (rien ne rend encore le crédit — cf. §5), mais à la
+minute où `produce.ts` consommera le verdict, un visuel gardera à l'écran un crédit périmé en se
+déclarant `fresh`. **Arbitrage :** non corrigé ici — élargir le hash modifie une logique
+existante et partagée du fichier que trois chantiers se partagent, hors de la discipline
+ADD-only, et re-value tous les hachages. **Le slice qui câble §5.1 DOIT ajouter
+`sources: run.sources ?? null` à `provenanceHash` dans le même commit** que la lecture du crédit.
+
+**R2 — La policy est prête, elle n'est appliquée qu'à un seul endroit.**
+Seul `writeManifest → assertInvariants` l'exerce. `validateSourcePolicy`, `assertProseGrounded`,
+`publicSourceView` et `assertNoPrivateLeak` sont testés mais **sans appelant en production**, par
+contrainte de périmètre (§5). Dit franchement : la classe d'une source est **enregistrée et
+vérifiée** dès maintenant ; le placeholder « Provided by the newsroom » de `produce.ts:115` est
+**toujours là**. Ce qui est acquis, c'est la déclaration ; ce qui reste promis, c'est la
+consommation.
+
+**R3 — `assertNoPrivateLeak` ne redacte que ce qui est DÉCLARÉ privé.**
+Il ne cherche ni « tout chemin absolu » ni « tout hôte non public ». Un `internalRef` qu'un export
+**reformule** (chemin ré-encodé, séparateurs changés, tronqué au-dessus du dernier segment) passe.
+**Arbitrage :** une heuristique large ferait échouer des exports légitimes (le run-dir contient
+des chemins absolus parfaitement normaux) et cette classe de garde se désamorce dès qu'elle crie
+au loup. La non-fuite **structurelle** (§D3) est la vraie défense ; ceci en est la ceinture.
+
+**R4 — Le seuil `MIN_SEGMENT = 5` est un jugement, pas une mesure.**
+Un `internalRef` dont le dernier segment fait 4 caractères (`/nas/q1.csv` → `q1.csv` passe,
+`/nas/x.db` → `x.db` non) n'est cherché qu'en entier. **Arbitrage :** en dessous, un segment est
+un mot courant et le garde devient bruyant ; la référence complète reste couverte.
+
+**R5 — `figuresIn` duplique `numbersIn` de `lib/brain/verify-offer.ts`.**
+Même normalisation, deux copies, donc deux endroits où corriger un bug de tokenisation.
+**Arbitrage :** `numbersIn` n'est pas exporté et `lib/brain/**` est hors périmètre. Extraction
+dans `lib/core/` notée en §6. Un test verrouille les trois séparateurs de milliers des deux côtés.
+
+**R6 — Le grounding prose est purement lexical.**
+« vingt-six » passe (chiffres seulement, exactement la limite déjà assumée par `verify-offer.ts`),
+et un nombre présent dans l'article mais **sans rapport** avec la donnée rendue passe aussi : la
+garde vérifie la présence, pas la référence. **Arbitrage :** vérifier la référence demanderait de
+comprendre la phrase — hors d'atteinte d'une garde mécanique, et une garde qui prétend le faire
+ment. Elle attrape ce qu'elle prétend attraper : le chiffre **dérivé** (somme, part, taux) que
+l'article ne prononce jamais.
+
+**R7 — `sourceQuestion` rend de l'anglais.**
+Un desk francophone verra une question en anglais tant que la copie n'est pas passée par
+`lib/newsroom/ui-copy.ts` (hors périmètre, §6). Le reste de la furniture **est** localisé (le
+crédit passe par `sourceLabel()` fr/de/it/en).
+
+**R8 — `local` interdit `internalRef`, ce qui déplace une information dans le manifest.**
+Un journaliste qui veut noter « c'est le fichier que la mairie m'a envoyé le 3 juin » n'a pas de
+champ pour ça : il le met dans le `label`, donc **visible du lecteur**. **Arbitrage :** assumé —
+une note interne sur un fichier local est de la documentation de run, pas une source, et lui
+ouvrir un champ rouvrirait exactement la surface de fuite que `local` referme (§D2).
+
+**R9 — Le ledger est run-level : `mode` vaut pour tout le run.**
+Un run ne peut pas mélanger une source réelle et une source de démonstration. C'est voulu
+(un run est une pièce, pas un bac à sable partagé), mais ça veut dire qu'une seule colonne
+inventée oblige à déclarer **tout** le run en `test`. C'est le bon sens de la règle, et c'est
+aussi son coût.

@@ -36,6 +36,14 @@ test("should ask about a url that points at a site rather than a document", () =
   ).toMatch(/points at a site/);
 });
 
+test("should fall back to the kind question when the kind is not one we know", () => {
+  // A partial declaration reaches this from a half-parsed answer; TypeScript does not guard a
+  // value that arrived as JSON. Asking again beats reading a requirements row that is not there.
+  expect(
+    sourceQuestion({ kind: "scraped" as never, label: "x" }),
+  ).toContain("Where does this data come from");
+});
+
 test("should accept a ledger with no declaration at all", () => {
   // Nothing declared yet is not the same as something invalid: a run declares its sources when
   // it knows them, and the manifest must stay writable before that.

@@ -70,8 +70,27 @@ test("should refuse to write a public source with no url", () => {
 });
 
 test("should refuse an unknown field inside a recorded declaration", () => {
+  // writeManifest does not re-parse, so the WRITE refuses this for the field it is missing…
   const { run, path } = runWith({ data: { kind: "local", name: "Relevés" } });
-  expect(() => writeManifest(path, run)).toThrow();
+  expect(() => writeManifest(path, run)).toThrow(/missing-label/);
+  // …and the READ refuses the same shape for the field it does not know. Both directions are
+  // closed, which is what "migrate without silently widening what is valid" asks for: a
+  // `{ name }` source (the shape lib/core/conformance-l0.ts uses) never parses as a valid
+  // declaration carrying no label.
+  writeFileSync(
+    path,
+    JSON.stringify({
+      runId: "r1",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: {},
+      elements: [],
+      events: [],
+      sources: { mode: "real", data: { kind: "local", name: "Relevés" } },
+    }),
+  );
+  expect(() => readManifest(path)).toThrow();
 });
 
 test("should never persist an internal reference into the public source view of a run", () => {
