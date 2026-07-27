@@ -246,4 +246,38 @@ et le substrat la fournit déjà).
 
 ## 7. Risques assumés
 
-*(renseigné à la fin du chantier — chaque résidu avec son ruling)*
+Chaque résidu réel constaté à la fin du chantier, avec son ruling. Aucun n'est un oubli.
+
+| # | Résidu | Ruling |
+|---|---|---|
+| 1 | **`.splash-preflight.json` garde deux écrivains.** L'obligation §5.1 parente en nommait deux : `runtime` (fermé ici) et les tampons de vérification. `skills/splash/scripts/preflight.mjs` écrit encore le fichier legacy pendant que la page écrit `lastVerified` dans le décor. | **Hors frontières de fichiers de ce sous-projet** (`skills/splash/scripts/` n'est à moi que pour `export-code.mjs`). Non fait plutôt que fait à moitié ou fait hors périmètre. Le geste est le même que pour le runtime : déplacer l'écrivain, puis supprimer le fichier. |
+| 2 | **`loadDecor(dir)` documente « rien n'est écrit » et écrit quand même `brand.json`** — `loadNewsroomProfile` rafraîchit ce cache à chaque appel (`skills/splash/src/brand-profile.ts:378`). Découvert ici en écrivant le test « n'écrit rien » de `readDecorState`. | **Fermé sur le chemin qui comptait, laissé ailleurs.** La migration (`migrate-decor.ts`) lit désormais la langue sans réécrire le cache, donc `readDecorState` — le chemin du script d'export — n'écrit vraiment rien. `loadDecor` continue de charger le profil via le loader avec cache : c'est le comportement en place depuis P1, ses autres appelants en dépendent peut-être, et le corriger sans appelant demandeur serait du remue-ménage. **La docstring de `loadDecor` reste donc inexacte sur ce point précis.** |
+| 3 | **La page juge « déjà configuré » sur le FICHIER `.env`, pas sur `process.env`.** Une clé exportée dans le shell qui a lancé l'installeur s'affiche comme absente. | **Voulu.** La page existe pour remplir ce fichier ; « configuré » doit vouloir dire « écrit », sinon elle afficherait vert une clé qui aura disparu au run suivant. Divergence assumée avec `decorEnv`, qui lui superpose `process.env` parce qu'il juge une exécution, pas une configuration. |
+| 4 | **Sur une install fraîche, « Photo narratives » (image-native) s'affiche `Missing`** — le bootstrap n'installe les dépendances que de `chart-native` et `map-native`, et `sharp` manque donc réellement. | **Vrai, donc affiché.** La readiness ne ment pas et la remédiation est imprimée (`bun install` dans `skills/image-native`). Élargir la liste des skills que le bootstrap installe est une décision de coût d'installation, pas une décision de page. |
+| 5 | **La page ne parle que `en` et `fr`.** Une rédaction qui choisit `de` enregistre bien `uiLang: "de"` mais lit une page anglaise. | **Assumé et borné.** Même règle que `lib/newsroom/ui-copy.ts` (défaut anglais, langue inconnue → anglais) ; ajouter une langue est une entrée de table. Traduire sans locuteur produirait pire qu'un repli. |
+| 6 | **Rien dans le gate ne pilote le DOM du client.** `client.ts` est typé et ses décisions sont dans des modules testés, mais son câblage n'est prouvé que par le rendu inspecté (§ ci-dessous), pas par un test de navigateur qui tourne en CI. | **Cohérent avec le dépôt** : `bun run check` est un gate typecheck + `bun:test`, et le rendu réel vit dans une voie séparée (`check:render`) parce qu'il traîne un navigateur headless. Les trois bugs trouvés au rendu (statut figé au clic, publisher non activé, message périmé après vérification) l'ont été à l'œil, ce qui est exactement ce que ce chantier devait faire — mais une régression future ne sera pas attrapée mécaniquement. |
+| 7 | **`embed-s3` n'a pas de vérificateur live.** Pour ce publisher, `ready` continue de vouloir dire « rempli », pas « accepté ». | **Délibéré.** Un HEAD sur un endpoint S3 arbitraire n'est pas un contrôle d'identifiants ; en inventer un donnerait un verdict que l'adapter ne partage pas. `capabilityVerifiable` répond `false`, et une absence de question n'est jamais un échec. |
+| 8 | **`install/bootstrap.ps1` n'a pas été EXÉCUTÉ** (pas de machine Windows). Sa modification (deps racine + résolution du runtime) est un miroir relu, couvert seulement par les tests textuels de `docs/installer/`. | **Déclaré tel quel.** Le fumigène Windows du README (« clean Windows VM ») reste le seul contrôle réel, comme pour tout changement de ce fichier depuis l'origine. |
+| 9 | **La page supprime `.splash-runtime` au premier enregistrement.** Une install qui reviendrait ensuite à une version de Splash antérieure à ce chantier ne trouverait plus son runtime et retomberait sur `claude`. | **Accepté** : c'est le prix de « un champ, un domicile », et le sens du downgrade n'est pas un chemin supporté. Le sens qui compte — une vieille install lue par le nouveau code — est couvert par le repli legacy de `read-runtime.ts`. |
+| 10 | **`install/configurator-core.ts` n'est plus qu'une coquille** (`RUNTIMES` + la ré-export des `verify*`). | **Gardé volontairement.** `install/configurator.ts` est un chemin publié (les commandes d'install déjà distribuées, les deux bootstraps, les tests de `docs/installer/`) ; casser son nom pour l'esthétique du module coûterait plus que la coquille. |
+| 11 | **Les phrases de `readiness.ts` nomment encore les variables d'environnement** (« needs VITE_MAPTILER_KEY or REMOTION_MAPTILER_KEY »). | **Contourné à la source d'affichage, pas réécrit.** Le modèle expose `missingFields`, et la page dit « nécessite : clé MapTiler ». La phrase de `readiness` reste telle quelle pour ses autres appelants (le `propose`, `splash newsroom`), où nommer la variable est utile. |
+
+## 8. Vérifié au rendu, pas à la relecture
+
+Le balisage n'est pas une preuve (règle du dépôt). La page a été servie par son vrai serveur et
+photographiée dans un navigateur headless, en six états : install fraîche · install partiellement
+configurée ouverte sur `?section=embed-cloudflare` · la même en thème sombre · deux capacités
+cochées en direct · après un **vrai** appel « Vérifier mes clés » (des identifiants bidons
+réellement refusés par Datawrapper et MapTiler) · et après un enregistrement complet piloté depuis
+l'interface (langue basculée en français, `.env` + `newsroom.json` + `NEWSROOM-PROFILE.md` relus
+sur le disque).
+
+**Trois défauts réels que seul le rendu a montrés**, tous corrigés puis re-photographiés :
+
+1. Cocher une capacité laissait sa pastille de statut figée sur l'état enregistré — la page ne
+   savait pas dire ce qu'une capacité deviendrait une fois activée. D'où `statusIfEnabled`,
+   calculé au serveur (le client ne ré-implémente pas la readiness).
+2. Choisir un hébergeur ne l'**activait** pas : il aurait été enregistré `enabled: false`, donc
+   jamais vérifié ni jamais signalé.
+3. Après une vérification live, le résumé affichait encore la raison enregistrée — une étiquette
+   nue pour une clé que le fournisseur venait de refuser, ou un « injoignable » périmé.

@@ -99,7 +99,13 @@ function helpText(text: string): DocumentFragment {
   for (const part of parts) {
     if (/^https?:\/\//.test(part)) {
       fragment.append(
-        el("a", { href: part, target: "_blank", rel: "noreferrer" }, part),
+        el(
+          "a",
+          // noopener as well as noreferrer: a new tab that keeps a handle on this page could
+          // navigate it away mid-setup, and this page holds the keys the journalist just typed.
+          { href: part, target: "_blank", rel: "noreferrer noopener" },
+          part,
+        ),
       );
     } else if (part) {
       fragment.append(document.createTextNode(part));

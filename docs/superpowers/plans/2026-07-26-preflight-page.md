@@ -115,6 +115,24 @@ Interdits : `lib/loop`, `lib/brain`, `lib/delivery`, `lib/host`, `lib/core`, `sk
   fait la même résolution en PowerShell natif ; les deux ajoutent le `bun install` racine gardé
   (§2.7 du spec).
 
+## Écarts entre ce plan et ce qui a été fait
+
+- **Tâche 2** a découvert que la lecture du profil n'était pas neutre : `loadNewsroomProfile`
+  réécrit le cache `brand.json` à chaque appel, donc `readDecorState` n'aurait pas été
+  sans-écriture. La migration lit désormais la langue via `parseNewsroomMarkdown` /
+  `loadBrandProfile` (aucun des deux n'écrit). Résidu #2 du spec.
+- **Tâche 6** a supprimé `install/configurator.test.ts` au lieu de le retarget : `server.test.ts`
+  lance déjà `install/configurator.ts` (le point d'entrée publié), donc le retarget aurait été une
+  copie du même fichier.
+- **Tâche 6** a dû toucher un fichier hors des fichiers possédés :
+  `skills/splash/tests/preflight.test.ts` importait `serializeEnv` pour sa parité installeur. Le
+  test a été réécrit sur `envUpdates` (parité plus forte : elle couvre désormais le miroir
+  MapTiler). Même geste pour le helper miroir de `skills/splash/tests/export-code-proposal-cli.test.ts`
+  en tâche 2.
+- **Tâche 8** a produit trois correctifs que seule la capture a révélés (détail au §8 du spec),
+  plus une passe de durcissement (publisher/runtime/profil validés contre le registre) issue de
+  l'auto-revue du diff.
+
 ## Tâche 8 — Vérification **au rendu**, puis auto-revue
 
 - Lancer le serveur, capturer la page en headless (Playwright, déjà présent dans
