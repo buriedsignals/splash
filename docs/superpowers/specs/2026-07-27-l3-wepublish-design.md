@@ -85,7 +85,7 @@ Chaque ligne est une contrainte sur l'adapter, pas une observation décorative.
 | **W13** | `article(slug:) { published { blocks } }` **anonyme** (sans jeton) renvoie le HTML **octet pour octet identique** à ce qui a été envoyé | C'est le canal de vérification : ce que le CMS sert réellement, lu sans privilèges |
 | **W14** | Le corps de requête plafonne à **1 MiB** (1 048 576 o) : corps de 1 047 298 o accepté, 1 062 923 o **rejeté en HTTP 413, sans corps d'erreur GraphQL** | Un dépassement doit être **refusé en amont avec un message actionnable**, jamais laissé produire un 413 opaque |
 | **W15** | `hidden: true` exclut l'article du listing public (`articles` : `totalCount` inchangé, slug absent) tout en le laissant **atteignable par son slug** | Exactement la sémantique d'un porteur d'embed : joignable, mais pas dans le fil éditorial de la rédaction |
-| **W16** | Un **vrai artefact produit** (`produce()`, chart-native, format `interactive`) pèse **491 207 o** ; échappé en `srcdoc` **507 598 o** (+3,4 %), corps JSON complet **508 664 o** | Ça passe sous W14, avec **moins de 2× de marge**. La marge n'est pas un confort : c'est pourquoi W14 doit être gardé mécaniquement |
+| **W16** | Deux **vrais artefacts produits** (`produce()`, chart-native, format `interactive`) ont été mesurés : **491 207 o** (corps JSON 508 664 o) et — celui de la preuve live du §6 — **755 005 o**, soit **783 568 o** de bloc HTML une fois emballé | Les deux passent sous W14, mais le second ne laisse que **~25 % de marge**. La marge n'est ni stable ni confortable : c'est exactement pourquoi W14 est gardé mécaniquement, et pourquoi le refus doit être actionnable plutôt qu'un 413 opaque |
 
 ### 3.1 Ce qui reste NON mesuré (dette honnête)
 
@@ -226,6 +226,31 @@ Test opt-in `SPLASH_WEPUBLISH_E2E=1`, sur le modèle exact de
 leçon que ce projet a payée deux fois. Canal `article-web`, format `interactive`, puis
 `requestDelivery` → `deliver` → lecture anonyme de retour.
 
+**Exécutée le 2026-07-27 contre l'instance du §2 — verte.** Ce qui a été mesuré :
+
+| | |
+|---|---|
+| article créé | `052fb88c-8e9c-4e62-8fb1-e41f448236ce`, slug `splash-primes` |
+| URL livrée | `http://localhost:4200/a/splash-primes` (**lue** dans la réponse, W9) |
+| `publishedAt` | `2026-07-27T22:15:17.292Z` |
+| relecture | **anonyme, sans aucun jeton** — HTTP **200**, `application/json; charset=utf-8` |
+| bloc servi | `HTMLBlock`, **783 568 octets** |
+| artefact récupéré | **755 005 octets**, **identiques octet pour octet** au `interactive.html` que `produce()` a écrit sur le disque |
+| marqueur | `<!-- splash:embed id="primes" -->` en tête du bloc servi |
+
+L'assertion qui porte la preuve n'est pas « un article existe » mais la **ré-extraction de
+l'artefact depuis le `srcdoc` servi**, comparée au fichier produit — l'équivalent du « ce ne sont
+pas seulement de bons octets, c'est LE fichier » de la preuve S3.
+
+**Une friction rencontrée, notée parce qu'elle vaut pour toute preuve live de livraison :** publier
+est désormais barré par le gate d'approbation (`lib/loop/deliver.ts`), et une vraie approbation exige
+une review dont le **preview a été capturé au navigateur** — la couche verify. Le sujet de ce test
+est l'adapter, pas la cérémonie de signature, donc l'enregistrement `approved` est posé comme
+`lib/loop/acceptance-deliver.test.ts` le pose pour la même raison, avec un `provenanceHash`
+**calculé** (un hash inventé serait refusé par `deliver()` et ne prouverait rien).
+À noter : la preuve live L2 (`lib/loop/delivery-genre-e2e.test.ts`) est **antérieure à ce gate** et
+tomberait aujourd'hui sur le même refus — hors périmètre ici (`lib/loop/**`), mais à corriger.
+
 ---
 
 ## 7. Risques assumés
@@ -234,7 +259,9 @@ leçon que ce projet a payée deux fois. Canal `article-web`, format `interactiv
 |---|---|---|
 | **R1** | Le rendu final n'est pas vérifié dans un navigateur : pas de service website dans le compose amont, et l'exécution d'un `srcdoc` de 500 Ko par `dangerously-set-html-content` est **lue** dans le code, pas exécutée | **Accepté, et nommé.** La vérification porte sur ce que le CMS **sert** (W13, octet pour octet, en anonyme) — le contrat de l'API, qui est ce que l'adapter contrôle. Ce qu'un thème de rédaction fait ensuite de ce balisage n'est pas quelque chose que l'adapter puisse garantir, pour We.Publish comme pour n'importe quel CMS. **Reste à mesurer avant qu'une rédaction s'appuie dessus** |
 | **R2** | Le credential est un **email + mot de passe**, pas un jeton scopé | **Contraint par l'API**, pas choisi : W3 a mesuré que le jeton longue durée est refusé. Conséquence à écrire dans la doc d'install : la rédaction crée un **utilisateur dédié à Splash**, pas le compte admin d'un humain |
-| **R3** | W14 laisse **moins de 2× de marge** sur un artefact réel (W16) | Gardé **mécaniquement** : l'adapter mesure le corps et refuse **avant** le réseau, avec un message qui nomme la taille et la limite. Un artefact plus lourd obtient une phrase actionnable, pas un 413 opaque |
+| **R3** | W14 ne laisse que **~25 % de marge** sur l'artefact réel de la preuve live (783 568 o de bloc contre 1 048 576 o de limite). **Un jeu de données un peu plus gros dépasse** | Gardé **mécaniquement**, à deux endroits : l'adapter mesure le bloc **échappé** (pas le fichier brut — un document riche en guillemets gonfle en chemin) et refuse avant le réseau ; `gqlCall` re-mesure le corps réel. Le message nomme la taille, la limite, et **quoi faire** (le stockage objet de la rédaction). C'est le risque le plus vivant de cette tranche : il n'est pas théorique, il est à ~1,3× |
 | **R4** | W7 (le plantage `SlotTeasersLoader`) est un bug amont qui peut être corrigé, ou se déplacer | L'adapter ne **dépend** pas du bug : il ne sélectionne que des scalaires sur les mutations, ce qui est de toute façon la bonne discipline. Si le bug disparaît, rien ne casse |
 | **R5** | Le marqueur d'appartenance (§4.2) est du **balisage**, donc falsifiable par quelqu'un qui éditerait l'article à la main | Accepté. Il protège contre la **collision accidentelle** (le cas réel : un slug de la rédaction qui ressemble au nôtre), pas contre un acte délibéré. Le CMS a son propre contrôle d'accès pour ça |
 | **R6** | Mesuré sur `master`, compte `admin`, une seule version | Nommé au §3.1. La forme de l'adapter ne dépend d'aucune version : elle dépend de `createSession` / `createArticle` / `publishArticle`, qui sont le cœur stable de l'API éditoriale |
+| **R7** | **Deux fichiers de test hors du périmètre annoncé ont dû changer** : `lib/newsroom/capabilities.test.ts` et `lib/newsroom/readiness.test.ts` prenaient tous deux `embed-cms` comme **exemple** de capacité déclarée-mais-non-construite | Conséquence mécanique de la tâche elle-même — construire `embed-cms` rend ces assertions fausses. Le changement est minimal et de même nature dans les deux : l'exemplaire devient `embed-fly`, la dernière capacité encore sans corps. Aucune règle n'a été affaiblie, et `capabilities.test.ts` continue d'exiger la liste **exacte** des non-construites |
+| **R8** | La preuve live **L2** (`lib/loop/delivery-genre-e2e.test.ts`) est antérieure au gate d'approbation et **échouerait aujourd'hui** au même refus que celui rencontré au §6 | Constaté, pas corrigé : `lib/loop/**` est hors périmètre de cette tranche. À reprendre — un test opt-in qui ne passe plus est une preuve qui a expiré sans que personne le sache, ce qui est précisément la classe de défaut que ces preuves existent pour éviter |
