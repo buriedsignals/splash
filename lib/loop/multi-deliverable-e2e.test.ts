@@ -15,6 +15,7 @@ import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
 import { advanceStep } from "./driver";
 import { chooseForm } from "./choose";
+import { applyPhrasing } from "./phrase";
 import {
   planDeliverables,
   confirmAspect,
@@ -59,6 +60,13 @@ test.skipIf(!RUN)(
       route: "embed",
       channel: "article-web",
       input: { data: freezeInput(runDir, src, "data") },
+      // The CSV written just above is a `local` source. produce() refuses an undeclared run
+      // ("the class of a source is declared, never guessed") and renders the declared credit
+      // into every one of the three geometries this proof measures.
+      sources: {
+        mode: "real" as const,
+        data: { kind: "local" as const, label: "Relevés cantonaux 2024" },
+      },
       elements: [
         {
           id: "e1",
@@ -103,6 +111,29 @@ test.skipIf(!RUN)(
         const r = confirmAspect(live, "portrait");
         if (!r.ok) throw new Error(r.message);
         run = replace(r.value);
+        continue;
+      }
+      if (next === "phrase") {
+        // The phrasing seam: propose() leaves every `why` empty on purpose (the brain hands over
+        // grounding, the desk writes the language), and an offer nobody phrased may not be
+        // chosen from. A host does this with a model; here it is one fixed sentence per option,
+        // through the same guarded writer — applyPhrasing, not a hand-written `why`, so this
+        // fixture cannot drift past verifyOffer the way it drifted past this whole step.
+        //
+        // The sentence carries NO DIGIT deliberately: verifyOffer grounds every number in the
+        // prose against the option's own computed facts, and a test string inventing one would
+        // be refused — correctly.
+        run = applyPhrasing(
+          run,
+          live.id,
+          (live.proposal?.options ?? []).map((o) => ({
+            id: o.id,
+            why: "the desk's own words for this option",
+            // Structural, not textual: a marked option must have its mark acknowledged, an
+            // unmarked one must not.
+            ...(o.readiness ? { markAcknowledged: true as const } : {}),
+          })),
+        );
         continue;
       }
       if (next === "choose-form") {
