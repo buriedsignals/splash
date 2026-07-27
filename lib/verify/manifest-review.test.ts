@@ -252,9 +252,23 @@ describe("new invariants — only about shapes that did not exist before", () =>
   });
 
   it("leaves the pre-existing invariants exactly as they were", () => {
-    // An element approved by hand, with no review at all — the shape three existing
-    // lib/loop tests rely on. Tightening THAT would break tests this slice may not touch,
-    // so the preview gate lives at approveElement instead (spec section 6.2).
+    // An element approved by hand, with no review at all. The refusal to tighten this was
+    // first written as "three existing lib/loop tests rely on the shape"; that was an
+    // estimate, and it is wrong. MEASURED on 2026-07-27 by adding `approved => review.preview`
+    // to assertInvariants and running the whole lib/ suite: 1195 pass, 2 fail. The failures
+    // are exactly TWO, and only one of them is a fixture —
+    //
+    //   1. lib/loop/driver.test.ts:236 ("run dir handoff"), which declares `approved` and then
+    //      writeManifest()s it; its own comment says its subject is the run dir travelling
+    //      whole, not the approval ceremony;
+    //   2. this test, which IS the decision.
+    //
+    // gate-state.test.ts, deliver.test.ts and acceptance-deliver.test.ts do NOT fail: they
+    // never write that manifest. So the invariant costs ONE fixture migration, in a file this
+    // slice may not touch — which is still enough to refuse it, because an invariant written
+    // against a test one cannot repair is a red suite or a forbidden edit. The preview gate
+    // therefore stays where it is: at approveElement, and unconditionally at deliver().
+    // Whoever owns lib/loop/driver.test.ts next has the complete list above.
     const el: RunElement = {
       ...withArtifact(baseRun()).elements[0]!,
       approved: { signoffPath: "s.sig", approvedProvenanceHash: "x" },
