@@ -2,11 +2,45 @@
 // The loop's door onto the brain. It threads state in and shapes the offer out — every rule
 // about WHAT may be offered lives in lib/brain (spec §3).
 import type { Decor } from "../newsroom/decor";
-import { channelForElement, type RunManifest, type RunElement, type FormOption } from "./manifest";
+import {
+  channelForElement,
+  type RunManifest,
+  type RunElement,
+  type FormOption,
+} from "./manifest";
 import { buildOffer } from "../brain/offer";
 import { deriveFacts } from "../brain/facts";
-import { intentsFromAngle } from "../brain/rank-intent";
+import { suggestIntents } from "../brain/rank-intent";
+import type { Intent } from "../brain/intents";
 import type { Excluded } from "../brain/eligibility";
+
+/**
+ * WHAT ORDERS THIS OFFER, and where it came from.
+ *
+ * The intent used to be read straight out of the journalist's prose by a keyword pass
+ * (lib/brain/rank-intent.ts). Measured, that pass answered NOTHING on ordinary French claims and
+ * mis-read others — and either way the run said nothing, so an offer ordered by fit and readiness
+ * alone was indistinguishable from one ordered around the journalist's point.
+ *
+ * So the declaration WINS WHOLE — no union with the guess. Merging them would put the mis-fire
+ * straight back in: a claim about spread declared `distribution` would be handed `spatial` too,
+ * because the word "canton" is in the sentence, and the journalist's decision would be quietly
+ * half-overruled.
+ *
+ * The suggestion is reached for in exactly one case — an angle recorded before the declaration
+ * existed. Refusing those would strand runs over a field that did not exist when they were
+ * written; what happens instead is that the fallback is REPORTED (lib/host/state.ts's `basis`),
+ * never silent.
+ */
+export function orderingIntents(el: RunElement | undefined): {
+  intents: Intent[];
+  basis: "declared" | "guessed" | "none";
+} {
+  const declared = el?.angle?.intent;
+  if (declared) return { intents: [declared], basis: "declared" };
+  const guessed = suggestIntents(el?.angle?.confirmedTakeaway ?? "");
+  return { intents: guessed, basis: guessed.length ? "guessed" : "none" };
+}
 
 export function propose(
   m: RunManifest,
@@ -27,7 +61,7 @@ export function propose(
     ...(decor ? { readiness: decor.readiness } : {}),
     ...(decor?.theme ? { themeBg: decor.theme } : {}),
     ...(el?.requestedFormat ? { requestedFormat: el.requestedFormat } : {}),
-    intents: intentsFromAngle(el?.angle?.confirmedTakeaway ?? ""),
+    intents: orderingIntents(el).intents,
   });
   return {
     options: offer.options.map((o) => ({

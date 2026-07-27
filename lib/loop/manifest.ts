@@ -95,6 +95,18 @@ const RunElementSchema = z.object({
       emphasis: z.string().optional(),
       altInsight: z.string(),
       unit: z.string(),
+      // WHAT THE JOURNALIST WANTS THE FIGURE TO SHOW — declared, never read out of their prose.
+      // The ranking's semantic input used to be guessed from `confirmedTakeaway` by a keyword
+      // pass (lib/brain/rank-intent.ts), which answered nothing at all on ordinary French
+      // phrasings and mis-fired on others; the offer was then ordered by fit and readiness
+      // alone, silently. It is a part of the ANGLE because that is what it is — the point the
+      // journalist is making — and because confirm-angle is already the questionnaire with
+      // refusals that collects the other parts (lib/loop/angle.ts).
+      //
+      // OPTIONAL in the schema, REQUIRED by confirmAngle: an angle recorded before this field
+      // existed must stay readable (refusing it would fail legitimate runs over a field that did
+      // not exist when they were written), while nothing written from now on can omit it.
+      intent: z.enum(INTENTS).optional(),
     })
     .optional(),
   proposal: z

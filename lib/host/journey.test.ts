@@ -138,7 +138,6 @@ describe("the whole journey through the façade", () => {
   }, 300_000);
 });
 
-
 describe("a non-JS host carries a run from NOTHING to a delivered artifact", () => {
   // THE PROOF. Every step below is a SPAWNED CLI call: no manifest is constructed in process, no
   // run.json is written by hand at any step, and this file imports nothing from lib/loop for the
@@ -179,9 +178,9 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
       }),
     );
     expect(started.code).toBe(0);
-    expect((started.body as { value: { nextActions: string[] } }).value).toEqual(
-      { runId: "primes-maladie", nextActions: ["orient"] },
-    );
+    expect(
+      (started.body as { value: { nextActions: string[] } }).value,
+    ).toEqual({ runId: "primes-maladie", nextActions: ["orient"] });
 
     // 2. ORIENT — the first deterministic step.
     const oriented = await cli(["advance", "--run", dir]);
@@ -193,11 +192,43 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
       (oriented.body as { value: { nextActions: string[] } }).value.nextActions,
     ).toEqual(["confirm-angle"]);
 
-    // 3. CONFIRM-ANGLE — the human turn the façade could previously only NAME. Four named
-    //    slots; the host answers four known questions and never designates a field.
+    // 3. CONFIRM-ANGLE — the human turn the façade could previously only NAME. Named slots; the
+    //    host answers known questions and never designates a field.
     const TAKEAWAY = "Les primes ont augmenté dans les trois cantons";
     const ALT =
       "La prime adulte moyenne passe de 449 à 583 francs à Genève entre 2015 et 2024.";
+    // 3a. THE INTENT IS ASKED BEFORE IT IS DECLARED, and asked editorially. This is the step
+    //     that did not exist: the ranking's semantic input was read out of TAKEAWAY's wording by
+    //     a keyword pass. A host gets the nine answers phrased for a journalist plus what the
+    //     draft reads like — and the reading is a SUGGESTION, never the decision.
+    const put = await cli([
+      "suggest-intent",
+      "--takeaway",
+      TAKEAWAY,
+      "--language",
+      "fr",
+    ]);
+    expect(put.code).toBe(0);
+    const intentQuestion = (
+      put.body as {
+        value: {
+          language: string;
+          question: string;
+          choices: { id: string; label: string; example: string }[];
+          suggested: string[];
+          note: string;
+        };
+      }
+    ).value;
+    expect(intentQuestion.language).toBe("fr");
+    expect(intentQuestion.choices).toHaveLength(9);
+    // Phrased as a point, never as a form: no choice hands a journalist the machine id.
+    for (const choice of intentQuestion.choices)
+      expect(`${choice.label} ${choice.example}`).not.toContain(choice.id);
+    expect(intentQuestion.suggested).toContain("change-over-time");
+
+    // 3b. …and the journalist DECLARES it, in the same command as the rest of the angle.
+    const INTENT = "change-over-time";
     const angled = await cli([
       "confirm-angle",
       "--run",
@@ -208,6 +239,8 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
       ALT,
       "--unit",
       "CHF",
+      "--intent",
+      INTENT,
     ]);
     expect(angled.code).toBe(0);
     expect(
@@ -237,6 +270,7 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
               options: {
                 id: string;
                 nativeType: string;
+                intent: string[];
                 why: string;
                 whySource?: {
                   fragments: string[];
@@ -253,6 +287,10 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
     expect(element.proposal).toBeDefined();
     const options = element.proposal!.options;
     expect(options.length).toBeGreaterThan(0);
+    // THE OFFER SERVES THE DECLARED POINT. The form that leads is one whose KB sheet declares
+    // the intent the journalist declared — the ordering rule of lib/brain/rank.ts, now fed by a
+    // decision instead of by a regex over the takeaway's prose.
+    expect(options[0]!.intent).toContain(INTENT);
     // Every option arrives unwritten and GROUNDED — the two halves of the phrasing seam.
     expect(options.every((o) => o.why === "")).toBe(true);
     expect(options.every((o) => (o.whySource?.fragments.length ?? 0) > 0)).toBe(
@@ -371,7 +409,8 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
       "preview",
     );
     expect(
-      (previewed.body as { value: { nextActions: string[] } }).value.nextActions,
+      (previewed.body as { value: { nextActions: string[] } }).value
+        .nextActions,
     ).toEqual(["approve"]);
 
     // 9f. THE HOST READS WHAT THE GATE WILL ASK FOR, from `state` — not from run.json.
@@ -433,7 +472,10 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
           elements: {
             gateState: string;
             validation: { artifact: string };
-            proposal: { chosenId: string; options: { id: string; why: string }[] };
+            proposal: {
+              chosenId: string;
+              options: { id: string; why: string }[];
+            };
           }[];
         };
       }
