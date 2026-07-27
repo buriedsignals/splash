@@ -1,11 +1,15 @@
 import { isChannel, isVerb, isVisualFormat, VERBS } from "../vocabulary";
 import { isPublishPayload, publish } from "./publish";
 import { render } from "./render";
+import { CAPTURE_PAYLOAD_MESSAGE, capture, isCapturePayload } from "./capture";
+import { REVIEW_PAYLOAD_MESSAGE, isReviewPayload, review } from "./review";
 import { fail, type RenderPayload, type VerbResult } from "./types";
 
 export * from "./types";
 export { render } from "./render";
 export { isPublishPayload, publish } from "./publish";
+export { capture, isCapturePayload } from "./capture";
+export { review, isReviewPayload } from "./review";
 
 // Shape gate for the neutral payload. Explicit rather than schema-driven: the contract
 // has one payload today, and every field must be checked before anything touches the
@@ -52,6 +56,16 @@ export async function runVerb(
           "publish: payload must carry artifactPath, id, format, metadata, settings, credentials and outDir",
         );
       return await publish(payload);
+    }
+    if (verb === "capture") {
+      if (!isCapturePayload(payload))
+        return fail("invalid-request", CAPTURE_PAYLOAD_MESSAGE);
+      return await capture(payload);
+    }
+    if (verb === "review") {
+      if (!isReviewPayload(payload))
+        return fail("invalid-request", REVIEW_PAYLOAD_MESSAGE);
+      return await review(payload);
     }
     if (verb !== "render")
       return fail(

@@ -23,12 +23,16 @@ describe("runVerb — the vocabulary is CLOSED (invariant I4)", () => {
     expect(r.message).toContain("fetch-data");
   });
 
-  it("answers not-implemented for a DECLARED verb with no body yet", async () => {
+  // capture and review used to answer not-implemented here — they were declared slots the
+  // verify layer has since filled (lib/core/verbs/capture.ts, review.ts). A declared verb
+  // with a body refuses a MALFORMED payload rather than its own existence; that is the
+  // difference this assertion now pins.
+  it("refuses a malformed payload for a declared verb, never its own existence", async () => {
     for (const verb of ["capture", "review"]) {
       const r = await runVerb(verb, {});
       expect(r.ok).toBe(false);
       if (r.ok) throw new Error("unreachable");
-      expect(r.code).toBe("not-implemented");
+      expect(r.code).toBe("invalid-request");
     }
   });
 
