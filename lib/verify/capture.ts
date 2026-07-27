@@ -13,7 +13,7 @@
 // Contract discipline: no path throws (I1), nothing reads process.env (I5), the payload is
 // neutral — it knows nothing of RunManifest or AcceptedProposal (I2) — and everything it
 // returns is JSON-round-trippable (I6), paths never bytes (I7).
-import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sha256 } from "@noble/hashes/sha2.js";
@@ -67,17 +67,6 @@ export type CapturePayload = {
   settleMs?: number;
 };
 
-export function isCapturePayload(p: unknown): p is CapturePayload {
-  if (typeof p !== "object" || p === null) return false;
-  const r = p as Record<string, unknown>;
-  return (
-    typeof r.artifactPath === "string" &&
-    typeof r.outDir === "string" &&
-    typeof r.id === "string" &&
-    typeof r.format === "string" &&
-    typeof r.channel === "string"
-  );
-}
 
 function hashFile(path: string): string {
   return Buffer.from(sha256(readFileSync(path))).toString("hex");
@@ -539,13 +528,3 @@ export function captureDir(outDir: string, id: string): string {
 export function fileUrlOf(path: string): string {
   return pathToFileURL(resolve(path)).href;
 }
-
-export function isReadableFile(path: string): boolean {
-  try {
-    return statSync(path).isFile();
-  } catch {
-    return false;
-  }
-}
-
-export type { FurnitureRole };

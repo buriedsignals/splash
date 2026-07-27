@@ -12,7 +12,6 @@ import {
   type CapturePayload,
 } from "../../verify/capture";
 import {
-  BREAKPOINTS,
   FURNITURE_ROLES,
   type CaptureResult,
   type FurnitureExpectation,
@@ -67,5 +66,4 @@ export async function capture(
   }
 }
 
-export { BREAKPOINTS };
 export type { CapturePayload, CaptureResult };
