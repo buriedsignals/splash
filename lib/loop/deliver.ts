@@ -94,16 +94,30 @@ export async function deliver(
       "invalid-request",
       "deliver: no destination requested — the journalist chooses where it goes",
     );
-  // Opt-in editorial gate (spec §2 decision 6). Without requiredSigners nothing is asked; with
-  // them, the element's approval must match the artifact being published, never an older one.
+  // THE EDITORIAL GATE, and it is unconditional now.
+  //
+  // It used to fire only when the newsroom had declared `requiredSigners` — and nothing in
+  // production could write an approval at all, so the rule cut both ways at once: a newsroom
+  // that declared signers could never publish, and a newsroom that declared none published
+  // with nothing having looked at the visual. A real journalist run went init → … → produce →
+  // request-delivery → deliver with no approval step anywhere in it.
+  //
+  // The approval is the record that a HUMAN decided (lib/loop/approve.ts, through
+  // approveElement — the only sanctioned writer), and it is bound to the exact provenance, so
+  // a re-production unseats it mechanically. requiredSigners does not add a second gate: it
+  // raises this one, by making an approval unwritable without a verified Ed25519 signature.
+  // Both messages are kept, because "your newsroom asked for a named editor" and "nobody has
+  // approved this yet" are different things to act on.
   const current = provenanceHash(run, el);
-  if ((profile.requiredSigners ?? []).length > 0) {
-    if (!el.approved || el.approved.approvedProvenanceHash !== current)
-      return fail(
-        "invalid-request",
-        `deliver: this newsroom requires an editorial sign-off (${profile.requiredSigners!.join(", ")}) for the exact artifact being published`,
-      );
-  }
+  const approvedNow =
+    el.approved != null && el.approved.approvedProvenanceHash === current;
+  if (!approvedNow)
+    return fail(
+      "invalid-request",
+      (profile.requiredSigners ?? []).length > 0
+        ? `deliver: this newsroom requires an editorial sign-off (${profile.requiredSigners!.join(", ")}) for the exact artifact being published`
+        : "deliver: this artifact has not been approved — capture it, review it, preview it and approve it before it is published",
+    );
 
   const delivered: DeliveryRecord[] = dropLegacyElementsDelivery(
     el.delivery?.delivered ?? [],

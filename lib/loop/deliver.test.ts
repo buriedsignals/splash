@@ -78,19 +78,61 @@ function runWith(el: Partial<RunElement>): {
     events: [],
   };
   const partial = { ...base.elements[0]!, ...el };
+  const artifact = partial.artifact ?? {
+    path: "elements/e1/static.png",
+    sha256: "d",
+    provenanceHash: provenanceHash(base, partial),
+    producedAt: "1980-01-01T00:00:00.000Z",
+  };
   const full: RunElement = {
     ...partial,
-    artifact: partial.artifact ?? {
-      path: "elements/e1/static.png",
-      sha256: "d",
-      provenanceHash: provenanceHash(base, partial),
-      producedAt: "1980-01-01T00:00:00.000Z",
+    artifact,
+    // Publishing is gated on an approval covering these exact bytes — the unconditional half
+    // of the editorial gate (see "refuses to publish what nobody approved" below, which is the
+    // test of the gate itself). Every case in this file is about what happens AFTER that gate,
+    // so the fixture carries the approval a journalist would have written.
+    approved: partial.approved ?? {
+      signoffPath: "signoffs/e1.json",
+      approvedProvenanceHash: artifact.provenanceHash,
     },
   };
   return { run: { ...base, elements: [full] }, el: full };
 }
 
 describe("deliver", () => {
+  // THE GATE. Until the verification chain was wired, a visual went from produced to published
+  // with nothing having looked at it: deliver() asked for an approval only when the newsroom
+  // had declared requiredSigners, and nothing in production could write one — so a newsroom
+  // that declared signers could never publish, and a newsroom that declared none published
+  // with no gate at all. Both halves of one disease.
+  it("refuses to publish what nobody approved, with or without requiredSigners", async () => {
+    const { run, el } = runWith({
+      delivery: { requested: ["zip"], delivered: [] },
+    });
+    const { approved: _approved, ...unapproved } = el;
+    const r = await deliver(
+      { ...run, elements: [unapproved] },
+      unapproved,
+      runDir,
+      decorWith(),
+    );
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toMatch(/approv/i);
+  });
+
+  it("refuses an approval that covers an earlier version of the artifact", async () => {
+    const { run, el } = runWith({
+      delivery: { requested: ["zip"], delivered: [] },
+      approved: {
+        signoffPath: "signoffs/e1.json",
+        approvedProvenanceHash: "the-hash-of-something-else",
+      },
+    });
+    const r = await deliver(run, el, runDir, decorWith());
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toMatch(/approv/i);
+  });
+
   it("should record an outcome carrying the current provenance", async () => {
     const { run, el } = runWith({
       delivery: { requested: ["zip"], delivered: [] },
@@ -162,9 +204,14 @@ describe("deliver", () => {
     const { run, el } = runWith({
       delivery: { requested: ["zip"], delivered: [] },
     });
-    const r = await deliver(run, el, runDir, decorWith(), {
-      requiredSigners: ["yvan"],
-    });
+    const { approved: _approved, ...unapproved } = el;
+    const r = await deliver(
+      { ...run, elements: [unapproved] },
+      unapproved,
+      runDir,
+      decorWith(),
+      { requiredSigners: ["yvan"] },
+    );
     expect(r).toMatchObject({ ok: false, code: "invalid-request" });
     expect((r as { message: string }).message).toContain("sign-off");
   });
@@ -539,6 +586,12 @@ describe("deliver", () => {
     const withArtifact: RunElement = {
       ...produced1.value,
       delivery: { requested: ["zip"], delivered: [] },
+      // Publishing is gated on an approval covering these bytes; this test is about what a
+      // re-produce does to an already-delivered package.
+      approved: {
+        signoffPath: "signoffs/e1.json",
+        approvedProvenanceHash: produced1.value.artifact!.provenanceHash,
+      },
     };
     const runWithArtifact: RunManifest = { ...base, elements: [withArtifact] };
 
@@ -579,11 +632,16 @@ function staticRunWith(requested: string[]) {
       })),
     },
   };
+  // Re-pinning the format moves the provenance hash, so the artifact AND the approval that
+  // covers it both follow — an approval left behind would read stale and the delivery would be
+  // refused by the editorial gate rather than by the genre rule these tests are about.
+  const provenance = provenanceHash(run, repinned);
   const fixed = {
     ...repinned,
-    artifact: {
-      ...repinned.artifact!,
-      provenanceHash: provenanceHash(run, repinned),
+    artifact: { ...repinned.artifact!, provenanceHash: provenance },
+    approved: {
+      signoffPath: "signoffs/e1.json",
+      approvedProvenanceHash: provenance,
     },
   };
   return { run: { ...run, elements: [fixed] }, el: fixed };

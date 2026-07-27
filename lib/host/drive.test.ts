@@ -263,10 +263,12 @@ describe("requestDeliveryIn — where it goes, decided and recorded", () => {
     expect(JSON.parse(bytes(dir)).elements[0].delivery.requested).toEqual([
       "zip",
     ]);
-    // And THAT is what makes the deliver step valid — the whole point of the decision.
+    // And THAT is what opens the road to publication — the whole point of the decision. The
+    // road now starts at `capture`: a produced artifact somebody has asked to publish owes the
+    // verification chain (capture → review → preview → approve) before deliver becomes valid.
     expect(
       (r as { value: { nextActions: string[] } }).value.nextActions,
-    ).toEqual(["deliver"]);
+    ).toEqual(["capture"]);
   });
 
   it("honours the destinations the journalist named", () => {
