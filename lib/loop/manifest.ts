@@ -6,6 +6,9 @@ import { migrate } from "./migrate";
 import { INTENTS } from "../brain/intents";
 import { VISUAL_FORMATS, CHANNELS as CHANNEL_KEYS } from "../core/vocabulary";
 import { isLoopBuildable, resolveBuilder } from "./buildable";
+// --- source policy (lib/source) ---
+import { SourceLedgerSchema } from "../source/kinds";
+import { assertSourceLedger } from "../source/policy";
 
 const HashRef = z.object({ path: z.string(), sha256: z.string() });
 const DataProfileSchema = z.object({
@@ -124,6 +127,13 @@ export const RunManifestSchema = z.object({
   /** Where this run publishes — the SCOPE axis, and what produce renders at. */
   channel: z.enum(CHANNEL_KEYS).default("article-web"),
   input: z.object({ data: HashRef.optional(), article: HashRef.optional() }),
+  // --- source policy (lib/source) ---
+  // WHAT each frozen input IS, beside the path+hash of WHICH file it is: the declared source
+  // class and the run's mode. Optional, because a run declares its sources when it knows them
+  // and every run recorded before this field existed stays readable — but a ledger that IS
+  // present is checked at every write (assertInvariants below). The manifest is the PRIVATE
+  // ledger: an internalRef belongs here and never leaves through lib/source/redact.ts.
+  sources: SourceLedgerSchema.optional(),
   cadrage: z.object({ answers: z.record(z.string(), z.string()) }).optional(),
   orient: z
     .object({
@@ -378,4 +388,15 @@ export function assertInvariants(run: RunManifest): void {
     if (el.blocked && el.dropped)
       throw new Error(`invariant: element ${el.id} both blocked and dropped`);
   }
+  // --- source policy (lib/source) ---
+  // A declared source must be valid AT THE RUN'S OWN MODE. This is the one place the policy is
+  // enforced rather than merely available, and it is deliberately the earliest: `synthetic` in
+  // a run that calls itself reporting is a contradiction in the DECLARATION, so it fails at the
+  // write, not later at the publish. The frozen-input flags are passed structurally (never the
+  // manifest itself) so lib/source stays free of any dependency on lib/loop.
+  if (run.sources)
+    assertSourceLedger(run.sources, {
+      data: run.input.data != null,
+      article: run.input.article != null,
+    });
 }
