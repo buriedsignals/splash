@@ -18,6 +18,8 @@ import {
   defaultAspectFor,
   destinationOf,
   aspectOf,
+  isFormatAllowed,
+  DESTINATION_POLICY,
 } from "../core/channel-policy";
 import {
   DESTINATIONS,
@@ -163,8 +165,12 @@ export function planDeliverables(
   const others = run.elements.filter((el) => el.id !== source.id);
 
   const [first, ...rest] = unique;
+  // Destructured OUT, not spread over: a plan REPLACES what the element was asked to be. Keeping
+  // an older `requestedFormat` because the new plan happens not to name one would leave a "video
+  // only" request standing on an element the journalist has just re-planned as plain web.
+  const { requestedFormat: _replaced, ...carried } = source;
   const master: RunElement = {
-    ...source,
+    ...carried,
     deliverable: {
       destination: first!.destination,
       ...(first!.aspect ? { aspect: first!.aspect } : {}),
@@ -173,6 +179,21 @@ export function planDeliverables(
       ? { requestedFormat: first!.requestedFormat }
       : {}),
   };
+  // An offer the NEW destination cannot carry has to go. Not a hypothetical: an element that had
+  // chosen an interactive and is then re-planned for print would be a manifest assertInvariants
+  // refuses to write — the plan would fail on a perfectly legitimate act. Dropping the stale
+  // proposal is the way out revise.ts already established: drop the field the next automatic step
+  // is conditioned on, and let manifest.ts's own "no proposal ⇒ propose" take it from there.
+  const pinned = master.proposal?.chosenId
+    ? master.proposal.options.find((o) => o.id === master.proposal!.chosenId)
+        ?.format
+    : undefined;
+  const carriable =
+    pinned == null ||
+    DESTINATION_POLICY[first!.destination].channels
+      .filter((c) => !first!.aspect || aspectOf(c) === first!.aspect)
+      .some((c) => isFormatAllowed(c, pinned));
+  if (!carriable) delete master.proposal;
 
   const siblings = rest.map((r, i) => {
     const id = nextId(taken, source.id, i + 2);

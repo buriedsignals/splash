@@ -6,7 +6,12 @@ import {
   deliverablePlan,
   type DeliverableChoice,
 } from "./deliverables";
-import { channelForElement, type RunManifest } from "./manifest";
+import {
+  channelForElement,
+  assertInvariants,
+  nextActionsForElement,
+  type RunManifest,
+} from "./manifest";
 
 function base(): RunManifest {
   return {
@@ -256,4 +261,76 @@ test("a planned run stays writable — its invariants hold", () => {
   const run = plan("web", "video", "social", "print");
   expect(() => JSON.parse(JSON.stringify(run))).not.toThrow();
   for (const el of run.elements) expect(el.id).toMatch(/^[A-Za-z0-9_-]+$/);
+});
+
+describe("re-planning an element that had already been somewhere", () => {
+  const alreadyWeb = (): RunManifest => {
+    const m = base();
+    return {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          deliverable: { destination: "article-web" },
+          requestedFormat: "video",
+          proposal: {
+            options: [
+              {
+                id: "slope",
+                nativeType: "slope",
+                engine: "chart-native",
+                format: "interactive",
+                why: "w",
+              },
+            ],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+    };
+  };
+
+  it("does not leave an older format request standing when the new plan names none", () => {
+    const r = planDeliverables(alreadyWeb(), ["web"]);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.elements[0]!.requestedFormat).toBeUndefined();
+  });
+
+  it("drops an offer its new destination cannot carry, instead of writing a manifest that throws", () => {
+    const r = planDeliverables(alreadyWeb(), ["print"]);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const master = r.value.elements[0]!;
+    expect(master.deliverable!.destination).toBe("print");
+    // The interactive it had chosen cannot be printed — so the offer goes, and the run routes
+    // back to `propose` on its own, the way revise.ts already invalidates a stale request.
+    expect(master.proposal).toBeUndefined();
+    expect(() => assertInvariants(r.value)).not.toThrow();
+    expect(nextActionsForElement(r.value, master)).toEqual(["propose"]);
+  });
+
+  it("keeps an offer the new destination still carries", () => {
+    const m = alreadyWeb();
+    const stillLegal = {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          proposal: {
+            ...m.elements[0]!.proposal!,
+            options: [
+              {
+                ...m.elements[0]!.proposal!.options[0]!,
+                format: "static" as const,
+              },
+            ],
+          },
+        },
+      ],
+    };
+    const r = planDeliverables(stillLegal, ["print"]);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.elements[0]!.proposal?.chosenId).toBe("slope");
+  });
 });
