@@ -458,7 +458,12 @@ Four rules, all mechanical:
    It throws on an id that was not offered, a discarded id presented as offered, and on ANY change
    to the list or its order (dropping an option — including dropping them all — is a silent removal
    and fails exactly like reordering). Go through `applyPhrasing()` (`lib/loop/phrase.ts`): it is
-   the one path that calls the guard and then writes the `why` back onto the manifest.
+   the one path that calls the guard and then writes the `why` back onto the manifest. From a host
+   that is not JavaScript, that path is `phrase --run <dir> < phrasing.json`.
+   **This is no longer only a contract in prose:** `nextActions` answers `phrase` while any offered
+   `why` is still empty, and `assertInvariants` refuses to WRITE a manifest whose chosen option
+   carries a blank one. "Never persist an option whose `why` is still empty" is now enforced by the
+   manifest itself.
 3. **A marked option is presented marked.** Set `markAcknowledged: true` on the phrasing of every
    option carrying a `readiness` (the guard refuses the phrasing otherwise, and equally refuses the
    flag on an unmarked option), **and print `readiness.reason` beside that option's `why`** — the
@@ -478,8 +483,15 @@ is written by CODE, with its own refusals, exactly like the offer is built by co
 manifest to record a choice produces state nothing validated, in a loop whose every guard assumes
 the opposite — and it is the last place where the flow was prose instead of a mechanism.
 
-| The journalist decides | The mechanism | Refuses |
+**Including the run's own creation.** This rule used to name a path that did not exist: nothing
+created a run, so hand-editing was the only way to get one. `initRun` closes that, and every row
+below is now reachable from a host that is not JavaScript.
+
+| The act | The mechanism | Refuses |
 |---|---|---|
+| starting the run | `initRun(runDir, declaration)` (`lib/loop/init.ts`) — host: `init --run <dir> < declaration.json` | a declaration carrying anything a command must EARN (`angle`, `proposal`, `artifact`, `delivery`, `orient`, `events` — refused **by name**) · a directory that already holds a run · an input path that does not exist · a source ledger the policy rejects (checked before a byte is written) |
+| the confirmed angle | `confirmAngle(el, parts)` (`lib/loop/angle.ts`) — host: `confirm-angle --run <dir> --takeaway <s> --alt-insight <s> --unit <s> [--emphasis <s>]` | a blank takeaway (it becomes the title) · a blank alt text (WCAG 1.1.1 — the producers fail hard on it) · a blank unit. Four NAMED slots, never a field the caller designates: that is what keeps it from being a "write any prose anywhere" command |
+| writing the offer's prose | `applyPhrasing(run, elId, phrased)` (`lib/loop/phrase.ts`) — host: `phrase --run <dir> < phrasing.json` | see the phrasing contract above — ids, count, exact order, discards, marks, every number grounded, and a blank `why` |
 | which form gets built | `chooseForm(el, id)` (`lib/loop/choose.ts`) — host: `choose-form --run <dir> --option <id>` | an id that is not in the offer (naming the ones that are) · an empty offer (carrying the brain's own refusal) · a form nothing can build |
 | where it goes | `requestDelivery(run, el, decor, opts)` (`lib/loop/request-delivery.ts`) — host: `request-delivery --run <dir> [--to <id,id>]` | nothing produced yet · a stale artifact · a destination this install does not know |
 
@@ -489,6 +501,13 @@ Then the deterministic steps run themselves: `advance()` (`lib/loop/driver.ts`),
 erases what the journalist decided. **Publishing never goes through `verb publish`**: that path
 skips the sign-off, the provenance-freshness check, the profile-derived metadata, the readiness
 and the genre legality, and the façade refuses it for that reason.
+
+**Nor does rendering, when the credit matters.** `verb render` IS callable — it is a first-class
+façade capability — but it validates no `spec.source`: the contract holds the spec opaque, so the
+credit inside it is whatever the caller typed. The façade's answer therefore carries
+`sourcePolicy: { checked: false }`, so such an artifact cannot pass for a policy-checked one. It
+also carries no provenance, so it can never be published through Splash. To render under the
+source policy, create a run and let `produce` take the credit from the declared ledger.
 
 Only accepted proposals continue.
 

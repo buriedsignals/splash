@@ -16,11 +16,13 @@ Three rules hold for every command:
   are strictly read-only — they never write a byte into the run directory, not even to
   migrate an old manifest (see `stale-schema` below). A host keeps nothing between calls; the
   run's `run.json` is the only source of truth.
-- **Four commands write, and each writes one thing.** `verb` writes inside the paths its own
-  request names. `advance`, `choose-form` and `request-delivery` write the `run.json` of the
-  run they were pointed at (and, for `advance`, whatever the loop's own step produces beneath
-  it). Nothing else on disk is touched, and a REFUSED decision writes nothing at all — a
-  refusal always leaves the run byte-identical, which is what makes it safe to retry.
+- **Seven commands write, and each writes one thing.** `verb` writes inside the paths its own
+  request names. `init` creates the `run.json` of a directory that held none (plus the frozen
+  copies of the inputs it declared). `advance`, `confirm-angle`, `phrase`, `choose-form` and
+  `request-delivery` write the `run.json` of the run they were pointed at (and, for `advance`,
+  whatever the loop's own step produces beneath it). Nothing else on disk is touched, and a
+  REFUSED command writes nothing at all — a refusal always leaves the run byte-identical, which
+  is what makes it safe to retry.
 
 ## Exit codes
 
@@ -34,10 +36,22 @@ These three are exhaustive, and they hold for every input: an unreadable stdin, 
 flag, a hostile payload, or a residual defect inside the façade all still leave one JSON
 document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
-## The eight commands
+## The eleven commands
 
-Read-only: `verbs`, `state`, `next`, `newsroom`. Acting: `advance`, `choose-form`,
-`request-delivery`, `verb`.
+Read-only: `verbs`, `state`, `next`, `newsroom`. Acting: `init`, `advance`, `confirm-angle`,
+`phrase`, `choose-form`, `request-delivery`, `verb`.
+
+The whole journey, in the order a host walks it — every step is one of these commands, and none
+of them needs a run.json written by hand:
+
+```
+init → advance (orient) → confirm-angle → advance (propose) → state (read the offer)
+     → phrase → choose-form → advance (produce) → request-delivery → advance (deliver)
+```
+
+`advance` performs whatever deterministic step is valid; the others are the turns only a
+journalist or a desk can take. `state`/`next` say which one is owed at any moment, and every
+acting command answers with the new `nextActions`, so a host never has to guess.
 
 ### `verbs`
 
@@ -109,7 +123,11 @@ $ bun lib/host/cli.ts verbs
             "type": "string",
             "required": true
           }
-        ]
+        ],
+        "sourcePolicy": {
+          "checked": false,
+          "why": "this artifact was rendered outside a run: spec.source is whatever this request supplied, and no source policy (lib/source) validated it. A run's produce takes the credit from its DECLARED source ledger and refuses a run that declared none. This artifact also carries no provenance, so Splash cannot publish it — verb publish is refused at this façade, and deliver only publishes an artifact a run produced. To render under the source policy, create a run (init --run <dir>) and drive it with advance."
+        }
       },
       {
         "name": "capture",
@@ -229,6 +247,77 @@ Exit code `0`. Notes on what a host can read out of that:
   (`lib/core/verbs/types.ts`) and `HOST_ERROR_CODES` (`lib/host/errors.ts`).
 - `spec` has no schema on purpose: it is opaque by contract, only the engine's own validator
   understands it.
+- **`sourcePolicy` on `render` is a declared limitation, not a payload field.** Because `spec` is
+  opaque, the credit inside it is whatever the request supplied — nothing validates it, and
+  `render()` cannot, since what the loop applies (`validateSourcePolicy` over a run's declared
+  ledger) is a fact about a RUN and this payload has no way to name one. A host reads that here
+  rather than assuming its artifact was checked, and the answer to a successful `verb render`
+  carries the same object. What keeps the hole harmless: an artifact rendered outside a run has
+  no provenance, so `deliver` will not publish it and `verb publish` is refused — the
+  mis-credited file stays local and cannot leave through Splash.
+
+### `init --run <dir>`
+
+Creates a run. This is the beginning of every journey and, until this command existed, the one
+step no host could take: `freezeInput` had a single production caller (an *old*-manifest
+migration), so a host outside JavaScript could read and drive a run it had no way to start.
+
+The declaration is read as JSON on **stdin**, because it is a document rather than a handful of
+scalars — two input slots, each with its own source declaration, plus the elements:
+
+```
+$ bun lib/host/cli.ts init --run /tmp/host-readme-journey < declaration.json
+```
+
+```json
+{
+  "runId": "primes-maladie",
+  "input": { "data": "/tmp/host-readme-journey/premiums.csv" },
+  "sources": {
+    "mode": "real",
+    "data": { "kind": "local", "label": "Relevés cantonaux 2024" }
+  },
+  "elements": [{ "id": "el1", "requestedFormat": "static" }]
+}
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "runId": "primes-maladie",
+    "nextActions": [
+      "orient"
+    ]
+  }
+}
+```
+
+Exit `0`. The declared inputs are **copied into the run** (content-addressed under `input/`), so
+the run is self-contained and the manifest references them by path + hash only.
+
+**What the declaration may NOT carry, and that is the point.** The schema is strict and admits
+exactly `runId` · `route` · `channel` · `input` · `sources` · `elements[{id, requestedFormat,
+deliverable, deliverableOf}]`. An `angle`, a `proposal`, an `artifact`, a `delivery`, an
+`orient` or an `events` list is refused **by name**, exit `1`:
+
+```json
+{
+  "ok": false,
+  "code": "invalid-request",
+  "message": "init: the run declaration is not valid — elements.0: Unrecognized key: \"angle\""
+}
+```
+
+A run this command creates is at gate state `empty`, and every field after that is *earned* by a
+command with its own refusals. That is what makes the rule in `skills/splash/SKILL.md` — never
+hand-edit `run.json` — a rule with a path behind it rather than a contradiction.
+
+Two more refusals, both exit `1`, and both leave the directory untouched: a declared input that
+does not exist, and a source ledger the policy rejects (checked **before** anything is frozen, so
+an illegal declaration cannot orphan a copied file in a directory with no `run.json`). A
+directory that already holds a `run.json` is refused outright — the manifest is the ledger of
+everything the run produced and delivered, and a command called "init" does not get to erase it.
 
 ### `state --run <dir>`
 
@@ -267,6 +356,62 @@ $ bun lib/host/cli.ts state --run /tmp/host-readme-demo
 }
 ```
 
+Once an offer exists, each element also carries `proposal` — **the offer, whole**: the options
+with their `whySource` grounding, the discarded forms with their reasons, the chosen id, and the
+brain's own refusal when it declined a requested format. Without it a host was told
+`nextActions: ["choose-form"]` and shown no forms — asked to make a decision it could not see the
+terms of, and unable to write the phrasing (below), which must come from `whySource` alone:
+
+```json
+{
+  "id": "el1",
+  "gateState": "proposed",
+  "nextActions": [
+    "phrase"
+  ],
+  "validation": {
+    "artifact": "none"
+  },
+  "destination": "article-web",
+  "aspect": "landscape",
+  "channel": "article-web",
+  "proposal": {
+    "options": [
+      {
+        "id": "slope",
+        "nativeType": "slope",
+        "engine": "chart-native",
+        "format": "static",
+        "intent": [
+          "change-over-time",
+          "ranking"
+        ],
+        "why": "",
+        "whySource": {
+          "sheet": "knowledge/references/chart/types/slope.md",
+          "fragments": [
+            "a before/after across a handful of categories",
+            "a rank change between two periods"
+          ],
+          "facts": {
+            "rows": "3",
+            "series": "3",
+            "points": "2",
+            "measures": "2015, 2024"
+          }
+        },
+        "requires": [
+          "chart-native"
+        ]
+      }
+    ],
+    "excluded": []
+  }
+}
+```
+
+(one option and two fragments shown; a real offer carries three options and their full sheets.)
+
 Exit code `0` on a readable run; `2` if `--run` is missing, an argument is not recognised,
 or the directory holds no readable `run.json`.
 
@@ -282,7 +427,7 @@ $ bun lib/host/cli.ts state --run /tmp/host-readme-v1
 {
   "ok": false,
   "code": "stale-schema",
-  "message": "/tmp/host-readme-v1/run.json declares schemaVersion 1, not 3 — state and next are read-only and will not migrate it, because migrating writes a frozen input file into the run directory. Run the migration explicitly, then read the run again"
+  "message": "/tmp/host-readme-v1/run.json declares schemaVersion 1, not 4 — state and next are read-only and will not migrate it, because migrating writes a frozen input file into the run directory. Run the migration explicitly, then read the run again"
 }
 ```
 
@@ -362,9 +507,137 @@ happened:
 }
 ```
 
-`confirm-angle` is the one human turn with **no** command behind it: the takeaway, alt text and
-unit are free editorial text, and a command that wrote arbitrary prose into the manifest would be
-the disease this surface cures. A host records the angle by building the run with it.
+Every human turn now has a command behind it, and `advance` names the one that is owed:
+
+```json
+{
+  "ok": false,
+  "code": "step-refused",
+  "message": "advance: the next act is the journalist's — confirm the angle with \"confirm-angle --run <dir> --takeaway <s> --alt-insight <s> --unit <s>\""
+}
+```
+
+### `confirm-angle --run <dir> --takeaway <s> --alt-insight <s> --unit <s> [--emphasis <s>] [--element <id>]`
+
+Records the confirmed angle — the editorial decision everything downstream reads: the takeaway
+becomes the visual's **title**, the alt text its **accessibility description**, the unit its
+**subtitle**, and all three enter the provenance hash.
+
+```
+$ bun lib/host/cli.ts confirm-angle --run /tmp/host-readme-journey \
+    --takeaway "Les primes ont augmenté dans les trois cantons" \
+    --alt-insight "La prime adulte moyenne passe de 449 à 583 francs à Genève entre 2015 et 2024." \
+    --unit CHF
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "confirmed": "el1",
+    "nextActions": [
+      "propose"
+    ]
+  }
+}
+```
+
+**Flags, not a JSON body — and that is the whole design.** The angle is free editorial text, and
+a command that let a host write arbitrary prose *anywhere in the manifest* would be the disease
+this surface cures, not the cure. What makes this one safe is that the host never names a KEY: it
+answers one of four known questions. There is no field to designate, no path into the manifest to
+choose. A JSON body would invite "here is an object"; flags enumerate.
+
+Three of the four are **refused blank**, with the reasons this codebase already gives at
+hand-over time (`lib/delivery/metadata.ts`) — made here instead, so the run cannot carry the blank
+at all. Exit `1`, and the run stays byte-identical:
+
+```json
+{
+  "ok": false,
+  "code": "invalid-request",
+  "message": "confirm-angle: element el1 was given a blank alt text — WCAG 1.1.1: the alt text must state the insight, not the chart's structure — the producers refuse to render without one"
+}
+```
+
+A missing FLAG is a different thing from a blank VALUE: the first is a malformed command line
+(`usage`, exit `2`), the second a well-formed request the loop declined (exit `1`).
+
+Re-confirming is allowed — it is how a journalist changes the angle after seeing the visual — and
+the answer says what that **invalidated**. The angle is in the provenance hash, so a fresh
+artifact goes stale and the loop routes back to `produce`:
+
+```json
+{
+  "ok": true,
+  "value": {
+    "confirmed": "el1",
+    "staled": true,
+    "nextActions": [
+      "produce"
+    ]
+  }
+}
+```
+
+`staled` is absent, never `false`, when there was nothing to stale.
+
+### `phrase --run <dir> [--element <id>]`
+
+Writes the offer's prose. The brain hands over each form as **data** — ids, order, the reference
+sheet's own fragments, the computed facts — and leaves every `why` empty on purpose, because the
+fragments are the knowledge base's ENGLISH sentences and the journalist reads French, German or
+Italian. This command is where those sentences get written, and until it existed nothing in
+production ever wrote one: every option on every real run carried a filled `whySource` and
+`why: ""`.
+
+Read the offer from `state` (above), then send one phrasing per form, **in the offer's order**:
+
+```
+$ bun lib/host/cli.ts phrase --run /tmp/host-readme-journey < phrasing.json
+```
+
+```json
+[
+  { "id": "slope", "why": "Deux dates, trois cantons : la pente montre d'un coup qui monte le plus vite." },
+  { "id": "bump", "why": "Le bump suit le classement, mais ici l'écart compte plus que le rang." },
+  { "id": "fan", "why": "L'éventail sert quand il y a une projection ; il n'y en a pas dans ces 3 lignes." }
+]
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "phrased": "el1",
+    "nextActions": [
+      "choose-form"
+    ]
+  }
+}
+```
+
+**Why free prose gets a document here, when the angle needed named flags.** This prose is
+VERIFIED. The guard beneath (`verifyOffer`) checks the ids, the count, the **exact order**, a
+discarded form presented as offered, the structural acknowledgement of every marked option
+(`"markAcknowledged": true`, required on a marked form and refused on an unmarked one) — and that
+every NUMBER in the sentence comes from that option's own grounding. Then a blank `why` is refused:
+an option nobody wrote is never shown. So the host is not writing wherever it likes; it is filling
+one sentence per offered form, against a list it did not choose.
+
+Every violation is exit `1`, in the guard's own words, and the run is left untouched:
+
+```json
+{
+  "ok": false,
+  "code": "invalid-request",
+  "message": "verifyOffer: the order changed — offered slope, bump, fan, phrased fan, bump, slope"
+}
+```
+
+An invented figure is refused the same way (`verifyOffer: "slope" claims the number 87, which is
+in neither the facts nor the sheet`), and so is a dropped option — dropping one is a silent
+removal, and it fails exactly like reordering.
 
 ### `choose-form --run <dir> --option <id>`
 
@@ -488,10 +761,20 @@ produced (a real `static.png`; ~6.5s wall clock for chart-native on this project
       "/tmp/host-readme-demo/elements/el1/native-source.json",
       "/tmp/host-readme-demo/elements/el1/static.png"
     ],
-    "report": {}
+    "report": {},
+    "sourcePolicy": {
+      "checked": false,
+      "why": "this artifact was rendered outside a run: spec.source is whatever this request supplied, and no source policy (lib/source) validated it. A run's produce takes the credit from its DECLARED source ledger and refuses a run that declared none. This artifact also carries no provenance, so Splash cannot publish it — verb publish is refused at this façade, and deliver only publishes an artifact a run produced. To render under the source policy, create a run (init --run <dir>) and drive it with advance."
+    }
   }
 }
 ```
+
+`sourcePolicy` sits beside the artifact rather than inside `report`, because `report` is the
+ENGINE's bag and the engine said nothing about the source policy. It appears only on a SUCCESS —
+a refusal rendered nothing — and only for `render`, which is the one verb reachable here that
+writes an artifact. To render **under** the policy, create a run (`init`) and drive it: the
+loop's produce takes the credit from the declared ledger and refuses a run that declared none.
 
 Exit code `0`. A refusal is still a well-formed JSON body, exit `1`:
 
