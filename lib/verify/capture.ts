@@ -66,11 +66,14 @@ export const ROOT_SELECTORS = [
 // divergence detector needs the text that IS painted, whatever it turns out to be.
 //
 // Measured on the engines rather than assumed:
-//   - chart-native's 42 components all end on `<svg role="img" aria-label={config.title}>`
-//     (e.g. skills/chart-native/src/BarChart.tsx:289-290). That accessible name is the only
-//     title this DOM NAMES: ChartFrame paints the visible one in an unclassed, unattributed
-//     <div> (ChartFrame.tsx:167-176), and "the biggest text near the top" would just as
-//     happily return a value label.
+//   - each of chart-native's 41 chart components roots its render on `<svg role="img"
+//     aria-label={config.title}>` (counted, not assumed: 41 of the 42 files carrying
+//     `role="img"` set exactly that, and the 42nd is ChartFrame.tsx, where the string is in a
+//     comment). The per-datum `role="img"` nodes inside are <rect>/<circle>, so the tag in
+//     the selector keeps them out and document order returns the root. That accessible name
+//     is the only title this DOM NAMES: ChartFrame paints the visible one in an unclassed,
+//     unattributed <div> (ChartFrame.tsx:167-176), and "the biggest text near the top" would
+//     just as happily return a value label.
 //   - map-native / scrolly declare the same thing PREFIXED ("Interactive map: <title>",
 //     ChoroplethMap.tsx:485). Harmless to the metric, which counts the share of the
 //     TAKEAWAY's words the title carries — extra words on the title side dilute nothing.

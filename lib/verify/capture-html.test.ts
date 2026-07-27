@@ -323,8 +323,8 @@ describe("capture — the real deliverable at the real publication container", (
   // ROOT_SELECTORS, and RECORDS which candidate answered.
 
   it("reads the accessible name the render declares — the title chart-native really ships", async () => {
-    // Measured on the engine, not assumed: all 42 chart-native components end on
-    // `<svg role="img" aria-label={config.title}>` (e.g. BarChart.tsx:289-290). ChartFrame
+    // Measured on the engine, not assumed: each of chart-native's 41 chart components roots
+    // on `<svg role="img" aria-label={config.title}>` (e.g. BarChart.tsx:289-290). ChartFrame
     // paints the VISIBLE title in an unclassed, unattributed <div> (ChartFrame.tsx:167-176),
     // so the accessible name is the only title this DOM actually names.
     const declared = "Health premiums rose in every canton shown";

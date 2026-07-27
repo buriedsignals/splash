@@ -108,9 +108,12 @@ export const TITLE_SOURCES = [
 
 Mesuré sur les moteurs, pas supposé :
 
-- **chart-native** — les **42** composants terminent sur `<svg role="img" aria-label={config.title}>`
-  (p. ex. `skills/chart-native/src/BarChart.tsx:289-290`). C'est le **nom accessible que le rendu
-  déclare**, verbatim. C'est aussi le SEUL titre nommé dans ce DOM : `ChartFrame` peint le titre
+- **chart-native** — les **41** composants de graphe enracinent leur rendu sur `<svg role="img"
+  aria-label={config.title}>` (compté : 41 des 42 fichiers portant `role="img"` écrivent
+  exactement cela, le 42e étant `core/ChartFrame.tsx` où la chaîne est dans un commentaire). Les
+  nœuds `role="img"` par-donnée à l'intérieur sont des `<rect>`/`<circle>` : la balise dans le
+  sélecteur les exclut, et l'ordre du document rend la racine. C'est le **nom accessible que le
+  rendu déclare**, verbatim. C'est aussi le SEUL titre nommé dans ce DOM : `ChartFrame` peint le titre
   visible dans un `<div>` sans classe, sans id et sans attribut (`ChartFrame.tsx:167-176` et
   `244-253`) — il n'existe aucun marqueur à viser, et « le plus gros texte en haut » attraperait
   une étiquette de valeur.
@@ -330,38 +333,61 @@ migrer. L'assertion, elle, ne bouge pas d'un caractère.
 
 ---
 
-## 7. La preuve
+## 7. La preuve — et ce qu'elle a mesuré
 
-`lib/verify/real-artifact-proof.test.ts` (opt-in, `SPLASH_VERIFY_PROOF=1`) est étendu et son
-**mensonge est retiré** : il ne se passe plus `renderedTitle: TAKEAWAY` à la main.
+Le **mensonge est retiré** de `lib/verify/real-artifact-proof.test.ts` : il ne se passe plus
+`renderedTitle: TAKEAWAY` à la main (c'était le seul assignateur du champ dans tout le dépôt).
 
-Deux runs, tous deux à travers la vraie boucle (vrai `produce` chart-native, vrai navigateur,
-vrais verbes `captureStep`/`reviewStep` de `lib/loop/verify.ts`) :
+La preuve neuve vit dans son propre fichier, `lib/verify/rendered-title-proof.test.ts` (opt-in,
+`SPLASH_VERIFY_PROOF=1`). Trois cas, tous à travers la vraie boucle — vrai `produce`
+chart-native (build Vite), vrai chromium, et les **appelants de production**
+`captureStep`/`reviewStep` de `lib/loop/verify.ts`, pas des payloads assemblés dans le test.
+Mesuré, 40,7 s :
 
-1. **Le cas muet.** `produce` rend l'interactif ; `captureStep` extrait le titre du rendu ;
-   `reviewStep` produit le record. Attendu : `renderedTitle === angle.confirmedTakeaway`,
-   `titleSource` nommé, et **aucun** `title-takeaway-divergence` dans `tasteRisk`.
-2. **Le cas bruyant.** Sur le **même artefact rendu**, la back-edge réelle de la boucle —
-   `revise(el, { kind: "takeaway", … })`, le journaliste qui change d'avis après avoir vu le
-   visuel — puis `captureStep`/`reviewStep` à nouveau. Attendu : le signal apparaît, son
-   `evidence` cite le titre peint ET le takeaway confirmé, et il **arrive dans
-   `approvalDecision(...).needsHumanEye`** — la présentation d'approbation.
+| | mesure |
+|---|---|
+| **muet** | `renderedTitle` = « Health premiums rose in every canton shown », `titleSource` = `svg[role='img'][aria-label]`, `confirmedTakeaway` identique → `tasteRisk: []`. |
+| **bruyant** | back-edge réelle `revise(el, {kind:"takeaway", …})` sur le **même artefact rendu** (`artifactSha256` identique) → `tasteRisk: ["title-takeaway-divergence"]`, evidence : *« title "Health premiums rose in every canton shown" shares 0/5 content words with the confirmed takeaway "Appenzell keeps the cheapest premium of the three" »*, et `approvalDecision(...).needsHumanEye` le porte. |
+| **statique** | `static.png` réellement produit → `titleSource: "static-image"`, `renderedTitle: null`, voie muette. |
 
-Le cas bruyant est honnête sur ce qu'il est : après un `revise`, `provenanceHash` bouge, donc la
-boucle route de toute façon vers `produce` et l'approbation refuserait pour `review-stale`. **La
-preuve l'asserte aussi**, plutôt que de le cacher : les deux mécanismes sont complémentaires — la
-péremption dit *« cet artefact n'est plus le bon »*, la voie de goût dit *« et voici en quoi son
-titre ne dit plus votre point »*. C'est le seul chemin réel qui fasse diverger les deux chaînes
-avec un rendu réel sur disque, puisque `produce.ts:168` les tient égales.
+Deux choses que la preuve asserte **au lieu de les cacher** :
 
-Un troisième cas, sur un `static.png` réellement produit par la boucle : `titleSource ===
-"static-image"`, pas de `renderedTitle`, voie muette.
+- **le signal ne bloque pas.** `decision.reasons` du cas bruyant vaut
+  `["preview-not-presented", "blocking-findings-open"]` — jamais `title-takeaway-divergence`. Le
+  bloquant est le `furniture-missing` que le check de furniture émet déjà (§4.5) : la divergence
+  est attrapée deux fois, et une seule des deux barre la route.
+- **la péremption fait son travail à côté.** Après le `revise`, `nextActionsForElement` répond
+  `["produce"]` — la preuve l'asserte. Les deux mécanismes répondent à deux questions : *« cet
+  artefact n'est plus le bon »* et *« et voici en quoi son titre ne dit plus votre point »*.
+  C'est aussi le seul chemin réel qui fasse diverger les deux chaînes avec un rendu sur disque,
+  puisque `produce.ts:168` les tient égales.
+
+**Pourquoi un fichier séparé.** Mesuré, deux fois : lancée dans le **même processus bun-test**
+après `real-artifact-proof.test.ts` (qui a déjà lancé trois navigateurs), la preuve neuve **cale
+à son premier lancement de navigateur** — un timeout de lancement, pas un échec. Séparées, chacune
+tourne en ~35-41 s. C'est une limite de l'environnement, notée en §8, pas un contournement de
+code.
 
 ---
 
 ## 8. Risques assumés
 
 *(écrits après implémentation, chacun avec son ruling.)*
+
+| # | Résidu constaté | Ruling |
+|---|---|---|
+| **R1** | **Rien ici ne prouve que des yeux ont touché les pixels.** `SPLASH_NO_VIEWER=1` rend toujours une préview `path-printed` atteignable (R4 de la tranche précédente, inchangé) ; et même une préview `opened` ne prouve qu'un lancement de visualiseur. Cette tranche rend la divergence **visible à la personne qui approuve**. Elle ne la fait pas regarder. | **Assumé, et c'est la limite du dispositif entier.** Aucun contrat JSON ne peut prouver un regard. Ce qui est prouvé est plus étroit et vrai : le titre présenté au moment de l'approbation a été **lu sur l'artefact**, pas recopié depuis l'intention. Aucune ligne de code, de commentaire ou de spec ne prétend davantage. |
+| **R2** | **Dans la boucle d'aujourd'hui, la divergence ne peut pas naître de la production** : `produce.ts:168` écrit `title: el.angle.confirmedTakeaway`, et `inheritAngle` vient de renforcer la discipline. Le détecteur ne « rattrape » donc aucun défaut vivant. | **Voulu, et c'est le point.** Jusqu'ici « le titre EST le takeaway » était une promesse que le code de production faisait sur lui-même, jamais vérifiée sur le rendu. C'est désormais une mesure prise dans le navigateur, à chaque `capture`. Le jour où un moteur transforme le titre — troncature, préfixe, échafaudage hôte qui reprend la tête — ou le jour où ce câblage dérive, la voie humaine le dit. Un détecteur muet parce que le système est sain est le bon état ; un détecteur muet parce qu'il ne lit rien ne l'est pas. |
+| **R3** | **La métrique est LEXICALE.** Une revendication inversée sur un sujet partagé passe : « Malta lags far behind on packaging recycling » titré « Estonia leads packaging recycling in Europe » score 0,33 et reste muet. | **Assumé, chiffré, et inscrit dans le banc** (`taste.test.ts`, cas marqué `fires: false` avec sa raison). Monter le seuil à 0,5 attraperait ce cas et ferait feu sur la reformulation allemande, à 0,33 elle aussi. La leçon de la tranche précédente (le détecteur de couleurs qui se déclenchait sur les teintes de grille) fixe l'arbitrage : **le rappel s'échange contre le silence**, parce qu'une voie qui se déclenche à chaque fois n'est plus lue. |
+| **R4** | **On lit le NOM ACCESSIBLE, pas les pixels.** Un titre présent dans l'arbre d'accessibilité mais visuellement rogné ou masqué serait rapporté comme « rendu ». | **Correct par répartition.** Ce défaut-là est déjà mesuré, ailleurs et mieux : `capture:furniture-in-frame` compare la boîte du titre au conteneur de publication (c'est la panne que la tranche #10 existe pour attraper). Deux mesures pour deux questions ; les fusionner ferait deux verdicts pour un défaut. |
+| **R5** | **Un livrable `static` ne traverse jamais ce détecteur.** | **Voulu** (§2.4). Un png n'a pas de DOM : ni OCR, ni recopie du titre commandé. `titleSource: "static-image"` **dit** l'absence au lieu de la taire. Le même livrable n'a jamais eu de check de furniture non plus, pour la même raison physique. |
+| **R6** | **`[data-splash-title]` n'est posé par aucun moteur** : le premier barreau de l'échelle est mort aujourd'hui. | **Assumé, convention du fichier.** `[data-splash-root]` est mort de la même façon depuis la tranche précédente. Le coût est un `querySelector` par capture ; le bénéfice est qu'un moteur qui marque son titre un jour gagne sans qu'une ligne d'ici change. |
+| **R7** | **Les préfixes des moteurs carto ne sont pas normalisés** (`Interactive map: <titre>`, `Map: <titre>`). L'evidence lue par l'humain les portera. | **Assumé, mesuré comme inoffensif.** La métrique compte la part des mots du **takeaway** présents dans le titre : des mots en plus côté titre ne diluent rien (banc §4.2, cas « préfixe moteur » à 1,00). Et aucun de ces moteurs n'est `LOOP_BUILDABLE` : normaliser un préfixe qu'aucun run ne produit serait du code jamais exercé. |
+| **R8** | **La liste de mots outils est une union figée de quatre langues**, pas une résolution par langue de contenu. Une rédaction publiant en espagnol n'y est pas. | **Assumé, contraint par la couche.** `lib/verify` n'importe que `lib/core`, et la langue de contenu vit dans `lib/newsroom`. L'union coûte peu (un mot outil français dans un titre anglais est un mot rare) et couvre les quatre langues que le profil de rédaction déclare aujourd'hui. Une cinquième langue est une ligne à ajouter, pas un design à refaire. |
+| **R9** | **Une divergence produit DEUX signaux** : un finding bloquant `furniture-missing` (le titre commandé est introuvable dans le DOM) et le risque de goût. | **Voulu, et non touché.** Les deux disent des choses différentes — *« ce que vous avez commandé n'est pas là »* et *« voici ce qui est peint à la place »* — et une seule barre la route. Affaiblir la porte existante pour faire de la place au signal serait le contraire du travail. Mesuré sur le run bruyant : `reasons = ["preview-not-presented", "blocking-findings-open"]`, jamais la dimension de goût. |
+| **R10** | **Les deux preuves opt-in ne peuvent pas tourner dans le même processus `bun test`** : la seconde cale sur son premier lancement de navigateur (reproduit deux fois). | **Assumé, environnemental, documenté dans l'en-tête du fichier.** Chaque preuve tourne seule (~35 s et ~41 s). Aucun code de production n'est concerné — `capture()` ferme son navigateur en `finally` et trois lancements consécutifs passent dans un `bun run` ordinaire. |
+| **R11** | **`DestinationProfile` reste vide** : `resolveTargets` retombe toujours sur `CHANNEL_POLICY`. | **Déféré, et requalifié** (§5.1). La tranche précédente l'annonçait comme « un champ à remplir, pas un design à faire » ; c'est faux, mesuré : le profil de rédaction ne porte aucune boîte d'embed, et son parseur est hors frontière. C'est une question de design produit, à traiter dans une tranche du profil. |
+| **R12** | **`approved ⇒ preview` n'est toujours pas un invariant du manifeste.** | **Refusé, avec la mesure** (§5.2) : exactement 2 tests tombent, dont **un seul** fixture (`lib/loop/driver.test.ts:256`), hors frontière de fichiers. Le verrou porte désormais le chiffre et le nom du fichier, pour que la prochaine tranche qui possède ce fichier sache que c'est la seule chose à migrer. |
 
 ---
 
