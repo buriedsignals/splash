@@ -10,6 +10,7 @@ import {
 } from "../publishers";
 import { publish, runVerb } from "./index";
 import { ok } from "./types";
+import { VISUAL_FORMATS } from "../vocabulary";
 
 const NEVER_CREATED = join(tmpdir(), "splash-publish-must-not-exist");
 
@@ -35,6 +36,7 @@ function request(overrides: Partial<PublishRequest> = {}): PublishRequest {
 function publisher(over: Partial<Publisher> & { id: string }): Publisher {
   return {
     kind: "package",
+    serves: [...VISUAL_FORMATS],
     implemented: true,
     publish: async () =>
       ok({

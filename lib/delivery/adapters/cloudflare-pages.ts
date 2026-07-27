@@ -533,6 +533,11 @@ async function publishToPages(
 export const cloudflarePublisher: Publisher = {
   id: "embed-cloudflare",
   kind: "hosted",
+  // Pages only auto-resolves "index.html" at a deployment's bare alias root, so a PNG or an
+  // mp4 lands with the right bytes and content-type and STILL cannot be addressed by the URL
+  // this adapter returns. That was a 404 discovered at verifyServed — after a real deploy.
+  // Declaring the limit here turns it into a refusal before any network call.
+  serves: ["interactive", "scrolly"],
   implemented: true,
   publish: publishToPages,
 };

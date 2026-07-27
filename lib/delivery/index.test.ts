@@ -10,6 +10,10 @@ import {
 } from "../core/publishers";
 import { fail } from "../core/verbs/types";
 import { NEWSROOM_CAPABILITIES } from "../newsroom/capabilities";
+import { cloudflarePublisher } from "./adapters/cloudflare-pages";
+import { s3Publisher } from "./adapters/s3";
+import { zipPublisher } from "./adapters/zip";
+import { VISUAL_FORMATS } from "../core/vocabulary";
 
 // The registry is global and bun test shares one process: any earlier file that reset it
 // would leave this one empty, because module caching means the root's side effect never runs
@@ -47,6 +51,7 @@ describe("the delivery composition root", () => {
     const squatter: Publisher = {
       id: "zip",
       kind: "package",
+      serves: [...VISUAL_FORMATS],
       implemented: true,
       publish: async () => fail("engine-failed", "stub"),
     };
@@ -130,5 +135,22 @@ describe("the delivery composition root", () => {
     expect((r as { message: string }).message).toContain(
       "CLOUDFLARE_API_TOKEN",
     );
+  });
+});
+
+describe("what each shipped adapter declares it can serve", () => {
+  it("should let the portable package serve every format", () => {
+    expect([...zipPublisher.serves].sort()).toEqual([...VISUAL_FORMATS].sort());
+  });
+
+  it("should let object storage serve every format — the newsroom asset-CDN case", () => {
+    expect([...s3Publisher.serves].sort()).toEqual([...VISUAL_FORMATS].sort());
+  });
+
+  it("should limit Cloudflare Pages to HTML, which is all it resolves at an alias root", () => {
+    expect([...cloudflarePublisher.serves].sort()).toEqual([
+      "interactive",
+      "scrolly",
+    ]);
   });
 });

@@ -18,6 +18,7 @@ import {
 import { isSafeId, unsafeIdMessage } from "../../core/id-safety";
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { renderSnippet } from "../snippet";
+import { VISUAL_FORMATS } from "../../core/vocabulary";
 
 // The ZIP epoch floor, as a Date rather than 0: the archive's bytes must not depend on the
 // clock, or the golden determinism test becomes a clock test. A Date object also avoids any
@@ -165,6 +166,8 @@ async function publish(
 export const zipPublisher: Publisher = {
   id: "zip",
   kind: "package",
+  // The universal fallback carries anything: it publishes to disk.
+  serves: [...VISUAL_FORMATS],
   implemented: true,
   publish,
 };

@@ -21,6 +21,7 @@ import {
   type Publisher,
 } from "../core/publishers";
 import { ok } from "../core/verbs";
+import { VISUAL_FORMATS } from "../core/vocabulary";
 
 let runDir: string;
 
@@ -188,6 +189,7 @@ describe("deliver", () => {
     const echoPublisher: Publisher = {
       id: TEST_CAP_ID,
       kind: "package",
+      serves: [...VISUAL_FORMATS],
       implemented: true,
       async publish(req) {
         return ok({
@@ -252,6 +254,7 @@ describe("deliver", () => {
     const echoS3: Publisher = {
       id: "embed-s3",
       kind: "hosted",
+      serves: [...VISUAL_FORMATS],
       implemented: true,
       async publish(req) {
         return ok({

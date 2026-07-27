@@ -98,6 +98,12 @@ export interface Publisher {
   /** Matches the decor's capability id ("embed-cloudflare", "zip", …). */
   id: string;
   kind: "hosted" | "package";
+  /** The formats this adapter can actually SERVE. `kind` answers where the artifact lands
+   * (disk or URL); this answers what it can carry — and the two are not redundant: `zip` is a
+   * package and still serves the embed genre (a self-contained HTML inside an archive), which
+   * is what makes "no host configured" a working path. Read by lib/loop/deliver.ts BEFORE the
+   * verb runs, so an unservable format is refused with nothing staged, uploaded or deployed. */
+  serves: VisualFormat[];
   /** false = declared, no body yet. Refused before any I/O. */
   implemented: boolean;
   publish(req: PublishRequest): Promise<VerbResult<PublishOutcome>>;

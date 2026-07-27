@@ -22,6 +22,7 @@ import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { isSafeId, unsafeIdMessage } from "../../core/id-safety";
 import { renderSnippet } from "../snippet";
 import { signS3Request, canonicalUri } from "./s3-sign";
+import { VISUAL_FORMATS } from "../../core/vocabulary";
 
 // F5: the public URL is NOT constructible from the endpoint — path-style, virtual-host and an
 // attached custom domain all produce a different URL, and MinIO's own path-style shape is only
@@ -340,6 +341,11 @@ async function publish(
 export const s3Publisher: Publisher = {
   id: "embed-s3",
   kind: "hosted",
+  // Object storage addresses every object by its own key, so it serves any format — the
+  // newsroom asset-CDN case the genre routing deliberately keeps reachable (spec §2): a big
+  // mp4 the CMS refuses, or a CMS that only accepts an embed code. It is no longer the
+  // DEFAULT for a file genre; it is still legal when explicitly chosen.
+  serves: [...VISUAL_FORMATS],
   implemented: true,
   publish,
 };
