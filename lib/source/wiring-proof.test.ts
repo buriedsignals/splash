@@ -1,0 +1,202 @@
+// Opt-in end-to-end proof of the source WIRING: the declared source is what a reader ends up
+// looking at, and correcting it makes the artifact stale.
+//
+// Run it with:  SPLASH_SOURCE_PROOF=1 bun test lib/source/wiring-proof.test.ts
+// Opt-in because it renders twice through the engine and packages a real zip (tens of seconds)
+// — the convention lib/verify/real-artifact-proof.test.ts:22 and lib/loop/video-e2e.test.ts:17
+// already follow. It was run once on the branch that introduced it; the numbers are in
+// docs/superpowers/plans/2026-07-26-source-wiring.md.
+//
+// What each half MEASURES, rather than asserts from the code:
+//
+//   1. Two runs identical except for the declared source label produce PNGs with DIFFERENT
+//      BYTES. Nothing else in the two runs differs — same CSV, same angle, same channel, same
+//      chart type — so the only thing that can have moved a pixel is the credit line. That is
+//      the credit reaching the raster, measured without OCR. (The complementary measurement,
+//      reading the rendered credit back out of a real browser's DOM, is
+//      lib/verify/real-artifact-proof.test.ts, whose FURNITURE check now reads the declared
+//      label.)
+//   2. Changing the label on an ALREADY PRODUCED element flips stalenessOf to true and puts
+//      the run back on "produce". Before provenanceHash covered the ledger this stayed false:
+//      a stale credit on an artifact reporting itself fresh.
+//   3. The delivered package's README credits the declared source, and the placeholder string
+//      appears nowhere in it.
+import { test, expect } from "bun:test";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import "../../skills/splash/src/register-producers";
+import { produce } from "../loop/produce";
+import { deliver } from "../loop/deliver";
+import { freezeInput } from "../loop/freeze";
+import {
+  nextActions,
+  provenanceHash,
+  stalenessOf,
+  type RunManifest,
+} from "../loop/manifest";
+import { neutralDecor } from "../newsroom/decor";
+import { DEFAULT_NEWSROOM_STATE } from "../newsroom/state";
+import { registerAllPublishers } from "../delivery";
+
+const RUN = process.env.SPLASH_SOURCE_PROOF === "1";
+
+const PLACEHOLDER = "Provided by the newsroom";
+const DECLARED = "Office cantonal de la statistique GE";
+const CORRECTED = "Office fédéral de la statistique";
+
+function makeRun(
+  runDir: string,
+  label: string,
+  format = "static",
+): RunManifest {
+  const src = join(runDir, "src.csv");
+  writeFileSync(
+    src,
+    "canton,2015,2024\nGenève,449,583\nVaud,412,531\nAppenzell RI,289,352",
+  );
+  return {
+    runId: "source-proof",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    sources: { mode: "real", data: { kind: "local", label } },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 3,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Health premiums rose in every canton shown",
+          altInsight:
+            "Between 2015 and 2024 the adult premium rose in all three cantons shown; Geneva stays the most expensive.",
+          unit: "Monthly adult premium (CHF)",
+        },
+        proposal: {
+          options: [
+            {
+              id: "slope",
+              nativeType: "slope",
+              engine: "chart-native",
+              format: format as "static",
+              why: "two points in time",
+            },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+}
+
+test.skipIf(!RUN)(
+  "the declared source is painted into the raster, and correcting it makes the artifact stale",
+  async () => {
+    // ---- 1. two runs, one label apart, produce different pixels ---------------------
+    const dirA = mkdtempSync(join(tmpdir(), "source-proof-a-"));
+    const runA = makeRun(dirA, DECLARED);
+    const a = await produce(runA, runA.elements[0]!, dirA);
+    if (!a.ok) throw new Error(a.message);
+    const pngA = readFileSync(join(dirA, a.value.artifact!.path));
+
+    const dirB = mkdtempSync(join(tmpdir(), "source-proof-b-"));
+    const runB = makeRun(dirB, CORRECTED);
+    const b = await produce(runB, runB.elements[0]!, dirB);
+    if (!b.ok) throw new Error(b.message);
+    const pngB = readFileSync(join(dirB, b.value.artifact!.path));
+
+    expect(a.value.artifact!.path).toBe(join("elements", "e1", "static.png"));
+    expect(pngA.length).toBeGreaterThan(5000);
+    // The ONLY difference between the two runs is the declared label. Different bytes ⇒ the
+    // credit is in the image, not merely in the config beside it.
+    expect(pngA.equals(pngB)).toBe(false);
+    expect(a.value.artifact!.sha256).not.toBe(b.value.artifact!.sha256);
+
+    // ---- 2. correcting the label on a produced element makes it stale ---------------
+    const produced = { ...runA, elements: [a.value] };
+    expect(stalenessOf(produced, produced.elements[0]!)).toBe(false);
+    expect(nextActions(produced)).toEqual(["show"]);
+
+    const corrected: RunManifest = {
+      ...produced,
+      sources: { mode: "real", data: { kind: "local", label: CORRECTED } },
+    };
+    expect(stalenessOf(corrected, corrected.elements[0]!)).toBe(true);
+    expect(nextActions(corrected)).toEqual(["produce"]);
+    expect(provenanceHash(corrected, corrected.elements[0]!)).not.toBe(
+      a.value.artifact!.provenanceHash,
+    );
+
+    // Re-producing at the corrected label lands on the OTHER run's bytes: same inputs, same
+    // credit, same image. The staleness was pointing at a real difference.
+    const reproduced = await produce(
+      corrected,
+      { ...corrected.elements[0]!, artifact: undefined },
+      dirA,
+    );
+    if (!reproduced.ok) throw new Error(reproduced.message);
+    expect(reproduced.value.artifact!.sha256).toBe(b.value.artifact!.sha256);
+    expect(stalenessOf(corrected, reproduced.value)).toBe(false);
+  },
+  240_000,
+);
+
+test.skipIf(!RUN)(
+  "the delivered package credits the declared source, and never the placeholder",
+  async () => {
+    registerAllPublishers();
+    const runDir = mkdtempSync(join(tmpdir(), "source-proof-zip-"));
+    const run = makeRun(runDir, DECLARED);
+    const p = await produce(run, run.elements[0]!, runDir);
+    if (!p.ok) throw new Error(p.message);
+
+    const withDelivery = {
+      ...run,
+      elements: [
+        { ...p.value, delivery: { requested: ["zip"], delivered: [] } },
+      ],
+    };
+    const decor = {
+      ...neutralDecor(),
+      state: {
+        ...DEFAULT_NEWSROOM_STATE,
+        capabilities: { zip: { enabled: true } },
+      },
+    };
+    // The newsroom profile names an OUTLET on purpose: before this wiring it was
+    // `profile.source` that became the delivered attribution, so the outlet's own name shipped
+    // as the origin of the figures.
+    const d = await deliver(
+      withDelivery,
+      withDelivery.elements[0]!,
+      runDir,
+      decor,
+      { source: "Heidi.news", credit: "Rédaction", lang: "fr" },
+    );
+    if (!d.ok) throw new Error(d.message);
+
+    const record = d.value.delivery!.delivered[0]!;
+    const zipPath = join(runDir, record.artifact!.path);
+    // Read back out of the DELIVERED archive, not out of the metadata object that built it —
+    // the entries are deflated, so this really unzips.
+    const readme = execFileSync("unzip", ["-p", zipPath, "README.md"], {
+      encoding: "utf8",
+    });
+    expect(readme).toContain(`Source: ${DECLARED}`);
+    expect(readme).not.toContain(PLACEHOLDER);
+    // The newsroom profile stays the AUTHOR line, and never becomes the origin of the figures.
+    expect(readme).not.toContain("Source: Heidi.news");
+    expect(readme).toContain("Credit: Rédaction");
+  },
+  240_000,
+);

@@ -201,20 +201,31 @@ soit stable sur les runs qui n'en portent pas.
 
 ## 6. Résidus, avec leur arbitrage → voir `## Risques assumés` en fin de fichier
 
-## 7. Preuve
+## 7. Preuve — trois mesures sur des artefacts réels
 
-Pas d'assertion depuis le code : **mesure sur un artefact réellement produit**.
-`lib/source/wiring-proof.test.ts` (opt-in, `SPLASH_SOURCE_PROOF=1` — il rend un vrai chart via
-chart-native) :
+Pas d'assertion depuis le code. Chaque mesure est journalisée dans le plan
+(`docs/superpowers/plans/2026-07-26-source-wiring.md`), avec son run.
 
-1. produit un `interactive` avec `data: { kind: "public", label: "…", url: "…" }` et **lit le
-   HTML livré** : le label déclaré et l'URL déclarée y sont, le placeholder
-   « Provided by the newsroom » n'y est **pas** ;
-2. produit un `static` PNG et **capture la même chaîne dans le DOM rendu** avant rasterisation ;
-3. change **le seul label**, re-calcule `provenanceHash`, et mesure `stalenessOf(run, el) === true`
-   sur l'élément déjà produit — la staleness du crédit, constatée, pas déduite.
-
-Le run de cette preuve est journalisé dans le plan (`docs/superpowers/plans/2026-07-26-source-wiring.md`).
+1. **Le crédit déclaré est LU dans le DOM rendu d'un vrai navigateur.**
+   `lib/verify/real-artifact-proof.test.ts` (opt-in `SPLASH_VERIFY_PROOF=1`) produit un
+   `interactive` par la boucle, l'ouvre dans Chromium et vérifie la furniture *présente et dans
+   le cadre*. Sa constante `SOURCE` valait `"Source: Provided by the newsroom"` — « ce que
+   produce.ts écrit vraiment », commenté comme tel. Elle vaut maintenant
+   `"Source: " + DECLARED_SOURCE`, où `DECLARED_SOURCE` est le label du ledger du run. Le
+   check `capture:furniture-present` (rôle `source`) passe : c'est la déclaration lue à
+   l'écran, pas dans un blob de config.
+2. **Le crédit est dans les PIXELS.** `lib/source/wiring-proof.test.ts` (opt-in
+   `SPLASH_SOURCE_PROOF=1`) produit deux `static` identiques en tout **sauf le label déclaré** —
+   même CSV, même angle, même canal, même type — et mesure que les PNG **diffèrent** (bytes et
+   sha256). Aucun OCR : la seule variable ayant pu déplacer un pixel est la ligne de crédit.
+3. **Le crédit corrigé rend l'artefact périmé, et la ré-production converge.** Même fichier :
+   sur l'élément **déjà produit**, changer le label fait passer `stalenessOf` de `false` à
+   `true` et `nextActions` de `["show"]` à `["produce"]` ; re-produire au label corrigé retombe
+   **exactement sur le sha256 de l'autre run** — la staleness pointait une vraie différence.
+4. **La livraison dit la même chose.** Même fichier : `deliver` → publisher `zip` → le `README.md`
+   est **dézippé** et contient `Source: <label déclaré>`, ne contient ni le placeholder ni
+   `Source: Heidi.news` (le profil rédaction passé exprès avec `source: "Heidi.news"`), et garde
+   `Credit: Rédaction`.
 
 ---
 
@@ -271,7 +282,27 @@ dépendre la fraîcheur d'une **deuxième** définition de « ce qui compte », 
 la première le jour où la projection change. Une re-production superflue coûte une minute ; une
 staleness qui rate un crédit change ce que le lecteur lit. On hache l'état déclaré.
 
-**R7 — `attribution` ajoute un champ à `PublishedSource`, donc deux façons de rendre la même
+**R7 — Il existe un QUATRIÈME consommateur, non couvert : le contrat de verbe lui-même.**
+Un hôte non-JS appelle `render` directement avec un `spec.source` de son choix (l'exemple de
+`lib/host/README.md:463` est littéralement
+`"source": { "name": "Provided by the newsroom" }`), sans passer par `produce()` — donc sans
+policy, sans ledger, sans refus. Les trois points d'appel du §5 sont câblés ; ce chemin-là ne
+l'est pas et n'est pas nommé dans la spec source. **Arbitrage :** le fermer signifie appliquer la
+policy **dans le verbe `render`**, ce qui suppose de décider si un `spec.source` sans ledger est
+une déclaration implicite (retour au devinage) ou un refus (rupture du contrat verbe pour tous
+les hôtes existants). C'est une décision de contrat, pas de câblage — et `lib/core/verbs/**`
+comme `lib/host/**` sont hors périmètre ici. Nommé pour que le prochain slice ne le redécouvre pas.
+
+**R8 — Deux fixtures ont été migrées dans des répertoires que le périmètre interdisait.**
+`lib/verify/real-artifact-proof.test.ts` et `lib/brain/acceptance.test.ts` appellent `produce()`
+sur un run sans ledger : le refus du §4 les casse, et les laisser rouges aurait été livrer une
+suite rouge. L'édition est **additive et minimale** (le bloc `sources` sur la fixture ; plus, pour
+le premier, la constante `SOURCE` qui décrivait le placeholder comme « ce que produce.ts écrit
+vraiment » et serait devenue un mensonge documenté). **Arbitrage :** affaiblir la décision §4 pour
+éviter deux ajouts de fixture aurait été laisser la queue remuer le chien. Signalé plutôt que
+dissimulé — c'est la limite d'instruction qui s'est révélée fausse, pas la décision.
+
+**R9 — `attribution` ajoute un champ à `PublishedSource`, donc deux façons de rendre la même
 chose.** Un appelant peut choisir le mauvais des deux et double-préfixer (« Source : Source : … »),
 exactement le bug que ce champ existe pour éviter. **Arbitrage :** la distinction est réelle (les
 moteurs possèdent déjà leur furniture, les README/zip non), la documenter dans le type est plus

@@ -87,4 +87,38 @@ spec (déjà rédigés — à confronter au diff réel et à corriger si le diff
 
 ## Journal d'exécution
 
-_(rempli au fil des tâches)_
+- **T1** `a305aa3` — `PublishedSource.attribution`. RED 7/10 fail → GREEN `lib/source` 100/0.
+  Écart §5 mesuré et corrigé (le `credit` préfixé ne peut pas aller dans `spec.source.name`).
+- **T2** `d7a220e` — `provenanceHash` + produce, **un seul commit**. RED : 2 fail hash + 2 fail
+  produce. Migration de fixtures : `lib/loop/produce.test.ts` (5 runs),
+  `lib/loop/driver.test.ts` (10), `lib/host/journey.test.ts` (2), `lib/loop/deliver.test.ts` (1),
+  `lib/loop/engines.test.ts` (1, run sérialisé dans un sous-process),
+  `lib/verify/real-artifact-proof.test.ts` (1) et `lib/brain/acceptance.test.ts` (1) — les deux
+  derniers dans des répertoires que le périmètre interdisait, cf. spec R8.
+- **T3** `8cc88fc` — `deliveryMetadata(el, profile, sizing, sources?)` + une ligne dans
+  `deliver.ts`. RED 5/12 fail → GREEN 12/0.
+- **T4** `afe03c3` — `conformanceL0({ sourceKind })`. RED 4/18 fail → GREEN `lib/core` 199/0 ;
+  `skills/chart-native` (qui l'importe) typecheck propre + `tests/conformance.test.ts` 28/0.
+
+### Preuves exécutées (mesures, pas assertions)
+
+- `SPLASH_VERIFY_PROOF=1 bun test lib/verify/real-artifact-proof.test.ts` → **1 pass**.
+  Rendu réel dans Chromium, `capture:furniture-present` (rôle `source`) au vert sur
+  `"Source: Relevés cantonaux 2024"` — le label DÉCLARÉ, lu dans le DOM. Le même test échouait
+  d'abord sur `source must be present in the produced chart` tant que sa constante décrivait
+  encore le placeholder : c'est la preuve que le crédit rendu a réellement changé.
+- `SPLASH_SOURCE_PROOF=1 bun test lib/source/wiring-proof.test.ts` → **2 pass**.
+  (a) deux runs à un label près → PNG de bytes/sha256 différents ; (b) label corrigé sur
+  l'élément produit → `stalenessOf` `false`→`true`, `nextActions` `["show"]`→`["produce"]`, et la
+  ré-production retombe sur le sha256 de l'autre run ; (c) zip livré dézippé → `README.md` porte
+  `Source: Office cantonal de la statistique GE`, jamais le placeholder ni `Source: Heidi.news`.
+
+### Gate final
+
+- `cd lib && bun test` → **959 pass / 9 skip / 0 fail** (baseline effective 940/7/0 ; +19 tests,
+  +2 skips = les deux preuves opt-in).
+- `cd lib && bunx tsc --noEmit` et `cd skills/splash && bunx tsc --noEmit` : propres.
+- `cd skills/splash && bun test` → **764 pass / 2 skip / 0 fail** (les 2 skips sont
+  token-gated Datawrapper, pré-existants — `scripts/produce-all-format.test.ts:172`,
+  `src/adapters.test.ts:129` — et 764+2 = les 766 de la baseline annoncée).
+- `cd skills/chart-native && bunx tsc --noEmit` : propre (il importe `lib/core/conformance-l0`).
