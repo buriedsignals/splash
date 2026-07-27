@@ -31,7 +31,7 @@ import type { VisualFormat } from "../core/vocabulary";
 // Populates the publisher registry the publish verb dispatches from — without it every
 // publish answers `unknown-publisher`. Same discipline as produce.ts importing ./engines.
 import { PUBLISHERS_REGISTERED } from "../delivery";
-import type { PublishOutcome } from "../core/publishers";
+import { lookupPublisher, type PublishOutcome } from "../core/publishers";
 import { deliveryMetadata, type ProfileFacts } from "../delivery/metadata";
 import { NEWSROOM_CAPABILITIES } from "../newsroom/capabilities";
 import { decorEnv, type Decor } from "../newsroom/decor";
@@ -174,6 +174,26 @@ export async function deliver(
         // Named by id, because a message listing several refusals must say WHICH destination
         // each one is about — and a capability disabled by choice carries an empty reason.
         message: `${publisherId}: ${readiness.reason || `${cap.label} is not enabled for this newsroom`}`,
+      });
+      continue;
+    }
+
+    // The hard-legality half of the genre routing (spec §3.5). The default never picks a
+    // hosted destination for a file genre — but a journalist may name one explicitly, and this
+    // is where "explicitly named" stops being enough. Refused BEFORE the verb runs, so nothing
+    // is staged, uploaded or deployed: embed-cloudflare used to discover a PNG only at
+    // verifyServed, after a real deployment had already gone out.
+    //
+    // An unregistered id is NOT refused here — that answer belongs to the publish verb
+    // (`unknown-publisher`), and duplicating it would give the same situation two different
+    // messages depending on which check ran first.
+    const publisher = lookupPublisher(publisherId);
+    if (publisher && !publisher.serves.includes(format)) {
+      refusals.push({
+        code: "invalid-request",
+        message:
+          `${publisherId}: ${cap.label} only serves ${publisher.serves.join(", ")} — ` +
+          `a ${format} is handed over as a file (the portable package), or hosted through a destination that serves it`,
       });
       continue;
     }

@@ -473,3 +473,125 @@ describe("deliver", () => {
     );
   });
 });
+
+// The element the existing helper builds, re-pinned to a static format with a provenance that
+// matches — anything else refuses on staleness before reaching the check under test.
+function staticRunWith(requested: string[]) {
+  const { run, el } = runWith({ delivery: { requested, delivered: [] } });
+  const repinned = {
+    ...el,
+    proposal: {
+      ...el.proposal!,
+      options: el.proposal!.options.map((o) => ({
+        ...o,
+        format: "static" as const,
+      })),
+    },
+  };
+  const fixed = {
+    ...repinned,
+    artifact: {
+      ...repinned.artifact!,
+      provenanceHash: provenanceHash(run, repinned),
+    },
+  };
+  return { run: { ...run, elements: [fixed] }, el: fixed };
+}
+
+describe("a destination that cannot serve the artifact's format", () => {
+  const HOSTED_ID = "test-html-only-host";
+
+  it("should refuse before the publisher is ever entered", async () => {
+    let entered = 0;
+    NEWSROOM_CAPABILITIES[HOSTED_ID] = {
+      id: HOSTED_ID,
+      label: "Test HTML-only host (throwaway, this test only)",
+      kind: "delivery",
+      env: [],
+      envHelp: {},
+      criticalDeps: null,
+      implemented: true,
+    };
+    registerPublisher({
+      id: HOSTED_ID,
+      kind: "hosted",
+      serves: ["interactive", "scrolly"],
+      implemented: true,
+      async publish() {
+        entered += 1;
+        return ok({
+          publisherId: HOSTED_ID,
+          kind: "hosted" as const,
+          url: "https://example.invalid/",
+          snippet: "",
+          publishedAt: new Date().toISOString(),
+        });
+      },
+    });
+
+    try {
+      const { run, el } = staticRunWith([HOSTED_ID]);
+      const decor = decorWith({
+        state: {
+          ...DEFAULT_NEWSROOM_STATE,
+          capabilities: { [HOSTED_ID]: { enabled: true } },
+        },
+      });
+      const r = await deliver(run, el, runDir, decor, {}, { env: {} });
+      expect(r.ok).toBe(false);
+      expect(entered).toBe(0);
+      expect((r as { message: string }).message).toContain("interactive");
+    } finally {
+      delete NEWSROOM_CAPABILITIES[HOSTED_ID];
+      resetPublishersForTest();
+      registerAllPublishers();
+    }
+  });
+
+  it("should let a hosted destination that DOES serve the format through", async () => {
+    const OPEN_ID = "test-serves-everything-host";
+    NEWSROOM_CAPABILITIES[OPEN_ID] = {
+      id: OPEN_ID,
+      label: "Test asset host (throwaway, this test only)",
+      kind: "delivery",
+      env: [],
+      envHelp: {},
+      criticalDeps: null,
+      implemented: true,
+    };
+    registerPublisher({
+      id: OPEN_ID,
+      kind: "hosted",
+      serves: [...VISUAL_FORMATS],
+      implemented: true,
+      async publish() {
+        return ok({
+          publisherId: OPEN_ID,
+          kind: "hosted" as const,
+          url: "https://assets.example.invalid/primes.png",
+          snippet:
+            '<img src="https://assets.example.invalid/primes.png" alt="x">',
+          publishedAt: new Date().toISOString(),
+        });
+      },
+    });
+
+    try {
+      const { run, el } = staticRunWith([OPEN_ID]);
+      const decor = decorWith({
+        state: {
+          ...DEFAULT_NEWSROOM_STATE,
+          capabilities: { [OPEN_ID]: { enabled: true } },
+        },
+      });
+      const r = await deliver(run, el, runDir, decor, {}, { env: {} });
+      expect(r.ok).toBe(true);
+      const value = (r as { value: RunElement }).value;
+      expect(value.delivery!.delivered[0]!.publisherId).toBe(OPEN_ID);
+    } finally {
+      delete NEWSROOM_CAPABILITIES[OPEN_ID];
+      resetPublishersForTest();
+      registerAllPublishers();
+    }
+  });
+});
