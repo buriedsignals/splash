@@ -232,3 +232,108 @@ test("resumeReport carries the grounding a phrasing has to be written from", () 
   expect(reported.options[0]!.whySource!.facts).toEqual({ rows: "2" });
   expect(reported.chosenId).toBeUndefined();
 });
+
+// --- the verification a host has to act on -------------------------------------------------
+//
+// `state` telling a host `nextActions: ["approve"]` and showing it no findings would be the
+// same hole the missing offer once was: asked to decide, shown nothing to decide about. The
+// projection below is persisted state plus ONE pure call (approvalDecision), so what the report
+// says the gate will ask for is what the gate asks for.
+function reviewed(): { run: RunManifest; runDir: string } {
+  const { run, runDir } = seed();
+  const el = run.elements[0]!;
+  const provenance = provenanceHash(run, el);
+  mkdirSync(join(runDir, "elements", "e1"), { recursive: true });
+  writeFileSync(join(runDir, "elements", "e1", "static.png"), "bytes");
+  return {
+    runDir,
+    run: {
+      ...run,
+      elements: [
+        {
+          ...el,
+          artifact: {
+            path: "elements/e1/static.png",
+            sha256: "sha-of-the-artifact",
+            provenanceHash: provenance,
+            producedAt: "2026-07-27T09:00:00.000Z",
+          },
+          capture: {
+            images: [],
+            checks: [],
+            capturedProvenanceHash: provenance,
+          },
+          review: {
+            findings: [
+              {
+                id: "unit-missing",
+                criterion: "craft" as const,
+                severity: "warning" as const,
+                status: "open" as const,
+                summary: "the visual states no unit for its numbers",
+                evidence: [],
+                provenance: "mechanical" as const,
+              },
+            ],
+            reviewedProvenanceHash: provenance,
+            reviewer: {
+              mode: "mechanical" as const,
+              name: "lib/verify/mechanical",
+              version: "1.0.0",
+              inputsHash: "in",
+              outputHash: "out",
+              independentSemanticReview: "unavailable" as const,
+            },
+            captures: [],
+            checks: [],
+            tasteRisk: [
+              {
+                dimension: "density" as const,
+                detector: "marks per 100px > 8",
+                evidence: ["[primary] 40 marks across 300px"],
+                routedTo: "human-signoff" as const,
+              },
+            ],
+            overrides: [],
+            acknowledged: [],
+            preview: {
+              deliverablePath: "/tmp/x/elements/e1/static.png",
+              deliverableSha256: "sha-of-the-artifact",
+              presentedAs: "path-printed" as const,
+              presentedAt: "2026-07-27T09:05:00.000Z",
+              fallbackReason: "the host presented it itself",
+            },
+          },
+        },
+      ],
+    },
+  };
+}
+
+it("carries the review a host has to act on at the approval gate", () => {
+  const { run, runDir } = reviewed();
+  const el = resumeReport(run, runDir).elements[0]!;
+  expect(el.verification).toBeDefined();
+  const v = el.verification!;
+  expect(v.findings).toHaveLength(1);
+  expect(v.findings[0]).toMatchObject({
+    id: "unit-missing",
+    severity: "warning",
+    status: "open",
+  });
+  // The lane no machine grades, shown rather than buried.
+  expect(v.tasteRisk[0]!.dimension).toBe("density");
+  expect(v.preview!.presentedAs).toBe("path-printed");
+  // Never dressed up as a pass.
+  expect(v.independentSemanticReview).toBe("unavailable");
+  // And exactly what the gate will demand: an unacknowledged warning.
+  expect(v.approval.approvable).toBe(false);
+  expect(v.approval.reasons.map((r) => r.code)).toEqual([
+    "warnings-unacknowledged",
+  ]);
+});
+
+it("says nothing about verification for an element nobody has reviewed", () => {
+  const { run, runDir } = seed();
+  expect(resumeReport(run, runDir).elements[0]!.verification).toBeUndefined();
+});

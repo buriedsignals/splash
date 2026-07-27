@@ -3,8 +3,10 @@ import { join } from "node:path";
 import { sha256 } from "@noble/hashes/sha2.js";
 import {
   readManifest,
+  chosenOption,
   gateStateOf,
   nextActionsForElement,
+  provenanceHash,
   resolvedChannelForElement,
   stalenessOf,
   type RunManifest,
@@ -13,7 +15,18 @@ import {
   type NextAction,
   type FormOption,
 } from "./manifest";
-import { aspectOf, defaultAspectFor, destinationOf } from "../core/channel-policy";
+import { approvalDecision, type ApprovalDecision } from "../verify/approval";
+import type {
+  Finding,
+  PreviewRecord,
+  ReviewRecord,
+  TasteRiskSignal,
+} from "../verify/types";
+import {
+  aspectOf,
+  defaultAspectFor,
+  destinationOf,
+} from "../core/channel-policy";
 import type { Channel, Destination, MediaAspect } from "../core/vocabulary";
 
 export type HashCheck = { ref: string; status: "ok" | "missing" | "tampered" };
@@ -56,6 +69,29 @@ export type ResumeReport = {
       chosenId?: string;
       refusal?: string;
     };
+    /** WHAT THE APPROVAL GATE WILL ASK FOR, present exactly when a review exists.
+     *
+     *  Without it a host is told `nextActions: ["approve"]` and shown nothing: which findings
+     *  block, which warnings need acknowledging, whether the deliverable has been presented at
+     *  all. That is the same omission the missing offer once was, one gate further along.
+     *
+     *  Persisted state plus ONE pure call (approvalDecision, lib/verify) — the same function
+     *  approveElement runs — so the report cannot promise something the gate then refuses.
+     *  Journalist-facing by construction: findings, risks and the preview record carry no
+     *  orchestration plumbing (#9). */
+    verification?: {
+      findings: Finding[];
+      tasteRisk: TasteRiskSignal[];
+      preview?: PreviewRecord;
+      /** Never inferred from an absence of findings — the record's own word. */
+      independentSemanticReview: ApprovalDecision["independentSemanticReview"];
+      approval: {
+        approvable: boolean;
+        reasons: ApprovalDecision["reasons"];
+        overridden: string[];
+        staleOverrides: string[];
+      };
+    };
   }[];
 };
 
@@ -83,6 +119,33 @@ function elementNextActions(run: RunManifest, el: RunElement): NextAction[] {
   if (!run.orient) return ["orient"];
   if (!run.orient.supportsPoint) return [];
   return nextActionsForElement(run, el);
+}
+
+// The gate's own answer, reported rather than re-derived: approvalDecision is the function
+// approveElement runs, called here with the same three facts. A second, "reporting" copy of
+// the rule is exactly how a report starts promising what the gate then refuses.
+function verificationOf(
+  run: RunManifest,
+  el: RunElement,
+): NonNullable<ResumeReport["elements"][number]["verification"]> {
+  const review = el.review as ReviewRecord;
+  const decision = approvalDecision(review, {
+    format: chosenOption(el)?.format ?? "static",
+    artifactSha256: el.artifact?.sha256 ?? "",
+    provenanceHash: provenanceHash(run, el),
+  });
+  return {
+    findings: review.findings ?? [],
+    tasteRisk: decision.needsHumanEye,
+    ...(review.preview ? { preview: review.preview } : {}),
+    independentSemanticReview: decision.independentSemanticReview,
+    approval: {
+      approvable: decision.approvable,
+      reasons: decision.reasons,
+      overridden: decision.overridden,
+      staleOverrides: decision.staleOverrides,
+    },
+  };
 }
 
 // Read-only: validates hashes, derives state + next actions. NEVER writes. Completion is
@@ -118,6 +181,7 @@ export function resumeReport(run: RunManifest, runDir: string): ResumeReport {
       ...(channel ? { channel } : {}),
       ...(el.deliverableOf ? { deliverableOf: el.deliverableOf } : {}),
       ...(el.proposal ? { proposal: el.proposal } : {}),
+      ...(el.review ? { verification: verificationOf(run, el) } : {}),
     };
   });
 
