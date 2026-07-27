@@ -47,6 +47,29 @@ bun run check        # typecheck + tests across all skills
 
 Each skill is self-contained (`SKILL.md` + `src/` + `scripts/` + tests). Producer suites that hit the Datawrapper API need a `DATAWRAPPER_API_TOKEN` in `.env` (see `.env.example`); they are skipped without it.
 
+### Fresh clone / fresh worktree checklist
+
+A worktree that skips any of these steps fails in ways that look like a code regression but
+aren't. Each step below states what it prevents — run them in order:
+
+1. **`bun install` at the repo root.** Without it, `cd lib && bun test` fails with ~48 phantom
+   errors ("Cannot find package 'zod'", `@noble/hashes`, `fflate`) that have nothing to do with
+   whatever you changed.
+2. **`bun install` in each skill you'll touch or test**: `skills/chart-native`,
+   `skills/map-native`, `skills/dw-chart` — and additionally `skills/scrolly` and
+   `skills/image-native` if you're running the full `bun run check`. Each skill has its own
+   `node_modules`; the root install does not cascade into them.
+3. **A root `.env`** (gitignored — copy `.env.example`) if you'll run `skills/image-native`'s
+   suite: its test drives a real scrolly build and fails without one.
+4. **`bunx remotion browser ensure`** in `skills/chart-native` and `skills/map-native`. Both
+   engines render video through Remotion, which needs its own downloaded Chrome Headless Shell
+   (tens of MB, separate from anything `bun install` fetches). Skipping this doesn't fail fast —
+   the first test that renders a video triggers the download **mid-suite**, and on a flaky
+   network it can stall partway through, leaving a corrupt half-extracted browser behind. Every
+   video render after that dies with an unreadable subprocess dump that looks like a regression
+   in whatever you just changed, not a networking hiccup from two steps ago. Running this command
+   up front turns that failure mode into a normal, retriable download you see happen.
+
 To load Splash into Claude Code:
 
 ```bash
