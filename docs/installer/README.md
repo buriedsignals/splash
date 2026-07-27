@@ -7,14 +7,15 @@ in the page, the command, or the Downloads folder.
 ## Pieces
 - `index.html` / `commands.js` — the public page (a static key-free command per OS + a key-free download).
 - `install/bootstrap.{sh,ps1}` — install the toolchain, then run the configurator.
-- `install/configurator.{ts,-core.ts}` — the Bun local server (form, live verification, writes `.env`).
+- `install/preflight/` — the Bun local setup page (real HTML/CSS + typed client, live verification, writes `.env` + `newsroom.json`). `install/configurator.ts` is the published entry point and delegates to it.
 
 ## Flow
 1. Public page shows `curl …/bootstrap.sh | bash` (mac) / `irm …/bootstrap.ps1 | iex` (win), or a key-free `.command`/`.cmd`.
-2. The bootstrap installs Bun, fetches Splash (zip), then runs `bun install/configurator.ts`.
-3. The configurator opens on `127.0.0.1`, the journalist enters keys (MapTiler / Datawrapper / optional
-   Anthropic — blank means the Claude subscription OAuth login). Keys are verified live, then written to
-   `~/Splash/.env` (chmod 600) with the chosen runtime.
+2. The bootstrap installs Bun, fetches Splash (zip), installs the root deps, then runs `bun install/configurator.ts` (the setup page).
+3. The setup page opens on `127.0.0.1`: the journalist names the newsroom, picks the interface and
+   publication languages, the runtime, the capabilities to turn on and where to publish. Keys are verified
+   live and merged into `~/Splash/.env` (chmod 600); everything else — runtime, enabled capabilities,
+   publisher, interface language, last verification — goes to `newsroom.json` (the decor).
 4. The bootstrap installs the runtime + deps + Playwright, and drops a local `Launch Splash` launcher.
 
 ## Hosting
@@ -33,6 +34,6 @@ Native (no WSL): Bun + Node + Claude Code install natively; the configurator is 
 On a clean macOS account AND a clean Windows VM, both modes:
 1. Run the command / double-click the file (clear the OS warning per the on-page note).
 2. Confirm Bun (+ Node on Win) install; `~/Splash` populated from zip; the **configurator opens**.
-3. Enter keys → they verify live → `.env` (600) + `.splash-runtime` written.
+3. Enter keys → they verify live → `.env` (600) + `newsroom.json` written (`.splash-runtime` is retired).
 4. Claude Code + deps + Playwright install; `Launch Splash` created; double-click → Splash starts.
 5. Windows native render (chart-native + map-native) does NOT hang (tsx guard, inherited).

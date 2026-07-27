@@ -39,20 +39,31 @@ if [ ! -d "$DEST" ]; then
   rm -rf "$tmp"
 fi
 
-# 3. Local configurator — pick runtime + enter keys (verified live); writes ~/Splash/.env.
+# 3. Root dependencies. The setup page reads and writes the newsroom decor (lib/newsroom), which
+# needs the root packages. Doing it here makes that dependency explicit and guarded, instead of
+# leaving Bun to resolve it implicitly at the most critical moment of the install.
+if ! ( cd "$DEST" && bun install >/dev/null ); then
+  echo "Dependency install failed in $DEST (see the error above) — check your connection, then re-run this installer." >&2
+  exit 1
+fi
+
+# 4. Local setup page — pick runtime + enter keys (verified live); writes ~/Splash/.env.
 # Skip it on a re-run that already has a verified .env (set SPLASH_RECONFIGURE=1 to force it),
 # so recovering from a later failure doesn't force re-entering and re-verifying every key.
 if [ ! -f "$DEST/.env" ] || [ "${SPLASH_RECONFIGURE:-0}" = "1" ]; then
-  echo "-> Opening the configurator in your browser to collect your keys…"
+  echo "-> Opening the setup page in your browser to collect your keys…"
   if ! ( cd "$DEST" && bun install/configurator.ts ) || [ ! -f "$DEST/.env" ]; then
     echo "Configuration was not completed — re-run this installer." >&2
     exit 1
   fi
 fi
 
-# 4. Runtime — install the one the configurator recorded, via its module in install/runtimes/.
+# 5. Runtime — install the one the setup page recorded, via its module in install/runtimes/.
 # Adding a runtime is a new install/runtimes/<name>.sh (see that dir's README), never a change here.
-runtime="$(cat "$DEST/.splash-runtime" 2>/dev/null || echo claude)"
+# The runtime lives in newsroom.json (the decor). install/read-runtime.ts resolves it — including
+# the legacy .splash-runtime of an install that predates the setup page — and validates it against
+# the shipped modules, so this variable is never an arbitrary string off disk.
+runtime="$( cd "$DEST" && bun install/read-runtime.ts 2>/dev/null || echo claude )"
 runtime_module="$DEST/install/runtimes/$runtime.sh"
 if [ ! -f "$runtime_module" ]; then
   echo "No runtime module for '$runtime' (expected install/runtimes/$runtime.sh) — re-run the configurator and pick a supported runtime." >&2
@@ -62,7 +73,7 @@ fi
 . "$runtime_module"
 runtime_install
 
-# 5. Producer deps + render engine (Playwright Chromium, shared cache). Keep stderr visible and
+# 6. Producer deps + render engine (Playwright Chromium, shared cache). Keep stderr visible and
 # guard each step: a failed install here (flaky wifi, proxy, full disk) must report its cause and
 # stop with guidance — not die silently under `set -e` after the .env was already written.
 echo "-> Installing render dependencies…"
@@ -77,7 +88,7 @@ if ! ( cd "$DEST/skills/chart-native" && bunx playwright install chromium ); the
   exit 1
 fi
 
-# 6. Local double-click launcher (created locally → no quarantine → clean re-launch).
+# 7. Local double-click launcher (created locally → no quarantine → clean re-launch).
 # The runtime module supplies the launch command for the recorded runtime.
 launch_cmd="$(runtime_launch_cmd)"
 launcher="$DEST/Launch Splash.command"

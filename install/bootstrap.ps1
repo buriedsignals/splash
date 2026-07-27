@@ -63,8 +63,16 @@ if (-not (Test-Path $Dest)) {
   Remove-Item $tmp -Recurse -Force
 }
 
-# 4. Local configurator — pick runtime + enter keys (verified live); writes .env
-Write-Host "-> Opening the configurator in your browser to collect your keys…"
+# 4. Root dependencies. The setup page reads and writes the newsroom decor (lib\newsroom), which
+# needs the root packages — explicit and guarded here rather than resolved implicitly at the most
+# critical moment of the install.
+Push-Location $Dest
+bun install | Out-Null
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw "bun install failed in $Dest — check your connection, then re-run this installer." }
+Pop-Location
+
+# 5. Local setup page — pick runtime + enter keys (verified live); writes .env
+Write-Host "-> Opening the setup page in your browser to collect your keys…"
 Push-Location $Dest
 bun install/configurator.ts
 Pop-Location
@@ -74,9 +82,16 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $Dest ".env"))) {
   throw "Configuration was not completed — re-run this installer."
 }
 
-# 5. Runtime — install the one the configurator recorded, via its module in install\runtimes\.
+# 6. Runtime — install the one the setup page recorded, via its module in install\runtimes\.
 # Adding a runtime is a new install\runtimes\<name>.ps1 (see that dir's README), never a change here.
-$runtime = if (Test-Path (Join-Path $Dest ".splash-runtime")) { (Get-Content (Join-Path $Dest ".splash-runtime") -Raw).Trim() } else { "claude" }
+# The runtime lives in newsroom.json (the decor). install\read-runtime.ts resolves it — including
+# the legacy .splash-runtime of an install that predates the setup page — and validates it against
+# the shipped modules, so this variable is never an arbitrary string off disk.
+Push-Location $Dest
+$runtime = (bun install/read-runtime.ts) | Select-Object -First 1
+Pop-Location
+if ($LASTEXITCODE -ne 0 -or -not $runtime) { $runtime = "claude" }
+$runtime = $runtime.Trim()
 $runtimeModule = Join-Path $Dest "install\runtimes\$runtime.ps1"
 if (-not (Test-Path $runtimeModule)) {
   throw "No runtime module for '$runtime' (expected install\runtimes\$runtime.ps1) — re-run the configurator and pick a supported runtime."
@@ -84,7 +99,7 @@ if (-not (Test-Path $runtimeModule)) {
 . $runtimeModule
 Runtime-Install
 
-# 6. Producer deps + render engine
+# 7. Producer deps + render engine
 Write-Host "-> Installing render dependencies…"
 foreach ($skill in $NativeSkills) {
   Push-Location (Join-Path $Dest $skill)
@@ -97,7 +112,7 @@ bunx playwright install chromium
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download failed — re-run this installer to resume." }
 Pop-Location
 
-# 7. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
+# 8. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
 $launcher = Join-Path $Dest "Launch Splash.cmd"
 $launchCmd = Runtime-LaunchCmd
 @"
