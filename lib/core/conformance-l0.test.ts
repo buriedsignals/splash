@@ -205,3 +205,90 @@ describe("core.conformanceL0 — parity with map-native's checkGlobalMapConforma
     expect(map).toContain("missing source name");
   });
 });
+
+// --- the source rule reads the requirements table (issue #7) ------------------------------
+//
+// The contradiction #7 opens with lives HERE, in one half of it: this module said "name
+// required, url optional" for every source, while the render-review rule said a named dataset
+// without a public URL is incomplete. Neither is wrong — they are two rules about a distinction
+// neither could express. With the class declared (lib/source), "incomplete" becomes one lookup:
+// a URL is required if and only if requirementsFor(kind).url === "required".
+//
+// Opt-in, exactly like altInsight and textColors above: a caller that supplies no `sourceKind`
+// gets the historical verdict, byte for byte. Nothing existing changes its answer.
+describe("core.conformanceL0 — source rules keyed on the declared class", () => {
+  const title = "Health premiums rose in every canton shown";
+
+  it("should require a specific URL for a public source, which the flat rule let through", () => {
+    const v = conformanceL0({
+      title,
+      source: { name: "Office fédéral de la statistique" },
+      sourceKind: "public",
+    });
+    expect(v.join(" ")).toContain("URL");
+    // The same declaration WITH the dataset page is clean.
+    expect(
+      conformanceL0({
+        title,
+        source: {
+          name: "Office fédéral de la statistique",
+          url: "https://www.bfs.admin.ch/asset/fr/32229771",
+        },
+        sourceKind: "public",
+      }),
+    ).toEqual([]);
+  });
+
+  it("should accept a named local or prose source with no URL at all", () => {
+    // The other half of the contradiction: a file the journalist brought, or a figure quoted in
+    // their own article, has no public address to cite and is complete without one.
+    for (const kind of ["local", "prose"] as const)
+      expect(
+        conformanceL0({
+          title,
+          source: { name: "Relevés 2024" },
+          sourceKind: kind,
+        }),
+      ).toEqual([]);
+  });
+
+  it("should refuse a site root offered as a source URL", () => {
+    const v = conformanceL0({
+      title,
+      source: { name: "OFS", url: "https://www.bfs.admin.ch" },
+      sourceKind: "public",
+    });
+    expect(v.join(" ")).toContain("https://www.bfs.admin.ch");
+  });
+
+  it("should refuse a URL on a class that publishes none, and a name on a class that publishes none", () => {
+    expect(
+      conformanceL0({
+        title,
+        source: { name: "Interne", url: "https://intranet.newsroom.local/x" },
+        sourceKind: "private",
+      }).join(" "),
+    ).toContain("URL");
+    expect(
+      conformanceL0({
+        title,
+        source: { name: "Une source quand même" },
+        sourceKind: "none",
+      }).join(" "),
+    ).toContain("none");
+  });
+
+  it("should not ask a none source for a name it is not allowed to have", () => {
+    expect(conformanceL0({ title, source: {}, sourceKind: "none" })).toEqual(
+      [],
+    );
+  });
+
+  it("should leave every caller that declares no class on the historical verdict", () => {
+    // The flat rule, unchanged: a name is required, a URL is not.
+    expect(conformanceL0({ title, source: { name: "OFS" } })).toEqual([]);
+    expect(conformanceL0({ title, source: {} })).toEqual([
+      "missing source name",
+    ]);
+  });
+});

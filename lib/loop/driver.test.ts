@@ -64,6 +64,13 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so every fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     elements: [{ id: "e1" }],
     events: [],
   };
@@ -144,6 +151,13 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so every fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     elements: [{ id: "e1" }],
     events: [],
   };
@@ -220,6 +234,13 @@ test("advance() records a produce failure as a bounded event without advancing s
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so every fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -397,6 +418,13 @@ test("advance() builds a proposal annotated against a decor, and never throws do
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so every fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -465,6 +493,13 @@ test("advance() persists the brain's refusal on the element when the requested f
     route: "embed",
     channel: "social-vertical", // allows only static/video (lib/core/channel-policy.ts)
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so every fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -513,6 +548,13 @@ test("a channel-legal but zero-buildable requested format strands the run, and c
     route: "embed",
     channel: "article-web", // scrolly IS allowed on this channel
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so every fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -725,6 +767,13 @@ test("advanceStep names the deterministic step it ran", async () => {
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so every fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     elements: [{ id: "e1" }],
     events: [],
   };
@@ -744,6 +793,13 @@ test("advanceStep reports a human turn as nothing run, leaving the manifest unto
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so every fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -793,6 +849,13 @@ test("advanceStep surfaces a refused step with the very message it recorded as a
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so every fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -847,6 +910,13 @@ test("advance() is exactly advanceStep's manifest — the wrapper adds nothing",
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so every fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     elements: [{ id: "e1" }],
     events: [],
   };

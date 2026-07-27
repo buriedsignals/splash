@@ -17,8 +17,22 @@ import type { SourceDeclaration } from "./kinds";
 import { requirementsFor } from "./requirements";
 
 export interface PublishedSource {
-  /** The full furniture line. Empty ONLY for `none`, whose visual asserts no facts. */
+  /** The full furniture line, locale prefix included ("Source : OFS"). Empty ONLY for `none`,
+   *  whose visual asserts no facts. For a caller that renders a BARE line — a zip README, an
+   *  embed attribute, a snippet — and owns no furniture of its own. */
   credit: string;
+  /**
+   * The same composed line WITHOUT the leading locale label ("OFS"), for the callers that
+   * already own that furniture: every rendering engine does. ChartFrame renders
+   * `{sourceLabel(lang)} {source.name}` (skills/chart-native/src/core/ChartFrame.tsx:275) and
+   * lib/delivery/adapters/zip.ts writes `Source: ${m.source}` — handing either of them `credit`
+   * prints "Source : Source : OFS". Everything that is part of WHAT IS SAID (the prose
+   * qualifier, the synthetic notice) stays in here; only the label is removed.
+   *
+   * Invariant, locked by a test over every kind × language:
+   * `credit === "" ? attribution === "" : credit === sourceLabel(lang) + " " + attribution`.
+   */
+  attribution: string;
   /** Present only for kinds that publish a url, and only when one was declared. */
   url?: string;
   /** A warning the visual must display. Also inlined into `credit` — see below. */
@@ -60,21 +74,31 @@ export function publishedSourceFor(
 ): PublishedSource {
   const rules = requirementsFor(decl.kind);
   const label = decl.label?.trim() ?? "";
-  if (rules.label === "forbidden" || label === "") return { credit: "" };
+  if (rules.label === "forbidden" || label === "")
+    return { credit: "", attribution: "" };
 
-  let credit = `${sourceLabel(lang)} ${label}`;
+  // Composed WITHOUT the locale label first, so the two fields cannot drift: `credit` is
+  // literally the prefix plus this. Both the prose qualifier and the synthetic notice belong
+  // here rather than only on `credit` — an engine that owns its own "Source:" furniture must
+  // not be the one caller that silently drops the demonstration warning.
+  let attribution = label;
   if (decl.kind === "prose")
-    credit = `${credit} (${forLang(PROSE_QUALIFIER, lang)})`;
+    attribution = `${attribution} (${forLang(PROSE_QUALIFIER, lang)})`;
 
   const notice = rules.requiresNotice
     ? forLang(SYNTHETIC_NOTICE, lang)
     : undefined;
   // Inlined into the credit as well: a renderer that prints only the credit line still prints
   // the warning. Nothing here relies on a downstream engine reading an optional field.
-  if (notice) credit = `${credit} — ${notice}`;
+  if (notice) attribution = `${attribution} — ${notice}`;
 
   const url =
     rules.url !== "forbidden" && decl.url?.trim() ? decl.url.trim() : undefined;
 
-  return { credit, ...(url ? { url } : {}), ...(notice ? { notice } : {}) };
+  return {
+    credit: `${sourceLabel(lang)} ${attribution}`,
+    attribution,
+    ...(url ? { url } : {}),
+    ...(notice ? { notice } : {}),
+  };
 }

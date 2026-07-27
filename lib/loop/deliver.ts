@@ -138,14 +138,22 @@ export async function deliver(
   const env = opts.env ?? decorEnv(decor.root);
   // Element-wide, not per-destination: every publisher describes the SAME visual, so a
   // refusal here (no angle, blank alt text) applies to all of them and stops the whole call.
-  const metadata = deliveryMetadata(el, profile, {
-    ...(decor.state.delivery?.maxWidth !== undefined
-      ? { width: decor.state.delivery.maxWidth }
-      : {}),
-    ...(decor.state.delivery?.height !== undefined
-      ? { height: decor.state.delivery.height }
-      : {}),
-  });
+  const metadata = deliveryMetadata(
+    el,
+    profile,
+    {
+      ...(decor.state.delivery?.maxWidth !== undefined
+        ? { width: decor.state.delivery.maxWidth }
+        : {}),
+      ...(decor.state.delivery?.height !== undefined
+        ? { height: decor.state.delivery.height }
+        : {}),
+    },
+    // WHERE the figures came from is the run's declared ledger, never the newsroom profile —
+    // the profile names the author (`credit`). Passing it here is what makes the packaged
+    // README, the embed snippet and the hosted page all say the same thing the visual says.
+    run.sources,
+  );
   if (!metadata.ok) return metadata;
 
   // The dedicated delivery directory (see the import comment above). Created here, not left
