@@ -50,6 +50,13 @@ export type ReviewerAdapter = {
 };
 
 export type ReviewRequest = {
+  // `source.sourceName` arrives here as a plain string, never as a run or a source ledger — this
+  // verb is deliberately blind to orchestration (#9's independence: a reviewer that could read the
+  // run could grade the process instead of the artifact). The production caller
+  // (`lib/loop/verify.ts`'s `renderedSourceName`) resolves it from the run's DECLARED source
+  // policy before it ever reaches this file, so the string is honest without this file having to
+  // see what it was honest ABOUT. Do not "fix" this by widening `source` to carry the run — that
+  // would reopen exactly what redact.ts's whitelist exists to close.
   source: ReviewerSource;
   checks: CaptureCheck[];
   reviewedProvenanceHash: string;
