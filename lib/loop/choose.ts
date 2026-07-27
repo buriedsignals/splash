@@ -1,0 +1,85 @@
+// The DECISION that names WHICH form gets built — the counterpart of request-delivery.ts, and
+// the missing producer of `proposal.chosenId`, which until now only tests ever wrote.
+//
+// Why this is code and not prose: the offer is data the brain built, the choice is the one act
+// that is the journalist's alone (P1 — the tool offers, the journalist decides), and everything
+// downstream reads the choice through `chosenOption` (produce, deliver, provenanceHash). A model
+// hand-editing run.json to record it produces a manifest nothing validated, in a loop whose every
+// guard assumes the state was written by code. So the decision gets a writer with refusals of its
+// own, in the same shape requestDelivery already has: a VerbResult, never a throw, nothing written
+// until every refusal has passed.
+import { fail, ok, type VerbResult } from "../core/verbs/types";
+import {
+  isLoopBuildable,
+  resolveBuilder,
+  unbuildableEngineReason,
+} from "./buildable";
+import type { RunElement } from "./manifest";
+
+/**
+ * Record the form the journalist chose. Returns a NEW element — the caller persists it.
+ *
+ * Takes the element alone, not the run: nothing here depends on run-level state, and an argument
+ * this function does not read would misdescribe what the decision actually rests on.
+ */
+export function chooseForm(
+  el: RunElement,
+  optionId: string,
+): VerbResult<RunElement> {
+  const proposal = el.proposal;
+  if (!proposal)
+    return fail(
+      "invalid-request",
+      `choose-form: element ${el.id} has nothing proposed yet — propose before choosing`,
+    );
+  if (proposal.options.length === 0)
+    return fail(
+      "invalid-request",
+      // The brain's own sentence when it refused the whole offer (manifest.ts keeps it as state
+      // precisely so it survives a resume). Without it, "the offer is empty" reads as a bug in the
+      // tool rather than as the answer the brain already gave.
+      `choose-form: element ${el.id} has an empty offer, so there is nothing to choose` +
+        (proposal.refusal ? ` — ${proposal.refusal}` : ""),
+    );
+
+  const chosen = proposal.options.find((o) => o.id === optionId);
+  if (!chosen)
+    return fail(
+      "invalid-request",
+      `choose-form: "${optionId}" is not in the offer — it holds ${proposal.options
+        .map((o) => `"${o.id}"`)
+        .join(", ")}`,
+    );
+
+  // The one refusal that is about the FORM rather than about the id. A form production cannot
+  // build is OFFERED (marked, never removed — lib/brain/eligibility.ts), so it CAN be named here;
+  // writing the choice anyway would produce a manifest that loops on its own dead end, because
+  // nextActionsForElement already routes such a choice straight back to "choose-form". Refusing
+  // one step earlier says the same thing while the journalist is still in the act of choosing.
+  //
+  // Resolved through resolveBuilder/isLoopBuildable — the SAME path produce.ts, manifest.ts and
+  // the brain's buildabilityMark resolve through. A fourth resolution here is exactly the drift
+  // lib/loop/buildable.ts exists to prevent.
+  //
+  // Only THIS mark forbids. An option can also carry a readiness mark for a capability the
+  // newsroom left switched off, or for the whole-article branch; those are warnings the offer
+  // showed and the journalist read. Refusing them would turn the mark into a veto and take the
+  // decision back from the journalist, which is the opposite of what this module is for.
+  const builder = resolveBuilder(chosen);
+  if (!isLoopBuildable(builder))
+    return fail(
+      "invalid-request",
+      // The mark's own words when it has them, so the journalist reads in the refusal exactly the
+      // sentence the offer displayed (including the whole-article-branch wording, which masks the
+      // engine reason in the offer — eligibility.ts's withMarks pushes it first).
+      `choose-form: "${chosen.id}" cannot be built — ${
+        chosen.readiness?.reason ?? unbuildableEngineReason(builder)
+      }`,
+    );
+
+  // Nothing else is touched. Moving the choice moves provenanceHash, so an existing artifact goes
+  // stale and nextActions routes back to produce on its own — no artifact is deleted here, and no
+  // delivery record is forgotten (a destination that already landed stays on the record, the same
+  // discipline request-delivery.ts follows).
+  return ok({ ...el, proposal: { ...proposal, chosenId: chosen.id } });
+}
