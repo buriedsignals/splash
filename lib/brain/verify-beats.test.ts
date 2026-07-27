@@ -64,9 +64,9 @@ describe("verifyBeats — the plan that came back is still the plan", () => {
   test("an authored beat has no anchor field — the coordinate cannot be moved at all", () => {
     // Structural, not checked: the authoring turn has nowhere to put an anchor, exactly as
     // confirm-angle's named slots leave the host nowhere to put a manifest path.
-    // @ts-expect-error `anchor` is not part of AuthoredBeat
     const withAnchor: AuthoredBeat = {
       ...FAITHFUL[0]!,
+      // @ts-expect-error `anchor` is not part of AuthoredBeat — the shape refuses it
       anchor: { kind: "x", value: "2012" },
     };
     expect(withAnchor.id).toBe("beat-1");

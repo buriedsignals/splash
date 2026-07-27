@@ -19,6 +19,7 @@ import {
   DESTINATION_POLICY,
 } from "../core/channel-policy";
 import { isLoopBuildable, resolveBuilder } from "./buildable";
+import { ARC_ROLES } from "../core/claim-arc";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger } from "../source/policy";
@@ -58,6 +59,35 @@ const FormOptionSchema = z.object({
     })
     .optional(),
 });
+// THE NARRATIVE PLAN of an article-branch deliverable — the beats a reader is walked through.
+//
+// It exists because the beats used to be DERIVED and shipped: skills/scrolly/src/Scrolly.tsx
+// calls deriveChartStory() and the auto-picked captions appeared under a journalist's byline,
+// against the socle's own rule that Splash composes the text the journalist brings and does not
+// write the journalism. The plan is now drafted (lib/brain/beats.ts), authored by the journalist
+// (lib/loop/beats.ts, behind lib/brain/verify-beats.ts), and only then rendered.
+//
+// `text: ""` is the DRAFT state and it is legitimate on disk — exactly as propose() persists an
+// offer whose every `why` is empty. What is not legitimate is an ARTIFACT standing on one
+// (assertInvariants below), and produce() refuses to build one.
+//
+// `draftText` is kept as STATE rather than discarded after being shown, for the reason the offer
+// keeps `excluded`: it survives a resume, and a journalist coming back to a run has to be able
+// to see again what was suggested without re-deriving it.
+const BeatSourceSchema = z.object({
+  facts: z.record(z.string(), z.string()),
+  shared: z.record(z.string(), z.string()),
+});
+const NarrativeBeatSchema = z.object({
+  id: z.string(),
+  anchor: z.object({ kind: z.enum(["x", "category"]), value: z.string() }),
+  role: z.enum(ARC_ROLES),
+  text: z.string(),
+  draftText: z.string(),
+  beatSource: BeatSourceSchema,
+});
+const NarrativeSchema = z.object({ beats: z.array(NarrativeBeatSchema) });
+
 const RunEventSchema = z.object({
   at: z.string(),
   kind: z.enum(["failure", "transition"]),
@@ -126,6 +156,9 @@ const RunElementSchema = z.object({
       refusal: z.string().optional(),
     })
     .optional(),
+  /** The authored beat plan of an article-branch deliverable. Absent for an embeddable element
+   *  — a chart in a story has no walk. See NarrativeSchema. */
+  narrative: NarrativeSchema.optional(),
   artifact: z
     .object({
       path: z.string(),
@@ -221,6 +254,11 @@ export type NextAction =
   | "phrase"
   | "choose-form"
   | "confirm-aspect"
+  // The article branch's two turns. `draft-beats` is DETERMINISTIC — the driver runs it, like
+  // propose — and hands over a walk whose every claim is unwritten. `author-beats` is the
+  // journalist's, like phrase: they validate or rewrite each beat, behind verifyBeats.
+  | "draft-beats"
+  | "author-beats"
   | "produce"
   // The verification chain (lib/verify), on the road between a produced artifact and a
   // published one. `capture`, `review` and `preview` are DETERMINISTIC — advanceStep runs
@@ -318,7 +356,23 @@ export function provenanceHash(run: RunManifest, el: RunElement): string {
     // brain) hashes as null rather than as produce's "static" default: what matters is that the
     // value MOVES when the pinned format moves, and a null that never changes is stable.
     format: chosen?.format ?? null,
+    // The narrative plan is artifact-determining for the same reason the source ledger is: since
+    // produce.ts threads the authored beats into the spec, the journalist's own sentences are
+    // RENDERED INTO the page. Without this line, rewriting a beat leaves the old prose on a page
+    // that reports itself fresh — nextActions answers "show", and the newsroom publishes a
+    // sentence it already replaced. `null` for every element that carries no plan, so the value
+    // stays stable rather than moving for an embeddable element that never had one.
+    narrative: el.narrative ?? null,
   });
+}
+
+/** The beats of an element's plan that nobody has written yet. Empty for an authored plan, and
+ *  for an element that carries no plan at all — one question, one answer, read by the routing,
+ *  the invariant and produce()'s refusal so the three cannot drift. */
+export function unauthoredBeats(el: RunElement): string[] {
+  return (el.narrative?.beats ?? [])
+    .filter((b) => b.text.trim() === "")
+    .map((b) => b.id);
 }
 
 export function stalenessOf(run: RunManifest, el: RunElement): boolean {
@@ -408,6 +462,17 @@ export function nextActionsForElement(
   // orchestrator to obey. A destination with one shape (web, print) never reaches it, because
   // resolvedChannelForElement answers from the destination's default.
   if (!resolvedChannelForElement(run, el)) return ["confirm-aspect"];
+  // THE ARTICLE BRANCH: a narrative page is not built from a plan nobody wrote.
+  //
+  // POSITION — below the buildability gate, on purpose. Drafting beats for a form nothing can
+  // build is work thrown away, and routing out of that state would swallow the stranded-run
+  // escape the offer's mark promises ("choose-form" is the way back). scrolly is not in
+  // LOOP_BUILDABLE_ENGINES today, so `draft-beats` is NOT reachable through this function yet;
+  // it becomes reachable the day the whole-article branch is wired, with nothing here to change.
+  // The `author-beats` line below is NOT format-gated for the same honesty: whatever created a
+  // plan, an unwritten one must not reach produce.
+  if (chosen?.format === "scrolly" && !el.narrative) return ["draft-beats"];
+  if (unauthoredBeats(el).length > 0) return ["author-beats"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   // `deliver` is a step a DECISION triggers, never an automatic advance — the symmetric of
   // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.
@@ -672,6 +737,16 @@ export function assertInvariants(run: RunManifest): void {
     if (el.artifact && !el.angle)
       throw new Error(
         `invariant: element ${el.id} has an artifact without an angle`,
+      );
+    // The narrative counterpart of the `why` invariant just above, and it says the same thing
+    // one layer out: a PAGE recorded as produced while a beat of its walk carries no claim is a
+    // page whose prose nobody wrote, shipping under a journalist's byline. Judged on the
+    // ARTIFACT, never on the plan alone — a drafted plan with every text empty is the legitimate
+    // intermediate state, exactly as a freshly proposed offer is legitimately unphrased.
+    const unauthored = el.artifact ? unauthoredBeats(el) : [];
+    if (unauthored.length)
+      throw new Error(
+        `invariant: element ${el.id} produced a page whose ${unauthored.join(", ")} nobody authored`,
       );
     if (el.approved && !el.artifact)
       throw new Error(
