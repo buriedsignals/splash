@@ -2,16 +2,22 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { nextActions, parseManifest, type RunManifest } from "../loop/manifest";
 import { resumeReport } from "../loop/resume";
+import type { VerbErrorCode } from "../core/verbs/types";
 import type { HostErrorCode } from "./errors";
 
 // The one response shape every host command answers with, so a host parses one thing.
 // Mirrors the verb contract's VerbResult on purpose: same discipline, same reasoning —
-// a host outside JavaScript has no `catch`, so a failure has to be a value. The code is
-// drawn from lib/host/errors.ts's single declared list, which is also what the capability
-// declaration publishes.
+// a host outside JavaScript has no `catch`, so a failure has to be a value.
+//
+// The code comes from EITHER declared list, and both are published by the capability
+// declaration (`errorCodes.verb` / `errorCodes.host`) precisely because a host meets two
+// families. The read-only commands only ever answer a host code; the acting commands
+// (lib/host/drive.ts) pass a loop refusal through with the code the loop gave it —
+// `invalid-request` for a form that is not in the offer — rather than relabelling it as a
+// façade error, which would lose which layer answered. Neither list is retyped here.
 export type HostResponse =
   | { ok: true; value: unknown }
-  | { ok: false; code: HostErrorCode; message: string };
+  | { ok: false; code: HostErrorCode | VerbErrorCode; message: string };
 
 // `state` and `next` are READ-ONLY, and that is a promise in lib/host/README.md: the façade
 // only ever writes inside the paths a `verb` request names.
@@ -27,7 +33,13 @@ export type HostResponse =
 // would mean handing the host a report whose `inputValidation` describes a file that does not
 // exist — a lie about the run rather than a read of it. So the honest answer is a typed
 // refusal that tells the host to run the migration explicitly, as a write it chose.
-function loadRun(
+//
+// Exported because the commands that DO write (lib/host/drive.ts) must load a run by exactly the
+// same rule — including the stale-schema refusal. A writing command has a weaker excuse for
+// refusing to migrate, and it refuses anyway: a host asked for one loop step, not for a migration
+// that freezes an input file into its run. One loader, one set of refusals, no second opinion
+// about what a readable run is.
+export function loadRun(
   runDir: string,
 ): { run: RunManifest } | { fail: HostResponse } {
   const manifestPath = join(runDir, "run.json");
