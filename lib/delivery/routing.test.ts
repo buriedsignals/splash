@@ -45,4 +45,16 @@ describe("defaultDestinationsFor", () => {
       expect(defaultDestinationsFor(f, EVERY_DELIVERY_ID)).toEqual(["zip"]);
     }
   });
+
+  it("should respect HOSTED_PREFERENCE order, not the caller's order", () => {
+    // Ready ids passed in reverse preference order: prefer embed-cms (first in array),
+    // not embed-s3 (first in the caller's list).
+    expect(
+      defaultDestinationsFor("interactive", ["embed-s3", "embed-cms"]),
+    ).toEqual(["embed-cms"]);
+    // Verify the preference order holds for other pairs.
+    expect(
+      defaultDestinationsFor("scrolly", ["embed-fly", "embed-cloudflare"]),
+    ).toEqual(["embed-cloudflare"]);
+  });
 });
