@@ -664,6 +664,11 @@ describe("provenance covers the deliverable", () => {
       // keys re-value nothing — instead of failing whenever another slice legitimately widens
       // the hash.
       sources: m.sources ?? null,
+      // Added by the article-beats seam, for the same reason as `sources`: the journalist's own
+      // beat sentences are rendered INTO the page, so rewriting one must invalidate it. Listed
+      // here on the same terms — null for an element that carries no plan, which is what keeps
+      // this test's own invariant (the deliverable keys re-value nothing) legible.
+      narrative: m.elements[0]!.narrative ?? null,
     });
     expect(provenanceHash(m, m.elements[0]!)).toBe(expected);
   });
@@ -1284,5 +1289,191 @@ describe("the capture slot", () => {
         ],
       }),
     ).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The narrative slot (article beats) — see docs/superpowers/specs/
+// 2026-07-27-article-beats-design.md
+// ---------------------------------------------------------------------------
+
+/** A run whose live element chose a chart-native SCROLLY — the one format whose deliverable is
+ *  a narrative page rather than an embeddable element. */
+function scrollyRun(): RunManifest {
+  const m = base();
+  return {
+    ...m,
+    elements: [
+      {
+        ...m.elements[0]!,
+        proposal: {
+          options: [
+            {
+              id: "line-scrolly",
+              nativeType: "line",
+              engine: "chart-native",
+              format: "scrolly",
+              why: "the series has a shape a reader can be walked through",
+            },
+          ],
+          excluded: [],
+          chosenId: "line-scrolly",
+        },
+      },
+    ],
+  };
+}
+
+const DRAFTED_BEAT = {
+  id: "beat-1",
+  anchor: { kind: "x" as const, value: "1979" },
+  role: "establish" as const,
+  text: "",
+  draftText: "1979 — 7",
+  beatSource: { facts: { x: "1979", value: "7" }, shared: { points: "7" } },
+};
+const AUTHORED_BEAT = {
+  ...DRAFTED_BEAT,
+  text: "En 1979 la banquise tenait encore.",
+};
+
+describe("the narrative slot", () => {
+  it("round-trips through the schema", () => {
+    const m = scrollyRun();
+    const parsed = parseManifest({
+      ...m,
+      elements: [{ ...m.elements[0]!, narrative: { beats: [AUTHORED_BEAT] } }],
+    });
+    expect(parsed.elements[0]!.narrative!.beats[0]!.anchor.value).toBe("1979");
+    expect(parsed.elements[0]!.narrative!.beats[0]!.draftText).toBe("1979 — 7");
+  });
+
+  it("refuses a role that is not a claim-arc stage", () => {
+    const m = scrollyRun();
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [
+          {
+            ...m.elements[0]!,
+            narrative: { beats: [{ ...AUTHORED_BEAT, role: "climax" }] },
+          },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("is part of the provenance — rewriting a beat stales the page", () => {
+    const m = scrollyRun();
+    const drafted: RunManifest = {
+      ...m,
+      elements: [{ ...m.elements[0]!, narrative: { beats: [AUTHORED_BEAT] } }],
+    };
+    const h1 = provenanceHash(drafted, drafted.elements[0]!);
+    const rewritten: RunManifest = {
+      ...drafted,
+      elements: [
+        {
+          ...drafted.elements[0]!,
+          narrative: {
+            beats: [
+              { ...AUTHORED_BEAT, text: "Une autre phrase entièrement." },
+            ],
+          },
+        },
+      ],
+    };
+    expect(provenanceHash(rewritten, rewritten.elements[0]!)).not.toBe(h1);
+    // …and it is STABLE when nothing moves.
+    expect(provenanceHash(drafted, drafted.elements[0]!)).toBe(h1);
+  });
+
+  it("stales an artifact produced before the beat was rewritten", () => {
+    const m = scrollyRun();
+    const el = { ...m.elements[0]!, narrative: { beats: [AUTHORED_BEAT] } };
+    const produced: RunManifest = { ...m, elements: [el] };
+    const withArtifact: RunElement = {
+      ...el,
+      artifact: {
+        path: "elements/e1/scrolly.html",
+        sha256: "b".repeat(64),
+        provenanceHash: provenanceHash(produced, el),
+        producedAt: new Date().toISOString(),
+      },
+    };
+    expect(
+      stalenessOf({ ...produced, elements: [withArtifact] }, withArtifact),
+    ).toBe(false);
+    const rewritten: RunElement = {
+      ...withArtifact,
+      narrative: { beats: [{ ...AUTHORED_BEAT, text: "Réécrit." }] },
+    };
+    expect(stalenessOf({ ...produced, elements: [rewritten] }, rewritten)).toBe(
+      true,
+    );
+  });
+
+  it("refuses on disk an artifact standing on a beat nobody authored", () => {
+    const m = scrollyRun();
+    const el: RunElement = {
+      ...m.elements[0]!,
+      narrative: { beats: [DRAFTED_BEAT] },
+      artifact: {
+        path: "elements/e1/scrolly.html",
+        sha256: "b".repeat(64),
+        provenanceHash: "h",
+        producedAt: new Date().toISOString(),
+      },
+    };
+    expect(() => assertInvariants({ ...m, elements: [el] })).toThrow(/beat-1/);
+  });
+
+  it("ACCEPTS a drafted plan with no artifact — that is the draft state", () => {
+    const m = scrollyRun();
+    expect(() =>
+      assertInvariants({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [DRAFTED_BEAT] } }],
+      }),
+    ).not.toThrow();
+  });
+});
+
+describe("routing a narrative page through its beats", () => {
+  // THE HONEST STATE OF THE ROUTE. `draft-beats` sits BELOW the buildability gate, because
+  // drafting beats for a form nothing can build would be work thrown away and would swallow the
+  // stranded-run escape (driver.test.ts's "clearing the request is the way out"). scrolly is not
+  // in LOOP_BUILDABLE_ENGINES today — the whole-article branch is its own sub-project — so a
+  // chosen scrolly still answers "choose-form", and this is what that looks like rather than a
+  // claim the route is live. See the design spec §8, first assumed risk.
+  it("still routes a chosen scrolly back to the offer — the article branch is not wired", () => {
+    expect(nextActions(scrollyRun())).toEqual(["choose-form"]);
+  });
+
+  it("asks the journalist to author, whenever a plan carries an unwritten beat", () => {
+    const m = base();
+    expect(
+      nextActions({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [DRAFTED_BEAT] } }],
+      }),
+    ).toEqual(["author-beats"]);
+  });
+
+  it("produces once every beat is authored", () => {
+    const m = base();
+    expect(
+      nextActions({
+        ...m,
+        elements: [
+          { ...m.elements[0]!, narrative: { beats: [AUTHORED_BEAT] } },
+        ],
+      }),
+    ).toEqual(["produce"]);
+  });
+
+  it("leaves an element with no plan untouched — no beats are ever asked of it", () => {
+    // base() chose a static slope: the narrative slot must not appear anywhere in its routing.
+    expect(nextActions(base())).toEqual(["produce"]);
   });
 });

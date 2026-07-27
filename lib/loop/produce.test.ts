@@ -9,9 +9,12 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
-import { produce } from "./produce";
+import { produce, assembleNativeSpec } from "./produce";
 import { provenanceHash, type RunManifest } from "./manifest";
 import { freezeInput } from "./freeze";
+import { draftBeats, applyBeats } from "./beats";
+import { narrativeBeatErrors } from "../../skills/chart-native/src/chart-story";
+import { rmSync } from "node:fs";
 
 test("produce renders a real static PNG through the chart-native seam", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-produce-run-"));
@@ -485,10 +488,7 @@ test("the declared source reaches the produced artifact, and the placeholder is 
   };
   const result = await produce(run, run.elements[0], runDir);
   if (!result.ok) throw new Error(result.message);
-  const html = readFileSync(
-    join(runDir, result.value.artifact!.path),
-    "utf8",
-  );
+  const html = readFileSync(join(runDir, result.value.artifact!.path), "utf8");
   expect(html).toContain("Office fédéral de la santé publique");
   expect(html).toContain(
     "https://www.bag.admin.ch/dam/bag/fr/dokumente/kuv-aufsicht/praemien/2024.csv",
@@ -547,4 +547,168 @@ test("produce refuses a social deliverable whose aspect has not been confirmed",
     // Never rendered at the run's article-web default: 9:16 or 1:1 is the journalist's answer.
     expect(result.message).toMatch(/aspect ratio/);
   }
+});
+
+// ---------------------------------------------------------------------------
+// The narrative plan reaches the spec (article beats) — see docs/superpowers/specs/
+// 2026-07-27-article-beats-design.md
+// ---------------------------------------------------------------------------
+
+const SEA_ICE =
+  "year,extent\n1979,7.0\n1995,6.1\n2003,6.1\n2007,4.3\n2012,3.6\n2020,3.9\n2025,4.3";
+
+function scrollyRunOnDisk(): { run: RunManifest; runDir: string } {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-beats-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, SEA_ICE);
+  return {
+    runDir,
+    run: {
+      runId: "t-beats",
+      schemaVersion: 4,
+      route: "article",
+      channel: "article-web",
+      input: { data: freezeInput(runDir, src, "data") },
+      sources: {
+        mode: "real",
+        data: { kind: "public", label: "NSIDC Sea Ice Index" },
+      },
+      orient: {
+        profile: {
+          columns: ["year", "extent"],
+          numericColumns: ["year", "extent"],
+          rowCount: 7,
+        },
+        supportsPoint: true,
+      },
+      elements: [
+        {
+          id: "e1",
+          angle: {
+            confirmedTakeaway:
+              "The Arctic's September sea ice has not recovered",
+            altInsight:
+              "September minimum sea-ice extent fell from 7 to 4.3 million km² between 1979 and 2025.",
+            unit: "million km²",
+          },
+          proposal: {
+            options: [
+              {
+                id: "line-scrolly",
+                nativeType: "line",
+                engine: "chart-native",
+                format: "scrolly",
+                why: "a series a reader can be walked through",
+              },
+            ],
+            excluded: [],
+            chosenId: "line-scrolly",
+          },
+        },
+      ],
+      events: [],
+    },
+  };
+}
+
+test("assembleNativeSpec threads the authored beats onto the spec", () => {
+  const { run, runDir } = scrollyRunOnDisk();
+  const drafted = draftBeats(run, run.elements[0]!, runDir);
+  expect(drafted.ok).toBe(true);
+  if (!drafted.ok) return;
+  const withPlan: RunManifest = { ...run, elements: [drafted.value] };
+  const authored = applyBeats(
+    withPlan,
+    "e1",
+    drafted.value.narrative!.beats.map((b) => ({
+      id: b.id,
+      role: b.role,
+      text: `Claim ${b.id}.`,
+    })),
+  );
+  const spec = assembleNativeSpec(
+    authored,
+    authored.elements[0]!,
+    SEA_ICE,
+    "NSIDC Sea Ice Index",
+  );
+  expect(spec.beats).toBeDefined();
+  expect(spec.beats!.map((b) => b.text)).toEqual(
+    drafted.value.narrative!.beats.map((b) => `Claim ${b.id}.`),
+  );
+  // A LINE beat anchors on `x` — the shape narrativeBeatErrors accepts, never `category`.
+  expect(spec.beats!.every((b) => typeof b.x === "string")).toBe(true);
+  expect(spec.beats!.every((b) => b.category === undefined)).toBe(true);
+  expect(spec.beats!.map((b) => b.role)).toEqual(
+    drafted.value.narrative!.beats.map((b) => b.role),
+  );
+  // …and the engine agrees the plan is valid against the data it was drafted from.
+  expect(narrativeBeatErrors(spec as never)).toEqual([]);
+  rmSync(runDir, { recursive: true, force: true });
+});
+
+test("assembleNativeSpec leaves an element with no plan byte-identical — no `beats` key", () => {
+  const { run, runDir } = scrollyRunOnDisk();
+  const spec = assembleNativeSpec(
+    run,
+    run.elements[0]!,
+    SEA_ICE,
+    "NSIDC Sea Ice Index",
+  );
+  expect("beats" in spec).toBe(false);
+  rmSync(runDir, { recursive: true, force: true });
+});
+
+test("produce refuses a walk whose beats nobody authored, naming them", async () => {
+  const { run, runDir } = scrollyRunOnDisk();
+  // A BUILDABLE form, so the refusal under test is the beats one and not the article branch's.
+  // The guard is deliberately not format-gated: whatever created a plan, an unwritten one must
+  // not be rendered.
+  const buildable: RunManifest = {
+    ...run,
+    elements: [
+      {
+        ...run.elements[0]!,
+        proposal: {
+          ...run.elements[0]!.proposal!,
+          options: [
+            { ...run.elements[0]!.proposal!.options[0]!, format: "static" },
+          ],
+        },
+      },
+    ],
+  };
+  const drafted = draftBeats(buildable, buildable.elements[0]!, runDir);
+  if (!drafted.ok) throw new Error(drafted.message);
+  const r = await produce(
+    { ...buildable, elements: [drafted.value] },
+    drafted.value,
+    runDir,
+  );
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.code).toBe("invalid-request");
+  expect(r.message).toContain("beat-1");
+  rmSync(runDir, { recursive: true, force: true });
+});
+
+// ORDER. lib/loop/buildable.ts's header states the invariant its three readers must hold: a
+// journalist reads ONE sentence for a form nothing can build, the one the offer already marked
+// it with. So the buildability refusal comes FIRST — telling someone to write their beats when
+// their chosen form cannot be built at all sends them to fix the wrong thing.
+test("a form nothing can build is refused with the offer's sentence, before its beats are judged", async () => {
+  const { run, runDir } = scrollyRunOnDisk();
+  const drafted = draftBeats(run, run.elements[0]!, runDir);
+  if (!drafted.ok) throw new Error(drafted.message);
+  const r = await produce(
+    { ...run, elements: [drafted.value] },
+    drafted.value,
+    runDir,
+  );
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.code).toBe("not-implemented");
+  expect(r.message).toContain("scrolly");
+  expect(r.message).not.toContain("beat-1");
+  rmSync(runDir, { recursive: true, force: true });
 });
