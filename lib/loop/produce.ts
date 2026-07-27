@@ -16,6 +16,21 @@ import {
 // in that file, on purpose; see its header.
 import "./engines";
 
+// Where an element's render output lives, and where its delivered packages live — declared
+// ONCE, here, rather than re-derived at each call site. Two call sites (this file and
+// deliver.ts) used to independently spell out `join(runDir, "elements", el.id)`: freshOutDir
+// (lib/core/verbs/exec.ts) wipes THAT directory clean before every render dispatch, which —
+// once deliver.ts started writing its package into the identical path — silently deleted an
+// already-delivered zip (and its ALT.txt/README.md) the moment the element was re-produced.
+// Siblings under the run dir, never nested inside one another, so a re-produce's wipe can
+// never reach what deliver.ts already published, and vice versa.
+export function elementRenderDir(runDir: string, id: string): string {
+  return join(runDir, "elements", id);
+}
+export function elementDeliveryDir(runDir: string, id: string): string {
+  return join(runDir, "deliveries", id);
+}
+
 // Which delivered file IS the artifact, for a given format — the same shape
 // assertDeliveredContract (lib/core/contract.ts) already validated is present before this
 // runs, so this only has to LOCATE it, not re-validate it. Kept in step with
@@ -142,7 +157,7 @@ export async function produce(
     spec: nativeSpec,
     format,
     channel,
-    outDir: join(runDir, "elements", el.id),
+    outDir: elementRenderDir(runDir, el.id),
     id: el.id,
   });
   if (!result.ok) return result;

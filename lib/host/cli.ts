@@ -5,7 +5,8 @@
 //
 // Exit codes are part of the contract:
 //   0  success
-//   1  the verb was refused (a well-formed request the contract declined)
+//   1  refused — a well-formed request the contract or the loop declined (a verb, a loop step,
+//      or a decision)
 //   2  usage error, unparseable input, or an unreadable run
 //
 // stdout carries ONLY the JSON document, so a host can parse it whole. Anything humans
@@ -21,10 +22,12 @@
 // a compile error.
 import { ENGINES_REGISTERED } from "../loop/engines";
 import { runVerb } from "../core/verbs";
-import { capabilities } from "./capabilities";
+import { capabilities, HOST_ONLY_VERBS } from "./capabilities";
+import { advanceRun, chooseFormIn, requestDeliveryIn } from "./drive";
 import { describeNewsroom } from "./newsroom";
 import { outDirRefusal } from "./path-safety";
 import { describeNext, describeState, type HostResponse } from "./state";
+import type { VerbErrorCode } from "../core/verbs/types";
 import type { HostErrorCode } from "./errors";
 
 function emit(body: unknown, code: number): never {
@@ -142,6 +145,54 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : 2);
   }
 
+  // The ACTING commands. `state`/`next` report what is valid; these do it. They are the only
+  // commands besides `verb` that write, and they write exactly one file — the run.json of the
+  // run they were pointed at — plus whatever the loop's own step produces beneath it.
+  if (command === "advance") {
+    const parsed = parseFlags(rest, ["--run"]);
+    if (!parsed.ok) usage(parsed.message);
+    const runDir = parsed.flags["--run"];
+    if (!runDir) usage("advance needs --run <dir>");
+    const r = await advanceRun(runDir);
+    // Two failure families, two exit codes: an unreadable run is an input problem (2), a step
+    // the loop declined is a refusal (1) — the same split `verb` already draws.
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
+  if (command === "choose-form") {
+    const parsed = parseFlags(rest, ["--run", "--option"]);
+    if (!parsed.ok) usage(parsed.message);
+    const runDir = parsed.flags["--run"];
+    if (!runDir) usage("choose-form needs --run <dir>");
+    const option = parsed.flags["--option"];
+    if (!option)
+      usage("choose-form needs --option <id> — the id of a form in the offer");
+    const r = chooseFormIn(runDir, option);
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
+  if (command === "request-delivery") {
+    const parsed = parseFlags(rest, ["--run", "--to"]);
+    if (!parsed.ok) usage(parsed.message);
+    const runDir = parsed.flags["--run"];
+    if (!runDir) usage("request-delivery needs --run <dir>");
+    const to = parsed.flags["--to"];
+    // A comma list, validated rather than cleaned: "zip," silently becoming ["zip"] would let a
+    // typo decide where a newsroom's work is published. Absent --to is different from an empty
+    // one — it means "derive the destination from the format's genre".
+    let destinations: string[] | undefined;
+    if (to !== undefined) {
+      destinations = to.split(",");
+      if (destinations.some((d) => d.trim() === ""))
+        usage(
+          `--to lists destinations separated by commas, and ${JSON.stringify(to)} holds an empty one`,
+        );
+      destinations = destinations.map((d) => d.trim());
+    }
+    const r = requestDeliveryIn(runDir, destinations);
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
   if (command === "newsroom") {
     const parsed = parseFlags(rest, ["--dir"]);
     if (!parsed.ok) usage(parsed.message);
@@ -154,6 +205,20 @@ async function main(): Promise<never> {
     const name = rest[0];
     if (!name || name.startsWith("--"))
       usage("verb needs a name: verb <name> < request.json");
+    // A verb whose gates live in the LOOP is not callable here — refused before stdin is even
+    // read, so nothing can be published on the way to the refusal. `publish` is the case:
+    // everything lib/loop/deliver.ts applies before it (the editorial sign-off, the provenance
+    // freshness check, the metadata derived from the newsroom's profile, the capability
+    // readiness, the genre's `serves` legality) is a fact about a RUN, and this payload has no
+    // way to name one. Carrying those gates into the verb instead would mean handing the neutral
+    // contract a manifest, a decor and a run directory — the coupling `verb`'s "no --run" rule
+    // exists to prevent. So the detour is the answer, and `verbs` declares it (hostCommand).
+    const detour = HOST_ONLY_VERBS[name];
+    if (detour)
+      usage(
+        `verb ${name} is not callable through the façade — ${detour.why}. ` +
+          `Use ${detour.commands.join(", then ")} instead`,
+      );
     // `verb` deliberately takes no flags — the contract's payload is self-sufficient and
     // carries its own outDir. A flag here means the host is following a sketch the façade
     // does not implement, and silence would hide that.
@@ -178,8 +243,22 @@ async function main(): Promise<never> {
   }
 
   usage(
-    `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, verb or newsroom`,
+    `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, advance, ` +
+      `choose-form, request-delivery, verb or newsroom`,
   );
+}
+
+// Which exit code a non-ok answer from an acting command carries. The run being unreadable is an
+// INPUT problem (2) — the same answer `state` gives for it — while a refused step or decision is
+// a well-formed request the loop declined (1). Driven by the code rather than by the call site so
+// the two families cannot drift apart per command.
+function refusalExit(code: HostErrorCode | VerbErrorCode): number {
+  return code === "no-run" ||
+    code === "invalid-run" ||
+    code === "stale-schema" ||
+    code === "usage"
+    ? 2
+    : 1;
 }
 
 // The never-throw invariant, made STRUCTURAL at the process boundary. Every path above

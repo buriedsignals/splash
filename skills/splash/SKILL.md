@@ -468,8 +468,27 @@ Four rules, all mechanical:
 4. **A marked form is still offered — and it is never chosen silently.** Marks come from three
    places: a capability the newsroom has not turned on, the whole-article branch (not built yet),
    and an engine production cannot build yet (`lib/loop/buildable.ts`). All three MARK, none
-   removes. If the journalist picks a marked-unbuildable form, the loop routes back to the choice
-   rather than looping on a refusal — say so plainly and offer the ranked alternatives again.
+   removes. A mark WARNS, it does not forbid: the journalist may pick a marked form and the
+   choice stands. The one exception is a form nothing can build — `chooseForm` refuses it in the
+   words the offer displayed, and the loop routes back to the choice rather than looping on a
+   refusal. Say so plainly and offer the ranked alternatives again.
+
+**★ THE DECISIONS ARE MECHANICAL — never hand-edit `run.json`.** A decision the journalist makes
+is written by CODE, with its own refusals, exactly like the offer is built by code. Editing the
+manifest to record a choice produces state nothing validated, in a loop whose every guard assumes
+the opposite — and it is the last place where the flow was prose instead of a mechanism.
+
+| The journalist decides | The mechanism | Refuses |
+|---|---|---|
+| which form gets built | `chooseForm(el, id)` (`lib/loop/choose.ts`) — host: `choose-form --run <dir> --option <id>` | an id that is not in the offer (naming the ones that are) · an empty offer (carrying the brain's own refusal) · a form nothing can build |
+| where it goes | `requestDelivery(run, el, decor, opts)` (`lib/loop/request-delivery.ts`) — host: `request-delivery --run <dir> [--to <id,id>]` | nothing produced yet · a stale artifact · a destination this install does not know |
+
+Then the deterministic steps run themselves: `advance()` (`lib/loop/driver.ts`), or
+`advance --run <dir>` from a host that is not JavaScript. Deciding and sending are TWO acts —
+`request-delivery` records where it goes, `advance` publishes it — so a missing credential never
+erases what the journalist decided. **Publishing never goes through `verb publish`**: that path
+skips the sign-off, the provenance-freshness check, the profile-derived metadata, the readiness
+and the genre legality, and the façade refuses it for that reason.
 
 Only accepted proposals continue.
 

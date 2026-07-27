@@ -9,7 +9,10 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import "../../skills/splash/src/register-producers";
 import { deliver } from "./deliver";
+import { produce } from "./produce";
+import { freezeInput } from "./freeze";
 import { provenanceHash, type RunElement, type RunManifest } from "./manifest";
 import { neutralDecor, type Decor } from "../newsroom/decor";
 import { DEFAULT_NEWSROOM_STATE } from "../newsroom/state";
@@ -334,7 +337,8 @@ describe("deliver", () => {
     // grant. This reproduces — with real fs permissions, no mocking — the exact race class
     // produce.ts already guards against (an engine ran, but recording its output can still
     // fail) for the delivery path's own analogous step.
-    const packagePath = join(runDir, "elements", "e1", "e1.zip");
+    const packagePath = join(runDir, "deliveries", "e1", "e1.zip");
+    mkdirSync(join(runDir, "deliveries", "e1"), { recursive: true });
     writeFileSync(packagePath, "placeholder");
     chmodSync(packagePath, 0o200);
     try {
@@ -368,7 +372,7 @@ describe("deliver", () => {
     expect(afterFirst.delivery!.delivered.map((d) => d.publisherId)).toEqual([
       "zip",
     ]);
-    expect(existsSync(join(runDir, "elements", "e1", "e1.zip"))).toBe(true);
+    expect(existsSync(join(runDir, "deliveries", "e1", "e1.zip"))).toBe(true);
 
     const second = await deliver(
       { ...run, elements: [afterFirst] },
@@ -412,7 +416,7 @@ describe("deliver", () => {
     expect(afterFirst.delivery!.delivered.map((d) => d.publisherId)).toEqual([
       "zip",
     ]);
-    expect(existsSync(join(runDir, "elements", "e1", "e1.zip"))).toBe(true);
+    expect(existsSync(join(runDir, "deliveries", "e1", "e1.zip"))).toBe(true);
 
     // …and the refusal is NOT swallowed: the cloudflare destination is still unsatisfied, so
     // the very next call is the bounded refusal naming the variable the journalist must set.
@@ -474,6 +478,84 @@ describe("deliver", () => {
       delivered.delivery!.delivered[0]!,
     );
   });
+
+  // Regression: produce() and deliver() used to render into and publish into the SAME
+  // directory (`elements/<id>/`). freshOutDir (lib/core/verbs/exec.ts) wipes that directory
+  // clean before every render, so re-producing an element after it was delivered silently
+  // deleted the zip archive (and its ALT.txt/README.md) — while the manifest still recorded
+  // that delivery's path and hash. This exercises the REAL sequence through the real
+  // chart-native seam (no fixture — a fixture never runs freshOutDir at all), the same way
+  // produce.test.ts's own e2e cases do.
+  it("re-producing an element after it was delivered does not delete the delivered package", async () => {
+    const src = join(runDir, "src.csv");
+    writeFileSync(
+      src,
+      "canton,2015,2024\nGenève,449,583\nVaud,412,531\nAppenzell RI,289,352",
+    );
+    const base: RunManifest = {
+      runId: "reproduce-after-deliver",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: { data: freezeInput(runDir, src, "data") },
+      orient: {
+        profile: {
+          columns: ["canton", "2015", "2024"],
+          numericColumns: ["2015", "2024"],
+          rowCount: 3,
+        },
+        supportsPoint: true,
+      },
+      elements: [
+        {
+          id: "e1",
+          angle: {
+            confirmedTakeaway: "Health premiums rose in every canton shown",
+            altInsight:
+              "Between 2015 and 2024 the adult premium rose in all three cantons shown.",
+            unit: "Monthly adult premium (CHF)",
+          },
+          proposal: {
+            options: [
+              { id: "slope", nativeType: "slope", why: "two points in time" },
+            ],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+      events: [],
+    };
+
+    const produced1 = await produce(base, base.elements[0]!, runDir);
+    if (!produced1.ok) throw new Error(produced1.message);
+    const withArtifact: RunElement = {
+      ...produced1.value,
+      delivery: { requested: ["zip"], delivered: [] },
+    };
+    const runWithArtifact: RunManifest = { ...base, elements: [withArtifact] };
+
+    const delivered = await deliver(
+      runWithArtifact,
+      withArtifact,
+      runDir,
+      decorWith(),
+    );
+    if (!delivered.ok) throw new Error(delivered.message);
+    const rec = delivered.value.delivery!.delivered[0]!;
+    const packagePath = join(runDir, rec.artifact!.path);
+    expect(existsSync(packagePath)).toBe(true);
+
+    const runAfterDeliver: RunManifest = {
+      ...runWithArtifact,
+      elements: [delivered.value],
+    };
+    const produced2 = await produce(runAfterDeliver, delivered.value, runDir);
+    if (!produced2.ok) throw new Error(produced2.message);
+
+    // THE assertion this test exists for: the delivered package must still be on disk.
+    expect(existsSync(packagePath)).toBe(true);
+  }, 180_000);
 });
 
 // The element the existing helper builds, re-pinned to a static format with a provenance that

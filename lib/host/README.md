@@ -14,23 +14,30 @@ Three rules hold for every command:
   parse it whole. Anything humans need to read (none today) would go to stderr instead.
 - **The run directory holds all state.** The façade itself is stateless. `state` and `next`
   are strictly read-only — they never write a byte into the run directory, not even to
-  migrate an old manifest (see `stale-schema` below). Only `verb` writes, and only inside
-  the paths its own request names. A host keeps nothing between calls; the run's `run.json`
-  is the only source of truth.
+  migrate an old manifest (see `stale-schema` below). A host keeps nothing between calls; the
+  run's `run.json` is the only source of truth.
+- **Four commands write, and each writes one thing.** `verb` writes inside the paths its own
+  request names. `advance`, `choose-form` and `request-delivery` write the `run.json` of the
+  run they were pointed at (and, for `advance`, whatever the loop's own step produces beneath
+  it). Nothing else on disk is touched, and a REFUSED decision writes nothing at all — a
+  refusal always leaves the run byte-identical, which is what makes it safe to retry.
 
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
 | `0` | Success. |
-| `1` | The verb was refused — a well-formed request the contract declined (`ok: false` in the body). |
+| `1` | Refused — a well-formed request the contract or the loop declined (`ok: false` in the body): a verb, a loop step, or a decision. |
 | `2` | Usage error, unparseable input, or an unreadable run. |
 
 These three are exhaustive, and they hold for every input: an unreadable stdin, an unknown
 flag, a hostile payload, or a residual defect inside the façade all still leave one JSON
 document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
-## The five commands
+## The eight commands
+
+Read-only: `verbs`, `state`, `next`, `newsroom`. Acting: `advance`, `choose-form`,
+`request-delivery`, `verb`.
 
 ### `verbs`
 
@@ -114,7 +121,8 @@ $ bun lib/host/cli.ts verbs
       },
       {
         "name": "publish",
-        "implemented": true
+        "implemented": true,
+        "hostCommand": "advance"
       }
     ],
     "vocabulary": {
@@ -189,6 +197,7 @@ $ bun lib/host/cli.ts verbs
         "no-run",
         "invalid-run",
         "stale-schema",
+        "step-refused",
         "internal"
       ]
     }
@@ -202,16 +211,21 @@ Exit code `0`. Notes on what a host can read out of that:
   callable yet — a host sees they exist and are not wired, rather than discovering that as an
   error from `verb`. `publish` used to sit in that list and no longer does: the Livraison
   sub-project gave it a body (`lib/core/verbs/publish.ts`), so it reports `implemented: true`
-  and dispatches to the publisher registry. Its payload shape is not self-described here yet —
-  a host builds it from the spec (`PublishRequest`, plus `settings.publisherId` naming the
-  destination) rather than from this output.
+  and dispatches to the publisher registry.
+- **`hostCommand` means the verb is not callable through `verb`.** `publish` carries it: the
+  façade refuses `verb publish` and the named command performs it through the editorial loop
+  (see below for why). A host reads the detour from the declaration instead of discovering it
+  as a refusal to a request it had every reason to believe was valid. No other verb carries the
+  field. Because `verb publish` is refused, `publish`'s payload shape is deliberately not
+  self-described here.
 - `vocabulary.engines` is derived from the producer registry each engine self-registers into,
   paired with the formats that engine's own manifest declares. `payload.engine.enum` is the
   same list. Asking an engine for a format it does not declare is refused as
   `unsupported-format`, from registry data alone, before any process is spawned.
 - `errorCodes` is split because a host meets two families and they arrive differently.
-  `verb` codes travel in a verb result body; `host` codes come from the façade's own
-  commands. Neither list is hand-written here — they are `VERB_ERROR_CODES`
+  `verb` codes travel in a verb result body — and in the answer of a command that ran a loop
+  step or recorded a decision, which is a verb result too; `host` codes come from the façade's
+  own commands. Neither list is hand-written here — they are `VERB_ERROR_CODES`
   (`lib/core/verbs/types.ts`) and `HOST_ERROR_CODES` (`lib/host/errors.ts`).
 - `spec` has no schema on purpose: it is opaque by contract, only the engine's own validator
   understands it.
@@ -295,6 +309,137 @@ $ bun lib/host/cli.ts next --run /tmp/host-readme-demo
 ```
 
 Same exit codes as `state`.
+
+### `advance --run <dir>`
+
+Performs the ONE deterministic step `next` says is valid — `orient`, `propose`, `produce` or
+`deliver` — and persists it. One step per call: a host reads the run between two of them, which
+is the point of a loop the journalist can turn back in.
+
+```
+$ bun lib/host/cli.ts advance --run /tmp/host-readme-drive
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "ran": "orient",
+    "nextActions": [
+      "propose"
+    ]
+  }
+}
+```
+
+Exit `0`. Every answer carries `nextActions`, so a host that acts learns the new state in the
+same breath and never has to follow up with `next`.
+
+A **human turn** is not something the façade can perform, and it says so rather than doing
+nothing quietly — naming the command that does perform it:
+
+```json
+{
+  "ok": false,
+  "code": "step-refused",
+  "message": "advance: the next act is the journalist's — choose a form with \"choose-form --run <dir> --option <id>\""
+}
+```
+
+Exit `1`. The same code answers a step the loop attempted and **refused** (a produce whose spec
+the engine will not build, a delivery whose destination has no credentials). In that case the
+bounded failure event is written to the run's ledger first — a host's run is never quieter about
+its own failures than an in-process one — and the message is the one recorded there.
+
+When a run is finished, `advance` says that too, and does not invite a delivery that already
+happened:
+
+```json
+{
+  "ok": false,
+  "code": "step-refused",
+  "message": "advance: the visual is fresh and every destination it asked for has been published — there is nothing left to run"
+}
+```
+
+`confirm-angle` is the one human turn with **no** command behind it: the takeaway, alt text and
+unit are free editorial text, and a command that wrote arbitrary prose into the manifest would be
+the disease this surface cures. A host records the angle by building the run with it.
+
+### `choose-form --run <dir> --option <id>`
+
+The journalist's first decision, written by code: which of the offered forms gets built. It is
+the counterpart of `request-delivery` below, and together they are the reason this façade exists
+— before them, the only carrier of a decision was prose telling a model to hand-edit `run.json`.
+
+```
+$ bun lib/host/cli.ts choose-form --run /tmp/host-readme-drive --option bar
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "chosen": "bar",
+    "nextActions": [
+      "produce"
+    ]
+  }
+}
+```
+
+The ids come from the run itself (`state`, or `run.json`'s `proposal.options`) — never invented.
+An id that is not in the offer is refused with the ids that ARE, exit `1`:
+
+```json
+{
+  "ok": false,
+  "code": "invalid-request",
+  "message": "choose-form: \"not-offered\" is not in the offer — it holds \"bar\", \"dumbbell\", \"lollipop\""
+}
+```
+
+Note the code family: `invalid-request` is a **verb** code, not a host one. The loop refused, and
+the answer says which layer did — that is why `verbs` publishes the two lists separately.
+
+A form the offer **marked** is still choosable: a mark warns, it does not forbid, and the
+journalist read it before choosing (the tool offers, the journalist decides). The single
+exception is a form nothing in the loop can build — choosing it would strand the run on its own
+dead end, so it is refused **in the words the offer displayed**.
+
+### `request-delivery --run <dir> [--to <id,id>]`
+
+The second decision: where the produced element goes. It does **not** publish — it records the
+choice that makes a `deliver` step valid, so a missing credential at publish time never erases
+what the journalist decided.
+
+```
+$ bun lib/host/cli.ts request-delivery --run /tmp/host-readme-drive
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "requested": [
+      "zip"
+    ],
+    "nextActions": [
+      "deliver"
+    ]
+  }
+}
+```
+
+Without `--to`, the destination is derived from the format's **genre**: a static image or a video
+is handed over as a portable package, an interactive or a scrolly goes to a ready host, and there
+is always an answer — `zip` needs no key. With `--to`, the journalist's own list wins, and a
+destination this install does not know is refused at the decision rather than at publish time.
+`--to` is a comma list validated rather than cleaned: `--to zip,` is a `usage` refusal, because a
+typo must not get to decide where a newsroom's work is published.
+
+Then `advance` carries it out. That two-call shape is deliberate: deciding and sending are two
+acts, and the manifest keeps the first even when the second fails.
 
 ### `verb <name>`
 
@@ -453,6 +598,36 @@ are the loop-aware commands, `verb` is not. Passing one is a `usage` refusal rat
 silently ignored argument. Calling `verb render` a second time against the same run does not
 touch `run.json` — `state` before and after are identical — because the contract writes
 artifacts and the loop writes state, and the CLI keeps that boundary.
+
+#### `verb publish` is refused — publishing goes through the loop
+
+```
+$ bun lib/host/cli.ts verb publish < request.json
+```
+
+```json
+{
+  "ok": false,
+  "code": "usage",
+  "message": "verb publish is not callable through the façade — publishing goes through the editorial loop, which applies the sign-off, provenance and readiness gates the neutral contract cannot see. Use request-delivery --run <dir>, then advance --run <dir> instead"
+}
+```
+
+Exit `2`, and the refusal lands **before stdin is read**: nothing can be published on the way to
+it. The verb itself is untouched and still has a body — `lib/loop/deliver.ts` calls it in-process,
+and that is now the only path to it.
+
+Everything `deliver()` applies before that call is a fact about a **run**, and a publish payload
+has no way to name one: the editorial sign-off (`approved` must match the exact artifact being
+published), the provenance-freshness check, the metadata derived from the newsroom's profile
+(title, alt text, source, credit, language), the capability readiness, and the genre legality
+that stops a hosted destination from being handed a PNG. A host calling `verb publish` skipped
+all six — silently, with a well-formed request.
+
+The alternative was to carry those gates into the verb. That would mean handing the neutral
+contract a manifest, a decor and a run directory — the exact coupling the "no `--run` flag" rule
+above exists to prevent. One or the other, not both: the detour is the answer, and `verbs`
+declares it (`hostCommand`) so a host meets it in the declaration rather than in a refusal.
 
 ### `newsroom [--dir <dir>]`
 

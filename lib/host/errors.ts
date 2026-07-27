@@ -9,6 +9,7 @@ export const HOST_ERROR_CODES = [
   "no-run", // --run names a directory that holds no run.json
   "invalid-run", // run.json is unparseable, or fails the manifest schema
   "stale-schema", // run.json predates the current schema; state/next will not migrate it
+  "step-refused", // `advance` had nothing deterministic to run, or the step it ran was refused
   "internal", // a residual defect in the façade — reported, never a stack trace on stdout
 ] as const;
 

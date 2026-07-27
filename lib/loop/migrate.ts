@@ -2,7 +2,12 @@ import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { freezeInput } from "./freeze";
-import { parseManifest, type RunManifest, type RunElement } from "./manifest";
+import {
+  parseManifest,
+  type DeliveryRecord,
+  type RunManifest,
+  type RunElement,
+} from "./manifest";
 
 // Upgrade an on-disk manifest to the current schema. v1 stored inline CSV content and a
 // single top-level element; v2 freezes the content (path+hash) and wraps it in elements[];
@@ -20,6 +25,29 @@ export function migrate(raw: unknown, runDir: string): RunManifest {
     throw new Error(`migrate: unsupported schemaVersion ${obj.schemaVersion}`);
   return parseManifest(
     migrateV3toV4(migrateV2toV3(migrateV1toV2(raw as V1Manifest, runDir))),
+  );
+}
+
+// A delivery record whose package was written under the PRE-FIX layout (`elements/<id>/…`,
+// the render directory produce.ts writes into and freshOutDir — lib/core/verbs/exec.ts —
+// wipes clean before every re-produce; see deliver.ts's own elementDeliveryDir comment) can no
+// longer be trusted: by the time this code runs, a re-produce may already have deleted the
+// file it names, or may be about to. There is no honest way to "migrate" it forward (the file
+// itself was never moved to the new `deliveries/<id>/` layout — only the STRING would move,
+// which would be a lie the next time someone actually opens the archive), so it is DROPPED —
+// the same discipline migrateV1toV2 above already applies to a v1 artifact it could not trust
+// either. Dropping it just means the matching destination reads as never delivered for its
+// current provenance: `deliver()` re-publishes it, this time into the safe directory.
+//
+// Not gated on `schemaVersion` (the field shape is unchanged, so there is nothing to bump):
+// `readManifest` only calls `migrate()` when schemaVersion differs from the CURRENT one, so a
+// version-gated fix would never run for the on-disk v4 manifests that actually carry the
+// hazard. deliver.ts calls this directly, on every read of `el.delivery.delivered`, instead.
+export function dropLegacyElementsDelivery(
+  delivered: DeliveryRecord[],
+): DeliveryRecord[] {
+  return delivered.filter(
+    (d) => !d.artifact || !d.artifact.path.startsWith("elements/"),
   );
 }
 

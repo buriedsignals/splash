@@ -88,7 +88,8 @@ describe("the CLI façade — JSON in, JSON out, stable exit codes", () => {
     // Pinned exactly, not a substring: the wording — including the full command list — is
     // part of the surface a host reads, not an implementation detail.
     expect(body.message).toBe(
-      'unknown command "explode" — expected verbs, state, next, verb or newsroom',
+      'unknown command "explode" — expected verbs, state, next, advance, ' +
+        "choose-form, request-delivery, verb or newsroom",
     );
     // The real assertion: the DOCUMENT the host reads carries no stack trace either. stderr
     // being empty on this path made the old `r.err` version trivially true.
@@ -269,6 +270,18 @@ describe("the never-throw boundary — structural, not audited by reading", () =
         stdin: JSON.stringify({ outDir: populated }),
       },
       { args: ["verb", "capture"], stdin: "{}" },
+      // The acting commands join the same invariant: whatever a host throws at them, one JSON
+      // document on stdout, nothing on stderr, one of the three documented codes.
+      { args: ["advance"] },
+      { args: ["advance", "--run"] },
+      { args: ["advance", "--run", "/definitely/not/here"] },
+      { args: ["choose-form"] },
+      { args: ["choose-form", "--run", "/definitely/not/here"] },
+      { args: ["choose-form", "--option", "x"] },
+      { args: ["request-delivery"] },
+      { args: ["request-delivery", "--run", "/definitely/not/here"] },
+      { args: ["request-delivery", "--run", "/x", "--to", ""] },
+      { args: ["verb", "publish"], stdin: "{}" },
     ];
 
     // Collected rather than asserted one by one, so a failure names EVERY invocation that
@@ -329,4 +342,149 @@ describe("what a failure message is allowed to contain", () => {
     // holds even while the engine's diagnostic travels inside `message`.
     expect(r.err).toBe("");
   }, 120_000);
+});
+
+// --- the acting half of the façade --------------------------------------------------------
+//
+// Until these commands existed, `next` could answer ["deliver"] and nothing in the façade could
+// carry it out: a host could read the loop but never drive it. Everything below goes through a
+// spawned process, because the contract being tested is the process's — argv, stdout, exit code.
+
+describe("advance — the façade performs what next says is valid", () => {
+  it("runs the deterministic step and reports it, persisting the result", async () => {
+    const dir = makeRun();
+    expect(JSON.parse((await run(["next", "--run", dir])).out).value).toEqual({
+      nextActions: ["orient"],
+    });
+
+    const r = await run(["advance", "--run", dir]);
+    expect(r.code).toBe(0);
+    const body = JSON.parse(r.out);
+    expect(body.ok).toBe(true);
+    expect(body.value.ran).toBe("orient");
+    // The state a separate process reads afterwards is the state this one wrote.
+    expect(
+      JSON.parse((await run(["next", "--run", dir])).out).value.nextActions,
+    ).toEqual(body.value.nextActions);
+    expect(r.err).toBe("");
+  }, 60_000);
+
+  it("refuses a human turn with exit 1, naming the command that performs it", async () => {
+    const dir = makeRun();
+    await run(["advance", "--run", dir]); // orient
+    const r = await run(["advance", "--run", dir]); // now: confirm-angle, a human turn
+    expect(r.code).toBe(1);
+    const body = JSON.parse(r.out);
+    expect(body.ok).toBe(false);
+    expect(body.code).toBe("step-refused");
+    expect(body.message).toContain("angle");
+  }, 60_000);
+
+  it("refuses an unreadable run with exit 2, like every other run-aware command", async () => {
+    const r = await run([
+      "advance",
+      "--run",
+      mkdtempSync(join(tmpdir(), "cli-adv-norun-")),
+    ]);
+    expect(r.code).toBe(2);
+    expect(JSON.parse(r.out).code).toBe("no-run");
+  });
+
+  it("takes no positional argument and no unknown flag", async () => {
+    const dir = makeRun();
+    expect((await run(["advance", dir])).code).toBe(2);
+    const r = await run(["advance", "--run", dir, "--force"]);
+    expect(r.code).toBe(2);
+    expect(JSON.parse(r.out).code).toBe("usage");
+  });
+});
+
+describe("choose-form — the decision, written by the façade", () => {
+  it("needs both a run and an option", async () => {
+    const dir = makeRun();
+    const noOption = await run(["choose-form", "--run", dir]);
+    expect(noOption.code).toBe(2);
+    expect(JSON.parse(noOption.out).code).toBe("usage");
+    const noRun = await run(["choose-form", "--option", "x"]);
+    expect(noRun.code).toBe(2);
+    expect(JSON.parse(noRun.out).code).toBe("usage");
+  });
+
+  it("passes the loop's own refusal through, with exit 1", async () => {
+    const dir = makeRun();
+    const r = await run(["choose-form", "--run", dir, "--option", "nope"]);
+    expect(r.code).toBe(1);
+    const body = JSON.parse(r.out);
+    expect(body.ok).toBe(false);
+    // A verb-family code, not a host one: the loop refused, and the answer says so.
+    expect(body.code).toBe("invalid-request");
+    expect(r.err).toBe("");
+  });
+});
+
+describe("request-delivery — where it goes, decided through the façade", () => {
+  it("refuses before anything is produced, with exit 1", async () => {
+    const dir = makeRun();
+    const r = await run(["request-delivery", "--run", dir]);
+    expect(r.code).toBe(1);
+    expect(JSON.parse(r.out).code).toBe("invalid-request");
+  });
+
+  it("refuses an empty entry in --to rather than silently dropping it", async () => {
+    const dir = makeRun();
+    const r = await run(["request-delivery", "--run", dir, "--to", "zip,"]);
+    expect(r.code).toBe(2);
+    const body = JSON.parse(r.out);
+    expect(body.code).toBe("usage");
+    expect(body.message).toContain("--to");
+  });
+});
+
+describe("publish does not go around the loop", () => {
+  it("refuses `verb publish` and names the way through", async () => {
+    const r = await run(
+      ["verb", "publish"],
+      JSON.stringify({
+        artifactPath: "/tmp/whatever.png",
+        id: "el1",
+        format: "static",
+        metadata: {
+          title: "t",
+          altText: "a",
+          source: "s",
+          credit: "c",
+          lang: "en",
+        },
+        settings: { publisherId: "zip" },
+        credentials: {},
+        outDir: "/tmp/nowhere-at-all",
+      }),
+    );
+    // Exit 2 — a "wrong command" answer, the same family as an unknown command. Nothing was
+    // published: the gates publish skips (sign-off, provenance freshness, profile metadata,
+    // readiness, genre legality) are all facts about a RUN, which this payload has no way to
+    // name.
+    expect(r.code).toBe(2);
+    const body = JSON.parse(r.out);
+    expect(body.ok).toBe(false);
+    expect(body.code).toBe("usage");
+    expect(body.message).toContain("advance");
+    expect(body.message).toContain("request-delivery");
+    expect(r.err).toBe("");
+  });
+
+  it("still declares publish as implemented, and says which command performs it", async () => {
+    const body = JSON.parse((await run(["verbs"])).out);
+    const publish = body.value.verbs.find(
+      (v: { name: string }) => v.name === "publish",
+    );
+    expect(publish.implemented).toBe(true);
+    expect(publish.hostCommand).toBe("advance");
+    // render has no detour, so it declares none.
+    expect(
+      body.value.verbs.find((v: { name: string }) => v.name === "render")
+        .hostCommand,
+    ).toBeUndefined();
+    expect(body.value.errorCodes.host).toContain("step-refused");
+  });
 });
