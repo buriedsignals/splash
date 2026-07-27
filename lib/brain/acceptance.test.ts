@@ -53,6 +53,13 @@ function newRun(channel: RunManifest["channel"] = "article-web"): {
       route: "embed",
       channel,
       input: { data },
+      // A CSV this test wrote into its own run dir: a `local` source (lib/source) — the file
+      // the journalist brought. produce() refuses an undeclared run rather than crediting a
+      // placeholder, so a fixture that reaches a render says what its data is.
+      sources: {
+        mode: "real" as const,
+        data: { kind: "local" as const, label: "Relevés cantonaux 2024" },
+      },
       elements: [{ id: "e1" }],
       events: [],
     },

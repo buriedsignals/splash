@@ -204,6 +204,16 @@ export function provenanceHash(run: RunManifest, el: RunElement): string {
     angle: el.angle ?? null,
     chosenId: el.proposal?.chosenId ?? null,
     channel: run.channel,
+    // The source ledger is artifact-determining for the same reason the channel is: since
+    // produce.ts reads the declared credit instead of a placeholder, the credit is RENDERED
+    // INTO the artifact. Without this line, correcting a source label leaves a stale credit on
+    // an artifact that reports itself fresh — stalenessOf answers false, nextActions says
+    // "show", and the newsroom publishes an attribution it already fixed. (Required by the
+    // source-policy design spec's R1, in the same commit as its first consumer.) The WHOLE
+    // ledger, not just the label: the class changes what the visual may assert and the mode
+    // changes whether it is reporting at all. `null` when a run declares nothing, so the value
+    // stays stable rather than moving.
+    sources: run.sources ?? null,
     // An option carrying no `format` at all (fixtures, hand-authored manifests predating the
     // brain) hashes as null rather than as produce's "static" default: what matters is that the
     // value MOVES when the pinned format moves, and a null that never changes is stable.

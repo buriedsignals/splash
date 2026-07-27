@@ -37,6 +37,7 @@ test("produce() reaches a real engine when the ONLY import is lib/loop/produce.t
       '  route: "embed",',
       '  channel: "article-web",',
       '  input: { data: freezeInput(runDir, src, "data") },',
+      '  sources: { mode: "real", data: { kind: "local", label: "Releves" } },',
       "  elements: [",
       "    {",
       '      id: "e1",',

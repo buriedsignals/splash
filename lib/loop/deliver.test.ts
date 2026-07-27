@@ -498,6 +498,13 @@ describe("deliver", () => {
       route: "embed",
       channel: "article-web",
       input: { data: freezeInput(runDir, src, "data") },
+      // A CSV the test wrote into its own run dir: a `local` source (lib/source) — the file the
+      // journalist brought. produce() refuses an undeclared run rather than crediting a
+      // placeholder, so every fixture that reaches a render says what its data is.
+      sources: {
+        mode: "real",
+        data: { kind: "local", label: "Relevés cantonaux 2024" },
+      },
       orient: {
         profile: {
           columns: ["canton", "2015", "2024"],

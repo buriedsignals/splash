@@ -80,6 +80,59 @@ test("provenanceHash covers the CHOSEN option's format, not just its id", () => 
   expect(provenanceHash(m, m.elements[0])).not.toBe(h1);
 });
 
+// The credit is RENDERED INTO the artifact (pixels of a PNG, DOM of an HTML) since
+// lib/loop/produce.ts reads the declared source instead of a placeholder. So the source ledger
+// is artifact-determining exactly the way the channel and the format are: without it, correcting
+// a source label leaves a STALE CREDIT on an artifact that reports itself fresh — stalenessOf
+// answers false, nextActions says "show", and the newsroom publishes an attribution it already
+// fixed. Required by the source-policy design spec's own R1, in the same commit as the consumer.
+test("provenanceHash covers the source ledger — a corrected credit does not stay fresh", () => {
+  const m = base();
+  m.sources = { mode: "real", data: { kind: "local", label: "Relevés 2024" } };
+  const h1 = provenanceHash(m, m.elements[0]);
+  const relabelled = {
+    ...m,
+    sources: {
+      mode: "real" as const,
+      data: { kind: "local" as const, label: "Relevés communaux 2024" },
+    },
+  };
+  expect(provenanceHash(relabelled, m.elements[0])).not.toBe(h1);
+  // The CLASS moves it too: it changes what the visual is allowed to assert, not just its wording.
+  expect(
+    provenanceHash(
+      {
+        ...m,
+        sources: {
+          mode: "real" as const,
+          data: { kind: "prose" as const, label: "Relevés 2024" },
+        },
+      },
+      m.elements[0],
+    ),
+  ).not.toBe(h1);
+  // And a run that declares nothing keeps a stable value rather than a moving one.
+  const bare = base();
+  expect(provenanceHash(bare, bare.elements[0])).toBe(
+    provenanceHash(bare, bare.elements[0]),
+  );
+});
+
+test("a produced artifact goes stale when its source label is corrected", () => {
+  const m = base();
+  m.sources = { mode: "real", data: { kind: "local", label: "Relevés 2024" } };
+  m.elements[0].artifact = {
+    path: "elements/e1/static.png",
+    sha256: "b".repeat(64),
+    provenanceHash: provenanceHash(m, m.elements[0]),
+    producedAt: "2026-01-01T00:00:00.000Z",
+  };
+  expect(stalenessOf(m, m.elements[0])).toBe(false);
+  m.sources.data!.label = "Relevés communaux 2024";
+  expect(stalenessOf(m, m.elements[0])).toBe(true);
+  expect(nextActions(m)).toEqual(["produce"]);
+});
+
 test("a produced artifact goes stale when the run changes channel", () => {
   const m = base();
   m.elements[0].artifact = {

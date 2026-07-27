@@ -26,6 +26,12 @@ test("produce renders a real static PNG through the chart-native seam", async ()
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // Every run that reaches a render declares what its data IS (lib/source): a CSV the test
+    // wrote into its own run dir is a `local` source — the file the journalist brought.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -87,6 +93,12 @@ test("produce renders the chosen option's own format, not a hard-coded static", 
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // Every run that reaches a render declares what its data IS (lib/source): a CSV the test
+    // wrote into its own run dir is a `local` source — the file the journalist brought.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -148,6 +160,12 @@ test("produce refuses a chosen option whose engine is not chart-native, instead 
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // Every run that reaches a render declares what its data IS (lib/source): a CSV the test
+    // wrote into its own run dir is a `local` source — the file the journalist brought.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "value"],
@@ -201,6 +219,12 @@ function makeBrokenRun(): { run: RunManifest; runDir: string } {
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // Every run that reaches a render declares what its data IS (lib/source): a CSV the test
+    // wrote into its own run dir is a `local` source — the file the journalist brought.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -294,6 +318,12 @@ test("a chosen scrolly option is refused with the mark's own sentence, never han
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // Every run that reaches a render declares what its data IS (lib/source): a CSV the test
+    // wrote into its own run dir is a `local` source — the file the journalist brought.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -334,3 +364,134 @@ test("a chosen scrolly option is refused with the mark's own sentence, never han
   expect(result.code).toBe("not-implemented");
   expect(result.message).toContain("scrolly");
 });
+
+// --- the declared source is the credit ---------------------------------------------------
+//
+// produce.ts used to assemble `source: { name: "Provided by the newsroom" }` — a hard-coded
+// placeholder, identical on every visual the loop has ever built, whatever the journalist
+// actually brought. The attribution did not exist; it was simulated. These two tests are the
+// two halves of closing that: what happens when nothing was declared, and what reaches the
+// artifact when something was.
+
+test("produce refuses a run that declared no source, instead of crediting a placeholder", async () => {
+  // The deliberate behaviour change of this slice (design spec §4). A named default — the
+  // placeholder, the newsroom's own name, "source not declared" — would make an undeclared run
+  // and a declared one render IDENTICALLY, which is exactly the indistinction issue #7 opens
+  // with, moved one step downstream. The refusal is a typed VerbResult, never a throw, and it
+  // carries the domain code so a caller can tell it from any other invalid-request.
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-no-source-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "t-no-source",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Health premiums rose in every canton shown",
+          altInsight: "Premiums rose in both cantons shown.",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            { id: "slope", nativeType: "slope", why: "two points in time" },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+  const result = await produce(run, run.elements[0], runDir);
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.code).toBe("invalid-request");
+  expect(result.message).toContain("source-undeclared");
+  // Nothing was written and nothing advanced.
+  expect(run.elements[0].artifact).toBeUndefined();
+  expect(existsSync(join(runDir, "elements", "e1", "static.png"))).toBe(false);
+}, 30000);
+
+test("the declared source reaches the produced artifact, and the placeholder is gone", async () => {
+  // Measured on the DELIVERED file, not on the spec produce assembled: the whole point is what
+  // a reader ends up looking at. (The rendered-DOM measurement of the same credit, plus the
+  // staleness half, is lib/source/wiring-proof.test.ts — opt-in because it drives a browser.)
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-credit-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(
+    src,
+    "canton,2015,2024\nGenève,449,583\nVaud,412,531\nAppenzell RI,289,352",
+  );
+  const run: RunManifest = {
+    runId: "t-credit",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    sources: {
+      mode: "real",
+      data: {
+        kind: "public",
+        label: "Office fédéral de la santé publique",
+        url: "https://www.bag.admin.ch/dam/bag/fr/dokumente/kuv-aufsicht/praemien/2024.csv",
+      },
+    },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 3,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Health premiums rose in every canton shown",
+          altInsight:
+            "Between 2015 and 2024 the adult premium rose in all three cantons shown.",
+          unit: "Monthly adult premium (CHF)",
+        },
+        proposal: {
+          options: [
+            {
+              id: "slope",
+              nativeType: "slope",
+              engine: "chart-native",
+              format: "interactive",
+              why: "two points in time",
+            },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+  const result = await produce(run, run.elements[0], runDir);
+  if (!result.ok) throw new Error(result.message);
+  const html = readFileSync(
+    join(runDir, result.value.artifact!.path),
+    "utf8",
+  );
+  expect(html).toContain("Office fédéral de la santé publique");
+  expect(html).toContain(
+    "https://www.bag.admin.ch/dam/bag/fr/dokumente/kuv-aufsicht/praemien/2024.csv",
+  );
+  expect(html).not.toContain("Provided by the newsroom");
+}, 90000);

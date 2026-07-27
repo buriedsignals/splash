@@ -4,6 +4,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { fail, ok, render, type VerbResult } from "../core/verbs";
 import { IMAGE_EXTENSIONS } from "../core/contract";
 import type { VisualFormat } from "../core/vocabulary";
+import { toVerbResult, validateSourcePolicy } from "../source";
 import { provenanceHash, type RunManifest, type RunElement } from "./manifest";
 import {
   isLoopBuildable,
@@ -122,12 +123,39 @@ export async function produce(
   // is the same default produce.ts always rendered before this format threading landed.
   const format: VisualFormat = chosen.format ?? "static";
 
+  // WHO the figures belong to. This used to be `{ name: "Provided by the newsroom" }` — a
+  // hard-coded placeholder, identical on every visual the loop ever built: the attribution did
+  // not exist, it was simulated. It now comes from the run's DECLARED source ledger, through the
+  // one policy every gate reads (lib/source). An undeclared run does not produce: a named default
+  // would make "nothing was declared" render identically to "this is where it came from", which
+  // is the exact indistinction issue #7 exists to remove (design spec §4).
+  //
+  // `carriesFactualData: true` unconditionally — a data visual built by this loop asserts facts,
+  // so `none` is refused here, which is the abuse that row is written for.
+  //
+  // No `lang`: the loop carries no language axis yet (the manifest has no locale, and produce
+  // sets no `NativeSpec.lang` either, so the engine already renders English furniture).
+  // Inventing one here would put a French qualifier under an English "Source:".
+  const verdict = validateSourcePolicy(run.sources?.data, {
+    mode: run.sources?.mode,
+    carriesFactualData: true,
+  });
+  if (!verdict.ok) return toVerbResult(verdict);
+  // `attribution`, never `credit`: ChartFrame renders `{sourceLabel(lang)} {source.name}` itself
+  // (skills/chart-native/src/core/ChartFrame.tsx), so handing it the prefixed credit would print
+  // "Source : Source : OFS". The prose qualifier and the synthetic notice are inside
+  // `attribution`, so nothing that must be READ is dropped by taking the shorter field.
+  const published = verdict.value.published;
+
   const nativeSpec = {
     nativeType: chosen.nativeType,
     title: el.angle.confirmedTakeaway,
     altInsight: el.angle.altInsight,
     unit: el.angle.unit,
-    source: { name: "Provided by the newsroom" },
+    source: {
+      name: published.attribution,
+      ...(published.url ? { url: published.url } : {}),
+    },
     ...(el.angle.emphasis ? { highlight: el.angle.emphasis } : {}),
     format,
     data: dataCsv,

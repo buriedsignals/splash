@@ -25,9 +25,13 @@ const TAKEAWAY = "Health premiums rose in every canton shown";
 const UNIT = "Monthly adult premium (CHF)";
 const ALT =
   "Between 2015 and 2024 the adult premium rose in all three cantons shown; Geneva stays the most expensive.";
-// What produce.ts really writes into the spec (lib/loop/produce.ts's nativeSpec) — the
-// source line the chart renders, quoted from the code rather than guessed.
-const SOURCE = "Source: Provided by the newsroom";
+// The source line the chart really renders. It is no longer a constant of produce.ts: since
+// the source policy was wired in, produce.ts credits the run's DECLARED source ledger (see
+// makeRun below), and ChartFrame prepends its own localized "Source:" label. So this is the
+// declared label, read back off the rendered DOM by the capture below — which makes this test
+// the render-level proof that the declaration reaches the reader.
+const DECLARED_SOURCE = "Relevés cantonaux 2024";
+const SOURCE = `Source: ${DECLARED_SOURCE}`;
 
 const FURNITURE = [
   { role: "title" as const, text: TAKEAWAY },
@@ -48,6 +52,13 @@ function makeRun(runDir: string): RunManifest {
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
+    // A CSV this test wrote into its own run dir: a `local` source (lib/source) — the file the
+    // journalist brought. produce() refuses an undeclared run rather than crediting a
+    // placeholder, so a fixture that reaches a render says what its data is.
+    sources: {
+      mode: "real" as const,
+      data: { kind: "local" as const, label: DECLARED_SOURCE },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -200,7 +211,7 @@ test.skipIf(!RUN)(
         confirmedTakeaway: TAKEAWAY,
         unit: UNIT,
         altText: ALT,
-        sourceName: "Provided by the newsroom",
+        sourceName: DECLARED_SOURCE,
         evidenceExtracts: [
           { text: "Genève 449 → 583", provenance: "the frozen input" },
         ],
@@ -233,7 +244,7 @@ test.skipIf(!RUN)(
         confirmedTakeaway: TAKEAWAY,
         unit: UNIT,
         altText: ALT,
-        sourceName: "Provided by the newsroom",
+        sourceName: DECLARED_SOURCE,
         evidenceExtracts: [],
         captures: adhoc.value.images,
         interactionResults: [],
