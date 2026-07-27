@@ -2,6 +2,10 @@ import { allProducers } from "../core/registry";
 import { CHANNELS, VERBS, VISUAL_FORMATS } from "../core/vocabulary";
 import { VERB_ERROR_CODES, type RenderPayload } from "../core/verbs/types";
 import { HOST_ERROR_CODES } from "./errors";
+import {
+  RENDER_SOURCE_POLICY_MARK,
+  type SourcePolicyMark,
+} from "./source-mark";
 
 export type PayloadField = {
   name: string;
@@ -41,6 +45,11 @@ export type Capabilities = {
     payload?: PayloadField[];
     /** Present when `verb <name>` is refused: the façade command that performs it. */
     hostCommand?: string;
+    /** Present when calling this verb through `verb` skips a policy the loop applies. `render`
+     *  carries it: the contract holds `spec` opaque, so the credit inside it is whatever the
+     *  request supplied. Declared here so a host reads the limitation rather than assuming its
+     *  artifact was checked — the answer carries the same object (lib/host/cli.ts). */
+    sourcePolicy?: SourcePolicyMark;
   }[];
   vocabulary: {
     formats: readonly string[];
@@ -128,7 +137,12 @@ export function capabilities(): Capabilities {
       // Still true of `publish`: the verb HAS a body, and lib/loop/deliver.ts calls it. What the
       // detour below changes is the path a host takes to reach it, not whether it exists.
       implemented: IMPLEMENTED.has(name),
-      ...(name === "render" ? { payload: payloadFields() } : {}),
+      ...(name === "render"
+        ? {
+            payload: payloadFields(),
+            sourcePolicy: RENDER_SOURCE_POLICY_MARK,
+          }
+        : {}),
       // The command that actually PERFORMS the verb — the last of the detour's sequence, since
       // the ones before it record the decisions that make it valid. The full sequence is in
       // HOST_ONLY_VERBS and in the refusal cli.ts prints; this field is the one word a host acts

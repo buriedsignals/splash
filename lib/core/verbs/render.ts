@@ -41,6 +41,32 @@ export async function render(
     // freshOutDir recursively deletes what it resolves.
     if (!isSafeId(p.id)) return fail("invalid-request", unsafeIdMessage(p.id));
 
+    // NOT validated here, and the decision is taken rather than deferred: `spec.source`.
+    //
+    // A caller reaching this verb directly supplies whatever credit it likes. It is the source
+    // wiring's R7 — the fourth consumer, ungated — and it stays ungated. The reasoning, kept
+    // where the guard would go so it is read by whoever comes to add one:
+    //
+    //   - It CANNOT be validated here without breaking the contract. `spec` is OPAQUE by
+    //     invariant (only the engine's own validator reads it) and the credit lives inside it;
+    //     and what produce() applies is a fact about a RUN (validateSourcePolicy over the run's
+    //     declared ledger), which a verb payload has no way to name. The contract carries no
+    //     ambient state — that is the same rule the "no --run flag" one enforces.
+    //   - Refusing `render` at the façade the way `publish` is refused was MEASURED: nine
+    //     load-bearing tests break — the destructive-outDir guard at the process boundary, the
+    //     never-throw boundary, and a real engine being reachable from a process that imports
+    //     only the CLI. `render` is not `publish`: it is a first-class façade capability, and
+    //     the only implemented verb that takes an outDir.
+    //   - The risk never reaches publication. An artifact rendered outside a run carries no
+    //     provenance hash, so deliver() cannot publish it, and `verb publish` is already refused
+    //     at the façade. The mis-credited file stays local and cannot leave through Splash.
+    //
+    // So it is MARKED instead of closed: the façade's answer to a successful bare `render` says
+    // the artifact did not go through the source policy (lib/host/source-mark.ts, declared by
+    // `verbs` and emitted by cli.ts), so it can no longer pass for a checked one. The loop's own
+    // path is unaffected — lib/loop/produce.ts fills spec.source from the declared ledger and
+    // refuses a run that declared nothing, which is why the mark lives at the façade and not in
+    // this function: applied here it would stamp "unchecked" on the one path that IS checked.
     const manifest = getProducer(p.engine);
     if (!manifest)
       return fail("unknown-engine", `unknown producer "${p.engine}"`);

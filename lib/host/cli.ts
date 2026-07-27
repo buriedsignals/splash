@@ -33,6 +33,7 @@ import {
 } from "./drive";
 import { describeNewsroom } from "./newsroom";
 import { outDirRefusal } from "./path-safety";
+import { RENDER_SOURCE_POLICY_MARK } from "./source-mark";
 import { describeNext, describeState, type HostResponse } from "./state";
 import type { VerbErrorCode } from "../core/verbs/types";
 import type { HostErrorCode } from "./errors";
@@ -343,6 +344,22 @@ async function main(): Promise<never> {
     // anything (lib/host/path-safety.ts). A refusal is a well-formed answer in the verb's
     // own shape — invalid-request, exit 1 — so the host needs no second parser.
     const result = outDirRefusal(payload) ?? (await runVerb(name, payload));
+    // A bare `render` produced a real artifact under a credit NOTHING validated (the contract
+    // holds `spec` opaque, so the source inside it is the host's own). Saying so beside the
+    // artifact is what stops it passing for one the source policy checked; `verbs` declares the
+    // same object, from the same constant. Only on SUCCESS — a refusal rendered nothing — and
+    // only for `render`, which is the one verb reachable here that writes an artifact.
+    if (result.ok && name === "render")
+      emit(
+        {
+          ...result,
+          value: {
+            ...(result.value as Record<string, unknown>),
+            sourcePolicy: RENDER_SOURCE_POLICY_MARK,
+          },
+        },
+        0,
+      );
     emit(result, result.ok ? 0 : 1);
   }
 
