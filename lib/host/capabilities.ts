@@ -19,9 +19,30 @@ export type EngineDeclaration = {
   formats: readonly string[];
 };
 
+// A verb the façade will NOT dispatch, and the way through instead. `verbs` is what a host
+// trusts in place of reading our source, so a detour that only lived in cli.ts would be
+// undiscoverable: a host would build a valid request and meet a refusal it could not have
+// anticipated. Declared here, read by cli.ts — one source, so the refusal and the declaration
+// cannot describe different worlds.
+export const HOST_ONLY_VERBS: Record<
+  string,
+  { why: string; commands: string[] }
+> = {
+  publish: {
+    why: "publishing goes through the editorial loop, which applies the sign-off, provenance and readiness gates the neutral contract cannot see",
+    commands: ["request-delivery --run <dir>", "advance --run <dir>"],
+  },
+};
+
 export type Capabilities = {
   contract: "splash-verbs/1";
-  verbs: { name: string; implemented: boolean; payload?: PayloadField[] }[];
+  verbs: {
+    name: string;
+    implemented: boolean;
+    payload?: PayloadField[];
+    /** Present when `verb <name>` is refused: the façade command that performs it. */
+    hostCommand?: string;
+  }[];
   vocabulary: {
     formats: readonly string[];
     channels: readonly string[];
@@ -100,8 +121,14 @@ export function capabilities(): Capabilities {
     contract: "splash-verbs/1",
     verbs: VERBS.map((name) => ({
       name,
+      // Still true of `publish`: the verb HAS a body, and lib/loop/deliver.ts calls it. What the
+      // detour below changes is the path a host takes to reach it, not whether it exists.
       implemented: IMPLEMENTED.has(name),
       ...(name === "render" ? { payload: payloadFields() } : {}),
+      ...(HOST_ONLY_VERBS[name]
+        ? // The command a host runs first; the detour's own entry names the whole sequence.
+          { hostCommand: HOST_ONLY_VERBS[name]!.commands.at(-1)!.split(" ")[0] }
+        : {}),
     })),
     vocabulary: {
       formats: VISUAL_FORMATS,
