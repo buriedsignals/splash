@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { renderSnippet, DEFAULT_SNIPPET_TEMPLATE } from "./snippet";
+import { renderSnippet } from "./snippet";
 import type { DeliveryMetadata } from "../core/publishers";
 
 const META: DeliveryMetadata = {
@@ -161,15 +161,14 @@ describe("renderSnippet by genre", () => {
       metadata: META,
       format: "interactive",
     });
+    // Literal, not derived from DEFAULT_SNIPPET_TEMPLATE: deriving the expectation from the
+    // same constant renderSnippet consumes internally means editing that constant moves both
+    // sides of the assertion together, so the test could never fail — it would prove genre
+    // routing reaches the constant without protecting the constant's own content.
     expect(r).toEqual({
       ok: true,
-      value: DEFAULT_SNIPPET_TEMPLATE.replace(
-        "{url}",
-        "https://a.example.pages.dev",
-      )
-        .replace("{title}", "Primes cantonales")
-        .replace("{width}", "700")
-        .replace("{height}", "420"),
+      value:
+        '<iframe src="https://a.example.pages.dev" title="Primes cantonales" width="700" height="420" style="border:0;max-width:100%" loading="lazy"></iframe>',
     });
   });
 
