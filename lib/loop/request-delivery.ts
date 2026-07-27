@@ -73,7 +73,10 @@ export function requestDelivery(
           capabilityReadiness(cap, decor.state, { env }).status === "ready",
       )
       .map((cap) => cap.id);
-    requested = defaultDestinationsFor(format, ready);
+    // The DESTINATION, not just the format: a print deliverable is a file whatever its format
+    // (lib/delivery/routing.ts). Absent on every element written before issue #1, and the
+    // routing then answers exactly as it did.
+    requested = defaultDestinationsFor(format, ready, el.deliverable?.destination);
   }
 
   // `delivered` is carried forward untouched: a destination that already landed for an older

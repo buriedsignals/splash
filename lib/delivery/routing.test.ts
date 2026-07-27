@@ -58,3 +58,25 @@ describe("defaultDestinationsFor", () => {
     ).toEqual(["embed-cloudflare"]);
   });
 });
+
+describe("a print deliverable is a file, never an embed", () => {
+  it("answers with the portable package for print, whatever host is ready", () => {
+    for (const f of VISUAL_FORMATS)
+      expect(defaultDestinationsFor(f, EVERY_DELIVERY_ID, "print")).toEqual([
+        "zip",
+      ]);
+  });
+
+  it("leaves the other destinations reading the format's genre, as before", () => {
+    expect(
+      defaultDestinationsFor("interactive", ["embed-cloudflare"], "article-web"),
+    ).toEqual(["embed-cloudflare"]);
+    expect(
+      defaultDestinationsFor("interactive", ["embed-cloudflare"], "social"),
+    ).toEqual(["embed-cloudflare"]);
+    // No destination at all ⇒ unchanged behaviour for every caller that has not threaded one.
+    expect(defaultDestinationsFor("interactive", ["embed-cloudflare"])).toEqual(
+      ["embed-cloudflare"],
+    );
+  });
+});

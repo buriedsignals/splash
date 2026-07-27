@@ -334,3 +334,56 @@ test("a chosen scrolly option is refused with the mark's own sentence, never han
   expect(result.code).toBe("not-implemented");
   expect(result.message).toContain("scrolly");
 });
+
+test("produce refuses a social deliverable whose aspect has not been confirmed", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-aspect-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "t",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        deliverable: { destination: "social" },
+        angle: {
+          confirmedTakeaway: "Premiums rose",
+          altInsight: "…",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            {
+              id: "slope",
+              nativeType: "slope",
+              engine: "chart-native",
+              format: "static",
+              why: "w",
+            },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+  const result = await produce(run, run.elements[0]!, runDir);
+  expect(result.ok).toBe(false);
+  if (!result.ok) {
+    expect(result.code).toBe("invalid-request");
+    // Never rendered at the run's article-web default: 9:16 or 1:1 is the journalist's answer.
+    expect(result.message).toMatch(/aspect ratio/);
+  }
+});

@@ -3,7 +3,11 @@
 // excludes. Nothing semantic happens here — the intent never reaches this file, which is what
 // guarantees a mis-read intent cannot change what is legal (spec §4.2).
 import type { Channel, VisualFormat } from "../core/vocabulary";
-import { allowedFormats, isFormatAllowed } from "../core/channel-policy";
+import {
+  allowedFormats,
+  destinationOf,
+  isFormatAllowed,
+} from "../core/channel-policy";
 import { getProducer, producerForFormat } from "../core/registry";
 import { bgIsDark } from "../core/theme";
 import type { CapabilityReadiness } from "../newsroom/readiness";
@@ -156,6 +160,22 @@ export function eligible(
       exclude(
         sheet.id,
         "the house theme has a dark background and Datawrapper only renders on a light one",
+      );
+      continue;
+    }
+    // Print (issue #1), on the same "physically impossible" condition as the dark background
+    // above. Datawrapper's PNG export goes through three fixed SCREEN boxes
+    // (skills/dw-chart/src/export-aspect.ts EXPORT_SIZES); there is no print-density export, and
+    // channelToAspect refuses the print channel by name rather than casting onto a box that does
+    // not exist. Excluding here means the journalist never gets offered a form that would then
+    // die at produce — the offer and the build agree, which is the whole point of this file.
+    if (
+      destinationOf(input.channel) === "print" &&
+      (engine === "dw-chart" || engine === "map-dw")
+    ) {
+      exclude(
+        sheet.id,
+        "this deliverable is for print, and Datawrapper only exports at screen density",
       );
       continue;
     }

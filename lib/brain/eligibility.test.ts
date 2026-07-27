@@ -1,5 +1,5 @@
 // lib/brain/eligibility.test.ts
-import { test, expect } from "bun:test";
+import { test, expect, describe, it } from "bun:test";
 import { deriveFacts } from "./facts";
 import { eligible, buildabilityMark } from "./eligibility";
 import type { TypeSheet } from "./typology";
@@ -420,4 +420,23 @@ test("a requested format with at least one buildable candidate is not refused", 
   });
   expect(res.eligible.some((c) => isLoopBuildable(c.engine))).toBe(true);
   expect(res.refusal).toBeUndefined();
+});
+
+describe("print (issue #1)", () => {
+  it("keeps Datawrapper out of a print offer, with a reason a journalist can read", () => {
+    const { eligible: rows, excluded } = eligible({
+      facts: TWO_POINTS,
+      channel: "print-page",
+    });
+    for (const c of rows) expect(c.engine).not.toBe("dw-chart");
+    for (const c of rows) expect(c.engine).not.toBe("map-dw");
+    const reasons = excluded.map((e) => e.reason).join(" | ");
+    if (excluded.length > 0) expect(reasons).toMatch(/print|screen/i);
+  });
+
+  it("offers native forms, and only in the static format", () => {
+    const { eligible: rows } = eligible({ facts: TWO_POINTS, channel: "print-page" });
+    expect(rows.length).toBeGreaterThan(0);
+    for (const c of rows) expect(c.format).toBe("static");
+  });
 });

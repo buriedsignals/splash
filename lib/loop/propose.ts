@@ -2,7 +2,7 @@
 // The loop's door onto the brain. It threads state in and shapes the offer out — every rule
 // about WHAT may be offered lives in lib/brain (spec §3).
 import type { Decor } from "../newsroom/decor";
-import type { RunManifest, FormOption } from "./manifest";
+import { channelForElement, type RunManifest, type RunElement, type FormOption } from "./manifest";
 import { buildOffer } from "../brain/offer";
 import { deriveFacts } from "../brain/facts";
 import { intentsFromAngle } from "../brain/rank-intent";
@@ -11,13 +11,17 @@ import type { Excluded } from "../brain/eligibility";
 export function propose(
   m: RunManifest,
   decor?: Decor,
+  // WHICH element the offer is for. A run carries several deliverables since issue #1, and each
+  // is offered at ITS OWN channel — a print deliverable must not be offered the interactive its
+  // web sibling can have. Defaults to the first element, so every existing caller is unchanged.
+  element?: RunElement,
 ): { options: FormOption[]; excluded: Excluded[]; refusal?: string } {
   const profile = m.orient?.profile;
   if (!profile) return { options: [], excluded: [] };
-  const el = m.elements[0];
+  const el = element ?? m.elements[0];
   const offer = buildOffer({
     facts: deriveFacts(profile),
-    channel: m.channel,
+    channel: el ? channelForElement(m, el) : m.channel,
     // `m.route` is deliberately NOT threaded: what the run declares it wants is not evidence
     // that the whole-article branch exists, and the brain's mark is about existence (I2).
     ...(decor ? { readiness: decor.readiness } : {}),
