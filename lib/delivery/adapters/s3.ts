@@ -14,6 +14,10 @@
 import { readFileSync } from "node:fs";
 import {
   artifactMediaFor,
+  DEFAULT_NETWORK_TIMEOUT_MS,
+  DEFAULT_UPLOAD_TIMEOUT_MS,
+  fetchBounded,
+  timeoutFromSettings,
   type Publisher,
   type PublishOutcome,
   type PublishRequest,
@@ -253,13 +257,26 @@ async function publish(
   // match what a real server recomputes from the bytes on the wire.
   const requestUrl = `${endpointUrl.protocol}//${endpointUrl.host}${canonicalUri(path)}`;
 
+  // Bounded time (docs/superpowers/specs/2026-07-26-bounded-time-design.md): the PUT carries the
+  // artifact's own bytes, so it gets the wider upload budget, not the generic control-call one —
+  // a large video over a slow uplink is not a hung endpoint. settings.uploadTimeoutMs overrides
+  // it per-newsroom/per-call (e.g. a self-hosted endpoint that is legitimately slower).
+  const uploadTimeoutMs = timeoutFromSettings(
+    req.settings,
+    "uploadTimeoutMs",
+    DEFAULT_UPLOAD_TIMEOUT_MS,
+  );
   let putStatus: number;
   try {
-    const res = await fetch(requestUrl, {
-      method: "PUT",
-      headers: signed.headers,
-      body: artifact,
-    });
+    const res = await fetchBounded(
+      requestUrl,
+      {
+        method: "PUT",
+        headers: signed.headers,
+        body: artifact,
+      },
+      uploadTimeoutMs,
+    );
     putStatus = res.status;
     // Step 6: on non-2xx, parse the XML <Code> (F6) and refuse with it — otherwise the
     // newsroom cannot tell a bad key from a clock skew from a permissions problem.
@@ -290,9 +307,20 @@ async function publish(
   // measurement backing the second case, and would delay or mask exactly the F4 refusal this
   // adapter exists to surface. If Task 4's live proof shows real propagation delay, add a
   // bounded window sized from THAT measurement — not a guessed number.
+  // Bounded time: a control call (no artifact bytes), so it gets the generic network budget.
+  // settings.timeoutMs overrides it — same knob, same tolerant fallback as the upload one above.
+  const networkTimeoutMs = timeoutFromSettings(
+    req.settings,
+    "timeoutMs",
+    DEFAULT_NETWORK_TIMEOUT_MS,
+  );
   const url = publicUrlFor(req.settings, filename);
   try {
-    const res = await fetch(url, { headers: { "cache-control": "no-cache" } });
+    const res = await fetchBounded(
+      url,
+      { headers: { "cache-control": "no-cache" } },
+      networkTimeoutMs,
+    );
     if (res.status === 403) {
       // F4: this is the refusal, not a policy change. Granting public read is the newsroom's
       // infrastructure decision to make — Splash names the object and stops.

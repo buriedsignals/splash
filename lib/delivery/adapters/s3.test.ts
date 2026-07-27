@@ -282,3 +282,77 @@ describe("the s3 publisher's served filename and content-type (fetch mocked)", (
     expect(puts[0]!.contentType).toBe("text/html");
   });
 });
+
+// Bounded time — docs/superpowers/specs/2026-07-26-bounded-time-design.md. REAL servers, not a
+// mocked clock: each one accepts the connection and then goes silent forever, which is exactly
+// the failure mode neither the PUT nor the anonymous verification GET had any defence against
+// before this. settings.timeoutMs/uploadTimeoutMs keep the proof fast (a few hundred ms) instead
+// of waiting out the real 20s/120s defaults.
+describe("the s3 publisher against a real hung endpoint", () => {
+  function hungServer() {
+    return Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch: () => new Promise<Response>(() => {}), // accepts, never answers
+    });
+  }
+
+  it("refuses instead of hanging when the PUT never gets a response", async () => {
+    const server = hungServer();
+    try {
+      const start = Date.now();
+      const r = await s3Publisher.publish(
+        request({
+          settings: {
+            ...request().settings,
+            endpoint: `http://127.0.0.1:${server.port}`,
+            uploadTimeoutMs: "150",
+          },
+        }),
+      );
+      expect(Date.now() - start).toBeLessThan(2_000);
+      expect(r).toMatchObject({ ok: false, code: "engine-failed" });
+      expect((r as { message: string }).message).toContain(
+        `http://127.0.0.1:${server.port}`,
+      );
+      expect((r as { message: string }).message).toContain("150");
+    } finally {
+      server.stop(true);
+    }
+  }, 3_000);
+
+  it("refuses instead of hanging when the post-upload verification GET never gets a response", async () => {
+    // The PUT itself succeeds against a normal, well-behaved endpoint — only the anonymous
+    // verification GET (a DIFFERENT server, addressed by publicBaseUrl) hangs. This is the
+    // realistic split: a newsroom's own S3-compatible endpoint answers uploads fine but the
+    // public read path (a CDN, a reverse proxy) is what goes dark.
+    const putOk = Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch: () => new Response(null, { status: 200 }),
+    });
+    const hungPublic = hungServer();
+    try {
+      const start = Date.now();
+      const r = await s3Publisher.publish(
+        request({
+          settings: {
+            ...request().settings,
+            endpoint: `http://127.0.0.1:${putOk.port}`,
+            publicBaseUrl: `http://127.0.0.1:${hungPublic.port}`,
+            timeoutMs: "150",
+          },
+        }),
+      );
+      expect(Date.now() - start).toBeLessThan(2_000);
+      expect(r).toMatchObject({ ok: false, code: "engine-failed" });
+      expect((r as { message: string }).message).toContain(
+        `http://127.0.0.1:${hungPublic.port}`,
+      );
+      expect((r as { message: string }).message).toContain("150");
+    } finally {
+      putOk.stop(true);
+      hungPublic.stop(true);
+    }
+  }, 3_000);
+});
