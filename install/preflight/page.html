@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Set up Splash</title>
+    <link rel="stylesheet" href="/page.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="masthead">
+        <p class="mark"><span class="mark-dot" aria-hidden="true"></span>Splash</p>
+        <h1 id="page-title"></h1>
+        <p class="lede" id="page-lede"></p>
+        <p class="summary" id="summary" aria-live="polite"></p>
+      </header>
+
+      <noscript>
+        <p class="notice">
+          This setup page needs JavaScript. Enable it and reload, or configure Splash by
+          editing <code>.env</code> and <code>newsroom.json</code> by hand.
+        </p>
+      </noscript>
+
+      <form id="preflight" novalidate>
+        <section class="card" id="section-newsroom" aria-labelledby="h-newsroom">
+          <h2 id="h-newsroom"><span class="step">1</span><span class="step-name"></span></h2>
+          <p class="hint"></p>
+          <div class="body"></div>
+        </section>
+
+        <section class="card" id="section-language" aria-labelledby="h-language">
+          <h2 id="h-language"><span class="step">2</span><span class="step-name"></span></h2>
+          <p class="hint"></p>
+          <div class="body"></div>
+        </section>
+
+        <section class="card" id="section-assistant" aria-labelledby="h-assistant">
+          <h2 id="h-assistant"><span class="step">3</span><span class="step-name"></span></h2>
+          <p class="hint"></p>
+          <div class="body"></div>
+        </section>
+
+        <section class="card" id="section-capabilities" aria-labelledby="h-capabilities">
+          <h2 id="h-capabilities"><span class="step">4</span><span class="step-name"></span></h2>
+          <p class="hint"></p>
+          <div class="body"></div>
+        </section>
+
+        <section class="card" id="section-publishing" aria-labelledby="h-publishing">
+          <h2 id="h-publishing"><span class="step">5</span><span class="step-name"></span></h2>
+          <p class="hint"></p>
+          <div class="body"></div>
+        </section>
+
+        <section class="card" id="section-readiness" aria-labelledby="h-readiness">
+          <h2 id="h-readiness"><span class="step">6</span><span class="step-name"></span></h2>
+          <p class="hint"></p>
+          <div class="body"></div>
+        </section>
+
+        <div class="actions">
+          <button type="button" id="check" class="btn btn-quiet"></button>
+          <button type="submit" id="save" class="btn btn-primary"></button>
+        </div>
+        <p class="privacy" id="privacy"></p>
+      </form>
+    </main>
+
+    <script type="application/json" id="preflight-model">
+      {}
+    </script>
+    <script type="module" src="/client.js"></script>
+  </body>
+</html>
