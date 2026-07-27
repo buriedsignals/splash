@@ -4,6 +4,7 @@ import {
   provenanceHash,
   channelForElement,
   liveElementFor,
+  assertInvariants,
   resolvedChannelForElement,
   stalenessOf,
   nextActions,
@@ -787,5 +788,106 @@ describe("nextActions across several deliverables", () => {
       ],
     };
     expect(nextActions(run)).toEqual(["show"]);
+  });
+});
+
+describe("a deliverable cannot be written with a format its own destination refuses", () => {
+  const withChosen = (
+    deliverable: RunManifest["elements"][number]["deliverable"],
+    format: "static" | "interactive" | "video" | "scrolly",
+  ): RunManifest => {
+    const m = base();
+    return {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          deliverable,
+          proposal: {
+            options: [
+              {
+                id: "slope",
+                nativeType: "slope",
+                engine: "chart-native",
+                format,
+                why: "w",
+              },
+            ],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+    };
+  };
+
+  it("refuses an interactive pinned on a print deliverable", () => {
+    expect(() =>
+      assertInvariants(withChosen({ destination: "print" }, "interactive")),
+    ).toThrow(/print-page/);
+  });
+
+  it("refuses a scrolly pinned on a social deliverable", () => {
+    expect(() =>
+      assertInvariants(
+        withChosen({ destination: "social", aspect: "portrait" }, "scrolly"),
+      ),
+    ).toThrow(/social-vertical/);
+  });
+
+  it("accepts what the destination does carry", () => {
+    expect(() =>
+      assertInvariants(withChosen({ destination: "print" }, "static")),
+    ).not.toThrow();
+    expect(() =>
+      assertInvariants(withChosen({ destination: "article-web" }, "interactive")),
+    ).not.toThrow();
+  });
+
+  it("says nothing about an element that declares no deliverable", () => {
+    // A legacy element is judged by the run's channel exactly as before — this check is only
+    // about rows that name their own destination.
+    const m = base();
+    const legacy: RunManifest = {
+      ...m,
+      channel: "social-feed",
+      elements: [
+        {
+          ...m.elements[0]!,
+          proposal: {
+            options: [
+              {
+                id: "slope",
+                nativeType: "slope",
+                format: "interactive",
+                why: "w",
+              },
+            ],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+    };
+    expect(() => assertInvariants(legacy)).not.toThrow();
+  });
+
+  it("refuses a sibling pointing at an element the run does not have", () => {
+    const m = base();
+    const orphan: RunManifest = {
+      ...m,
+      elements: [{ ...m.elements[0]!, id: "e2", deliverableOf: "ghost" }],
+    };
+    expect(() => assertInvariants(orphan)).toThrow(/ghost/);
+  });
+
+  it("refuses an element that says it is a deliverable of itself", () => {
+    const m = base();
+    expect(() =>
+      assertInvariants({
+        ...m,
+        elements: [{ ...m.elements[0]!, deliverableOf: "e1" }],
+      }),
+    ).toThrow(/itself/);
   });
 });

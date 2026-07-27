@@ -476,7 +476,33 @@ export function gateStateOf(run: RunManifest, el: RunElement): GateState {
 
 // state ↔ data must not desync. Throws on contradictions the derivation cannot express.
 export function assertInvariants(run: RunManifest): void {
+  const ids = new Set(run.elements.map((el) => el.id));
   for (const el of run.elements) {
+    // --- deliverables (issue #1) ---
+    // A sibling names the master whose confirmed takeaway it shares. A name that resolves to
+    // nothing — or to itself — makes the whole notion of "the same takeaway, another
+    // destination" unverifiable, and deliverablePlan's drift report silently blind.
+    if (el.deliverableOf === el.id)
+      throw new Error(
+        `invariant: element ${el.id} declares itself a deliverable of itself`,
+      );
+    if (el.deliverableOf && !ids.has(el.deliverableOf))
+      throw new Error(
+        `invariant: element ${el.id} is a deliverable of '${el.deliverableOf}', which is not in this run`,
+      );
+    // The mechanical half of "one output cannot inherit an incompatible format from another".
+    // Checked at the WRITE, not only at produce: a manifest asserting a printable interactive is
+    // already wrong on disk, whether or not anyone tries to build it. Scoped to rows that DECLARE
+    // a destination — a legacy element is judged by the run's channel, exactly as before, and
+    // this check must not retro-fail a manifest written before the axis existed.
+    if (el.deliverable) {
+      const channel = resolvedChannelForElement(run, el);
+      const format = chosenOption(el)?.format;
+      if (channel && format && !isFormatAllowed(channel, format))
+        throw new Error(
+          `invariant: element ${el.id} pins the "${format}" format on a deliverable rendered at "${channel}", which carries ${allowedFormats(channel).join(", ")}`,
+        );
+    }
     if (
       el.proposal?.chosenId &&
       !el.proposal.options.some((o) => o.id === el.proposal!.chosenId)
