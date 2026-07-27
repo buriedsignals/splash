@@ -373,8 +373,24 @@ littéralement ce que la production rendrait, pas un chemin parallèle. Le test 
 6. **le refus du garde** : un beat qui affirme un nombre absent de la donnée est refusé, nommément.
 
 Ce test est **opt-in** (`SPLASH_PROVE_BEATS=1`), pas dans `bun run check` : il fait un build Vite
-réel et un Playwright réel (~25 s), et le gate n'a pas à porter ça à chaque run. Même discipline
-que `skills/splash/scripts/verify-source-bundle.mjs`, délibérément hors gate pour la même raison.
+réel et un Playwright réel, et le gate n'a pas à porter ça à chaque run. Même discipline que
+`skills/splash/scripts/verify-source-bundle.mjs`, délibérément hors gate pour la même raison.
+
+### Le résultat mesuré (2026-07-27)
+
+Les deux pages construites pour de vrai, leurs **steps lus dans un navigateur** (nœuds
+`[data-step-index]`) — pas dans la config, pas dans le rapport du producteur. Même série, mêmes
+ancres, même structure à six cartes ; seuls les quatre steps narratifs diffèrent :
+
+| | steps 1 → 4 |
+|---|---|
+| **DÉRIVÉ** (`line-scrolly.json`, sans `beats`) | `1979 — 7` · `1995 — 6.1` · `2007 — 4.3` · `2025 — 4.3` |
+| **ÉCRIT** (cette couture) | « En 1979, la banquise d'été tenait encore sur 7 millions de kilomètres carrés. » · « Seize ans plus tard, le recul est engagé… » · « 2007 est l'année où le doute cesse… » · « Un demi-siècle après, rien n'est revenu — et c'est cela, l'histoire. » |
+
+`scrolly.html` réel, 5 726 513 octets, `render` OK, les quatre légendes dérivées **absentes** du
+livrable. Et le garde refuse `« La surface est tombée à 1,8. »` en nommant `1.8` — la série ne
+descend jamais sous 3,6 — **sans rien écrire** : le manifeste reste identique, donc un refus se
+retente sans risque.
 
 ---
 
