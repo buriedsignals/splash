@@ -180,16 +180,25 @@ function capabilityRow(
   const label = el("label", { for: inputId });
   label.append(input, capability.label);
   head.append(label);
-  head.append(
-    el(
-      "span",
-      { class: "spacer" },
-      capability.available
-        ? pill(liveStatus(capability), form.uiLang)
-        : el("span", { class: "pill pill-off" }, copy.unavailable),
-    ),
-  );
+  const status = el("span", { class: "spacer" });
+  head.append(status);
   row.append(head);
+
+  // A capability the newsroom did not tick carries NO pill: it is neither ready nor failing, and
+  // a column of grey "off" badges buries the two states that actually need reading.
+  const paintStatus = (): void => {
+    if (!capability.available) {
+      status.replaceChildren(
+        el("span", { class: "pill pill-off" }, copy.unavailable),
+      );
+      return;
+    }
+    const current = liveStatus(capability);
+    status.replaceChildren(
+      ...(current === "disabled" ? [] : [pill(current, form.uiLang)]),
+    );
+  };
+  paintStatus();
 
   const fields = el("div", { class: "capability-fields" });
   for (const name of capability.fields) {
@@ -215,13 +224,19 @@ function capabilityRow(
 
   input.addEventListener("change", () => {
     if (kind === "radio") {
+      // Choosing where to publish IS enabling it: a publisher recorded as disabled would be
+      // reported as neither ready nor blocking, and would never be checked.
       form.publisher = capability.id;
+      form.enabled.add(capability.id);
       render();
       return;
     }
     if (input.checked) form.enabled.add(capability.id);
     else form.enabled.delete(capability.id);
     fields.hidden = !input.checked;
+    // The pill is the answer to the tick that just happened — repainting only the summary left
+    // a freshly enabled capability showing the status it had before anyone touched it.
+    paintStatus();
     renderReadiness(pageCopy(form.uiLang));
   });
   return row;
@@ -236,7 +251,10 @@ function liveStatus(
   if (verdict === "ok") return "ready";
   if (verdict === "rejected") return "missing";
   if (verdict === "unreachable") return "unverified";
-  return capability.status;
+  // `statusIfEnabled`, not `status`: the saved state may have this capability off, and the
+  // journalist just turned it on. The server computed both answers precisely so this line does
+  // not have to re-derive readiness in the browser.
+  return capability.statusIfEnabled;
 }
 
 function textField(
@@ -418,9 +436,33 @@ function renderReadiness(copy: PageCopy): void {
       const row = el("div", { class: "blocker" });
       row.append(pill(status, form.uiLang));
       const text = el("div", { class: "blocker-body" });
-      text.append(el("p", {}, capability.reason || capability.label));
-      for (const help of capability.help)
-        text.append(el("p", { class: "blocker-help" }, helpText(help)));
+      // Journalist vocabulary first: the FIELDS that are missing, by their own labels. The env
+      // var names live in each field's "technical detail" — putting them in the summary is the
+      // habit issue #5 objects to. A blocker with no missing field (an uninstalled dependency)
+      // keeps readiness's sentence, which is the only thing that explains it.
+      const missing = capability.missingFields
+        .map((n) => model.fields.find((f) => f.name === n)?.label)
+        .filter((l): l is string => Boolean(l));
+      // A live verdict OVERRIDES the saved reason. Without this, a key that the provider just
+      // rejected showed whatever the state believed a moment ago — a bare label when it thought
+      // the capability was fine, or a stale "could not be reached" from an older check.
+      // Order matters: a capability with NO key at all is "still needs X", not "the provider
+      // refused it" — a blank credential is reported as rejected without a request ever being
+      // made, and telling a journalist their empty field was refused sends them hunting for a
+      // problem with a key they never entered.
+      const verdict = missing.length ? undefined : form.verified[capability.id];
+      const explanation = missing.length
+        ? `${capability.label} — ${copy.needs} ${missing.join(", ")}`
+        : verdict === "rejected"
+          ? `${capability.label} — ${copy.rejectedByProvider}`
+          : verdict === "unreachable"
+            ? `${capability.label} — ${copy.unreachableProvider}`
+            : capability.reason || capability.label;
+      text.append(el("p", {}, explanation));
+      for (const name of capability.missingFields) {
+        const help = model.fields.find((f) => f.name === name)?.help;
+        if (help) text.append(el("p", { class: "blocker-help" }, helpText(help)));
+      }
       row.append(text);
       body.append(row);
     }

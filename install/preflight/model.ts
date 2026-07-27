@@ -57,7 +57,26 @@ export type PreflightCapability = {
   /** Names of the fields nested under this capability. */
   fields: string[];
   status: ReadinessStatus;
+  /**
+   * The status this capability WOULD have if it were enabled. The page lets a journalist tick a
+   * capability the saved state has off, and must answer that tick immediately ("Missing — needs a
+   * MapTiler key") — computed here, so the browser never re-implements readiness to say it.
+   */
+  statusIfEnabled: ReadinessStatus;
+  /**
+   * Why it is not ready — the saved state's reason, or, when the saved state simply has it
+   * switched off, the reason it would give once ticked. The page needs the second one the
+   * instant a box is ticked; the summary of BLOCKERS is unaffected, since a capability that is
+   * off is not a blocker whatever this string says.
+   */
   reason: string;
+  /**
+   * The names of the fields this capability still needs — the page's way of saying what is
+   * missing in its own vocabulary ("Needs: MapTiler key"), instead of repeating readiness's env
+   * var names, which is exactly the complaint issue #5 makes. Empty when nothing is missing, and
+   * empty for a missing DEPENDENCY, which no field can supply (the reason covers that).
+   */
+  missingFields: string[];
   help: string[];
 };
 
@@ -156,10 +175,25 @@ function collectFields(
   return [...byName.values()];
 }
 
+/** The declared fields whose env group is not satisfied — what to ask for, by name. */
+function missingFieldsOf(
+  cap: NewsroomCapability,
+  env: Record<string, string | undefined>,
+): string[] {
+  const unsatisfied = cap.env.filter(
+    (group) => !group.some((name) => isSet(env[name])),
+  );
+  return (cap.settingsFields ?? [])
+    .filter((f) => unsatisfied.some((group) => group.includes(f.name)))
+    .map((f) => f.name);
+}
+
 function describe(
   cap: NewsroomCapability,
   readiness: CapabilityReadiness,
+  ifEnabled: CapabilityReadiness,
   state: NewsroomState,
+  env: Record<string, string | undefined>,
 ): PreflightCapability {
   return {
     id: cap.id,
@@ -169,7 +203,9 @@ function describe(
     available: cap.implemented,
     fields: (cap.settingsFields ?? []).map((f) => f.name),
     status: readiness.status,
-    reason: readiness.reason,
+    statusIfEnabled: ifEnabled.status,
+    reason: readiness.reason || ifEnabled.reason,
+    missingFields: cap.implemented ? missingFieldsOf(cap, env) : [],
     help: readiness.help,
   };
 }
@@ -185,12 +221,24 @@ export function preflightModel(
     ...(input.skillsRoot ? { skillsRoot: input.skillsRoot } : {}),
   };
 
+  // The same state with everything switched on, so each capability can also be asked what it
+  // would report if the journalist ticked it. One function answers both questions.
+  const allOn: NewsroomState = {
+    ...state,
+    capabilities: Object.fromEntries(
+      Object.keys(NEWSROOM_CAPABILITIES).map((id) => [
+        id,
+        { ...(state.capabilities[id] ?? {}), enabled: true },
+      ]),
+    ),
+  };
   const described = Object.values(NEWSROOM_CAPABILITIES).map((cap) => ({
     cap,
     readiness: capabilityReadiness(cap, state, opts),
+    ifEnabled: capabilityReadiness(cap, allOn, opts),
   }));
-  const capabilities = described.map(({ cap, readiness }) =>
-    describe(cap, readiness, state),
+  const capabilities = described.map(({ cap, readiness, ifEnabled }) =>
+    describe(cap, readiness, ifEnabled, state, env),
   );
   const count = (status: ReadinessStatus) =>
     capabilities.filter((c) => c.status === status).length;

@@ -195,3 +195,47 @@ describe("the rest of the decor the page renders", () => {
     expect(m.summary.degraded).toBe(0);
   });
 });
+
+// The page lets a journalist tick a capability that the SAVED state has disabled — and must then
+// say what that tick means ("Missing: needs a MapTiler key"), without the client re-implementing
+// readiness. So the model carries both: the status as saved, and the status this capability
+// WOULD have if it were on.
+describe("the status a capability would have if it were ticked", () => {
+  it("says what a currently-disabled capability is missing", () => {
+    const m = model();
+    expect(capability(m, "map-native")?.status).toBe("disabled");
+    expect(capability(m, "map-native")?.statusIfEnabled).toBe("missing");
+  });
+
+  it("says ready when the key is already in .env, so ticking it is instantly green", () => {
+    const m = model({ env: { DATAWRAPPER_API_TOKEN: "tok" } });
+    expect(capability(m, "dw-chart")?.statusIfEnabled).toBe("ready");
+  });
+
+  it("stays honest for a capability that is only declared", () => {
+    expect(capability(model(), "embed-fly")?.statusIfEnabled).toBe("disabled");
+  });
+});
+
+// Issue #5's actual complaint is the VOCABULARY: readiness explains itself with env var names
+// ("needs VITE_MAPTILER_KEY or REMOTION_MAPTILER_KEY"), which is right for a log and wrong for the
+// page a journalist reads. The model therefore also names WHICH FIELDS are missing, so the page
+// can say "Needs: MapTiler key" and put the var name in the technical detail where it belongs.
+describe("what is missing, in the page's own words", () => {
+  it("names the fields a capability still needs, not its env vars", () => {
+    expect(capability(model(), "map-native")?.missingFields).toEqual([
+      "VITE_MAPTILER_KEY",
+    ]);
+    expect(capability(model(), "embed-cloudflare")?.missingFields).toEqual([
+      "CLOUDFLARE_API_TOKEN",
+      "CLOUDFLARE_ACCOUNT_ID",
+      "SPLASH_EMBED_PROJECT",
+    ]);
+  });
+
+  it("names nothing when the keys are in place — a missing DEPENDENCY is not a missing field", () => {
+    const m = model({ env: { VITE_MAPTILER_KEY: "mt" } });
+    expect(capability(m, "map-native")?.missingFields).toEqual([]);
+    expect(capability(m, "image-native")?.missingFields).toEqual([]);
+  });
+});

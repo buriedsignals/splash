@@ -49,6 +49,11 @@ export type PageCopy = {
   readinessTitle: string;
   readinessHint: string;
   nothingBlocking: string;
+  /** Introduces the list of fields a capability still needs. */
+  needs: string;
+  /** What a live check said, when it said something the saved state does not know. */
+  rejectedByProvider: string;
+  unreachableProvider: string;
 
   configured: string;
   configuredHint: string;
@@ -106,6 +111,11 @@ const EN: PageCopy = {
   readinessTitle: "Where you stand",
   readinessHint: "What is ready, and what is still in the way.",
   nothingBlocking: "Nothing is in the way.",
+  needs: "needs",
+  rejectedByProvider:
+    "the provider did not accept this key — check it and run the check again",
+  unreachableProvider:
+    "the provider could not be reached — the key may well be fine; you can save and check later",
 
   configured: "Already configured",
   configuredHint: "Leave blank to keep it.",
@@ -164,6 +174,11 @@ const FR: PageCopy = {
   readinessTitle: "Où vous en êtes",
   readinessHint: "Ce qui est prêt, et ce qui bloque encore.",
   nothingBlocking: "Rien ne bloque.",
+  needs: "nécessite",
+  rejectedByProvider:
+    "le fournisseur a refusé cette clé — vérifiez-la puis relancez la vérification",
+  unreachableProvider:
+    "le fournisseur est injoignable — la clé est peut-être bonne ; vous pouvez enregistrer et vérifier plus tard",
 
   configured: "Déjà configuré",
   configuredHint: "Laissez vide pour le conserver.",
