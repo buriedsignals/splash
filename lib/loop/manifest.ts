@@ -9,6 +9,9 @@ import { isLoopBuildable, resolveBuilder } from "./buildable";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger } from "../source/policy";
+import { ReviewSlotSchema } from "../verify/schema";
+import { approvalDecision, type ApprovalDecision } from "../verify/approval";
+import type { ReviewRecord } from "../verify/types";
 
 const HashRef = z.object({ path: z.string(), sha256: z.string() });
 const DataProfileSchema = z.object({
@@ -87,12 +90,13 @@ const RunElementSchema = z.object({
       producedAt: z.string(),
     })
     .optional(),
-  review: z
-    .object({
-      findings: z.array(z.unknown()),
-      reviewedProvenanceHash: z.string(),
-    })
-    .optional(),
+  // The slot the verify layer fills (lib/verify). It kept `findings: unknown[]` while it
+  // was dormant; the schema now describes the real record — structured findings with a
+  // central severity, the reviewer's attribution, the captures and their checks, the taste
+  // risks routed to a human, the overrides and the PREVIEW that must precede approval.
+  // Every added field is optional and `findings` still admits an opaque value, so a
+  // manifest written while the slot was dormant parses unchanged.
+  review: ReviewSlotSchema.optional(),
   delivery: z
     .object({
       /** The publisher ids the JOURNALIST chose. Setting this is what makes `deliver` valid. */
@@ -387,6 +391,7 @@ export function assertInvariants(run: RunManifest): void {
       );
     if (el.blocked && el.dropped)
       throw new Error(`invariant: element ${el.id} both blocked and dropped`);
+    assertReviewRecordInvariants(el);
   }
   // --- source policy (lib/source) ---
   // A declared source must be valid AT THE RUN'S OWN MODE. This is the one place the policy is
@@ -399,4 +404,105 @@ export function assertInvariants(run: RunManifest): void {
       data: run.input.data != null,
       article: run.input.article != null,
     });
+}
+
+// ---------------------------------------------------------------------------------------
+// Verify layer (lib/verify) — the review slot's own invariants and the ONE writer of
+// `approved`. Grouped at the end on purpose, so this addition stays trivially mergeable.
+// ---------------------------------------------------------------------------------------
+
+// Only about shapes that did not exist before. The unconditional rule one would want here —
+// "approved implies a preview" — is NOT asserted: three existing lib/loop tests approve an
+// element by hand with no review, and this slice may not edit them, so an invariant written
+// against them would be a false green dressed as rigour. The gate lives at approveElement
+// below, which is the only sanctioned writer; the invariant follows in the slice that wires
+// approval into the driver (spec 2026-07-26-verify-layer-design.md section 6.2).
+function assertReviewRecordInvariants(el: RunElement): void {
+  const review = el.review as ReviewRecord | undefined;
+  if (!review) return;
+  const ids = new Set(
+    (review.findings ?? [])
+      .map((f) => (f as { id?: unknown })?.id)
+      .filter((id): id is string => typeof id === "string"),
+  );
+  for (const o of review.overrides ?? [])
+    if (!ids.has(o.findingId))
+      throw new Error(
+        `invariant: element ${el.id} has an override for finding '${o.findingId}', which is not in the review`,
+      );
+  for (const id of review.acknowledged ?? [])
+    if (!ids.has(id))
+      throw new Error(
+        `invariant: element ${el.id} acknowledged finding '${id}', which is not in the review`,
+      );
+  // A preview whose bytes are not the recorded artifact's is a contradiction, not a stale
+  // record: the approval path already refuses it, and persisting it would leave a manifest
+  // asserting that a journalist was shown something the run never produced.
+  if (
+    review.preview &&
+    el.artifact &&
+    review.preview.deliverableSha256 !== el.artifact.sha256
+  )
+    throw new Error(
+      `invariant: element ${el.id} records a preview of ${review.preview.deliverableSha256.slice(0, 12)}… while its artifact is ${el.artifact.sha256.slice(0, 12)}…`,
+    );
+}
+
+export type ApproveOutcome =
+  { ok: true; element: RunElement } | { ok: false; decision: ApprovalDecision };
+
+/**
+ * Approve an element — the ONLY sanctioned writer of `el.approved`.
+ *
+ * Issue #3's failure is that approval could be asked for without the deliverable ever
+ * having been presented, because "show the render" lived in prose. Arriving before any
+ * writer exists is the one window in which the gate can be placed with no legacy path to
+ * grandfather: everything that wants to approve has to come through here.
+ *
+ * Pure — it returns the next element rather than mutating, the way every other step in this
+ * module does, and it never throws: a refusal is the DECISION, with all of its reasons.
+ */
+export function approveElement(
+  run: RunManifest,
+  el: RunElement,
+  approval: { signoffPath: string },
+): ApproveOutcome {
+  const chosen = chosenOption(el);
+  const format = chosen?.format ?? "static";
+  const current = provenanceHash(run, el);
+  const decision = approvalDecision(el.review as ReviewRecord | undefined, {
+    format,
+    artifactSha256: el.artifact?.sha256 ?? "",
+    provenanceHash: current,
+  });
+  // An element with no artifact cannot be approved even if a record somehow cleared: the
+  // pre-existing invariant refuses to persist it, so refusing here keeps the two in step
+  // instead of writing something writeManifest would then reject.
+  if (!el.artifact || !decision.approvable)
+    return {
+      ok: false,
+      decision: el.artifact
+        ? decision
+        : {
+            ...decision,
+            approvable: false,
+            reasons: [
+              ...decision.reasons,
+              {
+                code: "not-reviewed",
+                detail: "the element has no produced artifact to approve",
+              },
+            ],
+          },
+    };
+  return {
+    ok: true,
+    element: {
+      ...el,
+      approved: {
+        signoffPath: approval.signoffPath,
+        approvedProvenanceHash: current,
+      },
+    },
+  };
 }

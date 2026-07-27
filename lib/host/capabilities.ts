@@ -59,7 +59,12 @@ export type Capabilities = {
 // Verbs with a body today. The vocabulary is CLOSED and declared in full — a host must be
 // able to see that `capture`/`review` exist and are not callable yet, rather than
 // discovering it as an error.
-const IMPLEMENTED = new Set<string>(["render", "publish"]);
+const IMPLEMENTED = new Set<string>([
+  "render",
+  "publish",
+  "capture",
+  "review",
+]);
 
 // The declaration of render's payload, KEYED BY THE PAYLOAD TYPE. `Record<keyof
 // RenderPayload, …>` is the whole point: adding a field to RenderPayload (lib/core/verbs/

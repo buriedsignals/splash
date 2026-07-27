@@ -17,7 +17,8 @@
     "host",
     "delivery",
     "newsroom",
-    "source"
+    "source",
+    "verify"
   ],
   "exclude": []
 }

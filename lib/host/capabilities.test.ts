@@ -15,8 +15,14 @@ describe("capabilities — the contract describes itself", () => {
     expect(ENGINES_REGISTERED).toBe(true);
     const c = capabilities();
     expect(c.verbs.map((v) => v.name)).toEqual([...VERBS]);
+    // A pinned golden list, deliberately literal. `capture` and `review` gained bodies with
+    // the verify layer; the facade announced them as not-implemented until this was corrected.
+    // capabilities-parity.test.ts is what keeps this honest going forward — it asks the
+    // DISPATCHER instead of a second list, so this literal cannot silently drift again.
     expect(c.verbs.filter((v) => v.implemented).map((v) => v.name)).toEqual([
       "render",
+      "capture",
+      "review",
       "publish",
     ]);
   });
