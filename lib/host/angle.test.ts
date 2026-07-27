@@ -25,6 +25,8 @@ async function cli(
 
 const TAKEAWAY = "Les primes ont augmenté dans les six cantons";
 const ALT = "La prime adulte passe de 449 à 583 francs entre 2015 et 2024.";
+// What the journalist wants the figure to SHOW — declared, not read out of TAKEAWAY's wording.
+const INTENT = "change-over-time";
 
 async function initialised(elements?: unknown[]): Promise<string> {
   const dir = mkdtempSync(join(tmpdir(), "host-angle-"));
@@ -51,7 +53,7 @@ function manifest(dir: string): Record<string, any> {
 }
 
 describe("confirm-angle: the human turn the façade could only name", () => {
-  it("records the four parts and reports what became valid", async () => {
+  it("records the parts and reports what became valid", async () => {
     const dir = await initialised();
     expect((await cli(["advance", "--run", dir])).code).toBe(0); // orient
     const r = await cli([
@@ -64,6 +66,8 @@ describe("confirm-angle: the human turn the façade could only name", () => {
       ALT,
       "--unit",
       "CHF",
+      "--intent",
+      INTENT,
     ]);
     expect(r.code).toBe(0);
     expect(r.body.value).toMatchObject({
@@ -74,7 +78,55 @@ describe("confirm-angle: the human turn the façade could only name", () => {
       confirmedTakeaway: TAKEAWAY,
       altInsight: ALT,
       unit: "CHF",
+      intent: INTENT,
     });
+  });
+
+  // THE SLICE'S OWN REFUSAL. The intent used to be guessed from --takeaway by a keyword pass
+  // that answered nothing on ordinary French claims, so the offer was ordered by fit and
+  // readiness alone with the run saying nothing. It is now one of the angle's declared parts,
+  // and it is refused absent like the other three.
+  it("refuses a missing --intent, and points at the command that asks it editorially", async () => {
+    const dir = await initialised();
+    const r = await cli([
+      "confirm-angle",
+      "--run",
+      dir,
+      "--takeaway",
+      TAKEAWAY,
+      "--alt-insight",
+      ALT,
+      "--unit",
+      "CHF",
+    ]);
+    expect(r.code).toBe(2);
+    expect(r.body.code).toBe("usage");
+    expect(String(r.body.message)).toContain("--intent");
+    // Never "pick one of: deviation, correlation, …" — a journalist is not asked in machine ids.
+    expect(String(r.body.message)).toContain("suggest-intent");
+  });
+
+  it("refuses an intent outside the vocabulary, listing what it accepts", async () => {
+    const dir = await initialised();
+    expect((await cli(["advance", "--run", dir])).code).toBe(0); // orient
+    const before = readFileSync(join(dir, "run.json"));
+    const r = await cli([
+      "confirm-angle",
+      "--run",
+      dir,
+      "--takeaway",
+      TAKEAWAY,
+      "--alt-insight",
+      ALT,
+      "--unit",
+      "CHF",
+      "--intent",
+      "pie-chart",
+    ]);
+    expect(r.code).toBe(1);
+    expect(r.body.code).toBe("invalid-request");
+    expect(String(r.body.message)).toContain("part-to-whole");
+    expect(readFileSync(join(dir, "run.json"))).toEqual(before);
   });
 
   it("carries an emphasis when the journalist names one", async () => {
@@ -90,6 +142,8 @@ describe("confirm-angle: the human turn the façade could only name", () => {
       ALT,
       "--unit",
       "CHF",
+      "--intent",
+      INTENT,
       "--emphasis",
       "Genève",
     ]);
@@ -109,6 +163,8 @@ describe("confirm-angle: the human turn the façade could only name", () => {
       ALT,
       "--unit",
       "CHF",
+      "--intent",
+      INTENT,
     ]);
     expect(r.code).toBe(2);
     expect(r.body.code).toBe("usage");
@@ -128,6 +184,8 @@ describe("confirm-angle: the human turn the façade could only name", () => {
       "   ",
       "--unit",
       "CHF",
+      "--intent",
+      INTENT,
     ]);
     expect(r.code).toBe(1);
     expect(r.body.code).toBe("invalid-request");
@@ -149,6 +207,8 @@ describe("confirm-angle: the human turn the façade could only name", () => {
       ALT,
       "--unit",
       "CHF",
+      "--intent",
+      INTENT,
     ]);
     expect(r.code).toBe(1);
     expect(String(r.body.message)).toContain('"web"');
@@ -168,6 +228,8 @@ describe("confirm-angle: the human turn the façade could only name", () => {
       ALT,
       "--unit",
       "CHF",
+      "--intent",
+      INTENT,
     ]);
     expect("staled" in (r.body.value as object)).toBe(false);
   });
@@ -191,6 +253,8 @@ describe("confirm-angle: the human turn the façade could only name", () => {
           ALT,
           "--unit",
           "CHF",
+          "--intent",
+          INTENT,
         ])
       ).code,
     ).toBe(0);
@@ -224,6 +288,8 @@ describe("confirm-angle: the human turn the façade could only name", () => {
       ALT,
       "--unit",
       "CHF",
+      "--intent",
+      INTENT,
     ]);
     expect(r.code).toBe(0);
     expect(r.body.value).toMatchObject({ staled: true });

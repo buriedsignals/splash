@@ -62,6 +62,8 @@ async function offered(): Promise<string> {
         "La prime adulte passe de 449 à 583 francs entre 2015 et 2024.",
         "--unit",
         "CHF",
+        "--intent",
+        "change-over-time",
       ])
     ).code,
   ).toBe(0);

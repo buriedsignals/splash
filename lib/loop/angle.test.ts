@@ -1,7 +1,9 @@
 import { test, expect } from "bun:test";
+import { INTENTS } from "../brain/intents";
 import { confirmAngle, inheritAngle } from "./angle";
 import {
   gateStateOf,
+  parseManifest,
   provenanceHash,
   stalenessOf,
   type RunElement,
@@ -13,6 +15,7 @@ const PARTS = {
   altInsight:
     "La prime adulte moyenne passe de 449 à 583 francs entre 2015 et 2024.",
   unit: "CHF",
+  intent: "change-over-time" as const,
 };
 
 function run(el: RunElement): RunManifest {
@@ -31,7 +34,7 @@ function run(el: RunElement): RunManifest {
   };
 }
 
-test("confirmAngle writes the four parts and moves the element to `angled`", () => {
+test("confirmAngle writes the parts and moves the element to `angled`", () => {
   const result = confirmAngle({ id: "el1" }, PARTS);
   expect(result.ok).toBe(true);
   if (!result.ok) throw new Error("unreachable");
@@ -39,8 +42,66 @@ test("confirmAngle writes the four parts and moves the element to `angled`", () 
     confirmedTakeaway: PARTS.takeaway,
     altInsight: PARTS.altInsight,
     unit: PARTS.unit,
+    intent: PARTS.intent,
   });
   expect(gateStateOf(run(result.value), result.value)).toBe("angled");
+});
+
+// --- the declared intent, in the manifest ----------------------------------------------------
+//
+// The intent stops being read out of the journalist's prose (lib/brain/rank-intent.ts's keyword
+// pass, which silently answered [] on ordinary French phrasings) and becomes a part of the angle
+// the journalist DECLARES. So the manifest has to hold it — and hold it as the closed vocabulary,
+// because a value outside lib/brain/intents.ts is a fact nothing can rank against.
+function manifestWithAngle(angle: unknown): unknown {
+  return {
+    runId: "angle",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: { path: "input/d.csv", sha256: "a".repeat(64) } },
+    elements: [{ id: "el1", angle }],
+    events: [],
+  };
+}
+
+test("the manifest carries a declared intent on the angle", () => {
+  const parsed = parseManifest(
+    manifestWithAngle({
+      confirmedTakeaway: PARTS.takeaway,
+      altInsight: PARTS.altInsight,
+      unit: PARTS.unit,
+      intent: "ranking",
+    }),
+  );
+  expect(parsed.elements[0]!.angle!.intent).toBe("ranking");
+});
+
+test("the manifest refuses an intent outside the closed vocabulary", () => {
+  expect(() =>
+    parseManifest(
+      manifestWithAngle({
+        confirmedTakeaway: PARTS.takeaway,
+        altInsight: PARTS.altInsight,
+        unit: PARTS.unit,
+        intent: "pie-chart",
+      }),
+    ),
+  ).toThrow();
+});
+
+// An angle recorded before this slice existed has no intent, and the run must stay readable:
+// refusing it would fail legitimate runs over a field that did not exist when they were written.
+// What happens to their ordering is reported rather than repaired (lib/host/state.ts).
+test("an angle written before the intent existed still parses", () => {
+  const parsed = parseManifest(
+    manifestWithAngle({
+      confirmedTakeaway: PARTS.takeaway,
+      altInsight: PARTS.altInsight,
+      unit: PARTS.unit,
+    }),
+  );
+  expect(parsed.elements[0]!.angle!.intent).toBeUndefined();
 });
 
 test("confirmAngle carries an emphasis when one is given", () => {
@@ -81,6 +142,36 @@ test("confirmAngle refuses a blank unit", () => {
   expect(result.ok).toBe(false);
   if (result.ok) throw new Error("unreachable");
   expect(result.message).toMatch(/unit/i);
+});
+
+// The fourth refusal. Blank is refused for the same reason the other three are: what is not
+// refused at the moment the angle is recorded is discovered much later, or never — and here
+// "never" means an offer ordered by fit and readiness alone, which is the defect this slice
+// exists to remove.
+test("confirmAngle refuses a blank intent", () => {
+  const result = confirmAngle({ id: "el1" }, { ...PARTS, intent: "  " });
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.code).toBe("invalid-request");
+  expect(result.message).toMatch(/intent/i);
+});
+
+test("confirmAngle refuses an intent outside the vocabulary, and names the nine", () => {
+  const result = confirmAngle(
+    { id: "el1" },
+    { ...PARTS, intent: "correlations" },
+  );
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.code).toBe("invalid-request");
+  // The whole list, so a host that mistyped can correct without reading our source.
+  for (const intent of INTENTS) expect(result.message).toContain(intent);
+});
+
+test("confirmAngle records the declared intent, trimmed", () => {
+  const result = confirmAngle({ id: "el1" }, { ...PARTS, intent: " ranking " });
+  if (!result.ok) throw new Error("unreachable");
+  expect(result.value.angle!.intent).toBe("ranking");
 });
 
 test("confirmAngle trims what it records — a stray newline is not editorial content", () => {
@@ -137,8 +228,10 @@ test("re-confirming an angle stales a produced artifact", () => {
 // the whole model, and the discipline "the title IS the confirmed takeaway" exists to hold it.
 const parts = {
   takeaway: "Genève paie la prime la plus lourde des cantons romands",
-  altInsight: "En 2024 la prime adulte atteint 583 francs à Genève, contre 468 à Fribourg.",
+  altInsight:
+    "En 2024 la prime adulte atteint 583 francs à Genève, contre 468 à Fribourg.",
   unit: "CHF",
+  intent: "ranking" as const,
 };
 const master: RunElement = { id: "web" };
 const sibling: RunElement = {
@@ -154,6 +247,11 @@ test("gives a sibling that has no angle of its own the one just confirmed", () =
   const after = inheritAngle([confirmed.value, sibling], confirmed.value);
   expect(after[1]!.angle?.confirmedTakeaway).toBe(parts.takeaway);
   expect(after[1]!.angle?.altInsight).toBe(parts.altInsight);
+  // One story, several outputs, ONE editorial point — so the sibling inherits WHAT THE POINT IS
+  // MEANT TO SHOW too. Without it the master's offer would be ordered around the declared intent
+  // and the sibling's around a keyword guess of the same sentence, which is the split this slice
+  // removes.
+  expect(after[1]!.angle?.intent).toBe(parts.intent);
 });
 
 test("leaves an element that is not its sibling alone", () => {
@@ -169,8 +267,10 @@ test("never overwrites an angle a sibling already confirmed for itself", () => {
   if (!confirmed.ok) throw new Error("unreachable");
   const own = {
     confirmedTakeaway: "Fribourg est le canton romand le moins cher",
-    altInsight: "En 2024 Fribourg affiche 468 francs, la prime la plus basse des six.",
+    altInsight:
+      "En 2024 Fribourg affiche 468 francs, la prime la plus basse des six.",
     unit: "CHF",
+    intent: "deviation" as const,
   };
   const decided: RunElement = { ...sibling, angle: own };
   const after = inheritAngle([confirmed.value, decided], confirmed.value);

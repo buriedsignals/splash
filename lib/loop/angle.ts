@@ -20,15 +20,33 @@
 // the producers fail hard on it) and a blank confirmedTakeaway ("a blank title is as visible to a
 // reader as a blank alt text is to a screen-reader user"). Making them here means the run cannot
 // carry the blank at all: the journalist learns before producing, not hours later at hand-over.
+//
+// The INTENT is the fourth refusal, added 2026-07-27 (spec 2026-07-27-intent-declared-design.md).
+// It was not asked at all: the ranking's semantic input was GUESSED from the takeaway's prose by
+// a keyword pass, which is exactly what the socle forbids — the tool describes factually and the
+// journalist chooses the angle; it never proposes the story. Measured, the guess also no-oped on
+// ordinary French phrasings ("Genève paie la prime la plus lourde" ⇒ nothing) and mis-fired on
+// others (a claim about spread read as geography, because "canton" won), leaving the offer
+// ordered by fit and readiness alone with nothing saying so.
+//
+// It belongs HERE rather than in a command of its own for the reason above: it is one more of the
+// angle's known parts, from a CLOSED vocabulary, so it is the least prose-like question on this
+// surface — the caller picks one of nine values.
+import { INTENTS, isIntent, type Intent } from "../brain/intents";
 import { fail, ok, type VerbResult } from "../core/verbs/types";
 import type { RunElement } from "./manifest";
 
-/** The four parts of an angle, as a caller supplies them. `emphasis` is the only optional one —
- *  it selects what to highlight, and having nothing to highlight is an ordinary answer. */
+/** The parts of an angle, as a caller supplies them. `emphasis` is the only optional one —
+ *  it selects what to highlight, and having nothing to highlight is an ordinary answer.
+ *
+ *  `intent` arrives as a plain string, not as `Intent`: it reaches this function from a CLI flag
+ *  and from a host's JSON, so the value has to be REFUSED here rather than assumed by a type that
+ *  nothing checked at the boundary. */
 export type AngleParts = {
   takeaway: string;
   altInsight: string;
   unit: string;
+  intent: Intent | (string & {});
   emphasis?: string;
 };
 
@@ -71,8 +89,25 @@ export function confirmAngle(
       parts.unit,
       `confirm-angle: element ${el.id} was given a blank unit`,
       "a value with no unit is a claim about a bare number; for a count, the unit is the thing counted",
+    ) ??
+    required(
+      parts.intent,
+      `confirm-angle: element ${el.id} was given no intent`,
+      "what the journalist wants the figure to SHOW is what orders the offer — left blank, the forms are ranked by fit and readiness alone and the one that serves the point is buried among the ones that do not",
     );
   if (refusal) return fail("invalid-request", refusal.message);
+
+  const intent = parts.intent.trim();
+  // A CLOSED vocabulary, so an unrecognised answer is refused with the whole list rather than
+  // dropped: the ranking has nothing to do with a value no KB sheet declares, and silently
+  // ignoring it would put us back where this slice started — an offer ordered by nothing, with
+  // the run reporting that an intent was recorded.
+  if (!isIntent(intent))
+    return fail(
+      "invalid-request",
+      `confirm-angle: element ${el.id} was given the intent ${JSON.stringify(intent)}, ` +
+        `which is not one of ${INTENTS.join(", ")}`,
+    );
 
   const emphasis = parts.emphasis?.trim();
   return ok({
@@ -81,6 +116,7 @@ export function confirmAngle(
       confirmedTakeaway: parts.takeaway.trim(),
       altInsight: parts.altInsight.trim(),
       unit: parts.unit.trim(),
+      intent,
       // Conditional, never `emphasis: undefined` riding along — the discipline driver.ts records
       // for `refusal`: no present-but-empty marker where absent already says the same thing.
       ...(emphasis ? { emphasis } : {}),

@@ -3,7 +3,7 @@ import { test, expect } from "bun:test";
 // the KB's `renderableSheets()` filters through lib/core/registry, empty until an engine
 // self-registers on import.
 import "./engines";
-import { propose } from "./propose";
+import { orderingIntents, propose } from "./propose";
 import type { RunManifest } from "./manifest";
 
 function run(numericColumns: string[], rowCount = 8): RunManifest {
@@ -98,7 +98,11 @@ test("a print deliverable is offered static forms only, and never through Datawr
       },
     ],
   };
-  const { options, excluded } = propose(withPrint, undefined, withPrint.elements[0]);
+  const { options, excluded } = propose(
+    withPrint,
+    undefined,
+    withPrint.elements[0],
+  );
   expect(options.length).toBeGreaterThan(0);
   for (const o of options) {
     expect(o.format).toBe("static");
@@ -108,20 +112,107 @@ test("a print deliverable is offered static forms only, and never through Datawr
   expect(excluded.map((e) => e.reason).join(" | ")).toMatch(/print/i);
 });
 
+// --- the DECLARED intent orders the offer ----------------------------------------------------
+//
+// This is the whole point of the slice. Before it, the semantic input came from a keyword pass
+// over the takeaway's prose, which answered nothing on ordinary French claims — so the offer was
+// ordered by fit and readiness alone, and nothing said so.
+function angled(intent: string | undefined, takeaway: string): RunManifest {
+  const m = run(["prime"]);
+  return {
+    ...m,
+    elements: [
+      {
+        ...m.elements[0]!,
+        angle: {
+          confirmedTakeaway: takeaway,
+          altInsight: "…",
+          unit: "CHF",
+          ...(intent ? { intent: intent as never } : {}),
+        },
+      },
+    ],
+  };
+}
+
+const SPREAD_CLAIM =
+  "La prime varie de 115 francs entre le canton le plus cher et le moins cher";
+
+test("two intents declared on the same facts give two different offers", () => {
+  const asSpread = propose(angled("distribution", SPREAD_CLAIM));
+  const asPlaces = propose(angled("spatial", SPREAD_CLAIM));
+  expect(asSpread.options.length).toBeGreaterThan(0);
+  expect(asPlaces.options.length).toBeGreaterThan(0);
+  expect(asSpread.options.map((o) => o.id)).not.toEqual(
+    asPlaces.options.map((o) => o.id),
+  );
+  // Not merely a different order: what leads is a form that SERVES the declared point.
+  expect(asSpread.options[0]!.intent).toContain("distribution");
+  expect(asPlaces.options[0]!.intent).toContain("spatial");
+});
+
+// The mis-fire of spec §1, closed. "canton" made the keyword pass answer `spatial` on a claim
+// about spread, and the journalist was offered three maps. A declaration must not have the guess
+// bolted onto it — a union would put the wrong reading straight back into the ranking.
+test("the declaration wins whole: no guess is merged into it", () => {
+  const m = angled("distribution", SPREAD_CLAIM);
+  // The exact input the brain is handed: one intent, the declared one. `spatial` — which the
+  // keyword pass reads in this very sentence — is nowhere near it.
+  expect(orderingIntents(m.elements[0])).toEqual({
+    intents: ["distribution"],
+    basis: "declared",
+  });
+  // Same facts, same sentence, nothing declared: the guess reads geography instead, and the
+  // offer that comes back is a different one.
+  expect(orderingIntents(angled(undefined, SPREAD_CLAIM).elements[0])).toEqual({
+    intents: ["spatial"],
+    basis: "guessed",
+  });
+  expect(
+    propose(angled(undefined, SPREAD_CLAIM)).options.map((o) => o.id),
+  ).not.toEqual(propose(m).options.map((o) => o.id));
+});
+
+// The state this slice exists to make visible: nothing declared AND nothing read. Before, the
+// offer degraded into an unranked one with the run saying nothing at all.
+test("nothing declared and nothing read is reported as such, never rounded up", () => {
+  expect(
+    orderingIntents(
+      angled(undefined, "Les chats aiment le fromage").elements[0],
+    ),
+  ).toEqual({ intents: [], basis: "none" });
+});
+
+// An angle recorded before the declaration existed keeps working: the suggestion is the fallback,
+// never a refusal that would strand a run written under the previous rule.
+test("an angle with no declared intent falls back on the suggestion", () => {
+  const legacy = propose(angled(undefined, SPREAD_CLAIM));
+  expect(legacy.options.length).toBeGreaterThan(0);
+  expect(legacy.options[0]!.intent).toContain("spatial");
+});
+
 test("two deliverables of one run are offered at their own channels", () => {
   const m = run(["2019", "2024"]);
-  const web = { ...m.elements[0]!, deliverable: { destination: "article-web" as const } };
+  const web = {
+    ...m.elements[0]!,
+    deliverable: { destination: "article-web" as const },
+  };
   const social = {
     ...m.elements[0]!,
     id: "e2",
     deliverableOf: "e1",
-    deliverable: { destination: "social" as const, aspect: "portrait" as const },
+    deliverable: {
+      destination: "social" as const,
+      aspect: "portrait" as const,
+    },
   };
   const two: RunManifest = { ...m, elements: [web, social] };
   const webOffer = propose(two, undefined, web);
   const socialOffer = propose(two, undefined, social);
   // article-web is the only channel that carries an interactive; a Stories post cannot.
-  expect(socialOffer.options.every((o) => o.format !== "interactive")).toBe(true);
+  expect(socialOffer.options.every((o) => o.format !== "interactive")).toBe(
+    true,
+  );
   expect(socialOffer.options.every((o) => o.format !== "scrolly")).toBe(true);
   expect(webOffer.options.length).toBeGreaterThan(0);
 });

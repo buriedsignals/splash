@@ -37,16 +37,17 @@ These three are exhaustive, and they hold for every input: an unreadable stdin, 
 flag, a hostile payload, or a residual defect inside the façade all still leave one JSON
 document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
-## The twelve commands
+## The thirteen commands
 
-Read-only: `verbs`, `state`, `next`, `newsroom`. Acting: `init`, `advance`, `confirm-angle`,
-`phrase`, `choose-form`, `approve`, `request-delivery`, `verb`.
+Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`. Acting: `init`, `advance`,
+`confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`.
 
 The whole journey, in the order a host walks it — every step is one of these commands, and none
 of them needs a run.json written by hand:
 
 ```
-init → advance (orient) → confirm-angle → advance (propose) → state (read the offer)
+init → advance (orient) → suggest-intent → confirm-angle → advance (propose)
+     → state (read the offer)
      → phrase → choose-form → advance (produce) → request-delivery
      → advance (capture) → advance (review) → advance (preview) → state (read the findings)
      → approve → advance (deliver)
@@ -427,6 +428,31 @@ terms of, and unable to write the phrasing (below), which must come from `whySou
 
 (one option and two fragments shown; a real offer carries three options and their full sheets.)
 
+While any element still owes `confirm-angle`, the report also carries **`intentChoices`** at the
+top level — the intent question and its nine answers, phrased for a journalist in the newsroom's
+own language. It is the same omission the missing offer once was, one gate earlier: a host told
+`nextActions: ["confirm-angle"]` had no way to put the question without inventing the wording, and
+the wording is exactly what the socle constrains. It disappears once every element has answered.
+There is no suggestion here — that is read from the *draft* takeaway, which is not in the run yet
+(`suggest-intent`). Resolving the newsroom's language for this block keeps the read-only promise:
+the decor is asked for a **named** root, the shape that derives the same answer without persisting
+the one-time legacy migration a bare `loadDecor()` is allowed to write.
+
+And once an element has an angle, it carries **`intent`** — what ordered its offer, and where that
+came from:
+
+```json
+{ "basis": "declared", "declared": "distribution" }
+{ "basis": "guessed",  "guessed": ["spatial"] }
+{ "basis": "none",     "guessed": [] }
+```
+
+`declared` is the only basis a run opened after the intent became a declared part of the angle can
+have. The other two can only come from an angle recorded before that — those runs are not refused
+(that would strand legitimate work over a field that did not exist when they were written), but
+they are not silent either: `guessed` means the order rests on a keyword reading of the takeaway's
+prose, and `none` means it rests on nothing and the forms are ranked by fit and readiness alone.
+
 Exit code `0` on a readable run; `2` if `--run` is missing, an argument is not recognised,
 or the directory holds no readable `run.json`.
 
@@ -532,17 +558,60 @@ Every human turn now has a command behind it, and `advance` names the one that i
 }
 ```
 
-### `confirm-angle --run <dir> --takeaway <s> --alt-insight <s> --unit <s> [--emphasis <s>] [--element <id>]`
+### `suggest-intent --takeaway <s> [--language <tag>]`
+
+Puts the intent question — *what do you want this to show?* — and offers a reading of the draft
+takeaway. Read-only, and deliberately **without `--run`**: the question comes before the angle
+exists, so requiring a run would make it unaskable at the only moment it is useful.
+
+```
+$ bun lib/host/cli.ts suggest-intent \
+    --takeaway "Les primes ont augmenté dans les trois cantons" --language fr
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "language": "fr",
+    "question": "Que voulez-vous faire voir ?",
+    "choices": [
+      { "id": "deviation", "label": "L'écart à une référence : qui est au-dessus, qui est en dessous", "example": "Trois cantons dépassent la moyenne suisse." },
+      { "id": "ranking", "label": "Qui est en tête, qui est en queue", "example": "Genève paie la prime la plus lourde des cantons romands." }
+    ],
+    "suggested": ["change-over-time"],
+    "note": "Votre formulation ressemble à « Ce qui a changé, et dans quel sens ». Confirmez, ou choisissez autre chose — c'est vous qui tranchez."
+  }
+}
+```
+
+**Present the `label` and the `example` — never the `id`.** The ids are the machine vocabulary a
+host names on `confirm-angle --intent`, exactly like `choose-form --option`. A journalist is never
+asked "is your intent part-to-whole?": that is the technical question the socle forbids, and
+`lib/host/intent-copy.test.ts` enforces it — no label or example may contain the vocabulary of the
+drawing, nor its own id.
+
+`suggested` is a **suggestion and nothing more**. It comes from a keyword pass over the wording
+(`lib/brain/rank-intent.ts`) which is deliberately crude: measured on real editorial phrasings it
+reads nothing at all in most French claims, and mis-reads others. It used to *decide* the offer's
+order on its own, silently; it now pre-fills an answer a human confirms or overrules. An empty
+`suggested` is an ordinary outcome, and `note` says so rather than filling the blank.
+
+Languages shipped: `en` and `fr` (parity with the rest of the interface copy). An unshipped
+language falls back to English rather than half-translating, and `language` in the answer says
+which one you actually got. Without `--language`, the newsroom's own `language.ui` is used.
+
+### `confirm-angle --run <dir> --takeaway <s> --alt-insight <s> --unit <s> --intent <id> [--emphasis <s>] [--element <id>]`
 
 Records the confirmed angle — the editorial decision everything downstream reads: the takeaway
 becomes the visual's **title**, the alt text its **accessibility description**, the unit its
-**subtitle**, and all three enter the provenance hash.
+**subtitle**, the intent **orders the offer**, and all of them enter the provenance hash.
 
 ```
 $ bun lib/host/cli.ts confirm-angle --run /tmp/host-readme-journey \
     --takeaway "Les primes ont augmenté dans les trois cantons" \
     --alt-insight "La prime adulte moyenne passe de 449 à 583 francs à Genève entre 2015 et 2024." \
-    --unit CHF
+    --unit CHF --intent change-over-time
 ```
 
 ```json
@@ -560,10 +629,11 @@ $ bun lib/host/cli.ts confirm-angle --run /tmp/host-readme-journey \
 **Flags, not a JSON body — and that is the whole design.** The angle is free editorial text, and
 a command that let a host write arbitrary prose *anywhere in the manifest* would be the disease
 this surface cures, not the cure. What makes this one safe is that the host never names a KEY: it
-answers one of four known questions. There is no field to designate, no path into the manifest to
-choose. A JSON body would invite "here is an object"; flags enumerate.
+answers a handful of known questions — and `--intent` is not prose at all, but one of nine closed
+values. There is no field to designate, no path into the manifest to choose. A JSON body would
+invite "here is an object"; flags enumerate.
 
-Three of the four are **refused blank**, with the reasons this codebase already gives at
+Four of them are **refused blank**, with the reasons this codebase already gives at
 hand-over time (`lib/delivery/metadata.ts`) — made here instead, so the run cannot carry the blank
 at all. Exit `1`, and the run stays byte-identical:
 
@@ -577,6 +647,12 @@ at all. Exit `1`, and the run stays byte-identical:
 
 A missing FLAG is a different thing from a blank VALUE: the first is a malformed command line
 (`usage`, exit `2`), the second a well-formed request the loop declined (exit `1`).
+
+`--intent` also has a **closed vocabulary**, and a value outside it is refused with the whole list
+(exit `1`) rather than dropped — a silently ignored intent would put the run straight back in the
+state this command exists to leave: an offer ordered by nothing, reporting that an intent was
+recorded. The intent is what the journalist wants the figure to SHOW, and it used to be *guessed*
+from `--takeaway`'s wording; ask it with `suggest-intent`, never in machine ids.
 
 Re-confirming is allowed — it is how a journalist changes the angle after seeing the visual — and
 the answer says what that **invalidated**. The angle is in the provenance hash, so a fresh

@@ -34,6 +34,7 @@ import {
 } from "./drive";
 import { describeNewsroom } from "./newsroom";
 import { outDirRefusal } from "./path-safety";
+import { describeIntentQuestion } from "./suggest-intent";
 import { RENDER_SOURCE_POLICY_MARK } from "./source-mark";
 import { describeNext, describeState, type HostResponse } from "./state";
 import type { VerbErrorCode } from "../core/verbs/types";
@@ -230,6 +231,7 @@ async function main(): Promise<never> {
       "--takeaway",
       "--alt-insight",
       "--unit",
+      "--intent",
       "--emphasis",
       "--element",
     ]);
@@ -251,12 +253,28 @@ async function main(): Promise<never> {
       usage(
         "confirm-angle needs --unit <s> — what the numbers are measured in; for a count, the thing counted",
       );
+    // The intent is asked in the SAME command as the other parts, and refused absent, because
+    // it is one of the angle's known parts — what the journalist wants the figure to show. It
+    // used to be guessed from `--takeaway` by a keyword pass that answered nothing on ordinary
+    // French phrasings; the offer was then ordered by fit and readiness alone, silently.
+    //
+    // The usage names `suggest-intent` rather than reciting the nine machine ids here: a
+    // journalist must never be asked "is your intent part-to-whole?", and that command is what
+    // serves the question editorially, in the newsroom's own language.
+    const intent = parsed.flags["--intent"];
+    if (!intent)
+      usage(
+        "confirm-angle needs --intent <id> — what the journalist wants the figure to SHOW, which " +
+          "is what orders the offer. Read the choices phrased for a journalist, in your own " +
+          'language, with "suggest-intent --takeaway <s>", and never present the raw id',
+      );
     const r = confirmAngleIn(
       runDir,
       {
         takeaway,
         altInsight,
         unit,
+        intent,
         ...(parsed.flags["--emphasis"]
           ? { emphasis: parsed.flags["--emphasis"] }
           : {}),
@@ -342,6 +360,23 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 
+  if (command === "suggest-intent") {
+    // READ-ONLY, and deliberately without --run: the question comes before the angle exists, so
+    // requiring a run would make it unaskable at the only moment it is useful. It answers with
+    // the nine choices phrased for a journalist plus what the draft wording reads like — the
+    // keyword pass that used to decide the ranking on its own, now offering instead.
+    const parsed = parseFlags(rest, ["--takeaway", "--language"]);
+    if (!parsed.ok) usage(parsed.message);
+    const takeaway = parsed.flags["--takeaway"];
+    if (!takeaway)
+      usage(
+        "suggest-intent needs --takeaway <s> — the claim the journalist is making, which the " +
+          "suggestion is read from",
+      );
+    const r = describeIntentQuestion(takeaway, parsed.flags["--language"]);
+    emit(r, r.ok ? 0 : 2);
+  }
+
   if (command === "newsroom") {
     const parsed = parseFlags(rest, ["--dir"]);
     if (!parsed.ok) usage(parsed.message);
@@ -400,7 +435,8 @@ async function main(): Promise<never> {
 
   usage(
     `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, init, ` +
-      `advance, confirm-angle, phrase, choose-form, approve, request-delivery, verb or newsroom`,
+      `advance, suggest-intent, confirm-angle, phrase, choose-form, approve, request-delivery, ` +
+      `verb or newsroom`,
   );
 }
 

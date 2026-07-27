@@ -8,7 +8,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describeState, describeNext } from "./state";
+import { describeState, describeNext, readOnlyUiLanguage } from "./state";
+import { installRoot } from "../newsroom/decor";
 import { writeManifest, nextActions, type RunManifest } from "../loop/manifest";
 import { freezeInput } from "../loop/freeze";
 
@@ -145,5 +146,126 @@ describe("state and next are genuinely read-only", () => {
           : "dir",
       ),
     ).toEqual(beforeHashes);
+  });
+});
+
+// --- the intent question, and where the ORDER of an offer came from --------------------------
+//
+// `state` already carried the offer because "an element said nextActions: ['choose-form'] and
+// carried no forms, so the host was told to make a decision it could not see the terms of". The
+// intent is one gate earlier and had exactly the same hole: an element says
+// nextActions: ['confirm-angle'] and nothing tells the host what the four answers are, let alone
+// that one of them is a closed list a journalist must be asked EDITORIALLY.
+//
+// And once an angle exists, the report says WHAT ORDERED ITS OFFER. That is the defect this
+// slice removes: an intent read out of prose by a keyword pass that frequently read nothing left
+// the offer ranked by fit and readiness alone, and the run said nothing at all about it.
+function runWithAngle(angle?: RunManifest["elements"][number]["angle"]): string {
+  const dir = emptyDir();
+  const src = join(dir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "host-intent",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(dir, src, "data") },
+    orient: {
+      profile: { columns: ["canton", "prime"], numericColumns: ["prime"], rowCount: 7 },
+      supportsPoint: true,
+    },
+    elements: [{ id: "e1", ...(angle ? { angle } : {}) }],
+    events: [],
+  };
+  writeManifest(join(dir, "run.json"), run);
+  return dir;
+}
+
+const ANGLE = {
+  confirmedTakeaway:
+    "La prime varie de 115 francs entre le canton le plus cher et le moins cher",
+  altInsight: "Genève affiche 583 francs, Fribourg 468.",
+  unit: "CHF",
+};
+
+function stateOf(dir: string): Record<string, any> {
+  const r = describeState(dir);
+  if (!r.ok) throw new Error(r.message);
+  return r.value as Record<string, any>;
+}
+
+describe("state serves the intent question, and says what ordered the offer", () => {
+  it("carries the nine choices, phrased editorially, while confirm-angle is owed", () => {
+    const value = stateOf(runWithAngle());
+    expect(value.elements[0].nextActions).toEqual(["confirm-angle"]);
+    expect(value.intentChoices.choices).toHaveLength(9);
+    expect(value.intentChoices.question.trim()).not.toBe("");
+    // Never the machine id: "is your intent part-to-whole?" is the technical question the socle
+    // forbids, and this is the surface a host renders the question from.
+    for (const choice of value.intentChoices.choices)
+      expect(`${choice.label} ${choice.example}`).not.toContain(choice.id);
+  });
+
+  it("drops the question once every element has answered it", () => {
+    const value = stateOf(runWithAngle({ ...ANGLE, intent: "distribution" }));
+    expect(value.elements[0].nextActions).not.toContain("confirm-angle");
+    expect("intentChoices" in value).toBe(false);
+    expect(value.elements[0].intent).toEqual({
+      basis: "declared",
+      declared: "distribution",
+    });
+  });
+
+  // The measured mis-fire, now VISIBLE. An angle written before the declaration existed carries
+  // no intent, so the ordering falls back on the keyword pass — which reads this claim about
+  // spread as geography, because "canton" is in it. The run says so instead of quietly offering
+  // three maps as if the journalist had asked for them.
+  it("says when the order rests on a guess, and which guess", () => {
+    const value = stateOf(runWithAngle(ANGLE));
+    expect(value.elements[0].intent).toEqual({
+      basis: "guessed",
+      guessed: ["spatial"],
+    });
+  });
+
+  // The state the whole slice exists to stop being silent.
+  it("says when the order rests on nothing at all", () => {
+    const value = stateOf(
+      runWithAngle({ ...ANGLE, confirmedTakeaway: "Les chats aiment le fromage" }),
+    );
+    expect(value.elements[0].intent).toEqual({ basis: "none", guessed: [] });
+  });
+
+  it("reports no intent for an element that has no angle yet", () => {
+    expect("intent" in stateOf(runWithAngle()).elements[0]).toBe(false);
+  });
+});
+
+// `state` and `next` are STRICTLY read-only — the promise in lib/host/README.md, and the reason
+// they refuse to migrate a stale manifest rather than migrating it quietly. Resolving the
+// newsroom's interface language put that promise at risk: `loadDecor()` called with NO directory
+// is allowed to WRITE (it persists the one-time legacy decor migration into the install root),
+// and `tryLoadDecor()` takes exactly that path. Naming the root explicitly is what makes the same
+// answer arrive without the side effect — decor.ts: "with an explicit dir the decor is read and
+// derived but NOTHING is written".
+//
+// Asserted at the seam, because the write only happens on an install that still carries the
+// legacy files and no test may fabricate one inside the real install root.
+describe("resolving the interface language cannot write", () => {
+  it("asks the decor for a named root, which is the read-only shape", () => {
+    const seen: (string | undefined)[] = [];
+    readOnlyUiLanguage(((dir?: string) => {
+      seen.push(dir);
+      return { language: { ui: "fr", content: "fr" } } as never;
+    }) as never);
+    expect(seen).toEqual([installRoot()]);
+  });
+
+  it("falls back to no language rather than throwing, so a broken decor never hides the run", () => {
+    expect(
+      readOnlyUiLanguage((() => {
+        throw new Error("unreadable install");
+      }) as never),
+    ).toBe("");
   });
 });
