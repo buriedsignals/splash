@@ -109,3 +109,113 @@ describe("the whole journey through the façade", () => {
     expect(after.body).toStrictEqual(before.body);
   }, 300_000);
 });
+
+describe("a non-JS host carries a run all the way to delivery", () => {
+  // The thesis of the decision surface, exercised end to end: after the run directory exists,
+  // EVERY step below is a façade command. Nothing writes into run.json by hand — which was the
+  // only way to record a choice before these commands existed.
+  //
+  // What the fixture still carries: the angle. `confirm-angle` is a free-text editorial act
+  // (takeaway, alt text, unit), deliberately left out of this slice — a command that wrote
+  // arbitrary prose into the manifest would be the disease, not the cure. So the run arrives
+  // angled, and the loop is driven from there.
+  it("advances, chooses, produces, decides where it goes, and publishes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "host-delivery-"));
+    const src = join(dir, "src.csv");
+    writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
+    const run: RunManifest = {
+      runId: "delivered",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: { data: freezeInput(dir, src, "data") },
+      elements: [
+        {
+          id: "el1",
+          requestedFormat: "static",
+          angle: {
+            confirmedTakeaway: "Premiums rose in both cantons",
+            altInsight: "Both cantons' adult premium rose from 2015 to 2024.",
+            unit: "CHF",
+          },
+        },
+      ],
+      events: [],
+    };
+    writeManifest(join(dir, "run.json"), run);
+
+    // 1. orient, then 2. propose — two deterministic steps, one call each.
+    expect((await cli(["advance", "--run", dir])).code).toBe(0);
+    const proposed = await cli(["advance", "--run", dir]);
+    expect(proposed.code).toBe(0);
+    expect((proposed.body as { value: { ran: string } }).value.ran).toBe(
+      "propose",
+    );
+
+    // 3. The journalist chooses — read the offer from `state`, name an id, and that id is
+    //    persisted by CODE. The choice is taken from the run itself, never guessed.
+    const offer = JSON.parse(
+      readFileSync(join(dir, "run.json"), "utf8"),
+    ) as RunManifest;
+    const buildable = offer.elements[0]!.proposal!.options.find(
+      (o) => !o.readiness,
+    )!;
+    const chosen = await cli([
+      "choose-form",
+      "--run",
+      dir,
+      "--option",
+      buildable.id,
+    ]);
+    expect(chosen.code).toBe(0);
+    expect(
+      (chosen.body as { value: { nextActions: string[] } }).value.nextActions,
+    ).toEqual(["produce"]);
+
+    // 4. produce — a real chart-native render, through the loop rather than through `verb`.
+    const produced = await cli(["advance", "--run", dir]);
+    expect(produced.code).toBe(0);
+    expect((produced.body as { value: { ran: string } }).value.ran).toBe(
+      "produce",
+    );
+    // A fresh artifact nobody asked to publish stays on show: `deliver` is not automatic.
+    expect(
+      (produced.body as { value: { nextActions: string[] } }).value.nextActions,
+    ).toEqual(["show"]);
+
+    // 5. The second decision: where it goes. No --to, so the destination is derived from the
+    //    format's genre — a static image is handed over as a portable package.
+    const asked = await cli(["request-delivery", "--run", dir]);
+    expect(asked.code).toBe(0);
+    expect(
+      (asked.body as { value: { requested: string[] } }).value,
+    ).toMatchObject({ requested: ["zip"], nextActions: ["deliver"] });
+    // The decision alone made the step valid — this is the answer that used to be unreachable:
+    // `next` could say "deliver" and nothing in the façade could carry it out.
+    const next = await cli(["next", "--run", dir]);
+    expect((next.body as { value: { nextActions: string[] } }).value).toEqual({
+      nextActions: ["deliver"],
+    });
+
+    // 6. deliver — the same `advance`, now carrying out what `next` says.
+    const delivered = await cli(["advance", "--run", dir]);
+    expect(delivered.code).toBe(0);
+    expect((delivered.body as { value: { ran: string } }).value.ran).toBe(
+      "deliver",
+    );
+
+    // 7. And the run says so, read back by a separate process.
+    const state = await cli(["state", "--run", dir]);
+    const report = (
+      state.body as { value: { elements: { gateState: string }[] } }
+    ).value;
+    expect(report.elements[0]!.gateState).toBe("delivered");
+    const record = (
+      JSON.parse(readFileSync(join(dir, "run.json"), "utf8")) as RunManifest
+    ).elements[0]!.delivery!.delivered[0]!;
+    expect(record.publisherId).toBe("zip");
+    expect(
+      readFileSync(join(dir, record.artifact!.path)).length,
+    ).toBeGreaterThan(0);
+  }, 300_000);
+});
