@@ -10,6 +10,7 @@ import {
   parseManifest,
   RunManifestSchema,
   type RunManifest,
+  type RunElement,
 } from "./manifest";
 
 function base(): RunManifest {
@@ -641,5 +642,61 @@ describe("provenance covers the deliverable", () => {
     expect(
       provenanceHash({ ...m, channel: "social-feed" }, m.elements[0]!),
     ).not.toBe(h);
+  });
+});
+
+describe("confirm-aspect — the aspect question, at the moment it is actually needed", () => {
+  const social = (extra: Partial<RunElement> = {}): RunManifest => {
+    const m = base();
+    return {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          deliverable: { destination: "social" },
+          ...extra,
+        },
+      ],
+    };
+  };
+
+  it("asks for the aspect once a form is chosen and before anything is produced", () => {
+    expect(nextActions(social())).toEqual(["confirm-aspect"]);
+  });
+
+  it("never asks before the editorial format is chosen", () => {
+    const m = social({
+      proposal: {
+        options: [{ id: "slope", nativeType: "slope", why: "w" }],
+        excluded: [],
+      },
+    });
+    expect(nextActions(m)).toEqual(["choose-form"]);
+  });
+
+  it("never asks before the angle is confirmed either", () => {
+    const m = social({ angle: undefined, proposal: undefined });
+    expect(nextActions(m)).toEqual(["confirm-angle"]);
+  });
+
+  it("moves on to produce once the aspect is answered", () => {
+    const m = social();
+    const el = {
+      ...m.elements[0]!,
+      deliverable: { destination: "social" as const, aspect: "portrait" as const },
+    };
+    expect(nextActions({ ...m, elements: [el] })).toEqual(["produce"]);
+  });
+
+  it("never asks on a branch that has one shape — web and print go straight to produce", () => {
+    const m = base();
+    for (const destination of ["article-web", "print"] as const) {
+      const el = { ...m.elements[0]!, deliverable: { destination } };
+      expect(nextActions({ ...m, elements: [el] })).toEqual(["produce"]);
+    }
+  });
+
+  it("never asks on a legacy element that has no deliverable at all", () => {
+    expect(nextActions(base())).toEqual(["produce"]);
   });
 });

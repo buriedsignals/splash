@@ -199,6 +199,7 @@ export type NextAction =
   | "confirm-angle"
   | "propose"
   | "choose-form"
+  | "confirm-aspect"
   | "produce"
   | "show"
   | "deliver";
@@ -347,6 +348,12 @@ export function nextActionsForElement(
   );
   if (chosen && !isLoopBuildable(resolveBuilder(chosen)))
     return ["choose-form"];
+  // Issue #1, stage 3: "ask aspect ratio only when entering an export that needs it, and after
+  // the editorial format is chosen". Both halves of that sentence are this line's POSITION —
+  // below choose-form, above produce — rather than a rule written down somewhere for an
+  // orchestrator to obey. A destination with one shape (web, print) never reaches it, because
+  // resolvedChannelForElement answers from the destination's default.
+  if (!resolvedChannelForElement(run, el)) return ["confirm-aspect"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   // `deliver` is a step a DECISION triggers, never an automatic advance — the symmetric of
   // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.
