@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { BrowserProbeResult } from "./probe";
 import { NEWSROOM_CAPABILITIES } from "./capabilities";
 import {
   capabilityReadiness,
@@ -8,6 +9,17 @@ import {
 import { DEFAULT_NEWSROOM_STATE, type NewsroomState } from "./state";
 
 const ALL_DEPS_PRESENT = () => true;
+// Every capability with `remotion` in criticalDeps (chart-native, map-native) also runs the
+// browser probe. These tests are about env/deps/lastVerified, not the browser, so they pin it
+// ready — exactly the DI pattern ALL_DEPS_PRESENT already establishes for resolveDep.
+const ALL_BROWSERS_READY = (): BrowserProbeResult => ({
+  status: "ready",
+  executablePath: "/stub/chrome-headless-shell",
+});
+const BROWSER_MISSING = (): BrowserProbeResult => ({
+  status: "missing",
+  executablePath: "/stub/chrome-headless-shell",
+});
 
 function state(capabilities: NewsroomState["capabilities"]): NewsroomState {
   return { ...DEFAULT_NEWSROOM_STATE, capabilities };
@@ -51,7 +63,11 @@ describe("capability readiness", () => {
       const r = capabilityReadiness(
         MAP,
         state({ "map-native": { enabled: true } }),
-        { env: { [name]: "k" }, resolveDep: ALL_DEPS_PRESENT },
+        {
+          env: { [name]: "k" },
+          resolveDep: ALL_DEPS_PRESENT,
+          probeBrowser: ALL_BROWSERS_READY,
+        },
       );
       expect(r.status).toBe("ready");
     }
@@ -61,7 +77,11 @@ describe("capability readiness", () => {
     const r = capabilityReadiness(
       CHART,
       state({ "chart-native": { enabled: true } }),
-      { env: {}, resolveDep: (pkg) => pkg !== "vite" },
+      {
+        env: {},
+        resolveDep: (pkg) => pkg !== "vite",
+        probeBrowser: ALL_BROWSERS_READY,
+      },
     );
     expect(r.status).toBe("missing");
     expect(r.reason).toContain("vite");
@@ -135,6 +155,67 @@ describe("capability readiness", () => {
     expect(r.help.join(" ")).not.toContain(secret);
   });
 
+  // The incident: package resolution reported chart-native/map-native "installed" while their
+  // Remotion headless-shell browser had downloaded incompletely, so every video render died
+  // with an unreadable subprocess dump. A capability whose criticalDeps carry "remotion" now
+  // also runs the browser probe, gated the same way as any other critical dep.
+  it("is missing when the Remotion browser has not finished downloading, with the actual remedy", () => {
+    const r = capabilityReadiness(
+      CHART,
+      state({ "chart-native": { enabled: true } }),
+      { env: {}, resolveDep: ALL_DEPS_PRESENT, probeBrowser: BROWSER_MISSING },
+    );
+    expect(r.status).toBe("missing");
+    expect(r.reason).toContain("bunx remotion browser ensure");
+    expect(r.reason).toContain("skills/chart-native");
+  });
+
+  it("is missing for map-native too — every criticalDep list carrying remotion is gated", () => {
+    const r = capabilityReadiness(
+      MAP,
+      state({ "map-native": { enabled: true } }),
+      {
+        env: { VITE_MAPTILER_KEY: "k" },
+        resolveDep: ALL_DEPS_PRESENT,
+        probeBrowser: BROWSER_MISSING,
+      },
+    );
+    expect(r.status).toBe("missing");
+    expect(r.reason).toContain("bunx remotion browser ensure");
+    expect(r.reason).toContain("skills/map-native");
+  });
+
+  it("does not probe the browser at all for a capability whose criticalDeps never mention remotion", () => {
+    let called = false;
+    const r = capabilityReadiness(
+      NEWSROOM_CAPABILITIES["image-native"]!,
+      state({ "image-native": { enabled: true } }),
+      {
+        env: {},
+        resolveDep: ALL_DEPS_PRESENT,
+        probeBrowser: () => {
+          called = true;
+          return { status: "missing", executablePath: "x" };
+        },
+      },
+    );
+    expect(called).toBe(false);
+    expect(r.status).toBe("ready");
+  });
+
+  it("is ready once the browser is fully extracted", () => {
+    const r = capabilityReadiness(
+      CHART,
+      state({ "chart-native": { enabled: true } }),
+      {
+        env: {},
+        resolveDep: ALL_DEPS_PRESENT,
+        probeBrowser: ALL_BROWSERS_READY,
+      },
+    );
+    expect(r.status).toBe("ready");
+  });
+
   it("takes its environment from the caller, never from the process", () => {
     process.env.DATAWRAPPER_API_TOKEN = "ambient-token-must-be-ignored";
     try {
@@ -156,7 +237,11 @@ describe("the decor's readiness report", () => {
       "dw-chart": { enabled: true },
       "chart-native": { enabled: true },
     });
-    const all = decorReadiness(s, { env: {}, resolveDep: ALL_DEPS_PRESENT });
+    const all = decorReadiness(s, {
+      env: {},
+      resolveDep: ALL_DEPS_PRESENT,
+      probeBrowser: ALL_BROWSERS_READY,
+    });
     expect(all.length).toBe(Object.keys(NEWSROOM_CAPABILITIES).length);
 
     const blockers = readinessBlockers(all);

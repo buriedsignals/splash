@@ -11,7 +11,12 @@
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NEWSROOM_CAPABILITIES, type NewsroomCapability } from "./capabilities";
-import { defaultResolveDep, isSet } from "./probe";
+import {
+  type BrowserProbeResult,
+  defaultResolveDep,
+  isSet,
+  probeRemotionBrowser,
+} from "./probe";
 import type { NewsroomState } from "./state";
 
 export type ReadinessStatus = "ready" | "missing" | "unverified" | "disabled";
@@ -31,6 +36,10 @@ export type ReadinessOpts = {
   resolveDep?: (pkg: string, fromDir: string) => boolean;
   /** Defaults to this repo's skills/ directory; injected by tests. */
   skillsRoot?: string;
+  /** Is a fully extracted Remotion headless-shell browser present for that skill dir? Runs
+   *  only when a capability's criticalDeps carry "remotion" (see capabilityReadiness).
+   *  Defaults to a real filesystem stat; injected by tests. */
+  probeBrowser?: (fromDir: string) => BrowserProbeResult;
 };
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -85,6 +94,22 @@ export function capabilityReadiness(
           `${cap.label} is not installed (${missing.join(", ")} missing) — ` +
           `run \`bun install\` in skills/${cap.criticalDeps.fromSkillDir}, then retry`,
       };
+
+    // Package resolution alone cannot see this: a stalled fetch can leave a partial download
+    // sitting unextracted while `remotion` itself still resolves fine, and every dependent
+    // render then dies with an unreadable subprocess dump (the incident this probe exists for).
+    if (cap.criticalDeps.packages.includes("remotion")) {
+      const probeBrowser = opts.probeBrowser ?? probeRemotionBrowser;
+      if (probeBrowser(fromDir).status !== "ready")
+        return {
+          ...base,
+          status: "missing",
+          reason:
+            `${cap.label}'s video renderer needs its Remotion browser, which looks missing ` +
+            `or half-downloaded — run \`bunx remotion browser ensure\` in ` +
+            `skills/${cap.criticalDeps.fromSkillDir}, then retry`,
+        };
+    }
   }
 
   const verified = state.capabilities[cap.id]?.lastVerified;

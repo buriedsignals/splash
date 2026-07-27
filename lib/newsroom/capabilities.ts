@@ -74,7 +74,14 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
     kind: "engine",
     env: [],
     envHelp: {},
-    criticalDeps: { fromSkillDir: "chart-native", packages: ["react", "vite"] },
+    // remotion (its video render path) is a critical dep like react/vite: an incident showed
+    // package resolution alone reporting "installed" while the headless-shell browser it needs
+    // to actually render had downloaded incompletely (readiness.ts's browser probe, gated on
+    // this list carrying "remotion").
+    criticalDeps: {
+      fromSkillDir: "chart-native",
+      packages: ["react", "vite", "remotion"],
+    },
     implemented: true,
   },
   "map-native": {
