@@ -173,10 +173,97 @@ Mesures reportées ci-dessous après exécution.
 
 ## Résultat mesuré (T10)
 
-_Rempli à l'exécution._
+`SPLASH_E2E_DELIVERABLES=1 bun test loop/multi-deliverable-e2e.test.ts` — **1 pass / 0 fail**,
+20,2 s, moteurs réels (chart-native, Vite + Chromium), trois PNG sur disque :
+
+```
+[deliverables-e2e] /var/folders/.../loop-deliverables-e2e-l9O0Pk
+  e1:    article-web → article-web  {"width":1200,"height":676}   elements/e1/static.png
+  e1-d2: social      → social-vertical {"width":1080,"height":1920} elements/e1-d2/static.png
+  e1-d3: print       → print-page   {"width":2480,"height":1748}  elements/e1-d3/static.png
+```
+
+Ce que le run prouve, au-delà des unitaires :
+
+- **Trois livrables, un seul takeaway confirmé** (`new Set(takeaways).size === 1`), trois
+  géométries distinctes — aucun artefact réutilisé d'un livrable à l'autre.
+- **`nextActions` ne dit `show`** qu'une fois les trois produits (assertion finale du test).
+- **`confirm-aspect` s'est déclenché une seule fois**, sur le livrable social, **après** son
+  choix de forme : le driver ne l'a jamais demandé pour le web ni pour le print.
+- **Le print REND vraiment** : 2480×1748 = A5 paysage à 300 dpi. **Vérifié à l'œil sur le PNG**
+  (pas seulement à l'IHDR) — barres horizontales, titre, sous-titre unité, value-labels, ligne
+  de source, mise en page saine à densité doublée. Idem pour le 1080×1920 social.
+- 1200×676 pour l'article-web = le 1px de l'arrondi CSS connu (hauteur impaire 675), dans la
+  tolérance ±2 px que `assertRenderedSize` applique déjà.
+
+Détail utile : le premier jet du test utilisait des données cantonales et le cerveau a classé
+des formes **carto** en tête (`hex-grid, choropleth, cartogram`) — non constructibles par la
+boucle, le run bloquait sur l'offre. Données non géographiques, et le run passe. Ce n'est pas un
+défaut de cette tranche (map-native n'est pas encore dans `LOOP_BUILDABLE_ENGINES`), mais ça
+mérite d'être noté : un run print sur des données géo n'a **rien** à choisir aujourd'hui.
 
 ---
 
 ## Risques assumés
 
-_Rempli à l'auto-revue._
+1. **`schemaVersion` reste 4 alors que le schéma a grandi.**
+   *Arbitrage :* les champs neufs sont optionnels et additifs, donc un manifeste v4 d'avant
+   parse et signifie exactement la même chose (`channelForElement → run.channel`) — il n'y a
+   aucune ambiguïté de lecture à lever. Le bump est bloqué par 27 fichiers écrivant
+   `schemaVersion: 4` en dur, dont trois zones interdites à cette tranche (`lib/host`,
+   `lib/verify`, `lib/source`). À faire par la tranche qui possède ces fichiers. **Accepté.**
+
+2. **`run.channel` survit à côté de `elements[].deliverable` — deux endroits où « où ça va »
+   peut être écrit.**
+   *Arbitrage :* une seule LECTURE existe (`channelForElement`), et `run.channel` y a un rôle
+   nommé (le défaut d'un élément qui ne déclare rien). La drift possible est donc décorative,
+   pas sémantique. La supprimer imposerait de rendre `deliverable` obligatoire → migration
+   dure → bump de version → risque 1. **Accepté, avec la lecture unique comme garde.**
+
+3. **Un `revise` du takeaway sur un frère le fait diverger de son master, silencieusement au
+   niveau du manifeste.**
+   *Arbitrage :* `deliverablePlan()` **rapporte** la divergence (`takeawayDrift`) au lieu de la
+   refuser. Un invariant d'égalité aurait fait **jeter `writeManifest`** après un `revise`
+   parfaitement légitime, échouant un run au lieu de le signaler — et `revise.ts` ne connaît
+   que l'élément, pas ses frères. Propagation = suite. **Signalé, pas gardé.**
+
+4. **La façade host (`lib/host/drive.ts`) vise toujours `elements[0]` pour `choose-form` et
+   `request-delivery`.**
+   *Arbitrage :* `next`/`advance` sont cohérents (ils passent par `nextActions`/`advanceStep`,
+   tous deux multi-livrables désormais), mais les deux commandes de décision décideraient pour
+   le mauvais livrable sur un run à plusieurs. `lib/host/**` est hors périmètre de cette
+   tranche. **Trou réel, nommé, non refermé** — première chose à faire dans la suite.
+
+5. **Le défaut print est une seule boîte (A5 paysage 300 dpi) que personne n'a validée avec un
+   imprimeur.**
+   *Arbitrage :* c'est un défaut *raisonné* (encart de presse large, 1,42:1, densité vraie),
+   pas un chiffre au hasard, et il est render-prouvé. Mais « print-safe » ≠ « press-ready » :
+   RGB, PNG, pas de fond perdu, pas de CMYK. La spec §5 le dit au lieu de le laisser croire.
+   **Accepté et écrit.**
+
+6. **Un run print sur des données géographiques n'a rien à choisir.**
+   *Arbitrage :* conséquence de `LOOP_BUILDABLE_ENGINES = ["chart-native"]`, pas de cette
+   tranche — et le refus est **loud** (le cerveau marque les formes non constructibles, et
+   `chooseForm` refuse). Rien à corriger ici, mais c'est ce que rencontrera le premier vrai
+   article carto+print. **Constaté au run réel, reporté.**
+
+7. **`normalizeChannel("print")` a changé de réponse** (`article-web` → `print-page`).
+   *Arbitrage :* c'est le bug de l'issue, pas une régression : l'ancienne réponse répondait à
+   une demande d'impression par un PNG écran 72 dpi. Un appelant qui écrivait « print » en
+   voulant dire « web » recevra désormais une boîte print — mais ce n'est pas ce qu'il a écrit.
+   Test `skills/splash/tests/channel.test.ts` mis à jour avec la raison. **Changement voulu.**
+
+8. **Trois fichiers hors du périmètre annoncé ont été touchés** :
+   `skills/splash/src/channel.ts` (alias print), `skills/splash/tests/channel.test.ts` et
+   `skills/dw-chart/{src/export-aspect.ts,tests/export-aspect.test.ts}` (Datawrapper refuse le
+   channel print par son nom au lieu de caster sur une boîte inexistante).
+   *Arbitrage :* aucun n'est dans la liste interdite, aucun n'est le fichier partagé avec
+   l'autre agent, et les laisser tels quels signifiait soit un test rouge, soit un `TypeError`
+   sur `box.width`. **Assumé, chacun commenté sur place.**
+
+9. **La destination et l'aspect ne sont pas hachés dans `provenanceHash`** (seul le channel
+   effectif l'est).
+   *Arbitrage :* la correspondance channel ↔ (destination, aspect) est une bijection tenue par
+   un test de round-trip sur `ALL_CHANNELS`. Si un jour deux couples partageaient un channel,
+   la provenance cesserait de les distinguer. Le garde-fou est ce test ; **il doit rester**.
+   **Accepté, dépendance nommée.**
