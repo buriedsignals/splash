@@ -40,6 +40,32 @@ export const VIDEO_SNIPPET_TEMPLATE =
 // passed through — a narrower pattern was the original defect (fix round 1, critical 1).
 const PLACEHOLDER = /\{([^{}]+)\}/g;
 
+// A DOUBLED BRACE IS A TYPO, NOT AN ESCAPE SYNTAX. The ruling, written down because the module
+// used to have none and the silence is what shipped the defect: `{{width}}` rendered `{700}` —
+// the inner pair substituted, the outer pair published — which is the exact thing the header
+// above says this module exists to prevent. Reading it as an escape would mean the ONE way to
+// get a literal "{width}" into published HTML is a feature of the module that refuses it
+// everywhere else, so it is refused instead: whoever fills `{{…}}` (Mustache, Handlebars, a CMS
+// pass of its own) is not Splash, and half-filling somebody else's syntax is worse than saying so.
+//
+// Stated as the general rule rather than as a special case for `{{…}}`, because the doubled
+// brace is one shape of one defect: EVERY brace in a template must belong to a placeholder
+// Splash fills. `{url}}` shipped a trailing `}` the same way and was just as silent. Checked on
+// the TEMPLATE, never on the rendered output — editorial text is substituted in, and a title
+// that legitimately contains a brace must not be read as a broken template.
+const DOUBLED = /\{\{[^{}]*\}\}/g;
+
+/** What is wrong with the template's braces, phrased for the newsroom — or null if nothing is. */
+function strayBraceProblem(template: string): string | null {
+  if (!/[{}]/.test(template.replace(PLACEHOLDER, ""))) return null;
+  // Named when they can be named: a newsroom fixes what it is shown, and the doubled token is
+  // the shape it will actually recognise in its own template.
+  const doubled = template.match(DOUBLED);
+  return doubled
+    ? `carries ${doubled.join(", ")}, and a doubled brace is a typo rather than an escape`
+    : "carries a brace that is not part of a placeholder";
+}
+
 // Every substituted value lands inside an HTML attribute. Editorial text (a title quoting a
 // source, a credit with an ampersand) is attacker-adjacent the moment it reaches a browser, so
 // nothing is trusted — the URL included (fix round 1, critical 2).
@@ -67,6 +93,18 @@ export function renderSnippet(input: SnippetInput): VerbResult<string> {
         : IMAGE_SNIPPET_TEMPLATE
       : (input.template ??
         (responsive ? RESPONSIVE_TEMPLATE : DEFAULT_SNIPPET_TEMPLATE));
+
+  // Braces first, before any other reading of the template. `"{{height}}".includes("{height}")`
+  // is true, so the responsive rule below would otherwise answer a malformed template by
+  // sending the newsroom to fix its sizing — the wrong instruction for the actual defect.
+  const braceProblem = strayBraceProblem(template);
+  if (braceProblem)
+    return fail(
+      "invalid-request",
+      `snippet: the delivery template ${braceProblem} — Splash fills single-brace placeholders ` +
+        `only, so every brace has to belong to one of them; a brace that does not would be ` +
+        `published to the reader exactly as it stands`,
+    );
 
   // A responsive sizing rule and a custom template that still demands {height} contradict each
   // other: only the newsroom can resolve which one wins, so this is a refusal, not a silent

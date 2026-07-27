@@ -117,3 +117,36 @@ justement séparé de `deliver` pour que la décision survive à un échec de pu
 l'enregistrement **livré** qui porte la revendication. 3 tests, dont la borne négative
 (`requested` seul ne déclenche rien). Aucun autre test de la suite n'a bougé : rien en production
 ne produisait cet état — c'était un trou d'expression, pas un bug vivant.
+
+---
+
+## 5. `{{width}}` rendait `{700}` *(fermé — accolade doublée = faute de frappe)*
+
+`lib/delivery/snippet.ts` substitue les placeholders à une seule accolade, donc une accolade
+doublée laissait la paire **extérieure** dans la sortie : `{{width}}` → `{700}`, publié tel quel.
+Sa propre note de résidu le dit mieux que nous : « la classe même de défaut que ce module existe
+pour empêcher ».
+
+**Décision, écrite en commentaire dans le module** (il n'en avait aucune, et ce silence est ce qui
+a livré le défaut) : `{{…}}` est une **faute de frappe, pas une syntaxe d'échappement**. Lu comme
+un échappement, il ferait du seul moyen d'obtenir un `{width}` littéral dans du HTML publié une
+*fonctionnalité* du module qui le refuse partout ailleurs — incohérent. Et si c'est du Mustache /
+Handlebars collé depuis un CMS, celui qui remplit `{{…}}` n'est pas Splash : remplir à moitié la
+syntaxe de quelqu'un d'autre est pire que de le dire.
+
+Formulé en **règle générale** plutôt qu'en cas particulier, parce que l'accolade doublée est une
+forme d'un seul défaut : *toute* accolade d'un gabarit doit appartenir à un placeholder que Splash
+remplit. `{url}}` publiait un `}` orphelin, aussi silencieusement. La garde retire les
+placeholders connus et refuse s'il reste une accolade ; elle est appliquée au **gabarit**, jamais
+à la sortie rendue — le texte éditorial est substitué dedans, et un titre qui contient
+légitimement une accolade ne doit pas être lu comme un gabarit cassé. Elle passe **avant** la
+règle `responsive`/`{height}` : `"{{height}}".includes("{height}")` est vrai, et le journaliste
+serait envoyé réparer son dimensionnement au lieu de sa frappe. Le message nomme les jetons
+doublés quand il y en a — on répare ce qu'on voit.
+
+Un cas a démenti une hypothèse au passage : un gabarit à base de `<script>` (le script d'embed
+responsive, un gabarit maison plausible) **était déjà refusé** avant ce changement — son
+`{e[r].y=1}` se lit comme un placeholder introuvable. Le refus n'est pas neuf ; il nomme
+maintenant la vraie raison. Le test qui l'affirmait « accepté » était faux et a été corrigé avant
+d'écrire le code, pas après. 5 tests, dont la borne négative (genre `file`, qui ne consulte jamais
+le gabarit).

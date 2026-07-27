@@ -186,6 +186,93 @@ describe("renderSnippet by genre", () => {
     expect((r as { value: string }).value.startsWith("<img ")).toBe(true);
   });
 
+  // --- doubled braces (residual sweep, 2026-07-27) ---
+  //
+  // `{{width}}` used to render `{700}`: the inner pair substituted, the outer pair left in the
+  // published HTML — the very defect this module opens by saying it refuses. The ruling is in
+  // snippet.ts: a doubled brace is a TYPO, never an escape.
+  it("should refuse a doubled-brace placeholder rather than leaving the outer pair in the output", () => {
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: META,
+      format: "interactive",
+      template: '<iframe src="{url}" width="{{width}}"></iframe>',
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    const message = (r as { message: string }).message;
+    expect(message).toContain("{{width}}");
+    expect(message).not.toContain("{700}");
+  });
+
+  it("should refuse a doubled-brace token even when nothing could fill it", () => {
+    // A Mustache/Handlebars template pasted in whole: whoever fills `{{campaign}}` is not
+    // Splash, and half-filling somebody else's syntax is worse than saying so.
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: META,
+      format: "interactive",
+      template: '<iframe src="{url}" data-x="{{campaign}}"></iframe>',
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("{{campaign}}");
+  });
+
+  it("should name the doubled brace rather than the responsive rule for {{height}}", () => {
+    // `"{{height}}".includes("{height}")` is true, so the responsive check would otherwise
+    // answer first and send the newsroom to fix the wrong thing.
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: { ...META, height: "responsive" },
+      format: "interactive",
+      template: '<iframe src="{url}" height="{{height}}"></iframe>',
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("{{height}}");
+  });
+
+  it("should say nothing about a template the file genre never consults", () => {
+    const r = renderSnippet({
+      url: "https://assets.example/primes.png",
+      id: "primes",
+      metadata: META,
+      format: "static",
+      template: '<iframe src="{{url}}"></iframe>',
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("should refuse a single stray closing brace too — same defect, same silence", () => {
+    // `{url}}` used to publish the URL followed by a bare `}`. Not the doubled-brace shape, the
+    // same class of damage: a brace that survives substitution and ships.
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: META,
+      format: "interactive",
+      template: '<iframe src="{url}}"></iframe>',
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+  });
+
+  it("should refuse a script-shaped template for the brace it cannot account for", () => {
+    // A responsive-embed script is a plausible house template, and it was ALREADY unusable
+    // here — its `{e[r].y=1}` reads as an unfillable placeholder. The refusal is not new; it
+    // now names the accurate reason (braces that belong to nobody) instead of pointing at a
+    // fragment of JavaScript as though it were a placeholder name.
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: META,
+      format: "interactive",
+      template:
+        '<iframe src="{url}"></iframe><script>for(var r=0;r<e.length;r++){if(e[r].x){e[r].y=1}}</script>',
+    });
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+  });
+
   it("should still apply the newsroom's own template for the embed genre", () => {
     const r = renderSnippet({
       url: "https://a.example.pages.dev",
