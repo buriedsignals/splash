@@ -150,3 +150,36 @@ responsive, un gabarit maison plausible) **était déjà refusé** avant ce chan
 maintenant la vraie raison. Le test qui l'affirmait « accepté » était faux et a été corrigé avant
 d'écrire le code, pas après. 5 tests, dont la borne négative (genre `file`, qui ne consulte jamais
 le gabarit).
+
+---
+
+## 6. L'autre moitié du couple source-consommateur *(non traité — l'agent s'est arrêté ici)*
+
+`lib/verify/review.ts` émet un constat `source-missing` depuis un `sourceName` qui **arrive sur le
+payload du verbe `review`**, pas dérivé du run. Le câblage source avait laissé cette moitié en
+expliquant qu'elle ne dérive rien du run ; la question rouverte ici était de savoir si, maintenant
+que `lib/source` existe, elle peut lire honnêtement la source déclarée.
+
+**Non tranché.** Le chantier s'est arrêté (erreur d'infrastructure) au moment d'ouvrir ce point, et
+c'est le seul des six qui demande un jugement plutôt qu'un correctif. Il reste ouvert **avec sa
+question**, qui n'est pas « comment câbler » mais : *le relecteur doit-il voir le run ?* Le contrat
+de `review` est délibérément aveugle à l'orchestration (c'est l'indépendance de l'issue #9 — ne pas
+donner au relecteur de quoi noter le processus plutôt que l'artefact). Lui passer le ledger de
+sources pourrait rouvrir précisément ce que cette indépendance ferme. À traiter avec la tranche
+Verify, pas isolément.
+
+---
+
+## Ce qu'un parcours réel a ajouté au §3, le même jour
+
+Le §3 conclut, par lecture, qu'un invariant « `why` non vide » casserait des chemins réels. **Un
+parcours de bout en bout sur `main` @ `687dadf`, conduit uniquement par la façade CLI, le confirme
+par la mesure** : sur un vrai cas (primes maladie, 6 cantons), les trois options offertes portent
+toutes `whySource` renseigné et **`why: ''`** — parce que `applyPhrasing` n'a **aucun appelant de
+production**. Poser l'invariant aujourd'hui ferait échouer l'écriture du manifest sur le seul
+parcours qui fonctionne de bout en bout, y compris jusqu'à un embed Cloudflare réellement servi.
+
+**Donc l'ordre est contraint, et c'est le vrai enseignement du §3 :** d'abord donner un appelant à
+`applyPhrasing` sur le chemin hôte, ensuite seulement verrouiller l'invariant. L'invariant sans le
+phrasage transformerait une promesse non tenue en panne dure.
+
