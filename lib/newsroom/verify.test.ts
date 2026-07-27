@@ -13,9 +13,11 @@ import {
 // condemned for life.
 async function offline<T>(run: () => Promise<T>): Promise<T> {
   const realFetch = globalThis.fetch;
+  // Through `unknown`: a bare cast fails tsc here (lib/ typechecks its tests, unlike install/),
+  // because a throwing thunk shares no members with the real fetch — including `preconnect`.
   globalThis.fetch = (() => {
     throw new Error("network down");
-  }) as typeof fetch;
+  }) as unknown as typeof fetch;
   try {
     return await run();
   } finally {
