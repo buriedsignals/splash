@@ -261,7 +261,17 @@ mérite d'être noté : un run print sur des données géo n'a **rien** à chois
    l'autre agent, et les laisser tels quels signifiait soit un test rouge, soit un `TypeError`
    sur `box.width`. **Assumé, chacun commenté sur place.**
 
-9. **La destination et l'aspect ne sont pas hachés dans `provenanceHash`** (seul le channel
+9. **Re-planifier un élément SUPPRIME son offre** quand sa nouvelle destination ne peut pas
+   porter le format épinglé.
+   *Arbitrage :* trouvé à l'auto-revue, pas au run — re-planifier un élément « interactif
+   choisi » vers `print` produisait un manifeste que `assertInvariants` refuse d'écrire : le
+   plan échouait sur un acte légitime. L'offre part et `nextActions` renvoie sur `propose`,
+   le mécanisme d'invalidation que `revise.ts` a déjà établi. Le journaliste **re-choisit** sa
+   forme pour la nouvelle destination — c'est le comportement voulu (un interactif n'a pas
+   d'équivalent imprimé), mais c'est bien une perte de travail non annoncée par une phrase.
+   **Gardé mécaniquement, testé, non annoncé côté desk.**
+
+10. **La destination et l'aspect ne sont pas hachés dans `provenanceHash`** (seul le channel
    effectif l'est).
    *Arbitrage :* la correspondance channel ↔ (destination, aspect) est une bijection tenue par
    un test de round-trip sur `ALL_CHANNELS`. Si un jour deux couples partageaient un channel,
