@@ -15,6 +15,7 @@ import {
   NEWSROOM_CAPABILITIES,
   type CapabilitySettingField,
 } from "../../lib/newsroom/capabilities.ts";
+import { RUNTIMES } from "../configurator-core.ts";
 import { isSet } from "../../lib/newsroom/probe.ts";
 import type {
   CapabilityState,
@@ -197,13 +198,21 @@ export function submittedState(
       ...(lastVerified ? { lastVerified } : {}),
     };
   }
+  // The payload names things; the registry decides whether those names exist. A publisher or a
+  // runtime is read back out of this file to build a path or to launch a program, so an unknown
+  // one is dropped here rather than persisted and dealt with later.
+  const publisher =
+    sub.publisher && NEWSROOM_CAPABILITIES[sub.publisher]?.kind === "delivery"
+      ? sub.publisher
+      : undefined;
+  const runtime = sub.runtime && RUNTIMES[sub.runtime] ? sub.runtime : undefined;
   return {
     ...previous,
     schemaVersion: 1,
-    runtime: sub.runtime || previous.runtime,
+    runtime: runtime ?? previous.runtime,
     uiLang: sub.uiLang || previous.uiLang,
     capabilities,
-    ...(sub.publisher ? { publisher: sub.publisher } : {}),
+    ...(publisher ? { publisher } : {}),
   };
 }
 
@@ -214,17 +223,22 @@ export function submittedState(
  * can keep editing.
  */
 export function profileMarkdown(facts: NewsroomFacts): string {
+  // Same reflex as the .env quoting: a value that carries a quote or a newline would not corrupt
+  // a shell here, it would forge EXTRA FRONTMATTER FIELDS in a file that governs what gets
+  // published (requiredSigners lives in it). Both characters go.
+  const scalar = (raw: string): string =>
+    raw.trim().replace(/[\r\n"]/g, "");
   const lines = ["---"];
   if (isSet(facts.color)) {
     lines.push("palette:");
-    lines.push(`  - "${facts.color!.trim()}"   # your house colour`);
+    lines.push(`  - "${scalar(facts.color!)}"   # your house colour`);
   }
   if (isSet(facts.name)) {
     lines.push("source:");
-    lines.push(`  name: "${facts.name!.trim()}"`);
-    if (isSet(facts.url)) lines.push(`  url: "${facts.url!.trim()}"`);
+    lines.push(`  name: "${scalar(facts.name!)}"`);
+    if (isSet(facts.url)) lines.push(`  url: "${scalar(facts.url!)}"`);
   }
-  lines.push(`lang: "${(facts.lang || "en").trim()}"`);
+  lines.push(`lang: "${scalar(facts.lang || "en")}"`);
   lines.push("---");
   lines.push("");
   lines.push("# Newsroom profile");

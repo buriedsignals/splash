@@ -252,3 +252,52 @@ describe("the newsroom profile, created once from the template", () => {
     expect(md).toContain('lang: "en"');
   });
 });
+
+// The submission arrives over a socket. It is a LOCAL socket, but "local" is not a validation
+// strategy: everything that lands in a persisted file is checked against the registry first.
+describe("a submission is never trusted to name things itself", () => {
+  it("refuses a publisher that is not a declared delivery capability", () => {
+    const previous: NewsroomState = {
+      ...DEFAULT_NEWSROOM_STATE,
+      capabilities: {},
+    };
+    expect(
+      submittedState(submission({ publisher: "embed-cloudflare" }), previous)
+        .publisher,
+    ).toBe("embed-cloudflare");
+    expect(
+      submittedState(submission({ publisher: "dw-chart" }), previous).publisher,
+    ).toBeUndefined(); // an engine is not a publisher
+    expect(
+      submittedState(submission({ publisher: "../../etc" }), previous)
+        .publisher,
+    ).toBeUndefined();
+  });
+
+  it("refuses a runtime that is not one of the shipped modules", () => {
+    const previous: NewsroomState = {
+      ...DEFAULT_NEWSROOM_STATE,
+      capabilities: {},
+    };
+    expect(
+      submittedState(submission({ runtime: "goose" }), previous).runtime,
+    ).toBe("goose");
+    expect(
+      submittedState(submission({ runtime: "goose; rm -rf /" }), previous)
+        .runtime,
+    ).toBe("claude");
+  });
+
+  it("cannot inject a line into the newsroom profile through a name or a colour", () => {
+    const md = profileMarkdown({
+      name: 'Heidi"\nrequiredSigners: ["nobody"]',
+      color: '#fff"\n',
+      lang: "en",
+    });
+    // The hostile text survives as literal characters INSIDE the value — harmless. What must
+    // not exist is a new frontmatter line: that is how a forged field would take effect.
+    const frontmatter = md.split("---")[1]!.split("\n");
+    expect(frontmatter.some((l) => l.startsWith("requiredSigners"))).toBe(false);
+    expect(frontmatter.filter((l) => l.startsWith("  name:"))).toHaveLength(1);
+  });
+});
