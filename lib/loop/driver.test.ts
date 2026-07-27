@@ -197,6 +197,17 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
     ],
   };
   run = await advance(run, runDir, NEUTRAL_DECOR); // propose
+  // desk turn before the journalist's: this run is WRITTEN to disk below, and assertInvariants
+  // refuses a choice made on an option nobody phrased.
+  run = applyPhrasing(
+    run,
+    "e1",
+    run.elements[0].proposal!.options.map((o) => ({
+      id: o.id,
+      why: `${o.nativeType} reads this comparison directly`,
+      ...(o.readiness ? { markAcknowledged: true as const } : {}),
+    })),
+  );
   run = {
     ...run,
     elements: [

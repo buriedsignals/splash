@@ -556,16 +556,25 @@ export function assertInvariants(run: RunManifest): void {
         `invariant: element ${el.id} chosenId '${el.proposal.chosenId}' not among options`,
       );
     }
-    // NOT asserted here, and deliberately: "a CHOSEN option must carry a non-empty `why`".
-    // It is the right rule — applyPhrasing (lib/loop/phrase.ts) refuses an empty why and
-    // skills/splash/SKILL.md says never to persist one — but this codebase cannot honour it
-    // yet, and the measurement is worth more than the intention (residual sweep 2026-07-27,
-    // docs/superpowers/specs/2026-07-27-residual-sweep-design.md §3). propose() writes EVERY
-    // option's why empty on purpose (the brain hands over grounding, the desk writes the
-    // language), phrasing happens ABOVE lib/ in skills/splash, and no façade command phrases —
-    // so lib/host's choose-form would become structurally unreachable for the non-JS host the
-    // façade exists for. Asserting it here breaks lib/host/journey.test.ts and
-    // lib/loop/driver.test.ts:219. Where it belongs: a phrasing step the façade can call.
+    // A CHOSEN option must carry a non-empty `why`. An option recorded as chosen on an empty
+    // sentence says a journalist chose something nobody showed them.
+    //
+    // This was PARKED, with its reason, and the reason has been removed rather than overruled
+    // (residual sweep 2026-07-27, §3): the rule was right and the codebase could not honour it,
+    // because propose() writes every `why` empty on purpose (the brain hands over grounding, the
+    // desk writes the language) and NO façade command phrased — so asserting it made lib/host's
+    // choose-form structurally unreachable for the very host the façade exists for. The sweep
+    // spelled out the order this had to be closed in: "first give applyPhrasing a caller on the
+    // host path, then lock the invariant". `phrase --run <dir>` (lib/host/drive.ts's
+    // phraseOfferIn) is that caller, and it lands BEFORE this line in the same slice.
+    //
+    // Scoped to the CHOSEN option, never to the offer: a fresh offer is legitimately unwritten,
+    // and persisting one is what every `advance`(propose) does.
+    const chosen = chosenOption(el);
+    if (chosen && chosen.why.trim() === "")
+      throw new Error(
+        `invariant: element ${el.id} chose '${chosen.id}', whose why is empty — an option nobody phrased was never shown to anyone`,
+      );
     if (el.artifact && !el.angle)
       throw new Error(
         `invariant: element ${el.id} has an artifact without an angle`,

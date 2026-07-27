@@ -1,9 +1,13 @@
 import { test, expect } from "bun:test";
+import { existsSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   gateStateOf,
   assertInvariants,
   nextActionsForElement,
   provenanceHash,
+  writeManifest,
   type RunManifest,
   type RunElement,
 } from "./manifest";
@@ -275,4 +279,84 @@ test("an element that already carries a choice is not sent back to phrase", () =
     },
   };
   expect(nextActionsForElement(run(el), el)).toEqual(["produce"]);
+});
+
+// --- the chosen option must carry a why (host-journey slice) --------------------------------
+// Parked by the residual sweep of 2026-07-27 with its reason: the rule was right, and asserting
+// it made lib/host's choose-form STRUCTURALLY UNREACHABLE, because no façade command could
+// phrase. That command now exists (`phrase`), so the ordering the sweep spelled out — caller
+// first, invariant second — is satisfied and the rule can be enforced.
+
+test("assertInvariants refuses a choice made on an option nobody wrote", () => {
+  const el: RunElement = {
+    id: "e1",
+    angle,
+    proposal: {
+      options: [
+        { id: "bar", nativeType: "bar", why: "" },
+        { id: "lollipop", nativeType: "lollipop", why: "une sucette allège" },
+      ],
+      excluded: [],
+      chosenId: "bar",
+    },
+  };
+  expect(() => assertInvariants(run(el))).toThrow(/e1.*bar|bar.*e1/);
+});
+
+test("assertInvariants refuses a choice made on a whitespace-only why", () => {
+  const el: RunElement = {
+    id: "e1",
+    angle,
+    proposal: {
+      options: [{ id: "bar", nativeType: "bar", why: "   \n" }],
+      excluded: [],
+      chosenId: "bar",
+    },
+  };
+  expect(() => assertInvariants(run(el))).toThrow(/why/i);
+});
+
+test("assertInvariants accepts a choice made on an option that was written", () => {
+  const el: RunElement = {
+    id: "e1",
+    angle,
+    proposal: {
+      options: [{ id: "bar", nativeType: "bar", why: "une barre compare" }],
+      excluded: [],
+      chosenId: "bar",
+    },
+  };
+  expect(() => assertInvariants(run(el))).not.toThrow();
+});
+
+// The negative bound: a FRESH offer is legitimately unwritten, and nothing has been chosen from
+// it. Writing that manifest is exactly what `advance`(propose) does on every run.
+test("assertInvariants accepts an unwritten offer while nothing is chosen", () => {
+  const el: RunElement = {
+    id: "e1",
+    angle,
+    proposal: {
+      options: [
+        { id: "bar", nativeType: "bar", why: "" },
+        { id: "lollipop", nativeType: "lollipop", why: "" },
+      ],
+      excluded: [],
+    },
+  };
+  expect(() => assertInvariants(run(el))).not.toThrow();
+});
+
+test("writeManifest carries the refusal — an unwritten choice never reaches disk", () => {
+  const dir = mkdtempSync(join(tmpdir(), "loop-why-invariant-"));
+  const el: RunElement = {
+    id: "e1",
+    angle,
+    proposal: {
+      options: [{ id: "bar", nativeType: "bar", why: "" }],
+      excluded: [],
+      chosenId: "bar",
+    },
+  };
+  expect(() => writeManifest(join(dir, "run.json"), run(el))).toThrow();
+  expect(existsSync(join(dir, "run.json"))).toBe(false);
 });
