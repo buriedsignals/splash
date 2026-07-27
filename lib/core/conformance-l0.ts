@@ -30,6 +30,13 @@
 // does not authorize. See task-6-report.md for the full note.
 
 import { contrastRatio, MIN_CONTRAST } from "./contrast";
+// The consequences table of the declared source class, and the URL specificity rule that goes
+// with it. Both are leaf modules (they import nothing from lib/core), so reading them from here
+// closes no cycle — only lib/source/furniture.ts points back at lib/core, and it is not on this
+// path.
+import { requirementsFor } from "../source/requirements";
+import { sourceUrlVerdict } from "../source/url";
+import type { SourceKind } from "../source/kinds";
 
 export interface ConformanceL0Header {
   /** the chart/map's insight title */
@@ -37,6 +44,18 @@ export interface ConformanceL0Header {
   /** name required (anti-fabrication + attribution); url optional (E2 — an honest
    *  prose source or a newsroom's own reporting legitimately has none) */
   source: { name?: string; url?: string };
+  /**
+   * The DECLARED class of that source (lib/source). OPT-IN, same convention as altInsight and
+   * textColors below: absent, the flat historical rule above applies unchanged.
+   *
+   * Present, the rules come from the one consequences table every gate reads — which is how the
+   * contradiction issue #7 opens with stops existing. This module said "url optional" for every
+   * source while the render-review called a named dataset without a public URL incomplete;
+   * neither could express the difference between "no URL exists" and "the URL was not
+   * collected". With the class declared, incomplete means exactly
+   * `requirementsFor(kind).url === "required"` — nothing else.
+   */
+  sourceKind?: SourceKind;
   /**
    * WCAG 1.1.1 — alt text must state the INSIGHT, not the structure. OPT-IN: only
    * enforced when the caller DECLARES the key (even with an undefined value) —
@@ -65,8 +84,33 @@ export function conformanceL0(input: ConformanceL0Header): string[] {
   if (/[A-Za-z]/.test(title) && title === title.toUpperCase())
     v.push("title is ALL CAPS (use sentence case)");
 
-  // 2. Source cited: NAME required, URL optional.
-  if (!input.source?.name?.trim()) v.push("missing source name");
+  // 2. Source cited. Without a declared class: NAME required, URL optional (the historical
+  //    rule, kept byte-identical for every caller that has no class to give). With one: the
+  //    requirements row decides, field by field.
+  const name = input.source?.name?.trim() ?? "";
+  const url = input.source?.url?.trim() ?? "";
+  if (input.sourceKind === undefined) {
+    if (!name) v.push("missing source name");
+  } else {
+    const rules = requirementsFor(input.sourceKind);
+    if (rules.label === "required" && !name) v.push("missing source name");
+    if (rules.label === "forbidden" && name)
+      v.push(
+        `a "none" source names no origin ("${name}") — a visual with a source to cite is not "none"`,
+      );
+    if (rules.url === "required" && !url)
+      v.push(
+        `missing source URL — a ${input.sourceKind} source must cite the specific dataset or page`,
+      );
+    if (rules.url === "forbidden" && url)
+      v.push(
+        `a ${input.sourceKind} source publishes no URL ("${url}") — an internal address is never rendered`,
+      );
+    if (url && sourceUrlVerdict(url) !== "specific")
+      v.push(
+        `source URL "${url}" does not point at a dataset or a page — cite the exact document, or omit it`,
+      );
+  }
 
   // 3. Alt text = the insight (WCAG 1.1.1), opt-in.
   if ("altInsight" in input) {
