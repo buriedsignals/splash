@@ -115,10 +115,14 @@ describe("the CLI façade — JSON in, JSON out, stable exit codes", () => {
     expect(body.code).toBe("invalid-request");
   });
 
-  it("a declared but unimplemented verb exits 1 with not-implemented", async () => {
+  // `capture` used to answer not-implemented here. The verify layer gave it a body
+  // (lib/core/verbs/capture.ts), so an empty payload is now refused for being MALFORMED
+  // rather than for the verb not existing — the exit code and the JSON-body contract this
+  // test really guards are unchanged.
+  it("a declared verb with a malformed payload exits 1 with invalid-request", async () => {
     const r = await run(["verb", "capture"], JSON.stringify({}));
     expect(r.code).toBe(1);
-    expect(JSON.parse(r.out).code).toBe("not-implemented");
+    expect(JSON.parse(r.out).code).toBe("invalid-request");
   });
 
   it("unparseable stdin exits 2, and says so as JSON", async () => {
