@@ -1,7 +1,8 @@
 // preflight.test.ts — the per-engine readiness manifest. Pure: env and dep resolution are
 // injected, so these tests never depend on the machine's real .env or node_modules.
 import { describe, expect, it } from "bun:test";
-import { serializeEnv } from "../../../install/configurator-core";
+import { NEWSROOM_CAPABILITIES } from "../../../lib/newsroom/capabilities";
+import { envUpdates } from "../../../install/preflight/serialize";
 import {
   EMBED_DELIVERY_ENV,
   ENGINE_REQUIREMENTS,
@@ -111,21 +112,23 @@ describe("enginePreflightStatus (tri-state, Spotlight A2)", () => {
 // Single source of truth with the installer: every env var the manifest (or the embed
 // delivery form) names must be one the installer's configurator actually writes.
 describe("installer parity", () => {
-  it("should only require env vars the installer's configurator writes", () => {
-    const written = serializeEnv({
-      runtime: "claude",
-      maptiler: "x",
-      datawrapper: "x",
-      anthropic: "x",
-      embedProject: "x",
-      cloudflareToken: "x",
-      cloudflareAccount: "x",
-    });
+  it("should only require env vars the setup page actually writes", () => {
+    // Every field the capability registry declares, filled in: what the setup page would write
+    // for a newsroom that configured everything. The MapTiler mirror is the serializer's job,
+    // which is precisely why this parity is asserted against it rather than against a list.
+    const credentials: Record<string, string> = {};
+    for (const cap of Object.values(NEWSROOM_CAPABILITIES))
+      for (const field of cap.settingsFields ?? []) credentials[field.name] = "x";
     const writtenNames = new Set(
-      written
-        .split("\n")
-        .filter(Boolean)
-        .map((line) => line.split("=")[0]),
+      Object.keys(
+        envUpdates({
+          runtime: "claude",
+          uiLang: "en",
+          anthropic: "x",
+          enabled: [],
+          credentials,
+        }),
+      ),
     );
     const required = new Set<string>(EMBED_DELIVERY_ENV);
     for (const req of Object.values(ENGINE_REQUIREMENTS))

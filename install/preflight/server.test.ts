@@ -1,0 +1,235 @@
+import { afterAll, describe, expect, it } from "bun:test";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { MODEL_SCRIPT_ID } from "./copy.ts";
+
+const ENTRY = join(import.meta.dir, "..", "configurator.ts");
+const roots: string[] = [];
+
+function root(): string {
+  const d = mkdtempSync(join(tmpdir(), "splash-preflight-"));
+  roots.push(d);
+  return d;
+}
+
+afterAll(() => {
+  for (const d of roots) rmSync(d, { recursive: true, force: true });
+});
+
+async function start(
+  dest: string,
+): Promise<{ port: number; proc: Bun.Subprocess }> {
+  const proc = Bun.spawn(["bun", ENTRY], {
+    cwd: dest,
+    // No provider is reachable from these cases (every credential is blank, which short-circuits
+    // before any fetch), and SPLASH_NO_OPEN keeps the browser out of a test run.
+    env: { ...process.env, SPLASH_NO_OPEN: "1" },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const reader = (proc.stdout as ReadableStream<Uint8Array>).getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  const deadline = Date.now() + 10000;
+  while (Date.now() < deadline) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value);
+    const m = buffer.match(/127\.0\.0\.1:(\d+)/);
+    if (m) {
+      reader.releaseLock();
+      return { port: Number(m[1]), proc };
+    }
+  }
+  proc.kill();
+  throw new Error(
+    "the setup page never printed a port; stdout was:\n" + buffer,
+  );
+}
+
+async function withServer<T>(
+  dest: string,
+  run: (port: number) => Promise<T>,
+): Promise<T> {
+  const { port, proc } = await start(dest);
+  try {
+    return await run(port);
+  } finally {
+    proc.kill();
+  }
+}
+
+function submission(over: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    runtime: "claude",
+    uiLang: "en",
+    contentLang: "en",
+    anthropic: "",
+    credentials: {},
+    enabled: [],
+    publisher: "zip",
+    verified: {},
+    ...over,
+  });
+}
+
+describe("the setup page as served", () => {
+  it("serves the real page file, with the model embedded for the client", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/`);
+      expect(r.status).toBe(200);
+      expect(r.headers.get("content-type")).toContain("text/html");
+      const html = await r.text();
+      expect(html).toContain(`id="${MODEL_SCRIPT_ID}"`);
+      const payload = html.slice(
+        html.indexOf(`id="${MODEL_SCRIPT_ID}"`),
+        html.indexOf("</script>", html.indexOf(`id="${MODEL_SCRIPT_ID}"`)),
+      );
+      expect(payload).toContain('"runtimes"');
+      expect(payload).toContain('"engines"');
+    });
+  });
+
+  it("serves the stylesheet and a bundled client module", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const css = await fetch(`http://127.0.0.1:${port}/page.css`);
+      expect(css.status).toBe(200);
+      expect(css.headers.get("content-type")).toContain("text/css");
+
+      const js = await fetch(`http://127.0.0.1:${port}/client.js`);
+      expect(js.status).toBe(200);
+      expect(js.headers.get("content-type")).toContain("javascript");
+      // Bundled, not served raw: the browser must never receive TypeScript.
+      const body = await js.text();
+      expect(body).not.toContain("import type");
+      expect(body.length).toBeGreaterThan(500);
+    });
+  });
+
+  it("answers a malformed body with a clean 400, never Bun's 500 overlay", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: "POST",
+        body: "not-json{{{",
+      });
+      expect(r.status).toBe(400);
+    });
+  });
+
+  it("answers an unknown path with 404", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      expect((await fetch(`http://127.0.0.1:${port}/nope`)).status).toBe(404);
+    });
+  });
+});
+
+describe("what a submission writes", () => {
+  it("writes .env and newsroom.json — and the runtime only into newsroom.json", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({
+          runtime: "goose",
+          enabled: ["dw-chart", "zip"],
+          credentials: { DATAWRAPPER_API_TOKEN: "dw-token" },
+        }),
+      });
+      expect(r.status).toBe(200);
+    });
+    const env = readFileSync(join(dest, ".env"), "utf8");
+    expect(env).toContain('DATAWRAPPER_API_TOKEN="dw-token"');
+    const state = JSON.parse(readFileSync(join(dest, "newsroom.json"), "utf8"));
+    expect(state.runtime).toBe("goose");
+    expect(state.uiLang).toBe("en");
+    expect(state.capabilities["dw-chart"].enabled).toBe(true);
+    expect(state.publisher).toBe("zip");
+    // The credential has ONE home.
+    expect(JSON.stringify(state)).not.toContain("dw-token");
+  });
+
+  it("retires the legacy .splash-runtime once the decor owns the runtime", async () => {
+    const dest = root();
+    writeFileSync(join(dest, ".splash-runtime"), "codex\n");
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({ runtime: "codex" }),
+      });
+      expect(r.status).toBe(200);
+    });
+    expect(
+      JSON.parse(readFileSync(join(dest, "newsroom.json"), "utf8")).runtime,
+    ).toBe("codex");
+    expect(existsSync(join(dest, ".splash-runtime"))).toBe(false);
+  });
+
+  it("never erases a key the journalist did not retype", async () => {
+    const dest = root();
+    writeFileSync(
+      join(dest, ".env"),
+      'VITE_MAPTILER_KEY="kept-key"\nMY_OWN_TOOL="mine"\n',
+    );
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({ credentials: { DATAWRAPPER_API_TOKEN: "new" } }),
+      });
+      expect(r.status).toBe(200);
+    });
+    const env = readFileSync(join(dest, ".env"), "utf8");
+    expect(env).toContain('VITE_MAPTILER_KEY="kept-key"');
+    expect(env).toContain('MY_OWN_TOOL="mine"');
+    expect(env).toContain('DATAWRAPPER_API_TOKEN="new"');
+  });
+
+  it("creates the newsroom profile once, and never rewrites an existing one", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({
+          contentLang: "fr",
+          newsroom: { name: "Heidi.news", color: "#0a5c36", lang: "fr" },
+        }),
+      });
+    });
+    const profile = readFileSync(join(dest, "NEWSROOM-PROFILE.md"), "utf8");
+    expect(profile).toContain('name: "Heidi.news"');
+    expect(profile).toContain('lang: "fr"');
+
+    writeFileSync(join(dest, "NEWSROOM-PROFILE.md"), "MINE, HAND EDITED\n");
+    await withServer(dest, async (port) => {
+      await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({
+          newsroom: { name: "Someone else", lang: "de" },
+        }),
+      });
+    });
+    expect(readFileSync(join(dest, "NEWSROOM-PROFILE.md"), "utf8")).toBe(
+      "MINE, HAND EDITED\n",
+    );
+  });
+
+  it("opens on the section a caller pointed at (?section=)", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const html = await (
+        await fetch(`http://127.0.0.1:${port}/?section=embed-cloudflare`)
+      ).text();
+      expect(html).toContain('"focus":"embed-cloudflare"');
+    });
+  });
+});
