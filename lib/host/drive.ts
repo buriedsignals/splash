@@ -11,6 +11,7 @@
 // is that these commands WRITE — and only ever into the run.json the caller named, plus the
 // artifacts the loop's own steps produce beneath it.
 import { join } from "node:path";
+import { confirmAngle, type AngleParts } from "../loop/angle";
 import { chooseForm } from "../loop/choose";
 import { advanceStep } from "../loop/driver";
 import { initRun } from "../loop/init";
@@ -18,6 +19,7 @@ import {
   gateStateOf,
   liveElementFor,
   nextActions,
+  stalenessOf,
   writeManifest,
   type RunElement,
   type RunManifest,
@@ -175,8 +177,9 @@ export async function advanceRun(runDir: string): Promise<HostResponse> {
 }
 
 // Which human turn is owed, in the host's own vocabulary. `next` already told the host what is
-// valid; this says who performs it, which is the piece a host cannot derive from the action name
-// alone (`choose-form` has a command, `confirm-angle` does not).
+// valid; this says who PERFORMS it, which is the piece a host cannot derive from the action name
+// alone. Every human turn now has a command behind it — `confirm-angle` used to end with "and no
+// façade command records it yet", which was the honest report of a hard stop at step 2 of 6.
 function nothingToRun(
   next: ReturnType<typeof nextActions>,
   run: RunManifest,
@@ -185,7 +188,10 @@ function nothingToRun(
   if (action === "choose-form")
     return 'advance: the next act is the journalist\'s — choose a form with "choose-form --run <dir> --option <id>"';
   if (action === "confirm-angle")
-    return "advance: the next act is the journalist's — the angle (takeaway, alt text, unit) has to be confirmed, and no façade command records it yet";
+    return (
+      "advance: the next act is the journalist's — confirm the angle with " +
+      '"confirm-angle --run <dir> --takeaway <s> --alt-insight <s> --unit <s>"'
+    );
   if (action === "show") {
     // "show" covers two very different situations, and telling them apart is the difference
     // between a useful answer and a wrong one: an element that has already been published sits
@@ -198,6 +204,40 @@ function nothingToRun(
     return 'advance: the visual is ready and fresh — there is nothing left to run. Decide where it goes with "request-delivery --run <dir>" to make a delivery step valid';
   }
   return "advance: nothing is valid to do on this run — read it with state --run <dir>";
+}
+
+/**
+ * Record the CONFIRMED ANGLE, and persist it.
+ *
+ * The four parts arrive as named flags, never as a document: the host answers one of four known
+ * questions and never names a key, which is what keeps this from being the "write arbitrary prose
+ * into the manifest" command the decision-surface slice was right to refuse. lib/loop/angle.ts
+ * holds the refusals and the reasoning.
+ */
+export function confirmAngleIn(
+  runDir: string,
+  parts: AngleParts,
+  elementId?: string,
+): HostResponse {
+  return decide(runDir, elementId, (run, el) => {
+    const confirmed = confirmAngle(el, parts);
+    if (!confirmed.ok) return confirmed;
+    // What this decision INVALIDATED, said out loud. Re-confirming is legitimate (it is
+    // lib/loop/revise.ts's back-edge), and the angle is in provenanceHash — so a fresh artifact
+    // becomes stale and the run goes back through produce. The parity spec parked exactly this
+    // omission for `--element` ("nothing warns the host that its decision cancels finished
+    // work"); a silently destructive decision has no place on a surface whose every other
+    // answer is explicit. Absent, never `staled: false`, when there was nothing to stale.
+    const staled =
+      el.artifact != null &&
+      !stalenessOf(run, el) &&
+      stalenessOf(run, confirmed.value);
+    return {
+      ok: true,
+      value: confirmed.value,
+      report: { confirmed: el.id, ...(staled ? { staled: true } : {}) },
+    };
+  });
 }
 
 /** Record the form the journalist chose, and persist it. */

@@ -26,6 +26,7 @@ import { capabilities, HOST_ONLY_VERBS } from "./capabilities";
 import {
   advanceRun,
   chooseFormIn,
+  confirmAngleIn,
   initRunIn,
   requestDeliveryIn,
 } from "./drive";
@@ -196,6 +197,52 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 
+  if (command === "confirm-angle") {
+    // FLAGS, deliberately — the opposite choice from `init` and `phrase`, which read documents.
+    // The angle is free editorial text, and the reason a command may write it is that the host
+    // never names a KEY: it answers one of four known questions. A JSON body would invite "here
+    // is an object"; flags enumerate. lib/loop/angle.ts holds the refusals.
+    const parsed = parseFlags(rest, [
+      "--run",
+      "--takeaway",
+      "--alt-insight",
+      "--unit",
+      "--emphasis",
+      "--element",
+    ]);
+    if (!parsed.ok) usage(parsed.message);
+    const runDir = parsed.flags["--run"];
+    if (!runDir) usage("confirm-angle needs --run <dir>");
+    const takeaway = parsed.flags["--takeaway"];
+    if (!takeaway)
+      usage(
+        "confirm-angle needs --takeaway <s> — the claim the journalist confirmed, which becomes the visual's title",
+      );
+    const altInsight = parsed.flags["--alt-insight"];
+    if (!altInsight)
+      usage(
+        "confirm-angle needs --alt-insight <s> — the accessibility description (WCAG 1.1.1), which states the insight rather than the chart's structure",
+      );
+    const unit = parsed.flags["--unit"];
+    if (!unit)
+      usage(
+        "confirm-angle needs --unit <s> — what the numbers are measured in; for a count, the thing counted",
+      );
+    const r = confirmAngleIn(
+      runDir,
+      {
+        takeaway,
+        altInsight,
+        unit,
+        ...(parsed.flags["--emphasis"]
+          ? { emphasis: parsed.flags["--emphasis"] }
+          : {}),
+      },
+      parsed.flags["--element"],
+    );
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
   if (command === "choose-form") {
     // --element is OPTIONAL and its absence is meaningful: without it the decision lands on the
     // element `next` is talking about (lib/host/drive.ts's selectElement), which is the loop's
@@ -283,7 +330,7 @@ async function main(): Promise<never> {
 
   usage(
     `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, init, ` +
-      `advance, choose-form, request-delivery, verb or newsroom`,
+      `advance, confirm-angle, choose-form, request-delivery, verb or newsroom`,
   );
 }
 
