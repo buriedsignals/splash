@@ -371,13 +371,45 @@ function needsDelivery(run: RunManifest, el: RunElement): boolean {
   );
 }
 
-// State-driven next actions: run-level gates first (orient + honest off-ramp),
-// then the live element's routing. Multi-element aggregation arrives with Task 8;
-// the live path drives elements[0].
+// "show" is the only TERMINAL action: it means this element is fresh and nobody is waiting on
+// it. Everything else is work outstanding — including the human turns, which are work the
+// journalist owes. `[]` is the honest off-ramp (an empty offer), also terminal.
+function isPending(actions: NextAction[]): boolean {
+  return actions.length > 0 && actions[0] !== "show";
+}
+
+// An element carrying an explicit verdict is not waiting for anything: it was cut (dropped) or
+// it is stuck behind something named (blocked), and gateStateOf reports it as such. Scanning
+// over it is what keeps ONE cut deliverable from stalling a whole run.
+function isSettled(el: RunElement): boolean {
+  return el.dropped != null || el.blocked != null;
+}
+
+/**
+ * The element `nextActions` is answering ABOUT — the first one with work outstanding.
+ *
+ * A run carries several deliverables now (issue #1), so "the live element" can no longer be
+ * elements[0] by definition: with the first deliverable produced and the second not, elements[0]
+ * answers "show" and the run reads as finished having shipped half of what was asked for. That
+ * is the acceptance criterion "no requested output is silently dropped", and it is decided here
+ * rather than in the schema.
+ *
+ * Falls back to elements[0] so that a run where nothing is pending keeps answering exactly what
+ * it answered before — a single-element run is byte-for-byte unchanged by this function.
+ */
+export function liveElementFor(run: RunManifest): RunElement | undefined {
+  const pending = run.elements.find(
+    (el) => !isSettled(el) && isPending(nextActionsForElement(run, el)),
+  );
+  return pending ?? run.elements[0];
+}
+
+// State-driven next actions: run-level gates first (orient + honest off-ramp), then the routing
+// of the element that still owes something (liveElementFor).
 export function nextActions(run: RunManifest): NextAction[] {
   if (!run.orient) return ["orient"];
   if (!run.orient.supportsPoint) return [];
-  return nextActionsForElement(run, run.elements[0]);
+  return nextActionsForElement(run, liveElementFor(run));
 }
 
 export type GateState =

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   appendEvent,
+  liveElementFor,
   nextActions,
   type NextAction,
   type RunElement,
@@ -46,7 +47,19 @@ export async function advanceStep(
   // Every branch below reads it defensively: `orient` runs at run level and only needs the
   // element to attribute a failure event (RunEvent.elementId is itself optional), while the
   // element-driven branches have nothing to act on without one.
-  const live: RunElement | undefined = run.elements[0];
+  //
+  // The element `nextActions` ANSWERED ABOUT, never elements[0]: a run carries several
+  // deliverables now (issue #1), so with the first one produced and the second not, nextActions
+  // says "produce" about the SECOND. Acting on elements[0] here would re-produce something
+  // already fresh — or, worse, refuse — while the action that was reported never runs, and the
+  // loop would advance forever without moving.
+  const live: RunElement | undefined = liveElementFor(run);
+  const liveIndex = live ? run.elements.indexOf(live) : -1;
+  // Replace the live element IN PLACE. `[result, ...rest]` moved the acted-on element to the
+  // front, which silently reordered the deliverables — and the order is meaningful: it is the
+  // production order the plan chose (web first, as the editorial master).
+  const withLive = (el: RunElement): RunElement[] =>
+    run.elements.map((e, i) => (i === liveIndex ? el : e));
   // A refused step, recorded ONCE: the ledger entry and the outcome carry the same string,
   // already truncated, so the two can never tell a caller two different stories.
   const refused = (
@@ -85,18 +98,15 @@ export async function advanceStep(
       return {
         run: {
           ...run,
-          elements: [
-            {
-              ...live,
-              // Conditional, not `refusal: refusal` — an element with nothing refused keeps
-              // exactly the proposal shape it had before this field existed (no `refusal:
-              // undefined` key riding along; nothing here hashes or walks the object's own
-              // key set, but the rest of this codebase's discipline is to never introduce a
-              // present-but-empty marker where "absent" already says the same thing).
-              proposal: { options, excluded, ...(refusal ? { refusal } : {}) },
-            },
-            ...run.elements.slice(1),
-          ],
+          elements: withLive({
+            ...live,
+            // Conditional, not `refusal: refusal` — an element with nothing refused keeps
+            // exactly the proposal shape it had before this field existed (no `refusal:
+            // undefined` key riding along; nothing here hashes or walks the object's own
+            // key set, but the rest of this codebase's discipline is to never introduce a
+            // present-but-empty marker where "absent" already says the same thing).
+            proposal: { options, excluded, ...(refusal ? { refusal } : {}) },
+          }),
         },
         ran: "propose",
       };
@@ -106,7 +116,7 @@ export async function advanceStep(
       const result = await produce(run, live, runDir);
       if (result.ok)
         return {
-          run: { ...run, elements: [result.value, ...run.elements.slice(1)] },
+          run: { ...run, elements: withLive(result.value) },
           ran: "produce",
         };
       // A refusal is DATA now, not an exception: the verb never throws, so the driver
@@ -118,13 +128,13 @@ export async function advanceStep(
       const result = await deliver(run, live, runDir, decor);
       if (result.ok)
         return {
-          run: { ...run, elements: [result.value, ...run.elements.slice(1)] },
+          run: { ...run, elements: withLive(result.value) },
           ran: "deliver",
         };
       return refused("deliver", result.message, live.id);
     }
     default:
-      // confirm-angle / choose-form / show / [] are human turns
+      // confirm-angle / choose-form / confirm-aspect / show / [] are human turns
       return { run, ran: null };
   }
 }
