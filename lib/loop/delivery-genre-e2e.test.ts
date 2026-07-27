@@ -22,6 +22,9 @@ import "./engines";
 import { propose } from "./propose";
 import { produce } from "./produce";
 import { deliver } from "./deliver";
+import { captureStep, reviewStep } from "./verify";
+import { previewStep } from "./preview";
+import { approve } from "./approve";
 import { requestDelivery } from "./request-delivery";
 import type { RunManifest, RunElement } from "./manifest";
 import { freezeInput } from "./freeze";
@@ -38,6 +41,39 @@ const RUN = process.env.SPLASH_S3_E2E === "1";
 // `channel: "social-feed"` is what makes this a STATIC proof rather than an interactive one:
 // social-feed's allowedFormats is ["static", "video"] (lib/core/channel-policy.ts), so the
 // offer cannot contain an interactive/scrolly row to accidentally pick instead.
+/** capture → review → preview → approve, on the real artifact. SPLASH_NO_VIEWER keeps the
+ *  preview step from opening a window on a test machine. */
+async function walkToApproval(
+  run: RunManifest,
+  runDir: string,
+): Promise<RunElement> {
+  const el = run.elements[0]!;
+  const captured = await captureStep(run, el, runDir);
+  if (!captured.ok) throw new Error(`capture: ${captured.message}`);
+  const reviewed = await reviewStep(
+    { ...run, elements: [captured.value] },
+    captured.value,
+    runDir,
+  );
+  if (!reviewed.ok) throw new Error(`review: ${reviewed.message}`);
+  const previewed = previewStep(
+    { ...run, elements: [reviewed.value] },
+    reviewed.value,
+    runDir,
+    { env: { SPLASH_NO_VIEWER: "1" } },
+  );
+  if (!previewed.ok) throw new Error(`preview: ${previewed.message}`);
+  const decided = approve(
+    { ...run, elements: [previewed.value] },
+    previewed.value,
+    runDir,
+    { actorLabel: "delivery-genre-proof" },
+    { signers: [], requiredSigners: [] },
+  );
+  if (!decided.ok) throw new Error(`approve: ${decided.message}`);
+  return decided.value;
+}
+
 async function producedStaticRun(): Promise<{
   run: RunManifest;
   el: RunElement;
@@ -53,6 +89,14 @@ async function producedStaticRun(): Promise<{
     route: "embed",
     channel: "social-feed",
     input: { data: freezeInput(runDir, src, "data") },
+    // A `local` source: the CSV written two lines above is the file the journalist brought.
+    // produce() refuses an undeclared run ("the class of a source is declared, never guessed"),
+    // and the declared label is rendered into the very PNG this proof fetches back — so the
+    // ledger is part of the artifact under test, not paperwork around it.
+    sources: {
+      mode: "real" as const,
+      data: { kind: "local" as const, label: "Relevés cantonaux 2024" },
+    },
     orient: {
       profile: {
         columns: ["canton", "2015", "2024"],
@@ -90,7 +134,17 @@ async function producedStaticRun(): Promise<{
       `producedStaticRun: produce() refused: ${produced.message}`,
     );
 
-  const producedEl = produced.value;
+  // …and then through the verification chain, because deliver() refuses bytes nobody approved
+  // ("capture it, review it, preview it and approve it before it is published"). Driven through
+  // the real steps rather than by writing `approved` onto the element: approveElement is the
+  // manifest's only sanctioned writer, and a publication proof that forged the gate record
+  // would prove the endpoint serves whatever it is handed — which nobody doubted.
+  const approvedEl = await walkToApproval(
+    { ...run, elements: [produced.value] },
+    runDir,
+  );
+
+  const producedEl = approvedEl;
   const decor: Decor = {
     ...neutralDecor(),
     state: {
@@ -126,20 +180,21 @@ test.skipIf(!RUN)(
       destinations: ["embed-s3"],
       env: process.env,
     });
-    expect(asked.ok).toBe(true);
+    // A refusal is DATA in this codebase, so surface its own sentence rather than `false` —
+    // `expect(x.ok).toBe(true)` was what made this proof's rot unreadable at a glance.
+    if (!asked.ok) throw new Error(`requestDelivery: ${asked.message}`);
 
     const delivered = await deliver(
       run,
-      (asked as { value: RunElement }).value,
+      asked.value,
       runDir,
       decor,
       {},
       { env: process.env },
     );
-    expect(delivered.ok).toBe(true);
+    if (!delivered.ok) throw new Error(`deliver: ${delivered.message}`);
 
-    const record = (delivered as { value: RunElement }).value.delivery!
-      .delivered[0]!;
+    const record = delivered.value.delivery!.delivered[0]!;
     expect(record.url).toBeDefined();
     expect(record.snippet).toContain("<img ");
     expect(record.snippet).toContain("alt=");
