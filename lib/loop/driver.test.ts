@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, cpSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
-import { advance } from "./driver";
+import { advance, advanceStep } from "./driver";
 import { revise } from "./revise";
 import {
   nextActions,
@@ -676,4 +676,151 @@ test("advance() records a deliver failure as a bounded event, without advancing 
   });
   expect(after.elements[0].delivery!.delivered).toHaveLength(0); // state did not advance
   expect(nextActions(after)).toEqual(["deliver"]); // still pending, unresolved
+});
+
+// --- advanceStep: the same step, reporting what it did ------------------------------------
+//
+// advance() records a refusal as a bounded EVENT and returns a manifest, so from the outside a
+// refused produce is indistinguishable from a successful one. A host that loops on "advance
+// until nextActions is empty" therefore spins forever, silently. advanceStep answers what ran
+// and what it met; advance() is its wrapper, unchanged for every existing caller.
+
+test("advanceStep names the deterministic step it ran", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-step-orient-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "step",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    elements: [{ id: "e1" }],
+    events: [],
+  };
+  const outcome = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(outcome.ran).toBe("orient");
+  expect(outcome.failure).toBeUndefined();
+  expect(outcome.run.orient).toBeDefined();
+});
+
+test("advanceStep reports a human turn as nothing run, leaving the manifest untouched", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-step-human-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "human",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [{ id: "e1" }],
+    events: [],
+  };
+  expect(nextActions(run)).toEqual(["confirm-angle"]);
+  const outcome = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(outcome.ran).toBeNull();
+  expect(outcome.failure).toBeUndefined();
+  expect(outcome.run).toStrictEqual(run);
+});
+
+test("advanceStep reports an off-ramp — nothing valid to do — as nothing run", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-step-offramp-"));
+  const run: RunManifest = {
+    runId: "offramp",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: {},
+    orient: {
+      profile: { columns: ["a"], numericColumns: [], rowCount: 1 },
+      supportsPoint: false,
+    },
+    elements: [{ id: "e1" }],
+    events: [],
+  };
+  expect(nextActions(run)).toEqual([]);
+  const outcome = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(outcome.ran).toBeNull();
+  expect(outcome.run).toStrictEqual(run);
+});
+
+test("advanceStep surfaces a refused step with the very message it recorded as an event", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-step-refused-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "refused",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Health premiums rose",
+          altInsight: "Between 2015 and 2024 the adult premium rose.",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            {
+              id: "bogus",
+              nativeType: "not-a-real-native-type",
+              why: "unsupported by design",
+            },
+          ],
+          excluded: [],
+          chosenId: "bogus",
+        },
+      },
+    ],
+    events: [],
+  };
+  expect(nextActions(run)).toEqual(["produce"]);
+
+  const outcome = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(outcome.ran).toBe("produce");
+  expect(outcome.failure).toBeDefined();
+  expect(outcome.failure!.action).toBe("produce");
+  // ONE truth, not two wordings: the message handed back is the message written to the ledger.
+  const failures = outcome.run.events.filter((e) => e.kind === "failure");
+  expect(failures).toHaveLength(1);
+  expect(outcome.failure!.message).toBe(failures[0]!.message);
+  expect(outcome.run.elements[0].artifact).toBeUndefined();
+}, 30000);
+
+test("advance() is exactly advanceStep's manifest — the wrapper adds nothing", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-step-wrapper-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const run: RunManifest = {
+    runId: "wrapper",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    elements: [{ id: "e1" }],
+    events: [],
+  };
+  const viaWrapper = await advance(run, runDir, NEUTRAL_DECOR);
+  const viaStep = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(viaWrapper).toStrictEqual(viaStep.run);
 });
