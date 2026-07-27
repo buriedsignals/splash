@@ -35,6 +35,9 @@ export type ReviewerSource = {
   captures: CaptureRecord[];
   interactionResults: InteractionResult[];
   rubric: string[];
+  /** The title as actually RENDERED — artifact content, so it travels to the reviewer:
+   *  judging title-fidelity without the title would be judging the caller's intent. */
+  renderedTitle?: string;
   // Below: present on the caller's side, never forwarded. Typed here so that dropping them
   // is a visible decision in this file rather than an accident of what the caller passed.
   runDir?: string;
@@ -76,6 +79,9 @@ export function buildReviewerInput(s: ReviewerSource): ReviewerInput {
       detail: i.detail,
     })),
     rubric: [...s.rubric],
+    // Conditional so an absent title is an ABSENT KEY: a `renderedTitle: undefined` would
+    // vanish across JSON and break the round-trip invariant (I6).
+    ...(s.renderedTitle ? { renderedTitle: s.renderedTitle } : {}),
   };
 }
 

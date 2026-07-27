@@ -265,4 +265,5 @@ export type ReviewerInput = {
   renders: ReviewerRender[];
   interactionResults: InteractionResult[];
   rubric: string[];
+  renderedTitle?: string;
 };

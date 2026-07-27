@@ -12,6 +12,7 @@
 //  3. The absence of an independent reviewer is RECORDED, never converted into a pass.
 //     Silence is not evidence — the whole reason this layer exists.
 import { makeFinding } from "./severity";
+import { detectTasteRisks } from "./taste";
 import {
   assertNoInternals,
   buildReviewerInput,
@@ -295,7 +296,16 @@ export async function runReview(req: ReviewRequest): Promise<ReviewRecord> {
     reviewer: attribution,
     captures: req.source.captures,
     checks: req.checks,
-    tasteRisk: [],
+    // The lane that is deliberately NOT graded: risks, with the measurement that raised
+    // them, routed to the human sign-off. Kept in its own field so nothing can read a
+    // taste risk as a cleared finding, or a cleared finding as a taste risk.
+    tasteRisk: detectTasteRisks({
+      captures: req.source.captures,
+      confirmedTakeaway: req.source.confirmedTakeaway,
+      ...(req.source.renderedTitle
+        ? { renderedTitle: req.source.renderedTitle }
+        : {}),
+    }),
     overrides: [],
     acknowledged: [],
   };
