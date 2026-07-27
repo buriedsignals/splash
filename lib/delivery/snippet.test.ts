@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { renderSnippet } from "./snippet";
+import { renderSnippet, DEFAULT_SNIPPET_TEMPLATE } from "./snippet";
 import type { DeliveryMetadata } from "../core/publishers";
 
 const META: DeliveryMetadata = {
@@ -18,6 +18,7 @@ describe("renderSnippet", () => {
       url: "https://a.example.pages.dev",
       id: "primes",
       metadata: META,
+      format: "interactive",
       template:
         '<iframe src="{url}" title="{title}" id="{id}" width="{width}" height="{height}"></iframe>',
     });
@@ -33,6 +34,7 @@ describe("renderSnippet", () => {
       url: "https://a.example.pages.dev",
       id: "primes",
       metadata: META,
+      format: "interactive",
       template: '<iframe src="{url}" data-x="{campaign}"></iframe>',
     });
     expect(r).toMatchObject({ ok: false, code: "invalid-request" });
@@ -44,6 +46,7 @@ describe("renderSnippet", () => {
       url: "https://a.example.pages.dev",
       id: "primes",
       metadata: META,
+      format: "interactive",
     });
     expect(r.ok).toBe(true);
     expect((r as { value: string }).value).toContain(
@@ -57,6 +60,7 @@ describe("renderSnippet", () => {
       url: "https://a.example.pages.dev",
       id: "primes",
       metadata: { ...META, height: "responsive" },
+      format: "interactive",
     });
     expect(r.ok).toBe(true);
     expect((r as { value: string }).value).toContain("aspect-ratio");
@@ -68,6 +72,7 @@ describe("renderSnippet", () => {
       url: "https://a.example.pages.dev",
       id: "primes",
       metadata: META,
+      format: "interactive",
       template: '<iframe src="{url}" data-x="{utm_source}"></iframe>',
     });
     expect(r).toMatchObject({ ok: false, code: "invalid-request" });
@@ -79,6 +84,7 @@ describe("renderSnippet", () => {
       url: "https://a.example.pages.dev",
       id: "primes",
       metadata: { ...META, title: 'Primes "cantonales" <b>en hausse</b>' },
+      format: "interactive",
     });
     expect(r.ok).toBe(true);
     const value = (r as { value: string }).value;
@@ -94,6 +100,7 @@ describe("renderSnippet", () => {
       url: "https://a.example.pages.dev",
       id: "primes",
       metadata: { ...META, height: "responsive" },
+      format: "interactive",
       template:
         '<iframe src="{url}" title="{title}" height="{height}"></iframe>',
     });
@@ -107,12 +114,91 @@ describe("renderSnippet", () => {
       url: "https://a.example.pages.dev",
       id: "primes",
       metadata: { ...META, height: "responsive" },
+      format: "interactive",
       template: '<iframe src="{url}" title="{title}"></iframe>',
     });
     expect(r).toEqual({
       ok: true,
       value:
         '<iframe src="https://a.example.pages.dev" title="Primes cantonales"></iframe>',
+    });
+  });
+});
+
+describe("renderSnippet by genre", () => {
+  it("should carry the alt text on an image, where the CMS reads it", () => {
+    const r = renderSnippet({
+      url: "https://assets.example/primes.png",
+      id: "primes",
+      metadata: META,
+      format: "static",
+    });
+    expect(r.ok).toBe(true);
+    const html = (r as { value: string }).value;
+    expect(html.startsWith("<img ")).toBe(true);
+    expect(html).toContain('alt="Les primes montent partout"');
+    expect(html).not.toContain("<iframe");
+  });
+
+  it("should give a video a spoken name and a fallback text", () => {
+    const r = renderSnippet({
+      url: "https://assets.example/primes.mp4",
+      id: "primes",
+      metadata: META,
+      format: "video",
+    });
+    expect(r.ok).toBe(true);
+    const html = (r as { value: string }).value;
+    expect(html.startsWith("<video ")).toBe(true);
+    expect(html).toContain('aria-label="Les primes montent partout"');
+    expect(html).toContain(">Les primes montent partout</video>");
+  });
+
+  it("should leave the embed genre byte-identical", () => {
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: META,
+      format: "interactive",
+    });
+    expect(r).toEqual({
+      ok: true,
+      value: DEFAULT_SNIPPET_TEMPLATE.replace(
+        "{url}",
+        "https://a.example.pages.dev",
+      )
+        .replace("{title}", "Primes cantonales")
+        .replace("{width}", "700")
+        .replace("{height}", "420"),
+    });
+  });
+
+  // A house template is iframe-shaped by definition. Applied to a PNG it would produce an
+  // iframe pointing at an image — so it is not applied to the file genre at all.
+  it("should ignore the newsroom's own template for the file genre", () => {
+    const r = renderSnippet({
+      url: "https://assets.example/primes.png",
+      id: "primes",
+      metadata: META,
+      format: "static",
+      template: '<iframe src="{url}" title="{title}"></iframe>',
+    });
+    expect(r.ok).toBe(true);
+    expect((r as { value: string }).value.startsWith("<img ")).toBe(true);
+  });
+
+  it("should still apply the newsroom's own template for the embed genre", () => {
+    const r = renderSnippet({
+      url: "https://a.example.pages.dev",
+      id: "primes",
+      metadata: META,
+      format: "scrolly",
+      template: '<iframe src="{url}" data-house="1"></iframe>',
+    });
+    expect(r).toEqual({
+      ok: true,
+      value:
+        '<iframe src="https://a.example.pages.dev" data-house="1"></iframe>',
     });
   });
 });

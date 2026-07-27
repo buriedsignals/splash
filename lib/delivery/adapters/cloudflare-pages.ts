@@ -428,6 +428,7 @@ function embedSnippet(req: PublishRequest, url: string): VerbResult<string> {
     url,
     id: req.id,
     metadata: req.metadata,
+    format: req.format,
     ...(req.settings.snippetTemplate
       ? { template: req.settings.snippetTemplate }
       : {}),
