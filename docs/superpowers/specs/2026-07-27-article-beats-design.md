@@ -269,9 +269,17 @@ produire**, et il est posé à trois niveaux indépendants :
 1. **`applyBeats`** ne peut pas écrire un blanc : `arcErrors`, appelé par `verifyBeats`, refuse un
    beat à rôle dont le `text` est vide. Le seul producteur d'un `text` vide est donc `draftBeats`,
    délibérément (le cerveau livre l'ancrage, le desk écrit la langue).
-2. **`produce()`** refuse un `scrolly` dont le plan porte un `text` vide, en nommant les beats
-   concernés. C'est **le garde de livraison proprement dit** : le format `scrolly` est une page
-   narrative, et une page narrative dont la prose n'est pas écrite n'est pas produite.
+2. **`produce()`** refuse un élément dont le plan porte un `text` vide, en nommant les beats
+   concernés. C'est **le garde de livraison proprement dit**. Deux précisions de placement, chacune
+   payée par une revue :
+   - **APRÈS le gate de constructibilité**, ligne pour ligne comme `nextActionsForElement`.
+     `lib/loop/buildable.ts` pose l'invariant que ses trois lecteurs ne doivent jamais contredire :
+     un journaliste lit **une** phrase pour une forme que rien ne construit, celle que l'offre a
+     déjà marquée. Répondre « vos beats ne sont pas écrits » à quelqu'un dont la forme n'est pas
+     constructible l'envoie réparer la mauvaise chose. *(Premier jet inversé, corrigé à l'auto-revue.)*
+   - **Pas conditionné au format.** Quoi qu'il ait créé un plan, un plan non écrit ne se rend pas.
+     C'est la CRÉATION du plan qui est réservée à la page narrative (`draft-beats`), pas le refus
+     de le livrer.
 3. **`assertInvariants`** refuse d'écrire sur disque un élément qui porte **un artefact** et un
    plan à `text` vide — l'état « une page produite dont personne n'a écrit la prose » n'est pas
    représentable. Symétrique exact de l'invariant `chosenId ⇒ why non vide`.
@@ -472,3 +480,20 @@ Deux fichiers sont édités par un autre agent en ce moment et n'ont pas été t
   périme l'artefact (provenance) mais laisse le plan en place ; une ancre disparue échoue alors
   **fort** au produce (`narrativeBeatErrors`), pas en silence. **Jugement : acceptable — fail-loud,
   pas fail-silent.**
+- **`suggestBeats` ne pose jamais de `turn`, donc un plan livré sans réécriture de rôle n'a pas de
+  pivot.** L'arc `establish → build → build → payoff` est bien formé et se rend, mais le Peak de
+  Cohn — le moment où l'argument bascule — n'est jamais suggéré. C'est voulu (un pivot est un
+  jugement éditorial), et cela veut dire que le plein bénéfice de l'arc demande une action du
+  journaliste. **Jugement : voulu ; l'alternative — deviner le pivot — est exactement ce que ce
+  slice retire.**
+- **La marche d'un bar suit l'ordre des LIGNES, pas le classement.** Contrainte mécanique du
+  moteur (`resolveBarSort` passe à `"none"` dès qu'un plan existe, donc les barres se rendent en
+  ordre de données et une marche par rang ferait sauter le highlight — ce que
+  `narrativeBeatWarnings` signale). Conséquence : le `payoff` d'un brouillon de bar tombe sur la
+  dernière ligne du CSV, pas sur le leader. Un journaliste qui veut l'autre récit re-brouillonne
+  avec ses propres ancres. **Jugement : contrainte du moteur, portée honnêtement plutôt que
+  contournée.**
+- **`assembleNativeSpec` rend un `Record<string, unknown>`**, donc une faute de frappe dans un nom
+  de champ ne serait pas attrapée au type. C'était déjà vrai de l'objet littéral qu'il remplace
+  (`render` prend un `spec: unknown` par contrat d'opacité), donc ce n'est pas une régression —
+  mais ce n'est pas non plus une amélioration. **Jugement : inchangé, noté.**

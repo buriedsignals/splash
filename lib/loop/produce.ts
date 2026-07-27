@@ -4,6 +4,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { fail, ok, render, type VerbResult } from "../core/verbs";
 import { IMAGE_EXTENSIONS } from "../core/contract";
 import type { VisualFormat } from "../core/vocabulary";
+import type { ArcRole } from "../core/claim-arc";
 import { toVerbResult, validateSourcePolicy } from "../source";
 import {
   chosenOption,
@@ -65,9 +66,14 @@ function artifactFileFor(
  * while the whole-article branch is still gated out of LOOP_BUILDABLE_ENGINES. A proof that
  * assembled its own spec would be proving a parallel path.
  *
- * `beats` is only present when the element carries an AUTHORED narrative plan. Absent for every
- * embeddable element, so a spec built for one is byte-identical to what it was before this seam
- * existed. The unauthored case never reaches an engine — produce() refuses it above.
+ * `beats` is only present when the element carries a narrative plan. Absent for every embeddable
+ * element, so a spec built for one is byte-identical to what it was before this seam existed. An
+ * UNAUTHORED plan never reaches an engine: produce() refuses it above, before this runs.
+ *
+ * The angle's parts fall back to "" rather than refusing, because produce() has already required
+ * an angle by the time it calls this and a second refusal here would be a second place to keep
+ * in step. A caller reaching it without one gets a spec the engine's own validator rejects
+ * (a blank title and a blank altInsight both fail-hard at conformance) — loud, not silent.
  */
 export function assembleNativeSpec(
   run: RunManifest,
@@ -97,7 +103,7 @@ export function assembleNativeSpec(
 type NarrativeBeatSpec = {
   x?: string;
   category?: string;
-  role: string;
+  role: ArcRole;
   text: string;
 };
 
@@ -166,11 +172,22 @@ export async function produce(
   // resolveBuilder (lib/loop/buildable.ts), the same helper lib/brain/eligibility.ts and
   // manifest.ts's nextActionsForElement resolve through, so the refusal a journalist reads
   // here is the sentence the offer already showed them.
-  // A NARRATIVE PAGE IS NOT BUILT FROM A PLAN NOBODY WROTE. This is the delivery guard of the
-  // beats seam, and it sits here — before any engine, before any byte — for the reason
-  // applyPhrasing refuses a blank `why`: the beats are shipped as the journalist's own claims,
-  // and an unwritten one would ship the machine's caption under their byline. That is the exact
-  // defect this seam exists to remove (skills/scrolly/src/Scrolly.tsx derived the whole walk).
+  const builder = resolveBuilder(chosen);
+  if (!isLoopBuildable(builder))
+    return fail(
+      "not-implemented",
+      `produce: "${chosen.id}" is a ${builder} form (${chosen.format ?? "static"}) — ${unbuildableEngineReason(builder)}`,
+    );
+
+  // A NARRATIVE PAGE IS NOT BUILT FROM A PLAN NOBODY WROTE. The delivery guard of the beats
+  // seam, for the reason applyPhrasing refuses a blank `why`: the beats ship as the journalist's
+  // own claims, and an unwritten one would put the machine's caption under their byline — the
+  // exact defect this seam removes (skills/scrolly/src/Scrolly.tsx derived the whole walk).
+  //
+  // POSITION — AFTER the buildability gate, matching nextActionsForElement line for line. The
+  // three readers of buildable.ts must never disagree, and a form nothing can build has a
+  // refusal the OFFER already showed the journalist; answering "your beats are unwritten" to
+  // someone whose form cannot be built at all would send them to fix the wrong thing.
   //
   // Not gated on the format: whatever created a plan, an unwritten one must not be rendered.
   // The refusal NAMES the beats, so a journalist reads what is owed, not that something is.
@@ -180,13 +197,6 @@ export async function produce(
       "invalid-request",
       `produce: ${unauthored.join(", ")} of this narrative walk ${unauthored.length === 1 ? "carries" : "carry"} no claim — ` +
         `Splash drafts the beats, the journalist writes them, and an unwritten beat is not published`,
-    );
-
-  const builder = resolveBuilder(chosen);
-  if (!isLoopBuildable(builder))
-    return fail(
-      "not-implemented",
-      `produce: "${chosen.id}" is a ${builder} form (${chosen.format ?? "static"}) — ${unbuildableEngineReason(builder)}`,
     );
 
   // The frozen input is read from disk, and a run dir can be incomplete for reasons that

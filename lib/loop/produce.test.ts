@@ -488,10 +488,7 @@ test("the declared source reaches the produced artifact, and the placeholder is 
   };
   const result = await produce(run, run.elements[0], runDir);
   if (!result.ok) throw new Error(result.message);
-  const html = readFileSync(
-    join(runDir, result.value.artifact!.path),
-    "utf8",
-  );
+  const html = readFileSync(join(runDir, result.value.artifact!.path), "utf8");
   expect(html).toContain("Office fédéral de la santé publique");
   expect(html).toContain(
     "https://www.bag.admin.ch/dam/bag/fr/dokumente/kuv-aufsicht/praemien/2024.csv",
@@ -662,14 +659,56 @@ test("assembleNativeSpec leaves an element with no plan byte-identical — no `b
   rmSync(runDir, { recursive: true, force: true });
 });
 
-test("produce refuses a narrative page whose beats nobody authored, naming them", async () => {
+test("produce refuses a walk whose beats nobody authored, naming them", async () => {
   const { run, runDir } = scrollyRunOnDisk();
-  const drafted = draftBeats(run, run.elements[0]!, runDir);
+  // A BUILDABLE form, so the refusal under test is the beats one and not the article branch's.
+  // The guard is deliberately not format-gated: whatever created a plan, an unwritten one must
+  // not be rendered.
+  const buildable: RunManifest = {
+    ...run,
+    elements: [
+      {
+        ...run.elements[0]!,
+        proposal: {
+          ...run.elements[0]!.proposal!,
+          options: [
+            { ...run.elements[0]!.proposal!.options[0]!, format: "static" },
+          ],
+        },
+      },
+    ],
+  };
+  const drafted = draftBeats(buildable, buildable.elements[0]!, runDir);
   if (!drafted.ok) throw new Error(drafted.message);
-  const r = await produce({ ...run, elements: [drafted.value] }, drafted.value, runDir);
+  const r = await produce(
+    { ...buildable, elements: [drafted.value] },
+    drafted.value,
+    runDir,
+  );
   expect(r.ok).toBe(false);
   if (r.ok) return;
   expect(r.code).toBe("invalid-request");
   expect(r.message).toContain("beat-1");
+  rmSync(runDir, { recursive: true, force: true });
+});
+
+// ORDER. lib/loop/buildable.ts's header states the invariant its three readers must hold: a
+// journalist reads ONE sentence for a form nothing can build, the one the offer already marked
+// it with. So the buildability refusal comes FIRST — telling someone to write their beats when
+// their chosen form cannot be built at all sends them to fix the wrong thing.
+test("a form nothing can build is refused with the offer's sentence, before its beats are judged", async () => {
+  const { run, runDir } = scrollyRunOnDisk();
+  const drafted = draftBeats(run, run.elements[0]!, runDir);
+  if (!drafted.ok) throw new Error(drafted.message);
+  const r = await produce(
+    { ...run, elements: [drafted.value] },
+    drafted.value,
+    runDir,
+  );
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.code).toBe("not-implemented");
+  expect(r.message).toContain("scrolly");
+  expect(r.message).not.toContain("beat-1");
   rmSync(runDir, { recursive: true, force: true });
 });
