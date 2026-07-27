@@ -5,6 +5,7 @@ import {
   nextActions,
   gateStateOf,
   parseManifest,
+  RunManifestSchema,
   type RunManifest,
 } from "./manifest";
 
@@ -386,6 +387,57 @@ describe("the delivery slot", () => {
     };
     const run = { ...m, elements: [emptyRequest] };
     expect(gateStateOf(run, emptyRequest)).not.toBe("delivered");
+  });
+
+  // These two prove the SCHEMA's own acceptance, not just gateStateOf's in-memory reads above —
+  // the manifest read back from disk goes through RunManifestSchema.safeParse, not a hand-built
+  // object, so that boundary is what actually needs testing.
+  function manifestWithDelivered(record: {
+    publisherId: string;
+    kind: "hosted" | "package";
+    [key: string]: unknown;
+  }): RunManifest {
+    const m = produced();
+    const el = m.elements[0]!;
+    return {
+      ...m,
+      elements: [
+        {
+          ...el,
+          delivery: { requested: [record.publisherId], delivered: [record] },
+        },
+      ],
+    } as unknown as RunManifest;
+  }
+
+  it("should accept a delivered record with no embed code", () => {
+    const parsed = RunManifestSchema.safeParse(
+      manifestWithDelivered({
+        publisherId: "zip",
+        kind: "package",
+        artifact: { path: "elements/e1/primes.zip", sha256: "a".repeat(64) },
+        publishedAt: "1980-01-01T12:00:00.000Z",
+        deliveredProvenanceHash: "b".repeat(64),
+      }),
+    );
+    expect(parsed.success).toBe(true);
+  });
+
+  // No migration is expected: an existing manifest carries `snippet`, and a field that becomes
+  // optional still validates. This is the other half of that claim — proving the OLD shape
+  // (with the field) still parses, not only the new one without it.
+  it("should still accept a delivered record that carries an embed code (no migration needed)", () => {
+    const parsed = RunManifestSchema.safeParse(
+      manifestWithDelivered({
+        publisherId: "embed-cloudflare",
+        kind: "hosted",
+        url: "https://example.invalid/e1",
+        snippet: '<iframe src="https://example.invalid/e1"></iframe>',
+        publishedAt: "1980-01-01T12:00:00.000Z",
+        deliveredProvenanceHash: "b".repeat(64),
+      }),
+    );
+    expect(parsed.success).toBe(true);
   });
 });
 

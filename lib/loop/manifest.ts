@@ -100,7 +100,7 @@ const RunElementSchema = z.object({
           kind: z.enum(["hosted", "package"]),
           url: z.string().optional(),
           artifact: HashRef.optional(),
-          snippet: z.string(),
+          snippet: z.string().optional(),
           publishedAt: z.string(),
           // A delivery NEVER inherits across a provenance change — the same discipline
           // review and approved already follow. This is what makes "published, but no longer
@@ -116,7 +116,7 @@ const RunElementSchema = z.object({
     .object({ signoffPath: z.string(), approvedProvenanceHash: z.string() })
     .optional(),
 });
-const RunManifestSchema = z.object({
+export const RunManifestSchema = z.object({
   runId: z.string(),
   schemaVersion: z.literal(4),
   /** The relationship to the text: an embeddable element, or the visual article itself. */

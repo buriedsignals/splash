@@ -307,7 +307,9 @@ describe("deliver", () => {
     expect(r.ok).toBe(true);
     const value = (r as { value: RunElement }).value;
     const snippet = value.delivery!.delivered[0]!.snippet;
-    const settings = JSON.parse(snippet);
+    // The echo stub above always returns a snippet — this test is about what settings reach it,
+    // not about the optional-snippet contract Task 6 introduced elsewhere.
+    const settings = JSON.parse(snippet!);
     expect(settings).toMatchObject({
       publisherId: "embed-s3",
       endpoint: "http://127.0.0.1:9000",
@@ -590,6 +592,52 @@ describe("a destination that cannot serve the artifact's format", () => {
       expect(value.delivery!.delivered[0]!.publisherId).toBe(OPEN_ID);
     } finally {
       delete NEWSROOM_CAPABILITIES[OPEN_ID];
+      resetPublishersForTest();
+      registerAllPublishers();
+    }
+  });
+});
+
+describe("a delivery with no embed code", () => {
+  it("should record a delivery that has no embed code without inventing one", async () => {
+    const FILE_ID = "test-file-package";
+    NEWSROOM_CAPABILITIES[FILE_ID] = {
+      id: FILE_ID,
+      label: "Test file package (throwaway, this test only)",
+      kind: "delivery",
+      env: [],
+      envHelp: {},
+      criticalDeps: null,
+      implemented: true,
+    };
+    registerPublisher({
+      id: FILE_ID,
+      kind: "package",
+      serves: [...VISUAL_FORMATS],
+      implemented: true,
+      async publish() {
+        return ok({
+          publisherId: FILE_ID,
+          kind: "package" as const,
+          publishedAt: new Date().toISOString(),
+        });
+      },
+    });
+
+    try {
+      const { run, el } = staticRunWith([FILE_ID]);
+      const decor = decorWith({
+        state: {
+          ...DEFAULT_NEWSROOM_STATE,
+          capabilities: { [FILE_ID]: { enabled: true } },
+        },
+      });
+      const r = await deliver(run, el, runDir, decor, {}, { env: {} });
+      expect(r.ok).toBe(true);
+      const record = (r as { value: RunElement }).value.delivery!.delivered[0]!;
+      expect("snippet" in record).toBe(false);
+    } finally {
+      delete NEWSROOM_CAPABILITIES[FILE_ID];
       resetPublishersForTest();
       registerAllPublishers();
     }

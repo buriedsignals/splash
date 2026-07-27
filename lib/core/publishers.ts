@@ -48,7 +48,11 @@ export type PublishOutcome = {
   url?: string;
   /** Owned packages. */
   path?: string;
-  snippet: string;
+  /** The embed code, when there IS one. A file-genre package has none: the CMS takes the file
+   * in its image/video field and the alt text in the field next to it (spec §3.8). Writing ""
+   * would make the manifest say "delivered with an empty embed code", which is a different
+   * and false claim. */
+  snippet?: string;
   publishedAt: string;
 };
 

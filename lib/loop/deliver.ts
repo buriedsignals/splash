@@ -256,7 +256,7 @@ export async function deliver(
         kind: outcome.kind,
         ...(outcome.url ? { url: outcome.url } : {}),
         ...(outcome.path ? { artifact: hashRef(outcome.path, runDir) } : {}),
-        snippet: outcome.snippet,
+        ...(outcome.snippet ? { snippet: outcome.snippet } : {}),
         publishedAt: outcome.publishedAt,
         deliveredProvenanceHash: current,
       };
