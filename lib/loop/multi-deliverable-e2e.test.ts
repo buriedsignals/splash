@@ -26,11 +26,13 @@ import {
   liveElementFor,
   resolvedChannelForElement,
   writeManifest,
+  type NextAction,
   type RunManifest,
 } from "./manifest";
 import { CHANNEL_POLICY } from "../core/channel-policy";
 import { freezeInput } from "./freeze";
 import { tryLoadDecor } from "../newsroom/decor";
+import { validateSourcePolicy } from "../source/policy";
 
 const RUN = process.env.SPLASH_E2E_DELIVERABLES === "1";
 
@@ -41,46 +43,98 @@ function pngSize(path: string): { width: number; height: number } {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
+function seedRun(runDir: string): RunManifest {
+  const src = join(runDir, "src.csv");
+  // Deliberately NOT geographic: a column of canton names makes the brain rank map forms to
+  // the top, and map-native is not one of the engines the loop builds through yet — the run
+  // would dead-end on the offer rather than on anything this test is about.
+  writeFileSync(
+    src,
+    "sector,2015,2024\nHousing,449,583\nTransport,412,531\nFood,289,352\nHealth,398,502",
+  );
+  return {
+    runId: "deliverables-e2e",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    // The CSV written just above is a `local` source. produce() refuses an undeclared run
+    // ("the class of a source is declared, never guessed") and renders the declared credit
+    // into every one of the three geometries this proof measures.
+    sources: {
+      mode: "real" as const,
+      data: { kind: "local" as const, label: "Relevés cantonaux 2024" },
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Household costs rose in every sector shown",
+          altInsight:
+            "Between 2015 and 2024 the monthly household cost rose in all four sectors shown; housing stays the largest.",
+          unit: "Monthly household cost (CHF)",
+          emphasis: "Housing",
+        },
+      },
+    ],
+    events: [],
+  };
+}
+
+/**
+ * Every action the loop can route to, and who answers it in the walk below. A Record over the
+ * NextAction UNION, so adding a step to lib/loop/manifest.ts breaks THIS FILE's `tsc --noEmit` —
+ * which runs on every `bun run check`, with no browser and no bundler.
+ *
+ * That is the cheap guard `phrase` slipped past. When the phrasing seam landed, this walk kept
+ * calling advanceStep on a human turn advanceStep does not answer, spun its 40 iterations doing
+ * nothing, and the proof failed weeks later on `["phrase"] !== ["show"]`. Nothing about that
+ * needed an engine to notice.
+ */
+type Answerer = "answered-here" | "advance" | "terminal" | "unreachable";
+const ANSWERED_BY: Record<NextAction, Answerer> = {
+  orient: "advance",
+  propose: "advance",
+  produce: "advance",
+  capture: "advance",
+  review: "advance",
+  preview: "advance",
+  deliver: "advance",
+  phrase: "answered-here",
+  "choose-form": "answered-here",
+  "confirm-aspect": "answered-here",
+  show: "terminal",
+  // Not reachable for THIS fixture: the seed confirms its angle up front, asks for no article
+  // branch, and requests no delivery. The walk says so out loud rather than spinning, so a
+  // routing change lands as a sentence naming the step instead of as a silent stall.
+  "confirm-angle": "unreachable",
+  "draft-beats": "unreachable",
+  "author-beats": "unreachable",
+  approve: "unreachable",
+};
+
+// ALWAYS ON — the millisecond half of this proof, deliberately outside the gate. Everything it
+// asserts is decidable from the fixture alone, and it is the only part of this file that
+// `bun run check` ever runs.
+test("the fixture declares a source the loop will accept, before any render", () => {
+  const seed = seedRun(
+    mkdtempSync(join(tmpdir(), "loop-deliverables-fixture-")),
+  );
+  // produce() refuses an undeclared run, and under the gate that refusal costs a full setup to
+  // reach. This is the same verdict, from the same policy module, in milliseconds.
+  const verdict = validateSourcePolicy(seed.sources?.data, {
+    mode: seed.sources?.mode,
+  });
+  expect(verdict.ok ? "accepted" : `${verdict.code}: ${verdict.message}`).toBe(
+    "accepted",
+  );
+});
+
 test.skipIf(!RUN)(
   "one takeaway, three deliverables — web, social and print, each rendered at its own geometry",
   async () => {
     const runDir = mkdtempSync(join(tmpdir(), "loop-deliverables-e2e-"));
-    const src = join(runDir, "src.csv");
-    // Deliberately NOT geographic: a column of canton names makes the brain rank map forms to
-    // the top, and map-native is not one of the engines the loop builds through yet — the run
-    // would dead-end on the offer rather than on anything this test is about.
-    writeFileSync(
-      src,
-      "sector,2015,2024\nHousing,449,583\nTransport,412,531\nFood,289,352\nHealth,398,502",
-    );
-
-    const seed: RunManifest = {
-      runId: "deliverables-e2e",
-      schemaVersion: 4,
-      route: "embed",
-      channel: "article-web",
-      input: { data: freezeInput(runDir, src, "data") },
-      // The CSV written just above is a `local` source. produce() refuses an undeclared run
-      // ("the class of a source is declared, never guessed") and renders the declared credit
-      // into every one of the three geometries this proof measures.
-      sources: {
-        mode: "real" as const,
-        data: { kind: "local" as const, label: "Relevés cantonaux 2024" },
-      },
-      elements: [
-        {
-          id: "e1",
-          angle: {
-            confirmedTakeaway: "Household costs rose in every sector shown",
-            altInsight:
-              "Between 2015 and 2024 the monthly household cost rose in all four sectors shown; housing stays the largest.",
-            unit: "Monthly household cost (CHF)",
-            emphasis: "Housing",
-          },
-        },
-      ],
-      events: [],
-    };
+    const seed = seedRun(runDir);
 
     // STAGE 1 — the multi-select. Static everywhere so the three deliverables differ by
     // GEOMETRY alone: that is what makes the pixel assertions below evidence about the
@@ -98,7 +152,16 @@ test.skipIf(!RUN)(
     // Drive it exactly as a host would: ask what is valid, run it, answer the human turns.
     for (let i = 0; i < 40; i++) {
       const [next] = nextActions(run);
-      if (!next || next === "show") break;
+      if (!next) break;
+      const answerer = ANSWERED_BY[next];
+      if (answerer === "terminal") break;
+      // The runtime half of the table above: a step this walk does not answer stops the proof
+      // with the step's NAME, instead of letting the loop idle to its iteration cap and fail
+      // forty steps later on an unrelated assertion.
+      if (answerer === "unreachable")
+        throw new Error(
+          `the loop routed this run to "${next}", which this walk does not answer — the loop changed under the fixture`,
+        );
       const live = liveElementFor(run);
       if (!live) throw new Error("no live element");
       const replace = (el: typeof live) => ({

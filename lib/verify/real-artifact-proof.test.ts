@@ -17,6 +17,7 @@ import { provenanceHash, type RunManifest } from "../loop/manifest";
 import { capture } from "./capture";
 import { runReview } from "./review";
 import { approvalDecision } from "./approval";
+import { validateSourcePolicy } from "../source/policy";
 import type { CaptureCheck, PreviewRecord } from "./types";
 
 const RUN = process.env.SPLASH_VERIFY_PROOF === "1";
@@ -89,6 +90,20 @@ function makeRun(runDir: string): RunManifest {
     events: [],
   };
 }
+
+// ALWAYS ON — outside the gate, and the only part of this file `bun run check` runs. Four of
+// this project's six proofs rotted on a fixture that predated a gate; this one did not, and the
+// check is here so it stays that way rather than because it is currently failing. See
+// docs/superpowers/specs/2026-07-27-proofs-run-design.md.
+test("the fixture declares a source the loop will accept, before any render", () => {
+  const run = makeRun(mkdtempSync(join(tmpdir(), "verify-proof-fixture-")));
+  const verdict = validateSourcePolicy(run.sources?.data, {
+    mode: run.sources?.mode,
+  });
+  expect(verdict.ok ? "accepted" : `${verdict.code}: ${verdict.message}`).toBe(
+    "accepted",
+  );
+});
 
 function pick(
   checks: CaptureCheck[],

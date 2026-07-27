@@ -28,6 +28,7 @@ import {
 } from "../loop/manifest";
 import { captureStep, reviewStep } from "../loop/verify";
 import { approvalDecision } from "./approval";
+import { validateSourcePolicy } from "../source/policy";
 import type { ReviewRecord } from "./types";
 
 const RUN = process.env.SPLASH_VERIFY_PROOF === "1";
@@ -89,6 +90,23 @@ function makeRun(
     events: [],
   };
 }
+
+// ALWAYS ON — outside the gate, and the only part of this file `bun run check` runs. Four of
+// this project's six proofs rotted on a fixture that predated a gate; this one did not, and the
+// check is here so it stays that way rather than because it is currently failing. See
+// docs/superpowers/specs/2026-07-27-proofs-run-design.md.
+test("the fixture declares a source the loop will accept, before any render", () => {
+  const run = makeRun(
+    mkdtempSync(join(tmpdir(), "verify-title-fixture-")),
+    "interactive",
+  );
+  const verdict = validateSourcePolicy(run.sources?.data, {
+    mode: run.sources?.mode,
+  });
+  expect(verdict.ok ? "accepted" : `${verdict.code}: ${verdict.message}`).toBe(
+    "accepted",
+  );
+});
 
 test.skipIf(!RUN)(
   "the title the render declares reaches the approval gate — quiet when it is the takeaway, loud when it is not",

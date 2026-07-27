@@ -44,6 +44,7 @@ import {
 import { neutralDecor } from "../newsroom/decor";
 import { DEFAULT_NEWSROOM_STATE } from "../newsroom/state";
 import { registerAllPublishers } from "../delivery";
+import { validateSourcePolicy } from "./policy";
 
 const RUN = process.env.SPLASH_SOURCE_PROOF === "1";
 
@@ -103,6 +104,23 @@ function makeRun(
     events: [],
   };
 }
+
+// ALWAYS ON — outside the gate, and the only part of this file `bun run check` runs. It checks
+// what is decidable from the fixture alone; the refusal that actually rotted this proof
+// (deliver() wanting an approval) is NOT of that kind, and no cheap guard sees it. See
+// docs/superpowers/specs/2026-07-27-proofs-run-design.md.
+test("the fixture declares a source the loop will accept, before any render", () => {
+  const run = makeRun(
+    mkdtempSync(join(tmpdir(), "source-proof-fixture-")),
+    DECLARED,
+  );
+  const verdict = validateSourcePolicy(run.sources?.data, {
+    mode: run.sources?.mode,
+  });
+  expect(verdict.ok ? "accepted" : `${verdict.code}: ${verdict.message}`).toBe(
+    "accepted",
+  );
+});
 
 /**
  * Take a produced element all the way to `approved`, through the real steps — nothing here

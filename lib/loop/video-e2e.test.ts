@@ -13,6 +13,7 @@ import { produce } from "./produce";
 import type { RunManifest } from "./manifest";
 import { freezeInput } from "./freeze";
 import { DELIVERABLE_KIND } from "../core/vocabulary";
+import { validateSourcePolicy } from "../source/policy";
 
 const RUN = process.env.SPLASH_VIDEO_E2E === "1";
 
@@ -67,6 +68,20 @@ function makeProducibleRun(): {
   };
   return { run, el: run.elements[0]!, runDir };
 }
+
+// ALWAYS ON — deliberately outside the gate, and the only part of this file `bun run check`
+// runs. The refusal that rotted this proof ("source-undeclared") is decidable from the fixture
+// alone: no Remotion, no browser, milliseconds. See
+// docs/superpowers/specs/2026-07-27-proofs-run-design.md for what this shape does NOT catch.
+test("the fixture declares a source the loop will accept, before any render", () => {
+  const { run } = makeProducibleRun();
+  const verdict = validateSourcePolicy(run.sources?.data, {
+    mode: run.sources?.mode,
+  });
+  expect(verdict.ok ? "accepted" : `${verdict.code}: ${verdict.message}`).toBe(
+    "accepted",
+  );
+});
 
 test.skipIf(!RUN)(
   "a chosen motion row produces a real mp4 under the run dir",

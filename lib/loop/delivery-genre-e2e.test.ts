@@ -30,6 +30,7 @@ import type { RunManifest, RunElement } from "./manifest";
 import { freezeInput } from "./freeze";
 import { neutralDecor, type Decor } from "../newsroom/decor";
 import { DEFAULT_NEWSROOM_STATE } from "../newsroom/state";
+import { validateSourcePolicy } from "../source/policy";
 
 const RUN = process.env.SPLASH_S3_E2E === "1";
 
@@ -74,16 +75,10 @@ async function walkToApproval(
   return decided.value;
 }
 
-async function producedStaticRun(): Promise<{
-  run: RunManifest;
-  el: RunElement;
-  runDir: string;
-  decor: Decor;
-}> {
-  const runDir = mkdtempSync(join(tmpdir(), "loop-s3-e2e-run-"));
+function seedRun(runDir: string): RunManifest {
   const src = join(runDir, "src.csv");
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
-  const run: RunManifest = {
+  return {
     runId: "s3-e2e",
     schemaVersion: 4,
     route: "embed",
@@ -118,6 +113,31 @@ async function producedStaticRun(): Promise<{
     ],
     events: [],
   };
+}
+
+// ALWAYS ON — outside the gate, and the only part of this file `bun run check` runs. The
+// refusal that rotted this proof ("source-undeclared") is decidable from the fixture alone: no
+// MinIO, no engine, milliseconds. What it cannot see is the SECOND refusal this proof also hit
+// (deliver() wanting an approval), which only exists once bytes exist — see
+// docs/superpowers/specs/2026-07-27-proofs-run-design.md.
+test("the fixture declares a source the loop will accept, before any render", () => {
+  const seed = seedRun(mkdtempSync(join(tmpdir(), "loop-s3-fixture-")));
+  const verdict = validateSourcePolicy(seed.sources?.data, {
+    mode: seed.sources?.mode,
+  });
+  expect(verdict.ok ? "accepted" : `${verdict.code}: ${verdict.message}`).toBe(
+    "accepted",
+  );
+});
+
+async function producedStaticRun(): Promise<{
+  run: RunManifest;
+  el: RunElement;
+  runDir: string;
+  decor: Decor;
+}> {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-s3-e2e-run-"));
+  const run = seedRun(runDir);
   const el = run.elements[0]!;
 
   const { options } = propose(run);
