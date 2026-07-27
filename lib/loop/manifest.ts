@@ -16,6 +16,7 @@ import {
   defaultAspectFor,
   isFormatAllowed,
   allowedFormats,
+  DESTINATION_POLICY,
 } from "../core/channel-policy";
 import { isLoopBuildable, resolveBuilder } from "./buildable";
 // --- source policy (lib/source) ---
@@ -208,10 +209,6 @@ export function parseManifest(raw: unknown): RunManifest {
   return RunManifestSchema.parse(raw);
 }
 
-// The option `proposal.chosenId` names, or undefined if nothing is chosen yet. provenanceHash
-// below and lib/loop/deliver.ts both need to resolve "the chosen option" from the same
-// `chosenId` — kept here once so a caller cannot build a second, subtly different lookup
-// (the class of drift this codebase has already been bitten by).
 export type Deliverable = z.infer<typeof DeliverableSchema>;
 
 /** The render channel this element's deliverable resolves to, or undefined while it still owes
@@ -236,6 +233,10 @@ export function channelForElement(run: RunManifest, el: RunElement): Channel {
   return resolvedChannelForElement(run, el) ?? run.channel;
 }
 
+// The option `proposal.chosenId` names, or undefined if nothing is chosen yet. provenanceHash
+// below and lib/loop/deliver.ts both need to resolve "the chosen option" from the same
+// `chosenId` — kept here once so a caller cannot build a second, subtly different lookup
+// (the class of drift this codebase has already been bitten by).
 export function chosenOption(el: RunElement): FormOption | undefined {
   return el.proposal?.chosenId
     ? el.proposal.options.find((o) => o.id === el.proposal!.chosenId)
@@ -504,6 +505,20 @@ export function assertInvariants(run: RunManifest): void {
         throw new Error(
           `invariant: element ${el.id} pins the "${format}" format on a deliverable rendered at "${channel}", which carries ${allowedFormats(channel).join(", ")}`,
         );
+      // An aspect still owed leaves no single channel to judge against — but the answer can
+      // already be known: if NO shape of the destination carries the format, no future answer
+      // will make it legal. Waiting for the aspect would let a manifest sit on disk asserting a
+      // scrolly Instagram Story, which is exactly the state this invariant exists to forbid.
+      const { destination } = el.deliverable;
+      if (!channel && format) {
+        const anywhere = DESTINATION_POLICY[destination].channels.some((c) =>
+          isFormatAllowed(c, format),
+        );
+        if (!anywhere)
+          throw new Error(
+            `invariant: element ${el.id} pins the "${format}" format on a "${destination}" deliverable, and no shape of that destination carries it`,
+          );
+      }
     }
     if (
       el.proposal?.chosenId &&

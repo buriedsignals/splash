@@ -891,3 +891,50 @@ describe("a deliverable cannot be written with a format its own destination refu
     ).toThrow(/itself/);
   });
 });
+
+it("refuses a format no shape of the destination could carry, even before the aspect is answered", () => {
+  const m = base();
+  const el = {
+    ...m.elements[0]!,
+    // Social, aspect still owed — so there is no single channel to judge against yet. Neither
+    // of its shapes carries a scrolly, so the answer is knowable anyway, and waiting for the
+    // aspect would let a manifest sit on disk asserting a scrolly Instagram Story.
+    deliverable: { destination: "social" as const },
+    proposal: {
+      options: [
+        {
+          id: "slope",
+          nativeType: "slope",
+          engine: "chart-native",
+          format: "scrolly" as const,
+          why: "w",
+        },
+      ],
+      excluded: [],
+      chosenId: "slope",
+    },
+  };
+  expect(() => assertInvariants({ ...m, elements: [el] })).toThrow(/social/);
+});
+
+it("allows a format one of the destination's shapes carries while the aspect is still owed", () => {
+  const m = base();
+  const el = {
+    ...m.elements[0]!,
+    deliverable: { destination: "social" as const },
+    proposal: {
+      options: [
+        {
+          id: "slope",
+          nativeType: "slope",
+          engine: "chart-native",
+          format: "video" as const,
+          why: "w",
+        },
+      ],
+      excluded: [],
+      chosenId: "slope",
+    },
+  };
+  expect(() => assertInvariants({ ...m, elements: [el] })).not.toThrow();
+});
