@@ -7,6 +7,7 @@ import {
   deliveryGenreFor,
   fetchBounded,
   NetworkTimeoutError,
+  timeoutFromSettings,
   type Publisher,
 } from "./publishers";
 import { ok } from "./verbs/types";
@@ -143,5 +144,29 @@ describe("fetchBounded", () => {
     } finally {
       server.stop(true);
     }
+  });
+});
+
+describe("timeoutFromSettings", () => {
+  it("should read a positive numeric override from the settings bag", () => {
+    expect(timeoutFromSettings({ timeoutMs: "500" }, "timeoutMs", 20_000)).toBe(
+      500,
+    );
+  });
+
+  it("should fall back to the default when the key is absent", () => {
+    expect(timeoutFromSettings({}, "timeoutMs", 20_000)).toBe(20_000);
+  });
+
+  it("should fall back to the default on a non-numeric, zero, or negative value — a tuning knob never refuses a delivery by being malformed", () => {
+    expect(
+      timeoutFromSettings({ timeoutMs: "soon" }, "timeoutMs", 20_000),
+    ).toBe(20_000);
+    expect(timeoutFromSettings({ timeoutMs: "0" }, "timeoutMs", 20_000)).toBe(
+      20_000,
+    );
+    expect(timeoutFromSettings({ timeoutMs: "-5" }, "timeoutMs", 20_000)).toBe(
+      20_000,
+    );
   });
 });

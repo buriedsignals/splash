@@ -168,6 +168,22 @@ export class NetworkTimeoutError extends Error {
 }
 
 /**
+ * A per-call/per-newsroom override read straight from the same `settings` bag adapters already
+ * read `snippetTemplate` and `prefix` from — e.g. a self-hosted S3 endpoint slower than the
+ * default budget, or a test pointing a small bound at a deliberately hung server. Anything that
+ * is not a finite positive number is IGNORED (falls back to `fallback`): a tuning knob must
+ * never turn into a NEW way to refuse a delivery by being malformed.
+ */
+export function timeoutFromSettings(
+  settings: Record<string, string>,
+  key: string,
+  fallback: number,
+): number {
+  const raw = Number(settings[key]);
+  return Number.isFinite(raw) && raw > 0 ? raw : fallback;
+}
+
+/**
  * `fetch`, wrapped so it cannot hang forever. Every outbound call in the delivery substrate goes
  * through this — never a bare `fetch()` — so the bound lives in one place. On timeout the raw
  * `AbortError` is translated into `NetworkTimeoutError`; any other rejection (a real network
