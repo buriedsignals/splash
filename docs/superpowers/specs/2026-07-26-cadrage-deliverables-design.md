@@ -186,22 +186,29 @@ takeaway — c'est le « final report » du critère d'acceptation.
 ### 2.6 Provenance : élargie, jamais affaiblie
 
 `provenanceHash` scelle aujourd'hui `{inputData, inputArticle, cadrage, angle, chosenId,
-channel, format}`. Il devient :
+channel, format}`. Une seule clé change de **valeur** :
 
 ```ts
-channel:     channelForElement(run, el),   // le channel EFFECTIF du livrable
-destination: el.deliverable?.destination,  // absent sur une ligne legacy
-aspect:      el.deliverable?.aspect,       // absent sur une ligne legacy
+channel: channelForElement(run, el),   // le channel EFFECTIF du livrable, plus run.channel
 ```
 
-Deux propriétés, toutes deux vérifiées par test :
+**La destination et l'aspect ne sont PAS hachés à côté** — et c'est une décision, pas un oubli.
+Premier jet : les ajouter comme deux clés supplémentaires. Le test de migration (T8) l'a réfuté
+en rouge : un channel **EST** un couple (destination, aspect), la correspondance est une
+bijection (le test de round-trip de `channel-policy.test.ts` la tient telle quelle), donc les
+deux clés n'ajoutent **aucune** discrimination — mais elles coûtent la propriété qui rend la
+migration honnête. Rendre explicite la destination qu'un run avait déjà
+(`materializeDeliverables`) faisait bouger le hash et renvoyait **tous** les artefacts déjà
+produits au produce. Le channel effectif suffit.
 
-- **Jamais plus faible.** Tout ce qui était haché l'est encore ; deux clés s'ajoutent. Déplacer
-  la destination ou l'aspect périme l'artefact, exactement comme déplacer le channel le faisait.
-- **Une ligne legacy garde son hash à l'octet près.** `canonicalHash` sérialise par
-  `JSON.stringify`, qui **omet** les clés `undefined` : un élément sans `deliverable` produit la
-  chaîne canonique d'avant, et son `channelForElement` vaut `run.channel`. Aucun artefact déjà
-  sur disque ne devient périmé du seul fait de cette tranche.
+Trois propriétés, toutes vérifiées par test :
+
+- **Jamais plus faible.** Tout ce qui était haché l'est encore, et le channel est maintenant
+  résolu **par élément** — plus fin qu'avant, jamais plus grossier.
+- **Une ligne legacy garde son hash à l'octet près** (`channelForElement` vaut `run.channel`).
+  Aucun artefact déjà sur disque ne devient périmé du fait de cette tranche.
+- **Déplacer la destination ou l'aspect périme l'artefact**, parce que le channel effectif bouge
+  avec eux.
 
 ### 2.7 Migration : additive, et la normalisation en dehors du numéro de version
 

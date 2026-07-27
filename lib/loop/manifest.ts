@@ -267,13 +267,15 @@ export function provenanceHash(run: RunManifest, el: RunElement): string {
     // the run-level default would let a social still and a web still of the same angle share a
     // provenance — the exact "looks fresh at a destination it was never built for" failure the
     // channel was added to this hash to prevent, one level down.
+    //
+    // The destination and the aspect are NOT hashed alongside it, and that is deliberate rather
+    // than an omission: a channel IS a (destination, aspect) pair, the mapping is a bijection
+    // (channel-policy.test.ts's round-trip holds it that way), so hashing them too would add no
+    // discrimination and would cost the one property that makes the migration honest — writing
+    // down the destination a run always had (migrate.ts's materializeDeliverables) must not
+    // re-value the hash and send every already-produced artifact back through produce. Moving a
+    // deliverable's destination or aspect moves its channel, and the hash moves with it.
     channel: channelForElement(run, el),
-    // The two axes, hashed as themselves. `undefined` (never null) for an element that carries
-    // no deliverable: canonicalStringify goes through JSON.stringify, which OMITS undefined
-    // values, so a legacy element's canonical string — and therefore its hash — is byte-identical
-    // to what it was before issue #1. No artifact already on disk is re-valued by this widening.
-    destination: el.deliverable?.destination,
-    aspect: el.deliverable?.aspect,
     // An option carrying no `format` at all (fixtures, hand-authored manifests predating the
     // brain) hashes as null rather than as produce's "static" default: what matters is that the
     // value MOVES when the pinned format moves, and a null that never changes is stable.

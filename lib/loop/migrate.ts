@@ -2,6 +2,7 @@ import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { freezeInput } from "./freeze";
+import { aspectOf, destinationOf } from "../core/channel-policy";
 import {
   parseManifest,
   type DeliveryRecord,
@@ -49,6 +50,33 @@ export function dropLegacyElementsDelivery(
   return delivered.filter(
     (d) => !d.artifact || !d.artifact.path.startsWith("elements/"),
   );
+}
+
+// Make the run's single channel EXPLICIT on every element, as the destination + aspect pair it
+// always was (issue #1). The conversion is the identity in meaning — channelForElement and
+// provenanceHash both answer exactly what they answered before, which is asserted in
+// migrate.test.ts — so nothing already produced goes stale. What it buys is that the manifest
+// stops relying on a run-level default to say where each of its outputs goes, which is the only
+// honest starting point for a run that is about to carry a second one.
+//
+// NOT gated on `schemaVersion`, and for the reason dropLegacyElementsDelivery above already
+// records: readManifest only calls migrate() when the version DIFFERS from the current one, so a
+// version-gated conversion would never run for the on-disk v4 manifests that are exactly the
+// ones carrying the implicit channel. `schemaVersion` itself stays at 4 because the new fields
+// are optional and additive — an old manifest parses unchanged and means the same thing.
+//
+// Called by the writer that plans deliverables, never silently at read time: rewriting a manifest
+// as a side effect of reading it would make a resume report differ from the one taken a moment
+// earlier, which lib/loop/acceptance.test.ts pins as a property of this loop.
+export function materializeDeliverables(run: RunManifest): RunManifest {
+  const destination = destinationOf(run.channel);
+  const aspect = aspectOf(run.channel);
+  return {
+    ...run,
+    elements: run.elements.map((el) =>
+      el.deliverable ? el : { ...el, deliverable: { destination, aspect } },
+    ),
+  };
 }
 
 // v3 had neither a route nor a channel: every v3 run was an embeddable element rendered for

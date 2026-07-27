@@ -2,8 +2,12 @@ import { test, expect, it } from "bun:test";
 import { mkdtempSync, existsSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { migrate } from "./migrate";
-import { parseManifest } from "./manifest";
+import { migrate, materializeDeliverables } from "./migrate";
+import {
+  parseManifest,
+  channelForElement,
+  provenanceHash,
+} from "./manifest";
 
 const v1 = {
   runId: "r1",
@@ -106,4 +110,79 @@ test("a v3 manifest migrates to v4 with the embed route and the web channel", ()
   expect(m.route).toBe("embed");
   expect(m.channel).toBe("article-web");
   expect(m.elements[0].proposal!.excluded).toEqual([]);
+});
+
+// --- issue #1: making an implicit single channel explicit, without changing what it means ---
+
+const legacyRun = (channel: "article-web" | "social-vertical" | "social-feed") => ({
+  runId: "r9",
+  schemaVersion: 4 as const,
+  route: "embed" as const,
+  channel,
+  input: { data: { path: "input/data.csv", sha256: "a".repeat(64) } },
+  orient: {
+    profile: { columns: ["c", "v"], numericColumns: ["v"], rowCount: 3 },
+    supportsPoint: true,
+  },
+  elements: [
+    {
+      id: "e1",
+      angle: { confirmedTakeaway: "t", altInsight: "a", unit: "u" },
+      proposal: {
+        options: [{ id: "slope", nativeType: "slope", why: "w" }],
+        excluded: [],
+        chosenId: "slope",
+      },
+    },
+  ],
+  events: [],
+});
+
+it("writes down the destination and aspect a single-channel run always meant", () => {
+  const run = parseManifest(legacyRun("social-vertical"));
+  const after = materializeDeliverables(run);
+  expect(after.elements[0]!.deliverable).toEqual({
+    destination: "social",
+    aspect: "portrait",
+  });
+});
+
+it("changes nothing that anything downstream reads — same channel, same provenance", () => {
+  for (const ch of ["article-web", "social-vertical", "social-feed"] as const) {
+    const run = parseManifest(legacyRun(ch));
+    const after = materializeDeliverables(run);
+    expect(channelForElement(after, after.elements[0]!)).toBe(
+      channelForElement(run, run.elements[0]!),
+    );
+    // The whole point: an artifact already on disk must NOT go stale just because the run
+    // learned to say out loud what it already meant.
+    expect(provenanceHash(after, after.elements[0]!)).toBe(
+      provenanceHash(run, run.elements[0]!),
+    );
+  }
+});
+
+it("leaves an element that already declares a deliverable alone", () => {
+  const run = parseManifest({
+    ...legacyRun("article-web"),
+    elements: [
+      {
+        ...legacyRun("article-web").elements[0]!,
+        deliverable: { destination: "print" },
+      },
+    ],
+  });
+  const after = materializeDeliverables(run);
+  expect(after.elements[0]!.deliverable).toEqual({ destination: "print" });
+});
+
+it("carries a v1 manifest all the way to an explicit web deliverable", () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-mig-deliv-"));
+  const migrated = migrate(v1, runDir);
+  const after = materializeDeliverables(migrated);
+  expect(after.elements[0]!.deliverable).toEqual({
+    destination: "article-web",
+    aspect: "landscape",
+  });
+  rmSync(runDir, { recursive: true, force: true });
 });
