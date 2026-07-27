@@ -50,6 +50,23 @@ const CLAIMS = [
   "Un demi-siècle après, rien n'est revenu — et c'est cela, l'histoire.",
 ];
 
+// Opens the built page and returns the text of its narrative steps, in order. A scrolly derives
+// its captions in the browser, so the DOM is the only place the shipped walk can be read.
+async function readRenderedSteps(pagePath: string): Promise<string[]> {
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch();
+  try {
+    const tab = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+    await tab.goto(`file://${pagePath}`, { waitUntil: "networkidle" });
+    await tab.waitForSelector("[data-step-index]", { timeout: 30_000 });
+    return await tab.$$eval("[data-step-index]", (nodes) =>
+      nodes.map((n) => (n.textContent ?? "").replace(/\s+/g, " ").trim()),
+    );
+  } finally {
+    await browser.close();
+  }
+}
+
 function proofRun() {
   const runDir = mkdtempSync(join(tmpdir(), "beats-render-proof-"));
   const src = join(runDir, "sea-ice.csv");
@@ -152,12 +169,27 @@ proof(
     if (!result.ok) return;
 
     const page = result.value.files.find((f) => f.endsWith("scrolly.html"))!;
-    const html = readFileSync(page, "utf8");
 
-    // 4. THE MEASUREMENT. Every authored claim is on the page…
-    for (const claim of CLAIMS) expect(html).toContain(claim);
-    // …and not one of the derived captions is.
-    for (const caption of draftCaptions) expect(html).not.toContain(caption);
+    // 4. THE MEASUREMENT — in a browser, off the rendered step nodes.
+    //
+    // It used to read the built file as a STRING. Half of that was vacuous, measured: the
+    // derived captions are produced at RUNTIME by deriveChartStory, so they are never in the
+    // bundle at all — `expect(html).not.toContain(caption)` passed whether the beats were
+    // authored or not. This codebase already wrote that rule down after a false alarm on a
+    // palette: grepping a single-file bundle is not evidence, because what the page SHOWS is
+    // computed after it loads. So the page is opened and the steps are read from the DOM.
+    // Six cards, not four: the scrolly frames the narrative walk with its own intro and
+    // takeaway cards (the "intro must not equal the takeaway" rule this project already
+    // pinned). The authored beats are the walk BETWEEN them, so they are matched by content
+    // rather than by count.
+    const steps = await readRenderedSteps(page);
+    const walk = steps.join(" \u2022 ");
+    expect(steps.length).toBeGreaterThanOrEqual(CLAIMS.length);
+    for (const claim of CLAIMS) expect(walk).toContain(claim);
+    // …and not one of the derived captions survives on the rendered page. THIS one can now
+    // fail: the derived run really does paint these strings (verified on the same fixture
+    // without beats), so their absence here is the authored walk having replaced them.
+    for (const caption of draftCaptions) expect(walk).not.toContain(caption);
 
     rmSync(runDir, { recursive: true, force: true });
   },
