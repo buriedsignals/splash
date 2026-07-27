@@ -135,3 +135,58 @@ export function allPublishers(): Publisher[] {
 export function resetPublishersForTest(): void {
   REGISTRY.clear();
 }
+
+// Bounded time — docs/superpowers/specs/2026-07-26-bounded-time-design.md. The ONE place this
+// mechanism lives, for the same reason artifactMediaFor/deliveryGenreFor above are here: every
+// adapter that reaches the network (s3.ts, cloudflare-pages.ts) had its own unbounded fetch,
+// and "how long do we wait before refusing" is exactly the kind of fact that drifts if it lives
+// in two places.
+
+/** Control calls: metadata, verification GETs, a single poll attempt. Not the artifact's bytes. */
+export const DEFAULT_NETWORK_TIMEOUT_MS = 20_000;
+
+/** The two call sites that transmit the artifact's own bytes (S3 PUT, Cloudflare asset upload)
+ * need a wider budget than a metadata call — a large video over a slow uplink is not a hung
+ * endpoint. Kept as a SEPARATE constant rather than one flat number applied everywhere: see the
+ * design note §3.2 for why a single timeout would be dishonest here. */
+export const DEFAULT_UPLOAD_TIMEOUT_MS = 120_000;
+
+/** A bounded fetch's typed failure — never a raw AbortError. Names the endpoint and the bound
+ * that was exceeded, so the refusal a journalist eventually sees (each adapter wraps this in its
+ * own `fail("engine-failed", …)`) says which endpoint, how long it waited, and what to check. */
+export class NetworkTimeoutError extends Error {
+  constructor(
+    readonly url: string,
+    readonly timeoutMs: number,
+  ) {
+    super(
+      `no response from ${url} within ${timeoutMs}ms — check the endpoint is reachable, ` +
+        `or pass a longer timeoutMs if this call carries a large upload over a slow connection`,
+    );
+    this.name = "NetworkTimeoutError";
+  }
+}
+
+/**
+ * `fetch`, wrapped so it cannot hang forever. Every outbound call in the delivery substrate goes
+ * through this — never a bare `fetch()` — so the bound lives in one place. On timeout the raw
+ * `AbortError` is translated into `NetworkTimeoutError`; any other rejection (a real network
+ * error, a non-2xx that the caller inspects on the resolved Response) passes through unchanged.
+ */
+export async function fetchBounded(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs: number = DEFAULT_NETWORK_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (e) {
+    if ((e as { name?: string }).name === "AbortError")
+      throw new NetworkTimeoutError(url, timeoutMs);
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}

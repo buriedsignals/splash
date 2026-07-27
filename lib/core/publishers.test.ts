@@ -5,6 +5,8 @@ import {
   allPublishers,
   resetPublishersForTest,
   deliveryGenreFor,
+  fetchBounded,
+  NetworkTimeoutError,
   type Publisher,
 } from "./publishers";
 import { ok } from "./verbs/types";
@@ -72,5 +74,74 @@ describe("deliveryGenreFor", () => {
   it("should answer for every format in the vocabulary", () => {
     for (const f of VISUAL_FORMATS)
       expect(["file", "embed"]).toContain(deliveryGenreFor(f));
+  });
+});
+
+describe("fetchBounded", () => {
+  // A REAL server that accepts the connection and then goes silent forever — not a mocked
+  // clock. If fetchBounded had no bound, this test itself would hang until the runner's own
+  // timeout, which is exactly the failure mode this mechanism exists to close.
+  function hungServer() {
+    return Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch: () => new Promise<Response>(() => {}), // never resolves, never rejects
+    });
+  }
+
+  it("should refuse with a NetworkTimeoutError instead of hanging when the endpoint never responds", async () => {
+    const server = hungServer();
+    try {
+      const start = Date.now();
+      let caught: unknown;
+      try {
+        await fetchBounded(`http://127.0.0.1:${server.port}/`, {}, 200);
+      } catch (e) {
+        caught = e;
+      }
+      const elapsed = Date.now() - start;
+      expect(caught).toBeInstanceOf(NetworkTimeoutError);
+      // Fires at the bound, not "eventually" — proves the abort actually happened rather than
+      // some unrelated rejection racing it.
+      expect(elapsed).toBeLessThan(2_000);
+    } finally {
+      server.stop(true);
+    }
+  });
+
+  it("should name the endpoint and the bound in the refusal message", async () => {
+    const server = hungServer();
+    try {
+      const url = `http://127.0.0.1:${server.port}/`;
+      let message = "";
+      try {
+        await fetchBounded(url, {}, 150);
+      } catch (e) {
+        message = (e as Error).message;
+      }
+      expect(message).toContain(url);
+      expect(message).toContain("150");
+    } finally {
+      server.stop(true);
+    }
+  });
+
+  it("should resolve normally when the endpoint answers well inside the bound", async () => {
+    const server = Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch: () => new Response("ok"),
+    });
+    try {
+      const res = await fetchBounded(
+        `http://127.0.0.1:${server.port}/`,
+        {},
+        5_000,
+      );
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe("ok");
+    } finally {
+      server.stop(true);
+    }
   });
 });
