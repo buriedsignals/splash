@@ -16,13 +16,14 @@ Three rules hold for every command:
   are strictly read-only — they never write a byte into the run directory, not even to
   migrate an old manifest (see `stale-schema` below). A host keeps nothing between calls; the
   run's `run.json` is the only source of truth.
-- **Seven commands write, and each writes one thing.** `verb` writes inside the paths its own
+- **Eight commands write, and each writes one thing.** `verb` writes inside the paths its own
   request names. `init` creates the `run.json` of a directory that held none (plus the frozen
-  copies of the inputs it declared). `advance`, `confirm-angle`, `phrase`, `choose-form` and
-  `request-delivery` write the `run.json` of the run they were pointed at (and, for `advance`,
-  whatever the loop's own step produces beneath it). Nothing else on disk is touched, and a
-  REFUSED command writes nothing at all — a refusal always leaves the run byte-identical, which
-  is what makes it safe to retry.
+  copies of the inputs it declared). `advance`, `confirm-angle`, `phrase`, `choose-form`,
+  `approve` and `request-delivery` write the `run.json` of the run they were pointed at (and,
+  for `advance`, whatever the loop's own step produces beneath it — a render, a review still, a
+  published package; `approve` also writes the sign-off document it points at). Nothing else on
+  disk is touched, and a REFUSED command writes nothing at all — a refusal always leaves the run
+  byte-identical, which is what makes it safe to retry.
 
 ## Exit codes
 
@@ -36,22 +37,30 @@ These three are exhaustive, and they hold for every input: an unreadable stdin, 
 flag, a hostile payload, or a residual defect inside the façade all still leave one JSON
 document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
-## The eleven commands
+## The twelve commands
 
 Read-only: `verbs`, `state`, `next`, `newsroom`. Acting: `init`, `advance`, `confirm-angle`,
-`phrase`, `choose-form`, `request-delivery`, `verb`.
+`phrase`, `choose-form`, `approve`, `request-delivery`, `verb`.
 
 The whole journey, in the order a host walks it — every step is one of these commands, and none
 of them needs a run.json written by hand:
 
 ```
 init → advance (orient) → confirm-angle → advance (propose) → state (read the offer)
-     → phrase → choose-form → advance (produce) → request-delivery → advance (deliver)
+     → phrase → choose-form → advance (produce) → request-delivery
+     → advance (capture) → advance (review) → advance (preview) → state (read the findings)
+     → approve → advance (deliver)
 ```
 
 `advance` performs whatever deterministic step is valid; the others are the turns only a
 journalist or a desk can take. `state`/`next` say which one is owed at any moment, and every
 acting command answers with the new `nextActions`, so a host never has to guess.
+
+**Publishing has a gate, and it is a human one.** Between a produced artifact and a published
+one sit four states: the deliverable is *captured* at the container it publishes into, the
+measurements are turned into severity-bearing *findings*, the real file is *presented*, and only
+then can a journalist *approve* it. `deliver` refuses an artifact nobody approved — the router
+is not the only thing holding the gate.
 
 ### `verbs`
 
@@ -131,11 +140,11 @@ $ bun lib/host/cli.ts verbs
       },
       {
         "name": "capture",
-        "implemented": false
+        "implemented": true
       },
       {
         "name": "review",
-        "implemented": false
+        "implemented": true
       },
       {
         "name": "publish",
@@ -225,11 +234,10 @@ $ bun lib/host/cli.ts verbs
 
 Exit code `0`. Notes on what a host can read out of that:
 
-- `capture`/`review` are declared as part of the closed vocabulary even though they are not
-  callable yet — a host sees they exist and are not wired, rather than discovering that as an
-  error from `verb`. `publish` used to sit in that list and no longer does: the Livraison
-  sub-project gave it a body (`lib/core/verbs/publish.ts`), so it reports `implemented: true`
-  and dispatches to the publisher registry.
+- Every verb in the closed vocabulary now has a body. `capture` and `review` used to report
+  `implemented: false` — a host could see they existed and were not wired. They are wired: the
+  loop calls them on the road from a produced artifact to a published one (`advance`), and they
+  are callable directly through `verb` for a host that wants to measure something itself.
 - **`hostCommand` means the verb is not callable through `verb`.** `publish` carries it: the
   façade refuses `verb publish` and the named command performs it through the editorial loop
   (see below for why). A host reads the detour from the declaration instead of discovering it
@@ -355,6 +363,13 @@ $ bun lib/host/cli.ts state --run /tmp/host-readme-demo
   }
 }
 ```
+
+Once a review exists, each element also carries **`verification`** — the terms of the approval
+gate, so a host told `nextActions: ["approve"]` can see what it is being asked to decide:
+`findings` (id, criterion, severity, status, summary, evidence), `tasteRisk` (the lane no
+machine grades), `preview` (which bytes were shown and how), `independentSemanticReview`, and
+`approval` — `approvable` plus every reason the gate would refuse for, drawn from the same
+function the gate itself runs, so the report cannot promise something `approve` then declines.
 
 Once an offer exists, each element also carries `proposal` — **the offer, whole**: the options
 with their `whySource` grounding, the discarded forms with their reasons, the chosen id, and the
@@ -680,6 +695,112 @@ journalist read it before choosing (the tool offers, the journalist decides). Th
 exception is a form nothing in the loop can build — choosing it would strand the run on its own
 dead end, so it is refused **in the words the offer displayed**.
 
+### `approve --run <dir> [--element <id>]`
+
+The gate between a produced visual and a published one — and a **human** decision, which is why
+it is a command rather than something `advance` performs. It is also the only writer of the
+run's `approved` record.
+
+Before it can be reached, `advance` carries three deterministic steps that `next` names in turn:
+
+- **`capture`** puts the real deliverable in front of the container it publishes into and
+  measures it: the component's own box, the document scroll, the marks and colours actually
+  painted, and whether the title, unit, source and alt text are present, visible and *inside the
+  frame*. A responsive deliverable is measured at the article container plus the narrow (360) and
+  wide (1600) edges of the contract. Nothing is judged here — these are facts.
+- **`review`** turns those facts into structured findings with a severity read from one central
+  table, records who produced them, and routes the axes no mechanism can settle (density,
+  whitespace, palette adjacency, title/takeaway divergence) into a separate `tasteRisk` lane that
+  carries no verdict field at all.
+- **`preview`** resolves the deliverable *from the manifest*, re-hashes it, refuses a file that is
+  not the pinned format's own (a png cannot preview an interactive), presents it, and records
+  which bytes were shown and how.
+
+Then read the gate's own terms from `state` (`elements[].verification`) and approve:
+
+```
+$ bun lib/host/cli.ts approve --run /tmp/host-readme-journey
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "approved": "el1",
+    "nextActions": [
+      "deliver"
+    ]
+  }
+}
+```
+
+The ceremony is an **optional** JSON document on stdin — the only document on this surface a
+command may be given none of, because approving a visual with nothing open to acknowledge must
+not require one:
+
+```json
+{
+  "actorLabel": "Yvan Pandelé",
+  "acknowledged": ["unit-missing"],
+  "overrides": [{ "findingId": "no-capture", "reason": "reviewed frame by frame in the edit" }],
+  "signoff": { "signerId": "yvan", "signature": "<base64>" }
+}
+```
+
+What the host may **not** supply is which bytes an override covers: the finding id and the
+reason come from the journalist, and the timestamp, the actor, the artifact hash and the
+provenance hash are written by Splash from the run. An override therefore cannot claim to be
+about a different artifact than the one in front of them — and a re-production moves both
+hashes, so it lapses on its own, with nobody having to remember to revoke it.
+
+Every refusal lists **all** of its reasons at once (a gate that reports one blocker at a time
+teaches people to re-run it rather than read it), exit `1`, run untouched:
+
+```json
+{
+  "ok": false,
+  "code": "invalid-request",
+  "message": "approve: this visual cannot be approved yet — preview-not-presented: no preview of the deliverable was recorded — approval cannot be asked for a visual nobody has been shown"
+}
+```
+
+A **blocking** finding must be resolved or explicitly overridden; a **warning** asks only to be
+acknowledged; an **informational** finding asks nothing. The severity is never chosen by whoever
+found the defect — it is read from one table, so the same defect cannot block in one producer
+and merely advise in another.
+
+**The Ed25519 sign-off and this command are one concept, not two.** `approved` says *what* was
+approved; the signature says *who* approved it. When `NEWSROOM-PROFILE.md` declares
+`requiredSigners`, no approval can be written at all without a verified signature from one of
+them over the exact artifact bytes — the editor signs with
+`skills/splash/scripts/sign-artifact.mjs <artifact> --proposal <element id> --key <pem>` exactly
+as before, and the signature is carried inside the sign-off document `approved.signoffPath`
+names. That document is written beside the run (`signoffs/<element>.json`) and records what was
+acknowledged, what was overridden and why, the taste risks routed to a human, and whether an
+independent semantic review was available.
+
+**No independent semantic review runs, and the record says so.** Splash does not send
+unpublished reporting to a third-party service — the retention risk for a newsroom is real and it
+contradicts a local-first tool — so `independentSemanticReview` reads `"unavailable"`. It is
+never dressed up as a pass.
+
+#### Presenting the deliverable: two settings
+
+`preview` launches the platform's viewer on the real file. Two environment variables change
+that, and both are ordinary operating conditions rather than test hooks:
+
+| Variable | Effect |
+|---|---|
+| `SPLASH_PREVIEW_OPENER=<command>` | Use this command instead of the platform's own. It receives the deliverable's absolute path as its single argument. |
+| `SPLASH_NO_VIEWER=1` | Do not launch anything: **the host presents the deliverable itself** (an agent embedding the image in its transcript), or the machine has no display. |
+
+Whatever happens, the record says what actually happened: `presentedAs` is `"opened"` only when
+a viewer really ran and exited 0. Otherwise it is `"path-printed"` **with the reason**, written
+by Splash from the signal that caused it — a printed path counts as a preview only when it
+records why no viewer could be opened, which is what stops the fallback from becoming a free
+square. On Linux with neither `DISPLAY` nor `WAYLAND_DISPLAY`, the fallback is deduced rather
+than configured.
+
 ### `request-delivery --run <dir> [--to <id,id>]`
 
 The second decision: where the produced element goes. It does **not** publish — it records the
@@ -698,11 +819,14 @@ $ bun lib/host/cli.ts request-delivery --run /tmp/host-readme-drive
       "zip"
     ],
     "nextActions": [
-      "deliver"
+      "capture"
     ]
   }
 }
 ```
+
+Note what became valid: **`capture`, not `deliver`**. The decision is what opens the road to
+publication, and that road runs through the verification chain above.
 
 Without `--to`, the destination is derived from the format's **genre**: a static image or a video
 is handed over as a portable package, an interactive or a scrolly goes to a ready host, and there

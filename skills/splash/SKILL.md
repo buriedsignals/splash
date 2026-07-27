@@ -494,11 +494,32 @@ below is now reachable from a host that is not JavaScript.
 | writing the offer's prose | `applyPhrasing(run, elId, phrased)` (`lib/loop/phrase.ts`) — host: `phrase --run <dir> < phrasing.json` | see the phrasing contract above — ids, count, exact order, discards, marks, every number grounded, and a blank `why` |
 | which form gets built | `chooseForm(el, id)` (`lib/loop/choose.ts`) — host: `choose-form --run <dir> --option <id>` | an id that is not in the offer (naming the ones that are) · an empty offer (carrying the brain's own refusal) · a form nothing can build |
 | where it goes | `requestDelivery(run, el, decor, opts)` (`lib/loop/request-delivery.ts`) — host: `request-delivery --run <dir> [--to <id,id>]` | nothing produced yet · a stale artifact · a destination this install does not know |
+| shipping it | `approve(run, el, runDir, ceremony, policy)` (`lib/loop/approve.ts`) — host: `approve --run <dir> [< ceremony.json]` | an artifact nobody CAPTURED, REVIEWED or was SHOWN · a blocking finding still open without a valid override · a warning nobody acknowledged · an override with no reason or no actor, or naming a finding the review does not carry · under `requiredSigners`, a missing/foreign/invalid Ed25519 signature over the artifact's exact bytes |
 
 Then the deterministic steps run themselves: `advance()` (`lib/loop/driver.ts`), or
 `advance --run <dir>` from a host that is not JavaScript. Deciding and sending are TWO acts —
 `request-delivery` records where it goes, `advance` publishes it — so a missing credential never
-erases what the journalist decided. **Publishing never goes through `verb publish`**: that path
+erases what the journalist decided.
+
+**★ THE GATE IS MECHANICAL TOO — "show the render" is no longer prose.** Gate 3's rule (below)
+is that nobody is asked to approve a visual they have not seen, and in the V1 flow that rule
+lives in this document, which is what made it skippable (issue #3). In the V2 loop it is a
+STATE: between `produce` and `deliver`, `nextActions` routes through **capture → review →
+preview → approve**, each one a step `advance` performs, and `deliver()` refuses an artifact
+that carries no approval covering its exact provenance.
+
+| The step | What it does | What it refuses to let pass |
+|---|---|---|
+| `capture` | opens the REAL deliverable at the container it publishes into (the newsroom's embed box, else the channel's own size) and measures the component, its furniture and its colours — at the article width plus the narrow/wide edges for a responsive one | furniture that is missing, hidden, or outside the frame; a component that overflows its container; an image that is not the size its destination publishes at; a still taken for another destination |
+| `review` | turns those measurements into findings whose severity comes from ONE central table, records the reviewer's mode and hashes, and routes the axes no machine can settle into a verdict-free `tasteRisk` lane | a severity chosen by whoever found the defect; a claim of independence nobody earned (`independentSemanticReview` reads `unavailable`, never `pass`) |
+| `preview` | resolves the deliverable FROM THE MANIFEST, re-hashes it, and presents it — recording which bytes were shown and how | a png standing in for an interactive; stale bytes; a printed path with no reason why no viewer opened |
+| `approve` | the journalist's decision, written by `approveElement` — the only sanctioned writer of `approved` — plus a sign-off document beside the run | everything in the row above, and publication itself: `deliver` has no path around it |
+
+**The Ed25519 sign-off is not a second approval.** `approved` says WHAT was approved; the
+signature says WHO. With `requiredSigners` in `NEWSROOM-PROFILE.md`, an approval cannot be
+written without a verified signature over the artifact's bytes, and it travels inside the
+sign-off document `approved.signoffPath` names — the editor still signs with
+`scripts/sign-artifact.mjs`, unchanged. **Publishing never goes through `verb publish`**: that path
 skips the sign-off, the provenance-freshness check, the profile-derived metadata, the readiness
 and the genre legality, and the façade refuses it for that reason.
 
