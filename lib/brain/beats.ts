@@ -1,0 +1,262 @@
+// lib/brain/beats.ts
+// THE DRAFT half of the beats seam — the exact counterpart of lib/brain/offer.ts.
+//
+// A chart scrolly is a narrative page, and until now its narrative beats were DERIVED from the
+// data and shipped as-is: skills/scrolly/src/Scrolly.tsx:139 calls deriveChartStory(), the
+// sample configs carry no `beats` at all, and the auto-picked captions ("2007 — 4.3") appear
+// under a journalist's byline. The locked socle says the opposite — on the article branch the
+// tool COMPOSES the text the journalist brings and does not write the journalism.
+//
+// So this module drafts, and nothing here ships. It hands over DATA — ids, an order, anchors,
+// the numbers each claim may cite — with every claim deliberately UNWRITTEN, exactly as
+// buildOffer hands over `whySource` with every `why` empty. lib/brain/verify-beats.ts is what
+// keeps the authoring turn to authoring, and lib/loop/beats.ts is the one path that calls it.
+//
+// THE NAME IS THE POINT. `deriveChartStory` reads like a fact — *the* story of the chart —
+// while it is a bet on data salience; the codebase has just applied that same discipline to
+// `intentsFromAngle` → `suggestIntents` ("a name that reads like a fact is how a guess ends up
+// believed"). What this produces is a SuggestedBeat whose caption is a `draftText`. The engine's
+// own function keeps its misleading name for now: it lives in skills/chart-native/src/, outside
+// this slice's file boundary (see the design spec §1.1).
+import { ARC_ROLES, type ArcRole } from "../core/claim-arc";
+import { parseCsvRows } from "../loop/profile";
+
+export type BeatAnchor =
+  | { kind: "x"; value: string } // line: a value of the x column
+  | { kind: "category"; value: string }; // bar: a value of the category column
+
+export type BeatSource = {
+  /** The numbers THIS beat's claim may cite — its anchor and its value. */
+  facts: Record<string, string>;
+  /** The numbers ANY beat of the plan may cite — the shape of the series. */
+  shared: Record<string, string>;
+};
+
+export type SuggestedBeat = {
+  /** Positional — the id encodes the order, which is what verifyBeats checks. */
+  id: string;
+  anchor: BeatAnchor;
+  role: ArcRole;
+  /** A data-tied caption offered as a STARTING POINT. Shown to the journalist, never shipped:
+   *  lib/loop/produce.ts refuses to build a page whose beats carry no authored text. */
+  draftText: string;
+  beatSource: BeatSource;
+};
+
+export type BeatDraft = { beats: SuggestedBeat[]; refusal?: string };
+
+export type SuggestBeatsInput = {
+  nativeType: string;
+  dataCsv: string;
+  /** Short caption unit ("%", "CHF"). Preferred over `unit`, which is the long axis label. */
+  valueUnit?: string;
+  unit?: string;
+  /** The journalist's OWN anchor list, in their own order — the re-draft door that makes
+   *  verifyBeats' exact-order refusal legitimate rather than a dead end. */
+  anchors?: string[];
+};
+
+// The engine's beats override supports line and bar only (skills/chart-native/src/chart-story.ts,
+// narrativeBeatErrors). Refused in THE ENGINE'S OWN WORDS rather than in a second wording a
+// journalist would have to reconcile with the one the render gate shows.
+const BEAT_TYPES = new Set(["line", "bar"]);
+
+/** A claim-arc needs establish + at least one build + payoff. Fewer anchors than this is not a
+ *  short argument, it is no argument — and a narrative PAGE is exactly where that matters. */
+const MIN_BEATS = 3;
+
+/** Round to at most two decimals and drop the trailing zeros, so a computed fact reads the way
+ *  a journalist would write it ("-2.7", not "-2.7000000000000006"). */
+function fmtNum(v: number): string {
+  return String(Math.round(v * 100) / 100);
+}
+
+function shortUnit(input: SuggestBeatsInput): string {
+  const vu = input.valueUnit?.trim();
+  if (vu) return vu;
+  const uu = input.unit?.trim();
+  // Mirrors chart-story.ts's caption rule: fall back to the axis label only when it is already
+  // short enough to sit inside a sentence.
+  return uu && uu.length <= 4 && !uu.includes(" ") ? uu : "";
+}
+
+function withUnit(value: string, unit: string): string {
+  if (!unit) return value;
+  return unit === "%" ? `${value}%` : `${value} ${unit}`;
+}
+
+/** establish opens, payoff closes, everything between builds — and `turn` is NEVER guessed.
+ *  The turn is the pivot of the argument (Cohn's Peak), an editorial judgement about what the
+ *  point IS; the journalist can set it, and arcErrors keeps the result well-formed. */
+function roleAt(i: number, n: number): ArcRole {
+  if (i === 0) return "establish";
+  if (i === n - 1) return "payoff";
+  return "build";
+}
+
+// The notable points of a LINE: always the first and the last, plus the interior points with the
+// biggest step-to-step move. Ascending, unique, at most four. Mirrors chart-native's
+// lineNotableIndices — pinned byte-for-byte by lib/brain/beats-drift.test.ts, which imports the
+// engine's own function. (The right home for this is lib/core, where claim-arc.ts was moved for
+// exactly this reason; that move edits chart-native and is outside this slice — spec §8.)
+function lineAnchorIndices(ys: number[]): number[] {
+  const n = ys.length;
+  if (n <= 2) return ys.map((_, i) => i);
+  const interior = ys
+    .slice(1, -1)
+    .map((y, i) => ({ i: i + 1, jump: Math.abs(y - ys[i]) }))
+    .sort((a, b) => b.jump - a.jump || a.i - b.i)
+    .slice(0, 2)
+    .map((c) => c.i);
+  return [...new Set([0, ...interior, n - 1])].sort((a, b) => a - b);
+}
+
+// The salient rows of a BAR: the three leaders plus the tail — a distribution two beats cannot
+// carry. Returned in DATA ROW ORDER, not in rank order, and that is a mechanical constraint
+// rather than a preference: a spec carrying beats resolves the bar sort to "none"
+// (resolveBarSort), so the bars render in data row order, and a walk in any other order makes
+// the highlight jump around the chart — which is precisely what narrativeBeatWarnings exists to
+// flag. The SET is the engine's (barRankedReveals); the ORDER follows what will be rendered.
+function barAnchorIndices(values: number[]): number[] {
+  const ranked = values
+    .map((v, i) => ({ v, i }))
+    .sort((a, b) => b.v - a.v || a.i - b.i);
+  const picked = new Set(
+    ranked.slice(0, Math.min(3, ranked.length)).map((r) => r.i),
+  );
+  if (ranked.length > picked.size) picked.add(ranked[ranked.length - 1]!.i);
+  return [...picked].sort((a, b) => a - b);
+}
+
+export function suggestBeats(input: SuggestBeatsInput): BeatDraft {
+  if (!BEAT_TYPES.has(input.nativeType))
+    return {
+      beats: [],
+      refusal:
+        `a beat plan is line and bar chart scrollies only (got "${input.nativeType}") — ` +
+        `the engine's own beats override supports no other type`,
+    };
+
+  const { columns, rows, numericColumns } = parseCsvRows(input.dataCsv);
+  const labelCol = columns[0];
+  if (!labelCol)
+    return {
+      beats: [],
+      refusal: "the data has no columns to anchor a beat on",
+    };
+  const valueCol = numericColumns[numericColumns.length - 1];
+  if (!valueCol)
+    return {
+      beats: [],
+      refusal:
+        "no numeric column in the data — a beat asserts a value, and there is none to assert",
+    };
+  // A native line draws ONE series; chart-native refuses a wide multi-series CSV outright
+  // (UnsupportedNativeType → the dw-chart fallback). Drafting beats for a chart that will never
+  // be built this way would be work thrown away, and a refusal here says so before it happens.
+  const seriesCols = numericColumns.filter((c) => c !== labelCol);
+  if (input.nativeType === "line" && seriesCols.length > 1)
+    return {
+      beats: [],
+      refusal:
+        `a line beat plan draws one series, and the data carries ${seriesCols.length} ` +
+        `(${seriesCols.join(", ")}) — narrow it to the one the point is about`,
+    };
+
+  const labels = rows.map((r) => String(r[labelCol]));
+  const values = rows.map((r) => Number(r[valueCol]));
+
+  // WHICH rows carry the story. An explicit list is the journalist's own — honoured in their
+  // order, and refused loud on an anchor the data does not contain (the same philosophy as the
+  // engine's fail-loud anchor tripwire: a typo must never silently drop or shift a beat).
+  let indices: number[];
+  if (input.anchors) {
+    const missing = input.anchors.filter((a) => !labels.includes(a));
+    if (missing.length)
+      return {
+        beats: [],
+        refusal:
+          `anchor${missing.length > 1 ? "s" : ""} ${missing.map((m) => `"${m}"`).join(", ")} ` +
+          `not found in the data — valid values: ${labels.join(", ")}`,
+      };
+    indices = input.anchors.map((a) => labels.indexOf(a));
+  } else {
+    indices =
+      input.nativeType === "line"
+        ? lineAnchorIndices(values)
+        : barAnchorIndices(values);
+  }
+
+  if (indices.length < MIN_BEATS)
+    return {
+      beats: [],
+      refusal:
+        `${indices.length} anchor${indices.length === 1 ? "" : "s"} is not an argument — a ` +
+        `claim-arc opens on an establish beat, needs at least one build, and closes on a ` +
+        `payoff (${ARC_ROLES.join(" → ")}). Bring more of the series, or make this an ` +
+        `embeddable element rather than a narrative page`,
+    };
+
+  const unit = shortUnit(input);
+  const shared = sharedFacts(input.nativeType, values);
+  const kind: BeatAnchor["kind"] =
+    input.nativeType === "line" ? "x" : "category";
+  const valueRank = [...values]
+    .map((v, i) => ({ v, i }))
+    .sort((a, b) => b.v - a.v || a.i - b.i)
+    .map((r) => r.i);
+
+  return {
+    beats: indices.map((rowIndex, i) => {
+      const label = labels[rowIndex]!;
+      const value = fmtNum(values[rowIndex]!);
+      return {
+        id: `beat-${i + 1}`,
+        anchor: { kind, value: label } as BeatAnchor,
+        role: roleAt(i, indices.length),
+        draftText: `${label} — ${withUnit(value, unit)}`,
+        beatSource: {
+          facts: {
+            [kind === "x" ? "x" : "category"]: label,
+            value,
+            rank: String(valueRank.indexOf(rowIndex) + 1),
+          },
+          shared,
+        },
+      };
+    }),
+  };
+}
+
+// The plan-wide numbers, computed once and cited by any beat. This is the brain's job and
+// nowhere else's — lib/brain/facts.ts's header states the rule this follows: "every number a
+// limit can be checked against comes from here, so a limit is never checked against a guess".
+function sharedFacts(
+  nativeType: string,
+  values: number[],
+): Record<string, string> {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (nativeType === "line") {
+    const first = values[0]!;
+    const last = values[values.length - 1]!;
+    return {
+      points: String(values.length),
+      first: fmtNum(first),
+      last: fmtNum(last),
+      min: fmtNum(min),
+      max: fmtNum(max),
+      change: fmtNum(last - first),
+      changePercent: first === 0 ? "0" : fmtNum(((last - first) / first) * 100),
+    };
+  }
+  const total = values.reduce((a, b) => a + b, 0);
+  return {
+    rows: String(values.length),
+    top: fmtNum(max),
+    bottom: fmtNum(min),
+    range: fmtNum(max - min),
+    total: fmtNum(total),
+    topShare: total === 0 ? "0" : fmtNum((max / total) * 100),
+  };
+}
