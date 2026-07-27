@@ -479,6 +479,8 @@ function renderReadiness(copy: PageCopy): void {
     missing: blocking.length,
     degraded: live.filter((l) => l.status === "unverified").length,
   };
+  // A zero count gets no pill: "0 missing" in the missing colour reads, at a glance, as a
+  // warning about nothing. The ready count always shows, because zero ready IS worth seeing.
   const summary = document.getElementById("summary")!;
   summary.replaceChildren(
     el(
@@ -486,11 +488,15 @@ function renderReadiness(copy: PageCopy): void {
       { class: "pill pill-ready" },
       `${counts.ready} ${copy.summaryReady}`,
     ),
-    el(
-      "span",
-      { class: "pill pill-missing" },
-      `${counts.missing} ${copy.summaryMissing}`,
-    ),
+    ...(counts.missing
+      ? [
+          el(
+            "span",
+            { class: "pill pill-missing" },
+            `${counts.missing} ${copy.summaryMissing}`,
+          ),
+        ]
+      : []),
     ...(counts.degraded
       ? [
           el(
