@@ -14,7 +14,7 @@
 //   SPLASH_S3_E2E=1 SPLASH_S3_ACCESS_KEY_ID=minioadmin \
 //     SPLASH_S3_SECRET_ACCESS_KEY=minioadmin bun test lib/loop/delivery-genre-e2e.test.ts
 import { test, expect } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../delivery";
@@ -150,6 +150,13 @@ test.skipIf(!RUN)(
     const bytes = new Uint8Array(await served.arrayBuffer());
     // The PNG magic number: the right bytes landed, not just a 200.
     expect([...bytes.slice(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+    // Byte identity: what got served is the SAME artifact produce() made, not a different
+    // file that also happens to be a PNG — the check with real value here, since
+    // deliveredProvenanceHash equality is near-tautological (deliver() computes it from the
+    // same `el` it just refused to publish a stale copy of).
+    expect(
+      Buffer.from(bytes).equals(readFileSync(join(runDir, el.artifact!.path))),
+    ).toBe(true);
   },
   600_000,
 );

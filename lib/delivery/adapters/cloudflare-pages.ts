@@ -29,7 +29,7 @@ import {
 } from "../../core/publishers";
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { renderSnippet } from "../snippet";
-import type { VisualFormat } from "../../core/vocabulary";
+import { VISUAL_FORMATS, type VisualFormat } from "../../core/vocabulary";
 
 const API = "https://api.cloudflare.com/client/v4";
 
@@ -536,7 +536,14 @@ export const cloudflarePublisher: Publisher = {
   // mp4 lands with the right bytes and content-type and STILL cannot be addressed by the URL
   // this adapter returns. That was a 404 discovered at verifyServed — after a real deploy.
   // Declaring the limit here turns it into a refusal before any network call.
-  serves: ["interactive", "scrolly"],
+  //
+  // Derived, not hand-listed: a hand-listed ["interactive", "scrolly"] is a second registry of
+  // "which formats resolve to HTML" alongside artifactMediaFor — the exact drift class
+  // deliveryGenreFor exists to prevent. A format added to VISUAL_FORMATS is picked up (or
+  // excluded) here automatically, from the same fact routing.ts and zip.ts already read from.
+  serves: VISUAL_FORMATS.filter(
+    (f) => artifactMediaFor(f).contentType === "text/html",
+  ),
   implemented: true,
   publish: publishToPages,
 };

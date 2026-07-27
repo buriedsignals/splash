@@ -12,6 +12,13 @@ export const PORTABLE_PACKAGE = "zip";
 
 // A DECLARED order, not the registry's iteration order: a default that depends on which
 // adapter file happened to be imported first is a default that moves when an import moves.
+//
+// Leading with unimplemented ids ("embed-cms", "embed-fly") is safe: this module is pure and
+// only picks among `readyIds`, and lib/newsroom/readiness.ts returns "disabled" for any
+// capability with `implemented: false` — request-delivery.ts's caller can therefore never put
+// an unimplemented id in `readyIds` in the first place. A caller that ignores that and passes
+// every known capability id would still get "embed-cms" back and dead-end at
+// `unknown-publisher` in deliver(); nothing here defends against that, readiness.ts does.
 export const HOSTED_PREFERENCE: readonly string[] = [
   "embed-cms",
   "embed-cloudflare",
