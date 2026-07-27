@@ -450,7 +450,11 @@ all:
 $ bun lib/host/cli.ts verb render < request.json
 ```
 
-where `request.json` was:
+where `request.json` was — note `spec.source.name`: it is the credit the run's own **declared
+source** publishes (`lib/source`), not a stand-in. A host composes it the way the loop does, from
+the ledger it already holds; `lib/loop/produce.ts` refuses a run that declared no source rather
+than crediting a placeholder, and a host that invents one here credits the reader's figures to
+nobody:
 
 ```json
 {
@@ -460,7 +464,7 @@ where `request.json` was:
     "title": "Rents rose fastest in Geneva",
     "altInsight": "Geneva leads the three cantons on rent growth.",
     "unit": "%",
-    "source": { "name": "Provided by the newsroom" },
+    "source": { "name": "Relevés cantonaux 2024" },
     "format": "static",
     "data": "canton,growth\nGeneva,4.1\nVaud,2.8\nBern,1.9\n"
   },

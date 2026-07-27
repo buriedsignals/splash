@@ -93,7 +93,13 @@ describe("the whole journey through the façade", () => {
           title: "Rents rose fastest in Geneva",
           altInsight: "Geneva leads the three cantons on rent growth.",
           unit: "%",
-          source: { name: "Provided by the newsroom" },
+          // What a real host sends: the credit taken from the run's OWN declared ledger,
+          // never a placeholder. This is the same line the loop renders — produce() reads
+          // `published.attribution` out of validateSourcePolicy and refuses a run that
+          // declared nothing — so an example showing "Provided by the newsroom" documented
+          // a payload the loop stopped building. Derived rather than retyped, so the
+          // example cannot drift from the ledger above it.
+          source: { name: run.sources!.data!.label },
           format: "static",
           data: readFileSync(src, "utf8"),
         },
