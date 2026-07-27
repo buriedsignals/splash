@@ -6,8 +6,10 @@ import { IMAGE_EXTENSIONS } from "../core/contract";
 import type { VisualFormat } from "../core/vocabulary";
 import { toVerbResult, validateSourcePolicy } from "../source";
 import {
+  chosenOption,
   provenanceHash,
   resolvedChannelForElement,
+  unauthoredBeats,
   type RunManifest,
   type RunElement,
 } from "./manifest";
@@ -54,6 +56,59 @@ function artifactFileFor(
     return files.find((f) => f.toLowerCase().endsWith(".mp4"));
   const htmlName = format === "scrolly" ? "scrolly.html" : "interactive.html";
   return files.find((f) => f.split("/").pop() === htmlName);
+}
+
+/**
+ * The manifest element, as the engine's spec. EXPORTED because two callers must render exactly
+ * the same thing: produce() below, and the article-beats render proof
+ * (lib/loop/beats-render-proof.test.ts), which drives a scrolly through the real render verb
+ * while the whole-article branch is still gated out of LOOP_BUILDABLE_ENGINES. A proof that
+ * assembled its own spec would be proving a parallel path.
+ *
+ * `beats` is only present when the element carries an AUTHORED narrative plan. Absent for every
+ * embeddable element, so a spec built for one is byte-identical to what it was before this seam
+ * existed. The unauthored case never reaches an engine — produce() refuses it above.
+ */
+export function assembleNativeSpec(
+  run: RunManifest,
+  el: RunElement,
+  dataCsv: string,
+  attribution: string,
+  sourceUrl?: string,
+  format?: VisualFormat,
+): Record<string, unknown> & { beats?: NarrativeBeatSpec[] } {
+  const chosen = chosenOption(el);
+  return {
+    nativeType: chosen?.nativeType ?? "",
+    title: el.angle?.confirmedTakeaway ?? "",
+    altInsight: el.angle?.altInsight ?? "",
+    unit: el.angle?.unit ?? "",
+    source: { name: attribution, ...(sourceUrl ? { url: sourceUrl } : {}) },
+    ...(el.angle?.emphasis ? { highlight: el.angle.emphasis } : {}),
+    ...(format ? { format } : {}),
+    data: dataCsv,
+    ...(el.narrative ? { beats: narrativeBeatsFor(el) } : {}),
+  };
+}
+
+/** The engine's own beat shape (skills/chart-native's NarrativeBeat), built from the manifest's.
+ *  The anchor's KIND picks the field — a line beat anchors on `x`, a bar walk on `category` —
+ *  so a plan drafted for one chart type can never arrive shaped like the other's. */
+type NarrativeBeatSpec = {
+  x?: string;
+  category?: string;
+  role: string;
+  text: string;
+};
+
+function narrativeBeatsFor(el: RunElement): NarrativeBeatSpec[] {
+  return (el.narrative?.beats ?? []).map((b) => ({
+    ...(b.anchor.kind === "x"
+      ? { x: b.anchor.value }
+      : { category: b.anchor.value }),
+    role: b.role,
+    text: b.text,
+  }));
 }
 
 // The ONE craft verb of the loop. Assembles a NativeSpec from the manifest element and
@@ -111,6 +166,22 @@ export async function produce(
   // resolveBuilder (lib/loop/buildable.ts), the same helper lib/brain/eligibility.ts and
   // manifest.ts's nextActionsForElement resolve through, so the refusal a journalist reads
   // here is the sentence the offer already showed them.
+  // A NARRATIVE PAGE IS NOT BUILT FROM A PLAN NOBODY WROTE. This is the delivery guard of the
+  // beats seam, and it sits here — before any engine, before any byte — for the reason
+  // applyPhrasing refuses a blank `why`: the beats are shipped as the journalist's own claims,
+  // and an unwritten one would ship the machine's caption under their byline. That is the exact
+  // defect this seam exists to remove (skills/scrolly/src/Scrolly.tsx derived the whole walk).
+  //
+  // Not gated on the format: whatever created a plan, an unwritten one must not be rendered.
+  // The refusal NAMES the beats, so a journalist reads what is owed, not that something is.
+  const unauthored = unauthoredBeats(el);
+  if (unauthored.length)
+    return fail(
+      "invalid-request",
+      `produce: ${unauthored.join(", ")} of this narrative walk ${unauthored.length === 1 ? "carries" : "carry"} no claim — ` +
+        `Splash drafts the beats, the journalist writes them, and an unwritten beat is not published`,
+    );
+
   const builder = resolveBuilder(chosen);
   if (!isLoopBuildable(builder))
     return fail(
@@ -163,19 +234,14 @@ export async function produce(
   // `attribution`, so nothing that must be READ is dropped by taking the shorter field.
   const published = verdict.value.published;
 
-  const nativeSpec = {
-    nativeType: chosen.nativeType,
-    title: el.angle.confirmedTakeaway,
-    altInsight: el.angle.altInsight,
-    unit: el.angle.unit,
-    source: {
-      name: published.attribution,
-      ...(published.url ? { url: published.url } : {}),
-    },
-    ...(el.angle.emphasis ? { highlight: el.angle.emphasis } : {}),
+  const nativeSpec = assembleNativeSpec(
+    run,
+    el,
+    dataCsv,
+    published.attribution,
+    published.url,
     format,
-    data: dataCsv,
-  };
+  );
 
   const result = await render({
     // Dispatch follows the CHOSEN engine (chosen.engine), never the RESOLVED builder — the
