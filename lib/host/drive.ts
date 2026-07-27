@@ -24,6 +24,7 @@ import {
   type RunElement,
   type RunManifest,
 } from "../loop/manifest";
+import { applyPhrasing } from "../loop/phrase";
 import { requestDelivery } from "../loop/request-delivery";
 import { tryLoadDecor } from "../newsroom/decor";
 import { loadRun, type HostResponse } from "./state";
@@ -185,6 +186,12 @@ function nothingToRun(
   run: RunManifest,
 ): string {
   const [action] = next;
+  if (action === "phrase")
+    return (
+      "advance: the next act is the desk's — the offer is still unwritten, so write each form's " +
+      'why from its own grounding with "phrase --run <dir> < phrasing.json" (read the offer, ' +
+      "including whySource, from state --run <dir>)"
+    );
   if (action === "choose-form")
     return 'advance: the next act is the journalist\'s — choose a form with "choose-form --run <dir> --option <id>"';
   if (action === "confirm-angle")
@@ -238,6 +245,67 @@ export function confirmAngleIn(
       report: { confirmed: el.id, ...(staled ? { staled: true } : {}) },
     };
   });
+}
+
+/**
+ * Write the OFFER's prose, and persist it — the production caller `applyPhrasing` never had.
+ *
+ * `lib/loop/phrase.ts` calls itself "the PHRASING SEAM, made real" and is the one path that
+ * writes a `why`; it had no caller outside a test, so on every real run the three offered forms
+ * carried a filled `whySource` and `why: ""`. The brain's central promise — explain WHY, in the
+ * journalist's language — produced nothing anywhere.
+ *
+ * Why free prose may have a command HERE, when the angle needed four named slots for it (§4.2 of
+ * the design): this prose is VERIFIED. verifyOffer checks the ids, the count, the exact order,
+ * the discards presented as offered, the structural acknowledgement of every mark — and that
+ * every NUMBER in the sentence comes from that option's own grounding. applyPhrasing then adds
+ * the one check the guard deliberately skips: a blank `why` is refused. The host is not writing
+ * anywhere it likes; it is filling one sentence per offered form, in the offer's own order.
+ */
+export function phraseOfferIn(
+  runDir: string,
+  phrased: unknown,
+  elementId?: string,
+): HostResponse {
+  const loaded = loadRun(runDir);
+  if ("fail" in loaded) return loaded.fail;
+  const selected = selectElement(loaded.run, elementId);
+  if ("fail" in selected) return { ok: false, ...selected.fail };
+
+  // Shape first, so the guard is met with the list it expects rather than with a TypeError.
+  if (
+    !Array.isArray(phrased) ||
+    phrased.some(
+      (p) =>
+        p == null ||
+        typeof p !== "object" ||
+        typeof (p as { id?: unknown }).id !== "string" ||
+        typeof (p as { why?: unknown }).why !== "string",
+    )
+  )
+    return {
+      ok: false,
+      code: "invalid-request",
+      message:
+        "phrase reads a LIST of phrasings on stdin — one per offered form, in the offer's " +
+        'order: [{"id": "<offered id>", "why": "<one sentence>", "markAcknowledged": true}]',
+    };
+
+  let run: RunManifest;
+  try {
+    // applyPhrasing THROWS by design (its header: "a caller that wants to be lenient has to say
+    // so out loud"), and so does verifyOffer beneath it. The façade never throws, so the guard's
+    // own words become the refusal — never re-worded, because the guard says the precise thing
+    // that was wrong with the phrasing.
+    run = applyPhrasing(loaded.run, selected.el.id, phrased);
+  } catch (e) {
+    return {
+      ok: false,
+      code: "invalid-request",
+      message: (e as Error)?.message ?? String(e),
+    };
+  }
+  return persist(runDir, run, { phrased: selected.el.id });
 }
 
 /** Record the form the journalist chose, and persist it. */

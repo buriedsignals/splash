@@ -28,6 +28,7 @@ import {
   chooseFormIn,
   confirmAngleIn,
   initRunIn,
+  phraseOfferIn,
   requestDeliveryIn,
 } from "./drive";
 import { describeNewsroom } from "./newsroom";
@@ -243,6 +244,23 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 
+  if (command === "phrase") {
+    // A DOCUMENT on stdin, like `init` and unlike `confirm-angle`: the phrasing is a list whose
+    // length and order are fixed by the offer, one sentence per form. No set of flags expresses
+    // "one value per option, in the offer's order" — and that order is exactly what the guard
+    // beneath verifies.
+    const parsed = parseFlags(rest, ["--run", "--element"]);
+    if (!parsed.ok) usage(parsed.message);
+    const runDir = parsed.flags["--run"];
+    if (!runDir) usage("phrase needs --run <dir>");
+    const phrased = await readJsonRequest(
+      "phrase",
+      "phrase --run <dir> < phrasing.json",
+    );
+    const r = phraseOfferIn(runDir, phrased, parsed.flags["--element"]);
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
   if (command === "choose-form") {
     // --element is OPTIONAL and its absence is meaningful: without it the decision lands on the
     // element `next` is talking about (lib/host/drive.ts's selectElement), which is the loop's
@@ -330,7 +348,7 @@ async function main(): Promise<never> {
 
   usage(
     `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, init, ` +
-      `advance, confirm-angle, choose-form, request-delivery, verb or newsroom`,
+      `advance, confirm-angle, phrase, choose-form, request-delivery, verb or newsroom`,
   );
 }
 

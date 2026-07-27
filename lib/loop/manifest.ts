@@ -199,6 +199,10 @@ export type NextAction =
   | "orient"
   | "confirm-angle"
   | "propose"
+  // The desk's turn: write each offered form's `why` in the journalist's language, from that
+  // form's own grounding. A human/model turn like confirm-angle and choose-form, so advanceStep's
+  // `default:` already treats it as one.
+  | "phrase"
   | "choose-form"
   | "confirm-aspect"
   | "produce"
@@ -345,7 +349,21 @@ export function nextActionsForElement(
   if (!el || !el.angle) return ["confirm-angle"];
   if (!el.proposal) return ["propose"];
   if (el.proposal.options.length === 0) return [];
-  if (!el.proposal.chosenId) return ["choose-form"];
+  // The offer has to be WRITTEN before it can be chosen from. propose() leaves every `why` empty
+  // on purpose — the brain hands over grounding, the desk writes the language (propose.ts) — and
+  // an offer nobody phrased would be shown to the journalist blank. Without this step a host is
+  // told "choose-form", tries it, and meets assertInvariants' refusal instead: the same "you are
+  // told to decide and cannot see the terms" the offer's absence from resumeReport used to cause.
+  //
+  // POSITION: under the `!chosenId` test, not above it. Once a choice exists, assertInvariants
+  // guarantees it was phrased, so the un-phrased-and-chosen state is not writable to disk and
+  // nothing needs routing out of it; putting the check above would instead swallow the
+  // "chosen form nothing can build ⇒ back to choose-form" dead-end routing just below, which
+  // lib/loop/driver.test.ts builds in memory precisely to prove it.
+  if (!el.proposal.chosenId)
+    return el.proposal.options.some((o) => o.why.trim() === "")
+      ? ["phrase"]
+      : ["choose-form"];
   // A form production cannot build is OFFERED (marked) — so it can be chosen. Choosing one
   // must not strand the run: `produce` would refuse it on every advance, the driver would
   // record the same bounded failure again, and this function would keep answering `produce`.

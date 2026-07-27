@@ -26,6 +26,7 @@ import {
   type RunManifest,
 } from "./manifest";
 import { freezeInput } from "./freeze";
+import { applyPhrasing } from "./phrase";
 import { resumeReport } from "./resume";
 import { isLoopBuildable } from "./buildable";
 import type { Decor } from "../newsroom/decor";
@@ -102,6 +103,20 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
 
   run = await advance(run, runDir, NEUTRAL_DECOR); // propose
   expect(run.elements[0].proposal!.options.length).toBeGreaterThan(0);
+  // The brain hands over an offer with every `why` empty (propose.ts), so the loop asks for the
+  // desk's turn BEFORE the journalist's: nobody chooses from an offer nobody wrote.
+  expect(nextActions(run)).toEqual(["phrase"]);
+
+  // desk turn: write each form's why from its own grounding, through the one sanctioned writer.
+  run = applyPhrasing(
+    run,
+    "e1",
+    run.elements[0].proposal!.options.map((o) => ({
+      id: o.id,
+      why: `${o.nativeType} reads this comparison directly`,
+      ...(o.readiness ? { markAcknowledged: true as const } : {}),
+    })),
+  );
   expect(nextActions(run)).toEqual(["choose-form"]);
 
   // human turn: choose a form — the brain's own top-ranked offer, not a hard-coded id, since

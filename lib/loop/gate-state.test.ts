@@ -2,6 +2,7 @@ import { test, expect } from "bun:test";
 import {
   gateStateOf,
   assertInvariants,
+  nextActionsForElement,
   provenanceHash,
   type RunManifest,
   type RunElement,
@@ -221,4 +222,57 @@ test("assertInvariants throws when artifact without an angle", () => {
     producedAt: "2026-01-01T00:00:00.000Z",
   };
   expect(() => assertInvariants(r)).toThrow();
+});
+
+// --- phrasing (host-journey slice) ---------------------------------------------------------
+// An offer the brain built arrives with every `why` empty on purpose (propose.ts: the brain
+// hands over grounding, the desk writes the language). A journalist cannot choose from an offer
+// nobody wrote, so the loop asks for the writing BEFORE the choice — and once a choice exists,
+// the invariant guarantees it was phrased, so there is nothing left to route out of.
+
+test("nextActions asks for the phrasing before the choice when an option is unwritten", () => {
+  const el: RunElement = {
+    id: "e1",
+    angle: { confirmedTakeaway: "t", altInsight: "a", unit: "CHF" },
+    proposal: {
+      options: [
+        { id: "bar", nativeType: "bar", why: "une barre compare des grandeurs" },
+        { id: "lollipop", nativeType: "lollipop", why: "" },
+      ],
+      excluded: [],
+    },
+  };
+  expect(nextActionsForElement(run(el), el)).toEqual(["phrase"]);
+});
+
+test("nextActions moves on to the choice once every option is written", () => {
+  const el: RunElement = {
+    id: "e1",
+    angle: { confirmedTakeaway: "t", altInsight: "a", unit: "CHF" },
+    proposal: {
+      options: [
+        { id: "bar", nativeType: "bar", why: "une barre compare des grandeurs" },
+        { id: "lollipop", nativeType: "lollipop", why: "une sucette allège" },
+      ],
+      excluded: [],
+    },
+  };
+  expect(nextActionsForElement(run(el), el)).toEqual(["choose-form"]);
+});
+
+// The POSITION of the rule, asserted rather than described: it sits UNDER the `!chosenId` test.
+// Above it, an in-memory manifest that pins an unbuildable chosen form would answer "phrase"
+// instead of routing back to "choose-form" — and that dead-end routing is what
+// lib/loop/driver.test.ts proves. The state this skips is one assertInvariants forbids on disk.
+test("an element that already carries a choice is not sent back to phrase", () => {
+  const el: RunElement = {
+    id: "e1",
+    angle: { confirmedTakeaway: "t", altInsight: "a", unit: "CHF" },
+    proposal: {
+      options: [{ id: "bar", nativeType: "bar", engine: "chart-native", why: "" }],
+      excluded: [],
+      chosenId: "bar",
+    },
+  };
+  expect(nextActionsForElement(run(el), el)).toEqual(["produce"]);
 });
