@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { chooseForm } from "../loop/choose";
 import { advanceStep } from "../loop/driver";
 import {
+  gateStateOf,
   nextActions,
   writeManifest,
   type RunElement,
@@ -88,7 +89,11 @@ export async function advanceRun(runDir: string): Promise<HostResponse> {
   }
 
   if (outcome.ran === null)
-    return { ok: false, code: "step-refused", message: nothingToRun(before) };
+    return {
+      ok: false,
+      code: "step-refused",
+      message: nothingToRun(before, loaded.run),
+    };
 
   if (outcome.failure) {
     // The refusal is persisted before it is reported: the bounded failure event is part of the
@@ -109,14 +114,26 @@ export async function advanceRun(runDir: string): Promise<HostResponse> {
 // Which human turn is owed, in the host's own vocabulary. `next` already told the host what is
 // valid; this says who performs it, which is the piece a host cannot derive from the action name
 // alone (`choose-form` has a command, `confirm-angle` does not).
-function nothingToRun(next: ReturnType<typeof nextActions>): string {
+function nothingToRun(
+  next: ReturnType<typeof nextActions>,
+  run: RunManifest,
+): string {
   const [action] = next;
   if (action === "choose-form")
     return 'advance: the next act is the journalist\'s — choose a form with "choose-form --run <dir> --option <id>"';
   if (action === "confirm-angle")
     return "advance: the next act is the journalist's — the angle (takeaway, alt text, unit) has to be confirmed, and no façade command records it yet";
-  if (action === "show")
+  if (action === "show") {
+    // "show" covers two very different situations, and telling them apart is the difference
+    // between a useful answer and a wrong one: an element that has already been published sits
+    // here too (delivery satisfied ⇒ no pending destination ⇒ back to show), and inviting the
+    // host to request a delivery it just completed reads as a loop. Found by running the
+    // sequence through to the end, not by reading it.
+    const el = liveElement(run);
+    if (el && gateStateOf(run, el) === "delivered")
+      return "advance: the visual is fresh and every destination it asked for has been published — there is nothing left to run";
     return 'advance: the visual is ready and fresh — there is nothing left to run. Decide where it goes with "request-delivery --run <dir>" to make a delivery step valid';
+  }
   return "advance: nothing is valid to do on this run — read it with state --run <dir>";
 }
 

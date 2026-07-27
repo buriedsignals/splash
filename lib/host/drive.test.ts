@@ -152,6 +152,46 @@ describe("advanceRun — one deterministic step, through the run directory", () 
     expect(bytes(dir)).toBe(before);
   });
 
+  it("tells a fresh, undelivered visual apart from a delivered one", async () => {
+    // Both sit on "show", and the honest answer differs: one still has a decision owed, the
+    // other has none. Inviting a host to request a delivery it already completed reads as a
+    // loop it cannot escape.
+    const dir = producedRun();
+    const waiting = await advanceRun(dir);
+    expect((waiting as { message: string }).message).toContain(
+      "request-delivery",
+    );
+
+    const path = join(dir, "run.json");
+    const run = JSON.parse(readFileSync(path, "utf8")) as RunManifest;
+    const el = run.elements[0]!;
+    writeManifest(path, {
+      ...run,
+      elements: [
+        {
+          ...el,
+          delivery: {
+            requested: ["zip"],
+            delivered: [
+              {
+                publisherId: "zip",
+                kind: "package",
+                publishedAt: "2026-07-26T00:00:00.000Z",
+                deliveredProvenanceHash: el.artifact!.provenanceHash,
+              },
+            ],
+          },
+        },
+      ],
+    });
+    const done = await advanceRun(dir);
+    expect(done).toMatchObject({ ok: false, code: "step-refused" });
+    expect((done as { message: string }).message).not.toContain(
+      "request-delivery",
+    );
+    expect((done as { message: string }).message).toContain("published");
+  });
+
   it("refuses a run directory that holds no run", async () => {
     const r = await advanceRun(emptyDir("drive-norun-"));
     expect(r).toMatchObject({ ok: false, code: "no-run" });
