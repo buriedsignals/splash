@@ -292,3 +292,105 @@ describe("requestDeliveryIn — where it goes, decided and recorded", () => {
     expect(r).toMatchObject({ ok: false, code: "invalid-request" });
   });
 });
+
+// --- addressing a deliverable other than the first ------------------------------------------
+//
+// A story now carries several deliverables (issue #1): one confirmed takeaway, an article-web
+// master and its social/print siblings, each an element with its own offer, format and artifact.
+// `nextActions` aggregates across them and the driver advances the one it ANSWERED ABOUT. The
+// façade did not follow: `liveElement` was `run.elements[0]`, so a host could decide about the
+// master and nothing else — `next` could say "choose-form" about the second deliverable while
+// every façade command kept writing to the first.
+
+// Two deliverables sharing one takeaway: the master already chosen and produced (terminal), the
+// social sibling still standing at its own choice. So the live element is the SECOND.
+function twoDeliverableRun(): string {
+  const dir = producedRun();
+  const path = join(dir, "run.json");
+  const run = JSON.parse(readFileSync(path, "utf8")) as RunManifest;
+  const master = run.elements[0]!;
+  const sibling: RunElement = {
+    id: "e1-d2",
+    deliverableOf: "e1",
+    deliverable: { destination: "social", aspect: "portrait" },
+    angle: master.angle,
+    proposal: {
+      options: [
+        {
+          id: "bar",
+          nativeType: "bar",
+          engine: "chart-native",
+          format: "static",
+          why: "one value per canton",
+        },
+      ],
+      excluded: [],
+    },
+  };
+  writeManifest(path, { ...run, elements: [master, sibling] });
+  return dir;
+}
+
+describe("the façade addresses the deliverable the loop is talking about", () => {
+  it("decides about the element nextActions answered about, not elements[0]", () => {
+    const dir = twoDeliverableRun();
+    const res = chooseFormIn(dir, "bar");
+    expect(res.ok).toBe(true);
+    const run = JSON.parse(bytes(dir)) as RunManifest;
+    // The sibling got the choice; the produced master was not touched.
+    expect(run.elements[1]!.proposal!.chosenId).toBe("bar");
+    expect(run.elements[0]!.proposal!.chosenId).toBe("slope");
+  });
+
+  it("keeps the deliverables in their planned order", () => {
+    const dir = twoDeliverableRun();
+    chooseFormIn(dir, "bar");
+    const run = JSON.parse(bytes(dir)) as RunManifest;
+    // `[decided, ...rest]` would move the acted-on element to the front. The order is the
+    // production order the plan chose — web first, as the editorial master.
+    expect(run.elements.map((e) => e.id)).toEqual(["e1", "e1-d2"]);
+  });
+
+  it("addresses the element the caller names", () => {
+    const dir = twoDeliverableRun();
+    // Named explicitly, and discriminating: "bar" exists ONLY in the sibling's offer, so a
+    // façade still writing to elements[0] refuses it rather than choosing it elsewhere.
+    const res = chooseFormIn(dir, "bar", "e1-d2");
+    expect(res.ok).toBe(true);
+    const run = JSON.parse(bytes(dir)) as RunManifest;
+    expect(run.elements[1]!.proposal!.chosenId).toBe("bar");
+    expect(run.elements[0]!.proposal!.chosenId).toBe("slope");
+  });
+
+  it("refuses an element id the run does not hold, naming the ones it does, and writes NOTHING", () => {
+    const dir = twoDeliverableRun();
+    const before = bytes(dir);
+    const res = chooseFormIn(dir, "bar", "e9");
+    expect(res.ok).toBe(false);
+    if (res.ok) throw new Error("unreachable");
+    expect(res.message).toContain("e9");
+    expect(res.message).toContain("e1-d2");
+    expect(bytes(dir)).toBe(before);
+  });
+
+  it("routes an unnamed delivery request to the live deliverable, not to the master", () => {
+    const dir = twoDeliverableRun();
+    // Discriminating in the other direction: the live element is the sibling, which has no
+    // artifact yet, so an unnamed request must REFUSE. A façade still writing to elements[0]
+    // would happily request a delivery for the already-produced master instead.
+    const res = requestDeliveryIn(dir);
+    expect(res.ok).toBe(false);
+    const run = JSON.parse(bytes(dir)) as RunManifest;
+    expect(run.elements[0]!.delivery).toBeUndefined();
+    expect(run.elements[1]!.delivery).toBeUndefined();
+  });
+
+  it("routes a delivery request to the master when it is named", () => {
+    const dir = twoDeliverableRun();
+    const res = requestDeliveryIn(dir, undefined, "e1");
+    expect(res.ok).toBe(true);
+    const run = JSON.parse(bytes(dir)) as RunManifest;
+    expect(run.elements[0]!.delivery?.requested?.length).toBeGreaterThan(0);
+    expect(run.elements[1]!.delivery).toBeUndefined();
+  });
+});

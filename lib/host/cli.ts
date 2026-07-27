@@ -160,19 +160,23 @@ async function main(): Promise<never> {
   }
 
   if (command === "choose-form") {
-    const parsed = parseFlags(rest, ["--run", "--option"]);
+    // --element is OPTIONAL and its absence is meaningful: without it the decision lands on the
+    // element `next` is talking about (lib/host/drive.ts's selectElement), which is the loop's
+    // own answer and never a positional guess. A host addresses a sibling deliverable — or
+    // re-opens the finished master — by naming it.
+    const parsed = parseFlags(rest, ["--run", "--option", "--element"]);
     if (!parsed.ok) usage(parsed.message);
     const runDir = parsed.flags["--run"];
     if (!runDir) usage("choose-form needs --run <dir>");
     const option = parsed.flags["--option"];
     if (!option)
       usage("choose-form needs --option <id> — the id of a form in the offer");
-    const r = chooseFormIn(runDir, option);
+    const r = chooseFormIn(runDir, option, parsed.flags["--element"]);
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 
   if (command === "request-delivery") {
-    const parsed = parseFlags(rest, ["--run", "--to"]);
+    const parsed = parseFlags(rest, ["--run", "--to", "--element"]);
     if (!parsed.ok) usage(parsed.message);
     const runDir = parsed.flags["--run"];
     if (!runDir) usage("request-delivery needs --run <dir>");
@@ -189,7 +193,7 @@ async function main(): Promise<never> {
         );
       destinations = destinations.map((d) => d.trim());
     }
-    const r = requestDeliveryIn(runDir, destinations);
+    const r = requestDeliveryIn(runDir, destinations, parsed.flags["--element"]);
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 

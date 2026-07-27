@@ -15,6 +15,7 @@ import { chooseForm } from "../loop/choose";
 import { advanceStep } from "../loop/driver";
 import {
   gateStateOf,
+  liveElementFor,
   nextActions,
   writeManifest,
   type RunElement,
@@ -25,11 +26,51 @@ import { tryLoadDecor } from "../newsroom/decor";
 import { loadRun, type HostResponse } from "./state";
 import type { VerbResult } from "../core/verbs/types";
 
-// The live element — the one nextActions() itself drives. Multi-element aggregation is a question
-// for the loop (manifest.ts parks it), not one the façade should answer on its own: a command that
-// decided about elements[2] would be deciding about something `next` cannot even report on.
-function liveElement(run: RunManifest): RunElement | undefined {
-  return run.elements[0];
+// WHICH element a command acts on. Two ways in, and the default is the load-bearing one.
+//
+// This was `run.elements[0]`, written when a run held one element and the loop parked multi-
+// element aggregation. Issue #1 unparked it: a story now carries an article-web master and its
+// social/print siblings, `nextActions` aggregates across them, and the driver advances the one it
+// ANSWERED ABOUT. The façade kept writing to the first, so `next` could say "choose-form" about
+// the second deliverable while every command wrote to the master — deciding about one element
+// while reporting about another.
+//
+// The default is `liveElementFor`, the loop's OWN answer to "which element is next talking
+// about", never a positional guess: an implicit first is exactly how this hole was born, and the
+// same resolver the driver uses means the façade cannot drift from it again. A caller that needs
+// another one names it — the terminal master is unreachable by default precisely because it is
+// finished, and re-opening it is a deliberate act.
+function selectElement(
+  run: RunManifest,
+  elementId?: string,
+):
+  | { el: RunElement }
+  | { fail: { code: "invalid-request"; message: string } } {
+  if (elementId === undefined) {
+    const live = liveElementFor(run);
+    return live
+      ? { el: live }
+      : {
+          fail: {
+            code: "invalid-request",
+            message: "this run holds no element to decide about",
+          },
+        };
+  }
+  const named = run.elements.find((e) => e.id === elementId);
+  // Naming one that is not there is a REFUSAL that lists what is, never a silent fall back to
+  // the live one: a host that mistypes an id would otherwise decide about the wrong deliverable
+  // and be told it succeeded.
+  return named
+    ? { el: named }
+    : {
+        fail: {
+          code: "invalid-request",
+          message: `this run holds no element "${elementId}" — it holds ${run.elements
+            .map((e) => `"${e.id}"`)
+            .join(", ")}`,
+        },
+      };
 }
 
 // Write the run, then answer with what the command did PLUS what became valid — a host that
@@ -129,7 +170,7 @@ function nothingToRun(
     // here too (delivery satisfied ⇒ no pending destination ⇒ back to show), and inviting the
     // host to request a delivery it just completed reads as a loop. Found by running the
     // sequence through to the end, not by reading it.
-    const el = liveElement(run);
+    const el = liveElementFor(run);
     if (el && gateStateOf(run, el) === "delivered")
       return "advance: the visual is fresh and every destination it asked for has been published — there is nothing left to run";
     return 'advance: the visual is ready and fresh — there is nothing left to run. Decide where it goes with "request-delivery --run <dir>" to make a delivery step valid';
@@ -138,8 +179,12 @@ function nothingToRun(
 }
 
 /** Record the form the journalist chose, and persist it. */
-export function chooseFormIn(runDir: string, optionId: string): HostResponse {
-  return decide(runDir, (run, el) => {
+export function chooseFormIn(
+  runDir: string,
+  optionId: string,
+  elementId?: string,
+): HostResponse {
+  return decide(runDir, elementId, (run, el) => {
     const chosen = chooseForm(el, optionId);
     if (!chosen.ok) return chosen;
     return { ok: true, value: chosen.value, report: { chosen: optionId } };
@@ -155,8 +200,9 @@ export function chooseFormIn(runDir: string, optionId: string): HostResponse {
 export function requestDeliveryIn(
   runDir: string,
   destinations?: string[],
+  elementId?: string,
 ): HostResponse {
-  return decide(runDir, (run, el) => {
+  return decide(runDir, elementId, (run, el) => {
     const asked = requestDelivery(run, el, tryLoadDecor(), {
       ...(destinations && destinations.length > 0 ? { destinations } : {}),
     });
@@ -178,17 +224,14 @@ type Decided =
 
 function decide(
   runDir: string,
+  elementId: string | undefined,
   decision: (run: RunManifest, el: RunElement) => Decided,
 ): HostResponse {
   const loaded = loadRun(runDir);
   if ("fail" in loaded) return loaded.fail;
-  const el = liveElement(loaded.run);
-  if (!el)
-    return {
-      ok: false,
-      code: "invalid-request",
-      message: "this run holds no element to decide about",
-    };
+  const selected = selectElement(loaded.run, elementId);
+  if ("fail" in selected) return { ok: false, ...selected.fail };
+  const el = selected.el;
 
   let result: Decided;
   try {
@@ -203,9 +246,15 @@ function decide(
   if (!result.ok) return refusedDecision(result);
 
   const report = result.report;
+  // Captured BEFORE the map: `result` is a `let`, and TypeScript's narrowing from the `!result.ok`
+  // guard above does not survive into a closure over a mutable binding.
+  const decided = result.value;
+  // Replace the decided element IN PLACE. `[result, ...rest]` moved it to the front, silently
+  // reordering the deliverables — and the order is the production order the plan chose, web
+  // first as the editorial master. The driver already learned this; the façade had not.
   const run: RunManifest = {
     ...loaded.run,
-    elements: [result.value, ...loaded.run.elements.slice(1)],
+    elements: loaded.run.elements.map((e) => (e.id === el.id ? decided : e)),
   };
   return persist(runDir, run, report);
 }
