@@ -13,6 +13,7 @@
 import { join } from "node:path";
 import { chooseForm } from "../loop/choose";
 import { advanceStep } from "../loop/driver";
+import { initRun } from "../loop/init";
 import {
   gateStateOf,
   liveElementFor,
@@ -43,9 +44,7 @@ import type { VerbResult } from "../core/verbs/types";
 function selectElement(
   run: RunManifest,
   elementId?: string,
-):
-  | { el: RunElement }
-  | { fail: { code: "invalid-request"; message: string } } {
+): { el: RunElement } | { fail: { code: "invalid-request"; message: string } } {
   if (elementId === undefined) {
     const live = liveElementFor(run);
     return live
@@ -103,6 +102,29 @@ function refusedDecision(
   result: VerbResult<unknown> & { ok: false },
 ): HostResponse {
   return { ok: false, code: result.code, message: result.message };
+}
+
+/**
+ * CREATE a run from a declaration — the one command that does not load one first.
+ *
+ * Everything else in this file needs a run to exist; this is the step that had no caller at all.
+ * `freezeInput` had exactly one production caller (lib/loop/migrate.ts, converting an OLD
+ * manifest), so a host outside JavaScript could read and drive a run it could not begin — and
+ * skills/splash/SKILL.md's "never hand-edit run.json" named the only path that existed.
+ */
+export function initRunIn(runDir: string, declaration: unknown): HostResponse {
+  const created = initRun(runDir, declaration);
+  if (!created.ok) return refusedDecision(created);
+  // Same breath as every acting command: what it did, plus what became valid. The run was just
+  // written by initRun itself, so there is nothing to persist here — which is why this is the
+  // one acting command that does not go through `persist`.
+  return {
+    ok: true,
+    value: {
+      runId: created.value.runId,
+      nextActions: nextActions(created.value),
+    },
+  };
 }
 
 /**

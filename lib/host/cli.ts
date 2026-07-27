@@ -23,7 +23,12 @@
 import { ENGINES_REGISTERED } from "../loop/engines";
 import { runVerb } from "../core/verbs";
 import { capabilities, HOST_ONLY_VERBS } from "./capabilities";
-import { advanceRun, chooseFormIn, requestDeliveryIn } from "./drive";
+import {
+  advanceRun,
+  chooseFormIn,
+  initRunIn,
+  requestDeliveryIn,
+} from "./drive";
 import { describeNewsroom } from "./newsroom";
 import { outDirRefusal } from "./path-safety";
 import { describeNext, describeState, type HostResponse } from "./state";
@@ -116,6 +121,25 @@ async function readStdin(): Promise<StdinRead> {
   }
 }
 
+// The JSON-document-on-stdin idiom, shared by every command whose argument is a DOCUMENT rather
+// than a handful of scalars (`verb`, `init`, `phrase`). Flags carry scalars; a run declaration
+// and a phrasing are structured, and squeezing them into ten near-homonymous flags is the shape
+// in which a host silently fills the wrong slot. One reader, so the three commands cannot
+// disagree about what an empty or unparseable stdin means.
+async function readJsonRequest(what: string, how: string): Promise<unknown> {
+  const stdin = await readStdin();
+  if (!stdin.ok) usage(stdin.message);
+  if (!stdin.text.trim())
+    usage(
+      `${what} reads its request as JSON on stdin, and stdin was empty (${how})`,
+    );
+  try {
+    return JSON.parse(stdin.text);
+  } catch (e) {
+    return usage(`stdin is not valid JSON: ${(e as Error).message}`);
+  }
+}
+
 async function main(): Promise<never> {
   // Binding the composition root's value keeps the registration import load-bearing.
   if (!ENGINES_REGISTERED)
@@ -148,6 +172,19 @@ async function main(): Promise<never> {
   // The ACTING commands. `state`/`next` report what is valid; these do it. They are the only
   // commands besides `verb` that write, and they write exactly one file — the run.json of the
   // run they were pointed at — plus whatever the loop's own step produces beneath it.
+  if (command === "init") {
+    const parsed = parseFlags(rest, ["--run"]);
+    if (!parsed.ok) usage(parsed.message);
+    const runDir = parsed.flags["--run"];
+    if (!runDir) usage("init needs --run <dir>");
+    const declaration = await readJsonRequest(
+      "init",
+      "init --run <dir> < declaration.json",
+    );
+    const r = initRunIn(runDir, declaration);
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
   if (command === "advance") {
     const parsed = parseFlags(rest, ["--run"]);
     if (!parsed.ok) usage(parsed.message);
@@ -193,7 +230,11 @@ async function main(): Promise<never> {
         );
       destinations = destinations.map((d) => d.trim());
     }
-    const r = requestDeliveryIn(runDir, destinations, parsed.flags["--element"]);
+    const r = requestDeliveryIn(
+      runDir,
+      destinations,
+      parsed.flags["--element"],
+    );
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 
@@ -229,16 +270,10 @@ async function main(): Promise<never> {
     const parsed = parseFlags(rest.slice(1), []);
     if (!parsed.ok) usage(`verb ${name}: ${parsed.message}`);
 
-    const stdin = await readStdin();
-    if (!stdin.ok) usage(stdin.message);
-    if (!stdin.text.trim())
-      usage("verb reads its request as JSON on stdin, and stdin was empty");
-    let payload: unknown;
-    try {
-      payload = JSON.parse(stdin.text);
-    } catch (e) {
-      usage(`stdin is not valid JSON: ${(e as Error).message}`);
-    }
+    const payload = await readJsonRequest(
+      "verb",
+      "verb <name> < request.json",
+    );
     // Path-safety at the untrusted boundary, BEFORE the contract can resolve or delete
     // anything (lib/host/path-safety.ts). A refusal is a well-formed answer in the verb's
     // own shape — invalid-request, exit 1 — so the host needs no second parser.
@@ -247,8 +282,8 @@ async function main(): Promise<never> {
   }
 
   usage(
-    `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, advance, ` +
-      `choose-form, request-delivery, verb or newsroom`,
+    `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, init, ` +
+      `advance, choose-form, request-delivery, verb or newsroom`,
   );
 }
 
