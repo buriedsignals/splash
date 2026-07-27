@@ -1,5 +1,15 @@
-// Pure, testable core for the local configurator. No server, no fs, no network here except the
-// verify* functions (Task 4), which hit real provider APIs.
+// Pure, testable core for the local configurator. No server, no fs, no network.
+//
+// The four verify* functions MOVED to lib/newsroom/verify.ts, whose `verifyCapability` the setup
+// page calls at the grain of a capability (spec 2026-07-26 §2.3). They are re-exported here for
+// the duration of the changeover, so an installer script pinned to this module keeps resolving.
+export {
+  verifyAnthropic,
+  verifyCloudflare,
+  verifyDatawrapper,
+  verifyMapTiler,
+} from "../lib/newsroom/verify";
+
 export const RUNTIMES: Record<string, { label: string; verified: boolean }> = {
   claude: { label: "Claude Code", verified: true },
   codex: { label: "Codex", verified: true },
@@ -120,70 +130,4 @@ f.onsubmit=async(e)=>{e.preventDefault();
   if(!r.ok){const t=await r.text().catch(()=>'');alert(t||'Some keys did not verify. Click "Verify keys", fix the red ones, then save.');return;}
   document.body.innerHTML='<h1>Saved ✓</h1><p>Return to your Terminal — the install continues.</p>';};
 </script></body></html>`;
-}
-
-// Live verification — real provider GETs (no token cost). Returns `true` iff the credential
-// works, `false` iff the provider actively rejected it (e.g. 401/403), and `null` when the
-// provider could not be REACHED (offline, filtering proxy, corporate TLS interception). The
-// null case must NOT be shown as "invalid": a valid key behind a proxy would be, and the user
-// would be permanently blocked. The caller distinguishes "unreachable" from "blank".
-export async function verifyMapTiler(key: string): Promise<boolean | null> {
-  if (!key.trim()) return false;
-  try {
-    const r = await fetch(
-      `https://api.maptiler.com/maps/streets-v2/style.json?key=${encodeURIComponent(key.trim())}`,
-    );
-    return r.ok;
-  } catch {
-    return null;
-  }
-}
-
-export async function verifyDatawrapper(
-  token: string,
-): Promise<boolean | null> {
-  if (!token.trim()) return false;
-  try {
-    const r = await fetch("https://api.datawrapper.de/v3/me", {
-      headers: { Authorization: `Bearer ${token.trim()}` },
-    });
-    return r.ok;
-  } catch {
-    return null;
-  }
-}
-
-// Listing Pages projects proves BOTH that the token authenticates AND that it carries the
-// "Cloudflare Pages: Edit" permission on this account. Measured trap this exists to catch: a
-// token with no Pages permission verifies happily against the generic token endpoint while
-// failing every Pages call with error 10000 — so verifying the token alone would green-light
-// a configuration that cannot deploy a single embed.
-export async function verifyCloudflare(
-  token: string,
-  accountId: string,
-): Promise<boolean | null> {
-  if (!token.trim() || !accountId.trim()) return false;
-  try {
-    const r = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId.trim())}/pages/projects`,
-      { headers: { Authorization: `Bearer ${token.trim()}` } },
-    );
-    if (!r.ok) return false;
-    const body = (await r.json()) as { success?: boolean };
-    return body.success === true;
-  } catch {
-    return null;
-  }
-}
-
-export async function verifyAnthropic(key: string): Promise<boolean | null> {
-  if (!key.trim()) return false;
-  try {
-    const r = await fetch("https://api.anthropic.com/v1/models", {
-      headers: { "x-api-key": key.trim(), "anthropic-version": "2023-06-01" },
-    });
-    return r.ok;
-  } catch {
-    return null;
-  }
 }

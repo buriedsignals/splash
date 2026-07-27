@@ -6,9 +6,6 @@ import {
   serializeEnv,
   renderConfiguratorHtml,
   RUNTIMES,
-  verifyMapTiler,
-  verifyDatawrapper,
-  verifyAnthropic,
 } from "./configurator-core.ts";
 
 const base = {
@@ -106,60 +103,4 @@ test("configurator HTML has the fields + the subscription note", () => {
 
 test("configurator HTML's submit handler refuses to show Saved on a non-2xx /submit response", () => {
   expect(renderConfiguratorHtml()).toContain("if(!r.ok)");
-});
-
-const MT = process.env.VITE_MAPTILER_KEY;
-const DW = process.env.DATAWRAPPER_API_TOKEN;
-const AN = process.env.ANTHROPIC_API_KEY;
-
-test.skipIf(!MT)(
-  "verifyMapTiler: true for the real key, false for a bad one",
-  async () => {
-    expect(await verifyMapTiler(MT!)).toBe(true);
-    expect(await verifyMapTiler("not-a-real-key")).toBe(false);
-  },
-
-  60000, // real-API round-trips flake past the 5s default under gate contention
-);
-
-test.skipIf(!DW)(
-  "verifyDatawrapper: true for the real token, false for a bad one",
-  async () => {
-    expect(await verifyDatawrapper(DW!)).toBe(true);
-    expect(await verifyDatawrapper("not-a-real-token")).toBe(false);
-  },
-
-  60000, // real-API round-trips flake past the 5s default under gate contention
-);
-
-test.skipIf(!AN)(
-  "verifyAnthropic: true for the real key, false for a bad one",
-  async () => {
-    expect(await verifyAnthropic(AN!)).toBe(true);
-    expect(await verifyAnthropic("sk-ant-not-real")).toBe(false);
-  },
-
-  60000, // real-API round-trips flake past the 5s default under gate contention
-);
-
-test("verify* returns null (unreachable), NOT false, when the provider can't be reached", async () => {
-  // A valid key behind a filtering proxy / offline / TLS interception makes fetch throw. That
-  // must read as 'couldn't reach', never 'invalid' — else a valid key is permanently blocked.
-  const realFetch = globalThis.fetch;
-  globalThis.fetch = (() => {
-    throw new Error("network down");
-  }) as typeof fetch;
-  try {
-    expect(await verifyMapTiler("some-key")).toBeNull();
-    expect(await verifyDatawrapper("some-token")).toBeNull();
-    expect(await verifyAnthropic("sk-ant-some")).toBeNull();
-  } finally {
-    globalThis.fetch = realFetch;
-  }
-});
-
-test("verify* still returns false for a genuinely blank key (never fetches)", async () => {
-  expect(await verifyMapTiler("")).toBe(false);
-  expect(await verifyDatawrapper("   ")).toBe(false);
-  expect(await verifyAnthropic("")).toBe(false);
 });
