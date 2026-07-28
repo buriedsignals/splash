@@ -117,3 +117,66 @@ export function sourceQuestionCopy(lang: string): SourceQuestionCopy {
   const base = (lang || DEFAULT_UI_LANG).toLowerCase().split("-")[0]!;
   return SOURCE_QUESTION_TABLE[base] ?? EN_SOURCE_QUESTIONS;
 }
+
+// ── The sign-off state, said to a person ────────────────────────────────────────────────────
+//
+// The export scripts print a machine line — `EDITORIAL: unsigned — LLM render-approval only` —
+// and a real run relayed it to the journalist verbatim. The INFORMATION is the one that matters
+// most at hand-over (nobody human signed this off), but "LLM render-approval only" is the
+// machine talking to itself: it names the mechanism, not the fact, and it is untranslated.
+//
+// So the same state is emitted TWICE: the machine line stays byte-identical (the guards, the
+// export transcript and the QA checks key on it), and this copy is printed beside it as the
+// sentence meant for a person. SKILL.md's voice rule then says which one is relayed.
+export type SignoffCopy = {
+  /** Nobody human signed off: the automatic checks passed, that is all. */
+  unsigned: string;
+  /** A human editor signed off, by name. */
+  signed: (names: string) => string;
+  /** There was no single artifact to bind a sign-off to (a folder delivery). */
+  skipped: string;
+};
+
+const EN_SIGNOFF: SignoffCopy = {
+  unsigned:
+    "SIGNOFF: nobody in the newsroom has signed this off — it passed the automatic checks, and that is all that stands behind it.",
+  signed: (names) => `SIGNOFF: signed off by ${names}.`,
+  skipped:
+    "SIGNOFF: this delivery is a folder, not one file, so there is nothing to bind a sign-off to — nobody has signed it off.",
+};
+
+const FR_SIGNOFF: SignoffCopy = {
+  unsigned:
+    "SIGNOFF: personne dans la rédaction n'a validé ce visuel — il a passé les contrôles automatiques, et c'est tout ce qui le garantit.",
+  signed: (names) => `SIGNOFF: validé par ${names}.`,
+  skipped:
+    "SIGNOFF: cette livraison est un dossier, pas un fichier unique : il n'y a rien à quoi rattacher une validation — personne ne l'a validée.",
+};
+
+const DE_SIGNOFF: SignoffCopy = {
+  unsigned:
+    "SIGNOFF: niemand in der Redaktion hat dies freigegeben — es hat die automatischen Prüfungen bestanden, mehr steht nicht dahinter.",
+  signed: (names) => `SIGNOFF: freigegeben von ${names}.`,
+  skipped:
+    "SIGNOFF: diese Lieferung ist ein Ordner, keine einzelne Datei — es gibt nichts, woran eine Freigabe gebunden werden könnte; niemand hat sie freigegeben.",
+};
+
+const IT_SIGNOFF: SignoffCopy = {
+  unsigned:
+    "SIGNOFF: nessuno in redazione ha convalidato questo visual — ha superato i controlli automatici, e questo è tutto ciò che lo garantisce.",
+  signed: (names) => `SIGNOFF: convalidato da ${names}.`,
+  skipped:
+    "SIGNOFF: questa consegna è una cartella, non un singolo file: non c'è nulla a cui legare una convalida — nessuno l'ha convalidata.",
+};
+
+const SIGNOFF_TABLE: Record<string, SignoffCopy> = {
+  en: EN_SIGNOFF,
+  fr: FR_SIGNOFF,
+  de: DE_SIGNOFF,
+  it: IT_SIGNOFF,
+};
+
+export function signoffCopy(lang: string): SignoffCopy {
+  const base = (lang || DEFAULT_UI_LANG).toLowerCase().split("-")[0]!;
+  return SIGNOFF_TABLE[base] ?? EN_SIGNOFF;
+}

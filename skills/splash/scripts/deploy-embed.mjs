@@ -8,9 +8,13 @@
 // docs/superpowers/specs/2026-07-19-cloudflare-pages-embed-adapter-design.md
 import { mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { assertEditoriallyCleared, assertShippable } from "../src/export-guard.ts";
 import { resolveProfile } from "../src/resolve-profile.ts";
+import { readDecorState } from "../../../lib/newsroom/decor.ts";
+import { resolveLanguage } from "../../../lib/newsroom/language.ts";
+import { signoffCopy } from "../../../lib/newsroom/ui-copy.ts";
 import {
   deployDirectory,
   embedSlug,
@@ -28,6 +32,19 @@ export {
   servedMatcher,
   stageArtifact,
 } from "../src/cloudflare-pages.ts";
+
+// The sign-off state is printed twice: the machine token (guards + QA checks key on it) and,
+// beside it, the sentence a journalist can read. Same resolution as export-code.mjs's uiCopy —
+// SPLASH_UI_LANG overrides for one run, else the newsroom's saved interface language, else
+// English. Read-only: this script must never create state as a side effect.
+function signoffSay() {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+  const { ui } = resolveLanguage({
+    override: { ui: process.env.SPLASH_UI_LANG },
+    uiLang: readDecorState(root).uiLang,
+  });
+  return signoffCopy(ui);
+}
 
 // Splits argv into positionals and `--flag value` pairs, so the required --results/--id
 // flags can sit alongside the existing positional args in any order.
@@ -82,11 +99,13 @@ if (import.meta.main) {
         profile,
         bytes,
       );
+      const say = signoffSay();
       console.log(
         unsigned
           ? "EDITORIAL: unsigned — LLM render-approval only"
           : `EDITORIAL: signed by ${signedBy.join(", ")}`,
       );
+      console.log(unsigned ? say.unsigned : say.signed(signedBy.join(", ")));
     } else if ((profile.requiredSigners ?? []).length > 0) {
       throw new Error(
         "refusing to deploy a directory artifact with requiredSigners set — no single artifact to re-verify (S4d)",
@@ -95,6 +114,7 @@ if (import.meta.main) {
       console.log(
         "EDITORIAL: skipped (artifact is a directory — no single owned artifact to re-verify; see S4d follow-up)",
       );
+      console.log(signoffSay().skipped);
     }
   } catch (e) {
     console.error(e.message);

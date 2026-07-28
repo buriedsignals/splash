@@ -55,6 +55,24 @@ describe("preflight CLI", () => {
       expect(report.engines[p]).toBeDefined();
   });
 
+  // The GREEN path's raw material. A report keyed only on producer ids is what let a real run
+  // announce « les six moteurs sont prêts (préflight vert) » — a count and a self-report, telling
+  // the journalist nothing about what he can make. The newsroom label travels with every entry,
+  // ready or not, and it comes from the capability registry so engine naming keeps one home.
+  it("should carry each engine's newsroom label, never only the producer id", () => {
+    const out = execFileSync("bun", [CLI], {
+      cwd: project(),
+      encoding: "utf8",
+    });
+    const report = JSON.parse(out);
+    for (const [id, engine] of Object.entries(report.engines)) {
+      expect(typeof engine.label).toBe("string");
+      expect(engine.label.length).toBeGreaterThan(0);
+      expect(engine.label).not.toBe(id);
+    }
+    expect(report.engines["scrolly"].label).toBe("Scrollytelling stories");
+  });
+
   it("should exit 1 on an unknown producer", () => {
     expect(() =>
       execFileSync("bun", [CLI, "sankey-native"], {
