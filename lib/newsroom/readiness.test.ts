@@ -31,6 +31,8 @@ const CHART = NEWSROOM_CAPABILITIES["chart-native"]!;
 // The declared-but-unbuilt exemplar. Was embed-cms until L3 built it (2026-07-27); embed-fly
 // is now the only capability still waiting for its own tranche.
 const UNBUILT = NEWSROOM_CAPABILITIES["embed-fly"]!;
+// The destination whose non-secret provider identifiers live in newsroom.json, not in .env.
+const S3 = NEWSROOM_CAPABILITIES["embed-s3"]!;
 
 describe("capability readiness", () => {
   it("is ready when enabled, keyed and installed", () => {
@@ -216,6 +218,101 @@ describe("capability readiness", () => {
       },
     );
     expect(r.status).toBe("ready");
+  });
+
+  // A23: `ready` used to mean two different things depending on the capability. For an engine
+  // it meant "usable right now"; for a destination whose provider identifiers live in
+  // newsroom.json rather than in .env, it meant "its secrets are present" — so a newsroom that
+  // had put its two S3 keys in .env read READY and was refused by the adapter at the moment of
+  // delivery ("settings.endpoint is required"). Readiness now judges the same bag deliver()
+  // hands the adapter.
+  it("is missing while a destination's required settings are unfilled", () => {
+    const r = capabilityReadiness(
+      S3,
+      state({ "embed-s3": { enabled: true } }),
+      {
+        env: {
+          SPLASH_S3_ACCESS_KEY_ID: "id",
+          SPLASH_S3_SECRET_ACCESS_KEY: "secret",
+        },
+        resolveDep: ALL_DEPS_PRESENT,
+      },
+    );
+    expect(r.status).toBe("missing");
+    // Named, and with the place they are set — the same remediation shape the adapter's own
+    // refusal carries, arriving before the delivery instead of during it.
+    for (const f of ["endpoint", "region", "bucket", "publicBaseUrl"])
+      expect(r.reason).toContain(f);
+    expect(r.reason).toContain("newsroom.json");
+  });
+
+  it("names only the settings still missing", () => {
+    const r = capabilityReadiness(
+      S3,
+      state({
+        "embed-s3": {
+          enabled: true,
+          settings: {
+            endpoint: "https://s3.example.org",
+            region: "auto",
+            bucket: "newsroom",
+          },
+        },
+      }),
+      {
+        env: {
+          SPLASH_S3_ACCESS_KEY_ID: "id",
+          SPLASH_S3_SECRET_ACCESS_KEY: "secret",
+        },
+        resolveDep: ALL_DEPS_PRESENT,
+      },
+    );
+    expect(r.status).toBe("missing");
+    expect(r.reason).toContain("publicBaseUrl");
+    expect(r.reason).not.toContain("bucket");
+  });
+
+  it("is ready once the destination is fully configured", () => {
+    const r = capabilityReadiness(
+      S3,
+      state({
+        "embed-s3": {
+          enabled: true,
+          settings: {
+            endpoint: "https://s3.example.org",
+            region: "auto",
+            bucket: "newsroom",
+            publicBaseUrl: "https://cdn.example.org",
+            // An OPTIONAL field left out must not hold readiness back.
+          },
+        },
+      }),
+      {
+        env: {
+          SPLASH_S3_ACCESS_KEY_ID: "id",
+          SPLASH_S3_SECRET_ACCESS_KEY: "secret",
+        },
+        resolveDep: ALL_DEPS_PRESENT,
+      },
+    );
+    expect(r.status).toBe("ready");
+    expect(r.reason).toBe("");
+  });
+
+  it("asks for a missing credential before asking for a setting", () => {
+    // Order matters for the sentence a newsroom reads: the key is where the provider account
+    // is, the settings are where the bucket is. One instruction at a time.
+    const r = capabilityReadiness(
+      S3,
+      state({ "embed-s3": { enabled: true } }),
+      {
+        env: {},
+        resolveDep: ALL_DEPS_PRESENT,
+      },
+    );
+    expect(r.status).toBe("missing");
+    expect(r.reason).toContain("SPLASH_S3_ACCESS_KEY_ID");
+    expect(r.reason).not.toContain("newsroom.json");
   });
 
   it("takes its environment from the caller, never from the process", () => {

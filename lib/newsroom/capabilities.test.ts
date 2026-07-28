@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   NEWSROOM_CAPABILITIES,
   deliveryCapabilities,
@@ -108,5 +110,41 @@ describe("the newsroom capability registry", () => {
   it("should give every declared env var a help string, so a missing key is actionable", () => {
     const s3 = NEWSROOM_CAPABILITIES["embed-s3"]!;
     for (const name of s3.env.flat()) expect(s3.envHelp[name]).toBeTruthy();
+  });
+
+  // A23: `required` is what lets readiness answer for a destination whose provider identifiers
+  // live in newsroom.json rather than in .env — but the fact is now written in two places, here
+  // and in the adapter's own REQUIRED_SETTINGS. This reads the adapters as TEXT rather than
+  // importing them: lib/newsroom must not grow a dependency on lib/delivery (decor.ts says so),
+  // and a drift guard is not a reason to open that door. Adding a name to an adapter's list
+  // without declaring it here would put readiness back to answering "ready" for a destination
+  // that refuses every delivery.
+  it("declares exactly the settings its adapter refuses to run without", () => {
+    const adapters: Record<string, string> = {
+      "embed-s3": "s3.ts",
+      "embed-cms": "wepublish.ts",
+      "embed-cloudflare": "cloudflare-pages.ts",
+    };
+    for (const [id, file] of Object.entries(adapters)) {
+      const src = readFileSync(
+        join(import.meta.dir, "../delivery/adapters", file),
+        "utf8",
+      );
+      const block = src.match(/const REQUIRED_SETTINGS = \[([\s\S]*?)\]/);
+      const demanded = [...(block?.[1] ?? "").matchAll(/"([^"]+)"/g)]
+        .map((m) => m[1]!)
+        .sort();
+      const declared = (NEWSROOM_CAPABILITIES[id]?.settingsFields ?? [])
+        .filter((f) => f.required)
+        .map((f) => f.name)
+        .sort();
+      expect(declared).toEqual(demanded);
+    }
+  });
+
+  it("never marks a secret as a required SETTING — a secret lives in .env", () => {
+    for (const cap of Object.values(NEWSROOM_CAPABILITIES))
+      for (const f of cap.settingsFields ?? [])
+        if (f.secret) expect(f.required).toBeUndefined();
   });
 });

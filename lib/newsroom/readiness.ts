@@ -77,6 +77,28 @@ export function capabilityReadiness(
     };
   }
 
+  // The provider identifiers that do NOT belong in .env — an S3 endpoint, a bucket, the
+  // We.Publish address. They live in newsroom.json, which is exactly the bag `deliver()` hands
+  // the adapter (lib/loop/deliver.ts), so this judges the same thing the adapter will.
+  //
+  // Asked AFTER the credentials on purpose: a newsroom reads one instruction at a time, and the
+  // key (where the provider account is) comes before the bucket (where the files go).
+  const settings = state.capabilities[cap.id]?.settings ?? {};
+  const missingSettings = (cap.settingsFields ?? []).filter(
+    (f) => f.required && !f.secret && !(settings[f.name] ?? "").trim(),
+  );
+  if (missingSettings.length)
+    return {
+      ...base,
+      status: "missing",
+      reason:
+        `${cap.label} is not fully configured — it still needs ` +
+        `${missingSettings.map((f) => f.name).join(", ")}. ` +
+        `They are set in newsroom.json under capabilities["${cap.id}"].settings ` +
+        `(the Splash setup page fills them in for you; credentials stay in .env)`,
+      help: missingSettings.map((f) => f.label),
+    };
+
   if (cap.criticalDeps) {
     const resolveDep = opts.resolveDep ?? defaultResolveDep;
     const fromDir = join(

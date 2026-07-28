@@ -13,6 +13,16 @@ export type CapabilitySettingField = {
   name: string;
   label: string;
   secret: boolean;
+  /**
+   * A NON-secret field the capability's adapter refuses to run without (an S3 endpoint, a
+   * bucket). Readiness reads it, so an enabled destination missing one reads `missing` instead
+   * of `ready` — the gap that let a newsroom with its two S3 keys in .env be told everything
+   * was fine and then be refused at the moment of delivery.
+   *
+   * Absent ⇒ optional. It is only meaningful on a non-secret field: a secret never reaches
+   * `settings` at all (`stripSecretSettings`), its presence is judged through `env`.
+   */
+  required?: boolean;
 };
 
 export type NewsroomCapability = {
@@ -207,6 +217,7 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
         label:
           "We.Publish GraphQL address — the full URL, ending in /v1 (for example https://cms.example.org/v1)",
         secret: false,
+        required: true,
       },
       {
         name: "slugPrefix",
@@ -251,16 +262,19 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
         label:
           "S3-compatible endpoint URL, path-style (the server's own host, not the bucket's hostname)",
         secret: false,
+        required: true,
       },
       {
         name: "region",
         label: "Region",
         secret: false,
+        required: true,
       },
       {
         name: "bucket",
         label: "Bucket name",
         secret: false,
+        required: true,
       },
       {
         name: "prefix",
@@ -271,6 +285,7 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
         name: "publicBaseUrl",
         label: "Public URL the bucket serves from",
         secret: false,
+        required: true,
       },
     ],
     criticalDeps: null,
