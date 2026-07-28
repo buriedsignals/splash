@@ -6,7 +6,8 @@ import "../../skills/splash/src/register-producers";
 import { render } from "../core/verbs";
 import { freezeInput } from "./freeze";
 import { draftBeats, applyBeats } from "./beats";
-import { assembleNativeSpec } from "./produce";
+import { assembleChartNative } from "./assemble/chart-native";
+import { briefFor } from "./assemble/brief";
 import { unauthoredBeats, type RunManifest } from "./manifest";
 import type { AuthoredBeat } from "../brain/verify-beats";
 
@@ -20,9 +21,9 @@ import type { AuthoredBeat } from "../brain/verify-beats";
 // WHY IT CALLS render() AND NOT produce(). scrolly is not in LOOP_BUILDABLE_ENGINES yet (the
 // whole-article branch is its own sub-project — see the design spec §5), so produce() refuses a
 // scrolly form by design. What this test must not become is a PARALLEL path: it therefore builds
-// its spec with the very function produce() uses (assembleNativeSpec) and hands it to the very
-// verb produce() dispatches through (render), with the same arguments. What gets rendered here is
-// literally what production will render on the day the branch is wired.
+// its spec with the very table entry produce() uses (briefFor + assembleChartNative) and hands
+// it to the very verb produce() dispatches through (render), with the same arguments. What gets
+// rendered here is literally what production will render on the day the branch is wired.
 // MEASURED, 2026-07-27, on a real build of both pages. The four narrative steps of a chart
 // scrolly, same series, same anchors, same six-card structure:
 //
@@ -56,7 +57,9 @@ async function readRenderedSteps(pagePath: string): Promise<string[]> {
   const { chromium } = await import("playwright");
   const browser = await chromium.launch();
   try {
-    const tab = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+    const tab = await browser.newPage({
+      viewport: { width: 1200, height: 900 },
+    });
     await tab.goto(`file://${pagePath}`, { waitUntil: "networkidle" });
     await tab.waitForSelector("[data-step-index]", { timeout: 30_000 });
     return await tab.$$eval("[data-step-index]", (nodes) =>
@@ -148,14 +151,19 @@ proof(
     expect(unauthoredBeats(ready.elements[0]!)).toEqual([]);
 
     // 3. THE RENDER — production's own spec assembly, production's own verb.
-    const spec = assembleNativeSpec(
-      ready,
-      ready.elements[0]!,
-      SEA_ICE,
-      "NSIDC Sea Ice Index",
-      "https://nsidc.org/data/seaice_index",
-      "scrolly",
+    const assembled = assembleChartNative(
+      briefFor(
+        ready,
+        ready.elements[0]!,
+        SEA_ICE,
+        "NSIDC Sea Ice Index",
+        "https://nsidc.org/data/seaice_index",
+        "scrolly",
+      ),
     );
+    expect(assembled.ok).toBe(true);
+    if (!assembled.ok) return;
+    const spec = assembled.value;
     const out = join(runDir, "elements", "e1");
     const result = await render({
       engine: "scrolly",

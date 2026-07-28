@@ -1,5 +1,6 @@
 import { producerForFormat } from "../core/registry";
 import type { VisualFormat } from "../core/vocabulary";
+import { ASSEMBLERS } from "./assemble";
 
 // Which engines the editorial loop can actually BUILD through today — ONE list, read by
 // everything that has to know.
@@ -30,8 +31,11 @@ import type { VisualFormat } from "../core/vocabulary";
 // module's only outside import is lib/core/registry's producerForFormat, and lib/core never
 // imports lib/loop or lib/brain.
 //
-// Adding an engine here is a promise: produce.ts must be able to assemble that engine's spec.
-export const LOOP_BUILDABLE_ENGINES: readonly string[] = ["chart-native"];
+// DERIVED, not declared. Before this, the list was a sentence someone had to remember to keep
+// true; now a moteur is buildable if and only if an assembler exists for it, which is the
+// promise this file's header has always asked for.
+export const LOOP_BUILDABLE_ENGINES: readonly string[] =
+  Object.keys(ASSEMBLERS);
 
 /** An option with no engine at all (fixtures, hand-authored manifests predating the brain) is
  *  built through the default path, which IS chart-native — so "unset" is buildable. */

@@ -9,7 +9,9 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
-import { produce, assembleNativeSpec } from "./produce";
+import { produce } from "./produce";
+import { assembleChartNative } from "./assemble/chart-native";
+import { briefFor } from "./assemble/brief";
 import { provenanceHash, type RunManifest } from "./manifest";
 import { freezeInput } from "./freeze";
 import { draftBeats, applyBeats } from "./beats";
@@ -611,7 +613,7 @@ function scrollyRunOnDisk(): { run: RunManifest; runDir: string } {
   };
 }
 
-test("assembleNativeSpec threads the authored beats onto the spec", () => {
+test("assembleChartNative threads the authored beats onto the spec", () => {
   const { run, runDir } = scrollyRunOnDisk();
   const drafted = draftBeats(run, run.elements[0]!, runDir);
   expect(drafted.ok).toBe(true);
@@ -626,12 +628,21 @@ test("assembleNativeSpec threads the authored beats onto the spec", () => {
       text: `Claim ${b.id}.`,
     })),
   );
-  const spec = assembleNativeSpec(
-    authored,
-    authored.elements[0]!,
-    SEA_ICE,
-    "NSIDC Sea Ice Index",
+  const result = assembleChartNative(
+    briefFor(
+      authored,
+      authored.elements[0]!,
+      SEA_ICE,
+      "NSIDC Sea Ice Index",
+      undefined,
+      "static",
+    ),
   );
+  expect(result.ok).toBe(true);
+  if (!result.ok) return;
+  const spec = result.value as Record<string, unknown> & {
+    beats?: { x?: string; category?: string; role: string; text: string }[];
+  };
   expect(spec.beats).toBeDefined();
   expect(spec.beats!.map((b) => b.text)).toEqual(
     drafted.value.narrative!.beats.map((b) => `Claim ${b.id}.`),
@@ -647,15 +658,21 @@ test("assembleNativeSpec threads the authored beats onto the spec", () => {
   rmSync(runDir, { recursive: true, force: true });
 });
 
-test("assembleNativeSpec leaves an element with no plan byte-identical — no `beats` key", () => {
+test("assembleChartNative leaves an element with no plan byte-identical — no `beats` key", () => {
   const { run, runDir } = scrollyRunOnDisk();
-  const spec = assembleNativeSpec(
-    run,
-    run.elements[0]!,
-    SEA_ICE,
-    "NSIDC Sea Ice Index",
+  const result = assembleChartNative(
+    briefFor(
+      run,
+      run.elements[0]!,
+      SEA_ICE,
+      "NSIDC Sea Ice Index",
+      undefined,
+      "static",
+    ),
   );
-  expect("beats" in spec).toBe(false);
+  expect(result.ok).toBe(true);
+  if (!result.ok) return;
+  expect("beats" in (result.value as Record<string, unknown>)).toBe(false);
   rmSync(runDir, { recursive: true, force: true });
 });
 

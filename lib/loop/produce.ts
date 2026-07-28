@@ -4,7 +4,6 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { fail, ok, render, type VerbResult } from "../core/verbs";
 import { IMAGE_EXTENSIONS } from "../core/contract";
 import type { VisualFormat } from "../core/vocabulary";
-import type { ArcRole } from "../core/claim-arc";
 import {
   assertNoPrivateLeak,
   assertProseGrounded,
@@ -32,6 +31,8 @@ import {
   resolveBuilder,
   LOOP_BUILDABLE_ENGINES,
 } from "./buildable";
+import { briefFor } from "./assemble/brief";
+import { ASSEMBLERS } from "./assemble";
 // Populates the producer registry the render verb dispatches from — without it every
 // render answers `unknown-engine`. The loop's ONE point of knowledge about skills/ lives
 // in that file, on purpose; see its header.
@@ -72,44 +73,6 @@ function artifactFileFor(
 }
 
 /**
- * The manifest element, as the engine's spec. EXPORTED because two callers must render exactly
- * the same thing: produce() below, and the article-beats render proof
- * (lib/loop/beats-render-proof.test.ts), which drives a scrolly through the real render verb
- * while the whole-article branch is still gated out of LOOP_BUILDABLE_ENGINES. A proof that
- * assembled its own spec would be proving a parallel path.
- *
- * `beats` is only present when the element carries a narrative plan. Absent for every embeddable
- * element, so a spec built for one is byte-identical to what it was before this seam existed. An
- * UNAUTHORED plan never reaches an engine: produce() refuses it above, before this runs.
- *
- * The angle's parts fall back to "" rather than refusing, because produce() has already required
- * an angle by the time it calls this and a second refusal here would be a second place to keep
- * in step. A caller reaching it without one gets a spec the engine's own validator rejects
- * (a blank title and a blank altInsight both fail-hard at conformance) — loud, not silent.
- */
-export function assembleNativeSpec(
-  run: RunManifest,
-  el: RunElement,
-  dataCsv: string,
-  attribution: string,
-  sourceUrl?: string,
-  format?: VisualFormat,
-): Record<string, unknown> & { beats?: NarrativeBeatSpec[] } {
-  const chosen = chosenOption(el);
-  return {
-    nativeType: chosen?.nativeType ?? "",
-    title: el.angle?.confirmedTakeaway ?? "",
-    altInsight: el.angle?.altInsight ?? "",
-    unit: el.angle?.unit ?? "",
-    source: { name: attribution, ...(sourceUrl ? { url: sourceUrl } : {}) },
-    ...(el.angle?.emphasis ? { highlight: el.angle.emphasis } : {}),
-    ...(format ? { format } : {}),
-    data: dataCsv,
-    ...(el.narrative ? { beats: narrativeBeatsFor(el) } : {}),
-  };
-}
-
-/**
  * A guard's THROW, turned into the refusal a verb is allowed to return.
  *
  * `assertProseGrounded` and `assertNoPrivateLeak` throw, on purpose — lib/source's own rule is
@@ -130,26 +93,6 @@ function refusalFromGuard(
     "",
   );
   return toVerbResult(sourceFail(code, `produce: ${message}`));
-}
-
-/** The engine's own beat shape (skills/chart-native's NarrativeBeat), built from the manifest's.
- *  The anchor's KIND picks the field — a line beat anchors on `x`, a bar walk on `category` —
- *  so a plan drafted for one chart type can never arrive shaped like the other's. */
-type NarrativeBeatSpec = {
-  x?: string;
-  category?: string;
-  role: ArcRole;
-  text: string;
-};
-
-function narrativeBeatsFor(el: RunElement): NarrativeBeatSpec[] {
-  return (el.narrative?.beats ?? []).map((b) => ({
-    ...(b.anchor.kind === "x"
-      ? { x: b.anchor.value }
-      : { category: b.anchor.value }),
-    role: b.role,
-    text: b.text,
-  }));
 }
 
 // The ONE craft verb of the loop. Assembles a NativeSpec from the manifest element and
@@ -300,7 +243,7 @@ export async function produce(
   // `attribution`, so nothing that must be READ is dropped by taking the shorter field.
   const published = verdict.value.published;
 
-  const nativeSpec = assembleNativeSpec(
+  const brief = briefFor(
     run,
     el,
     dataCsv,
@@ -308,6 +251,15 @@ export async function produce(
     published.url,
     format,
   );
+  const assembler = ASSEMBLERS[builder];
+  if (!assembler)
+    return fail(
+      "not-implemented",
+      `produce: "${chosen.id}" is a ${builder} form (${format}) — ${unbuildableEngineReason(builder)}`,
+    );
+  const assembled = assembler(brief);
+  if (!assembled.ok) return assembled;
+  const nativeSpec = assembled.value as Record<string, unknown>;
 
   // ── The two LAST-MOMENT guards of the source policy ─────────────────────────────────────────
   //
