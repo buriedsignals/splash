@@ -238,4 +238,49 @@ describe("what is missing, in the page's own words", () => {
     expect(capability(m, "map-native")?.missingFields).toEqual([]);
     expect(capability(m, "image-native")?.missingFields).toEqual([]);
   });
+
+  // A23's page half. Readiness now answers `missing` for a destination whose non-secret
+  // identifiers are unfilled; a blocker the page cannot name falls back to readiness's own
+  // sentence, which speaks in `newsroom.json` keys — the vocabulary this whole section exists to
+  // avoid. The fields are already on the page (destination "settings"), so it names them.
+  it("names an unfilled destination setting, not only a missing key", () => {
+    const m = model({
+      state: state({ capabilities: { "embed-s3": { enabled: true } } }),
+      env: {
+        SPLASH_S3_ACCESS_KEY_ID: "id",
+        SPLASH_S3_SECRET_ACCESS_KEY: "secret",
+      },
+    });
+    expect(capability(m, "embed-s3")?.status).toBe("missing");
+    expect(capability(m, "embed-s3")?.missingFields).toEqual([
+      "endpoint",
+      "region",
+      "bucket",
+      "publicBaseUrl",
+    ]);
+  });
+
+  it("stops naming a setting once the newsroom has filled it", () => {
+    const m = model({
+      state: state({
+        capabilities: {
+          "embed-s3": {
+            enabled: true,
+            settings: {
+              endpoint: "https://s3.example.org",
+              region: "auto",
+              bucket: "newsroom",
+              publicBaseUrl: "https://cdn.example.org",
+            },
+          },
+        },
+      }),
+      env: {
+        SPLASH_S3_ACCESS_KEY_ID: "id",
+        SPLASH_S3_SECRET_ACCESS_KEY: "secret",
+      },
+    });
+    expect(capability(m, "embed-s3")?.status).toBe("ready");
+    expect(capability(m, "embed-s3")?.missingFields).toEqual([]);
+  });
 });

@@ -175,16 +175,29 @@ function collectFields(
   return [...byName.values()];
 }
 
-/** The declared fields whose env group is not satisfied — what to ask for, by name. */
+/**
+ * The declared fields still to fill — what to ask for, by name.
+ *
+ * Two homes, one list: a credential whose env group is unsatisfied, and a REQUIRED non-secret
+ * setting (an S3 endpoint, a bucket) absent from the saved state. Readiness refuses on both, and
+ * a blocker the page cannot name falls back to readiness's own sentence — which speaks in
+ * newsroom.json keys, the vocabulary this list exists to keep off the summary.
+ */
 function missingFieldsOf(
   cap: NewsroomCapability,
+  state: NewsroomState,
   env: Record<string, string | undefined>,
 ): string[] {
   const unsatisfied = cap.env.filter(
     (group) => !group.some((name) => isSet(env[name])),
   );
+  const settings = state.capabilities[cap.id]?.settings ?? {};
   return (cap.settingsFields ?? [])
-    .filter((f) => unsatisfied.some((group) => group.includes(f.name)))
+    .filter(
+      (f) =>
+        unsatisfied.some((group) => group.includes(f.name)) ||
+        (f.required && !f.secret && !isSet(settings[f.name])),
+    )
     .map((f) => f.name);
 }
 
@@ -205,7 +218,7 @@ function describe(
     status: readiness.status,
     statusIfEnabled: ifEnabled.status,
     reason: readiness.reason || ifEnabled.reason,
-    missingFields: cap.implemented ? missingFieldsOf(cap, env) : [],
+    missingFields: cap.implemented ? missingFieldsOf(cap, state, env) : [],
     help: readiness.help,
   };
 }
