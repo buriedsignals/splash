@@ -1,5 +1,10 @@
 import { test, expect } from "bun:test";
-import { ASSEMBLERS, assemblerFor, declineReason } from "./index";
+import {
+  ASSEMBLERS,
+  assemblerFor,
+  declineReason,
+  heightPolicyFor,
+} from "./index";
 import {
   isLoopBuildable,
   LOOP_BUILDABLE_ENGINES,
@@ -49,16 +54,41 @@ test("a type Datawrapper has no slug for is unbuildable in every format", () => 
 });
 
 // A row-driven Datawrapper export ships the channel's WIDTH and a content-driven height (pinning
-// the height crops rows — silent data loss). The loop's capture layer measures the delivered image
-// against the destination's whole box, so that correct artifact reads as a size mismatch. Marked,
-// not offered clean, until the two can agree.
-test("a Datawrapper export whose height follows the row count is not offered by the loop", () => {
-  expect(isLoopBuildable("dw-chart", "d3-bars", "static")).toBe(false);
-  expect(declineReason("dw-chart", "d3-bars", "static")).toContain(
-    "grows its height with the row count",
-  );
-  // Its fixed-aspect sibling — the vertical column chart — exports AT the box, and is offered.
+// the height crops rows — silent data loss). That cost the offer NINE of Datawrapper's twenty-two
+// types while the capture layer could only measure a whole box. It can now measure a width against
+// a content-driven height (lib/verify/types.ts HeightPolicy), so the nine are back — and the
+// knowledge that justified excluding them now DECLARES their shape instead (heightPolicyFor).
+test("the whole row-driven family is back in the offer, declaring its own shape", () => {
+  for (const t of [
+    "d3-bars",
+    "d3-bars-grouped",
+    "d3-bars-stacked",
+    "d3-bars-split",
+    "d3-bars-bullet",
+    "d3-dot-plot",
+    "d3-arrow-plot",
+    "d3-range-plot",
+    "tables",
+  ]) {
+    expect(isLoopBuildable("dw-chart", t, "static")).toBe(true);
+    expect(declineReason("dw-chart", t, "static")).toBeUndefined();
+    expect(heightPolicyFor("dw-chart", t)).toBe("content-driven");
+  }
+  // Its fixed-aspect sibling — the vertical column chart — exports AT the box, and stays pinned:
+  // the relaxation is earned per type, not handed to the engine wholesale.
   expect(isLoopBuildable("dw-chart", "column-chart", "static")).toBe(true);
+  expect(heightPolicyFor("dw-chart", "column-chart")).toBe("pinned");
+});
+
+// The default is the strict one, everywhere. A policy that leaked to another engine (or to an
+// option carrying no engine at all — hand-authored manifests predating the brain) would relax a
+// check for artifacts that never earned it.
+test("every other engine, and an unset one, stays pinned", () => {
+  expect(heightPolicyFor("chart-native", "d3-bars")).toBe("pinned");
+  expect(heightPolicyFor("map-dw", "choropleth")).toBe("pinned");
+  expect(heightPolicyFor(undefined, undefined)).toBe("pinned");
+  expect(heightPolicyFor("dw-chart", undefined)).toBe("pinned");
+  expect(heightPolicyFor("dw-chart", "not-a-real-type")).toBe("pinned");
 });
 
 // The refusal a journalist reads for a wired engine must not be the generic one: "nothing can

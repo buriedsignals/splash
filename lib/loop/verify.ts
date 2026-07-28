@@ -14,6 +14,7 @@ import { fail, ok, runVerb, type VerbResult } from "../core/verbs";
 import { toVerbResult, validateSourcePolicy } from "../source";
 import { destinationIdFor } from "../verify/viewport";
 import { DEFAULT_REVIEW_RUBRIC } from "../verify/review";
+import { heightPolicyFor } from "./assemble";
 import type {
   CaptureResult,
   FurnitureExpectation,
@@ -84,7 +85,8 @@ export async function captureStep(
   const source = renderedSourceName(run);
   if (!source.ok) return source;
 
-  const format = chosenOption(el)?.format ?? "static";
+  const chosen = chosenOption(el);
+  const format = chosen?.format ?? "static";
   const capturedProvenanceHash = provenanceHash(run, el);
   const result = await runVerb("capture", {
     artifactPath: join(runDir, el.artifact.path),
@@ -93,6 +95,11 @@ export async function captureStep(
     outDir: elementVerifyDir(runDir),
     id: el.id,
     furniture: furnitureFor(el, source.value),
+    // WHAT SHAPE this deliverable has against its box — declared by the loop, which knows the
+    // engine and the type it commissioned, and read by capture as neutral vocabulary. Without it
+    // a Datawrapper bar chart's deliberately content-driven height reads as a `size-mismatch` on
+    // a correct artifact, which is what kept nine of Datawrapper's chart types out of the offer.
+    heightPolicy: heightPolicyFor(chosen?.engine, chosen?.nativeType),
   });
 
   if (!result.ok) {

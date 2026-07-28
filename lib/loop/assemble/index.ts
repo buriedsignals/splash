@@ -16,6 +16,7 @@ import {
   type ChartType,
 } from "../../../skills/dw-chart/src/chart-spec";
 import { isRowDriven } from "../../../skills/dw-chart/src/export-aspect";
+import type { HeightPolicy } from "../../verify/types";
 
 export type AssemblerEntry = {
   assemble: Assembler;
@@ -76,37 +77,61 @@ export const ASSEMBLERS: Record<string, AssemblerEntry> = {
   // A hosted, file-less deliverable is a capability the loop does not have yet; until it does,
   // this table says so rather than letting the brain promise it.
   //
-  // And FIXED-ASPECT types only, for the second measured reason: a ROW-DRIVEN Datawrapper export
-  // (the d3-bars family, dot/arrow/range plots, tables) is exported WIDTH-ONLY on purpose — a
-  // pinned height makes Datawrapper CROP the rows that overflow, which is silent data loss
-  // (skills/dw-chart/src/export-aspect.ts ROW_DRIVEN_TYPES). The loop's own capture layer then
-  // measures the delivered image against the destination's box and reads the content-driven
-  // height as a defect: a 3-row bar chart delivered 1200x600 against article-web's 1200x675 and
-  // `capture:size-matches-destination` failed, which becomes a `size-mismatch` finding on a
-  // correct artifact (measured in lib/host/journey.test.ts — see .sdd/task-12-report.md).
-  // Neither side is wrong; they cannot both be satisfied until the verify layer can express
-  // "width pinned, height follows the content". Datawrapper's vertical column chart, its lines,
-  // areas, pies and scatter all export AT the channel box, so the offer keeps them.
+  // The ROW-DRIVEN family (d3-bars and its variants, dot / arrow / range plots, tables) used to be
+  // excluded here TOO — nine of Datawrapper's twenty-two types, kept out of the offer. Not for a
+  // fault of the engine's: such a chart is exported WIDTH-ONLY on purpose, because a pinned height
+  // makes Datawrapper CROP the rows that overflow (silent data loss — see export-aspect.ts
+  // ROW_DRIVEN_TYPES), so a 3-row bar chart legitimately came back 1200x600 for article-web's
+  // 1200x675 and `capture:size-matches-destination` filed a `size-mismatch` on a correct artifact.
+  // Neither side was wrong: the verify layer simply could not express "width pinned, height follows
+  // the content". It can now (lib/verify/types.ts HeightPolicy), so the exclusion is GONE and the
+  // knowledge that justified it did not disappear with it — it moved to heightPolicyFor below,
+  // where it declares the shape the capture layer measures against instead of refusing the type.
   "dw-chart": {
     assemble: assembleDwChart,
     supports: (t, format) =>
       (CHART_TYPES as readonly string[]).includes(t) &&
-      !isRowDriven(t as ChartType) &&
       (format === undefined || format === "static"),
     declines: (t, format) =>
       !(CHART_TYPES as readonly string[]).includes(t)
         ? `Datawrapper does not build a "${t}" chart`
-        : isRowDriven(t as ChartType)
-          ? `a Datawrapper "${t}" grows its height with the row count rather than fitting the ` +
-            `box this deliverable publishes into, and the loop checks a delivered image against ` +
-            `that box — so this form is built in-house instead`
-          : format !== undefined && format !== "static"
-            ? `Datawrapper delivers a ${format} chart as a HOSTED embed — a URL, with no file the ` +
-              `newsroom owns — and a run keeps each element as a file of its own, so the loop ` +
-              `builds a Datawrapper chart as a static image; an interactive one is built in-house`
-            : undefined,
+        : format !== undefined && format !== "static"
+          ? `Datawrapper delivers a ${format} chart as a HOSTED embed — a URL, with no file the ` +
+            `newsroom owns — and a run keeps each element as a file of its own, so the loop ` +
+            `builds a Datawrapper chart as a static image; an interactive one is built in-house`
+          : undefined,
   },
 };
+
+/**
+ * The SHAPE the artifact this (engine, type) pairing produces will have against its destination
+ * box — the fact `capture` needs in order to measure it correctly.
+ *
+ * WHY IT TRAVELS FROM HERE, and not from the two other places it could have:
+ *   · not from the CHANNEL model — a channel is not row-driven. article-web hosts a column chart
+ *     that lands exactly on its box and a bar chart whose height belongs to its rows; the property
+ *     is the ENGINE's and the TYPE's, and putting it on the channel would make it true of both.
+ *   · not from the PRODUCER'S REPORT — the run manifest records an artifact as path + sha256 +
+ *     provenance + producedAt (lib/loop/manifest.ts); a producer's `report` bag never reaches
+ *     capture. Widening the persisted schema to carry a value that is a pure function of (engine,
+ *     type) would buy a migration AND a second copy of the answer that can disagree with the
+ *     engine's own — the drift this codebase has already paid for more than once.
+ *   · so from the ENGINE, read at the one place lib/loop already keeps engine knowledge (this
+ *     table), and handed to `capture` as a NEUTRAL vocabulary term (lib/verify/types.ts
+ *     HeightPolicy) — never as a type name. lib/verify stays free of chart types, which is what
+ *     keeps this from becoming a list someone has to remember to extend.
+ *
+ * A future engine with the same property answers here, in one line, and the verify layer needs
+ * no edit at all.
+ */
+export function heightPolicyFor(
+  engine?: string,
+  nativeType?: string,
+): HeightPolicy {
+  if (engine === "dw-chart" && isRowDriven(nativeType as ChartType))
+    return "content-driven";
+  return "pinned";
+}
 
 export function assemblerFor(
   engine: string,
