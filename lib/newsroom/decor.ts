@@ -5,11 +5,13 @@
 // The install root is resolved from THIS module's location, not from process.cwd(): a
 // producer, the loop and the host façade all run from different working directories, and the
 // decor must not change depending on which one asked.
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  loadBrandProfile,
   loadNewsroomProfile,
+  parseNewsroomMarkdown,
   type BrandProfile,
 } from "../../skills/splash/src/brand-profile";
 import {
@@ -94,8 +96,8 @@ export type LoadDecorOpts = {
  * `newsroom.json` there. With an explicit `dir` — the shape reachable from the host façade,
  * where every argument is untrusted (`lib/host/cli.ts`) — the decor is read and derived but
  * NOTHING is written: no directory is created, no migration is persisted, no legacy file is
- * touched. A host asking "what can this newsroom do?" must not be able to make a directory
- * appear wherever it points.
+ * touched, and no `brand.json` profile cache is left behind. A host asking "what can this
+ * newsroom do?" must not be able to make a directory appear wherever it points.
  */
 export function loadDecor(dir?: string, opts: LoadDecorOpts = {}): Decor {
   const root = dir ?? installRoot();
@@ -103,7 +105,7 @@ export function loadDecor(dir?: string, opts: LoadDecorOpts = {}): Decor {
   const mayWrite = dir === undefined;
   const env = opts.env ?? decorEnv(root);
   const state = resolveState(root, env, mayWrite);
-  const profile = loadNewsroomProfile(root);
+  const profile = resolveProfile(root, mayWrite);
   const language = resolveLanguage({
     uiLang: state.uiLang,
     profileLang: profile?.lang,
@@ -116,6 +118,30 @@ export function loadDecor(dir?: string, opts: LoadDecorOpts = {}): Decor {
     profile: deliveryProfile(profile, language.content),
     ...(profile?.theme ? { theme: profile.theme } : {}),
   };
+}
+
+/**
+ * The newsroom profile, under the same write rule as the state.
+ *
+ * `loadNewsroomProfile` caches its parse to `brand.json` on every call — which is right for the
+ * install's own root (the cache is inspectable, and the file is the machine-readable half of
+ * NEWSROOM-PROFILE.md) and wrong for a directory the host handed in: an entry point documented
+ * as read-only was dropping a file into an untrusted path. Under an explicit dir the same
+ * profile is DERIVED from the same two sources, in the same order, and simply not written.
+ *
+ * The parse-failure warning stays on the write path. It exists for the journalist configuring
+ * THIS install; a façade query about some other directory is not that moment, and mirroring the
+ * message here would be a second copy of it.
+ */
+function resolveProfile(root: string, mayWrite: boolean): BrandProfile | null {
+  if (mayWrite) return loadNewsroomProfile(root);
+  const mdPath = join(root, "NEWSROOM-PROFILE.md");
+  if (!existsSync(mdPath)) return loadBrandProfile(root);
+  try {
+    return parseNewsroomMarkdown(readFileSync(mdPath, "utf8"));
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -195,6 +195,40 @@ describe("an explicit directory is READ-ONLY", () => {
     expect(readdirSync(d)).toEqual([LEGACY_RUNTIME_FILE]);
   });
 
+  // A4: the docstring promised "NOTHING is written" while the profile loader cached its parse
+  // to brand.json on EVERY call — a read-only entry point dropping a file into an untrusted
+  // path, which is the whole reason the explicit dir exists. The cache belongs to the install's
+  // own root, where `loadDecor()` is allowed to persist; here the same profile is derived.
+  it("derives the newsroom profile without dropping its cache in", () => {
+    const d = dir();
+    writeFileSync(
+      join(d, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        'lang: "fr"',
+        "source:",
+        '  name: "A Newsroom"',
+        "---",
+        "",
+        "# guide",
+        "",
+      ].join("\n"),
+    );
+    const decor = loadDecor(d, NO_ENV);
+    expect(decor.profile.source).toBe("A Newsroom"); // derived…
+    expect(decor.language.content).toBe("fr");
+    expect(readdirSync(d)).toEqual(["NEWSROOM-PROFILE.md"]); // …never cached
+  });
+
+  it("reads the brand.json cache when that is all the install has", () => {
+    const d = dir();
+    writeFileSync(
+      join(d, "brand.json"),
+      JSON.stringify({ palette: [], source: { name: "Cached Newsroom" } }),
+    );
+    expect(loadDecor(d, NO_ENV).profile.source).toBe("Cached Newsroom");
+  });
+
   it("does not create the directory it was pointed at", () => {
     const target = join(dir(), "does", "not", "exist");
     expect(loadDecor(target, NO_ENV).root).toBe(target);
