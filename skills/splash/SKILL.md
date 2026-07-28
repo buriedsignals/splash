@@ -477,10 +477,10 @@ Four rules, all mechanical:
    whole-article branch, not built yet" — on every scrolly; it is gone, because a scrolly is an
    embeddable element like any other (one self-contained HTML file, the embed genre, the same
    publishers and the same iframe snippet an interactive gets), proven end to end in
-   `lib/loop/scrolly-e2e.test.ts`. A mark WARNS, it does not forbid: the journalist may pick a marked form and the
-   choice stands. The one exception is a form nothing can build — `chooseForm` refuses it in the
-   words the offer displayed, and the loop routes back to the choice rather than looping on a
-   refusal. Say so plainly and offer the ranked alternatives again.
+   `lib/loop/scrolly-e2e.test.ts`. A mark WARNS, it does not forbid: the journalist may pick a
+   marked form and the choice stands. The one exception is a form nothing can build —
+   `chooseForm` refuses it in the words the offer displayed, and the loop routes back to the
+   choice rather than looping on a refusal. Say so plainly and offer the ranked alternatives again.
 
 **★ THE DECISIONS ARE MECHANICAL — never hand-edit `run.json`.** A decision the journalist makes
 is written by CODE, with its own refusals, exactly like the offer is built by code. Editing the
