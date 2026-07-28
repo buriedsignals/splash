@@ -345,17 +345,27 @@ test("buildabilityMark is null when the loop can already build through the produ
   expect(buildabilityMark("chart-native", "video")).toBeNull();
 });
 
-// THE FORMAT AXIS (task 12), at the level that matters: what the journalist is SHOWN. dw-chart's
-// static export is a PNG the loop records; its interactive is a hosted Datawrapper embed with no
-// file, and produce() records an artifact by path. Unmarked, that pairing ranked FIRST in a real
-// run's offer and dead-ended after the choice — measured, and the reason the mark now reads the
-// format as well as the engine.
-test("a dw-chart chart is marked in the format the loop cannot deliver, and clean in the one it can", () => {
+// THE FORMAT AXIS (task 12), at the level that matters: what the journalist is SHOWN — and what
+// closed it. dw-chart's static export is a PNG the loop records by path; its interactive is a
+// hosted Datawrapper embed with no file at all. While the manifest could only record a path, that
+// pairing was MARKED: unmarked it ranked FIRST in a real run's offer and dead-ended after the
+// choice (measured). The manifest now records a hosted delivery as the URL it is
+// (ArtifactRecordSchema, lib/loop/manifest.ts) and produce() writes it, so there is no dead end
+// left to warn about and BOTH formats are offered clean.
+//
+// The TYPE axis still marks, and is asserted here beside it, so this test keeps guarding that
+// buildabilityMark reads more than the engine name.
+test("both of a hosted engine's formats are offered clean, while an unbuildable type still marks", () => {
   expect(buildabilityMark("dw-chart", "static", "column-chart")).toBeNull();
-  const hosted = buildabilityMark("dw-chart", "interactive", "column-chart");
-  expect(hosted).not.toBeNull();
-  expect(hosted!.status).toBe("missing");
-  expect(hosted!.reason).toContain("HOSTED");
+  expect(
+    buildabilityMark("dw-chart", "interactive", "column-chart"),
+  ).toBeNull();
+  const unknownType = buildabilityMark("dw-chart", "static", "beeswarm");
+  expect(unknownType).not.toBeNull();
+  expect(unknownType!.status).toBe("missing");
+  expect(unknownType!.reason).toContain(
+    'Datawrapper does not build a "beeswarm" chart',
+  );
 });
 
 test("buildabilityMark names the actual unbuildable engine when there is no format redirect", () => {

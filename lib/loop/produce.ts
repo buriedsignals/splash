@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { fail, ok, render, type VerbResult } from "../core/verbs";
-import { IMAGE_EXTENSIONS } from "../core/contract";
+import { IMAGE_EXTENSIONS, isHostedUrl } from "../core/contract";
 import type { VisualFormat } from "../core/vocabulary";
 import {
   assertNoPrivateLeak,
@@ -345,6 +345,37 @@ export async function produce(
   });
   if (!result.ok) return result;
 
+  // A HOSTED DELIVERY IS A DELIVERY. Datawrapper's interactive chart and map publish and hand back
+  // a URL with `files: []` (form "hosted" — skills/dw-chart/src/manifest.ts,
+  // skills/map-dw/src/manifest.ts). Looking for a named file among none is how this branch used to
+  // answer "no interactive artifact in the delivery" on a chart that had been published perfectly
+  // well, and then discard the URL render() had brought back — the loop losing the whole "Embed"
+  // delivery form it publicly promises.
+  //
+  // Checked with the contract's OWN isHostedUrl, never a second https test written here:
+  // assertDeliveredContract already ran this exact predicate inside the dispatcher, so what this
+  // repeats is a belt on the ONE place that writes the record, in the same words. A hosted form
+  // with an unusable URL is an engine failure — the engine ran and produced nothing pointable.
+  if (result.value.form === "hosted") {
+    const url = result.value.publicUrl;
+    if (!isHostedUrl(url))
+      return fail(
+        "engine-failed",
+        `produce: the ${format} delivery is hosted — a published embed with no file the newsroom owns — ` +
+          `but it carries no resolvable https URL (${JSON.stringify(url)}), so there is nothing to record`,
+      );
+    return ok({
+      ...el,
+      artifact: {
+        kind: "hosted",
+        // Non-null by isHostedUrl above, which returns false for anything but a string.
+        url: url as string,
+        provenanceHash: provenanceHash(run, el),
+        producedAt: new Date().toISOString(),
+      },
+    });
+  }
+
   const artifactPath = artifactFileFor(format, result.value.files);
   if (!artifactPath)
     return fail(
@@ -359,6 +390,9 @@ export async function produce(
     return ok({
       ...el,
       artifact: {
+        // Written EXPLICITLY from here on, though the schema reads its absence as "file" so every
+        // manifest already on disk still parses (see ArtifactRecordSchema).
+        kind: "file",
         path: relative(runDir, artifactPath),
         sha256: Buffer.from(sha256(artifactBytes)).toString("hex"),
         provenanceHash: provenanceHash(run, el),

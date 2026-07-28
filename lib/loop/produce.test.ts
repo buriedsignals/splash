@@ -12,7 +12,7 @@ import "../../skills/splash/src/register-producers";
 import { produce } from "./produce";
 import { assembleChartNative } from "./assemble/chart-native";
 import { briefFor } from "./assemble/brief";
-import { provenanceHash, type RunManifest } from "./manifest";
+import { provenanceHash, type RunManifest, fileArtifact } from "./manifest";
 import { freezeInput } from "./freeze";
 import { draftBeats, applyBeats } from "./beats";
 import { narrativeBeatErrors } from "../../skills/chart-native/src/chart-story";
@@ -69,14 +69,16 @@ test("produce renders a real static PNG through the chart-native seam", async ()
   const result = await produce(run, run.elements[0], runDir);
   if (!result.ok) throw new Error(result.message);
   const after = result.value;
-  const artifactAbs = join(runDir, after.artifact!.path);
-  expect(after.artifact!.path).toBe(join("elements", "e1", "static.png"));
+  const artifactAbs = join(runDir, fileArtifact(after.artifact)!.path);
+  expect(fileArtifact(after.artifact)!.path).toBe(
+    join("elements", "e1", "static.png"),
+  );
   expect(existsSync(artifactAbs)).toBe(true);
   expect(statSync(artifactAbs).size).toBeGreaterThan(5000);
   expect(after.artifact!.provenanceHash).toBe(
     provenanceHash(run, run.elements[0]),
   );
-  expect(after.artifact!.sha256).toMatch(/^[0-9a-f]{64}$/);
+  expect(fileArtifact(after.artifact)!.sha256).toMatch(/^[0-9a-f]{64}$/);
 }, 60000);
 
 // A21 — end of the thread. The class the run declared has to arrive on the CONFIG the engine's
@@ -208,8 +210,10 @@ test("produce renders the chosen option's own format, not a hard-coded static", 
   const after = result.value;
   // The recorded artifact path matches the format the manifest promised — an
   // interactive.html, not a static.png.
-  expect(after.artifact!.path).toBe(join("elements", "e1", "interactive.html"));
-  const artifactAbs = join(runDir, after.artifact!.path);
+  expect(fileArtifact(after.artifact)!.path).toBe(
+    join("elements", "e1", "interactive.html"),
+  );
+  const artifactAbs = join(runDir, fileArtifact(after.artifact)!.path);
   expect(existsSync(artifactAbs)).toBe(true);
   expect(readFileSync(artifactAbs, "utf8")).toContain("<html");
 }, 60000);
@@ -577,7 +581,10 @@ test("the declared source reaches the produced artifact, and the placeholder is 
   };
   const result = await produce(run, run.elements[0], runDir);
   if (!result.ok) throw new Error(result.message);
-  const html = readFileSync(join(runDir, result.value.artifact!.path), "utf8");
+  const html = readFileSync(
+    join(runDir, fileArtifact(result.value.artifact)!.path),
+    "utf8",
+  );
   expect(html).toContain("Office fédéral de la santé publique");
   expect(html).toContain(
     "https://www.bag.admin.ch/dam/bag/fr/dokumente/kuv-aufsicht/praemien/2024.csv",

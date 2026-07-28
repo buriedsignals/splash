@@ -22,6 +22,8 @@ import type {
 import {
   channelForElement,
   chosenOption,
+  fileArtifact,
+  isHostedArtifact,
   provenanceHash,
   type RunElement,
   type RunManifest,
@@ -86,8 +88,32 @@ export async function captureStep(
 
   const format = chosenOption(el)?.format ?? "static";
   const capturedProvenanceHash = provenanceHash(run, el);
+
+  // A HOSTED DELIVERY OWNS NO FILE, so there is nothing here to put in front of a viewport: the
+  // capture verb opens a path and measures what renders, and a Datawrapper embed is a URL this run
+  // never downloaded. Capturing it would mean fetching a live page over the network from inside a
+  // verb — a capability lib/verify does not have and invariant I5 would have to be revisited for.
+  //
+  // The answer is the SAME third one captureStep already gives a format lib/verify cannot cover
+  // (video, below): RECORD THE GAP. Refusing would route the element back to `capture` forever and
+  // strand it; passing silently would publish an unverified embed. A recorded gap makes review
+  // emit its blocking `no-capture` finding, and the only way past that is a journalist's explicit,
+  // written override — #11's ceremony, used for exactly what it was designed for.
+  if (!fileArtifact(el.artifact))
+    return ok({
+      ...el,
+      capture: {
+        images: [],
+        checks: [],
+        capturedProvenanceHash,
+        unsupported:
+          `this element was delivered as a HOSTED embed (${isHostedArtifact(el.artifact) ? el.artifact.url : "no url"}) — ` +
+          `the run owns no file of it, so nothing can be put in front of the publication viewport and measured`,
+      },
+    });
+
   const result = await runVerb("capture", {
-    artifactPath: join(runDir, el.artifact.path),
+    artifactPath: join(runDir, fileArtifact(el.artifact)!.path),
     format,
     channel: channelForElement(run, el),
     outDir: elementVerifyDir(runDir),

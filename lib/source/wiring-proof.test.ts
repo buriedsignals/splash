@@ -40,6 +40,7 @@ import {
   provenanceHash,
   stalenessOf,
   type RunManifest,
+  fileArtifact,
 } from "../loop/manifest";
 import { neutralDecor } from "../newsroom/decor";
 import { DEFAULT_NEWSROOM_STATE } from "../newsroom/state";
@@ -167,20 +168,24 @@ test.skipIf(!RUN)(
     const runA = makeRun(dirA, DECLARED);
     const a = await produce(runA, runA.elements[0]!, dirA);
     if (!a.ok) throw new Error(a.message);
-    const pngA = readFileSync(join(dirA, a.value.artifact!.path));
+    const pngA = readFileSync(join(dirA, fileArtifact(a.value.artifact)!.path));
 
     const dirB = mkdtempSync(join(tmpdir(), "source-proof-b-"));
     const runB = makeRun(dirB, CORRECTED);
     const b = await produce(runB, runB.elements[0]!, dirB);
     if (!b.ok) throw new Error(b.message);
-    const pngB = readFileSync(join(dirB, b.value.artifact!.path));
+    const pngB = readFileSync(join(dirB, fileArtifact(b.value.artifact)!.path));
 
-    expect(a.value.artifact!.path).toBe(join("elements", "e1", "static.png"));
+    expect(fileArtifact(a.value.artifact)!.path).toBe(
+      join("elements", "e1", "static.png"),
+    );
     expect(pngA.length).toBeGreaterThan(5000);
     // The ONLY difference between the two runs is the declared label. Different bytes ⇒ the
     // credit is in the image, not merely in the config beside it.
     expect(pngA.equals(pngB)).toBe(false);
-    expect(a.value.artifact!.sha256).not.toBe(b.value.artifact!.sha256);
+    expect(fileArtifact(a.value.artifact)!.sha256).not.toBe(
+      fileArtifact(b.value.artifact)!.sha256,
+    );
 
     // ---- 2. correcting the label on a produced element makes it stale ---------------
     const produced = { ...runA, elements: [a.value] };
@@ -205,7 +210,9 @@ test.skipIf(!RUN)(
       dirA,
     );
     if (!reproduced.ok) throw new Error(reproduced.message);
-    expect(reproduced.value.artifact!.sha256).toBe(b.value.artifact!.sha256);
+    expect(fileArtifact(reproduced.value.artifact)!.sha256).toBe(
+      fileArtifact(b.value.artifact)!.sha256,
+    );
     expect(stalenessOf(corrected, reproduced.value)).toBe(false);
   },
   240_000,

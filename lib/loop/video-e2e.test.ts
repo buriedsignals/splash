@@ -1,3 +1,4 @@
+import { fileArtifact } from "./manifest";
 // Opt-in end-to-end proof: a real Remotion render, minutes long, through the actual loop
 // seam — not a mock, not a fixture that only proves the mechanism. This project's own
 // lesson (docs/splash/CHANGELOG.md) is that a live proof on a fixture does not prove the
@@ -98,7 +99,7 @@ test.skipIf(!RUN)(
     expect(res.ok).toBe(true);
     if (!res.ok) throw new Error(res.message);
 
-    const artifact = join(runDir, res.value.artifact!.path);
+    const artifact = join(runDir, fileArtifact(res.value.artifact)!.path);
     expect(existsSync(artifact)).toBe(true);
     expect(artifact.endsWith(".mp4")).toBe(true);
     expect(statSync(artifact).size).toBeGreaterThan(50_000);

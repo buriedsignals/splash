@@ -1,3 +1,4 @@
+import { fileArtifact } from "./manifest";
 // Opt-in live proof: a real static PNG, produced by the loop, published to a real
 // S3-compatible endpoint, then FETCHED BACK.
 //
@@ -230,7 +231,9 @@ test.skipIf(!RUN)(
     // deliveredProvenanceHash equality is near-tautological (deliver() computes it from the
     // same `el` it just refused to publish a stale copy of).
     expect(
-      Buffer.from(bytes).equals(readFileSync(join(runDir, el.artifact!.path))),
+      Buffer.from(bytes).equals(
+        readFileSync(join(runDir, fileArtifact(el.artifact)!.path)),
+      ),
     ).toBe(true);
   },
   600_000,

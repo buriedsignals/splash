@@ -25,6 +25,7 @@ import {
   provenanceHash,
   type RunElement,
   type RunManifest,
+  fileArtifact,
 } from "../loop/manifest";
 import { captureStep, reviewStep } from "../loop/verify";
 import { approvalDecision } from "./approval";
@@ -162,7 +163,7 @@ test.skipIf(!RUN)(
     const primary2 = captured2.value.capture!.images.find(
       (i) => i.breakpoint === "primary",
     )!;
-    expect(primary2.artifactSha256).toBe(el.artifact!.sha256); // the SAME rendered bytes
+    expect(primary2.artifactSha256).toBe(fileArtifact(el.artifact)!.sha256); // the SAME rendered bytes
     expect(primary2.renderedTitle).toBe(TAKEAWAY);
 
     const reviewedLoud = await reviewStep(run2, captured2.value, runDir);
@@ -189,7 +190,7 @@ test.skipIf(!RUN)(
     // ---- and it REACHES the approval presentation, without ever blocking it.
     const decision = approvalDecision(loud, {
       format: "interactive",
-      artifactSha256: el.artifact!.sha256,
+      artifactSha256: fileArtifact(el.artifact)!.sha256,
       provenanceHash: provenanceHash(run2, revised),
     });
     expect(
@@ -238,7 +239,7 @@ test.skipIf(!RUN)(
       JSON.stringify(
         {
           quiet: {
-            artifact: el.artifact!.path,
+            artifact: fileArtifact(el.artifact)!.path,
             renderedTitle: primary.renderedTitle,
             titleSource: primary.titleSource,
             confirmedTakeaway: TAKEAWAY,
@@ -254,7 +255,7 @@ test.skipIf(!RUN)(
             blockingReasons: decision.reasons.map((r) => r.code),
           },
           static: {
-            artifact: staticProduced.value.artifact!.path,
+            artifact: fileArtifact(staticProduced.value.artifact)!.path,
             titleSource: staticImage.titleSource,
             renderedTitle: staticImage.renderedTitle ?? null,
           },

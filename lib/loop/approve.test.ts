@@ -24,6 +24,7 @@ import {
   writeManifest,
   type RunElement,
   type RunManifest,
+  fileArtifact,
 } from "./manifest";
 import type { Finding, ReviewRecord } from "../verify/types";
 
@@ -154,7 +155,7 @@ describe("approve — the ceremony", () => {
     expect(existsSync(join(runDir, approved.signoffPath))).toBe(true);
     expect(doc).toMatchObject({
       elementId: "e1",
-      artifactSha256: ready.artifact!.sha256,
+      artifactSha256: fileArtifact(ready.artifact)!.sha256,
       approvedProvenanceHash: provenanceHash(run, ready),
       actorLabel: "Yvan",
       independentSemanticReview: "unavailable",
@@ -244,7 +245,7 @@ describe("approve — findings, overrides and acknowledgements (#11)", () => {
     expect(recorded).toMatchObject({
       findingId: "source-missing",
       actorLabel: "Rinny",
-      artifactSha256: ready.artifact!.sha256,
+      artifactSha256: fileArtifact(ready.artifact)!.sha256,
       provenanceHash: provenanceHash(run, ready),
     });
     expect(recorded.at.length).toBeGreaterThan(0);
@@ -360,7 +361,7 @@ describe("approve — the Ed25519 sign-off is the identity proof INSIDE the appr
         actorLabel: "Yvan Pandelé",
         signoff: {
           signerId: "yvan",
-          signature: signatureOver("e1", ready.artifact!.sha256),
+          signature: signatureOver("e1", fileArtifact(ready.artifact)!.sha256),
         },
       },
       signers,
@@ -400,7 +401,7 @@ describe("approve — the Ed25519 sign-off is the identity proof INSIDE the appr
         actorLabel: "Someone",
         signoff: {
           signerId: "rinny",
-          signature: signatureOver("e1", ready.artifact!.sha256),
+          signature: signatureOver("e1", fileArtifact(ready.artifact)!.sha256),
         },
       },
       signers,

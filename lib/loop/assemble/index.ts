@@ -63,21 +63,21 @@ export const ASSEMBLERS: Record<string, AssemblerEntry> = {
   // error), and its `locator` is left to map-native, which already places markers from lat/lon
   // columns. Both are marked in the offer rather than chosen and dead-ended at produce.
   "map-dw": { assemble: assembleMapDw, supports: supportsMapDwType },
-  // The hosted Datawrapper chart (Task 12) — STATIC only, and the format bound is not a
-  // conservatism, it is a MEASURED boundary of the loop:
-  //   · dw-chart "static"      → the engine exports a PNG it hands back (form "file"). The loop
-  //                              records an artifact by PATH, so this is a delivery it can keep.
-  //   · dw-chart "interactive" → the engine publishes and hands back a URL and NO file (form
-  //                              "hosted", `files: []` — skills/dw-chart/src/manifest.ts). The run
-  //                              manifest's artifact slot requires `path`, and produce() answers
-  //                              "no interactive artifact in the delivery". Offering it unmarked
-  //                              put a dead end at rank 1 of a real run's offer (measured — see
-  //                              .sdd/task-12-report.md).
-  // A hosted, file-less deliverable is a capability the loop does not have yet; until it does,
-  // this table says so rather than letting the brain promise it.
+  // The hosted Datawrapper chart (Task 12).
   //
-  // And FIXED-ASPECT types only, for the second measured reason: a ROW-DRIVEN Datawrapper export
-  // (the d3-bars family, dot/arrow/range plots, tables) is exported WIDTH-ONLY on purpose — a
+  // The STATIC-only bound this entry used to carry is GONE, and with it the reason for it: a
+  // hosted, file-less deliverable used to be a capability the loop did not have, because the run
+  // manifest's artifact slot required a `path` and produce() answered "no interactive artifact in
+  // the delivery" for a chart Datawrapper had published perfectly well (measured — see
+  // .sdd/task-12-report.md). The manifest now records a hosted delivery as the URL it is
+  // (ArtifactRecordSchema, lib/loop/manifest.ts) and produce() writes it, so `interactive` is a
+  // real form of this engine again and the brain may offer it unmarked. What the loop still cannot
+  // do to a hosted artifact — capture it, preview it, approve it, hand it to a publisher — is
+  // refused BY NAME at each of those steps rather than by pretending the form does not exist.
+  //
+  // FIXED-ASPECT types only, for the second measured reason, which is untouched: a ROW-DRIVEN
+  // Datawrapper export (the d3-bars family, dot/arrow/range plots, tables) is exported WIDTH-ONLY
+  // on purpose — a
   // pinned height makes Datawrapper CROP the rows that overflow, which is silent data loss
   // (skills/dw-chart/src/export-aspect.ts ROW_DRIVEN_TYPES). The loop's own capture layer then
   // measures the delivered image against the destination's box and reads the content-driven
@@ -89,22 +89,17 @@ export const ASSEMBLERS: Record<string, AssemblerEntry> = {
   // areas, pies and scatter all export AT the channel box, so the offer keeps them.
   "dw-chart": {
     assemble: assembleDwChart,
-    supports: (t, format) =>
+    supports: (t) =>
       (CHART_TYPES as readonly string[]).includes(t) &&
-      !isRowDriven(t as ChartType) &&
-      (format === undefined || format === "static"),
-    declines: (t, format) =>
+      !isRowDriven(t as ChartType),
+    declines: (t) =>
       !(CHART_TYPES as readonly string[]).includes(t)
         ? `Datawrapper does not build a "${t}" chart`
         : isRowDriven(t as ChartType)
           ? `a Datawrapper "${t}" grows its height with the row count rather than fitting the ` +
             `box this deliverable publishes into, and the loop checks a delivered image against ` +
             `that box — so this form is built in-house instead`
-          : format !== undefined && format !== "static"
-            ? `Datawrapper delivers a ${format} chart as a HOSTED embed — a URL, with no file the ` +
-              `newsroom owns — and a run keeps each element as a file of its own, so the loop ` +
-              `builds a Datawrapper chart as a static image; an interactive one is built in-house`
-            : undefined,
+          : undefined,
   },
 };
 

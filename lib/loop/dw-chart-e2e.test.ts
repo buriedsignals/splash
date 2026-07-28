@@ -14,13 +14,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
 import { produce } from "./produce";
-import { render } from "../core/verbs";
 import { freezeInput } from "./freeze";
 import { assembleDwChart } from "./assemble/dw-chart";
 import { validateChartSpec } from "../../skills/dw-chart/src/chart-spec";
 import { renderSize } from "../../skills/splash/src/channel";
 import type { ProductionBrief } from "../core/production-brief";
-import type { RunManifest } from "./manifest";
+import {
+  fileArtifact,
+  isHostedArtifact,
+  readManifest,
+  writeManifest,
+  type RunManifest,
+} from "./manifest";
 
 const RUN_IT = process.env.SPLASH_DW_E2E === "1";
 const proof = RUN_IT ? test : test.skip;
@@ -63,7 +68,11 @@ test("the fixture assembles into a spec the engine accepts, before any API call"
 
 /** The run this proof produces from — article-web, because that is the channel dw-chart sizes
  *  against when nothing injects one onto the spec (see the note in the produce proof below). */
-function chartRun(runDir: string, dataPath: string): RunManifest {
+function chartRun(
+  runDir: string,
+  dataPath: string,
+  format: "static" | "interactive" = "static",
+): RunManifest {
   return {
     runId: "dw-chart-e2e",
     schemaVersion: 4,
@@ -105,7 +114,7 @@ function chartRun(runDir: string, dataPath: string): RunManifest {
               id: "dw-column",
               nativeType: "column-chart",
               engine: "dw-chart",
-              format: "static",
+              format,
               why: "one value per city, ranked",
             },
           ],
@@ -137,7 +146,9 @@ proof(
       // THE POSITIVE CONTROL — the PNG's own header, not the producer's report. Datawrapper
       // rasterizes its export at 2x, so dw-chart REQUESTS half the channel box and the delivered
       // file lands back on it (skills/dw-chart/src/export-aspect.ts DW_EXPORT_PIXEL_RATIO).
-      const png = readFileSync(join(runDir, result.value.artifact!.path));
+      const png = readFileSync(
+        join(runDir, fileArtifact(result.value.artifact)!.path),
+      );
       expect(png.subarray(1, 4).toString("ascii")).toBe("PNG");
       const width = png.readUInt32BE(16);
       const height = png.readUInt32BE(20);
@@ -155,45 +166,65 @@ proof(
 );
 
 // THE OTHER HALF OF THE POSITIVE CONTROL: a hosted chart's deliverable is a URL, and a URL is
-// only delivered if it RESOLVES. This drives the same contract call produce() makes internally
-// (lib/core/verbs render), in the format where the hosted embed IS the artifact.
+// only delivered if it RESOLVES.
 //
-// Why it is not driven through produce(): a run records each element as a FILE it owns (the
-// manifest's artifact slot requires a path), and a hosted delivery has none — so the loop declines
-// dw-chart's interactive form up front (lib/loop/assemble/index.ts) rather than publishing a chart
-// nothing can record. The spec is the same one produce() would hand over; what this proves is the
-// half of the delivery the loop cannot keep yet, so the day it can, this URL is already known to
-// resolve. See .sdd/task-12-report.md.
+// It goes through produce() — the loop's own verb — not through render() one layer down. It used
+// to have to: a run recorded each element as a FILE it owns, so produce() answered `engine-failed:
+// no interactive artifact in the delivery` for a chart Datawrapper had published perfectly well,
+// and the loop declined the form up front rather than dead-ending on it. Proving the URL at
+// render() was the honest way to prove it AT ALL, and it left the one thing that mattered unproven:
+// that the RUN can keep the delivery.
+//
+// So this proof now goes the whole way round — produce, PERSIST the manifest, read it back off
+// disk through the schema, and fetch the URL that survived the round trip. Reading it off the
+// in-memory result would prove produce composed an object; reading it off the file proves the
+// manifest can HOLD a hosted delivery, which is the capability this tranche adds.
 proof(
-  "the hosted embed the same spec builds is a URL that actually resolves",
+  "a chosen Datawrapper interactive chart produces a HOSTED delivery the run records, and its URL resolves",
   async () => {
-    const outDir = mkdtempSync(join(tmpdir(), "splash-dw-chart-hosted-"));
+    const runDir = mkdtempSync(join(tmpdir(), "splash-dw-chart-hosted-"));
     try {
-      const assembled = assembleDwChart(FIXTURE_BRIEF);
-      expect(assembled.ok).toBe(true);
-      if (!assembled.ok) return;
+      const src = join(runDir, "data.csv");
+      writeFileSync(src, RECYCLING_CSV);
+      const run = chartRun(runDir, src, "interactive");
 
-      const delivered = await render({
-        engine: "dw-chart",
-        spec: assembled.value,
-        format: "interactive",
-        channel: "article-web",
-        outDir,
-        id: "e1",
+      const el = run.elements[0]!;
+      const result = await produce(run, el, runDir);
+      expect(result.ok ? "produced" : `${result.code}: ${result.message}`).toBe(
+        "produced",
+      );
+      if (!result.ok) return;
+
+      // NO FILE WAS RECORDED, and that is the point: a hosted delivery owns no media, so the run
+      // must not be holding a path it cannot open.
+      expect(fileArtifact(result.value.artifact)).toBeUndefined();
+
+      // THROUGH THE FILE. writeManifest runs the manifest's own invariants on the way out and
+      // readManifest parses it back through the schema — a hosted record that could not survive
+      // either would fail here rather than at some later reader's feet.
+      const manifestPath = join(runDir, "run.json");
+      writeManifest(manifestPath, {
+        ...run,
+        elements: [result.value],
       });
-      expect(
-        delivered.ok ? "rendered" : `${delivered.code}: ${delivered.message}`,
-      ).toBe("rendered");
-      if (!delivered.ok) return;
+      const reopened = readManifest(manifestPath, runDir);
+      const recorded = reopened.elements[0]!.artifact!;
+      expect(isHostedArtifact(recorded)).toBe(true);
+      if (!isHostedArtifact(recorded)) return;
+      console.log(`[dw-chart-e2e] recorded hosted delivery ${recorded.url}`);
 
-      const url = delivered.value.publicUrl!;
-      expect(url.startsWith("https://")).toBe(true);
-      // RESOLVABLE, read off the network — a well-formed URL that 404s is not a delivery.
-      const res = await fetch(url, { redirect: "follow" });
-      expect(res.status).toBe(200);
+      // THE POSITIVE CONTROL — the URL off the MANIFEST is fetched, not merely well-formed. A
+      // published Datawrapper chart that 404s is exactly the failure a string check cannot see.
+      const res = await fetch(recorded.url, {
+        redirect: "follow",
+        signal: AbortSignal.timeout(30_000),
+      });
+      expect(`${recorded.url} \u2192 ${res.status}`).toBe(
+        `${recorded.url} \u2192 200`,
+      );
       expect((await res.text()).toLowerCase()).toContain("<html");
     } finally {
-      rmSync(outDir, { recursive: true, force: true });
+      rmSync(runDir, { recursive: true, force: true });
     }
   },
   180_000,

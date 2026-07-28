@@ -14,6 +14,7 @@ import {
   writeManifest,
   type RunElement,
   type RunManifest,
+  fileArtifact,
 } from "../loop/manifest";
 import { freezeInput } from "../loop/freeze";
 
@@ -574,7 +575,7 @@ describe("approveIn — the human gate, through the run directory", () => {
             acknowledged: [],
             preview: {
               deliverablePath: join(dir, "elements/e1/static.png"),
-              deliverableSha256: el.artifact!.sha256,
+              deliverableSha256: fileArtifact(el.artifact)!.sha256,
               presentedAs: "path-printed",
               presentedAt: "2026-07-27T09:00:00.000Z",
               fallbackReason: "the host presented it itself",

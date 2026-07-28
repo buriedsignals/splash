@@ -21,7 +21,13 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { fail, ok, type VerbResult } from "../core/verbs";
 import { isDeliverableOf } from "../verify/preview";
 import type { PreviewRecord, ReviewRecord } from "../verify/types";
-import { chosenOption, type RunElement, type RunManifest } from "./manifest";
+import {
+  chosenOption,
+  fileArtifact,
+  isHostedArtifact,
+  type RunElement,
+  type RunManifest,
+} from "./manifest";
 
 /** Set when the HOST presents the deliverable itself — an agent embedding the image in its
  *  transcript — or when the machine has no display at all. The spine then prints the path
@@ -129,8 +135,26 @@ export function previewStep(
       "preview: this artifact has not been reviewed yet — the preview is recorded on the review of the artifact it presents",
     );
 
+  // A HOSTED DELIVERY HAS NO BYTES TO SHOW, and this step's whole value is that the four things
+  // it guarantees are true of the exact bytes recorded (see this module's header). None of them
+  // can be said about a Datawrapper embed: the run owns no file, so there is nothing to open,
+  // nothing to re-hash, and no genre to check the file against.
+  //
+  // Refused by NAME, with the URL in the sentence, rather than left to read an absent `path` and
+  // present `<runDir>/undefined`. It is a dead end for now, and deliberately a loud one: making
+  // the verification chain able to travel to a published URL (fetch it, capture it, hash what it
+  // served) is its own tranche, and a quiet half-answer here would let an unlooked-at embed reach
+  // the approval gate looking exactly like a previewed file.
+  const file = fileArtifact(el.artifact);
+  if (!file)
+    return fail(
+      "invalid-request",
+      `preview: this element was delivered as a HOSTED embed (${isHostedArtifact(el.artifact) ? el.artifact.url : "no url"}) — ` +
+        `the newsroom owns no file of it, so there is nothing on disk to present; open the URL to look at it`,
+    );
+
   const format = chosenOption(el)?.format ?? "static";
-  const absolutePath = resolve(join(runDir, el.artifact.path));
+  const absolutePath = resolve(join(runDir, file.path));
 
   // The genre gate, applied BEFORE anything is shown: a png standing in for an interactive is
   // the substitution issue #3 names, and presenting it would produce a record that passes the
@@ -138,7 +162,7 @@ export function previewStep(
   if (!isDeliverableOf(format, absolutePath))
     return fail(
       "invalid-request",
-      `preview: ${el.artifact.path} is not the deliverable of a "${format}" element — presenting it would show something other than what would be published`,
+      `preview: ${file.path} is not the deliverable of a "${format}" element — presenting it would show something other than what would be published`,
     );
 
   let digest: string;
@@ -147,16 +171,16 @@ export function previewStep(
   } catch (e) {
     return fail(
       "engine-failed",
-      `preview: cannot read the deliverable at ${el.artifact.path}: ${(e as Error).message}`,
+      `preview: cannot read the deliverable at ${file.path}: ${(e as Error).message}`,
     );
   }
   // Re-hashed rather than trusted: a preview whose bytes are not the recorded artifact's is
   // exactly the "stale bytes" case the gate refuses, and the manifest's own invariant would
   // reject the record anyway. Refusing here says WHY.
-  if (digest !== el.artifact.sha256)
+  if (digest !== file.sha256)
     return fail(
       "engine-failed",
-      `preview: the file at ${el.artifact.path} is no longer the artifact this run recorded (it has changed on disk) — produce it again before presenting it`,
+      `preview: the file at ${file.path} is no longer the artifact this run recorded (it has changed on disk) — produce it again before presenting it`,
     );
 
   const presentation = present(absolutePath, opts.env ?? process.env);

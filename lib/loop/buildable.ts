@@ -47,10 +47,13 @@ export const LOOP_BUILDABLE_ENGINES: readonly string[] =
  *  the engine as a whole, matching every caller that does not have a type in hand yet.
  *
  *  `format` narrows it once more, for the same reason one level down: an engine can be wired in
- *  one format and not another. dw-chart is the measured case — its static export is a file the
- *  loop can record, its interactive is a hosted embed with no file at all, and the run manifest
- *  records an artifact by path. Optional, like `nativeType`, so every caller without a format in
- *  hand still answers for the engine, unchanged. */
+ *  one format and not another. dw-chart WAS the measured case — its static export is a file the
+ *  loop records by path, its interactive a hosted embed with no file at all, and the manifest's
+ *  artifact slot could only hold the first. That slot now records a hosted delivery as the URL it
+ *  is (ArtifactRecordSchema, lib/loop/manifest.ts), so no entry restricts by format today. The
+ *  axis stays, because it is the honest question to ask of a table whose entries are per-(type,
+ *  format) pairings. Optional, like `nativeType`, so every caller without a format in hand still
+ *  answers for the engine, unchanged. */
 export function isLoopBuildable(
   engine?: string,
   nativeType?: string,
@@ -65,9 +68,9 @@ export function isLoopBuildable(
 // happen, not which module is missing.
 //
 // The TABLE's own sentence wins when it has one. An engine can be wired and still decline a
-// pairing (dw-chart builds a static chart, never a hosted interactive one), and the fallback
-// below would then say "nothing can build a dw-chart form yet — production is wired for …,
-// dw-chart" — a sentence that contradicts itself in its own second half.
+// pairing (dw-chart declines a chart type Datawrapper has no slug for), and the fallback below
+// would then say "nothing can build a dw-chart form yet — production is wired for …, dw-chart" —
+// a sentence that contradicts itself in its own second half.
 export function unbuildableEngineReason(
   engine: string,
   nativeType?: string,

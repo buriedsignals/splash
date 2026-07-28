@@ -11,26 +11,33 @@
 //   - static      → an OWNED PNG, its IHDR read back from the file and compared to the channel's
 //                   media size. That half goes through produce(), the loop's own verb.
 //   - interactive → a HOSTED embed and no owned media at all. Its positive control is the
-//                   publicUrl RESOLVING over https. That half goes through render() — the verb
-//                   produce itself delegates to — because produce() cannot carry a hosted-only
-//                   delivery today: artifactFileFor (lib/loop/produce.ts) looks for an
-//                   `interactive.html` among the delivered files, and a hosted map delivers no
-//                   files, so produce() answers `engine-failed: no interactive artifact in the
-//                   delivery`. Proving the URL one layer down is the honest way to prove it at
-//                   all; see .sdd/task-13-report.md.
+//                   publicUrl RESOLVING over https, read back off the PERSISTED run manifest.
+//                   That half goes through produce() too now. It used to go through render() —
+//                   the verb produce delegates to — because produce() could not carry a
+//                   hosted-only delivery: artifactFileFor (lib/loop/produce.ts) looked for an
+//                   `interactive.html` among the delivered files, a hosted map delivers none, and
+//                   produce() answered `engine-failed: no interactive artifact in the delivery`
+//                   (see .sdd/task-13-report.md). The manifest now records a hosted delivery as
+//                   the URL it is (ArtifactRecordSchema), so the proof no longer has to duck one
+//                   layer down to be honest.
 import { test, expect } from "bun:test";
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
 import { produce } from "./produce";
-import { render } from "../core/verbs";
 import { freezeInput } from "./freeze";
 import { assembleMapDw } from "./assemble/map-dw";
 import { validateMapSpec } from "../../skills/map-dw/src/map-spec";
 import { normalizeChannel, renderSize } from "../../skills/splash/src/channel";
 import type { ProductionBrief } from "../core/production-brief";
-import type { RunManifest } from "./manifest";
+import {
+  fileArtifact,
+  isHostedArtifact,
+  readManifest,
+  writeManifest,
+  type RunManifest,
+} from "./manifest";
 
 const RUN_IT = process.env.SPLASH_DW_E2E === "1";
 const proof = RUN_IT ? test : test.skip;
@@ -147,7 +154,9 @@ proof(
       if (!result.ok) return;
 
       // THE POSITIVE CONTROL — the PNG's own header, not the producer's report.
-      const png = readFileSync(join(runDir, result.value.artifact!.path));
+      const png = readFileSync(
+        join(runDir, fileArtifact(result.value.artifact)!.path),
+      );
       expect(png.subarray(1, 4).toString("ascii")).toBe("PNG");
       const width = png.readUInt32BE(16);
       const height = png.readUInt32BE(20);
@@ -170,40 +179,41 @@ proof(
 );
 
 proof(
-  "the interactive form is a LIVE Datawrapper map — the published URL resolves",
+  "the interactive form is a LIVE Datawrapper map the run records as a hosted delivery",
   async () => {
     const runDir = mkdtempSync(join(tmpdir(), "splash-map-dw-embed-"));
     try {
-      const assembled = assembleMapDw({
-        ...FIXTURE_BRIEF,
-        format: "interactive",
-      });
-      if (!assembled.ok) throw new Error(assembled.message);
-      const r = await render({
-        engine: "map-dw",
-        spec: assembled.value,
-        format: "interactive",
-        channel: "article-web",
-        outDir: join(runDir, "elements", "e1"),
-        id: "e1",
-      });
-      expect(r.ok ? "delivered" : `${r.code}: ${r.message}`).toBe("delivered");
-      if (!r.ok) return;
+      const run = runFor(runDir, "interactive");
+      const el = run.elements[0]!;
+      const result = await produce(run, el, runDir);
+      expect(result.ok ? "produced" : `${result.code}: ${result.message}`).toBe(
+        "produced",
+      );
+      if (!result.ok) return;
 
       // A hosted delivery owns no media — that is what "hosted" means, and asserting it here
       // keeps this proof honest about which half of map-dw it is proving.
-      expect(r.value.form).toBe("hosted");
-      expect(r.value.files).toEqual([]);
+      expect(fileArtifact(result.value.artifact)).toBeUndefined();
+
+      // THROUGH THE FILE, not off the in-memory result: writeManifest runs the manifest's own
+      // invariants on the way out and readManifest parses it back through the schema, so what is
+      // fetched below is the URL that survived a real round trip to disk.
+      const manifestPath = join(runDir, "run.json");
+      writeManifest(manifestPath, { ...run, elements: [result.value] });
+      const reopened = readManifest(manifestPath, runDir);
+      const recorded = reopened.elements[0]!.artifact!;
+      expect(isHostedArtifact(recorded)).toBe(true);
+      if (!isHostedArtifact(recorded)) return;
+      console.log(`[map-dw-e2e] recorded hosted delivery ${recorded.url}`);
 
       // THE POSITIVE CONTROL — the URL is fetched, not merely well-formed. A published
       // Datawrapper map that 404s is exactly the failure a string check cannot see.
-      const publicUrl = r.value.publicUrl!;
-      expect(publicUrl).toMatch(/^https:\/\//);
-      console.log(`[map-dw-e2e] published ${publicUrl}`);
-      const res = await fetch(publicUrl, {
+      const res = await fetch(recorded.url, {
         signal: AbortSignal.timeout(30_000),
       });
-      expect(`${publicUrl} → ${res.status}`).toBe(`${publicUrl} → 200`);
+      expect(`${recorded.url} \u2192 ${res.status}`).toBe(
+        `${recorded.url} \u2192 200`,
+      );
       expect((await res.text()).length).toBeGreaterThan(500);
     } finally {
       rmSync(runDir, { recursive: true, force: true });

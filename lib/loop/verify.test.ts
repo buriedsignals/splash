@@ -20,6 +20,7 @@ import {
   reviewCovers,
   type RunElement,
   type RunManifest,
+  fileArtifact,
 } from "./manifest";
 import type { Finding } from "../verify/types";
 
@@ -98,7 +99,7 @@ describe("captureStep", () => {
     // article-web container.
     expect(slot.images).toHaveLength(1);
     const image = slot.images[0]!;
-    expect(image.artifactSha256).toBe(produced.artifact!.sha256);
+    expect(image.artifactSha256).toBe(fileArtifact(produced.artifact)!.sha256);
     expect(image.destinationId).toBe("channel:article-web");
     expect(image.cssViewport).toEqual({
       width: CHANNEL_POLICY["article-web"].mediaSize.width,
@@ -135,7 +136,10 @@ describe("captureStep", () => {
   it("refuses when the recorded artifact is not there to capture", async () => {
     const missing: RunElement = {
       ...produced,
-      artifact: { ...produced.artifact!, path: "elements/e1/gone.png" },
+      artifact: {
+        ...fileArtifact(produced.artifact)!,
+        path: "elements/e1/gone.png",
+      },
     };
     const result = await captureStep(
       { ...run, elements: [missing] },

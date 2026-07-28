@@ -46,6 +46,7 @@ import {
   provenanceHash,
   type RunManifest,
   type RunElement,
+  fileArtifact,
 } from "../../loop/manifest";
 import { freezeInput } from "../../loop/freeze";
 import { neutralDecor, type Decor } from "../../newsroom/decor";
@@ -222,7 +223,10 @@ test.skipIf(!RUN)(
     // The artifact itself round-tripped: the produced bytes are recoverable from what the CMS
     // serves. This is the check with real value — "an article exists" is not "the visual is
     // there", the same way "upload succeeded" was never "the embed works".
-    const artifact = readFileSync(join(runDir, el.artifact!.path), "utf8");
+    const artifact = readFileSync(
+      join(runDir, fileArtifact(el.artifact)!.path),
+      "utf8",
+    );
     const srcdocStart = html.indexOf('srcdoc="') + 'srcdoc="'.length;
     const srcdocEnd = html.indexOf('"', srcdocStart);
     const recovered = html

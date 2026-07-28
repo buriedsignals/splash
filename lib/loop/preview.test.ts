@@ -15,7 +15,12 @@ import { freezeInput } from "./freeze";
 import { produce } from "./produce";
 import { previewStep } from "./preview";
 import { captureStep, reviewStep } from "./verify";
-import { previewCovers, type RunElement, type RunManifest } from "./manifest";
+import {
+  previewCovers,
+  type RunElement,
+  type RunManifest,
+  fileArtifact,
+} from "./manifest";
 
 let runDir: string;
 let run: RunManifest;
@@ -100,7 +105,9 @@ describe("previewStep", () => {
     // A printed path counts as a preview ONLY when it records why no viewer opened — the
     // free-square lib/verify/preview.ts refuses to grant.
     expect(preview.fallbackReason!.trim().length).toBeGreaterThan(0);
-    expect(preview.deliverableSha256).toBe(reviewed.artifact!.sha256);
+    expect(preview.deliverableSha256).toBe(
+      fileArtifact(reviewed.artifact)!.sha256,
+    );
     expect(preview.deliverablePath.endsWith("static.png")).toBe(true);
     expect(previewCovers(result.value)).toBe(true);
   });

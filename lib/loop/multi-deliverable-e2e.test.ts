@@ -28,6 +28,7 @@ import {
   writeManifest,
   type NextAction,
   type RunManifest,
+  fileArtifact,
 } from "./manifest";
 import { CHANNEL_POLICY } from "../core/channel-policy";
 import { freezeInput } from "./freeze";
@@ -237,7 +238,7 @@ test.skipIf(!RUN)(
     const measured: Record<string, { width: number; height: number }> = {};
     for (const el of run.elements) {
       expect(el.artifact).toBeDefined();
-      const abs = join(runDir, el.artifact!.path);
+      const abs = join(runDir, fileArtifact(el.artifact)!.path);
       expect(existsSync(abs)).toBe(true);
       const channel = resolvedChannelForElement(run, el)!;
       const size = pngSize(abs);
@@ -267,7 +268,7 @@ test.skipIf(!RUN)(
           .map(
             (el) =>
               `  ${el.id}: ${el.deliverable!.destination} → ${resolvedChannelForElement(run, el)} ` +
-              `${JSON.stringify(measured[resolvedChannelForElement(run, el)!])} ${el.artifact!.path}`,
+              `${JSON.stringify(measured[resolvedChannelForElement(run, el)!])} ${fileArtifact(el.artifact)!.path}`,
           )
           .join("\n"),
     );

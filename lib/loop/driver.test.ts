@@ -24,6 +24,7 @@ import {
   writeManifest,
   readManifest,
   type RunManifest,
+  fileArtifact,
 } from "./manifest";
 import { freezeInput } from "./freeze";
 import { applyPhrasing } from "./phrase";
@@ -1072,7 +1073,7 @@ test("advance() carries capture then review on the road to a requested delivery"
   expect(step.ran).toBe("preview");
   run = step.run;
   expect(run.elements[0]!.review!.preview!.deliverableSha256).toBe(
-    run.elements[0]!.artifact!.sha256,
+    fileArtifact(run.elements[0]!.artifact)!.sha256,
   );
 
   // …and it stops at the approval, which is where the human turn begins. `advance` cannot

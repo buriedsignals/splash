@@ -7,6 +7,7 @@ import {
   deliverableForElement,
   gateStateOf,
   nextActionsForElement,
+  fileArtifact,
   provenanceHash,
   resolvedChannelForElement,
   stalenessOf,
@@ -27,7 +28,11 @@ import type { Channel, Destination, MediaAspect } from "../core/vocabulary";
 
 export type HashCheck = { ref: string; status: "ok" | "missing" | "tampered" };
 export type ElementValidation = {
-  artifact: "none" | "ok" | "missing" | "tampered" | "stale";
+  /** "hosted" is the answer for a delivery the run does not OWN — a published Datawrapper embed,
+   *  recorded as a URL with no bytes on disk (see ArtifactRecordSchema). It is a fresh, real
+   *  artifact; what it is not is one this report can re-hash, so it says which it is instead of
+   *  reporting a "missing" file that was never supposed to be there. */
+  artifact: "none" | "ok" | "missing" | "tampered" | "stale" | "hosted";
 };
 export type ResumeReport = {
   runId: string;
@@ -153,7 +158,11 @@ function verificationOf(
   const review = el.review as ReviewRecord;
   const decision = approvalDecision(review, {
     format: chosenOption(el)?.format ?? "static",
-    artifactSha256: el.artifact?.sha256 ?? "",
+    // "" for a hosted delivery, which has no bytes — the same value an element with no artifact
+    // at all gets. approvalDecision reads it only to check the preview covers THESE bytes, and a
+    // hosted artifact is never previewable (previewStep refuses it), so the decision it reaches
+    // is "not previewed", which is the true one.
+    artifactSha256: fileArtifact(el.artifact)?.sha256 ?? "",
     provenanceHash: provenanceHash(run, el),
   });
   return {
@@ -181,10 +190,15 @@ export function resumeReport(run: RunManifest, runDir: string): ResumeReport {
   const elements = run.elements.map((el) => {
     let artifact: ElementValidation["artifact"] = "none";
     if (el.artifact) {
-      const abs = join(runDir, el.artifact.path);
+      const file = fileArtifact(el.artifact);
       if (stalenessOf(run, el)) artifact = "stale";
-      else if (!existsSync(abs)) artifact = "missing";
-      else artifact = hashFile(abs) === el.artifact.sha256 ? "ok" : "tampered";
+      // Staleness is checked FIRST for a hosted delivery too — a re-angled run's published embed
+      // is as stale as a re-angled run's PNG, and that is the answer a journalist has to act on.
+      else if (!file) artifact = "hosted";
+      else if (!existsSync(join(runDir, file.path))) artifact = "missing";
+      else
+        artifact =
+          hashFile(join(runDir, file.path)) === file.sha256 ? "ok" : "tampered";
     }
     // One resolver for both axes AND for the channel they compose into — deliverableForElement is
     // where the run's default is unpacked, so this report cannot name a destination derived by one

@@ -16,7 +16,7 @@ import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
 import { produce } from "../loop/produce";
 import { freezeInput } from "../loop/freeze";
-import type { RunManifest } from "../loop/manifest";
+import { fileArtifact, type RunManifest } from "../loop/manifest";
 import type { SourceLedger } from "./kinds";
 
 const CSV =
@@ -152,7 +152,7 @@ test("produce renders a prose-sourced run whose every figure is quoted in the ar
   });
   const result = await produce(run, run.elements[0]!, runDir);
   if (!result.ok) throw new Error(result.message);
-  expect(result.value.artifact!.path).toBe(
+  expect(fileArtifact(result.value.artifact)!.path).toBe(
     join("elements", "e1", "static.png"),
   );
 }, 90000);
@@ -221,7 +221,7 @@ test("produce renders a private-sourced run whose internal reference stayed in t
   const run = makeRun({ runDir, sources: PRIVATE });
   const result = await produce(run, run.elements[0]!, runDir);
   if (!result.ok) throw new Error(result.message);
-  expect(result.value.artifact!.path).toBe(
+  expect(fileArtifact(result.value.artifact)!.path).toBe(
     join("elements", "e1", "static.png"),
   );
 }, 90000);

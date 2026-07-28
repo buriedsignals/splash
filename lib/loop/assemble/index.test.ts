@@ -26,18 +26,21 @@ test("no engine at all is the pre-brain default path, which is chart-native", ()
   expect(isLoopBuildable(undefined)).toBe(true);
 });
 
-// THE FORMAT AXIS (task 12). dw-chart's static export is a PNG the loop records by path; its
-// interactive is a hosted embed with NO file (skills/dw-chart/src/manifest.ts returns
-// `files: []`, form "hosted"), and the run manifest's artifact slot requires a path. The two
-// answers must differ, or the offer promises a form production dead-ends on.
-test("an engine wired in one format is not buildable in another", () => {
+// THE FORMAT AXIS (task 12), and what closed it. dw-chart's static export is a PNG the loop
+// records by path; its interactive is a hosted embed with NO file (skills/dw-chart/src/manifest.ts
+// returns `files: []`, form "hosted"). The table used to decline the second, because the run
+// manifest's artifact slot required a path and produce() dead-ended on a chart Datawrapper had
+// published perfectly well. The slot now records a hosted delivery as the URL it is
+// (ArtifactRecordSchema), so BOTH formats are buildable and the brain may offer either.
+test("both of a hosted engine's formats are buildable — the file one and the URL one", () => {
   expect(isLoopBuildable("dw-chart", "column-chart", "static")).toBe(true);
-  expect(isLoopBuildable("dw-chart", "column-chart", "interactive")).toBe(
-    false,
-  );
+  expect(isLoopBuildable("dw-chart", "column-chart", "interactive")).toBe(true);
+  // The hosted MAP too — it never carried a format clause, and its interactive was blocked one
+  // level down, in produce(), rather than in this table.
+  expect(isLoopBuildable("map-dw", "choropleth", "interactive")).toBe(true);
 });
 
-test("asked without a format, a format-restricted engine still answers for itself", () => {
+test("asked without a format, a type-restricted engine still answers for itself", () => {
   // The engine-level question ("can the loop build through dw-chart at all") must not answer
   // "no" for an engine it does build — several callers ask it with no format in hand.
   expect(isLoopBuildable("dw-chart", "column-chart")).toBe(true);
@@ -64,13 +67,12 @@ test("a Datawrapper export whose height follows the row count is not offered by 
 // The refusal a journalist reads for a wired engine must not be the generic one: "nothing can
 // build a dw-chart form yet — production is wired for …, dw-chart" contradicts itself.
 test("the refusal for a declined pairing is the table's own sentence, not the engine fallback", () => {
-  const reason = unbuildableEngineReason(
-    "dw-chart",
-    "column-chart",
-    "interactive",
-  );
-  expect(reason).toBe(declineReason("dw-chart", "column-chart", "interactive"));
-  expect(reason).toContain("HOSTED");
+  // A type Datawrapper has no slug for — the pairing dw-chart declines whatever the format, so
+  // this reads the property (table sentence beats generic fallback) off a case that is about the
+  // TYPE axis and cannot be confused with a format restriction.
+  const reason = unbuildableEngineReason("dw-chart", "beeswarm", "static");
+  expect(reason).toBe(declineReason("dw-chart", "beeswarm", "static"));
+  expect(reason).toContain('Datawrapper does not build a "beeswarm" chart');
   expect(reason).not.toContain("nothing can build");
 });
 

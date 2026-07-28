@@ -17,6 +17,7 @@ import { join } from "node:path";
 import { advance, advanceStep } from "../loop/driver";
 import { freezeInput } from "../loop/freeze";
 import {
+  fileArtifact,
   nextActions,
   type RunManifest,
   type FormOption,
@@ -176,7 +177,7 @@ test("a real run reaches an offer that carries its discards and can be phrased",
     );
   expect(produced).toBeDefined();
 
-  const artifact = produced!.elements[0].artifact!;
+  const artifact = fileArtifact(produced!.elements[0].artifact)!;
   expect(artifact.provenanceHash).toBeTruthy();
   // The delivered file matches the format the offer promised — the same media-shape clause
   // produce.ts's own dispatcher enforces on every produced artifact (lib/core/contract.ts),

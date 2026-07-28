@@ -37,7 +37,10 @@ import type {
 import {
   approveElement,
   chosenOption,
+  fileArtifact,
+  isHostedArtifact,
   provenanceHash,
+  type FileArtifactRecord,
   type RunElement,
   type RunManifest,
 } from "./manifest";
@@ -108,6 +111,22 @@ export function approve(
 ): VerbResult<RunElement> {
   if (!el.artifact)
     return fail("invalid-request", "approve: nothing produced to approve yet");
+  // THE WHOLE CEREMONY IS OVER BYTES. Every record this step writes binds to `artifactSha256` —
+  // the override, the sign-off document, and the Ed25519 signature an editor makes with
+  // sign-artifact.mjs — and a HOSTED delivery has no bytes at all. There is nothing to sign and
+  // nothing an approval could be pinned to that a re-publish would not silently change under it.
+  //
+  // It is also unreachable by construction: approveElement refuses an element whose preview does
+  // not cover it, previewCovers answers `false` for every hosted artifact, and previewStep refuses
+  // to write one. This refusal exists so the reason is NAMED rather than arriving as a generic
+  // "not previewed" three modules away.
+  const file = fileArtifact(el.artifact);
+  if (!file)
+    return fail(
+      "invalid-request",
+      `approve: this element was delivered as a HOSTED embed (${isHostedArtifact(el.artifact) ? el.artifact.url : "no url"}) — ` +
+        `an approval is a record over the artifact's own bytes, and the newsroom owns none of it`,
+    );
   const review = el.review as ReviewRecord | undefined;
   const overrides = ceremony.overrides ?? [];
   const acknowledged = ceremony.acknowledged ?? [];
@@ -142,7 +161,7 @@ export function approve(
   }
 
   const current = provenanceHash(run, el);
-  const signoff = verifySignoff(el, ceremony, policy);
+  const signoff = verifySignoff(el, file, ceremony, policy);
   if (!signoff.ok) return signoff;
 
   // The override records, completed by the spine. #11 asks for "finding ID, reason, timestamp,
@@ -154,7 +173,7 @@ export function approve(
     reason: o.reason.trim(),
     actorLabel,
     at,
-    artifactSha256: el.artifact!.sha256,
+    artifactSha256: file.sha256,
     provenanceHash: current,
   }));
   const overriddenIds = new Set(recorded.map((o) => o.findingId));
@@ -194,13 +213,13 @@ export function approve(
     outcome.element.review as ReviewRecord | undefined,
     {
       format: chosenOption(el)?.format ?? "static",
-      artifactSha256: el.artifact.sha256,
+      artifactSha256: file.sha256,
       provenanceHash: current,
     },
   );
   const document: SignoffDocument = {
     elementId: el.id,
-    artifactSha256: el.artifact.sha256,
+    artifactSha256: file.sha256,
     approvedProvenanceHash: current,
     actorLabel: actorLabel || "unnamed",
     at,
@@ -231,6 +250,9 @@ export function approve(
 // newsroom that has not declared signers approves by name alone.
 function verifySignoff(
   el: RunElement,
+  // The FILE record, resolved by the caller — this verifier signs bytes, and a hosted delivery is
+  // refused before it is ever reached.
+  file: FileArtifactRecord,
   ceremony: ApprovalCeremony,
   policy: SigningPolicy,
 ): VerbResult<null> {
@@ -257,7 +279,7 @@ function verifySignoff(
   // own signing script produces, so nothing about how an editor signs has to change.
   const valid = verifyEditorialSignature({
     proposalId: el.id,
-    sha256hex: el.artifact!.sha256,
+    sha256hex: file.sha256,
     signature: given.signature,
     signer,
   });

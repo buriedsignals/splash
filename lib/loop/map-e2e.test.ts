@@ -1,3 +1,4 @@
+import { fileArtifact } from "./manifest";
 // THE PROOF that the loop builds map-native, not just that the assembler compiles a config for
 // it. modelled on lib/loop/beats-render-proof.test.ts and lib/loop/multi-deliverable-e2e.test.ts:
 // a real produce() call, driving a real MapLibre render, measured off the delivered PNG's own
@@ -129,7 +130,9 @@ proof(
       if (!result.ok) return;
 
       // THE POSITIVE CONTROL — the PNG's own header, not the producer's report.
-      const png = readFileSync(join(runDir, result.value.artifact!.path));
+      const png = readFileSync(
+        join(runDir, fileArtifact(result.value.artifact)!.path),
+      );
       expect(png.subarray(1, 4).toString("ascii")).toBe("PNG");
       const width = png.readUInt32BE(16);
       const height = png.readUInt32BE(20);

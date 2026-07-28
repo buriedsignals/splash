@@ -1,3 +1,4 @@
+import { fileArtifact } from "./manifest";
 // THE PROOF that the loop builds an image scrolly, not just that the assembler composes a
 // story for it. Modelled on lib/loop/map-e2e.test.ts and lib/loop/beats-render-proof.test.ts:
 // a real produce() call, driving the real image-native → scrolly build, measured off the
@@ -193,7 +194,7 @@ proof(
       );
       if (!result.ok) return;
 
-      const page = join(runDir, result.value.artifact!.path);
+      const page = join(runDir, fileArtifact(result.value.artifact)!.path);
       const { captions, alts } = await readRenderedFrames(page);
       const walk = captions.join(" • ");
       for (const caption of CAPTIONS) expect(walk).toContain(caption);

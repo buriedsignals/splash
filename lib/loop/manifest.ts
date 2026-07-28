@@ -31,6 +31,72 @@ import { previewCoversDeliverable } from "../verify/preview";
 import type { CaptureSlot, ReviewRecord } from "../verify/types";
 
 const HashRef = z.object({ path: z.string(), sha256: z.string() });
+
+// ── THE ARTIFACT RECORD: the two shapes a delivery actually takes ──────────────────────────────
+//
+// A produced element is not always a file. `DeliveredArtifact.form` (lib/core/contract.ts) has
+// carried the fork since the verb contract landed:
+//   "file"   — owned local artifacts on disk (every native engine; dw-chart/map-dw "static" PNG).
+//   "hosted" — a Datawrapper embed ALONE, `files: []` and a publicUrl (dw-chart/map-dw
+//              "interactive" — skills/dw-chart/src/manifest.ts, skills/map-dw/src/manifest.ts).
+// The manifest only knew the first, so produce() refused the second and threw away the URL
+// render() had correctly brought back — which cost the loop the "Embed" delivery form outright.
+//
+// A UNION, not a `path`-optional record with a `url` beside it. The two shapes share nothing but
+// their provenance: a file has bytes to hash and a path to open, a hosted delivery has neither and
+// has a URL instead. Written as one loose object, every reader would take `string | undefined` and
+// be free to skip the check — and a reader that opens `join(runDir, undefined)` is exactly the
+// silent failure this record exists to prevent. As a union, TypeScript refuses `.path` until the
+// reader has said which shape it is holding, so the compiler enumerates the readers for us.
+//
+// `kind` is OPTIONAL on the file branch and REQUIRED on the hosted one, which is what keeps every
+// manifest already on disk parsing: they all record a file and none carries a `kind`. Absence
+// means "file" — the shape the slot has always had, and the one its required `path` already
+// evidences. produce() writes it explicitly from here on. Nothing is migrated (lib/loop/migrate.ts
+// upgrades a manifest whose FIELDS changed meaning; this one's did not), and no schemaVersion bump
+// is owed for the same reason the deliverable fields took none: the addition is additive and an
+// old manifest still means exactly what it meant.
+const FileArtifactSchema = z.object({
+  kind: z.literal("file").optional(),
+  path: z.string(),
+  sha256: z.string(),
+  provenanceHash: z.string(),
+  producedAt: z.string(),
+});
+const HostedArtifactSchema = z.object({
+  kind: z.literal("hosted"),
+  /** The published embed. Shape-checked with lib/core/contract.ts's isHostedUrl at the ONE place
+   *  that writes it (produce.ts) — the same check assertDeliveredContract runs on the delivery, so
+   *  "resolvable" is defined once for both stages. */
+  url: z.string(),
+  provenanceHash: z.string(),
+  producedAt: z.string(),
+});
+export const ArtifactRecordSchema = z.union([
+  FileArtifactSchema,
+  HostedArtifactSchema,
+]);
+export type FileArtifactRecord = z.infer<typeof FileArtifactSchema>;
+export type HostedArtifactRecord = z.infer<typeof HostedArtifactSchema>;
+export type ArtifactRecord = z.infer<typeof ArtifactRecordSchema>;
+
+/** The hosted half, narrowed. The ONE predicate every reader asks — never a re-spelled
+ *  `a.kind === "hosted"`, so the day a third form exists there is one line to change. */
+export function isHostedArtifact(
+  a: ArtifactRecord | undefined,
+): a is HostedArtifactRecord {
+  return a?.kind === "hosted";
+}
+
+/** The file half, narrowed — `undefined` for a hosted delivery. The accessor for every reader
+ *  that needs BYTES (hash them, open them, publish them, show them). Returning `undefined`
+ *  rather than throwing keeps each caller free to answer in its own register: a refusal, a
+ *  recorded gap, or a report line. */
+export function fileArtifact(
+  a: ArtifactRecord | undefined,
+): FileArtifactRecord | undefined {
+  return a && a.kind !== "hosted" ? a : undefined;
+}
 // The journalist's own photographs, declared with the run — NOT frozen the way `data`/
 // `article` are (no HashRef, no sha256): freezeInput copies a single file it can hash on the
 // spot, while an image folder stays where the journalist keeps it and is read by `frameRef`
@@ -191,14 +257,9 @@ const RunElementSchema = z.object({
   /** The authored beat plan of an article-branch deliverable. Absent for an embeddable element
    *  — a chart in a story has no walk. See NarrativeSchema. */
   narrative: NarrativeSchema.optional(),
-  artifact: z
-    .object({
-      path: z.string(),
-      sha256: z.string(),
-      provenanceHash: z.string(),
-      producedAt: z.string(),
-    })
-    .optional(),
+  /** WHAT WAS DELIVERED — a file this run owns, or a hosted embed it can only point at.
+   *  See ArtifactRecordSchema for why it is a union and why an old manifest still parses. */
+  artifact: ArtifactRecordSchema.optional(),
   // What `capture` measured at the destination's real publication viewport (issue #10).
   // Optional, and its own slot rather than part of `review` — see CaptureSlotSchema.
   capture: CaptureSlotSchema.optional(),
@@ -646,12 +707,17 @@ export function approvalCovers(run: RunManifest, el: RunElement): boolean {
 // Delegated to lib/verify so the router and the approval gate cannot disagree about what
 // counts as having been shown.
 export function previewCovers(el: RunElement): boolean {
-  if (!el.artifact) return false;
+  // A HOSTED delivery is never covered: previewCovers answers on the BYTES a journalist was
+  // shown, and there are none — previewStep refuses it outright rather than presenting a URL it
+  // cannot re-hash. Answering `false` here is what keeps the approval gate from clearing on an
+  // embed nobody looked at; it is the same `false` an unproduced element gets.
+  const file = fileArtifact(el.artifact);
+  if (!file) return false;
   const format = chosenOption(el)?.format ?? "static";
   return previewCoversDeliverable(
     format,
     (el.review as ReviewRecord | undefined)?.preview,
-    el.artifact.sha256,
+    file.sha256,
   ).ok;
 }
 
@@ -927,13 +993,19 @@ function assertReviewRecordInvariants(el: RunElement): void {
   // A preview whose bytes are not the recorded artifact's is a contradiction, not a stale
   // record: the approval path already refuses it, and persisting it would leave a manifest
   // asserting that a journalist was shown something the run never produced.
+  //
+  // Read through fileArtifact: a HOSTED delivery has no sha256 to contradict, and previewStep
+  // refuses to write a preview record for one at all — so there is no pair to compare, and
+  // comparing against `undefined` would throw on every hosted element instead of on a real
+  // contradiction.
+  const previewedFile = fileArtifact(el.artifact);
   if (
     review.preview &&
-    el.artifact &&
-    review.preview.deliverableSha256 !== el.artifact.sha256
+    previewedFile &&
+    review.preview.deliverableSha256 !== previewedFile.sha256
   )
     throw new Error(
-      `invariant: element ${el.id} records a preview of ${review.preview.deliverableSha256.slice(0, 12)}… while its artifact is ${el.artifact.sha256.slice(0, 12)}…`,
+      `invariant: element ${el.id} records a preview of ${review.preview.deliverableSha256.slice(0, 12)}… while its artifact is ${previewedFile.sha256.slice(0, 12)}…`,
     );
 }
 
@@ -961,7 +1033,9 @@ export function approveElement(
   const current = provenanceHash(run, el);
   const decision = approvalDecision(el.review as ReviewRecord | undefined, {
     format,
-    artifactSha256: el.artifact?.sha256 ?? "",
+    // "" for a hosted delivery — it has no bytes, and it can carry no preview either, so the
+    // decision this reaches is "not previewed", which is the true one.
+    artifactSha256: fileArtifact(el.artifact)?.sha256 ?? "",
     provenanceHash: current,
   });
   // An element with no artifact cannot be approved even if a record somehow cleared: the

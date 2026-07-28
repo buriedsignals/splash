@@ -6,7 +6,7 @@ import "../../skills/splash/src/register-producers";
 import { freezeInput } from "./freeze";
 import { draftBeats, applyBeats } from "./beats";
 import { produce } from "./produce";
-import { unauthoredBeats, type RunManifest } from "./manifest";
+import { unauthoredBeats, type RunManifest, fileArtifact } from "./manifest";
 import type { AuthoredBeat } from "../brain/verify-beats";
 
 // THE PROOF that the beats a reader sees are the journalist's, not the machine's.
@@ -149,7 +149,7 @@ proof(
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    const page = join(runDir, result.value.artifact!.path);
+    const page = join(runDir, fileArtifact(result.value.artifact)!.path);
 
     // 4. THE MEASUREMENT — in a browser, off the rendered step nodes.
     //

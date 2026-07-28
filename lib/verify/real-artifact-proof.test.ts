@@ -13,7 +13,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { produce } from "../loop/produce";
 import { freezeInput } from "../loop/freeze";
-import { provenanceHash, type RunManifest } from "../loop/manifest";
+import {
+  provenanceHash,
+  type RunManifest,
+  fileArtifact,
+} from "../loop/manifest";
 import { capture } from "./capture";
 import { runReview } from "./review";
 import { approvalDecision } from "./approval";
@@ -127,8 +131,10 @@ test.skipIf(!RUN)(
     const produced = await produce(run, run.elements[0]!, runDir);
     if (!produced.ok) throw new Error(`produce failed: ${produced.message}`);
     const el = produced.value;
-    const artifactPath = join(runDir, el.artifact!.path);
-    expect(el.artifact!.path).toBe(join("elements", "e1", "interactive.html"));
+    const artifactPath = join(runDir, fileArtifact(el.artifact)!.path);
+    expect(fileArtifact(el.artifact)!.path).toBe(
+      join("elements", "e1", "interactive.html"),
+    );
 
     // ---- capture at the destination the run actually publishes to -----------------
     const good = await capture({
@@ -171,7 +177,7 @@ test.skipIf(!RUN)(
           primary.rootBox.height * primary.deviceScaleFactor,
       ),
     ).toBeLessThanOrEqual(2);
-    expect(primary.artifactSha256).toBe(el.artifact!.sha256);
+    expect(primary.artifactSha256).toBe(fileArtifact(el.artifact)!.sha256);
     expect(primary.marks).toBeGreaterThan(0);
 
     // The furniture the engine really rendered, at the real publication container.
@@ -277,7 +283,7 @@ test.skipIf(!RUN)(
     // ---- the preview gate, on the real deliverable --------------------------------
     const ctx = {
       format: "interactive" as const,
-      artifactSha256: el.artifact!.sha256,
+      artifactSha256: fileArtifact(el.artifact)!.sha256,
       provenanceHash: provenance,
     };
     const withoutPreview = approvalDecision(clean, ctx);
@@ -289,7 +295,7 @@ test.skipIf(!RUN)(
     // A still is not the interactive — even the one this very run just captured.
     const stillPreview: PreviewRecord = {
       deliverablePath: primary.path,
-      deliverableSha256: el.artifact!.sha256,
+      deliverableSha256: fileArtifact(el.artifact)!.sha256,
       presentedAs: "opened",
       presentedAt: new Date().toISOString(),
     };
@@ -301,7 +307,7 @@ test.skipIf(!RUN)(
 
     const realPreview: PreviewRecord = {
       deliverablePath: artifactPath,
-      deliverableSha256: el.artifact!.sha256,
+      deliverableSha256: fileArtifact(el.artifact)!.sha256,
       presentedAs: "opened",
       presentedAt: new Date().toISOString(),
     };
@@ -312,8 +318,8 @@ test.skipIf(!RUN)(
     console.log(
       JSON.stringify(
         {
-          artifact: el.artifact!.path,
-          artifactSha256: el.artifact!.sha256.slice(0, 12),
+          artifact: fileArtifact(el.artifact)!.path,
+          artifactSha256: fileArtifact(el.artifact)!.sha256.slice(0, 12),
           primary: {
             cssViewport: primary.cssViewport,
             rootBox: primary.rootBox,

@@ -38,6 +38,8 @@ import { decorEnv, type Decor } from "../newsroom/decor";
 import { capabilityReadiness } from "../newsroom/readiness";
 import {
   chosenOption,
+  fileArtifact,
+  isHostedArtifact,
   provenanceHash,
   stalenessOf,
   type DeliveryRecord,
@@ -83,6 +85,21 @@ export async function deliver(
     );
   if (!el.artifact)
     return fail("invalid-request", "deliver: nothing produced to deliver yet");
+  // EVERY PUBLISHER TAKES A FILE. The publish verb's payload is an `artifactPath` a capability
+  // copies, zips or uploads (lib/core/verbs/publish.ts) — and a hosted delivery has no file at
+  // all: it is ALREADY published, on Datawrapper's own CDN, and the URL is the whole hand-over.
+  //
+  // Refused by name rather than handed `join(runDir, undefined)`. Sending an embed to a second
+  // destination is a real capability — it is the "Embed" hand-over form — but it is a publisher
+  // that forwards a URL, not one that ships bytes, and none exists yet. Naming the URL in the
+  // refusal is what makes the sentence actionable: it IS the deliverable.
+  if (!fileArtifact(el.artifact))
+    return fail(
+      "invalid-request",
+      `deliver: this element was delivered as a HOSTED embed (${isHostedArtifact(el.artifact) ? el.artifact.url : "no url"}) — ` +
+        `it is already published and the newsroom owns no file of it, so there is nothing for a publisher to send; ` +
+        `hand the URL over as the embed`,
+    );
   if (stalenessOf(run, el))
     return fail(
       "invalid-request",
@@ -267,7 +284,7 @@ export async function deliver(
     // design) are spread LAST of all, so a newsroom-wide override the journalist deliberately
     // set is never silently shadowed by a capability's own, narrower settings.
     const result = await runVerb("publish", {
-      artifactPath: join(runDir, el.artifact.path),
+      artifactPath: join(runDir, fileArtifact(el.artifact)!.path),
       id: el.id,
       format,
       metadata: metadata.value,

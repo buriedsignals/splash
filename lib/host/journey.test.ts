@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { mkdtempSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { RunManifest } from "../loop/manifest";
+import { fileArtifact, type RunManifest } from "../loop/manifest";
 
 const CLI = join(import.meta.dir, "cli.ts");
 
@@ -336,9 +336,7 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
       throw new Error(
         "no buildable form in the offer — every option carries a readiness mark, which is what a " +
           "worktree missing an engine's dependencies looks like. Marks: " +
-          options
-            .map((o) => `${o.id}: ${o.readiness?.status}`)
-            .join(" · ") +
+          options.map((o) => `${o.id}: ${o.readiness?.status}`).join(" · ") +
           ". See README's 'For developers' checklist.",
       );
     const chosen = await cli([
@@ -395,7 +393,7 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
     expect(captured.images).toHaveLength(1);
     const image = captured.images[0]!;
     expect(image.artifactSha256).toBe(
-      beforeApproval.elements[0]!.artifact!.sha256,
+      fileArtifact(beforeApproval.elements[0]!.artifact)!.sha256,
     );
     expect(image.destinationId).toBe("channel:article-web");
     expect(image.cssViewport).toEqual({ width: 1200, height: 675 });
@@ -446,7 +444,7 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
     ).value.elements[0]!.verification!;
     expect(verification.findings).toEqual([]);
     expect(verification.preview!.deliverableSha256).toBe(
-      beforeApproval.elements[0]!.artifact!.sha256,
+      fileArtifact(beforeApproval.elements[0]!.artifact)!.sha256,
     );
     // The absence of an independent semantic reviewer is RECORDED, never converted into a
     // pass: no unpublished reporting leaves this machine, so nothing claims independence.
@@ -508,9 +506,9 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
       readFileSync(join(dir, "run.json"), "utf8"),
     ) as RunManifest;
     const el = manifest.elements[0]!;
-    expect(readFileSync(join(dir, el.artifact!.path)).length).toBeGreaterThan(
-      1000,
-    );
+    expect(
+      readFileSync(join(dir, fileArtifact(el.artifact)!.path)).length,
+    ).toBeGreaterThan(1000);
     const record = el.delivery!.delivered[0]!;
     expect(record.publisherId).toBe("zip");
     expect(
@@ -532,7 +530,7 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
     };
     expect(signoff).toMatchObject({
       elementId: "el1",
-      artifactSha256: el.artifact!.sha256,
+      artifactSha256: fileArtifact(el.artifact)!.sha256,
       actorLabel: "Yvan Pandelé",
       independentSemanticReview: "unavailable",
     });
