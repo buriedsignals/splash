@@ -254,6 +254,73 @@ describe("chooseFormIn — the journalist's choice, persisted", () => {
       code: "no-run",
     });
   });
+
+  // SYMMETRY WITH confirm-angle. Both commands move provenanceHash, so both can annul a finished
+  // artifact; only one said so. A decision that silently throws away work has no place on a
+  // surface whose every other answer is explicit — and the host cannot infer it, because the
+  // hash it would have to compare is not something the façade hands out.
+  //
+  // A second option, added to the offer the produced run already carries. `options` is not part
+  // of provenanceHash (only `chosenId` and the chosen option's `format` are), so widening the
+  // offer leaves the recorded artifact fresh — which is precisely the state under test.
+  function producedWithASecondOption(): string {
+    const dir = producedRun();
+    const path = join(dir, "run.json");
+    const run = JSON.parse(readFileSync(path, "utf8")) as RunManifest;
+    const el = run.elements[0]!;
+    writeManifest(path, {
+      ...run,
+      elements: [
+        {
+          ...el,
+          proposal: {
+            ...el.proposal!,
+            options: [
+              ...el.proposal!.options,
+              {
+                id: "bar",
+                nativeType: "bar",
+                engine: "chart-native",
+                format: "static",
+                why: "one bar per canton",
+              },
+            ],
+          },
+        },
+      ],
+    });
+    return dir;
+  }
+
+  it("says when re-choosing a form annuls a finished artifact", () => {
+    const dir = producedWithASecondOption();
+    const r = chooseFormIn(dir, "bar");
+    expect(r).toMatchObject({ ok: true });
+    expect((r as { value: object }).value).toMatchObject({
+      chosen: "bar",
+      staled: true,
+    });
+    // The word is earned: the run really does route back through produce.
+    expect(
+      (r as { value: { nextActions: string[] } }).value.nextActions,
+    ).toEqual(["produce"]);
+  });
+
+  it("stays silent when the choice annuls nothing", () => {
+    // Re-affirming the SAME form moves no hash, so there is nothing to warn about. Absent, never
+    // `staled: false` — the same presence rule confirm-angle follows.
+    const dir = producedWithASecondOption();
+    const r = chooseFormIn(dir, "slope");
+    expect(r).toMatchObject({ ok: true });
+    expect("staled" in ((r as { value: object }).value as object)).toBe(false);
+  });
+
+  it("stays silent when there is no artifact to annul", () => {
+    const dir = proposedRun();
+    const r = chooseFormIn(dir, "slope");
+    expect(r).toMatchObject({ ok: true });
+    expect("staled" in ((r as { value: object }).value as object)).toBe(false);
+  });
 });
 
 describe("requestDeliveryIn — where it goes, decided and recorded", () => {
