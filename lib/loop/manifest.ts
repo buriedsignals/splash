@@ -90,6 +90,13 @@ const NarrativeBeatSchema = z.object({
 });
 const NarrativeSchema = z.object({ beats: z.array(NarrativeBeatSchema) });
 
+const GeoMatchSchema = z.object({
+  column: z.string(),
+  basemap: z.string(),
+  matched: z.number(),
+  total: z.number(),
+  unmatched: z.array(z.string()),
+});
 const RunEventSchema = z.object({
   at: z.string(),
   kind: z.enum(["failure", "transition"]),
@@ -243,6 +250,7 @@ export const RunManifestSchema = z.object({
       profile: DataProfileSchema,
       supportsPoint: z.boolean(),
       note: z.string().optional(),
+      geo: GeoMatchSchema.optional(),
     })
     .optional(),
   elements: z.array(RunElementSchema),

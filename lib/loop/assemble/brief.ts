@@ -46,5 +46,6 @@ export function briefFor(
     attribution,
     ...(sourceUrl ? { sourceUrl } : {}),
     ...(el.narrative ? { beats: beatsFor(el) } : {}),
+    ...(run.orient?.geo ? { geo: run.orient.geo } : {}),
   };
 }

@@ -1,10 +1,15 @@
-import { profileCsv } from "./profile";
+import { profileCsv, parseCsvRows } from "./profile";
 import type { DataProfile } from "./manifest";
+import { matchGeography } from "../../skills/map-native/src/geo-match";
+import type { GeoMatch } from "../core/production-brief";
 
 export type OrientResult = {
   profile: DataProfile;
   supportsPoint: boolean;
   note?: string;
+  /** What the desk found when it tried to place this data on a shipped basemap. Absent when
+   *  nothing joined — which is the ordinary case for a time series. */
+  geo?: GeoMatch;
 };
 
 // The desk describes what the brought data factually contains and says, honestly,
@@ -27,5 +32,7 @@ export function orient(dataCsv: string): OrientResult {
       note: "No numeric columns in what you brought — there is nothing to chart for this point. Bring the figures.",
     };
   }
-  return { profile, supportsPoint: true };
+  const { columns, rows } = parseCsvRows(dataCsv);
+  const geo = matchGeography(columns, rows);
+  return { profile, supportsPoint: true, ...(geo ? { geo } : {}) };
 }

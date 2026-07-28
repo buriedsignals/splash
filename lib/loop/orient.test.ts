@@ -18,3 +18,11 @@ test("orient refuses when the data has a header but no rows", () => {
   expect(r.supportsPoint).toBe(false);
   expect(r.note).toContain("rows");
 });
+
+test("orient reports the geography when the data carries one, and stays silent when it does not", () => {
+  const geoRun = orient("country,value\nCHE,12\nFRA,9");
+  expect(geoRun.geo?.basemap).toBe("world");
+  expect(geoRun.geo?.column).toBe("country");
+  const timeSeries = orient("year,extent\n1979,7.0\n2025,4.3");
+  expect(timeSeries.geo).toBeUndefined();
+});
