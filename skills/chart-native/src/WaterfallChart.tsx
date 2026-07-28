@@ -52,6 +52,11 @@ export interface WaterfallConfig {
   /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture + swaps the
    *  role palette's black TOTAL for a light neutral (themeWaterfallColors). */
   themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. This chart encodes with a fixed
+   *  categorical/role palette, so the hue never touches its marks — colouring them with one
+   *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface WaterfallChartProps {
@@ -204,6 +209,7 @@ export function WaterfallChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -237,7 +243,7 @@ function WaterfallSvg({
 }) {
   const { innerWidth, innerHeight, base, bars } = layout;
   const n = bars.length;
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const roleColors = themeWaterfallColors(config.themeBg);
 
   const chrome = easeOutCubic(p / 0.18);

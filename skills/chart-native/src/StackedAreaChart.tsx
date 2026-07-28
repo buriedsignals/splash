@@ -41,6 +41,11 @@ export interface StackedAreaConfig {
   /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture. The band
    *  palette (STACKED_AREA_COLORS) has no black, so it is theme-independent. */
   themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. This chart encodes with a fixed
+   *  categorical/role palette, so the hue never touches its marks — colouring them with one
+   *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface StackedAreaChartProps {
@@ -167,6 +172,7 @@ export function StackedAreaChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -199,7 +205,7 @@ function StackedAreaSvg({
   sc: number;
 }) {
   const { innerWidth, innerHeight, bands } = layout;
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
 
   const chrome = easeOutCubic(p / 0.18);
   const wipe = easeInOutCubic(p); // left→right reveal of the whole stack

@@ -35,11 +35,9 @@ import {
   revealTriggersByLabel,
   markTriggerFrames,
 } from "../locator-story";
-import {
-  placeLabels,
-  labelRadialOffset,
-  type LabelBox,
-} from "../locator-labels";
+import { placeLabels, labelRadialOffset } from "../locator-labels";
+import { locatorLabelPlacement } from "../locator-label-placement";
+import type { LabelAnchor } from "../symbol-labels";
 import { resolveMapStyle } from "../route-geo";
 import {
   buildTimeline,
@@ -56,7 +54,7 @@ import {
   AREAL_LABEL_S,
   AREAL_LABEL_START_S,
 } from "../story-choreography";
-import { stagedEntrance } from "../core/staged-reveal";
+import { stagedEntrance, clampOpacity } from "../core/staged-reveal";
 import type { LocatorConfigShape } from "../validate-config";
 import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
@@ -81,6 +79,9 @@ interface LocatorFeatureProps {
   color: string;
   category: string;
   labelOffset: number;
+  /** MapLibre `text-anchor` — recomputed per frame from the projected screen position so a
+   *  marker near the frame edge flips its label inward instead of running it off canvas. */
+  anchor: LabelAnchor;
   __highlight: boolean;
   __showLabel: boolean;
   __triggerFrame: number;
@@ -221,6 +222,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
           category: mk.category ?? "",
           labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
           __showLabel: true,
+          anchor: "left", // MapLibre text-anchor; recomputed per frame (edge-aware)
           __highlight: true, // establish: all markers full; recomputed per beat
           __triggerFrame:
             markTriggers.get(mk.label) ?? Number.POSITIVE_INFINITY,
@@ -264,7 +266,11 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
           "text-field": ["get", "label"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
           "text-size": textSize,
-          "text-variable-anchor": ["top", "bottom", "left", "right"],
+          // Per-feature anchor (data-driven), NOT text-variable-anchor: variable-anchor
+          // only re-anchors on label-to-label collision — it is blind to the viewport
+          // edge, so a marker near an edge keeps its default side and its text runs off
+          // canvas. Recomputed per frame from the projected screen position.
+          "text-anchor": ["get", "anchor"],
           "text-radial-offset": ["get", "labelOffset"],
           "text-justify": "auto",
           "text-allow-overlap": true,
@@ -326,34 +332,50 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
 
     let dataChanged = false;
 
+    const highlightSet = new Set(beat.highlight);
+    const emphasise = beat.dim && highlightSet.size > 0;
+
+    // Edge-aware label placement, recomputed EVERY FRAME — the camera glides within a beat,
+    // so an anchor chosen once at the beat boundary is stale by the middle of the move and a
+    // marker drifting toward the frame edge would take its label off canvas. Same cadence as
+    // SymbolStory, which recomputes its anchors per frame after the jumpTo settles. One call
+    // returns both the side each label takes and the rectangle it occupies there, so the
+    // declutter below collides the box the label really has.
+    const el = ref.current;
+    const { anchors, boxes } = locatorLabelPlacement(
+      geo.markers.map((mk) => ({
+        label: mk.label,
+        priority:
+          (mk.priority ?? 0) +
+          (emphasise && highlightSet.has(mk.label) ? 1000 : 0),
+      })),
+      geo.markers.map((mk) => map.project([mk.lon, mk.lat])),
+      {
+        viewport: {
+          width: el?.clientWidth ?? width,
+          height: el?.clientHeight ?? height,
+        },
+        textSize,
+        radius: DOT_RADIUS_PX,
+      },
+    );
+    for (let i = 0; i < geo.markers.length; i++) {
+      const props = markerFeatures[i]
+        .properties as unknown as LocatorFeatureProps;
+      if (props.anchor !== anchors[i]) {
+        props.anchor = anchors[i];
+        dataChanged = true;
+      }
+    }
+
     // On beat change: recompute per-marker __highlight (dim-the-rest) + __showLabel
     // (declutter) — MUTATED in place on the PERSISTENT markerFeatures array (never rebuilt)
     // so the per-marker staged-entrance loop below (which runs every frame, not just on beat
-    // change) keeps reading/writing the same feature objects.
+    // change) keeps reading/writing the same feature objects. WHICH labels show stays a
+    // per-beat editorial decision (a label winking in and out mid-glide would read as a
+    // glitch); WHERE a shown label sits is the per-frame geometry above.
     if (beatIndex !== lastBeatIndex.current) {
       lastBeatIndex.current = beatIndex;
-      const highlightSet = new Set(beat.highlight);
-      const emphasise = beat.dim && highlightSet.size > 0;
-
-      // Declutter — prioritise highlighted markers on dim beats so their labels win.
-      const boxes: LabelBox[] = geo.markers.map((mk, i) => {
-        const pt = map.project([mk.lon, mk.lat]);
-        const w = Math.max(1, mk.label.length) * (textSize * 0.58);
-        const hh = textSize * 1.3;
-        const basePriority = mk.priority ?? 0;
-        const priority =
-          emphasise && highlightSet.has(mk.label)
-            ? basePriority + 1000
-            : basePriority;
-        return {
-          key: `m${i}`,
-          x: pt.x - w / 2,
-          y: pt.y - DOT_RADIUS_PX - hh,
-          w,
-          h: hh,
-          priority,
-        };
-      });
       const shownSet = new Set(placeLabels(boxes).shown);
 
       for (let i = 0; i < geo.markers.length; i++) {
@@ -392,10 +414,15 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         labelStart: AREAL_LABEL_START_S,
       });
       const radius = DOT_RADIUS_PX * staged.borderProgress;
-      const opacity =
-        (props.__highlight ? 0.95 : DIM_OPACITY) * staged.fillOpacity;
-      const strokeOpacity =
-        (props.__highlight ? 1 : DIM_OPACITY) * staged.fillOpacity;
+      // Two channels, two ceilings, one envelope: the raw curve is scaled by each channel's
+      // own target and clamped on the way out. A highlighted marker's stroke target is
+      // already 1, so its bloom has nowhere to go — that is the channel's limit, not a bug.
+      const opacity = clampOpacity(
+        (props.__highlight ? 0.95 : DIM_OPACITY) * staged.fillEnvelope,
+      );
+      const strokeOpacity = clampOpacity(
+        (props.__highlight ? 1 : DIM_OPACITY) * staged.fillEnvelope,
+      );
       const labelOpacity = (props.__highlight ? 1 : 0.35) * staged.labelReveal;
 
       if (

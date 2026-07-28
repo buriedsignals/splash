@@ -301,6 +301,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         catField: catCol,
         seriesFields,
         rows: parsed.rows,
@@ -320,6 +323,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         catField: catCol,
         seriesFields,
         rows: parsed.rows,
@@ -341,6 +347,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         xField: catCol,
         seriesFields,
         rows: parsed.rows,
@@ -496,6 +505,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         labelField: catCol,
         valueField: valCol,
         rows,
@@ -533,6 +545,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         catField: catCol,
         valField: valCol,
         rows,
@@ -571,6 +586,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         labelField: labelCol,
         leftField,
         rightField,
@@ -591,6 +609,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         labelField: labelCol,
         leftField,
         rightField,
@@ -631,6 +652,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows: bulletRows,
       },
     };
@@ -772,6 +796,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         responses,
         ...(neutralIndex !== undefined ? { neutralIndex } : {}),
         items,
@@ -790,6 +817,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         bandField: bandCol,
         leftField,
         rightField,
@@ -890,6 +920,9 @@ export const MAPPERS: Record<
         title: spec.title,
         source: src(spec.source),
         unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows: wrows,
       },
     };

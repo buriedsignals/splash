@@ -43,7 +43,7 @@ import {
   AREAL_LABEL_S,
   AREAL_LABEL_START_S,
 } from "../story-choreography";
-import { stagedEntrance } from "../core/staged-reveal";
+import { stagedEntrance, clampOpacity } from "../core/staged-reveal";
 import type { SymbolConfig } from "../SymbolMap";
 import { resolveMapStyle } from "../route-geo";
 import { houseFill } from "../theme/house-ramp";
@@ -371,7 +371,10 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         labelStart: AREAL_LABEL_START_S,
       });
       const radius = props.radius * staged.borderProgress;
-      const opacity = SYMBOL_BASE_OPACITY * staged.fillOpacity;
+      // The envelope is staged at fillTarget=1 and scaled here by the mark's own ceiling,
+      // so the RAW curve is what this comp wants (0.75 * 1.25 = 0.94 at peak — a real,
+      // in-range bloom). Clamped on the way out: the product is the paint value.
+      const opacity = clampOpacity(SYMBOL_BASE_OPACITY * staged.fillEnvelope);
       const labelOpacity =
         props.label === highlightLabel
           ? staged.labelReveal * (1 - calloutReveal)

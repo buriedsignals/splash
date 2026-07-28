@@ -12,8 +12,8 @@ import type { LocatorConfigShape } from "./validate-config";
 import {
   placeLabels,
   labelRadialOffset,
-  type LabelBox,
 } from "./locator-labels";
+import { locatorLabelPlacement } from "./locator-label-placement";
 import { resolveMapStyle } from "./route-geo";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame, labelTextSize } from "./core/map-format";
@@ -249,6 +249,10 @@ export const LocatorMap: React.FC<Props> = ({
           priority: mk.priority ?? 0,
           labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
           __showLabel: true, // recomputed by declutter
+          // MapLibre text-anchor, recomputed from the projected position so the label
+          // never runs off the frame. "left" = text to the RIGHT of the point, the
+          // FT/NYT direct-label default every non-edge marker keeps.
+          anchor: "left",
         },
         geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
       }));
@@ -357,7 +361,11 @@ export const LocatorMap: React.FC<Props> = ({
           "text-field": ["get", "label"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
           "text-size": textSize,
-          "text-variable-anchor": ["top", "bottom", "left", "right"],
+          // Per-feature anchor (data-driven), NOT text-variable-anchor: variable-anchor
+          // only re-anchors on label-to-label collision — it is blind to the viewport
+          // edge, so a marker near an edge keeps its default side and its text runs off
+          // canvas. `relabel()` recomputes `anchor` from the projected screen position.
+          "text-anchor": ["get", "anchor"],
           "text-radial-offset": ["get", "labelOffset"],
           "text-justify": "auto",
           "text-allow-overlap": true,
@@ -373,24 +381,25 @@ export const LocatorMap: React.FC<Props> = ({
         },
       });
 
-      // Deterministic declutter: project every marker, build LabelBoxes, place by
-      // priority, then mark only `shown` features with __showLabel = true.
+      // Edge-aware placement, then deterministic declutter. `locatorLabelPlacement` picks
+      // each label's side so it stays inside the frame (the same screen-space rule the
+      // symbol maps use) AND returns the rectangle that side occupies, which is what the
+      // priority declutter must collide-test — a label flipped to the left of its marker
+      // was previously still boxed as if it sat above it.
       function relabel() {
         const m = mapRef.current;
         if (!m) return;
-        const boxes: LabelBox[] = geo.markers.map((mk, i) => {
-          const pt = m.project([mk.lon, mk.lat]);
-          const w = Math.max(1, mk.label.length) * (textSize * 0.58);
-          const h = textSize * 1.3;
-          return {
-            key: `m${i}`,
-            x: pt.x - w / 2,
-            y: pt.y - DOT_RADIUS_PX - h,
-            w,
-            h,
-            priority: mk.priority ?? 0,
-          };
-        });
+        const el = containerRef.current;
+        if (!el) return;
+        const { anchors, boxes } = locatorLabelPlacement(
+          geo.markers,
+          geo.markers.map((mk) => m.project([mk.lon, mk.lat])),
+          {
+            viewport: { width: el.clientWidth, height: el.clientHeight },
+            textSize,
+            radius: DOT_RADIUS_PX,
+          },
+        );
         const { shown } = placeLabels(boxes);
         const shownSet = new Set(shown);
         let changed = false;
@@ -399,6 +408,10 @@ export const LocatorMap: React.FC<Props> = ({
           const props = features[i].properties as Record<string, unknown>;
           if (props.__showLabel !== showLabel) {
             props.__showLabel = showLabel;
+            changed = true;
+          }
+          if (props.anchor !== anchors[i]) {
+            props.anchor = anchors[i];
             changed = true;
           }
         }
@@ -651,6 +664,7 @@ export const LocatorMap: React.FC<Props> = ({
       style={{ position: "relative", width: "100%", height: "100%" }}
     >
       <MapFrame
+        standalone
         title={config.title ?? ""}
         description={config.description}
         source={{ name: config.source?.name ?? "", url: config.source?.url }}

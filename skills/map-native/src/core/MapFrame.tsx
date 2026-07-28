@@ -38,6 +38,16 @@ export interface MapFrameProps {
   belowTitle?: ReactNode;
   /** deliverable language — localizes the "Source" furniture label. Default English. */
   lang?: Lang;
+  /**
+   * This frame is the WHOLE deliverable, not one step inside a host page — so its title is
+   * the page's headline and gets marked `[data-splash-title]`, the first rung of the Verify
+   * layer's title ladder (lib/verify/capture.ts). Only the seven `src/*Map.tsx` top-level
+   * maps pass it. Defaults FALSE because MapFrame is also the furniture of every
+   * Reveal/Story/Scrolly step: in a map-scrolly page the verifier's `querySelector` would
+   * return the first step's caption and record it as the headline. Unmarked, the ladder
+   * degrades to the SVG accessible name exactly as it does today.
+   */
+  standalone?: boolean;
 }
 
 export function MapFrame({
@@ -56,6 +66,7 @@ export function MapFrame({
   houseHue,
   belowTitle,
   lang,
+  standalone = false,
 }: MapFrameProps) {
   const titleRef = useRef<HTMLDivElement>(null);
   const [, setMeasuredHeight] = useState(0);
@@ -126,6 +137,7 @@ export function MapFrame({
         }}
       >
         <div
+          data-splash-title={standalone ? "" : undefined}
           style={{
             fontSize: frame.type.title,
             fontWeight: 700,

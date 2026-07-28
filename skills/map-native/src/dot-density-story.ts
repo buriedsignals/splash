@@ -107,9 +107,11 @@ export const STAGGER_SPAN = 0.25;
 
 /**
  * A MapLibre data-driven expression that remaps a region's own entrance progress
- * (`regionProgress` — the region's staged `fillOpacity` this frame; the DOT layer always
- * stages with fillTarget=1, so this value ranges 0 → ~1.25 overshoot → 1, see
- * `stagedByKey`/`stagedEntrance`) into a PER-DOT opacity: each dot's ramp is delayed by
+ * (`regionProgress` — the region's staged `fillEnvelope` this frame, the RAW curve: the DOT
+ * layer stages with fillTarget=1, so this value ranges 0 → 1.25 overshoot → 1, see
+ * `stagedByKey`/`stagedEntrance`. It is a PROGRESS here, not an opacity — which is exactly
+ * why it reads the envelope and not the clamped `fillOpacity`) into a PER-DOT opacity, an
+ * opacity that IS clamped below: each dot's ramp is delayed by
  * `__dotOrder * STAGGER_SPAN` and rescaled (same delayed-start, same-end) so every dot still
  * lands on exactly `regionProgress` once the region settles (`regionProgress === 1`) —
  * dots with a higher `__dotOrder` lag behind dots with a lower one while ramping, and all
@@ -118,7 +120,15 @@ export const STAGGER_SPAN = 0.25;
  */
 function staggeredDotOpacityExpr(regionProgress: number): unknown[] {
   const delay: unknown[] = ["*", ["get", "__dotOrder"], STAGGER_SPAN];
-  return ["max", 0, ["/", ["-", regionProgress, delay], ["-", 1, delay]]];
+  // Bounded BOTH ways. The remap's numerator carries the region's overshoot, and dividing
+  // by a shrinking `1 - delay` amplifies it further — a late-ordered dot could reach ~1.4
+  // mid-bloom. `circle-opacity` is a [0,1] channel: the GPU saturated the excess, so the
+  // out-of-range value was invisible rather than harmless. Clamping here says so.
+  return [
+    "min",
+    1,
+    ["max", 0, ["/", ["-", regionProgress, delay], ["-", 1, delay]]],
+  ];
 }
 
 /**
@@ -151,7 +161,7 @@ export function buildDotOpacityExpression(
     for (const [key, staged] of stagedMap) {
       expr.push(
         ["==", ["get", "__region"], key],
-        staggeredDotOpacityExpr(staged.fillOpacity),
+        staggeredDotOpacityExpr(staged.fillEnvelope),
       );
     }
     expr.push(0); // default: not (yet) a reveal subject
@@ -169,7 +179,7 @@ export function buildDotOpacityExpression(
     return [
       "case",
       ["==", ["get", "__region"], highlightKey],
-      staggeredDotOpacityExpr(staged.fillOpacity),
+      staggeredDotOpacityExpr(staged.fillEnvelope),
       dimOpacity,
     ];
   }

@@ -24,8 +24,8 @@ import { locatorGeometry } from "../locator-geo";
 import {
   placeLabels,
   labelRadialOffset,
-  type LabelBox,
 } from "../locator-labels";
+import { locatorLabelPlacement } from "../locator-label-placement";
 import { resolveMapStyle } from "../route-geo";
 import type { LocatorConfigShape } from "../validate-config";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
@@ -102,6 +102,9 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
         color: mk.color,
         labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
         __showLabel: true, // recomputed by declutter
+          // MapLibre text-anchor — recomputed per frame from the projected position so a
+          // marker near the frame edge flips instead of running its label off canvas.
+          anchor: "left",
       },
       geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
     }));
@@ -158,7 +161,11 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
           "text-field": ["get", "label"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
           "text-size": textSize,
-          "text-variable-anchor": ["top", "bottom", "left", "right"],
+          // Per-feature anchor (data-driven), NOT text-variable-anchor: variable-anchor
+          // only re-anchors on label-to-label collision — it is blind to the viewport
+          // edge, so a marker near an edge keeps its default side and its text runs off
+          // canvas. Recomputed from the projected screen position (locatorLabelPlacement).
+          "text-anchor": ["get", "anchor"],
           "text-radial-offset": ["get", "labelOffset"],
           "text-justify": "auto",
           "text-allow-overlap": true,
@@ -177,25 +184,27 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
       map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
 
       continueWhenMapSettles(map, () => {
-        // Deterministic declutter: project each marker, build LabelBoxes, place by
-        // priority, then mark only `shown` features with __showLabel = true.
-        const boxes: LabelBox[] = geo.markers.map((mk, i) => {
-          const pt = map.project([mk.lon, mk.lat]);
-          const w = Math.max(1, mk.label.length) * (textSize * 0.58);
-          const h = textSize * 1.3;
-          return {
-            key: `m${i}`,
-            x: pt.x - w / 2,
-            y: pt.y - DOT_RADIUS_PX - h,
-            w,
-            h,
-            priority: mk.priority ?? 0,
-          };
-        });
+        // Edge-aware placement + deterministic declutter, from ONE call: the anchor keeps
+        // each label inside the frame, and the box it returns is the rectangle the priority
+        // rule collide-tests (the old box assumed the text always sat above the dot).
+        const el = containerRef.current;
+        const { anchors, boxes } = locatorLabelPlacement(
+          geo.markers,
+          geo.markers.map((mk) => map.project([mk.lon, mk.lat])),
+          {
+            viewport: {
+              width: el?.clientWidth ?? width,
+              height: el?.clientHeight ?? height,
+            },
+            textSize,
+            radius: DOT_RADIUS_PX,
+          },
+        );
         const shownSet = new Set(placeLabels(boxes).shown);
         for (let i = 0; i < geo.markers.length; i++) {
-          (features[i].properties as Record<string, unknown>).__showLabel =
-            shownSet.has(`m${i}`);
+          const props = features[i].properties as Record<string, unknown>;
+          props.__showLabel = shownSet.has(`m${i}`);
+          props.anchor = anchors[i];
         }
         (map.getSource("locator") as maptilersdk.GeoJSONSource).setData({
           type: "FeatureCollection",

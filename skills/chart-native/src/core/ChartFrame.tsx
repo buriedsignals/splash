@@ -22,6 +22,10 @@ import {
 import { themeColors, FONT, TYPE } from "./tokens";
 import { sourceLabel, type Lang } from "./locale";
 import { clampOffset } from "./tooltip-clamp";
+import {
+  CaptureRootMarkedContext,
+  captureMarkerValue,
+} from "./capture-markers";
 
 // WCAG 1.1.1 — the fuller accessible DESCRIPTION of the chart (the insight; the
 // accessible NAME is already the title via each <svg role="img" aria-label>).
@@ -150,6 +154,23 @@ export function ChartFrame({
   const altDescription = altInsight?.trim() ? (
     <p style={VISUALLY_HIDDEN}>{altInsight}</p>
   ) : null;
+  // The Verify layer's capture ladder (lib/verify/capture.ts) resolves the element it
+  // screenshots from `[data-splash-root]` first, and the text it records as the rendered
+  // title from `[data-splash-title]` first, degrading to structural guesses (`#root > div`,
+  // the SVG accessible name) when no engine poses them. Posing them here retires both
+  // guesses WITHOUT moving the crop — see core/capture-markers.ts for why the root marker
+  // is conditional and the title marker is not.
+  //   An EMBEDDED frame stays unmarked on purpose: it is one step inside a host scaffold
+  // (scrolly), so the deliverable's root is the scaffold and its headline is the page's,
+  // not this chart's. Marking would make the verifier screenshot a fragment of the page it
+  // is meant to review, and read a step's caption as the headline. `embedded` is already
+  // the flag that says the host owns the title and the source; it owns page identity too.
+  //   The root also yields to an InteractiveChart wrapper above it, which in an interactive
+  // build is the element `#root > div` resolves to. The title never yields: the wrapper has
+  // no text of its own, so this stays the one element that paints the headline.
+  const rootAlreadyMarked = useContext(CaptureRootMarkedContext);
+  const captureRootMarker = captureMarkerValue(!embedded && !rootAlreadyMarked);
+  const captureTitleMarker = captureMarkerValue(!embedded);
   const PAD = 24 * scale; // header / source left-right inset
   const titleSize = TYPE.title * scale;
   const axisSize = TYPE.axis * scale;
@@ -157,7 +178,10 @@ export function ChartFrame({
   const topPad = 18 * scale;
   if (responsive) {
     return (
-      <div style={{ width, background: C.bg, fontFamily: FONT }}>
+      <div
+        data-splash-root={captureRootMarker}
+        style={{ width, background: C.bg, fontFamily: FONT }}
+      >
         {altDescription}
         {/* Header: the standalone chart shows title + unit; an EMBEDDED chart shows
             only the unit (the host scaffold owns the title). */}
@@ -165,6 +189,7 @@ export function ChartFrame({
           <div style={{ padding: `4px ${PAD}px 0` }}>
             {!embedded && (
               <div
+                data-splash-title={captureTitleMarker}
                 style={{
                   fontSize: titleSize,
                   fontWeight: 700,
@@ -226,6 +251,7 @@ export function ChartFrame({
 
   return (
     <div
+      data-splash-root={captureRootMarker}
       style={{
         width,
         height,
@@ -242,6 +268,7 @@ export function ChartFrame({
           to be ≥ this block's height — no ResizeObserver or second render needed. */}
       <div style={{ position: "absolute", top: topPad, left: PAD, right: PAD }}>
         <div
+          data-splash-title={captureTitleMarker}
           style={{
             fontSize: titleSize,
             fontWeight: 700,

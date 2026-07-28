@@ -56,6 +56,11 @@ export interface SlopeConfig {
   accent?: string;
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
   themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. This chart encodes with a fixed
+   *  categorical/role palette, so the hue never touches its marks — colouring them with one
+   *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -190,6 +195,7 @@ export function SlopeChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -270,7 +276,7 @@ function SlopeSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   // neutral CONTEXT line (slope.md rule 4) — furniture-grade scaffolding (the guard
   // calls it "exempt like the axis"), so it flips with the theme's muted furniture:
   // #6B6B6B on white → the lighter dark muted on the dark bg (else near-invisible).

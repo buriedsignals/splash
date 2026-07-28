@@ -45,6 +45,11 @@ export interface DumbbellConfig {
   rightLabel: string; // series B name (legend)
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
   themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. This chart encodes with a fixed
+   *  categorical/role palette, so the hue never touches its marks — colouring them with one
+   *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -187,6 +192,7 @@ export function DumbbellChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -218,7 +224,7 @@ function DumbbellSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   // neutral gap CONNECTOR — furniture-grade scaffolding (the guard exempts it from
   // palette membership), so it flips with the theme's muted furniture: near-invisible
   // as #6B6B6B on the dark bg, so use the lighter dark muted.
