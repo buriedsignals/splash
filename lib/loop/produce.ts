@@ -268,11 +268,32 @@ export async function produce(
   // No `lang`: the loop carries no language axis yet (the manifest has no locale, and produce
   // sets no `NativeSpec.lang` either, so the engine already renders English furniture).
   // Inventing one here would put a French qualifier under an English "Source:".
-  const verdict = validateSourcePolicy(run.sources?.data, {
+  const declared = run.sources?.data;
+  const verdict = validateSourcePolicy(declared, {
     mode: run.sources?.mode,
     carriesFactualData: true,
   });
-  if (!verdict.ok) return toVerbResult(verdict);
+  // THE REFUSAL CARRIES THE QUESTION. `sourceQuestion` is the ONE targeted question the flow owes
+  // a journalist whose source cannot be determined (lib/source/policy.ts) — the kind first, then
+  // the first required field still missing — and it had no caller at all: the refusal named what
+  // was missing without ever asking for it, which is the worst order for those two events.
+  //
+  // This is not the question's proper PLACE. That is before the run exists: `sources` is written
+  // once, by initRun's declaration, and no later step can add it — so the CADRAGE beat composing
+  // that declaration is where the question belongs, and it lives in lib/host/**. Until it does,
+  // the refusal at least ends with something answerable rather than only with a diagnosis.
+  //
+  // `null` when nothing it can ask about is wrong (demo data in a real run: the declaration is
+  // complete and the fix is a decision, not an answer). A refusal is not padded with a question
+  // that does not fit it.
+  if (!verdict.ok) {
+    const question = sourceQuestion(declared);
+    return toVerbResult(
+      question
+        ? sourceFail(verdict.code, `${verdict.message} — ${question}`)
+        : verdict,
+    );
+  }
   // `attribution`, never `credit`: ChartFrame renders `{sourceLabel(lang)} {source.name}` itself
   // (skills/chart-native/src/core/ChartFrame.tsx), so handing it the prefixed credit would print
   // "Source : Source : OFS". The prose qualifier and the synthetic notice are inside
