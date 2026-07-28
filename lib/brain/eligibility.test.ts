@@ -506,3 +506,93 @@ test("real KB: radar and parallel are legal once the data carries >= 3 axes", ()
   expect(ok.some((c) => c.id === "radar")).toBe(true);
   expect(ok.some((c) => c.id === "parallel")).toBe(true);
 });
+
+// A17: facts.series === rowCount always (facts.ts), so any sheet checking BOTH `maxSeries` and
+// `maxCategories` was comparing the SAME number (rows) against two different ceilings — one of
+// the two checks was a decoy that could never fire on its own terms. grouped-bar/stacked-bar/
+// marimekko are exactly the CSV shape chart-selection.md documents as "first column = category
+// [the ROWS], every following numeric column = a series [the COLUMNS]" — so on a real wide CSV
+// for these three, "series" means numeric-column count (facts.points), not row count. A dataset
+// with few series (2 columns) and many categories (10 rows) used to be excluded with "stays
+// readable up to 3 series, and the data has 10" — true about the ROW count, false about the
+// actual series count, and naming the wrong ceiling to the journalist reading it.
+test("real KB: grouped-bar counts its series from the numeric columns, not the row count", () => {
+  const manyCategoriesFewSeries = deriveFacts({
+    columns: ["region", "2019", "2024"], // 2 series columns
+    numericColumns: ["2019", "2024"],
+    rowCount: 10, // 10 categories — legal (<= maxCategories: 6 is NOT satisfied, see below)
+  });
+  // 10 rows also breaks maxCategories (<=6), so isolate the series axis: 6 categories, 2 series.
+  const sixCategoriesTwoSeries = deriveFacts({
+    columns: ["region", "2019", "2024"],
+    numericColumns: ["2019", "2024"],
+    rowCount: 6,
+  });
+  const { eligible: ok } = eligible({
+    facts: sixCategoriesTwoSeries,
+    channel: "article-web",
+  });
+  expect(ok.some((c) => c.id === "grouped-bar")).toBe(true);
+
+  // Before the fix this used to read the ROW count (10) as the series count and exclude with
+  // "stays readable up to 3 series, and the data has 10" — a true statement about rows, and a
+  // false one about series (there are only 2). Now: excluded for the real reason (too many
+  // categories), never a phantom series violation.
+  const { excluded } = eligible({
+    facts: manyCategoriesFewSeries,
+    channel: "article-web",
+  });
+  const why = excluded.find((e) => e.id === "grouped-bar");
+  expect(why?.reason).toMatch(/categories/);
+  expect(why?.reason).not.toMatch(/series/);
+});
+
+test("real KB: grouped-bar refuses too many series (numeric columns), naming the real count", () => {
+  const fourSeriesFewCategories = deriveFacts({
+    columns: ["region", "2019", "2020", "2021", "2022"], // 4 series columns > maxSeries: 3
+    numericColumns: ["2019", "2020", "2021", "2022"],
+    rowCount: 4, // well under maxCategories: 6
+  });
+  const { eligible: ok, excluded } = eligible({
+    facts: fourSeriesFewCategories,
+    channel: "article-web",
+  });
+  expect(ok.some((c) => c.id === "grouped-bar")).toBe(false);
+  const why = excluded.find((e) => e.id === "grouped-bar");
+  expect(why?.reason).toMatch(/series/);
+  expect(why?.reason).toContain("4");
+});
+
+test("real KB: stacked-bar shows the same fix (maxCategories: 8, maxSeries: 5)", () => {
+  const sevenCategoriesTwoSeries = deriveFacts({
+    columns: ["year", "hydro", "wind"],
+    numericColumns: ["hydro", "wind"],
+    rowCount: 7, // > maxCategories: 8? no — 7 <= 8, legal; picks a value distinct from grouped-bar's cap
+  });
+  const { eligible: ok } = eligible({
+    facts: sevenCategoriesTwoSeries,
+    channel: "article-web",
+  });
+  expect(ok.some((c) => c.id === "stacked-bar")).toBe(true);
+});
+
+// marimekko is `deferred` (Family B) in chart-native's own catalogue, so it never reaches
+// renderableSheets() today — same reasoning as the radar/parallel test above: prove the
+// mechanics now with a direct pairing, correct the day it goes live.
+test("real KB: marimekko (deferred) also counts its series from numeric columns, not rows", () => {
+  const marimekko = realPair("marimekko");
+  expect(marimekko.sheet.limits).toEqual({ maxSeries: 5, maxCategories: 6 });
+
+  const manyCategoriesFewSeries = deriveFacts({
+    columns: ["segment", "urban", "rural"],
+    numericColumns: ["urban", "rural"],
+    rowCount: 10, // > maxCategories: 6
+  });
+  const { excluded } = eligible(
+    { facts: manyCategoriesFewSeries, channel: "article-web" },
+    [marimekko],
+  );
+  const why = excluded.find((e) => e.id === "marimekko");
+  expect(why?.reason).toMatch(/categories/);
+  expect(why?.reason).not.toMatch(/series/);
+});
