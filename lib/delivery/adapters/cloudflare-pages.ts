@@ -136,8 +136,11 @@ export function assertEmbedProject(name: string): string {
 
 // Whether an embed deploy is even POSSIBLE here. The caller refuses up front rather than
 // half-deploying or handing back a placeholder URL that fakes "delivered".
+// `env` is REQUIRED, not defaulted to process.env: the contract's I5 says an adapter never
+// reads ambient state, and a default that reaches for it is the door through which a publish
+// starts depending on which shell launched it. The caller resolves the environment it means.
 export function embedTokenConfigured(
-  env: Record<string, string | undefined> = process.env,
+  env: Record<string, string | undefined>,
 ): boolean {
   return (
     (env.CLOUDFLARE_API_TOKEN ?? "").trim() !== "" &&
