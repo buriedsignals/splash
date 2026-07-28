@@ -16,6 +16,7 @@ import { capabilityReadiness } from "../newsroom/readiness";
 import { decorEnv, type Decor } from "../newsroom/decor";
 import {
   chosenOption,
+  isHostedArtifact,
   stalenessOf,
   type RunElement,
   type RunManifest,
@@ -76,7 +77,15 @@ export function requestDelivery(
     // The DESTINATION, not just the format: a print deliverable is a file whatever its format
     // (lib/delivery/routing.ts). Absent on every element written before issue #1, and the
     // routing then answers exactly as it did.
-    requested = defaultDestinationsFor(format, ready, el.deliverable?.destination);
+    // WHAT THE ARTIFACT IS, alongside what the format is: a Datawrapper interactive is already
+    // published, so the default is the hand-over of its address rather than a package of bytes
+    // nobody owns. Resolved here, where the manifest is, and passed to a pure router as a fact.
+    requested = defaultDestinationsFor(
+      format,
+      ready,
+      el.deliverable?.destination,
+      { alreadyPublished: isHostedArtifact(el.artifact) },
+    );
   }
 
   // `delivered` is carried forward untouched: a destination that already landed for an older

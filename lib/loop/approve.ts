@@ -35,12 +35,11 @@ import type {
   TasteRiskSignal,
 } from "../verify/types";
 import {
+  approvalSubjectOf,
   approveElement,
   chosenOption,
-  fileArtifact,
   isHostedArtifact,
   provenanceHash,
-  type FileArtifactRecord,
   type RunElement,
   type RunManifest,
 } from "./manifest";
@@ -74,7 +73,10 @@ export function elementSignoffPath(runDir: string, id: string): string {
 // no machine graded, written into the document the human puts their name to.
 type SignoffDocument = {
   elementId: string;
+  /** The SUBJECT: an owned artifact's sha256, or a published embed's hosted binding. */
   artifactSha256: string;
+  /** The published address the binding is over — hosted deliveries only. */
+  artifactUrl?: string;
   approvedProvenanceHash: string;
   actorLabel: string;
   at: string;
@@ -111,21 +113,27 @@ export function approve(
 ): VerbResult<RunElement> {
   if (!el.artifact)
     return fail("invalid-request", "approve: nothing produced to approve yet");
-  // THE WHOLE CEREMONY IS OVER BYTES. Every record this step writes binds to `artifactSha256` —
-  // the override, the sign-off document, and the Ed25519 signature an editor makes with
-  // sign-artifact.mjs — and a HOSTED delivery has no bytes at all. There is nothing to sign and
-  // nothing an approval could be pinned to that a re-publish would not silently change under it.
+  // THE WHOLE CEREMONY IS OVER ONE SUBJECT. Every record this step writes binds to
+  // `artifactSha256` — the override, the sign-off document, and the Ed25519 signature an editor
+  // makes with sign-artifact.mjs — and for a file that subject is its own bytes.
   //
-  // It is also unreachable by construction: approveElement refuses an element whose preview does
-  // not cover it, previewCovers answers `false` for every hosted artifact, and previewStep refuses
-  // to write one. This refusal exists so the reason is NAMED rather than arriving as a generic
-  // "not previewed" three modules away.
-  const file = fileArtifact(el.artifact);
-  if (!file)
+  // A HOSTED delivery has no bytes, so its subject is the HOSTED BINDING: the address the capture
+  // landed on, hashed together with the still it took there (lib/verify/hosted.ts). That module
+  // records why the address alone would not do, and the measured Datawrapper property that makes
+  // the address leg load-bearing — a re-publish returns a NEW versioned URL and the recorded one
+  // keeps serving what it served, so an approval of .../1/ can never come to cover .../2/.
+  //
+  // Resolved through approvalSubjectOf, the same resolver previewCovers and approveElement use:
+  // an approval that bound to one subject while the gate cleared on another is the single failure
+  // this whole chain exists to make impossible.
+  const subject = approvalSubjectOf(el);
+  if (!subject.sha256)
     return fail(
       "invalid-request",
-      `approve: this element was delivered as a HOSTED embed (${isHostedArtifact(el.artifact) ? el.artifact.url : "no url"}) — ` +
-        `an approval is a record over the artifact's own bytes, and the newsroom owns none of it`,
+      isHostedArtifact(el.artifact)
+        ? `approve: this element was delivered as a HOSTED embed (${el.artifact.url}) and nothing has been captured of it — ` +
+          `an approval binds to the live embed as it was measured, so capture and review it first`
+        : "approve: this element's artifact records no subject to bind an approval to",
     );
   const review = el.review as ReviewRecord | undefined;
   const overrides = ceremony.overrides ?? [];
@@ -161,7 +169,7 @@ export function approve(
   }
 
   const current = provenanceHash(run, el);
-  const signoff = verifySignoff(el, file, ceremony, policy);
+  const signoff = verifySignoff(el, subject.sha256, ceremony, policy);
   if (!signoff.ok) return signoff;
 
   // The override records, completed by the spine. #11 asks for "finding ID, reason, timestamp,
@@ -173,7 +181,7 @@ export function approve(
     reason: o.reason.trim(),
     actorLabel,
     at,
-    artifactSha256: file.sha256,
+    artifactSha256: subject.sha256,
     provenanceHash: current,
   }));
   const overriddenIds = new Set(recorded.map((o) => o.findingId));
@@ -213,13 +221,17 @@ export function approve(
     outcome.element.review as ReviewRecord | undefined,
     {
       format: chosenOption(el)?.format ?? "static",
-      artifactSha256: file.sha256,
+      artifactSha256: subject.sha256,
       provenanceHash: current,
     },
   );
   const document: SignoffDocument = {
     elementId: el.id,
-    artifactSha256: file.sha256,
+    artifactSha256: subject.sha256,
+    // WHICH published version was signed for, when the subject is a hosted binding. The digest
+    // above cannot be re-derived by a reader (it is over a still nobody kept), so without the
+    // address the document would name a signed thing nobody could identify.
+    ...(subject.url ? { artifactUrl: subject.url } : {}),
     approvedProvenanceHash: current,
     actorLabel: actorLabel || "unnamed",
     at,
@@ -250,9 +262,10 @@ export function approve(
 // newsroom that has not declared signers approves by name alone.
 function verifySignoff(
   el: RunElement,
-  // The FILE record, resolved by the caller — this verifier signs bytes, and a hosted delivery is
-  // refused before it is ever reached.
-  file: FileArtifactRecord,
+  // The SUBJECT, resolved by the caller: an owned artifact's sha256, or a published embed's
+  // hosted binding. Both are a hex sha256 and both go through the SAME payload and the same
+  // verifier — nothing about how an editor signs changes, only what the hash is of.
+  subjectSha256: string,
   ceremony: ApprovalCeremony,
   policy: SigningPolicy,
 ): VerbResult<null> {
@@ -275,18 +288,21 @@ function verifySignoff(
       "invalid-request",
       `approve: "${given.signerId}" is required but has no registered public key in this newsroom's profile`,
     );
-  // Over the ARTIFACT's bytes, through the existing verifier: the same payload the editor's
-  // own signing script produces, so nothing about how an editor signs has to change.
+  // Over the SUBJECT, through the existing verifier: the same payload the editor's own signing
+  // script produces, so nothing about how an editor signs has to change. For a published embed
+  // the editor signs the binding the gate printed (`sign-artifact.mjs --digest`), and a
+  // substituted digest simply fails here — the verifier is handed the run's own subject, never
+  // the operator's.
   const valid = verifyEditorialSignature({
     proposalId: el.id,
-    sha256hex: file.sha256,
+    sha256hex: subjectSha256,
     signature: given.signature,
     signer,
   });
   if (!valid)
     return fail(
       "invalid-request",
-      `approve: the signature from "${given.signerId}" does not verify against this artifact's bytes — it may have been made for another artifact, or for an earlier version of this one`,
+      `approve: the signature from "${given.signerId}" does not verify against this artifact — it may have been made for another artifact, or for an earlier version of this one`,
     );
   return ok(null);
 }

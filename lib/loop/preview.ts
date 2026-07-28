@@ -8,8 +8,9 @@
 // can only be written here, by the one step that resolves the deliverable from the manifest.
 //
 // Four things this step guarantees, each of them a refusal when it fails:
-//   1. the file shown is the artifact the RUN produced (never a path an argument named);
-//   2. its bytes are still the bytes the manifest recorded;
+//   1. the deliverable shown is the one the RUN produced (never a path an argument named);
+//   2. it is still what the manifest recorded — the same bytes for a file, the same measured
+//      published version for an embed (see the hosted branch below);
 //   3. it is the pinned format's OWN deliverable — a png cannot preview an interactive;
 //   4. the presentation actually happened, and how it happened is recorded truthfully.
 //
@@ -22,6 +23,7 @@ import { fail, ok, type VerbResult } from "../core/verbs";
 import { isDeliverableOf } from "../verify/preview";
 import type { PreviewRecord, ReviewRecord } from "../verify/types";
 import {
+  approvalSubjectOf,
   chosenOption,
   fileArtifact,
   isHostedArtifact,
@@ -64,6 +66,8 @@ function platformOpener(): string[] | null {
  * reason is written HERE, from the signal that caused it, and is never supplied by a caller.
  */
 export function present(
+  // An absolute path, or the https address of a published embed — both are things the platform's
+  // opener takes as its single argument, and a hosted delivery has nothing else to show.
   absolutePath: string,
   env: Record<string, string | undefined>,
 ): Presentation {
@@ -135,25 +139,54 @@ export function previewStep(
       "preview: this artifact has not been reviewed yet — the preview is recorded on the review of the artifact it presents",
     );
 
-  // A HOSTED DELIVERY HAS NO BYTES TO SHOW, and this step's whole value is that the four things
-  // it guarantees are true of the exact bytes recorded (see this module's header). None of them
-  // can be said about a Datawrapper embed: the run owns no file, so there is nothing to open,
-  // nothing to re-hash, and no genre to check the file against.
+  const format = chosenOption(el)?.format ?? "static";
+
+  // A HOSTED DELIVERY IS PRESENTED AT ITS ADDRESS. The four guarantees at the top of this module
+  // survive the move intact — only what they are said ABOUT changes:
+  //   1. the address shown is the one the RUN recorded, read from the manifest;
+  //   2. the subject is the HOSTED BINDING, and it comes off the capture that measured the live
+  //      embed — so "these bytes" becomes "this published version, rendering as it did when it
+  //      was measured" (lib/verify/hosted.ts);
+  //   3. the genre gate still runs: an address is the deliverable of an embed-genre element and
+  //      of nothing else (isDeliverableOf), so a URL cannot stand in for a static png;
+  //   4. the presentation is recorded truthfully by the same `present`, which opens a URL exactly
+  //      as it opens a file.
   //
-  // Refused by NAME, with the URL in the sentence, rather than left to read an absent `path` and
-  // present `<runDir>/undefined`. It is a dead end for now, and deliberately a loud one: making
-  // the verification chain able to travel to a published URL (fetch it, capture it, hash what it
-  // served) is its own tranche, and a quiet half-answer here would let an unlooked-at embed reach
-  // the approval gate looking exactly like a previewed file.
+  // What it cannot do is re-hash the bytes, because there are none — so the ORDER is load-bearing
+  // in a way it is not for a file: with nothing captured there is no binding, and the honest
+  // answer is a refusal naming the address rather than a preview of an unmeasured embed.
+  if (isHostedArtifact(el.artifact)) {
+    const subject = approvalSubjectOf(el);
+    if (!subject.sha256)
+      return fail(
+        "invalid-request",
+        `preview: this element was delivered as a HOSTED embed (${el.artifact.url}) and nothing has been captured of it — ` +
+          `there is no measurement of the live embed to present, so capture it first`,
+      );
+    // The address the capture LANDED on, never the recorded one when they differ: what the
+    // journalist is shown has to be the thing the approval will bind to.
+    const shown = subject.url ?? el.artifact.url;
+    if (!isDeliverableOf(format, shown))
+      return fail(
+        "invalid-request",
+        `preview: ${shown} is not the deliverable of a "${format}" element — presenting it would show something other than what would be published`,
+      );
+    const presentation = present(shown, opts.env ?? process.env);
+    const preview: PreviewRecord = {
+      deliverablePath: shown,
+      deliverableSha256: subject.sha256,
+      presentedAt: new Date().toISOString(),
+      ...presentation,
+    };
+    return ok({ ...el, review: { ...review, preview } });
+  }
+
   const file = fileArtifact(el.artifact);
   if (!file)
     return fail(
       "invalid-request",
-      `preview: this element was delivered as a HOSTED embed (${isHostedArtifact(el.artifact) ? el.artifact.url : "no url"}) — ` +
-        `the newsroom owns no file of it, so there is nothing on disk to present; open the URL to look at it`,
+      "preview: this element's artifact is neither a file this run owns nor a published embed",
     );
-
-  const format = chosenOption(el)?.format ?? "static";
   const absolutePath = resolve(join(runDir, file.path));
 
   // The genre gate, applied BEFORE anything is shown: a png standing in for an interactive is

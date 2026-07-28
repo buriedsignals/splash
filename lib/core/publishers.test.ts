@@ -18,6 +18,7 @@ function stub(id: string, implemented = true): Publisher {
     id,
     kind: "package",
     serves: [...VISUAL_FORMATS],
+    sources: ["file"],
     implemented,
     publish: async () =>
       ok({

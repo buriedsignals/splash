@@ -17,9 +17,11 @@ import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { isHostedUrl } from "../core/contract";
 import { isSafeId, unsafeIdMessage } from "../core/id-safety";
 import type { Channel, VisualFormat } from "../core/vocabulary";
 import { fail, ok, type VerbResult } from "../core/verbs/types";
+import { hostedBindingDigest } from "./hosted";
 import { pngSize } from "./png";
 import { destinationIdFor, resolveTargets } from "./viewport";
 import type {
@@ -106,6 +108,14 @@ export const ROOT_SELECTORS = [
 //     FALLBACK for those three, not their answer — a capture of a chart-native interactive
 //     records `titleSource: "[data-splash-title]"`.
 //
+//   - a PUBLISHED Datawrapper embed marks its headline as an `h3` inside a `[class*="headline"]`
+//     block and carries no h1, no h2, and no `svg[role="img"][aria-label]` at all (probed live on
+//     2026-07-28 against datawrapper.dwcdn.net/XkA4o/2/: `document.querySelector("h3")` returned
+//     the commissioned headline and every rung above it returned null). Without the h3 rung a
+//     hosted capture records `titleSource: "none"` and the divergence detector has nothing to
+//     read — the same silence a static png gets, on a deliverable that does have a DOM. The rung
+//     is LAST, so no engine that marks its title or paints an h1/h2 changes answer.
+//
 // It reads the accessible NAME, not the pixels. A title present in the accessible tree but
 // visually clipped is a FURNITURE question, and furnitureChecks already measures that.
 export const TITLE_SOURCES = [
@@ -113,6 +123,7 @@ export const TITLE_SOURCES = [
   { selector: "svg[role='img'][aria-label]", read: "aria-label" },
   { selector: "h1", read: "text" },
   { selector: "h2", read: "text" },
+  { selector: "h3", read: "text" },
 ] as const;
 
 // A candidate whose text is longer than this is not a headline — it is a section, and
@@ -123,7 +134,13 @@ export const TITLE_SOURCES = [
 export const MAX_RENDERED_TITLE_CHARS = 300;
 
 export type CapturePayload = {
-  artifactPath: string;
+  /** The deliverable this run OWNS, on disk. Exactly one of the two is given. */
+  artifactPath?: string;
+  /** The deliverable already PUBLISHED, which the run owns no file of — a Datawrapper interactive
+   *  chart or map. Capture opens the address instead of a file: everything downstream of capture
+   *  (the findings, the rendered-title read, the size checks) then has something real to measure,
+   *  which is the whole difference between verifying an embed and recording that it could not be. */
+  artifactUrl?: string;
   format: VisualFormat;
   channel: Channel;
   outDir: string;
@@ -206,12 +223,16 @@ function integerScaleOf(
 async function captureStatic(
   p: CapturePayload,
   target: CaptureTarget,
+  // The path, resolved by the caller. `p.artifactPath` became optional when a deliverable could
+  // be an address instead of a file, and a `!` at each of the five reads below would be five
+  // places to get it wrong.
+  artifactPath: string,
 ): Promise<VerbResult<CaptureResult>> {
-  const size = pngSize(p.artifactPath);
+  const size = pngSize(artifactPath);
   if (!size)
     return fail(
       "engine-failed",
-      `capture: ${p.artifactPath} is not a readable png — a static deliverable's size cannot be measured`,
+      `capture: ${artifactPath} is not a readable png — a static deliverable's size cannot be measured`,
     );
   const heightPolicy: HeightPolicy = p.heightPolicy ?? "pinned";
   const scale = integerScaleOf(size, target.cssViewport, heightPolicy);
@@ -221,12 +242,12 @@ async function captureStatic(
     width: Math.round(size.width / scale),
     height: Math.round(size.height / scale),
   };
-  const digest = hashFile(p.artifactPath);
+  const digest = hashFile(artifactPath);
   const record: CaptureRecord = {
     breakpoint: target.breakpoint,
     // A static deliverable IS its own review image: re-screenshotting it would introduce a
     // second artifact to keep honest, and every hash below would then describe the copy.
-    path: p.artifactPath,
+    path: artifactPath,
     sha256: digest,
     cssViewport: target.cssViewport,
     deviceScaleFactor: scale,
@@ -234,7 +255,7 @@ async function captureStatic(
     rootSelector: "image",
     documentScroll: { width: rootBox.width, height: rootBox.height },
     artifactSha256: digest,
-    artifactPath: p.artifactPath,
+    artifactPath,
     destinationId: destinationIdFor(p.channel, p.destination),
     channel: p.channel,
     format: p.format,
@@ -523,9 +544,21 @@ function furnitureChecks(target: CaptureTarget, m: Measured): CaptureCheck[] {
   return checks;
 }
 
+// WHERE the pixels come from, resolved once by capture() and read by captureHtml.
+//
+//   file   — a deliverable on disk. `subject` is its own sha256: every downstream record binds to
+//            the bytes, and the bytes are here to be hashed.
+//   hosted — a published address. There are no bytes, so `subject` cannot be known until the
+//            primary still has been taken; it is stamped onto every record afterwards, from the
+//            hosted binding (lib/verify/hosted.ts), which is the whole reason that module exists.
+type CaptureSource =
+  | { kind: "file"; url: string; path: string; subject: string }
+  | { kind: "hosted"; url: string };
+
 async function captureHtml(
   p: CapturePayload,
   targets: CaptureTarget[],
+  source: CaptureSource,
 ): Promise<VerbResult<CaptureResult>> {
   // Imported lazily so a machine with no browser fails at CAPTURE time, with a message
   // naming what is missing — not at module load, which would take the whole verify layer
@@ -541,8 +574,7 @@ async function captureHtml(
   }
 
   const dir = captureDir(p.outDir, p.id);
-  const artifactSha256 = hashFile(p.artifactPath);
-  const url = fileUrlOf(p.artifactPath);
+  const url = source.url;
   const settleMs = p.settleMs ?? DEFAULT_SETTLE_MS;
   const furniture = (p.furniture ?? []).map((f) => ({
     role: f.role as string,
@@ -561,7 +593,10 @@ async function captureHtml(
       try {
         const response = await page.goto(url, { waitUntil: "load" });
         // A file:// navigation returns a null response; anything else must have succeeded,
-        // or the "capture" would be of a browser error page.
+        // or the "capture" would be of a browser error page. For a PUBLISHED embed this is the
+        // whole liveness check: a 404 from a chart that was deleted, or a 5xx from the CDN, is a
+        // real failure to fix — the element stays on `capture` — and never a still of an error
+        // page that would then be reviewed as if it were the visual.
         if (response && !response.ok())
           return fail(
             "engine-failed",
@@ -601,8 +636,14 @@ async function captureHtml(
           rootBox: m.rootBox,
           rootSelector: m.rootSelector,
           documentScroll: m.documentScroll,
-          artifactSha256,
-          artifactPath: p.artifactPath,
+          // Provisional for a hosted source — the binding needs the primary still, which may not
+          // have been taken yet. Stamped for real below, before anything can read it.
+          artifactSha256: source.kind === "file" ? source.subject : "",
+          ...(source.kind === "file"
+            ? { artifactPath: source.path }
+            : // The address the browser LANDED on, not the one it was handed: a hosted engine
+              // whose recorded URL redirects must bind to what was actually measured.
+              { artifactUrl: page.url() }),
           destinationId: destinationIdFor(p.channel, p.destination),
           channel: p.channel,
           format: p.format,
@@ -629,6 +670,24 @@ async function captureHtml(
       } finally {
         await page.close();
       }
+    }
+    // THE BINDING, once the pixels exist. Computed from the PRIMARY still — the container the
+    // deliverable actually publishes into — and stamped on every record of this capture, so a
+    // hosted capture reads exactly like a file one: every image names the same subject, and every
+    // downstream record (the preview, the override, the sign-off) binds to that single value.
+    if (source.kind === "hosted") {
+      const primary =
+        images.find((i) => i.breakpoint === "primary") ?? images[0];
+      if (!primary)
+        return fail(
+          "engine-failed",
+          `capture: nothing was captured at ${url} — there is no still to bind an approval to`,
+        );
+      const digest = hostedBindingDigest(primary.artifactUrl!, primary.sha256);
+      return ok({
+        images: images.map((i) => ({ ...i, artifactSha256: digest })),
+        checks,
+      });
     }
     return ok({ images, checks });
   } catch (e) {
@@ -657,10 +716,15 @@ export async function capture(
   try {
     // Path safety BEFORE any resolve/mkdir — `id` becomes a directory name under outDir.
     if (!isSafeId(p.id)) return fail("invalid-request", unsafeIdMessage(p.id));
-    if (!existsSync(p.artifactPath))
+
+    // WHICH DELIVERABLE, and there is exactly one. Both would leave the record's subject
+    // ambiguous; neither leaves nothing to open. Refused before a browser is launched.
+    const hasPath = typeof p.artifactPath === "string" && p.artifactPath !== "";
+    const hasUrl = typeof p.artifactUrl === "string" && p.artifactUrl !== "";
+    if (hasPath === hasUrl)
       return fail(
-        "engine-failed",
-        `capture: no deliverable at ${p.artifactPath}`,
+        "invalid-request",
+        "capture: name the deliverable ONCE — artifactPath for a file this run owns, artifactUrl for a published embed it does not",
       );
 
     // Deferred, and deferred LOUDLY. Extracting a frame needs ffmpeg, which lives in the
@@ -679,9 +743,45 @@ export async function capture(
       return fail("invalid-request", (e as Error).message);
     }
 
-    if (p.format === "static") return await captureStatic(p, targets[0]!);
+    if (hasUrl) {
+      // A STATIC deliverable is measured off its OWN pixel box — its IHDR, at a scale an integer
+      // explains (captureStatic). There is no such thing to read at an address, and a screenshot
+      // of a page showing an image is not the image. Datawrapper's static form is an owned PNG
+      // anyway; only its interactive form is hosted, so this refusal names a payload nobody can
+      // build from a real delivery rather than a case that exists and is unhandled.
+      if (p.format === "static")
+        return fail(
+          "invalid-request",
+          "capture: a static deliverable is measured off its own png bytes, not at a published address — give artifactPath",
+        );
+      // The SHAPE of the address, with the contract's own predicate — never a second https test:
+      // the same rule produce.ts writes the record under and assertInvariants keeps it under.
+      if (!isHostedUrl(p.artifactUrl))
+        return fail(
+          "invalid-request",
+          `capture: ${JSON.stringify(p.artifactUrl)} is not a resolvable https address — there is nothing to open`,
+        );
+      return await captureHtml(p, targets, {
+        kind: "hosted",
+        url: p.artifactUrl!,
+      });
+    }
 
-    return await captureHtml(p, targets);
+    if (!existsSync(p.artifactPath!))
+      return fail(
+        "engine-failed",
+        `capture: no deliverable at ${p.artifactPath}`,
+      );
+
+    if (p.format === "static")
+      return await captureStatic(p, targets[0]!, p.artifactPath!);
+
+    return await captureHtml(p, targets, {
+      kind: "file",
+      url: fileUrlOf(p.artifactPath!),
+      path: p.artifactPath!,
+      subject: hashFile(p.artifactPath!),
+    });
   } catch (e) {
     return fail("engine-failed", (e as Error)?.message ?? String(e));
   }

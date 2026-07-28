@@ -240,6 +240,7 @@ describe("deliver", () => {
       id: TEST_CAP_ID,
       kind: "package",
       serves: [...VISUAL_FORMATS],
+      sources: ["file"],
       implemented: true,
       async publish(req) {
         return ok({
@@ -305,6 +306,7 @@ describe("deliver", () => {
       id: "embed-s3",
       kind: "hosted",
       serves: [...VISUAL_FORMATS],
+      sources: ["file"],
       implemented: true,
       async publish(req) {
         return ok({
@@ -665,6 +667,7 @@ describe("a destination that cannot serve the artifact's format", () => {
       id: HOSTED_ID,
       kind: "hosted",
       serves: ["interactive", "scrolly"],
+      sources: ["file"],
       implemented: true,
       async publish() {
         entered += 1;
@@ -712,6 +715,7 @@ describe("a destination that cannot serve the artifact's format", () => {
       id: OPEN_ID,
       kind: "hosted",
       serves: [...VISUAL_FORMATS],
+      sources: ["file"],
       implemented: true,
       async publish() {
         return ok({
@@ -761,6 +765,7 @@ describe("a delivery with no embed code", () => {
       id: FILE_ID,
       kind: "package",
       serves: [...VISUAL_FORMATS],
+      sources: ["file"],
       implemented: true,
       async publish() {
         return ok({

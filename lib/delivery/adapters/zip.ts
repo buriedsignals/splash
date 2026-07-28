@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { zipSync, strToU8, type Zippable } from "fflate";
 import {
+  artifactFileOf,
   artifactMediaFor,
   deliveryGenreFor,
   type DeliveryMetadata,
@@ -146,13 +147,15 @@ async function publish(
     snippetValue = snippet.value;
   }
 
+  const file = artifactFileOf(req, "zip");
+  if (!file.ok) return file;
   let artifact: Uint8Array;
   try {
-    artifact = new Uint8Array(readFileSync(req.artifactPath));
+    artifact = new Uint8Array(readFileSync(file.value));
   } catch (e) {
     return fail(
       "engine-failed",
-      `zip: cannot read the artifact ${req.artifactPath}: ${(e as Error).message}`,
+      `zip: cannot read the artifact ${file.value}: ${(e as Error).message}`,
     );
   }
 
@@ -229,6 +232,9 @@ export const zipPublisher: Publisher = {
   kind: "package",
   // The universal fallback carries anything: it publishes to disk.
   serves: [...VISUAL_FORMATS],
+  // BYTES. This adapter moves the deliverable itself, so it needs a file the run owns; a
+  // Datawrapper embed is already published elsewhere and there is nothing here to move.
+  sources: ["file"],
   implemented: true,
   publish,
 };

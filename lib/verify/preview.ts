@@ -11,7 +11,8 @@
 //   1. the preview must carry the CURRENT artifact's bytes;
 //   2. the file shown must be the pinned format's OWN deliverable — a png cannot preview an
 //      interactive, which is the substitution the issue calls out by name.
-import { IMAGE_EXTENSIONS } from "../core/contract";
+import { IMAGE_EXTENSIONS, isHostedUrl } from "../core/contract";
+import { deliveryGenreFor } from "../core/publishers";
 import type { VisualFormat } from "../core/vocabulary";
 import type { PreviewRecord } from "./types";
 
@@ -28,8 +29,15 @@ export type PreviewVerdict =
     };
 
 /** Does this path look like the deliverable of that format? Extension-level, on purpose:
- *  it is the one property that is true of every engine's output and cannot be argued with. */
+ *  it is the one property that is true of every engine's output and cannot be argued with.
+ *
+ *  A PUBLISHED EMBED is the one deliverable with no extension to read, because it has no file:
+ *  the address IS the artifact. What makes it checkable all the same is the genre — an embed is
+ *  what `interactive` and `scrolly` are handed over as (lib/core/publishers.ts), and a `static` or
+ *  `video` element handing over a URL is exactly the substitution this function exists to refuse.
+ *  So the URL branch asks the genre the same question the extension branch asks the file. */
 export function isDeliverableOf(format: VisualFormat, path: string): boolean {
+  if (isHostedUrl(path)) return deliveryGenreFor(format) === "embed";
   const lower = path.toLowerCase();
   if (format === "static")
     return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));

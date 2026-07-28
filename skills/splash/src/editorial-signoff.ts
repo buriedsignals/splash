@@ -1,6 +1,8 @@
 import {
   createHash,
+  createPrivateKey,
   createPublicKey,
+  sign as cryptoSign,
   verify as cryptoVerify,
   type KeyObject,
 } from "node:crypto";
@@ -27,6 +29,38 @@ export function editorialPayload(
 
 export function sha256Hex(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
+}
+
+/**
+ * Sign a SUBJECT — the sha256 an approval binds to — with an editor's private key.
+ *
+ * It lives HERE, beside the payload it signs and the verifier that checks it, rather than in
+ * scripts/sign-artifact.mjs where the signing half used to live alone: the script is a CLI over
+ * this, so the editor's own tool and the gate can never sign and verify two different strings.
+ *
+ * The subject is a FILE's sha256 for an owned artifact, and the HOSTED BINDING for a published
+ * embed the newsroom owns no bytes of (lib/verify/hosted.ts) — the two are the same shape and take
+ * the same payload, which is why a hosted delivery needed no second signing scheme.
+ */
+export function signEditorialSubject(
+  sha256hex: string,
+  proposalId: string,
+  privatePem: string,
+): { sha256: string; signature: string } {
+  const sha256 = sha256hex.trim().toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(sha256))
+    throw new Error(`not a sha256 digest: ${JSON.stringify(sha256hex)}`);
+  const key = createPrivateKey({
+    key: privatePem,
+    format: "pem",
+    type: "pkcs8",
+  });
+  const signature = cryptoSign(
+    null,
+    Buffer.from(editorialPayload(proposalId, sha256), "utf8"),
+    key,
+  ).toString("base64");
+  return { sha256, signature };
 }
 
 /** Import a base64 SPKI DER Ed25519 public key, or null if it is not a valid importable key. */

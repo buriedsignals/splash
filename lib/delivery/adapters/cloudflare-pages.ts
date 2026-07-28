@@ -22,6 +22,7 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { extname, join, relative } from "node:path";
 import {
+  artifactFileOf,
   artifactMediaFor,
   DEFAULT_NETWORK_TIMEOUT_MS,
   DEFAULT_UPLOAD_TIMEOUT_MS,
@@ -512,13 +513,15 @@ async function publishToPages(
   // A random temp dir, never derived from req.id — the branch slug above is what carries the
   // (already-sanitized) id into the protocol, so there is no path built from req.id here for
   // id-safety to guard.
+  const file = artifactFileOf(req, "cloudflare");
+  if (!file.ok) return file;
   let tmpBase: string | undefined;
   let stageDir: string;
   let stagedName: string;
   try {
     tmpBase = mkdtempSync(join(tmpdir(), "splash-embed-"));
     stageDir = join(tmpBase, "site");
-    stagedName = stageArtifact(req.artifactPath, stageDir, req.format);
+    stagedName = stageArtifact(file.value, stageDir, req.format);
   } catch (e) {
     // A half-created temp dir from a failed stage must not linger either.
     if (tmpBase) {
@@ -530,7 +533,7 @@ async function publishToPages(
     }
     return fail(
       "engine-failed",
-      `cloudflare: cannot stage ${req.artifactPath} for upload: ${(e as Error).message}`,
+      `cloudflare: cannot stage ${file.value} for upload: ${(e as Error).message}`,
     );
   }
 
@@ -629,6 +632,9 @@ export const cloudflarePublisher: Publisher = {
   serves: VISUAL_FORMATS.filter(
     (f) => artifactMediaFor(f).contentType === "text/html",
   ),
+  // BYTES. This adapter moves the deliverable itself, so it needs a file the run owns; a
+  // Datawrapper embed is already published elsewhere and there is nothing here to move.
+  sources: ["file"],
   implemented: true,
   publish: publishToPages,
 };

@@ -7,7 +7,7 @@
 // lib/delivery/adapters/ and register themselves through lib/delivery/index.ts.
 //
 // See docs/superpowers/specs/2026-07-25-delivery-publishers-design.md §3.1.
-import type { VerbResult } from "./verbs/types";
+import { fail, ok, type VerbResult } from "./verbs/types";
 import type { VisualFormat } from "./vocabulary";
 
 /** What a destination needs to know about the visual. Assembled by lib/delivery/metadata.ts. */
@@ -24,8 +24,14 @@ export type DeliveryMetadata = {
 };
 
 export type PublishRequest = {
-  /** I7: a path, never bytes. */
-  artifactPath: string;
+  /** I7: a path, never bytes. Set when the run OWNS the deliverable — every publisher that ships
+   * bytes takes this. Exactly one of `artifactPath` / `artifactUrl` is set. */
+  artifactPath?: string;
+  /** Set when the deliverable is ALREADY PUBLISHED and the run owns no file of it — a Datawrapper
+   * interactive chart or map. There is nothing to upload: the hand-over is the address itself,
+   * plus the embed code a CMS pastes. Which destinations can take it is declared per adapter
+   * (`Publisher.sources`), and lib/loop/deliver.ts refuses the mismatch BEFORE the verb runs. */
+  artifactUrl?: string;
   /** Slug source; checked before any path resolution. */
   id: string;
   /** What produce.ts rendered `artifactPath` as — an adapter must serve it as THAT (filename +
@@ -72,6 +78,32 @@ export function artifactMediaFor(format: VisualFormat): {
   return { extension: "html", contentType: "text/html" };
 }
 
+/**
+ * The FILE a byte-shipping adapter was handed, or a typed refusal naming why there is none.
+ *
+ * `artifactPath` became optional when a deliverable could be an already-published address instead
+ * of a file (`artifactUrl`). Every adapter that reads bytes needs the path narrowed, and doing it
+ * with a `!` in four adapters is four places to get it wrong — and one of them reading
+ * `readFileSync(undefined)` is the exact silent failure the artifact record became a union to
+ * prevent. lib/loop/deliver.ts already refuses this mismatch through `Publisher.sources` before
+ * the verb runs; this is the adapter's own guard for a DIRECT caller, the same defence-in-depth
+ * zip.ts keeps its own id-safety check for.
+ */
+export function artifactFileOf(
+  req: PublishRequest,
+  publisherId: string,
+): VerbResult<string> {
+  if (typeof req.artifactPath === "string" && req.artifactPath !== "")
+    return ok(req.artifactPath);
+  return fail(
+    "invalid-request",
+    `${publisherId}: this destination sends the deliverable's own bytes, and the request names no file` +
+      (req.artifactUrl
+        ? ` — it carries the published address ${req.artifactUrl}, which is handed over rather than uploaded`
+        : ""),
+  );
+}
+
 /** Where an artifact of a given format is delivered: handed over as a file, or hosted. */
 export type DeliveryGenre = "file" | "embed";
 
@@ -108,6 +140,13 @@ export interface Publisher {
    * is what makes "no host configured" a working path. Read by lib/loop/deliver.ts BEFORE the
    * verb runs, so an unservable format is refused with nothing staged, uploaded or deployed. */
   serves: VisualFormat[];
+  /** What this adapter can take as its SOURCE — bytes on disk, an already-published address, or
+   * both. A THIRD axis, not a re-spelling of the two above: `serves` answers what the artifact
+   * IS, `kind` answers where it lands, and this answers what the adapter can be handed. Without
+   * it, an s3 publisher asked to upload a Datawrapper embed would be handed `join(runDir,
+   * undefined)`, and a link-forwarder asked to hand over a PNG would publish an address to a file
+   * nobody hosts. REQUIRED, so a new adapter cannot compile without deciding. */
+  sources: ("file" | "hosted")[];
   /** false = declared, no body yet. Refused before any I/O. */
   implemented: boolean;
   publish(req: PublishRequest): Promise<VerbResult<PublishOutcome>>;

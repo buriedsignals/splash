@@ -442,19 +442,39 @@ would clear `validate-config` and render silently WRONG. **Where it bites:** the
 one place the codebase chose a loud refusal over a plausible-looking wrong render, and it is
 correctly a loop-level guard rather than an engine one.
 
-### L3 — a hosted artifact is recorded, but `preview` / `approve` / `deliver` refuse to act on one
+### L3 — a hosted artifact is recorded, but `preview` / `approve` / `deliver` refuse to act on one — ✅ CLOSED 2026-07-28
 
-The run manifest records a hosted delivery as the URL it is (`ArtifactRecordSchema`), so
-`isLoopBuildable` no longer restricts dw-chart by format. But `preview` writes none
-(`previewCovers` is false for every hosted artifact), `approve` refuses by name (*"an approval is a
-record over the artifact's own bytes, and the newsroom owns none of it"*, `lib/loop/approve.ts:126`),
-and `deliver` refuses by name (*"it is already published and the newsroom owns no file of it"*,
-`lib/loop/deliver.ts:96`). **Where it bites:** the **10 unmarked `interactive` rows produced as
+**As measured (the limit this section recorded).** The run manifest records a hosted delivery as the
+URL it is (`ArtifactRecordSchema`), so `isLoopBuildable` no longer restricts dw-chart by format. But
+`capture` recorded a gap, `preview` wrote none (`previewCovers` was false for every hosted
+artifact), `approve` refused by name (*"an approval is a record over the artifact's own bytes, and
+the newsroom owns none of it"*), and `deliver` refused by name (*"it is already published and the
+newsroom owns no file of it"*). **Where it bit:** the **10 unmarked `interactive` rows produced as
 `form: "hosted"`** — dw-chart × 9 sheets (`scatter, bar, stacked-bar, bullet, dumbbell, grouped-bar,
-pie, lollipop, line`) and map-dw × `choropleth`. Those ten cells are offerable, choosable and
-producible, and then stop: the run ends at a Datawrapper URL that cannot be previewed, signed off, or
-handed to a publisher. They are counted as "buildable" and "offerable unmarked" everywhere above,
-which is honest about production and silent about hand-over.
+pie, lollipop, line`) and map-dw × `choropleth`. Those ten cells were offerable, choosable and
+producible, and then stopped: the run ended at a Datawrapper URL that could not be previewed, signed
+off, or handed to a publisher.
+
+**Closed** by the hosted-artifact-chain slice — the four steps now act on a published embed on its
+own terms rather than by pretending it is a file:
+
+- `capture` opens the ADDRESS in the browser (`CapturePayload.artifactUrl`) and measures the live
+  embed at the destination's own viewports. An address that does not answer is a real failure, not a
+  recorded gap.
+- the approval binds to the **hosted binding** (`lib/verify/hosted.ts`): the address the capture
+  landed on, hashed with the still taken there. Measured: Datawrapper's `publicUrl` is
+  version-pinned (`.../<id>/<publicVersion>/`), a re-publish returns a NEW URL, and the old one keeps
+  serving what it served — so an approval of `.../1/` can never come to cover `.../2/`.
+- `preview` presents the URL and records the binding; its refusal now fires only when nothing has
+  been captured, which is a real precondition rather than a dead end.
+- `deliver` hands the address over through the `embed-hosted` publisher (verify it answers, compose
+  the CMS snippet, record `kind: "hosted"` with no path). What is still refused is the MISMATCH — a
+  byte-shipping destination asked to ship an embed nobody owns bytes of (`Publisher.sources`).
+
+Proven end to end in `lib/loop/dw-chart-e2e.test.ts` and `lib/loop/map-dw-e2e.test.ts`
+(`SPLASH_DW_E2E=1`), each driving a real published chart/map through produce → capture → review →
+preview → approve → deliver, with the captured image's own bytes and the delivered embed's URL
+(fetched 200) as the controls.
 
 ---
 

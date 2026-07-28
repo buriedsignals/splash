@@ -59,7 +59,11 @@ export const CaptureRecordSchema = z.object({
   rootSelector: z.string(),
   documentScroll: ViewportSchema,
   artifactSha256: z.string(),
-  artifactPath: z.string(),
+  // Exactly one of the two, and both optional in the SCHEMA for the reason every field this
+  // layer adds is optional: a capture slot written before hosted deliveries could be captured
+  // carries `artifactPath` and no `artifactUrl`, and must keep parsing unchanged.
+  artifactPath: z.string().optional(),
+  artifactUrl: z.string().optional(),
   destinationId: z.string(),
   channel: z.string(),
   format: z.string(),

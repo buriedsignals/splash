@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { sha256 } from "@noble/hashes/sha2.js";
 import {
+  approvalSubjectOf,
   readManifest,
   chosenOption,
   deliverableForElement,
@@ -158,11 +159,11 @@ function verificationOf(
   const review = el.review as ReviewRecord;
   const decision = approvalDecision(review, {
     format: chosenOption(el)?.format ?? "static",
-    // "" for a hosted delivery, which has no bytes — the same value an element with no artifact
-    // at all gets. approvalDecision reads it only to check the preview covers THESE bytes, and a
-    // hosted artifact is never previewable (previewStep refuses it), so the decision it reaches
-    // is "not previewed", which is the true one.
-    artifactSha256: fileArtifact(el.artifact)?.sha256 ?? "",
+    // The element's SUBJECT — its bytes for a file, its hosted binding for a published embed
+    // (lib/loop/manifest.ts). Reported through the SAME resolver the gate uses, for the reason
+    // this whole function exists: a report that derived the subject its own way is how a report
+    // starts promising what the gate then refuses.
+    artifactSha256: approvalSubjectOf(el).sha256,
     provenanceHash: provenanceHash(run, el),
   });
   return {

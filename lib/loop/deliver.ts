@@ -85,21 +85,16 @@ export async function deliver(
     );
   if (!el.artifact)
     return fail("invalid-request", "deliver: nothing produced to deliver yet");
-  // EVERY PUBLISHER TAKES A FILE. The publish verb's payload is an `artifactPath` a capability
-  // copies, zips or uploads (lib/core/verbs/publish.ts) — and a hosted delivery has no file at
-  // all: it is ALREADY published, on Datawrapper's own CDN, and the URL is the whole hand-over.
+  // NOT EVERY PUBLISHER TAKES A FILE any more. Most do — the publish verb's payload carries an
+  // `artifactPath` a capability copies, zips or uploads — but a hosted delivery has no file at
+  // all: it is ALREADY published, on Datawrapper's own CDN, and the address is the whole
+  // hand-over (lib/delivery/adapters/hosted-embed.ts).
   //
-  // Refused by name rather than handed `join(runDir, undefined)`. Sending an embed to a second
-  // destination is a real capability — it is the "Embed" hand-over form — but it is a publisher
-  // that forwards a URL, not one that ships bytes, and none exists yet. Naming the URL in the
-  // refusal is what makes the sentence actionable: it IS the deliverable.
-  if (!fileArtifact(el.artifact))
-    return fail(
-      "invalid-request",
-      `deliver: this element was delivered as a HOSTED embed (${isHostedArtifact(el.artifact) ? el.artifact.url : "no url"}) — ` +
-        `it is already published and the newsroom owns no file of it, so there is nothing for a publisher to send; ` +
-        `hand the URL over as the embed`,
-    );
+  // This used to refuse EVERY hosted artifact by name, which was honest while no publisher could
+  // forward a link and cost the loop every Datawrapper interactive it can build. What remains
+  // refused is the MISMATCH, and it is refused per-destination below (`sources`), not here: an
+  // embed sent to a destination that ships bytes, or a file sent to one that only forwards a link.
+  const hosted = isHostedArtifact(el.artifact);
   if (stalenessOf(run, el))
     return fail(
       "invalid-request",
@@ -253,6 +248,24 @@ export async function deliver(
     // (`unknown-publisher`), and duplicating it would give the same situation two different
     // messages depending on which check ran first.
     const publisher = lookupPublisher(publisherId);
+    // WHAT THIS DESTINATION CAN BE HANDED. The `serves` check just below asks what the artifact
+    // IS; this asks what the adapter can take, and the two are different questions the moment a
+    // deliverable can be an address instead of a file. Refused BEFORE the verb runs, so a
+    // byte-shipping publisher is never handed `join(runDir, undefined)` — the silent failure the
+    // artifact record became a union to prevent — and a link-forwarder never publishes an address
+    // to a file nobody hosts.
+    if (publisher && !publisher.sources.includes(hosted ? "hosted" : "file")) {
+      refusals.push({
+        code: "invalid-request",
+        message: hosted
+          ? `${publisherId}: ${cap.label} sends a file, and this element is a HOSTED embed ` +
+            `(${(el.artifact as { url: string }).url}) the newsroom owns no bytes of — ` +
+            `it is already published, so hand its address over instead`
+          : `${publisherId}: ${cap.label} hands over an address that is already published, and this ` +
+            `element is a file this run owns — send it to a destination that ships it`,
+      });
+      continue;
+    }
     if (publisher && !publisher.serves.includes(format)) {
       refusals.push({
         code: "invalid-request",
@@ -284,7 +297,11 @@ export async function deliver(
     // design) are spread LAST of all, so a newsroom-wide override the journalist deliberately
     // set is never silently shadowed by a capability's own, narrower settings.
     const result = await runVerb("publish", {
-      artifactPath: join(runDir, fileArtifact(el.artifact)!.path),
+      // The deliverable, named ONCE and in the shape it actually has: a path for a file this run
+      // owns, an address for one already published.
+      ...(hosted
+        ? { artifactUrl: (el.artifact as { url: string }).url }
+        : { artifactPath: join(runDir, fileArtifact(el.artifact)!.path) }),
       id: el.id,
       format,
       metadata: metadata.value,
