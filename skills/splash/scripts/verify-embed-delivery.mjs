@@ -11,6 +11,8 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { lookupPublisher } from "../../../lib/core/publishers.ts";
+import { declaredCredentials } from "../../../lib/delivery/credentials.ts";
+import { NEWSROOM_CAPABILITIES } from "../../../lib/newsroom/capabilities.ts";
 import { decorEnv, installRoot } from "../../../lib/newsroom/decor.ts";
 import "../../../lib/delivery/index.ts";
 
@@ -34,6 +36,17 @@ if (!publisher) {
 // decorEnv): the install's own .env, with the process environment winning. Reading raw
 // process.env alone would miss credentials that sit in .env but were never exported to
 // this shell.
+//
+// Then projected down to the three variables the capability declares, through the SAME
+// function lib/loop/deliver.ts's rule is written as. A proof of the delivery path that handed
+// the adapter a blanket copy of the environment would be contradicting, on its way in, the
+// principle the module it verifies exists to hold — and would be quietly wrong about what a
+// real deliver() gives an adapter.
+const credentials = declaredCredentials(
+  NEWSROOM_CAPABILITIES["embed-cloudflare"].env,
+  decorEnv(installRoot()),
+);
+
 const result = await publisher.publish({
   artifactPath: artifact,
   id: `delivery-proof-${process.pid}`,
@@ -48,7 +61,7 @@ const result = await publisher.publish({
     height: 420,
   },
   settings: { publisherId: "embed-cloudflare" },
-  credentials: decorEnv(installRoot()),
+  credentials,
   outDir: join(root, "out"),
 });
 

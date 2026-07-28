@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterAll } from "bun:test";
 import {
   registerPublisher,
   lookupPublisher,
@@ -29,6 +29,21 @@ function stub(id: string, implemented = true): Publisher {
       }),
   };
 }
+
+// The registry is global to the module and `bun test` shares one process across files, so this
+// file must hand back the registry it was given. Captured at module scope — before any test
+// runs, after every earlier file has finished — and restored in afterAll.
+//
+// Clearing alone would NOT be enough, and that is the whole point: registerAllPublishers() is
+// first-registration-wins, so a leaked `{id:"zip"}` stub survives the defensive re-registration
+// that lib/loop/deliver.test.ts and three others already call. Proved in
+// lib/core/publishers-isolation.test.ts; registry A5.
+const PUBLISHERS_ON_ENTRY = allPublishers();
+
+afterAll(() => {
+  resetPublishersForTest();
+  for (const p of PUBLISHERS_ON_ENTRY) registerPublisher(p);
+});
 
 describe("publisher registry", () => {
   beforeEach(() => resetPublishersForTest());

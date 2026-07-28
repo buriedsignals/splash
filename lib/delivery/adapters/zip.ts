@@ -19,6 +19,7 @@ import {
 import { isSafeId, unsafeIdMessage } from "../../core/id-safety";
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { renderSnippet } from "../snippet";
+import { readmeCopy } from "../readme-copy";
 import { VISUAL_FORMATS, type VisualFormat } from "../../core/vocabulary";
 
 // The ZIP epoch floor, as a Date rather than 0: the archive's bytes must not depend on the
@@ -45,29 +46,32 @@ const FIXED_MTIME = new Date(1980, 0, 1, 12, 0, 0);
 // string is the one piece of output that is genuinely fixed everywhere, independent of TZ.
 const FIXED_PUBLISHED_AT = "1980-01-01T12:00:00.000Z";
 
+// The prose follows `m.lang`, the newsroom's CONTENT language — spec §4.4, "le README est dans
+// la langue de contenu". The table is lib/delivery/readme-copy.ts.
 export function zipReadme(
   m: DeliveryMetadata,
   id: string,
   snippet: string,
   entryName: string,
 ): string {
+  const t = readmeCopy(m.lang);
   return [
     `# ${m.title}`,
     "",
     m.altText,
     "",
-    "## How to integrate",
+    t.howTo,
     "",
-    `1. Upload \`${entryName}\` anywhere your newsroom serves static files.`,
-    "2. Paste the snippet below into your article, replacing the URL with where you uploaded it.",
+    t.uploadAnywhere(entryName),
+    t.pasteSnippet,
     "",
     "```html",
     snippet,
     "```",
     "",
-    `Source: ${m.source}`,
-    m.credit ? `Credit: ${m.credit}` : "",
-    `Identifier: ${id}`,
+    `${t.source} ${m.source}`,
+    m.credit ? `${t.credit} ${m.credit}` : "",
+    `${t.identifier} ${id}`,
     "",
   ]
     .filter((line, i, all) => !(line === "" && all[i - 1] === ""))
@@ -83,21 +87,21 @@ export function filePackageReadme(
   entryName: string,
   format: VisualFormat,
 ): string {
-  const field = format === "video" ? "video" : "image";
+  const t = readmeCopy(m.lang);
+  const field = format === "video" ? t.videoField : t.imageField;
   return [
     `# ${m.title}`,
     "",
     m.altText,
     "",
-    "## How to integrate",
+    t.howTo,
     "",
-    `1. Upload \`${entryName}\` through your CMS's ${field} field.`,
-    "2. Paste the text from `ALT.txt` into the alternative-text field next to it — that is what",
-    "   a screen reader announces, and Splash cannot put it there for you.",
+    t.uploadToField(entryName, field),
+    ...t.pasteAltText,
     "",
-    `Source: ${m.source}`,
-    m.credit ? `Credit: ${m.credit}` : "",
-    `Identifier: ${id}`,
+    `${t.source} ${m.source}`,
+    m.credit ? `${t.credit} ${m.credit}` : "",
+    `${t.identifier} ${id}`,
     "",
   ]
     .filter((line, i, all) => !(line === "" && all[i - 1] === ""))
