@@ -231,12 +231,26 @@ Un point de contrat repris tel quel du manifeste : sur la piste carte, un `beats
 
 C'est ici que se ferme **A34** (§6).
 
-### 4.4 image-native — quasi trivial
+### 4.4 image-native — ~~quasi trivial~~ **CORRIGÉ à l'écriture du plan (2026-07-27)**
 
-Un `ImageStory` : des images, des légendes qui passent **telles quelles** (le moteur ne réécrit
-jamais une légende de journaliste), un seul format livré (`scrolly`), un seul type
-(`image-scrolly`). L'assembleur est court ; sa seule vraie décision est que les légendes viennent des
-beats écrits, pas d'une dérivation.
+> **Cette section disait « quasi trivial ». C'est faux, et la mesure est nette.**
+> `RunManifest.input` vaut `{ data?, article? }` (`lib/loop/manifest.ts:232`) — **il n'y a aucune
+> entrée image**. Et `checkImageConformance` exige, par image : `frameRef`, `caption`, `alt`
+> (obligatoirement ≠ caption) et `credit.name`. Or Splash **ne génère jamais** une image et
+> **n'écrit jamais** un alt ni un crédit : `suggest-image` les *demande* au journaliste et refuse
+> de les inventer. La boucle ne peut donc pas assembler un `ImageStory` tant que le run ne porte
+> pas les photos **et** leur alt/crédit.
+
+Ce qui reste vrai : un seul format livré (`scrolly`), un seul type (`image-scrolly`), et les
+légendes qui passent **telles quelles** — elles viennent des beats écrits par le journaliste, pas
+d'une dérivation.
+
+Ce que la correction ajoute à la tranche : **une entrée image dans la déclaration de run**
+(`input.images` = un dossier + par photo `frameRef`/`alt`/`credit`, écrite une fois à `init` comme
+le ledger de sources), refusée fort si un alt ou un crédit manque. Le `sourcePassage` du moteur
+reste **absent** : la boucle n'a pas d'appariement par vision, la légende est la phrase du
+journaliste, et fabriquer un passage donnerait au garde-fou de recouvrement quelque chose que
+personne n'a écrit à vérifier.
 
 ### 4.5 dw-chart et map-dw — traduire vers le vocabulaire Datawrapper
 
