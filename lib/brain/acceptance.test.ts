@@ -18,13 +18,14 @@ import { advance, advanceStep } from "../loop/driver";
 import { freezeInput } from "../loop/freeze";
 import {
   fileArtifact,
+  isHostedArtifact,
   nextActions,
   type RunManifest,
   type FormOption,
 } from "../loop/manifest";
 import { type PhrasedOption } from "./verify-offer";
 import { applyPhrasing } from "../loop/phrase";
-import { assertFileMedia } from "../core/contract";
+import { assertFileMedia, isHostedUrl } from "../core/contract";
 import { isLoopBuildable } from "../loop/buildable";
 
 const CSV = `canton,2019,2024
@@ -177,12 +178,24 @@ test("a real run reaches an offer that carries its discards and can be phrased",
     );
   expect(produced).toBeDefined();
 
-  const artifact = fileArtifact(produced!.elements[0].artifact)!;
+  // The record itself, not a branch of it: `provenanceHash` is on both the file and the hosted
+  // shape (lib/loop/manifest.ts's ArtifactRecordSchema), and this assertion is a liveness check
+  // that production actually happened — narrowing to `fileArtifact` first would make it silently
+  // pass-by-`undefined` the moment a hosted form ranks first, which is exactly the regression this
+  // union was built to catch.
+  const artifact = produced!.elements[0].artifact!;
   expect(artifact.provenanceHash).toBeTruthy();
-  // The delivered file matches the format the offer promised — the same media-shape clause
-  // produce.ts's own dispatcher enforces on every produced artifact (lib/core/contract.ts),
-  // reused here rather than re-deriving the static/video/interactive/scrolly naming rule.
-  expect(() => assertFileMedia(chosen!.format!, [artifact.path])).not.toThrow();
+  // The delivered form matches the format the offer promised. A file delivery is checked with the
+  // same media-shape clause produce.ts's own dispatcher enforces on every produced artifact
+  // (lib/core/contract.ts) rather than re-deriving the static/video/interactive/scrolly naming
+  // rule; a hosted delivery (dw-chart/map-dw "interactive") has no bytes to shape-check, so it is
+  // held to the sibling clause the dispatcher applies to that form instead — a resolvable URL.
+  if (isHostedArtifact(artifact)) {
+    expect(isHostedUrl(artifact.url)).toBe(true);
+  } else {
+    const file = fileArtifact(artifact)!;
+    expect(() => assertFileMedia(chosen!.format!, [file.path])).not.toThrow();
+  }
   expect(nextActions(produced!)).not.toEqual(["produce"]);
 }, 60000);
 
