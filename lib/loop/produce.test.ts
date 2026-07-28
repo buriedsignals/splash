@@ -368,15 +368,19 @@ test("a refused render becomes a typed failure, not a throw", async () => {
 }, 120_000);
 
 // A chosen option can name engine "chart-native" and format "scrolly" — chart-native
-// declares no "scrolly" format (it belongs to skills/scrolly, the shared mechanism that
-// hosts a native engine's track; see lib/core/registry.ts's producerForFormat). Before
-// this fix, produce.ts guarded on `chosen.engine` alone, so this option looked buildable
-// (chart-native IS in LOOP_BUILDABLE_ENGINES) and was handed straight to chart-native,
-// which refuses "scrolly" with its OWN engine-internal message — a different sentence
-// than the one the brain's offer already marked it with (lib/brain/eligibility.ts). The
-// invariant lib/loop/buildable.ts's header states is that the two must be the SAME
-// sentence, so a journalist reads one story.
-test("a chosen scrolly option is refused with the mark's own sentence, never handed to chart-native", async () => {
+// declares no "scrolly" format itself (it belongs to skills/scrolly, the shared mechanism
+// that hosts a native engine's track; see lib/core/registry.ts's producerForFormat). Before
+// task 9 wired an assembler for that effective producer, produce.ts refused this EXACT option
+// at the buildability gate with a `not-implemented`, naming "scrolly" — the scenario this test
+// used to pin (guarding against a REGRESSED version of produce.ts that checked `chosen.engine`
+// alone and would have handed it straight to chart-native's own engine-internal refusal
+// instead). Task 9 closes that dead end: the option is now recognized as buildable and carried
+// PAST the buildability gate. Proven here cheaply (no render is ever reached, so no real
+// subprocess build runs) by handing it a narrative with one unwritten beat — the guard BELOW
+// the buildability gate refuses it BY NAME, which could only happen if the buildability gate
+// let the option through first (lib/loop/produce.ts's own documented ORDER: the buildability
+// refusal comes before the beats one, never the reverse).
+test("a chosen chart-track scrolly option is carried past the buildability gate, to the beats guard below it", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-produce-scrolly-format-"));
   const src = join(runDir, "src.csv");
   writeFileSync(
@@ -425,6 +429,20 @@ test("a chosen scrolly option is refused with the mark's own sentence, never han
           excluded: [],
           chosenId: "line",
         },
+        // Hand-authored rather than drafted: the point of this test is the ORDER of two gates,
+        // not the drafting seam, and a drafted plan would need real data-anchored suggestions.
+        narrative: {
+          beats: [
+            {
+              id: "beat-1",
+              anchor: { kind: "x", value: "2015" },
+              role: "establish",
+              text: "",
+              draftText: "2015 — 449",
+              beatSource: { facts: { x: "2015", value: "449" }, shared: {} },
+            },
+          ],
+        },
       },
     ],
     events: [],
@@ -432,8 +450,8 @@ test("a chosen scrolly option is refused with the mark's own sentence, never han
   const result = await produce(run, run.elements[0], runDir);
   expect(result.ok).toBe(false);
   if (result.ok) throw new Error("unreachable");
-  expect(result.code).toBe("not-implemented");
-  expect(result.message).toContain("scrolly");
+  expect(result.code).toBe("invalid-request");
+  expect(result.message).toContain("beat-1");
 });
 
 // --- the declared source is the credit ---------------------------------------------------
@@ -821,19 +839,44 @@ test("produce refuses a walk whose beats nobody authored, naming them", async ()
 // journalist reads ONE sentence for a form nothing can build, the one the offer already marked
 // it with. So the buildability refusal comes FIRST — telling someone to write their beats when
 // their chosen form cannot be built at all sends them to fix the wrong thing.
+//
+// Used to prove this on the scrollyRunOnDisk() fixture UNCHANGED (chart-native/scrolly) — task 9
+// wires that exact pairing as buildable, so it no longer demonstrates a dead end (draftBeats
+// does not check buildability at all, so drafting still succeeds, but produce() now carries the
+// option past the buildability gate instead of refusing there). Swapped to map-dw — still
+// genuinely absent from the assembler table, and not reached through the scrolly format-host
+// redirect at all — so the buildability refusal still fires, and still fires FIRST.
 test("a form nothing can build is refused with the offer's sentence, before its beats are judged", async () => {
   const { run, runDir } = scrollyRunOnDisk();
-  const drafted = draftBeats(run, run.elements[0]!, runDir);
+  const unbuildable: RunManifest = {
+    ...run,
+    elements: [
+      {
+        ...run.elements[0]!,
+        proposal: {
+          ...run.elements[0]!.proposal!,
+          options: [
+            {
+              ...run.elements[0]!.proposal!.options[0]!,
+              engine: "map-dw",
+              format: "static",
+            },
+          ],
+        },
+      },
+    ],
+  };
+  const drafted = draftBeats(unbuildable, unbuildable.elements[0]!, runDir);
   if (!drafted.ok) throw new Error(drafted.message);
   const r = await produce(
-    { ...run, elements: [drafted.value] },
+    { ...unbuildable, elements: [drafted.value] },
     drafted.value,
     runDir,
   );
   expect(r.ok).toBe(false);
   if (r.ok) return;
   expect(r.code).toBe("not-implemented");
-  expect(r.message).toContain("scrolly");
+  expect(r.message).toContain("map-dw");
   expect(r.message).not.toContain("beat-1");
   rmSync(runDir, { recursive: true, force: true });
 });

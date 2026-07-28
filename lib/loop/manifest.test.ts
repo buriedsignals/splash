@@ -205,14 +205,14 @@ test("nextActions routes BACK to the choice when the chosen form's engine cannot
   expect(nextActions(m)).toEqual(["produce"]);
 });
 
-// The same dead-end applies when the chosen option's ENGINE is buildable but its FORMAT is
-// not one that engine's manifest declares — chart-native is in LOOP_BUILDABLE_ENGINES, but a
-// "scrolly" format on it is actually built by skills/scrolly (producerForFormat), which is
-// not. Before this fix nextActionsForElement only checked isLoopBuildable(chosen.engine)
-// directly, so this exact option (buildable engine, unbuildable effective producer) looked
-// buildable here while produce() refused it every time — routing "produce" forever, with no
-// way back to the choice.
-test("nextActions routes BACK to the choice when the chosen option's engine is buildable but its format's effective producer is not", () => {
+// This used to pin a dead end: chart-native is in LOOP_BUILDABLE_ENGINES, but a "scrolly"
+// format on it is actually built by skills/scrolly (producerForFormat) — before Task 9 wired
+// an assembler for that effective producer, nextActionsForElement checking chosen.engine alone
+// would have looked buildable here while produce() refused it every time. Task 9 (scrolly
+// composes its host engine's track) closed that dead end: the same option now starts the
+// narrative flow instead of bouncing back to the offer. Switching the choice to a plain form
+// still resolves to "produce", unchanged.
+test("nextActions moves a chosen chart-track scrolly into the narrative flow, not back to the offer", () => {
   const m = base();
   m.elements[0].proposal = {
     options: [
@@ -228,7 +228,7 @@ test("nextActions routes BACK to the choice when the chosen option's engine is b
     excluded: [],
     chosenId: "line-scrolly",
   };
-  expect(nextActions(m)).toEqual(["choose-form"]);
+  expect(nextActions(m)).toEqual(["draft-beats"]);
   m.elements[0].proposal.chosenId = "slope";
   expect(nextActions(m)).toEqual(["produce"]);
 });
@@ -1444,12 +1444,12 @@ describe("the narrative slot", () => {
 describe("routing a narrative page through its beats", () => {
   // THE HONEST STATE OF THE ROUTE. `draft-beats` sits BELOW the buildability gate, because
   // drafting beats for a form nothing can build would be work thrown away and would swallow the
-  // stranded-run escape (driver.test.ts's "clearing the request is the way out"). scrolly is not
-  // in LOOP_BUILDABLE_ENGINES today — the whole-article branch is its own sub-project — so a
-  // chosen scrolly still answers "choose-form", and this is what that looks like rather than a
-  // claim the route is live. See the design spec §8, first assumed risk.
-  it("still routes a chosen scrolly back to the offer — the article branch is not wired", () => {
-    expect(nextActions(scrollyRun())).toEqual(["choose-form"]);
+  // stranded-run escape (driver.test.ts's "clearing the request is the way out"). scrolly is now
+  // in LOOP_BUILDABLE_ENGINES (lib/loop/assemble/scrolly.ts composes the chosen host engine's
+  // track), so a chosen chart-track scrolly with no plan yet routes to "draft-beats", not back
+  // to "choose-form".
+  it("routes a chosen chart-track scrolly with no plan yet to draft-beats", () => {
+    expect(nextActions(scrollyRun())).toEqual(["draft-beats"]);
   });
 
   it("asks the journalist to author, whenever a plan carries an unwritten beat", () => {

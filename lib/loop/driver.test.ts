@@ -28,7 +28,6 @@ import {
 import { freezeInput } from "./freeze";
 import { applyPhrasing } from "./phrase";
 import { resumeReport } from "./resume";
-import { isLoopBuildable } from "./buildable";
 import type { Decor } from "../newsroom/decor";
 import { registerAllPublishers } from "../delivery";
 import { resetPublishersForTest } from "../core/publishers";
@@ -573,19 +572,21 @@ test("advance() persists the brain's refusal on the element when the requested f
   expect(after.elements[0].proposal!.refusal).toContain("scrolly");
 });
 
-// A requestedFormat can be channel-legal (article-web carries scrolly) and STILL strand the
-// run: every surviving candidate is a scrolly, and LOOP_BUILDABLE_ENGINES has no scrolly host
-// today, so choosing one and calling produce() refuses forever while nextActionsForElement
-// keeps routing back to choose-form — no NextAction verb existed to get out. This is the exact
-// dead end the whole-branch review found reproducible end to end through advance(); it proves
-// both halves of the fix together: eligibility.ts's new refusal (a sentence the desk could
-// show even before choosing) and revise.ts's clear-requested-format (the actual way out).
-test("a channel-legal but zero-buildable requested format strands the run, and clearing it is the way out", async () => {
-  const runDir = mkdtempSync(join(tmpdir(), "loop-strand-run-"));
+// A requestedFormat can be channel-legal (article-web carries scrolly) — this used to STRAND
+// the run: every surviving candidate was a scrolly, and LOOP_BUILDABLE_ENGINES had no scrolly
+// host, so choosing one and calling produce() refused forever while nextActionsForElement kept
+// routing back to choose-form — no NextAction verb existed to get out (revise.ts's
+// clear-requested-format was the escape that dead end needed; it is still covered on its own
+// terms in revise.test.ts). Task 9 closes the dead end itself: scrolly composes whichever host
+// engine's track the chosen nativeType belongs to, so a scrolly candidate is genuinely
+// choosable now. This proves the strand is gone — requesting scrolly here is no longer a dead
+// end reachable through advance(); it is the start of the narrative flow (draft-beats).
+test("a channel-legal requested scrolly format is offered unstranded, and starts the narrative flow", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-scrolly-request-"));
   const src = join(runDir, "src.csv");
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   let run: RunManifest = {
-    runId: "strand",
+    runId: "scrolly-request",
     schemaVersion: 4,
     route: "embed",
     channel: "article-web", // scrolly IS allowed on this channel
@@ -622,69 +623,25 @@ test("a channel-legal but zero-buildable requested format strands the run, and c
 
   run = await advance(run, runDir, NEUTRAL_DECOR); // propose
   const proposal = run.elements[0].proposal!;
-  // The rows are OFFERED and MARKED — never removed — but the run already carries the extra
-  // sentence naming the dead end, before the journalist even chooses.
+  // The rows are OFFERED and MARKED (the whole-article-branch mark fires unconditionally on
+  // format:"scrolly" — see eligibility.ts's withMarks — so every row still carries a
+  // readiness note) — but the run is no longer stranded: no aggregate refusal is added,
+  // because at least one row is genuinely buildable.
   expect(proposal.options.length).toBeGreaterThan(0);
   expect(proposal.options.every((o) => o.format === "scrolly")).toBe(true);
-  expect(proposal.refusal).toBeTruthy();
-  expect(proposal.refusal).toContain("scrolly");
-  expect(proposal.refusal).toContain("article-web");
+  expect(proposal.refusal).toBeUndefined();
 
-  // Choosing the marked row is still legal (the offer never forbids choosing a marked
-  // option) — and produce refuses it, exactly the mark promised.
+  const chosen = proposal.options.find((o) => o.engine === "chart-native")!;
+  expect(chosen).toBeDefined();
   run = {
     ...run,
     elements: [
-      {
-        ...run.elements[0],
-        proposal: { ...proposal, chosenId: proposal.options[0]!.id },
-      },
+      { ...run.elements[0], proposal: { ...proposal, chosenId: chosen.id } },
     ],
   };
-  expect(nextActions(run)).toEqual(["choose-form"]); // stranded: not "produce"
-
-  run = await advance(run, runDir, NEUTRAL_DECOR); // no step runs — but the strand is recorded
-  expect(nextActions(run)).toEqual(["choose-form"]); // still stranded — the loop, proven
-  // The loop does not move, AND it says why: routing back to "choose-form" is indistinguishable
-  // from an offer awaiting a decision unless the run writes the reason down.
-  expect(run.events).toMatchObject([
-    { kind: "failure", action: "choose-form", elementId: "e1" },
-  ]);
-  const strand = run.events[0]!;
-
-  // THE WAY OUT: clear the request. It drops requestedFormat and the stale proposal built
-  // under it in one step, routing back to a fresh "propose".
-  run = {
-    ...run,
-    elements: [revise(run.elements[0], { kind: "clear-requested-format" })],
-  };
-  expect(run.elements[0].requestedFormat).toBeUndefined();
-  expect(nextActions(run)).toEqual(["propose"]);
-
-  run = await advance(run, runDir, NEUTRAL_DECOR); // propose, unconstrained this time
-  const freeProposal = run.elements[0].proposal!;
-  expect(freeProposal.refusal).toBeUndefined();
-  expect(freeProposal.options.some((o) => o.format !== "scrolly")).toBe(true);
-
-  // Walk to a buildable row and prove the run actually escapes, all the way to an artifact.
-  const buildable = freeProposal.options.find((o) => isLoopBuildable(o.engine));
-  expect(buildable).toBeDefined();
-  run = {
-    ...run,
-    elements: [
-      {
-        ...run.elements[0],
-        proposal: { ...freeProposal, chosenId: buildable!.id },
-      },
-    ],
-  };
-  expect(nextActions(run)).toEqual(["produce"]);
-  run = await advance(run, runDir, NEUTRAL_DECOR); // produce
-  // The escape added no failure of its own — the ledger still holds exactly the strand it
-  // recorded on the way in, which is the history the journalist should be able to read back.
-  expect(run.events).toEqual([strand]);
-  expect(run.elements[0].artifact).toBeDefined();
-}, 90000);
+  // Not "choose-form" — the narrative flow starts instead of bouncing back to the offer.
+  expect(nextActions(run)).toEqual(["draft-beats"]);
+});
 
 test("the element-driven branches never dereference a missing element", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-no-elements-2-"));

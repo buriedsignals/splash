@@ -310,11 +310,22 @@ test("a producer that genuinely lacks a format still loses it — map-dw has no 
 // whether this mark was resolved on the sheet's engine or on the effective producer. Testing
 // the exported function directly is the only level at which a revert of the effective-producer
 // fix is observable.
-test("buildabilityMark resolves the EFFECTIVE producer, not the sheet's engine — a chart-native form in the scrolly format is a scrolly build", () => {
-  const mark = buildabilityMark("chart-native", "scrolly");
-  expect(mark).not.toBeNull();
-  expect(mark!.status).toBe("missing");
-  expect(mark!.reason).toContain("scrolly");
+//
+// Used to pin this on "chart-native" + "scrolly": before task 9 wired an assembler for the
+// scrolly host, that pairing was the one place the two resolutions disagreed (chart-native
+// itself IS loop-buildable; its scrolly form was not). Task 9 closed that gap — scrolly now
+// composes whichever host engine's track the nativeType belongs to, for ANY engine's sheet —
+// so chart-native/scrolly no longer demonstrates a disagreement. dw-chart still does: it is
+// not in the assembler table at all, yet its own sheets can declare a "scrolly" format (the
+// same shared host builds it, exactly like chart-native's). The same engine name has to answer
+// differently for its two formats, or the resolution is reading chosen.engine instead of the
+// format's actual producer.
+test("buildabilityMark resolves the EFFECTIVE producer, not the sheet's engine — a dw-chart form in the scrolly format is a scrolly build", () => {
+  const staticMark = buildabilityMark("dw-chart", "static");
+  expect(staticMark).not.toBeNull();
+  expect(staticMark!.reason).toContain("dw-chart");
+  const scrollyMark = buildabilityMark("dw-chart", "scrolly");
+  expect(scrollyMark).toBeNull();
 });
 
 test("buildabilityMark is null when the loop can already build through the producer", () => {
@@ -395,23 +406,27 @@ test("a form that does not come in the requested format is excluded with its own
   expect(res.excluded[0]!.reason).toContain("video");
 });
 
-// requestedFormat:"scrolly" on article-web is CHANNEL-legal (article-web allows scrolly), so
-// the channel-legality refusal above never fires — but every scrolly candidate is unbuildable
-// today (LOOP_BUILDABLE_ENGINES has no scrolly host), which used to leave the offer with rows
-// but no refusal: nextActionsForElement would route back to choose-form forever with no verb
-// to escape it. The rows stay OFFERED and MARKED (never removed) — this refusal is an
-// ADDITIONAL sentence naming the dead end.
+// This used to run on requestedFormat:"scrolly" — CHANNEL-legal on article-web (so the
+// channel-legality refusal above never fires), and every real KB scrolly candidate was
+// unbuildable (LOOP_BUILDABLE_ENGINES had no scrolly host), which used to leave the offer with
+// rows but no refusal: nextActionsForElement would route back to choose-form forever with no
+// verb to escape it. Task 9 wires scrolly (it composes whichever host engine's track the
+// nativeType belongs to), so a real scrolly request on this KB now has buildable rows and this
+// fixture no longer demonstrates the dead end. A synthetic single-engine sheet on a still-
+// unwired engine (map-dw) reproduces the same mechanism: channel-legal, zero buildable
+// candidates, refused by name. The rows stay OFFERED and MARKED (never removed) — this
+// refusal is an ADDITIONAL sentence naming the dead end.
 test("a requested format that is channel-legal but leaves zero buildable candidates is refused by name too", () => {
-  const res = eligible({
-    facts: TWO_POINTS,
-    channel: "article-web",
-    requestedFormat: "scrolly",
-  });
-  // The rows are NOT removed — every real KB scrolly candidate is still offered, marked.
-  expect(res.eligible.length).toBeGreaterThan(0);
-  expect(res.eligible.every((c) => c.format === "scrolly")).toBe(true);
+  const sheet = fakeSheet("fx-map-dw-static", ["static"]);
+  const res = eligible(
+    { facts: TWO_POINTS, channel: "article-web", requestedFormat: "static" },
+    [{ sheet, engine: "map-dw", key: "fake-key" }],
+  );
+  // The row is NOT removed — offered, marked.
+  expect(res.eligible.length).toBe(1);
+  expect(res.eligible[0]!.format).toBe("static");
   expect(res.refusal).toBeDefined();
-  expect(res.refusal).toContain("scrolly");
+  expect(res.refusal).toContain("static");
   expect(res.refusal).toContain("article-web");
 });
 

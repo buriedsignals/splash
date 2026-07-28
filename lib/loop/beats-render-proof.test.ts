@@ -1,13 +1,11 @@
 import { test, expect } from "bun:test";
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import "../../skills/splash/src/register-producers";
-import { render } from "../core/verbs";
 import { freezeInput } from "./freeze";
 import { draftBeats, applyBeats } from "./beats";
-import { assembleChartNative } from "./assemble/chart-native";
-import { briefFor } from "./assemble/brief";
+import { produce } from "./produce";
 import { unauthoredBeats, type RunManifest } from "./manifest";
 import type { AuthoredBeat } from "../brain/verify-beats";
 
@@ -18,12 +16,6 @@ import type { AuthoredBeat } from "../brain/verify-beats";
 // discipline as skills/splash/scripts/verify-source-bundle.mjs, deliberately kept out of the gate
 // for the same reason — a real network-and-browser build has no business running on every commit.
 //
-// WHY IT CALLS render() AND NOT produce(). scrolly is not in LOOP_BUILDABLE_ENGINES yet (the
-// whole-article branch is its own sub-project — see the design spec §5), so produce() refuses a
-// scrolly form by design. What this test must not become is a PARALLEL path: it therefore builds
-// its spec with the very table entry produce() uses (briefFor + assembleChartNative) and hands
-// it to the very verb produce() dispatches through (render), with the same arguments. What gets
-// rendered here is literally what production will render on the day the branch is wired.
 // MEASURED, 2026-07-27, on a real build of both pages. The four narrative steps of a chart
 // scrolly, same series, same anchors, same six-card structure:
 //
@@ -150,33 +142,14 @@ proof(
     const ready = applyBeats(withPlan, "e1", authored);
     expect(unauthoredBeats(ready.elements[0]!)).toEqual([]);
 
-    // 3. THE RENDER — production's own spec assembly, production's own verb.
-    const assembled = assembleChartNative(
-      briefFor(
-        ready,
-        ready.elements[0]!,
-        SEA_ICE,
-        "NSIDC Sea Ice Index",
-        "https://nsidc.org/data/seaice_index",
-        "scrolly",
-      ),
-    );
-    expect(assembled.ok).toBe(true);
-    if (!assembled.ok) return;
-    const spec = assembled.value;
-    const out = join(runDir, "elements", "e1");
-    const result = await render({
-      engine: "scrolly",
-      spec,
-      format: "scrolly",
-      channel: "article-web",
-      outDir: out,
-      id: "e1",
-    });
+    // 3. THE RENDER — production's own verb, exactly as the driver calls it: assembles the
+    // spec (assembleScrolly, resolved through the assembler table) and renders it, with no
+    // parallel path of this test's own.
+    const result = await produce(ready, ready.elements[0]!, runDir);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    const page = result.value.files.find((f) => f.endsWith("scrolly.html"))!;
+    const page = join(runDir, result.value.artifact!.path);
 
     // 4. THE MEASUREMENT — in a browser, off the rendered step nodes.
     //

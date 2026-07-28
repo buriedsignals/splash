@@ -5,6 +5,7 @@
 import type { Assembler } from "../../core/production-brief";
 import { assembleChartNative } from "./chart-native";
 import { assembleMapNative } from "./map-native";
+import { assembleScrolly } from "./scrolly";
 import { MAP_TYPES } from "../../../skills/map-native/src/map-types";
 
 export type AssemblerEntry = {
@@ -23,6 +24,11 @@ export const ASSEMBLERS: Record<string, AssemblerEntry> = {
     assemble: assembleMapNative,
     supports: (t) => (MAP_TYPES as readonly string[]).includes(t),
   },
+  // scrolly is not a third engine — it hosts chart-native's or map-native's own track (see
+  // scrolly.ts's header). No `supports`: whatever nativeType arrives, assembleScrolly composes
+  // the right host engine for it (a MAP_TYPES id goes to map-native, anything else to
+  // chart-native), so every type either engine already supports is reachable through it.
+  scrolly: { assemble: assembleScrolly },
 };
 
 export function assemblerFor(

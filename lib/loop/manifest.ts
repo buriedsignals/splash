@@ -537,9 +537,10 @@ export function nextActionsForElement(
   //
   // POSITION — below the buildability gate, on purpose. Drafting beats for a form nothing can
   // build is work thrown away, and routing out of that state would swallow the stranded-run
-  // escape the offer's mark promises ("choose-form" is the way back). scrolly is not in
-  // LOOP_BUILDABLE_ENGINES today, so `draft-beats` is NOT reachable through this function yet;
-  // it becomes reachable the day the whole-article branch is wired, with nothing here to change.
+  // escape the offer's mark promises ("choose-form" is the way back). scrolly is now in
+  // LOOP_BUILDABLE_ENGINES (lib/loop/assemble/scrolly.ts composes the chosen host engine's
+  // track), so `draft-beats` IS reachable through this function: a chosen chart-track scrolly
+  // with no narrative yet lands here, not on "choose-form".
   // The `author-beats` line below is NOT format-gated for the same honesty: whatever created a
   // plan, an unwritten one must not reach produce.
   if (chosen?.format === "scrolly" && !el.narrative) return ["draft-beats"];
