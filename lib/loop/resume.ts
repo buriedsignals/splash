@@ -47,6 +47,19 @@ export type ResumeReport = {
     channel?: Channel;
     /** The master this deliverable shares its takeaway with, when it is a sibling. */
     deliverableOf?: string;
+    /** THE ANGLE, present exactly when the element carries one.
+     *
+     *  A host resuming a run cold was told `gateState: "angled"` and shown nothing of the angle —
+     *  so the first thing the journalist decided, the point the whole visual is making, could
+     *  only be re-read by opening run.json by hand. That is the one thing this layer exists to
+     *  make unnecessary, and it is the same omission the offer once was, one gate earlier.
+     *
+     *  Carried WHOLE, for the reason the offer is: which of the four parts a host "deserves" is a
+     *  decision that drifts, every part is one the desk wrote itself, and a host has real work
+     *  for each (restate the takeaway, show the alt text, label the unit, name the emphasis).
+     *  `intent` rides along as persisted state; lib/host/state.ts's `intent` is a different
+     *  answer — where the OFFER'S ordering came from, which is a derivation, not this record. */
+    angle?: RunElement["angle"];
     /** THE OFFER, present exactly when the element carries one.
      *
      *  It was the omission of this report: an element said `nextActions: ["choose-form"]` and
@@ -174,6 +187,7 @@ export function resumeReport(run: RunManifest, runDir: string): ResumeReport {
       ...(aspect ? { aspect } : {}),
       ...(channel ? { channel } : {}),
       ...(el.deliverableOf ? { deliverableOf: el.deliverableOf } : {}),
+      ...(el.angle ? { angle: el.angle } : {}),
       ...(el.proposal ? { proposal: el.proposal } : {}),
       ...(el.review ? { verification: verificationOf(run, el) } : {}),
     };
@@ -222,4 +236,3 @@ if (import.meta.main) {
   const report = resumeReport(run, runDir);
   printReport(report);
 }
-

@@ -87,6 +87,29 @@ describe("describeState / describeNext over a real run", () => {
     expect(JSON.parse(JSON.stringify(s))).toStrictEqual(s);
     expect(JSON.parse(JSON.stringify(n))).toStrictEqual(n);
   });
+
+  // A COLD RESUME CAN RE-READ THE ANGLE. `gateState: "angled"` used to be the whole of what a
+  // host learned about the first decision the journalist made; the takeaway itself was only in
+  // run.json, which this layer exists so that nobody has to open.
+  it("hands back the confirmed angle, so nothing has to open run.json to restate it", () => {
+    const { dir, run } = makeRun();
+    const angle = {
+      confirmedTakeaway: "Genève est le canton le plus cher",
+      altInsight: "La prime adulte a augmenté dans les deux cantons.",
+      unit: "CHF",
+      intent: "ranking" as const,
+    };
+    writeManifest(join(dir, "run.json"), {
+      ...run,
+      elements: [{ ...run.elements[0]!, angle }],
+    });
+
+    const s = describeState(dir);
+    expect(s.ok).toBe(true);
+    if (!s.ok) throw new Error(s.message);
+    const report = s.value as { elements: { angle?: typeof angle }[] };
+    expect(report.elements[0]!.angle).toEqual(angle);
+  });
 });
 
 describe("state and next are genuinely read-only", () => {

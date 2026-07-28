@@ -337,3 +337,45 @@ it("says nothing about verification for an element nobody has reviewed", () => {
   const { run, runDir } = seed();
   expect(resumeReport(run, runDir).elements[0]!.verification).toBeUndefined();
 });
+
+// THE ANGLE, READABLE FROM THE REPORT.
+//
+// A host that resumes a run cold was told `gateState: "angled"` and shown nothing of the angle:
+// the confirmed takeaway, the alt text, the unit. So the one thing the journalist decided first —
+// the point the whole visual is making — could only be re-read by opening run.json by hand, which
+// is the exact thing this whole layer exists to make unnecessary (the same omission the offer once
+// was, one gate earlier).
+//
+// Carried WHOLE, as a pure projection, for the reason `proposal` is: choosing which of the four
+// parts a host "deserves" is a decision that drifts, and every part is one the desk wrote itself.
+test("resumeReport carries the confirmed angle exactly as the manifest persisted it", () => {
+  const { run, runDir } = seed();
+  const angled: RunManifest = {
+    ...run,
+    elements: [
+      {
+        ...run.elements[0]!,
+        angle: {
+          confirmedTakeaway: "Genève est le canton le plus cher",
+          emphasis: "Genève",
+          altInsight: "La prime adulte a augmenté dans les deux cantons.",
+          unit: "CHF",
+          intent: "ranking",
+        },
+      },
+    ],
+  };
+  const report = resumeReport(angled, runDir);
+  expect(report.elements[0]!.angle).toEqual(angled.elements[0]!.angle!);
+  rmSync(runDir, { recursive: true, force: true });
+});
+
+test("resumeReport carries no angle key for an element that has none", () => {
+  const { run, runDir } = seed();
+  const unangled: RunManifest = {
+    ...run,
+    elements: [{ id: "e1" }],
+  };
+  expect("angle" in resumeReport(unangled, runDir).elements[0]!).toBe(false);
+  rmSync(runDir, { recursive: true, force: true });
+});
