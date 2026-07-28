@@ -153,11 +153,16 @@ now trips a mechanical WARNING at validation: `validateMapSpec` flags data cover
 basemap's recorded regions with < 20 rows (`SPARSE_REGION_FRACTION` / `SPARSE_MAX_ROWS` in
 `src/map-spec.ts`, counts in `src/basemap-keys.ts` BASEMAP_REGION_COUNTS) and advises a region-scoped
 basemap or the `map-native` escalation — advisory only, a deliberately sparse national map may pass.
-For continental-US data prefer **`us-states-continental`** (not `us-states`): some basemap ids pass
-`validateMapSpec` but **500 on publish** (`us-states` does) — if a publish 500s, switch to the safe
-variant (`-continental`, or another id of the same extent).
-(The 500-on-publish and general "smallest basemap" fit are still caught only by looking at the
-render — only the sparse-subset fraction is checked mechanically.)
+For US-state data use **`us-states`** with join key **`id`** (2-letter UPPERCASE postal codes —
+`GET /v3/basemaps/us-states` returns 51 regions under that key). This entry previously advised
+`us-states-continental` instead, because `us-states` had been observed to pass `validateMapSpec`
+and then **500 on publish**; re-probed live on 2026-07-28, `us-states` created, patched and
+published without error (so did `-continental`). Prefer the full 51-region id: `-continental`
+carries only 49 and would drop **Alaska and Hawaii silently** from a national dataset, which is
+worse than the loud failure. `-continental` remains the fallback if a publish 500s again — some
+basemap ids do pass validation and fail at publish, and that is still caught only by publishing.
+(The general "smallest basemap" fit is likewise caught only by looking at the render — only the
+sparse-subset fraction is checked mechanically.)
 
 ## Quick start
 
