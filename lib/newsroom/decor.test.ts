@@ -241,8 +241,9 @@ describe("an explicit directory is READ-ONLY", () => {
 });
 
 // C2: the legacy files still have live readers (install/bootstrap.sh reads .splash-runtime on
-// every invocation) and live writers (install/configurator.ts, preflight.mjs). P1 absorbs
-// them; P2 removes them, with their writers.
+// every invocation). They no longer have writers (A3 retired the last one). The absorption
+// must still not delete them: only the setup page does that, once it has written the decor
+// they folded into.
 describe("the legacy files survive the absorption", () => {
   it("leaves .splash-runtime and .splash-preflight.json in place", () => {
     const d = dir();

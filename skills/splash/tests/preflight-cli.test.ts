@@ -1,24 +1,36 @@
 // preflight-cli.test.ts — the PROPOSITION-time readiness report the orchestrator runs
 // before presenting engines to the journalist.
+//
+// A3: the CLI REPORTS, it does not record. The record of "when was this capability last
+// checked, and what came back" has one home — `newsroom.json.capabilities[id].lastVerified`,
+// written by the setup page, which is the only caller that performs a live provider check.
+// The env/deps half this CLI computes is re-derived on every read by lib/newsroom/readiness.ts
+// from the same manifest, so persisting it was a cache nothing read.
 import { describe, expect, it } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const CLI = join(import.meta.dir, "../scripts/preflight.mjs");
 
+function project(): string {
+  return mkdtempSync(join(tmpdir(), "splash-preflight-cli-"));
+}
+
 describe("preflight CLI", () => {
   it("should report every named engine with ready flag + findings, exit 0", () => {
-    const project = mkdtempSync(join(tmpdir(), "splash-preflight-cli-"));
-    const out = execFileSync(
-      "bun",
-      [CLI, "dw-chart", "map-native", "--project", project],
-      {
-        env: { ...process.env, DATAWRAPPER_API_TOKEN: "" }, // force the dw finding
-        encoding: "utf8",
-      },
-    );
+    const out = execFileSync("bun", [CLI, "dw-chart", "map-native"], {
+      cwd: project(),
+      env: { ...process.env, DATAWRAPPER_API_TOKEN: "" }, // force the dw finding
+      encoding: "utf8",
+    });
     const report = JSON.parse(out);
     expect(report.engines["dw-chart"].ready).toBe(false);
     expect(report.engines["dw-chart"].findings[0].message).toContain(
@@ -28,8 +40,8 @@ describe("preflight CLI", () => {
   });
 
   it("should default to ALL engines when no argument is given", () => {
-    const project = mkdtempSync(join(tmpdir(), "splash-preflight-cli-"));
-    const out = execFileSync("bun", [CLI, "--project", project], {
+    const out = execFileSync("bun", [CLI], {
+      cwd: project(),
       encoding: "utf8",
     });
     const report = JSON.parse(out);
@@ -43,27 +55,10 @@ describe("preflight CLI", () => {
       expect(report.engines[p]).toBeDefined();
   });
 
-  it("should persist the tri-state map to <project>/.splash-preflight.json (Spotlight A2)", () => {
-    const project = mkdtempSync(join(tmpdir(), "splash-preflight-cli-"));
-    const out = execFileSync("bun", [CLI, "dw-chart", "--project", project], {
-      env: { ...process.env, DATAWRAPPER_API_TOKEN: "" },
-      encoding: "utf8",
-    });
-    const printed = JSON.parse(out);
-    const file = join(project, ".splash-preflight.json");
-    expect(existsSync(file)).toBe(true);
-    const persisted = JSON.parse(readFileSync(file, "utf8"));
-    expect(persisted.schemaVersion).toBe("1");
-    expect(persisted.engines["dw-chart"].status).toBe(
-      printed.engines["dw-chart"].status.status,
-    );
-    expect(persisted.engines["dw-chart"].checkedAt).toBeString();
-  });
-
   it("should exit 1 on an unknown producer", () => {
-    const project = mkdtempSync(join(tmpdir(), "splash-preflight-cli-"));
     expect(() =>
-      execFileSync("bun", [CLI, "sankey-native", "--project", project], {
+      execFileSync("bun", [CLI, "sankey-native"], {
+        cwd: project(),
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
       }),
@@ -71,27 +66,36 @@ describe("preflight CLI", () => {
   });
 });
 
-// Review F1: a subset run must merge into the persisted map, never clobber it.
-import { mkdtempSync, readFileSync as readFS } from "node:fs";
-import { tmpdir } from "node:os";
+// A3 — one fact, one home. The tri-state used to be persisted to `.splash-preflight.json`
+// beside the decor, which held the same fact under `lastVerified`: two writers of one record.
+describe("the CLI records nothing (A3)", () => {
+  it("writes no file at all — not the legacy status map, not the decor", () => {
+    const dir = project();
+    execFileSync("bun", [CLI, "dw-chart"], { cwd: dir, encoding: "utf8" });
+    expect(existsSync(join(dir, ".splash-preflight.json"))).toBe(false);
+    expect(existsSync(join(dir, "newsroom.json"))).toBe(false);
+    expect(readdirSync(dir)).toEqual([]);
+  });
 
-describe("preflight CLI persistence merge (review F1)", () => {
-  it("subset run preserves other engines' persisted statuses (read-merge-write)", () => {
-    const project = mkdtempSync(join(tmpdir(), "preflight-merge-"));
-    execFileSync("bun", [CLI, "--project", project], { encoding: "utf8" });
-    const full = JSON.parse(
-      readFS(join(project, ".splash-preflight.json"), "utf8"),
-    );
-    expect(Object.keys(full.engines).length).toBeGreaterThanOrEqual(5);
-    execFileSync("bun", [CLI, "dw-chart", "--project", project], {
+  it("leaves a legacy status map untouched, so the migration can still absorb it", () => {
+    const dir = project();
+    const legacy = join(dir, ".splash-preflight.json");
+    const before = JSON.stringify({
+      schemaVersion: "1",
+      engines: {
+        "dw-chart": {
+          status: "green",
+          checkedAt: "2026-07-01T00:00:00.000Z",
+          reason: "",
+        },
+      },
+    });
+    writeFileSync(legacy, before);
+    execFileSync("bun", [CLI, "dw-chart"], {
+      cwd: dir,
+      env: { ...process.env, DATAWRAPPER_API_TOKEN: "" }, // a finding must not rewrite it
       encoding: "utf8",
     });
-    const after = JSON.parse(
-      readFS(join(project, ".splash-preflight.json"), "utf8"),
-    );
-    expect(Object.keys(after.engines).length).toBe(
-      Object.keys(full.engines).length,
-    );
-    expect(after.engines["map-native"]).toBeDefined();
+    expect(readFileSync(legacy, "utf8")).toBe(before);
   });
 });

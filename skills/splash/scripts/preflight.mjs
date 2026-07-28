@@ -1,13 +1,20 @@
-// CLI: bun scripts/preflight.mjs [producer…] [--project <dir>] — PROPOSITION-time engine
-// readiness report. Prints JSON; ALWAYS exits 0 on a known-producer run (it informs the
-// ranked-list annotation — the blocking gate lives in produce-all). Falls back to the
-// repo-root .env for key lookup so a standard install (launcher sources /splash/.env) and
-// a bare dev shell report identically. Persistence (Spotlight A2): also writes the
-// tri-state map to <project>/.splash-preflight.json (default project = cwd) so later
-// turns/resumes read the persisted statuses instead of re-probing every run; a re-run
-// refreshes the file (statuses carry checkedAt).
-import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+// CLI: bun scripts/preflight.mjs [producer…] — PROPOSITION-time engine readiness report.
+// Prints JSON; ALWAYS exits 0 on a known-producer run (it informs the ranked-list annotation
+// — the blocking gate lives in produce-all). Falls back to the repo-root .env for key lookup
+// so a standard install (launcher sources /splash/.env) and a bare dev shell report
+// identically.
+//
+// It REPORTS and records NOTHING (A3). It used to persist the tri-state map to
+// <project>/.splash-preflight.json (Spotlight A2) while the decor held the same fact under
+// `newsroom.json.capabilities[id].lastVerified` — one record, two homes, and the legacy half
+// was a cache no code read (its only consumer was the one-time absorption in
+// lib/newsroom/migrate-decor.ts). The env/deps verdict this CLI computes is re-derived on
+// every read by lib/newsroom/readiness.ts from the same manifest, so nothing needs to keep
+// it; and the durable half — what a provider actually ANSWERED — is a live check this CLI
+// never performs, so stamping `lastVerified` from here would have overwritten a real
+// "rejected" verdict with a guess. The setup page owns that record.
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   ENGINE_REQUIREMENTS,
@@ -31,39 +38,15 @@ function rootEnv() {
   return out;
 }
 
-const args = process.argv.slice(2);
-let project = process.cwd();
-const producerArgs = [];
-for (let i = 0; i < args.length; i++) {
-  if (args[i] === "--project") {
-    project = args[++i];
-    if (!project) {
-      console.error("--project requires a directory argument");
-      process.exit(1);
-    }
-  } else {
-    producerArgs.push(args[i]);
-  }
-}
+// `--project <dir>` is gone with the file it addressed: it only ever chose where the status
+// map was written, and there is no longer anything to write.
+const producerArgs = process.argv.slice(2);
 
 const env = { ...rootEnv(), ...process.env };
 const producers = producerArgs.length
   ? producerArgs
   : Object.keys(ENGINE_REQUIREMENTS);
 const engines = {};
-// Read-merge-write (review F1): a subset run (`preflight.mjs dw-chart`) must REFRESH the
-// named engines and PRESERVE the rest — clobbering the map would silently drop the other
-// engines' persisted statuses and defeat the resume purpose. A corrupt/absent file starts
-// fresh (it is a cache of re-computable state, never a source of truth).
-const statusPath = join(project, ".splash-preflight.json");
-let persisted = {};
-try {
-  const prior = JSON.parse(readFileSync(statusPath, "utf8"));
-  if (prior && typeof prior.engines === "object" && prior.engines !== null)
-    persisted = prior.engines;
-} catch {
-  // absent or corrupt — start fresh
-}
 for (const producer of producers) {
   if (!ENGINE_REQUIREMENTS[producer]) {
     console.error(
@@ -74,12 +57,6 @@ for (const producer of producers) {
   const findings = preflightFindings(producer, { env });
   const status = enginePreflightStatus(producer, { env });
   engines[producer] = { ready: findings.length === 0, status, findings };
-  persisted[producer] = status;
 }
-
-writeFileSync(
-  statusPath,
-  JSON.stringify({ schemaVersion: "1", engines: persisted }, null, 2) + "\n",
-);
 
 console.log(JSON.stringify({ engines }, null, 2));
