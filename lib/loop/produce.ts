@@ -151,10 +151,10 @@ export async function produce(
   // manifest.ts's nextActionsForElement resolve through, so the refusal a journalist reads
   // here is the sentence the offer already showed them.
   const builder = resolveBuilder(chosen);
-  if (!isLoopBuildable(builder, chosen.nativeType))
+  if (!isLoopBuildable(builder, chosen.nativeType, chosen.format))
     return fail(
       "not-implemented",
-      `produce: "${chosen.id}" is a ${builder} form (${chosen.format ?? "static"}) — ${unbuildableEngineReason(builder)}`,
+      `produce: "${chosen.id}" is a ${builder} form (${chosen.format ?? "static"}) — ${unbuildableEngineReason(builder, chosen.nativeType, chosen.format)}`,
     );
 
   // A NARRATIVE PAGE IS NOT BUILT FROM A PLAN NOBODY WROTE. The delivery guard of the beats
@@ -254,11 +254,11 @@ export async function produce(
     // the one that cleared the policy, so the engine and the policy are reading the same row.
     verdict.value.kind,
   );
-  const assembler = assemblerFor(builder, chosen.nativeType);
+  const assembler = assemblerFor(builder, chosen.nativeType, format);
   if (!assembler)
     return fail(
       "not-implemented",
-      `produce: "${chosen.id}" is a ${builder} form (${format}) — ${unbuildableEngineReason(builder)}`,
+      `produce: "${chosen.id}" is a ${builder} form (${format}) — ${unbuildableEngineReason(builder, chosen.nativeType, format)}`,
     );
   const assembled = assembler(brief);
   if (!assembled.ok) return assembled;

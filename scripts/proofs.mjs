@@ -65,6 +65,11 @@ const PROOFS = [
     env: { SPLASH_MAP_E2E: "1" },
   },
   {
+    file: "lib/loop/dw-chart-e2e.test.ts",
+    what: "a chosen Datawrapper chart is assembled by the loop, published, and exported at the channel's size",
+    env: { SPLASH_DW_E2E: "1" },
+  },
+  {
     file: "lib/loop/delivery-genre-e2e.test.ts",
     what: "a produced PNG is published to a real S3 endpoint and served as an image",
     env: { SPLASH_S3_E2E: "1" },

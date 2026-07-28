@@ -215,8 +215,9 @@ test("produce renders the chosen option's own format, not a hard-coded static", 
 }, 60000);
 
 // The brain offers across engines, and produce() only knows how to build through the
-// ASSEMBLERS table (chart-native and, since task 7, map-native) — wiring dw-chart / map-dw
-// into this seam is a separate tranche. Before this guard, a chosen option naming another
+// ASSEMBLERS table (chart-native, map-native since task 7, scrolly since task 9, dw-chart's
+// static form since task 12) — wiring map-dw into this seam is a separate tranche. Before this
+// guard, a chosen option naming another
 // engine was silently rendered as if it were a chart-native spec (the option's nativeType
 // handed to chart-native regardless of what engine it actually belongs to) — a WRONG
 // artifact, not a missing one. A loud, typed refusal is the correct failure mode until that
