@@ -5,7 +5,16 @@ import { fail, ok, render, type VerbResult } from "../core/verbs";
 import { IMAGE_EXTENSIONS } from "../core/contract";
 import type { VisualFormat } from "../core/vocabulary";
 import type { ArcRole } from "../core/claim-arc";
-import { toVerbResult, validateSourcePolicy } from "../source";
+import {
+  assertNoPrivateLeak,
+  assertProseGrounded,
+  sourceFail,
+  sourceQuestion,
+  toVerbResult,
+  validateSourcePolicy,
+  type SourceLedger,
+  type SourcePolicyCode,
+} from "../source";
 import {
   chosenOption,
   provenanceHash,
@@ -14,6 +23,9 @@ import {
   type RunManifest,
   type RunElement,
 } from "./manifest";
+// The loop's ONE CSV parser (lib/loop/profile.ts) — the same split `orient` profiled this run's
+// input with. The prose guard needs the CELLS, not the CSV text; see its call site below.
+import { parseCsvRows } from "./profile";
 import {
   isLoopBuildable,
   unbuildableEngineReason,
@@ -95,6 +107,29 @@ export function assembleNativeSpec(
     data: dataCsv,
     ...(el.narrative ? { beats: narrativeBeatsFor(el) } : {}),
   };
+}
+
+/**
+ * A guard's THROW, turned into the refusal a verb is allowed to return.
+ *
+ * `assertProseGrounded` and `assertNoPrivateLeak` throw, on purpose — lib/source's own rule is
+ * that a caller wanting to be lenient about an invented number or an escaped shelf path has to
+ * say so out loud. A verb never throws (invariant I1), so produce says so exactly once, here,
+ * rather than at each call site.
+ *
+ * The thrown sentence IS the refusal a journalist reads; only the guard's own restatement of the
+ * code ("private leak: ", "prose source: ") is dropped, because `toVerbResult` already prefixes
+ * the domain code and saying it twice reads as two different problems.
+ */
+function refusalFromGuard(
+  code: SourcePolicyCode,
+  e: unknown,
+): VerbResult<never> {
+  const message = (e as Error).message.replace(
+    /^(private leak|prose source): /,
+    "",
+  );
+  return toVerbResult(sourceFail(code, `produce: ${message}`));
 }
 
 /** The engine's own beat shape (skills/chart-native's NarrativeBeat), built from the manifest's.
@@ -233,11 +268,32 @@ export async function produce(
   // No `lang`: the loop carries no language axis yet (the manifest has no locale, and produce
   // sets no `NativeSpec.lang` either, so the engine already renders English furniture).
   // Inventing one here would put a French qualifier under an English "Source:".
-  const verdict = validateSourcePolicy(run.sources?.data, {
+  const declared = run.sources?.data;
+  const verdict = validateSourcePolicy(declared, {
     mode: run.sources?.mode,
     carriesFactualData: true,
   });
-  if (!verdict.ok) return toVerbResult(verdict);
+  // THE REFUSAL CARRIES THE QUESTION. `sourceQuestion` is the ONE targeted question the flow owes
+  // a journalist whose source cannot be determined (lib/source/policy.ts) — the kind first, then
+  // the first required field still missing — and it had no caller at all: the refusal named what
+  // was missing without ever asking for it, which is the worst order for those two events.
+  //
+  // This is not the question's proper PLACE. That is before the run exists: `sources` is written
+  // once, by initRun's declaration, and no later step can add it — so the CADRAGE beat composing
+  // that declaration is where the question belongs, and it lives in lib/host/**. Until it does,
+  // the refusal at least ends with something answerable rather than only with a diagnosis.
+  //
+  // `null` when nothing it can ask about is wrong (demo data in a real run: the declaration is
+  // complete and the fix is a decision, not an answer). A refusal is not padded with a question
+  // that does not fit it.
+  if (!verdict.ok) {
+    const question = sourceQuestion(declared);
+    return toVerbResult(
+      question
+        ? sourceFail(verdict.code, `${verdict.message} — ${question}`)
+        : verdict,
+    );
+  }
   // `attribution`, never `credit`: ChartFrame renders `{sourceLabel(lang)} {source.name}` itself
   // (skills/chart-native/src/core/ChartFrame.tsx), so handing it the prefixed credit would print
   // "Source : Source : OFS". The prose qualifier and the synthetic notice are inside
@@ -252,6 +308,74 @@ export async function produce(
     published.url,
     format,
   );
+
+  // ── The two LAST-MOMENT guards of the source policy ─────────────────────────────────────────
+  //
+  // validateSourcePolicy above cleared the DECLARATION. These two check the PAYLOAD that is about
+  // to become pixels — and this is the only place in the codebase where that payload exists whole
+  // (the CSV read from disk, the journalist's title and alt text, the authored beats, the credit
+  // composed from the ledger). Both were built and left dormant; a guard whose refusal no run has
+  // ever executed is an intention, not a behaviour.
+  //
+  // A valid verdict means `run.sources.data` was declared, so the ledger exists. The fallback is
+  // unreachable and only spares this line a non-null assertion.
+  const ledger: SourceLedger = run.sources ?? { mode: "real" };
+
+  // A PROSE SOURCE IS RE-PRESENTED, NEVER COMPUTED FROM (lib/source/prose.ts). The quoted text is
+  // the run's frozen ARTICLE, read HERE at check time: the manifest records inputs as path+sha256
+  // and never their content, so produce is the only party holding both halves at once.
+  if (ledger.data?.kind === "prose") {
+    if (!run.input.article)
+      return fail(
+        "invalid-request",
+        "produce: the data is declared `prose`, but this run froze no article — the figures a prose " +
+          "source re-presents can only be checked against the text that states them",
+      );
+    let quoted: string;
+    try {
+      quoted = readFileSync(join(runDir, run.input.article.path), "utf8");
+    } catch (e) {
+      return fail(
+        "engine-failed",
+        `produce: cannot read the frozen article ${run.input.article.path}: ${(e as Error).message}`,
+      );
+    }
+    // WHAT IS CHECKED: the plotted data, and the claims rendered as text. NOT `unit` and NOT
+    // `emphasis` — those are labels the journalist composes at CADRAGE, not figures read out of
+    // the article, and a unit written "m2" or "CO2" would be refused for a digit that is not a
+    // figure at all. Named here rather than left to be re-derived; widening it is a decision.
+    //
+    // The data goes in CELL BY CELL, never as the CSV text. `figuresIn` reads a comma as a
+    // DECIMAL separator (correct for the French prose it was written for), so a row handed over
+    // whole reads "2015,2024" as the single number 2015.2024 and reports it ungrounded against
+    // an article that states both years — measured, not hypothetical. One cell is one figure, and
+    // splitting through parseCsvRows (the loop's one CSV parser, the same one `orient` profiled
+    // this very input with) keeps a French decimal cell like "3,5" intact.
+    const { columns, rows } = parseCsvRows(dataCsv);
+    try {
+      assertProseGrounded(quoted, [
+        ...columns,
+        ...rows.flatMap((r) => Object.values(r)),
+        el.angle.confirmedTakeaway,
+        el.angle.altInsight,
+        ...(el.narrative?.beats ?? []).map((b) => b.text),
+      ]);
+    } catch (e) {
+      return refusalFromGuard("prose-figure-ungrounded", e);
+    }
+  }
+
+  // BELT over publicSourceView's braces, and the last thing that happens before the door: produce
+  // does NOT build its credit through that allow-list (it takes `published` off the verdict), and
+  // everything else in this spec is text the run collected elsewhere — a CSV header, an alt text,
+  // a beat. Any of them can have picked up an internal shelf path or a file:// address on the
+  // way, and every one of them is rendered into the artifact. This is exactly the payload
+  // "composed somewhere ELSE" that lib/source/redact.ts's header writes the guard for.
+  try {
+    assertNoPrivateLeak(nativeSpec, ledger);
+  } catch (e) {
+    return refusalFromGuard("private-leak", e);
+  }
 
   const result = await render({
     // Dispatch follows the CHOSEN engine (chosen.engine), never the RESOLVED builder — the
