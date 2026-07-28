@@ -13,3 +13,4 @@ node_modules
 # Committing one would make every install of the release believe it is already migrated.
 newsroom.json
 .splash-runtime
+.sdd/
