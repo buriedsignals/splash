@@ -13,6 +13,7 @@ import {
 } from "../../verify/capture";
 import {
   FURNITURE_ROLES,
+  HEIGHT_POLICIES,
   type CaptureResult,
   type FurnitureExpectation,
 } from "../../verify/types";
@@ -44,6 +45,14 @@ export function isCapturePayload(p: unknown): p is CapturePayload {
         return false;
   }
   if (r.settleMs !== undefined && typeof r.settleMs !== "number") return false;
+  // Membership, not `typeof string`: a payload declaring "contentDriven" or "row-driven" would
+  // otherwise be accepted and then silently read as the default "pinned" — a guard relaxed by a
+  // typo is exactly the failure this whole check exists to make impossible.
+  if (
+    r.heightPolicy !== undefined &&
+    !(HEIGHT_POLICIES as readonly unknown[]).includes(r.heightPolicy)
+  )
+    return false;
   if (r.destination !== undefined) {
     const d = r.destination as Record<string, unknown>;
     if (typeof d !== "object" || d === null || typeof d.id !== "string")
@@ -54,7 +63,8 @@ export function isCapturePayload(p: unknown): p is CapturePayload {
 
 export const CAPTURE_PAYLOAD_MESSAGE =
   "capture: payload must carry artifactPath, format, channel, outDir and id " +
-  `(optional: destination, furniture[{role,text}] with role in ${FURNITURE_ROLES.join("|")}, settleMs)`;
+  `(optional: destination, furniture[{role,text}] with role in ${FURNITURE_ROLES.join("|")}, settleMs, ` +
+  `heightPolicy in ${HEIGHT_POLICIES.join("|")})`;
 
 export async function capture(
   p: CapturePayload,

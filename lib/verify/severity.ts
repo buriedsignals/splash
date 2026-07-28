@@ -51,6 +51,17 @@ export const FINDING_SEVERITY: Record<
   },
   "destination-mismatch": { criterion: "viewport", severity: "blocking" },
   "size-mismatch": { criterion: "viewport", severity: "blocking" },
+  // WARNING, alone among the viewport findings, and deliberately. Its siblings state facts with
+  // no judgement in them — the image is not the destination's size, the component leaves its
+  // container — while this one compares a legitimately content-driven height against a CHOSEN
+  // ceiling (lib/verify/capture.ts CONTENT_HEIGHT_LIMIT_MULTIPLE). A long national ranking can
+  // reach for it honestly, so blocking on the constant would gate real work on a number nobody
+  // can derive. A warning still reaches the journalist in its own words, and promoting it is one
+  // line here if the field says otherwise.
+  "height-far-exceeds-destination": {
+    criterion: "viewport",
+    severity: "warning",
+  },
   "no-capture": { criterion: "provenance", severity: "blocking" },
   // Evidence (issues #9, #11)
   "alt-text-missing": { criterion: "accessibility", severity: "blocking" },

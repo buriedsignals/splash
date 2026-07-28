@@ -7,11 +7,10 @@ import {
 } from "../../../skills/dw-chart/src/chart-spec";
 import type { ProductionBrief } from "../../core/production-brief";
 
-// column-chart, the vertical bar: a HIGHLIGHT_TYPE (so the emphasis has somewhere to go) and
-// fixed-aspect, which is what the loop's table lets through — see index.ts's dw-chart entry for
-// why a row-driven export is declined there. The ASSEMBLER itself translates any of Datawrapper's
-// types, and the tests below still exercise the row-driven ones: composing a spec and being
-// offered a form are two different questions, answered in two different places.
+// column-chart, the vertical bar: a HIGHLIGHT_TYPE, so the emphasis has somewhere to go. The
+// ASSEMBLER translates any of Datawrapper's types, row-driven ones included — the loop's table
+// no longer refuses those (index.ts's dw-chart entry; their content-driven height is DECLARED to
+// capture now instead of costing them the offer), it only declares the shape they will have.
 const CHART_BRIEF: ProductionBrief = {
   elementId: "e1",
   nativeType: "column-chart",

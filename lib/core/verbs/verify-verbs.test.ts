@@ -87,6 +87,27 @@ describe("shape gates", () => {
     expect(isCapturePayload(capturePayload)).toBe(true);
     expect(isCapturePayload({ ...capturePayload, format: 7 })).toBe(false);
     expect(isCapturePayload(null)).toBe(false);
+    // heightPolicy is checked by MEMBERSHIP, not `typeof string`. A near-miss spelling must be
+    // REFUSED, never silently read as the default "pinned": a guard that a typo relaxes is worse
+    // than no guard, and this one decides whether a height is checked at all.
+    expect(
+      isCapturePayload({ ...capturePayload, heightPolicy: "content-driven" }),
+    ).toBe(true);
+    expect(
+      isCapturePayload({ ...capturePayload, heightPolicy: "pinned" }),
+    ).toBe(true);
+    for (const bad of [
+      "contentDriven",
+      "content driven",
+      "row-driven",
+      "",
+      1,
+      null,
+    ])
+      expect(
+        isCapturePayload({ ...capturePayload, heightPolicy: bad }),
+        `heightPolicy ${JSON.stringify(bad)} must be refused`,
+      ).toBe(false);
     expect(isReviewPayload(reviewPayload)).toBe(true);
     expect(isReviewPayload({ ...reviewPayload, source: null })).toBe(false);
     expect(isReviewPayload({ ...reviewPayload, checks: "none" })).toBe(false);

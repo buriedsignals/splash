@@ -117,6 +117,29 @@ export type FurnitureExpectation = { role: FurnitureRole; text: string };
 
 export type Box = { x: number; y: number; width: number; height: number };
 
+// How a deliverable's own pixel box relates to the box its destination publishes at.
+//
+//   "pinned"         — both axes are the destination's. The ordinary case: a chart scaled INTO
+//                      its box, and the only shape a size check could express until now.
+//   "content-driven" — the WIDTH is the destination's; the HEIGHT belongs to the content. Not a
+//                      tolerance and not a laxer mode: it is a different, verifiable statement,
+//                      and the width leg is checked exactly as hard as before.
+//
+// It exists because a real engine really behaves this way. A Datawrapper ROW-DRIVEN export (the
+// bar family, dot / arrow / range plots, tables) lays each data row out as its own track, so its
+// natural height grows with the row count — and Datawrapper does not SCALE those rows into a
+// pinned box, it CROPS the ones that overflow (silent data loss in an owned deliverable). The
+// engine therefore exports such a chart width-only, ON PURPOSE, and a 3-row bar chart legitimately
+// comes back 1200x600 for a 1200x675 destination.
+//
+// The caller DECLARES it; nothing here infers it. WHICH types grow with their rows is engine
+// knowledge (skills/dw-chart/src/export-aspect.ts ROW_DRIVEN_TYPES), and a list of type names in
+// this layer would be that knowledge's second, driftable home — the wrong layer for it, and the
+// kind of copy this codebase has already paid for. Absent ⇒ "pinned", so every caller that has
+// nothing to declare is unchanged.
+export const HEIGHT_POLICIES = ["pinned", "content-driven"] as const;
+export type HeightPolicy = (typeof HEIGHT_POLICIES)[number];
+
 export type CaptureRecord = {
   breakpoint: Breakpoint;
   path: string; // the review image
@@ -142,13 +165,23 @@ export type CaptureRecord = {
    *  a wrong extraction stays readable in the proof instead of silently standing in for the
    *  real headline. */
   titleSource?: string;
+  /** The policy this image's SIZE was measured under, recorded only when it is not the default
+   *  "pinned". Same discipline as `rootSelector` and `titleSource`: a check that forgave an axis
+   *  must say so IN the evidence, so a reader of the record can see why a 1200x600 image passed
+   *  against a 1200x675 destination instead of having to re-derive it. */
+  heightPolicy?: HeightPolicy;
 };
 
 export type CaptureCheckId =
   | "capture:furniture-present"
   | "capture:furniture-in-frame"
   | "capture:fits-viewport"
-  | "capture:size-matches-destination";
+  | "capture:size-matches-destination"
+  // The ceiling a CONTENT-DRIVEN deliverable still has. Its own id, not a reading of the two
+  // above: those ask "is this the box?" and the answer for a content-driven height is
+  // legitimately no. This asks a different question — "is this still a chart, or has a runaway
+  // row count produced something nobody can publish?" — and a journalist must be told which.
+  | "capture:height-within-bound";
 
 // A measured FACT, not a verdict. review.ts is the single place that turns facts into
 // severity-bearing findings (#11: "define the severity mapping centrally").

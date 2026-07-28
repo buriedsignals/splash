@@ -31,6 +31,7 @@ import type {
   DestinationProfile,
   FurnitureExpectation,
   FurnitureRole,
+  HeightPolicy,
 } from "./types";
 
 // The rounding the engines really ship: a loop-produced article-web static.png measures
@@ -38,6 +39,26 @@ import type {
 // exactly 2px for this since the channel work; a stricter gate here would fail a correct
 // artifact and teach everyone to ignore the check.
 export const SIZE_TOLERANCE_PX = 2;
+
+// HOW TALL a content-driven deliverable may still be, as a multiple of the height its
+// destination publishes at.
+//
+// Relaxing the height leg for a row-driven export says the box's EXACT height is not the rule.
+// It does not say there is no rule: a join that fanned out, or a table nobody aggregated, can
+// hand back a 500-row chart, and "the height belongs to the content" would let it through with
+// no signal at all. That is a ceiling this layer can measure, so it measures it.
+//
+// A MULTIPLE, not a pixel count, because the ceiling has to mean the same thing on every
+// channel: 6750px is a runaway chart for a 675-high article embed and an ordinary one for a
+// 1920-high Stories box, and a constant would have to be wrong for one of them.
+//
+// Ten, specifically. At article-web that is 6750 delivered pixels — around a hundred rows once
+// the title, axis and source are paid for, which is a full national ranking (every canton, every
+// constituency) and about the longest thing anyone reads as a chart rather than scrolls as a
+// table. The failures it exists to catch are not near it: a runaway row count lands 20-50x out
+// (a real 500-row export is ~44x), so the bound separates "long" from "broken" with room on both
+// sides rather than adjudicating a close call.
+export const CONTENT_HEIGHT_LIMIT_MULTIPLE = 10;
 
 // How long the reveal is given to settle before the still is taken. The number the engines'
 // own snap scripts already use (skills/chart-native/scripts/snap-responsive.mjs:29) —
@@ -106,6 +127,12 @@ export type CapturePayload = {
   destination?: DestinationProfile;
   furniture?: FurnitureExpectation[];
   settleMs?: number;
+  /** How this deliverable's own box relates to the destination's — see HeightPolicy. Absent ⇒
+   *  "pinned", the shape every check here expressed before. Consulted on the STATIC path, where
+   *  the measurement IS the artifact's own pixel box; an html deliverable already answers the
+   *  question differently (it fills its host, and `capture:fits-viewport` measures the component
+   *  it renders, not a file's IHDR). */
+  heightPolicy?: HeightPolicy;
 };
 
 function hashFile(path: string): string {
@@ -116,34 +143,58 @@ function sizeCheck(
   target: CaptureTarget,
   actual: { width: number; height: number },
   scale: number,
+  heightPolicy: HeightPolicy,
 ): CaptureCheck {
   const expectedW = target.cssViewport.width * scale;
   const expectedH = target.cssViewport.height * scale;
-  const matches =
-    Math.abs(actual.width - expectedW) <= SIZE_TOLERANCE_PX &&
+  const widthMatches = Math.abs(actual.width - expectedW) <= SIZE_TOLERANCE_PX;
+  // The height leg is DROPPED for a content-driven deliverable, and only the height leg: an
+  // artifact whose width is wrong is still wrong, on either policy. The check keeps its id and
+  // its severity — what changes is the statement it verifies, not how hard it verifies it.
+  const heightMatches =
+    heightPolicy === "content-driven" ||
     Math.abs(actual.height - expectedH) <= SIZE_TOLERANCE_PX;
+  const matches = widthMatches && heightMatches;
+  const box = `${target.cssViewport.width}x${target.cssViewport.height}`;
+  if (heightPolicy === "content-driven")
+    return {
+      id: "capture:size-matches-destination",
+      breakpoint: target.breakpoint,
+      outcome: matches ? "pass" : "fail",
+      // The detail names the relaxation rather than hiding it: a reader of the evidence must be
+      // able to tell "the height was never checked" from "the height was checked and matched".
+      detail: matches
+        ? `image ${actual.width}x${actual.height} matches the destination width ${target.cssViewport.width} at scale ${scale} — its height is content-driven and is not held to the ${box} box`
+        : `image ${actual.width}x${actual.height} is not the destination width ${target.cssViewport.width} (any integer device scale) — its height is content-driven, so only the width is checked against the ${box} box`,
+    };
   return {
     id: "capture:size-matches-destination",
     breakpoint: target.breakpoint,
     outcome: matches ? "pass" : "fail",
     detail: matches
-      ? `image ${actual.width}x${actual.height} matches the destination ${target.cssViewport.width}x${target.cssViewport.height} at scale ${scale}`
-      : `image ${actual.width}x${actual.height} is not the destination ${target.cssViewport.width}x${target.cssViewport.height} (any integer device scale)`,
+      ? `image ${actual.width}x${actual.height} matches the destination ${box} at scale ${scale}`
+      : `image ${actual.width}x${actual.height} is not the destination ${box} (any integer device scale)`,
   };
 }
 
 // The integer device scale an image was rendered at, or 1 when no integer explains it. Both
-// axes must agree: a non-uniform ratio is a differently-shaped image, not a scaled one.
+// axes must agree: a non-uniform ratio is a differently-shaped image, not a scaled one — UNLESS
+// the height is content-driven, where the axes agreeing is not merely unlikely but impossible by
+// construction (the height is whatever the rows needed). There the WIDTH alone answers, which is
+// the only axis that carries a scale at all in that shape; demanding both would record a real 2x
+// export as scale 1 and then measure it against a box twice the size it was rendered for.
 function integerScaleOf(
   actual: { width: number; height: number },
   css: { width: number; height: number },
+  heightPolicy: HeightPolicy,
 ): number {
   for (const k of [1, 2, 3, 4]) {
-    if (
-      Math.abs(actual.width - css.width * k) <= SIZE_TOLERANCE_PX &&
-      Math.abs(actual.height - css.height * k) <= SIZE_TOLERANCE_PX
-    )
-      return k;
+    const widthAgrees =
+      Math.abs(actual.width - css.width * k) <= SIZE_TOLERANCE_PX;
+    const heightAgrees =
+      heightPolicy === "content-driven" ||
+      Math.abs(actual.height - css.height * k) <= SIZE_TOLERANCE_PX;
+    if (widthAgrees && heightAgrees) return k;
   }
   return 1;
 }
@@ -158,7 +209,8 @@ async function captureStatic(
       "engine-failed",
       `capture: ${p.artifactPath} is not a readable png — a static deliverable's size cannot be measured`,
     );
-  const scale = integerScaleOf(size, target.cssViewport);
+  const heightPolicy: HeightPolicy = p.heightPolicy ?? "pinned";
+  const scale = integerScaleOf(size, target.cssViewport, heightPolicy);
   const rootBox: Box = {
     x: 0,
     y: 0,
@@ -191,20 +243,47 @@ async function captureStatic(
     // detector compare a string with itself, guaranteeing silence while looking like a
     // measurement. The record says WHY there is no title instead.
     titleSource: "static-image",
+    // Conditional so the ordinary case is an ABSENT KEY, not `undefined` — the round-trip
+    // invariant (I6) the whole payload is held to, and the same shape `renderedTitle` uses.
+    ...(heightPolicy === "content-driven" ? { heightPolicy } : {}),
   };
+  // The container's HEIGHT is not a bound on a content-driven deliverable: the embed grows with
+  // it, which is the entire reason the engine exports it width-only. Held to the box, a 45-row
+  // bar chart would fail TWICE for one correct measurement — once as a size mismatch and once as
+  // an overflow — so relaxing one and not the other would leave the guard useless for every chart
+  // with more rows than the box happens to fit. The WIDTH leg is untouched: an image wider than
+  // its container overflows on any policy.
+  const fitsWidth =
+    rootBox.width <= target.cssViewport.width + SIZE_TOLERANCE_PX;
+  const fitsHeight =
+    heightPolicy === "content-driven" ||
+    rootBox.height <= target.cssViewport.height + SIZE_TOLERANCE_PX;
   const checks: CaptureCheck[] = [
-    sizeCheck(target, size, scale),
+    sizeCheck(target, size, scale, heightPolicy),
     {
       id: "capture:fits-viewport",
       breakpoint: target.breakpoint,
-      outcome:
-        rootBox.width <= target.cssViewport.width + SIZE_TOLERANCE_PX &&
-        rootBox.height <= target.cssViewport.height + SIZE_TOLERANCE_PX
-          ? "pass"
-          : "fail",
-      detail: `image ${rootBox.width}x${rootBox.height} against a ${target.cssViewport.width}x${target.cssViewport.height} container`,
+      outcome: fitsWidth && fitsHeight ? "pass" : "fail",
+      detail:
+        heightPolicy === "content-driven"
+          ? `image ${rootBox.width}x${rootBox.height} against a ${target.cssViewport.width}x${target.cssViewport.height} container, whose height it is not held to (content-driven)`
+          : `image ${rootBox.width}x${rootBox.height} against a ${target.cssViewport.width}x${target.cssViewport.height} container`,
     },
   ];
+  // ...and the ceiling that height still has. Emitted ONLY for a content-driven deliverable: a
+  // pinned one already has its height held to ±2px by sizeCheck, and a second verdict on the
+  // same number would file one defect twice — the duplication furnitureChecks is careful to
+  // avoid two functions above.
+  if (heightPolicy === "content-driven") {
+    const limit = target.cssViewport.height * CONTENT_HEIGHT_LIMIT_MULTIPLE;
+    const times = (rootBox.height / target.cssViewport.height).toFixed(1);
+    checks.push({
+      id: "capture:height-within-bound",
+      breakpoint: target.breakpoint,
+      outcome: rootBox.height <= limit ? "pass" : "fail",
+      detail: `image ${rootBox.width}x${rootBox.height} is ${times}x the ${target.cssViewport.height} its destination publishes at (ceiling ${CONTENT_HEIGHT_LIMIT_MULTIPLE}x = ${limit})`,
+    });
+  }
   return ok({ images: [record], checks });
 }
 

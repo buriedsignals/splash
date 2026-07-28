@@ -14,6 +14,7 @@ import {
   FINDING_PROVENANCES,
   FINDING_STATUSES,
   FURNITURE_ROLES,
+  HEIGHT_POLICIES,
   PREVIEW_PRESENTATIONS,
   REVIEWER_MODES,
   SEVERITIES,
@@ -69,6 +70,10 @@ export const CaptureRecordSchema = z.object({
   // the title was read must still parse. The compatibility rule of this file, unchanged.
   renderedTitle: z.string().optional(),
   titleSource: z.string().optional(),
+  // Which size policy this image was measured under, when it was not the default "pinned".
+  // Persisted, not derived: without it a re-read of the manifest could not tell a forgiven
+  // height from a matching one, and zod would strip the key on the way through.
+  heightPolicy: z.enum(HEIGHT_POLICIES).optional(),
 });
 
 export const CaptureCheckSchema = z.object({
