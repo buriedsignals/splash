@@ -2,7 +2,7 @@
 import { test, expect, describe, it } from "bun:test";
 import { deriveFacts } from "./facts";
 import { eligible, buildabilityMark } from "./eligibility";
-import { loadTypology, type TypeSheet } from "./typology";
+import { loadTypology, renderableSheets, type TypeSheet } from "./typology";
 import type { VisualFormat } from "../core/vocabulary";
 // renderableSheets() only sees a type once its engine has self-registered into
 // lib/core/registry — the same side-effect import lib/brain/typology-drift.test.ts uses.
@@ -249,10 +249,20 @@ test("the article branch MARKS every form that needs it, whatever the run declar
   expect(scrolly!.readiness!.reason).toMatch(/whole-article branch/);
 });
 
+// A FICTIONAL engine, on purpose. This used to filter the real KB's own offer for a sheet
+// whose engine had no assembler yet (map-native, then dw-chart, then map-dw) — each wiring
+// falsified it in turn, and now the assembler table covers every REAL engine the KB names
+// (chart-native, map-native, scrolly, image-native, map-dw, dw-chart), so no real sheet can
+// prove this rule any more. Same resolution lib/loop/produce.test.ts already carries: declare
+// a dead end instead of borrowing the last real one.
 test("a form whose engine the loop cannot build through is MARKED, never offered clean", () => {
-  const { eligible: ok } = eligible({ ...BASE });
+  const unbuildableSheet = fakeSheet("fx-crayon-form", ["static"]);
+  const { eligible: ok } = eligible({ ...BASE }, [
+    ...renderableSheets(),
+    { sheet: unbuildableSheet, engine: "crayon", key: "fake-key" },
+  ]);
   const unbuildable = ok.filter((c) => !isLoopBuildable(c.engine));
-  expect(unbuildable.length).toBeGreaterThan(0); // the KB actually exercises the path
+  expect(unbuildable.length).toBeGreaterThan(0); // the fixture actually exercises the path
   for (const c of unbuildable) {
     expect(c.readiness?.status).toBe("missing");
     // …and it names what cannot be built — unless the form ALSO sits on the unbuilt article
@@ -311,18 +321,23 @@ test("a producer that genuinely lacks a format still loses it — map-dw has no 
 // the exported function directly is the only level at which a revert of the effective-producer
 // fix is observable.
 //
-// The FIXTURE has moved twice, each time because the engine it was pinned on became buildable —
-// which is the point of the tranche, not a weakening of this test. It was "chart-native" +
-// "scrolly" until task 9 wired the scrolly host (chart-native itself IS loop-buildable; its
-// scrolly form was not), then "dw-chart" until task 12 wired the hosted chart. It now stands on
-// map-dw: the last engine with no assembler, whose own sheets can still declare a "scrolly"
-// format that the shared host builds. The same engine name has to answer differently for its two
-// formats, or the resolution is reading chosen.engine instead of the format's actual producer.
-test("buildabilityMark resolves the EFFECTIVE producer, not the sheet's engine — a map-dw form in the scrolly format is a scrolly build", () => {
-  const staticMark = buildabilityMark("map-dw", "static");
+// The FIXTURE moved three times, each time because the engine it was pinned on became
+// buildable — which is the point of the tranche, not a weakening of this test. It was
+// "chart-native" + "scrolly" until task 9 wired the scrolly host (chart-native itself IS
+// loop-buildable; its scrolly form was not), then "dw-chart" until task 12 wired the hosted
+// chart, then "map-dw" until task 13 wired the hosted map — and now the assembler table covers
+// every real engine the KB names, so no real engine is left with an unbuildable static form.
+// A FICTIONAL engine ("crayon", the same convention lib/loop/produce.test.ts and the
+// no-format-redirect test below use) still proves the point: nothing in the assembler table
+// knows its name, so its static form is unbuildable, but `producerForFormat` redirects ANY
+// engine's "scrolly" format to the shared scrolly host (lib/core/registry.ts's FORMAT_HOST),
+// which IS buildable — so the same engine name has to answer differently for its two formats,
+// or the resolution is reading chosen.engine instead of the format's actual producer.
+test("buildabilityMark resolves the EFFECTIVE producer, not the sheet's engine — a fictional engine's scrolly form redirects to the buildable scrolly host", () => {
+  const staticMark = buildabilityMark("crayon", "static");
   expect(staticMark).not.toBeNull();
-  expect(staticMark!.reason).toContain("map-dw");
-  const scrollyMark = buildabilityMark("map-dw", "scrolly");
+  expect(staticMark!.reason).toContain("crayon");
+  const scrollyMark = buildabilityMark("crayon", "scrolly");
   expect(scrollyMark).toBeNull();
 });
 
