@@ -17,7 +17,7 @@ import {
   type CalendarLayout,
 } from "./calendar-geometry";
 import { clamp01, easeOutCubic, formatNumber } from "./core/math";
-import { COLORS, FONT, TYPE } from "./core/tokens";
+import { COLORS, FONT, TYPE, themeColors, tooltipBorder } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -29,6 +29,14 @@ export interface CalendarConfig {
   lang?: Lang;
   unit: string; // subtitle / value unit
   days: { date: string; value: number }[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. The day cells are painted by the
+   *  sequential ramp (calendar-geometry), so the hue never touches them. Undefined =
+   *  untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface CalendarChartProps {
@@ -115,6 +123,8 @@ export function CalendarChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -156,6 +166,7 @@ function CalendarSvg({
     ramp,
     valueDomain,
   } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.16);
 
   // chronological wipe: a cell appears once the wipe (by column) reaches it.
@@ -186,7 +197,7 @@ function CalendarSvg({
             y={gridY - 7 * sc}
             fontSize={ts.source}
             fontWeight={600}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {m.label}
           </text>
@@ -204,7 +215,7 @@ function CalendarSvg({
             dy="0.32em"
             textAnchor="end"
             fontSize={ts.source}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {w.label}
           </text>
@@ -227,7 +238,7 @@ function CalendarSvg({
             height={c.h}
             rx={1.5 * sc}
             fill={c.color}
-            stroke={focused ? COLORS.ink : "none"}
+            stroke={focused ? C.ink : "none"}
             strokeWidth={focused ? 1.5 * sc : 0}
             opacity={ap}
             tabIndex={interactive ? 0 : undefined}
@@ -264,7 +275,7 @@ function CalendarSvg({
           x={barX}
           y={barY + barH + 12 * sc}
           fontSize={ts.source}
-          fill={COLORS.muted}
+          fill={C.muted}
         >
           {formatNumber(valueDomain[0], config.lang)}
         </text>
@@ -273,7 +284,7 @@ function CalendarSvg({
           y={barY + barH + 12 * sc}
           textAnchor="end"
           fontSize={ts.source}
-          fill={COLORS.muted}
+          fill={C.muted}
         >
           {formatNumber(valueDomain[1], config.lang)}
         </text>
@@ -281,7 +292,7 @@ function CalendarSvg({
           x={barX + barW + 10 * sc}
           y={barY + barH - 0.5 * sc}
           fontSize={ts.source}
-          fill={COLORS.muted}
+          fill={C.muted}
         >
           {config.unit}
         </text>
@@ -319,6 +330,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

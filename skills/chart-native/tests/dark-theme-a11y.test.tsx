@@ -10,29 +10,43 @@ import {
 } from "../src/core/tokens";
 import { contrastRatio } from "../src/core/conformance";
 
+import arcSample from "../assets/sample-data/arc.json";
 import barSample from "../assets/sample-data/bars.json";
 import beeswarmSample from "../assets/sample-data/beeswarm.json";
 import boxplotSample from "../assets/sample-data/boxplot.json";
 import bulletSample from "../assets/sample-data/bullet.json";
 import bumpSample from "../assets/sample-data/bump.json";
+import calendarSample from "../assets/sample-data/calendar.json";
+import candlestickSample from "../assets/sample-data/candlestick.json";
+import chordSample from "../assets/sample-data/chord.json";
+import comboSample from "../assets/sample-data/combo.json";
 import connectedScatterSample from "../assets/sample-data/connected-scatter.json";
 import divergingSample from "../assets/sample-data/diverging-bar.json";
 import divergingStackedSample from "../assets/sample-data/diverging-stacked.json";
 import dotStripSample from "../assets/sample-data/dot-strip.json";
 import dumbbellSample from "../assets/sample-data/dumbbell.json";
 import fanSample from "../assets/sample-data/fan.json";
+import ganttSample from "../assets/sample-data/gantt.json";
 import groupedSample from "../assets/sample-data/grouped.json";
 import heatmapSample from "../assets/sample-data/heatmap.json";
 import histogramSample from "../assets/sample-data/histogram.json";
 import lineSample from "../assets/sample-data/series.json";
 import lollipopSample from "../assets/sample-data/lollipop.json";
+import lorenzSample from "../assets/sample-data/lorenz.json";
+import marimekkoSample from "../assets/sample-data/marimekko.json";
+import parallelSample from "../assets/sample-data/parallel.json";
+import pictogramSample from "../assets/sample-data/pictogram.json";
 import pieSample from "../assets/sample-data/pie.json";
 import pyramidSample from "../assets/sample-data/population-pyramid.json";
+import radarSample from "../assets/sample-data/radar.json";
 import radialBarSample from "../assets/sample-data/radial-bar.json";
+import sankeySample from "../assets/sample-data/sankey.json";
 import scatterSample from "../assets/sample-data/scatter.json";
 import slopeSample from "../assets/sample-data/slope.json";
 import stackedAreaSample from "../assets/sample-data/stacked-area.json";
 import stackedSample from "../assets/sample-data/stacked.json";
+import streamgraphSample from "../assets/sample-data/streamgraph.json";
+import sunburstSample from "../assets/sample-data/sunburst.json";
 import treemapSample from "../assets/sample-data/treemap.json";
 import violinSample from "../assets/sample-data/violin.json";
 import waffleSample from "../assets/sample-data/waffle.json";
@@ -47,8 +61,8 @@ import waterfallSample from "../assets/sample-data/waterfall.json";
 // ~1.15:1 black-on-black fail on a dark ground), or the flat muted/axis/grid greys #6B6B6B /
 // #CFCFCF / #E6E6E6 — an invisible straggler that never derived from the ground.
 //
-// This suite renders EVERY themeBg-supporting native type (the 27 components that thread `themeBg`
-// — the family-B specialists that don't support it are out of scope) on non-light grounds and
+// This suite renders EVERY native chart type (all 41 base components — the family-B specialists
+// joined the seam when the last unthemed component was wired) on non-light grounds and
 // asserts (a) the ground bg is present, (b) the DERIVED furniture ink is present, and (c) no
 // light-DEFAULT furniture literal survives. Three grounds are exercised: the dark preset (#18181B),
 // an arbitrary DARK ground (dark brown), and an arbitrary LIGHT ground (pink) — proving the
@@ -56,33 +70,47 @@ import waterfallSample from "../assets/sample-data/waterfall.json";
 
 const source = { name: "Riverton open data", url: "https://example.org/x" };
 
-// (render-type id, shipped sample) for the 27 themeBg-supporting components. The sample files are
+// (render-type id, shipped sample) for the 41 base components. The sample files are
 // complete configs (title + source + data); we spread `themeBg` + a stable source over each and
 // render the SAME static branch a static.png produce would.
 const CASES: [string, Record<string, unknown>][] = [
+  ["arc", arcSample],
   ["bar", barSample],
   ["beeswarm", beeswarmSample],
   ["boxplot", boxplotSample],
   ["bullet", bulletSample],
   ["bump", bumpSample],
+  ["calendar", calendarSample],
+  ["candlestick", candlestickSample],
+  ["chord", chordSample],
+  ["combo", comboSample],
   ["connected-scatter", connectedScatterSample],
   ["diverging", divergingSample],
   ["diverging-stacked", divergingStackedSample],
   ["dot-strip", dotStripSample],
   ["dumbbell", dumbbellSample],
   ["fan", fanSample],
+  ["gantt", ganttSample],
   ["grouped", groupedSample],
   ["heatmap", heatmapSample],
   ["histogram", histogramSample],
   ["line", lineSample],
   ["lollipop", lollipopSample],
+  ["lorenz", lorenzSample],
+  ["marimekko", marimekkoSample],
+  ["parallel", parallelSample],
+  ["pictogram", pictogramSample],
   ["pie", pieSample],
   ["pyramid", pyramidSample],
+  ["radar", radarSample],
   ["radial-bar", radialBarSample],
+  ["sankey", sankeySample],
   ["scatter", scatterSample],
   ["slope", slopeSample],
   ["stacked-area", stackedAreaSample],
   ["stacked", stackedSample],
+  ["streamgraph", streamgraphSample],
+  ["sunburst", sunburstSample],
   ["treemap", treemapSample],
   ["violin", violinSample],
   ["waffle", waffleSample],
@@ -154,8 +182,8 @@ describe("theme a11y — chrome derives from the ground (dark preset #18181B)", 
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("covers every themeBg-supporting native type (all 27)", () => {
-    expect(CASES).toHaveLength(27);
+  it("covers every native chart type (all 41)", () => {
+    expect(CASES).toHaveLength(41);
     for (const [type] of CASES) expect(AUDIT_REGISTRY[type]).toBeDefined();
   });
 

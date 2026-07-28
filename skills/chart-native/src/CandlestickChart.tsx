@@ -17,7 +17,14 @@ import {
   type CandlestickLayout,
 } from "./candlestick-geometry";
 import { clamp01, easeOutCubic, stagger, formatNumber } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -36,6 +43,13 @@ export interface CandlestickConfig {
     low: number;
     close: number;
   }[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. Candles are coloured by DIRECTION
+   *  (up/down), so the hue never touches them. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface CandlestickChartProps {
@@ -131,6 +145,8 @@ export function CandlestickChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -163,6 +179,7 @@ function CandlestickSvg({
   sc: number;
 }) {
   const { innerWidth, innerHeight, candles, priceTicks, dateTicks } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const n = candles.length;
   const chrome = easeOutCubic(p / 0.16);
   const candleP = (i: number) =>
@@ -186,7 +203,7 @@ function CandlestickSvg({
                 x2={innerWidth}
                 y1={t.pos}
                 y2={t.pos}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -195,7 +212,7 @@ function CandlestickSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.source}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {formatNumber(Number(t.label), config.lang)}
               </text>
@@ -208,7 +225,7 @@ function CandlestickSvg({
               y={innerHeight + 18 * sc}
               textAnchor="middle"
               fontSize={ts.source}
-              fill={COLORS.muted}
+              fill={C.muted}
             >
               {t.label}
             </text>
@@ -297,6 +314,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,
