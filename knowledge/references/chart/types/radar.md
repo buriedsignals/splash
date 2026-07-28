@@ -4,7 +4,7 @@ engines:
   chart-native: radar
 intent: [ranking]
 shape: wide
-limits: { maxSeries: 3 }
+limits: { minPoints: 3, maxSeries: 3 }
 formats: [static, interactive, video]
 bestFor:
   - "comparing up to about three entities across 4-8 comparable dimensions, where the profile (the shape) is the message"

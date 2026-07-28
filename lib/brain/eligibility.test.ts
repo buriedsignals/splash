@@ -2,7 +2,7 @@
 import { test, expect, describe, it } from "bun:test";
 import { deriveFacts } from "./facts";
 import { eligible, buildabilityMark } from "./eligibility";
-import type { TypeSheet } from "./typology";
+import { loadTypology, type TypeSheet } from "./typology";
 import type { VisualFormat } from "../core/vocabulary";
 // renderableSheets() only sees a type once its engine has self-registered into
 // lib/core/registry — the same side-effect import lib/brain/typology-drift.test.ts uses.
@@ -435,8 +435,74 @@ describe("print (issue #1)", () => {
   });
 
   it("offers native forms, and only in the static format", () => {
-    const { eligible: rows } = eligible({ facts: TWO_POINTS, channel: "print-page" });
+    const { eligible: rows } = eligible({
+      facts: TWO_POINTS,
+      channel: "print-page",
+    });
     expect(rows.length).toBeGreaterThan(0);
     for (const c of rows) expect(c.format).toBe("static");
   });
+});
+
+// A26: radar and parallel coordinates both need >= 3 axes to form a legible shape
+// (checkRadarConformance / checkParallelConformance in skills/chart-native/src/core/conformance.ts
+// enforce exactly this floor: "radar has N axes (< 3)" / "parallel coordinates need >= 3 axes").
+// Until now that floor lived ONLY at render time — a 2-numeric-column CSV would have been offered
+// by the brain as legal, then died downstream at conformance instead of being excluded here with
+// a readable reason. `minPoints` already measures numeric-column count (facts.points); no new
+// vocabulary is needed, only declaring the floor both sheets already document in prose ("4-8
+// comparable dimensions" / "3-8 numeric dimensions") and their own conformance checker enforces.
+//
+// Both types are `deferred` in chart-native's own catalogue (Family B — "rare in a small
+// newsroom"), so renderableSheets() never pairs them today (same reason typology-drift.test.ts
+// uses "sankey" as its "a deferred type never pairs" example) — there is no LIVE path where an
+// under-specified radar/parallel reaches a journalist yet. This test proves the mechanics
+// directly, the same way the `fakeSheet` tests above isolate one engine pairing from the real
+// KB's coincidences: it pairs the REAL sheet (loaded straight off disk, not a fixture) explicitly,
+// bypassing the deferred filter, so the floor is proven correct now and stays correct the day
+// Family B goes live — nobody has to remember to add it in that future moment.
+const REAL_SHEETS = loadTypology();
+function realPair(id: string) {
+  const sheet = REAL_SHEETS.find((s) => s.id === id);
+  if (!sheet) throw new Error(`no real KB sheet named "${id}"`);
+  return {
+    sheet,
+    engine: "chart-native",
+    key: sheet.engines["chart-native"][0],
+  };
+}
+
+test("real KB: radar and parallel both declare a >= 3 axis floor, and refuse a two-axis dataset with it named", () => {
+  const radarSheet = REAL_SHEETS.find((s) => s.id === "radar")!;
+  const parallelSheet = REAL_SHEETS.find((s) => s.id === "parallel")!;
+  expect(radarSheet.limits.minPoints).toBe(3);
+  expect(parallelSheet.limits.minPoints).toBe(3);
+
+  const twoAxes = deriveFacts({
+    columns: ["entity", "reach", "trust"],
+    numericColumns: ["reach", "trust"],
+    rowCount: 3,
+  });
+  const { excluded } = eligible({ facts: twoAxes, channel: "article-web" }, [
+    realPair("radar"),
+    realPair("parallel"),
+  ]);
+  const radar = excluded.find((e) => e.id === "radar");
+  const parallel = excluded.find((e) => e.id === "parallel");
+  expect(radar?.reason).toMatch(/3.*point|point.*3/i);
+  expect(parallel?.reason).toMatch(/3.*point|point.*3/i);
+});
+
+test("real KB: radar and parallel are legal once the data carries >= 3 axes", () => {
+  const threeAxes = deriveFacts({
+    columns: ["entity", "reach", "trust", "speed"],
+    numericColumns: ["reach", "trust", "speed"],
+    rowCount: 3,
+  });
+  const { eligible: ok } = eligible(
+    { facts: threeAxes, channel: "article-web" },
+    [realPair("radar"), realPair("parallel")],
+  );
+  expect(ok.some((c) => c.id === "radar")).toBe(true);
+  expect(ok.some((c) => c.id === "parallel")).toBe(true);
 });

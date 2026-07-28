@@ -4,7 +4,7 @@ engines:
   chart-native: parallel
 intent: [magnitude]
 shape: wide
-limits: {}
+limits: { minPoints: 3 }
 formats: [static, interactive, video]
 bestFor:
   - "comparing items across 3-8 numeric dimensions where the trade-offs and clusters are the story"
