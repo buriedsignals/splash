@@ -379,3 +379,20 @@ test("resumeReport carries no angle key for an element that has none", () => {
   expect("angle" in resumeReport(unangled, runDir).elements[0]!).toBe(false);
   rmSync(runDir, { recursive: true, force: true });
 });
+
+// THE DECLARED ROUTE, REPORTED AS A DECLARATION.
+//
+// `run.route` was schematised, written by `init` from the journalist's declaration and by the v3
+// migration, and read by NOBODY: a field written and never read is eventually read as live
+// configuration that mysteriously changes nothing. Wiring it into the brain is not the closure —
+// lib/brain/eligibility.ts REMOVED it on purpose (whether the whole-article branch exists is a
+// fact about this build, never about what a run asked for), and propose.ts says so at its call
+// site. What was missing is a reader that reports it for what it is.
+test("resumeReport reports the route the run declared", () => {
+  const { run, runDir } = seed();
+  expect(resumeReport(run, runDir).route).toBe("embed");
+  expect(resumeReport({ ...run, route: "article" }, runDir).route).toBe(
+    "article",
+  );
+  rmSync(runDir, { recursive: true, force: true });
+});

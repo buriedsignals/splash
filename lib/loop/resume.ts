@@ -31,6 +31,19 @@ export type ElementValidation = {
 };
 export type ResumeReport = {
   runId: string;
+  /** WHAT THE RUN DECLARED IT IS — an embeddable element, or the visual article itself.
+   *
+   *  REPORTED, and deliberately nothing more. `route` had two writers (init, from the
+   *  journalist's declaration; the v3 migration) and no reader at all, and a field written and
+   *  never read is eventually read as live configuration that mysteriously changes nothing.
+   *
+   *  Giving it a reader is not the same as giving it authority, and the authority is refused on
+   *  purpose: lib/brain/eligibility.ts took `route` out of its input because whether the
+   *  whole-article branch EXISTS is a fact about this build, never about what a run asked for —
+   *  a manifest declaring route:"article" used to get the narrative forms offered clean,
+   *  buildable by nobody. lib/loop/propose.ts repeats the refusal at its call site. So this is
+   *  the declaration handed back to the desk that made it, and nothing routes on it. */
+  route: RunManifest["route"];
   inputValidation: HashCheck[];
   elements: {
     id: string;
@@ -193,7 +206,7 @@ export function resumeReport(run: RunManifest, runDir: string): ResumeReport {
     };
   });
 
-  return { runId: run.runId, inputValidation, elements };
+  return { runId: run.runId, route: run.route, inputValidation, elements };
 }
 
 function printReport(r: ResumeReport): void {

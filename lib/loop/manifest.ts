@@ -208,7 +208,19 @@ const RunElementSchema = z.object({
 export const RunManifestSchema = z.object({
   runId: z.string(),
   schemaVersion: z.literal(4),
-  /** The relationship to the text: an embeddable element, or the visual article itself. */
+  /** The relationship to the text: an embeddable element, or the visual article itself.
+   *
+   *  DECLARED, REPORTED, AND ROUTED ON BY NOTHING — and that is the design, not an omission.
+   *  lib/brain/eligibility.ts deliberately does NOT see this field: whether the whole-article
+   *  branch exists is a fact about this build, never about what a run asked for, and while it
+   *  did see it a manifest declaring route:"article" got the narrative forms offered clean,
+   *  buildable by nobody. lib/loop/propose.ts repeats the refusal at its call site.
+   *
+   *  Its one reader is lib/loop/resume.ts, which hands the declaration back to the desk that
+   *  made it. Before that it had two writers and no readers, which is how a field starts being
+   *  read as live configuration that mysteriously changes nothing. If the whole-article branch
+   *  is ever wired, what makes it reachable is LOOP_BUILDABLE_ENGINES (lib/loop/buildable.ts),
+   *  not this. */
   route: z.enum(["embed", "article"]).default("embed"),
   /** The run's DEFAULT destination, in render-channel form — what an element that declares no
    *  `deliverable` of its own is produced at. Before issue #1 this was the run's ONE channel;
