@@ -44,6 +44,11 @@ export interface StackedConfig {
   /** newsroom dark theme (F2 house `theme: dark`) — flips the furniture + swaps the
    *  palette's black series for a light neutral (themeStackedColors). Default light. */
   themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. This chart encodes with a fixed
+   *  categorical/role palette, so the hue never touches its marks — colouring them with one
+   *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface StackedBarChartProps {
@@ -181,6 +186,7 @@ export function StackedBarChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -214,7 +220,7 @@ function StackedSvg({
 }) {
   const { innerWidth, innerHeight, base, columns } = layout;
   const n = columns.length;
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const seriesColors = themeStackedColors(config.themeBg);
 
   const chrome = easeOutCubic(p / 0.18);

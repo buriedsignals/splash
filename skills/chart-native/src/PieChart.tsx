@@ -38,6 +38,11 @@ export interface PieConfig {
   donut?: boolean;
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
   themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. This chart encodes with a fixed
+   *  categorical/role palette, so the hue never touches its marks — colouring them with one
+   *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -132,6 +137,7 @@ export function PieChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -164,7 +170,7 @@ function PieSvg({
   sc: number;
 }) {
   const { cx, cy, radius, innerRadius, total, slices } = layout;
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
 
   // Radial label placement (type-specific) + the GLOBAL invariant check.
   // Only the FIXED layout uses radial labels; responsive renders a legend below.

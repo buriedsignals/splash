@@ -35,6 +35,11 @@ export interface PopulationPyramidConfig {
   lang?: Lang;
   /** newsroom dark theme — flips the chart chrome to the dark furniture set. */
   themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. This chart encodes with a fixed
+   *  categorical/role palette, so the hue never touches its marks — colouring them with one
+   *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
   unit: string;
   bandField: string;
   leftField: string;
@@ -66,7 +71,7 @@ export function PopulationPyramidChart({
   scale = 1,
 }: PopulationPyramidChartProps) {
   const p = clamp01(progress);
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
     8,
@@ -150,6 +155,7 @@ export function PopulationPyramidChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>

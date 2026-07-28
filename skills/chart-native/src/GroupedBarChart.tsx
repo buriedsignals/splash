@@ -40,6 +40,11 @@ export interface GroupedConfig {
   seriesFields: string[];
   /** newsroom dark theme — flips the chrome furniture (bg/ink/muted). Default light. */
   themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. This chart encodes with a fixed
+   *  categorical/role palette, so the hue never touches its marks — colouring them with one
+   *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -167,6 +172,7 @@ export function GroupedBarChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -200,7 +206,7 @@ function GroupedSvg({
 }) {
   const { innerWidth, innerHeight, base, bars, columns } = layout;
   const nCols = columns.length;
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
 
   const chrome = easeOutCubic(p / 0.18);
   // stagger across GROUPS (reading order); series within a group rise together.

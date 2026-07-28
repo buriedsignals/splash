@@ -48,6 +48,11 @@ export interface DivergingStackedConfig {
    *  sentiment ramp has no black (its neutral is #BFBFBF, light-visible) and in-bar
    *  labels are picked per-fill by labelInkOnFill, so both are theme-independent. */
   themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. This chart encodes with a fixed
+   *  categorical/role palette, so the hue never touches its marks — colouring them with one
+   *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface DivergingStackedChartProps {
@@ -197,6 +202,7 @@ export function DivergingStackedChart({
       scale={sc}
       lang={config.lang}
       themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -232,7 +238,7 @@ function DSSvg({
 }) {
   const { innerWidth, innerHeight, centerX, rows, pctTicks } = layout;
   const n = rows.length;
-  const C = themeColors(config.themeBg);
+  const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.16);
   const rowP = (i: number) =>
     easeOutCubic(stagger(p, i, n, 0.16, 0.5 / n, 0.4));
