@@ -13,6 +13,7 @@ import {
 } from "../../../../lib/core/contrast";
 import { conformanceL0 } from "../../../../lib/core/conformance-l0";
 import { rampUniformityIssues } from "../../../../lib/core/house-ramp";
+import type { SourceKind } from "../../../../lib/source/vocabulary";
 
 export const OKABE_ITO_SET = new Set([
   "#0072B2",
@@ -298,6 +299,26 @@ export function checkLabelDataIntegrity(input: {
 }
 
 /**
+ * The source, as every conformance layer passes it down: the two reader-facing fields, plus the
+ * DECLARED CLASS of the data behind them (lib/source/vocabulary.ts).
+ *
+ * `kind` rides here rather than beside the source because this object is what the produce gate
+ * already hands to each type's guard (`source: cfg.source`, 26 call sites in
+ * produce-conformance.ts) and what each guard already forwards to checkGlobalConformance. A
+ * sibling parameter would have had to be declared and forwarded at all 38 layers in between to
+ * arrive at the same place.
+ *
+ * OPT-IN, and that is the whole compatibility story: without a class, conformanceL0 applies the
+ * flat historical rule (name required, url optional); with one, it reads the consequences table
+ * (lib/source/requirements.ts), which is the only place those rules are written.
+ */
+export interface ConformanceSource {
+  name?: string;
+  url?: string;
+  kind?: SourceKind;
+}
+
+/**
  * Check a chart's config + colours against design-conformance.md. Returns the
  * list of violations (empty = conformant). The component bakes these in; this
  * is the guard that proves it for every chart we ship.
@@ -310,7 +331,7 @@ export function checkLabelDataIntegrity(input: {
  */
 export function checkGlobalConformance(input: {
   title: string;
-  source: { name?: string; url?: string };
+  source: ConformanceSource;
   colors: ConformanceColors;
   /**
    * WCAG 1.1.1 — alt text must state the INSIGHT (not the chart's structure),
@@ -345,6 +366,11 @@ export function checkGlobalConformance(input: {
   const v: string[] = conformanceL0({
     title: input.title,
     source: input.source,
+    // The declared class, when the config carries one. Spread rather than passed as
+    // `sourceKind: input.source.kind`, because conformanceL0's rule switches on the KEY being
+    // undefined: a class-less source must reach it with no key at all, so it keeps the flat
+    // historical rule instead of reading a requirements row that does not exist.
+    ...(input.source?.kind ? { sourceKind: input.source.kind } : {}),
     ...("altInsight" in input ? { altInsight: input.altInsight } : {}),
     textColors: colors,
   });
@@ -397,7 +423,7 @@ export function checkConformance(
 export function checkBarConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     valueDomain: [number, number];
   },
   colors: ConformanceColors,
@@ -424,7 +450,7 @@ export function checkBarConformance(
 export function checkDivergingBarConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     valueDomain: [number, number];
     signColors: string[]; // [positive, negative]
   },
@@ -461,7 +487,7 @@ export function checkDivergingBarConformance(
 export function checkWaterfallConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     countDomain: [number, number];
     /** the rows in order, to verify the cumulative arithmetic */
     rows: { value: number; total?: boolean }[];
@@ -516,7 +542,7 @@ export function checkWaterfallConformance(
 export function checkPopulationPyramidConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     leftLabel?: string;
     rightLabel?: string;
     groupColors: string[]; // [left, right]
@@ -551,7 +577,7 @@ export function checkPopulationPyramidConformance(
 export function checkHistogramConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     countDomain: [number, number];
     binCount: number;
   },
@@ -583,7 +609,7 @@ export function checkHistogramConformance(
 export function checkMarimekkoConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     seriesCount: number;
     seriesColors: string[];
     /** each column's series values, to check they form a real composition */
@@ -623,7 +649,7 @@ export function checkMarimekkoConformance(
 export function checkBulletConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     measureColors: string[];
     rows: { target?: number }[];
   },
@@ -661,7 +687,7 @@ export function checkBulletConformance(
 export function checkScatterConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     xLabel?: string;
     yLabel?: string;
   },
@@ -685,7 +711,7 @@ export function checkScatterConformance(
 export function checkPieConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     sliceCount: number;
     sliceColors: string[];
   },
@@ -719,7 +745,7 @@ export function checkPieConformance(
 export function checkStackedBarConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     valueDomain: [number, number];
     seriesCount: number;
     seriesColors: string[];
@@ -758,7 +784,7 @@ export function checkStackedBarConformance(
 export function checkStackedAreaConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     valueDomain: [number, number];
     seriesCount: number;
     seriesColors: string[];
@@ -797,7 +823,7 @@ export function checkStackedAreaConformance(
 export function checkGroupedBarConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     valueDomain: [number, number];
     seriesCount: number;
     seriesColors: string[];
@@ -839,7 +865,7 @@ export function checkGroupedBarConformance(
 export function checkSlopeConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     leftPeriod?: string;
     rightPeriod?: string;
     accentColor: string;
@@ -878,7 +904,7 @@ export function checkSlopeConformance(
 export function checkDumbbellConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     leftLabel?: string;
     rightLabel?: string;
     dotColors: string[]; // the two endpoint colours
@@ -913,7 +939,7 @@ export function checkDumbbellConformance(
 export function checkDotStripConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     dotColor: string;
     hasSummaryMarker: boolean;
     categoryCounts: number[]; // observations per category
@@ -945,7 +971,7 @@ export function checkDotStripConformance(
 export function checkViolinConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     fillColor: string;
     hasMedianMarker: boolean;
     categoryCounts: number[]; // observations per category
@@ -977,7 +1003,7 @@ export function checkViolinConformance(
 export function checkArcConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     groupColors: string[]; // one colour per node group
     encodesWeightByWidth: boolean;
     danglingLinks: number; // links referencing a missing node
@@ -1016,7 +1042,7 @@ export function checkArcConformance(
 export function checkRadialBarConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     dataColor: string;
     radialBaseline: number; // the value at the inner circle — MUST be 0
     tickCount: number; // number of radial value rings
@@ -1051,7 +1077,7 @@ export function checkRadialBarConformance(
 export function checkComboConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     columnColor: string;
     lineColor: string;
     columnAxisIncludesZero: boolean;
@@ -1090,7 +1116,7 @@ export function checkComboConformance(
 export function checkPictogramConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     iconColor: string;
     unitPerIcon: number;
     unitStated: boolean; // is "each icon = N" shown to the reader?
@@ -1123,7 +1149,7 @@ export function checkPictogramConformance(
 export function checkCandlestickConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     priceLabel?: string;
     ohlc: { open: number; high: number; low: number; close: number }[];
     directionColors: string[]; // [up, down]
@@ -1168,7 +1194,7 @@ export function checkCandlestickConformance(
 export function checkLorenzConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     xLabel?: string;
     yLabel?: string;
     series: { endsX: number; endsY: number; gini: number }[];
@@ -1211,7 +1237,7 @@ export function checkLorenzConformance(
 export function checkWaffleConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     unit?: string;
     categoryCount: number;
     categoryColors: string[];
@@ -1248,7 +1274,7 @@ export function checkWaffleConformance(
 export function checkCalendarConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     unit?: string;
     rampStops: string[];
     valueDomain: [number, number];
@@ -1293,7 +1319,7 @@ export function checkCalendarConformance(
 export function checkFanConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     valueLabel?: string;
     levels: number[];
     /** per forecast step: { central, bands: { level → [lo, hi] } } */
@@ -1342,7 +1368,7 @@ export function checkFanConformance(
 export function checkGanttConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     spans: { startMs: number; endMs: number }[];
     timeLabel?: string;
     groupColors: string[];
@@ -1381,7 +1407,7 @@ export function checkGanttConformance(
 export function checkStreamgraphConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     seriesCount: number;
     seriesColors: string[];
     stepCount: number;
@@ -1416,7 +1442,7 @@ export function checkStreamgraphConformance(
 export function checkChordConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     matrix: number[][];
     labels: string[];
     entityColors: string[];
@@ -1457,7 +1483,7 @@ export function checkChordConformance(
 export function checkSankeyConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     columnCount: number;
     linkValues: number[];
     nodeLabels: string[];
@@ -1504,7 +1530,7 @@ export function checkSankeyConformance(
 export function checkDivergingStackedConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     responseCount: number;
     /** each item's response percentages, to verify they form a composition */
     rows: number[][];
@@ -1551,7 +1577,7 @@ export function checkDivergingStackedConformance(
 export function checkSunburstConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     leafValues: number[];
     branchCount: number;
     branchColors: string[];
@@ -1589,7 +1615,7 @@ export function checkSunburstConformance(
 export function checkTreemapConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     values: number[];
     groupColors: string[];
   },
@@ -1625,7 +1651,7 @@ export function checkTreemapConformance(
 export function checkBeeswarmConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     valueLabel?: string;
     pointCount: number;
     categoryColors: string[]; // [] for a single-hue swarm
@@ -1669,7 +1695,7 @@ export function checkBeeswarmConformance(
 export function checkBumpConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     periodCount: number;
     maxRank: number;
     highlightCount: number;
@@ -1710,7 +1736,7 @@ export function checkBumpConformance(
 export function checkBoxplotConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     valueLabel?: string;
     categoryCount: number;
     boxColors: string[];
@@ -1746,7 +1772,7 @@ export function checkBoxplotConformance(
 export function checkParallelConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     dimensionLabels: string[];
     highlightCount: number;
     accentColors: string[];
@@ -1789,7 +1815,7 @@ export function checkParallelConformance(
 export function checkRadarConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     max: number;
     axisCount: number;
     seriesCount: number;
@@ -1829,7 +1855,7 @@ export function checkRadarConformance(
 export function checkHeatmapConformance(
   input: {
     title: string;
-    source: { name?: string; url?: string };
+    source: ConformanceSource;
     rampStops: string[];
     valueDomain: [number, number];
   },

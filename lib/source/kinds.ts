@@ -3,7 +3,8 @@
 // holding their own idea of what a cited source is.
 //
 // Six kinds, and no seventh: a class that is not one of these is a class nobody decided the
-// consequences of (lib/source/requirements.ts holds them, one row per kind, exhaustively).
+// consequences of (lib/source/requirements.ts holds them, one row per kind, exhaustively). The
+// six words themselves are in lib/source/vocabulary.ts and re-exported from here unchanged.
 //
 // The schemas are STRICT on purpose. Issue #7's acceptance list says "existing source fields
 // migrate without silently widening what is considered valid": a permissive object would let a
@@ -11,33 +12,11 @@
 // label at all, and the policy would then refuse it for a missing field the caller thinks it
 // supplied. Failing at the parse, naming the unknown field, is the honest version.
 import { z } from "zod";
-
-export const SOURCE_KINDS = [
-  // A named external dataset or publication. Traceable by anyone: needs its own URL.
-  "public",
-  // A file the journalist brought. Provenance is the run's own frozen input (path + sha256),
-  // which is why this kind needs no URL and stores no second copy of the path.
-  "local",
-  // A newsroom-internal dataset. Publishable ATTRIBUTION only; the internal reference stays in
-  // the private run ledger and never reaches a rendered visual.
-  "private",
-  // Test / demo data. Never reporting: barred from a real run outright.
-  "synthetic",
-  // Figures the journalist quoted in their own text. An already-published claim, not a record —
-  // so Splash may re-present it, never derive from it.
-  "prose",
-  // No external factual data at all (a diagram, a pure illustration). The one kind with no
-  // credit, and legal only for a visual that asserts no facts.
-  "none",
-] as const;
-
-export type SourceKind = (typeof SOURCE_KINDS)[number];
-
-// Whether this run is reporting or a rehearsal. The axis synthetic data is gated on: a demo
-// dataset is legitimate in a test run and a fabrication in a real one, and nothing else in the
-// declaration can express that difference.
-export const RUN_MODES = ["real", "test"] as const;
-export type RunMode = (typeof RUN_MODES)[number];
+// The words live in vocabulary.ts — zero imports, so an ENGINE can name a source class in its
+// own types without the zod dependency riding along into the runnable source bundle. Re-exported
+// here so every importer of "./kinds" keeps its path.
+import { SOURCE_KINDS, RUN_MODES } from "./vocabulary";
+export * from "./vocabulary";
 
 export const SourceDeclarationSchema = z.strictObject({
   kind: z.enum(SOURCE_KINDS),

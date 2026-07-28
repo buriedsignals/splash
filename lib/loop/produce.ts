@@ -12,6 +12,7 @@ import {
   sourceQuestion,
   toVerbResult,
   validateSourcePolicy,
+  type SourceKind,
   type SourceLedger,
   type SourcePolicyCode,
 } from "../source";
@@ -94,6 +95,7 @@ export function assembleNativeSpec(
   attribution: string,
   sourceUrl?: string,
   format?: VisualFormat,
+  sourceKind?: SourceKind,
 ): Record<string, unknown> & { beats?: NarrativeBeatSpec[] } {
   const chosen = chosenOption(el);
   return {
@@ -102,6 +104,12 @@ export function assembleNativeSpec(
     altInsight: el.angle?.altInsight ?? "",
     unit: el.angle?.unit ?? "",
     source: { name: attribution, ...(sourceUrl ? { url: sourceUrl } : {}) },
+    // WHAT the figures are, alongside WHO to credit. The engine's conformance belt reads it
+    // (chart-native's specToNativeConfig threads it onto the config's source object, and
+    // conformanceL0 then applies the requirements row instead of the flat "name required, url
+    // optional" rule). Omitted when absent, so a caller with no ledger — the two proof callers
+    // above — assembles a byte-identical spec.
+    ...(sourceKind ? { sourceKind } : {}),
     ...(el.angle?.emphasis ? { highlight: el.angle.emphasis } : {}),
     ...(format ? { format } : {}),
     data: dataCsv,
@@ -307,6 +315,9 @@ export async function produce(
     published.attribution,
     published.url,
     format,
+    // The class comes off the VERDICT, never off the raw declaration: `verdict.value.kind` is
+    // the one that cleared the policy, so the engine and the policy are reading the same row.
+    verdict.value.kind,
   );
 
   // ── The two LAST-MOMENT guards of the source policy ─────────────────────────────────────────

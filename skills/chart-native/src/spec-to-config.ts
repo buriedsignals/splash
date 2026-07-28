@@ -8,6 +8,7 @@ import { parseCsv, type ParsedCsv } from "./csv";
 import { validateShape } from "./shape-validation";
 import { humanizeColumn, seriesLabelFromColumn } from "./core/text";
 import type { ArcRole } from "../../../lib/core/claim-arc";
+import type { SourceKind } from "../../../lib/source/vocabulary";
 
 /**
  * One journalist-confirmed narrative beat for a chart SCROLLY (NativeSpec.beats).
@@ -67,6 +68,19 @@ export interface NativeSpec {
    *  Undefined = the light default (byte-identical legacy path). Threaded onto every config by
    *  specToNativeConfig; consumed via themeColors(config.themeBg). */
   themeBg?: string;
+  /**
+   * The DECLARED CLASS of `source` (lib/source/vocabulary.ts): what the figures ARE — a published
+   * dataset, a file the journalist brought, an internal table, figures quoted in prose…
+   * Threaded onto every produced config's `source` object by specToNativeConfig, and read by
+   * the conformance belt (checkGlobalConformance → conformanceL0), which then applies the ONE
+   * consequences table (lib/source/requirements.ts) instead of the flat "name required, url
+   * optional" rule. OPT-IN: absent, every gate behaves exactly as before this field existed.
+   *
+   * It rides ON the source object rather than beside it because that object is what the 26
+   * produce-conformance call sites already hand down; a sibling field would have had to be
+   * re-declared and forwarded at every layer in between.
+   */
+  sourceKind?: SourceKind;
   /** the chart subject (e.g. "housing rents", "cross-border commuting"). Injected onto
    *  every produced config so the produce-time subject-fit guard can catch a chart left
    *  on a blue-family hue for a non-water/cold subject (design-conformance.md). */
@@ -959,6 +973,17 @@ export function specToNativeConfig(spec: NativeSpec): {
   // newsroom's ground via themeColors(config.themeBg). Only set when present, so a light (default)
   // spec produces a byte-identical config. Set by the newsroom-profile merge from `theme`.
   if (spec.themeBg) out.config.themeBg = spec.themeBg;
+  // The declared source CLASS — threaded onto EVERY produced config here (single injection
+  // point, like lang/subject/altInsight), but ON the `source` object every mapper already
+  // built, because that object is what the produce gate hands down to each type's guard.
+  // Only set when present, so a spec that declares no class produces a byte-identical config
+  // and every gate keeps the flat historical source rule.
+  if (
+    spec.sourceKind &&
+    out.config.source &&
+    typeof out.config.source === "object"
+  )
+    (out.config.source as { kind?: SourceKind }).kind = spec.sourceKind;
   return out;
 }
 
