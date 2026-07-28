@@ -55,7 +55,9 @@ export function propose(
   const el = element ?? m.elements[0];
   const offer = buildOffer({
     facts: deriveFacts(profile),
-    channel: el ? channelForElement(m, el) : m.channel,
+    // Through the resolver even when there is no element: the run's default is not this module's
+    // to unpack (lib/loop/manifest.ts's deliverableForElement is the one reader of `run.channel`).
+    channel: channelForElement(m, el),
     // `m.route` is deliberately NOT threaded: what the run declares it wants is not evidence
     // that the whole-article branch exists, and the brain's mark is about existence (I2).
     ...(decor ? { readiness: decor.readiness } : {}),

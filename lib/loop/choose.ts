@@ -9,11 +9,7 @@
 // own, in the same shape requestDelivery already has: a VerbResult, never a throw, nothing written
 // until every refusal has passed.
 import { fail, ok, type VerbResult } from "../core/verbs/types";
-import {
-  isLoopBuildable,
-  resolveBuilder,
-  unbuildableEngineReason,
-} from "./buildable";
+import { unbuildableFormReason } from "./buildable";
 import type { RunElement } from "./manifest";
 
 /**
@@ -65,16 +61,14 @@ export function chooseForm(
   // newsroom left switched off, or for the whole-article branch; those are warnings the offer
   // showed and the journalist read. Refusing them would turn the mark into a veto and take the
   // decision back from the journalist, which is the opposite of what this module is for.
-  const builder = resolveBuilder(chosen);
-  if (!isLoopBuildable(builder))
+  // The mark's own words when it has them, so the journalist reads in the refusal exactly the
+  // sentence the offer displayed — written once, in buildable.ts, because manifest.ts's routing
+  // and the driver's ledger entry for a run already stuck on such a choice say the same thing.
+  const unbuildable = unbuildableFormReason(chosen);
+  if (unbuildable)
     return fail(
       "invalid-request",
-      // The mark's own words when it has them, so the journalist reads in the refusal exactly the
-      // sentence the offer displayed (including the whole-article-branch wording, which masks the
-      // engine reason in the offer — eligibility.ts's withMarks pushes it first).
-      `choose-form: "${chosen.id}" cannot be built — ${
-        chosen.readiness?.reason ?? unbuildableEngineReason(builder)
-      }`,
+      `choose-form: "${chosen.id}" cannot be built — ${unbuildable}`,
     );
 
   // Nothing else is touched. Moving the choice moves provenanceHash, so an existing artifact goes

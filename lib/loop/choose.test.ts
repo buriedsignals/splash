@@ -113,6 +113,22 @@ describe("chooseForm — the journalist's choice, written by code", () => {
     expect((r as { message: string }).message).toContain("map-native");
   });
 
+  it("should refuse an unbuildable form whose mark is BLANK, in the engine's own words", () => {
+    // `readiness.reason` is typed as a plain string, so "" is a manifest anyone could hand-author.
+    // The refusal is decided by the ENGINE, never by whether a sentence happens to be filled in:
+    // a blank mark that suppressed the refusal would dead-end the run in silence.
+    const el = elementWith([
+      buildable({
+        id: "map1",
+        engine: "map-native",
+        readiness: { status: "missing", reason: "   " },
+      }),
+    ]);
+    const r = chooseForm(el, "map1");
+    expect(r).toMatchObject({ ok: false, code: "invalid-request" });
+    expect((r as { message: string }).message).toContain("map-native");
+  });
+
   it("should accept a MARKED form the loop can still build — the mark warns, it does not forbid", () => {
     // P1: the offer showed the mark, the journalist read it and chose anyway. A capability the
     // newsroom left switched off is a newsroom decision, not an impossibility — refusing here

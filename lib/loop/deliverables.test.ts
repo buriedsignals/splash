@@ -310,6 +310,32 @@ describe("re-planning an element that had already been somewhere", () => {
     expect(nextActionsForElement(r.value, master)).toEqual(["propose"]);
   });
 
+  // ANNOUNCED, not merely constated. The drop is deliberate and mechanically guarded, and it is
+  // still the destruction of work the journalist finished: an offer that had been proposed,
+  // phrased and chosen. Writing it into the run's own ledger is what makes it readable by the
+  // next person to open the run, rather than by whoever happens to diff the manifest.
+  it("writes down that re-planning cost the element its offer", () => {
+    const r = planDeliverables(alreadyWeb(), ["print"]);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.events).toHaveLength(1);
+    const [ev] = r.value.events;
+    expect(ev).toMatchObject({
+      kind: "transition",
+      elementId: "e1",
+      action: "plan-deliverables",
+    });
+    // The sentence has to say what was lost and why, or it is a marker rather than an account.
+    expect(ev!.message).toContain("print");
+    expect(ev!.message).toContain("interactive");
+  });
+
+  it("stays silent when the plan costs nothing", () => {
+    const r = planDeliverables(alreadyWeb(), ["web"]);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.events).toEqual([]);
+  });
+
   it("keeps an offer the new destination still carries", () => {
     const m = alreadyWeb();
     const stillLegal = {

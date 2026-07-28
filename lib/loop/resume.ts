@@ -4,6 +4,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import {
   readManifest,
   chosenOption,
+  deliverableForElement,
   gateStateOf,
   nextActionsForElement,
   provenanceHash,
@@ -22,11 +23,6 @@ import type {
   ReviewRecord,
   TasteRiskSignal,
 } from "../verify/types";
-import {
-  aspectOf,
-  defaultAspectFor,
-  destinationOf,
-} from "../core/channel-policy";
 import type { Channel, Destination, MediaAspect } from "../core/vocabulary";
 
 export type HashCheck = { ref: string; status: "ok" | "missing" | "tampered" };
@@ -35,6 +31,19 @@ export type ElementValidation = {
 };
 export type ResumeReport = {
   runId: string;
+  /** WHAT THE RUN DECLARED IT IS — an embeddable element, or the visual article itself.
+   *
+   *  REPORTED, and deliberately nothing more. `route` had two writers (init, from the
+   *  journalist's declaration; the v3 migration) and no reader at all, and a field written and
+   *  never read is eventually read as live configuration that mysteriously changes nothing.
+   *
+   *  Giving it a reader is not the same as giving it authority, and the authority is refused on
+   *  purpose: lib/brain/eligibility.ts took `route` out of its input because whether the
+   *  whole-article branch EXISTS is a fact about this build, never about what a run asked for —
+   *  a manifest declaring route:"article" used to get the narrative forms offered clean,
+   *  buildable by nobody. lib/loop/propose.ts repeats the refusal at its call site. So this is
+   *  the declaration handed back to the desk that made it, and nothing routes on it. */
+  route: RunManifest["route"];
   inputValidation: HashCheck[];
   elements: {
     id: string;
@@ -51,6 +60,19 @@ export type ResumeReport = {
     channel?: Channel;
     /** The master this deliverable shares its takeaway with, when it is a sibling. */
     deliverableOf?: string;
+    /** THE ANGLE, present exactly when the element carries one.
+     *
+     *  A host resuming a run cold was told `gateState: "angled"` and shown nothing of the angle —
+     *  so the first thing the journalist decided, the point the whole visual is making, could
+     *  only be re-read by opening run.json by hand. That is the one thing this layer exists to
+     *  make unnecessary, and it is the same omission the offer once was, one gate earlier.
+     *
+     *  Carried WHOLE, for the reason the offer is: which of the four parts a host "deserves" is a
+     *  decision that drifts, every part is one the desk wrote itself, and a host has real work
+     *  for each (restate the takeaway, show the alt text, label the unit, name the emphasis).
+     *  `intent` rides along as persisted state; lib/host/state.ts's `intent` is a different
+     *  answer — where the OFFER'S ordering came from, which is a derivation, not this record. */
+    angle?: RunElement["angle"];
     /** THE OFFER, present exactly when the element carries one.
      *
      *  It was the omission of this report: an element said `nextActions: ["choose-form"]` and
@@ -164,12 +186,10 @@ export function resumeReport(run: RunManifest, runDir: string): ResumeReport {
       else if (!existsSync(abs)) artifact = "missing";
       else artifact = hashFile(abs) === el.artifact.sha256 ? "ok" : "tampered";
     }
-    const destination = el.deliverable
-      ? el.deliverable.destination
-      : destinationOf(run.channel);
-    const aspect = el.deliverable
-      ? (el.deliverable.aspect ?? defaultAspectFor(destination))
-      : aspectOf(run.channel);
+    // One resolver for both axes AND for the channel they compose into — deliverableForElement is
+    // where the run's default is unpacked, so this report cannot name a destination derived by one
+    // rule beside a channel derived by another.
+    const { destination, aspect } = deliverableForElement(run, el);
     const channel = resolvedChannelForElement(run, el);
     return {
       id: el.id,
@@ -180,12 +200,13 @@ export function resumeReport(run: RunManifest, runDir: string): ResumeReport {
       ...(aspect ? { aspect } : {}),
       ...(channel ? { channel } : {}),
       ...(el.deliverableOf ? { deliverableOf: el.deliverableOf } : {}),
+      ...(el.angle ? { angle: el.angle } : {}),
       ...(el.proposal ? { proposal: el.proposal } : {}),
       ...(el.review ? { verification: verificationOf(run, el) } : {}),
     };
   });
 
-  return { runId: run.runId, inputValidation, elements };
+  return { runId: run.runId, route: run.route, inputValidation, elements };
 }
 
 function printReport(r: ResumeReport): void {

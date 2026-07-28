@@ -102,6 +102,33 @@ function persist(
   return { ok: true, value: { ...did, nextActions: nextActions(run) } };
 }
 
+/**
+ * WHAT THIS DECISION INVALIDATED, said out loud — for every decision that can invalidate anything.
+ *
+ * Re-confirming an angle and re-choosing a form are both legitimate (revise.ts's back-edge is the
+ * first, the offer's own marks invite the second), and both are in provenanceHash — so either one
+ * turns a fresh artifact stale and sends the run back through produce. A silently destructive
+ * decision has no place on a surface whose every other answer is explicit, and the host cannot
+ * work it out for itself: the façade never hands out the hash it would have to compare.
+ *
+ * ONE rule, not one per command. The parity spec parked this omission for `--element` and it was
+ * then written for confirm-angle alone, which is how the asymmetry appeared in the first place.
+ *
+ * Absent, never `staled: false`, when there was nothing to stale — a marker for an event that did
+ * not happen reads as a state the run is in.
+ */
+function staleWarning(
+  run: RunManifest,
+  before: RunElement,
+  after: RunElement,
+): { staled?: true } {
+  const staled =
+    before.artifact != null &&
+    !stalenessOf(run, before) &&
+    stalenessOf(run, after);
+  return staled ? { staled: true } : {};
+}
+
 // A decision's refusal is a VerbResult — an `invalid-request` from the loop, not a façade error.
 // It is passed through UNCHANGED rather than re-coded as a host error: the codes a host meets are
 // declared in two families for exactly this reason (`errorCodes.verb` / `errorCodes.host`), and
@@ -252,20 +279,10 @@ export function confirmAngleIn(
   return decide(runDir, elementId, (run, el) => {
     const confirmed = confirmAngle(el, parts);
     if (!confirmed.ok) return confirmed;
-    // What this decision INVALIDATED, said out loud. Re-confirming is legitimate (it is
-    // lib/loop/revise.ts's back-edge), and the angle is in provenanceHash — so a fresh artifact
-    // becomes stale and the run goes back through produce. The parity spec parked exactly this
-    // omission for `--element` ("nothing warns the host that its decision cancels finished
-    // work"); a silently destructive decision has no place on a surface whose every other
-    // answer is explicit. Absent, never `staled: false`, when there was nothing to stale.
-    const staled =
-      el.artifact != null &&
-      !stalenessOf(run, el) &&
-      stalenessOf(run, confirmed.value);
     return {
       ok: true,
       value: confirmed.value,
-      report: { confirmed: el.id, ...(staled ? { staled: true } : {}) },
+      report: { confirmed: el.id, ...staleWarning(run, el, confirmed.value) },
     };
   });
 }
@@ -428,7 +445,14 @@ export function chooseFormIn(
   return decide(runDir, elementId, (run, el) => {
     const chosen = chooseForm(el, optionId);
     if (!chosen.ok) return chosen;
-    return { ok: true, value: chosen.value, report: { chosen: optionId } };
+    return {
+      ok: true,
+      value: chosen.value,
+      // Same warning confirm-angle gives, for the same reason: `chosenId` and the chosen option's
+      // format are both in provenanceHash, so switching forms annuls a finished artifact exactly
+      // the way re-confirming an angle does. Only one of the two commands used to say so.
+      report: { chosen: optionId, ...staleWarning(run, el, chosen.value) },
+    };
   });
 }
 
@@ -495,7 +519,8 @@ function decide(
   // declared at `init` got none — measured on a real run, where a second confirm-angle then
   // accepted a contradictory takeaway for the same story. inheritAngle fills a blank and never
   // overrules one a sibling confirmed for itself.
-  const spread = (els: RunElement[]): RunElement[] => inheritAngle(els, decided);
+  const spread = (els: RunElement[]): RunElement[] =>
+    inheritAngle(els, decided);
   // Replace the decided element IN PLACE. `[result, ...rest]` moved it to the front, silently
   // reordering the deliverables — and the order is the production order the plan chose, web
   // first as the editorial master. The driver already learned this; the façade had not.

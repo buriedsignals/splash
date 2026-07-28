@@ -46,6 +46,34 @@ export function unbuildableEngineReason(engine: string): string {
   return `nothing can build a ${engine} form yet — production is wired for ${LOOP_BUILDABLE_ENGINES.join(", ")} only`;
 }
 
+/**
+ * WHY THIS FORM IS A DEAD END, or undefined when it is not — the whole sentence, for an option.
+ *
+ * One writer for it, because three places say it and they are read as one voice: chooseForm's
+ * refusal while the journalist is still choosing, nextActionsForElement's routing back to the
+ * offer, and the driver's ledger entry when a run stagnates on a choice already recorded. The
+ * mark's OWN words win when the option carries them (eligibility.ts pushes the whole-article
+ * wording first, and the journalist read that sentence in the offer), so the refusal repeats what
+ * was shown rather than substituting a maintainer's version of it.
+ *
+ * A BLANK mark falls back to the engine sentence rather than being returned. The schema types
+ * `readiness.reason` as a plain string, so "" is a manifest anyone could hand-author — and since
+ * the whole answer here is "a sentence, or nothing", an empty one would make an unbuildable form
+ * read as buildable and dead-end the run in silence. Same trap FormOption.why closed by refusing
+ * a blank phrasing.
+ */
+export function unbuildableFormReason(chosen: {
+  id?: string;
+  engine?: string;
+  format?: VisualFormat;
+  readiness?: { reason?: string };
+}): string | undefined {
+  const builder = resolveBuilder(chosen);
+  if (isLoopBuildable(builder)) return undefined;
+  const marked = chosen.readiness?.reason?.trim();
+  return marked ? marked : unbuildableEngineReason(builder);
+}
+
 // The EFFECTIVE producer for a chosen (or offered) option — the one thing all three readers
 // above must resolve identically, or they drift. `engine`/`format` are optional because
 // FormOption's schema still admits hand-authored options predating the brain (manifest.ts);

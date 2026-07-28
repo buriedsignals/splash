@@ -12,13 +12,15 @@ import {
   type Channel,
 } from "../core/vocabulary";
 import {
+  aspectOf,
   channelFor,
   defaultAspectFor,
+  destinationOf,
   isFormatAllowed,
   allowedFormats,
   DESTINATION_POLICY,
 } from "../core/channel-policy";
-import { isLoopBuildable, resolveBuilder } from "./buildable";
+import { unbuildableFormReason } from "./buildable";
 import { ARC_ROLES } from "../core/claim-arc";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
@@ -206,7 +208,19 @@ const RunElementSchema = z.object({
 export const RunManifestSchema = z.object({
   runId: z.string(),
   schemaVersion: z.literal(4),
-  /** The relationship to the text: an embeddable element, or the visual article itself. */
+  /** The relationship to the text: an embeddable element, or the visual article itself.
+   *
+   *  DECLARED, REPORTED, AND ROUTED ON BY NOTHING — and that is the design, not an omission.
+   *  lib/brain/eligibility.ts deliberately does NOT see this field: whether the whole-article
+   *  branch exists is a fact about this build, never about what a run asked for, and while it
+   *  did see it a manifest declaring route:"article" got the narrative forms offered clean,
+   *  buildable by nobody. lib/loop/propose.ts repeats the refusal at its call site.
+   *
+   *  Its one reader is lib/loop/resume.ts, which hands the declaration back to the desk that
+   *  made it. Before that it had two writers and no readers, which is how a field starts being
+   *  read as live configuration that mysteriously changes nothing. If the whole-article branch
+   *  is ever wired, what makes it reachable is LOOP_BUILDABLE_ENGINES (lib/loop/buildable.ts),
+   *  not this. */
   route: z.enum(["embed", "article"]).default("embed"),
   /** The run's DEFAULT destination, in render-channel form — what an element that declares no
    *  `deliverable` of its own is produced at. Before issue #1 this was the run's ONE channel;
@@ -276,26 +290,67 @@ export function parseManifest(raw: unknown): RunManifest {
 
 export type Deliverable = z.infer<typeof DeliverableSchema>;
 
+/**
+ * WHERE this element goes and WHAT SHAPE it takes — its own `deliverable` when it declares one,
+ * the run's default channel unpacked into the same two axes when it does not.
+ *
+ * THE one place `run.channel` is read on the live path, and the reason this function exists as a
+ * separate export rather than staying inlined in the channel resolver below. The arbitrage that
+ * let `run.channel` keep living beside `elements[].deliverable` rested on a single stated
+ * property — "what channel is THIS element rendered at" is answered in one place only — and that
+ * property had quietly eroded to five call sites, each unpacking the legacy field with its own
+ * copy of `destinationOf` / `aspectOf` / `defaultAspectFor`. Two of them (resumeReport,
+ * deliverablePlan) then ALSO called the channel resolver on the same element, so a report could
+ * name a destination and a channel derived by two different rules.
+ *
+ * The pair, not the channel, is what those callers actually need — which is why re-routing them
+ * onto the channel resolver alone would not have closed it. Round-tripping is safe:
+ * channelFor(destinationOf(c), aspectOf(c)) === c for every channel, held by
+ * lib/core/channel-policy.test.ts's bijection. lib/loop/channel-single-reader.test.ts keeps the
+ * one-reader property mechanical, so the next erosion is a red test rather than a note.
+ *
+ * `aspect` is absent exactly when the branch still owes the answer — a social deliverable whose
+ * shape has not been confirmed. 9:16 or 1:1 is not a guess this codebase gets to make.
+ */
+export function deliverableForElement(
+  run: RunManifest,
+  el: RunElement,
+): Deliverable {
+  if (!el.deliverable) {
+    return {
+      destination: destinationOf(run.channel),
+      aspect: aspectOf(run.channel),
+    };
+  }
+  const { destination } = el.deliverable;
+  const aspect = el.deliverable.aspect ?? defaultAspectFor(destination);
+  return { destination, ...(aspect ? { aspect } : {}) };
+}
+
 /** The render channel this element's deliverable resolves to, or undefined while it still owes
- *  an answer (a social deliverable whose aspect has not been confirmed — 9:16 or 1:1 is not a
- *  guess this codebase gets to make). An element with no deliverable at all resolves to the
- *  run's default channel, which is exactly what it meant before issue #1. */
+ *  an answer. An element with no deliverable at all resolves to the run's default channel, which
+ *  is exactly what it meant before issue #1. */
 export function resolvedChannelForElement(
   run: RunManifest,
   el: RunElement,
 ): Channel | undefined {
-  if (!el.deliverable) return run.channel;
-  const { destination } = el.deliverable;
-  const aspect = el.deliverable.aspect ?? defaultAspectFor(destination);
+  const { destination, aspect } = deliverableForElement(run, el);
   return aspect ? channelFor(destination, aspect) : undefined;
 }
 
 /** The TOTAL form: never undefined, never throws. provenanceHash and every read-only reporter
  *  need an answer for any element in any state; the run's default stands in while an aspect is
  *  still owed. Production does NOT go through this — produce.ts requires the resolved one, so an
- *  unanswered aspect is a refusal there rather than a silently substituted channel. */
-export function channelForElement(run: RunManifest, el: RunElement): Channel {
-  return resolvedChannelForElement(run, el) ?? run.channel;
+ *  unanswered aspect is a refusal there rather than a silently substituted channel.
+ *
+ *  Accepts NO element on purpose. "The run carries nothing yet" is a state the question still has
+ *  an answer for (propose() orders an empty run's offer at the run's own channel), and answering
+ *  it at the call site is precisely how the second reader came back the first time. */
+export function channelForElement(
+  run: RunManifest,
+  el: RunElement | undefined,
+): Channel {
+  return (el ? resolvedChannelForElement(run, el) : undefined) ?? run.channel;
 }
 
 // The option `proposal.chosenId` names, or undefined if nothing is chosen yet. provenanceHash
@@ -454,8 +509,11 @@ export function nextActionsForElement(
   const chosen = el.proposal.options.find(
     (o) => o.id === el.proposal!.chosenId,
   );
-  if (chosen && !isLoopBuildable(resolveBuilder(chosen)))
-    return ["choose-form"];
+  if (chosen && unbuildableFormReason(chosen)) return ["choose-form"];
+  // ^ deadEndReason() below answers WHY this line fired, from the same call. Kept as a separate
+  //   export rather than folded into the return: nextActions answers what is VALID, and a caller
+  //   that needs the reason (the driver, so a stagnating run says something) must not have to
+  //   re-derive it and risk saying something else.
   // Issue #1, stage 3: "ask aspect ratio only when entering an export that needs it, and after
   // the editorial format is chosen". Both halves of that sentence are this line's POSITION —
   // below choose-form, above produce — rather than a rule written down somewhere for an
@@ -478,6 +536,21 @@ export function nextActionsForElement(
   // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.
   if (el.delivery && needsDelivery(run, el)) return verificationChain(run, el);
   return ["show"];
+}
+
+/**
+ * WHY this element is stuck at "choose-form" with a choice already made, or undefined when it is
+ * not stuck at all.
+ *
+ * The dead end is real and deliberate: a form nothing can build is OFFERED (marked, never
+ * removed), so it CAN be chosen, and nextActionsForElement routes such a choice back to the offer
+ * rather than to a produce that would refuse forever. What was missing is that the routing said
+ * nothing — "choose-form" reads identically whether an offer is waiting to be chosen from or a
+ * choice already made can never succeed. The driver tells the two apart through this.
+ */
+export function deadEndReason(el: RunElement): string | undefined {
+  const chosen = chosenOption(el);
+  return chosen ? unbuildableFormReason(chosen) : undefined;
 }
 
 /**

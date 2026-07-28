@@ -29,12 +29,15 @@ import {
   type Channel,
 } from "../core/vocabulary";
 import {
+  appendEvent,
+  deliverableForElement,
   gateStateOf,
   nextActionsForElement,
   resolvedChannelForElement,
   type GateState,
   type NextAction,
   type RunElement,
+  type RunEvent,
   type RunManifest,
 } from "./manifest";
 
@@ -193,6 +196,23 @@ export function planDeliverables(
     DESTINATION_POLICY[first!.destination].channels
       .filter((c) => !first!.aspect || aspectOf(c) === first!.aspect)
       .some((c) => isFormatAllowed(c, pinned));
+  // ANNOUNCED, not merely constated. Dropping the offer is right and it is still the destruction
+  // of finished work — an offer proposed, phrased and chosen. Written into the run's own ledger
+  // rather than returned beside the manifest: the manifest IS this function's answer, so a notice
+  // handed back alongside it lives exactly as long as the first caller that ignores it, while the
+  // ledger is what the next person to open the run reads. `transition`, not `failure`: nothing
+  // went wrong here, a legitimate decision cost something and the run says what.
+  const lost: RunEvent | undefined = carriable
+    ? undefined
+    : {
+        at: new Date().toISOString(),
+        kind: "transition",
+        elementId: master.id,
+        action: "plan-deliverables",
+        message:
+          `the "${pinned}" form chosen for element ${master.id} cannot be carried to "${first!.destination}", ` +
+          `so its offer was dropped — the element goes back through propose at its new destination`,
+      };
   if (!carriable) delete master.proposal;
 
   const siblings = rest.map((r, i) => {
@@ -213,7 +233,11 @@ export function planDeliverables(
     return el;
   });
 
-  return ok({ ...run, elements: [master, ...siblings, ...others] });
+  const planned: RunManifest = {
+    ...run,
+    elements: [master, ...siblings, ...others],
+  };
+  return ok(lost ? appendEvent(planned, lost) : planned);
 }
 
 /** Stage 3's writer: record the shape, once the journalist has been asked for it. */
@@ -268,13 +292,10 @@ export function deliverablePlan(run: RunManifest): DeliverableRow[] {
   const byId = new Map(run.elements.map((el) => [el.id, el]));
   return run.elements.map((el) => {
     const declared = el.deliverable != null;
-    const destination = declared
-      ? el.deliverable!.destination
-      : destinationOf(run.channel);
+    // Same single resolver resumeReport reads through — the two reports answer "where does this
+    // element go" identically because there is only one function that knows.
+    const { destination, aspect } = deliverableForElement(run, el);
     const channel = resolvedChannelForElement(run, el);
-    const aspect = declared
-      ? (el.deliverable!.aspect ?? defaultAspectFor(destination))
-      : aspectOf(run.channel);
     const master = el.deliverableOf ? byId.get(el.deliverableOf) : undefined;
     const chosen = el.proposal?.chosenId
       ? el.proposal.options.find((o) => o.id === el.proposal!.chosenId)
