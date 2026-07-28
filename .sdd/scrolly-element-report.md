@@ -252,10 +252,21 @@ implied by the question this branch was asked. It is the honest next question, n
   check passes at all three breakpoints, `findings: none`, and the approval gate is reached with an
   EMPTY override list.
 - `bun test lib/verify` in isolation — 166 pass, 0 fail.
-- Full-suite note: `lib/verify/capture-html.test.ts` hit the known Playwright contention flake
-  (`Failed to connect … ENOENT` at browser launch, and once a timeout) during `bun test lib`, and
-  passes 18/18 in isolation. Reported as a flake, not as a pass and not as a failure. The two new
-  negative cases were re-fixtured onto a declared 300x100 destination at `deviceScaleFactor: 1` to
-  cut their cost by three orders of magnitude — the rule under test is a RATIO and does not care
-  which box it is a ratio of.
-- `bun run check` — see below.
+- `bun run check` — **22/22 checks passed** (9 tsc, 13 test suites), on the final tree.
+
+### The flake, reported rather than smoothed over
+
+On an intermediate run, `lib/verify/capture-html.test.ts` hit the known Playwright contention flake
+under `bun test lib`'s file-level parallelism — first as a 180 s timeout, then as
+`Failed to connect … ENOENT` at browser launch — while passing 18/18 in isolation and 166/0 for the
+whole `lib/verify` directory. That is the flake this repo already documents, and my four new
+browser-launching cases widened the window for it.
+
+I did not weaken anything to make it go away. What changed is the two negative cases' FIXTURE: they
+were re-declared onto a 300x100 destination at `deviceScaleFactor: 1` (from article-web at scale 2,
+which meant a 20000 px page screenshotted across three breakpoints — roughly 100 megapixels of PNG
+for two boolean assertions). The rule under test is a RATIO and does not care which box it is a
+ratio of; the assertions are identical. The positive control keeps the realistic article-web box.
+
+The final `bun run check` above ran every one of these green. Nothing is reported as a pass that was
+not observed as one.
