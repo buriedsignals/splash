@@ -44,26 +44,31 @@ export function orderingIntents(el: RunElement | undefined): {
 
 export function propose(
   m: RunManifest,
+  // WHICH element the offer is for — REQUIRED, and second so that it cannot be omitted. A run
+  // carries several deliverables since issue #1, and each is offered at ITS OWN channel: a print
+  // deliverable must not be offered the interactive its web sibling can have. This used to be an
+  // optional trailing parameter falling back on `m.elements[0]`, which left TWO definitions of
+  // "the live element" — the caller's and this one's — and only the caller's is the run's truth
+  // (driver.ts guards on `live` before it gets here, and routes an empty elements array to
+  // confirm-angle instead). The fallback is gone: there is one definition, and it is the argument.
+  element: RunElement,
   decor?: Decor,
-  // WHICH element the offer is for. A run carries several deliverables since issue #1, and each
-  // is offered at ITS OWN channel — a print deliverable must not be offered the interactive its
-  // web sibling can have. Defaults to the first element, so every existing caller is unchanged.
-  element?: RunElement,
 ): { options: FormOption[]; excluded: Excluded[]; refusal?: string } {
   const profile = m.orient?.profile;
   if (!profile) return { options: [], excluded: [] };
-  const el = element ?? m.elements[0];
   const offer = buildOffer({
     facts: deriveFacts(profile),
-    // Through the resolver even when there is no element: the run's default is not this module's
-    // to unpack (lib/loop/manifest.ts's deliverableForElement is the one reader of `run.channel`).
-    channel: channelForElement(m, el),
+    // Through the resolver, never off `m.channel` directly: unpacking the run's default is not
+    // this module's to do (lib/loop/manifest.ts's deliverableForElement is the one reader of it).
+    channel: channelForElement(m, element),
     // `m.route` is deliberately NOT threaded: what the run declares it wants is not evidence
     // that the whole-article branch exists, and the brain's mark is about existence (I2).
     ...(decor ? { readiness: decor.readiness } : {}),
     ...(decor?.theme ? { themeBg: decor.theme } : {}),
-    ...(el?.requestedFormat ? { requestedFormat: el.requestedFormat } : {}),
-    intents: orderingIntents(el).intents,
+    ...(element.requestedFormat
+      ? { requestedFormat: element.requestedFormat }
+      : {}),
+    intents: orderingIntents(element).intents,
   });
   return {
     options: offer.options.map((o) => ({

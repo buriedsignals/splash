@@ -103,7 +103,7 @@ async function producedInteractiveRun(): Promise<{
   };
   const el = run.elements[0]!;
 
-  const { options } = propose(run);
+  const { options } = propose(run, el);
   const interactive = options.find((o) => o.format === "interactive");
   if (!interactive)
     throw new Error(
