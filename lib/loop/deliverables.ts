@@ -29,6 +29,7 @@ import {
   type Channel,
 } from "../core/vocabulary";
 import {
+  deliverableForElement,
   gateStateOf,
   nextActionsForElement,
   resolvedChannelForElement,
@@ -268,13 +269,10 @@ export function deliverablePlan(run: RunManifest): DeliverableRow[] {
   const byId = new Map(run.elements.map((el) => [el.id, el]));
   return run.elements.map((el) => {
     const declared = el.deliverable != null;
-    const destination = declared
-      ? el.deliverable!.destination
-      : destinationOf(run.channel);
+    // Same single resolver resumeReport reads through — the two reports answer "where does this
+    // element go" identically because there is only one function that knows.
+    const { destination, aspect } = deliverableForElement(run, el);
     const channel = resolvedChannelForElement(run, el);
-    const aspect = declared
-      ? (el.deliverable!.aspect ?? defaultAspectFor(destination))
-      : aspectOf(run.channel);
     const master = el.deliverableOf ? byId.get(el.deliverableOf) : undefined;
     const chosen = el.proposal?.chosenId
       ? el.proposal.options.find((o) => o.id === el.proposal!.chosenId)

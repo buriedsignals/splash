@@ -4,6 +4,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import {
   readManifest,
   chosenOption,
+  deliverableForElement,
   gateStateOf,
   nextActionsForElement,
   provenanceHash,
@@ -22,11 +23,6 @@ import type {
   ReviewRecord,
   TasteRiskSignal,
 } from "../verify/types";
-import {
-  aspectOf,
-  defaultAspectFor,
-  destinationOf,
-} from "../core/channel-policy";
 import type { Channel, Destination, MediaAspect } from "../core/vocabulary";
 
 export type HashCheck = { ref: string; status: "ok" | "missing" | "tampered" };
@@ -164,12 +160,10 @@ export function resumeReport(run: RunManifest, runDir: string): ResumeReport {
       else if (!existsSync(abs)) artifact = "missing";
       else artifact = hashFile(abs) === el.artifact.sha256 ? "ok" : "tampered";
     }
-    const destination = el.deliverable
-      ? el.deliverable.destination
-      : destinationOf(run.channel);
-    const aspect = el.deliverable
-      ? (el.deliverable.aspect ?? defaultAspectFor(destination))
-      : aspectOf(run.channel);
+    // One resolver for both axes AND for the channel they compose into — deliverableForElement is
+    // where the run's default is unpacked, so this report cannot name a destination derived by one
+    // rule beside a channel derived by another.
+    const { destination, aspect } = deliverableForElement(run, el);
     const channel = resolvedChannelForElement(run, el);
     return {
       id: el.id,
@@ -228,3 +222,4 @@ if (import.meta.main) {
   const report = resumeReport(run, runDir);
   printReport(report);
 }
+

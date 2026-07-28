@@ -12,8 +12,10 @@ import {
   type Channel,
 } from "../core/vocabulary";
 import {
+  aspectOf,
   channelFor,
   defaultAspectFor,
+  destinationOf,
   isFormatAllowed,
   allowedFormats,
   DESTINATION_POLICY,
@@ -276,26 +278,67 @@ export function parseManifest(raw: unknown): RunManifest {
 
 export type Deliverable = z.infer<typeof DeliverableSchema>;
 
+/**
+ * WHERE this element goes and WHAT SHAPE it takes — its own `deliverable` when it declares one,
+ * the run's default channel unpacked into the same two axes when it does not.
+ *
+ * THE one place `run.channel` is read on the live path, and the reason this function exists as a
+ * separate export rather than staying inlined in the channel resolver below. The arbitrage that
+ * let `run.channel` keep living beside `elements[].deliverable` rested on a single stated
+ * property — "what channel is THIS element rendered at" is answered in one place only — and that
+ * property had quietly eroded to five call sites, each unpacking the legacy field with its own
+ * copy of `destinationOf` / `aspectOf` / `defaultAspectFor`. Two of them (resumeReport,
+ * deliverablePlan) then ALSO called the channel resolver on the same element, so a report could
+ * name a destination and a channel derived by two different rules.
+ *
+ * The pair, not the channel, is what those callers actually need — which is why re-routing them
+ * onto the channel resolver alone would not have closed it. Round-tripping is safe:
+ * channelFor(destinationOf(c), aspectOf(c)) === c for every channel, held by
+ * lib/core/channel-policy.test.ts's bijection. lib/loop/channel-single-reader.test.ts keeps the
+ * one-reader property mechanical, so the next erosion is a red test rather than a note.
+ *
+ * `aspect` is absent exactly when the branch still owes the answer — a social deliverable whose
+ * shape has not been confirmed. 9:16 or 1:1 is not a guess this codebase gets to make.
+ */
+export function deliverableForElement(
+  run: RunManifest,
+  el: RunElement,
+): Deliverable {
+  if (!el.deliverable) {
+    return {
+      destination: destinationOf(run.channel),
+      aspect: aspectOf(run.channel),
+    };
+  }
+  const { destination } = el.deliverable;
+  const aspect = el.deliverable.aspect ?? defaultAspectFor(destination);
+  return { destination, ...(aspect ? { aspect } : {}) };
+}
+
 /** The render channel this element's deliverable resolves to, or undefined while it still owes
- *  an answer (a social deliverable whose aspect has not been confirmed — 9:16 or 1:1 is not a
- *  guess this codebase gets to make). An element with no deliverable at all resolves to the
- *  run's default channel, which is exactly what it meant before issue #1. */
+ *  an answer. An element with no deliverable at all resolves to the run's default channel, which
+ *  is exactly what it meant before issue #1. */
 export function resolvedChannelForElement(
   run: RunManifest,
   el: RunElement,
 ): Channel | undefined {
-  if (!el.deliverable) return run.channel;
-  const { destination } = el.deliverable;
-  const aspect = el.deliverable.aspect ?? defaultAspectFor(destination);
+  const { destination, aspect } = deliverableForElement(run, el);
   return aspect ? channelFor(destination, aspect) : undefined;
 }
 
 /** The TOTAL form: never undefined, never throws. provenanceHash and every read-only reporter
  *  need an answer for any element in any state; the run's default stands in while an aspect is
  *  still owed. Production does NOT go through this — produce.ts requires the resolved one, so an
- *  unanswered aspect is a refusal there rather than a silently substituted channel. */
-export function channelForElement(run: RunManifest, el: RunElement): Channel {
-  return resolvedChannelForElement(run, el) ?? run.channel;
+ *  unanswered aspect is a refusal there rather than a silently substituted channel.
+ *
+ *  Accepts NO element on purpose. "The run carries nothing yet" is a state the question still has
+ *  an answer for (propose() orders an empty run's offer at the run's own channel), and answering
+ *  it at the call site is precisely how the second reader came back the first time. */
+export function channelForElement(
+  run: RunManifest,
+  el: RunElement | undefined,
+): Channel {
+  return (el ? resolvedChannelForElement(run, el) : undefined) ?? run.channel;
 }
 
 // The option `proposal.chosenId` names, or undefined if nothing is chosen yet. provenanceHash
