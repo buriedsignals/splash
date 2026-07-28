@@ -18,11 +18,9 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import { locatorGeometry } from "../locator-geo";
 import { deriveLocatorStory } from "../locator-story";
-import {
-  placeLabels,
-  labelRadialOffset,
-  type LabelBox,
-} from "../locator-labels";
+import { placeLabels, labelRadialOffset } from "../locator-labels";
+import { locatorLabelPlacement } from "../locator-label-placement";
+import type { LabelAnchor } from "../symbol-labels";
 import { resolveMapStyle } from "../route-geo";
 import {
   buildTimeline,
@@ -94,6 +92,12 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
 
   // Ref to track the last rendered step-ref beat index so we avoid setData on every frame.
   const lastRefBeatIndex = useRef<number>(-1);
+  // This comp rebuilds its feature array rather than mutating it, so the two pieces of state
+  // that must survive a frame live here: the anchors last pushed (to detect a real change and
+  // avoid a setData every frame) and the declutter's verdict (recomputed per STEP, reused on
+  // the frames in between).
+  const lastAnchors = useRef<LabelAnchor[]>([]);
+  const lastShown = useRef<Set<string>>(new Set());
 
   // Init map once — same guard pattern as LocatorStory / SymbolScrolly.
   useEffect(() => {
@@ -110,6 +114,7 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
         category: mk.category ?? "",
         labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
         __showLabel: true,
+        anchor: "left", // MapLibre text-anchor; recomputed per frame (edge-aware)
         __highlight: true, // establish: all markers full; recomputed per reveal step
       },
       geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
@@ -177,7 +182,11 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
           "text-field": ["get", "label"],
           "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
           "text-size": textSize,
-          "text-variable-anchor": ["top", "bottom", "left", "right"],
+          // Per-feature anchor (data-driven), NOT text-variable-anchor: variable-anchor
+          // only re-anchors on label-to-label collision — it is blind to the viewport
+          // edge, so a marker near an edge keeps its default side and its text runs off
+          // canvas. Recomputed per frame from the projected screen position.
+          "text-anchor": ["get", "anchor"],
           "text-radial-offset": ["get", "labelOffset"],
           "text-justify": "auto",
           "text-allow-overlap": true,
@@ -269,55 +278,62 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
     const refBeatIndex = story.steps[beatIndex].ref as number;
     const refBeat = beats[refBeatIndex];
 
-    // Rebuild source data only when the step's ref beat changes.
-    if (refBeatIndex !== lastRefBeatIndex.current) {
+    const highlightSet = new Set(refBeat.highlight);
+    const emphasise = refBeat.dim && highlightSet.size > 0;
+
+    // Edge-aware label placement, recomputed EVERY FRAME. The camera glides WITHIN a step as
+    // the reader scrolls, so an anchor chosen once at the step boundary is stale halfway
+    // through the move and a marker drifting toward the frame edge takes its label off
+    // canvas. One call returns both the side each label takes and the rectangle it occupies
+    // there, so the declutter below collides the box the label really has.
+    const el = ref.current;
+    const { anchors, boxes } = locatorLabelPlacement(
+      geo.markers.map((mk) => ({
+        label: mk.label,
+        priority:
+          (mk.priority ?? 0) +
+          (emphasise && highlightSet.has(mk.label) ? 1000 : 0),
+      })),
+      geo.markers.map((mk) => map.project([mk.lon, mk.lat])),
+      {
+        viewport: {
+          width: el?.clientWidth ?? width,
+          height: el?.clientHeight ?? height,
+        },
+        textSize,
+        radius: DOT_RADIUS_PX,
+      },
+    );
+
+    // WHICH labels show is a per-step editorial decision (winking in and out mid-scroll
+    // would read as a glitch), so the declutter still runs on the step's ref beat only —
+    // but WHERE a shown label sits is the per-frame geometry above, so the source is also
+    // re-pushed when any anchor moves.
+    const stepChanged = refBeatIndex !== lastRefBeatIndex.current;
+    const anchorsChanged = anchors.some((a, i) => a !== lastAnchors.current[i]);
+    if (stepChanged || anchorsChanged) {
       lastRefBeatIndex.current = refBeatIndex;
-      const highlightSet = new Set(refBeat.highlight);
-      const emphasise = refBeat.dim && highlightSet.size > 0;
+      lastAnchors.current = anchors;
+      if (stepChanged) lastShown.current = new Set(placeLabels(boxes).shown);
+      const shownSet = lastShown.current;
 
       // Highlight flags: on dim (reveal) beats only the beat's markers glow; otherwise all.
-      const rebuilt: GeoJSON.Feature[] = geo.markers.map((mk, i) => {
-        const highlight = emphasise ? highlightSet.has(mk.label) : true;
-        return {
-          type: "Feature",
-          id: i,
-          properties: {
-            key: `m${i}`,
-            label: mk.label,
-            color: mk.color,
-            category: mk.category ?? "",
-            labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
-            __highlight: highlight,
-            __showLabel: false, // set by declutter below
-          },
-          geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
-        };
-      });
-
-      // Declutter — prioritise highlighted markers on dim beats so their labels win.
-      const boxes: LabelBox[] = geo.markers.map((mk, i) => {
-        const pt = map.project([mk.lon, mk.lat]);
-        const w = Math.max(1, mk.label.length) * (textSize * 0.58);
-        const hh = textSize * 1.3;
-        const basePriority = mk.priority ?? 0;
-        const priority =
-          emphasise && highlightSet.has(mk.label)
-            ? basePriority + 1000
-            : basePriority;
-        return {
+      const rebuilt: GeoJSON.Feature[] = geo.markers.map((mk, i) => ({
+        type: "Feature",
+        id: i,
+        properties: {
           key: `m${i}`,
-          x: pt.x - w / 2,
-          y: pt.y - DOT_RADIUS_PX - hh,
-          w,
-          h: hh,
-          priority,
-        };
-      });
-      const shownSet = new Set(placeLabels(boxes).shown);
-      for (let i = 0; i < rebuilt.length; i++) {
-        (rebuilt[i].properties as Record<string, unknown>).__showLabel =
-          shownSet.has(`m${i}`);
-      }
+          label: mk.label,
+          color: mk.color,
+          category: mk.category ?? "",
+          labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
+          __highlight: emphasise ? highlightSet.has(mk.label) : true,
+          __showLabel: shownSet.has(`m${i}`),
+          anchor: anchors[i],
+        },
+        geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
+      }));
+
       (map.getSource("locator") as maptilersdk.GeoJSONSource).setData({
         type: "FeatureCollection",
         features: rebuilt,
@@ -332,8 +348,7 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
       0,
       Math.min(1, stepSlide(frame, phases, beatIndex, fps, total)),
     );
-    const highlightSet = new Set(refBeat.highlight);
-    const emphasise = refBeat.dim && highlightSet.size > 0;
+    // `emphasise` is already resolved above, where the label placement needs it.
     map.setPaintProperty(GLYPH_LAYER, "circle-stroke-width", [
       "case",
       ["==", ["get", "__highlight"], true],
