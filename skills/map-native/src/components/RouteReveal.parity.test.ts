@@ -37,8 +37,18 @@ describe("RouteReveal staged parity", () => {
       const o = original(lt);
       const s = stagedEntrance(lt, { fillOpacity: FILL_OPACITY });
       expect(s.borderProgress).toBeCloseTo(o.bp, 9);
+      // `fillEnvelope` is the curve the original produced, unchanged. `fillOpacity` is the
+      // same curve clamped into the paint channel — and at RouteReveal's 0.55 target the
+      // overshoot peaks at 0.6875, so the clamp is a no-op here and BOTH still match.
+      expect(s.fillEnvelope).toBeCloseTo(o.fill, 9);
       expect(s.fillOpacity).toBeCloseTo(o.fill, 9);
       expect(s.labelReveal).toBeCloseTo(o.lp, 9);
     }
+  });
+
+  it("RouteReveal's own target never needed the clamp — the parity above is exact", () => {
+    // Guards the reasoning, not just the numbers: if someone raises FILL_OPACITY past 0.8,
+    // the two fields diverge and this test says so instead of the parity quietly weakening.
+    expect(FILL_OPACITY * 1.25).toBeLessThanOrEqual(1);
   });
 });

@@ -357,9 +357,13 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
       if (mode === "context") {
         // Transient overshoot delta only — the base cartogram-cells opacity below is left
         // untouched (its own dim/highlight expression), so this is a brief brightening on
-        // top, never a drop-to-zero.
-        const delta = Math.max(0, staged.fillOpacity - FULL_OPACITY);
-        map.setPaintProperty(`cartogram-bloom-${key}`, "fill-opacity", delta);
+        // top, never a drop-to-zero. `fillBloom` IS that delta, computed from the raw
+        // envelope in the helper (see staged-reveal.ts).
+        map.setPaintProperty(
+          `cartogram-bloom-${key}`,
+          "fill-opacity",
+          staged.fillBloom,
+        );
       } else {
         // sequential: the bloom layer carries the FULL entrance (0 → overshoot → FULL_OPACITY,
         // holds) since the base cartogram-cells layer is pinned to 0 for the whole distribution.

@@ -5,9 +5,14 @@ import {
 } from "./dot-density-story.ts";
 import type { StagedEntrance } from "./core/staged-reveal.ts";
 
-const staged = (fillOpacity: number): StagedEntrance => ({
+// The dot layer stages at fillTarget=1 and reads the RAW envelope (a progress, not an
+// opacity), so the fixture drives `fillEnvelope`; `fillOpacity` carries the clamped mirror
+// the helper would have produced, and `fillBloom` the headroom over the target.
+const staged = (fillEnvelope: number): StagedEntrance => ({
   borderProgress: 1,
-  fillOpacity,
+  fillOpacity: Math.max(0, Math.min(1, fillEnvelope)),
+  fillEnvelope,
+  fillBloom: Math.max(0, Math.min(1, fillEnvelope - 1)),
   labelReveal: 1,
 });
 
@@ -52,7 +57,11 @@ function evalExpr(expr: unknown, props: Props): number | string | boolean {
 // structural expectations can be written without re-exporting an internal helper.
 const stagger = (regionProgress: number): unknown[] => {
   const delay: unknown[] = ["*", ["get", "__dotOrder"], STAGGER_SPAN];
-  return ["max", 0, ["/", ["-", regionProgress, delay], ["-", 1, delay]]];
+  return [
+    "min",
+    1,
+    ["max", 0, ["/", ["-", regionProgress, delay], ["-", 1, delay]]],
+  ];
 };
 
 describe("buildDotOpacityExpression", () => {
@@ -169,6 +178,27 @@ describe("buildDotOpacityExpression", () => {
       );
       expect(evalExpr(expr, { __region: "FRA", __dotOrder: 0 })).toBe(0);
       expect(evalExpr(expr, { __region: "FRA", __dotOrder: 0.8 })).toBe(0);
+    });
+
+    it("mid-bloom: no dot is driven past 1, at any __dotOrder", () => {
+      // The region's envelope peaks at 1.25 (fillTarget=1), and the stagger's rescale
+      // DIVIDES by a shrinking (1 - delay) — so a late-ordered dot's raw remap runs far
+      // past the channel. circle-opacity is [0,1]: the excess was silently saturated.
+      const stagedMap = new Map([["FRA", staged(1.25)]]);
+      const expr = buildDotOpacityExpression(
+        "context",
+        { dim: true, highlight: ["FRA"] },
+        stagedMap,
+        0.25,
+      );
+      for (const order of [0, 0.25, 0.5, 0.75, 0.99]) {
+        const v = evalExpr(expr, {
+          __region: "FRA",
+          __dotOrder: order,
+        }) as number;
+        expect(v).toBeGreaterThanOrEqual(0);
+        expect(v).toBeLessThanOrEqual(1);
+      }
     });
 
     it("non-highlighted regions stay flat at dimOpacity regardless of __dotOrder", () => {

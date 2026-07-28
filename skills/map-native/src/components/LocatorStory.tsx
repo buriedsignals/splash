@@ -56,7 +56,7 @@ import {
   AREAL_LABEL_S,
   AREAL_LABEL_START_S,
 } from "../story-choreography";
-import { stagedEntrance } from "../core/staged-reveal";
+import { stagedEntrance, clampOpacity } from "../core/staged-reveal";
 import type { LocatorConfigShape } from "../validate-config";
 import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
@@ -392,10 +392,15 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         labelStart: AREAL_LABEL_START_S,
       });
       const radius = DOT_RADIUS_PX * staged.borderProgress;
-      const opacity =
-        (props.__highlight ? 0.95 : DIM_OPACITY) * staged.fillOpacity;
-      const strokeOpacity =
-        (props.__highlight ? 1 : DIM_OPACITY) * staged.fillOpacity;
+      // Two channels, two ceilings, one envelope: the raw curve is scaled by each channel's
+      // own target and clamped on the way out. A highlighted marker's stroke target is
+      // already 1, so its bloom has nowhere to go — that is the channel's limit, not a bug.
+      const opacity = clampOpacity(
+        (props.__highlight ? 0.95 : DIM_OPACITY) * staged.fillEnvelope,
+      );
+      const strokeOpacity = clampOpacity(
+        (props.__highlight ? 1 : DIM_OPACITY) * staged.fillEnvelope,
+      );
       const labelOpacity = (props.__highlight ? 1 : 0.35) * staged.labelReveal;
 
       if (

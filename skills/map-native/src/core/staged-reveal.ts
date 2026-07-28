@@ -13,14 +13,41 @@ import { Easing, interpolate } from "remotion";
 export const STAGED_BORDER_S = 2.5;
 export const STAGED_FILL_S = 1.0;
 export const STAGED_LABEL_S = 0.7;
+/** How far above the settle target the fill blooms at its peak. */
+export const STAGED_FILL_OVERSHOOT = 1.25;
 
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+
+/**
+ * The one name for "this number is about to become a MapLibre opacity". Every comp that
+ * scales the raw envelope by its own ceiling passes the product through here, so the
+ * discipline is greppable instead of re-derived per component.
+ */
+export const clampOpacity = clamp01;
 
 export interface StagedEntrance {
   /** 0..1 eased — fraction of the border drawn. */
   borderProgress: number;
-  /** eased 0 → overshoot(target*1.25) → target. 0 until the border completes. */
+  /**
+   * A VALID opacity, 0..1 — the envelope below made safe for a paint property. Hand THIS
+   * to `fill-opacity` / `circle-opacity` and friends.
+   */
   fillOpacity: number;
+  /**
+   * The RAW envelope: eased 0 → target*STAGED_FILL_OVERSHOOT → target, 0 until the fill
+   * window opens. **Not an opacity** — its whole point is that it leaves the channel, and
+   * a target above 0.8 puts the peak past 1. Read it when the overshoot is the signal
+   * (a progress remap, or a ceiling you are about to multiply by), then clamp the result.
+   */
+  fillEnvelope: number;
+  /**
+   * The overshoot ALONE: `max(0, fillEnvelope - target)`, so 0 everywhere except during
+   * the bloom. A valid opacity by construction (it never exceeds target*0.25). This is the
+   * value the context-mode areal comps paint on the bloom layer sitting above the base
+   * fill — clamping the envelope instead of exposing this would have quietly cut their
+   * bloom to the headroom left under 1.
+   */
+  fillBloom: number;
   /** 0..1 eased — label rise/fade progress. */
   labelReveal: number;
 }
@@ -53,14 +80,18 @@ export function stagedEntrance(
     easing: Easing.inOut(Easing.cubic),
   });
 
+  // `extrapolateLeft/Right: "clamp"` bounds the INPUT of the interpolation, never its
+  // output — so the peak keyframe below is exactly what the curve reaches, overshoot and
+  // all. That is intended for the envelope and wrong for an opacity, hence the two fields.
+  const target = opts.fillOpacity;
   const fp = clamp01((ls - fillStart) / fillS);
-  const fillOpacity =
+  const fillEnvelope =
     fp <= 0
       ? 0
       : interpolate(
           fp,
           [0, 0.6, 1],
-          [0, opts.fillOpacity * 1.25, opts.fillOpacity],
+          [0, target * STAGED_FILL_OVERSHOOT, target],
           {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
@@ -70,5 +101,11 @@ export function stagedEntrance(
 
   const labelReveal = clamp01((ls - labelStart) / labelS);
 
-  return { borderProgress, fillOpacity, labelReveal };
+  return {
+    borderProgress,
+    fillOpacity: clamp01(fillEnvelope),
+    fillEnvelope,
+    fillBloom: Math.max(0, Math.min(1, fillEnvelope - target)),
+    labelReveal,
+  };
 }

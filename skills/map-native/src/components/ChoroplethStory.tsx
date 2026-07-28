@@ -455,9 +455,14 @@ export const ChoroplethStory: React.FC<{
       if (mode === "context") {
         // Transient overshoot delta only — the base choropleth-fill opacity below is left
         // untouched (fillReveal*0.9 for the whole distribution), so this is a brief
-        // brightening on top, never a drop-to-zero.
-        const delta = Math.max(0, staged.fillOpacity - BLOOM_BASE);
-        map.setPaintProperty(`choro-bloom-${key}`, "fill-opacity", delta);
+        // brightening on top, never a drop-to-zero. `fillBloom` IS that delta, computed
+        // from the raw envelope in the helper (it stays the full 0.225 at peak; reading
+        // the clamped `fillOpacity` here would have cut it to the headroom under 1).
+        map.setPaintProperty(
+          `choro-bloom-${key}`,
+          "fill-opacity",
+          staged.fillBloom,
+        );
       } else {
         // sequential: the bloom layer carries the FULL entrance (0 → overshoot → 0.9, holds)
         // since the base choropleth-fill is pinned to 0 for the whole distribution below.
