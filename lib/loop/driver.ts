@@ -153,7 +153,7 @@ export async function advanceStep(
       // Unreachable through nextActions (an empty elements array routes to confirm-angle), and
       // still defensive: nothing ran, so it reports nothing ran rather than claiming a step.
       if (!live) return { run, ran: null };
-      const { options, excluded, refusal } = propose(run, decor, live);
+      const { options, excluded, refusal } = propose(run, live, decor);
       return {
         run: {
           ...run,

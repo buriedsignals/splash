@@ -87,7 +87,7 @@ test.skipIf(!RUN)(
   "a chosen motion row produces a real mp4 under the run dir",
   async () => {
     const { run, el, runDir } = makeProducibleRun();
-    const { options } = propose(run);
+    const { options } = propose(run, el);
     const motion = options.find(
       (o) => o.format != null && DELIVERABLE_KIND[o.format] === "motion",
     );

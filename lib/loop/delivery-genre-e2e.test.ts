@@ -140,7 +140,7 @@ async function producedStaticRun(): Promise<{
   const run = seedRun(runDir);
   const el = run.elements[0]!;
 
-  const { options } = propose(run);
+  const { options } = propose(run, el);
   const staticOption = options.find((o) => o.format === "static");
   if (!staticOption)
     throw new Error(

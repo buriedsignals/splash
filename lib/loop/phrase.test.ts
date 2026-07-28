@@ -37,7 +37,7 @@ function run(): RunManifest {
 
 function proposed(): RunManifest {
   const m = run();
-  const { options, excluded } = propose(m);
+  const { options, excluded } = propose(m, m.elements[0]!);
   return {
     ...m,
     elements: [{ ...m.elements[0], proposal: { options, excluded } }],
@@ -60,7 +60,8 @@ function makeRunWithProposal(options: FormOption[]): RunManifest {
 // Italian. An un-phrased option must not present one of them as if it were the journalist's
 // reason — so it carries no `why` at all until a phrasing step writes one.
 test("an option the desk has not phrased carries an EMPTY why, never the sheet's English", () => {
-  const { options } = propose(run());
+  const m = run();
+  const { options } = propose(m, m.elements[0]!);
   expect(options.length).toBeGreaterThan(0);
   for (const o of options) {
     expect(o.why).toBe("");
@@ -102,7 +103,7 @@ test("applyPhrasing runs the guard: a marked option must be acknowledged", () =>
   const spatial = run();
   spatial.elements[0].angle!.confirmedTakeaway =
     "La carte des cantons montre où l'écart se creuse";
-  const { options: opts, excluded } = propose(spatial);
+  const { options: opts, excluded } = propose(spatial, spatial.elements[0]!);
   const m: RunManifest = {
     ...spatial,
     elements: [
