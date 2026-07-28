@@ -219,6 +219,97 @@ test("initRun refuses an illegal source ledger without freezing the input", () =
   expect(existsSync(join(dir, "run.json"))).toBe(false);
 });
 
+// Splash never generates a photograph, and never writes its alt or credit — the journalist's
+// suggest-image skill asks for both and refuses to fill them in. A run can only carry the
+// photographs it was GIVEN, each with the alt and credit that came with it.
+function imagesDecl(dir: string): Record<string, unknown> {
+  return {
+    dir,
+    frames: [
+      {
+        frameRef: "01.jpg",
+        alt: "A flooded street, cars submerged to the roof",
+        credit: { name: "M. Rossi" },
+      },
+      {
+        frameRef: "02.jpg",
+        alt: "The same street, dry, two years later",
+        credit: { name: "M. Rossi" },
+      },
+    ],
+  };
+}
+
+test("a run can declare a folder of the journalist's images, each with its alt and credit", () => {
+  const { dir, csv } = scene();
+  const result = initRun(dir, {
+    ...declaration(csv),
+    input: { data: csv, images: imagesDecl("/abs/photos") },
+  });
+  expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error("unreachable");
+  expect(result.value.input.images?.dir).toBe("/abs/photos");
+  expect(result.value.input.images?.frames).toHaveLength(2);
+  expect(result.value.input.images?.frames[0]).toEqual({
+    frameRef: "01.jpg",
+    alt: "A flooded street, cars submerged to the roof",
+    credit: { name: "M. Rossi" },
+  });
+});
+
+test("an image declared without an alt is refused — Splash never writes one", () => {
+  const { dir, csv } = scene();
+  const images = imagesDecl("/abs/photos");
+  (images.frames as Record<string, unknown>[])[0]!.alt = "";
+  const result = initRun(dir, {
+    ...declaration(csv),
+    input: { data: csv, images },
+  });
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.message).toContain("alt");
+  expect(existsSync(join(dir, "run.json"))).toBe(false);
+});
+
+test("an image declared without a credit is refused — a photo carries its photographer", () => {
+  const { dir, csv } = scene();
+  const images = imagesDecl("/abs/photos");
+  (images.frames as Record<string, unknown>[])[0]!.credit = { name: "" };
+  const result = initRun(dir, {
+    ...declaration(csv),
+    input: { data: csv, images },
+  });
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.message).toContain("credit");
+  expect(existsSync(join(dir, "run.json"))).toBe(false);
+});
+
+// The same three shapes skills/image-native/src/image-story.ts's checkImageConformance
+// refuses at build time — refused one layer earlier, at declaration, so the bad value never
+// lands in a manifest on disk in the first place.
+for (const escaping of [
+  "../../etc/passwd",
+  "/etc/passwd",
+  "C:\\Windows\\win.ini",
+]) {
+  test(`a frameRef "${escaping}" that escapes the image folder is refused`, () => {
+    const { dir, csv } = scene();
+    const images = imagesDecl("/abs/photos");
+    (images.frames as Record<string, unknown>[])[0]!.frameRef = escaping;
+    const result = initRun(dir, {
+      ...declaration(csv),
+      input: { data: csv, images },
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.message).toContain(
+      "must be a plain path INSIDE the image folder",
+    );
+    expect(existsSync(join(dir, "run.json"))).toBe(false);
+  });
+}
+
 test("initRun freezes an article input too, and declares it", () => {
   const { dir, csv } = scene();
   const article = join(dir, "piece.txt");

@@ -31,6 +31,29 @@ import { previewCoversDeliverable } from "../verify/preview";
 import type { CaptureSlot, ReviewRecord } from "../verify/types";
 
 const HashRef = z.object({ path: z.string(), sha256: z.string() });
+// The journalist's own photographs, declared with the run — NOT frozen the way `data`/
+// `article` are (no HashRef, no sha256): freezeInput copies a single file it can hash on the
+// spot, while an image folder stays where the journalist keeps it and is read by `frameRef`
+// at produce time. Mirrors lib/core/production-brief.ts's `ImageInput` exactly, because
+// briefFor hands this straight through (Task 10's deferred line) — the two must never drift.
+//
+// STRICT would be the declaration-schema instinct (lib/loop/init.ts's ElementDeclarationSchema
+// header), but this schema is shared VERBATIM with the declaration below (the way
+// lib/source/kinds.ts's SourceLedgerSchema is shared, not duplicated) precisely so the two
+// can never say something different about the same shape — and strict is what a shared schema
+// needs when one of its two callers accepts raw, untrusted JSON.
+export const ImageFrameSchema = z.strictObject({
+  frameRef: z.string().min(1),
+  alt: z.string().min(1),
+  credit: z.strictObject({
+    name: z.string().min(1),
+    url: z.string().optional(),
+  }),
+});
+export const ImageInputSchema = z.strictObject({
+  dir: z.string().min(1),
+  frames: z.array(ImageFrameSchema),
+});
 const DataProfileSchema = z.object({
   columns: z.array(z.string()),
   numericColumns: z.array(z.string()),
@@ -236,7 +259,11 @@ export const RunManifestSchema = z.object({
    *  question "what channel is THIS element rendered at" is answered in one place only:
    *  channelForElement(). */
   channel: z.enum(CHANNEL_KEYS).default("article-web"),
-  input: z.object({ data: HashRef.optional(), article: HashRef.optional() }),
+  input: z.object({
+    data: HashRef.optional(),
+    article: HashRef.optional(),
+    images: ImageInputSchema.optional(),
+  }),
   // --- source policy (lib/source) ---
   // WHAT each frozen input IS, beside the path+hash of WHICH file it is: the declared source
   // class and the run's mode. Optional, because a run declares its sources when it knows them

@@ -25,7 +25,7 @@ import {
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger, EN_SOURCE_QUESTIONS } from "../source/policy";
 import { freezeInput } from "./freeze";
-import { writeManifest, type RunManifest } from "./manifest";
+import { ImageInputSchema, writeManifest, type RunManifest } from "./manifest";
 
 // WHAT A RUN MAY BE CREATED WITH — and, far more importantly, what it may NOT.
 //
@@ -57,6 +57,9 @@ export const RunDeclarationSchema = z.strictObject({
   input: z.strictObject({
     data: z.string().min(1).optional(),
     article: z.string().min(1).optional(),
+    /** The journalist's own photographs — declared here verbatim (dir + per-frame alt and
+     *  credit), never generated and never defaulted. See ImageInputSchema's own header. */
+    images: ImageInputSchema.optional(),
   }),
   sources: SourceLedgerSchema.optional(),
   elements: z
@@ -66,6 +69,27 @@ export const RunDeclarationSchema = z.strictObject({
 });
 
 export type RunDeclaration = z.input<typeof RunDeclarationSchema>;
+
+// The exact three shapes skills/image-native/src/image-story.ts's checkImageConformance
+// refuses at build time (an absolute path, a Windows drive, a ".." segment): a frameRef
+// becomes a path resolved under `imageDir`, so any of the three is a traversal out of the one
+// folder Splash is allowed to read images from. Refused one layer earlier here, at
+// declaration, so the bad value never lands in a manifest on disk in the first place — and
+// the message is QUOTED from the engine's own check (the shared clause after the frame label),
+// never reworded, so the two rules can never disagree about the same thing.
+function imageFrameRefViolation(frameRef: string): string | undefined {
+  if (
+    frameRef.startsWith("/") ||
+    frameRef.startsWith("\\") ||
+    /^[A-Za-z]:[\\/]/.test(frameRef) ||
+    frameRef.split(/[\\/]/).includes("..")
+  )
+    return (
+      `frameRef ${JSON.stringify(frameRef)} must be a plain path INSIDE the image folder — ` +
+      `no absolute paths, no ".." (the raw images live under imageDir, nothing else is readable)`
+    );
+  return undefined;
+}
 
 /**
  * Create a run in `runDir` from a declaration. Returns the manifest it wrote.
@@ -92,6 +116,18 @@ export function initRun(runDir: string, raw: unknown): VerbResult<RunManifest> {
       "invalid-request",
       "init: a run is built from something — declare input.data, input.article, or both",
     );
+
+  // 1b. Every declared image's frameRef, checked BEFORE anything else about images: a
+  //     traversal is a filesystem hazard, not an editorial one, so it is refused ahead of the
+  //     alt/credit questions the schema above already asked (min(1) on both — an empty one
+  //     fails at the parse in step 1, naming the field, exactly like every other declared
+  //     shape). One violation is enough to refuse the whole declaration and write nothing.
+  if (decl.input.images) {
+    for (const frame of decl.input.images.frames) {
+      const violation = imageFrameRefViolation(frame.frameRef);
+      if (violation) return fail("invalid-request", `init: ${violation}`);
+    }
+  }
 
   // 2. An existing run is NEVER overwritten. The manifest is the ledger: it carries the events,
   //    the produced artifacts and the deliveries that already landed. Destroying that on a
@@ -170,6 +206,9 @@ export function initRun(runDir: string, raw: unknown): VerbResult<RunManifest> {
       ...(decl.input.article
         ? { article: freezeInput(runDir, decl.input.article, "article") }
         : {}),
+      // NOT frozen — see ImageInputSchema's own header (manifest.ts): an image folder stays
+      // where the journalist keeps it, declared verbatim, never copied or hashed.
+      ...(decl.input.images ? { images: decl.input.images } : {}),
     };
     const run: RunManifest = {
       runId: decl.runId.trim(),
