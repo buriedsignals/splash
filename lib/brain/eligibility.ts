@@ -224,8 +224,20 @@ function limitFailure(sheet: TypeSheet, f: Facts): string | null {
     return `this form needs at least ${l.minPoints} points, and the data has ${f.points}`;
   if (l.maxPoints != null && f.points > l.maxPoints)
     return `this form takes at most ${l.maxPoints} points, and the data has ${f.points}`;
-  if (l.maxSeries != null && f.series > l.maxSeries)
-    return `this form stays readable up to ${l.maxSeries} series, and the data has ${f.series}`;
+  if (l.maxSeries != null) {
+    // facts.series === facts.rows always (facts.ts) — the row count is what "series" measures
+    // for a wide sheet with no separate row axis (a slope/dumbbell-style CSV: one row PER
+    // series). But a sheet that ALSO caps `maxCategories` has already claimed the row axis for
+    // categories — chart-selection.md documents grouped-bar/stacked-bar/marimekko's own CSV
+    // shape as "first column = category [rows], every following numeric column = a series
+    // [columns]" — so on THOSE sheets "series" means the numeric-column count (facts.points),
+    // never the row count. Checking rows for both would compare the identical number against
+    // two different ceilings and could name the wrong one to the journalist reading the refusal
+    // (spec A17). This branches on the sheet's OWN declared shape, not a guess.
+    const seriesCount = l.maxCategories != null ? f.points : f.series;
+    if (seriesCount > l.maxSeries)
+      return `this form stays readable up to ${l.maxSeries} series, and the data has ${seriesCount}`;
+  }
   if (l.maxCategories != null && f.rows > l.maxCategories)
     return `this form stays readable up to ${l.maxCategories} categories, and the data has ${f.rows}`;
   if (l.minRows != null && f.rows < l.minRows)
@@ -241,9 +253,18 @@ function limitFailure(sheet: TypeSheet, f: Facts): string | null {
 // FT-canonical slope/dumbbell for two-point data) regardless of how comfortably either actually
 // fits. 0.5 claims nothing: it sits below a genuinely roomy capped form and above a cramped one.
 function fillRatio(sheet: TypeSheet, f: Facts): number {
-  const cap = sheet.limits.maxSeries ?? sheet.limits.maxCategories;
+  const l = sheet.limits;
+  const cap = l.maxSeries ?? l.maxCategories;
   if (cap == null || cap <= 0) return 0.5;
-  const used = sheet.limits.maxSeries != null ? f.series : f.rows;
+  // Mirrors limitFailure's shape-aware read of `maxSeries` (A17): a sheet that caps BOTH
+  // measures its series from the numeric columns, not the row count already claimed by
+  // maxCategories.
+  const used =
+    l.maxSeries != null
+      ? l.maxCategories != null
+        ? f.points
+        : f.series
+      : f.rows;
   return Math.min(1, used / cap);
 }
 

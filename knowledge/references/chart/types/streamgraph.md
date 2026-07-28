@@ -7,7 +7,7 @@ shape: wide
 limits: { maxSeries: 7 }
 formats: [static, interactive, video]
 bestFor:
-  - "many series (5-10) over a continuous time axis where the shift in composition and the overall ebb/flow is the story"
+  - "many series (5-7) over a continuous time axis where the shift in composition and the overall ebb/flow is the story"
 notFor:
   - "reading precise values — with no shared baseline only the thickest bands are readable; use a stacked area or small multiples if exact values matter"
   - "few series — a stacked area or lines are clearer"
@@ -26,7 +26,7 @@ its overall size shifted over time"** — an organic, at-a-glance read of many s
 
 ## When to use / when NOT — read the caveats first
 
-- **Use** for: many series (5–10) over a continuous time axis where the SHIFT in composition and the
+- **Use** for: many series (5–7) over a continuous time axis where the SHIFT in composition and the
   overall ebb/flow is the story — genres, fuels, categories over decades.
 - **Not** for: reading precise values — with no shared baseline, only the THICKEST bands are readable;
   thin/middle ones are guesswork. If exact values matter, use a stacked area or small multiples.

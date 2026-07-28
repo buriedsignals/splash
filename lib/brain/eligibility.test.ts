@@ -2,7 +2,7 @@
 import { test, expect, describe, it } from "bun:test";
 import { deriveFacts } from "./facts";
 import { eligible, buildabilityMark } from "./eligibility";
-import type { TypeSheet } from "./typology";
+import { loadTypology, type TypeSheet } from "./typology";
 import type { VisualFormat } from "../core/vocabulary";
 // renderableSheets() only sees a type once its engine has self-registered into
 // lib/core/registry — the same side-effect import lib/brain/typology-drift.test.ts uses.
@@ -435,8 +435,164 @@ describe("print (issue #1)", () => {
   });
 
   it("offers native forms, and only in the static format", () => {
-    const { eligible: rows } = eligible({ facts: TWO_POINTS, channel: "print-page" });
+    const { eligible: rows } = eligible({
+      facts: TWO_POINTS,
+      channel: "print-page",
+    });
     expect(rows.length).toBeGreaterThan(0);
     for (const c of rows) expect(c.format).toBe("static");
   });
+});
+
+// A26: radar and parallel coordinates both need >= 3 axes to form a legible shape
+// (checkRadarConformance / checkParallelConformance in skills/chart-native/src/core/conformance.ts
+// enforce exactly this floor: "radar has N axes (< 3)" / "parallel coordinates need >= 3 axes").
+// Until now that floor lived ONLY at render time — a 2-numeric-column CSV would have been offered
+// by the brain as legal, then died downstream at conformance instead of being excluded here with
+// a readable reason. `minPoints` already measures numeric-column count (facts.points); no new
+// vocabulary is needed, only declaring the floor both sheets already document in prose ("4-8
+// comparable dimensions" / "3-8 numeric dimensions") and their own conformance checker enforces.
+//
+// Both types are `deferred` in chart-native's own catalogue (Family B — "rare in a small
+// newsroom"), so renderableSheets() never pairs them today (same reason typology-drift.test.ts
+// uses "sankey" as its "a deferred type never pairs" example) — there is no LIVE path where an
+// under-specified radar/parallel reaches a journalist yet. This test proves the mechanics
+// directly, the same way the `fakeSheet` tests above isolate one engine pairing from the real
+// KB's coincidences: it pairs the REAL sheet (loaded straight off disk, not a fixture) explicitly,
+// bypassing the deferred filter, so the floor is proven correct now and stays correct the day
+// Family B goes live — nobody has to remember to add it in that future moment.
+const REAL_SHEETS = loadTypology();
+function realPair(id: string) {
+  const sheet = REAL_SHEETS.find((s) => s.id === id);
+  if (!sheet) throw new Error(`no real KB sheet named "${id}"`);
+  return {
+    sheet,
+    engine: "chart-native",
+    key: sheet.engines["chart-native"][0],
+  };
+}
+
+test("real KB: radar and parallel both declare a >= 3 axis floor, and refuse a two-axis dataset with it named", () => {
+  const radarSheet = REAL_SHEETS.find((s) => s.id === "radar")!;
+  const parallelSheet = REAL_SHEETS.find((s) => s.id === "parallel")!;
+  expect(radarSheet.limits.minPoints).toBe(3);
+  expect(parallelSheet.limits.minPoints).toBe(3);
+
+  const twoAxes = deriveFacts({
+    columns: ["entity", "reach", "trust"],
+    numericColumns: ["reach", "trust"],
+    rowCount: 3,
+  });
+  const { excluded } = eligible({ facts: twoAxes, channel: "article-web" }, [
+    realPair("radar"),
+    realPair("parallel"),
+  ]);
+  const radar = excluded.find((e) => e.id === "radar");
+  const parallel = excluded.find((e) => e.id === "parallel");
+  expect(radar?.reason).toMatch(/3.*point|point.*3/i);
+  expect(parallel?.reason).toMatch(/3.*point|point.*3/i);
+});
+
+test("real KB: radar and parallel are legal once the data carries >= 3 axes", () => {
+  const threeAxes = deriveFacts({
+    columns: ["entity", "reach", "trust", "speed"],
+    numericColumns: ["reach", "trust", "speed"],
+    rowCount: 3,
+  });
+  const { eligible: ok } = eligible(
+    { facts: threeAxes, channel: "article-web" },
+    [realPair("radar"), realPair("parallel")],
+  );
+  expect(ok.some((c) => c.id === "radar")).toBe(true);
+  expect(ok.some((c) => c.id === "parallel")).toBe(true);
+});
+
+// A17: facts.series === rowCount always (facts.ts), so any sheet checking BOTH `maxSeries` and
+// `maxCategories` was comparing the SAME number (rows) against two different ceilings — one of
+// the two checks was a decoy that could never fire on its own terms. grouped-bar/stacked-bar/
+// marimekko are exactly the CSV shape chart-selection.md documents as "first column = category
+// [the ROWS], every following numeric column = a series [the COLUMNS]" — so on a real wide CSV
+// for these three, "series" means numeric-column count (facts.points), not row count. A dataset
+// with few series (2 columns) and many categories (10 rows) used to be excluded with "stays
+// readable up to 3 series, and the data has 10" — true about the ROW count, false about the
+// actual series count, and naming the wrong ceiling to the journalist reading it.
+test("real KB: grouped-bar counts its series from the numeric columns, not the row count", () => {
+  const manyCategoriesFewSeries = deriveFacts({
+    columns: ["region", "2019", "2024"], // 2 series columns
+    numericColumns: ["2019", "2024"],
+    rowCount: 10, // 10 categories — legal (<= maxCategories: 6 is NOT satisfied, see below)
+  });
+  // 10 rows also breaks maxCategories (<=6), so isolate the series axis: 6 categories, 2 series.
+  const sixCategoriesTwoSeries = deriveFacts({
+    columns: ["region", "2019", "2024"],
+    numericColumns: ["2019", "2024"],
+    rowCount: 6,
+  });
+  const { eligible: ok } = eligible({
+    facts: sixCategoriesTwoSeries,
+    channel: "article-web",
+  });
+  expect(ok.some((c) => c.id === "grouped-bar")).toBe(true);
+
+  // Before the fix this used to read the ROW count (10) as the series count and exclude with
+  // "stays readable up to 3 series, and the data has 10" — a true statement about rows, and a
+  // false one about series (there are only 2). Now: excluded for the real reason (too many
+  // categories), never a phantom series violation.
+  const { excluded } = eligible({
+    facts: manyCategoriesFewSeries,
+    channel: "article-web",
+  });
+  const why = excluded.find((e) => e.id === "grouped-bar");
+  expect(why?.reason).toMatch(/categories/);
+  expect(why?.reason).not.toMatch(/series/);
+});
+
+test("real KB: grouped-bar refuses too many series (numeric columns), naming the real count", () => {
+  const fourSeriesFewCategories = deriveFacts({
+    columns: ["region", "2019", "2020", "2021", "2022"], // 4 series columns > maxSeries: 3
+    numericColumns: ["2019", "2020", "2021", "2022"],
+    rowCount: 4, // well under maxCategories: 6
+  });
+  const { eligible: ok, excluded } = eligible({
+    facts: fourSeriesFewCategories,
+    channel: "article-web",
+  });
+  expect(ok.some((c) => c.id === "grouped-bar")).toBe(false);
+  const why = excluded.find((e) => e.id === "grouped-bar");
+  expect(why?.reason).toMatch(/series/);
+  expect(why?.reason).toContain("4");
+});
+
+test("real KB: stacked-bar shows the same fix (maxCategories: 8, maxSeries: 5)", () => {
+  const sevenCategoriesTwoSeries = deriveFacts({
+    columns: ["year", "hydro", "wind"],
+    numericColumns: ["hydro", "wind"],
+    rowCount: 7, // > maxCategories: 8? no — 7 <= 8, legal; picks a value distinct from grouped-bar's cap
+  });
+  const { eligible: ok } = eligible({
+    facts: sevenCategoriesTwoSeries,
+    channel: "article-web",
+  });
+  expect(ok.some((c) => c.id === "stacked-bar")).toBe(true);
+});
+
+// marimekko is `deferred` (Family B) in chart-native's own catalogue, so it never reaches
+// renderableSheets() today — same reasoning as the radar/parallel test above: prove the
+// mechanics now with a direct pairing, correct the day it goes live.
+test("real KB: marimekko (deferred) also counts its series from numeric columns, not rows", () => {
+  const marimekko = realPair("marimekko");
+  expect(marimekko.sheet.limits).toEqual({ maxSeries: 5, maxCategories: 6 });
+
+  const manyCategoriesFewSeries = deriveFacts({
+    columns: ["segment", "urban", "rural"],
+    numericColumns: ["urban", "rural"],
+    rowCount: 10, // > maxCategories: 6
+  });
+  const { excluded } = eligible(
+    { facts: manyCategoriesFewSeries, channel: "article-web" },
+    [marimekko],
+  );
+  const why = excluded.find((e) => e.id === "marimekko");
+  expect(why?.reason).toMatch(/categories/);
+  expect(why?.reason).not.toMatch(/series/);
 });

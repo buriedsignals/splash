@@ -16,7 +16,7 @@ notFor:
 
 # Image scrolly — per-type best practice
 
-> Source: the engine's own design, `docs/superpowers/specs/2026-07-10-image-scrolly-design.md`.
+> Sources: the engine's own design, `docs/superpowers/specs/2026-07-10-image-scrolly-design.md`.
 > Inherits the interactive-web discipline (reflow, keyboard, `prefers-reduced-motion`) in
 > `knowledge/references/formats/interactive.md`.
 
@@ -38,7 +38,7 @@ generates them.
 - **Not** for: images the newsroom does not have the rights to publish — every frame requires a
   credit, and the caption is not a substitute for it.
 
-## Correctness
+## Correctness "de base" (image-scrolly-specific)
 
 1. **Every frame carries its own `alt` and `credit`, distinct from its caption.** `alt` describes
    what is seen (journalist-supplied, never vision-generated); `caption` is what the frame proves
