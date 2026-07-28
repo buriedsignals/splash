@@ -130,11 +130,15 @@ it("every other pairing is the identity", () => {
   expect(producerForFormat("chart-native", "video")).toBe("chart-native");
   expect(producerForFormat("map-dw", "static")).toBe("map-dw");
   expect(producerForFormat("unknown-engine", "static")).toBe("unknown-engine");
-  // NOT actually the identity: dw-chart declares no scrolly track of its own, so it redirects
-  // to the scrolly producer exactly like chart-native/map-native do above — the redirection is
-  // unconditional on `format === "scrolly"`, with no check that the engine hosts a scrolly
-  // track at all. This documents CURRENT behaviour, not a deliberate design choice; narrowing
-  // producerForFormat's redirection to engines that actually host a scrolly track is a named
-  // follow-up (final whole-branch review, 2026-07-26), explicitly out of scope here.
-  expect(producerForFormat("dw-chart", "scrolly")).toBe("scrolly");
+  // THE IDENTITY, and now genuinely so. This line asserted "scrolly" until 2026-07-28, with a
+  // comment saying it documented current behaviour rather than a design choice: the redirect
+  // fired on `format === "scrolly"` alone, with no check that the engine hosts a scrolly track.
+  // Measured consequence — a dw-chart `d3-bars` scrolly was OFFERED unmarked, composed a
+  // chart-native spec no mapper knows, passed validation (nativeSpecErrors swallows
+  // UnsupportedNativeType) and threw at BUILD; and a map-dw choropleth scrolly silently became a
+  // MapLibre map. FORMAT_HOST now names the engines skills/scrolly actually hosts.
+  expect(producerForFormat("dw-chart", "scrolly")).toBe("dw-chart");
+  expect(producerForFormat("map-dw", "scrolly")).toBe("map-dw");
+  // An engine nobody registered is unchanged: no host claims it, so it keeps its own name.
+  expect(producerForFormat("crayon", "scrolly")).toBe("crayon");
 });

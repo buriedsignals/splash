@@ -20,6 +20,8 @@
 // this slice's file boundary (see the design spec §1.1).
 import { ARC_ROLES, type ArcRole } from "../core/claim-arc";
 import { parseCsvRows } from "../loop/profile";
+import { AUTHORABLE_SCROLLY_TYPES } from "../../skills/chart-native/src/chart-story";
+import { IMAGE_SCROLLY_TYPE } from "../../skills/image-native/src/image-story";
 
 export type BeatAnchor =
   | { kind: "x"; value: string } // line: a value of the x column
@@ -58,8 +60,35 @@ export type SuggestBeatsInput = {
 
 // The engine's beats override supports line and bar only (skills/chart-native/src/chart-story.ts,
 // narrativeBeatErrors). Refused in THE ENGINE'S OWN WORDS rather than in a second wording a
-// journalist would have to reconcile with the one the render gate shows.
-const BEAT_TYPES = new Set(["line", "bar"]);
+// journalist would have to reconcile with the one the render gate shows — and READ from the
+// engine's own exported list rather than retyped here, which is what this comment used to
+// promise and a `new Set(["line", "bar"])` could only be trusted to keep.
+const BEAT_TYPES = new Set<string>(AUTHORABLE_SCROLLY_TYPES);
+
+/**
+ * CAN THE LOOP DRAFT A WALK FOR THIS TRACK AT ALL — the one question
+ * `nextActionsForElement` needs before it routes an element to `draft-beats`.
+ *
+ * It exists because the routing and the drafter disagreed in silence. `manifest.ts` sent EVERY
+ * narrative-less scrolly to `draft-beats`, `suggestBeats` refused every track but line and bar,
+ * and `draftBeats`/`applyBeats` are the only writers of `el.narrative` — so a map or image
+ * scrolly answered the same impossible action forever, with no route back (`deadEndReason` is
+ * consulted only on "choose-form"). One predicate, read by the router and honoured by the
+ * drafter, is what keeps them from drifting apart again.
+ *
+ * A MAP scrolly is deliberately absent: that track derives its own walk from the data
+ * (deriveMapStory) and `assembleScrolly` refuses an authored plan on it outright, so it needs no
+ * draft — it goes straight to produce.
+ *
+ * A SCATTER scrolly is absent too, and is not routed to produce either: the scrolly renderer
+ * hosts one and would DERIVE its captions, which is the defect this whole seam exists to remove,
+ * so the offer MARKS it instead (lib/loop/assemble/scrolly.ts's SCROLLY_TRACK_TYPES). That is why
+ * this predicate and the table's `supports` read the SAME engine list — a type the loop offers
+ * as a scrolly and cannot draft a walk for would strand a run all over again.
+ */
+export function canDraftBeats(nativeType: string): boolean {
+  return BEAT_TYPES.has(nativeType) || nativeType === IMAGE_SCROLLY_TYPE;
+}
 
 /** A claim-arc needs establish + at least one build + payoff. Fewer anchors than this is not a
  *  short argument, it is no argument — and a narrative PAGE is exactly where that matters. */
@@ -132,9 +161,13 @@ export function suggestBeats(input: SuggestBeatsInput): BeatDraft {
   if (!BEAT_TYPES.has(input.nativeType))
     return {
       beats: [],
+      // The CHART track's own type limit, which is a different rule from "a map derives its own
+      // walk" (that one has a single wording, skills/scrolly/src/scrolly-types.ts's
+      // MAP_TRACK_BEATS_REFUSAL, and a map never reaches this function any more — the router
+      // gates on canDraftBeats above).
       refusal:
-        `a beat plan is line and bar chart scrollies only (got "${input.nativeType}") — ` +
-        `the engine's own beats override supports no other type`,
+        `a beat plan is ${[...BEAT_TYPES].join(" and ")} chart scrollies only (got ` +
+        `"${input.nativeType}") — the engine's own beats override supports no other type`,
     };
 
   const { columns, rows, numericColumns } = parseCsvRows(input.dataCsv);
@@ -225,6 +258,51 @@ export function suggestBeats(input: SuggestBeatsInput): BeatDraft {
         },
       };
     }),
+  };
+}
+
+/**
+ * THE IMAGE WALK — one beat per declared photograph, in the order the journalist declared them.
+ *
+ * The counterpart of suggestBeats, and deliberately NOT a branch inside it: there is no CSV to
+ * read, no salience to measure, and nothing to derive. The captions of an image scrolly ARE the
+ * beats (lib/loop/assemble/image-native.ts zips frames to beats one-to-one), so what the brain
+ * can hand over here is the SHAPE of the walk — how many claims, in which order, against which
+ * photograph — and nothing else.
+ *
+ * `draftText` is therefore EMPTY, and that is the honest value rather than a missing one: Splash
+ * runs no vision matching between a photograph and any prose (image-native.ts's own header), so
+ * it has never looked at the image and has nothing to suggest. The ANCHOR names the frame, which
+ * is what a journalist needs in order to know which photograph they are writing.
+ *
+ * ACCEPTED LIMITATION, inherited from verifyBeats' claim grounding: an image beat's facts are its
+ * frame and its position, so a caption asserting a number the walk does not carry ("the canal
+ * opened in 1887") is REFUSED — there is no data behind a photograph for the guard to check it
+ * against. Loud and retryable, never silent; loosening the guard for one track would loosen it
+ * for the chart track it was written for.
+ */
+export function suggestImageBeats(
+  frames: readonly { frameRef: string }[],
+): BeatDraft {
+  if (frames.length < MIN_BEATS)
+    return {
+      beats: [],
+      refusal:
+        `${frames.length} photograph${frames.length === 1 ? "" : "s"} is not an argument — a ` +
+        `claim-arc opens on an establish beat, needs at least one build, and closes on a ` +
+        `payoff (${ARC_ROLES.join(" → ")}). Declare more photographs with the run`,
+    };
+  return {
+    beats: frames.map((f, i) => ({
+      id: `beat-${i + 1}`,
+      anchor: { kind: "category", value: f.frameRef } as BeatAnchor,
+      role: roleAt(i, frames.length),
+      draftText: "",
+      beatSource: {
+        facts: { frame: f.frameRef, position: String(i + 1) },
+        shared: { photographs: String(frames.length) },
+      },
+    })),
   };
 }
 

@@ -11,6 +11,11 @@ import type { AuthoredBeat } from "../brain/verify-beats";
 
 // THE PROOF that the beats a reader sees are the journalist's, not the machine's.
 //
+// TWO HALVES, as every other proof in this roster has: the RENDER below is opt-in, and the
+// grounding guard at the foot of the file is ALWAYS ON. Both used to be gated, which made this
+// the only one of the eleven proofs with nothing running under `bun run check` — dark on every
+// commit, on the proof that earned scrolly its key in the assembler table.
+//
 // OPT-IN (SPLASH_PROVE_BEATS=1), and out of `bun run check` on purpose: it drives a real Vite
 // single-file build plus the scrolly producer's own Playwright reduced-motion snap, then opens the
 // built page in a third browser to read it. Same discipline as
@@ -192,24 +197,26 @@ proof(
   600_000,
 );
 
-proof(
-  "the guard refuses a beat asserting a number the data does not contain",
-  () => {
-    const { run, runDir } = proofRun();
-    const drafted = draftBeats(run, run.elements[0]!, runDir);
-    if (!drafted.ok) throw new Error(drafted.message);
-    const withPlan: RunManifest = { ...run, elements: [drafted.value] };
-    const plan = drafted.value.narrative!.beats;
+// ALWAYS ON — the half that needs neither browser nor network. This file was the ONLY one of the
+// eleven proofs with no always-on half: both tests sat behind SPLASH_PROVE_BEATS, so nothing here
+// ran under `bun run check` on any commit — the exact rot mode the other proof headers cite, on
+// the proof that earned scrolly its key in the assembler table. This test drafts from a CSV the
+// test itself writes and calls the guard synchronously; there is nothing in it a gate cannot run.
+test("the guard refuses a beat asserting a number the data does not contain", () => {
+  const { run, runDir } = proofRun();
+  const drafted = draftBeats(run, run.elements[0]!, runDir);
+  if (!drafted.ok) throw new Error(drafted.message);
+  const withPlan: RunManifest = { ...run, elements: [drafted.value] };
+  const plan = drafted.value.narrative!.beats;
 
-    const invented: AuthoredBeat[] = plan.map((b, i) => ({
-      id: b.id,
-      role: b.role,
-      // The last beat asserts a collapse to 1.8 million km². The series never goes below 3.6.
-      text: i === plan.length - 1 ? "La surface est tombée à 1,8." : CLAIMS[i]!,
-    }));
-    expect(() => applyBeats(withPlan, "e1", invented)).toThrow(/1\.8/);
-    // …and nothing was written: the manifest is unchanged, so a refusal is safe to retry.
-    expect(unauthoredBeats(withPlan.elements[0]!)).toHaveLength(plan.length);
-    rmSync(runDir, { recursive: true, force: true });
-  },
-);
+  const invented: AuthoredBeat[] = plan.map((b, i) => ({
+    id: b.id,
+    role: b.role,
+    // The last beat asserts a collapse to 1.8 million km². The series never goes below 3.6.
+    text: i === plan.length - 1 ? "La surface est tombée à 1,8." : CLAIMS[i]!,
+  }));
+  expect(() => applyBeats(withPlan, "e1", invented)).toThrow(/1\.8/);
+  // …and nothing was written: the manifest is unchanged, so a refusal is safe to retry.
+  expect(unauthoredBeats(withPlan.elements[0]!)).toHaveLength(plan.length);
+  rmSync(runDir, { recursive: true, force: true });
+});

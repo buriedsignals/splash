@@ -194,3 +194,58 @@ describe("chooseForm — the journalist's choice, written by code", () => {
     expect(stalenessOf({ ...run, elements: [moved] }, moved)).toBe(true);
   });
 });
+
+// A NARRATIVE IS EXACTLY AS STALE AS AN ARTIFACT when the form changes — it was drafted FOR a
+// form. Measured before chooseForm dropped it: a walk authored on a chart scrolly survived onto a
+// re-chosen MAP scrolly, so nextActions skipped `draft-beats` (a narrative exists) and
+// `author-beats` (nothing unwritten) and answered `produce` forever, while assembleScrolly
+// refused the map track's authored beats every time. A dead end with no route back.
+describe("chooseForm — the narrative", () => {
+  function scrolly(over: Partial<FormOption> = {}): FormOption {
+    return {
+      id: "chart-scrolly",
+      nativeType: "line",
+      engine: "chart-native",
+      format: "scrolly",
+      why: "w",
+      ...over,
+    };
+  }
+  const WALK = {
+    beats: [
+      {
+        id: "beat-1",
+        anchor: { kind: "x" as const, value: "1979" },
+        role: "establish" as const,
+        text: "En 1979, la banquise tenait encore.",
+        draftText: "1979 — 7",
+        beatSource: { facts: { x: "1979", value: "7" }, shared: {} },
+      },
+    ],
+  };
+
+  it("is dropped when the journalist re-chooses another form", () => {
+    const options = [
+      scrolly(),
+      scrolly({ id: "map-scrolly", nativeType: "choropleth", engine: "map-native" }),
+    ];
+    const el = elementWith(options, {
+      proposal: { options, excluded: [], chosenId: "chart-scrolly" },
+      narrative: WALK,
+    });
+    const r = chooseForm(el, "map-scrolly");
+    expect(r.ok).toBe(true);
+    expect((r as { value: RunElement }).value.narrative).toBeUndefined();
+  });
+
+  it("survives re-affirming the SAME choice — that is not a change of form", () => {
+    const options = [scrolly()];
+    const el = elementWith(options, {
+      proposal: { options, excluded: [], chosenId: "chart-scrolly" },
+      narrative: WALK,
+    });
+    const r = chooseForm(el, "chart-scrolly");
+    expect(r.ok).toBe(true);
+    expect((r as { value: RunElement }).value.narrative).toEqual(WALK);
+  });
+});

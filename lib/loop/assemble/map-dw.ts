@@ -74,7 +74,13 @@ export function supportsMapDwType(nativeType: string): boolean {
   return nativeType === "choropleth";
 }
 
-function typeRefusal(nativeType: string): string {
+/** WHY a type this engine declines is declined, in the journalist's words. EXPORTED so the
+ *  assembler table hands it to the offer as map-dw's `declines` sentence: until it did, this
+ *  function was reached only from assembleMapDw — which `assemblerFor` never calls for a
+ *  declined type — so a journalist read the generic "nothing can build a map-dw form yet —
+ *  production is wired for …, map-dw" (a sentence contradicting itself in its own second half)
+ *  while the real reason sat here, written and unreachable. */
+export function mapDwTypeRefusal(nativeType: string): string {
   if (nativeType === "symbol")
     // The registry's own reason, in the journalist's words: DW's proportional circles carry
     // their value on HOVER only, so the owned static PNG is mute, unlabeled circles.
@@ -121,7 +127,7 @@ function geoRefusal(geo: GeoMatch | undefined): string | undefined {
 
 export function assembleMapDw(brief: ProductionBrief): VerbResult<unknown> {
   if (!supportsMapDwType(brief.nativeType))
-    return fail("invalid-request", typeRefusal(brief.nativeType));
+    return fail("invalid-request", mapDwTypeRefusal(brief.nativeType));
 
   const refusal = geoRefusal(brief.geo);
   if (refusal) return fail("invalid-request", refusal);

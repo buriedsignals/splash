@@ -3,6 +3,11 @@
 // conformance style (a string[] of human-readable violations; empty = valid).
 // Spec: docs/superpowers/specs/2026-07-10-image-scrolly-design.md §5, §6.
 
+/** The ONE type this engine declares (its producer manifest's `types`). Named here, in the
+ *  engine's own contract module, so the readers outside the engine — the loop's assembler table
+ *  and the brain's beat drafter — READ it instead of repeating the string. */
+export const IMAGE_SCROLLY_TYPE = "image-scrolly";
+
 export interface ImageCredit {
   name: string;
   url?: string;

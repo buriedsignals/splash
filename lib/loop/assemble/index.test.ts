@@ -10,6 +10,10 @@ import {
   LOOP_BUILDABLE_ENGINES,
   unbuildableEngineReason,
 } from "../buildable";
+// The registry has to be POPULATED for engineTypes to answer — the deferred check reads each
+// engine's own manifest, and an unregistered registry would make it a silent no-op.
+import "../../../skills/splash/src/register-producers";
+import { allProducers } from "../../core/registry";
 
 test("the buildable list is exactly the table's keys — no hand-written second copy", () => {
   expect([...LOOP_BUILDABLE_ENGINES].sort()).toEqual(
@@ -17,9 +21,13 @@ test("the buildable list is exactly the table's keys — no hand-written second 
   );
 });
 
-test("an engine with no per-type restriction builds any of its types", () => {
+test("an engine with no per-type restriction builds any of its REACHABLE types", () => {
   expect(isLoopBuildable("chart-native", "line")).toBe(true);
-  expect(isLoopBuildable("chart-native", "sankey")).toBe(true);
+  expect(isLoopBuildable("chart-native", "heatmap")).toBe(true);
+  // It said `sankey` until 2026-07-28, and that was the lie: chart-native's manifest declares
+  // sankey `deferred` (no mapper builds it), so the table was claiming a type the engine denies.
+  // The table reads the flag now — see the deferral tests at the foot of this file.
+  expect(isLoopBuildable("chart-native", "sankey")).toBe(false);
 });
 
 test("an unknown engine is not buildable, with or without a type", () => {
@@ -66,15 +74,27 @@ test("the whole row-driven family is back in the offer, declaring its own shape"
     "d3-bars",
     "d3-bars-grouped",
     "d3-bars-stacked",
-    "d3-bars-split",
     "d3-bars-bullet",
     "d3-dot-plot",
-    "d3-arrow-plot",
     "d3-range-plot",
-    "tables",
   ]) {
     expect(isLoopBuildable("dw-chart", t, "static")).toBe(true);
     expect(declineReason("dw-chart", t, "static")).toBeUndefined();
+    expect(heightPolicyFor("dw-chart", t)).toBe("content-driven");
+  }
+  // THREE of the nine left this list on 2026-07-28, and not because the height policy changed:
+  // dw-chart's OWN manifest declares `d3-bars-split`, `d3-arrow-plot` and `tables` `deferred`
+  // ("no KB sheet models this"), and the table now reads that flag instead of claiming what the
+  // manifest denies. NOTHING A JOURNALIST SEES MOVES, and that is measurable rather than hoped:
+  // lib/brain/typology.ts's renderableSheets already joins through `isRenderable`, which is the
+  // same flag — a deferred key could never have become a candidate. Their SHAPE is still
+  // declared, because the shape is a fact about the type whether or not the loop composes it.
+  for (const t of ["d3-bars-split", "d3-arrow-plot", "tables"]) {
+    expect(isLoopBuildable("dw-chart", t, "static")).toBe(false);
+    // The manifest's own reason, quoted rather than replaced by the generic engine sentence.
+    expect(declineReason("dw-chart", t, "static")).toContain(
+      "but cannot build it",
+    );
     expect(heightPolicyFor("dw-chart", t)).toBe("content-driven");
   }
   // Its fixed-aspect sibling — the vertical column chart — exports AT the box, and stays pinned:
@@ -106,8 +126,105 @@ test("the refusal for a declined pairing is the table's own sentence, not the en
   expect(reason).not.toContain("nothing can build");
 });
 
-test("an engine nothing is wired for still gets the engine sentence", () => {
-  expect(unbuildableEngineReason("map-dw", "choropleth", "static")).toContain(
-    "nothing can build a map-dw form yet",
+// THE GENERIC FALLBACK belongs to an engine the table holds NO key for — and only to it. This
+// test used to call unbuildableEngineReason("map-dw", "choropleth", "static"), a pairing
+// isLoopBuildable answers TRUE for: it exercised the refusal writer on something that is never
+// refused, passed for the wrong reason, and pinned the self-contradicting sentence ("nothing can
+// build a map-dw form yet — production is wired for …, map-dw") as the expected one.
+test("the generic engine sentence is for an engine nothing is wired for, and only that", () => {
+  expect(isLoopBuildable("crayon", "choropleth", "static")).toBe(false);
+  const reason = unbuildableEngineReason("crayon", "choropleth", "static");
+  expect(reason).toContain("nothing can build a crayon form yet");
+  // …and it names what IS wired, which is only useful because "crayon" is not among them.
+  for (const engine of LOOP_BUILDABLE_ENGINES) expect(reason).toContain(engine);
+});
+
+// EVERY WIRED ENGINE ANSWERS IN ITS OWN WORDS. The generic sentence contradicts itself for any
+// engine sitting in the buildable list, which is exactly what these four used to emit: "nothing
+// can build a map-native form yet — production is wired for …, map-native …". Enumerated rather
+// than sampled, so a future entry with a `supports` and no `declines` fails here.
+test("a wired engine declining a pairing never falls back to the self-contradicting sentence", () => {
+  const declined: [string, string][] = [
+    ["dw-chart", "beeswarm"],
+    ["map-dw", "symbol"],
+    ["map-dw", "locator"],
+    ["map-native", "treemap"],
+    ["image-native", "line"],
+    ["scrolly", "d3-bars"],
+    ["scrolly", "scatter"],
+  ];
+  for (const [engine, type] of declined) {
+    expect(isLoopBuildable(engine, type, "static")).toBe(false);
+    const reason = unbuildableEngineReason(engine, type, "static");
+    expect(`${engine}/${type}: ${reason}`).not.toContain("nothing can build a");
+    expect(reason).toBe(declineReason(engine, type, "static")!);
+  }
+  // The two sentences that already existed and were DEAD — reached only from assembleMapDw,
+  // which assemblerFor never calls for a type it declines.
+  expect(unbuildableEngineReason("map-dw", "symbol")).toContain("hover only");
+  expect(unbuildableEngineReason("map-dw", "locator")).toContain(
+    "build the locator with map-native",
+  );
+  // "a image-native" was the other half of that sentence being generic — the article agrees now.
+  expect(unbuildableEngineReason("image-native", "line")).toContain(
+    "image-native walks the journalist's own photographs",
+  );
+});
+
+// Every entry that RESTRICTS must also EXPLAIN. Without this, adding a `supports` to a new entry
+// silently re-opens the generic-sentence hole one engine at a time.
+test("every entry that narrows its types also carries the sentence for what it turned down", () => {
+  const restricted = Object.entries(ASSEMBLERS).filter(([, e]) => e.supports);
+  expect(restricted.length).toBeGreaterThan(0);
+  expect(
+    restricted.filter(([, e]) => !e.declines).map(([name]) => name),
+  ).toEqual([]);
+});
+
+// A DEFERRED TYPE IS NOT BUILDABLE, for every engine that declares one — enumerated FROM the
+// registry, never from a list of names typed here (that list is exactly what would rot).
+//
+// The lie this closes, measured on the committed branch:
+// `isLoopBuildable("chart-native", "sankey", "static")` answered TRUE. `sankey` is one of the
+// fourteen family-B types chart-native's manifest marks `deferred` — no mapper builds them — and
+// chart-native's table entry carries no `supports`, so every declared type passed. Nothing
+// downstream would have rendered one (lib/brain's renderableSheets join drops a deferred type one
+// layer up), which is precisely the problem: the table, which this branch makes the arbiter, was
+// relying on a join sitting above it to be right.
+test("a type its own engine declares deferred is refused by the table, and says why", () => {
+  const deferred = allProducers().flatMap((p) =>
+    (p.types ?? [])
+      .filter((t) => t.deferred)
+      .map((t) => ({ engine: p.name, id: t.id, reason: t.deferred! })),
+  );
+  // Non-vacuity: several engines declare deferred types today (chart-native's family B, map-dw's
+  // symbol, dw-chart's two un-modelled slugs). A registry that stopped declaring any would make
+  // the loop below pass by iterating nothing.
+  expect(deferred.length).toBeGreaterThan(10);
+  expect(new Set(deferred.map((d) => d.engine)).size).toBeGreaterThan(1);
+  for (const d of deferred) {
+    // Only for engines the table actually holds a key for — an engine with no key is unbuildable
+    // for a different reason, already covered above.
+    if (!(d.engine in ASSEMBLERS)) continue;
+    expect(`${d.engine}/${d.id}`).toBe(
+      isLoopBuildable(d.engine, d.id, "static")
+        ? "unreachable — a deferred type answered buildable"
+        : `${d.engine}/${d.id}`,
+    );
+    // …and the refusal is never the self-contradicting generic sentence.
+    expect(unbuildableEngineReason(d.engine, d.id, "static")).not.toContain(
+      "nothing can build a",
+    );
+  }
+});
+
+// The engine-level question is UNCHANGED by the deferral check: "can the loop build through
+// chart-native at all" must still answer yes for an engine whose catalogue holds deferred types.
+test("deferral narrows a TYPE, never the engine", () => {
+  expect(isLoopBuildable("chart-native")).toBe(true);
+  expect(isLoopBuildable("chart-native", "line", "static")).toBe(true);
+  expect(isLoopBuildable("chart-native", "sankey", "static")).toBe(false);
+  expect(unbuildableEngineReason("chart-native", "sankey", "static")).toContain(
+    "family-B: needs nodes+links",
   );
 });

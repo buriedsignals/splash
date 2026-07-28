@@ -76,7 +76,16 @@ test("the fixture assembles into a spec the engine accepts, before any API call"
   const r = assembleMapDw(FIXTURE_BRIEF);
   if (!r.ok) throw new Error(r.message);
   const v = validateMapSpec(r.value);
-  expect(v.ok ? [] : v.errors).toEqual([]);
+  // THE WARNINGS ARE READ, not discarded — this line was `expect([]).toEqual([])` on the success
+  // branch, which asserted nothing whatever about a spec the validator accepted with complaints.
+  // Its dw-chart twin asserts `v.warnings` EMPTY; this fixture cannot, and the difference is a
+  // property of the fixture rather than a weaker check: twelve countries on a 212-region world
+  // basemap IS a sparse subset, deliberately (a small, readable demo map), and validateMapSpec
+  // says so every time. So the ONE expected warning is pinned by its subject: a second warning,
+  // or a different one, fails here — a doubled unit, a bad number format, a join gone thin.
+  const warnings = v.ok ? v.warnings : v.errors;
+  expect(warnings.length).toBe(1);
+  expect(warnings[0]).toContain("sub-national subset");
 });
 
 function runFor(runDir: string, format: "static" | "interactive"): RunManifest {
@@ -214,7 +223,9 @@ proof(
       expect(`${recorded.url} \u2192 ${res.status}`).toBe(
         `${recorded.url} \u2192 200`,
       );
-      expect((await res.text()).length).toBeGreaterThan(500);
+      // The BODY is a page, not merely 500-odd bytes — a Datawrapper error page clears a length
+      // check comfortably. The same assertion its dw-chart twin makes.
+      expect((await res.text()).toLowerCase()).toContain("<html");
     } finally {
       rmSync(runDir, { recursive: true, force: true });
     }

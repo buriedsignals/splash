@@ -16,7 +16,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fail, ok, type VerbResult } from "../core/verbs";
-import { suggestBeats } from "../brain/beats";
+import {
+  suggestBeats,
+  suggestImageBeats,
+  type SuggestedBeat,
+} from "../brain/beats";
+// The engine's own declared type id, read rather than repeated (skills/image-native/src/
+// image-story.ts) — the same list lib/loop/assemble/index.ts's image-native entry reads.
+import { IMAGE_SCROLLY_TYPE } from "../../skills/image-native/src/image-story";
 import { verifyBeats, type AuthoredBeat } from "../brain/verify-beats";
 import { chosenOption, type RunManifest, type RunElement } from "./manifest";
 
@@ -28,6 +35,11 @@ import { chosenOption, type RunManifest, type RunElement } from "./manifest";
  * `anchors` is the RE-DRAFT door. verifyBeats refuses a plan whose order changed, which is only
  * legitimate because changing the walk has a named way in: the journalist names their own points
  * and gets a new draft, rather than editing the list inside the authoring turn.
+ *
+ * TWO TRACKS, and the second one reads no data at all: an IMAGE scrolly's walk is one beat per
+ * photograph declared with the run, in declaration order. `anchors` is not offered there and
+ * would mean nothing — the order of a photograph sequence is the journalist's own declaration,
+ * so re-ordering the walk is re-declaring the photographs, not re-drafting from salience.
  */
 export function draftBeats(
   run: RunManifest,
@@ -41,6 +53,24 @@ export function draftBeats(
       "invalid-request",
       "draft-beats: no form is chosen — there is nothing to draft a walk for",
     );
+  // THE IMAGE TRACK reads no data at all — its walk is one beat per DECLARED PHOTOGRAPH, so it
+  // is answered before the frozen CSV is even opened. Routed on the chosen type rather than on
+  // the engine, for the same reason nextActionsForElement gates on `canDraftBeats`: the type is
+  // what decides whether a plan can be drafted, and one answer read in both places is what keeps
+  // the router and the drafter from disagreeing again.
+  if (chosen.nativeType === IMAGE_SCROLLY_TYPE) {
+    if (!run.input.images)
+      return fail(
+        "invalid-request",
+        "draft-beats: an image scrolly walks the journalist's own photographs, and none are " +
+          "declared with this run — bring a photograph (with its alt text and credit) for each " +
+          "beat of the walk",
+      );
+    const drafted = suggestImageBeats(run.input.images.frames);
+    if (drafted.refusal)
+      return fail("invalid-request", `draft-beats: ${drafted.refusal}`);
+    return ok(withPlan(el, drafted.beats));
+  }
   if (!run.input.data)
     return fail("invalid-request", "draft-beats: no frozen data input");
   // The frozen input is read from disk, and a run dir can be incomplete for reasons that have
@@ -67,7 +97,13 @@ export function draftBeats(
   });
   if (refusal) return fail("invalid-request", `draft-beats: ${refusal}`);
 
-  return ok({
+  return ok(withPlan(el, beats));
+}
+
+/** The drafted plan, onto the element — one shape for both tracks, so the chart walk and the
+ *  image walk cannot come to differ in how they record a draft. */
+function withPlan(el: RunElement, beats: SuggestedBeat[]): RunElement {
+  return {
     ...el,
     narrative: {
       beats: beats.map((b) => ({
@@ -83,7 +119,7 @@ export function draftBeats(
         beatSource: b.beatSource,
       })),
     },
-  });
+  };
 }
 
 /**

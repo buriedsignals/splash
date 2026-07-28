@@ -118,6 +118,14 @@ function listValidAnchors(values: string[]): string {
   return shown.join(", ") + (more > 0 ? `, … (+${more} more)` : "");
 }
 
+/** The chart types whose narrative walk can be AUTHORED — the types this module accepts an
+ *  explicit `beats` override for. The rest of the engine's chart-scrolly track (scatter) can
+ *  only be DERIVED, and a derived caption under a journalist's byline is exactly what the beats
+ *  seam exists to remove, so the loop offers a scrolly for these two alone
+ *  (lib/loop/assemble/index.ts's `scrolly` entry, lib/brain/beats.ts's BEAT_TYPES). Exported so
+ *  that list is READ from the engine instead of being a copy someone has to keep true. */
+export const AUTHORABLE_SCROLLY_TYPES = ["line", "bar"] as const;
+
 // Validate an explicit beat plan against the chart type + the data's own anchor
 // values (line: the x column; bar: the category column). Returns human-readable
 // errors ([] = valid). Pure and throw-free so the spine validation gate
@@ -146,9 +154,9 @@ export function narrativeBeatErrors(spec: NativeSpec): string[] {
     ];
   }
   const { type, config } = parsed;
-  if (type !== "line" && type !== "bar") {
+  if (!(AUTHORABLE_SCROLLY_TYPES as readonly string[]).includes(type)) {
     return [
-      `explicit \`beats\` override supports line and bar chart scrollies only (got "${type}")`,
+      `explicit \`beats\` override supports ${AUTHORABLE_SCROLLY_TYPES.join(" and ")} chart scrollies only (got "${type}")`,
     ];
   }
   const errors: string[] = [];

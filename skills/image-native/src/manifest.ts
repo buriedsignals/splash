@@ -12,7 +12,11 @@
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { registerProducer } from "../../../lib/core/registry";
-import { checkImageConformance, type ImageStory } from "./image-story";
+import {
+  checkImageConformance,
+  IMAGE_SCROLLY_TYPE,
+  type ImageStory,
+} from "./image-story";
 import { IMAGE_NATIVE_V1_FORMAT_MESSAGE } from "./format-support";
 
 const skillDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,7 +25,7 @@ registerProducer({
   name: "image-native",
   // The engine's grid is static/video/scrolly (never interactive); v1 CLI ships scrolly.
   formats: ["scrolly"],
-  types: [{ id: "image-scrolly" }],
+  types: [{ id: IMAGE_SCROLLY_TYPE }],
   unsupportedFormatMessage: IMAGE_NATIVE_V1_FORMAT_MESSAGE,
   validate: (spec) =>
     checkImageConformance(spec as ImageStory, { format: "scrolly" }),

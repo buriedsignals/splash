@@ -16,8 +16,11 @@ const REGION_TYPES = new Set(["choropleth", "cartogram", "dot-density"]);
 const POINT_TYPES = new Set(["symbol", "hex-grid", "locator", "route"]);
 const MAP_NATIVE_TYPES = new Set<string>([...REGION_TYPES, ...POINT_TYPES]);
 
-const LAT_NAMES = ["lat", "latitude", "lat_dd", "y"];
-const LON_NAMES = ["lon", "lng", "long", "longitude", "lon_dd", "x"];
+// No bare `x`/`y`: they were the one pair in these lists the rule below argues AGAINST — an
+// ordinary chart CSV's x and y columns are not coordinates, and a map that plots the wrong column
+// looks exactly like a map that plots the right one. No fixture ever used them.
+const LAT_NAMES = ["lat", "latitude", "lat_dd"];
+const LON_NAMES = ["lon", "lng", "long", "longitude", "lon_dd"];
 
 /** The coordinate columns, by name. Deliberately a CLOSED list rather than a heuristic on the
  *  values: a column of small numbers is not a latitude just because it could be one, and a map

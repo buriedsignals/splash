@@ -4,6 +4,11 @@ import { dirname } from "node:path";
 import { canonicalHash } from "./canonical-hash";
 import { migrate } from "./migrate";
 import { INTENTS } from "../brain/intents";
+// The DRAFTER's own answer to "can a walk be drafted for this track", read by the routing below
+// so the two cannot disagree. Same direction as the INTENTS import just above (lib/loop reads a
+// lib/brain vocabulary), and no runtime cycle: lib/brain/beats.ts reaches lib/loop/profile, whose
+// own import of this module is `import type` and erased.
+import { canDraftBeats } from "../brain/beats";
 import {
   VISUAL_FORMATS,
   CHANNELS as CHANNEL_KEYS,
@@ -632,9 +637,24 @@ export function nextActionsForElement(
   // LOOP_BUILDABLE_ENGINES (lib/loop/assemble/scrolly.ts composes the chosen host engine's
   // track), so `draft-beats` IS reachable through this function: a chosen chart-track scrolly
   // with no narrative yet lands here, not on "choose-form".
+  //
+  // GATED ON THE TRACK, not on the format alone — and the gate is `canDraftBeats`, the drafter's
+  // OWN answer (lib/brain/beats.ts), never a second list here. Format alone was a silent dead
+  // end: a map scrolly and an image scrolly were both routed to `draft-beats`, `draftBeats`
+  // refused both, and since `draftBeats`/`applyBeats` are the only writers of `el.narrative` this
+  // function answered the same impossible action on every advance. Nothing caught it —
+  // `deadEndReason` is consulted only when the answer is "choose-form" (driver.ts) — so the run
+  // stagnated in silence. A MAP scrolly needs no plan at all (it derives its own walk from the
+  // data, and assembleScrolly refuses an authored one), so it goes straight to produce.
+  //
   // The `author-beats` line below is NOT format-gated for the same honesty: whatever created a
   // plan, an unwritten one must not reach produce.
-  if (chosen?.format === "scrolly" && !el.narrative) return ["draft-beats"];
+  if (
+    chosen?.format === "scrolly" &&
+    !el.narrative &&
+    canDraftBeats(chosen.nativeType ?? "")
+  )
+    return ["draft-beats"];
   if (unauthoredBeats(el).length > 0) return ["author-beats"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   // `deliver` is a step a DECISION triggers, never an automatic advance — the symmetric of

@@ -310,21 +310,27 @@ function barsRun(runDir: string, dataPath: string): RunManifest {
   };
 }
 
-// ALWAYS ON — the offer half. What the exclusion cost, in one assertion: nine types the loop
-// refused to offer are buildable again, and each one declares the shape capture measures it by.
-test("the nine row-driven Datawrapper types are offered again, each declaring a content-driven height", () => {
+// ALWAYS ON — the offer half. What the exclusion cost, in one assertion: the row-driven types the
+// loop refused to offer are buildable again, and each one declares the shape capture measures it
+// by. SIX of the nine, since 2026-07-28: `d3-bars-split`, `d3-arrow-plot` and `tables` are marked
+// `deferred` in dw-chart's OWN manifest ("no KB sheet models this"), and the assembler table now
+// reads that flag rather than claiming what the manifest denies. No offer moves — renderableSheets
+// already joins through the same flag, so a deferred key could never have been a candidate — and
+// the SHAPE is still declared for all nine, because the shape is a property of the type.
+test("the row-driven Datawrapper types are offered again, each declaring a content-driven height", () => {
   for (const t of [
     "d3-bars",
     "d3-bars-grouped",
     "d3-bars-stacked",
-    "d3-bars-split",
     "d3-bars-bullet",
     "d3-dot-plot",
-    "d3-arrow-plot",
     "d3-range-plot",
-    "tables",
   ]) {
     expect(isLoopBuildable("dw-chart", t, "static")).toBe(true);
+    expect(heightPolicyFor("dw-chart", t)).toBe("content-driven");
+  }
+  for (const t of ["d3-bars-split", "d3-arrow-plot", "tables"]) {
+    expect(isLoopBuildable("dw-chart", t, "static")).toBe(false);
     expect(heightPolicyFor("dw-chart", t)).toBe("content-driven");
   }
 });

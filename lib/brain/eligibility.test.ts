@@ -327,18 +327,28 @@ test("a producer that genuinely lacks a format still loses it — map-dw has no 
 // loop-buildable; its scrolly form was not), then "dw-chart" until task 12 wired the hosted
 // chart, then "map-dw" until task 13 wired the hosted map — and now the assembler table covers
 // every real engine the KB names, so no real engine is left with an unbuildable static form.
-// A FICTIONAL engine ("crayon", the same convention lib/loop/produce.test.ts and the
-// no-format-redirect test below use) still proves the point: nothing in the assembler table
-// knows its name, so its static form is unbuildable, but `producerForFormat` redirects ANY
-// engine's "scrolly" format to the shared scrolly host (lib/core/registry.ts's FORMAT_HOST),
-// which IS buildable — so the same engine name has to answer differently for its two formats,
-// or the resolution is reading chosen.engine instead of the format's actual producer.
-test("buildabilityMark resolves the EFFECTIVE producer, not the sheet's engine — a fictional engine's scrolly form redirects to the buildable scrolly host", () => {
-  const staticMark = buildabilityMark("crayon", "static");
-  expect(staticMark).not.toBeNull();
-  expect(staticMark!.reason).toContain("crayon");
-  const scrollyMark = buildabilityMark("crayon", "scrolly");
-  expect(scrollyMark).toBeNull();
+// The fixture moved ONCE more on 2026-07-28, and this time because the redirect itself was
+// narrowed: `producerForFormat` used to hand ANY engine's "scrolly" format to the shared host,
+// so a fictional engine's scrolly form came back buildable and that asymmetry was the probe.
+// It no longer does — the host names the engines it actually hosts (FORMAT_HOST), because the
+// unconditional redirect was offering a Datawrapper `d3-bars` scrolly that threw at build.
+//
+// The property is unchanged and so is the shape of the probe: ONE engine, ONE type, TWO formats,
+// two different answers — which can only happen if the resolution goes through the format's
+// actual producer rather than through `engine`. chart-native/`slope` is that pair now:
+// chart-native builds a slope chart (static), and the SCROLLY host does not host one at all
+// (skills/scrolly's chart track is line and bar — a scrolly's captions are the journalist's
+// beats, and no other chart type accepts an authored plan).
+test("buildabilityMark resolves the EFFECTIVE producer, not the sheet's engine — one engine and type, two formats, two answers", () => {
+  expect(buildabilityMark("chart-native", "static", "slope")).toBeNull();
+  const scrollyMark = buildabilityMark("chart-native", "scrolly", "slope");
+  expect(scrollyMark).not.toBeNull();
+  expect(scrollyMark!.reason).toContain("slope");
+  // …and an engine the table knows nothing about is still unbuildable in every format, which is
+  // what the old fixture asserted on its static half.
+  expect(buildabilityMark("crayon", "static")).not.toBeNull();
+  expect(buildabilityMark("crayon", "static")!.reason).toContain("crayon");
+  expect(buildabilityMark("crayon", "scrolly")).not.toBeNull();
 });
 
 test("buildabilityMark is null when the loop can already build through the producer", () => {

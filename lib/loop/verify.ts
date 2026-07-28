@@ -15,6 +15,9 @@ import { toVerbResult, validateSourcePolicy } from "../source";
 import { destinationIdFor } from "../verify/viewport";
 import { DEFAULT_REVIEW_RUBRIC } from "../verify/review";
 import { heightPolicyFor } from "./assemble";
+// The EFFECTIVE producer, resolved the one way every other reader resolves it — buildable.ts's
+// header states the rule ("they must never disagree") and this was the reader that did not.
+import { resolveBuilder } from "./buildable";
 import type {
   CaptureResult,
   FurnitureExpectation,
@@ -125,7 +128,13 @@ export async function captureStep(
     // engine and the type it commissioned, and read by capture as neutral vocabulary. Without it
     // a Datawrapper bar chart's deliberately content-driven height reads as a `size-mismatch` on
     // a correct artifact, which is what kept nine of Datawrapper's chart types out of the offer.
-    heightPolicy: heightPolicyFor(chosen?.engine, chosen?.nativeType),
+    // Through resolveBuilder, never off `chosen.engine`: a chart-native option in the scrolly
+    // format is built by skills/scrolly, and asking the table about the engine the option NAMES
+    // rather than the one that BUILT it is how the five readers of buildable.ts come to disagree.
+    heightPolicy: heightPolicyFor(
+      chosen ? resolveBuilder(chosen) : undefined,
+      chosen?.nativeType,
+    ),
   });
 
   if (!result.ok) {

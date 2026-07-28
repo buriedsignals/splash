@@ -224,3 +224,129 @@ describe("applyBeats — the one production caller of the guard", () => {
     rmSync(runDir, { recursive: true, force: true });
   });
 });
+
+// THE IMAGE TRACK — the walk of an image scrolly is one beat per DECLARED PHOTOGRAPH, in the
+// order the journalist declared them. It exists because the loop could not reach produce() for
+// image-native AT ALL: its only format is scrolly, `nextActionsForElement` sent it to
+// `draft-beats`, `suggestBeats` refused it (no CSV drafts a photograph), and draftBeats/applyBeats
+// are the only writers of `el.narrative` — so the run answered the same impossible action forever
+// while assembleImageNative refuses a frame/beat count mismatch on the other side.
+describe("draftBeats — the image track", () => {
+  function imageRun(frameCount: number) {
+    const runDir = mkdtempSync(join(tmpdir(), "loop-beats-image-"));
+    const src = join(runDir, "src.csv");
+    writeFileSync(src, "note\nan image story has no data axis\n");
+    const run: RunManifest = {
+      runId: "t-image",
+      schemaVersion: 4,
+      route: "article",
+      channel: "article-web",
+      input: {
+        data: freezeInput(runDir, src, "data"),
+        images: {
+          dir: runDir,
+          frames: Array.from({ length: frameCount }, (_, i) => ({
+            frameRef: `frame-${i + 1}.jpg`,
+            alt: `Alt text for frame ${i + 1}`,
+            credit: { name: "M. Rossi / Heidi.news" },
+          })),
+        },
+      },
+      sources: {
+        mode: "real",
+        data: { kind: "public", label: "Heidi.news" },
+      },
+      orient: {
+        profile: { columns: ["note"], numericColumns: [], rowCount: 1 },
+        supportsPoint: false,
+      },
+      elements: [
+        {
+          id: "e1",
+          angle: {
+            confirmedTakeaway: "The canal split the village in two",
+            altInsight: "Three photographs tracing the waterway",
+            unit: "",
+          },
+          proposal: {
+            options: [
+              {
+                id: "image-scrolly",
+                nativeType: "image-scrolly",
+                engine: "image-native",
+                format: "scrolly",
+                why: "the journalist's own photographs, walked in sequence",
+              },
+            ],
+            excluded: [],
+            chosenId: "image-scrolly",
+          },
+        },
+      ],
+      events: [],
+    };
+    return { run, runDir };
+  }
+
+  test("drafts one unwritten beat per declared photograph, in declaration order", () => {
+    const { run, runDir } = imageRun(3);
+    const r = draftBeats(run, run.elements[0]!, runDir);
+    expect(r.ok ? "drafted" : r.message).toBe("drafted");
+    if (!r.ok) return;
+    const beats = r.value.narrative!.beats;
+    expect(beats.map((b) => b.anchor.value)).toEqual([
+      "frame-1.jpg",
+      "frame-2.jpg",
+      "frame-3.jpg",
+    ]);
+    expect(beats.map((b) => b.role)).toEqual(["establish", "build", "payoff"]);
+    // Every claim unwritten, and the DRAFT itself empty: Splash never looked at the photograph
+    // (no vision matching), so it has nothing to suggest and says so by suggesting nothing.
+    expect(beats.every((b) => b.text === "")).toBe(true);
+    expect(beats.every((b) => b.draftText === "")).toBe(true);
+    expect(unauthoredBeats(r.value)).toEqual(beats.map((b) => b.id));
+    rmSync(runDir, { recursive: true, force: true });
+  });
+
+  test("the drafted plan is authorable — the journalist's captions land on it", () => {
+    const { run, runDir } = imageRun(3);
+    const drafted = draftBeats(run, run.elements[0]!, runDir);
+    if (!drafted.ok) throw new Error(drafted.message);
+    const withPlan: RunManifest = { ...run, elements: [drafted.value] };
+    const authored: AuthoredBeat[] = drafted.value.narrative!.beats.map(
+      (b, i) => ({
+        id: b.id,
+        // establish → build → payoff. A three-beat walk cannot carry a `turn`: arcErrors needs
+        // at least one build between the two ends, so a turn only becomes available from four
+        // photographs on (the engine's floor is 3, its cap 6).
+        role: (["establish", "build", "payoff"] as const)[i]!,
+        text: `The journalist's own sentence about photograph ${i + 1}.`,
+      }),
+    );
+    const ready = applyBeats(withPlan, "e1", authored);
+    expect(unauthoredBeats(ready.elements[0]!)).toEqual([]);
+    rmSync(runDir, { recursive: true, force: true });
+  });
+
+  test("refuses a walk of two photographs — two frames is not a claim-arc", () => {
+    const { run, runDir } = imageRun(2);
+    const r = draftBeats(run, run.elements[0]!, runDir);
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.message).toContain("not an argument");
+    rmSync(runDir, { recursive: true, force: true });
+  });
+
+  test("refuses when no photographs are declared with the run", () => {
+    const { run, runDir } = imageRun(3);
+    const bare: RunManifest = {
+      ...run,
+      input: { data: run.input.data },
+    };
+    const r = draftBeats(bare, bare.elements[0]!, runDir);
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.message).toContain("photograph");
+    rmSync(runDir, { recursive: true, force: true });
+  });
+});

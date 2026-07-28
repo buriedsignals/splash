@@ -71,9 +71,27 @@ export function chooseForm(
       `choose-form: "${chosen.id}" cannot be built — ${unbuildable}`,
     );
 
-  // Nothing else is touched. Moving the choice moves provenanceHash, so an existing artifact goes
-  // stale and nextActions routes back to produce on its own — no artifact is deleted here, and no
-  // delivery record is forgotten (a destination that already landed stays on the record, the same
-  // discipline request-delivery.ts follows).
-  return ok({ ...el, proposal: { ...proposal, chosenId: chosen.id } });
+  // Nothing else is touched, WITH ONE EXCEPTION. Moving the choice moves provenanceHash, so an
+  // existing artifact goes stale and nextActions routes back to produce on its own — no artifact
+  // is deleted here, and no delivery record is forgotten (a destination that already landed stays
+  // on the record, the same discipline request-delivery.ts follows).
+  //
+  // THE NARRATIVE IS DROPPED, and it is stale for exactly the reason an artifact is: it was
+  // drafted FOR a form. A walk drafted and authored on a chart scrolly is a plan of x-anchored
+  // beats; re-chosen onto a map scrolly it becomes a plan that track refuses outright
+  // (assembleScrolly: "a map scrolly derives its own walk from the data"), and onto an image
+  // scrolly a plan of the wrong length against the declared photographs. Measured before this
+  // line existed: the surviving narrative made nextActions skip `draft-beats` (a narrative is
+  // present) and skip `author-beats` (nothing is unwritten), so the run answered `produce`
+  // forever while produce refused it — a dead end with no route back, on state the journalist
+  // could not see. Dropping it re-enters the drafting seam through the front door.
+  //
+  // Only on a REAL change of form. Re-affirming the same choice must not throw away work the
+  // journalist did on it.
+  const formChanged = proposal.chosenId !== chosen.id;
+  return ok({
+    ...el,
+    ...(formChanged ? { narrative: undefined } : {}),
+    proposal: { ...proposal, chosenId: chosen.id },
+  });
 }

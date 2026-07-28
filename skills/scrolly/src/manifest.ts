@@ -18,6 +18,7 @@ import {
 } from "../../chart-native/src/spec-to-config";
 import { narrativeBeatErrors } from "../../chart-native/src/chart-story";
 import { mapNativeConfigErrors } from "../../map-native/src/validate-config";
+import { MAP_TRACK_BEATS_REFUSAL } from "./scrolly-types";
 
 const skillDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -33,11 +34,8 @@ function scrollySpecErrors(spec: unknown): string[] {
   }
   // Map track: an explicit `beats` override is chart-track-only control — reject it loud.
   if ((spec as { beats?: unknown } | null)?.beats !== undefined) {
-    return [
-      "explicit `beats` override is not supported on the map scrolly track " +
-        "(chart-track line/bar narrative control only) — remove it; map scrolly " +
-        "steps are derived from the data (deriveMapStory)",
-    ];
+    // One wording, shared with the loop's assembler — see MAP_TRACK_BEATS_REFUSAL.
+    return [MAP_TRACK_BEATS_REFUSAL];
   }
   return mapNativeConfigErrors(spec);
 }

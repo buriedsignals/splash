@@ -7,15 +7,21 @@ import type { VisualFormat } from "../../core/vocabulary";
 import { assembleChartNative } from "./chart-native";
 import { assembleMapNative } from "./map-native";
 import { assembleImageNative } from "./image-native";
-import { assembleScrolly } from "./scrolly";
-import { assembleMapDw, supportsMapDwType } from "./map-dw";
+import {
+  assembleScrolly,
+  scrollyTrackRefusal,
+  SCROLLY_TRACK_TYPES,
+} from "./scrolly";
+import { assembleMapDw, supportsMapDwType, mapDwTypeRefusal } from "./map-dw";
 import { assembleDwChart } from "./dw-chart";
 import { MAP_TYPES } from "../../../skills/map-native/src/map-types";
+import { IMAGE_SCROLLY_TYPE } from "../../../skills/image-native/src/image-story";
 import {
   CHART_TYPES,
   type ChartType,
 } from "../../../skills/dw-chart/src/chart-spec";
 import { isRowDriven } from "../../../skills/dw-chart/src/export-aspect";
+import { engineTypes, getProducer } from "../../core/registry";
 import type { HeightPolicy } from "../../verify/types";
 
 export type AssemblerEntry = {
@@ -45,25 +51,52 @@ export const ASSEMBLERS: Record<string, AssemblerEntry> = {
   "map-native": {
     assemble: assembleMapNative,
     supports: (t) => (MAP_TYPES as readonly string[]).includes(t),
+    declines: (t) =>
+      (MAP_TYPES as readonly string[]).includes(t)
+        ? undefined
+        : `map-native draws ${MAP_TYPES.join(", ")} — "${t}" is not one of them`,
   },
   // scrolly is not a third engine — it hosts chart-native's or map-native's own track (see
-  // scrolly.ts's header). No `supports`: whatever nativeType arrives, assembleScrolly composes
-  // the right host engine for it (a MAP_TYPES id goes to map-native, anything else to
-  // chart-native), so every type either engine already supports is reachable through it.
-  scrolly: { assemble: assembleScrolly },
+  // scrolly.ts's header).
+  //
+  // `supports` is the two tracks' OWN type lists (SCROLLY_TRACK_TYPES), and it used to be absent
+  // — which, combined with a redirect that fired on the format alone, made EVERY engine's
+  // scrolly candidate buildable. Measured against the real KB: a Datawrapper `d3-bars` composed
+  // a chart-native spec no mapper knows (validation passed, the BUILD threw), and a hosted
+  // Datawrapper choropleth silently became a MapLibre map the journalist never chose. The
+  // ENGINE-level half of that is closed at the redirect (lib/core/registry.ts's FORMAT_HOST now
+  // names the engines skills/scrolly hosts); this is the TYPE-level half.
+  scrolly: {
+    assemble: assembleScrolly,
+    supports: (t) => SCROLLY_TRACK_TYPES.includes(t),
+    declines: (t) =>
+      SCROLLY_TRACK_TYPES.includes(t) ? undefined : scrollyTrackRefusal(t),
+  },
   // image-native owns its format ("scrolly") itself — registry.ts's producerForFormat routes
   // it straight to "image-native", never through the scrolly host — so this key is reached
   // directly, not via the entry above. Its one declared type (image-scrolly).
   "image-native": {
     assemble: assembleImageNative,
-    supports: (t) => t === "image-scrolly",
+    supports: (t: string) => t === IMAGE_SCROLLY_TYPE,
+    declines: (t) =>
+      t === IMAGE_SCROLLY_TYPE
+        ? undefined
+        : `image-native walks the journalist's own photographs — it draws no "${t}", and ` +
+          `nothing about a "${t}" can be made out of a photograph sequence`,
   },
   // The hosted Datawrapper map (Task 13). `supports` is NARROWER than the engine's own
   // catalogue, and deliberately: map-dw declares three types but can never render `symbol`
   // (registry-declared `deferred` — validateMapSpec's symbol branch pushes an unconditional
   // error), and its `locator` is left to map-native, which already places markers from lat/lon
   // columns. Both are marked in the offer rather than chosen and dead-ended at produce.
-  "map-dw": { assemble: assembleMapDw, supports: supportsMapDwType },
+  "map-dw": {
+    assemble: assembleMapDw,
+    supports: supportsMapDwType,
+    // The engine's OWN sentence, which existed and was DEAD: assemblerFor returns undefined for a
+    // declined type, so assembleMapDw — where mapDwTypeRefusal was reached from — never ran, and
+    // the journalist read the generic engine fallback contradicting itself instead.
+    declines: (t) => (supportsMapDwType(t) ? undefined : mapDwTypeRefusal(t)),
+  },
   // The hosted Datawrapper chart (Task 12).
   //
   // The STATIC-only bound this entry used to carry is GONE, and with it the reason for it: a
@@ -127,6 +160,63 @@ export function heightPolicyFor(
   return "pinned";
 }
 
+/**
+ * THE ENGINE'S OWN "declared but not reachable" flag, read straight off its producer manifest
+ * (`types: [{ id, deferred? }]`, lib/core/registry.ts).
+ *
+ * It is read HERE, in the table, because the table is meant to be the one arbiter of what the
+ * loop can build — and it was not. chart-native's entry carries no `supports`, so every type its
+ * manifest declares passed, INCLUDING the fourteen family-B types the manifest marks `deferred`
+ * because no mapper builds them: `isLoopBuildable("chart-native", "sankey", "static")` answered
+ * TRUE. Nothing downstream would have rendered one — lib/brain's `renderableSheets` join drops a
+ * deferred type one layer up — but that is a join happening to sit above the gate, not the gate
+ * being right, and every caller that is not the brain was being lied to.
+ *
+ * One rule, no per-engine exception: `isRenderable` (the registry's own predicate, which the
+ * brain uses) already treats declared-and-deferred as un-renderable, so this makes the table
+ * AGREE with it rather than adding a second opinion. Ten dw-chart types carry the flag for a
+ * SOFTER reason (no KB sheet models them, rather than "the engine cannot draw it") and they leave
+ * the table's `true` too — no sheet names any of them, so no offer changes; what changes is that
+ * the table stops claiming what the manifest denies. Twenty-five types in all, across three
+ * engines.
+ */
+function deferredReason(engine: string, nativeType?: string): string | undefined {
+  if (!nativeType) return undefined;
+  return engineTypes(engine).find((t) => t.id === nativeType)?.deferred;
+}
+
+/**
+ * A FORMAT THE ENGINE DOES NOT DECLARE, read off the same manifest — the format axis of the
+ * question above, and the one this table was still answering wrong after the scrolly redirect was
+ * narrowed. Enumerated at the time: `isLoopBuildable("dw-chart", "d3-bars", "scrolly")` answered
+ * TRUE, because dw-chart's `supports` is a TYPE list and knows nothing about formats, while
+ * dw-chart's manifest declares `static` and `interactive` only. No journalist saw it — the brain
+ * drops such a candidate through eligibility's producer-format filter — but the table is the
+ * arbiter, and an arbiter that answers "yes" for a form nothing renders is the same defect as the
+ * scrolly over-claim, one axis over.
+ *
+ * The ENGINE'S own message when it wrote one (`unsupportedFormatMessage` — image-native's v1
+ * sentence is the live case), because a pre-dispatch gate must not silently replace wording a
+ * journalist may already know from the engine's own CLI.
+ *
+ * Fail-OPEN on an unregistered producer, deliberately: the same condition resolveBuilder already
+ * lives with (producerForFormat falls back when getProducer answers nothing), so a caller that
+ * has not imported skills/splash/src/register-producers gets the pre-registry answer here too
+ * rather than a table that refuses everything.
+ */
+function unsupportedFormatReason(
+  engine: string,
+  format?: VisualFormat,
+): string | undefined {
+  if (!format) return undefined;
+  const producer = getProducer(engine);
+  if (!producer || producer.formats.includes(format)) return undefined;
+  return (
+    producer.unsupportedFormatMessage ??
+    `${engine} does not build a ${format} — it builds ${producer.formats.join(", ")}`
+  );
+}
+
 export function assemblerFor(
   engine: string,
   nativeType?: string,
@@ -134,6 +224,10 @@ export function assemblerFor(
 ): Assembler | undefined {
   const entry = ASSEMBLERS[engine];
   if (!entry) return undefined;
+  // The engine's own flag first: a type it declares unreachable is unreachable whatever this
+  // table's entry says about the rest of its catalogue.
+  if (deferredReason(engine, nativeType)) return undefined;
+  if (unsupportedFormatReason(engine, format)) return undefined;
   // Gated on `nativeType`, not on `format`: an entry's `supports` is written to answer about a
   // TYPE, and calling it with none would ask map-native whether it builds "" — false, for an
   // engine it builds everything of. Callers with a format in hand have a type in hand too
@@ -152,5 +246,16 @@ export function declineReason(
   format?: VisualFormat,
 ): string | undefined {
   if (!nativeType) return undefined;
-  return ASSEMBLERS[engine]?.declines?.(nativeType, format);
+  // The ENTRY's sentence wins over the manifest's: map-dw declares `symbol` deferred AND writes
+  // the journalist's version of why ("Datawrapper shows a circle's value on hover only … build it
+  // with map-native"). The manifest's reason is written for a maintainer, so it is the fallback,
+  // not the answer — but it IS an answer, which is what stops a deferred type falling through to
+  // the generic engine sentence.
+  const deferred = deferredReason(engine, nativeType);
+  return (
+    ASSEMBLERS[engine]?.declines?.(nativeType, format) ??
+    (deferred
+      ? `${engine} declares "${nativeType}" but cannot build it — ${deferred}`
+      : unsupportedFormatReason(engine, format))
+  );
 }
