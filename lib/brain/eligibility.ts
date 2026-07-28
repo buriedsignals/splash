@@ -312,8 +312,15 @@ export function buildabilityMark(
   nativeType?: string,
 ): { status: CapabilityReadiness["status"]; reason: string } | null {
   const builder = producerForFormat(engine, format);
-  if (isLoopBuildable(builder, nativeType)) return null;
-  return { status: "missing", reason: unbuildableEngineReason(builder) };
+  // The FORMAT travels into the check, not only into the builder resolution: an engine can be
+  // wired in one format and not another (dw-chart builds a static chart; its interactive is a
+  // hosted embed with no file, which the loop cannot record). Without this, that pairing was
+  // offered unmarked and dead-ended at produce — the exact defect this mark exists to prevent.
+  if (isLoopBuildable(builder, nativeType, format)) return null;
+  return {
+    status: "missing",
+    reason: unbuildableEngineReason(builder, nativeType, format),
+  };
 }
 
 function withMarks(c: Candidate, input: EligibilityInput): Candidate {

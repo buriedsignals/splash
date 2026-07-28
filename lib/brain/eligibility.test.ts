@@ -311,25 +311,36 @@ test("a producer that genuinely lacks a format still loses it — map-dw has no 
 // the exported function directly is the only level at which a revert of the effective-producer
 // fix is observable.
 //
-// Used to pin this on "chart-native" + "scrolly": before task 9 wired an assembler for the
-// scrolly host, that pairing was the one place the two resolutions disagreed (chart-native
-// itself IS loop-buildable; its scrolly form was not). Task 9 closed that gap — scrolly now
-// composes whichever host engine's track the nativeType belongs to, for ANY engine's sheet —
-// so chart-native/scrolly no longer demonstrates a disagreement. dw-chart still does: it is
-// not in the assembler table at all, yet its own sheets can declare a "scrolly" format (the
-// same shared host builds it, exactly like chart-native's). The same engine name has to answer
-// differently for its two formats, or the resolution is reading chosen.engine instead of the
-// format's actual producer.
-test("buildabilityMark resolves the EFFECTIVE producer, not the sheet's engine — a dw-chart form in the scrolly format is a scrolly build", () => {
-  const staticMark = buildabilityMark("dw-chart", "static");
+// The FIXTURE has moved twice, each time because the engine it was pinned on became buildable —
+// which is the point of the tranche, not a weakening of this test. It was "chart-native" +
+// "scrolly" until task 9 wired the scrolly host (chart-native itself IS loop-buildable; its
+// scrolly form was not), then "dw-chart" until task 12 wired the hosted chart. It now stands on
+// map-dw: the last engine with no assembler, whose own sheets can still declare a "scrolly"
+// format that the shared host builds. The same engine name has to answer differently for its two
+// formats, or the resolution is reading chosen.engine instead of the format's actual producer.
+test("buildabilityMark resolves the EFFECTIVE producer, not the sheet's engine — a map-dw form in the scrolly format is a scrolly build", () => {
+  const staticMark = buildabilityMark("map-dw", "static");
   expect(staticMark).not.toBeNull();
-  expect(staticMark!.reason).toContain("dw-chart");
-  const scrollyMark = buildabilityMark("dw-chart", "scrolly");
+  expect(staticMark!.reason).toContain("map-dw");
+  const scrollyMark = buildabilityMark("map-dw", "scrolly");
   expect(scrollyMark).toBeNull();
 });
 
 test("buildabilityMark is null when the loop can already build through the producer", () => {
   expect(buildabilityMark("chart-native", "video")).toBeNull();
+});
+
+// THE FORMAT AXIS (task 12), at the level that matters: what the journalist is SHOWN. dw-chart's
+// static export is a PNG the loop records; its interactive is a hosted Datawrapper embed with no
+// file, and produce() records an artifact by path. Unmarked, that pairing ranked FIRST in a real
+// run's offer and dead-ended after the choice — measured, and the reason the mark now reads the
+// format as well as the engine.
+test("a dw-chart chart is marked in the format the loop cannot deliver, and clean in the one it can", () => {
+  expect(buildabilityMark("dw-chart", "static", "column-chart")).toBeNull();
+  const hosted = buildabilityMark("dw-chart", "interactive", "column-chart");
+  expect(hosted).not.toBeNull();
+  expect(hosted!.status).toBe("missing");
+  expect(hosted!.reason).toContain("HOSTED");
 });
 
 test("buildabilityMark names the actual unbuildable engine when there is no format redirect", () => {

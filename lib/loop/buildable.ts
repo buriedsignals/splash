@@ -1,6 +1,6 @@
 import { producerForFormat } from "../core/registry";
 import type { VisualFormat } from "../core/vocabulary";
-import { ASSEMBLERS, assemblerFor } from "./assemble";
+import { ASSEMBLERS, assemblerFor, declineReason } from "./assemble";
 
 // Which engines the editorial loop can actually BUILD through today — ONE list, read by
 // everything that has to know.
@@ -44,17 +44,39 @@ export const LOOP_BUILDABLE_ENGINES: readonly string[] =
  *  engine can be wired while only some of its types are, and offering the rest unmarked would
  *  be the exact dead end this file exists to prevent, just one level down (see the header on
  *  "why type-aware" in the task that added this parameter). Absent `nativeType` answers for
- *  the engine as a whole, matching every caller that does not have a type in hand yet. */
-export function isLoopBuildable(engine?: string, nativeType?: string): boolean {
+ *  the engine as a whole, matching every caller that does not have a type in hand yet.
+ *
+ *  `format` narrows it once more, for the same reason one level down: an engine can be wired in
+ *  one format and not another. dw-chart is the measured case — its static export is a file the
+ *  loop can record, its interactive is a hosted embed with no file at all, and the run manifest
+ *  records an artifact by path. Optional, like `nativeType`, so every caller without a format in
+ *  hand still answers for the engine, unchanged. */
+export function isLoopBuildable(
+  engine?: string,
+  nativeType?: string,
+  format?: VisualFormat,
+): boolean {
   if (engine == null) return true; // pre-brain manifests take the default path (chart-native)
-  return assemblerFor(engine, nativeType) !== undefined;
+  return assemblerFor(engine, nativeType, format) !== undefined;
 }
 
 // The one sentence both readers use, so a journalist reads the same refusal in the offer's mark
 // and in produce's failure. Written for a journalist, not for a maintainer: it says what cannot
 // happen, not which module is missing.
-export function unbuildableEngineReason(engine: string): string {
-  return `nothing can build a ${engine} form yet — production is wired for ${LOOP_BUILDABLE_ENGINES.join(", ")} only`;
+//
+// The TABLE's own sentence wins when it has one. An engine can be wired and still decline a
+// pairing (dw-chart builds a static chart, never a hosted interactive one), and the fallback
+// below would then say "nothing can build a dw-chart form yet — production is wired for …,
+// dw-chart" — a sentence that contradicts itself in its own second half.
+export function unbuildableEngineReason(
+  engine: string,
+  nativeType?: string,
+  format?: VisualFormat,
+): string {
+  return (
+    declineReason(engine, nativeType, format) ??
+    `nothing can build a ${engine} form yet — production is wired for ${LOOP_BUILDABLE_ENGINES.join(", ")} only`
+  );
 }
 
 /**
@@ -81,9 +103,12 @@ export function unbuildableFormReason(chosen: {
   readiness?: { reason?: string };
 }): string | undefined {
   const builder = resolveBuilder(chosen);
-  if (isLoopBuildable(builder, chosen.nativeType)) return undefined;
+  if (isLoopBuildable(builder, chosen.nativeType, chosen.format))
+    return undefined;
   const marked = chosen.readiness?.reason?.trim();
-  return marked ? marked : unbuildableEngineReason(builder);
+  return marked
+    ? marked
+    : unbuildableEngineReason(builder, chosen.nativeType, chosen.format);
 }
 
 // The EFFECTIVE producer for a chosen (or offered) option — the one thing all three readers

@@ -316,6 +316,13 @@ describe("capability readiness", () => {
   });
 
   it("takes its environment from the caller, never from the process", () => {
+    // The ambient value is RESTORED, not deleted — the same discipline decor.test.ts already
+    // follows. bun test shares one process across files, so deleting it left every later file
+    // running without a Datawrapper token: the moment a suite downstream of this one actually
+    // produced a Datawrapper chart (lib/brain/acceptance.test.ts, once dw-chart became
+    // loop-buildable), it failed with "DATAWRAPPER_API_TOKEN is not set" — green on its own,
+    // red in the full run, for a reason nothing in it could explain.
+    const ambient = process.env.DATAWRAPPER_API_TOKEN;
     process.env.DATAWRAPPER_API_TOKEN = "ambient-token-must-be-ignored";
     try {
       const r = capabilityReadiness(
@@ -325,7 +332,8 @@ describe("capability readiness", () => {
       );
       expect(r.status).toBe("missing");
     } finally {
-      delete process.env.DATAWRAPPER_API_TOKEN;
+      if (ambient === undefined) delete process.env.DATAWRAPPER_API_TOKEN;
+      else process.env.DATAWRAPPER_API_TOKEN = ambient;
     }
   });
 });

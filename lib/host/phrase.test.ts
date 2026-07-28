@@ -73,11 +73,18 @@ async function offered(): Promise<string> {
 
 // The phrasing a well-behaved host writes: every option, in the offer's order, each mark
 // acknowledged, and no number that is not already in that option's own grounding.
+//
+// The sentence no longer names the option's `nativeType`. Datawrapper's own render keys carry
+// DIGITS — "d3-lines", "d3-bars-stacked" — and verifyOffer reads a digit in the prose as a
+// numeric CLAIM ("line" claims the number 3, which is in neither the facts nor the sheet), so
+// interpolating the slug refused a phrasing that says nothing numeric at all. That is a real
+// edge of the guard (see .sdd/task-12-report.md), surfaced here the moment dw-chart entered the
+// offer; this fixture's subject is the phrase command, not that edge.
 function phrasingFor(dir: string): string {
   return JSON.stringify(
     manifest(dir).elements[0]!.proposal!.options.map((o) => ({
       id: o.id,
-      why: `Cette forme met en évidence l'écart entre les cantons (${o.nativeType}).`,
+      why: "Cette forme met en évidence l'écart entre les cantons.",
       ...(o.readiness ? { markAcknowledged: true } : {}),
     })),
   );
