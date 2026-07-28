@@ -1301,3 +1301,79 @@ test("an offer still waiting to be chosen from is a human turn, and stays silent
   expect(out.run.events).toEqual([]);
   rmSync(runDir, { recursive: true, force: true });
 });
+
+// A RUN THAT CANNOT ADVANCE MUST NOT EAT ITS OWN HISTORY.
+//
+// A destination nobody has configured, an input that is not on disk: `nextActions` keeps
+// answering the same action, the step keeps refusing the same way, and an autonomous runner
+// appends the identical failure event on every turn. The ledger is capped at 50 entries and the
+// loop is not, so the cap does not merely bound the noise — it EVICTS the run's real history and
+// leaves fifty copies of one fact where the transitions used to be.
+//
+// Collapsing them loses nothing. The reason is a pure function of a state that has not changed,
+// and StepOutcome.failure still carries it to the caller on every single turn — which is the
+// signal a runner looping on "advance until there is nothing left" terminates on.
+test("a refusal that repeats identically is one ledger entry, not one per turn", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-driver-repeat-refusal-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
+  const frozen = freezeInput(runDir, src, "data");
+  const run: RunManifest = {
+    runId: "repeat-refusal",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: frozen },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Premiums rose in both cantons",
+          altInsight: "Both cantons' adult premium rose from 2015 to 2024.",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            { id: "slope", nativeType: "slope", why: "two points in time" },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+  rmSync(join(runDir, frozen.path));
+
+  let current = run;
+  const messages: string[] = [];
+  for (let turn = 0; turn < 4; turn++) {
+    const out = await advanceStep(current, runDir, NEUTRAL_DECOR);
+    // Reported EVERY turn — the collapse is about the ledger, never about what the caller is
+    // told. A runner that stops on `failure` stops on the first one.
+    expect(out.failure?.action).toBe("produce");
+    messages.push(out.failure!.message);
+    current = out.run;
+    expect(nextActions(current)).toEqual(["produce"]); // the loop, still turning
+  }
+  expect(new Set(messages).size).toBe(1); // the same refusal, four times over
+  expect(current.events).toHaveLength(1);
+
+  // A DIFFERENT refusal is a different fact and still appends: only an exact repeat of the
+  // ledger's LAST entry collapses, so nothing that actually happened is dropped.
+  const elsewhere = await advanceStep(
+    { ...current, input: {} },
+    runDir,
+    NEUTRAL_DECOR,
+  );
+  expect(elsewhere.run.events).toHaveLength(2);
+  rmSync(runDir, { recursive: true, force: true });
+}, 30000);

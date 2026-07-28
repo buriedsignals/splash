@@ -87,8 +87,46 @@ export async function advanceStep(
   // production order the plan chose (web first, as the editorial master).
   const withLive = (el: RunElement): RunElement[] =>
     run.elements.map((e, i) => (i === liveIndex ? el : e));
-  // A refused step, recorded ONCE: the ledger entry and the outcome carry the same string,
-  // already bounded, so the two can never tell a caller two different stories.
+  /**
+   * A refusal in the ledger — recorded ONCE, in two senses.
+   *
+   * The ledger entry and the outcome carry the same already-bounded string, so the two can never
+   * tell a caller two different stories. And a refusal IDENTICAL to the ledger's LAST entry is
+   * not appended a second time.
+   *
+   * Why the collapse. Nothing about a refusal makes the state advance: `nextActions` answers the
+   * same action, the same step refuses the same way, and an autonomous runner appends the same
+   * event on every turn — a destination nobody configured, an input that is not on disk. The
+   * ledger is capped at 50 entries and the loop is not, so the cap does not merely bound the
+   * noise: it EVICTS the run's real history and leaves fifty copies of one fact where the
+   * transitions used to be. Nothing is lost by collapsing them — the reason is a pure function of
+   * a state that has not changed, and `StepOutcome.failure` still carries it to the caller on
+   * every single turn, which is the signal a runner terminates on.
+   *
+   * Only against the LAST entry, never a search of the whole ledger: two refusals with something
+   * else in between are two things that happened, and the run should say so in order.
+   */
+  const recordFailure = (
+    action: NextAction,
+    message: string,
+    elementId?: string,
+  ): RunManifest => {
+    const last = run.events.at(-1);
+    const repeat =
+      last?.kind === "failure" &&
+      last.action === action &&
+      last.elementId === elementId &&
+      last.message === message;
+    return repeat
+      ? run
+      : appendEvent(run, {
+          at: new Date().toISOString(),
+          kind: "failure",
+          ...(elementId ? { elementId } : {}),
+          action,
+          message,
+        });
+  };
   const refused = (
     action: NextAction,
     rawMessage: string,
@@ -96,13 +134,7 @@ export async function advanceStep(
   ): StepOutcome => {
     const message = boundEventMessage(rawMessage);
     return {
-      run: appendEvent(run, {
-        at: new Date().toISOString(),
-        kind: "failure",
-        ...(elementId ? { elementId } : {}),
-        action,
-        message,
-      }),
+      run: recordFailure(action, message, elementId),
       ran: action,
       failure: { action, message },
     };
@@ -205,32 +237,17 @@ export async function advanceStep(
       // has already decided, and a manifest re-read afterwards shows `chosen → choose-form` with
       // no trace of the refusal. The ledger is meant to be the whole story of a run.
       //
-      // Recorded ONCE. The ledger is capped at 50 entries, so a refusal re-appended on every turn
-      // does not merely add noise — it EVICTS the run's real history and replaces it with copies
-      // of one fact. Nothing is lost by collapsing them: the reason is a pure function of state
-      // that has not changed, and the outcome carries it to this caller on every single turn.
+      // Through recordFailure, so the once-only rule is the same one every refused step follows.
+      // `ran` stays null: no deterministic step was attempted here, which is exactly what makes
+      // this different from the branches above.
       const stuck =
         next === "choose-form" && live ? deadEndReason(live) : undefined;
       if (!stuck) return { run, ran: null };
       const message = boundEventMessage(stuck);
-      const already = run.events.at(-1);
-      const duplicate =
-        already?.kind === "failure" &&
-        already.action === next &&
-        already.elementId === live!.id &&
-        already.message === message;
       return {
         ran: null,
         failure: { action: next, message },
-        run: duplicate
-          ? run
-          : appendEvent(run, {
-              at: new Date().toISOString(),
-              kind: "failure",
-              elementId: live!.id,
-              action: next,
-              message,
-            }),
+        run: recordFailure(next, message, live!.id),
       };
     }
   }

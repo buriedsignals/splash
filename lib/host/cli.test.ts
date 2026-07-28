@@ -169,8 +169,10 @@ describe("next — driven through the CLI, not only through its function", () =>
     const dir = makeRun();
     const s = JSON.parse((await run(["state", "--run", dir])).out);
     const n = JSON.parse((await run(["next", "--run", dir])).out);
+    // `route` is part of the report: the run's DECLARED relationship to the text, handed back to
+    // the desk that declared it. Reported only — nothing routes on it (lib/loop/manifest.ts).
     expect(Object.keys(s.value).sort()).toEqual(
-      ["elements", "inputValidation", "runId"].sort(),
+      ["elements", "inputValidation", "route", "runId"].sort(),
     );
     expect(Object.keys(n.value)).toEqual(["nextActions"]);
   });
@@ -504,7 +506,11 @@ describe("approve — the human gate at the process edge", () => {
   });
 
   it("refuses an unreadable run with exit 2", async () => {
-    const r = await run(["approve", "--run", mkdtempSync(join(tmpdir(), "cli-approve-norun-"))]);
+    const r = await run([
+      "approve",
+      "--run",
+      mkdtempSync(join(tmpdir(), "cli-approve-norun-")),
+    ]);
     expect(r.code).toBe(2);
     expect(JSON.parse(r.out)).toMatchObject({ ok: false, code: "no-run" });
   });
