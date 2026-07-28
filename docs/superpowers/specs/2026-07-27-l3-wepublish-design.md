@@ -89,6 +89,8 @@ Chaque ligne est une contrainte sur l'adapter, pas une observation décorative.
 
 ### 3.1 Ce qui reste NON mesuré (dette honnête)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **Le rendu par le site.** Le `docker-compose.yml` amont ne contient **pas** de service website ;
   `WEBSITE_URL` n'est qu'une chaîne de configuration qui alimente `Article.url` (W9). L'URL livrée
   est donc **vérifiée au niveau de l'API** (W13 — le contenu que le CMS sert à n'importe quel
@@ -254,6 +256,8 @@ tomberait aujourd'hui sur le même refus — hors périmètre ici (`lib/loop/**`
 ---
 
 ## 7. Risques assumés
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 | # | Risque | Arbitrage |
 |---|---|---|

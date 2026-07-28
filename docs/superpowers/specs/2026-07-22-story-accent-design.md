@@ -96,6 +96,8 @@ no-accent render is unchanged.
 
 ## 7. Non-goals
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - Deriving categorical series colours from the palette (CVD decision — categorical stays Okabe-Ito).
 - Overriding semantic role colours.
 - Furniture tint for the 11 no-baseColor charts (fan-out residual).

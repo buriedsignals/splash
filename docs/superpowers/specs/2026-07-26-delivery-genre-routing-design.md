@@ -259,6 +259,8 @@ text/html » a survécu à un check. La fixture est interdite ici : l'artefact d
 
 ## 7. Hors scope (assumé, avec la raison)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **L'URL Cloudflare `${url}/${stagedName}`** : le refus de §4 la rend sans objet. Si un jour
   Cloudflare doit servir des actifs, ça devient une tranche « adressage » à part entière.
 - **A11y vidéo complète** (sous-titres, transcription) : `altInsight` renseigne un nom accessible,
@@ -272,6 +274,8 @@ text/html » a survécu à un check. La fixture est interdite ici : l'artefact d
 - **L3 (We.Publish, Fly)** : toujours en attente d'un accès réel.
 
 ## 8. Risques
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 - **Une rédaction qui voulait vraiment héberger ses PNG** doit désormais nommer `embed-s3`
   explicitement. Assumé : c'est le sens de la décision cadre, et le refus l'oriente.

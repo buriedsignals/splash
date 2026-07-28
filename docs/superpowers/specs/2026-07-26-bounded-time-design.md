@@ -135,6 +135,8 @@ default n'est pas devenu une régression.
 
 ## 6. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **Pas de timeout d'inactivité (suivi d'octets)** — `fetchBounded` est un mur-à-mur, jamais réarmé
   sur progression. Mitigé par le budget upload séparé (§3.2). Réel, jugé suffisant : fermer la
   classe "aucun budget du tout" prime sur l'affiner en timeout glissant, qui demanderait un suivi de

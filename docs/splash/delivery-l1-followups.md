@@ -9,6 +9,8 @@
 
 ## À corriger en premier si on rouvre le chantier
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Point | Où | Ruling |
 |---|---|---|
 | `profile` déréférencé sans garde — un décor sans `profile` lève un `TypeError` au lieu d'un refus borné, dans le module qui documente qu'il ne throw jamais | `lib/loop/deliver.ts:87` | **Réel**, une ligne (`= decor.profile ?? {}`). Non atteignable depuis les appelants typés : `Decor` n'est construit qu'en deux endroits de production (`loadDecor`, `neutralDecor`) et les deux posent `profile`, `tsc` couvre désormais `newsroom`, et aucun appelant `.mjs`/`.js` n'existe. Parké faute d'une seconde vague de revue, pas parce que c'est acceptable. |
@@ -17,6 +19,8 @@
 | La façade hôte n'expose aucun pas de boucle : `splash verb publish` court-circuite `deliver()` entièrement | `lib/host/cli.ts:126-176` (commandes `verbs`/`state`/`next`/`verb`/`newsroom`) | **Réel et structurel.** Un hôte non-JS (Goose, la cible de B) peut lire l'état et exécuter un verbe brut, mais ne peut pas exécuter un pas de la boucle. `next` répond `deliver` sans qu'aucune commande ne puisse l'effectuer ; la seule voie hôte, `verb publish`, contourne le gate de sign-off, le contrôle de fraîcheur de provenance, la métadonnée dérivée du profil et la readiness — toutes portées par `deliver()`. Pas un bloquant pour le sous-projet suivant ; à trancher soit en exposant un pas de boucle à la façade, soit en portant le gate dans le verbe. |
 
 ## Résidus mineurs
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 - `nextActions` reste `["deliver"]` pour une destination définitivement non configurée : un runner autonome ré-appendra le même événement d'échec à chaque tour. Pré-existant, identique avant/après le fix I4 et pour une destination unique.
 - Une destination qui a un effet de bord **puis** échoue (déploiement OK, `verifyServed` KO) voit son message perdu pour ce tour si une destination suivante réussit — et le déploiement vivant-non-enregistré est recréé au tour d'après.

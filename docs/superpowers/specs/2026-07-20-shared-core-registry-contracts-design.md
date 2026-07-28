@@ -162,6 +162,8 @@ WCAG/thème réelle) avant de fusionner — pas de fusion aveugle.
 
 ## 7. Risques & mitigations
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Risque | Mitigation |
 |---|---|
 | Fusion aveugle de 2 primitives qui divergeaient réellement → régression silencieuse | Test de parité par primitive (§6) ; diff + décision groundée avant fusion (§5 invariant) |

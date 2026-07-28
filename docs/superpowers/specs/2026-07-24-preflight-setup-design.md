@@ -273,6 +273,8 @@ Repris tels quels de `install/configurator.ts`, parce que ce sont des pièges d�
 
 ## 6. Risques
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Risque | Réponse |
 |---|---|
 | Le hoist touche un legacy vivant | Sa suite de tests reste le filet, inchangée ; aucune politique ne bouge |
@@ -298,6 +300,8 @@ Repris tels quels de `install/configurator.ts`, parce que ce sont des pièges d�
 
 ## 8. Hors scope — et ce qu'on répond à Tom
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Demandé | Décision | Raison |
 |---|---|---|
 | #5 « reopens the relevant section and **resumes the same run** » côté legacy | **Non fait** | La reprise n'existe pas dans la coquille legacy — c'est l'issue #8 elle-même. Elle est livrée dans le substrat (`lib/loop/resume.ts`, `splash state`/`next`). La rebâtir dans une coquille qu'on remplace serait du travail jeté deux fois. La page **s'ouvre** bien à la bonne section (§5.3) ; c'est la reprise automatique du run legacy qui n'est pas câblée. |
@@ -308,6 +312,8 @@ Repris tels quels de `install/configurator.ts`, parce que ce sont des pièges d�
 ---
 
 ## 9. Suites parkées à la sortie de P1 (revue finale, 2026-07-25)
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 La revue de branche a rendu **« ready to merge »** ; ces trois points sont réels, non bloquants, et parkés
 avec leur raison plutôt que corrigés dans une seconde vague.

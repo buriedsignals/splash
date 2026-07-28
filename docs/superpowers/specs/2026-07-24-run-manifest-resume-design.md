@@ -224,6 +224,8 @@ apporter(data + point)
 
 ## 16. Hors scope (déféré — chacun sa case §4 de la spec-parapluie)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - Contrat de verbes abstraits + adapters Goose → sous-projet **B** (après A).
 - LOGIQUE review/delivery réelle → sous-projets **Verify** (#3/9/10/11) & **Livraison** (#4). Ici : seulement les slots dormants `review?`/`delivery?` + les règles d'héritage de provenance.
 - Production de **plusieurs** éléments depuis un article → besoin du **proposal-cerveau** (#2). A bâtit le conteneur `elements[]` + le tracking indépendant ; le chemin live crée 1 élément.

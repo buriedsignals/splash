@@ -317,6 +317,8 @@ matched?: number }`, et `eligibility.ts` refuse tout candidat `map-native` quand
 
 ## 7. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 Relecture du diff après implémentation. Chaque point avec son arbitrage.
 
 **R1 — `provenanceHash` n'inclut PAS `sources`. (le plus important)**

@@ -279,6 +279,8 @@ production » n'est pas une règle à respecter, c'est l'absence d'une ligne.
 
 ## 5. Explicitement différé (et pourquoi)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Différé | Raison |
 |---|---|
 | **Taille/orientation print fines** (A4/A3, portrait, gouttière colonne) | L'issue dit « collect print size/orientation later on the print branch ». La tranche livre **une** boîte par défaut à 300 dpi et le point d'accroche (`aspect: "page"` + `DESTINATION_POLICY.print`). Ajouter `print-a4-portrait` etc. = des entrées `CHANNEL_POLICY` de plus, aucun changement de modèle. |
@@ -305,6 +307,8 @@ résultat mesuré est reporté dans le plan.
 ---
 
 ## 7. Risques assumés
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 Voir la section homonyme du plan `docs/superpowers/plans/2026-07-26-cadrage-deliverables.md`,
 tenue à jour à l'exécution (chaque risque avec son arbitrage).

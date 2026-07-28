@@ -107,6 +107,8 @@ side-by-side (a chart + a map from the same profile). Confirm a no-house-hue ren
 
 ## 7. Non-goals
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - Tinting `pill`, `ink`, basemap, marks, or the ramp (done elsewhere or intentionally untouched).
 - `map-dw` furniture (plan-gated Datawrapper — separate follow-up).
 - A new house-hue field: reuse `brandHue` / `brandPalette[0]`, already seeded.

@@ -79,6 +79,8 @@ Thread `AREAL_TIMELINE_OPTS` into **both** each comp's `buildTimeline` call AND 
 - Feedback → system: promote to the shared module so all 6 inherit; never patch one comp in isolation.
 
 ## Non-goals / deferred
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 - Newsroom-profile → CSS-var typography threading. Context-bloom lightness-shift. Sequential overshoot clamp (`fillOpacity` peaks at target*1.25 > 1.0 for opacity channels — clamp where it maps to an opacity). These are recorded follow-ups from the Choropleth work; apply the clamp fix in the shared helper so all comps inherit it.
 - map-dw / scrolly comps (different engines).
 

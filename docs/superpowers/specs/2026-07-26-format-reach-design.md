@@ -396,6 +396,8 @@ Prérequis d'environnement (à noter dans le plan, ce n'est pas un défaut) : `b
 
 ## 13. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **La ligne réservée coûte une forme distincte** (3 formes dont une en mouvement, au lieu de 3
   embarquables). Assumé : c'est le prix du choix, et P1 tranche.
 - **Une vidéo légale mais éditorialement faible** peut occuper la ligne réservée (un scatter animé,

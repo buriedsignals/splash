@@ -206,6 +206,8 @@ mérite d'être noté : un run print sur des données géo n'a **rien** à chois
 
 ## Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 1. **`schemaVersion` reste 4 alors que le schéma a grandi.**
    *Arbitrage :* les champs neufs sont optionnels et additifs, donc un manifeste v4 d'avant
    parse et signifie exactement la même chose (`channelForElement → run.channel`) — il n'y a

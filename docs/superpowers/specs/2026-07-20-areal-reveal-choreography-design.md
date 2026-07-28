@@ -282,6 +282,8 @@ The envelope has three phases; **each comp enables the phases its geometry suppo
 
 ## Open follow-ups (explicitly deferred)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **A′-points:** Symbol / Locator / DotDensity entrance choreography (circle-grow overshoot,
   stipple-in) + their point-label declutter interaction.
 - **Fixed-plate + satellite basemap** — conditional spec; only if a satellite/hillshade cinematic

@@ -231,6 +231,8 @@ Pas d'assertion depuis le code. Chaque mesure est journalisée dans le plan
 
 ## Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 **R1 — La branche kind-aware de `conformanceL0` n'est pas atteinte depuis un produce réel.**
 `produce.ts` ne pose pas `sourceKind` sur le `NativeSpec`, donc chart-native appelle `conformanceL0`
 sans kind et prend la branche historique. Interface exacte du threading, pour le slice qui le fera :

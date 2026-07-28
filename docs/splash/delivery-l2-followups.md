@@ -45,6 +45,8 @@ provoquer la condition en live (F4). Les deux ont été faits.
 
 ## Résidus parkés — minors, avec leur ruling
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **Aucun `fetch` n'a de timeout** (`s3.ts` PUT + GET de vérification). « Échec borné » est tenu en
   *forme* (un `VerbResult`) mais pas en *temps* : un endpoint qui absorbe sans répondre bloque
   `advance()` indéfiniment, sans message. **Ruling** : réel, mais classe pré-existante —

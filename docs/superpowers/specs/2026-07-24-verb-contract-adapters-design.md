@@ -202,6 +202,8 @@ Trois apports neufs, qui n'étaient pas prévisibles au design et qui **conditio
 
 ## 5. Risques
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Risque | Réponse |
 |---|---|
 | Le hoist touche un legacy encore vivant | Sa suite de tests reste le filet ; `realDispatch` reste behavior-preserving ; aucune politique ne bouge |

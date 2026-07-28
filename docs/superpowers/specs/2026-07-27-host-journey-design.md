@@ -348,6 +348,8 @@ test tombe.
 
 ## 8. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **`init` ne restreint pas quel fichier est gelé.** Un hôte peut pointer `input.data` sur
   n'importe quel chemin lisible, relatif compris (résolu contre le cwd du process). Assumé :
   l'hôte nomme sa propre donnée, et il pouvait déjà passer n'importe quels octets par

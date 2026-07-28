@@ -266,6 +266,8 @@ du travail.
 
 ## 5. Les deux résidus voisins
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 ### 5.1 R5 — le `DestinationProfile` réel de la rédaction : **laissé, et voici pourquoi**
 
 `resolveTargets` retombe sur `CHANNEL_POLICY`. La tranche précédente l'a déféré comme « hors
@@ -322,6 +324,8 @@ migrer. L'assertion, elle, ne bouge pas d'un caractère.
 
 ## 6. Hors scope — assumé, avec sa raison
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Déféré | Pourquoi (honnête) |
 |---|---|
 | **Le titre d'un livrable `static`** | Pas de DOM, pas de texte. Ni OCR ni recopie du titre commandé (§2.4). `titleSource: "static-image"` le dit. |
@@ -371,6 +375,8 @@ code.
 ---
 
 ## 8. Risques assumés
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 *(écrits après implémentation, chacun avec son ruling.)*
 

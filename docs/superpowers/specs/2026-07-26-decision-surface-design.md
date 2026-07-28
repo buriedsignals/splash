@@ -238,6 +238,8 @@ Unitaires / assemblage :
 
 ## 5. Hors scope (assumé, avec la raison)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **Une commande `migrate`.** Les runs de schéma périmé restent refusés partout (D7). L'ajouter
   demande de décider ce qu'on écrit dans le run d'autrui ; ce n'est pas la question de cette tranche.
 - **Enregistrer un sign-off éditorial.** `deliver()` exige `el.approved` quand le profil déclare des
@@ -255,6 +257,8 @@ Unitaires / assemblage :
 ---
 
 ## 6. Risques assumés
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 Findings réels de l'auto-review (relecture du diff + exécution de la séquence complète), chacun
 avec son arbitrage.

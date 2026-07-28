@@ -92,6 +92,8 @@ source a supprimé. L'exemple périmé vit dans un test.
 
 ## 4. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **Rouvrir le master par `--element` n'est pas gardé.** Re-choisir la forme d'un élément terminal
   périme son artefact (la provenance bouge) et le renvoie en production — c'est le comportement
   voulu, mais rien ne prévient l'hôte que sa décision **annule un travail fini**. Un avertissement

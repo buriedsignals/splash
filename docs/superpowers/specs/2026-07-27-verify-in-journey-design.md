@@ -343,6 +343,8 @@ Corollaire tenu partout : `unavailable` n'est jamais habillé en `pass`, et il e
 
 ## 7. Hors scope — assumé, avec sa raison
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Déféré | Pourquoi (honnête) |
 |---|---|
 | **Le relecteur sémantique indépendant** | Décision verrouillée, pas un manque (§5). Aucun appel sortant. |
@@ -370,6 +372,8 @@ article-web, lu par son IHDR, contre la taille que le canal publie.
 ---
 
 ## 9. Risques assumés
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 *(écrits après implémentation, chacun avec son ruling.)*
 

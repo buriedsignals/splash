@@ -451,6 +451,8 @@ Deux fichiers sont édités par un autre agent en ce moment et n'ont pas été t
 
 ## 8. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **Le routage `draft-beats`/`author-beats` n'est pas atteignable par `advance()` aujourd'hui**,
   parce que `scrolly` reste hors de `LOOP_BUILDABLE_ENGINES` (§5). C'est la maladie « le mécanisme
   existe et rien ne l'invoque » — assumée les yeux ouverts, avec deux atténuations : chaque pièce

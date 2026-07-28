@@ -90,6 +90,8 @@ au rendu des beats (les composants walkent déjà `Beat[]`).
   affirment l'argument par rôle — vérifié au rendu.
 
 ## 6. Risques & mitigations
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 | Risque | Mitigation |
 |---|---|
 | `applyMapArc` ne se factorise pas proprement sur 2 dériveurs à ancres différentes | Le helper opère sur des `revealCandidates` normalisés (region→beat) ; si les 2 dériveurs divergent trop, le plan bascule sur 2 câblages fins partageant la seule VALIDATION — décidé au plan, testé des deux côtés. |

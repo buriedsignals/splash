@@ -171,6 +171,8 @@ but n'est pas expliqué est une étape qu'on saute) :
 
 ## 5. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 Voir le rapport final de la session pour la section `## Risques assumés` complète (granularité
 capacité-vs-format, pas de check de version Remotion, la CLI de production `skills/splash/src/
 preflight.ts` ne reçoit pas encore le probe browser).

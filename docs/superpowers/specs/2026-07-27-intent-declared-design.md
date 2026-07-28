@@ -279,6 +279,8 @@ change en entier, y compris de **moteur**.
 
 ## 8. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **Déclarer (ou re-déclarer) une intention périme un artefact déjà produit.** `angle` est hashé
   entier par `provenanceHash` (`lib/loop/manifest.ts`), donc le champ neuf y entre. **Ruling :
   accepté, direction sûre.** Re-confirmer réécrit déjà l'angle entier (les quatre parties sont

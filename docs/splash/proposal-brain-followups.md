@@ -8,6 +8,8 @@
 
 ## À trancher par Rémy (décisions produit, pas des correctifs)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **La vidéo est structurellement inoffrable.** `rank.ts`'s `FORMAT_ORDER` classe
   `interactive < static < video < scrolly`, et `offer.ts` ne garde qu'une ligne par forme : sur
   `article-web` toute option sort en `interactive`, sur les canaux sociaux en `static`. Vérifié sur
@@ -45,6 +47,8 @@
 
 ## Correctness — réels, non bloquants
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **Aucun événement lors du refus d'une forme non constructible.** Choisir une forme marquée
   renvoie à `choose-form` (cf. spec §8) et `advance()` est un no-op total — mais rien n'est écrit,
   donc un manifeste relu après coup montre `chosen → choose-form` sans trace du refus. Fermer = un
@@ -75,6 +79,8 @@
   deux sources pour « l'élément vivant ».
 
 ## Hygiène KB / cosmétique
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 - `bar.md` énonce deux fois son plafond de catégories (`limits.maxCategories: 25` et « ~20-25 » en
   prose) · `boxplot.md` omet un « n≈5 » jugé illustratif · `streamgraph.md` se contredit (5-10 vs

@@ -138,6 +138,8 @@ real regression, never declared flake without proof.
 
 ## 7. Non-goals (later S3 slices)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 Accent/neutral discipline ("1 accent, rest grey"), saturation-as-f(background) beyond the theme orientation,
 tinted neutrals, and a story-level palette. Each is its own slice; this one is the perceptual-ramp foundation
 they build on.

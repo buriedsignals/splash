@@ -230,6 +230,8 @@ opted out of the guarantee this gate is meant to provide).
 
 ## Follow-ups (out of scope)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - Wire the export-manifest `{signedBy, unsigned}` line into the export-code/deploy-embed stdout the
   journalist sees (thin plumbing; the guard returns the data).
 - Real keypair generation + profile registration for Yvan/Rinny (operational, on the real Heidi.news

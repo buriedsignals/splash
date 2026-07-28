@@ -521,6 +521,8 @@ Cette tranche répond aussi à la question ouverte du §4.6 (publisher à notion
 
 ## 7. Risques
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Risque | Réponse |
 |---|---|
 | Le hoist touche un chemin legacy vivant (`deploy-embed.mjs`) | Ré-export + sa suite de tests inchangée comme filet |
@@ -549,6 +551,8 @@ Cette tranche répond aussi à la question ouverte du §4.6 (publisher à notion
 ---
 
 ## 9. Hors scope — et ce qu'on répond à Tom (#4)
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 | Demandé | Décision | Raison |
 |---|---|---|

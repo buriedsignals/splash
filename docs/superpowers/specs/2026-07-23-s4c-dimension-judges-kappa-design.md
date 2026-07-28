@@ -191,6 +191,8 @@ not code change.
 
 ## Follow-ups (out of scope)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - Produce a real inter-judge κ over the pilot's stored transcripts (small spend, on Rémy's go).
 - Human-label collection → calibration κ (needs Rémy/Yvan/Rinny; feeds S4d).
 - If a dimension proves reliably high-κ AND high-signal, consider promoting it into the live judge

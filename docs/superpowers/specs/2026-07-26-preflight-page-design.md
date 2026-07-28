@@ -246,6 +246,8 @@ et le substrat la fournit déjà).
 
 ## 7. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 Chaque résidu réel constaté à la fin du chantier, avec son ruling. Aucun n'est un oubli.
 
 | # | Résidu | Ruling |

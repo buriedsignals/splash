@@ -110,6 +110,8 @@ Ni Remotion, ni navigateur, ni endpoint : **3,5 ms**. Vérifié en cassant réel
 
 ## 5. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - **Rien ne lance `bun run proofs` automatiquement.** C'est une commande, pas un cron ni un job
   CI. La décision d'en faire une étape périodique (avant un merge dans `main`, ou une fois par
   jour) appartient à Rémy : elle exige une machine avec Docker, une clé MapTiler et un `.env`, ce

@@ -226,6 +226,8 @@ type PreviewRecord = {
 
 ## 7. Hors scope — assumé, avec sa raison
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Déféré | Pourquoi (honnête) |
 |---|---|
 | **La passe de critique sémantique indépendante (un vrai second modèle)** | Le seam existe (`ReviewerAdapter`), la redaction et le hachage sont construits et testés. Ce qui manque est **une décision produit qu'on n'a pas le droit de prendre ici** : #9 exige de *« Define privacy/data-retention requirements before sending unpublished reporting to any additional model or service »* — envoyer une enquête Heidi.news non publiée à un service tiers est un arbitrage de rédaction, pas d'implémentation. Et un second modèle branché sans mode d'isolement local serait précisément le « juge qui valide le juge » que S4c a déjà démonté. Le record dit `unavailable` en attendant. |
@@ -239,6 +241,8 @@ type PreviewRecord = {
 
 ## 8. Risques assumés
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 | Risque | Réponse / arbitrage |
 |---|---|
 | **La résolution de racine est une heuristique** (`#root > div` d'abord) | Vérifiée sur un rendu réel de la boucle ; dégrade vers `body` (jamais d'exception) ; le sélecteur retenu est **enregistré dans `CaptureRecord`**, donc une mauvaise racine est lisible dans la preuve au lieu d'être invisible. Le vrai correctif — un `data-splash-root` posé par les moteurs — est un changement côté `skills/`, hors frontière ici. |
@@ -250,6 +254,8 @@ type PreviewRecord = {
 ---
 
 ## 8bis. Risques assumés *(écrit après implémentation — chacun avec son ruling)*
+
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
 
 | # | Résidu constaté | Ruling |
 |---|---|---|

@@ -119,6 +119,8 @@ maintainer-judged:
 
 ## 7. Non-goals (fan-out / later)
 
+> Registre consolidé : `docs/splash/residuals.md` — statut vérifié contre le code, pile A/B/C.
+
 - Threading `baseColor` into the remaining ~26 `themeColors` sites (universal furniture consistency).
 - Map furniture (`resolveFrameColors`) tinted neutrals — mirror `deriveFurniture`.
 - Tinting composition-chart furniture (stacked/pie) from a **story-level** house colour (those configs may lack
