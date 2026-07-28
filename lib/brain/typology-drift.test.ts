@@ -77,6 +77,54 @@ function fixtureSheet(
   };
 }
 
+// A10: the frontmatter `limits` block is the fact the brain reads (limitFailure() in
+// eligibility.ts checks it, nothing reads the prose). A sheet whose prose states a DIFFERENT
+// number for the same cap is lying to whichever of the two audiences reads the other one — a
+// human trusts the prose, the machine trusts the frontmatter, and they now disagree. `bar.md`
+// stated its category ceiling twice (`maxCategories: 25` vs "~20-25" in prose, twice) and
+// `streamgraph.md` stated its series ceiling three ways (`maxSeries: 7` vs "5-10" in `bestFor`
+// vs "≤ ~7" in its own Correctness section). Both are fixed now; this locks the number the
+// prose states to the number the frontmatter enforces, so the next edit to one is caught
+// against the other instead of drifting quietly.
+test("DRIFT 4: a sheet's prose states the same numeric cap as its own frontmatter limits", () => {
+  const bar = loadTypology().find((s) => s.id === "bar")!;
+  expect(bar.limits.maxCategories).toBe(25);
+  expect(bar.body).not.toMatch(/20.{0,3}25 categories/);
+  expect(bar.body).toMatch(/~?25 categories/);
+
+  const streamgraph = loadTypology().find((s) => s.id === "streamgraph")!;
+  expect(streamgraph.limits.maxSeries).toBe(7);
+  expect(streamgraph.body).not.toMatch(/5.{0,3}10/);
+});
+
+// A10 (family convention): every chart/image type sheet cites its research under a plural
+// "> Sources:" line and titles its per-type rules section `## Correctness "de base" (...)`,
+// even a sheet with exactly one citation (map/types sheets are a separate family with their
+// own shared geo-prep layer and are out of scope here — CLAUDE.md). `image-scrolly.md` was the
+// sole outlier in both — a lone "> Source:" and a bare "## Correctness" — which reads as a
+// different sheet family to a journalist or reviewer skimming the corpus. Fixed; locked so the
+// next new sheet is caught at authoring time instead of by the next sweep.
+test("DRIFT 5: every chart/image type sheet follows the family's Sources/Correctness heading convention", () => {
+  const sheets = loadTypology().filter(
+    (s) =>
+      s.sheetPath.includes("/chart/types/") ||
+      s.sheetPath.includes("/image/types/"),
+  );
+  expect(sheets.length).toBeGreaterThan(30);
+  for (const sheet of sheets) {
+    expect(sheet.body, `${sheet.id}: cites "> Sources:" (plural)`).toMatch(
+      /^\n?> Sources:/m,
+    );
+    expect(sheet.body, `${sheet.id}: no lone "> Source:" line`).not.toMatch(
+      /^> Source:/m,
+    );
+    expect(
+      sheet.body,
+      `${sheet.id}: has a '## Correctness "de base" (...)' heading`,
+    ).toMatch(/^## Correctness "de base" \(/m);
+  }
+});
+
 test("renderableSheets prefers the FIRST key when several are renderable", () => {
   // "slope" and "bar" are both real, non-deferred chart-native ids.
   const sheet = fixtureSheet("fixture-both-renderable", {

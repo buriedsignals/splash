@@ -12,7 +12,7 @@ bestFor:
 notFor:
   - "a continuous trend over many time points — that is a line"
   - "part-to-whole where the components matter — use a stacked bar or, sparingly, a pie"
-  - "more than ~20–25 categories — the chart becomes a comb; filter, group into Other, or use a dot plot / small multiples"
+  - "more than ~25 categories — the chart becomes a comb; filter, group into Other, or use a dot plot / small multiples"
 ---
 
 # Bar / Column — per-type best practice (L2)
@@ -33,7 +33,7 @@ baseline. Length is near the top of the perception hierarchy → bars are the sa
 - **Not** for: a continuous trend over many time points → that is a **line** (`line.md`). A few
   periods (≤ ~8) can be columns, but a real time series is a line.
 - **Not** for: part-to-whole where the components matter → stacked bar or, sparingly, pie.
-- **Not** for: more than ~20–25 categories → the chart becomes a comb; filter, group into "Other",
+- **Not** for: more than ~25 categories → the chart becomes a comb; filter, group into "Other",
   or switch to a dot plot / small multiples.
 
 ## Correctness "de base" (the rules that are specific to bars)
