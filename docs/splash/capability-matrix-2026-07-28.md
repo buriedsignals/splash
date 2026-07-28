@@ -476,6 +476,22 @@ Proven end to end in `lib/loop/dw-chart-e2e.test.ts` and `lib/loop/map-dw-e2e.te
 preview → approve → deliver, with the captured image's own bytes and the delivered embed's URL
 (fetched 200) as the controls.
 
+**"Closed" means the chain runs, not that every row is clean.** Now that capture measures the live
+embed, it reports two real defects that were previously invisible, and BOTH are blocking findings a
+journalist has to override in writing before the visual can be delivered:
+
+- **all 9 dw-chart interactive rows** — `furniture-missing` on the `unit` role. A published
+  Datawrapper chart paints the unit nowhere: probed on a live embed, the only elements whose text
+  contains `%` are two `display:none` `<script>` blobs carrying the serialized props. The unit
+  reaches the chart's metadata and never reaches the reader.
+- **the map-dw `choropleth` row** — `furniture-below-fold` + `component-overflows-viewport` on
+  **every run**. The live map renders ~628 CSS px tall against the 560 article-web publishes at.
+
+So those ten cells are deliverable, and today none of them is deliverable *silently*: each needs the
+#11 override ceremony. Fixing them means changing what dw-chart/map-dw commission, or ruling on a
+height policy for responsive hosted embeds — both out of this slice, both recorded in
+`.sdd/hosted-chain-report.md` §5.
+
 ---
 
 ## 5. Verdict on the owner's question

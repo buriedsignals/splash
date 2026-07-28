@@ -3,8 +3,10 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  approvalSubjectOf,
   approveElement,
   assertInvariants,
+  fileArtifact,
   gateStateOf,
   parseManifest,
   provenanceHash,
@@ -195,16 +197,20 @@ describe("approveElement — the only sanctioned writer of `approved`", () => {
     expect(r.ok).toBe(false);
   });
 
-  it("writes the approval — bound to the current provenance — when the gate clears", () => {
+  it("writes the approval — bound to the current provenance AND subject — when the gate clears", () => {
     const run = reviewed();
-    const r = approveElement(run, run.elements[0]!, {
-      signoffPath: "signoff.sig",
-    });
+    const el = run.elements[0]!;
+    const r = approveElement(run, el, { signoffPath: "signoff.sig" });
     if (!r.ok) throw new Error(JSON.stringify(r.decision.reasons));
     expect(r.element.approved).toStrictEqual({
       signoffPath: "signoff.sig",
-      approvedProvenanceHash: provenanceHash(run, run.elements[0]!),
+      approvedProvenanceHash: provenanceHash(run, el),
+      // WHAT was approved, beside WHEN — the artifact's own sha256 for a file. Provenance answers
+      // "which run state", not "which artifact", and the two come apart for a hosted delivery
+      // (provenanceHash never reads el.capture); deliver.ts re-derives this and compares.
+      approvedSubject: approvalSubjectOf(el).sha256,
     });
+    expect(approvalSubjectOf(el).sha256).toBe(fileArtifact(el.artifact)!.sha256);
     expect(gateStateOf(run, r.element)).toBe("approved");
   });
 

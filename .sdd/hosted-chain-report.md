@@ -340,3 +340,204 @@ policy for hosted embeds, and both are judgements this slice has no measurement 
 - **`skills/map-dw` has no `package.json`**, so `bun install` there is a no-op; its tests run from
   the root install. Not a problem, just noted since the brief asked for installs in the `skills/*`
   needed.
+
+---
+
+# Review wave — fixes
+
+Reviewed as MERGE WITH FIXES. All of them addressed in one wave; below is what changed and how it
+was verified.
+
+## [Critical] The proofs overrode whatever came back
+
+`blocking.map(f => …)` cleared every blocking finding, whatever it was. Interpolating `f.id` into
+the reason made the TEXT specific while the SET stayed unbounded — a chart rendering blank at HTTP
+200, a title divergence or a `no-capture` regression would have been swallowed identically, in the
+only end-to-end evidence this slice has. The report called them "explicit written overrides naming
+the finding"; they named it in prose only. That was the right catch.
+
+Both proofs now **assert the blocking id set first, as a literal**, and override **only** those ids
+by literal name:
+
+- dw-chart: `expect(blocking.map(f => f.id).sort()).toEqual(["furniture-missing"])`, plus
+  `expect(missing.evidence.filter(e => !e.includes("/unit]"))).toEqual([])` — because
+  `furniture-missing` GROUPS every furniture role (`CHECK_TO_FINDING`), so pinning the id alone
+  would still swallow a missing title or a dropped source. Override: one literal
+  `findingId: "furniture-missing"`.
+- map-dw: `expect(...).toEqual(["component-overflows-viewport", "furniture-below-fold"])`.
+  Overrides: those two ids as literals.
+
+Any other blocking finding now fails the proof before anything is approved. Both re-run green
+(§ verification below), and the assertions are load-bearing rather than decorative: if Datawrapper
+ever paints the unit, the chart proof fails and has to be updated, which is the correct outcome.
+
+## [Important] (a) The address had two values — chose: deliver the APPROVED address
+
+`deliver` now passes `approvalSubjectOf(el).url ?? artifact.url` to the publish verb, instead of the
+recorded `artifact.url`.
+
+**Why this option rather than refusing the capture on `page.url() !== p.artifactUrl`.** The approval
+is the authority on what was approved; anything else delivered is, by definition, something nobody
+approved. Reading the subject's URL makes "the delivered thing is the approved thing" true **by
+construction**, rather than resting on an equality no code asserts. The refusal option would instead
+have put a normalisation judgement in the measurement layer — it would reject a legitimate redirect
+or a trailing-slash difference that the binding already handles honestly, and it would only be
+correct for engines whose recorded URL is already final. It also protects the better case: for an
+engine whose recorded URL redirects to a version-pinned target, delivering the LANDED address hands
+over the immutable one, which is strictly safer than handing over the mutable alias.
+
+The fallback `?? artifact.url` cannot fire in practice: the gate immediately above refuses a hosted
+artifact whose approval carries no subject. It is there so the expression is total.
+
+For Datawrapper the two strings are equal (`publicUrl` is already the final versioned address), so
+no delivered URL changes — verified in both gated proofs, where the handed-over address equals the
+published one.
+
+## [Important] (b) The digest and the URL came from different records
+
+`hostedBindingOf` returned `images.find(has url)` — the NARROW record, since `resolveTargets`
+returns `[narrow, primary, wide]` — while the digest is computed over the PRIMARY still. That URL is
+what preview presents and what `SignoffDocument.artifactUrl` records as "which published version was
+signed for", so with a per-breakpoint embed variant the document would name a version nobody
+approved, and `hostedBindingDigest(url, pixels)` would not reproduce the digest beside it.
+
+Fixed: select `breakpoint === "primary"` with the same `?? images[0]` fallback capture itself uses.
+`lib/verify/hosted.test.ts` now gives the narrow record a **different** URL (`…/1/?mobile=1`) and its
+own pixels, so it can fail; it also asserts the pair REPRODUCES
+(`hostedBindingDigest(b.url, PIXELS) === b.digest`) and that the no-primary fallback matches
+capture's.
+
+## [Important] The editorial gate was provenance-only
+
+`provenanceHash` never reads `el.capture`, so a re-capture mints a new binding while
+`approvedProvenanceHash` still matches — and `deliver` re-ran neither `approvalDecision` nor
+`previewCovers`. The router noticed; the router is not the gate. This is the
+`approvedHash`-never-re-verified class at a new seam, and the review is right that it is the one
+class this repo has already paid for.
+
+Fixed at the record: `el.approved` gained `approvedSubject`, written by `approveElement` through
+`approvalSubjectOf` (the same resolver the decision was made on). `deliver` re-derives the subject
+and compares, refusing with a message that says what moved.
+
+Backward compatibility is handled without a hole: `approvedSubject` is optional, and an approval
+lacking it is **let through only for a FILE** — every approval already on disk is a file approval,
+because no hosted artifact could be approved at all before this slice, and a file's subject cannot
+move without a re-produce that moves the provenance the gate already checks. A **hosted** approval
+with no subject is a shape nothing could legitimately have produced, and is refused.
+
+Covered by a new test: same provenance, embed re-published to `…/2/`, `approvedProvenanceHash` still
+matching — delivery refused, and no call goes out.
+
+## Minors
+
+- **`routing.ts` ignored readiness.** `alreadyPublished` now returns `[HOSTED_EMBED]` only when it
+  is in `readyIds`, and `[]` otherwise — the one case this function may answer with nothing, because
+  there is no fallback to fall back TO (every other destination ships bytes this artifact has none
+  of). `requestDelivery` turns that empty answer into a refusal that NAMES the disabled capability,
+  rather than writing `requested: []`, which `needsDelivery` would read as "nobody is waiting on
+  it" and silently drop the delivery. Tested.
+- **The reverse mismatch had no test.** Added: a file artifact sent to `embed-hosted` is refused by
+  name, `invalid-request`, with no call going out.
+- **`preview.ts` header oversold the hosted branch.** Rewritten to say what is true: a file's bytes
+  are re-read off disk and re-hashed; a published embed gets a **weaker** guarantee — the subject is
+  read off the capture record, so what is verified is "this is the embed as the capture measured
+  it", not "the live embed is still that". Only a re-capture can say the second thing, and preview
+  does not reach the network. The same correction is made at the branch itself.
+- **`docs/splash/capability-matrix-2026-07-28.md` §L3** now states that "closed" means the chain
+  runs, not that the rows are clean: all 9 dw-chart interactive rows block on `furniture-missing`
+  (unit) and the map-dw choropleth blocks on `furniture-below-fold` + `component-overflows-viewport`
+  on **every run**. None of those ten cells is deliverable *silently* — each needs the #11 override
+  ceremony.
+
+### Ruled on, not changed: the snippet's fixed `width=700 height=420`
+
+`lib/delivery/snippet.ts` pins 700×420 on every embed hand-over, which is not the box capture
+verified against (article-web ≈ 1200×900 CSS, primary viewport 900×560). The review is right that
+this is the concrete mechanism behind open item 2: the map's ~628 px overflow is measured against
+560 and then handed over at 420, so the delivered iframe is **more** clipped than the one that was
+judged.
+
+Not changed here, deliberately. It is pre-existing and applies to every embed destination
+(cloudflare, s3, wepublish, zip's HTML), so a change is a change to every newsroom's snippet, not to
+the hosted path. And the right value is not obvious: `DeliveryMetadata.width/height` already exists
+and `decor.state.delivery.maxWidth/height` already feed it, so the fix is plumbing the destination
+profile into `deliveryMetadata` rather than hard-coding a better constant — and for a **responsive**
+Datawrapper embed the honest answer may be `height: "responsive"` (the module already has a template
+for it) rather than any number. That is the same decision as the height-policy item below, and
+should be made once, with a measurement, for both. Named here so it is not silently inherited.
+
+## Verification (after the fixes)
+
+```
+$ cd lib && bunx tsc --noEmit
+(no output, exit 0)
+
+$ bun test lib
+ 1609 pass
+ 19 skip
+ 1 fail            <- lib/verify/manifest-review.test.ts, the el.approved shape assertion
+ 7535 expect() calls
+Ran 1629 tests across 159 files. [290.35s]
+```
+
+That failure was the `approvedSubject` field arriving in `el.approved` — a real shape change.
+Updated to assert the new field *meaningfully* (`approvedSubject === approvalSubjectOf(el).sha256`,
+and that for a file that equals `fileArtifact(el.artifact).sha256`) rather than to absorb it.
+
+```
+$ bun test lib
+ 1609 pass / 19 skip / 1 fail  <- lib/newsroom/verify.test.ts "verifyMapTiler: true for the real key"
+$ bun test lib/newsroom/verify.test.ts
+ 12 pass / 1 skip / 0 fail  [1.70s]
+```
+
+That one is a LIVE MapTiler round-trip (`verifyMapTiler` returned `null` — its "could not tell"
+answer — after 8s under full-suite contention). Unrelated to this slice, passes in isolation; the
+same class as the known `lib/verify` Playwright contention flake, at a different provider.
+
+```
+$ bun run check
+22/22 checks passed.        (all 9 tsc dirs, all 13 test dirs)
+```
+
+```
+$ SPLASH_DW_E2E=1 bun test lib/loop/dw-chart-e2e.test.ts
+[dw-chain-e2e] published https://datawrapper.dwcdn.net/3wyRN/1/
+[dw-chain-e2e] still 2400x872 …/verify/e1/review-primary.png sha 5852c25baca7…
+[dw-chain-e2e] rendered title (h3): Basel recycles more of its waste than any other Swiss city
+[dw-chain-e2e] furniture unit: fail — the unit is in the DOM but not visible   (×3 breakpoints)
+[dw-chain-e2e] blocking: furniture-missing — required furniture is missing or hidden …
+[dw-chain-e2e] handed over https://datawrapper.dwcdn.net/3wyRN/1/
+ 6 pass / 0 fail / 67 expect() calls [24.81s]
+
+$ SPLASH_DW_E2E=1 bun test lib/loop/map-dw-e2e.test.ts
+[map-dw-chain-e2e] published https://datawrapper.dwcdn.net/cjOgM/1/
+[map-dw-chain-e2e] still 2400x1256 sha 032524846490…
+[map-dw-chain-e2e] rendered title (h3): Electricity access is lowest across the Sahel
+[map-dw-chain-e2e] blocking: furniture-below-fold — …
+[map-dw-chain-e2e] blocking: component-overflows-viewport — …
+[map-dw-chain-e2e] handed over https://datawrapper.dwcdn.net/cjOgM/1/
+ 4 pass / 0 fail / 29 expect() calls [25.40s]
+```
+
+The expect() counts rose (65→67, 28→29) exactly by the pinned-set assertions. URLs fetched this
+wave: `https://datawrapper.dwcdn.net/3wyRN/1/`, `https://datawrapper.dwcdn.net/cjOgM/1/` (both
+captured in a browser AND fetched 200 off the delivery record), plus
+`https://datawrapper.dwcdn.net/GtUwK/1/` and `https://datawrapper.dwcdn.net/qaZ0C/1/` from the
+pre-existing URL-resolves proofs.
+
+## Still open after this wave
+
+Unchanged from §5, minus what was fixed:
+
+- **The unit gap** — dw-chart commissions a unit Datawrapper paints nowhere. Now pinned by an
+  assertion in the proof, so it cannot regress into silence, and named in the capability matrix.
+- **The hosted-embed height policy** — and, with it, the snippet's fixed 700×420 (ruled on above).
+  One decision, needing one measurement across DW map/chart types, not two guesses.
+- **A re-publish is still detected by re-capture, not by delivery re-measuring pixels.** What
+  changed this wave is that delivery no longer trusts the approval's DATE: it re-derives the subject
+  and compares. What it still does not do is fetch the live embed and re-measure it — the
+  `embed-hosted` publisher verifies the address answers 200, nothing more. For Datawrapper the
+  recorded URL is version-pinned and content-immutable, so this cannot bite there.
+- **The furniture matcher counts `<script>` text as "in the DOM"** — verdict right, wording odd;
+  shared by every engine, so noted rather than changed.

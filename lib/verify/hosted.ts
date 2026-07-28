@@ -63,14 +63,23 @@ export function hostedBindingDigest(
  * The binding these captures measured, or `undefined` when they measured a FILE.
  *
  * Every record of one hosted capture carries the SAME `artifactSha256` — the binding, computed
- * once from the primary still — exactly as every record of a file capture carries the same
- * artifact sha256. So this reads the first record that names an address rather than re-deriving
- * anything: one definition of the binding, written where the measurement happened.
+ * once from the PRIMARY still — exactly as every record of a file capture carries the same
+ * artifact sha256. The URL is NOT shared that way: each record names the address its own
+ * navigation landed on, and a hosted engine whose embed differs per breakpoint (a `?mobile=1`
+ * variant, a width parameter) makes those genuinely different strings.
+ *
+ * So the PRIMARY record is selected, with the same `?? images[0]` fallback capture itself uses
+ * when it computes the digest. Reading "the first record that names an address" instead returned
+ * the NARROW capture's URL beside a digest computed over the primary's — and this URL is what
+ * preview presents and what the sign-off document records as "which published version was signed
+ * for". The pair has to come from ONE record, or the document names a version nobody approved
+ * and `hostedBindingDigest(url, pixels)` no longer reproduces the digest beside it.
  */
 export function hostedBindingOf(
   images: CaptureRecord[],
 ): { digest: string; url: string } | undefined {
-  const rec = images.find((c) => (c.artifactUrl ?? "").length > 0);
+  const hosted = images.filter((c) => (c.artifactUrl ?? "").length > 0);
+  const rec = hosted.find((c) => c.breakpoint === "primary") ?? hosted[0];
   return rec
     ? { digest: rec.artifactSha256, url: rec.artifactUrl! }
     : undefined;

@@ -51,9 +51,16 @@ export function defaultDestinationsFor(
   // corrected. Above the print branch on purpose: a published embed cannot be handed to a printer
   // as a file either — the file does not exist — so "print" would name a package nobody can build.
   //
-  // Never an empty list, for the same reason `zip` is the fallback below: HOSTED_EMBED needs no
-  // key (lib/newsroom/capabilities.ts, `env: []`) and is therefore always ready.
-  if (opts.alreadyPublished) return [HOSTED_EMBED];
+  // EMPTY when the hand-over is not enabled, and that is the one place this function may return
+  // nothing. "Needs no key" is not "is enabled": HOSTED_EMBED is always READY (no env to be
+  // missing) but a newsroom can still turn it off, and answering with a destination the newsroom
+  // disabled would put an id in `delivery.requested` that readiness then refuses on every call.
+  // There is no fallback to fall back TO — `zip` and every other destination ship bytes this
+  // artifact has none of — so the honest answer is nothing, and lib/loop/request-delivery.ts
+  // turns it into a refusal that NAMES the disabled capability rather than an empty request that
+  // silently reads as "delivered nowhere".
+  if (opts.alreadyPublished)
+    return readyIds.includes(HOSTED_EMBED) ? [HOSTED_EMBED] : [];
   // A print deliverable is a FILE — there is no URL on a page. Today this is also true by way
   // of the format (print carries `static` only, and static is of the file genre), so this line
   // changes no current answer. It is written anyway, and above the genre test, because the rule

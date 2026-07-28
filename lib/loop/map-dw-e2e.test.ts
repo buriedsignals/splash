@@ -309,6 +309,17 @@ proof(
       for (const f of blocking)
         console.log(`[map-dw-chain-e2e] blocking: ${f.id} — ${f.summary}`);
 
+      // WHICH blockers this embed really has, PINNED — see the same passage in its dw-chart twin
+      // for why `blocking.map(...)` is not an override but a blanket. Both of these are measured
+      // facts about a live Datawrapper map at article-web: it renders taller than the container it
+      // publishes into, which puts furniture below the fold and overflows the box. Any OTHER
+      // blocking finding — a blank map at HTTP 200, a lost title, a no-capture regression — fails
+      // here rather than being cleared by a reason that merely names it.
+      expect(blocking.map((f) => f.id).sort()).toEqual([
+        "component-overflows-viewport",
+        "furniture-below-fold",
+      ]);
+
       const previewed = previewStep(run, reviewed.value, runDir, {
         env: { SPLASH_NO_VIEWER: "1" },
       });
@@ -326,10 +337,23 @@ proof(
         runDir,
         {
           actorLabel: "e2e",
-          overrides: blocking.map((f) => ({
-            findingId: f.id,
-            reason: `e2e proof: knowingly shipped past to prove the chain ends in a delivery (${f.id})`,
-          })),
+          // Named as literals, never derived from the review.
+          overrides: [
+            {
+              findingId: "furniture-below-fold",
+              reason:
+                "e2e proof: a published Datawrapper map embed renders taller than the article-web " +
+                "container, so its footer furniture falls below the fold. Knowingly shipped past so " +
+                "the chain reaches a delivery; the height question is reported, not fixed.",
+            },
+            {
+              findingId: "component-overflows-viewport",
+              reason:
+                "e2e proof: the same measured overflow, seen as the component not fitting its box. " +
+                "Whether a responsive hosted embed should be held to the destination's height at all " +
+                "is an open design question — reported, not fixed.",
+            },
+          ],
         },
         { signers: [], requiredSigners: [] },
       );

@@ -9,8 +9,11 @@
 //
 // Four things this step guarantees, each of them a refusal when it fails:
 //   1. the deliverable shown is the one the RUN produced (never a path an argument named);
-//   2. it is still what the manifest recorded — the same bytes for a file, the same measured
-//      published version for an embed (see the hosted branch below);
+//   2. a FILE's bytes are still the bytes the manifest recorded — re-read off disk and re-hashed
+//      here. A published embed gets a WEAKER guarantee, and it is worth stating plainly: the
+//      subject is read off the capture record, so what is verified is "this is the embed as the
+//      capture measured it", not "the live embed is still that". Only a re-capture can say the
+//      second thing, and preview does not reach the network (see the hosted branch below);
 //   3. it is the pinned format's OWN deliverable — a png cannot preview an interactive;
 //   4. the presentation actually happened, and how it happened is recorded truthfully.
 //
@@ -152,8 +155,10 @@ export function previewStep(
   //   4. the presentation is recorded truthfully by the same `present`, which opens a URL exactly
   //      as it opens a file.
   //
-  // What it cannot do is re-hash the bytes, because there are none — so the ORDER is load-bearing
-  // in a way it is not for a file: with nothing captured there is no binding, and the honest
+  // Guarantee 2 is genuinely weaker here, and the module header says so: there are no bytes to
+  // re-hash, so the subject is TAKEN from the capture record rather than re-derived from the live
+  // embed. This step does not reach the network. What that buys is the ORDER being load-bearing in
+  // a way it is not for a file: with nothing captured there is no binding at all, and the honest
   // answer is a refusal naming the address rather than a preview of an unmeasured embed.
   if (isHostedArtifact(el.artifact)) {
     const subject = approvalSubjectOf(el);

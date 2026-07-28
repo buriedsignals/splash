@@ -145,7 +145,13 @@ function approvedHostedRun(): RunManifest {
     },
     capture: { images: [image], checks: [], capturedProvenanceHash: prov },
     review,
-    approved: { signoffPath: "signoffs/e1.json", approvedProvenanceHash: prov },
+    approved: {
+      signoffPath: "signoffs/e1.json",
+      approvedProvenanceHash: prov,
+      // WHAT was approved, as approveElement records it — the binding over the address the capture
+      // landed on and the still it took there.
+      approvedSubject: BINDING,
+    },
   } as unknown as RunManifest["elements"][number];
   return { ...run, elements: [el] };
 }
@@ -185,9 +191,9 @@ test("delivering a hosted embed records the address and the embed code, and no f
   try {
     let asked = "";
     globalThis.fetch = (async (
-    u: string | URL,
-    _i?: RequestInit,
-  ): Promise<Response> => {
+      u: string | URL,
+      _i?: RequestInit,
+    ): Promise<Response> => {
       asked = String(u);
       return new Response("<html>a chart</html>", { status: 200 });
     }) as typeof fetch;
@@ -259,6 +265,133 @@ test("a byte-shipping destination is refused for a hosted embed, by name, before
     expect(r.message).toContain("zip");
     expect(r.message).toContain(HOSTED_URL);
     expect(called).toBe(false);
+  } finally {
+    rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+// THE REVERSE MISMATCH — a file this run owns, sent to the destination that only forwards a link.
+// It had a message and no test, which is the shape a message quietly stops being true in.
+test("a file artifact is refused at the hand-over destination, by name, before any call", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "splash-hosted-deliver-file-"));
+  try {
+    let called = false;
+    globalThis.fetch = (async (
+      _u: string | URL,
+      _i?: RequestInit,
+    ): Promise<Response> => {
+      called = true;
+      return new Response("", { status: 200 });
+    }) as typeof fetch;
+
+    const run = approvedHostedRun();
+    const prov = provenanceHash(run, run.elements[0]!);
+    const el = {
+      ...run.elements[0]!,
+      // A real interactive.html the run owns — the artifact embed-hosted cannot take.
+      artifact: {
+        kind: "file",
+        path: "elements/e1/interactive.html",
+        sha256: "f".repeat(64),
+        provenanceHash: prov,
+        producedAt: "2026-01-01T00:00:00.000Z",
+      },
+      approved: {
+        signoffPath: "signoffs/e1.json",
+        approvedProvenanceHash: prov,
+        approvedSubject: "f".repeat(64),
+      },
+      delivery: { requested: ["embed-hosted"], delivered: [] },
+    } as unknown as RunManifest["elements"][number];
+    const r = await deliver(
+      { ...run, elements: [el] },
+      el,
+      runDir,
+      decorFor(runDir),
+      undefined,
+      { env: {} },
+    );
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.code).toBe("invalid-request");
+    expect(r.message).toContain("embed-hosted");
+    expect(r.message.toLowerCase()).toContain("file");
+    expect(called).toBe(false);
+  } finally {
+    rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+// THE APPROVAL IS RE-VERIFIED AT THE HAND-OVER, not merely dated. A hosted subject can move
+// without provenance moving — provenanceHash never reads el.capture — so an embed re-published or
+// re-measured after approval would otherwise be handed over under an approval that no longer
+// describes it. The router notices; the router is not the gate.
+test("a hosted embed re-captured after approval is refused at delivery", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "splash-hosted-deliver-moved-"));
+  try {
+    let called = false;
+    globalThis.fetch = (async (
+      _u: string | URL,
+      _i?: RequestInit,
+    ): Promise<Response> => {
+      called = true;
+      return new Response("<html>a chart</html>", { status: 200 });
+    }) as typeof fetch;
+
+    const run = approvedHostedRun();
+    const el0 = run.elements[0]!;
+    const prov = provenanceHash(run, el0);
+    // The SAME provenance — nothing about the run changed — with the embed re-published: a new
+    // version in the path, so a new binding.
+    const moved = "https://datawrapper.dwcdn.net/AbCdE/2/";
+    const image = {
+      ...el0.capture!.images[0]!,
+      artifactUrl: moved,
+      artifactSha256: hostedBindingDigest(moved, PIXELS),
+    };
+    const el = {
+      ...el0,
+      capture: { images: [image], checks: [], capturedProvenanceHash: prov },
+      delivery: { requested: ["embed-hosted"], delivered: [] },
+    } as unknown as RunManifest["elements"][number];
+    expect(el.approved!.approvedProvenanceHash).toBe(prov); // the date gate still says yes
+    const r = await deliver(
+      { ...run, elements: [el] },
+      el,
+      runDir,
+      decorFor(runDir),
+      undefined,
+      { env: {} },
+    );
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.message).toContain("re-published or re-captured");
+    expect(called).toBe(false);
+  } finally {
+    rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+// "Needs no key" is not "is enabled". A newsroom that turned the hand-over off has NO destination
+// that can take an already-published embed, and the answer must name that rather than write an
+// empty request the router then reads as "nobody is waiting on it".
+test("a newsroom that disabled the hand-over is told so, not left with an empty request", () => {
+  const runDir = mkdtempSync(join(tmpdir(), "splash-hosted-request-off-"));
+  try {
+    expect(
+      defaultDestinationsFor("interactive", ["zip"], undefined, {
+        alreadyPublished: true,
+      }),
+    ).toEqual([]);
+
+    const run = approvedHostedRun();
+    const decor = decorFor(runDir);
+    decor.state.capabilities["embed-hosted"] = { enabled: false, settings: {} };
+    const r = requestDelivery(run, run.elements[0]!, decor, { env: {} });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.message).toContain("embed-hosted");
+    expect(r.message).toContain(HOSTED_URL);
   } finally {
     rmSync(runDir, { recursive: true, force: true });
   }

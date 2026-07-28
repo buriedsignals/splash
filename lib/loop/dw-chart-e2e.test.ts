@@ -334,6 +334,25 @@ proof(
       for (const f of blocking)
         console.log(`[dw-chain-e2e] blocking: ${f.id} — ${f.summary}`);
 
+      // WHICH blockers this embed really has, PINNED. Overriding `blocking.map(f => f.id)` would
+      // clear whatever came back — a chart that renders blank at HTTP 200, a title divergence, a
+      // `no-capture` regression — and this proof, the only end-to-end evidence the hosted chain
+      // has, would stay green through all of it. Interpolating the id into the reason makes the
+      // TEXT look specific while the SET stays unbounded, which is worse than saying nothing.
+      //
+      // So the set is asserted first and the override below names its member as a LITERAL. Any
+      // other blocking finding fails here, loudly, before anything is approved.
+      //
+      // `furniture-missing` is real and measured: a published Datawrapper chart paints the unit
+      // NOWHERE. Probed on this very chart — the only elements whose text contains "%" are two
+      // display:none <script> blobs (the serialized props). See .sdd/hosted-chain-report.md §4.
+      expect(blocking.map((f) => f.id).sort()).toEqual(["furniture-missing"]);
+      // ...and it is about the UNIT and nothing else. The finding GROUPS every furniture role
+      // (lib/verify/review.ts CHECK_TO_FINDING), so pinning the id alone would still swallow a
+      // missing title or a dropped source credit under the same name.
+      const missing = blocking[0]!;
+      expect(missing.evidence.filter((e) => !e.includes("/unit]"))).toEqual([]);
+
       const previewed = previewStep(run, reviewed.value, runDir, {
         env: { SPLASH_NO_VIEWER: "1" },
       });
@@ -354,13 +373,18 @@ proof(
         runDir,
         {
           actorLabel: "e2e",
-          // Whatever the live embed's review found is knowingly shipped past HERE, in writing —
-          // the ceremony a journalist would perform, not a relaxation of the gate. An empty list
-          // when nothing blocks; the run below is what says which.
-          overrides: blocking.map((f) => ({
-            findingId: f.id,
-            reason: `e2e proof: knowingly shipped past to prove the chain ends in a delivery (${f.id})`,
-          })),
+          // ONE finding, named as a literal — the ceremony a journalist would perform, on the one
+          // blocker this embed is asserted to have. Nothing computed from `blocking`: a set
+          // derived from the review is a set that grows silently with it.
+          overrides: [
+            {
+              findingId: "furniture-missing",
+              reason:
+                "e2e proof: Datawrapper paints the unit nowhere on a published chart embed " +
+                "(measured — the only '%' on the page is inside display:none script blobs). " +
+                "Knowingly shipped past so the chain reaches a delivery; the gap is reported, not fixed.",
+            },
+          ],
         },
         { signers: [], requiredSigners: [] },
       );

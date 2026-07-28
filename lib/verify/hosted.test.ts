@@ -51,15 +51,35 @@ function hostedRecord(over: Partial<CaptureRecord> = {}): CaptureRecord {
   };
 }
 
+// The URL and the digest must come from the SAME record — the primary, the one capture computes
+// the digest over. The narrow record below names a DIFFERENT address on purpose: a hosted engine
+// may legitimately serve a per-breakpoint variant, and reading "the first record with an address"
+// then reported narrow's URL beside primary's digest. With one URL on every fixture record that
+// mismatch is invisible, which is why this test now uses two.
 test("the binding is read back off the capture that measured the embed", () => {
+  const NARROW_URL = `${URL_V1}?mobile=1`;
   const b = hostedBindingOf([
-    hostedRecord({ breakpoint: "narrow" }),
+    hostedRecord({
+      breakpoint: "narrow",
+      artifactUrl: NARROW_URL,
+      sha256: "e".repeat(64),
+    }),
     hostedRecord(),
   ]);
   expect(b).toEqual({
     digest: hostedBindingDigest(URL_V1, PIXELS),
     url: URL_V1,
   });
+  // The pair REPRODUCES: re-deriving the digest from the reported URL and the primary still's own
+  // pixels gives back the reported digest. That is exactly the property a mismatched pair breaks,
+  // and it is what makes the sign-off document's `artifactUrl` mean something.
+  expect(hostedBindingDigest(b!.url, PIXELS)).toBe(b!.digest);
+  // ...and with no primary record at all, the fallback is the same one capture uses.
+  expect(
+    hostedBindingOf([
+      hostedRecord({ breakpoint: "narrow", artifactUrl: NARROW_URL }),
+    ])?.url,
+  ).toBe(NARROW_URL);
   // A capture of a FILE carries no hosted binding — the artifact's own bytes are the subject.
   expect(
     hostedBindingOf([

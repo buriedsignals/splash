@@ -37,6 +37,7 @@ import { NEWSROOM_CAPABILITIES } from "../newsroom/capabilities";
 import { decorEnv, type Decor } from "../newsroom/decor";
 import { capabilityReadiness } from "../newsroom/readiness";
 import {
+  approvalSubjectOf,
   chosenOption,
   fileArtifact,
   isHostedArtifact,
@@ -129,6 +130,41 @@ export async function deliver(
       (profile.requiredSigners ?? []).length > 0
         ? `deliver: this newsroom requires an editorial sign-off (${profile.requiredSigners!.join(", ")}) for the exact artifact being published`
         : "deliver: this artifact has not been approved — capture it, review it, preview it and approve it before it is published",
+    );
+
+  // ...AND THE APPROVAL IS ABOUT THE THING BEING PUBLISHED. Provenance answers WHEN, not WHAT, and
+  // the two come apart for a hosted delivery: `provenanceHash` reads the run's inputs, angle and
+  // chosen option, never `el.capture`, so a RE-CAPTURE mints a new binding (a re-published embed,
+  // a re-measured one) while `approvedProvenanceHash` still matches. The router notices — it
+  // re-resolves through previewCovers and answers "preview" again — but the router is not the
+  // gate, and nothing between it and here re-ran the decision. Publishing on a provenance match
+  // alone is `approvedHash`-never-re-verified (skills/splash/src/gate.ts) reappearing at a new
+  // seam, which is the one defect class this codebase has already paid for.
+  //
+  // Re-resolved through the SAME resolver the approval was written with, never a second reading.
+  const subject = approvalSubjectOf(el).sha256;
+  const approvedSubject = el.approved!.approvedSubject;
+  if (approvedSubject === undefined) {
+    // An approval written before the subject was recorded. Every one of those is a FILE approval —
+    // no hosted artifact could be approved at all before this slice — so a hosted approval with no
+    // subject is a shape nothing could legitimately have produced, and it is refused rather than
+    // grandfathered. A file one is let through: its subject cannot move without a re-produce,
+    // which moves the provenance the gate above already checked.
+    if (hosted)
+      return fail(
+        "invalid-request",
+        "deliver: this embed's approval records no subject, so there is nothing to check the live " +
+          "embed against — capture it, review it, preview it and approve it again",
+      );
+  } else if (approvedSubject !== subject)
+    return fail(
+      "invalid-request",
+      hosted
+        ? `deliver: the approval covers ${approvedSubject.slice(0, 12)}… but this embed now measures ` +
+          `${(subject || "nothing").slice(0, 12)}… — it has been re-published or re-captured since it was ` +
+          `approved, so approve what is live now before handing it over`
+        : `deliver: the approval covers ${approvedSubject.slice(0, 12)}… but this artifact is ` +
+          `${(subject || "nothing").slice(0, 12)}… — it changed after it was approved`,
     );
 
   const delivered: DeliveryRecord[] = dropLegacyElementsDelivery(
@@ -299,8 +335,18 @@ export async function deliver(
     const result = await runVerb("publish", {
       // The deliverable, named ONCE and in the shape it actually has: a path for a file this run
       // owns, an address for one already published.
+      //
+      // THE APPROVED ADDRESS, not the recorded one. A hosted artifact has two candidate URLs — the
+      // one produce recorded from the engine, and the one the capture's navigation LANDED on,
+      // which is what the binding (and therefore the approval, the preview and the sign-off
+      // document) is over. They are the same string for Datawrapper, whose publicUrl is already
+      // the final versioned address; they need not be for a hosted engine whose URL redirects or
+      // normalises. Handing over the recorded one would then publish an address nobody approved,
+      // and "the delivered thing is the approved thing" would rest on an equality no code asserts.
+      // Reading the subject's URL makes it true by construction. It is always present here: the
+      // gate above refused a hosted artifact whose approval carries no subject.
       ...(hosted
-        ? { artifactUrl: (el.artifact as { url: string }).url }
+        ? { artifactUrl: approvalSubjectOf(el).url ?? (el.artifact as { url: string }).url }
         : { artifactPath: join(runDir, fileArtifact(el.artifact)!.path) }),
       id: el.id,
       format,

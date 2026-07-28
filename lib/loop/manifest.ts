@@ -302,7 +302,23 @@ const RunElementSchema = z.object({
   blocked: z.object({ reason: z.string(), at: z.string() }).optional(),
   dropped: z.object({ reason: z.string(), at: z.string() }).optional(),
   approved: z
-    .object({ signoffPath: z.string(), approvedProvenanceHash: z.string() })
+    .object({
+      signoffPath: z.string(),
+      approvedProvenanceHash: z.string(),
+      /** WHAT was approved — `approvalSubjectOf(el).sha256` at the moment of approval.
+       *
+       *  Provenance alone is not enough for a hosted delivery: `provenanceHash` reads the run's
+       *  inputs, angle and chosen option, and NOT `el.capture`, so a re-capture mints a new
+       *  binding while `approvedProvenanceHash` still matches. Recording the subject is what lets
+       *  deliver.ts re-verify rather than trust — the `approvedHash`-never-re-checked class this
+       *  codebase has already paid for once, at a new seam.
+       *
+       *  OPTIONAL because every approval already on disk was written without it. Those are all
+       *  FILE approvals (no hosted artifact could be approved at all before this slice), so
+       *  deliver.ts skips the comparison only for a file and refuses a hosted approval that
+       *  carries no subject — a shape nothing could legitimately have produced. */
+      approvedSubject: z.string().optional(),
+    })
     .optional(),
 });
 export const RunManifestSchema = z.object({
@@ -1144,6 +1160,9 @@ export function approveElement(
       approved: {
         signoffPath: approval.signoffPath,
         approvedProvenanceHash: current,
+        // WHAT was approved, beside WHEN. Read through the one resolver, so the value deliver.ts
+        // re-derives and compares is the value the decision above was made on.
+        approvedSubject: approvalSubjectOf(el).sha256,
       },
     },
   };
