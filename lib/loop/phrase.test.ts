@@ -98,18 +98,35 @@ test("applyPhrasing runs the guard: a phrasing that drops an option throws", () 
 });
 
 test("applyPhrasing runs the guard: a marked option must be acknowledged", () => {
-  // A spatial takeaway ranks the map forms first, and no map engine can be produced yet — so
-  // this offer really does carry marks, which is the case the guard exists for.
-  const spatial = run();
-  spatial.elements[0].angle!.confirmedTakeaway =
-    "La carte des cantons montre où l'écart se creuse";
-  const { options: opts, excluded } = propose(spatial, spatial.elements[0]!);
-  const m: RunManifest = {
-    ...spatial,
-    elements: [
-      { ...spatial.elements[0], proposal: { options: opts, excluded } },
-    ],
-  };
+  // Before task 7, a spatial takeaway reliably ranked a map form to the top of the offer with
+  // no map engine buildable at all, which made a real propose() call the natural fixture for
+  // "this offer really does carry a mark". Now that map-native is wired, its unmarked
+  // candidates outrank map-dw's marked ones for the very same sheet (rank.ts: an unmarked
+  // candidate always beats a marked one at the same intent tier) and dedup by id drops the
+  // marked row — so a real propose() call can no longer be trusted to surface one
+  // deterministically. The guard under test is applyPhrasing's, not propose()'s marking logic
+  // (eligibility.test.ts covers that), so a hand-authored offer carrying the SAME shape
+  // propose() would have produced — full grounding, one marked option — exercises it exactly
+  // as directly, without depending on which engine happens to still be unbuildable today.
+  const m = makeRunWithProposal([
+    {
+      id: "map-dw-choropleth",
+      nativeType: "choropleth",
+      engine: "map-dw",
+      format: "static",
+      intent: ["spatial"],
+      why: "",
+      whySource: {
+        sheet: "map/types/choropleth.md",
+        fragments: ["one value per region, shaded"],
+        facts: { rows: "8", series: "8", points: "8" },
+      },
+      readiness: {
+        status: "missing",
+        reason: "nothing can build a map-dw form yet",
+      },
+    },
+  ]);
   const options = m.elements[0].proposal!.options;
   const marked = options.find((o) => o.readiness);
   expect(marked).toBeDefined(); // this offer really does carry a mark

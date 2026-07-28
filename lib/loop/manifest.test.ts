@@ -187,16 +187,18 @@ test("nextActions routes BACK to the choice when the chosen form's engine cannot
   const m = base();
   m.elements[0].proposal = {
     options: [
+      // map-dw, not map-native — map-native became buildable (task 7); map-dw stays the
+      // still-unbuildable stand-in for "an engine nothing can build through yet".
       {
-        id: "choropleth",
+        id: "choropleth-dw",
         nativeType: "choropleth",
-        engine: "map-native",
+        engine: "map-dw",
         why: "w",
       },
       { id: "slope", nativeType: "slope", engine: "chart-native", why: "w" },
     ],
     excluded: [],
-    chosenId: "choropleth",
+    chosenId: "choropleth-dw",
   };
   expect(nextActions(m)).toEqual(["choose-form"]);
   m.elements[0].proposal.chosenId = "slope";

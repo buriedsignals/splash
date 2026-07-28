@@ -1242,10 +1242,12 @@ function strandedOnUnbuildableChoice(): RunManifest {
         },
         proposal: {
           options: [
+            // map-dw, not map-native — map-native became buildable (task 7); map-dw is the
+            // still-unbuildable stand-in a dead-ended choice needs now.
             {
               id: "map-choropleth",
               nativeType: "choropleth",
-              engine: "map-native",
+              engine: "map-dw",
               format: "static",
               why: "one value per canton",
             },
@@ -1267,7 +1269,7 @@ test("a run dead-ended on an unbuildable choice says so, once, instead of report
   const first = await advanceStep(run, runDir, NEUTRAL_DECOR);
   expect(first.ran).toBeNull();
   expect(first.failure?.action).toBe("choose-form");
-  expect(first.failure?.message).toContain("map-native");
+  expect(first.failure?.message).toContain("map-dw");
   // Written down, not only returned: the next reader of this manifest is a resume, not this call.
   expect(first.run.events).toHaveLength(1);
   expect(first.run.events[0]).toMatchObject({

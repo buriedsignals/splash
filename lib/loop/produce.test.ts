@@ -214,13 +214,14 @@ test("produce renders the chosen option's own format, not a hard-coded static", 
   expect(readFileSync(artifactAbs, "utf8")).toContain("<html");
 }, 60000);
 
-// The brain offers across engines, and today produce() only knows how to build through
-// chart-native — wiring map-native / dw-chart / map-dw into this seam is a separate tranche.
-// Before this guard, a chosen option naming another engine was silently rendered as if it
-// were a chart-native spec (the option's nativeType handed to chart-native regardless of
-// what engine it actually belongs to) — a WRONG artifact, not a missing one. A loud, typed
-// refusal is the correct failure mode until that wiring exists.
-test("produce refuses a chosen option whose engine is not chart-native, instead of rendering it wrong", async () => {
+// The brain offers across engines, and produce() only knows how to build through the
+// ASSEMBLERS table (chart-native and, since task 7, map-native) — wiring dw-chart / map-dw
+// into this seam is a separate tranche. Before this guard, a chosen option naming another
+// engine was silently rendered as if it were a chart-native spec (the option's nativeType
+// handed to chart-native regardless of what engine it actually belongs to) — a WRONG
+// artifact, not a missing one. A loud, typed refusal is the correct failure mode until that
+// wiring exists. map-dw, not map-native, is the still-unbuildable stand-in this needs now.
+test("produce refuses a chosen option whose engine is not in the assembler table, instead of rendering it wrong", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-produce-wrong-engine-"));
   const src = join(runDir, "src.csv");
   writeFileSync(src, "canton,value\nGenève,449\nVaud,412");
@@ -257,7 +258,7 @@ test("produce refuses a chosen option whose engine is not chart-native, instead 
             {
               id: "choropleth",
               nativeType: "choropleth",
-              engine: "map-native",
+              engine: "map-dw",
               format: "static",
               why: "a map form",
             },
@@ -272,7 +273,7 @@ test("produce refuses a chosen option whose engine is not chart-native, instead 
   const result = await produce(run, run.elements[0], runDir);
   expect(result.ok).toBe(false);
   if (result.ok) throw new Error("unreachable");
-  expect(result.message).toContain("map-native");
+  expect(result.message).toContain("map-dw");
   expect(result.message).toContain("static");
 });
 

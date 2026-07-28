@@ -60,6 +60,11 @@ const PROOFS = [
     env: { SPLASH_VIDEO_E2E: "1" },
   },
   {
+    file: "lib/loop/map-e2e.test.ts",
+    what: "a chosen map is assembled by the loop and rendered by the engine",
+    env: { SPLASH_MAP_E2E: "1" },
+  },
+  {
     file: "lib/loop/delivery-genre-e2e.test.ts",
     what: "a produced PNG is published to a real S3 endpoint and served as an image",
     env: { SPLASH_S3_E2E: "1" },

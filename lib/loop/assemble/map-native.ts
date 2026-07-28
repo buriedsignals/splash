@@ -182,6 +182,21 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
   }
 
   if (brief.nativeType === "dot-density") {
+    // DotDensityMap.tsx hard-imports world.geojson and hard-codes the join key "iso_a3" — it
+    // never reads config.basemap or config.boundaries at all (verified 2026-07-28, task-7).
+    // The engine's own validator only checks that `basemap` NAMES a registered basemap, so a
+    // "us-states" dot-density would clear validate-config and then render against the WORLD
+    // map, joining state postal codes against country ISO codes — wrong silently, not missing.
+    // Refused here, at the one place that knows which basemap this geography actually matched,
+    // rather than shipping a config that looks truthful and renders false. See
+    // task-7-report.md for the fix-the-component alternative this defers.
+    if (geo.basemap !== "world")
+      return fail(
+        "invalid-request",
+        `dot-density only renders against the world basemap today — its component joins ` +
+          `against world.geojson unconditionally, so a "${geo.basemap}" join would render ` +
+          `silently wrong rather than merely fail`,
+      );
     return ok({
       type: "dot-density",
       regionKey: geo.column,

@@ -269,3 +269,39 @@ test("the widened guard accepts the point family alongside the region family, an
   expect(r.code).toBe("invalid-request");
   expect(r.message).toContain("pie");
 });
+
+test("a dot-density config against the world basemap clears the engine's own validator", () => {
+  const r = assembleMapNative({ ...REGION_BRIEF, nativeType: "dot-density" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect(mapNativeConfigErrors(r.value)).toEqual([]);
+  const cfg = r.value as Record<string, unknown>;
+  expect(cfg.type).toBe("dot-density");
+  expect(cfg.basemap).toBe("world");
+});
+
+// DotDensityMap.tsx hard-imports world.geojson and hard-codes the join key "iso_a3" — it never
+// reads config.basemap or config.boundaries at all (verified 2026-07-28, task-7). The engine's
+// own validate-config only checks that `basemap` NAMES a shipped basemap, so a "us-states"
+// dot-density would clear it and then render wrong (a state postal code joined against country
+// ISO codes) rather than fail loud. Refused here — the assembler is the one place that knows
+// which basemap this geography actually matched — until the component itself reads basemap.
+test("a dot-density against any basemap but world is refused, not silently rendered wrong", () => {
+  const r = assembleMapNative({
+    ...REGION_BRIEF,
+    nativeType: "dot-density",
+    dataCsv: "state,access\nCA,100\nTX,90",
+    geo: {
+      column: "state",
+      basemap: "us-states",
+      matched: 2,
+      total: 2,
+      unmatched: [],
+    },
+  });
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.code).toBe("invalid-request");
+  expect(r.message).toContain("us-states");
+  expect(r.message).toContain("world");
+});

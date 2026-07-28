@@ -275,8 +275,16 @@ switch (format) {
     // snap-contrast.mjs's header for why a plain DOM background read cannot see this).
     // Upgrades the config-time conformance gate above (a drift-defense on pre-vetted
     // tokens against an assumed-opaque backdrop) to a live render-time fail.
+    // No OUTDIR here (mirrors chart-native's own snap-contrast.mjs call): the debug
+    // screenshot this snap writes (contrast-static.png) is a byproduct for a human to
+    // inspect, not part of the delivery, and passing outDir put it beside static.png —
+    // the loop's own render() collects the WHOLE outDir as the delivery's files
+    // (lib/core/verbs/exec.ts's collectOutputs), so a "static" produce found TWO image
+    // files and assertFileMedia refused it (task-7, first real call through render()).
+    // Left to its own default, the debug PNG lands in this skill's persistent
+    // output-proof/contrast/ instead.
     console.log(`[produce map] snapping contrast (furniture text WCAG)…`);
-    snap("scripts/snap-contrast.mjs", { OUTDIR: outDir, SERVE_DIR: staticDir, MODE: "static" });
+    snap("scripts/snap-contrast.mjs", { SERVE_DIR: staticDir, MODE: "static" });
 
     // Render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
     // dimensions must equal the channel's exact media size. Fail-hard before export.
@@ -342,8 +350,10 @@ switch (format) {
 
     // Contrast guard — same render-time WCAG 1.4.3 check as the static path, against the
     // interactive dist (which can additionally show the filter bar). See snap-contrast.mjs.
+    // No OUTDIR (see the static branch's comment above) — its debug screenshot does not
+    // belong beside interactive.html either.
     console.log(`[produce map] snapping contrast (furniture text WCAG)…`);
-    snap("scripts/snap-contrast.mjs", { OUTDIR: outDir, SERVE_DIR: interactiveDir, MODE: "interactive" });
+    snap("scripts/snap-contrast.mjs", { SERVE_DIR: interactiveDir, MODE: "interactive" });
 
     result.interactive = interactiveHtmlDest;
     result.reviewStill = join(outDir, "interactive.png"); // ephemeral — not delivered

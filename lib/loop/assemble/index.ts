@@ -4,6 +4,8 @@
 // proof (design spec §4.6).
 import type { Assembler } from "../../core/production-brief";
 import { assembleChartNative } from "./chart-native";
+import { assembleMapNative } from "./map-native";
+import { MAP_TYPES } from "../../../skills/map-native/src/map-types";
 
 export type AssemblerEntry = {
   assemble: Assembler;
@@ -14,6 +16,13 @@ export type AssemblerEntry = {
 
 export const ASSEMBLERS: Record<string, AssemblerEntry> = {
   "chart-native": { assemble: assembleChartNative },
+  // All seven of map-native's types (Task 6). `supports` is the engine's own type list, not a
+  // hand-kept copy — see MAP_TYPES's header for the single-source-of-truth it drift-tests
+  // against mount.tsx.
+  "map-native": {
+    assemble: assembleMapNative,
+    supports: (t) => (MAP_TYPES as readonly string[]).includes(t),
+  },
 };
 
 export function assemblerFor(
