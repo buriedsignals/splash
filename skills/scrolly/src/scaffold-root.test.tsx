@@ -60,3 +60,39 @@ describe("Scrolly scaffold root (A34)", () => {
     );
   });
 });
+
+// WCAG 1.1.1, and a defect that was measured rather than reasoned about.
+//
+// A chart-track scrolly's config IS a chart-native spec (lib/loop/assemble/scrolly.ts composes it
+// through assembleChartNative), so it carries `altInsight` — probed on a real assembled config.
+// chart-native paints that string as a visually-hidden description from its OWN mount.tsx
+// (AltInsightContext.Provider → ChartFrame). skills/scrolly/src/mount.tsx has no equivalent and
+// this scaffold painted title / unit / source / credit and nothing else, so every chart scrolly
+// shipped without the accessible description its own config carried — and `capture` filed a
+// blocking `furniture-missing` on every one of them ("no element carries the alt-text text …",
+// at all three breakpoints, measured in lib/loop/scrolly-e2e.test.ts).
+describe("Scrolly accessible description (WCAG 1.1.1)", () => {
+  const ALT =
+    "Arctic September sea-ice extent fell from 7 to 4.3 million km² between 1979 and 2025.";
+
+  it("emits the config's altInsight as a visually-hidden description inside the root", () => {
+    const html = renderToStaticMarkup(
+      <Scrolly config={{ ...lineSample, altInsight: ALT } as never} />,
+    );
+    expect(html).toContain(ALT);
+    // Inside the captured component, or the capture ladder would never see it.
+    expect(html.indexOf("data-splash-root")).toBeLessThan(html.indexOf(ALT));
+  });
+
+  it("emits nothing at all when the config carries no altInsight", () => {
+    // Byte-identical to the render before this existed — every sample, map and image config
+    // that has never carried the field renders exactly as it did.
+    const withField = renderToStaticMarkup(
+      <Scrolly config={{ ...lineSample, altInsight: "   " } as never} />,
+    );
+    const without = renderToStaticMarkup(
+      <Scrolly config={lineSample as never} />,
+    );
+    expect(withField).toBe(without);
+  });
+});

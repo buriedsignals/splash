@@ -81,6 +81,7 @@ map-dw          1 sheet  x 2 formats (choropleth only)          =   2  clean
 unmarked offerable rows                                           122
 map-dw locator x 2 formats                                          2  MARKED unbuildable
 every scrolly row (10 sheets, 15 sheet-engine pairs)               15  MARKED article-branch
+                                                                       (SUPERSEDED — see "G5 — closed")
                                                                  ----
 total offerable rows                                              139
 ```
@@ -222,6 +223,13 @@ Owns no type of its own (formats: scrolly). It hosts another engine's track.
 ### Table B — what a journalist can be offered (lib/brain, article-web)
 
 One row per KB sheet, per engine that renders it. `clean` = offered unmarked. `MARKED` = offered with a mark naming why it is a dead end (spec §8: marked, never silently removed). `—` = the sheet does not declare that format, or the format's producer cannot build it. Facts are synthesized FROM each sheet's own declared `limits`, so a data limit can never cause a false negative here.
+
+> **The `scrolly` column is SUPERSEDED — see "G5 — closed" below.** Every `MARKED article-branch`
+> cell in it was measured on `main` and is no longer what the code does: that mark was removed on
+> `feat/scrolly-is-an-element` after the chain was walked end to end. Re-measured, 6 of 8 scrolly
+> rows are **clean**; the ones that stay marked are `scatter` (its captions could not be the
+> journalist's) and `image-scrolly` (its walk needs photographs the run must declare), each with a
+> mark of its own. Read the cells below as history, not as the current answer.
 
 | sheet | engine | render key | static | interactive | video | scrolly |
 |---|---|---|---|---|---|---|
@@ -384,6 +392,10 @@ written*. The moment the article branch ships, a dw-chart-keyed scrolly is a liv
 
 ### G5 — the whole narrative branch is offered MARKED, never clean
 
+> **SUPERSEDED, same day, on `feat/scrolly-is-an-element`.** The gap below was measured correctly and
+> its VERDICT was wrong. See "G5 — closed" immediately after it. The measurement is left standing
+> because it is what the code did on `main` at the moment of writing.
+
 `ARTICLE_BRANCH_ENGINES` (`lib/brain/eligibility.ts:60`) + `c.format === "scrolly"` puts a
 `missing` mark on every scrolly candidate: *"this is the whole-article branch — it is not built yet,
 and it changes what gets delivered"*. Measured: **15 of 15 scrolly rows on article-web carry it, and
@@ -391,6 +403,40 @@ and it changes what gets delivered"*. Measured: **15 of 15 scrolly rows on artic
 the one engine a journalist can never be offered unmarked. Verdict: *nobody wired it* — the scrolly
 engine has an assembler, a registry entry and a render proof; what is missing is the loop branch that
 delivers a page rather than an embeddable element.
+
+### G5 — closed. There was no branch left to wire.
+
+The verdict above assumed a "loop branch that delivers a page rather than an embeddable element".
+`lib/loop/scrolly-e2e.test.ts` walked one to find it and there was nothing there: a chart-track
+scrolly goes `produce → capture → review → preview → approve → request-delivery → deliver` with no
+code change, and what it delivers is **one self-contained HTML file of the embed genre** — the same
+`DELIVERY_GENRE`, the same publishers, the same default destination and the same `<iframe>` snippet
+an interactive gets, with the produced `scrolly.html` byte-for-byte inside the archive. Nothing under
+`lib/delivery/` has ever special-cased a scrolly. Both halves of the mark's sentence were false.
+
+What the mark WAS masking is two verify-layer defects, each much smaller than a branch, both fixed:
+
+- `capture:fits-viewport` failed on every scrolly at every breakpoint (*"the component ends at
+  y 3645 … outside its 1200x675 container"*). A scrolly is its own scroll. The verify layer already
+  had the vocabulary — `HeightPolicy: "content-driven"`, written for Datawrapper's row-driven
+  exports — and `captureHtml` simply never read the field. Declared for the scrolly host and for
+  image-native; the width leg is still checked as hard, and the height keeps its `10x` ceiling.
+- `capture:furniture-present` failed for `alt-text` on every chart-track scrolly. The assembled
+  config carries `altInsight`; chart-native paints it from its OWN `mount.tsx`, and the scrolly
+  scaffold had no equivalent. `Scrolly.tsx` now emits it visually-hidden (WCAG 1.1.1).
+
+Re-measured after both, on article-web: **6 of 8 scrolly rows clean**. The two that stay marked earn
+it — `scatter` (the host cannot carry an authored walk for that track, so its captions would be the
+machine's) and `image-scrolly` (its walk is one beat per photograph the run must declare, and
+`eligible()` cannot see `run.input.images`). `ARTICLE_BRANCH` was also never a
+`NEWSROOM_CAPABILITIES` id, so it rode in `requires` — the CAPACITÉ axis — as a requirement no
+install could satisfy; it is gone from there too.
+
+One correction to G4 above while this is being written: those three dw-chart-keyed scrolly rows do
+NOT reach the offer and are not masked by this mark. `producerForFormat` stopped redirecting a
+Datawrapper engine into the scrolly host before this matrix was measured, and `eligible()`'s
+producer-format filter drops them (`lib/loop/scrolly-routing.test.ts` enumerates it). The
+`isLoopBuildable` over-claim G4 names is real; the offer consequence it predicts is not.
 
 ### G6 — map-dw `locator`: declined by the loop, with the wrong sentence
 

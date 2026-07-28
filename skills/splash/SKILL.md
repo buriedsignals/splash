@@ -471,12 +471,16 @@ Four rules, all mechanical:
    the acknowledgement STRUCTURALLY; it cannot verify meaning across languages, so printing the
    reason is what makes the disclosure real.
 4. **A marked form is still offered — and it is never chosen silently.** Marks come from three
-   places: a capability the newsroom has not turned on, the whole-article branch (not built yet),
-   and an engine production cannot build yet (`lib/loop/buildable.ts`). All three MARK, none
-   removes. A mark WARNS, it does not forbid: the journalist may pick a marked form and the
-   choice stands. The one exception is a form nothing can build — `chooseForm` refuses it in the
-   words the offer displayed, and the loop routes back to the choice rather than looping on a
-   refusal. Say so plainly and offer the ranked alternatives again.
+   places: a capability the newsroom has not turned on, an INPUT the run has not declared (an
+   image scrolly walks the journalist's own photographs), and an engine production cannot build
+   yet (`lib/loop/buildable.ts`). All three MARK, none removes. There used to be a fourth — "the
+   whole-article branch, not built yet" — on every scrolly; it is gone, because a scrolly is an
+   embeddable element like any other (one self-contained HTML file, the embed genre, the same
+   publishers and the same iframe snippet an interactive gets), proven end to end in
+   `lib/loop/scrolly-e2e.test.ts`. A mark WARNS, it does not forbid: the journalist may pick a
+   marked form and the choice stands. The one exception is a form nothing can build —
+   `chooseForm` refuses it in the words the offer displayed, and the loop routes back to the
+   choice rather than looping on a refusal. Say so plainly and offer the ranked alternatives again.
 
 **★ THE DECISIONS ARE MECHANICAL — never hand-edit `run.json`.** A decision the journalist makes
 is written by CODE, with its own refusals, exactly like the offer is built by code. Editing the

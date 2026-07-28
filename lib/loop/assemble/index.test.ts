@@ -103,6 +103,27 @@ test("the whole row-driven family is back in the offer, declaring its own shape"
   expect(heightPolicyFor("dw-chart", "column-chart")).toBe("pinned");
 });
 
+// A SCROLLY IS THE SECOND SHAPE THAT EARNS THE RELAXATION, and it earns it for the same reason
+// the row-driven family does: its height belongs to its content. A scrolly is its own scroll —
+// measured on a loop-produced chart scrolly, 3645px of narrative walk in a 1200x675 destination —
+// so the destination's height is not a bound on it, and holding it to one filed a blocking
+// `component-overflows-viewport` on every scrolly that has ever been produced.
+//
+// Declared on the HOST, not on the type: skills/scrolly hosts chart-native's and map-native's
+// tracks, so `resolveBuilder` answers "scrolly" for every one of them and the property is true of
+// all. image-native answers for itself (its only format IS scrolly).
+test("a scrolly's height belongs to its walk, whichever track it hosts", () => {
+  for (const t of ["line", "bar", "choropleth", "symbol"])
+    expect(heightPolicyFor("scrolly", t)).toBe("content-driven");
+  expect(heightPolicyFor("image-native", "image-scrolly")).toBe(
+    "content-driven",
+  );
+  // …and the same engines' NON-scrolly forms are untouched: a chart-native interactive is still
+  // pinned to its box. The relaxation follows the builder that actually renders the page.
+  expect(heightPolicyFor("chart-native", "line")).toBe("pinned");
+  expect(heightPolicyFor("map-native", "choropleth")).toBe("pinned");
+});
+
 // The default is the strict one, everywhere. A policy that leaked to another engine (or to an
 // option carrying no engine at all — hand-authored manifests predating the brain) would relax a
 // check for artifacts that never earned it.

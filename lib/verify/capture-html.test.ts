@@ -439,6 +439,184 @@ describe("capture — the real deliverable at the real publication container", (
     expect(r.value.images[0]!.titleSource).toBe("[data-splash-title]");
   }, 120_000);
 
+  // --- the content-driven height, on the HTML path -----------------------------------
+  //
+  // captureStatic has honoured `heightPolicy` since the row-driven family came back into the
+  // offer; captureHtml never read the field at all. That cost every scrolly a blocking
+  // `component-overflows-viewport` finding: measured on a loop-produced chart scrolly, the
+  // component ends at y 3645 in a 1200x675 destination at EVERY breakpoint, because a scrolly is
+  // its own scroll. The fixture below is that shape, an order of magnitude smaller.
+  function tallPage(height: number, width = "100%"): string {
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Scrolly</title>
+<style>html,body{margin:0;padding:0}#root>div{width:${width};height:${height}px;background:#fff}</style>
+</head><body><div id="root"><div><div class="title">${TITLE}</div></div></div></body></html>`;
+  }
+
+  it("does not hold a content-driven page to its destination's HEIGHT — and still holds it to the width", async () => {
+    const artifactPath = writeDoc("tall.html", tallPage(1400));
+    const r = await capture({
+      artifactPath,
+      format: "scrolly",
+      channel: "article-web",
+      outDir: join(dir, "out-tall"),
+      id: "e1",
+      furniture: [{ role: "title", text: TITLE }],
+      settleMs: 0,
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    for (const bp of ["narrow", "primary", "wide"] as const) {
+      const checks = r.value.checks.filter((c) => c.breakpoint === bp);
+      const fits = pick(checks, "capture:fits-viewport")[0]!;
+      expect(`${bp}: ${fits.outcome}`).toBe(`${bp}: pass`);
+      // The relaxation is NAMED in the evidence — a reader must be able to tell "the height was
+      // never checked" from "the height was checked and matched".
+      expect(fits.detail).toContain("content-driven");
+      // …and the ceiling the height still has is measured: 1400 is 2.1x a 675 box, inside the 10x
+      // bound, so a runaway page would still fail here.
+      const bound = pick(checks, "capture:height-within-bound")[0]!;
+      expect(`${bp}: ${bound.outcome}`).toBe(`${bp}: pass`);
+    }
+    // Recorded on the image, exactly as captureStatic records it: a check that forgave an axis
+    // must say so IN the evidence.
+    expect(
+      r.value.images.every((i) => i.heightPolicy === "content-driven"),
+    ).toBe(true);
+  }, 120_000);
+
+  // A SMALL DECLARED DESTINATION, on purpose. The two negative cases below need a page that runs
+  // PAST the ceiling, and the ceiling is a multiple of the destination's own height — so against
+  // article-web's 675 the fixture would have to be 7000px+, screenshotted at deviceScaleFactor 2
+  // across three breakpoints. That is ~100 megapixels of PNG for two boolean assertions, and it
+  // is what made the first draft of this test time out under the full suite's parallelism.
+  // Declaring a 300x100 destination at scale 1 asks the identical questions for a thousandth of
+  // the pixels: the rule under test is a RATIO, and it does not care which box it is a ratio of.
+  const SMALL = {
+    id: "small-box",
+    primary: { width: 300, height: 100 },
+    narrow: { width: 200, height: 100 },
+    wide: { width: 400, height: 100 },
+    deviceScaleFactor: 1,
+  };
+
+  it("still fails a content-driven page that overflows the WIDTH", async () => {
+    // 900px wide inside a 300px container: an overflow on any policy, and the only axis a
+    // content-driven page is still held to.
+    const wide = writeDoc("tall-wide.html", tallPage(400, "900px"));
+    const r = await capture({
+      artifactPath: wide,
+      format: "scrolly",
+      channel: "article-web",
+      outDir: join(dir, "out-tall-wide"),
+      id: "e1",
+      settleMs: 0,
+      destination: SMALL,
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    const primary = r.value.checks.filter((c) => c.breakpoint === "primary");
+    const fits = pick(primary, "capture:fits-viewport")[0]!;
+    expect(fits.outcome).toBe("fail");
+    // The refusal names the axis, so nobody reads it as a height complaint.
+    expect(fits.detail).toContain("WIDTH");
+  }, 120_000);
+
+  // THE CEILING IS PER SHAPE, and the reason is arithmetic rather than taste.
+  //
+  // A scrolly's card is `min-height: 90vh` (skills/scrolly/src/Scrolly.tsx:495), so its height is
+  // not merely "content-driven" the way a row-driven export's is — it is a MULTIPLE OF THE
+  // VIEWPORT, and the ratio IS the card count: `0.9 x cards`, where `cards = beats + 2` (the walk
+  // is framed by an intro and a takeaway card). That is measured, not modelled — the e2e's 4-beat
+  // walk is 6 cards and lands at exactly 5.4x (lib/loop/scrolly-e2e.test.ts).
+  //
+  // Against the 10x row-driven ceiling that means a walk of TEN beats — 12 cards, 10.8x — files
+  // `height-far-exceeds-destination` on a completely correct artifact. The derived walk is capped
+  // at four beats (lib/brain/beats.ts: a line takes first + two interior + last, a bar three
+  // leaders + the tail), but an AUTHORED anchor list is not capped at all, so ten beats is an
+  // ordinary long-read rather than an edge case.
+  it("does not file a runaway warning on an ordinary long WALK — the ceiling knows the shape", async () => {
+    // 1400px against a 100px box is 14x: a ~14-card walk. Past the row-driven 10x, and well
+    // inside what a scrolly legitimately is.
+    const longWalk = writeDoc("long-walk.html", tallPage(1400));
+    const r = await capture({
+      artifactPath: longWalk,
+      format: "scrolly",
+      channel: "article-web",
+      outDir: join(dir, "out-long-walk"),
+      id: "e1",
+      settleMs: 0,
+      destination: SMALL,
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    const primary = r.value.checks.filter((c) => c.breakpoint === "primary");
+    expect(pick(primary, "capture:fits-viewport")[0]!.outcome).toBe("pass");
+    const bound = pick(primary, "capture:height-within-bound")[0]!;
+    expect(`14x: ${bound.outcome}`).toBe("14x: pass");
+    expect(bound.detail).toContain("14.0x");
+  }, 120_000);
+
+  it("still fails a scrolly that runs past its OWN ceiling", async () => {
+    // 3500px against a 100px box is 35x — a ~39-beat walk, past the scroll ceiling.
+    const runaway = writeDoc("runaway.html", tallPage(3500));
+    const r = await capture({
+      artifactPath: runaway,
+      format: "scrolly",
+      channel: "article-web",
+      outDir: join(dir, "out-runaway"),
+      id: "e1",
+      settleMs: 0,
+      destination: SMALL,
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    const primary = r.value.checks.filter((c) => c.breakpoint === "primary");
+    // The overflow check stays forgiving — the ceiling is the check that catches a runaway, and
+    // only one of the two files a verdict on the same number.
+    expect(pick(primary, "capture:fits-viewport")[0]!.outcome).toBe("pass");
+    const bound = pick(primary, "capture:height-within-bound")[0]!;
+    expect(bound.outcome).toBe("fail");
+    expect(bound.detail).toContain("35.0x");
+  }, 120_000);
+
+  it("keeps the ROW-DRIVEN ceiling at 10x — the per-shape number is not a blanket loosening", async () => {
+    // The same 14x page, declared as the shape the 10x was actually chosen for. An html
+    // interactive is not a scrolly, so it keeps the tighter ceiling.
+    const tall = writeDoc("tall-rows.html", tallPage(1400));
+    const r = await capture({
+      artifactPath: tall,
+      format: "interactive",
+      channel: "article-web",
+      outDir: join(dir, "out-tall-rows"),
+      id: "e1",
+      settleMs: 0,
+      destination: SMALL,
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    const primary = r.value.checks.filter((c) => c.breakpoint === "primary");
+    expect(pick(primary, "capture:height-within-bound")[0]!.outcome).toBe(
+      "fail",
+    );
+  }, 120_000);
+
+  it("leaves a PINNED html deliverable exactly as it was — no ceiling check, no relaxation", async () => {
+    const artifactPath = writeDoc("tall-pinned.html", tallPage(1400));
+    const r = await capture({
+      artifactPath,
+      format: "interactive",
+      channel: "article-web",
+      outDir: join(dir, "out-tall-pinned"),
+      id: "e1",
+      settleMs: 0,
+    });
+    if (!r.ok) throw new Error(r.message);
+    const primary = r.value.checks.filter((c) => c.breakpoint === "primary");
+    expect(pick(primary, "capture:fits-viewport")[0]!.outcome).toBe("fail");
+    expect(pick(primary, "capture:height-within-bound")).toHaveLength(0);
+    expect(r.value.images[0]!.heightPolicy).toBeUndefined();
+  }, 120_000);
+
   it("reports an unopenable deliverable as a typed failure, never a throw", async () => {
     const r = await capture({
       artifactPath: join(dir, "gone.html"),

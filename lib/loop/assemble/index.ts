@@ -157,6 +157,24 @@ export function heightPolicyFor(
 ): HeightPolicy {
   if (engine === "dw-chart" && isRowDriven(nativeType as ChartType))
     return "content-driven";
+  // A SCROLLY IS ITS OWN SCROLL. It fills the destination's width and then runs for as many
+  // screens as its walk has cards — measured on a loop-produced chart scrolly, the component
+  // ends at y 3645 in a 1200x675 destination, at every breakpoint. That is the same statement
+  // the row-driven family makes ("the width is the destination's, the height belongs to the
+  // content"), so it is the same policy, not a second concept: held to the box instead, every
+  // scrolly ever produced filed a blocking `component-overflows-viewport` on a correct artifact.
+  //
+  // Taking over the reader's scroll is a real editorial difference from a chart in a box — and
+  // it is a difference in the READING, not in what is delivered (one self-contained HTML file of
+  // the embed genre, the same publishers, the same iframe snippet). This line is where that
+  // difference is expressed, and it is the whole of it.
+  //
+  // Keyed on the BUILDER, which is what the caller resolves (lib/loop/verify.ts passes
+  // resolveBuilder(chosen)): skills/scrolly hosts chart-native's and map-native's tracks, so
+  // "scrolly" covers every track it hosts, and image-native — whose only format IS scrolly —
+  // answers for itself. An engine's non-scrolly forms are untouched.
+  if (engine === "scrolly" || engine === "image-native")
+    return "content-driven";
   return "pinned";
 }
 
@@ -180,7 +198,10 @@ export function heightPolicyFor(
  * the table stops claiming what the manifest denies. Twenty-five types in all, across three
  * engines.
  */
-function deferredReason(engine: string, nativeType?: string): string | undefined {
+function deferredReason(
+  engine: string,
+  nativeType?: string,
+): string | undefined {
   if (!nativeType) return undefined;
   return engineTypes(engine).find((t) => t.id === nativeType)?.deferred;
 }

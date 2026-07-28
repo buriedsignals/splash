@@ -54,7 +54,8 @@ export const FINDING_SEVERITY: Record<
   // WARNING, alone among the viewport findings, and deliberately. Its siblings state facts with
   // no judgement in them — the image is not the destination's size, the component leaves its
   // container — while this one compares a legitimately content-driven height against a CHOSEN
-  // ceiling (lib/verify/capture.ts CONTENT_HEIGHT_LIMIT_MULTIPLE). A long national ranking can
+  // ceiling (lib/verify/capture.ts heightCeilingMultiple — per shape since 2026-07-28: rows and a
+  // scrolly's viewport-multiple walk are not the same number). A long national ranking can
   // reach for it honestly, so blocking on the constant would gate real work on a number nobody
   // can derive. A warning still reaches the journalist in its own words, and promoting it is one
   // line here if the field says otherwise.

@@ -52,6 +52,22 @@ const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 export { CHART_SCROLLY_TYPES, MAP_SCROLLY_TYPES } from "./scrolly-types";
 import { CHART_SCROLLY_TYPES, MAP_SCROLLY_TYPES } from "./scrolly-types";
 
+// The standard visually-hidden pattern (CSS clip) — NOT display:none, which would remove the node
+// from the accessibility tree. Copied deliberately from chart-native's ChartFrame.tsx rather than
+// imported: this package's build must not pull chart-native's frame (and its context, tooltip
+// clamp and capture markers) into a MAP or IMAGE scrolly that renders no chart at all.
+const VISUALLY_HIDDEN: React.CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+};
+
 // ---------------------------------------------------------------------------
 // Scrolly
 // ---------------------------------------------------------------------------
@@ -74,6 +90,9 @@ export const Scrolly: React.FC<{
   // default (themeBg undefined) → deriveFurniture returns the light COLORS, so pageBg = "#FFFFFF" and
   // the scaffold is byte-identical to before.
   const themeBg = (config as { themeBg?: string }).themeBg;
+  // Blank-trimmed, exactly as ChartFrame trims it: a whitespace-only field must emit nothing
+  // rather than an empty node the accessibility tree would announce.
+  const altInsight = (config as { altInsight?: string }).altInsight?.trim();
   const F = deriveFurniture(themeBg);
   const dark = bgIsDark(themeBg);
   const pageBg = F.bg;
@@ -602,6 +621,20 @@ export const Scrolly: React.FC<{
   // containing block for the sticky descendant) is not left to an unstated default.
   return (
     <div data-splash-root="" style={{ display: "block", position: "static" }}>
+      {/* WCAG 1.1.1 — the fuller accessible DESCRIPTION of the page.
+          A chart-track scrolly's config IS a chart-native spec (lib/loop/assemble/scrolly.ts
+          composes it through assembleChartNative), so it carries `altInsight`; chart-native
+          paints that string from its OWN mount.tsx (AltInsightContext → ChartFrame), which this
+          package never mounts. So every chart scrolly shipped WITHOUT the description its own
+          config carried, and `capture` filed a blocking `furniture-missing` on every one of them
+          at all three breakpoints (measured, lib/loop/scrolly-e2e.test.ts).
+          Read off the config the way `themeBg` above is — the union of track configs does not
+          declare the field, and a track that never carries it emits nothing at all (absent or
+          blank ⇒ no node, so every existing sample/map/image render is byte-identical).
+          INSIDE [data-splash-root], because that is the element the capture ladder screenshots
+          and searches; out of flow (position:absolute, 1x1, clipped) so it cannot move the
+          sticky graphic's containing block — the invariant A34's fix depends on. */}
+      {altInsight && <p style={VISUALLY_HIDDEN}>{altInsight}</p>}
       {/* Persistent figure title — the insight, always visible (self-contained module) */}
       {story.title && (
         <div style={headerStyle}>

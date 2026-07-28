@@ -82,9 +82,13 @@ export function isChannel(v: unknown): v is Channel {
 // What a journalist actually walks away with. Two formats can differ (static vs interactive)
 // and still be the SAME decision — an element embedded in the article. A video is a different
 // artifact entirely (the only format whose file is not HTML — see lib/loop/produce.ts's
-// artifactFileFor), and a scrolly is a whole narrative page rather than an embeddable element
-// (the distinction lib/brain/eligibility.ts's ARTICLE_BRANCH_ENGINES comment already draws).
-// lib/brain/offer.ts uses this to keep the offer from being mono-format.
+// artifactFileFor), and a scrolly takes over the reader's scroll for its own height rather than
+// sitting in a box — a different READING, not a different hand-over: a scrolly is delivered as
+// one self-contained HTML file of the embed genre, exactly like an interactive
+// (lib/core/publishers.ts's DELIVERY_GENRE, proven end to end in lib/loop/scrolly-e2e.test.ts).
+// "page" is therefore about what the journalist WALKS AWAY WITH as a reading experience, which
+// is the only question this table answers; lib/brain/offer.ts uses it to keep the offer from
+// being mono-format, and nothing routes delivery on it.
 export type DeliverableKind = "element" | "motion" | "page";
 
 // TOTAL over VisualFormat on purpose: adding a format to VISUAL_FORMATS must force a decision
