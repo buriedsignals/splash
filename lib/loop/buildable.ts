@@ -2,11 +2,11 @@ import { producerForFormat } from "../core/registry";
 import type { VisualFormat } from "../core/vocabulary";
 import { ASSEMBLERS, assemblerFor, declineReason } from "./assemble";
 
-// Which engines the editorial loop can actually BUILD through today — ONE list, read by
-// everything that has to know.
+// Which FORMS the editorial loop can actually BUILD today — ONE answer, read by everything that
+// has to know.
 //
-// Three readers, and they must never disagree:
-//   - lib/loop/produce.ts refuses a chosen option whose EFFECTIVE producer is not in this list
+// Four readers, and they must never disagree:
+//   - lib/loop/produce.ts refuses a chosen option whose EFFECTIVE producer cannot build it
 //     (rendering a map spec through the chart renderer produces a WRONG artifact silently);
 //   - lib/brain/eligibility.ts MARKS such a form in the offer instead of dropping it (spec §8:
 //     "jamais silencieusement retirée") — the SAME sentence produce refuses with for most
@@ -15,7 +15,10 @@ import { ASSEMBLERS, assemblerFor, declineReason } from "./assemble";
 //     reads "this is the whole-article branch…" while produce still refuses with the plain
 //     unbuildableEngineReason sentence below. Both name the same dead end, in different words;
 //   - lib/loop/manifest.ts's nextActionsForElement routes back to "choose-form" instead of
-//     answering "produce" forever on a choice that can never succeed.
+//     answering "produce" forever on a choice that can never succeed;
+//   - lib/loop/choose.ts refuses the choice itself one step earlier, while the journalist is
+//     still in the act of choosing, rather than writing a manifest that loops on its own dead
+//     end.
 // Before this file the list was hard-coded in produce.ts alone and the brain knew nothing of
 // it, so the offer could rank an unbuildable form FIRST, unmarked: the journalist chose it,
 // produce answered `not-implemented`, and the run had nothing to say for itself. Before
@@ -24,16 +27,30 @@ import { ASSEMBLERS, assemblerFor, declineReason } from "./assemble";
 // the scrolly format, built by skills/scrolly) looked buildable here while produce() refused
 // it every time — the exact dead-end this file exists to prevent, just one level down.
 //
-// It lives under lib/loop/ because it is a fact about the loop's produce verb (which engines
-// it can assemble a spec for), not about the engines themselves — lib/core/registry.ts already
+// DERIVED FROM THE TABLE, not declared here. The answer is lib/loop/assemble/index.ts's
+// ASSEMBLERS: an engine is buildable if and only if the table holds a key for it, and a (type,
+// format) pairing if and only if that key's `supports` admits it. So the list is no longer a
+// sentence someone had to remember to keep true — and the promise this header used to ask a
+// maintainer for ("adding an engine here is a promise the loop can build it") is discharged by
+// the table's own rule: a key is added only in the commit that adds that engine's render proof
+// (design spec §4.6). All six engines the loop knows carry one today — chart-native, map-native,
+// scrolly, image-native, dw-chart, map-dw.
+//
+// The answer is TYPE- AND FORMAT-AWARE, and the constant below is only its engine-level roll-up:
+// the coarse list a refusal sentence names when it has nothing finer to say. An engine can be
+// wired while some of its types or formats are not, and offering one of those unmarked would be
+// the same dead end one level down — so a caller holding a type (and a format) asks
+// isLoopBuildable, and does not read this list.
+//
+// It lives under lib/loop/ because it is a fact about the loop's produce verb (which forms it
+// can assemble a spec for), not about the engines themselves — lib/core/registry.ts already
 // answers "what does this engine render", and that is a different question. lib/brain reads it
 // the way lib/brain/facts.ts already reads lib/loop/manifest, and no cycle is possible: this
-// module's only outside import is lib/core/registry's producerForFormat, and lib/core never
-// imports lib/loop or lib/brain.
-//
-// DERIVED, not declared. Before this, the list was a sentence someone had to remember to keep
-// true; now a moteur is buildable if and only if an assembler exists for it, which is the
-// promise this file's header has always asked for.
+// module's outside imports are lib/core/registry's producerForFormat and lib/loop/assemble, whose
+// own runtime imports reach lib/core, skills/ and lib/loop/profile's CSV reader — never lib/brain,
+// and never back to lib/loop/manifest, the one module here that reads this file. (assemble/brief.ts
+// does import lib/loop/manifest, and is not reachable from the table; lib/loop/profile's own
+// manifest import is `import type`, erased before it can close a runtime loop.)
 export const LOOP_BUILDABLE_ENGINES: readonly string[] =
   Object.keys(ASSEMBLERS);
 
@@ -42,9 +59,9 @@ export const LOOP_BUILDABLE_ENGINES: readonly string[] =
  *
  *  `nativeType` narrows the answer to what the table can actually compose a spec for: an
  *  engine can be wired while only some of its types are, and offering the rest unmarked would
- *  be the exact dead end this file exists to prevent, just one level down (see the header on
- *  "why type-aware" in the task that added this parameter). Absent `nativeType` answers for
- *  the engine as a whole, matching every caller that does not have a type in hand yet.
+ *  be the exact dead end this file exists to prevent, just one level down (the header above says
+ *  it once, for both axes). Absent `nativeType` answers for the engine as a whole, matching
+ *  every caller that does not have a type in hand yet.
  *
  *  `format` narrows it once more, for the same reason one level down: an engine can be wired in
  *  one format and not another. dw-chart WAS the measured case — its static export is a file the

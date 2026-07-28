@@ -45,6 +45,7 @@ import {
 import { neutralDecor } from "../newsroom/decor";
 import { DEFAULT_NEWSROOM_STATE } from "../newsroom/state";
 import { registerAllPublishers } from "../delivery";
+import { readmeCopy } from "../delivery/readme-copy";
 import { validateSourcePolicy } from "./policy";
 
 const RUN = process.env.SPLASH_SOURCE_PROOF === "1";
@@ -269,11 +270,20 @@ test.skipIf(!RUN)(
     const readme = execFileSync("unzip", ["-p", zipPath, "README.md"], {
       encoding: "utf8",
     });
-    expect(readme).toContain(`Source: ${DECLARED}`);
+    // The LABEL is read from the same table the package writes with, the VALUE is not: the
+    // delivery is asked for `lang: "fr"` above, and a French package spaces its colon
+    // ("Source : X", lib/delivery/readme-copy.ts). Hard-coding the English label here made all
+    // three of these assertions rot at once when the owned package learned the newsroom's
+    // language — the positive one failed loudly, but both NEGATIVE ones went vacuous, passing
+    // on a string the README could no longer contain in any case. What this proof is about —
+    // that the DECLARED source, and never the placeholder or the outlet, is what a reader ends
+    // up looking at — is carried by the values, so only the labels are derived.
+    const copy = readmeCopy("fr");
+    expect(readme).toContain(`${copy.source} ${DECLARED}`);
     expect(readme).not.toContain(PLACEHOLDER);
     // The newsroom profile stays the AUTHOR line, and never becomes the origin of the figures.
-    expect(readme).not.toContain("Source: Heidi.news");
-    expect(readme).toContain("Credit: Rédaction");
+    expect(readme).not.toContain(`${copy.source} Heidi.news`);
+    expect(readme).toContain(`${copy.credit} Rédaction`);
   },
   240_000,
 );

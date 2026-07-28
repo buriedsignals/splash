@@ -137,9 +137,9 @@ export async function produce(
       `produce: the ${el.deliverable?.destination} deliverable has no shape yet — confirm the aspect ratio before producing it`,
     );
 
-  // The brain offers across engines (chart-native, map-native, dw-chart, map-dw…), but this
-  // verb only knows how to build through the engines LOOP_BUILDABLE_ENGINES names — wiring the
-  // rest is a separate tranche. Without this guard a chosen option naming another engine was
+  // The brain offers across engines and this verb builds through all six of them today, but not
+  // through every (type, format) pairing they declare — lib/loop/assemble/index.ts's table says
+  // which, and this guard asks it. Without this guard a chosen option naming another engine was
   // handed to chart-native anyway (its nativeType meaningless there), producing a WRONG
   // artifact silently. Refusing loud, naming what was chosen, is what a journalist can act on.
   // The list is NOT re-stated here: lib/loop/buildable.ts is the one source, and the brain
@@ -163,7 +163,7 @@ export async function produce(
   // exact defect this seam removes (skills/scrolly/src/Scrolly.tsx derived the whole walk).
   //
   // POSITION — AFTER the buildability gate, matching nextActionsForElement line for line. The
-  // three readers of buildable.ts must never disagree, and a form nothing can build has a
+  // four readers of buildable.ts must never disagree, and a form nothing can build has a
   // refusal the OFFER already showed the journalist; answering "your beats are unwritten" to
   // someone whose form cannot be built at all would send them to fix the wrong thing.
   //

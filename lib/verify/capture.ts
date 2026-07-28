@@ -98,9 +98,13 @@ export const ROOT_SELECTORS = [
 //   - map-native / scrolly declare the same thing PREFIXED ("Interactive map: <title>",
 //     ChoroplethMap.tsx:485). Harmless to the metric, which counts the share of the
 //     TAKEAWAY's words the title carries — extra words on the title side dilute nothing.
-//   - `[data-splash-title]` exists nowhere yet, exactly like `[data-splash-root]` above it.
-//     It is the convention of this file: an engine that marks its title one day wins here
-//     without a line changing.
+//   - `[data-splash-title]` was a convention of this file with no engine behind it, exactly
+//     like `[data-splash-root]` above it — a rung written so that an engine marking its title
+//     one day would win here without a line changing. Three engines have since marked it and
+//     do win: chart-native (ChartFrame.tsx), map-native (MapFrame.tsx) and scrolly
+//     (Scrolly.tsx, the fix that closed residual A34). So the aria-label rung below is now the
+//     FALLBACK for those three, not their answer — a capture of a chart-native interactive
+//     records `titleSource: "[data-splash-title]"`.
 //
 // It reads the accessible NAME, not the pixels. A title present in the accessible tree but
 // visually clipped is a FURNITURE question, and furnitureChecks already measures that.

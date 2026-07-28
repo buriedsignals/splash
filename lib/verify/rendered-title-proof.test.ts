@@ -129,7 +129,14 @@ test.skipIf(!RUN)(
     // Read off the live DOM, not handed in: this is the assertion that "the title IS the
     // takeaway" stopped being a promise the production code makes about itself.
     expect(primary.renderedTitle).toBe(TAKEAWAY);
-    expect(primary.titleSource).toBe("svg[role='img'][aria-label]");
+    // The MARKER rung, not the aria-label one. This asserted `svg[role='img'][aria-label]`
+    // until chart-native's ChartFrame started stamping `data-splash-title` on the title it
+    // paints — the higher rung of capture.ts's TITLE_SOURCES ladder, and the whole point of
+    // that ladder. What this proof is about is unchanged and still asserted above: the title
+    // read OFF THE LIVE DOM is the confirmed takeaway. Recording which rung answered is the
+    // ladder's own contract (a wrong extraction must be readable in the evidence), so the
+    // assertion stays exact rather than being loosened to "any rung".
+    expect(primary.titleSource).toBe("[data-splash-title]");
 
     const reviewedQuiet = await reviewStep(run, withCapture, runDir);
     if (!reviewedQuiet.ok)
