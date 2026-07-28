@@ -1,4 +1,4 @@
-import { profileCsv, parseCsvRows } from "./profile";
+import { parseCsvRows } from "./profile";
 import type { DataProfile } from "./manifest";
 import { matchGeography } from "../../skills/map-native/src/geo-match";
 import type { GeoMatch } from "../core/production-brief";
@@ -17,7 +17,15 @@ export type OrientResult = {
 // story — the journalist owns the angle. (Deeper honesty checks — per-capita,
 // denominator, time window — are the proposal-cerveau sub-project.)
 export function orient(dataCsv: string): OrientResult {
-  const profile = profileCsv(dataCsv);
+  // One parse (lib/loop's one CSV parser), read twice: the profile projects columns/numericColumns
+  // straight out of it, and matchGeography needs the rows profileCsv does not expose. Calling
+  // profileCsv here too would parse the same string a second time for no new information.
+  const { columns, rows, numericColumns } = parseCsvRows(dataCsv);
+  const profile: DataProfile = {
+    columns,
+    numericColumns,
+    rowCount: rows.length,
+  };
   if (profile.rowCount === 0) {
     return {
       profile,
@@ -32,7 +40,6 @@ export function orient(dataCsv: string): OrientResult {
       note: "No numeric columns in what you brought — there is nothing to chart for this point. Bring the figures.",
     };
   }
-  const { columns, rows } = parseCsvRows(dataCsv);
   const geo = matchGeography(columns, rows);
   return { profile, supportsPoint: true, ...(geo ? { geo } : {}) };
 }

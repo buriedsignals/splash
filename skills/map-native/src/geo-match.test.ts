@@ -1,4 +1,7 @@
 import { test, expect } from "bun:test";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { matchGeography } from "./geo-match";
 
 test("an ISO-A3 column matches the world basemap and reports a full join", () => {
@@ -45,4 +48,39 @@ test("data with no geography at all matches nothing — undefined, not an empty 
     { year: "2025", extent: "4.3" },
   ];
   expect(matchGeography(["year", "extent"], rows)).toBeUndefined();
+});
+
+test("an absent basemap asset is skipped, not thrown — and a sibling basemap still matches (I1)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "geo-match-absent-"));
+  // world.geojson is present and valid; us-states.geojson is never written — absent on disk.
+  writeFileSync(
+    join(dir, "world.geojson"),
+    JSON.stringify({
+      type: "FeatureCollection",
+      features: [
+        { type: "Feature", properties: { iso_a3: "CHE" }, geometry: null },
+      ],
+    }),
+  );
+  const basemaps = {
+    world: { joinKey: "iso_a3", label: "World" },
+    "us-states": { joinKey: "postal", label: "US States" },
+  };
+  const rows = [{ country: "CHE", value: "1" }];
+  expect(() =>
+    matchGeography(["country", "value"], rows, dir, basemaps),
+  ).not.toThrow();
+  const m = matchGeography(["country", "value"], rows, dir, basemaps);
+  expect(m).toBeDefined();
+  expect(m!.basemap).toBe("world");
+  expect(m!.matched).toBe(1);
+});
+
+test("an unparseable basemap asset is skipped, not thrown — undefined, not a crash", () => {
+  const dir = mkdtempSync(join(tmpdir(), "geo-match-corrupt-"));
+  writeFileSync(join(dir, "broken.geojson"), "{ not valid json");
+  const basemaps = { broken: { joinKey: "code", label: "Broken" } };
+  const rows = [{ x: "AAA" }];
+  expect(() => matchGeography(["x"], rows, dir, basemaps)).not.toThrow();
+  expect(matchGeography(["x"], rows, dir, basemaps)).toBeUndefined();
 });
