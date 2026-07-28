@@ -651,6 +651,7 @@ export const LocatorMap: React.FC<Props> = ({
       style={{ position: "relative", width: "100%", height: "100%" }}
     >
       <MapFrame
+        standalone
         title={config.title ?? ""}
         description={config.description}
         source={{ name: config.source?.name ?? "", url: config.source?.url }}

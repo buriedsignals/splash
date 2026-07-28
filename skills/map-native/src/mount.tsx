@@ -54,8 +54,15 @@ const isDotDensity = configType === "dot-density";
 const isHexGrid = configType === "hex-grid";
 const isCartogram = configType === "cartogram";
 
+// `data-splash-root` is the first rung of the Verify layer's root ladder
+// (lib/verify/capture.ts) — the element it screenshots and measures for
+// `capture:fits-viewport`. It went unposed by every engine, so captures fell through to
+// `#root > div`, which is this exact wrapper: marking it retires the guess without moving
+// the crop by a pixel. Scoped here rather than in MapFrame on purpose — this mount builds
+// the STANDALONE map, while a scrolly page mounts through skills/scrolly and must keep
+// resolving to its own scaffold, not to the first map step inside it.
 createRoot(root).render(
-  <div style={{ width: "100vw", height: "100vh" }}>
+  <div data-splash-root="" style={{ width: "100vw", height: "100vh" }}>
     {isCartogram ? (
       <CartogramMap
         config={config as CartogramConfigShape}

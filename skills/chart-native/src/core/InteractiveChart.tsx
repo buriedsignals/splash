@@ -9,6 +9,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { clamp01 } from "./math";
 import { prefersReducedMotion } from "../../../../lib/core/motion";
+import { CaptureRootMarkedContext } from "./capture-markers";
 
 /** When the intro reveal plays. A per-format knob (the journalist picks). */
 export type AnimateOn = "load" | "scroll" | "none";
@@ -88,9 +89,17 @@ export function InteractiveChart({
   // overflow it (host scrolls/crops) rather than report a box the svg paints
   // past — measured: a 264px container floored to a 280px layout left the
   // right-gutter band labels 7.3px outside the card (snap-label-fit @360px).
+  // `data-splash-root`: the first rung of the Verify layer's root ladder
+  // (lib/verify/capture.ts), the element it screenshots and measures for
+  // `capture:fits-viewport`. THIS wrapper is what the rung below it, `#root > div`, already
+  // resolved to in an interactive build — verified on a produced interactive.html — so
+  // posing it retires the structural guess without moving the crop. The context tells the
+  // ChartFrame inside not to mark too, keeping one root marker per page.
   return (
-    <div ref={ref} style={{ width: "100%", minWidth }}>
-      {width != null && render(width, progress)}
+    <div ref={ref} data-splash-root="" style={{ width: "100%", minWidth }}>
+      <CaptureRootMarkedContext.Provider value={true}>
+        {width != null && render(width, progress)}
+      </CaptureRootMarkedContext.Provider>
     </div>
   );
 }
