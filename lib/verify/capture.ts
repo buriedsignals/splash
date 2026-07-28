@@ -549,6 +549,15 @@ async function captureHtml(
     text: f.text,
   }));
 
+  // The SAME field captureStatic has read since the row-driven family came back into the offer.
+  // This path never read it, which meant the relaxation existed for a PNG and not for the page —
+  // and the shape it describes is at least as true of an html deliverable: a scrolly fills the
+  // destination's width and then runs for as many screens as its walk has cards (measured on a
+  // loop-produced chart scrolly: 3645px of component in a 1200x675 destination, at every
+  // breakpoint). Held to the box, every scrolly filed a blocking `component-overflows-viewport`
+  // on a correct artifact. Absent ⇒ "pinned", so every existing caller is unchanged.
+  const heightPolicy: HeightPolicy = p.heightPolicy ?? "pinned";
+
   const browser = await chromium.launch();
   try {
     const images: CaptureRecord[] = [];
@@ -611,21 +620,55 @@ async function captureHtml(
           markColours: m.markColours,
           titleSource: m.titleSource,
           ...(m.renderedTitle ? { renderedTitle: m.renderedTitle } : {}),
+          // Conditional so the ordinary case is an ABSENT key, not `undefined` — the round-trip
+          // invariant (I6), and the same shape captureStatic already uses for this field.
+          ...(heightPolicy === "content-driven" ? { heightPolicy } : {}),
         });
         checks.push(...furnitureChecks(target, m));
         const rootBottom = m.rootBox.y + m.rootBox.height;
         const rootRight = m.rootBox.x + m.rootBox.width;
-        const fits =
-          rootBottom <= target.cssViewport.height + SIZE_TOLERANCE_PX &&
+        // The WIDTH leg is checked exactly as hard on either policy — a component wider than its
+        // container overflows whatever its height belongs to. Only the height leg is dropped, and
+        // the detail SAYS SO, so a reader of the evidence can tell "the height was never checked"
+        // from "the height was checked and fitted". Mirrors captureStatic line for line.
+        const fitsWidth =
           rootRight <= target.cssViewport.width + SIZE_TOLERANCE_PX;
+        const fitsHeight =
+          heightPolicy === "content-driven" ||
+          rootBottom <= target.cssViewport.height + SIZE_TOLERANCE_PX;
+        const fits = fitsWidth && fitsHeight;
+        const box = `${target.cssViewport.width}x${target.cssViewport.height}`;
         checks.push({
           id: "capture:fits-viewport",
           breakpoint: target.breakpoint,
           outcome: fits ? "pass" : "fail",
-          detail: fits
-            ? `the component ends at y ${rootBottom}, x ${rootRight}, inside its ${target.cssViewport.width}x${target.cssViewport.height} container`
-            : `the component ends at y ${rootBottom}, x ${rootRight}, outside its ${target.cssViewport.width}x${target.cssViewport.height} container (document scrolls to ${m.documentScroll.width}x${m.documentScroll.height})`,
+          detail:
+            heightPolicy === "content-driven"
+              ? fits
+                ? `the component ends at y ${rootBottom}, x ${rootRight}, inside the width of its ${box} container, whose height it is not held to (content-driven)`
+                : `the component ends at y ${rootBottom}, x ${rootRight}, outside the WIDTH of its ${box} container — its height is content-driven and is not checked (document scrolls to ${m.documentScroll.width}x${m.documentScroll.height})`
+              : fits
+                ? `the component ends at y ${rootBottom}, x ${rootRight}, inside its ${box} container`
+                : `the component ends at y ${rootBottom}, x ${rootRight}, outside its ${box} container (document scrolls to ${m.documentScroll.width}x${m.documentScroll.height})`,
         });
+        // …and the ceiling that height still has. A walk may be long; it may not be unbounded, and
+        // a join that fanned out or a beat list nobody capped is exactly what this catches. Emitted
+        // ONLY for a content-driven deliverable, for captureStatic's reason: a pinned one already
+        // has its height judged by the check above, and a second verdict on the same number would
+        // file one defect twice.
+        if (heightPolicy === "content-driven") {
+          const limit =
+            target.cssViewport.height * CONTENT_HEIGHT_LIMIT_MULTIPLE;
+          const times = (m.rootBox.height / target.cssViewport.height).toFixed(
+            1,
+          );
+          checks.push({
+            id: "capture:height-within-bound",
+            breakpoint: target.breakpoint,
+            outcome: m.rootBox.height <= limit ? "pass" : "fail",
+            detail: `the component is ${m.rootBox.height}px tall, ${times}x the ${target.cssViewport.height} its destination publishes at (ceiling ${CONTENT_HEIGHT_LIMIT_MULTIPLE}x = ${limit})`,
+          });
+        }
       } finally {
         await page.close();
       }

@@ -18,6 +18,9 @@ import {
   unbuildableEngineReason,
   LOOP_BUILDABLE_ENGINES,
 } from "../loop/buildable";
+// The drafter's own sentence for "an image scrolly needs your photographs" — read, never
+// restated, so the offer's mark and the refusal a journalist would meet are one wording.
+import { IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED } from "./beats";
 import {
   renderableSheets,
   type RenderableSheet,
@@ -55,10 +58,31 @@ export type EligibilityInput = {
   requestedFormat?: VisualFormat;
 };
 
-// The engines whose output is a narrative page rather than an embeddable element. Until the
-// article branch exists they are offered MARKED, never dropped (spec §8).
-const ARTICLE_BRANCH_ENGINES = new Set(["scrolly", "image-native"]);
-const ARTICLE_BRANCH = "article-branch";
+// ── WHAT USED TO BE HERE, and why it is not ────────────────────────────────────────────────────
+//
+// `ARTICLE_BRANCH_ENGINES = new Set(["scrolly", "image-native"])` and an `ARTICLE_BRANCH`
+// capability id, which put this mark on every scrolly candidate and every image-native one:
+//
+//   "this is the whole-article branch — it is not built yet, and it changes what gets delivered"
+//
+// Both halves were measured false on 2026-07-28 (lib/loop/scrolly-e2e.test.ts). A chart-track
+// scrolly walks produce → capture → review → preview → approve → request-delivery → deliver with
+// no code change, and what it delivers is one self-contained HTML file of the EMBED genre
+// (lib/core/publishers.ts's DELIVERY_GENRE maps scrolly and interactive to the same one), routed
+// to the same publishers, defaulting to the same destination, packaged with the same <iframe>
+// snippet — the produced scrolly.html, byte for byte, inside the archive the newsroom is handed.
+// Nothing under lib/delivery/ has ever special-cased a scrolly.
+//
+// A scrolly DOES take over the reader's scroll for its own height, which is a real editorial
+// difference from a chart in a box. That is a difference in the READING, not in what is
+// delivered, and it is expressed where it belongs: lib/loop/assemble/index.ts declares the
+// scrolly host content-driven, and lib/verify/capture.ts measures it as such.
+//
+// `ARTICLE_BRANCH` was also not a NEWSROOM_CAPABILITIES id, so it rode in `requires` — the
+// decor's CAPACITÉ axis, the list of things a newsroom can turn on — as a requirement no install
+// could ever satisfy. A capability nobody can satisfy must not linger.
+//
+// image-native keeps a mark, for a reason of its OWN — see imageWalkMark below.
 
 export function eligible(
   input: EligibilityInput,
@@ -296,10 +320,11 @@ function markReason(r: {
 
 /** The mark a form earns when nothing in the loop can build it. Resolved on the EFFECTIVE
  *  producer, not the sheet's engine: skills/scrolly hosts a native engine's track, so a
- *  chart-native form in the scrolly format is not a chart-native build. Exported because the
- *  mark it returns is masked inside a full `eligible()` call — the article-branch mark shares
- *  its severity and is pushed first — so this is the only level at which the rule is
- *  observable.
+ *  chart-native form in the scrolly format is not a chart-native build. Exported because it was
+ *  once the only level at which the rule was observable: an article-branch mark shared its
+ *  severity and was pushed first, masking it for every scrolly candidate. That mark is gone, so
+ *  eligible() shows this one now — the export stays as the unit-level probe, on fixtures the
+ *  real KB cannot express.
  *
  *  `nativeType` narrows the check to what the loop can actually compose a spec for, not just
  *  the engine as a whole — an engine can be wired while only some of its types are (map-native's
@@ -340,29 +365,44 @@ export function buildabilityMark(
   };
 }
 
+/**
+ * THE MARK IMAGE-NATIVE EARNS — the only thing left of what the article-branch mark used to say,
+ * and it says something else entirely.
+ *
+ * image-native's only format is `scrolly`, and its walk is one beat per photograph the journalist
+ * declares WITH THE RUN. That is a fact about the run's INPUT, and this file cannot see it:
+ * `EligibilityInput` carries facts, channel, readiness and themeBg — deliberately, so a mis-read
+ * intent cannot change what is legal — and `run.input.images` is not among them.
+ *
+ * So the form cannot be offered clean. Measured: with no photographs declared,
+ * `nextActionsForElement` answers `draft-beats`, `draftBeats` refuses, and the run answers the
+ * same impossible action forever — `deadEndReason` is consulted only on "choose-form"
+ * (lib/loop/driver.ts), so nothing catches it. A clean offer would strand the run.
+ *
+ * NOT added to `requires`, for buildabilityMark's reason: that list is the decor's CAPACITÉ axis
+ * (ids a newsroom can turn on), and no newsroom setting declares a photograph. The sentence is
+ * the DRAFTER'S OWN (lib/brain/beats.ts), so the offer's mark and the refusal a journalist would
+ * eventually meet are one wording, not two.
+ *
+ * FOLLOW-UP, named rather than left implicit: the day `eligible()` is given the run's declared
+ * inputs, this mark should fire only for a run that has none — a run that HAS declared its
+ * photographs is being warned about a condition it already satisfies.
+ */
+function imageWalkMark(
+  engine: string,
+): { status: CapabilityReadiness["status"]; reason: string } | null {
+  if (engine !== "image-native") return null;
+  return { status: "missing", reason: IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED };
+}
+
 function withMarks(c: Candidate, input: EligibilityInput): Candidate {
-  const requires = [
-    c.engine,
-    ...(ARTICLE_BRANCH_ENGINES.has(c.engine) || c.format === "scrolly"
-      ? [ARTICLE_BRANCH]
-      : []),
-  ];
+  const requires = [c.engine];
   // Order matters: `worst` below keeps the FIRST mark of the highest severity, and several
-  // marks can share it. The article-branch mark leads because it is the one that tells the
-  // journalist what they would be GETTING (a whole narrative page, not an embeddable element);
-  // the engine-wiring reason below is the same "not yet" said in production's terms.
+  // marks can share it. The photographs mark leads because it is the one a journalist can ACT
+  // on; the engine-wiring reason below is about what production cannot do for them.
   const marks: { status: CapabilityReadiness["status"]; reason: string }[] = [];
-  // The branch does not exist yet — and whether it exists is a fact about THIS BUILD, never
-  // about what the run asked for. This used to fire only when `input.route !== "article"`,
-  // i.e. it was conditioned on the journalist's declared intent: a manifest saying
-  // route:"article" got the narrative forms offered CLEAN, buildable by nobody. `route` is
-  // gone from this file's input entirely, so the condition cannot come back by accident.
-  if (requires.includes(ARTICLE_BRANCH))
-    marks.push({
-      status: "missing",
-      reason:
-        "this is the whole-article branch — it is not built yet, and it changes what gets delivered",
-    });
+  const walkMark = imageWalkMark(c.engine);
+  if (walkMark) marks.push(walkMark);
   // The engine exists and renders this type — but the loop's produce verb cannot assemble a
   // spec for it yet, so choosing it would dead-end. MARKED, exactly like a missing capability:
   // the journalist still learns the form is the right one for this data (P1 — the tool offers,

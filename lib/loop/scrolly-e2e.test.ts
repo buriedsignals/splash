@@ -193,10 +193,22 @@ proof(
     if (!previewed.ok) throw new Error(`preview: ${previewed.message}`);
     current = { ...current, elements: [previewed.value] };
 
-    // 6. APPROVE. Every open finding is acknowledged rather than silenced: the gate's own
-    // ceremony, used as designed — and the findings are named in the failure message when it
-    // refuses, so a blocker is read rather than guessed at.
+    // 6. APPROVE. Warnings are acknowledged — the gate's own ceremony, used as designed. NO
+    // BLOCKING FINDING IS OVERRIDDEN, and that is the assertion rather than a convenience.
+    //
+    // The first run of this walk (2026-07-28, before the two fixes on this branch) had to
+    // override two, and both fired on EVERY scrolly at every breakpoint:
+    //   · `component-overflows-viewport` — "the component ends at y 3645 … outside its 1200x675
+    //     container". A scrolly is its own scroll; captureHtml simply never read `heightPolicy`.
+    //   · `furniture-missing` — "no element carries the alt-text text …". The config carried
+    //     `altInsight`; the scrolly scaffold painted title/unit/source/credit and nothing else.
+    // Neither was about delivery. Both are fixed, so a scrolly now reaches the gate clean, and an
+    // override list that is EMPTY is what proves it.
     const findings = (previewed.value.review as ReviewRecord).findings;
+    const blocking = findings.filter(
+      (f) => f.status === "open" && f.severity === "blocking",
+    );
+    expect(blocking.map((f) => `${f.id}: ${f.summary}`)).toEqual([]);
     const decided = approve(
       current,
       current.elements[0]!,
@@ -206,12 +218,6 @@ proof(
         acknowledged: findings
           .filter((f) => f.status === "open" && f.severity === "warning")
           .map((f) => f.id),
-        overrides: findings
-          .filter((f) => f.status === "open" && f.severity === "blocking")
-          .map((f) => ({
-            findingId: f.id,
-            reason: "e2e proof: knowingly shipped to measure the delivery leg",
-          })),
       },
       { signers: [], requiredSigners: [] },
     );

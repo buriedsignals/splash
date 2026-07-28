@@ -214,12 +214,21 @@ test("the dark-ground decision agrees with the renderer's own predicate, at ever
   }
 });
 
-// The mark is about whether the branch EXISTS in this build, never about what the run asked
-// for. It used to fire only when `input.route !== "article"` — so a manifest declaring
-// route:"article" (a plain field any caller may set) got image-scrolly offered CLEAN: no
-// readiness at all, buildable by nobody. `EligibilityInput` no longer carries `route`, so the
-// condition cannot be re-introduced by accident.
-test("the article branch MARKS every form that needs it, whatever the run declared — and marking never removes the form", () => {
+// THE MARK IMAGE-NATIVE ACTUALLY EARNS — and it is not the one it used to carry.
+//
+// Until 2026-07-28 every image-scrolly and every scrolly candidate carried "this is the
+// whole-article branch — it is not built yet, and it changes what gets delivered". Both halves
+// of that sentence were measured false (lib/loop/scrolly-e2e.test.ts walks a scrolly to a
+// delivered package), so the branch mark is gone.
+//
+// image-native keeps a mark, for a reason of its own. Its only format is `scrolly`, and its walk
+// is one beat per photograph the journalist declares WITH THE RUN. This file's input is facts +
+// channel + readiness + themeBg — `run.input.images` is not among them — so it cannot tell a run
+// that HAS declared photographs from one that has none, and offering the form clean to a run with
+// none strands it: nextActionsForElement answers `draft-beats`, draftBeats refuses, and
+// deadEndReason is consulted only on "choose-form". So it is MARKED, with the sentence that is
+// actually true.
+test("an image scrolly is marked for the photographs it needs, not for a branch that exists — and marking never removes the form", () => {
   // image-scrolly is the KB's narrative sheet; only article-web allows its scrolly format.
   const facts = deriveFacts({
     columns: ["step", "note", "alt"],
@@ -241,12 +250,42 @@ test("the article branch MARKS every form that needs it, whatever the run declar
   });
   const scrolly = ok.find((c) => c.id === "image-scrolly");
   expect(scrolly).toBeDefined(); // still offered…
-  expect(scrolly!.requires).toContain("article-branch");
-  // worst of {article-branch: missing, image-native: unverified} is missing (3 > 1) — the
-  // rule this pins, not just image-scrolly's own readiness.
+  // NOT in `requires`: that list is the decor's CAPACITÉ axis (ids a newsroom can turn on), and
+  // no newsroom setting declares a photograph. "article-branch" was in it and was satisfiable by
+  // nobody — a requirement carried into every manifest that no install could ever meet.
+  expect(scrolly!.requires).toEqual(["image-native"]);
+  expect(scrolly!.requires).not.toContain("article-branch");
+  // worst of {photographs: missing, image-native: unverified} is missing (3 > 1) — the rule this
+  // pins, not just image-scrolly's own readiness.
   expect(scrolly!.readiness?.status).toBe("missing");
-  // …and the sentence a journalist reads is the branch's, not a deeper wiring detail.
-  expect(scrolly!.readiness!.reason).toMatch(/whole-article branch/);
+  // …and the sentence a journalist reads is the one they can act on.
+  expect(scrolly!.readiness!.reason).toMatch(/photograph/i);
+  expect(scrolly!.readiness!.reason).not.toMatch(/whole-article branch/);
+});
+
+// THE MARK IS GONE FOR THE SCROLLY HOST. Measured end to end before it was removed: a chart-track
+// scrolly walks produce → capture → review → preview → approve → request-delivery → deliver and is
+// handed over as a package holding the produced scrolly.html byte for byte, with an <iframe>
+// snippet — the embed genre, the same publishers and the same default destination an interactive
+// gets (lib/loop/scrolly-e2e.test.ts).
+test("a scrolly form the loop can build is offered CLEAN — no branch mark, on any track", () => {
+  const { eligible: legal } = eligible({
+    facts: deriveFacts({
+      columns: ["year", "extent"],
+      numericColumns: ["year", "extent"],
+      rowCount: 7,
+    }),
+    channel: "article-web",
+  });
+  const scrollies = legal.filter((c) => c.format === "scrolly");
+  expect(scrollies.length).toBeGreaterThan(0); // the KB really offers some
+  const clean = scrollies.filter((c) => !c.readiness);
+  expect(clean.length).toBeGreaterThan(0);
+  // Nothing anywhere in the offer still says it, and nothing still requires it.
+  for (const c of legal) {
+    expect(c.requires ?? []).not.toContain("article-branch");
+    expect(c.readiness?.reason ?? "").not.toMatch(/whole-article branch/);
+  }
 });
 
 // A FICTIONAL engine, on purpose. This used to filter the real KB's own offer for a sheet
@@ -265,11 +304,10 @@ test("a form whose engine the loop cannot build through is MARKED, never offered
   expect(unbuildable.length).toBeGreaterThan(0); // the fixture actually exercises the path
   for (const c of unbuildable) {
     expect(c.readiness?.status).toBe("missing");
-    // …and it names what cannot be built — unless the form ALSO sits on the unbuilt article
-    // branch, whose mark is the one a journalist needs to read first (it changes what would
-    // be delivered, not just which renderer runs).
-    if (!c.requires?.includes("article-branch"))
-      expect(c.readiness!.reason).toContain(c.engine);
+    // …and it names what cannot be built. Unconditional now: this used to exempt a form sitting
+    // on the "unbuilt article branch", whose mark masked this one. That branch mark is gone, so
+    // the wiring reason is the sentence every unbuildable form carries.
+    expect(c.readiness!.reason).toContain(c.engine);
   }
   // …and the mark never removes: every buildable form is still there, unmarked by THIS rule.
   expect(ok.some((c) => c.engine === "chart-native" && !c.readiness)).toBe(
@@ -282,26 +320,35 @@ test("every exclusion carries a non-empty reason — no silent drop", () => {
   for (const e of excluded) expect(e.reason.length).toBeGreaterThan(0);
 });
 
-test("a scrolly candidate is never clean — nothing can build it yet, and the offer says so", () => {
+// A scrolly form the scrolly HOST does not host is marked — and that mark is now the only one a
+// scrolly can carry, so it is also the only thing that can be observed through eligible().
+//
+// The fixture's key moved from "line" to "slope" on 2026-07-28, and the move is the point: while
+// the article-branch mark fired on the FORMAT, every scrolly candidate was marked whatever its
+// track, so a "line" scrolly (which the host builds perfectly well) read as marked too and this
+// test could not tell the two apart. It can now — chart-native builds a slope chart, and the
+// scrolly host does not host one at all.
+test("a scrolly track the host does not host is MARKED, and the offer says which", () => {
   const sheet = fakeSheet("fx-scrolly", ["scrolly"]);
   // The point of this fixture: chart-native itself IS loop-buildable, so a naive check on
   // c.engine alone would see this candidate as clean. It is the EFFECTIVE producer
-  // (scrolly, via producerForFormat) that cannot be built through yet.
+  // (scrolly, via producerForFormat) that cannot compose this track.
   expect(isLoopBuildable("chart-native")).toBe(true);
   const { eligible: legal } = eligible(
     { facts: TWO_POINTS, channel: "article-web" },
-    [{ sheet, engine: "chart-native", key: "line" }],
+    [{ sheet, engine: "chart-native", key: "slope" }],
   );
   expect(legal.length).toBe(1);
   expect(legal[0]!.format).toBe("scrolly");
-  // Every scrolly candidate also carries the article-branch mark (unconditional on format,
-  // regardless of engine — see withMarks), and that mark is pushed first, so it wins the
-  // same-severity tie against the effective-producer buildability mark this task adds.
-  // Both marks are real; only one is surfaced (the SEVERITY "worst, first-wins" rule already
-  // governs every other mark in this file). What this test pins is that the candidate is
-  // offered MARKED, never clean.
   expect(legal[0]!.readiness?.status).toBe("missing");
-  expect(legal[0]!.readiness?.reason.length).toBeGreaterThan(0);
+  expect(legal[0]!.readiness?.reason).toContain("slope");
+  // …and the SAME sheet on a track the host does host is offered clean — which is what makes the
+  // assertion above about the track rather than about the format.
+  const { eligible: hosted } = eligible(
+    { facts: TWO_POINTS, channel: "article-web" },
+    [{ sheet, engine: "chart-native", key: "line" }],
+  );
+  expect(hosted[0]!.readiness).toBeUndefined();
 });
 
 test("a producer that genuinely lacks a format still loses it — map-dw has no video", () => {
@@ -314,12 +361,11 @@ test("a producer that genuinely lacks a format still loses it — map-dw has no 
   expect(excluded.length).toBe(1);
 });
 
-// Direct seam on the buildability mark: inside a full eligible() call, this mark is masked
-// for every scrolly candidate by the article-branch mark (same severity, pushed first — see
-// the comment at eligibility.ts:207-211), so no black-box call through eligible() can tell
-// whether this mark was resolved on the sheet's engine or on the effective producer. Testing
-// the exported function directly is the only level at which a revert of the effective-producer
-// fix is observable.
+// Direct seam on the buildability mark. It used to be MASKED for every scrolly candidate by the
+// article-branch mark (same severity, pushed first), which is why this seam had to be tested
+// through the exported function rather than through eligible(). That mask is gone — the test
+// above now observes the same property through a full eligible() call — and this stays as the
+// unit-level probe of the resolution itself, on a fixture eligible() cannot express.
 //
 // The FIXTURE moved three times, each time because the engine it was pinned on became
 // buildable — which is the point of the tranche, not a weakening of this test. It was
@@ -404,10 +450,10 @@ test("a mark can never carry an empty reason, even for a capability disabled wit
   // Scoped to the engine the fixture actually disabled: a candidate on ANOTHER engine now
   // carries the "production cannot build this" mark instead, whose reason is a different (also
   // non-empty) sentence. What is pinned here is the empty-reason repair, not which mark wins.
-  // A chart-native candidate in the scrolly format is excluded too: its EFFECTIVE producer is
-  // skills/scrolly, so it carries the masking article-branch mark (severity `missing`, always
-  // pushed first — see `withMarks` in eligibility.ts) instead of this readiness mark; that
-  // masking is exercised directly by "buildabilityMark resolves the EFFECTIVE producer..." above.
+  // A chart-native candidate in the SCROLLY format is scoped out too, and no longer because a
+  // branch mark masks it: a scrolly track the host does not compose carries the `missing`
+  // buildability mark, which outranks this `disabled` one. Which mark wins there is the subject
+  // of "a scrolly track the host does not host is MARKED…" above, not of this test.
   const marked = ok.filter(
     (c) => c.engine === "chart-native" && c.format !== "scrolly" && c.readiness,
   );

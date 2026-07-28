@@ -58,8 +58,8 @@ export function chooseForm(
   // lib/loop/buildable.ts exists to prevent.
   //
   // Only THIS mark forbids. An option can also carry a readiness mark for a capability the
-  // newsroom left switched off, or for the whole-article branch; those are warnings the offer
-  // showed and the journalist read. Refusing them would turn the mark into a veto and take the
+  // newsroom left switched off, or for an input the run has not declared (an image scrolly's
+  // photographs); those are warnings the offer showed and the journalist read. Refusing them would turn the mark into a veto and take the
   // decision back from the journalist, which is the opposite of what this module is for.
   // The mark's own words when it has them, so the journalist reads in the refusal exactly the
   // sentence the offer displayed — written once, in buildable.ts, because manifest.ts's routing

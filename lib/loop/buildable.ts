@@ -9,11 +9,12 @@ import { ASSEMBLERS, assemblerFor, declineReason } from "./assemble";
 //   - lib/loop/produce.ts refuses a chosen option whose EFFECTIVE producer cannot build it
 //     (rendering a map spec through the chart renderer produces a WRONG artifact silently);
 //   - lib/brain/eligibility.ts MARKS such a form in the offer instead of dropping it (spec §8:
-//     "jamais silencieusement retirée") — the SAME sentence produce refuses with for most
-//     engines, though not for every scrolly candidate: eligibility.ts's `withMarks` pushes the
-//     higher-priority article-branch mark first, which masks this one's wording, so the offer
-//     reads "this is the whole-article branch…" while produce still refuses with the plain
-//     unbuildableEngineReason sentence below. Both name the same dead end, in different words;
+//     "jamais silencieusement retirée") — the SAME sentence produce refuses with, so the offer's
+//     mark and the refusal a journalist would eventually meet are one wording. (It was NOT one
+//     wording for a scrolly until 2026-07-28: `withMarks` pushed an article-branch mark first,
+//     which masked this one, so the offer read "this is the whole-article branch…" while produce
+//     refused with the sentence below. That mark is gone — it claimed a scrolly could not be
+//     built and changed what was delivered, and both halves were measured false.);
 //   - lib/loop/manifest.ts's nextActionsForElement routes back to "choose-form" instead of
 //     answering "produce" forever on a choice that can never succeed;
 //   - lib/loop/choose.ts refuses the choice itself one step earlier, while the journalist is
@@ -21,8 +22,10 @@ import { ASSEMBLERS, assemblerFor, declineReason } from "./assemble";
 //     end;
 //   - lib/loop/verify.ts asks the table which SHAPE the artifact has against its box
 //     (heightPolicyFor). A fifth, added late and reading `chosen.engine` directly until the
-//     whole-branch review counted the readers this header names — harmless while no scrolly
-//     carried a height policy, and the exact drift the sentence above forbids.
+//     whole-branch review counted the readers this header names. That is no longer harmless: the
+//     scrolly HOST is content-driven (a scrolly is its own scroll), so reading the engine an
+//     option NAMES rather than the one that BUILDS it would hold a chart-track scrolly to its
+//     destination's height and file a blocking overflow on a correct page.
 // Before this file the list was hard-coded in produce.ts alone and the brain knew nothing of
 // it, so the offer could rank an unbuildable form FIRST, unmarked: the journalist chose it,
 // produce answered `not-implemented`, and the run had nothing to say for itself. Before

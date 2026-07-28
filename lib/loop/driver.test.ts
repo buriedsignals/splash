@@ -624,13 +624,15 @@ test("a channel-legal requested scrolly format is offered unstranded, and starts
 
   run = await advance(run, runDir, NEUTRAL_DECOR); // propose
   const proposal = run.elements[0].proposal!;
-  // The rows are OFFERED and MARKED (the whole-article-branch mark fires unconditionally on
-  // format:"scrolly" — see eligibility.ts's withMarks — so every row still carries a
-  // readiness note) — but the run is no longer stranded: no aggregate refusal is added,
-  // because at least one row is genuinely buildable.
+  // The rows are OFFERED, and at least one of them CLEAN. Until 2026-07-28 every row here
+  // carried a readiness note, because the whole-article-branch mark fired unconditionally on
+  // format:"scrolly" — a mark whose sentence ("not built yet, and it changes what gets
+  // delivered") was measured false end to end (lib/loop/scrolly-e2e.test.ts). What remains
+  // marked is only what is genuinely unbuildable, per track.
   expect(proposal.options.length).toBeGreaterThan(0);
   expect(proposal.options.every((o) => o.format === "scrolly")).toBe(true);
   expect(proposal.refusal).toBeUndefined();
+  expect(proposal.options.some((o) => !o.readiness)).toBe(true);
 
   const chosen = proposal.options.find((o) => o.engine === "chart-native")!;
   expect(chosen).toBeDefined();

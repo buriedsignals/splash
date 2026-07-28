@@ -19,6 +19,7 @@ import { fail, ok, type VerbResult } from "../core/verbs";
 import {
   suggestBeats,
   suggestImageBeats,
+  IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED,
   type SuggestedBeat,
 } from "../brain/beats";
 // The engine's own declared type id, read rather than repeated (skills/image-native/src/
@@ -60,11 +61,11 @@ export function draftBeats(
   // the router and the drafter from disagreeing again.
   if (chosen.nativeType === IMAGE_SCROLLY_TYPE) {
     if (!run.input.images)
+      // The wording lives with the rule (lib/brain/beats.ts), not here: the OFFER marks the same
+      // form with the same sentence, and a journalist meeting it twice must read it once.
       return fail(
         "invalid-request",
-        "draft-beats: an image scrolly walks the journalist's own photographs, and none are " +
-          "declared with this run — bring a photograph (with its alt text and credit) for each " +
-          "beat of the walk",
+        `draft-beats: ${IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED}`,
       );
     const drafted = suggestImageBeats(run.input.images.frames);
     if (drafted.refusal)

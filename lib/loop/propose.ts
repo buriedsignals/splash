@@ -61,8 +61,8 @@ export function propose(
     // Through the resolver, never off `m.channel` directly: unpacking the run's default is not
     // this module's to do (lib/loop/manifest.ts's deliverableForElement is the one reader of it).
     channel: channelForElement(m, element),
-    // `m.route` is deliberately NOT threaded: what the run declares it wants is not evidence
-    // that the whole-article branch exists, and the brain's mark is about existence (I2).
+    // `m.route` is deliberately NOT threaded: what a run DECLARES it wants is not evidence about
+    // what this build can do, and legality must not move with a field any caller may set (I2).
     ...(decor ? { readiness: decor.readiness } : {}),
     ...(decor?.theme ? { themeBg: decor.theme } : {}),
     ...(element.requestedFormat

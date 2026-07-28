@@ -23,6 +23,21 @@ import { parseCsvRows } from "../loop/profile";
 import { AUTHORABLE_SCROLLY_TYPES } from "../../skills/chart-native/src/chart-story";
 import { IMAGE_SCROLLY_TYPE } from "../../skills/image-native/src/image-story";
 
+/**
+ * THE ONE WORDING for "an image scrolly needs the journalist's own photographs".
+ *
+ * Two readers, and they must never come to say it differently: the OFFER marks an image-native
+ * form with it (lib/brain/eligibility.ts — the brain cannot see `run.input.images`, so it cannot
+ * tell a run that has declared photographs from one that has not, and offering the form clean to
+ * the second strands it at `draft-beats`), and the DRAFTER refuses with it when the photographs
+ * really are absent (lib/loop/beats.ts). Same discipline, and the same reason, as
+ * MAP_TRACK_BEATS_REFUSAL in skills/scrolly/src/scrolly-types.ts: a journalist meeting the rule
+ * twice has to read it once.
+ */
+export const IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED =
+  "an image scrolly walks the journalist's own photographs, and none are declared with this " +
+  "run — bring a photograph (with its alt text and credit) for each beat of the walk";
+
 export type BeatAnchor =
   | { kind: "x"; value: string } // line: a value of the x column
   | { kind: "category"; value: string }; // bar: a value of the category column
