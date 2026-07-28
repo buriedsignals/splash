@@ -13,12 +13,14 @@
 // call it defensively could NOT displace the leaked `zip` stub. They were green by file
 // ordering alone.
 import { describe, it, expect } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const REPO = join(import.meta.dir, "..", "..");
 const PUBLISHERS = join(REPO, "lib", "core", "publishers.ts");
+/** The file under proof: the one that stubs the registry. */
+const PUBLISHERS_TEST = join(REPO, "lib", "core", "publishers.test.ts");
 const ROOT_MODULE = join(REPO, "lib", "delivery", "index.ts");
 const ZIP_ADAPTER = join(REPO, "lib", "delivery", "adapters", "zip.ts");
 
@@ -60,19 +62,22 @@ describe("publishers.test.ts leaves the registry as it found it", () => {
     writeFileSync(loads, LOADS_ROOT);
     writeFileSync(inspects, INSPECTS_AFTER);
 
-    const child = Bun.spawn(
-      ["bun", "test", loads, PUBLISHERS.replace(/\.ts$/, ".test.ts"), inspects],
-      {
-        cwd: REPO,
-        stdout: "pipe",
-        stderr: "pipe",
-      },
-    );
-    const [code, stderr] = await Promise.all([
-      child.exited,
-      new Response(child.stderr).text(),
-    ]);
-    expect(stderr).not.toContain("(fail)");
-    expect(code).toBe(0);
+    // Explicit paths, in this order — `bun test` runs the files it is handed in the order it
+    // is handed them, which is what makes the sandwich deterministic instead of alphabetical.
+    const child = Bun.spawn(["bun", "test", loads, PUBLISHERS_TEST, inspects], {
+      cwd: REPO,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    try {
+      const [code, stderr] = await Promise.all([
+        child.exited,
+        new Response(child.stderr).text(),
+      ]);
+      expect(stderr).not.toContain("(fail)");
+      expect(code).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   }, 60_000);
 });
