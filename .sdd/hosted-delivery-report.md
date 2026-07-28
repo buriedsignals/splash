@@ -297,3 +297,126 @@ Each file's always-on fixture-validity half is untouched and still ungated (`ass
 5. **Two `bun install` runs were needed** (`skills/chart-native`, `skills/map-native`) for the engine
    registry to import at all. Both write into gitignored `node_modules`; nothing is committed. A
    fresh worktree needs them before `bun test lib` means anything.
+
+---
+
+# Review round 1 — ruling SOUND, two Minor findings closed
+
+## Finding 1 — stale comment in `lib/brain/eligibility.ts` (`buildabilityMark`)
+
+It still asserted dw-chart's interactive "is a hosted embed with no file, which the loop cannot
+record" and that the pairing "dead-ended at produce" — both false after this branch. The reviewer is
+right that this is the same class the sweep already fixed twice in `buildable.ts` and missed here.
+
+Rewritten to say three things instead of one, because a reader of this comment needs the live limit
+and not just the correction:
+
+- dw-chart WAS that case and no longer is — the manifest records a hosted delivery as the URL it is,
+  `isLoopBuildable` answers true for both formats, neither is marked.
+- **What is still true**: the loop RECORDS a hosted delivery but cannot act on one — capture records
+  a gap, and preview/approve/deliver refuse it by name. Stated explicitly as a limit of the
+  VERIFICATION CHAIN, not of the offer, which is why it is deliberately not a mark: the journalist
+  can legitimately be shown this form, and the refusal they eventually meet names the URL.
+- No format restriction survives in the table today, but the format still travels into the check,
+  because the next engine wired in one format and not another must be marked rather than discovered
+  at produce.
+
+## Finding 2 — `HostedArtifactSchema` accepted `url: ""` at the write
+
+Correct, and the reasoning is the one that matters: it was unreachable through anything this branch
+added (one writer, `produce.ts`, always calling `isHostedUrl`), but "one writer, always careful" is a
+property of today's code, not of the manifest.
+
+Closed in `assertInvariants` — the function `writeManifest` runs on every write — beside the
+`el.artifact && !el.angle` family:
+
+```ts
+if (isHostedArtifact(el.artifact) && !isHostedUrl(el.artifact.url))
+  throw new Error(
+    `invariant: element ${el.id} records a hosted delivery whose url is not a resolvable https address (…)`,
+  );
+```
+
+`isHostedUrl` is **imported from `lib/core/contract.ts`** — no second definition of "resolvable".
+Three readers of one predicate now: `assertDeliveredContract` (delivery), `produce.ts` (the write of
+the record), `assertInvariants` (every write of the manifest). zod cannot express this (`url` is
+typed as a plain string), which is why it belongs in the invariant rather than in the schema; the
+schema's own comment was updated to say where the check actually lives.
+
+**RED demonstrated, not assumed.** The test was written first and run against the code with only
+`lib/loop/manifest.ts` stashed, so the invariant was absent while the test existed:
+
+```
+$ git stash push -q lib/loop/manifest.ts && bun test lib/loop/hosted-artifact.test.ts
+145 |     expect(() => assertInvariants(m)).toThrow(/not a resolvable https address/);
+error: expect(received).toThrow(expected)
+Expected pattern: /not a resolvable https address/
+Received function did not throw
+(fail) a hosted record whose url is not resolvable is refused at the write
+ 6 pass / 1 fail
+```
+
+The test covers five rejections — blank, `http://`, a bare local host, a placeholder host, and a
+non-URL string — plus a positive control asserting the real published shape still passes, so the
+guard is proven to reject the URL rather than the hosted record itself.
+
+## Ruling on `z.union` vs `z.discriminatedUnion` — MEASURED, and the answer is "leave it"
+
+The reviewer asked whether a record carrying BOTH `path` and `url` being silently pruned is worth
+tightening, and offered "it would break legacy records with no `kind`" as the possible reason to
+leave it. I probed zod 4.4.3 directly rather than reason about it:
+
+```
+union   legacy : {"success":true,"data":{"path":"p","sha256":"s"}}
+union   both   : {"success":true,"data":{"path":"p","sha256":"s"}}
+union   bothH  : {"success":true,"data":{"kind":"hosted","url":"https://dw.net/a"}}
+discr   legacy : {"success":true,"data":{"path":"p","sha256":"s"}}
+discr   both   : {"success":true,"data":{"path":"p","sha256":"s"}}
+discr   bothH  : {"success":true,"data":{"kind":"hosted","url":"https://dw.net/a"}}
+strict  both   : {"success":false, … invalid_union}
+```
+
+Two things the measurement settles, and the offered reason is not one of them:
+
+1. **`z.discriminatedUnion` would NOT break legacy records.** zod 4 accepts an absent optional
+   discriminator — `legacy` parses identically under both. That concern is false, so it is not the
+   reason to leave it.
+2. **`z.discriminatedUnion` does not fix the finding either.** It prunes `both` and `bothH` exactly
+   as `z.union` does, because it selects the branch by `kind` and then parses with a non-strict
+   `z.object` that strips the foreign key. Switching would be churn that changes nothing about the
+   behaviour in question.
+
+What DOES reject a self-contradictory record is `z.strictObject` branches. I am not taking it, for
+reasons of proportion rather than difficulty:
+
+- It would reject a manifest written by a NEWER Splash that added a field to the artifact record.
+  This manifest is explicitly designed to travel — `produce.ts`'s own header states the recorded
+  path is run-dir-relative "so the whole run dir can be copied elsewhere and still resolve" — so
+  forward-compatibility on this record is a property worth more than rejecting a state no writer can
+  produce. Every other object in `RunElementSchema` is non-strict for the same reason; the one
+  `z.strictObject` in this file (`ImageFrameSchema`) is strict precisely because its header says it
+  is shared with a schema that accepts raw, untrusted JSON. The artifact record is not.
+- The prune fails in the SAFE direction. `{path, sha256, url}` resolves to the FILE branch, so the
+  loop never claims a hosted delivery it did not record; if the path does not resolve, `resume`
+  reports `"missing"` — loud. And the hosted-leaning contradiction is now caught outright: a
+  `{kind:"hosted", url:"", path:"p"}` prunes to hosted and then throws on the new invariant.
+
+**Ruling: leave `z.union`, and tighten nothing further in this pass.** The finding's actual risk —
+a hosted record reaching the loop with a URL nobody can open — is closed by the invariant in Finding
+2, at the layer that can see it, rather than by a schema change that the probe shows would not have
+closed it.
+
+## Verification (each command run ONCE, foreground; gated DW proofs NOT re-run)
+
+```
+$ cd /Users/rmdms/Sites/Professional/splash-hosted/lib && bunx tsc --noEmit; echo "TSC_EXIT=$?"
+TSC_EXIT=0
+
+$ cd /Users/rmdms/Sites/Professional/splash-hosted && bun test lib/loop lib/brain
+bun test v1.3.5 (1e86cebd)
+ 607 pass
+  11 skip
+   0 fail
+ 2094 expect() calls
+Ran 618 tests across 62 files. [201.00s]
+```

@@ -21,6 +21,7 @@ import {
   DESTINATION_POLICY,
 } from "../core/channel-policy";
 import { unbuildableFormReason } from "./buildable";
+import { isHostedUrl } from "../core/contract";
 import { ARC_ROLES } from "../core/claim-arc";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
@@ -65,9 +66,11 @@ const FileArtifactSchema = z.object({
 });
 const HostedArtifactSchema = z.object({
   kind: z.literal("hosted"),
-  /** The published embed. Shape-checked with lib/core/contract.ts's isHostedUrl at the ONE place
-   *  that writes it (produce.ts) — the same check assertDeliveredContract runs on the delivery, so
-   *  "resolvable" is defined once for both stages. */
+  /** The published embed. Typed as a plain string because zod cannot express "resolvable"; the
+   *  shape is checked with lib/core/contract.ts's isHostedUrl in TWO places — produce.ts, the one
+   *  writer, and assertInvariants, which every write goes through (so a hand-edited manifest or a
+   *  future second writer cannot get a blank one past). Same predicate assertDeliveredContract
+   *  runs on the delivery itself: one definition of "resolvable", three readers. */
   url: z.string(),
   provenanceHash: z.string(),
   producedAt: z.string(),
@@ -917,6 +920,25 @@ export function assertInvariants(run: RunManifest): void {
     if (el.artifact && !el.angle)
       throw new Error(
         `invariant: element ${el.id} has an artifact without an angle`,
+      );
+    // A HOSTED RECORD'S URL IS ITS WHOLE DELIVERABLE, so a blank or malformed one is a manifest
+    // asserting a delivery that cannot be opened — the hosted counterpart of a file record naming
+    // a path nobody can read.
+    //
+    // Checked at the WRITE, not only at produce, for the reason the deliverable-format invariant
+    // just above states in its own words: a manifest wrong on disk is wrong whether or not anyone
+    // tries to use it. produce.ts IS the only writer today and it always runs this same check, so
+    // nothing this branch added can reach here — but "one writer, always careful" is a property of
+    // the current code, not of the schema, and a hand-edited manifest or a second writer walks
+    // straight in. zod cannot express it (the schema types `url` as a string), so it belongs here.
+    //
+    // isHostedUrl is IMPORTED from lib/core/contract.ts — the same predicate produce.ts calls and
+    // assertDeliveredContract runs inside the dispatcher. Three readers, one definition of
+    // "resolvable"; writing a second one here is exactly how the produce stage and the write stage
+    // would start disagreeing about what a deliverable URL is.
+    if (isHostedArtifact(el.artifact) && !isHostedUrl(el.artifact.url))
+      throw new Error(
+        `invariant: element ${el.id} records a hosted delivery whose url is not a resolvable https address (${JSON.stringify(el.artifact.url)})`,
       );
     // The narrative counterpart of the `why` invariant just above, and it says the same thing
     // one layer out: a PAGE recorded as produced while a beat of its walk carries no claim is a

@@ -15,6 +15,7 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  assertInvariants,
   parseManifest,
   provenanceHash,
   gateStateOf,
@@ -124,6 +125,28 @@ test("a manifest written before hosted deliveries existed still parses as a file
   const a = parsed.elements[0]!.artifact!;
   expect(isHostedArtifact(a)).toBe(false);
   expect(fileArtifact(a)?.path).toBe("elements/e1/static.png");
+});
+
+// THE URL IS THE WHOLE DELIVERABLE, so a blank or malformed one is a manifest asserting a delivery
+// nobody can open — the hosted counterpart of a file record naming an unreadable path. produce.ts
+// checks it, but produce.ts being careful is a property of today's code, not of the manifest: the
+// write is where a hand-edited file or a second writer is caught. Same isHostedUrl predicate at
+// both, never a second definition of "resolvable".
+test("a hosted record whose url is not resolvable is refused at the write", () => {
+  for (const url of [
+    "", // blank
+    "http://datawrapper.dwcdn.net/AbCdE/1/", // not https
+    "https://localhost/AbCdE/1/", // a bare local host, not a domain
+    "https://example.com/AbCdE/1/", // a placeholder host
+    "not a url at all",
+  ]) {
+    const m = withHostedArtifact();
+    (m.elements[0]!.artifact as { url: string }).url = url;
+    expect(() => assertInvariants(m)).toThrow(/not a resolvable https address/);
+  }
+  // The control: the real published shape passes, so the guard is rejecting the URL and not the
+  // hosted record itself.
+  expect(() => assertInvariants(withHostedArtifact())).not.toThrow();
 });
 
 test("a hosted artifact is a produced element, and goes stale with its provenance", () => {

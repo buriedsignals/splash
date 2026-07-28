@@ -313,9 +313,26 @@ export function buildabilityMark(
 ): { status: CapabilityReadiness["status"]; reason: string } | null {
   const builder = producerForFormat(engine, format);
   // The FORMAT travels into the check, not only into the builder resolution: an engine can be
-  // wired in one format and not another (dw-chart builds a static chart; its interactive is a
-  // hosted embed with no file, which the loop cannot record). Without this, that pairing was
-  // offered unmarked and dead-ended at produce — the exact defect this mark exists to prevent.
+  // wired in one format and not another, and an unmarked pairing that dead-ends at produce is the
+  // exact defect this mark exists to prevent.
+  //
+  // dw-chart WAS that case and no longer is. Its interactive form is a hosted Datawrapper embed
+  // with no file the newsroom owns, and while the run manifest could only record an artifact by
+  // PATH the pairing was marked, because produce() answered "no interactive artifact in the
+  // delivery" for a chart Datawrapper had published perfectly well. The manifest now records a
+  // hosted delivery as the URL it is (ArtifactRecordSchema, lib/loop/manifest.ts) and produce()
+  // writes it, so isLoopBuildable answers true for both formats and neither is marked here.
+  //
+  // WHAT IS STILL TRUE, because a reader of this comment needs the live limit and not just the
+  // history: the loop RECORDS a hosted delivery, but it cannot act on one. capture records a gap
+  // instead of measuring it, and preview, approve and deliver each refuse it by name — there are
+  // no bytes to present, to sign, or to hand a publisher. That is a limit of the verification
+  // chain, not of the OFFER, which is why it is not a mark: the journalist can legitimately be
+  // shown this form, and the refusal they eventually meet names the URL they can use.
+  //
+  // No format restriction survives in the table today (lib/loop/assemble/index.ts). The format
+  // still travels because the entries are per-(type, format) pairings and the next engine wired
+  // in one format and not another must be marked, not discovered at produce.
   if (isLoopBuildable(builder, nativeType, format)) return null;
   return {
     status: "missing",
