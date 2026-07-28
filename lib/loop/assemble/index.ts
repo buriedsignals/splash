@@ -5,6 +5,24 @@
 import type { Assembler } from "../../core/production-brief";
 import { assembleChartNative } from "./chart-native";
 
-export const ASSEMBLERS: Record<string, Assembler> = {
-  "chart-native": assembleChartNative,
+export type AssemblerEntry = {
+  assemble: Assembler;
+  /** Absent = every type this engine declares. Present = the types the LOOP can compose a
+   *  spec for, which can lag the engine's own catalogue while a family is being wired. */
+  supports?: (nativeType: string) => boolean;
 };
+
+export const ASSEMBLERS: Record<string, AssemblerEntry> = {
+  "chart-native": { assemble: assembleChartNative },
+};
+
+export function assemblerFor(
+  engine: string,
+  nativeType?: string,
+): Assembler | undefined {
+  const entry = ASSEMBLERS[engine];
+  if (!entry) return undefined;
+  if (nativeType && entry.supports && !entry.supports(nativeType))
+    return undefined;
+  return entry.assemble;
+}

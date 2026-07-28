@@ -204,7 +204,7 @@ export function eligible(
   if (
     input.requestedFormat &&
     out.length > 0 &&
-    out.every((c) => buildabilityMark(c.engine, c.format) != null)
+    out.every((c) => buildabilityMark(c.engine, c.format, c.key) != null)
   )
     return {
       eligible: out,
@@ -299,13 +299,20 @@ function markReason(r: {
  *  chart-native form in the scrolly format is not a chart-native build. Exported because the
  *  mark it returns is masked inside a full `eligible()` call — the article-branch mark shares
  *  its severity and is pushed first — so this is the only level at which the rule is
- *  observable. */
+ *  observable.
+ *
+ *  `nativeType` narrows the check to what the loop can actually compose a spec for, not just
+ *  the engine as a whole — an engine can be wired while only some of its types are (map-native's
+ *  seven types land in families), and the day that happens an unmarked type-mismatch here is
+ *  the same dead end this file already guards one level up. Optional so every existing caller
+ *  without a type in hand still answers for the engine, unchanged. */
 export function buildabilityMark(
   engine: string,
   format: VisualFormat,
+  nativeType?: string,
 ): { status: CapabilityReadiness["status"]; reason: string } | null {
   const builder = producerForFormat(engine, format);
-  if (isLoopBuildable(builder)) return null;
+  if (isLoopBuildable(builder, nativeType)) return null;
   return { status: "missing", reason: unbuildableEngineReason(builder) };
 }
 
@@ -338,7 +345,7 @@ function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   // the journalist decides), and the day produce wires the engine the mark disappears with no
   // change here. NOT added to `requires`: that list is the decor's CAPACITÉ axis (ids a
   // newsroom can turn on), and no newsroom setting can make this true.
-  const engineMark = buildabilityMark(c.engine, c.format);
+  const engineMark = buildabilityMark(c.engine, c.format, c.key);
   if (engineMark) marks.push(engineMark);
   for (const r of input.readiness ?? [])
     if (requires.includes(r.id) && r.status !== "ready")

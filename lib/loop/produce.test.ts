@@ -729,3 +729,12 @@ test("a form nothing can build is refused with the offer's sentence, before its 
   expect(r.message).not.toContain("beat-1");
   rmSync(runDir, { recursive: true, force: true });
 });
+
+test("a scrolly-format option dispatches to the scrolly producer, not to the chosen engine", async () => {
+  // Regression guard for the trap produce.ts:385-400 documents. Asserted on the dispatch,
+  // not on a render: the point is WHICH engine key is asked for.
+  const { resolveBuilder } = await import("./buildable");
+  expect(resolveBuilder({ engine: "chart-native", format: "scrolly" })).toBe(
+    "scrolly",
+  );
+});

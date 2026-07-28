@@ -1,6 +1,6 @@
 import { producerForFormat } from "../core/registry";
 import type { VisualFormat } from "../core/vocabulary";
-import { ASSEMBLERS } from "./assemble";
+import { ASSEMBLERS, assemblerFor } from "./assemble";
 
 // Which engines the editorial loop can actually BUILD through today — ONE list, read by
 // everything that has to know.
@@ -38,9 +38,16 @@ export const LOOP_BUILDABLE_ENGINES: readonly string[] =
   Object.keys(ASSEMBLERS);
 
 /** An option with no engine at all (fixtures, hand-authored manifests predating the brain) is
- *  built through the default path, which IS chart-native — so "unset" is buildable. */
-export function isLoopBuildable(engine?: string): boolean {
-  return engine == null || LOOP_BUILDABLE_ENGINES.includes(engine);
+ *  built through the default path, which IS chart-native — so "unset" is buildable.
+ *
+ *  `nativeType` narrows the answer to what the table can actually compose a spec for: an
+ *  engine can be wired while only some of its types are, and offering the rest unmarked would
+ *  be the exact dead end this file exists to prevent, just one level down (see the header on
+ *  "why type-aware" in the task that added this parameter). Absent `nativeType` answers for
+ *  the engine as a whole, matching every caller that does not have a type in hand yet. */
+export function isLoopBuildable(engine?: string, nativeType?: string): boolean {
+  if (engine == null) return true; // pre-brain manifests take the default path (chart-native)
+  return assemblerFor(engine, nativeType) !== undefined;
 }
 
 // The one sentence both readers use, so a journalist reads the same refusal in the offer's mark
@@ -70,10 +77,11 @@ export function unbuildableFormReason(chosen: {
   id?: string;
   engine?: string;
   format?: VisualFormat;
+  nativeType?: string;
   readiness?: { reason?: string };
 }): string | undefined {
   const builder = resolveBuilder(chosen);
-  if (isLoopBuildable(builder)) return undefined;
+  if (isLoopBuildable(builder, chosen.nativeType)) return undefined;
   const marked = chosen.readiness?.reason?.trim();
   return marked ? marked : unbuildableEngineReason(builder);
 }

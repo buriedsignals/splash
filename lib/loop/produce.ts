@@ -29,10 +29,9 @@ import {
   isLoopBuildable,
   unbuildableEngineReason,
   resolveBuilder,
-  LOOP_BUILDABLE_ENGINES,
 } from "./buildable";
 import { briefFor } from "./assemble/brief";
-import { ASSEMBLERS } from "./assemble";
+import { assemblerFor } from "./assemble";
 // Populates the producer registry the render verb dispatches from — without it every
 // render answers `unknown-engine`. The loop's ONE point of knowledge about skills/ lives
 // in that file, on purpose; see its header.
@@ -151,7 +150,7 @@ export async function produce(
   // manifest.ts's nextActionsForElement resolve through, so the refusal a journalist reads
   // here is the sentence the offer already showed them.
   const builder = resolveBuilder(chosen);
-  if (!isLoopBuildable(builder))
+  if (!isLoopBuildable(builder, chosen.nativeType))
     return fail(
       "not-implemented",
       `produce: "${chosen.id}" is a ${builder} form (${chosen.format ?? "static"}) — ${unbuildableEngineReason(builder)}`,
@@ -251,7 +250,7 @@ export async function produce(
     published.url,
     format,
   );
-  const assembler = ASSEMBLERS[builder];
+  const assembler = assemblerFor(builder, chosen.nativeType);
   if (!assembler)
     return fail(
       "not-implemented",
@@ -330,26 +329,10 @@ export async function produce(
   }
 
   const result = await render({
-    // Dispatch follows the CHOSEN engine (chosen.engine), never the RESOLVED builder — the
-    // guard above checks `builder` (resolveBuilder: the EFFECTIVE producer, which redirects
-    // `scrolly` to skills/scrolly regardless of chosen.engine), but this dispatch still reads
-    // the raw `chosen.engine`. That is safe ONLY by the narrow coincidence that today
-    // LOOP_BUILDABLE_ENGINES is exactly ["chart-native"] and the sole redirecting format is
-    // `scrolly`, which is unbuildable — so a candidate that clears the guard above always has
-    // builder === chosen.engine already; the two names never actually diverge in a case that
-    // reaches this line. (The spec assembled just above is still chart-native-shaped — that is
-    // the promise buildable.ts's header records for adding an engine; a premature addition
-    // fails at the engine's own validator rather than rendering the wrong thing silently.) An
-    // option with no engine at all is a pre-brain manifest, and the default path has always
-    // been chart-native.
-    //
-    // THIS BREAKS the day `scrolly` enters LOOP_BUILDABLE_ENGINES: a chart-native option in
-    // the scrolly format would then clear the guard above (builder = "scrolly", buildable),
-    // but this line would still dispatch `engine: "chart-native"` — render.ts:58-69 reads
-    // chart-native's OWN manifest, which does not declare `scrolly`, and refuses the build as
-    // "unsupported-format" for a form the guard just promised was buildable. Fix at that
-    // point: dispatch on `builder`, not `chosen.engine`.
-    engine: chosen.engine ?? LOOP_BUILDABLE_ENGINES[0]!,
+    // `builder` is what resolveBuilder resolved above — the same value the buildability guard
+    // checked and the same value the assembler table was keyed on. One name, one resolution,
+    // three readers.
+    engine: builder,
     spec: nativeSpec,
     format,
     channel,
