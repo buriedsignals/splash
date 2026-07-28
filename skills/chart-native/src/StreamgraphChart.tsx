@@ -19,7 +19,14 @@ import {
 } from "./streamgraph-geometry";
 import { area, curveBasis } from "d3-shape";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -34,6 +41,14 @@ export interface StreamgraphConfig {
   xField: string;
   seriesFields: string[];
   rows: Record<string, string | number>[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. Bands carry the fixed Okabe-Ito series
+   *  palette (and their in-band label is picked per-fill by labelInkOnFill, which is
+   *  theme-independent), so the hue never touches them. Undefined = untinted. */
+  baseColor?: string;
 }
 
 export interface StreamgraphChartProps {
@@ -142,6 +157,8 @@ export function StreamgraphChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -174,6 +191,7 @@ function StreamgraphSvg({
   sc: number;
 }) {
   const { innerWidth, innerHeight, bands, xTicks } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const n = bands.length;
   const chrome = easeOutCubic(p / 0.16);
   const labelOp = clamp01((p - 0.6) / 0.3);
@@ -205,7 +223,7 @@ function StreamgraphSvg({
               }
               fontSize={ts.axis}
               fontWeight={600}
-              fill={COLORS.ink}
+              fill={C.ink}
             >
               {t.label}
             </text>
@@ -302,6 +320,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

@@ -122,12 +122,19 @@ const CASES: [string, Record<string, unknown>][] = [
 const INK = "#1A1A1A"; // COLORS.ink
 const PURE_FURNITURE_GREYS = ["#6B6B6B", "#CFCFCF", "#E6E6E6"]; // muted / axis / grid
 
-// The three types that legitimately print #1A1A1A as an IN-MARK label (labelInkOnFill on a
+// The types that legitimately print #1A1A1A as an IN-MARK label (labelInkOnFill on a
 // light-enough mark fill) — theme-independent WCAG max-contrast text, not furniture. Their
-// FURNITURE still derives from the ground; the greys are still enforced. This set is the
-// labelInkOnFill importers among the 27; if it ever must grow, that is a real review question
-// (a new in-mark-label type), not a silent widen.
-const IN_MARK_INK_TYPES = new Set(["heatmap", "treemap", "diverging-stacked"]);
+// FURNITURE still derives from the ground; the greys are still enforced. This set is exactly
+// the labelInkOnFill importers among the 41 base components; if it ever must grow, that is a
+// real review question (a new in-mark-label type), not a silent widen.
+const IN_MARK_INK_TYPES = new Set([
+  "heatmap",
+  "treemap",
+  "diverging-stacked",
+  "marimekko",
+  "streamgraph",
+  "sunburst",
+]);
 
 // Two arbitrary (non-preset) grounds proving derivation, not a light/dark switch:
 const GROUND_DARK = "#3A2E2E"; // dark brown — a dark house ground that is NOT the #18181B preset

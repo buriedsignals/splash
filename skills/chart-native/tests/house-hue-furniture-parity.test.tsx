@@ -48,12 +48,10 @@ const THEMED = BASE.filter((f) => read(f).includes("themeBg?: string"));
 // separately in docs/splash/residuals.md. Frozen as a list so the set cannot quietly grow:
 // a new chart type must be themed, or it must be added here on purpose.
 const UNTHEMED = [
-  "MarimekkoChart.tsx",
   "ParallelChart.tsx",
   "PictogramChart.tsx",
   "RadarChart.tsx",
   "SankeyChart.tsx",
-  "StreamgraphChart.tsx",
   "SunburstChart.tsx",
 ];
 
