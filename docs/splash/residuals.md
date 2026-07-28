@@ -450,6 +450,31 @@ la toucher.
 
 ---
 
+### A34 — la capture d'un scrolly crope sur sa bannière *(ouvert, MESURÉ ici)*
+
+**Constat live, pas déduit.** Sur un scrolly produit et ouvert dans un navigateur, le sélecteur de
+repli de la couche capture — `#root > div` — résout un élément de **454 × 63 px** dont le texte
+commence par « The Arctic's summer sea ice has shrunk b… » : **la bannière de titre**, pas la page.
+Toute la chaîne `capture → review → approve` mesurerait un fragment, et les constats de furniture
+comme la voie taste-risk porteraient sur une bannière — la classe de faux vert que cette couche
+existe précisément pour tuer.
+
+**Cause.** `skills/scrolly/src/Scrolly.tsx:588` retourne un **fragment** (`<>…</>`) dont le premier
+enfant est l'en-tête. Aucun élément ne contient la page entière, donc rien à marquer.
+
+**Pourquoi ce n'est pas une édition d'une ligne** — les deux issues évidentes échouent chacune :
+envelopper dans une `<div>` ajoute une boîte à un composant en `position: sticky`, donc le contexte
+de collage peut se déplacer et il faut un A/B au rendu ; `display: contents` éviterait la boîte mais
+rend un `getBoundingClientRect()` à zéro, ce qui casserait le crop qu'on répare.
+
+**Sévérité : latente.** `scrolly` n'est pas dans `LOOP_BUILDABLE_ENGINES` — la forme est offerte
+MARQUÉE, aucun scrolly ne traverse `capture` aujourd'hui. **Vivant le jour où la branche article
+ship**, et c'est le bon moment pour le fermer : même tranche, rendu sous les yeux.
+
+**Ce qu'il faut :** `data-splash-root` sur une racine réelle du scaffold, `data-splash-title` sur le
+titre de page, l'A/B prouvant que le collage n'a pas bougé, et la vérification que `#root > div`
+cesse d'être le repli atteint. Trouvé par le lot moteurs (hors de sa frontière), mesuré ici.
+
 ## 4. Pile C — bloqué
 
 Chacun attend quelque chose que ce dépôt ne contient pas.
