@@ -326,7 +326,21 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
     );
 
     // 7. CHOOSE-FORM — the journalist's decision, on an offer that has now been shown.
-    const buildable = options.find((o) => !o.readiness)!;
+    // Not `find(...)!`: without a form the machine can actually build, that assertion died on a
+    // dereference and said nothing about why. Since the readiness probe learned to see a missing
+    // Remotion browser, "every option is marked" is a normal state of a worktree that skipped the
+    // README's `bunx remotion browser ensure` — the probe doing its job, not a defect. So the
+    // failure names the marks instead of exploding on them.
+    const buildable = options.find((o) => !o.readiness);
+    if (!buildable)
+      throw new Error(
+        "no buildable form in the offer — every option carries a readiness mark, which is what a " +
+          "worktree missing an engine's dependencies looks like. Marks: " +
+          options
+            .map((o) => `${o.id}: ${o.readiness?.status}`)
+            .join(" · ") +
+          ". See README's 'For developers' checklist.",
+      );
     const chosen = await cli([
       "choose-form",
       "--run",
