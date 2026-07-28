@@ -83,6 +83,11 @@ for skill in "${NATIVE_SKILLS[@]}"; do
     exit 1
   fi
 done
+# ONE download, from one skill, on purpose: Playwright caches per user and per browser revision
+# (~/Library/Caches/ms-playwright on macOS), so map-native — and every other renderer — resolves
+# the same executable this call fetches. Measured, both skills report the identical path. The
+# decision holds only while those skills pin the SAME Playwright version, which
+# install/native-browser.test.ts keeps true. Running it per skill would re-download nothing.
 if ! ( cd "$DEST/skills/chart-native" && bunx playwright install chromium ); then
   echo "Playwright Chromium download failed (see above) — re-run this installer to resume." >&2
   exit 1
