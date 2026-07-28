@@ -55,6 +55,12 @@ export function unbuildableEngineReason(engine: string): string {
  * mark's OWN words win when the option carries them (eligibility.ts pushes the whole-article
  * wording first, and the journalist read that sentence in the offer), so the refusal repeats what
  * was shown rather than substituting a maintainer's version of it.
+ *
+ * A BLANK mark falls back to the engine sentence rather than being returned. The schema types
+ * `readiness.reason` as a plain string, so "" is a manifest anyone could hand-author — and since
+ * the whole answer here is "a sentence, or nothing", an empty one would make an unbuildable form
+ * read as buildable and dead-end the run in silence. Same trap FormOption.why closed by refusing
+ * a blank phrasing.
  */
 export function unbuildableFormReason(chosen: {
   id?: string;
@@ -64,7 +70,8 @@ export function unbuildableFormReason(chosen: {
 }): string | undefined {
   const builder = resolveBuilder(chosen);
   if (isLoopBuildable(builder)) return undefined;
-  return chosen.readiness?.reason ?? unbuildableEngineReason(builder);
+  const marked = chosen.readiness?.reason?.trim();
+  return marked ? marked : unbuildableEngineReason(builder);
 }
 
 // The EFFECTIVE producer for a chosen (or offered) option — the one thing all three readers
