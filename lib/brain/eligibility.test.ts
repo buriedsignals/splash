@@ -333,12 +333,13 @@ test("buildabilityMark is null when the loop can already build through the produ
 });
 
 test("buildabilityMark names the actual unbuildable engine when there is no format redirect", () => {
-  // map-native became buildable (task 7) — map-dw is the still-unbuildable stand-in this
-  // test needs (dw-chart's own producer redirect makes it the wrong fixture: it shares no
-  // format with the ones that stay unbuildable here).
-  const mark = buildabilityMark("map-dw", "static");
+  // A FICTIONAL engine, on purpose. This assertion needs an engine that is unbuildable AND
+  // whose format is not redirected to another producer — it named map-native (task 7), then
+  // map-dw (task 13), and each wiring falsified it in turn. buildabilityMark takes any engine
+  // string, so the test declares its own dead end instead of borrowing the last real one.
+  const mark = buildabilityMark("crayon", "static");
   expect(mark).not.toBeNull();
-  expect(mark!.reason).toContain("map-dw");
+  expect(mark!.reason).toContain("crayon");
 });
 
 test("a mark can never carry an empty reason, even for a capability disabled with no reason (readiness.ts:54)", () => {

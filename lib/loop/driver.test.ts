@@ -1199,18 +1199,21 @@ function strandedOnUnbuildableChoice(): RunManifest {
         },
         proposal: {
           options: [
-            // map-dw, not map-native — map-native became buildable (task 7); map-dw is the
-            // still-unbuildable stand-in a dead-ended choice needs now.
+            // A FICTIONAL engine, declared by this test. The fixture used to point at
+            // whichever real engine was not wired yet (map-native, then map-dw), and had to
+            // be re-pointed each time one became buildable (tasks 7, 13) — every engine the
+            // brain offers is now assembled, so a dead-ended choice is something a test
+            // constructs rather than borrows.
             {
-              id: "map-choropleth",
+              id: "unbuildable-form",
               nativeType: "choropleth",
-              engine: "map-dw",
+              engine: "crayon",
               format: "static",
               why: "one value per canton",
             },
           ],
           excluded: [],
-          chosenId: "map-choropleth",
+          chosenId: "unbuildable-form",
         },
       },
     ],
@@ -1226,7 +1229,7 @@ test("a run dead-ended on an unbuildable choice says so, once, instead of report
   const first = await advanceStep(run, runDir, NEUTRAL_DECOR);
   expect(first.ran).toBeNull();
   expect(first.failure?.action).toBe("choose-form");
-  expect(first.failure?.message).toContain("map-dw");
+  expect(first.failure?.message).toContain("crayon");
   // Written down, not only returned: the next reader of this manifest is a resume, not this call.
   expect(first.run.events).toHaveLength(1);
   expect(first.run.events[0]).toMatchObject({
