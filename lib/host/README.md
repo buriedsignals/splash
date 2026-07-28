@@ -322,6 +322,24 @@ A run this command creates is at gate state `empty`, and every field after that 
 command with its own refusals. That is what makes the rule in `skills/splash/SKILL.md` — never
 hand-edit `run.json` — a rule with a path behind it rather than a contradiction.
 
+**A data input says what it is, or the run does not begin.** `sources` is written exactly once —
+here — and no later step can add it, so a run declared without a data ledger reaches `produce`,
+is refused there for an undeclared source, and has no gate left to pass. The refusal is therefore
+put while the declaration is still being composed, and it *is* the question the journalist owes an
+answer to, in the newsroom's interface language:
+
+```json
+{
+  "ok": false,
+  "code": "invalid-request",
+  "message": "Where does this data come from? A published dataset (public), a file you were given or built (local), an internal newsroom dataset (private), figures quoted in your article (prose), or demo data (synthetic)?"
+}
+```
+
+A source that is declared but incomplete gets the one field it still owes — `"What is the exact
+page or dataset URL for this source?"` for a `public` source with no address — never a form. An
+article-only run declares no data ledger and is created as it stands.
+
 Two more refusals, both exit `1`, and both leave the directory untouched: a declared input that
 does not exist, and a source ledger the policy rejects (checked **before** anything is frozen, so
 an illegal declaration cannot orphan a copied file in a directory with no `run.json`). A

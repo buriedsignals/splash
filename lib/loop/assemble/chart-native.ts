@@ -24,6 +24,12 @@ export function assembleChartNative(
       name: brief.attribution,
       ...(brief.sourceUrl ? { url: brief.sourceUrl } : {}),
     },
+    // WHAT the figures are, alongside WHO to credit. The engine's conformance belt reads it
+    // (chart-native's specToNativeConfig threads it onto the config's source object, and
+    // conformanceL0 then applies the requirements row instead of the flat "name required, url
+    // optional" rule). Omitted when absent, so a brief with no class assembles a byte-identical
+    // spec.
+    ...(brief.sourceKind ? { sourceKind: brief.sourceKind } : {}),
     ...(brief.angle.emphasis ? { highlight: brief.angle.emphasis } : {}),
     ...(brief.format ? { format: brief.format } : {}),
     data: brief.dataCsv,

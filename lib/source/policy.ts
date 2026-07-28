@@ -116,30 +116,64 @@ export function validateSourcePolicy(
 }
 
 /**
+ * The WORDS of the four questions `sourceQuestion` can owe — separated from the branch that
+ * decides WHICH one is owed, so a façade can put the question in the newsroom's own language
+ * without holding a second opinion about what is missing (`lib/newsroom/ui-copy.ts` ships the
+ * other languages, the same way it ships the export proposal's).
+ *
+ * The five kinds stay their declared ids in every language: they are the vocabulary that goes
+ * back INTO the declaration, and a translated answer is one the schema refuses.
+ */
+export type SourceQuestionCopy = {
+  /** Nothing declared, or a kind outside the vocabulary. Asked first: everything depends on it. */
+  kind: string;
+  /** The kind is known and its display credit is missing. */
+  label: (kind: SourceKind) => string;
+  /** The kind requires a traceable address and none was given. */
+  url: string;
+  /** An address was given, and it points at a site rather than at a document. */
+  urlNotSpecific: (url: string) => string;
+};
+
+/** English, and the default — the answer the policy gives a caller that names no language
+ *  (design spec R7). Every other language is desk copy and lives on the façade's side. */
+export const EN_SOURCE_QUESTIONS: SourceQuestionCopy = {
+  kind: "Where does this data come from? A published dataset (public), a file you were given or built (local), an internal newsroom dataset (private), figures quoted in your article (prose), or demo data (synthetic)?",
+  label: (kind) => `How should this ${kind} source be credited to the reader?`,
+  url: "What is the exact page or dataset URL for this source? (the document itself, not the site's home page)",
+  urlNotSpecific: (url) =>
+    `"${url}" points at a site, not a document — what is the exact page for this source, or should the link be dropped?`,
+};
+
+/**
  * The ONE targeted question the preflight/CADRAGE flow should ask when the class or a required
  * field cannot be determined from what was supplied (issue #7). One question, never a form: the
  * kind first, then the first required field still missing. `null` means nothing is missing —
  * which is also the signal not to ask anything at all.
+ *
+ * `copy` is the only thing a caller may vary: the branches below are the one place that decides
+ * what is missing, whichever language it is asked in.
  */
 export function sourceQuestion(
   decl: Partial<SourceDeclaration> | undefined,
+  copy: SourceQuestionCopy = EN_SOURCE_QUESTIONS,
 ): string | null {
   // A kind outside the vocabulary lands here from a half-parsed answer — TypeScript does not
   // guard a value that arrived as JSON. Asking the kind question again is the honest move;
   // reading a requirements row that does not exist would crash on the next line.
   if (!decl?.kind || !SOURCE_KINDS.includes(decl.kind as SourceKind))
-    return "Where does this data come from? A published dataset (public), a file you were given or built (local), an internal newsroom dataset (private), figures quoted in your article (prose), or demo data (synthetic)?";
-  const rules = requirementsFor(decl.kind as SourceKind);
+    return copy.kind;
+  const kind = decl.kind as SourceKind;
+  const rules = requirementsFor(kind);
   if (rules.label === "required" && !decl.label?.trim())
-    return `How should this ${decl.kind} source be credited to the reader?`;
-  if (rules.url === "required" && !decl.url?.trim())
-    return "What is the exact page or dataset URL for this source? (the document itself, not the site's home page)";
+    return copy.label(kind);
+  if (rules.url === "required" && !decl.url?.trim()) return copy.url;
   if (
     rules.url !== "forbidden" &&
     decl.url?.trim() &&
     sourceUrlVerdict(decl.url) !== "specific"
   )
-    return `"${decl.url.trim()}" points at a site, not a document — what is the exact page for this source, or should the link be dropped?`;
+    return copy.urlNotSpecific(decl.url.trim());
   return null;
 }
 

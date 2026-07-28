@@ -161,11 +161,42 @@ test("initRun never overwrites an existing run — the manifest is the ledger", 
   expect(readFileSync(join(dir, "run.json"))).toEqual(before);
 });
 
+// `sources` is written exactly ONCE, here: no later step of the loop can add it, so a run that
+// begins without a data ledger reaches produce and stops there for good. The refusal therefore
+// belongs to the declaration, and it carries the question it owes rather than only a diagnosis.
+test("initRun refuses a data input whose source is not declared, and writes nothing", () => {
+  const { dir, csv } = scene();
+  const result = initRun(dir, { runId: "undeclared", input: { data: csv } });
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.code).toBe("invalid-request");
+  expect(result.message).toContain("sources.data");
+  expect(result.message).toContain("Where does this data come from");
+  expect(existsSync(join(dir, "run.json"))).toBe(false);
+  expect(existsSync(join(dir, "input"))).toBe(false);
+});
+
+test("initRun accepts an article-only run with no data ledger", () => {
+  // The rule is about the DATA slot: an article input carries no figures of its own, and
+  // requiring a ledger for it would refuse a legitimate run.
+  const { dir } = scene();
+  const article = join(dir, "piece.txt");
+  writeFileSync(article, "Les primes ont augmenté dans les six cantons.\n");
+  const result = initRun(dir, { runId: "article-only", input: { article } });
+  expect(result.ok).toBe(true);
+});
+
 test("initRun refuses an input path that does not exist, before freezing anything", () => {
   const { dir } = scene();
   const result = initRun(dir, {
     runId: "missing",
     input: { data: join(dir, "nope.csv") },
+    // Declared, because the loop no longer creates a run whose data says nothing about itself —
+    // this fixture is about the PATH, and it has to clear every earlier gate to reach it.
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
   });
   expect(result.ok).toBe(false);
   if (result.ok) throw new Error("unreachable");

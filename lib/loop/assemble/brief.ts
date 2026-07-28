@@ -1,5 +1,6 @@
 import type { ProductionBrief, BriefBeat } from "../../core/production-brief";
 import type { VisualFormat } from "../../core/vocabulary";
+import type { SourceKind } from "../../source";
 import { chosenOption, type RunManifest, type RunElement } from "../manifest";
 
 function beatsFor(el: RunElement): BriefBeat[] {
@@ -30,6 +31,7 @@ export function briefFor(
   attribution: string,
   sourceUrl: string | undefined,
   format: VisualFormat,
+  sourceKind?: SourceKind,
 ): ProductionBrief {
   const chosen = chosenOption(el);
   return {
@@ -45,6 +47,7 @@ export function briefFor(
     dataCsv,
     attribution,
     ...(sourceUrl ? { sourceUrl } : {}),
+    ...(sourceKind ? { sourceKind } : {}),
     ...(el.narrative ? { beats: beatsFor(el) } : {}),
     ...(run.orient?.geo ? { geo: run.orient.geo } : {}),
   };

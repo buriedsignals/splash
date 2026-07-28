@@ -36,7 +36,8 @@ function run(numericColumns: string[], rowCount = 8): RunManifest {
 }
 
 test("it offers forms with an engine, a format and their grounding", () => {
-  const { options } = propose(run(["2019", "2024"]));
+  const m = run(["2019", "2024"]);
+  const { options } = propose(m, m.elements[0]!);
   expect(options.length).toBeGreaterThan(0);
   expect(options.length).toBeLessThanOrEqual(3);
   for (const o of options) {
@@ -47,27 +48,34 @@ test("it offers forms with an engine, a format and their grounding", () => {
 });
 
 test("it reports what it discarded", () => {
-  const { excluded } = propose(run(["2019", "2024"], 400));
+  const m = run(["2019", "2024"], 400);
+  const { excluded } = propose(m, m.elements[0]!);
   expect(excluded.length).toBeGreaterThan(0);
 });
 
 test("nothing before orient has run", () => {
   const m = run(["2019", "2024"]);
-  const { options, excluded } = propose({ ...m, orient: undefined });
+  const { options, excluded } = propose(
+    { ...m, orient: undefined },
+    m.elements[0]!,
+  );
   expect(options).toEqual([]);
   expect(excluded).toEqual([]);
 });
 
 test("the channel constrains the offer", () => {
   const m = run(["2019", "2024"]);
-  const { options } = propose({ ...m, channel: "social-vertical" });
+  const { options } = propose(
+    { ...m, channel: "social-vertical" },
+    m.elements[0]!,
+  );
   expect(options.every((o) => o.format !== "interactive")).toBe(true);
 });
 
 test("the element's requested format reaches the brain — every option honours it", () => {
   const m = run(["2019", "2024"]);
   m.elements[0]!.requestedFormat = "video";
-  const { options } = propose(m);
+  const { options } = propose(m, m.elements[0]!);
   expect(options.length).toBeGreaterThan(0);
   expect(options.every((o) => o.format === "video")).toBe(true);
 });
@@ -79,7 +87,10 @@ test("the element's requested format reaches the brain — every option honours 
 test("a refusal computed by the brain arrives at propose()'s caller, with its sentence", () => {
   const m = run(["2019", "2024"]);
   m.elements[0]!.requestedFormat = "scrolly";
-  const { options, refusal } = propose({ ...m, channel: "social-vertical" });
+  const { options, refusal } = propose(
+    { ...m, channel: "social-vertical" },
+    m.elements[0]!,
+  );
   expect(options).toEqual([]);
   expect(refusal).toBeTruthy();
   expect(refusal).toContain("social-vertical");
@@ -98,11 +109,7 @@ test("a print deliverable is offered static forms only, and never through Datawr
       },
     ],
   };
-  const { options, excluded } = propose(
-    withPrint,
-    undefined,
-    withPrint.elements[0],
-  );
+  const { options, excluded } = propose(withPrint, withPrint.elements[0]!);
   expect(options.length).toBeGreaterThan(0);
   for (const o of options) {
     expect(o.format).toBe("static");
@@ -139,8 +146,10 @@ const SPREAD_CLAIM =
   "La prime varie de 115 francs entre le canton le plus cher et le moins cher";
 
 test("two intents declared on the same facts give two different offers", () => {
-  const asSpread = propose(angled("distribution", SPREAD_CLAIM));
-  const asPlaces = propose(angled("spatial", SPREAD_CLAIM));
+  const spread = angled("distribution", SPREAD_CLAIM);
+  const places = angled("spatial", SPREAD_CLAIM);
+  const asSpread = propose(spread, spread.elements[0]!);
+  const asPlaces = propose(places, places.elements[0]!);
   expect(asSpread.options.length).toBeGreaterThan(0);
   expect(asPlaces.options.length).toBeGreaterThan(0);
   expect(asSpread.options.map((o) => o.id)).not.toEqual(
@@ -168,9 +177,10 @@ test("the declaration wins whole: no guess is merged into it", () => {
     intents: ["spatial"],
     basis: "guessed",
   });
+  const undeclared = angled(undefined, SPREAD_CLAIM);
   expect(
-    propose(angled(undefined, SPREAD_CLAIM)).options.map((o) => o.id),
-  ).not.toEqual(propose(m).options.map((o) => o.id));
+    propose(undeclared, undeclared.elements[0]!).options.map((o) => o.id),
+  ).not.toEqual(propose(m, m.elements[0]!).options.map((o) => o.id));
 });
 
 // The state this slice exists to make visible: nothing declared AND nothing read. Before, the
@@ -186,7 +196,8 @@ test("nothing declared and nothing read is reported as such, never rounded up", 
 // An angle recorded before the declaration existed keeps working: the suggestion is the fallback,
 // never a refusal that would strand a run written under the previous rule.
 test("an angle with no declared intent falls back on the suggestion", () => {
-  const legacy = propose(angled(undefined, SPREAD_CLAIM));
+  const m = angled(undefined, SPREAD_CLAIM);
+  const legacy = propose(m, m.elements[0]!);
   expect(legacy.options.length).toBeGreaterThan(0);
   expect(legacy.options[0]!.intent).toContain("spatial");
 });
@@ -207,8 +218,8 @@ test("two deliverables of one run are offered at their own channels", () => {
     },
   };
   const two: RunManifest = { ...m, elements: [web, social] };
-  const webOffer = propose(two, undefined, web);
-  const socialOffer = propose(two, undefined, social);
+  const webOffer = propose(two, web);
+  const socialOffer = propose(two, social);
   // article-web is the only channel that carries an interactive; a Stories post cannot.
   expect(socialOffer.options.every((o) => o.format !== "interactive")).toBe(
     true,

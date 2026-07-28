@@ -24,7 +24,14 @@ import {
   easeOutCubic,
   formatNumber,
 } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -41,6 +48,14 @@ export interface PictogramConfig {
   unitPerIcon: number;
   iconNoun: string; // e.g. "residents" — used in the key and tooltip
   rows: Record<string, string | number>[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. The icons carry one Okabe-Ito hue —
+   *  count, never colour, encodes the value — so the hue never touches them. Undefined =
+   *  untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface PictogramChartProps {
@@ -177,6 +192,8 @@ export function PictogramChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -209,6 +226,7 @@ function PictogramSvg({
   sc: number;
 }) {
   const { innerWidth, innerHeight, rows, iconSize, cellW, maxCols } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.18);
   const reveal = easeInOutCubic(p);
   const labelW = padding.left - 12 * sc;
@@ -300,7 +318,7 @@ function PictogramSvg({
                 textAnchor="end"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={chrome}
               >
                 {truncate(r.category, labelW, ts.axis)}
@@ -314,7 +332,7 @@ function PictogramSvg({
                 textAnchor="start"
                 fontSize={ts.source}
                 fontWeight={600}
-                fill={COLORS.muted}
+                fill={C.muted}
                 opacity={clamp01((reveal * maxCols - r.count) / 0.6)}
               >
                 {formatNumber(r.value, config.lang)}
@@ -338,7 +356,7 @@ function PictogramSvg({
             dy="0.32em"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             = {formatNumber(layout.unitPerIcon, config.lang)} {config.iconNoun}
           </text>
@@ -372,6 +390,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

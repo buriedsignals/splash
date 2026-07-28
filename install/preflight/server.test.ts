@@ -175,6 +175,37 @@ describe("what a submission writes", () => {
     expect(existsSync(join(dest, ".splash-runtime"))).toBe(false);
   });
 
+  it("absorbs the legacy .splash-preflight.json stamps, then retires it (A3)", async () => {
+    const dest = root();
+    writeFileSync(
+      join(dest, ".splash-preflight.json"),
+      JSON.stringify({
+        schemaVersion: "1",
+        engines: {
+          "dw-chart": {
+            status: "green",
+            checkedAt: "2026-07-01T00:00:00.000Z",
+            reason: "",
+          },
+        },
+      }),
+    );
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({ enabled: ["dw-chart"] }),
+      });
+      expect(r.status).toBe(200);
+    });
+    const state = JSON.parse(readFileSync(join(dest, "newsroom.json"), "utf8"));
+    // Absorbed BEFORE the file goes: the stamp survives in its one home.
+    expect(state.capabilities["dw-chart"].lastVerified).toEqual({
+      at: "2026-07-01T00:00:00.000Z",
+      result: "ok",
+    });
+    expect(existsSync(join(dest, ".splash-preflight.json"))).toBe(false);
+  });
+
   it("never erases a key the journalist did not retype", async () => {
     const dest = root();
     writeFileSync(

@@ -351,9 +351,14 @@ export function resolvedChannelForElement(
  *  still owed. Production does NOT go through this — produce.ts requires the resolved one, so an
  *  unanswered aspect is a refusal there rather than a silently substituted channel.
  *
- *  Accepts NO element on purpose. "The run carries nothing yet" is a state the question still has
- *  an answer for (propose() orders an empty run's offer at the run's own channel), and answering
- *  it at the call site is precisely how the second reader came back the first time. */
+ *  Accepts NO element — but no longer because propose() asks it to. propose() takes the live
+ *  element as a REQUIRED argument now (one definition of "the live element", not two), so it can
+ *  never put this question to an empty run. Measured 2026-07-27: NO production caller passes
+ *  undefined — verify.ts, provenanceHash and propose.ts all hand over a RunElement, and the arm
+ *  is held by channel-single-reader.test.ts alone. It stays anyway, deliberately: "the run
+ *  carries nothing yet" is a state this question must still have an answer for, and answering it
+ *  at the call site is precisely how the second reader came back the first time. So narrowing
+ *  the parameter is a decision about that guard, never a dead-code cleanup. */
 export function channelForElement(
   run: RunManifest,
   el: RunElement | undefined,

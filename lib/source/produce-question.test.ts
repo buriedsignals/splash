@@ -2,10 +2,11 @@
 //
 // `sourceQuestion()` is the one targeted question issue #7 asks the flow to put to a journalist,
 // and it had no caller at all (residual A20): the refusal named what was missing without ever
-// asking for it. This is the HALF of A20 that is closable from inside the loop. The other half is
-// an ORDERING problem — the question's proper place is before the run exists, at the CADRAGE beat
-// that composes the `RunDeclaration` (`sources` is written once, by `initRun`, and no later step
-// can add it) — and that place is in lib/host/**, outside this slice. See the register row.
+// asking for it. This is the HALF of A20 that is closable from inside the loop; the ORDERING half
+// is closed too, one layer up — `initRun` refuses a data input with no `sources.data` and carries
+// the same question, and `initRunIn` puts it in the newsroom's language before the run exists
+// (`sources` is written once, by `initRun`, and no later step can add it). What stays true here:
+// a run that DOES reach produce with a bad ledger is still refused with the question it owes.
 //
 // One question, never a form: `sourceQuestion` answers the kind first, then the first required
 // field still missing, and answers `null` when nothing it can ask about is wrong. The third case

@@ -11,6 +11,7 @@ import {
   sourceQuestion,
   toVerbResult,
   validateSourcePolicy,
+  type SourceKind,
   type SourceLedger,
   type SourcePolicyCode,
 } from "../source";
@@ -249,6 +250,9 @@ export async function produce(
     published.attribution,
     published.url,
     format,
+    // The class comes off the VERDICT, never off the raw declaration: `verdict.value.kind` is
+    // the one that cleared the policy, so the engine and the policy are reading the same row.
+    verdict.value.kind,
   );
   const assembler = assemblerFor(builder, chosen.nativeType);
   if (!assembler)

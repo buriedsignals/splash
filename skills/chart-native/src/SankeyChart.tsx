@@ -18,7 +18,14 @@ import {
   type SankeyLayout,
 } from "./sankey-geometry";
 import { clamp01, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -33,6 +40,14 @@ export interface SankeyConfig {
   rampNodes?: string[]; // categories to colour (in palette order); rest neutral
   nodes: { id: string; label: string; column: number; category?: string }[];
   links: { source: string; target: string; value: number }[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. Nodes and ribbons carry the fixed
+   *  Okabe-Ito ramp (plus the two neutral greys for un-ramped flows), so the hue never
+   *  touches them. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface SankeyChartProps {
@@ -185,6 +200,8 @@ export function SankeyChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -227,6 +244,7 @@ function SankeySvg({
   sc: number;
 }) {
   const { nodes, links } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const nCol = columns.length;
   const colIndex = new Map(columns.map((c, i) => [c, i]));
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
@@ -333,10 +351,10 @@ function SankeySvg({
                 textAnchor={anchor}
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={labelOp}
                 paintOrder="stroke"
-                stroke="#fff"
+                stroke={C.bg}
                 strokeWidth={3 * sc}
                 strokeLinejoin="round"
               >
@@ -380,6 +398,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

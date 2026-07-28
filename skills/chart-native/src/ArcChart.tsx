@@ -20,7 +20,14 @@ import {
   type ArcLayout,
 } from "./arc-geometry";
 import { clamp01, easeInOutCubic, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -35,6 +42,14 @@ export interface ArcConfig {
   unit: string; // subtitle
   nodes: { id: string; label: string; group?: string }[];
   links: { source: string; target: string; value: number }[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. Node groups carry a fixed Okabe-Ito
+   *  categorical palette, so the hue never touches the marks — colouring them with one hue
+   *  would collapse the groups it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface ArcChartProps {
@@ -173,6 +188,8 @@ export function ArcChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -211,6 +228,7 @@ function ArcSvg({
   labelClear: number; // px below the baseline for the node label baseline
 }) {
   const { innerWidth, innerHeight, baseY, nodes, links } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.18);
   const reveal = easeInOutCubic(p);
   const groupOfNode = new Map(config.nodes.map((n) => [n.id, n.group ?? "—"]));
@@ -252,7 +270,7 @@ function ArcSvg({
           x2={innerWidth}
           y1={baseY}
           y2={baseY}
-          stroke={COLORS.axis}
+          stroke={C.axis}
           strokeWidth={1}
           opacity={chrome}
         />
@@ -272,7 +290,7 @@ function ArcSvg({
                 <path
                   key={`a${i}`}
                   d={arcPath(l, baseY, reveal)}
-                  stroke={cross ? COLORS.ink : COLORS.muted}
+                  stroke={cross ? C.ink : C.muted}
                   strokeWidth={l.width * sc}
                   // butt cap: a zero-length arc at progress 0 draws NOTHING (a
                   // round cap would paint a foot-dot — the reveal-from-nothing bug)
@@ -329,7 +347,7 @@ function ArcSvg({
                   textAnchor="middle"
                   fontSize={ts.source}
                   fontWeight={600}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                   opacity={clamp01((np - 0.4) / 0.4)}
                 >
                   {truncate(n.label, labelBudget, ts.source)}
@@ -350,7 +368,7 @@ function ArcSvg({
                 dy="0.32em"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>
@@ -387,6 +405,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

@@ -127,8 +127,10 @@ describe("the resolvers agree, because there is only one of them", () => {
   });
 
   test("a run carrying no element at all is still the total resolver's question", () => {
-    // propose() asks it: an offer for a run whose elements array is empty is ordered at the run's
-    // own channel. Answering that anywhere else is how the second reader came back last time.
+    // propose() no longer asks it — it takes the live element as a required argument, and an
+    // empty elements array routes to confirm-angle instead (driver.ts). The TOTAL form still has
+    // to answer for the read-only reporters that walk a run before any element exists. Answering
+    // it anywhere else is how the second reader came back last time.
     expect(channelForElement(RUN, undefined)).toBe("social-vertical");
   });
 

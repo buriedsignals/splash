@@ -19,7 +19,7 @@ import { confirmAngle, inheritAngle, type AngleParts } from "../loop/angle";
 import { approve, type ApprovalCeremony } from "../loop/approve";
 import { chooseForm } from "../loop/choose";
 import { advanceStep } from "../loop/driver";
-import { initRun } from "../loop/init";
+import { initRun, RunDeclarationSchema } from "../loop/init";
 import {
   gateStateOf,
   liveElementFor,
@@ -32,7 +32,9 @@ import {
 import { applyPhrasing } from "../loop/phrase";
 import { requestDelivery } from "../loop/request-delivery";
 import { tryLoadDecor } from "../newsroom/decor";
-import { loadRun, type HostResponse } from "./state";
+import { sourceQuestionCopy } from "../newsroom/ui-copy";
+import { sourceQuestion } from "../source/policy";
+import { loadRun, readOnlyUiLanguage, type HostResponse } from "./state";
 import type { VerbResult } from "../core/verbs/types";
 
 // WHICH element a command acts on. Two ways in, and the default is the load-bearing one.
@@ -152,6 +154,34 @@ function tryLoadNewsroomProfile(root: string): BrandProfile | null {
 }
 
 /**
+ * WHAT THE DECLARATION STILL OWES ABOUT ITS DATA, phrased as the question to put — or `null`
+ * when it owes nothing.
+ *
+ * A run's source ledger is written exactly once, by `initRun`: no later step can add it, so a
+ * run declared without one reaches `produce`, is refused there for an undeclared source, and
+ * has no gate left to pass. That refusal therefore has to happen while the declaration is still
+ * being composed, which is here — before a run exists to be stuck.
+ *
+ * `sourceQuestion` decides WHICH question is owed (the kind first, then the first required field
+ * still missing, then a URL that points at a site rather than a document); this only chooses the
+ * language. It is deliberately the same call the loop's refusal already carries — the façade
+ * asks the question, it does not invent a second opinion about what is missing.
+ *
+ * A declaration the strict schema REJECTS is passed straight through instead: `initRun` names
+ * the offending field, and answering "where does this data come from?" to a mistyped `chanel`
+ * would replace a precise diagnosis with an unrelated question. Parsing twice costs nothing and
+ * writes nothing.
+ */
+function undeclaredSourceQuestion(declaration: unknown): string | null {
+  const parsed = RunDeclarationSchema.safeParse(declaration);
+  if (!parsed.success || !parsed.data.input.data) return null;
+  return sourceQuestion(
+    parsed.data.sources?.data,
+    sourceQuestionCopy(readOnlyUiLanguage()),
+  );
+}
+
+/**
  * CREATE a run from a declaration — the one command that does not load one first.
  *
  * Everything else in this file needs a run to exist; this is the step that had no caller at all.
@@ -160,6 +190,12 @@ function tryLoadNewsroomProfile(root: string): BrandProfile | null {
  * skills/splash/SKILL.md's "never hand-edit run.json" named the only path that existed.
  */
 export function initRunIn(runDir: string, declaration: unknown): HostResponse {
+  // THE ONE QUESTION THAT HAS TO BE ASKED BEFORE THE RUN EXISTS, and here it is asked in the
+  // newsroom's own language. initRun holds the same rule in English (it is a verb, and this
+  // layer has no language); what the façade adds is the wording a journalist reads.
+  const owed = undeclaredSourceQuestion(declaration);
+  if (owed) return { ok: false, code: "invalid-request", message: owed };
+
   const created = initRun(runDir, declaration);
   if (!created.ok) return refusedDecision(created);
   // Same breath as every acting command: what it did, plus what became valid. The run was just

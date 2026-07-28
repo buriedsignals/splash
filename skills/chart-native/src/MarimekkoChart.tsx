@@ -17,7 +17,14 @@ import {
   type MarimekkoLayout,
 } from "./marimekko-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -32,6 +39,14 @@ export interface MarimekkoConfig {
   unit: string;
   seriesFields: string[];
   columns: { label: string; weight: number; values: number[] }[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. Cells carry the fixed Okabe-Ito series
+   *  palette (and their in-cell percent label is picked per-fill by labelInkOnFill, which is
+   *  theme-independent), so the hue never touches them. Undefined = untinted. */
+  baseColor?: string;
 }
 
 export interface MarimekkoChartProps {
@@ -154,6 +169,8 @@ export function MarimekkoChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -189,6 +206,7 @@ function MarimekkoSvg({
   staggerColLabels: boolean;
 }) {
   const { innerWidth, innerHeight, cols, cells } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const n = cols.length;
 
   const chrome = easeOutCubic(p / 0.18);
@@ -291,7 +309,7 @@ function MarimekkoSvg({
               textAnchor="middle"
               fontSize={ts.axis}
               fontWeight={700}
-              fill={COLORS.ink}
+              fill={C.ink}
               opacity={colP(ci)}
             >
               {txt}
@@ -317,7 +335,7 @@ function MarimekkoSvg({
                 dy="0.32em"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>
@@ -354,6 +372,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

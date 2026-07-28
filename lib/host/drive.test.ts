@@ -1,11 +1,12 @@
 import { describe, it, expect } from "bun:test";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   advanceRun,
   approveIn,
   chooseFormIn,
+  initRunIn,
   requestDeliveryIn,
 } from "./drive";
 import {
@@ -127,6 +128,70 @@ function producedRun(): string {
 function bytes(dir: string): string {
   return readFileSync(join(dir, "run.json"), "utf8");
 }
+
+// A directory with a CSV in it and no run — what a host holds before it declares one.
+function undeclared(): { dir: string; csv: string } {
+  const dir = emptyDir("drive-init-");
+  const csv = join(dir, "premiums.csv");
+  writeFileSync(csv, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
+  return { dir, csv };
+}
+
+describe("initRunIn — the question a run cannot begin without", () => {
+  it("creates the run when the data says what it is", () => {
+    const { dir, csv } = undeclared();
+    const r = initRunIn(dir, {
+      runId: "premiums",
+      input: { data: csv },
+      sources: {
+        mode: "real",
+        data: { kind: "local", label: "Relevés cantonaux 2024" },
+      },
+    });
+    expect(r).toEqual({
+      ok: true,
+      value: { runId: "premiums", nextActions: ["orient"] },
+    });
+  });
+
+  it("asks where the data comes from when no source is declared, and writes NOTHING", () => {
+    const { dir, csv } = undeclared();
+    const r = initRunIn(dir, { runId: "premiums", input: { data: csv } });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.code).toBe("invalid-request");
+    expect(r.message).toContain("Where does this data come from");
+    expect(existsSync(join(dir, "run.json"))).toBe(false);
+    expect(existsSync(join(dir, "input"))).toBe(false);
+  });
+
+  it("asks for the one field a declared source is still missing", () => {
+    const { dir, csv } = undeclared();
+    const r = initRunIn(dir, {
+      runId: "premiums",
+      input: { data: csv },
+      sources: { mode: "real", data: { kind: "public", label: "OFS" } },
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.message).toContain("URL");
+    expect(existsSync(join(dir, "run.json"))).toBe(false);
+  });
+
+  it("keeps the loop's own refusal for a declaration that is not even shaped right", () => {
+    // A mistyped or smuggled field is NAMED by initRun's strict schema. Answering a question
+    // about the source instead would replace a precise diagnosis with an unrelated one.
+    const { dir, csv } = undeclared();
+    const r = initRunIn(dir, {
+      runId: "premiums",
+      input: { data: csv },
+      angle: "sneaky",
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.message).toContain("angle");
+  });
+});
 
 describe("advanceRun — one deterministic step, through the run directory", () => {
   it("runs the step next says is valid and persists it", async () => {

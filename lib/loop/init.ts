@@ -23,7 +23,7 @@ import {
   MEDIA_ASPECTS,
 } from "../core/vocabulary";
 import { SourceLedgerSchema } from "../source/kinds";
-import { assertSourceLedger } from "../source/policy";
+import { assertSourceLedger, EN_SOURCE_QUESTIONS } from "../source/policy";
 import { freezeInput } from "./freeze";
 import { writeManifest, type RunManifest } from "./manifest";
 
@@ -105,7 +105,26 @@ export function initRun(runDir: string, raw: unknown): VerbResult<RunManifest> {
       `init: ${manifestPath} already holds a run — a run is never overwritten, because the manifest is the ledger of everything this run produced and delivered. Point --run at a new directory`,
     );
 
-  // 3. The source ledger, judged BEFORE a single byte is written. assertSourceLedger takes the
+  // 3. A DECLARED DATA INPUT SAYS WHAT IT IS. `sources` is written exactly ONCE — here — and no
+  //    later step of the loop can add it: `produce` reads `run.sources.data` and refuses an
+  //    undeclared source rather than crediting a placeholder, and nothing between init and
+  //    produce can fill the slot. A run begun without a data ledger is therefore stuck at
+  //    produce for good, with no gate to pass. So the rule lives where the declaration is
+  //    composed, and the refusal carries the question it owes (lib/source/policy.ts) instead of
+  //    only naming the absence. In English, like every other refusal of this layer — the façade
+  //    that knows the newsroom's language asks it in that language (lib/host/drive.ts).
+  //
+  //    The schema keeps `sources` optional because an ARTICLE-only run legitimately declares no
+  //    data ledger; what is required is the pairing, and a pairing is not a field.
+  if (decl.input.data && !decl.sources?.data)
+    return fail(
+      "invalid-request",
+      `init: the run declares a data input, so it declares where that data comes from — ` +
+        `add sources.data with its kind and the fields that kind requires. ` +
+        EN_SOURCE_QUESTIONS.kind,
+    );
+
+  // 4. The source ledger, judged BEFORE a single byte is written. assertSourceLedger takes the
   //    frozen-input flags STRUCTURALLY (never the manifest — that is what keeps lib/source free
   //    of any dependency on lib/loop), and the declaration already knows which slots it fills.
   //    Doing this after the freeze would leave an orphaned input/data-<hash>.csv in a directory
@@ -122,7 +141,7 @@ export function initRun(runDir: string, raw: unknown): VerbResult<RunManifest> {
     }
   }
 
-  // 4. Every declared input must exist and be a file. freezeInput throws on a missing source;
+  // 5. Every declared input must exist and be a file. freezeInput throws on a missing source;
   //    checking here means the FIRST missing path is refused before the SECOND one is copied.
   for (const [slot, path] of [
     ["data", decl.input.data],
@@ -141,7 +160,7 @@ export function initRun(runDir: string, raw: unknown): VerbResult<RunManifest> {
       );
   }
 
-  // 5. Freeze, then write. Both can still fail for reasons of the disk's own, and a verb never
+  // 6. Freeze, then write. Both can still fail for reasons of the disk's own, and a verb never
   //    throws — so the pair is guarded together rather than left to escape.
   try {
     const input: RunManifest["input"] = {
@@ -168,7 +187,7 @@ export function initRun(runDir: string, raw: unknown): VerbResult<RunManifest> {
       events: [],
     };
     // writeManifest asserts the manifest's own invariants before it touches the disk — including
-    // the source policy a second time, at the run level. A declaration that clears step 3 and
+    // the source policy a second time, at the run level. A declaration that clears step 4 and
     // fails here is one whose ELEMENTS are contradictory (a printable interactive, a sibling
     // naming a master that is not in the run), and that refusal is worth reporting in its words.
     writeManifest(manifestPath, run);

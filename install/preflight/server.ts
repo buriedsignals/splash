@@ -8,7 +8,8 @@
 //
 // What is new: the page writes the DECOR (newsroom.json) as well as the credentials (.env), it
 // merges .env instead of rewriting it, it records what each provider actually answered, and the
-// runtime now has exactly one home — writing newsroom.json retires .splash-runtime.
+// runtime and the verification stamps now have exactly one home — writing newsroom.json retires
+// .splash-runtime and .splash-preflight.json.
 import {
   chmodSync,
   existsSync,
@@ -18,7 +19,10 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { loadDecor } from "../../lib/newsroom/decor.ts";
-import { LEGACY_RUNTIME_FILE } from "../../lib/newsroom/migrate-decor.ts";
+import {
+  LEGACY_PREFLIGHT_FILE,
+  LEGACY_RUNTIME_FILE,
+} from "../../lib/newsroom/migrate-decor.ts";
 import { parseEnvFile } from "../../lib/newsroom/probe.ts";
 import { writeNewsroomState } from "../../lib/newsroom/state.ts";
 import {
@@ -177,11 +181,14 @@ function persist(sub: PreflightSubmission): void {
   const previous = loadDecor(ROOT, { env: fileEnv() }).state;
   writeNewsroomState(ROOT, submittedState(sub, previous));
 
-  // ONE home for the runtime. The decor now holds it, so the legacy file is retired here rather
-  // than left to rot beside it — install/read-runtime.ts still reads it for an install that has
-  // not been through this page yet.
-  const legacy = join(ROOT, LEGACY_RUNTIME_FILE);
-  if (existsSync(legacy)) rmSync(legacy, { force: true });
+  // ONE home for the runtime, and one for a capability's last verdict. `loadDecor` above just
+  // absorbed both legacy supports into the state that was written, so they are retired here
+  // rather than left to rot beside it — their readers (install/read-runtime.ts,
+  // lib/newsroom/migrate-decor.ts) still serve an install that has not been through this page.
+  for (const name of [LEGACY_RUNTIME_FILE, LEGACY_PREFLIGHT_FILE]) {
+    const legacy = join(ROOT, name);
+    if (existsSync(legacy)) rmSync(legacy, { force: true });
+  }
 
   // Created ONCE, never round-tripped: after this the file belongs to the newsroom, comments and
   // all (spec 2026-07-24, decision 6).

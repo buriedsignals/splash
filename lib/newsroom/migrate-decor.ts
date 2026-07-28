@@ -4,14 +4,15 @@
 //   .splash-runtime        → state.runtime
 //   .splash-preflight.json → state.capabilities[id].lastVerified (green stamps only)
 //
-// ABSORBED IN P1, REMOVED IN P2. This migration deliberately deletes nothing: both files
-// still have live readers and writers that P1 does not move. `install/bootstrap.sh` reads
-// .splash-runtime on EVERY invocation — including its documented "re-run this installer to
-// resume" path — so deleting it would silently reinstall a goose/codex/gemini newsroom under
-// a different runtime and rewrite its launcher. `install/configurator.ts` still writes it,
-// and `skills/splash/scripts/preflight.mjs` still writes .splash-preflight.json. Removal
-// belongs with the move of those writers (P2, when the configurator becomes the preflight
-// page); until then the legacy files stay, and this reads them.
+// This migration deliberately deletes nothing, and that is now its whole job: neither legacy
+// file has a WRITER left (the setup page owns the runtime and the verification stamps, and
+// A3 retired the one in `skills/splash/scripts/preflight.mjs`), but both still have live
+// READERS for an install that has not been through that page yet. `install/bootstrap.sh`
+// reads .splash-runtime on EVERY invocation — including its documented "re-run this installer
+// to resume" path — so deleting it here would silently reinstall a goose/codex/gemini
+// newsroom under a different runtime and rewrite its launcher. Retirement happens at the one
+// moment the decor demonstrably holds the same facts: `install/preflight/server.ts` removes
+// both files immediately after writing the state it absorbed them into.
 //
 // .env is NEVER touched: it is and stays the single home of every credential.
 import { existsSync, readFileSync } from "node:fs";

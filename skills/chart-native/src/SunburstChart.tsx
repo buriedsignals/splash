@@ -24,7 +24,14 @@ import {
   easeInOutCubic,
   formatNumber,
 } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { labelInkOnFill } from "./core/conformance";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
@@ -42,6 +49,14 @@ export interface SunburstConfig {
     label: string;
     children: { label: string; value?: number; children?: unknown[] }[];
   };
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. Arcs carry the fixed Okabe-Ito branch
+   *  palette lightened by depth (and their in-arc label is picked per-fill by labelInkOnFill,
+   *  which is theme-independent), so the hue never touches them. Undefined = untinted. */
+  baseColor?: string;
 }
 
 export interface SunburstChartProps {
@@ -167,6 +182,8 @@ export function SunburstChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -199,6 +216,7 @@ function SunburstSvg({
   sc: number;
 }) {
   const { cx, cy, radius, ringW, arcs, centerLabel } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.16);
   const labelOp = clamp01((p - 0.55) / 0.35);
 
@@ -305,7 +323,7 @@ function SunburstSvg({
             y={-2 * sc}
             fontSize={ts.axis}
             fontWeight={700}
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             {centerLabel}
           </text>
@@ -330,7 +348,7 @@ function SunburstSvg({
               dy="0.32em"
               fontSize={ts.axis}
               fontWeight={600}
-              fill={COLORS.ink}
+              fill={C.ink}
             >
               {it.text}
             </text>
@@ -366,6 +384,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

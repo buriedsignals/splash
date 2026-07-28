@@ -12,6 +12,11 @@
 import type { VerbResult } from "./verbs";
 import type { VisualFormat } from "./vocabulary";
 import type { ArcRole } from "./claim-arc";
+// From vocabulary.ts, not kinds.ts: geo-match.ts's `import type { GeoMatch }` from this file
+// already puts production-brief.ts on the map-native runnable bundle's traced closure
+// (bundle-source.mjs does not distinguish a type-only import), so a schema-carrying import here
+// would hand every map-native download the zod dependency it never runs.
+import type { SourceKind } from "../source/vocabulary";
 
 /** A narrative beat in the shape the engines want: the anchor's KIND picks the field, so a
  *  plan drafted for a line (x) can never arrive shaped like a bar walk (category). */
@@ -56,6 +61,7 @@ export type ProductionBrief = {
   dataCsv: string;
   attribution: string;
   sourceUrl?: string;
+  sourceKind?: SourceKind;
   beats?: BriefBeat[];
   geo?: GeoMatch;
   images?: ImageInput;
