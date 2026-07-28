@@ -643,8 +643,14 @@ test("a channel-legal but zero-buildable requested format strands the run, and c
   };
   expect(nextActions(run)).toEqual(["choose-form"]); // stranded: not "produce"
 
-  run = await advance(run, runDir, NEUTRAL_DECOR); // a no-op: "choose-form" is a human turn
+  run = await advance(run, runDir, NEUTRAL_DECOR); // no step runs — but the strand is recorded
   expect(nextActions(run)).toEqual(["choose-form"]); // still stranded — the loop, proven
+  // The loop does not move, AND it says why: routing back to "choose-form" is indistinguishable
+  // from an offer awaiting a decision unless the run writes the reason down.
+  expect(run.events).toMatchObject([
+    { kind: "failure", action: "choose-form", elementId: "e1" },
+  ]);
+  const strand = run.events[0]!;
 
   // THE WAY OUT: clear the request. It drops requestedFormat and the stale proposal built
   // under it in one step, routing back to a fresh "propose".
@@ -674,7 +680,9 @@ test("a channel-legal but zero-buildable requested format strands the run, and c
   };
   expect(nextActions(run)).toEqual(["produce"]);
   run = await advance(run, runDir, NEUTRAL_DECOR); // produce
-  expect(run.events).toEqual([]);
+  // The escape added no failure of its own — the ledger still holds exactly the strand it
+  // recorded on the way in, which is the history the journalist should be able to read back.
+  expect(run.events).toEqual([strand]);
   expect(run.elements[0].artifact).toBeDefined();
 }, 90000);
 
@@ -1199,5 +1207,97 @@ test("author-beats is a human turn — the driver runs nothing and changes nothi
   expect(out.ran).toBeNull();
   expect(out.failure).toBeUndefined();
   expect(out.run).toEqual(run);
+  rmSync(runDir, { recursive: true, force: true });
+});
+
+// A DEAD END IS NOT A HUMAN TURN.
+//
+// A chosen form nothing can build routes back to "choose-form" (manifest.ts), which the driver's
+// `default:` arm treated exactly like an offer waiting to be chosen from: `ran: null`, no failure,
+// nothing written. So an autonomous runner looping on advance saw "waiting for the journalist"
+// forever, and a manifest re-read afterwards showed `chosen → choose-form` with no trace of why —
+// the run stagnated without ever saying so. The ledger is meant to be the whole story of a run.
+function strandedOnUnbuildableChoice(): RunManifest {
+  return {
+    runId: "dead-end",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: {},
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Premiums rose in both cantons",
+          altInsight: "Both cantons' adult premium rose from 2015 to 2024.",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            {
+              id: "map-choropleth",
+              nativeType: "choropleth",
+              engine: "map-native",
+              format: "static",
+              why: "one value per canton",
+            },
+          ],
+          excluded: [],
+          chosenId: "map-choropleth",
+        },
+      },
+    ],
+    events: [],
+  };
+}
+
+test("a run dead-ended on an unbuildable choice says so, once, instead of reporting a human turn", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-deadend-"));
+  const run = strandedOnUnbuildableChoice();
+  expect(nextActions(run)).toEqual(["choose-form"]);
+
+  const first = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(first.ran).toBeNull();
+  expect(first.failure?.action).toBe("choose-form");
+  expect(first.failure?.message).toContain("map-native");
+  // Written down, not only returned: the next reader of this manifest is a resume, not this call.
+  expect(first.run.events).toHaveLength(1);
+  expect(first.run.events[0]).toMatchObject({
+    kind: "failure",
+    elementId: "e1",
+    action: "choose-form",
+    message: first.failure!.message,
+  });
+
+  // ONCE. A runner loops on advance, and the ledger is capped at 50 entries — a refusal that
+  // re-appends on every turn evicts the run's real history with copies of one fact.
+  const second = await advanceStep(first.run, runDir, NEUTRAL_DECOR);
+  expect(second.failure?.message).toBe(first.failure!.message);
+  expect(second.run.events).toHaveLength(1);
+  rmSync(runDir, { recursive: true, force: true });
+});
+
+test("an offer still waiting to be chosen from is a human turn, and stays silent", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-human-turn-"));
+  const stranded = strandedOnUnbuildableChoice();
+  const el = stranded.elements[0]!;
+  // The same run, minus the choice: "choose-form" now means what it has always meant.
+  const run: RunManifest = {
+    ...stranded,
+    elements: [{ ...el, proposal: { ...el.proposal!, chosenId: undefined } }],
+  };
+  expect(nextActions(run)).toEqual(["choose-form"]);
+  const out = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(out.ran).toBeNull();
+  expect(out.failure).toBeUndefined();
+  expect(out.run.events).toEqual([]);
   rmSync(runDir, { recursive: true, force: true });
 });

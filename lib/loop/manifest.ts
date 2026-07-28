@@ -20,7 +20,7 @@ import {
   allowedFormats,
   DESTINATION_POLICY,
 } from "../core/channel-policy";
-import { isLoopBuildable, resolveBuilder } from "./buildable";
+import { unbuildableFormReason } from "./buildable";
 import { ARC_ROLES } from "../core/claim-arc";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
@@ -497,8 +497,11 @@ export function nextActionsForElement(
   const chosen = el.proposal.options.find(
     (o) => o.id === el.proposal!.chosenId,
   );
-  if (chosen && !isLoopBuildable(resolveBuilder(chosen)))
-    return ["choose-form"];
+  if (chosen && unbuildableFormReason(chosen)) return ["choose-form"];
+  // ^ deadEndReason() below answers WHY this line fired, from the same call. Kept as a separate
+  //   export rather than folded into the return: nextActions answers what is VALID, and a caller
+  //   that needs the reason (the driver, so a stagnating run says something) must not have to
+  //   re-derive it and risk saying something else.
   // Issue #1, stage 3: "ask aspect ratio only when entering an export that needs it, and after
   // the editorial format is chosen". Both halves of that sentence are this line's POSITION —
   // below choose-form, above produce — rather than a rule written down somewhere for an
@@ -521,6 +524,21 @@ export function nextActionsForElement(
   // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.
   if (el.delivery && needsDelivery(run, el)) return verificationChain(run, el);
   return ["show"];
+}
+
+/**
+ * WHY this element is stuck at "choose-form" with a choice already made, or undefined when it is
+ * not stuck at all.
+ *
+ * The dead end is real and deliberate: a form nothing can build is OFFERED (marked, never
+ * removed), so it CAN be chosen, and nextActionsForElement routes such a choice back to the offer
+ * rather than to a produce that would refuse forever. What was missing is that the routing said
+ * nothing — "choose-form" reads identically whether an offer is waiting to be chosen from or a
+ * choice already made can never succeed. The driver tells the two apart through this.
+ */
+export function deadEndReason(el: RunElement): string | undefined {
+  const chosen = chosenOption(el);
+  return chosen ? unbuildableFormReason(chosen) : undefined;
 }
 
 /**

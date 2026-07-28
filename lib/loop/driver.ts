@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   appendEvent,
+  deadEndReason,
   liveElementFor,
   nextActions,
   type NextAction,
@@ -196,9 +197,42 @@ export async function advanceStep(
         };
       return refused("deliver", result.message, live.id);
     }
-    default:
-      // confirm-angle / choose-form / confirm-aspect / approve / show / [] are human turns
-      return { run, ran: null };
+    default: {
+      // confirm-angle / choose-form / confirm-aspect / approve / show / [] are human turns —
+      // EXCEPT one, which only looks like one. A chosen form nothing can build routes back to
+      // "choose-form", and reported as a plain human turn it is indistinguishable from an offer
+      // waiting to be chosen from: a runner looping on advance waits forever on a journalist who
+      // has already decided, and a manifest re-read afterwards shows `chosen → choose-form` with
+      // no trace of the refusal. The ledger is meant to be the whole story of a run.
+      //
+      // Recorded ONCE. The ledger is capped at 50 entries, so a refusal re-appended on every turn
+      // does not merely add noise — it EVICTS the run's real history and replaces it with copies
+      // of one fact. Nothing is lost by collapsing them: the reason is a pure function of state
+      // that has not changed, and the outcome carries it to this caller on every single turn.
+      const stuck =
+        next === "choose-form" && live ? deadEndReason(live) : undefined;
+      if (!stuck) return { run, ran: null };
+      const message = boundEventMessage(stuck);
+      const already = run.events.at(-1);
+      const duplicate =
+        already?.kind === "failure" &&
+        already.action === next &&
+        already.elementId === live!.id &&
+        already.message === message;
+      return {
+        ran: null,
+        failure: { action: next, message },
+        run: duplicate
+          ? run
+          : appendEvent(run, {
+              at: new Date().toISOString(),
+              kind: "failure",
+              elementId: live!.id,
+              action: next,
+              message,
+            }),
+      };
+    }
   }
 }
 
