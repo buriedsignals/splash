@@ -17,7 +17,14 @@ import {
 } from "./lorenz-geometry";
 import { line, area, curveLinear } from "d3-shape";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -33,6 +40,14 @@ export interface LorenzConfig {
   xLabel: string;
   yLabel: string;
   series: { label: string; points: { x: number; y: number }[] }[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. The curves carry the fixed
+   *  most-unequal-first Okabe-Ito palette that the comparison depends on, so the hue never
+   *  touches them. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface LorenzChartProps {
@@ -141,6 +156,8 @@ export function LorenzChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -173,6 +190,7 @@ function LorenzSvg({
   sc: number;
 }) {
   const { innerWidth, innerHeight, series, equality, xTicks, yTicks } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.18);
   const reveal = easeInOutCubic(p);
   const clipW = innerWidth * reveal + 1;
@@ -216,7 +234,7 @@ function LorenzSvg({
                 x2={innerWidth}
                 y1={t.pos}
                 y2={t.pos}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -225,7 +243,7 @@ function LorenzSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.source}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -238,7 +256,7 @@ function LorenzSvg({
               y={innerHeight + 16 * sc}
               textAnchor="middle"
               fontSize={ts.source}
-              fill={COLORS.muted}
+              fill={C.muted}
             >
               {t.label}
             </text>
@@ -248,7 +266,7 @@ function LorenzSvg({
             y={innerHeight + 30 * sc}
             textAnchor="middle"
             fontSize={ts.axis}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {truncate(config.xLabel, innerWidth, ts.axis)}
           </text>
@@ -256,7 +274,7 @@ function LorenzSvg({
             transform={`translate(${-38 * sc},${innerHeight / 2}) rotate(-90)`}
             textAnchor="middle"
             fontSize={ts.axis}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             {truncate(config.yLabel, innerHeight, ts.axis)}
           </text>
@@ -286,7 +304,7 @@ function LorenzSvg({
                 dy="0.32em"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>
@@ -306,7 +324,7 @@ function LorenzSvg({
             y1={equality.y0}
             x2={equality.x1}
             y2={equality.y1}
-            stroke={COLORS.muted}
+            stroke={C.muted}
             strokeWidth={1.5 * sc}
             strokeDasharray={`${5 * sc} ${4 * sc}`}
           />
@@ -317,7 +335,7 @@ function LorenzSvg({
             y={-7 * sc}
             textAnchor="middle"
             fontSize={ts.source}
-            fill={COLORS.muted}
+            fill={C.muted}
           >
             line of equality
           </text>
@@ -347,7 +365,7 @@ function LorenzSvg({
                     x2={c.x}
                     y1={0}
                     y2={innerHeight}
-                    stroke={COLORS.ink}
+                    stroke={C.ink}
                     strokeWidth={1}
                     opacity={0.3}
                   />
@@ -406,6 +424,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,0)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

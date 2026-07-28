@@ -17,7 +17,14 @@ import {
   type ChordLayout,
 } from "./chord-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -31,6 +38,14 @@ export interface ChordConfig {
   unit: string; // subtitle
   labels: string[];
   matrix: number[][];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. Entities carry a fixed Okabe-Ito
+   *  categorical palette, so the hue never touches the arcs or ribbons — one hue would
+   *  collapse the entities it separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface ChordChartProps {
@@ -139,6 +154,8 @@ export function ChordChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -171,6 +188,7 @@ function ChordSvg({
   sc: number;
 }) {
   const { cx, cy, radius, groups, ribbons } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const nR = ribbons.length;
   const chrome = easeOutCubic(p / 0.18);
   const bloom = 0.45 + 0.55 * easeOutCubic(clamp01((p - 0.05) / 0.45));
@@ -249,7 +267,7 @@ function ChordSvg({
               textAnchor={g.side === "right" ? "start" : "end"}
               fontSize={ts.axis}
               fontWeight={600}
-              fill={COLORS.ink}
+              fill={C.ink}
               opacity={dim ? 0.4 : 1}
             >
               {truncate(
@@ -298,6 +316,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

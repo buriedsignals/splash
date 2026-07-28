@@ -43,26 +43,12 @@ const THEMED = BASE.filter((f) => read(f).includes("themeBg?: string"));
 
 // The components that are not themed AT ALL — no `themeBg`, so they paint the static light
 // `COLORS` and no house ground reaches them either. Giving them a `baseColor` alone would
-// tint nothing: their furniture never goes through `themeColors`. That is a WIDER gap than
-// this file's invariant (a whole theme seam missing, not one of its two halves), tracked
-// separately in docs/splash/residuals.md. Frozen as a list so the set cannot quietly grow:
-// a new chart type must be themed, or it must be added here on purpose.
-const UNTHEMED = [
-  "ArcChart.tsx",
-  "CalendarChart.tsx",
-  "CandlestickChart.tsx",
-  "ChordChart.tsx",
-  "ComboChart.tsx",
-  "GanttChart.tsx",
-  "LorenzChart.tsx",
-  "MarimekkoChart.tsx",
-  "ParallelChart.tsx",
-  "PictogramChart.tsx",
-  "RadarChart.tsx",
-  "SankeyChart.tsx",
-  "StreamgraphChart.tsx",
-  "SunburstChart.tsx",
-];
+// tint nothing: their furniture never goes through `themeColors`. That was a WIDER gap than
+// this file's invariant (a whole theme seam missing, not one of its two halves), and it is
+// now CLOSED: the fourteen family-B specialists were wired to the same seam and the list is
+// EMPTY. Keep it empty. It is not a parking space — a new chart type is themed or it does
+// not ship; anything added back here is a newsroom's ground and hue reaching nothing.
+const UNTHEMED: string[] = [];
 
 // A JSX opening tag ends at the first `>` seen at brace depth 0 — props hold nested elements
 // and objects carrying their own `>`.
