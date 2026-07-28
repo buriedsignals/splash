@@ -205,3 +205,37 @@ export function pageCopy(lang: string): PageCopy {
   const base = (lang || "en").toLowerCase().split("-")[0]!;
   return TABLE[base] ?? EN;
 }
+
+export type LanguageOption = { id: string; label: string };
+
+/** Endonyms — a language is named in itself, never translated into the current interface. */
+const LANGUAGE_LABELS: Record<string, string> = {
+  en: "English",
+  fr: "Français",
+  de: "Deutsch",
+  it: "Italiano",
+};
+
+/**
+ * The languages the PAGE SPEAKS, derived from the copy table rather than listed beside it.
+ *
+ * The two used to be written twice, and drifted: the selector offered Deutsch and Italiano
+ * while this table knew `en`/`fr`, so picking German re-rendered the page in English. Deriving
+ * the list is what makes that unrepresentable — a translation appears in the selector by
+ * landing in the table, and disappears by leaving it.
+ */
+export const UI_LANGUAGES: LanguageOption[] = Object.keys(TABLE).map((id) => ({
+  id,
+  label: LANGUAGE_LABELS[id] ?? id,
+}));
+
+/**
+ * The languages a newsroom may PUBLISH in — deliberately a superset of the above.
+ *
+ * The content language rides on the profile and reaches the delivered package as a BCP-47
+ * string; nothing about it requires Splash's own interface to be translated. Collapsing the
+ * two lists into one would take German publishing away to fix a German setup page.
+ */
+export const CONTENT_LANGUAGES: LanguageOption[] = Object.entries(
+  LANGUAGE_LABELS,
+).map(([id, label]) => ({ id, label }));

@@ -5,7 +5,14 @@
 //
 // It is bundled by Bun at request time (no build step, no CDN, no dependency), which is what
 // lets it be typed TypeScript instead of a string of JavaScript inside an HTML template.
-import { MODEL_SCRIPT_ID, pageCopy, type PageCopy } from "./copy.ts";
+import {
+  CONTENT_LANGUAGES,
+  MODEL_SCRIPT_ID,
+  pageCopy,
+  UI_LANGUAGES,
+  type LanguageOption,
+  type PageCopy,
+} from "./copy.ts";
 import type { PreflightCapability, PreflightModel } from "./model.ts";
 import { statusView } from "./status-view.ts";
 import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
@@ -42,13 +49,6 @@ const form: FormState = {
   newsroom: { name: "", url: "", color: "#0072b2" },
   verified: {},
 };
-
-const LANGUAGES: { id: string; label: string }[] = [
-  { id: "en", label: "English" },
-  { id: "fr", label: "Français" },
-  { id: "de", label: "Deutsch" },
-  { id: "it", label: "Italiano" },
-];
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -284,6 +284,9 @@ function languageSelect(
   label: string,
   value: string,
   disabled: boolean,
+  // The two selectors do NOT offer the same list: the page can only be READ in the languages
+  // it has copy for, while a newsroom may PUBLISH in any of them (copy.ts).
+  options: LanguageOption[],
   onChange: (v: string) => void,
 ): HTMLElement {
   const wrapper = el("div", { class: "field" });
@@ -292,9 +295,9 @@ function languageSelect(
     id,
     ...(disabled ? { disabled: "disabled" } : {}),
   }) as HTMLSelectElement;
-  for (const lang of LANGUAGES)
+  for (const lang of options)
     select.append(el("option", { value: lang.id }, lang.label));
-  if (!LANGUAGES.some((l) => l.id === value))
+  if (!options.some((l) => l.id === value))
     select.append(el("option", { value }, value));
   select.value = value;
   select.addEventListener("change", () => onChange(select.value));
@@ -343,16 +346,24 @@ function renderLanguage(copy: PageCopy): void {
   name.textContent = copy.languageTitle;
   hint.textContent = copy.languageHint;
   body.replaceChildren(
-    languageSelect("ui-lang", copy.languageUi, form.uiLang, false, (v) => {
-      form.uiLang = v;
-      render();
-    }),
+    languageSelect(
+      "ui-lang",
+      copy.languageUi,
+      form.uiLang,
+      false,
+      UI_LANGUAGES,
+      (v) => {
+        form.uiLang = v;
+        render();
+      },
+    ),
     languageSelect(
       "content-lang",
       copy.languageContent,
       form.contentLang,
       // Decision 6: an existing profile belongs to the newsroom; the page never rewrites it.
       model.profileExists,
+      CONTENT_LANGUAGES,
       (v) => {
         form.contentLang = v;
       },
@@ -467,7 +478,8 @@ function renderReadiness(copy: PageCopy): void {
       text.append(el("p", {}, explanation));
       for (const name of capability.missingFields) {
         const help = model.fields.find((f) => f.name === name)?.help;
-        if (help) text.append(el("p", { class: "blocker-help" }, helpText(help)));
+        if (help)
+          text.append(el("p", { class: "blocker-help" }, helpText(help)));
       }
       row.append(text);
       body.append(row);
