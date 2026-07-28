@@ -450,7 +450,7 @@ la toucher.
 
 ---
 
-### A34 — la capture d'un scrolly crope sur sa bannière *(ouvert, MESURÉ ici)*
+### A34 — la capture d'un scrolly crope sur sa bannière *(FERMÉ — mesuré avant/après)*
 
 **Constat live, pas déduit.** Sur un scrolly produit et ouvert dans un navigateur, le sélecteur de
 repli de la couche capture — `#root > div` — résout un élément de **454 × 63 px** dont le texte
@@ -467,13 +467,37 @@ envelopper dans une `<div>` ajoute une boîte à un composant en `position: stic
 de collage peut se déplacer et il faut un A/B au rendu ; `display: contents` éviterait la boîte mais
 rend un `getBoundingClientRect()` à zéro, ce qui casserait le crop qu'on répare.
 
-**Sévérité : latente.** `scrolly` n'est pas dans `LOOP_BUILDABLE_ENGINES` — la forme est offerte
-MARQUÉE, aucun scrolly ne traverse `capture` aujourd'hui. **Vivant le jour où la branche article
-ship**, et c'est le bon moment pour le fermer : même tranche, rendu sous les yeux.
+**Fermé.** `Scrolly.tsx` retourne maintenant un `<div data-splash-root style={{ display: "block",
+position: "static" }}>` réel (au lieu du fragment) et pose `data-splash-title` sur le nœud de texte
+du titre persistant. `display: block; position: static` sont les défauts d'une `<div>` nue — posés
+explicitement pour que l'invariant dont ce fix dépend (aucun nouveau contexte de positionnement,
+aucun nouveau containing block pour le descendant `sticky`) ne repose pas sur un défaut non écrit.
 
-**Ce qu'il faut :** `data-splash-root` sur une racine réelle du scaffold, `data-splash-title` sur le
-titre de page, l'A/B prouvant que le collage n'a pas bougé, et la vérification que `#root > div`
-cesse d'être le repli atteint. Trouvé par le lot moteurs (hors de sa frontière), mesuré ici.
+**Mesure AVANT/APRÈS (même config, `line-scrolly.json`, produite via `bun scripts/produce.mjs` +
+Playwright réel, viewport 1100×800) :**
+
+| | AVANT | APRÈS |
+|---|---|---|
+| `#root > div` rect | **454 × 63 px** (top 16, left 20) — la bannière de titre | **1100 × 4320 px** (top 0, left 0) — la page entière |
+| `[data-splash-root]` rect | absent (0 marqueur) | **1100 × 4320 px** — identique à `#root > div` |
+| `[data-splash-root]` == `#root > div` | — | **oui** (même élément) |
+
+**A/B du collage (sticky) — les positions d'activation de chaque `[data-step-index]` (scrollY
+document auquel le centre de l'étape croise le centre du viewport, la bande de déclenchement réelle
+de l'`IntersectionObserver`, `rootMargin: "-50% 0px -50% 0px"`) sont BYTE-IDENTIQUES avant/après :**
+`{0: -40, 2: 680, 3: 1400, 4: 2120, 5: 2840, 6: 3560}` (l'étape 1 est absente des deux — caption
+dupliquée de l'étape 0, collapsée par construction). Le nouveau conteneur n'a déplacé ni la mise en
+page ni le déclenchement du scroll — la CSS explicite (`display:block; position:static`) suffit,
+aucun repli vers `display: contents` n'a été nécessaire.
+
+**Couche capture.** `lib/verify/capture.ts` (`ROOT_SELECTORS`/`TITLE_SOURCES`) préférait déjà
+`[data-splash-root]`/`[data-splash-title]` avant `#root > div` — posé par le lot moteurs
+(chart-native/map-native) pour leurs propres racines standalone, jamais consommé côté scrolly avant
+ce ticket. Aucune modification requise là : c'est `Scrolly.tsx` qui ne posait pas le marqueur.
+
+**Preuve mécanique.** `skills/scrolly/src/scaffold-root.test.tsx` — un seul `data-splash-root` par
+page, situé avant `data-splash-title` dans le HTML rendu (chart track ET map track). Vert :
+`bunx tsc --noEmit` + `bun test` (82/82, `skills/scrolly`) + `bun test lib/verify` (148/148, 2 skip).
 
 ## 4. Pile C — bloqué
 

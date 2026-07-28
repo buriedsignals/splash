@@ -585,12 +585,28 @@ export const Scrolly: React.FC<{
     );
   }
 
+  // A34 (docs/splash/residuals.md): the scaffold used to return a bare fragment whose
+  // first child was the header, so the Verify layer's capture ladder (lib/verify/capture.ts)
+  // fell through to its structural guess `#root > div` and measured the 454×63px title
+  // banner instead of the page — measured live, not deduced.
+  //
+  // Two obvious fixes each failed (measured, not assumed):
+  //   - a plain wrapping `<div>` adds a box ABOVE the `position: sticky` graphic, which
+  //     could move the sticky containing block — proved harmless here by an A/B: the
+  //     step-activation scroll positions and the sticky graphic's own box are byte-identical
+  //     before/after (docs/splash/residuals.md A34, `bun scripts/produce.mjs` + Playwright).
+  //   - `display: contents` avoids the box but returns a zero `getBoundingClientRect()`,
+  //     which would break the very crop this fix repairs — never used.
+  // `display: block; position: static;` are the browser defaults for a bare `<div>`; spelled
+  // out here so the invariant this fix depends on (no new positioning context, no new
+  // containing block for the sticky descendant) is not left to an unstated default.
   return (
-    <>
+    <div data-splash-root="" style={{ display: "block", position: "static" }}>
       {/* Persistent figure title — the insight, always visible (self-contained module) */}
       {story.title && (
         <div style={headerStyle}>
           <div
+            data-splash-title=""
             style={{
               fontFamily: "sans-serif",
               fontWeight: 700,
@@ -739,6 +755,6 @@ export const Scrolly: React.FC<{
           )}
         </div>
       )}
-    </>
+    </div>
   );
 };
