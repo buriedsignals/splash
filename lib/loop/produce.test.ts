@@ -77,6 +77,71 @@ test("produce renders a real static PNG through the chart-native seam", async ()
   expect(after.artifact!.sha256).toMatch(/^[0-9a-f]{64}$/);
 }, 60000);
 
+// A21 — end of the thread. The class the run declared has to arrive on the CONFIG the engine's
+// conformance belt reads, not merely on the spec: the whole point is that one table decides the
+// source rules at every layer, and a class that stops at the spec boundary decides nothing.
+test("produce lands the declared source class on the rendered config", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-kind-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(
+    src,
+    "canton,2015,2024\nGenève,449,583\nVaud,412,531\nAppenzell RI,289,352",
+  );
+  const run: RunManifest = {
+    runId: "t",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    // A PUBLIC source this time: the one class whose row demands a specific URL, so the belt
+    // downstream is genuinely reading the requirements table rather than the flat old rule.
+    sources: {
+      mode: "real",
+      data: {
+        kind: "public",
+        label: "OFS",
+        url: "https://www.bfs.admin.ch/asset/fr/12345",
+      },
+    },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 3,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Health premiums rose in every canton shown",
+          altInsight:
+            "Between 2015 and 2024 the adult premium rose in all three cantons shown; Geneva stays the most expensive.",
+          unit: "Monthly adult premium (CHF)",
+          emphasis: "Genève",
+        },
+        proposal: {
+          options: [
+            { id: "slope", nativeType: "slope", why: "two points in time" },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+  const result = await produce(run, run.elements[0], runDir);
+  if (!result.ok) throw new Error(result.message);
+  const config = JSON.parse(
+    readFileSync(join(runDir, "elements", "e1", "config.json"), "utf8"),
+  ) as { source: { name: string; url?: string; kind?: string } };
+  expect(config.source.kind).toBe("public");
+  expect(config.source.url).toBe("https://www.bfs.admin.ch/asset/fr/12345");
+  rmSync(runDir, { recursive: true, force: true });
+}, 60000);
+
 // The manifest's proposal now records the FORMAT the brain offered (format threading,
 // fix round 2/5) — before this, produce() hard-coded "static" regardless of what the
 // chosen option promised, so an "interactive" offer silently delivered a static PNG: the
@@ -656,6 +721,37 @@ test("assembleNativeSpec leaves an element with no plan byte-identical — no `b
     "NSIDC Sea Ice Index",
   );
   expect("beats" in spec).toBe(false);
+  rmSync(runDir, { recursive: true, force: true });
+});
+
+// A21 — the engine is told WHAT the figures are, not only who to credit. The class the run
+// declared (lib/source) reaches chart-native's conformance belt through the spec; without it,
+// every chart the loop ever built was checked on the flat "name required, url optional" rule
+// whatever its data actually was.
+test("assembleNativeSpec carries the run's declared source class onto the spec", () => {
+  const { run, runDir } = scrollyRunOnDisk();
+  const spec = assembleNativeSpec(
+    run,
+    run.elements[0]!,
+    SEA_ICE,
+    "NSIDC Sea Ice Index",
+    "https://nsidc.org/data/g02135",
+    undefined,
+    "public",
+  );
+  expect(spec.sourceKind).toBe("public");
+  rmSync(runDir, { recursive: true, force: true });
+});
+
+test("assembleNativeSpec omits `sourceKind` when no class is passed — byte-identical spec", () => {
+  const { run, runDir } = scrollyRunOnDisk();
+  const spec = assembleNativeSpec(
+    run,
+    run.elements[0]!,
+    SEA_ICE,
+    "NSIDC Sea Ice Index",
+  );
+  expect("sourceKind" in spec).toBe(false);
   rmSync(runDir, { recursive: true, force: true });
 });
 
