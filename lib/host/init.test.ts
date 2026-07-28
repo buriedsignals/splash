@@ -111,6 +111,21 @@ describe("init: the façade can begin a run", () => {
     expect(existsSync(join(dir, "run.json"))).toBe(false);
   });
 
+  // The run's source ledger is written once, at init, and no later step can add it — so a
+  // declaration that names data without saying what it is would create a run that can never
+  // produce. The refusal is the question itself, put before the run exists.
+  it("asks where the data comes from rather than starting a run that could never produce", async () => {
+    const { dir, csv } = scene();
+    const r = await cli(
+      ["init", "--run", dir],
+      JSON.stringify({ runId: "premiums", input: { data: csv } }),
+    );
+    expect(r.code).toBe(1);
+    expect(r.body.code).toBe("invalid-request");
+    expect(String(r.body.message)).toContain("Where does this data come from");
+    expect(existsSync(join(dir, "run.json"))).toBe(false);
+  });
+
   it("refuses to overwrite a run that already exists", async () => {
     const { dir, csv } = scene();
     expect((await cli(["init", "--run", dir], declaration(csv))).code).toBe(0);
