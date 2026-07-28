@@ -141,6 +141,165 @@ describe("capture — a static deliverable IS its own review image", () => {
   });
 });
 
+// A deliverable whose HEIGHT follows its content, not its box. Measured, not hypothetical: a
+// 3-row Datawrapper bar chart delivered 1200x600 against article-web's 1200x675, because pinning
+// the height of a row-driven export makes Datawrapper CROP the rows that overflow — silent data
+// loss (skills/dw-chart/src/export-aspect.ts ROW_DRIVEN_TYPES). The artifact is correct; the
+// check read it as a mismatch, and the loop answered by refusing to offer nine chart types.
+//
+// The policy is DECLARED by the caller, never inferred here: which types grow with their rows is
+// an engine fact, and a list of type names inside lib/verify would be that fact's second, driftable
+// home. Absent ⇒ "pinned", so every existing caller is unchanged.
+describe("capture — a content-driven height is measured on its width alone", () => {
+  it("PASSES a row-driven export that is the destination's width at its own height", async () => {
+    const r = await capture({
+      artifactPath: staticPngAt("row-driven.png", 1200, 600),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    const c = check(r.value.checks, "capture:size-matches-destination");
+    expect(c?.outcome).toBe("pass");
+    // The relaxation must be READABLE in the evidence, not silent: the detail says the height
+    // was not held to the box, and the record carries the policy it was measured under.
+    expect(c?.detail).toContain("content-driven");
+    expect(r.value.images[0]!.heightPolicy).toBe("content-driven");
+    expect(check(r.value.checks, "capture:fits-viewport")?.outcome).toBe(
+      "pass",
+    );
+  });
+
+  it("PASSES a many-row export that is TALLER than the box it publishes into", async () => {
+    // The other direction of the same fact: a 45-row bar chart grows past the container, and the
+    // container grows with it. Held to the box, this correct artifact would fail twice — once as
+    // a size mismatch and once as an overflow.
+    const r = await capture({
+      artifactPath: staticPngAt("row-driven-tall.png", 1200, 3000),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven-tall"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(
+      check(r.value.checks, "capture:size-matches-destination")?.outcome,
+    ).toBe("pass");
+    expect(check(r.value.checks, "capture:fits-viewport")?.outcome).toBe(
+      "pass",
+    );
+  });
+
+  it("FAILS a row-driven export whose WIDTH is wrong — only the height is forgiven", async () => {
+    const r = await capture({
+      artifactPath: staticPngAt("row-driven-narrow.png", 1000, 600),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven-narrow"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    const c = check(r.value.checks, "capture:size-matches-destination");
+    expect(c?.outcome).toBe("fail");
+    expect(c?.detail).toContain("1000");
+    expect(c?.detail).toContain("1200");
+  });
+
+  it("FAILS a row-driven export that is WIDER than its destination", async () => {
+    const r = await capture({
+      artifactPath: staticPngAt("row-driven-wide.png", 1600, 600),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven-wide"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(
+      check(r.value.checks, "capture:size-matches-destination")?.outcome,
+    ).toBe("fail");
+    expect(check(r.value.checks, "capture:fits-viewport")?.outcome).toBe(
+      "fail",
+    );
+  });
+
+  it("FAILS the SAME image under the default policy — the relaxation is opt-in, not the new rule", async () => {
+    const r = await capture({
+      artifactPath: staticPngAt("row-driven.png", 1200, 600),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven-default"),
+      id: "e1",
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(
+      check(r.value.checks, "capture:size-matches-destination")?.outcome,
+    ).toBe("fail");
+    expect(r.value.images[0]!.heightPolicy).toBeUndefined();
+    expect("heightPolicy" in r.value.images[0]!).toBe(false);
+  });
+
+  it("FAILS a pinned deliverable on EITHER axis", async () => {
+    for (const [w, h] of [
+      [1200, 900],
+      [900, 675],
+    ] as const) {
+      const r = await capture({
+        artifactPath: staticPngAt(`pinned-${w}x${h}.png`, w, h),
+        format: "static",
+        channel: "article-web",
+        outDir: join(dir, `out-pinned-${w}x${h}`),
+        id: "e1",
+        heightPolicy: "pinned",
+      });
+      if (!r.ok) throw new Error(r.message);
+      expect(
+        check(r.value.checks, "capture:size-matches-destination")?.outcome,
+      ).toBe("fail");
+    }
+  });
+
+  it("reads the device scale off the WIDTH when the height is content-driven", async () => {
+    // A 2x row-driven export: no integer scale explains BOTH axes, so a rule that demands both
+    // would record a 2x image as scale 1 and then measure it against the wrong box.
+    const r = await capture({
+      artifactPath: staticPngAt("row-driven-2x.png", 2400, 1400),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven-2x"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(r.value.images[0]!.deviceScaleFactor).toBe(2);
+    expect(r.value.images[0]!.rootBox).toStrictEqual({
+      x: 0,
+      y: 0,
+      width: 1200,
+      height: 700,
+    });
+    expect(
+      check(r.value.checks, "capture:size-matches-destination")?.outcome,
+    ).toBe("pass");
+  });
+
+  it("survives JSON.parse(JSON.stringify(result)) with the policy intact", async () => {
+    const r = await capture({
+      artifactPath: staticPngAt("row-driven-json.png", 1200, 600),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven-json"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    expect(JSON.parse(JSON.stringify(r))).toStrictEqual(r);
+  });
+});
+
 describe("capture — a verb never throws (I1) and always round-trips (I6)", () => {
   it("reports a missing artifact as a typed failure", async () => {
     const r = await capture({
