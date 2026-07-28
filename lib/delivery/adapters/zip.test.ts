@@ -86,10 +86,13 @@ describe("the zip publisher, file genre", () => {
     ]);
     expect(strFromU8(entries["ALT.txt"]!)).toBe("Les primes montent\n");
     const readme = strFromU8(entries["README.md"]!);
-    expect(readme).toContain("image field");
+    // French, because the request's metadata.lang is "fr" — these three assertions used to
+    // name the English strings and were the record of registry A25. The language table itself
+    // is exercised in zip-lang.test.ts; here it only has to be the newsroom's.
+    expect(readme).toContain("champ image");
     expect(readme).toContain("ALT.txt");
     expect(readme).not.toContain("<iframe");
-    expect(readme).not.toContain("Upload `index.png` anywhere");
+    expect(readme).not.toContain("Déposez `index.png` là où");
   });
 
   it("should name the video field for a video", async () => {
@@ -102,7 +105,7 @@ describe("the zip publisher, file genre", () => {
       ),
     );
     expect(Object.keys(entries)).toContain("index.mp4");
-    expect(strFromU8(entries["README.md"]!)).toContain("video field");
+    expect(strFromU8(entries["README.md"]!)).toContain("champ vidéo");
   });
 
   it("should leave the embed genre's archive byte-identical", async () => {
