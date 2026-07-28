@@ -4,10 +4,14 @@
 // every word and every image already belongs to someone, so this assembler ZIPS the two
 // declared lists together rather than measuring anything of its own.
 //
-// `sourcePassage` is never set (see image-story.ts's own comment on the field): the loop runs
-// no vision matching between a photograph and an article passage, the caption IS the
-// journalist's authored beat, and inventing a passage would give the anti-copy tripwire a
-// reference nobody wrote for it to compare a caption against words it never came from.
+// Every frame is marked `captionSource: "authored"` (see ImageStep's own comment on the
+// discriminant) and `sourcePassage` is never set: the loop runs no vision matching between a
+// photograph and an article passage, the caption IS the journalist's authored beat, and
+// inventing a passage would give the anti-copy tripwire a reference nobody wrote for it to
+// compare a caption against words it never came from. The explicit "authored" mark (rather than
+// just omitting sourcePassage) is what keeps the engine's guard enforced for every OTHER caller
+// — suggest-image's vision-matched, article-derived path defaults to enforced when it says
+// nothing at all, so this assembler has to say what it is, not just what it lacks.
 import { fail, ok, type VerbResult } from "../../core/verbs";
 import type { ProductionBrief } from "../../core/production-brief";
 import {
@@ -51,6 +55,7 @@ export function assembleImageNative(
     caption: beats[i]!.text,
     alt: f.alt,
     credit: f.credit,
+    captionSource: "authored",
   }));
 
   const story: ImageStory = {

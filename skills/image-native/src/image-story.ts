@@ -15,12 +15,27 @@ export interface ImageStep {
   caption: string; // article-derived, self-contained, NEVER a verbatim excerpt
   alt: string; // what is VISIBLE — journalist-supplied, distinct from caption (WCAG 1.1.1)
   credit: ImageCredit; // per-frame photo credit — a different axis from the module source
-  // The matched article passage — the tripwire's reference (spec §6.5). OPTIONAL: it is
-  // required only when the caption is ARTICLE-DERIVED (spec §5, line 92 — "REQUIS dès que la
-  // caption est article-dérivée"). A caption composed of the journalist's OWN authored beat
-  // (lib/loop/assemble/image-native.ts) was never matched against a passage — there is nothing
-  // to record, and fabricating one would hand the overlap tripwire a reference nobody wrote,
-  // for it to compare a caption against words it never came from.
+  // Where the caption's WORDS came from — the discriminant `sourcePassage`'s requirement is
+  // keyed on (spec §5, line 92: "REQUIS dès que la caption est article-dérivée" — required as
+  // soon as the caption is article-derived):
+  //   "article"   (or absent — see the default note below) — suggest-image's vision-matched
+  //                path (skills/suggest-image): the caption is a rephrase of a matched article
+  //                passage, and `sourcePassage` is REQUIRED so the anti-copy overlap tripwire
+  //                has something to check the rephrase against.
+  //   "authored"  — the loop's own beat-authored path (lib/loop/assemble/image-native.ts): the
+  //                caption IS the journalist's own narrative beat, never matched against
+  //                anything, so `sourcePassage` is correctly absent and nothing is checked.
+  // DEFAULT IS "article" when this key is omitted entirely — not "authored". A frame that says
+  // nothing about its provenance is far likelier to be a manifest from the older, undiscriminated
+  // shape (every caller before this field existed) than a caller opting into the new authored
+  // path, and the safe failure on that ambiguity is the LOUD one: keep enforcing the guard
+  // rather than silently waiving it.
+  captionSource?: "article" | "authored";
+  // The matched article passage — the tripwire's reference (spec §6.5). Required exactly when
+  // `captionSource` is "article" (or absent, by the default above); absent and unchecked when
+  // "authored". Never fabricate one for an authored frame: there is no passage it came from, and
+  // inventing one would hand the overlap tripwire a reference nobody wrote, to compare a caption
+  // against words it never came from.
   sourcePassage?: string;
   fit?: "crop" | "canvas-frame"; // per-frame override of ImageStory.fit
   align?: "left" | "right" | "center";
@@ -440,11 +455,15 @@ export function checkImageConformance(
       v.push(
         `frame ${label} has no photo credit — each image carries its own attribution`,
       );
-    // sourcePassage is OPTIONAL (see the field's own comment): absent means "not
-    // article-derived", and there is nothing to check. PRESENT-but-blank is still a mistake —
-    // a caller that wrote the key owes it a value — so that shape still flags, exactly as it
-    // did when the field was required.
-    if (f.sourcePassage !== undefined && !f.sourcePassage.trim())
+    // sourcePassage's requirement is GATED ON captionSource (see ImageStep's own comment), not
+    // blanket-optional: an article-derived frame (captionSource: "article", or the field absent
+    // — the safe, loud default) still owes one, exactly as it did before "authored" existed.
+    // Only a frame explicitly marked "authored" is legitimately exempt — the loop's own beats
+    // were never matched against any passage. This is the discriminant a review found missing:
+    // without it, EVERY caller (including suggest-image's shipped vision-matched path) could
+    // omit sourcePassage and the anti-copy tripwire would silently stop checking anything.
+    const isArticleDerived = f.captionSource !== "authored";
+    if (isArticleDerived && !f.sourcePassage?.trim())
       v.push(
         `frame ${label} has no sourcePassage — an article-derived caption must record the passage it came from`,
       );

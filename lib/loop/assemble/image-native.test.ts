@@ -145,3 +145,15 @@ test("sourcePassage stays absent — the loop has no vision matching to invent o
   for (const f of (r.value as ImageStory).frames)
     expect(f.sourcePassage).toBeUndefined();
 });
+
+// captionSource discriminant (review finding, 2026-07-28): the engine's sourcePassage
+// requirement is gated on this field, defaulting to "article" (enforced) when absent — so a
+// caller that omits sourcePassage MUST also say "authored", or the engine's guard (rightly)
+// refuses it. Every frame this assembler builds carries the mark explicitly.
+test('every frame is marked captionSource:"authored" — the discriminant that keeps the engine\'s guard from silently waiving itself', () => {
+  const r = assembleImageNative(IMAGE_BRIEF);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  for (const f of (r.value as ImageStory).frames)
+    expect(f.captionSource).toBe("authored");
+});

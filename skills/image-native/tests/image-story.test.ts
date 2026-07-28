@@ -208,12 +208,39 @@ describe("checkImageConformance", () => {
     expect(checkImageConformance(s)).toContain('duplicate frame id "f0"');
   });
 
-  it("should flag a frame whose caption is missing its sourcePassage", () => {
+  it("should flag a frame whose caption is missing its sourcePassage (present but blank)", () => {
     const s = validStory();
     s.frames[0]!.sourcePassage = "";
     expect(checkImageConformance(s)).toContain(
       'frame "f0" has no sourcePassage — an article-derived caption must record the passage it came from',
     );
+  });
+
+  // captionSource discriminant (review finding, 2026-07-28): sourcePassage's requirement is
+  // gated on provenance, not blanket-optional — an omission on an article-derived frame must
+  // still flag, exactly as an explicit blank does above.
+  it("should flag an ARTICLE-DERIVED frame with sourcePassage absent entirely, not just blank", () => {
+    const s = validStory();
+    delete s.frames[0]!.sourcePassage;
+    expect(checkImageConformance(s)).toContain(
+      'frame "f0" has no sourcePassage — an article-derived caption must record the passage it came from',
+    );
+  });
+
+  it('should flag a frame explicitly marked captionSource:"article" with no sourcePassage', () => {
+    const s = validStory();
+    s.frames[0]!.captionSource = "article";
+    delete s.frames[0]!.sourcePassage;
+    expect(checkImageConformance(s)).toContain(
+      'frame "f0" has no sourcePassage — an article-derived caption must record the passage it came from',
+    );
+  });
+
+  it('should NOT flag a frame marked captionSource:"authored" with no sourcePassage — the journalist\'s own beat was never matched against anything', () => {
+    const s = validStory();
+    s.frames[0]!.captionSource = "authored";
+    delete s.frames[0]!.sourcePassage;
+    expect(checkImageConformance(s)).toEqual([]);
   });
 
   it("should flag a caption that copies its sourcePassage", () => {

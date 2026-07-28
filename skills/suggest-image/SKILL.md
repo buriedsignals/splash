@@ -73,7 +73,12 @@ The schema + conformance live in `skills/image-native/src/image-story.ts`
    rephrased self-contained from the matched passage — never a verbatim excerpt. Record the
    matched passage as the frame's `sourcePassage` (required; the engine's overlap tripwire
    compares caption ↔ passage and fails a copy). Inherits the `prose-provenance` discipline
-   (`2026-06-27-prose-extracted-provenance-design.md`).
+   (`2026-06-27-prose-extracted-provenance-design.md`). Every frame this skill emits is
+   vision-matched and article-derived, so its `captionSource` is `"article"` — the engine
+   defaults to that when the field is left off entirely, so leaving it implicit is fine, but
+   naming it explicitly is clearer given a second path now exists (the editorial loop's own
+   beat-authored assembler marks its frames `"authored"` instead, and skips `sourcePassage`
+   for exactly the reason this skill records one).
 4. **★ GATE — MANDATORY, non-skippable (mirror Gate 1b's confirm-back).** Present, per frame:
    the image, its proposed position, its caption, and **the matched passage it came from** (so
    a bad match is caught before rendering), plus the cull list if any. Ask explicitly:
@@ -82,10 +87,10 @@ The schema + conformance live in `skills/image-native/src/image-story.ts`
    captions + kept frames) and get an explicit yes. Never proceed on silence; never treat the
    proposal itself as approval. The journalist's edits win verbatim.
 5. **Emit `image-story.json`** (the `ImageStory` shape — title, description, source, frames
-   with id/frameRef/caption/alt/credit/sourcePassage, keyFrame, fit, lang, imageDir).
-   Self-check: run `checkImageConformance(story, { format: "scrolly" })` and fix every
-   violation (3–6 frames, alt ≠ caption, credit present, sourcePassage present, overlap under
-   threshold).
+   with id/frameRef/caption/alt/credit/captionSource/sourcePassage, keyFrame, fit, lang,
+   imageDir). Self-check: run `checkImageConformance(story, { format: "scrolly" })` and fix
+   every violation (3–6 frames, alt ≠ caption, credit present, sourcePassage present for an
+   article-derived frame, overlap under threshold).
 6. **Produce** (after the gate only):
    `bun skills/image-native/scripts/produce.mjs <image-story.json> <outDir> scrolly`.
    Any other format exits 1 (v1 is scrolly-only). On the splash spine the accepted proposal
