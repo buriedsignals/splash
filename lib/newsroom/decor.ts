@@ -131,9 +131,20 @@ function deliveryProfile(
   // `{name}` is the documented placeholder of the credit template. Substituting it here means
   // a newsroom that used the documented form never finds a literal "{name}" in its package;
   // a credit without the placeholder is untouched.
-  const credit = profile.source?.name
+  const filled = profile.source?.name
     ? profile.credit?.replaceAll("{name}", profile.source.name)
     : profile.credit;
+  // An UNFILLED template is dropped rather than published. Nothing downstream can catch it:
+  // lib/delivery/metadata.ts only trims, and lib/delivery/snippet.ts's brace guard reads the
+  // TEMPLATE, never the value substituted into it — so `credit: "Graphique : {name}"` on a
+  // profile with no `source.name` used to reach the reader as a literal "{name}".
+  //
+  // `{name}` is this template's ONLY placeholder (brand-profile.ts:27), so a brace that
+  // survived substitution belongs to no filling Splash performs — the same ruling snippet.ts
+  // makes for delivery templates. Dropping it lands on the documented empty-credit state
+  // ("empty = derived from lang by the producer"), which is strictly what a newsroom that
+  // declared no credit already gets.
+  const credit = filled && /[{}]/.test(filled) ? undefined : filled;
   return {
     lang: contentLang,
     ...(profile.source?.name ? { source: profile.source.name } : {}),

@@ -127,6 +127,40 @@ describe("loading the decor", () => {
     expect(loadDecor(dir(), NO_ENV).theme).toBeUndefined();
   });
 
+  it("fills the credit template's {name} from the profile source", () => {
+    const d = dir();
+    writeFileSync(
+      join(d, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        'credit: "Graphique : {name}"',
+        "source:",
+        '  name: "A Newsroom"',
+        "---",
+        "",
+        "# guide",
+        "",
+      ].join("\n"),
+    );
+    expect(loadDecor(d, NO_ENV).profile.credit).toBe("Graphique : A Newsroom");
+  });
+
+  // A1: the substituted VALUE is nobody's business downstream — metadata.ts only trims, and
+  // snippet.ts's brace guard reads the template, never what was put in it. An unfillable
+  // template therefore used to reach metadata.json verbatim, and a reader saw "{name}".
+  // Dropping it lands on the documented empty-credit state: "empty = derived from lang by the
+  // producer" (brand-profile.ts:27), which is what a newsroom that declared no credit gets.
+  it("drops a credit it cannot fill rather than shipping the template", () => {
+    const d = dir();
+    writeFileSync(
+      join(d, "NEWSROOM-PROFILE.md"),
+      ["---", 'credit: "Graphique : {name}"', "---", "", "# guide", ""].join(
+        "\n",
+      ),
+    );
+    expect(loadDecor(d, NO_ENV).profile.credit).toBeUndefined();
+  });
+
   it("reads .env from the install root, with the process environment winning", () => {
     const d = dir();
     writeFileSync(join(d, ".env"), 'DATAWRAPPER_API_TOKEN="from-file"\n');
