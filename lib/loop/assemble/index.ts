@@ -7,6 +7,7 @@ import { assembleChartNative } from "./chart-native";
 import { assembleMapNative } from "./map-native";
 import { assembleImageNative } from "./image-native";
 import { assembleScrolly } from "./scrolly";
+import { assembleMapDw, supportsMapDwType } from "./map-dw";
 import { MAP_TYPES } from "../../../skills/map-native/src/map-types";
 
 export type AssemblerEntry = {
@@ -37,6 +38,12 @@ export const ASSEMBLERS: Record<string, AssemblerEntry> = {
     assemble: assembleImageNative,
     supports: (t) => t === "image-scrolly",
   },
+  // The hosted Datawrapper map (Task 13). `supports` is NARROWER than the engine's own
+  // catalogue, and deliberately: map-dw declares three types but can never render `symbol`
+  // (registry-declared `deferred` — validateMapSpec's symbol branch pushes an unconditional
+  // error), and its `locator` is left to map-native, which already places markers from lat/lon
+  // columns. Both are marked in the offer rather than chosen and dead-ended at produce.
+  "map-dw": { assemble: assembleMapDw, supports: supportsMapDwType },
 };
 
 export function assemblerFor(

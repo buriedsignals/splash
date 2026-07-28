@@ -87,8 +87,13 @@ function escapeRegExp(s: string): string {
  *  unrelated prose ("outcome" contains "n") and either falsely collides with the real answer
  *  or — worse — gets silently picked on its own when the real column is never named at all.
  *  A multi-word column (`gdp_per_capita` → "gdp per capita") still has to match as a whole
- *  phrase, not word-by-word, so the boundary sits at the START and END of the full phrase. */
-function valueFieldFor(
+ *  phrase, not word-by-word, so the boundary sits at the START and END of the full phrase.
+ *
+ *  EXPORTED because map-dw asks the same question of the same brief (a hosted choropleth has
+ *  one `valueColumn` exactly as a native one has one `valueField`), and two copies of this
+ *  rule would be two answers to "which quantity is on the map" — the one question whose wrong
+ *  answer nothing downstream can see. */
+export function valueFieldFor(
   numeric: string[],
   takeaway: string,
 ): { field: string } | { candidates: string[] } {

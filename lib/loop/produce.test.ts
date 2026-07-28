@@ -215,12 +215,15 @@ test("produce renders the chosen option's own format, not a hard-coded static", 
 }, 60000);
 
 // The brain offers across engines, and produce() only knows how to build through the
-// ASSEMBLERS table (chart-native and, since task 7, map-native) — wiring dw-chart / map-dw
-// into this seam is a separate tranche. Before this guard, a chosen option naming another
-// engine was silently rendered as if it were a chart-native spec (the option's nativeType
-// handed to chart-native regardless of what engine it actually belongs to) — a WRONG
-// artifact, not a missing one. A loud, typed refusal is the correct failure mode until that
-// wiring exists. map-dw, not map-native, is the still-unbuildable stand-in this needs now.
+// ASSEMBLERS table. Before this guard, a chosen option naming an engine absent from that table
+// was silently rendered as if it were a chart-native spec (the option's nativeType handed to
+// chart-native regardless of what engine it actually belongs to) — a WRONG artifact, not a
+// missing one. A loud, typed refusal is the correct failure mode.
+//
+// The engine here is FICTIONAL, and deliberately so: this fixture used to name whichever real
+// engine was not wired yet (map-native, then map-dw), and had to be re-pointed each time one
+// became buildable. The guard is about an engine the table does not know — so the test now
+// declares one instead of borrowing an engine that will stop being one.
 test("produce refuses a chosen option whose engine is not in the assembler table, instead of rendering it wrong", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-produce-wrong-engine-"));
   const src = join(runDir, "src.csv");
@@ -258,7 +261,7 @@ test("produce refuses a chosen option whose engine is not in the assembler table
             {
               id: "choropleth",
               nativeType: "choropleth",
-              engine: "map-dw",
+              engine: "crayon",
               format: "static",
               why: "a map form",
             },
@@ -273,7 +276,7 @@ test("produce refuses a chosen option whose engine is not in the assembler table
   const result = await produce(run, run.elements[0], runDir);
   expect(result.ok).toBe(false);
   if (result.ok) throw new Error("unreachable");
-  expect(result.message).toContain("map-dw");
+  expect(result.message).toContain("crayon");
   expect(result.message).toContain("static");
 });
 
@@ -843,9 +846,10 @@ test("produce refuses a walk whose beats nobody authored, naming them", async ()
 // Used to prove this on the scrollyRunOnDisk() fixture UNCHANGED (chart-native/scrolly) — task 9
 // wires that exact pairing as buildable, so it no longer demonstrates a dead end (draftBeats
 // does not check buildability at all, so drafting still succeeds, but produce() now carries the
-// option past the buildability gate instead of refusing there). Swapped to map-dw — still
-// genuinely absent from the assembler table, and not reached through the scrolly format-host
-// redirect at all — so the buildability refusal still fires, and still fires FIRST.
+// option past the buildability gate instead of refusing there). It was then swapped to map-dw,
+// which task 13 wired in turn. So the engine here is now FICTIONAL and declared by the test:
+// absent from the assembler table by construction, not reached through the scrolly format-host
+// redirect at all — the buildability refusal still fires, and still fires FIRST.
 test("a form nothing can build is refused with the offer's sentence, before its beats are judged", async () => {
   const { run, runDir } = scrollyRunOnDisk();
   const unbuildable: RunManifest = {
@@ -858,7 +862,7 @@ test("a form nothing can build is refused with the offer's sentence, before its 
           options: [
             {
               ...run.elements[0]!.proposal!.options[0]!,
-              engine: "map-dw",
+              engine: "crayon",
               format: "static",
             },
           ],
@@ -876,7 +880,7 @@ test("a form nothing can build is refused with the offer's sentence, before its 
   expect(r.ok).toBe(false);
   if (r.ok) return;
   expect(r.code).toBe("not-implemented");
-  expect(r.message).toContain("map-dw");
+  expect(r.message).toContain("crayon");
   expect(r.message).not.toContain("beat-1");
   rmSync(runDir, { recursive: true, force: true });
 });

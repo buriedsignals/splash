@@ -68,6 +68,9 @@ const PROOFS = [
     file: "lib/loop/image-e2e.test.ts",
     what: "a declared photograph sequence and its authored beats become a real image scrolly",
     env: { SPLASH_IMAGE_E2E: "1" },
+    file: "lib/loop/map-dw-e2e.test.ts",
+    what: "a chosen hosted map is assembled by the loop, published by Datawrapper and measured off its own PNG",
+    env: { SPLASH_DW_E2E: "1" },
   },
   {
     file: "lib/loop/delivery-genre-e2e.test.ts",

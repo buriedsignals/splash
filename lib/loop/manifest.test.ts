@@ -187,18 +187,21 @@ test("nextActions routes BACK to the choice when the chosen form's engine cannot
   const m = base();
   m.elements[0].proposal = {
     options: [
-      // map-dw, not map-native — map-native became buildable (task 7); map-dw stays the
-      // still-unbuildable stand-in for "an engine nothing can build through yet".
+      // A FICTIONAL engine, constructed here on purpose rather than borrowed. This fixture
+      // used to point at whichever real engine was not wired yet — map-native, then map-dw —
+      // and had to be re-pointed each time one became buildable (tasks 7 and 13). Every engine
+      // the brain can offer is now assembled, so there is no real dead end left to borrow: an
+      // engine nothing can build is now something a test has to declare for itself.
       {
-        id: "choropleth-dw",
+        id: "unbuildable-form",
         nativeType: "choropleth",
-        engine: "map-dw",
+        engine: "crayon",
         why: "w",
       },
       { id: "slope", nativeType: "slope", engine: "chart-native", why: "w" },
     ],
     excluded: [],
-    chosenId: "choropleth-dw",
+    chosenId: "unbuildable-form",
   };
   expect(nextActions(m)).toEqual(["choose-form"]);
   m.elements[0].proposal.chosenId = "slope";
