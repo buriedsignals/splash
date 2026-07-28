@@ -115,6 +115,16 @@ const CHECK_TO_FINDING: Record<
     criterion: "viewport",
     summary: "the delivered image is not the size its destination publishes at",
   },
+  // Its OWN sentence, and not size-mismatch's. A content-driven deliverable's height is not the
+  // box's BY DESIGN, so telling a journalist "wrong size" about it would be false and would give
+  // them nothing to do. What is true, and actionable, is that it has grown far past the space it
+  // publishes into — usually because the data behind it did.
+  "capture:height-within-bound": {
+    id: "height-far-exceeds-destination",
+    criterion: "viewport",
+    summary:
+      "the deliverable is far taller than the space it publishes into — check the row count behind it",
+  },
 };
 
 function findingsFromChecks(checks: CaptureCheck[]): Finding[] {

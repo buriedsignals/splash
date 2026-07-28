@@ -176,7 +176,12 @@ export type CaptureCheckId =
   | "capture:furniture-present"
   | "capture:furniture-in-frame"
   | "capture:fits-viewport"
-  | "capture:size-matches-destination";
+  | "capture:size-matches-destination"
+  // The ceiling a CONTENT-DRIVEN deliverable still has. Its own id, not a reading of the two
+  // above: those ask "is this the box?" and the answer for a content-driven height is
+  // legitimately no. This asks a different question — "is this still a chart, or has a runaway
+  // row count produced something nobody can publish?" — and a journalist must be told which.
+  | "capture:height-within-bound";
 
 // A measured FACT, not a verdict. review.ts is the single place that turns facts into
 // severity-bearing findings (#11: "define the severity mapping centrally").

@@ -40,6 +40,26 @@ import type {
 // artifact and teach everyone to ignore the check.
 export const SIZE_TOLERANCE_PX = 2;
 
+// HOW TALL a content-driven deliverable may still be, as a multiple of the height its
+// destination publishes at.
+//
+// Relaxing the height leg for a row-driven export says the box's EXACT height is not the rule.
+// It does not say there is no rule: a join that fanned out, or a table nobody aggregated, can
+// hand back a 500-row chart, and "the height belongs to the content" would let it through with
+// no signal at all. That is a ceiling this layer can measure, so it measures it.
+//
+// A MULTIPLE, not a pixel count, because the ceiling has to mean the same thing on every
+// channel: 6750px is a runaway chart for a 675-high article embed and an ordinary one for a
+// 1920-high Stories box, and a constant would have to be wrong for one of them.
+//
+// Ten, specifically. At article-web that is 6750 delivered pixels — around a hundred rows once
+// the title, axis and source are paid for, which is a full national ranking (every canton, every
+// constituency) and about the longest thing anyone reads as a chart rather than scrolls as a
+// table. The failures it exists to catch are not near it: a runaway row count lands 20-50x out
+// (a real 500-row export is ~44x), so the bound separates "long" from "broken" with room on both
+// sides rather than adjudicating a close call.
+export const CONTENT_HEIGHT_LIMIT_MULTIPLE = 10;
+
 // How long the reveal is given to settle before the still is taken. The number the engines'
 // own snap scripts already use (skills/chart-native/scripts/snap-responsive.mjs:29) —
 // inherited rather than re-guessed, so a capture here sees the same finished chart their
@@ -250,6 +270,20 @@ async function captureStatic(
           : `image ${rootBox.width}x${rootBox.height} against a ${target.cssViewport.width}x${target.cssViewport.height} container`,
     },
   ];
+  // ...and the ceiling that height still has. Emitted ONLY for a content-driven deliverable: a
+  // pinned one already has its height held to ±2px by sizeCheck, and a second verdict on the
+  // same number would file one defect twice — the duplication furnitureChecks is careful to
+  // avoid two functions above.
+  if (heightPolicy === "content-driven") {
+    const limit = target.cssViewport.height * CONTENT_HEIGHT_LIMIT_MULTIPLE;
+    const times = (rootBox.height / target.cssViewport.height).toFixed(1);
+    checks.push({
+      id: "capture:height-within-bound",
+      breakpoint: target.breakpoint,
+      outcome: rootBox.height <= limit ? "pass" : "fail",
+      detail: `image ${rootBox.width}x${rootBox.height} is ${times}x the ${target.cssViewport.height} its destination publishes at (ceiling ${CONTENT_HEIGHT_LIMIT_MULTIPLE}x = ${limit})`,
+    });
+  }
   return ok({ images: [record], checks });
 }
 

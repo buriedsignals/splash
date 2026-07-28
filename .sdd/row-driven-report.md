@@ -234,3 +234,145 @@ the suites are fully green. Nothing in the failure set was environmental-and-ign
    where a mis-declared engine would silently forgive a height. It is unit-tested in both
    directions (every other engine, an unset engine, an unknown type → `pinned`), and nothing else
    in the codebase can set the field on a loop-produced element.
+
+---
+
+# Follow-up: closing the concession (post-review)
+
+The review returned **SOUND** and raised my own concern #2 to Important: a content-driven
+artifact was left with no height ceiling at all. It is now closed the way I proposed — a NEW,
+distinct check, not a re-tightening of the leg the policy relaxes.
+
+The review also added a detail worth recording, because it strengthens the *earlier* decision: on
+the static path `fits-viewport`'s `rootBox` is derived from the **same measured PNG dimensions**
+`size-matches-destination` reads, and both sit in the `viewport` criterion. For a file they are
+two readings of one number, not two concerns — which is why relaxing them in lockstep was right,
+and why the ceiling below had to be a *third*, differently-shaped question rather than a tweak to
+either.
+
+## The bound: 10 × the destination height
+
+`CONTENT_HEIGHT_LIMIT_MULTIPLE = 10` (`lib/verify/capture.ts`), compared against
+`target.cssViewport.height`.
+
+**A multiple, not a pixel count.** The ceiling has to mean the same thing on every channel:
+6750px is a runaway chart for a 675-high article embed and an ordinary one for a 1920-high
+Stories box. A constant would have to be wrong for one of them. Proven, not asserted — one
+1080×15000 image is **fail** against `social-feed` (13.9×) and **pass** against `social-vertical`
+(7.8×).
+
+**Ten, specifically.** At article-web that is 6750 delivered pixels — roughly a hundred rows once
+title, axis and source are paid for. That is a full national ranking (every canton, every
+constituency), and about the longest thing a reader treats as a chart rather than as a table.
+The failures the bound exists to catch are nowhere near it: a runaway row count lands 20–50×
+out — a real 500-row export is ~44× — so the bound separates "long" from "broken" with room on
+both sides instead of adjudicating a close call. My own e2e artifact (1200×800) is 1.2×, and the
+tall unit fixture (1200×3000) is 4.4×: both comfortably inside.
+
+## A distinct check with its own sentence
+
+| | |
+|---|---|
+| check id | `capture:height-within-bound` |
+| finding id | `height-far-exceeds-destination` |
+| criterion | `viewport` |
+| severity | **warning** |
+| summary | "the deliverable is far taller than the space it publishes into — check the row count behind it" |
+
+Not `size-mismatch`'s sentence. A content-driven height is not the box's **by design**, so telling
+a journalist "wrong size" about it would be false and would give them nothing to do; what is true
+and actionable is that the artifact has grown far past its space, usually because the data behind
+it did. The test asserts the two do not blur: the finding's summary does not contain "not the
+size", and no `size-mismatch` is filed alongside it.
+
+**Why warning, alone among the viewport findings.** Its siblings state facts with no judgement in
+them (the image is not the destination's size; the component leaves its container). This one
+compares a legitimately content-driven height against a **chosen constant**. A long national
+ranking can reach for that constant honestly, so blocking on it would gate real work on a number
+nobody can derive. A warning still reaches the journalist in its own words. Promoting it is one
+line in `lib/verify/severity.ts` if the field disagrees.
+
+**Emitted only under `content-driven`.** A pinned deliverable already has its height held to ±2px
+by `sizeCheck`; a second verdict on the same number would file one defect twice — exactly the
+duplication `furnitureChecks` is careful to avoid. Asserted: a pinned 1200×30000 gets
+`size-matches-destination: fail` and **no** `height-within-bound` check at all.
+
+## Both directions, proven
+
+| case | policy | image | box | multiple | `height-within-bound` |
+|---|---|---|---|---|---|
+| long ranking | content-driven | 1200×3000 | 1200×675 | 4.4× | **pass** |
+| runaway export | content-driven | 1200×30000 | 1200×675 | 44.4× | **fail** (detail names 30000 and the 10× ceiling) |
+| exactly at the ceiling | content-driven | 1200×6750 | 1200×675 | 10.0× | **pass** |
+| 100px past it | content-driven | 1200×6850 | 1200×675 | 10.1× | **fail** |
+| same image, short box | content-driven | 1080×15000 | 1080×1080 | 13.9× | **fail** |
+| same image, tall box | content-driven | 1080×15000 | 1080×1920 | 7.8× | **pass** |
+| pinned, absurdly tall | pinned | 1200×30000 | 1200×675 | — | **check not emitted** |
+
+## The Minor: the membership guard now has a diff-visible test
+
+`lib/core/verbs/verify-verbs.test.ts` — `"content-driven"` and `"pinned"` accepted;
+`"contentDriven"`, `"content driven"`, `"row-driven"`, `""`, `1` and `null` all **refused**.
+
+Stated honestly: this one was **green on arrival**. The guard was implemented in `6f79fdb5`; what
+the review found missing was the coverage, not the behaviour. So it is a characterization test,
+not a TDD cycle, and I am not claiming a RED for it. The RED evidence below is for the ceiling,
+which genuinely did not exist.
+
+## Commands, with real output
+
+RED first:
+
+```
+$ bun test lib/verify/capture-static.test.ts
+SyntaxError: Export named 'CONTENT_HEIGHT_LIMIT_MULTIPLE' not found in module
+  '/Users/rmdms/Sites/Professional/splash-rowdriven/lib/verify/capture.ts'
+ 0 pass / 1 fail / 1 error
+
+$ bun test lib/verify/review.test.ts
+error: expect(received).toBeDefined()  Received: undefined
+(fail) runReview … > warns — in its own sentence — about a content-driven deliverable far taller than its box
+```
+
+GREEN:
+
+```
+$ bun test lib/verify/capture-static.test.ts lib/verify/review.test.ts lib/core/verbs/verify-verbs.test.ts
+ 51 pass / 0 fail / 169 expect() calls
+
+$ cd lib && bunx tsc --noEmit
+tsc exit=0                             # 0 errors
+
+$ bun test lib/verify lib/core
+ 376 pass / 2 skip / 0 fail / 2217 expect() calls   [29.61s]
+```
+
+The gated Datawrapper proof was **not** re-run, per instruction. Nothing in this follow-up touches
+the produce path or the offer — the new check is additive and fires only under a policy the e2e
+artifact (1.2×) passes with 8× of headroom.
+
+## Files changed in the follow-up
+
+| file | change |
+|---|---|
+| `lib/verify/capture.ts` | `CONTENT_HEIGHT_LIMIT_MULTIPLE`; emits `capture:height-within-bound` under content-driven only |
+| `lib/verify/types.ts` | the new id in `CaptureCheckId` |
+| `lib/verify/review.ts` | `capture:height-within-bound` → `height-far-exceeds-destination`, its own summary |
+| `lib/verify/severity.ts` | the finding catalogued as a `viewport` **warning**, with the reasoning |
+| `lib/verify/capture-static.test.ts` | 5 cases: long / runaway / at the ceiling / past it / channel-relative / pinned-exempt |
+| `lib/verify/review.test.ts` | the warning finding, and that it is not confused with `size-mismatch` |
+| `lib/core/verbs/verify-verbs.test.ts` | the membership reject case |
+
+## Remaining concerns
+
+1. **The constant is a judgement.** 10× is defended above and has wide margins on both sides, but
+   it is not derived from anything — no engine constant, no WCAG rule. That is precisely why the
+   finding is a warning rather than a blocker. If the field ever produces a legitimate chart past
+   it, the fix is the constant, and the finding will have said so in its own words first.
+2. **Static path only.** The ceiling is not applied in `captureHtml`, for the same reason the
+   policy is not: there the measurement is a live component in a scrolling document, not a file's
+   IHDR, and "how tall may this be" is a different question with a different answer. Unchanged
+   from the original slice, and still the narrower choice.
+3. Concerns 1 and 3 of the original report stand unchanged (the merge conflict with
+   `../splash-hosted`; eight of the nine types proven by construction rather than by pixels).
+   Original concern 2 is **closed** by this follow-up.

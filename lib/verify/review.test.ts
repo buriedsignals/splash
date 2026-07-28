@@ -120,6 +120,36 @@ describe("runReview — capture facts become severity-bearing findings, once", (
     ).toBe("blocking");
   });
 
+  // The ceiling a content-driven deliverable still has. A WARNING, not a blocker, and
+  // deliberately: "the image is not the size its destination publishes at" is a fact with no
+  // judgement in it, while "this is more than ten times its box" is a strong smell that a long
+  // ranking could legitimately produce. It reaches the journalist in its own words either way.
+  it("warns — in its own sentence — about a content-driven deliverable far taller than its box", async () => {
+    const r = await runReview(
+      request({
+        checks: [
+          {
+            id: "capture:height-within-bound",
+            breakpoint: "primary",
+            outcome: "fail",
+            detail:
+              "image 1200x30000 is 44.4x the 675 the destination publishes at (ceiling 10x)",
+          },
+        ],
+      }),
+    );
+    const f = r.findings.find(
+      (x) => x.id === "height-far-exceeds-destination",
+    )!;
+    expect(f).toBeDefined();
+    expect(f.severity).toBe("warning");
+    expect(f.criterion).toBe("viewport");
+    // Not the size-mismatch sentence: telling a journalist "wrong size" about a chart whose
+    // height is content-driven BY DESIGN would be false, and unactionable.
+    expect(f.summary).not.toContain("not the size");
+    expect(r.findings.find((x) => x.id === "size-mismatch")).toBeUndefined();
+  });
+
   it("collapses the same defect at several breakpoints into ONE finding", async () => {
     const at = (breakpoint: CaptureCheck["breakpoint"]): CaptureCheck => ({
       id: "capture:fits-viewport",

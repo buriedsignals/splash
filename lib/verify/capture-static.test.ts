@@ -2,7 +2,11 @@ import { describe, it, expect } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { capture, SIZE_TOLERANCE_PX } from "./capture";
+import {
+  capture,
+  CONTENT_HEIGHT_LIMIT_MULTIPLE,
+  SIZE_TOLERANCE_PX,
+} from "./capture";
 import type { CaptureCheck } from "./types";
 
 function ihdrPng(width: number, height: number): Uint8Array {
@@ -284,6 +288,126 @@ describe("capture — a content-driven height is measured on its width alone", (
     });
     expect(
       check(r.value.checks, "capture:size-matches-destination")?.outcome,
+    ).toBe("pass");
+  });
+
+  // A content-driven artifact still has a CEILING — what it does not have is the box's exact
+  // height. Without one, a 500-row export from a data bug would sail through with no signal at
+  // all, which is not what "the height belongs to the content" was meant to buy. This is its own
+  // named check, not a re-tightening of the leg the policy relaxes: the two say different things,
+  // and a journalist reading "this is far taller than the space it publishes into" is being told
+  // something true and actionable, where "size mismatch" would be false.
+  it("PASSES a legitimately tall row-driven export — a long ranking is a real chart", async () => {
+    const r = await capture({
+      artifactPath: staticPngAt("row-driven-long.png", 1200, 3000),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven-long"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(check(r.value.checks, "capture:height-within-bound")?.outcome).toBe(
+      "pass",
+    );
+  });
+
+  it("FAILS an absurd export — the ceiling scales with the channel, so it is not a pixel count", async () => {
+    // 1200x30000 against a 675-high box: 44x. The shape a runaway row count really produces.
+    const r = await capture({
+      artifactPath: staticPngAt("row-driven-runaway.png", 1200, 30000),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven-runaway"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!r.ok) throw new Error(r.message);
+    const c = check(r.value.checks, "capture:height-within-bound");
+    expect(c?.outcome).toBe("fail");
+    // The detail must say how far out it is and what the ceiling was, or the finding is a
+    // verdict with nothing behind it.
+    expect(c?.detail).toContain("30000");
+    expect(c?.detail).toContain(String(CONTENT_HEIGHT_LIMIT_MULTIPLE));
+  });
+
+  it("puts the ceiling exactly where it says it does", async () => {
+    const limit = 675 * CONTENT_HEIGHT_LIMIT_MULTIPLE;
+    const at = await capture({
+      artifactPath: staticPngAt("row-driven-at-limit.png", 1200, limit),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven-at-limit"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!at.ok) throw new Error(at.message);
+    expect(check(at.value.checks, "capture:height-within-bound")?.outcome).toBe(
+      "pass",
+    );
+
+    const past = await capture({
+      artifactPath: staticPngAt("row-driven-past-limit.png", 1200, limit + 100),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-rowdriven-past-limit"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!past.ok) throw new Error(past.message);
+    expect(
+      check(past.value.checks, "capture:height-within-bound")?.outcome,
+    ).toBe("fail");
+  });
+
+  it("does NOT bound a PINNED artifact — its height is already checked exactly", async () => {
+    // size-matches-destination pins that height to ±2px. A second height check on the same
+    // number would file one defect twice, which is the failure furnitureChecks already avoids.
+    const r = await capture({
+      artifactPath: staticPngAt("pinned-tall.png", 1200, 30000),
+      format: "static",
+      channel: "article-web",
+      outDir: join(dir, "out-pinned-tall"),
+      id: "e1",
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(
+      check(r.value.checks, "capture:height-within-bound"),
+    ).toBeUndefined();
+    expect(
+      check(r.value.checks, "capture:size-matches-destination")?.outcome,
+    ).toBe("fail");
+  });
+
+  it("follows the CHANNEL, not a hard-coded pixel count", async () => {
+    // ONE image, two destinations: 15000px is 13.9x a square feed post's 1080 box and 7.8x a
+    // 1920-high vertical one. A ceiling written in pixels could not tell those apart, which is
+    // the whole reason it is a multiple of the destination.
+    const png = staticPngAt("row-driven-1080x15000.png", 1080, 15000);
+    const feed = await capture({
+      artifactPath: png,
+      format: "static",
+      channel: "social-feed", // 1080x1080
+      outDir: join(dir, "out-rowdriven-feed"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!feed.ok) throw new Error(feed.message);
+    expect(
+      check(feed.value.checks, "capture:height-within-bound")?.outcome,
+    ).toBe("fail");
+
+    const vertical = await capture({
+      artifactPath: png,
+      format: "static",
+      channel: "social-vertical", // 1080x1920 — a taller box, and the same image is inside it
+      outDir: join(dir, "out-rowdriven-vertical"),
+      id: "e1",
+      heightPolicy: "content-driven",
+    });
+    if (!vertical.ok) throw new Error(vertical.message);
+    expect(
+      check(vertical.value.checks, "capture:height-within-bound")?.outcome,
     ).toBe("pass");
   });
 
