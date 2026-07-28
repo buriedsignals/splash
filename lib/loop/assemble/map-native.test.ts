@@ -136,3 +136,136 @@ test("a cartogram carries id/value pairs, not rows", () => {
   const cfg = r.value as { values: { id: string; value: number }[] };
   expect(cfg.values[0]).toEqual({ id: "CHE", value: 100 });
 });
+
+// THE POINT FAMILY — symbol, hex-grid, locator, route.
+
+const POINT_BRIEF: ProductionBrief = {
+  elementId: "e2",
+  nativeType: "symbol",
+  format: "static",
+  angle: {
+    confirmedTakeaway: "The strongest quakes cluster along the Pacific rim",
+    altInsight: "A map with the largest circles down the Pacific coast",
+    unit: "magnitude",
+  },
+  dataCsv:
+    "place,lat,lon,magnitude\nValparaíso,-33.05,-71.62,8.2\nSendai,38.26,140.87,9.1",
+  attribution: "USGS",
+};
+
+test("lat/lon columns become the symbol points, label included", () => {
+  const r = assembleMapNative(POINT_BRIEF);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect(mapNativeConfigErrors(r.value)).toEqual([]);
+  const cfg = r.value as {
+    points: { lon: number; lat: number; value: number; label?: string }[];
+  };
+  expect(cfg.points).toEqual([
+    { lon: -71.62, lat: -33.05, value: 8.2, label: "Valparaíso" },
+    { lon: 140.87, lat: 38.26, value: 9.1, label: "Sendai" },
+  ]);
+});
+
+test("longitude spelled `long` or `lng` is still longitude", () => {
+  const r = assembleMapNative({
+    ...POINT_BRIEF,
+    dataCsv: "place,latitude,lng,magnitude\nSendai,38.26,140.87,9.1",
+  });
+  expect(r.ok).toBe(true);
+});
+
+test("a point type with no coordinates is refused, naming the columns it looked for", () => {
+  const r = assembleMapNative({
+    ...POINT_BRIEF,
+    dataCsv: "place,magnitude\nSendai,9.1",
+  });
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.message).toContain("lat");
+  expect(r.message).toContain("lon");
+});
+
+test("an out-of-range coordinate is refused, naming the row — never plotted in the sea", () => {
+  const r = assembleMapNative({
+    ...POINT_BRIEF,
+    dataCsv: "place,lat,lon,magnitude\nSendai,138.26,140.87,9.1",
+  });
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.message).toContain("Sendai");
+});
+
+test("a coordinate that does not parse as a number is refused, naming the row", () => {
+  const r = assembleMapNative({
+    ...POINT_BRIEF,
+    dataCsv: "place,lat,lon,magnitude\nSendai,north,140.87,9.1",
+  });
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.message).toContain("Sendai");
+});
+
+test("a route is the ordered coordinates, as pairs", () => {
+  const r = assembleMapNative({ ...POINT_BRIEF, nativeType: "route" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect(mapNativeConfigErrors(r.value)).toEqual([]);
+  expect((r.value as { route: [number, number][] }).route).toEqual([
+    [-71.62, -33.05],
+    [140.87, 38.26],
+  ]);
+});
+
+test("a hex-grid's points carry an optional value, resolved the same way as symbol", () => {
+  const r = assembleMapNative({ ...POINT_BRIEF, nativeType: "hex-grid" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect(mapNativeConfigErrors(r.value)).toEqual([]);
+  const cfg = r.value as {
+    points: { lon: number; lat: number; value?: number }[];
+  };
+  expect(cfg.points).toEqual([
+    { lon: -71.62, lat: -33.05, value: 8.2 },
+    { lon: 140.87, lat: 38.26, value: 9.1 },
+  ]);
+});
+
+test("a locator's markers carry the row's own name as the label", () => {
+  const r = assembleMapNative({ ...POINT_BRIEF, nativeType: "locator" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect(mapNativeConfigErrors(r.value)).toEqual([]);
+  const cfg = r.value as {
+    markers: { lon: number; lat: number; label: string }[];
+  };
+  expect(cfg.markers).toEqual([
+    { lon: -71.62, lat: -33.05, label: "Valparaíso" },
+    { lon: 140.87, lat: 38.26, label: "Sendai" },
+  ]);
+});
+
+test("a locator with no column to name the markers is refused", () => {
+  const r = assembleMapNative({
+    ...POINT_BRIEF,
+    nativeType: "locator",
+    dataCsv: "lat,lon\n-33.05,-71.62\n38.26,140.87",
+  });
+  expect(r.ok).toBe(false);
+});
+
+test("a symbol map with no numeric column besides the coordinates is refused", () => {
+  const r = assembleMapNative({
+    ...POINT_BRIEF,
+    dataCsv: "place,lat,lon\nValparaíso,-33.05,-71.62",
+  });
+  expect(r.ok).toBe(false);
+});
+
+test("the widened guard accepts the point family alongside the region family, and still refuses what is neither", () => {
+  const r = assembleMapNative({ ...POINT_BRIEF, nativeType: "pie" });
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.code).toBe("invalid-request");
+  expect(r.message).toContain("pie");
+});
