@@ -27,6 +27,26 @@ const EngineKeys = z.union([
   z.array(z.string().min(1)).min(1),
 ]);
 
+// Pulled out of HeaderSchema so both the parse-time shape AND the key list are a single
+// definition — `LIMIT_KEYS` below is derived FROM this schema, never retyped alongside it, so a
+// key added or removed here changes what eligibility-drift.test.ts iterates without anyone
+// having to remember a second place to edit.
+const LimitsSchema = z.strictObject({
+  points: z.number().optional(),
+  minPoints: z.number().optional(),
+  maxPoints: z.number().optional(),
+  maxSeries: z.number().optional(),
+  maxCategories: z.number().optional(),
+  minRows: z.number().optional(),
+});
+
+/** The full, closed set of `limits` keys — read by eligibility-drift.test.ts to prove every one
+ *  of them is actually wired into eligibility.ts's limitFailure(), so the promise the comment
+ *  above states is checked mechanically instead of trusted on sight. */
+export const LIMIT_KEYS = Object.keys(LimitsSchema.shape) as (keyof z.infer<
+  typeof LimitsSchema
+>)[];
+
 const HeaderSchema = z.object({
   id: z.string().min(1),
   engines: z
@@ -51,17 +71,12 @@ const HeaderSchema = z.object({
   // or a limit measuring something the facts do not carry (`maxAxes: 3`) validate cleanly and
   // then vanish, making the form offerable where its own sheet says it should not be. A strict
   // object refuses the unknown key BY NAME instead. Adding a key here is a promise that
-  // limitFailure() checks it.
-  limits: z
-    .strictObject({
-      points: z.number().optional(),
-      minPoints: z.number().optional(),
-      maxPoints: z.number().optional(),
-      maxSeries: z.number().optional(),
-      maxCategories: z.number().optional(),
-      minRows: z.number().optional(),
-    })
-    .default({}),
+  // limitFailure() checks it — that promise used to be held ONLY by this comment: a key added
+  // here without a matching branch in limitFailure() validated clean and then degraded in
+  // silence (the exact failure mode the strict object exists to prevent, just reached from the
+  // other side). `LIMIT_KEYS` below turns the promise into a fixture: eligibility-drift.test.ts
+  // reads it — not a hand-copied list of its own — and proves each one actually excludes.
+  limits: LimitsSchema.default({}),
   formats: z.array(z.enum(VISUAL_FORMATS)).min(1),
   bestFor: z.array(z.string().min(1)).min(1),
   notFor: z.array(z.string().min(1)).min(1),
