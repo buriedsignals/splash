@@ -21,7 +21,14 @@ import {
   type RadarLayout,
 } from "./radar-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame } from "./core/format";
@@ -36,6 +43,14 @@ export interface RadarConfig {
   max: number;
   axes: string[];
   series: { label: string; values: number[] }[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. The ≤3 series carry the fixed Okabe-Ito
+   *  palette that keeps the overlapping profiles apart, so the hue never touches them.
+   *  Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface RadarChartProps {
@@ -151,6 +166,8 @@ export function RadarChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -183,6 +200,7 @@ function RadarSvg({
   sc: number;
 }) {
   const { cx, cy, radius, axes, series, rings, max } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const gap = 8 * sc;
 
   // reveal: chrome (spokes + rings + axis labels + legend) fades in first; then
@@ -227,7 +245,7 @@ function RadarSvg({
               cy={0}
               r={ring.r}
               fill="none"
-              stroke={COLORS.grid}
+              stroke={C.grid}
               strokeWidth={1}
             />
           ))}
@@ -237,7 +255,7 @@ function RadarSvg({
             cy={0}
             r={radius}
             fill="none"
-            stroke={COLORS.axis}
+            stroke={C.axis}
             strokeWidth={1}
           />
           {/* spokes */}
@@ -248,7 +266,7 @@ function RadarSvg({
               y1={0}
               x2={ax.ex}
               y2={ax.ey}
-              stroke={COLORS.axis}
+              stroke={C.axis}
               strokeWidth={1}
             />
           ))}
@@ -262,9 +280,9 @@ function RadarSvg({
               y={-ring.r}
               dy="0.32em"
               fontSize={ts.source}
-              fill={COLORS.muted}
+              fill={C.muted}
               paintOrder="stroke"
-              stroke="#fff"
+              stroke={C.bg}
               strokeWidth={3 * sc}
               strokeLinejoin="round"
             >
@@ -305,7 +323,7 @@ function RadarSvg({
                 textAnchor={anchor}
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {truncate(ax.label, room, ts.axis)}
               </text>
@@ -339,7 +357,7 @@ function RadarSvg({
                   cy={v.y}
                   r={3.2 * sc * sp}
                   fill={color}
-                  stroke="#fff"
+                  stroke={C.bg}
                   strokeWidth={1.2 * sc}
                 />
               ))}
@@ -377,6 +395,7 @@ function RadarSvg({
           alike), fading in with the chrome */}
       <Legend
         series={config.series.map((s) => s.label)}
+        ink={C.ink}
         cx={cx}
         y={legendY}
         ts={ts}
@@ -393,6 +412,7 @@ function RadarSvg({
 
 function Legend({
   series,
+  ink,
   cx,
   y,
   ts,
@@ -404,6 +424,8 @@ function Legend({
   setFocusSeries,
 }: {
   series: string[];
+  /** the ground-derived furniture ink, resolved once by RadarSvg and threaded down */
+  ink: string;
   cx: number;
   y: number;
   ts: { axis: number };
@@ -451,7 +473,7 @@ function Legend({
               dy="0.32em"
               fontSize={ts.axis}
               fontWeight={600}
-              fill={COLORS.ink}
+              fill={ink}
             >
               {label}
             </text>
@@ -488,6 +510,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-130%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,
