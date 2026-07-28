@@ -85,7 +85,14 @@ describe("loading the decor", () => {
       .filter(([, c]) => c.enabled)
       .map(([id]) => id)
       .sort();
-    expect(enabled).toEqual(["chart-native", "image-native", "zip"]);
+    expect(enabled).toEqual([
+      "chart-native",
+      // The hand-over of an already-published embed: it uploads nothing, so like zip it needs
+      // no key and is enabled by default.
+      "embed-hosted",
+      "image-native",
+      "zip",
+    ]);
     expect(decor.readiness.find((r) => r.id === "dw-chart")?.status).toBe(
       "disabled",
     );

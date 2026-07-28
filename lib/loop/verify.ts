@@ -94,31 +94,24 @@ export async function captureStep(
   const format = chosen?.format ?? "static";
   const capturedProvenanceHash = provenanceHash(run, el);
 
-  // A HOSTED DELIVERY OWNS NO FILE, so there is nothing here to put in front of a viewport: the
-  // capture verb opens a path and measures what renders, and a Datawrapper embed is a URL this run
-  // never downloaded. Capturing it would mean fetching a live page over the network from inside a
-  // verb — a capability lib/verify does not have and invariant I5 would have to be revisited for.
+  // A HOSTED DELIVERY OWNS NO FILE — so capture opens its ADDRESS instead of a path. That is the
+  // whole difference: the browser lands on the published embed, the same measurement runs on the
+  // same live DOM (furniture, root box, rendered title, the destination's own viewports), and
+  // everything downstream of capture has something real to measure for the first time.
   //
-  // The answer is the SAME third one captureStep already gives a format lib/verify cannot cover
-  // (video, below): RECORD THE GAP. Refusing would route the element back to `capture` forever and
-  // strand it; passing silently would publish an unverified embed. A recorded gap makes review
-  // emit its blocking `no-capture` finding, and the only way past that is a journalist's explicit,
-  // written override — #11's ceremony, used for exactly what it was designed for.
-  if (!fileArtifact(el.artifact))
-    return ok({
-      ...el,
-      capture: {
-        images: [],
-        checks: [],
-        capturedProvenanceHash,
-        unsupported:
-          `this element was delivered as a HOSTED embed (${isHostedArtifact(el.artifact) ? el.artifact.url : "no url"}) — ` +
-          `the run owns no file of it, so nothing can be put in front of the publication viewport and measured`,
-      },
-    });
-
+  // It used to RECORD A GAP here, the third answer captureStep still gives a format lib/verify
+  // cannot cover at all (video, below). That was honest while nothing could travel to a URL, and
+  // it cost the loop ten clean interactive rows: review emitted its blocking `no-capture` finding
+  // and the only way past it was a written override on every single embed. A recorded gap is for
+  // a measurement this layer cannot make, and this one it can.
+  //
+  // An address that does not answer is therefore a REAL failure — the element stays on `capture`
+  // (see lib/verify/capture.ts's response check) — never a gap, and never a silent pass.
+  const artifact = el.artifact;
   const result = await runVerb("capture", {
-    artifactPath: join(runDir, fileArtifact(el.artifact)!.path),
+    ...(isHostedArtifact(artifact)
+      ? { artifactUrl: artifact.url }
+      : { artifactPath: join(runDir, fileArtifact(artifact)!.path) }),
     format,
     channel: channelForElement(run, el),
     outDir: elementVerifyDir(runDir),

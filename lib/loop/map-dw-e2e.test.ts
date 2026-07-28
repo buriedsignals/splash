@@ -24,14 +24,23 @@ import { test, expect } from "bun:test";
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { sha256 } from "@noble/hashes/sha2.js";
 import "../../skills/splash/src/register-producers";
 import { produce } from "./produce";
+import { approve } from "./approve";
+import { deliver } from "./deliver";
+import { previewStep } from "./preview";
+import { captureStep, reviewStep } from "./verify";
+import { hostedBindingDigest } from "../verify/hosted";
+import type { ReviewRecord } from "../verify/types";
+import type { Decor } from "../newsroom/decor";
 import { freezeInput } from "./freeze";
 import { assembleMapDw } from "./assemble/map-dw";
 import { validateMapSpec } from "../../skills/map-dw/src/map-spec";
 import { normalizeChannel, renderSize } from "../../skills/splash/src/channel";
 import type { ProductionBrief } from "../core/production-brief";
 import {
+  approvalSubjectOf,
   fileArtifact,
   isHostedArtifact,
   readManifest,
@@ -231,4 +240,168 @@ proof(
     }
   },
   180_000,
+);
+
+// THE WHOLE CHAIN, on a map that lives at an address and nowhere else.
+//
+// Producing the hosted map and recording its URL (the proof above) is where this used to stop:
+// capture recorded a gap, and preview, approve and deliver each refused by name. The choropleth
+// was offerable, choosable and producible — and undeliverable
+// (docs/splash/capability-matrix-2026-07-28.md).
+//
+// Its dw-chart twin proves the same chain on a chart; this one exists because map-dw is a
+// SEPARATE producer with its own manifest, its own spec and its own furniture, and "the chart
+// works" has never been evidence about the map in this codebase.
+//
+// The positive controls are read off the real thing at both ends: the captured image's own bytes,
+// and the delivered embed's URL fetched 200.
+proof(
+  "a published Datawrapper map is captured, reviewed, previewed, approved and delivered",
+  async () => {
+    const runDir = mkdtempSync(join(tmpdir(), "splash-map-dw-chain-"));
+    try {
+      const run = runFor(runDir, "interactive");
+      const produced = await produce(run, run.elements[0]!, runDir);
+      expect(
+        produced.ok ? "produced" : `${produced.code}: ${produced.message}`,
+      ).toBe("produced");
+      if (!produced.ok) return;
+      const artifact = produced.value.artifact!;
+      expect(isHostedArtifact(artifact)).toBe(true);
+      if (!isHostedArtifact(artifact)) return;
+      console.log(`[map-dw-chain-e2e] published ${artifact.url}`);
+
+      // CAPTURE — the browser opens the ADDRESS, and measures the live map.
+      const captured = await captureStep(run, produced.value, runDir);
+      expect(
+        captured.ok ? "captured" : `${captured.code}: ${captured.message}`,
+      ).toBe("captured");
+      if (!captured.ok) return;
+      const slot = captured.value.capture!;
+      expect(slot.unsupported).toBeUndefined();
+      const primary = slot.images.find((i) => i.breakpoint === "primary")!;
+      expect(primary.artifactUrl).toBe(artifact.url);
+
+      // THE POSITIVE CONTROL, half one — the still's OWN bytes, re-hashed off disk.
+      const stillBytes = readFileSync(primary.path);
+      expect(stillBytes.subarray(1, 4).toString("ascii")).toBe("PNG");
+      const stillSha = Buffer.from(sha256(stillBytes)).toString("hex");
+      expect(stillSha).toBe(primary.sha256);
+      console.log(
+        `[map-dw-chain-e2e] still ${stillBytes.readUInt32BE(16)}x${stillBytes.readUInt32BE(20)} sha ${stillSha.slice(0, 12)}…`,
+      );
+      expect(approvalSubjectOf(captured.value)).toEqual({
+        sha256: hostedBindingDigest(artifact.url, stillSha),
+        url: artifact.url,
+      });
+      console.log(
+        `[map-dw-chain-e2e] rendered title (${primary.titleSource}): ${primary.renderedTitle}`,
+      );
+
+      const reviewed = await reviewStep(run, captured.value, runDir);
+      expect(
+        reviewed.ok ? "reviewed" : `${reviewed.code}: ${reviewed.message}`,
+      ).toBe("reviewed");
+      if (!reviewed.ok) return;
+      const blocking = (reviewed.value.review as ReviewRecord).findings.filter(
+        (f) => f.severity === "blocking" && f.status === "open",
+      );
+      for (const f of blocking)
+        console.log(`[map-dw-chain-e2e] blocking: ${f.id} — ${f.summary}`);
+
+      // WHICH blockers this embed really has, PINNED — see the same passage in its dw-chart twin
+      // for why `blocking.map(...)` is not an override but a blanket. Both of these are measured
+      // facts about a live Datawrapper map at article-web: it renders taller than the container it
+      // publishes into, which puts furniture below the fold and overflows the box. Any OTHER
+      // blocking finding — a blank map at HTTP 200, a lost title, a no-capture regression — fails
+      // here rather than being cleared by a reason that merely names it.
+      expect(blocking.map((f) => f.id).sort()).toEqual([
+        "component-overflows-viewport",
+        "furniture-below-fold",
+      ]);
+
+      const previewed = previewStep(run, reviewed.value, runDir, {
+        env: { SPLASH_NO_VIEWER: "1" },
+      });
+      expect(
+        previewed.ok ? "presented" : `${previewed.code}: ${previewed.message}`,
+      ).toBe("presented");
+      if (!previewed.ok) return;
+      expect(
+        (previewed.value.review as ReviewRecord).preview!.deliverablePath,
+      ).toBe(artifact.url);
+
+      const approved = approve(
+        { ...run, elements: [previewed.value] },
+        previewed.value,
+        runDir,
+        {
+          actorLabel: "e2e",
+          // Named as literals, never derived from the review.
+          overrides: [
+            {
+              findingId: "furniture-below-fold",
+              reason:
+                "e2e proof: a published Datawrapper map embed renders taller than the article-web " +
+                "container, so its footer furniture falls below the fold. Knowingly shipped past so " +
+                "the chain reaches a delivery; the height question is reported, not fixed.",
+            },
+            {
+              findingId: "component-overflows-viewport",
+              reason:
+                "e2e proof: the same measured overflow, seen as the component not fitting its box. " +
+                "Whether a responsive hosted embed should be held to the destination's height at all " +
+                "is an open design question — reported, not fixed.",
+            },
+          ],
+        },
+        { signers: [], requiredSigners: [] },
+      );
+      expect(
+        approved.ok ? "approved" : `${approved.code}: ${approved.message}`,
+      ).toBe("approved");
+      if (!approved.ok) return;
+
+      const requested = {
+        ...approved.value,
+        delivery: { requested: ["embed-hosted"], delivered: [] },
+      } as unknown as RunManifest["elements"][number];
+      const decor = {
+        root: runDir,
+        profile: { credit: "Heidi.news", lang: "en" },
+        state: {
+          capabilities: { "embed-hosted": { enabled: true, settings: {} } },
+          delivery: {},
+        },
+      } as unknown as Decor;
+      const delivered = await deliver(
+        { ...run, elements: [requested] },
+        requested,
+        runDir,
+        decor,
+        undefined,
+        { env: {} },
+      );
+      expect(
+        delivered.ok ? "delivered" : `${delivered.code}: ${delivered.message}`,
+      ).toBe("delivered");
+      if (!delivered.ok) return;
+      const record = delivered.value.delivery!.delivered[0]!;
+      expect(record.kind).toBe("hosted");
+      expect(record.artifact).toBeUndefined();
+      console.log(`[map-dw-chain-e2e] handed over ${record.url}`);
+      console.log(`[map-dw-chain-e2e] snippet: ${record.snippet}`);
+
+      // THE POSITIVE CONTROL, half two — the DELIVERED address, fetched off the run's own record.
+      const res = await fetch(record.url!, {
+        redirect: "follow",
+        signal: AbortSignal.timeout(30_000),
+      });
+      expect(`${record.url} → ${res.status}`).toBe(`${record.url} → 200`);
+      expect((await res.text()).toLowerCase()).toContain("<html");
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  },
+  300_000,
 );

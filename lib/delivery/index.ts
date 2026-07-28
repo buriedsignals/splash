@@ -9,6 +9,7 @@
 import { lookupPublisher, registerPublisher } from "../core/publishers";
 import type { Publisher } from "../core/publishers";
 import { cloudflarePublisher } from "./adapters/cloudflare-pages";
+import { hostedEmbedPublisher } from "./adapters/hosted-embed";
 import { s3Publisher } from "./adapters/s3";
 import { wepublishPublisher } from "./adapters/wepublish";
 import { zipPublisher } from "./adapters/zip";
@@ -17,6 +18,7 @@ import { zipPublisher } from "./adapters/zip";
  * destination (§3.1). */
 const DELIVERY_PUBLISHERS: Publisher[] = [
   cloudflarePublisher,
+  hostedEmbedPublisher,
   s3Publisher,
   wepublishPublisher,
   zipPublisher,

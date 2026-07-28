@@ -149,8 +149,15 @@ export type CaptureRecord = {
   rootBox: Box;
   rootSelector: string; // which candidate matched — a wrong root stays READABLE in the proof
   documentScroll: Viewport;
-  artifactSha256: string; // the deliverable these pixels came from
-  artifactPath: string;
+  /** The deliverable these pixels came from. A file's own sha256 — or, for a published embed
+   *  that has no bytes at all, the HOSTED BINDING over its address and its primary still
+   *  (lib/verify/hosted.ts). One field, because every downstream record binds to one subject. */
+  artifactSha256: string;
+  /** Set when the deliverable is a FILE this run owns. Exactly one of the two is set. */
+  artifactPath?: string;
+  /** Set when the deliverable is PUBLISHED and the run owns no file of it: the address the
+   *  browser actually landed on, which is what the binding above is computed over. */
+  artifactUrl?: string;
   destinationId: string;
   channel: Channel;
   format: VisualFormat;

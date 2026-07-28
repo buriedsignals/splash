@@ -17,8 +17,13 @@ export function isPublishPayload(p: unknown): p is PublishRequest {
   if (typeof p !== "object" || p === null) return false;
   const r = p as Record<string, unknown>;
   const m = r.metadata as Record<string, unknown> | undefined;
+  // EXACTLY ONE deliverable is named: a file this run owns (`artifactPath` — every publisher that
+  // ships bytes), or an address it does not (`artifactUrl` — the hand-over of an already published
+  // embed). Both would leave the adapter to choose; neither leaves it nothing to publish.
+  const hasPath = typeof r.artifactPath === "string" && r.artifactPath !== "";
+  const hasUrl = typeof r.artifactUrl === "string" && r.artifactUrl !== "";
   return (
-    typeof r.artifactPath === "string" &&
+    hasPath !== hasUrl &&
     typeof r.id === "string" &&
     isVisualFormat(r.format) &&
     typeof r.outDir === "string" &&

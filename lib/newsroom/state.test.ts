@@ -291,7 +291,12 @@ describe("defaultCapabilities", () => {
       .filter(([, c]) => c.enabled)
       .map(([id]) => id)
       .sort();
-    expect(enabled).toEqual(["chart-native", "image-native", "zip"]);
+    expect(enabled).toEqual([
+      "chart-native",
+      "embed-hosted",
+      "image-native",
+      "zip",
+    ]);
   });
 
   it("accepts EITHER member of an alternatives group (the MapTiler mirror rule)", () => {

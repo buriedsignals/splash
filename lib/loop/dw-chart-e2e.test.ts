@@ -12,18 +12,26 @@ import { test, expect } from "bun:test";
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { sha256 } from "@noble/hashes/sha2.js";
 import "../../skills/splash/src/register-producers";
 import { produce } from "./produce";
+import { approve } from "./approve";
+import { deliver } from "./deliver";
+import { previewStep } from "./preview";
 import { freezeInput } from "./freeze";
 import { assembleDwChart } from "./assemble/dw-chart";
 import { heightPolicyFor } from "./assemble";
 import { isLoopBuildable } from "./buildable";
-import { captureStep } from "./verify";
+import { captureStep, reviewStep } from "./verify";
 import { capture } from "../verify/capture";
+import { hostedBindingDigest } from "../verify/hosted";
+import type { ReviewRecord } from "../verify/types";
+import type { Decor } from "../newsroom/decor";
 import { validateChartSpec } from "../../skills/dw-chart/src/chart-spec";
 import { renderSize } from "../../skills/splash/src/channel";
 import type { ProductionBrief } from "../core/production-brief";
 import {
+  approvalSubjectOf,
   fileArtifact,
   isHostedArtifact,
   readManifest,
@@ -232,6 +240,206 @@ proof(
     }
   },
   180_000,
+);
+
+// THE WHOLE CHAIN, on a chart that lives at an address and nowhere else.
+//
+// Producing a hosted embed and recording its URL (the proof above) is where this used to stop:
+// capture recorded a gap, preview refused by name, approve refused by name, deliver refused by
+// name. Ten clean interactive rows were offerable, choosable and producible, and then could not be
+// previewed, approved or delivered (docs/splash/capability-matrix-2026-07-28.md).
+//
+// This drives one real published chart all the way — produce → capture → review → preview →
+// approve → deliver — with the positive control read off the REAL thing at each end:
+//   · the captured image's OWN bytes (a png header read off the file capture wrote, and its
+//     sha256, which is the pixel leg of the binding the approval then commits to);
+//   · the delivered embed's URL, fetched 200 after the hand-over is recorded.
+// Nothing here is read off a producer's report about itself.
+proof(
+  "a published Datawrapper interactive is captured, reviewed, previewed, approved and delivered",
+  async () => {
+    const runDir = mkdtempSync(join(tmpdir(), "splash-dw-chain-"));
+    try {
+      const src = join(runDir, "data.csv");
+      writeFileSync(src, RECYCLING_CSV);
+      const run = chartRun(runDir, src, "interactive");
+
+      const produced = await produce(run, run.elements[0]!, runDir);
+      expect(
+        produced.ok ? "produced" : `${produced.code}: ${produced.message}`,
+      ).toBe("produced");
+      if (!produced.ok) return;
+      const artifact = produced.value.artifact!;
+      expect(isHostedArtifact(artifact)).toBe(true);
+      if (!isHostedArtifact(artifact)) return;
+      console.log(`[dw-chain-e2e] published ${artifact.url}`);
+
+      // CAPTURE — the browser opens the ADDRESS. Everything measured below comes off the live
+      // embed's own DOM, at the viewports article-web actually publishes at.
+      const captured = await captureStep(run, produced.value, runDir);
+      expect(
+        captured.ok ? "captured" : `${captured.code}: ${captured.message}`,
+      ).toBe("captured");
+      if (!captured.ok) return;
+      const slot = captured.value.capture!;
+      // NOT a recorded gap: this is the branch that used to strand every embed.
+      expect(slot.unsupported).toBeUndefined();
+      expect(slot.images.length).toBeGreaterThan(0);
+      const primary = slot.images.find((i) => i.breakpoint === "primary")!;
+      expect(primary.artifactUrl).toBe(artifact.url);
+      expect(primary.artifactPath).toBeUndefined();
+
+      // THE POSITIVE CONTROL, half one — the captured image's OWN bytes. Read off disk and
+      // re-hashed here, so the record's `sha256` is checked against the file rather than believed,
+      // and the png header proves an image was really taken rather than a path recorded.
+      const stillBytes = readFileSync(primary.path);
+      expect(stillBytes.subarray(1, 4).toString("ascii")).toBe("PNG");
+      const stillWidth = stillBytes.readUInt32BE(16);
+      const stillHeight = stillBytes.readUInt32BE(20);
+      expect(stillWidth).toBeGreaterThan(200);
+      expect(stillHeight).toBeGreaterThan(100);
+      const stillSha = Buffer.from(sha256(stillBytes)).toString("hex");
+      expect(stillSha).toBe(primary.sha256);
+      console.log(
+        `[dw-chain-e2e] still ${stillWidth}x${stillHeight} ${primary.path} sha ${stillSha.slice(0, 12)}…`,
+      );
+      // ...and the subject the approval will bind to is exactly that address and those pixels.
+      expect(approvalSubjectOf(captured.value)).toEqual({
+        sha256: hostedBindingDigest(artifact.url, stillSha),
+        url: artifact.url,
+      });
+      // The live embed carries the furniture the loop commissioned — read off the rendered page,
+      // which is the measurement a recorded gap could never make.
+      console.log(
+        `[dw-chain-e2e] rendered title (${primary.titleSource}): ${primary.renderedTitle}`,
+      );
+      expect(primary.renderedTitle).toContain("Basel");
+      const furniture = slot.checks.filter(
+        (c) => c.id === "capture:furniture-present",
+      );
+      for (const c of furniture)
+        console.log(
+          `[dw-chain-e2e] furniture ${c.role}: ${c.outcome} — ${c.detail}`,
+        );
+
+      // REVIEW → PREVIEW → APPROVE. Every one of the three used to be a refusal here.
+      const reviewed = await reviewStep(run, captured.value, runDir);
+      expect(
+        reviewed.ok ? "reviewed" : `${reviewed.code}: ${reviewed.message}`,
+      ).toBe("reviewed");
+      if (!reviewed.ok) return;
+      const blocking = (reviewed.value.review as ReviewRecord).findings.filter(
+        (f) => f.severity === "blocking" && f.status === "open",
+      );
+      for (const f of blocking)
+        console.log(`[dw-chain-e2e] blocking: ${f.id} — ${f.summary}`);
+
+      // WHICH blockers this embed really has, PINNED. Overriding `blocking.map(f => f.id)` would
+      // clear whatever came back — a chart that renders blank at HTTP 200, a title divergence, a
+      // `no-capture` regression — and this proof, the only end-to-end evidence the hosted chain
+      // has, would stay green through all of it. Interpolating the id into the reason makes the
+      // TEXT look specific while the SET stays unbounded, which is worse than saying nothing.
+      //
+      // So the set is asserted first and the override below names its member as a LITERAL. Any
+      // other blocking finding fails here, loudly, before anything is approved.
+      //
+      // `furniture-missing` is real and measured: a published Datawrapper chart paints the unit
+      // NOWHERE. Probed on this very chart — the only elements whose text contains "%" are two
+      // display:none <script> blobs (the serialized props). See .sdd/hosted-chain-report.md §4.
+      expect(blocking.map((f) => f.id).sort()).toEqual(["furniture-missing"]);
+      // ...and it is about the UNIT and nothing else. The finding GROUPS every furniture role
+      // (lib/verify/review.ts CHECK_TO_FINDING), so pinning the id alone would still swallow a
+      // missing title or a dropped source credit under the same name.
+      const missing = blocking[0]!;
+      expect(missing.evidence.filter((e) => !e.includes("/unit]"))).toEqual([]);
+
+      const previewed = previewStep(run, reviewed.value, runDir, {
+        env: { SPLASH_NO_VIEWER: "1" },
+      });
+      expect(
+        previewed.ok ? "presented" : `${previewed.code}: ${previewed.message}`,
+      ).toBe("presented");
+      if (!previewed.ok) return;
+      const preview = (previewed.value.review as ReviewRecord).preview!;
+      expect(preview.deliverablePath).toBe(artifact.url);
+      expect(preview.deliverableSha256).toBe(
+        hostedBindingDigest(artifact.url, stillSha),
+      );
+
+      const staged: RunManifest = { ...run, elements: [previewed.value] };
+      const approved = approve(
+        staged,
+        previewed.value,
+        runDir,
+        {
+          actorLabel: "e2e",
+          // ONE finding, named as a literal — the ceremony a journalist would perform, on the one
+          // blocker this embed is asserted to have. Nothing computed from `blocking`: a set
+          // derived from the review is a set that grows silently with it.
+          overrides: [
+            {
+              findingId: "furniture-missing",
+              reason:
+                "e2e proof: Datawrapper paints the unit nowhere on a published chart embed " +
+                "(measured — the only '%' on the page is inside display:none script blobs). " +
+                "Knowingly shipped past so the chain reaches a delivery; the gap is reported, not fixed.",
+            },
+          ],
+        },
+        { signers: [], requiredSigners: [] },
+      );
+      expect(
+        approved.ok ? "approved" : `${approved.code}: ${approved.message}`,
+      ).toBe("approved");
+      if (!approved.ok) return;
+
+      // DELIVER — the hand-over. Nothing is uploaded: the embed is already live, so the record is
+      // the address plus the code a CMS pastes.
+      const requested = {
+        ...approved.value,
+        delivery: { requested: ["embed-hosted"], delivered: [] },
+      } as unknown as RunManifest["elements"][number];
+      const decor = {
+        root: runDir,
+        profile: { credit: "Heidi.news", lang: "en" },
+        state: {
+          capabilities: { "embed-hosted": { enabled: true, settings: {} } },
+          delivery: {},
+        },
+      } as unknown as Decor;
+      const delivered = await deliver(
+        { ...run, elements: [requested] },
+        requested,
+        runDir,
+        decor,
+        undefined,
+        { env: {} },
+      );
+      expect(
+        delivered.ok ? "delivered" : `${delivered.code}: ${delivered.message}`,
+      ).toBe("delivered");
+      if (!delivered.ok) return;
+      const record = delivered.value.delivery!.delivered[0]!;
+      expect(record.publisherId).toBe("embed-hosted");
+      expect(record.kind).toBe("hosted");
+      expect(record.artifact).toBeUndefined();
+      console.log(`[dw-chain-e2e] handed over ${record.url}`);
+      console.log(`[dw-chain-e2e] snippet: ${record.snippet}`);
+
+      // THE POSITIVE CONTROL, half two — the DELIVERED address is fetched, off the record the run
+      // wrote, not off the URL this test happens to hold.
+      expect(record.snippet).toContain(record.url!);
+      const res = await fetch(record.url!, {
+        redirect: "follow",
+        signal: AbortSignal.timeout(30_000),
+      });
+      expect(`${record.url} → ${res.status}`).toBe(`${record.url} → 200`);
+      expect((await res.text()).toLowerCase()).toContain("<html");
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  },
+  300_000,
 );
 
 // ---------------------------------------------------------------------------------------

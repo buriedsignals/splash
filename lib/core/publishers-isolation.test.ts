@@ -48,6 +48,7 @@ it("finds the real adapters, not a stub left behind by the previous file", () =>
   expect(allPublishers().map((p) => p.id).sort()).toEqual([
     "embed-cloudflare",
     "embed-cms",
+    "embed-hosted",
     "embed-s3",
     "zip",
   ]);

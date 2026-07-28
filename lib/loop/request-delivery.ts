@@ -10,12 +10,13 @@
 // retroactively change what had been asked for.
 import { fail, ok, type VerbResult } from "../core/verbs/types";
 import type { VisualFormat } from "../core/vocabulary";
-import { defaultDestinationsFor } from "../delivery/routing";
+import { defaultDestinationsFor, HOSTED_EMBED } from "../delivery/routing";
 import { NEWSROOM_CAPABILITIES } from "../newsroom/capabilities";
 import { capabilityReadiness } from "../newsroom/readiness";
 import { decorEnv, type Decor } from "../newsroom/decor";
 import {
   chosenOption,
+  isHostedArtifact,
   stalenessOf,
   type RunElement,
   type RunManifest,
@@ -76,7 +77,27 @@ export function requestDelivery(
     // The DESTINATION, not just the format: a print deliverable is a file whatever its format
     // (lib/delivery/routing.ts). Absent on every element written before issue #1, and the
     // routing then answers exactly as it did.
-    requested = defaultDestinationsFor(format, ready, el.deliverable?.destination);
+    // WHAT THE ARTIFACT IS, alongside what the format is: a Datawrapper interactive is already
+    // published, so the default is the hand-over of its address rather than a package of bytes
+    // nobody owns. Resolved here, where the manifest is, and passed to a pure router as a fact.
+    requested = defaultDestinationsFor(
+      format,
+      ready,
+      el.deliverable?.destination,
+      { alreadyPublished: isHostedArtifact(el.artifact) },
+    );
+    // The ONE case the router can answer with nothing: an already-published embed whose hand-over
+    // the newsroom has turned off. Nothing else can take it — every other destination ships bytes
+    // it has none of — so writing `requested: []` would leave the element reading as "nobody is
+    // waiting on it" (needsDelivery is false for an empty list) and silently drop the delivery.
+    // Named here instead, where the newsroom's own capability list is in hand.
+    if (requested.length === 0)
+      return fail(
+        "invalid-request",
+        `request-delivery: this visual is already published at ${(el.artifact as { url?: string }).url ?? "its own address"} ` +
+          `and the only destination that can hand it over ("${HOSTED_EMBED}" — ${NEWSROOM_CAPABILITIES[HOSTED_EMBED]?.label}) ` +
+          `is not enabled for this newsroom; enable it, or name a destination explicitly`,
+      );
   }
 
   // `delivered` is carried forward untouched: a destination that already landed for an older

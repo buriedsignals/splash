@@ -169,6 +169,20 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
     criticalDeps: null,
     implemented: true,
   },
+  // The hand-over of a deliverable that is ALREADY published — a Datawrapper interactive chart or
+  // map, live on Datawrapper's own CDN with no file the newsroom owns. It uploads nothing, so it
+  // needs no key of its own and is ALWAYS ready: an embed the run cannot deliver would be a
+  // visual that is offerable, choosable, producible and undeliverable, which is exactly the dead
+  // end this capability closes.
+  "embed-hosted": {
+    id: "embed-hosted",
+    label: "Hand over the published embed link (already live)",
+    kind: "delivery",
+    env: [],
+    envHelp: {},
+    criticalDeps: null,
+    implemented: true,
+  },
   // The universal fallback: it publishes to disk, so it needs no key and is therefore ALWAYS
   // ready. That is what makes "no host configured" a working path rather than a dead end.
   zip: {

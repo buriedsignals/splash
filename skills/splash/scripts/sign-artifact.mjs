@@ -1,6 +1,6 @@
-import { generateKeyPairSync, createPrivateKey, sign as cryptoSign } from "node:crypto";
+import { generateKeyPairSync } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
-import { editorialPayload, sha256Hex } from "../src/editorial-signoff.ts";
+import { sha256Hex, signEditorialSubject } from "../src/editorial-signoff.ts";
 
 /** One-time setup: an Ed25519 keypair for an editor. Private PEM stays with the editor; the
  *  public base64 (SPKI DER) + a ready-to-paste `signers:` line go into the newsroom profile. */
@@ -15,10 +15,24 @@ export function generateEditorKeypair(editorId) {
 /** Sign the exact artifact FILE bytes for a proposal. Hashes the bytes itself — the operator
  *  cannot substitute a hash. Returns the sha256 + a base64 Ed25519 signature over the payload. */
 export function signArtifact(fileBytes, proposalId, privatePem) {
-  const sha256 = sha256Hex(fileBytes);
-  const key = createPrivateKey({ key: privatePem, format: "pem", type: "pkcs8" });
-  const signature = cryptoSign(null, Buffer.from(editorialPayload(proposalId, sha256), "utf8"), key).toString("base64");
-  return { sha256, signature };
+  return signSubject(sha256Hex(fileBytes), proposalId, privatePem);
+}
+
+/** Sign a SUBJECT that is already a sha256 — the shape a HOSTED delivery has.
+ *
+ *  A Datawrapper interactive is published on Datawrapper's own CDN and the newsroom owns no file
+ *  of it, so there are no bytes for an editor to hash. What the run binds an approval to instead
+ *  is the HOSTED BINDING (lib/verify/hosted.ts): the published address hashed together with the
+ *  still the loop captured at it. The editor cannot re-derive that — a screenshot is not
+ *  reproducible byte-for-byte — so the gate PRINTS it and this signs it.
+ *
+ *  That looks like the substitution `signArtifact` above exists to prevent, and it is not: the
+ *  signature is verified against the run's OWN subject (lib/loop/approve.ts hands the verifier
+ *  `approvalSubjectOf(el)`, never the operator's string), so a digest that is not the one the run
+ *  recorded simply fails to verify. What the operator can choose is which digest they sign, not
+ *  which digest they are checked against. */
+export function signSubject(sha256hex, proposalId, privatePem) {
+  return signEditorialSubject(String(sha256hex), proposalId, privatePem);
 }
 
 function fail(msg) {
@@ -42,25 +56,39 @@ function main() {
   const file = argv[0];
   const proposalIdx = argv.indexOf("--proposal");
   const keyIdx = argv.indexOf("--key");
+  const digestIdx = argv.indexOf("--digest");
   const proposalId = proposalIdx !== -1 ? argv[proposalIdx + 1] : undefined;
   const keyPath = keyIdx !== -1 ? argv[keyIdx + 1] : undefined;
-  if (!file || file.startsWith("--")) fail("usage: sign-artifact.mjs <artifactFile> --proposal <id> --key <privKeyPem>");
+  // A HOSTED delivery has no file to point at — the approval gate prints the binding to sign.
+  const digest = digestIdx !== -1 ? argv[digestIdx + 1] : undefined;
+  if (!digest && (!file || file.startsWith("--")))
+    fail("usage: sign-artifact.mjs <artifactFile> --proposal <id> --key <privKeyPem>\n   or: sign-artifact.mjs --digest <sha256> --proposal <id> --key <privKeyPem>   (a published embed, which has no file)");
   if (!proposalId) fail("missing --proposal <id>");
   if (!keyPath) fail("missing --key <privKeyPem>");
-  let fileBytes, privatePem;
-  try {
-    fileBytes = readFileSync(file);
-  } catch {
-    return fail(`cannot read artifact file ${file}`);
-  }
+  let privatePem;
   try {
     privatePem = readFileSync(keyPath, "utf8");
   } catch {
     return fail(`cannot read key ${keyPath}`);
   }
-  const { sha256, signature } = signArtifact(fileBytes, proposalId, privatePem);
-  console.log(`artifact sha256: ${sha256}`);
-  console.log(`signature (base64): ${signature}`);
+  let signed;
+  if (digest) {
+    try {
+      signed = signSubject(digest, proposalId, privatePem);
+    } catch (e) {
+      return fail(`${e.message} — --digest takes the hosted binding the approval gate printed`);
+    }
+  } else {
+    let fileBytes;
+    try {
+      fileBytes = readFileSync(file);
+    } catch {
+      return fail(`cannot read artifact file ${file}`);
+    }
+    signed = signArtifact(fileBytes, proposalId, privatePem);
+  }
+  console.log(`artifact sha256: ${signed.sha256}`);
+  console.log(`signature (base64): ${signed.signature}`);
 }
 
 if (import.meta.main) main();

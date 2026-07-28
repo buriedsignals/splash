@@ -33,6 +33,7 @@ import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger } from "../source/policy";
 import { CaptureSlotSchema, ReviewSlotSchema } from "../verify/schema";
 import { approvalDecision, type ApprovalDecision } from "../verify/approval";
+import { hostedBindingOf } from "../verify/hosted";
 import { previewCoversDeliverable } from "../verify/preview";
 import type { CaptureSlot, ReviewRecord } from "../verify/types";
 
@@ -301,7 +302,23 @@ const RunElementSchema = z.object({
   blocked: z.object({ reason: z.string(), at: z.string() }).optional(),
   dropped: z.object({ reason: z.string(), at: z.string() }).optional(),
   approved: z
-    .object({ signoffPath: z.string(), approvedProvenanceHash: z.string() })
+    .object({
+      signoffPath: z.string(),
+      approvedProvenanceHash: z.string(),
+      /** WHAT was approved — `approvalSubjectOf(el).sha256` at the moment of approval.
+       *
+       *  Provenance alone is not enough for a hosted delivery: `provenanceHash` reads the run's
+       *  inputs, angle and chosen option, and NOT `el.capture`, so a re-capture mints a new
+       *  binding while `approvedProvenanceHash` still matches. Recording the subject is what lets
+       *  deliver.ts re-verify rather than trust — the `approvedHash`-never-re-checked class this
+       *  codebase has already paid for once, at a new seam.
+       *
+       *  OPTIONAL because every approval already on disk was written without it. Those are all
+       *  FILE approvals (no hosted artifact could be approved at all before this slice), so
+       *  deliver.ts skips the comparison only for a file and refuses a hosted approval that
+       *  carries no subject — a shape nothing could legitimately have produced. */
+      approvedSubject: z.string().optional(),
+    })
     .optional(),
 });
 export const RunManifestSchema = z.object({
@@ -729,18 +746,49 @@ export function approvalCovers(run: RunManifest, el: RunElement): boolean {
 // Delegated to lib/verify so the router and the approval gate cannot disagree about what
 // counts as having been shown.
 export function previewCovers(el: RunElement): boolean {
-  // A HOSTED delivery is never covered: previewCovers answers on the BYTES a journalist was
-  // shown, and there are none — previewStep refuses it outright rather than presenting a URL it
-  // cannot re-hash. Answering `false` here is what keeps the approval gate from clearing on an
-  // embed nobody looked at; it is the same `false` an unproduced element gets.
-  const file = fileArtifact(el.artifact);
-  if (!file) return false;
+  // Judged on the element's SUBJECT — its bytes for a file, its hosted binding for a published
+  // embed. A hosted element with nothing captured has no subject at all, and `""` is what an
+  // unproduced element gets: never covered, which is what keeps the approval gate shut on an
+  // embed nobody has looked at.
+  const subject = approvalSubjectOf(el).sha256;
+  if (!subject) return false;
   const format = chosenOption(el)?.format ?? "static";
   return previewCoversDeliverable(
     format,
     (el.review as ReviewRecord | undefined)?.preview,
-    file.sha256,
+    subject,
   ).ok;
+}
+
+/**
+ * WHAT a preview, an override, a sign-off and an Ed25519 signature about this element are ABOUT.
+ *
+ * For a file it is the artifact's own sha256 — the bytes are the thing, and every record binds to
+ * them. For a HOSTED delivery there are no bytes: the subject is the hosted binding, the address
+ * the capture landed on hashed together with the still it took there (lib/verify/hosted.ts records
+ * why neither leg alone would do, and the measurement that makes the address leg load-bearing).
+ *
+ * ONE resolver, exported, because five readers ask this question — previewCovers and
+ * approveElement here, approve.ts, resume.ts, and the approval gate through them. A second,
+ * subtly different answer is precisely how a gate comes to clear on a subject a report denies.
+ *
+ * `""` when there is nothing to bind to yet: no artifact, or a hosted one nobody has captured.
+ * That is not an error — it is the honest "not previewable yet", and it routes the element to the
+ * step that would give it a subject.
+ */
+export function approvalSubjectOf(el: RunElement): {
+  sha256: string;
+  url?: string;
+} {
+  const file = fileArtifact(el.artifact);
+  if (file) return { sha256: file.sha256 };
+  if (isHostedArtifact(el.artifact)) {
+    const binding = hostedBindingOf(
+      (el.capture as CaptureSlot | undefined)?.images ?? [],
+    );
+    if (binding) return { sha256: binding.digest, url: binding.url };
+  }
+  return { sha256: "" };
 }
 
 function needsDelivery(run: RunManifest, el: RunElement): boolean {
@@ -1035,10 +1083,14 @@ function assertReviewRecordInvariants(el: RunElement): void {
   // record: the approval path already refuses it, and persisting it would leave a manifest
   // asserting that a journalist was shown something the run never produced.
   //
-  // Read through fileArtifact: a HOSTED delivery has no sha256 to contradict, and previewStep
-  // refuses to write a preview record for one at all — so there is no pair to compare, and
-  // comparing against `undefined` would throw on every hosted element instead of on a real
-  // contradiction.
+  // Read through fileArtifact, and DELIBERATELY not through approvalSubjectOf: a file record
+  // carries its own sha256, so a preview naming a different one is the manifest contradicting
+  // ITSELF — a fact about two immutable fields. A hosted element's subject lives on the CAPTURE,
+  // which the chain rewrites every time the embed is measured again, so the same comparison there
+  // would turn an ordinary re-capture into a failed WRITE (a throw, from a module the loop awaits
+  // unguarded) rather than into the next action. The hosted case is gated where it belongs — at
+  // previewCovers/approvalDecision, which resolve the subject freshly and answer "preview it
+  // again" instead of refusing to persist the run.
   const previewedFile = fileArtifact(el.artifact);
   if (
     review.preview &&
@@ -1074,9 +1126,10 @@ export function approveElement(
   const current = provenanceHash(run, el);
   const decision = approvalDecision(el.review as ReviewRecord | undefined, {
     format,
-    // "" for a hosted delivery — it has no bytes, and it can carry no preview either, so the
-    // decision this reaches is "not previewed", which is the true one.
-    artifactSha256: fileArtifact(el.artifact)?.sha256 ?? "",
+    // The element's SUBJECT: its bytes for a file, its hosted binding for a published embed, and
+    // "" when there is nothing to bind to yet — which reaches the decision "not previewed", the
+    // true one for an element nobody has captured.
+    artifactSha256: approvalSubjectOf(el).sha256,
     provenanceHash: current,
   });
   // An element with no artifact cannot be approved even if a record somehow cleared: the
@@ -1106,6 +1159,9 @@ export function approveElement(
       approved: {
         signoffPath: approval.signoffPath,
         approvedProvenanceHash: current,
+        // WHAT was approved, beside WHEN. Read through the one resolver, so the value deliver.ts
+        // re-derives and compares is the value the decision above was made on.
+        approvedSubject: approvalSubjectOf(el).sha256,
       },
     },
   };

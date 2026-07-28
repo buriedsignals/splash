@@ -13,6 +13,7 @@
 //        instead — a deliberate limit on what this tool does to someone else's infrastructure.
 import { readFileSync } from "node:fs";
 import {
+  artifactFileOf,
   artifactMediaFor,
   DEFAULT_NETWORK_TIMEOUT_MS,
   DEFAULT_UPLOAD_TIMEOUT_MS,
@@ -201,13 +202,15 @@ async function publish(
   if (!preflight.ok) return preflight;
 
   // Step 4: read the artifact — bounded failure, same shape as zip.ts.
+  const file = artifactFileOf(req, "s3");
+  if (!file.ok) return file;
   let artifact: Buffer;
   try {
-    artifact = readFileSync(req.artifactPath);
+    artifact = readFileSync(file.value);
   } catch (e) {
     return fail(
       "engine-failed",
-      `s3: cannot read the artifact ${req.artifactPath}: ${(e as Error).message}`,
+      `s3: cannot read the artifact ${file.value}: ${(e as Error).message}`,
     );
   }
 
@@ -375,6 +378,9 @@ export const s3Publisher: Publisher = {
   // mp4 the CMS refuses, or a CMS that only accepts an embed code. It is no longer the
   // DEFAULT for a file genre; it is still legal when explicitly chosen.
   serves: [...VISUAL_FORMATS],
+  // BYTES. This adapter moves the deliverable itself, so it needs a file the run owns; a
+  // Datawrapper embed is already published elsewhere and there is nothing here to move.
+  sources: ["file"],
   implemented: true,
   publish,
 };

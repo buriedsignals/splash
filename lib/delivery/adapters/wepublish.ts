@@ -17,6 +17,7 @@
 //         adapter looks up its deterministic carrier slug and UPDATES, never blindly creates.
 import { readFileSync } from "node:fs";
 import {
+  artifactFileOf,
   DEFAULT_NETWORK_TIMEOUT_MS,
   DEFAULT_UPLOAD_TIMEOUT_MS,
   timeoutFromSettings,
@@ -144,13 +145,15 @@ async function publish(
     return fail("invalid-request", unsafeIdMessage(req.id));
 
   // Step 3: read the artifact.
+  const file = artifactFileOf(req, "wepublish");
+  if (!file.ok) return file;
   let document: string;
   try {
-    document = readFileSync(req.artifactPath, "utf8");
+    document = readFileSync(file.value, "utf8");
   } catch (e) {
     return fail(
       "engine-failed",
-      `wepublish: cannot read the artifact ${req.artifactPath}: ${(e as Error).message}`,
+      `wepublish: cannot read the artifact ${file.value}: ${(e as Error).message}`,
     );
   }
 
@@ -381,6 +384,9 @@ export const wepublishPublisher: Publisher = {
   // lib/loop/deliver.ts turns a `static`/`video` request here into a refusal that names the
   // portable package instead, which is where the genre routing already sends them.
   serves: ["interactive", "scrolly"],
+  // BYTES. This adapter moves the deliverable itself, so it needs a file the run owns; a
+  // Datawrapper embed is already published elsewhere and there is nothing here to move.
+  sources: ["file"],
   implemented: true,
   publish,
 };

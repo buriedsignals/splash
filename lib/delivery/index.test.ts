@@ -33,7 +33,13 @@ describe("the delivery composition root", () => {
       allPublishers()
         .map((p) => p.id)
         .sort(),
-    ).toEqual(["embed-cloudflare", "embed-cms", "embed-s3", "zip"]);
+    ).toEqual([
+      "embed-cloudflare",
+      "embed-cms",
+      "embed-hosted",
+      "embed-s3",
+      "zip",
+    ]);
   });
 
   it("should expose the cloudflare adapter as a hosted publisher", () => {
@@ -71,6 +77,7 @@ describe("the delivery composition root", () => {
       id: "zip",
       kind: "package",
       serves: [...VISUAL_FORMATS],
+      sources: ["file"],
       implemented: true,
       publish: async () => fail("engine-failed", "stub"),
     };

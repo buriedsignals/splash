@@ -25,8 +25,13 @@ import { fail, type VerbResult } from "./types";
 export function isCapturePayload(p: unknown): p is CapturePayload {
   if (typeof p !== "object" || p === null) return false;
   const r = p as Record<string, unknown>;
+  // EXACTLY ONE deliverable is named: a file this run owns, or an address it does not. Both would
+  // leave the record's subject ambiguous, neither leaves anything to open — and a host outside
+  // JavaScript building this payload from JSON gets the same answer either way.
+  const hasPath = typeof r.artifactPath === "string" && r.artifactPath !== "";
+  const hasUrl = typeof r.artifactUrl === "string" && r.artifactUrl !== "";
+  if (hasPath === hasUrl) return false;
   if (
-    typeof r.artifactPath !== "string" ||
     typeof r.outDir !== "string" ||
     typeof r.id !== "string" ||
     !isVisualFormat(r.format) ||
@@ -62,7 +67,8 @@ export function isCapturePayload(p: unknown): p is CapturePayload {
 }
 
 export const CAPTURE_PAYLOAD_MESSAGE =
-  "capture: payload must carry artifactPath, format, channel, outDir and id " +
+  "capture: payload must carry EITHER artifactPath (a file this run owns) OR artifactUrl " +
+  "(a published embed it does not), plus format, channel, outDir and id " +
   `(optional: destination, furniture[{role,text}] with role in ${FURNITURE_ROLES.join("|")}, settleMs, ` +
   `heightPolicy in ${HEIGHT_POLICIES.join("|")})`;
 

@@ -68,6 +68,8 @@ describe("absorbing the legacy decor", () => {
       "chart-native",
       "dw-chart",
       "embed-cloudflare",
+      // Key-free, like zip: the hand-over of an embed that is already published.
+      "embed-hosted",
       "image-native",
       "map-dw",
       "map-native",
@@ -84,7 +86,12 @@ describe("absorbing the legacy decor", () => {
       .filter(([, c]) => c.enabled)
       .map(([id]) => id)
       .sort();
-    expect(enabled).toEqual(["chart-native", "image-native", "zip"]);
+    expect(enabled).toEqual([
+      "chart-native",
+      "embed-hosted",
+      "image-native",
+      "zip",
+    ]);
   });
 
   // embed-s3 is deliberately NOT in this list any more: it is implemented, so it would pass

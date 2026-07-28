@@ -53,7 +53,7 @@ export async function runVerb(
       if (!isPublishPayload(payload))
         return fail(
           "invalid-request",
-          "publish: payload must carry artifactPath, id, format, metadata, settings, credentials and outDir",
+          "publish: payload must carry EITHER artifactPath (a file this run owns) OR artifactUrl (an embed already published), plus id, format, metadata, settings, credentials and outDir",
         );
       return await publish(payload);
     }
