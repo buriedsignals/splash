@@ -60,6 +60,16 @@ const PROOFS = [
     env: { SPLASH_VIDEO_E2E: "1" },
   },
   {
+    // scrolly's OWN render proof — the one that earned its key in the assembler table. It sat
+    // outside this roster until the close-out, which is to say nobody ran it: "a file not here is
+    // a file nobody runs" is this list's whole point, and the engine whose entry is justified by a
+    // proof had that proof living outside the mechanism built to guarantee proofs get run. That is
+    // the same condition that let two proofs rot on main unnoticed until they were run here.
+    file: "lib/loop/beats-render-proof.test.ts",
+    what: "the beats a reader sees are the journalist's own, read off the built page's step nodes",
+    env: { SPLASH_PROVE_BEATS: "1" },
+  },
+  {
     file: "lib/loop/map-e2e.test.ts",
     what: "a chosen map is assembled by the loop and rendered by the engine",
     env: { SPLASH_MAP_E2E: "1" },

@@ -12,9 +12,24 @@ import type { AuthoredBeat } from "../brain/verify-beats";
 // THE PROOF that the beats a reader sees are the journalist's, not the machine's.
 //
 // OPT-IN (SPLASH_PROVE_BEATS=1), and out of `bun run check` on purpose: it drives a real Vite
-// single-file build plus the scrolly producer's own Playwright reduced-motion snap (~25 s). Same
-// discipline as skills/splash/scripts/verify-source-bundle.mjs, deliberately kept out of the gate
-// for the same reason — a real network-and-browser build has no business running on every commit.
+// single-file build plus the scrolly producer's own Playwright reduced-motion snap, then opens the
+// built page in a third browser to read it. Same discipline as
+// skills/splash/scripts/verify-source-bundle.mjs, deliberately kept out of the gate for the same
+// reason — a real network-and-browser build has no business running on every commit. It IS in
+// scripts/proofs.mjs's roster (added at the branch's close-out, having been absent since it was
+// written, which meant nothing ran it).
+//
+// COST — 3.3 s for the whole file, both tests, reproduced three times on an M-series Mac.
+// Broken down, measured: `bunx vite build` 0.35-0.5 s (vite resolves from
+// skills/scrolly/node_modules, so nothing is fetched), produce() end to end 2.2 s (that build plus
+// the reduced-motion snap), and the remaining ~1 s is this file's own browser read.
+//
+// This header said "~25 s" until 2026-07-28 and that number could NOT be reproduced — it is off by
+// an order of magnitude, and a wrong cost in a header is how the next person mis-plans a run. What
+// a slow run's time goes into, if you meet one: snap-reduced-motion.mjs waits up to 30 s for
+// `[data-step-index]` to become visible, and a standalone run of it was observed spending 15 s in
+// exactly that wait. So ~25 s is consistent with a cold browser or a page slow to paint, and not
+// with the steady state. Cause NOT established — only the steady-state figures above are measured.
 //
 // MEASURED, 2026-07-27, on a real build of both pages. The four narrative steps of a chart
 // scrolly, same series, same anchors, same six-card structure:
