@@ -9,18 +9,31 @@ import { BASEMAP_NAMES } from "../../../skills/map-native/src/basemaps";
 
 const REGION_TYPES = new Set(["choropleth", "cartogram", "dot-density"]);
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /** WHICH COLUMN HOLDS THE VALUE. One numeric column is unambiguous. Several is a real
  *  question, and the takeaway is where the journalist already answered it: the column whose
  *  name appears in the confirmed takeaway wins. Neither ⇒ refuse and LIST them — guessing
- *  here paints the wrong quantity on a map and nothing downstream can tell. */
+ *  here paints the wrong quantity on a map and nothing downstream can tell.
+ *
+ *  The match is on WORD BOUNDARIES, on both sides of the normalisation: a plain `includes`
+ *  lets a short or generic column name (`n`, `id`, `x`) match as an incidental substring of
+ *  unrelated prose ("outcome" contains "n") and either falsely collides with the real answer
+ *  or — worse — gets silently picked on its own when the real column is never named at all.
+ *  A multi-word column (`gdp_per_capita` → "gdp per capita") still has to match as a whole
+ *  phrase, not word-by-word, so the boundary sits at the START and END of the full phrase. */
 function valueFieldFor(
   numeric: string[],
   takeaway: string,
 ): { field: string } | { candidates: string[] } {
   if (numeric.length === 1) return { field: numeric[0]! };
-  const said = numeric.filter((c) =>
-    takeaway.toLowerCase().includes(c.toLowerCase().replace(/[_-]+/g, " ")),
-  );
+  const lower = takeaway.toLowerCase();
+  const said = numeric.filter((c) => {
+    const phrase = escapeRegExp(c.toLowerCase().replace(/[_-]+/g, " "));
+    return new RegExp(`\\b${phrase}\\b`).test(lower);
+  });
   if (said.length === 1) return { field: said[0]! };
   return { candidates: numeric };
 }

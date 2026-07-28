@@ -97,6 +97,37 @@ test("several numeric columns, one named in the takeaway — that one is used", 
   expect((r.value as Record<string, unknown>).valueField).toBe("access");
 });
 
+test("a bare column name like 'n' never matches as an accidental substring of unrelated prose — refused, not silently picked", () => {
+  const r = assembleMapNative({
+    ...REGION_BRIEF,
+    dataCsv: "country,n,score\nCHE,100,8\nTCD,11,17",
+    angle: {
+      ...REGION_BRIEF.angle,
+      confirmedTakeaway: "Countries differ widely in outcome",
+    },
+  });
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.message).toContain("n, score");
+});
+
+test("a multi-word column name matches as a whole phrase when the takeaway names it", () => {
+  const r = assembleMapNative({
+    ...REGION_BRIEF,
+    dataCsv: "country,gdp_per_capita,population\nCHE,80000,8\nTCD,700,17",
+    angle: {
+      ...REGION_BRIEF.angle,
+      confirmedTakeaway:
+        "GDP per capita explains the gap between rich and poor nations",
+    },
+  });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect((r.value as Record<string, unknown>).valueField).toBe(
+    "gdp_per_capita",
+  );
+});
+
 test("a cartogram carries id/value pairs, not rows", () => {
   const r = assembleMapNative({ ...REGION_BRIEF, nativeType: "cartogram" });
   expect(r.ok).toBe(true);
