@@ -18,7 +18,14 @@ import {
 } from "./parallel-geometry";
 import { line, curveLinear } from "d3-shape";
 import { clamp01, easeInOutCubic, easeOutCubic } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -34,6 +41,14 @@ export interface ParallelConfig {
   dimensions: { key: string; label: string }[];
   highlight?: string[];
   items: Record<string, string | number>[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour — including the CONTEXT polylines, which
+   *  are the muted furniture grey, not an encoding. The highlighted items carry the fixed
+   *  Okabe-Ito accents, so the hue never touches them. Undefined = untinted. */
+  baseColor?: string;
 }
 
 export interface ParallelChartProps {
@@ -73,8 +88,11 @@ export function ParallelChart({
   (config.highlight ?? []).forEach((label, i) =>
     accentOf.set(label, ACCENTS[i % ACCENTS.length]),
   );
+  // the un-highlighted polylines are CONTEXT, painted in the ground's muted furniture
+  // grey (the slope-chart convention) — so they derive from the theme, not a literal.
+  const contextColor = themeColors(config.themeBg, config.baseColor).muted;
   const colorOf = (label: string, hl: boolean) =>
-    hl ? (accentOf.get(label) ?? ACCENTS[0]) : COLORS.muted;
+    hl ? (accentOf.get(label) ?? ACCENTS[0]) : contextColor;
 
   const LEG_ROW = 20;
   const legendRows = legendRowCount(
@@ -151,6 +169,8 @@ export function ParallelChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -185,6 +205,7 @@ function ParallelSvg({
   sc: number;
 }) {
   const { innerWidth, innerHeight, axes, lines } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.18);
   const reveal = easeInOutCubic(p);
   const clipW = innerWidth * reveal + 1;
@@ -230,7 +251,7 @@ function ParallelSvg({
                 x2={a.x}
                 y1={0}
                 y2={innerHeight}
-                stroke={COLORS.axis}
+                stroke={C.axis}
                 strokeWidth={1}
               />
               <text
@@ -241,7 +262,7 @@ function ParallelSvg({
                 }
                 fontSize={ts.axis}
                 fontWeight={700}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {truncate(
                   a.label,
@@ -254,7 +275,7 @@ function ParallelSvg({
                 y={a.yTop - 4 * sc}
                 textAnchor={i === axes.length - 1 ? "end" : "start"}
                 fontSize={ts.source}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {fmt(a.maxVal)}
               </text>
@@ -263,7 +284,7 @@ function ParallelSvg({
                 y={a.yBottom + 12 * sc}
                 textAnchor={i === axes.length - 1 ? "end" : "start"}
                 fontSize={ts.source}
-                fill={COLORS.muted}
+                fill={C.muted}
               >
                 {fmt(a.minVal)}
               </text>
@@ -333,7 +354,7 @@ function ParallelSvg({
                 dy="0.32em"
                 fontSize={ts.axis}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>
@@ -373,6 +394,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,
