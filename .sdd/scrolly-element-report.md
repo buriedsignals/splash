@@ -108,23 +108,57 @@ scaffold never renders it. chart-native's visually-hidden description comes from
 has no equivalent, and `Scrolly.tsx` painted title / unit / source / credit and nothing else. Every
 chart-track scrolly shipped without the WCAG 1.1.1 description its own config carried.
 
-### A third finding, at the offer
+### A third finding, at the offer — I GOT THE CAUSE WRONG. Retracted.
 
-The mark was not only an annotation. `lib/brain/rank.ts` tier 2 grades on readiness severity, so a
-`missing`-marked candidate ranks below every ready one. Probed on the same fixture through the
-real `propose()`:
+**What I originally wrote here was causally false, and I am striking it rather than softening it.**
+I observed that `propose()` on my fixture returned no scrolly row —
 
 ```
-refusal: (none)
-  bar      | chart-native/bar      | interactive | mark=none
-  dumbbell | chart-native/dumbbell | interactive | mark=none
-  lollipop | chart-native/lollipop | video       | mark=none
+bar      | chart-native/bar      | interactive | mark=none
+dumbbell | chart-native/dumbbell | interactive | mark=none
+lollipop | chart-native/lollipop | video       | mark=none
 ```
 
-No scrolly row at all — even though `DELIVERABLE_KIND["scrolly"] = "page"` reserves the offer's
-last row for a kind not yet on the table (`lib/brain/offer.ts`), and the reserved row went to a
-video instead. In practice scrolly was not "offered marked", it was **invisible**; the capability
-matrix's "15 MARKED, 0 clean" is what `eligible()` produced, not what a journalist saw.
+— and attributed it to the mark, via `rank.ts`'s tier-2 readiness penalty. A reviewer re-ran
+`buildOffer` on this same fixture against my own HEAD, **with the mark already gone**, and got the
+identical three rows. I reproduced it:
+
+```
+=== propose() on HEAD (mark removed) ===
+  bar | chart-native/bar | interactive | clean
+  dumbbell | chart-native/dumbbell | interactive | clean
+  lollipop | chart-native/lollipop | video | clean
+
+=== the ranked legal set ===
+  [5] bar | chart-native/bar | scrolly | kind=page | clean     ← clean, ranked 6th of 105
+  clean scrolly candidates: 6 of 8
+```
+
+`bar/chart-native/scrolly` is clean and sits at rank index 5, and it *still* does not reach the
+offer. The mark was never the cause. The real causes are untouched by this branch:
+
+- **`lib/brain/offer.ts:58-62` skips by sheet `id`.** `bar/interactive` is taken first, so every
+  other `bar` row — including `bar/scrolly` — is `seen` and skipped.
+- **The reserved row (`offer.ts:70-79`) takes the best-ranked unseen id of an unseen KIND**, and
+  `rank.ts:12-17`'s `FORMAT_ORDER` puts `video` (2) ahead of `scrolly` (3). So the reserved
+  "different kind" row goes to `lollipop/video` (motion), not to a page.
+
+My error was inferring a cause from a single before-observation without running the after. The
+lesson is the one this repo already wrote down about the judge and the proof: I checked that the
+number changed and not that my explanation of it did.
+
+### What I actually earned at the offer
+
+A **requested** scrolly. `lib/loop/driver.test.ts:624` drives a run with `requestedFormat:
+"scrolly"`, which makes every offered row a scrolly row; before this branch all of them carried a
+readiness note, and now at least one is clean (`expect(proposal.options.some((o) => !o.readiness))`).
+A journalist who asks for a scrolly is no longer told, of every option, that it cannot be built.
+That is the whole of the offer-side win, and it is real.
+
+**The invisibility point survives, re-attributed.** A scrolly is still effectively unreachable
+*unrequested*, for the two structural reasons above — id-level dedup and `FORMAT_ORDER`. Neither is
+a mark, neither is fixed here, and fixing either changes what every offer looks like for every
+format. Named as a follow-up below, against its real cause.
 
 ### Conclusion
 
@@ -175,8 +209,21 @@ the sentence that is actually true. The wording is now declared once
 the drafter's refusal, the same discipline `MAP_TRACK_BEATS_REFUSAL` already follows. The mark is
 NOT added to `requires` — no newsroom setting declares a photograph.
 
+**And it costs exactly what I diagnosed for scrolly — said plainly, in the docstring and here.**
+The mark is unconditional, and `rank.ts` tier 2 grades on severity, so a `missing`-marked
+image-scrolly sorts below every ready candidate and never reaches the three-row offer. image-native
+declares one format, so that is the whole engine: **a newsroom that HAS declared its photographs
+still cannot be offered the form.** Marked, here, means *unreachable*, not *warned about*.
+
+I kept it anyway, and the reasoning is on the evidence rather than on convenience: offering it clean
+strands a run that has no photographs, which is worse, and this is no worse than `main`. But it is a
+debt, not a design, and the docstring now says so in those words instead of implying the journalist
+merely sees a warning.
+
 **Named follow-up, in the code:** the day `eligible()` is given the run's declared inputs, this
-mark should fire only for a run that has none.
+mark should fire only for a run that has none — and the form becomes reachable for the run that has
+them. Secondary, noted at the same place: the mark keys on `engine`, not `(engine, format)`, which
+is correct only while image-native declares a single format.
 
 ### 3. Break A — a scrolly's height is content-driven, and the HTML capture path says so
 
@@ -189,8 +236,43 @@ mark should fire only for a run that has none.
   **height** leg of `capture:fits-viewport` is dropped, the **width** leg is checked as hard as
   before, the relaxation is named in the check's own `detail`, the policy is recorded on every
   `CaptureRecord` (conditionally, for the I6 round-trip), and the ceiling the height still has is
-  emitted as `capture:height-within-bound` against the same `CONTENT_HEIGHT_LIMIT_MULTIPLE` the
-  static path uses. A runaway walk still fails loudly.
+  emitted as `capture:height-within-bound`. A runaway walk still fails loudly.
+- `lib/verify/capture.ts` — **the ceiling is now per shape.** See the ruling below.
+
+### The ceiling constant — my ruling: a per-shape number, not a rewritten comment
+
+`CONTENT_HEIGHT_LIMIT_MULTIPLE = 10` argues itself entirely from rows ("a runaway row count lands
+20-50x out"). A scrolly's card is `min-height: 90vh` (`Scrolly.tsx:495`), so its height is not
+merely content-driven — it is a multiple of the viewport, and **the ratio IS the card count**:
+
+```
+ratio = 0.9 x cards = 0.9 x (beats + 2)          [measured: 4 beats → 6 cards → exactly 5.4x]
+```
+
+So 10x is crossed at **ten beats** (12 cards, 10.8x) — a warning filed on a completely correct
+artifact. The derived walk cannot reach it (`lib/brain/beats.ts` caps a line at first + two interior
++ last, a bar at three leaders + the tail — four either way), but an **authored anchor list is not
+capped at all**, and neither is a map track's derived walk. A ten-beat scrolly is a long read.
+
+I took the second option offered — **a per-shape number** — rather than writing the second shape
+into the existing comment, for one reason: one constant serving two shapes is exactly the "two
+registries of the same fact" failure this codebase has already paid for twice, except worse,
+because here it is one registry answering two different questions. A comment explaining that the
+number is wrong for one of its callers documents the defect instead of removing it.
+
+`SCROLL_HEIGHT_LIMIT_MULTIPLE = 30`, keyed on `format === "scrolly"` through
+`heightCeilingMultiple(format)`, which both capture paths now call so they cannot drift. The key is
+**core vocabulary**, not engine knowledge — the same axis `viewport.ts` already keys
+`RESPONSIVE_FORMATS` on — so invariant I2 holds and image-native's scrolly (frames x viewport, the
+same shape) is covered by the same key.
+
+Thirty is *chosen* the way ten was, and I say so in the comment rather than dressing it as derived:
+30x admits ~31 beats, published scrollytelling runs 8-15 steps, and the failures the check exists to
+catch are nowhere near it (a map track deriving one chapter per row of a 200-row table lands ~180x).
+Same "separates long from broken with room on both sides" property, measured on the right shape.
+
+Three tests pin it: a 14x walk now passes, a 35x one still fails, and **a 14x `interactive` still
+fails** — the last is what proves this is a per-shape number and not a blanket loosening.
 
 ### 4. Break B — the scrolly scaffold paints its own alt description
 
@@ -226,6 +308,29 @@ sample, map and image render is byte-identical (pinned as a test).
 
 ## What I did NOT close, and why
 
+### ★ THE IMMEDIATE NEXT QUESTION: nothing measures a scrolly against the frame it ships in
+
+Stated first because it is a consequence of *this* branch, not a musing. `capture` measures the
+deliverable against the **channel's** container (article-web, 1200x675) and against
+`DestinationProfile` — it never sees `metadata.height`, the number that actually goes into the
+delivered `<iframe>`. That was harmless while `fits-viewport` complained about any tall page: the
+complaint was wrong about the container but it was at least *a* signal that a scrolly does not sit
+in a box.
+
+**I switched that signal off.** Correctly — it was measuring the wrong box and blocking every
+correct scrolly — but the result is that a 3645px walk delivered into a `width="700" height="420"`
+iframe now produces **nested scrollbars and not one check anywhere says so.** The height ceiling
+does not catch it either: it is a ratio against the capture container, not against the frame.
+
+So this is not "a default nobody has chosen". It is a **hole this branch opened at the seam between
+verify and delivery**: the two layers measure against two different boxes and neither owns the one
+the reader sees. The next question is which layer learns `metadata.height` — capture taking the
+delivery box as a `DestinationProfile`, or delivery deriving the frame from the artifact's measured
+shape. Both are real designs; picking is not mine to do unasked, but the gap is now named and
+attributable rather than left for someone to find in a newsroom's CMS.
+
+### The snippet default itself
+
 **The embed snippet's default sizing is chart-shaped.** The delivered snippet is
 `<iframe … width="700" height="420">`, and the responsive alternative
 (`RESPONSIVE_TEMPLATE`, `lib/delivery/snippet.ts`) is `aspect-ratio:16/9`. Both are calibrated for
@@ -240,7 +345,18 @@ template or `"responsive"` gets what it asked for. So this is not a chain break 
 I left it alone deliberately. Picking the right one is a design decision (a full-height iframe? a
 `height:100vh` frame? a `postMessage` auto-resize handshake, which is what most CMS scrolly embeds
 actually use?), it changes what every existing newsroom's embeds look like, and none of it is
-implied by the question this branch was asked. It is the honest next question, not this one.
+implied by the question this branch was asked.
+
+### Follow-up: a scrolly is still unreachable UNREQUESTED, and the mark was never why
+
+Re-attributed after the retraction above. `lib/brain/offer.ts:58-62` dedups by sheet `id`, so a
+sheet's scrolly row dies once any other format of that sheet is taken; and the reserved-row rule
+(`offer.ts:70-79`) picks the best-ranked unseen KIND, which `rank.ts`'s `FORMAT_ORDER` hands to
+`video` (2) ahead of `scrolly` (3). Both predate this branch and neither is touched by it. Fixing
+either changes every offer for every format, which is why it is named rather than done.
+
+The same two rules are what make `image-native` unreachable (see above) — one structural cause,
+two visible symptoms.
 
 ---
 

@@ -224,6 +224,13 @@ Owns no type of its own (formats: scrolly). It hosts another engine's track.
 
 One row per KB sheet, per engine that renders it. `clean` = offered unmarked. `MARKED` = offered with a mark naming why it is a dead end (spec §8: marked, never silently removed). `—` = the sheet does not declare that format, or the format's producer cannot build it. Facts are synthesized FROM each sheet's own declared `limits`, so a data limit can never cause a false negative here.
 
+> **The `scrolly` column is SUPERSEDED — see "G5 — closed" below.** Every `MARKED article-branch`
+> cell in it was measured on `main` and is no longer what the code does: that mark was removed on
+> `feat/scrolly-is-an-element` after the chain was walked end to end. Re-measured, 6 of 8 scrolly
+> rows are **clean**; the ones that stay marked are `scatter` (its captions could not be the
+> journalist's) and `image-scrolly` (its walk needs photographs the run must declare), each with a
+> mark of its own. Read the cells below as history, not as the current answer.
+
 | sheet | engine | render key | static | interactive | video | scrolly |
 |---|---|---|---|---|---|---|
 | bump | chart-native | bump | clean | clean | clean | — |

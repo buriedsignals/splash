@@ -292,8 +292,11 @@ function fillRatio(sheet: TypeSheet, f: Facts): number {
   return Math.min(1, used / cap);
 }
 
-// CAPACITÉ and the article branch MARK, they never remove: the worst status among what a form
-// requires is the status of the form (the rule already in lib/loop/propose.ts).
+// EVERY MARK WARNS, none removes: the worst status among what a form requires is the status of
+// the form (the rule already in lib/loop/propose.ts). The three that can fire are CAPACITÉ (a
+// capability the newsroom has not turned on), the declared-input mark (imageWalkMark) and the
+// buildability mark. A fourth — "the whole-article branch" — was removed on 2026-07-28; see the
+// block at the head of this file for what it claimed and why both halves were false.
 // Exported: rank.ts grades its readiness penalty on this same ordinal, rather than defining a
 // second one that could drift from it.
 export const SEVERITY = {
@@ -384,9 +387,28 @@ export function buildabilityMark(
  * the DRAFTER'S OWN (lib/brain/beats.ts), so the offer's mark and the refusal a journalist would
  * eventually meet are one wording, not two.
  *
- * FOLLOW-UP, named rather than left implicit: the day `eligible()` is given the run's declared
- * inputs, this mark should fire only for a run that has none — a run that HAS declared its
- * photographs is being warned about a condition it already satisfies.
+ * ── WHAT THIS COSTS, said plainly rather than left for someone to discover ──────────────────
+ *
+ * The mark is UNCONDITIONAL, so its cost is not "a warning": lib/brain/rank.ts's second tier
+ * grades on readiness severity, and `missing` is the worst of the four — so an image-scrolly
+ * candidate sorts below every ready one and, with the offer capped at three rows
+ * (lib/brain/offer.ts), never reaches a journalist at all. image-native declares exactly one
+ * format, so this is the whole engine: a newsroom that HAS declared its photographs still cannot
+ * be offered the form. Marked, in practice, means UNREACHABLE here — not merely flagged.
+ *
+ * That is the same defect this branch measured for scrolly, and it is kept deliberately, on the
+ * evidence in the block at the head of this file: the alternative is offering a form CLEAN that
+ * strands a run with no photographs, which is worse, and it is no worse than what `main` did.
+ * But it is a debt, not a design, and the follow-up below is what pays it — until then, read
+ * this mark as "off", not as "warned about".
+ *
+ * FOLLOW-UP: the day `eligible()` is given the run's declared inputs, this mark should fire only
+ * for a run that has none — and the form becomes reachable for the run that has them.
+ *
+ * SECONDARY, for whoever lands that: this keys on `engine`, not on `(engine, format)`, which is
+ * correct only while image-native declares a single format. The day it declares a second one,
+ * that format would inherit a mark about a photograph walk it has nothing to do with — key it
+ * the way buildabilityMark already keys, on the pairing.
  */
 function imageWalkMark(
   engine: string,

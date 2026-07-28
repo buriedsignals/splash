@@ -112,7 +112,7 @@ export function unbuildableEngineReason(
  * One writer for it, because three places say it and they are read as one voice: chooseForm's
  * refusal while the journalist is still choosing, nextActionsForElement's routing back to the
  * offer, and the driver's ledger entry when a run stagnates on a choice already recorded. The
- * mark's OWN words win when the option carries them (eligibility.ts pushes the whole-article
+ * mark's OWN words win when the option carries them (eligibility.ts once pushed a whole-article
  * wording first, and the journalist read that sentence in the offer), so the refusal repeats what
  * was shown rather than substituting a maintainer's version of it.
  *

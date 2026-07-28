@@ -58,7 +58,49 @@ export const SIZE_TOLERANCE_PX = 2;
 // table. The failures it exists to catch are not near it: a runaway row count lands 20-50x out
 // (a real 500-row export is ~44x), so the bound separates "long" from "broken" with room on both
 // sides rather than adjudicating a close call.
+//
+// THIS NUMBER IS ABOUT ROWS. Every sentence above reasons from a row count, and it stayed true
+// only while the row-driven export was the one content-driven shape there was.
 export const CONTENT_HEIGHT_LIMIT_MULTIPLE = 10;
+
+// The SECOND content-driven shape, which the number above does not describe.
+//
+// A scrolly's step card is `min-height: 90vh` (skills/scrolly/src/Scrolly.tsx:495), so its height
+// is not merely "driven by content" — it is a MULTIPLE OF THE VIEWPORT, and the ratio IS the card
+// count. Measured, not modelled: the e2e's four-beat walk renders six cards (the walk is framed by
+// an intro and a takeaway card) and lands at exactly 5.4x = 0.9 x 6 (lib/loop/scrolly-e2e.test.ts).
+// So:
+//
+//     ratio = 0.9 x cards = 0.9 x (beats + 2)
+//
+// Against the row ceiling that arithmetic files a warning on ordinary work: 10x is crossed at ten
+// beats (12 cards, 10.8x). The DERIVED walk cannot reach it — lib/brain/beats.ts caps a line at
+// first + two interior + last and a bar at three leaders + the tail, four beats either way — but an
+// AUTHORED anchor list is not capped at all, and neither is a map track's derived walk. A ten-beat
+// scrolly is a long read, not a defect, and a check that calls it one is a check people learn to
+// click past — which is the same argument the paragraph above makes for not setting the row
+// ceiling too tight.
+//
+// Thirty, and chosen the same way ten was rather than derived: it is past any editorial walk and
+// well short of a broken one. 30x admits ~31 beats; published scrollytelling runs 8-15 steps, so
+// the longest thing anyone would actually ship clears it with room, while the failures this exists
+// to catch are nowhere near it — a map track deriving one chapter per row of a 200-row table lands
+// at ~180x, an uncapped authored plan likewise. It separates "long" from "broken" on this shape
+// with the same margin ten gives on rows.
+//
+// Keyed on the FORMAT, not on the engine: `scrolly` is core vocabulary (lib/core/vocabulary.ts),
+// the same axis lib/verify/viewport.ts already keys RESPONSIVE_FORMATS on, so no engine knowledge
+// enters this layer (invariant I2). image-native's scrolly is the same shape — frames x viewport —
+// and is covered by the same key.
+export const SCROLL_HEIGHT_LIMIT_MULTIPLE = 30;
+
+/** The ceiling a content-driven deliverable of THIS shape is held to. One function so the two
+ *  capture paths cannot come to disagree about a number that is now per-shape. */
+export function heightCeilingMultiple(format: VisualFormat): number {
+  return format === "scrolly"
+    ? SCROLL_HEIGHT_LIMIT_MULTIPLE
+    : CONTENT_HEIGHT_LIMIT_MULTIPLE;
+}
 
 // How long the reveal is given to settle before the still is taken. The number the engines'
 // own snap scripts already use (skills/chart-native/scripts/snap-responsive.mjs:29) —
@@ -132,10 +174,14 @@ export type CapturePayload = {
   furniture?: FurnitureExpectation[];
   settleMs?: number;
   /** How this deliverable's own box relates to the destination's — see HeightPolicy. Absent ⇒
-   *  "pinned", the shape every check here expressed before. Consulted on the STATIC path, where
-   *  the measurement IS the artifact's own pixel box; an html deliverable already answers the
-   *  question differently (it fills its host, and `capture:fits-viewport` measures the component
-   *  it renders, not a file's IHDR). */
+   *  "pinned", the shape every check here expressed before.
+   *
+   *  Consulted on BOTH paths. This said "the STATIC path … an html deliverable already answers
+   *  the question differently" until 2026-07-28, and that was the premise a scrolly disproved:
+   *  captureHtml ignored the field, so a page whose height legitimately belongs to its content
+   *  was still held to the destination's box and filed a blocking `component-overflows-viewport`
+   *  on a correct artifact — at every breakpoint, on every scrolly ever produced. The measurement
+   *  differs between the paths (an IHDR vs. a component's rendered box); the QUESTION does not. */
   heightPolicy?: HeightPolicy;
 };
 
@@ -279,13 +325,14 @@ async function captureStatic(
   // same number would file one defect twice — the duplication furnitureChecks is careful to
   // avoid two functions above.
   if (heightPolicy === "content-driven") {
-    const limit = target.cssViewport.height * CONTENT_HEIGHT_LIMIT_MULTIPLE;
+    const multiple = heightCeilingMultiple(p.format);
+    const limit = target.cssViewport.height * multiple;
     const times = (rootBox.height / target.cssViewport.height).toFixed(1);
     checks.push({
       id: "capture:height-within-bound",
       breakpoint: target.breakpoint,
       outcome: rootBox.height <= limit ? "pass" : "fail",
-      detail: `image ${rootBox.width}x${rootBox.height} is ${times}x the ${target.cssViewport.height} its destination publishes at (ceiling ${CONTENT_HEIGHT_LIMIT_MULTIPLE}x = ${limit})`,
+      detail: `image ${rootBox.width}x${rootBox.height} is ${times}x the ${target.cssViewport.height} its destination publishes at (ceiling ${multiple}x = ${limit})`,
     });
   }
   return ok({ images: [record], checks });
@@ -657,8 +704,8 @@ async function captureHtml(
         // has its height judged by the check above, and a second verdict on the same number would
         // file one defect twice.
         if (heightPolicy === "content-driven") {
-          const limit =
-            target.cssViewport.height * CONTENT_HEIGHT_LIMIT_MULTIPLE;
+          const multiple = heightCeilingMultiple(p.format);
+          const limit = target.cssViewport.height * multiple;
           const times = (m.rootBox.height / target.cssViewport.height).toFixed(
             1,
           );
@@ -666,7 +713,7 @@ async function captureHtml(
             id: "capture:height-within-bound",
             breakpoint: target.breakpoint,
             outcome: m.rootBox.height <= limit ? "pass" : "fail",
-            detail: `the component is ${m.rootBox.height}px tall, ${times}x the ${target.cssViewport.height} its destination publishes at (ceiling ${CONTENT_HEIGHT_LIMIT_MULTIPLE}x = ${limit})`,
+            detail: `the component is ${m.rootBox.height}px tall, ${times}x the ${target.cssViewport.height} its destination publishes at (ceiling ${multiple}x = ${limit})`,
           });
         }
       } finally {
