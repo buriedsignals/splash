@@ -15,7 +15,13 @@ export interface ImageStep {
   caption: string; // article-derived, self-contained, NEVER a verbatim excerpt
   alt: string; // what is VISIBLE — journalist-supplied, distinct from caption (WCAG 1.1.1)
   credit: ImageCredit; // per-frame photo credit — a different axis from the module source
-  sourcePassage: string; // the matched article passage — the tripwire's reference
+  // The matched article passage — the tripwire's reference (spec §6.5). OPTIONAL: it is
+  // required only when the caption is ARTICLE-DERIVED (spec §5, line 92 — "REQUIS dès que la
+  // caption est article-dérivée"). A caption composed of the journalist's OWN authored beat
+  // (lib/loop/assemble/image-native.ts) was never matched against a passage — there is nothing
+  // to record, and fabricating one would hand the overlap tripwire a reference nobody wrote,
+  // for it to compare a caption against words it never came from.
+  sourcePassage?: string;
   fit?: "crop" | "canvas-frame"; // per-frame override of ImageStory.fit
   align?: "left" | "right" | "center";
 }
@@ -434,11 +440,15 @@ export function checkImageConformance(
       v.push(
         `frame ${label} has no photo credit — each image carries its own attribution`,
       );
-    if (!f.sourcePassage?.trim())
+    // sourcePassage is OPTIONAL (see the field's own comment): absent means "not
+    // article-derived", and there is nothing to check. PRESENT-but-blank is still a mistake —
+    // a caller that wrote the key owes it a value — so that shape still flags, exactly as it
+    // did when the field was required.
+    if (f.sourcePassage !== undefined && !f.sourcePassage.trim())
       v.push(
         `frame ${label} has no sourcePassage — an article-derived caption must record the passage it came from`,
       );
-    else {
+    else if (f.sourcePassage) {
       const ratio = captionOverlapRatio(f.caption ?? "", f.sourcePassage);
       if (ratio > overlapThreshold)
         v.push(

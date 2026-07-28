@@ -5,6 +5,7 @@
 import type { Assembler } from "../../core/production-brief";
 import { assembleChartNative } from "./chart-native";
 import { assembleMapNative } from "./map-native";
+import { assembleImageNative } from "./image-native";
 import { assembleScrolly } from "./scrolly";
 import { MAP_TYPES } from "../../../skills/map-native/src/map-types";
 
@@ -29,6 +30,13 @@ export const ASSEMBLERS: Record<string, AssemblerEntry> = {
   // the right host engine for it (a MAP_TYPES id goes to map-native, anything else to
   // chart-native), so every type either engine already supports is reachable through it.
   scrolly: { assemble: assembleScrolly },
+  // image-native owns its format ("scrolly") itself — registry.ts's producerForFormat routes
+  // it straight to "image-native", never through the scrolly host — so this key is reached
+  // directly, not via the entry above. Its one declared type (image-scrolly).
+  "image-native": {
+    assemble: assembleImageNative,
+    supports: (t) => t === "image-scrolly",
+  },
 };
 
 export function assemblerFor(

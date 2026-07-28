@@ -65,6 +65,11 @@ const PROOFS = [
     env: { SPLASH_MAP_E2E: "1" },
   },
   {
+    file: "lib/loop/image-e2e.test.ts",
+    what: "a declared photograph sequence and its authored beats become a real image scrolly",
+    env: { SPLASH_IMAGE_E2E: "1" },
+  },
+  {
     file: "lib/loop/delivery-genre-e2e.test.ts",
     what: "a produced PNG is published to a real S3 endpoint and served as an image",
     env: { SPLASH_S3_E2E: "1" },
