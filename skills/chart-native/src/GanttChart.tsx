@@ -18,7 +18,14 @@ import {
   type GanttLayout,
 } from "./gantt-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -33,6 +40,14 @@ export interface GanttConfig {
   unit: string; // subtitle / time-axis caption
   categories?: string[];
   items: { label: string; start: string; end: string; category?: string }[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. Bars carry a fixed Okabe-Ito group
+   *  palette, so the hue never touches them — one hue would collapse the groups it
+   *  separates. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface GanttChartProps {
@@ -140,6 +155,8 @@ export function GanttChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -174,6 +191,7 @@ function GanttSvg({
   sc: number;
 }) {
   const { innerWidth, innerHeight, bars, timeTicks } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const n = bars.length;
   const chrome = easeOutCubic(p / 0.16);
   const rowP = (i: number) =>
@@ -211,7 +229,7 @@ function GanttSvg({
               x2={t.pos}
               y1={0}
               y2={innerHeight}
-              stroke={COLORS.grid}
+              stroke={C.grid}
               strokeWidth={1}
             />
           ))}
@@ -224,7 +242,7 @@ function GanttSvg({
               y={innerHeight + 18 * sc}
               textAnchor="middle"
               fontSize={ts.source}
-              fill={COLORS.muted}
+              fill={C.muted}
             >
               {t.label}
             </text>
@@ -248,7 +266,7 @@ function GanttSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.axis}
-                fill={COLORS.ink}
+                fill={C.ink}
                 opacity={catOp}
               >
                 {truncate(b.label, padding.left - 16 * sc, ts.axis)}
@@ -299,7 +317,7 @@ function GanttSvg({
                 dy="0.32em"
                 fontSize={ts.source}
                 fontWeight={600}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {it.text}
               </text>
@@ -337,6 +355,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,

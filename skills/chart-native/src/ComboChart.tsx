@@ -18,7 +18,14 @@ import {
 } from "./combo-geometry";
 import { line as d3line, curveMonotoneX } from "d3-shape";
 import { clamp01, easeInOutCubic, easeOutCubic, stagger } from "./core/math";
-import { COLORS, FONT, TYPE, OKABE_ITO } from "./core/tokens";
+import {
+  COLORS,
+  FONT,
+  TYPE,
+  OKABE_ITO,
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
@@ -38,6 +45,14 @@ export interface ComboConfig {
   columnSeriesLabel: string;
   lineSeriesLabel: string;
   rows: Record<string, string | number>[];
+  /** newsroom house theme GROUND (F2 house `theme`) — every furniture token (ink, muted,
+   *  axis, grid, bg) derives from this hex. Undefined = the light default (byte-identical). */
+  themeBg?: string;
+  /** newsroom house hue (spec `baseColor`): tints the FURNITURE greys (muted/axis/grid) and
+   *  the frame's title band toward the house colour. The two series carry the fixed
+   *  axis-coded Okabe-Ito pair (column blue / line orange) that the dual-axis rule
+   *  depends on, so the hue never touches them. Undefined = untinted (byte-identical). */
+  baseColor?: string;
 }
 
 export interface ComboChartProps {
@@ -133,6 +148,8 @@ export function ComboChart({
       tooltip={tooltip}
       scale={sc}
       lang={config.lang}
+      themeBg={config.themeBg}
+      baseColor={config.baseColor}
     >
       {svg}
     </ChartFrame>
@@ -172,6 +189,7 @@ function ComboSvg({
     leftTicks,
     rightTicks,
   } = layout;
+  const C = themeColors(config.themeBg, config.baseColor);
   const n = columns.length;
   const chrome = easeOutCubic(p / 0.18);
   const wipe = easeInOutCubic(p);
@@ -225,7 +243,7 @@ function ComboSvg({
                 x2={innerWidth}
                 y1={t.y}
                 y2={t.y}
-                stroke={COLORS.grid}
+                stroke={C.grid}
                 strokeWidth={1}
               />
               <text
@@ -326,7 +344,7 @@ function ComboSvg({
                 y={innerHeight + 16 * sc}
                 textAnchor="middle"
                 fontSize={ts.source}
-                fill={COLORS.ink}
+                fill={C.ink}
               >
                 {truncate(c.category, labelSlot, ts.source)}
               </text>
@@ -375,7 +393,7 @@ function ComboSvg({
             dy="0.32em"
             fontSize={ts.axis}
             fontWeight={600}
-            fill={COLORS.ink}
+            fill={C.ink}
           >
             {config.columnSeriesLabel}
           </text>
@@ -404,7 +422,7 @@ function ComboSvg({
                   dy="0.32em"
                   fontSize={ts.axis}
                   fontWeight={600}
-                  fill={COLORS.ink}
+                  fill={C.ink}
                 >
                   {config.lineSeriesLabel}
                 </text>
@@ -442,6 +460,7 @@ function Tooltip({
         top,
         transform: "translate(-50%,-100%)",
         background: COLORS.ink,
+        border: tooltipBorder(config.themeBg),
         color: "#fff",
         padding: "6px 10px",
         borderRadius: 6,
