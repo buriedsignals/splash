@@ -124,8 +124,12 @@ d("produceChart (real API)", () => {
       headers: { Authorization: `Bearer ${process.env.DATAWRAPPER_API_TOKEN}` },
     });
     const chart = await r.json();
-    // The localized line landed on the LIVE chart…
-    expect(chart.metadata.annotate.notes).toBe("Source : Insee");
+    // The localized line landed on the LIVE chart, URL preserved (Task 3: the
+    // fixture carries a source URL, so the em-dash-suffixed form is the true
+    // contract — name-only is only correct when no URL was supplied at all).
+    expect(chart.metadata.annotate.notes).toBe(
+      "Source : Insee — https://insee.fr",
+    );
     // …and the native (untranslatable "Source:"-prefixed) caption is blanked, so the
     // footer never shows BOTH captions — the map-dw decision, mirrored.
     expect(chart.metadata.describe["source-name"]).toBe("");
