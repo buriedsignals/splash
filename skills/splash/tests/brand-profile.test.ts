@@ -1,7 +1,7 @@
 // F2 — the newsroom brand profile (house style, first cut: colours only). A per-
-// project brand.json declares the house `palette` (+ optional `accent`); when present
-// the producer spec is SEEDED from it and marked brandExplicit so the a11y guards
-// apply policy (b). Absent/invalid → null → today's auto subject-fit behaviour.
+// project brand.json declares the house `palette`; when present the producer spec
+// is SEEDED from it and marked brandExplicit so the a11y guards apply policy (b).
+// Absent/invalid → null → today's auto subject-fit behaviour.
 import { describe, it, expect } from "bun:test";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -18,6 +18,7 @@ import {
 import { existsSync, readFileSync } from "node:fs";
 import { computeChoropleth } from "../../map-native/src/choropleth-geo";
 import { houseRamp } from "../../map-native/src/theme/house-ramp";
+import { validateChartSpec } from "../../dw-chart/src/chart-spec";
 
 function tmpProject(brandJson?: string): string {
   const dir = mkdtempSync(join(tmpdir(), "splash-brand-"));
@@ -27,13 +28,10 @@ function tmpProject(brandJson?: string): string {
 }
 
 describe("parseBrandProfile", () => {
-  it("parses a palette (+ optional accent) of #rrggbb hues", () => {
-    const p = parseBrandProfile(
-      '{"palette":["#E30613","#1D1D1B"],"accent":"#F5A623"}',
-    );
+  it("parses a palette of #rrggbb hues", () => {
+    const p = parseBrandProfile('{"palette":["#E30613","#1D1D1B"]}');
     expect(p).toEqual({
       palette: ["#E30613", "#1D1D1B"],
-      accent: "#F5A623",
     });
   });
 
@@ -48,8 +46,6 @@ describe("parseBrandProfile", () => {
 
   it("returns null when there is no usable field (→ auto path)", () => {
     expect(parseBrandProfile('{"palette":[]}')).toBeNull();
-    // accent alone (no palette) is not a brand
-    expect(parseBrandProfile('{"accent":"#F5A623"}')).toBeNull();
   });
 
   it("reads the extended fields (source, lang, credit)", () => {
@@ -75,7 +71,6 @@ describe("parseNewsroomMarkdown", () => {
 palette:                    # the 1st is primary
   - "#0A5C36"               # house green
   - "#C8102E"
-accent: "#C8102E"
 source:
   name: "Heidi.news"
   url: "https://heidi.news"
@@ -90,7 +85,6 @@ credit: "Source : {name}"   # template
   it("parses the frontmatter into a BrandProfile, stripping comments but keeping quoted hex", () => {
     expect(parseNewsroomMarkdown(md)).toEqual({
       palette: ["#0A5C36", "#C8102E"],
-      accent: "#C8102E",
       source: { name: "Heidi.news", url: "https://heidi.news" },
       lang: "fr",
       credit: "Source : {name}",
@@ -110,18 +104,17 @@ credit: "Source : {name}"   # template
 
   it("accepts single-quoted values (name and hex) like double-quoted", () => {
     const p = parseNewsroomMarkdown(
-      `---\npalette:\n  - '#0A5C36'\naccent: '#C8102E'\nsource:\n  name: 'Le Temps'\n---`,
+      `---\npalette:\n  - '#0A5C36'\nsource:\n  name: 'Le Temps'\n---`,
     );
     expect(p).toEqual({
       palette: ["#0A5C36"],
-      accent: "#C8102E",
       source: { name: "Le Temps" },
     });
   });
 
   it("keeps every palette colour despite a comment or blank line between items", () => {
     const p = parseNewsroomMarkdown(
-      `---\npalette:\n  - "#0A5C36"   # principal\n  # une note\n\n  - "#C8102E"\naccent: "#C8102E"\n---`,
+      `---\npalette:\n  - "#0A5C36"   # principal\n  # une note\n\n  - "#C8102E"\n---`,
     );
     expect(p?.palette).toEqual(["#0A5C36", "#C8102E"]);
   });
@@ -585,24 +578,62 @@ describe("newsroom theme → chart/map themeBg (arbitrary ground)", () => {
   });
 });
 
-describe("mergeProfileDefaults seeds the story accent", () => {
-  const profileWithAccent = { palette: ["#0072B2"], accent: "#7A1FA2" } as any;
-  const profileNoAccent = { palette: ["#0072B2"] } as any;
-  it("sets spec.accent from profile.accent for a chart", () => {
+describe("mergeProfileDefaults never emits `accent` (dw-chart rejects unknown fields)", () => {
+  // The house charter no longer asks for an accent, and no engine ever rendered one:
+  // NativeSpec has no such field (spec-to-config.ts:43-127) and specToNativeConfig has no
+  // injection point for it (:947-988). A profile that still carries one must not put it on a
+  // spec — validateChartSpec refuses any unknown top-level field (chart-spec.ts:421-431), and
+  // that failure is HARD (produce-all exits 1).
+  const legacyProfileWithAccent = {
+    palette: ["#0072B2"],
+    accent: "#7A1FA2",
+  } as unknown as Parameters<typeof mergeProfileDefaults>[1];
+
+  it("should not set spec.accent for a chart-native spec", () => {
     const out = mergeProfileDefaults(
-      { nativeType: "slope" } as any,
-      profileWithAccent,
+      { nativeType: "slope" } as Record<string, unknown>,
+      legacyProfileWithAccent,
       { producer: "chart-native" },
     );
-    expect((out as any).accent).toBe("#7A1FA2");
+    expect(out.accent).toBeUndefined();
   });
-  it("leaves spec.accent absent when the profile has no accent (byte-identity)", () => {
+
+  it("should not set spec.accent for a dw-chart spec", () => {
     const out = mergeProfileDefaults(
-      { nativeType: "slope" } as any,
-      profileNoAccent,
-      { producer: "chart-native" },
+      { type: "d3-lines" } as Record<string, unknown>,
+      legacyProfileWithAccent,
+      { producer: "dw-chart" },
     );
-    expect((out as any).accent).toBeUndefined();
+    expect(out.accent).toBeUndefined();
+  });
+
+  it("should drop a legacy `accent:` frontmatter key instead of carrying it", () => {
+    // The brief's fixture used inline-array syntax (`palette: ["#0072B2"]`); this parser only
+    // supports the multi-line `- item` list form used throughout this file (parseNewsroomMarkdown
+    // has no inline-array handling — it returns null for that input, which is a fixture bug, not
+    // an accent-related failure). Using the supported form here.
+    const p = parseNewsroomMarkdown(
+      '---\npalette:\n  - "#0072B2"\naccent: "#7A1FA2"\n---\n',
+    );
+    expect(p).not.toBeNull();
+    expect((p as Record<string, unknown>).accent).toBeUndefined();
+  });
+});
+
+describe("dw-chart refuses a stray `accent` loudly", () => {
+  it("should name the offending field rather than fail silently", () => {
+    const r = validateChartSpec({
+      type: "d3-lines",
+      title: "T",
+      data: "a,b\n1,2",
+      altInsight: "alt",
+      accent: "#7A1FA2",
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.some((e) => e.includes('unknown field "accent"'))).toBe(
+        true,
+      );
   });
 });
 

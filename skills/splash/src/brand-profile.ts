@@ -18,8 +18,6 @@ import { importSignerPublicKey, type EditorSigner } from "./editorial-signoff";
 export interface BrandProfile {
   /** ordered brand hues (#rrggbb); palette[0] is the primary house colour (may be empty) */
   palette: string[];
-  /** optional accent hue (#rrggbb) */
-  accent?: string;
   /** default attribution reused across visuals (a per-visual source overrides it) */
   source?: { name: string; url?: string };
   /** default deliverable language (BCP-47) */
@@ -43,13 +41,12 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 
 /**
  * Assemble a validated BrandProfile from loosely-typed fields (shared by the JSON and the
- * markdown parsers). Non-hex palette entries are dropped; an accent alone (no palette) is not a
- * brand. Returns null unless at least ONE usable field is present (palette / source / lang /
- * credit / signers) — so a newsroom that only wants a default source but no house colour is still valid.
+ * markdown parsers). Non-hex palette entries are dropped. Returns null unless at least ONE usable
+ * field is present (palette / source / lang / credit / signers) — so a newsroom that only wants a
+ * default source but no house colour is still valid.
  */
 function buildProfile(fields: {
   palette?: unknown;
-  accent?: unknown;
   source?: unknown;
   lang?: unknown;
   credit?: unknown;
@@ -62,10 +59,6 @@ function buildProfile(fields: {
         (c): c is string => typeof c === "string" && HEX.test(c),
       )
     : [];
-  const accent =
-    typeof fields.accent === "string" && HEX.test(fields.accent)
-      ? fields.accent
-      : undefined;
   let source: { name: string; url?: string } | undefined;
   if (fields.source && typeof fields.source === "object") {
     const s = fields.source as Record<string, unknown>;
@@ -138,7 +131,6 @@ function buildProfile(fields: {
   )
     return null;
   const p: BrandProfile = { palette };
-  if (accent) p.accent = accent;
   if (source) p.source = source;
   if (lang) p.lang = lang;
   if (credit) p.credit = credit;
@@ -163,7 +155,6 @@ export function parseBrandProfile(text: string): BrandProfile | null {
   const o = raw as Record<string, unknown>;
   return buildProfile({
     palette: o.palette,
-    accent: o.accent,
     source: o.source,
     lang: o.lang,
     credit: o.credit,
@@ -192,15 +183,18 @@ export function loadBrandProfile(projectDir: string): BrandProfile | null {
  * Seed a producer spec's colour from the brand palette and mark it brandExplicit —
  * the thread `brand.json → spec → the produce guards` (policy b). The spec keeps an
  * already-chosen baseColor; otherwise it takes the primary house hue. `brandExplicit`
- * is set ONLY when the resulting colour is a genuine house colour (in the palette or
- * the accent) — so an auto subject-fit colour never gains the a11y bypass. Pure.
+ * is set ONLY when the resulting colour is a genuine house colour (in the palette) —
+ * so an auto subject-fit colour never gains the a11y bypass. Pure.
  */
 export function seedBrandColor<
   T extends { baseColor?: string; brandExplicit?: boolean },
 >(spec: T, brand: BrandProfile): T {
   const baseColor = spec.baseColor ?? brand.palette[0];
-  const isHouseColour =
-    brand.palette.includes(baseColor) || brand.accent === baseColor;
+  // The house palette is now the whole definition of a house colour: `accent` was removed
+  // (it rendered nowhere — NativeSpec has no field, specToNativeConfig no injection point —
+  // and dw-chart hard-failed on it). `brand.accent === baseColor` was false for every profile
+  // without an accent, so this is byte-identical for them.
+  const isHouseColour = brand.palette.includes(baseColor);
   return { ...spec, baseColor, brandExplicit: isHouseColour };
 }
 
@@ -247,7 +241,7 @@ function unquote(v: string): string {
 
 /**
  * Parse the YAML frontmatter of a NEWSROOM-PROFILE.md into a BrandProfile. Reads only the known
- * fields (palette list, accent, source.name/url, lang, credit, signers, requiredSigners); unknown keys are ignored. No
+ * fields (palette list, source.name/url, lang, credit, signers, requiredSigners); unknown keys are ignored. No
  * frontmatter, or no usable field → null. Pure.
  */
 export function parseNewsroomMarkdown(md: string): BrandProfile | null {
@@ -256,7 +250,6 @@ export function parseNewsroomMarkdown(md: string): BrandProfile | null {
   const lines = fm[1].split(/\r?\n/).map(stripComment);
   const fields: {
     palette?: string[];
-    accent?: string;
     source?: { name?: string; url?: string };
     lang?: string;
     credit?: string;
@@ -347,13 +340,7 @@ export function parseNewsroomMarkdown(md: string): BrandProfile | null {
       fields.requiredSigners = items;
       continue;
     }
-    if (
-      val !== "" &&
-      (key === "accent" ||
-        key === "lang" ||
-        key === "credit" ||
-        key === "theme")
-    )
+    if (val !== "" && (key === "lang" || key === "credit" || key === "theme"))
       fields[key] = unquote(val);
     i++;
   }
@@ -447,7 +434,6 @@ export function mergeProfileDefaults<
     type?: string;
     mapStyle?: string;
     themeBg?: string;
-    accent?: string;
     source?: { name: string; url?: string };
     lang?: string;
   },
@@ -491,11 +477,6 @@ export function mergeProfileDefaults<
       }
     }
   }
-  // Story accent: a brand accent becomes the editorial-emphasis hue for the charts that render one
-  // (Slope/Lollipop/Histogram/RadialBar/Bump read config.accent). Charts without an accent-use site
-  // ignore it; absent profile.accent → nothing set (byte-identical). Not applied to maps.
-  if (profile.accent && kind === "chart")
-    out = { ...out, accent: profile.accent };
   // Newsroom theme (house default): a newsroom pins `theme` ONCE (a "dark" preset or any #rrggbb
   // ground) → every visual inherits it. The resolved GROUND hex (null for the light default) drives
   // both branches; the ground's luminance snaps a map to its light/dark basemap.
