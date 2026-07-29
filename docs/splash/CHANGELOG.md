@@ -4,6 +4,82 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-07-29 — famille B « ce qui atteint le lecteur » : porteur/lecteur/comparaison fermés (branche `feat/family-b-what-reaches-the-reader`, 18 tâches, gate 21/22 — les 2 échecs sont l'ambiant nommé)
+
+Spec `docs/superpowers/specs/2026-07-28-family-b-what-reaches-the-reader-design.md`, plan
+`docs/superpowers/plans/2026-07-29-family-b-what-reaches-the-reader.md`. Ferme le bucket B du
+registre `docs/splash/sweep-2026-07-28-triage.md` (§8) : la langue, l'unité, la couleur annoncée et
+le titre/takeaway — ce qui arrive au lecteur, pas ce que la règle prose promet.
+
+**Mesures (avant → après), tirées des tâches 7-13 du plan, chacune re-vérifiée en session par
+grep/re-run plutôt que reportée sur parole) :**
+
+- **Dette locale (drift guard `lib/core/locale-reach.ts`)** : **22 fichiers visibles aveugles à la
+  langue** à l'arrêt (tâche 7 — 11 chart-native + 9 map-native + 2 scrolly, dont **11 n'important
+  aucun helper de locale du tout**) → **0** (tâches 8-9). Re-confirmé cette session :
+  `locale-reach.test.ts` dans `skills/chart-native`, `skills/map-native`, `skills/scrolly` — 2
+  pass / 0 fail chacun.
+- **Émetteurs du critère `colour-semantics`** : **0 → 2** (tâche 12). Le critère était un membre
+  d'enum mort — déclaré (`lib/verify/types.ts`), pricé (`lib/verify/severity.ts`), jamais filé
+  contre. `lib/verify/colour-announcement.ts` en est le PREMIER émetteur, avec exactement 2 sites
+  d'émission littéraux (`grep -c 'criterion: "colour-semantics"'` = 2, non-test) : les
+  `BrandConcern` mintés en produce-time (CVD/contraste) et l'incohérence D26 « couleur annoncée
+  mais type qui ne peut pas la peindre ». *Correction sur le brief de cette tâche 18 :* le brief
+  citait « 2 → ≥4 » ; l'énumération brute ne le confirme pas — le nombre réel, mesuré, est 0 → 2.
+  Rapporté tel quel plutôt qu'inventé (règle du plan : un compte n'est jamais une preuve sans
+  énumération brute).
+- **22 fichiers ramenés à 0 dette** : voir ci-dessus (locale). La même discipline a fermé D28 (le
+  slope n'était qu'un symptôme d'une classe de 22, pas un correctif d'une ligne) et confirmé la
+  non-reproductibilité de D29 sur `main` (`SymbolMap.tsx:528` appelle toujours `labelWithUnit`).
+
+**Fermé** : langue déclarée à l'INPUT et jamais redemandée en CADRAGE (ordre signal explicite >
+langue de l'article > profil maison, `lib/newsroom/language.ts`) ; cinquième langue refusée À
+L'OFFRE (`lib/brain/eligibility.ts`, zéro candidat + un refus nommé) plutôt qu'à la livraison ; le
+carrier `ProductionBrief.lang` de bout en bout sur les 6 assembleurs de la boucle (tâche 6) ;
+l'unité dite une fois dans le sous-titre (`BarChart.tsx:98-101`, et son miroir dw-chart à
+correspondance de frontière de mot, tâche 11) ; les 22 fichiers aveugles à la locale ; D25/D26
+séparés en deux ensembles disjoints (11 types à palette de rôles qui n'annoncent jamais une teinte
+maison qu'ils ne peuvent pas peindre, `skills/chart-native/src/base-colour-reach.ts`) et leurs
+deux chemins fermés (`review-gate.mjs` lit désormais le bon chemin imbriqué, tâche 12 ;
+`mergeProfileDefaults` ne stampe plus `baseColor` sur un type furniture-only, tâche 13) ; l'URL de
+source du journaliste qui ne peut plus disparaître sans le dire (`droppedSourceUrlReason`, tâche
+15) ; le placeholder de source mécaniquement refusé sur une seule liste consolidée (tâche 17) ; et
+le registre lui-même corrigé sur 8 points où sa lecture contredisait le code (voir
+`docs/splash/sweep-2026-07-28-triage.md`, notes « Fixed in the family-B effort », tâche 18).
+
+**Déféré à la famille A, explicitement, à deux endroits :**
+1. **Le refus terminal de `source-fidelity`** reste `required: false`
+   (`skills/splash/src/flow-decisions.ts:90`, tâche 14). Ce chantier a fermé le GARDE lui-même (un
+   matching par déclinaison/accent réel au lieu d'une sous-chaîne exacte) — pas la question de
+   savoir si un refus de ce garde ARRÊTE le parcours. Arrêter un refus est une décision
+   d'architecture du parcours (§9 du registre, question 1), hors du périmètre B.
+2. **Le moment forcé du signalement D16 dans la chaîne PROSE.** `juxtaposeTitleAndTakeaway`
+   (`lib/verify/taste.ts`) imprime bien les deux lignes côte à côte au sign-off, mais dans la
+   chaîne prose cette juxtaposition dépend du même acteur qui a écrit le titre — il n'existe pas
+   de moment qui la force devant une autre paire d'yeux. Fermer cela est un mécanisme éditorial de
+   sign-off, matière famille A.
+
+**Risque résiduel assumé, ouvert :** un signalement reste un signalement — si le moment forcé de
+la famille A n'arrive jamais, D16 et D25 se lisent en diagonale : la juxtaposition et l'alerte CVD
+existent, sont correctement routées, et personne n'est structurellement forcé de les lire avant de
+signer.
+
+**Gate** : 21/22 (`test lib` seul en échec, 1831 pass / 21 skip / 2 fail / 8138 expect(), 172
+fichiers, 429.61s) — les 2 échecs sont NOMMÉMENT les deux ambiants suivis depuis avant le premier
+commit de cette branche (`eligibility.test.ts` readiness vide, `capture-html.test.ts` contention,
+20/0 rejoué seul). Tous les 9 `tsc --noEmit` verts, 12/13 suites `bun test` par paquet vertes.
+**Réserve à porter partout où ce 21/22 est cité** : `bun test` par paquet ne lit PAS le `.env` de
+racine, donc chaque suite live-API (Datawrapper, MapTiler) s'auto-skip dans le gate — « 21/22
+vert » ne veut pas dire que les chemins Datawrapper/MapTiler ont tourné (mesuré ailleurs sur cette
+branche : `skills/dw-chart && bun test tests/produce.test.ts` = 1 pass/7 skip sans `.env`, 8/0 avec).
+
+**Deux trous structurels que ce chantier a mesurés et n'a pas fermés** — à porter dans tout audit
+futur : le drift-guard de la tâche 7 est FILE-level (il prouve qu'un fichier appelle *un* helper
+de locale quelque part, jamais que le câblage est complet — la tâche 9 l'a heurté directement) ;
+et `skills/chart-native/tests/` est SSR-only (`renderToStaticMarkup`, aucun jsdom, aucune
+simulation d'événement), donc le contenu Tooltip de chaque chart est structurellement hors de
+portée du test, engine-wide.
+
 ## Session 2026-07-26 — delivery genre routing : l'hébergement devient une propriété du format, résidu Cloudflare retiré
 
 Fait mesuré qui a motivé le chantier : le paquet zip d'un `static` tendait un `README.md` avec un `EMBED.txt`/iframe pour un PNG, et `cloudflare-pages.ts` ne découvrait qu'après un vrai deploy que Pages ne résout `index.html` qu'à la racine de l'alias — un artefact non-HTML atterrissait avec la bonne extension mais une URL qui ne l'adressait pas. Spec `docs/superpowers/specs/2026-07-26-delivery-genre-routing-design.md`, plan 10 tâches TDD. `deliveryGenreFor` (`lib/core/publishers.ts`) classe `static`/`video` en genre `file`, `interactive`/`scrolly` en genre `embed` ; `Publisher.serves` déclare les formats que chaque adapter peut porter (`zip`/`embed-s3` = tout, `embed-cloudflare` = HTML seul) ; `defaultDestinationsFor` (`lib/delivery/routing.ts`) route un genre `file` vers le paquet portable par défaut, jamais vers un host ; `deliver()` (`lib/loop/deliver.ts`) refuse une destination illégale AVANT tout I/O — c'est ce refus dur qui retire le gap Cloudflare : un PNG/mp4 ne peut plus atteindre l'appel `verifyServed`, le commentaire KNOWN GAP est retiré (remplacé par l'explication structurelle). `renderSnippet` construit `<img>`/`<video>`/`<iframe>` selon le format au lieu d'un iframe systématique, template maison appliqué au genre `embed` seulement. Un paquet zip du genre `file` livre le fichier + `ALT.txt` (texte alternatif à coller dans le champ CMS) + un README réécrit, sans `EMBED.txt` ni iframe. `PublishOutcome.snippet` devient optionnel. `requestDelivery` (`lib/loop/request-delivery.ts`) écrit `delivery.requested` selon le genre du format — posé et testé (`lib/loop/delivery-genre-e2e.test.ts`), mais aucun chemin de production ne l'appelle encore : le driver (`lib/loop/driver.ts`) ne route vers `deliver()` que si ce slot est déjà rempli (`lib/loop/manifest.ts:270`), et rien ne le remplit en dehors des tests. Le câblage à la boucle de production reste la tranche façade différée (spec §7).
