@@ -9,8 +9,13 @@ import {
 
 const SRC = join(import.meta.dir, "..", "src");
 
-/** Diagnostic-only: these strings go into a conformance VIOLATION message, never to a reader.
- *  Measured, not assumed — both files' toFixed sites are inside `violations.push(...)`. */
+/** Diagnostic-only: these strings go into a conformance violation/concern message, never to a
+ *  reader. Measured, not assumed — three sites, three exact calls:
+ *  core/conformance.ts:211 is `concerns.push(...)` (the local array `checkMarkContrastOnBg`
+ *  returns — a downgraded a11y concern, the same shape as `BrandReconciliation.concerns`,
+ *  conformance.ts:105-107, distinct from that type's `.violations`); core/conformance.ts:1562
+ *  and :1897 are `v.push(...)` onto the violations array `checkGlobalConformance` returns, inside
+ *  `checkDivergingStackedConformance` and the heatmap dark-ground ramp check respectively. */
 const DIAGNOSTIC_ONLY = ["core/conformance.ts"];
 
 /** THE DEBT. Every entry here paints a number a reader sees, in whatever language the browser's

@@ -9,8 +9,9 @@ import {
 
 const SRC = join(import.meta.dir, "..", "src");
 
-/** Diagnostic-only: these strings go into a conformance VIOLATION message, never to a reader.
- *  Measured, not assumed — both files' toFixed sites are inside `violations.push(...)`. */
+/** Diagnostic-only: this string goes into a conformance violation message, never to a reader.
+ *  Measured, not assumed — conformance.ts:256 is `v.push(...)` onto the violations array
+ *  `checkGlobalMapConformance` returns, inside the symbol-map conformance check. */
 const DIAGNOSTIC_ONLY = ["conformance.ts"];
 
 /** THE DEBT. Every entry here paints a number a reader sees, in whatever language the browser's
