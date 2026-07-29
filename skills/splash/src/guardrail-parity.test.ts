@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   aspectTypeViolation,
+  furnitureViolations,
   nativeFurnitureViolations,
   nativeSubjectFitViolation,
   resolveGuardChannel,
@@ -213,7 +214,12 @@ describe("guardrailParityViolations — the composed produce-boundary gate", () 
       guardrailParityViolations(
         proposal({
           channel: "article-web",
-          spec: { type: "d3-bars", title: "t", data: "a,b\n1,2" },
+          spec: {
+            type: "d3-bars",
+            title: "t",
+            data: "a,b\n1,2",
+            source: { name: "OFS" },
+          },
         }),
       ),
     ).toEqual([]);
@@ -259,5 +265,33 @@ describe("guardrailParityViolations — the composed produce-boundary gate", () 
     );
     expect(r.some((v) => v.includes("unknown channel"))).toBe(true);
     expect(r.some((v) => v.includes("title"))).toBe(true);
+  });
+});
+
+describe("furniture parity covers dw-chart too", () => {
+  it("should flag a dw-chart proposal missing a source name", () => {
+    // The rule existed and ran for ONE producer. A Datawrapper chart shipping without an
+    // attribution went through the spine in silence (guardrail-parity.ts's dispatch, previously
+    // an `if (p.producer === "chart-native")` with no dw-chart branch at all).
+    const out = guardrailParityViolations({
+      producer: "dw-chart",
+      format: "static",
+      channel: "article-web",
+      spec: { type: "d3-lines", title: "T", data: "a,b\n1,2", altInsight: "a" },
+    } as unknown as Parameters<typeof guardrailParityViolations>[0]);
+    expect(out.join(" ")).toContain("source name");
+  });
+
+  it("should name the producer it is talking about", () => {
+    const out = furnitureViolations({ title: "" }, "dw-chart");
+    expect(out.join(" ")).toContain("dw-chart");
+    expect(out.join(" ")).not.toContain("chart-native");
+  });
+
+  it("should keep chart-native's wording byte-identical", () => {
+    expect(nativeFurnitureViolations({})).toEqual([
+      "chart-native spec is missing an insight title",
+      "chart-native spec is missing a source name",
+    ]);
   });
 });
