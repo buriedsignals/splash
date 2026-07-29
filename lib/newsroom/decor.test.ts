@@ -120,6 +120,19 @@ describe("loading the decor", () => {
     expect(decor.language).toEqual({ ui: "en", content: "fr" });
   });
 
+  // The measured failure mode this closes (sweep-2026-07-28-triage.md:186-196): a confirmed
+  // English article rendered under a French house profile shipped French furniture. The
+  // profile is the LAST resort — it must never overwrite a language the caller declares.
+  it("keeps the declared article language over the house profile's default", () => {
+    const d = dir();
+    writeFileSync(
+      join(d, "NEWSROOM-PROFILE.md"),
+      ["---", 'lang: "fr"', "---", "", "# guide", ""].join("\n"),
+    );
+    const decor = loadDecor(d, { ...NO_ENV, articleLang: "en" });
+    expect(decor.language.content).toBe("en");
+  });
+
   it("the decor carries the house theme so the offer can judge what is renderable", () => {
     const d = dir();
     writeFileSync(
