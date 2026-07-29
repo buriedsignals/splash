@@ -1,6 +1,9 @@
 import { describe, it, expect } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   DENSITY_MARKS_PER_100PX,
+  MAP_NATIVE_TITLE_PREFIX,
   MIN_COLOUR_SEPARATION,
   TAKEAWAY_COVERAGE_FLOOR,
   TAKEAWAY_OVERLAP_FLOOR,
@@ -313,6 +316,40 @@ describe("title coverage and overrun — D16, the confirmed takeaway is only PAR
         "Interactive map: Les primes ont augmenté dans les six cantons",
     });
     expect(signals.map((s) => s.dimension)).not.toContain("title-overrun");
+  });
+
+  it("MAP_NATIVE_TITLE_PREFIX still matches every production site it is a copy of", () => {
+    // The exemption above is only correct while the constant equals what the engine actually
+    // renders. The value is hand-copied in five map-native components with no shared symbol,
+    // and lib/verify may not import from skills/ (spec §4.1) — so the drift guard is a READ of
+    // the production sources, the same technique lib/host/drive.test.ts uses for
+    // DEFAULT_UI_LANG. Reword the prefix on the engine side and this reddens, instead of
+    // silently re-enabling the title-overrun false positive the exemption exists to prevent.
+    const components = [
+      "ChoroplethMap.tsx",
+      "CartogramMap.tsx",
+      "RouteMap.tsx",
+      "HexGridMap.tsx",
+      "DotDensityMap.tsx",
+    ];
+    const srcDir = join(
+      import.meta.dir,
+      "..",
+      "..",
+      "skills",
+      "map-native",
+      "src",
+    );
+    // The trailing space is part of the constant but not of the template literal, so compare
+    // against the interpolated form the components really write.
+    const literal = `\`${MAP_NATIVE_TITLE_PREFIX}\${config.title}\``;
+    for (const file of components) {
+      const src = readFileSync(join(srcDir, file), "utf8");
+      expect(src).toContain(literal);
+    }
+    // And the count is pinned too: a SIXTH interactive map component that prepends its own
+    // accessible name must be added to this list rather than going unguarded.
+    expect(components).toHaveLength(5);
   });
 
   it("still fires title-overrun when a real addition follows the engine prefix", () => {
