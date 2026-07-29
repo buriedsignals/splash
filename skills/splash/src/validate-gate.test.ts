@@ -412,6 +412,7 @@ describe("validateAccepted — the spine validation gate", () => {
           baseColor: "#009E73",
           data: "country,rate\nEstonia,63\nMalta,31",
           altInsight: "Estonia recycles the most packaging waste in Europe.",
+          source: { name: "Eurostat" },
         },
         "article-web",
       ),

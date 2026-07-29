@@ -80,6 +80,7 @@ describe("scoreSpec — map routing", () => {
       altInsight: "Norway highest at 99%, Poland lowest at 21%",
       baseColor: "#009E73",
       sort: "desc",
+      source: { name: "Eurostat" },
     };
     // The correct routing (sorted bar) passes.
     expect(
@@ -103,6 +104,7 @@ describe("scoreSpec — map routing", () => {
       altInsight: "Education gets the largest share",
       baseColor: "#0072B2",
       sort: "desc",
+      source: { name: "sample data" },
     };
     const r = scoreSpec(chart, { family: "ranking" }); // no element → chart
     expect(r.validates).toBe(true);
@@ -115,6 +117,7 @@ const validLine = {
   data: "year,value\n2018,5.1\n2023,3.7",
   altInsight: "Unemployment fell from 5.1% in 2018 to 3.7% in 2023",
   baseColor: "#0072B2",
+  source: { name: "ONS" },
 };
 
 describe("scoreSpec", () => {
@@ -357,9 +360,13 @@ describe("scoreSpec — chart-native producer", () => {
         producer: "chart-native",
         nativeType: "heatmap",
         title: "Emergency-room waits peak on Monday mornings",
-        source: { name: "County health authority", url: "https://example.org/er" },
+        source: {
+          name: "County health authority",
+          url: "https://example.org/er",
+        },
         unit: "median wait (minutes)",
-        altInsight: "Waits are longest on weekday mornings and shortest overnight.",
+        altInsight:
+          "Waits are longest on weekday mornings and shortest overnight.",
         data:
           "day,06-10,10-14,14-18,18-22\n" +
           "Mon,52,38,41,60\nTue,44,33,39,55\nWed,40,31,37,50",
@@ -536,6 +543,7 @@ describe("scoreSpec — aspect↔type guard (row-driven horizontal type vs portr
     data: "country,rate\nEstonia,63\nMalta,31",
     altInsight: "Estonia recycles the most packaging waste in Europe.",
     baseColor: "#009E73",
+    source: { name: "Eurostat" },
   };
 
   it("fails a row-driven d3-bars spec on a social-vertical (portrait) channel", () => {

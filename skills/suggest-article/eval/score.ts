@@ -112,6 +112,7 @@ export function scoreProposalSet(
       title: "probe",
       data: p.data,
       altInsight: "probe",
+      source: { name: "probe" },
     };
     const v = validateChartSpec(probe);
     if (!v.ok) {

@@ -37,6 +37,7 @@ describe("validateChartSpec — numberFormat token", () => {
     title: "North East rents rose fastest",
     data: "region,pct\nNorth East,8.4\nLondon,2.8",
     altInsight: "North East rents rose 8.4% vs London 2.8%",
+    source: { name: "ONS" },
   };
   it("warns (not errors) when a printf token is auto-corrected", () => {
     const r = validateChartSpec({ ...barBase, numberFormat: ".1f" });
@@ -59,6 +60,7 @@ const base = {
   title: "Unemployment is at a five-year low",
   data: "year,value\n2018,5.1\n2023,3.7",
   altInsight: "Unemployment fell from 5.1% in 2018 to 3.7% in 2023",
+  source: { name: "ONS" },
 };
 
 describe("validateChartSpec", () => {
@@ -198,6 +200,7 @@ describe("validateChartSpec", () => {
       altInsight: "Coal declined while renewables grew",
       seriesColors: { Coal: "#0072B2", Gas: "#E69F00", Renewables: "#009E73" },
       transpose: true,
+      source: { name: "IEA" },
     });
     expect(r.ok).toBe(true);
   });
@@ -292,6 +295,7 @@ describe("validateChartSpec", () => {
         title: "An insight",
         data,
         altInsight: "x",
+        source: { name: "sample data" },
       });
       expect(r.ok).toBe(true);
     }
@@ -367,6 +371,7 @@ describe("validateChartSpec", () => {
       data: "year,Coal,Gas,Renewables\n2018,100,80,20\n2023,50,70,120",
       altInsight: "Renewables rose from 20 to 120 while coal fell",
       seriesColors,
+      source: { name: "IEA" },
     });
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -416,6 +421,7 @@ describe("validateChartSpec", () => {
       title: "2018-2023",
       data: "a,b\n1,2",
       altInsight: "x",
+      source: { name: "sample data" },
     });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.warnings.join()).toMatch(/insight/);
@@ -427,6 +433,7 @@ describe("validateChartSpec — #5 valueLabels only on bar/column", () => {
     title: "Something clear about the data over time",
     data: "year,value\n2019,10\n2024,20",
     altInsight: "Something clear about the data over time.",
+    source: { name: "sample data" },
   };
   it("warns when valueLabels is set on a line chart (Datawrapper ignores it)", () => {
     const r = validateChartSpec({
@@ -459,6 +466,7 @@ describe("validateChartSpec — #4 valueLabels on horizontal bars renders direct
     title: "Something clear about the data",
     data: "region,value\nNorth,10\nSouth,11",
     altInsight: "Something clear about the data.",
+    source: { name: "sample data" },
   };
   it("does NOT warn about inside labels being unrenderable — d3-bars now show direct on-bar value labels", () => {
     // Superseded gap: the old mapper turned the on-bar labels OFF (axis-only) and warned
@@ -554,6 +562,7 @@ describe("validateChartSpec — #1c percent-scale mismatch (HARD error)", () => 
       data: "region,share\nNorth,29\nSouth,22",
       numberFormat: "0%",
       altInsight: "Renewable share is highest in the North.",
+      source: { name: "sample data" },
     });
     expect(r.ok).toBe(true);
   });
@@ -583,6 +592,7 @@ describe("validateChartSpec — #1c percent-scale mismatch (HARD error)", () => 
       data: "region,share\nNorth,29\nSouth,22",
       valueFormat: "0%",
       altInsight: "Renewable share is highest in the North.",
+      source: { name: "sample data" },
     });
     expect(r.ok).toBe(true);
   });
@@ -594,6 +604,7 @@ describe("validateChartSpec — #5 annotations dropped on horizontal value-x/cat
     data: "region,rent\nNorth East,8.4\nLondon,2.8",
     altInsight: "North East rents rose 8.4 vs London 2.8",
     annotations: [{ text: "outlier", x: "North East", y: 8.4 }],
+    source: { name: "ONS" },
   };
   it("warns that annotations are dropped on d3-bars (coordinate model mismatch)", () => {
     const r = validateChartSpec({ ...annBase, type: "d3-bars" });
@@ -666,6 +677,7 @@ describe("validateChartSpec — strict top-level fields (fail-closed)", () => {
     altInsight: "Basel tops the ranking with 812 beds per 100k residents",
     baseColor: "#E69F00",
     sort: "desc",
+    source: { name: "FSO" },
   };
 
   it("rejects the hallucinated `highlightColor` field, naming it and suggesting `highlight` (the QA Wave 8 case)", () => {
@@ -732,6 +744,7 @@ describe("validateChartSpec — highlight (bar-family category accent)", () => {
     altInsight: "Basel tops the ranking with 812 beds per 100k residents",
     baseColor: "#E69F00",
     sort: "desc",
+    source: { name: "FSO" },
   };
 
   it("accepts a highlight naming a data category on d3-bars", () => {
@@ -796,6 +809,7 @@ describe("validateChartSpec — highlight (bar-family category accent)", () => {
     data: `ministère,budget\n"${MINISTRY}",320\nMinistère des Armées,47\nMinistère de la Justice,12`,
     altInsight: "Bercy's 320bn budget dwarfs every other ministry's",
     baseColor: "#E69F00",
+    source: { name: "Ministère des Finances" },
   };
 
   it("accepts a highlight naming an RFC4180-quoted, comma-containing category", () => {
@@ -817,5 +831,51 @@ describe("validateChartSpec — highlight (bar-family category accent)", () => {
       expect(err).not.toContain(`"${MINISTRY}`);
       expect(err).not.toMatch(/Ministère de l'Économie(?!,)/);
     }
+  });
+});
+
+describe("validateChartSpec — the source line is a promise, not a preference", () => {
+  const base = {
+    type: "d3-lines" as const,
+    title: "T",
+    data: "a,b\n1,2",
+    altInsight: "alt",
+  };
+
+  it("should refuse a flat string source", () => {
+    // Measured: `source: "INSEE"` passed the unknown-field loop (source IS in
+    // CHART_SPEC_FIELDS:250) and NO shape check followed → { ok: true }, zero warnings, and
+    // spec-to-metadata read `spec.source?.name` → undefined → "" → a chart published with no
+    // source line. Three spine guards disarm on the same shape: placeholderSourceError reads
+    // `source?.url` of a string → null (validate-gate.ts:188-192); shippedSource → {} → null
+    // (source-guard.ts:84-90); nativeFurnitureViolations catches it but runs for chart-native
+    // ONLY (guardrail-parity.ts:139-140).
+    const r = validateChartSpec({ ...base, source: "INSEE" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("source");
+  });
+
+  it("should refuse an object with a blank name", () => {
+    const r = validateChartSpec({ ...base, source: { name: "  " } });
+    expect(r.ok).toBe(false);
+  });
+
+  it("should refuse a spec with no source at all", () => {
+    const r = validateChartSpec(base);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("source");
+  });
+
+  it("should accept a name-only source (the honest prose fallback)", () => {
+    const r = validateChartSpec({ ...base, source: { name: "INSEE" } });
+    expect(r.ok).toBe(true);
+  });
+
+  it("should accept name + url", () => {
+    const r = validateChartSpec({
+      ...base,
+      source: { name: "INSEE", url: "https://insee.fr/x" },
+    });
+    expect(r.ok).toBe(true);
   });
 });

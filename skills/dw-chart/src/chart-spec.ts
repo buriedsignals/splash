@@ -210,7 +210,11 @@ export interface ChartSpec {
   // `language`, so Datawrapper localizes value labels + dates (fr → "1 900,5"). Set by
   // the suggester from the article language. Absent → DW default (en-US).
   lang?: string;
-  source?: { name: string; url?: string };
+  // REQUIRED. A chart without an attribution line is not shippable: the newsroom's promise is
+  // that every visual says where its numbers come from. `url` stays optional — the honest
+  // name-only prose fallback is legitimate (see validate-gate.ts's GUARD 2 comment). Aligned
+  // with chart-native's nativeFurnitureViolations (guardrail-parity.ts:92).
+  source: { name: string; url?: string };
   altInsight: string; // WCAG: alt = the insight, not the structure
   annotations?: {
     text: string;
@@ -438,6 +442,25 @@ export function validateChartSpec(
     errors.push("data must be CSV text");
   if (typeof s.altInsight !== "string" || !s.altInsight.trim())
     errors.push("altInsight is required (WCAG: alt = the insight)");
+  // SHAPE, not just presence: `source: "INSEE"` (a string) used to pass the unknown-field loop
+  // and then read as `spec.source?.name === undefined` downstream (spec-to-metadata.ts:469,
+  // :539-540) → a published chart with an empty source line, and no error anywhere.
+  const src = s.source;
+  if (!src || typeof src !== "object" || Array.isArray(src)) {
+    errors.push(
+      'source is required and must be an object: { name: "…", url?: "…" } ' +
+        "(a bare string does not carry an attribution)",
+    );
+  } else {
+    const sname = (src as { name?: unknown }).name;
+    if (typeof sname !== "string" || !sname.trim())
+      errors.push(
+        "source.name is required (the attribution line the chart ships)",
+      );
+    const surl = (src as { url?: unknown }).url;
+    if (surl !== undefined && (typeof surl !== "string" || !surl.trim()))
+      errors.push("source.url, when present, must be a non-empty string");
+  }
   // #5 — valueLabels is only honoured on bar/column charts; on any other type Datawrapper
   // silently ignores it, so warn rather than let it pass as a silent no-op.
   if (

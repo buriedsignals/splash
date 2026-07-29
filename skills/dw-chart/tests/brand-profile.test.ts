@@ -13,6 +13,7 @@ const baseSpec = {
   title: "The south runs hottest of every region",
   data: "region,value\nSouth,72\nWest,21",
   altInsight: "hottest in the south",
+  source: { name: "sample data" },
 };
 
 describe("validateChartSpec — F2 brand-explicit baseColor", () => {
