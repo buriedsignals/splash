@@ -320,7 +320,7 @@ function DotStripSvg({
                 role={interactive ? "img" : undefined}
                 aria-label={
                   interactive
-                    ? `${r.category}: ${r.dots.length} pupils, ${fmt(r.min)} to ${fmt(r.max)} ${config.unit}, mean ${fmt(r.mean)}`
+                    ? `${r.category}: ${fmt(r.dots.length)} pupils, ${fmt(r.min)} to ${fmt(r.max)} ${config.unit}, mean ${fmt(r.mean)}`
                     : undefined
                 }
                 style={interactive ? { cursor: "pointer" } : undefined}
@@ -445,8 +445,8 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{r.category}</strong>
       <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>
-        {r.dots.length} pupils · {fmt(r.min)}–{fmt(r.max)} · mean {fmt(r.mean)}{" "}
-        {config.unit}
+        {fmt(r.dots.length)} pupils · {fmt(r.min)}–{fmt(r.max)} · mean{" "}
+        {fmt(r.mean)} {config.unit}
       </div>
     </div>
   );

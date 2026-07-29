@@ -297,7 +297,7 @@ function ViolinSvg({
                 role={interactive ? "img" : undefined}
                 aria-label={
                   interactive
-                    ? `${r.label}: ${r.n} values, median ${fmt(r.median)}, middle half ${fmt(r.q1)} to ${fmt(r.q3)} ${config.unit}`
+                    ? `${r.label}: ${fmt(r.n)} values, median ${fmt(r.median)}, middle half ${fmt(r.q1)} to ${fmt(r.q3)} ${config.unit}`
                     : undefined
                 }
                 style={interactive ? { cursor: "pointer" } : undefined}
@@ -430,7 +430,7 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{r.label}</strong>
       <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>
-        {r.n} values · median {fmt(r.median)} · middle half {fmt(r.q1)}–
+        {fmt(r.n)} values · median {fmt(r.median)} · middle half {fmt(r.q1)}–
         {fmt(r.q3)} {config.unit}
       </div>
     </div>

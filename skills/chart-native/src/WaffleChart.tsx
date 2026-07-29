@@ -257,7 +257,7 @@ function WaffleSvg({
             role={interactive ? "img" : undefined}
             aria-label={
               interactive
-                ? `${categories[i].label}: ${fmt(categories[i].value)}, ${categories[i].cells}% (${categories[i].cells} squares)`
+                ? `${categories[i].label}: ${fmt(categories[i].value)}, ${fmt(categories[i].cells)}% (${fmt(categories[i].cells)} squares)`
                 : undefined
             }
             onMouseEnter={interactive ? () => setHover(i) : undefined}
@@ -344,7 +344,7 @@ function Tooltip({
             waffle is a percentage grid (default gridN=10 → 100 cells, one cell = 1%);
             a `unit` subtitle implying a different denominator (e.g. "1 square = 1 in 10")
             is a semantic mismatch the component can't police — see WaffleConfig.gridN. */}
-        {cat.cells} of {layout.gridN * layout.gridN} squares
+        {fmt(cat.cells)} of {fmt(layout.gridN * layout.gridN)} squares
       </div>
     </div>
   );

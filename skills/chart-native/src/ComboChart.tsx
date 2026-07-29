@@ -304,7 +304,7 @@ function ComboSvg({
                 role={interactive ? "img" : undefined}
                 aria-label={
                   interactive
-                    ? `${c.category}: ${c.value} ${config.columnSeriesLabel}, ${fmt(linePoints[c.index].value)} ${config.lineSeriesLabel}`
+                    ? `${c.category}: ${fmt(c.value)} ${config.columnSeriesLabel}, ${fmt(linePoints[c.index].value)} ${config.lineSeriesLabel}`
                     : undefined
                 }
                 style={
@@ -483,7 +483,7 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{c.category}</strong>
       <div style={{ fontSize: 11, opacity: 0.9, marginTop: 1 }}>
-        <span style={{ color: "#8AB6D6" }}>■</span> {c.value}{" "}
+        <span style={{ color: "#8AB6D6" }}>■</span> {fmt(c.value)}{" "}
         {config.columnSeriesLabel} · <span style={{ color: "#F0B860" }}>●</span>{" "}
         {fmt(pt.value)} {config.lineSeriesLabel}
       </div>

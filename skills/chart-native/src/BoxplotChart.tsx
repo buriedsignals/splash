@@ -365,7 +365,7 @@ function BoxplotSvg({
                     s5.q1,
                   )} to ${fmt(s5.q3)}, range ${fmt(s5.whiskerLo)} to ${fmt(
                     s5.whiskerHi,
-                  )}${s5.outliers.length ? `, ${s5.outliers.length} outlier${s5.outliers.length > 1 ? "s" : ""}` : ""} ${config.valueLabel}`}
+                  )}${s5.outliers.length ? `, ${fmt(s5.outliers.length)} outlier${s5.outliers.length > 1 ? "s" : ""}` : ""} ${config.valueLabel}`}
                   style={{ cursor: "pointer", outline: "none" }}
                   onMouseEnter={() => setHover(r.index)}
                   onMouseLeave={() => setHover(null)}
@@ -428,7 +428,7 @@ function Tooltip({
             ? ` · outlier${s.outliers.length > 1 ? "s" : ""} ${s.outliers
                 .map(fmt)
                 .join(", ")}`
-            : ` · ${s.outliers.length} outliers`
+            : ` · ${fmt(s.outliers.length)} outliers`
           : ""}
       </div>
     </div>

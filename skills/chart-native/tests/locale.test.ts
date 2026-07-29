@@ -223,7 +223,14 @@ describe("chart-native value labels reach the locale table (task 8)", () => {
     expect(svg).not.toContain("52.0");
   });
 
-  it("ComboChart: line-series aria-label value, bare integer + one-decimal, fr separators", () => {
+  it("ComboChart: column-series AND line-series aria-label value, bare integer + one-decimal, fr separators", () => {
+    // Column value (c.value) and line value (linePoints[...].value) are DISTINCT
+    // fields interpolated at the same aria-label site — a fixed pair caught the
+    // line-series half at task-8 time but let the column-series half (c.value,
+    // interpolated raw beside it) slip through review because 10/20 render
+    // identically in every locale. Using thousands-crossing + decimal values for
+    // BOTH fields here means a raw (unlocalized) interpolation of EITHER one
+    // reddens this test.
     const config: ComboConfig = {
       title: "T",
       source: SRC,
@@ -237,17 +244,21 @@ describe("chart-native value labels reach the locale table (task 8)", () => {
       columnSeriesLabel: "Columns",
       lineSeriesLabel: "Line",
       rows: [
-        { cat: "A", col: 10, line: 3200 },
-        { cat: "B", col: 20, line: 52.4 },
+        { cat: "A", col: 3200, line: 6100 },
+        { cat: "B", col: 52.4, line: 74.8 },
       ],
     };
     const svg = renderToStaticMarkup(
       createElement(ComboChart, { config, interactive: true }),
     );
-    expect(svg).toContain(`3${NBSP}200`);
-    expect(svg).toContain("52,4");
-    expect(svg).not.toContain("3200.0");
-    expect(svg).not.toContain("52.0");
+    expect(svg).toContain(`3${NBSP}200`); // column, row A
+    expect(svg).toContain(`6${NBSP}100`); // line, row A
+    expect(svg).toContain("52,4"); // column, row B
+    expect(svg).toContain("74,8"); // line, row B
+    expect(svg).not.toContain("3200"); // raw/unlocalized column integer
+    expect(svg).not.toContain("6100"); // raw/unlocalized line integer
+    expect(svg).not.toContain("52.4"); // raw/unlocalized column decimal
+    expect(svg).not.toContain("74.8"); // raw/unlocalized line decimal
   });
 
   it("DotStripChart: min/max/mean aria-label, bare integer + one-decimal, fr separators", () => {
