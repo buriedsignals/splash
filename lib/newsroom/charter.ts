@@ -411,6 +411,30 @@ function colourTokens(value: string): string[] {
   return out;
 }
 
+/**
+ * What each signal MEANS, in the words the journalist is shown.
+ *
+ * It lives here, next to the enum and typed `Record<ColourSignal, string>`, so that adding a
+ * signal without adding its label is a COMPILE ERROR. It used to live in the CLI as an untyped
+ * object literal, and the predictable happened the moment a signal was split out: `--accent`
+ * became its own signal, the table was not updated, and a site whose only readable colour was an
+ * `--accent` printed `from undefined` in its evidence line. This capability's entire argument is
+ * that the journalist can AUDIT what he is shown; `from undefined` is the one place a hole must
+ * not appear, and "remember to update the other file" is not a mechanism.
+ */
+export const SIGNAL_LABEL: Record<ColourSignal, string> = {
+  "theme-color":
+    "the colour the site declares to browsers as its own (<meta theme-color>)",
+  "brand-property":
+    "a colour the site's stylesheet NAMES as its brand/primary colour",
+  "accent-property":
+    "a colour the stylesheet names as an ACCENT (often a hover or a badge, not the masthead)",
+  masthead: "the fill of an SVG inside the masthead/logo element",
+  link: "the colour of the links",
+  control: "the background of the buttons",
+  declared: "a colour declared somewhere in the stylesheet",
+};
+
 // ── Signal weights ──
 //
 // The ordering IS the method: a colour the site's own authors LABELLED as the brand outranks a

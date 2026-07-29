@@ -7,6 +7,8 @@ import {
   isNeutral,
   parseCssColour,
   proposeCharter,
+  SIGNAL_LABEL,
+  type ColourSignal,
   type SiteSources,
 } from "./charter";
 
@@ -453,6 +455,59 @@ describe("regression — !important is not a typeface", () => {
     const css = "body { font-family: 'Publico Text', serif !important }";
     const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
     expect(p.typography[0]!.family).toBe("Publico Text");
+  });
+});
+
+describe("regression — every signal a reading can carry is explainable", () => {
+  // The type already makes a missing label a compile error. This adds the two things the type
+  // cannot check — that no label is blank, and that a signal actually PRODUCED by an extraction
+  // resolves to prose — because `from undefined` reaching a journalist defeats the whole premise
+  // that he can audit what he is shown.
+  const SIGNALS: ColourSignal[] = [
+    "theme-color",
+    "brand-property",
+    "accent-property",
+    "masthead",
+    "link",
+    "control",
+    "declared",
+  ];
+
+  it("should label every signal with non-empty prose", () => {
+    for (const s of SIGNALS) {
+      expect(SIGNAL_LABEL[s]).toBeString();
+      expect(SIGNAL_LABEL[s].length).toBeGreaterThan(0);
+    }
+  });
+
+  it("should have no label beyond the signals that exist", () => {
+    expect(Object.keys(SIGNAL_LABEL).sort()).toEqual([...SIGNALS].sort());
+  });
+
+  it("should resolve a label for an accent-only site — the reading that printed `undefined`", () => {
+    const p = proposeCharter(
+      bare({ sheets: [{ href: "s.css", css: ":root { --accent: #c8102e }" }] }),
+    );
+    const signal = p.candidates[0]!.evidence[0]!.signal;
+    expect(signal).toBe("accent-property");
+    expect(SIGNAL_LABEL[signal]).toContain("ACCENT");
+  });
+
+  it("should resolve a label for every signal a real extraction emits", () => {
+    const p = proposeCharter({
+      html: '<meta name="theme-color" content="#c8102e"><a class="site-logo"><svg><path fill="#0a5c36"/></svg></a>',
+      sheets: [
+        {
+          href: "s.css",
+          css: ":root{--brand:#1a5fb4;--accent:#e8b100} a{color:#7b2fbe} .btn{background:#3cad00} .x{color:#00a0a0}",
+        },
+      ],
+    });
+    const emitted = new Set(
+      p.candidates.flatMap((c) => c.evidence.map((e) => e.signal)),
+    );
+    expect(emitted.size).toBeGreaterThan(3);
+    for (const s of emitted) expect(SIGNAL_LABEL[s]).toBeTruthy();
   });
 });
 

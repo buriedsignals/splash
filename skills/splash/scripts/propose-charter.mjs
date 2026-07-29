@@ -27,6 +27,7 @@ import {
   proposeCharter,
   accentCandidate,
   groundTheme,
+  SIGNAL_LABEL,
 } from "../../../lib/newsroom/charter.ts";
 import { collectSiteSources } from "../../../lib/newsroom/charter-fetch.ts";
 import { profileMarkdown } from "../../../lib/newsroom/profile-write.ts";
@@ -65,14 +66,6 @@ function die(message) {
 
 // ── read ──
 
-const SIGNAL_LABEL = {
-  "theme-color": "the colour the site declares to browsers as its own (<meta theme-color>)",
-  "brand-property": "a colour the site's stylesheet NAMES as its brand/primary colour",
-  masthead: "the fill of the masthead/logo artwork",
-  link: "the colour of the links",
-  control: "the background of the buttons",
-  declared: "a colour declared somewhere in the stylesheet",
-};
 
 function renderProposal(proposal, fetchNotes) {
   const out = [];
