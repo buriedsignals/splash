@@ -437,3 +437,38 @@ interne→journaliste, et interdiction explicite d'émettre un nom interne (`SKI
 4. **Câbler le marqueur de livraison réelle** : la présence de `config.json`/`native-source.json`
    parmi les livrables prédit la non-livraison à 16/16. `check:deliverable-reached` ne regarde
    aujourd'hui que les runs déjà sortis en échec.
+
+---
+
+## 8. Découpage en sous-projets (2026-07-28, à faire dans cet ordre)
+
+Les 29 défauts ouverts ne tiennent pas dans une seule spec. Ils se rangent en quatre familles.
+**Commencer par A** — non parce qu'elle est la plus grosse, mais parce que les trois autres en
+dépendent : tant qu'un refus n'arrête rien, tout garde-fou ajouté ailleurs reste consultatif.
+
+### A — Les règles écrites que rien n'applique · ~10 défauts, ~170 occurrences · **PREMIER**
+
+D01 (50), D02 (56), D15 (10), D11, D04 (10), D20 (9), D19 (7), D07 (4), D14 (4), D06 (3).
+
+Une seule cause racine, établie dans le registre pour D01 et D02 : **la règle vit dans
+`skills/splash/SKILL.md`, et rien ne la fait respecter pendant le run.** L'orchestrateur lit,
+puis décide. Les gardes mécaniques détectent et refusent — et il expédie par-dessus.
+
+Levier identifié par ce dépouillement, et c'est ce qui rend la famille traitable : plusieurs de
+ces règles sont **vérifiables comme des faits sur le disque**, sans juge ni modèle —
+l'absence de `candidates.json` prouve que `suggest-chart` n'a pas tourné ; la présence de
+`config.json`/`native-source.json` parmi les livrables prouve qu'on a remis le dossier de
+production au lieu d'un export (les 16 non-livraisons prouvées sont toutes dans ces 36 cas,
+zéro en dehors). Un refus terminal sur un fait de disque ne se discute pas.
+
+### B — Ce qui arrive au lecteur est faux · ~8 défauts
+D12 (langue, 8 — aucune détection dans le code, pas de champ `lang` sur `ProductionBrief`),
+D16 (titre partiel, 13), D17 (ledger source-fidelity, 19), D18 (7), D10 (4), D25/D26 (couleur
+annoncée ≠ rendue), D28, D29.
+
+### C — Capacité et validation · ~8 défauts
+D13 (`accent` casse dw-chart — correctif d'une ligne identifié), D22, D24 (dérive KB↔code),
+D27, D21, D08, D23, D05.
+
+### D — La livraison · 2 défauts
+D03 (le placement jamais dit, 24 cas — troisième plus prévalent du sweep), D09.
