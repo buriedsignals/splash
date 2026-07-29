@@ -149,6 +149,21 @@ describe("source-fidelity decision", () => {
     expect(r.ok).toBe(true);
   });
 
+  it("skips the name check entirely for a 'none' source — the class forbids a label at all", () => {
+    // lib/source/requirements.ts:96 (inside the `none: {` block opened at :95) is the ONLY row
+    // whose label is "forbidden" — every other kind's label is "required" (:51/:60/:69/:78/:87).
+    // A `none` citation asserts no facts and carries no reader-facing name, so there is nothing
+    // to compare against the article. sourceName here does NOT appear in the article on purpose:
+    // without the label==="forbidden" exemption this would (wrongly) raise source-fidelity.
+    const d = getDecision("source-fidelity")!;
+    const r = d.artifactCheck!("/tmp/run", {
+      article: "Une illustration purement décorative, sans donnée.",
+      sourceName: "Ce nom n'apparaît nulle part dans le texte",
+      sourceKind: "none",
+    });
+    expect(r.ok).toBe(true);
+  });
+
   it("still refuses a name the article never states", () => {
     const d = getDecision("source-fidelity")!;
     const r = d.artifactCheck!("/tmp/run", {

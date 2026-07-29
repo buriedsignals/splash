@@ -122,6 +122,12 @@ export const FLOW_DECISIONS: FlowDecision[] = [
             reason: `cited source URL "${url}" (host ${host}) does not appear in the article text`,
           };
       }
+      // `label: "forbidden"` singles out exactly one kind — `none` (lib/source/requirements.ts:96,
+      // inside the `none: {` block opened at :95); every other kind's `label` is "required"
+      // (:51 public, :60 local, :69 private, :78 synthetic, :87 prose). A `none` citation asserts
+      // no facts and carries no reader-facing name at all, so there is nothing here to compare
+      // against the article — skip the check rather than fail a class that structurally has no
+      // legitimate name to match.
       if (name && rules?.label !== "forbidden" && !nameAppearsIn(name, article))
         return {
           ok: false,
