@@ -144,6 +144,25 @@ describe("review-gate CLI — probes ledger", () => {
     );
   });
 
+  it("refuses a path-traversal id rather than resolving outside the run dir", () => {
+    // MINOR-10: the id is argv-supplied and is interpolated straight into
+    // join(dirname(reportPath), id, "brand-concerns.json"). The same slug guard the rest of
+    // the spine uses (lib/core/id-safety.ts, re-exported as src/id-safety.ts) already exists;
+    // this gate simply never called it.
+    const reportPath = freshReport();
+    const probes = JSON.stringify([
+      { check: "title matches the confirmed takeaway", outcome: "pass" },
+    ]);
+    const { code, stderr } = runReviewGate([
+      reportPath,
+      "../../etc",
+      "--probes",
+      probes,
+    ]);
+    expect(code).not.toBe(0);
+    expect(stderr).toContain("not a safe slug");
+  });
+
   it("accepts when a resolved probe carries the failure with evidence (inline JSON probes)", () => {
     const reportPath = freshReport();
     const probes = JSON.stringify([

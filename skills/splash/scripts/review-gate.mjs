@@ -12,6 +12,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { applyReviewGate } from "../src/review-gate.ts";
+import { isSafeId, unsafeIdMessage } from "../src/id-safety.ts";
 
 const USAGE =
   "usage: review-gate.mjs <report.json> <proposalId> --probes <probes.json|inline-JSON-array> [concern...]\n" +
@@ -28,6 +29,15 @@ for (let i = 0; i < args.length; i++) {
 const [reportPath, id, ...concerns] = positional;
 if (!reportPath || !id || probesArg == null) {
   console.error(USAGE);
+  process.exit(1);
+}
+// The id is argv-supplied and becomes a PATH COMPONENT below (the brand-concerns.json lookup),
+// so it passes the same slug guard the rest of the spine uses before it is joined to anything.
+// applyReviewGate would eventually refuse an unknown proposal anyway, but only AFTER the
+// traversed path had already been built and read — the refusal has to come first, and it names
+// the real problem instead of "unknown proposal ../../etc".
+if (!isSafeId(id)) {
+  console.error(`review-gate failed: ${unsafeIdMessage(id)}`);
   process.exit(1);
 }
 let probes;
