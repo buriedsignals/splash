@@ -14,6 +14,7 @@ import { worstContrast, MIN_CONTRAST, wcagMinContrast } from "../src/core/contra
 import { chartDistSub } from "../src/build-paths.ts";
 import { sampleTextContrast } from "./lib/sample-text-contrast.mjs";
 import { groundOf } from "./lib/ground-of.mjs";
+import { snapViewportFor, STATIC_DEVICE_SCALE } from "./lib/snap-viewport.mjs";
 import {
   checkFurnitureI18n,
   collectFurnitureI18n,
@@ -53,7 +54,8 @@ await new Promise((r) => server.listen(0, r));
 const port = server.address().port;
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 900, height: 560 }, deviceScaleFactor: 2 });
+const viewport = snapViewportFor(process.env.SPLASH_CHANNEL);
+const page = await browser.newPage({ viewport, deviceScaleFactor: STATIC_DEVICE_SCALE });
 await page.goto(`http://localhost:${port}/`);
 await page.waitForSelector("svg");
 await page.waitForTimeout(2100); // let the reveal settle to progress=1

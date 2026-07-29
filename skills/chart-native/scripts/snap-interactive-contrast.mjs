@@ -30,6 +30,7 @@ import { worstContrast, MIN_CONTRAST, wcagMinContrast } from "../src/core/contra
 import { chartDistSub } from "../src/build-paths.ts";
 import { sampleTextContrast } from "./lib/sample-text-contrast.mjs";
 import { groundOf } from "./lib/ground-of.mjs";
+import { snapViewportFor, STATIC_DEVICE_SCALE } from "./lib/snap-viewport.mjs";
 import {
   checkFurnitureI18n,
   collectFurnitureI18n,
@@ -53,7 +54,8 @@ const brandColors = new Set(
 );
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 900, height: 560 }, deviceScaleFactor: 2 });
+const viewport = snapViewportFor(process.env.SPLASH_CHANNEL);
+const page = await browser.newPage({ viewport, deviceScaleFactor: STATIC_DEVICE_SCALE });
 await page.goto(pathToFileURL(join(dist, "index.html")).href);
 await page.waitForSelector("svg");
 // Unlike the static build (fixed at progress=1), the interactive build plays a REAL
@@ -64,6 +66,13 @@ await page.waitForSelector("svg");
 // fully-settled progress=1, matching snap-contrast.mjs's "final frame" guarantee —
 // sampling mid-reveal could catch a label at a transient (not shipped) position.
 await page.waitForTimeout(2500);
+
+// The interactive dist FLOWS taller than its plot box (header + source footer sit outside the
+// height-constrained div, ChartFrame.tsx:188-215 and :225-247). Clipping there is the exact
+// false-positive class snap-proof.mjs:83-90 records. Grow the window to the document.
+const docHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+if (docHeight > viewport.height)
+  await page.setViewportSize({ width: viewport.width, height: docHeight });
 
 // Same sampling engine snap-contrast.mjs uses (./lib/sample-text-contrast.mjs) — for
 // every visible <text>, hide the glyph and sample the real background behind it at 3
