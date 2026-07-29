@@ -19,6 +19,7 @@
 // runtime dependency on skills/splash — no import cycle with export-guard, which imports FROM here.
 import type { VisualFormat } from "./vocabulary";
 import type { Channel } from "./vocabulary";
+import { isPlaceholderHost } from "./placeholder-host";
 
 // What the spine hands a producer. Threaded identically for both transports: the subprocess
 // path forwards channel as SPLASH_CHANNEL + format/outDir on argv; the in-process path passes
@@ -63,8 +64,7 @@ export function isHostedUrl(url: unknown): boolean {
     return false;
   }
   if (!host.includes(".")) return false; // must be a domain, not a bare/local host
-  if (/(^|\.)(localhost|example|invalid|placeholder|todo)(\.|$)/i.test(host))
-    return false;
+  if (isPlaceholderHost(host)) return false;
   return true;
 }
 

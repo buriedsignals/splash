@@ -408,3 +408,19 @@ describe("droppedSourceUrlReason", () => {
     expect(reason).toContain("OFS");
   });
 });
+
+// Task 17 — one shared placeholder list (lib/core/placeholder-host.ts), the strictest of the
+// two independently-maintained lists this guard and lib/core/contract.ts's isHostedUrl used to
+// carry. Two lists let two cross-leaks through: `https://data.test/x` passed the old V2
+// alternation (contract.ts) but failed this V1 TLD guard; `https://todo.com/x` did the
+// opposite. Both must now be rejected AT THIS CALL SITE (placeholderSourceReason), not just in
+// the shared module's own unit tests — this is the delegation, verified.
+describe("placeholderSourceReason — closes the two cross-leaks via the shared list", () => {
+  it("rejects data.test (the leak V1's old TLD-only check missed before .test was a TLD entry)", () => {
+    expect(placeholderSourceReason("https://data.test/x")).not.toBeNull();
+  });
+
+  it("rejects todo.com (the leak V1's old TLD/domain-only check never covered)", () => {
+    expect(placeholderSourceReason("https://todo.com/x")).not.toBeNull();
+  });
+});

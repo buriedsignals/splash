@@ -3,6 +3,7 @@ import {
   requirementsFor,
   type SourceKind,
 } from "../../../lib/source";
+import { placeholderHostReason } from "../../../lib/core/placeholder-host";
 
 // GUARD 2 — reject placeholder / reserved-domain source URLs. A real QA finding: splash
 // accepted `https://…example.com` placeholder URLs as the citable source. The SKILL.md
@@ -13,12 +14,9 @@ import {
 // style; wired into the spine's validate-gate so a placeholder fails validation before
 // any producer runs, for EVERY producer.
 //
-// Reserved per RFC 2606 / RFC 6761:
-//   - TLDs: .example, .test, .invalid, .localhost
-//   - second-level domains: example.com, example.org, example.net
-
-const RESERVED_TLDS = new Set(["example", "test", "invalid", "localhost"]);
-const RESERVED_DOMAINS = new Set(["example.com", "example.org", "example.net"]);
+// The reserved-label list itself lives in lib/core/placeholder-host.ts — ONE list, shared
+// with lib/core/contract.ts's isHostedUrl. Two lists is what let `https://data.test/x`
+// through the policy and `https://todo.com/x` through this guard (both fixed by the union).
 
 // Best-effort host extraction. Accepts a full URL (with scheme) or a scheme-less host
 // (e.g. a value pasted without https://). Returns a lowercased hostname, or null when
@@ -38,22 +36,14 @@ function extractHost(url: string): string | null {
   return null;
 }
 
-// Returns a human-readable reason when the URL's host is a reserved placeholder domain,
-// or null when it is a real host (or unparseable — see extractHost). Only the EXACT
-// reserved registrable domain (or a subdomain of it) is rejected, so a real domain that
-// merely contains a reserved label (myexample.com, example-data.fr, testing.gov.uk) is
-// NOT false-rejected.
+// Returns a human-readable reason when the URL's host is a reserved placeholder label,
+// or null when it is a real host (or unparseable — see extractHost). Label-bounded, not
+// substring: a real domain that merely contains a reserved label (myexample.com,
+// example-data.fr, testing.gov.uk) is NOT false-rejected — see placeholder-host.ts.
 export function placeholderSourceReason(url: string): string | null {
   const host = extractHost(url);
   if (!host) return null;
-  const labels = host.split(".");
-  const tld = labels[labels.length - 1];
-  if (RESERVED_TLDS.has(tld))
-    return `source URL host "${host}" uses the reserved placeholder TLD ".${tld}" (RFC 2606/6761) — not a real, citable dataset URL`;
-  const registrable = labels.slice(-2).join(".");
-  if (RESERVED_DOMAINS.has(registrable))
-    return `source URL host "${host}" is the reserved placeholder domain "${registrable}" (RFC 2606/6761) — not a real, citable dataset URL`;
-  return null;
+  return placeholderHostReason(host);
 }
 
 // What `suggest-article` captures verbatim when the ARTICLE itself names where the figures
