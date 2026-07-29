@@ -74,6 +74,7 @@ describe("specToMetadata routes bar/column value labels safely", () => {
     subject: "heat",
     valueLabels: true,
     altInsight: "The south is the hottest region",
+    source: { name: "sample data" },
   };
 
   it("a horizontal bar emits direct on-bar value labels AND the value axis", () => {

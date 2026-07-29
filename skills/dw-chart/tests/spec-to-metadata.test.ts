@@ -795,6 +795,7 @@ describe("specToMetadata — highlight → category-keyed custom-colors", () => 
     altInsight: "Basel tops the ranking with 812 beds per 100k residents",
     baseColor: "#E69F00",
     highlight: "Basel",
+    source: { name: "FSO" },
   };
 
   it("keys the accent by the CATEGORY VALUE and mutes every other bar to the DW palette grey", () => {

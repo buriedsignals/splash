@@ -52,6 +52,7 @@ d("produceChart (real API)", () => {
       transpose: true,
       altInsight:
         "Renewables grew from 20% in 2018 to 42% in 2022, overtaking coal",
+      source: { name: "IEA" },
     };
     const out = join(tmpdir(), "splash-multiseries.png");
     const res = await produceChart(msSpec as any, out);
@@ -80,6 +81,7 @@ d("produceChart (real API)", () => {
       baseColor: "#0072B2",
       altInsight: "It peaked at 5.6% in 2021",
       annotations: [{ text: "Peak", x: "2021", y: 5.6 }],
+      source: { name: "sample data" },
     };
     const out = join(tmpdir(), "splash-annot.png");
     const res = await produceChart(annSpec as any, out);
@@ -141,6 +143,7 @@ d("produceChart (real API)", () => {
       baseColor: "#0072B2",
       numberFormat: "$0,0.00",
       altInsight: "Steak at $32 is roughly eight times the price of coffee",
+      source: { name: "sample data" },
     };
     const out = join(tmpdir(), "splash-dwbar-value-labels.png");
     rmSync(out, { force: true });

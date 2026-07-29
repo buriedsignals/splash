@@ -26,6 +26,7 @@ describe("label safety — single-series direct labelling", () => {
     data: "period,median_home_price_usd\n2014,275200\n2026,403200",
     seriesLabels: { median_home_price_usd: "Median home price" },
     altInsight: "prices rose then eased",
+    source: { name: "sample data" },
   };
 
   it("turns direct labelling OFF for a single-series line chart", () => {

@@ -116,6 +116,7 @@ d(
         channel: "article-web",
         altInsight:
           "Unemployment rose to 5.6% in 2021 then fell to a five-year low of 3.7% in 2023",
+        source: { name: "ONS" },
       } as ChartSpec;
       const out = join(tmpdir(), `dw-density-web-${Date.now()}.png`);
       const res = await produceChart(spec, out);
@@ -134,6 +135,7 @@ d(
         baseColor: "#009E73",
         channel: "social-feed",
         altInsight: "Renewable share doubled from 21% in 2018 to 42% in 2023",
+        source: { name: "IEA" },
       } as ChartSpec;
       const out = join(tmpdir(), `dw-density-feed-${Date.now()}.png`);
       const res = await produceChart(spec, out);
@@ -157,6 +159,7 @@ d(
         channel: "article-web",
         altInsight:
           "Paris (2.1M) is more than twice Marseille (0.87M), the second city",
+        source: { name: "INSEE" },
       } as ChartSpec;
       const out = join(tmpdir(), `dw-density-bars-${Date.now()}.png`);
       const res = await produceChart(spec, out);
