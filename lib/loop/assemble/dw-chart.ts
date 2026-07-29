@@ -19,7 +19,10 @@ function takesHighlight(nativeType: string): boolean {
   return HIGHLIGHT_TYPES.has(nativeType as ChartType);
 }
 
-const WORD_CHAR = /[\p{L}\p{N}]/u;
+/** Whether the unit's own edge character is alphanumeric at all — the question of whether a
+ *  boundary assertion is needed there in the first place. A symbol edge ("€/m²"'s "€", "%")
+ *  can never run on into an adjacent word, so it needs no assertion. */
+const EDGE_ALNUM = /[\p{L}\p{N}]/u;
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -41,20 +44,39 @@ function escapeRegExp(s: string): string {
  *  characters somewhere inside another word. A naked substring test is wrong for any unit
  *  that is a single ordinary letter ("m", "t", "h", "g"): almost every sentence contains that
  *  letter buried in some unrelated word, and the old check silently swallowed the unit every
- *  time, never appending it. The boundary here is Unicode-letter/number aware (`\p{L}`,
- *  `\p{N}`), checked only at the edges of the unit that are themselves letters/numbers — a
- *  unit like "€/m²" or "%" that opens or closes on a symbol needs no boundary there, since a
- *  symbol can't run on into an adjacent word in the first place. */
+ *  time, never appending it.
+ *
+ *  The boundary excludes LETTERS only (`\p{L}`), not digits, on both edges — a deliberate,
+ *  explicit choice, not an accident of the character class: a number glued directly onto the
+ *  unit ("12km", "500g", "3h30") is the ordinary, no-space value+unit convention, and IS the
+ *  unit already stated, on either side ("3h30" states "h" with a digit touching it on both
+ *  edges, and it still counts). Only an adjacent LETTER means the run continues into an
+ *  unrelated word ("moyen", "logements"), so only letters block a match. The unit's own edge
+ *  still only gets an assertion at all when it is itself alphanumeric (`EDGE_ALNUM`) — a
+ *  symbol like "€" or "%" can't run on into a neighbouring word in the first place, so no
+ *  boundary is added there. The unit string is untrusted (comes from a brief) and is escaped
+ *  before it is ever interpolated into a pattern.
+ *
+ *  Matching stays case-insensitive, including for a single-letter unit — so "M." at the start
+ *  of an abbreviated name ("selon M. Dupont") can, in principle, be misread as the unit "m"
+ *  already stated. Accepted: case-insensitivity was this function's original, explicit
+ *  requirement, the false-positive needs a standalone capital letter immediately followed by a
+ *  non-letter (rare in practice, and no report of it firing), and narrowing it correctly would
+ *  mean matching case-sensitively only for length-1 units — a second special case on top of the
+ *  boundary logic above, for a residual with no observed instance. */
 export function introWithUnit(intro: string, unit: string | undefined): string {
   const u = unit?.trim();
   if (!u) return intro;
   const base = intro.trim();
   if (!base) return u;
   const escaped = escapeRegExp(u);
-  const left = WORD_CHAR.test(u[0]!) ? String.raw`(?<![\p{L}\p{N}])` : "";
-  const right = WORD_CHAR.test(u[u.length - 1]!)
-    ? String.raw`(?![\p{L}\p{N}])`
-    : "";
+  // Unicode-aware edge chars — u[0]/u[u.length - 1] index UTF-16 code units and would slice an
+  // astral character in half; no unit under test is astral, but the spread form costs nothing.
+  const chars = [...u];
+  const first = chars[0]!;
+  const last = chars[chars.length - 1]!;
+  const left = EDGE_ALNUM.test(first) ? String.raw`(?<!\p{L})` : "";
+  const right = EDGE_ALNUM.test(last) ? String.raw`(?!\p{L})` : "";
   const alreadyStated = new RegExp(`${left}${escaped}${right}`, "iu");
   if (alreadyStated.test(base)) return base;
   return `${base} (${u})`;
@@ -68,6 +90,7 @@ export function assembleDwChart(brief: ProductionBrief): VerbResult<unknown> {
         `${CHART_TYPES.join(", ")}`,
     );
 
+  const intro = introWithUnit(brief.angle.altInsight, brief.angle.unit);
   return ok({
     type: brief.nativeType,
     title: brief.angle.confirmedTakeaway,
@@ -77,9 +100,7 @@ export function assembleDwChart(brief: ProductionBrief): VerbResult<unknown> {
     // being invented. `intro` is omitted when there is none — a blank subtitle would print an
     // empty band; a blank altInsight, by contrast, is left to fail LOUD at the validator, the
     // same discipline assembleChartNative's header records.
-    ...(introWithUnit(brief.angle.altInsight, brief.angle.unit)
-      ? { intro: introWithUnit(brief.angle.altInsight, brief.angle.unit) }
-      : {}),
+    ...(intro ? { intro } : {}),
     altInsight: brief.angle.altInsight,
     data: brief.dataCsv,
     source: {

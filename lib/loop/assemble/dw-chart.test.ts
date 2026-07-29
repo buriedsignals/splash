@@ -262,6 +262,42 @@ test("a bare 'g' that stands alone as its own token is genuinely already stated"
   expect(introWithUnit("Masse exprimée en g", "g")).toBe("Masse exprimée en g");
 });
 
+// A number glued directly onto the unit — "12km", "500g", "3h30" — is the ordinary,
+// no-space value+unit convention, and is exactly the shape that already states the unit;
+// it is not a coincidental digit run that happens to end in a letter. Every fixture below
+// carries the unit attached to a digit on at least one side, which is precisely what a
+// boundary class that (wrongly) treats digits as word-forming would misread as "not a
+// standalone token" and append a second, redundant unit — the regression this guards
+// against. "3h30" additionally exercises the RIGHT edge the same way as the left: the
+// digit immediately after "h" does not block the match either, by the same convention.
+test("a unit glued to a preceding number ('12km') is already stated, not repeated", () => {
+  expect(introWithUnit("Distance moyenne de 12km", "km")).toBe(
+    "Distance moyenne de 12km",
+  );
+});
+
+test("a unit glued to a preceding number ('500g') is already stated, not repeated", () => {
+  expect(introWithUnit("Poids de 500g par colis", "g")).toBe(
+    "Poids de 500g par colis",
+  );
+});
+
+test("a unit glued between two numbers ('3h30') is already stated on both edges", () => {
+  expect(introWithUnit("Durée de 3h30 par jour", "h")).toBe(
+    "Durée de 3h30 par jour",
+  );
+});
+
+// The unit string comes from a brief — untrusted input — and can carry regex
+// metacharacters ("^", "(", "/", …). Escaping is a guard no other fixture exercises (every
+// other unit under test is metacharacter-free, so an unescaped pattern would coincidentally
+// behave the same). "m/s^2" is the fixture that makes escaping load-bearing: unescaped, the
+// bare "^" asserts line-start mid-pattern, the match can never succeed, and the unit would
+// be silently appended a second time even though the subtitle already states it verbatim.
+test("a unit containing regex metacharacters is matched literally, not as a pattern", () => {
+  expect(introWithUnit("Vitesse en m/s^2", "m/s^2")).toBe("Vitesse en m/s^2");
+});
+
 // The composed subtitle must not silently start varying with the run's language — `intro` is
 // prose, not a numeric label, so `lang` (emitted separately, :49) and the unit-in-parens
 // composition are independent. This would fail if introWithUnit were rewritten to route
