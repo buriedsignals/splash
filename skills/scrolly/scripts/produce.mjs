@@ -37,8 +37,6 @@ if (!configPath || !outDir) {
   console.error("usage: produce.mjs <config.json> <outDir>");
   process.exit(1);
 }
-mkdirSync(outDir, { recursive: true });
-
 // IMAGE track (visual:"image"): the prepped frames live on disk (framesDir), but the
 // deliverable is ONE self-contained scrolly.html — so the frames are inlined here as
 // base64 data URIs (frameSrcs, aligned 1:1 with story.frames) into the config the
@@ -57,6 +55,10 @@ if (specErrors.length > 0) {
   for (const e of specErrors) console.error(`  ✗ ${e}`);
   process.exit(1);
 }
+
+// outDir is only created once the config has passed validation — a refusal leaves no
+// trace on disk at all, not even an empty directory.
+mkdirSync(outDir, { recursive: true });
 
 if (rawConfig.visual === "image" && rawConfig.framesDir && !rawConfig.frameSrcs) {
   const { readFileSync: readBin, mkdtempSync } = await import("node:fs");
