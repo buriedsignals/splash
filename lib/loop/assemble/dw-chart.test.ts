@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { assembleDwChart } from "./dw-chart";
+import { assembleDwChart, introWithUnit } from "./dw-chart";
 import {
   CHART_TYPES,
   validateChartSpec,
@@ -152,4 +152,81 @@ test("a brief with nothing in it comes back as a value, never as a throw", () =>
   };
   expect(() => assembleDwChart(empty)).not.toThrow();
   expect(assembleDwChart(empty).ok).toBe(false);
+});
+
+// ChartSpec has no `unit` field and the unit cannot be smuggled in as `numberFormat` (a number
+// FORMAT token, not a unit — "%" on 0-1 data is a hard error the engine raises by name). The
+// reader-reaching path is the SUBTITLE — the same decision BarChart.tsx:98-101 made for the
+// native standalone renders. Without it the unit reached nothing at all on a hosted chart.
+test("states the unit once in the printed subtitle, the way the native engines do", () => {
+  const r = assembleDwChart({
+    ...CHART_BRIEF,
+    nativeType: "d3-bars",
+    angle: {
+      confirmedTakeaway: "T",
+      altInsight: "Cantons compared",
+      unit: "€/m²",
+    },
+  });
+  expect(r.ok).toBe(true);
+  if (r.ok)
+    expect((r.value as { intro?: string }).intro).toBe(
+      "Cantons compared (€/m²)",
+    );
+});
+
+test("does not repeat a unit the subtitle already states", () => {
+  expect(introWithUnit("Rents in €/m²", "€/m²")).toBe("Rents in €/m²");
+});
+
+test("says the unit alone when there is no subtitle to hang it on", () => {
+  expect(introWithUnit("", "km")).toBe("km");
+});
+
+test("changes nothing when there is no unit", () => {
+  expect(introWithUnit("Cantons compared", undefined)).toBe("Cantons compared");
+});
+
+// Locale visibility (constraints: a fixture must make the locale VISIBLE). "%" is the exact
+// unit lib/core/locale.ts spaces differently per language ("70 %" fr/de vs "70%" en) — chosen
+// here, the way task 10's map-native fixture chose "%" for the same reason, to prove the
+// de-dup guard that keeps the unit stated ONCE is not fooled by whichever spacing convention
+// the journalist's own prose already used. introWithUnit takes no `lang`: it composes a
+// PARENTHETICAL annotation onto a sentence, a different question from "how do I space a unit
+// onto a numeric value" (labelWithUnit/unitSuffix's job) — there is no per-language spacing
+// rule for "(unit)" to apply here in the first place, only a substring check, and these two
+// tests are the evidence that the check holds under both spacing conventions.
+test("a French-spaced unit already in the subtitle isn't handed a second, parenthetical one", () => {
+  expect(introWithUnit("Le recyclage atteint 54 %", "%")).toBe(
+    "Le recyclage atteint 54 %",
+  );
+});
+
+test("an English-spaced unit already in the subtitle is caught the same way", () => {
+  expect(introWithUnit("Recycling reaches 54%", "%")).toBe(
+    "Recycling reaches 54%",
+  );
+});
+
+// The composed subtitle must not silently start varying with the run's language — `intro` is
+// prose, not a numeric label, so `lang` (emitted separately, :49) and the unit-in-parens
+// composition are independent. This would fail if introWithUnit were rewritten to route
+// through unitSuffix/labelWithUnit (which DO vary by lang) instead of staying a plain,
+// language-invariant parenthetical.
+test("the composed subtitle is identical with and without a French run language", () => {
+  const angle = {
+    ...CHART_BRIEF.angle,
+    unit: "%",
+    altInsight: "A ranking of four cities",
+  };
+  const withoutLang = assembleDwChart({ ...CHART_BRIEF, angle });
+  const withFrLang = assembleDwChart({ ...CHART_BRIEF, lang: "fr", angle });
+  expect(withoutLang.ok && withFrLang.ok).toBe(true);
+  if (!withoutLang.ok || !withFrLang.ok) return;
+  expect((withFrLang.value as { intro?: string }).intro).toBe(
+    "A ranking of four cities (%)",
+  );
+  expect((withFrLang.value as { intro?: string }).intro).toBe(
+    (withoutLang.value as { intro?: string }).intro,
+  );
 });

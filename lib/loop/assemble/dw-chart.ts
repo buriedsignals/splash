@@ -19,6 +19,27 @@ function takesHighlight(nativeType: string): boolean {
   return HIGHLIGHT_TYPES.has(nativeType as ChartType);
 }
 
+/** The unit, stated ONCE, in the printed subtitle.
+ *
+ *  ChartSpec has no `unit` field and never will get one here: the strict validator refuses an
+ *  unknown top-level key, and `numberFormat` is a number FORMAT token ("%" on 0-1 data is a
+ *  hard error the engine raises by name). So the unit had exactly one reader-reaching path,
+ *  and it is the one chart-native already chose for its standalone renders
+ *  (skills/chart-native/src/BarChart.tsx:98-101): the frame states it once, in the subtitle.
+ *
+ *  No `lang` parameter, on purpose: this composes a PARENTHETICAL annotation onto a sentence,
+ *  not a numeric value label, so there is no per-language spacing rule to apply (that is
+ *  labelWithUnit/unitSuffix's job, lib/core/locale.ts, for a different call site). Never
+ *  repeated: a subtitle the journalist already wrote with the unit in it stays as it is. */
+export function introWithUnit(intro: string, unit: string | undefined): string {
+  const u = unit?.trim();
+  if (!u) return intro;
+  const base = intro.trim();
+  if (!base) return u;
+  if (base.toLowerCase().includes(u.toLowerCase())) return base;
+  return `${base} (${u})`;
+}
+
 export function assembleDwChart(brief: ProductionBrief): VerbResult<unknown> {
   if (!(CHART_TYPES as readonly string[]).includes(brief.nativeType))
     return fail(
@@ -36,7 +57,9 @@ export function assembleDwChart(brief: ProductionBrief): VerbResult<unknown> {
     // being invented. `intro` is omitted when there is none — a blank subtitle would print an
     // empty band; a blank altInsight, by contrast, is left to fail LOUD at the validator, the
     // same discipline assembleChartNative's header records.
-    ...(brief.angle.altInsight ? { intro: brief.angle.altInsight } : {}),
+    ...(introWithUnit(brief.angle.altInsight, brief.angle.unit)
+      ? { intro: introWithUnit(brief.angle.altInsight, brief.angle.unit) }
+      : {}),
     altInsight: brief.angle.altInsight,
     data: brief.dataCsv,
     source: {
@@ -54,8 +77,9 @@ export function assembleDwChart(brief: ProductionBrief): VerbResult<unknown> {
     //   baseColor / subject — a subject-fit hue is the suggester's judgment, and chart-spec.ts's
     //     guardrail is written to fire when a DECLARED subject sits on the default blue. Naming a
     //     subject here without a colour to go with it would refuse every chart.
-    //   unit — ChartSpec has no unit field. It cannot be smuggled in as `numberFormat`: that token
-    //     is a number FORMAT, and "%" on 0-1 data is a hard error the engine raises by name.
+    //   unit — ChartSpec has no unit field, and it cannot be smuggled in as `numberFormat`.
+    //     It reaches the reader through `intro` instead (introWithUnit above) — the same
+    //     "state it once in the subtitle" decision the native engines made.
     //   sourceKind — chart-native's conformance belt reads it; ChartSpec has no such field and
     //     the strict check would refuse the spec outright.
   });
