@@ -1,14 +1,16 @@
 import { describe, expect, it } from "bun:test";
+import { execFileSync } from "node:child_process";
+import { writeFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { validateAccepted } from "./validate-gate";
 import type { AcceptedProposal } from "./producer-spec";
 import { validateChartSpec } from "../../dw-chart/src/chart-spec";
 import { nativeSpecErrors } from "../../chart-native/src/spec-to-config";
-// Side-effect import — the registry the deferred-type guard reads (lib/core/registry.ts) is
-// populated by each engine's manifest at import time. In production this happens because
-// produce-all.mjs imports adapters.ts, which imports this same file, before validateAccepted
-// ever runs (adapters.ts:33); the test process has no such entry point, so it is imported here
-// directly (idempotent — module caching runs each manifest's registerProducer exactly once).
-import "./register-producers";
+import { validateMapSpec } from "../../map-dw/src/map-spec";
+// NOTE: no side-effect "./register-producers" import here on purpose — validate-gate.ts now
+// imports it itself (self-sufficient guard, see its top-of-file comment), so this test exercises
+// the same registry state a real caller gets from importing validateAccepted alone.
 
 const base = {
   id: "x",
@@ -633,6 +635,39 @@ describe("the journalist spine refuses a deferred type by name", () => {
     }
   });
 
+  // Regression for the fail-open bug a reviewer proved by measurement: a FRESH process that
+  // imports ONLY validate-gate.ts (never adapters.ts, never register-producers.ts directly)
+  // must still refuse the deferred spec. Before validate-gate.ts imported "./register-producers"
+  // itself, this exact scenario returned {"ok":true, ...} — the guard silently passed the very
+  // spec it exists to refuse, because engineTypes("dw-chart") read an empty, never-populated
+  // registry. A same-process unit test cannot catch this (module caching means once ANY earlier
+  // test in the same bun process has imported the manifests, the registry looks populated no
+  // matter what this file imports) — it requires a genuinely separate process, so this spawns
+  // one.
+  it("should refuse the deferred spec even from a process that imports validate-gate.ts alone", () => {
+    const dir = mkdtempSync(join(tmpdir(), "validate-gate-fresh-process-"));
+    const scriptPath = join(dir, "probe.mjs");
+    const validateGatePath = join(import.meta.dir, "validate-gate.ts");
+    const proposal = {
+      id: "x",
+      producer: "dw-chart",
+      format: "static",
+      confirmedTakeaway: "The confirmed takeaway for this fixture",
+      channel: "article-web",
+      spec: multipleLinesSpec,
+    };
+    const script =
+      `import { validateAccepted } from ${JSON.stringify(validateGatePath)};\n` +
+      `const out = validateAccepted(${JSON.stringify(proposal)});\n` +
+      `console.log(JSON.stringify(out));\n`;
+    writeFileSync(scriptPath, script);
+    const stdout = execFileSync("bun", [scriptPath], { encoding: "utf8" });
+    const out = JSON.parse(stdout) as
+      { ok: true; warnings: string[] } | { ok: false; errors: string[] };
+    expect(out.ok).toBe(false);
+    if (!out.ok) expect(out.errors.join(" ")).toContain("multiple-lines");
+  });
+
   it("should leave the ENGINE validator's maintainer door open", () => {
     // Same spec, straight to the engine: still accepted. That door is declared
     // (dw-chart/src/manifest.ts) and is deliberately kept.
@@ -655,10 +690,16 @@ describe("the journalist spine refuses a deferred type by name", () => {
   });
 
   // The guard reads the shared registry (lib/core/registry.ts), not a dw-chart special case —
-  // it refuses ANY producer's declared-deferred type. chart-native's own family-B entries
+  // it refuses a declared-deferred type on every engine whose manifest DECLARES one, across
+  // all three field names the codebase's spec shapes actually use (`nativeType`, `type`,
+  // `mapType` — see deferredTypeError's own comment). chart-native's own family-B entries
   // (native-types.ts) are declared with a `deferred` reason and no MAPPERS implementation
   // ("sankey": "family-B: needs nodes+links") — the same shape of fact dw-chart's
-  // NOT_KB_MODELED table states, on a different engine.
+  // NOT_KB_MODELED table states, on a different engine. `scrolly` is NOT a fourth engine to
+  // cover here: its manifest declares no `types` of its own on purpose (registry.ts's own
+  // "Absent/empty ⇒ the engine owns no type of its own") — a scrolly proposal's real type
+  // lives on its HOST engine's spec, dispatched by producer, not read through `producer:
+  // "scrolly"`.
   it("should refuse a chart-native proposal for a declared, deferred nativeType (family-B)", () => {
     const out = validateAccepted({
       ...accept("chart-native", {
@@ -689,5 +730,74 @@ describe("the journalist spine refuses a deferred type by name", () => {
       data: "a,b\n1,2",
     });
     expect(errors).toEqual([]);
+  });
+
+  // map-dw keys its type on `mapType`, a THIRD field name distinct from `type`/`nativeType` —
+  // this is the field the extraction must ALSO read for the guard to be genuinely
+  // engine-agnostic rather than only covering the two engines its original test happened to
+  // exercise. `"symbol"` is map-dw's one declared-deferred entry (manifest.ts), reason:
+  // "not producible — DW symbol maps are hover-only; route to map-native".
+  const symbolSpec = {
+    mapType: "symbol",
+    basemap: "world",
+    latColumn: "lat",
+    lonColumn: "lon",
+    sizeColumn: "value",
+    data: "lat,lon,value\n48.85,2.35,100\n51.5,-0.12,80",
+    title: "T",
+    altInsight: "a",
+    source: { name: "S" },
+  };
+
+  it("should refuse a map-dw proposal for a deferred mapType (symbol), via the GUARD specifically", () => {
+    const out = validateAccepted({
+      ...accept("map-dw", symbolSpec),
+      channel: "article-web",
+    });
+    expect(out.ok).toBe(false);
+    if (!out.ok) {
+      expect(out.errors.join(" ")).toContain("symbol");
+      // the manifest's own prose reason, naming the redirect
+      expect(out.errors.join(" ")).toContain("map-native");
+      // Distinguishes the GUARD's refusal from validateMapSpec's OWN unconditional symbol
+      // rejection (map-spec.ts:433-435, "symbol maps are not producible by map-dw: ...") —
+      // map-dw is the one engine here where the underlying validator ALSO always fails this
+      // spec, so an assertion on `ok === false` alone would stay green even with the guard
+      // deleted. `"is not an offerable"` is the guard's own wording (deferredTypeError), never
+      // produced by validateMapSpec — this is what actually reddens under mutation.
+      expect(out.errors.join(" ")).toContain("is not an offerable");
+    }
+  });
+
+  it("has NO maintainer door for map-dw symbol — unlike dw-chart/chart-native, the engine's own validator ALSO rejects it unconditionally", () => {
+    // Confirms map-dw's `symbol` is architecturally different from the other two engines'
+    // deferred types: there is no direct-engine-call escape hatch to prove stays open, because
+    // none exists. validateMapSpec's own symbol branch pushes this error for every symbol
+    // spec, well-formed or not (map-spec.ts:433-435) — the guard above changes WHEN this spec
+    // is refused (earlier, with a more useful message), never WHETHER a real capability is
+    // lost.
+    const r = validateMapSpec(symbolSpec);
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.join(" ")).toContain("symbol maps are not producible");
+  });
+
+  it("should pass a non-deferred map-dw mapType through unchanged", () => {
+    const out = validateAccepted({
+      ...accept("map-dw", {
+        mapType: "choropleth",
+        basemap: "world-2019",
+        mapKeyAttr: "DW_NAME",
+        regionKey: "region",
+        valueColumn: "value",
+        data: "region,value\nNord,42\nSud,12\n",
+        title: "Unemployment by region",
+        altInsight: "Unemployment peaks at 42% in the north.",
+        source: { name: "S" },
+      }),
+      channel: "article-web",
+      confirmedTakeaway: "Unemployment peaks at 42% in the north",
+    });
+    expect(out.ok).toBe(true);
   });
 });

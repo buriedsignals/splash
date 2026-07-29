@@ -39,6 +39,20 @@ import {
 } from "./source-guard";
 import { guardrailParityViolations } from "./guardrail-parity";
 import { engineTypes, isRenderable } from "../../../lib/core/registry";
+// Side-effect import — the deferred-type guard below (deferredTypeError) reads the registry
+// this populates (each engine's manifest self-registers on import). This module must NOT rely
+// on some OTHER file having imported the manifests first: production is safe today only
+// because produce-all.mjs imports adapters.ts, which imports this same file (adapters.ts:33),
+// before validate-gate.ts ever runs — but that is a caller convention, not a guarantee this
+// file enforces, and a second real entry point (any process/test that imports validateAccepted
+// without going through adapters.ts) sees an EMPTY registry: engineTypes(producer) === [],
+// so the guard fails OPEN — it silently passes the exact deferred spec it exists to refuse.
+// A guard that cannot see its catalogue must fail loud, not silent; the fix is to make this
+// module self-sufficient rather than order-dependent. No cycle: none of the six manifests
+// (chart-native, map-native, scrolly, image-native, dw-chart, map-dw) import validate-gate.ts,
+// adapters.ts, or anything else in skills/splash — verified by grepping every manifest.ts's
+// import list.
+import "./register-producers";
 
 export type ValidationOutcome =
   { ok: true; warnings: string[] } | { ok: false; errors: string[] };
@@ -594,20 +608,37 @@ function skillsInvokedIssues(p: AcceptedProposal): {
   return { errors: [], warnings: [] };
 }
 
-// GUARD — a deferred type is a MAINTAINER's door, not a journalist's. The registry already
-// answers this (`isRenderable` = declared by that engine AND not deferred, registry.ts:123);
-// nothing consulted it on this path. The engines' own validators stay unchanged on purpose:
-// dw-chart's manifest DECLARES that deferred types remain producible "if asked for by name"
-// (manifest.ts:18-20), and that door is kept. What closes here is the entry a journalist uses.
-// The refusal quotes the manifest's OWN prose reason, so the offer's mark and this refusal are
-// one wording.
+// GUARD — a deferred type is a MAINTAINER's door, not a journalist's (except where no such
+// door exists at all — see map-dw below). The registry already answers this (`isRenderable` =
+// declared by that engine AND not deferred, registry.ts:123); nothing consulted it on this
+// path. Most engines' own validators stay unchanged on purpose: dw-chart's manifest DECLARES
+// that deferred types remain producible "if asked for by name" (manifest.ts:18-20), and that
+// door is kept; chart-native's family-B deferred types are the same shape (declared, no
+// MAPPERS entry, `nativeSpecErrors` unchanged). What closes here is the entry a journalist
+// uses. The refusal quotes the manifest's OWN prose reason, so the offer's mark and this
+// refusal are one wording.
+// Three field names, because the three spec shapes this reads from disagree: dw-chart and
+// chart-native/scrolly key on `type`/`nativeType` respectively; map-dw keys on `mapType`
+// (map-spec.ts:57,108,151 — a THIRD, distinct field, not an alias of the other two). map-dw's
+// one deferred entry ("symbol", manifest.ts) is unlike the other two engines' deferred sets:
+// `validateMapSpec`'s OWN symbol branch unconditionally pushes an error for every symbol spec,
+// well-formed or not (map-spec.ts:433-435) — there is no maintainer door to preserve there,
+// only an earlier, more informative refusal (the manifest's reason names the map-native
+// redirect instead of a generic Datawrapper-hover-only paragraph).
 function deferredTypeError(p: AcceptedProposal): string | null {
+  const spec = p.spec as {
+    nativeType?: unknown;
+    type?: unknown;
+    mapType?: unknown;
+  } | null;
   const typeId =
-    typeof (p.spec as { nativeType?: unknown })?.nativeType === "string"
-      ? (p.spec as { nativeType: string }).nativeType
-      : typeof (p.spec as { type?: unknown })?.type === "string"
-        ? (p.spec as { type: string }).type
-        : null;
+    typeof spec?.nativeType === "string"
+      ? spec.nativeType
+      : typeof spec?.type === "string"
+        ? spec.type
+        : typeof spec?.mapType === "string"
+          ? spec.mapType
+          : null;
   if (!typeId) return null;
   const declared = engineTypes(p.producer).some((t) => t.id === typeId);
   if (!declared) return null; // an undeclared type is another guard's business
