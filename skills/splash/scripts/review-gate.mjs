@@ -9,7 +9,8 @@
 // and a failure keyword (404/absent/missing/mismatch…) no probe outcome reflects
 // (src/review-gate.ts). This records that the review RAN and WHAT it ran; assertShippable
 // then refuses to export any visual with no review record.
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { applyReviewGate } from "../src/review-gate.ts";
 
 const USAGE =
@@ -41,9 +42,24 @@ try {
   );
   process.exit(1);
 }
+// THE READER brand-concerns.json never had. It sat next to the outputs, listed in a
+// delete-safety allowlist, opened by nothing — while this gate took its concerns as
+// hand-typed argv. A journalist signed "ship it" without ever learning their house colour
+// breaks accessibility (D25, 4/83).
+const concernsPath = join(dirname(reportPath), "brand-concerns.json");
+let fileConcerns = [];
+if (existsSync(concernsPath)) {
+  const parsed = JSON.parse(readFileSync(concernsPath, "utf8"));
+  fileConcerns = (parsed.concerns ?? []).map((c) =>
+    c.nearestAccessible
+      ? `${c.reason} — closest accessible hue: ${c.nearestAccessible}`
+      : c.reason,
+  );
+}
+const allConcerns = [...fileConcerns, ...concerns];
 try {
   const report = JSON.parse(readFileSync(reportPath, "utf8"));
-  const next = applyReviewGate(report, id, concerns, probes);
+  const next = applyReviewGate(report, id, allConcerns, probes);
   writeFileSync(reportPath, JSON.stringify(next, null, 2));
 } catch (e) {
   console.error(`review-gate failed: ${e instanceof Error ? e.message : e}`);
@@ -51,7 +67,7 @@ try {
 }
 console.log(
   `render reviewed: ${id} — ${probes.length} probe(s), ` +
-    (concerns.length
-      ? `${concerns.length} concern(s) recorded`
+    (allConcerns.length
+      ? `${allConcerns.length} concern(s) recorded`
       : "no concerns"),
 );

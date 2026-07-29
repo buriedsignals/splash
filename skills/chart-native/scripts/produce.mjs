@@ -145,8 +145,10 @@ let brandConcerns = [];
     process.exit(1);
   } else if (result.concerns.length > 0) {
     // policy (b): the brand colour is KEPT (not rewritten); the a11y tradeoff is
-    // recorded for the render-review instead of failing the run.
-    brandConcerns = result.concerns;
+    // recorded for the render-review instead of failing the run. brandConcerns is the
+    // STRUCTURED subset (kind/colour/reason/nearestAccessible) — brand-concerns.json
+    // records the RECORD, not the flattened prose result.concerns carries below.
+    brandConcerns = result.brandConcerns;
     console.log(
       `[produce ${type}] conformance: OK — surfaced ${result.concerns.length} non-fatal render-review concern(s) (e.g. a kept house colour, or a possible label-fit data-integrity flag):`,
     );

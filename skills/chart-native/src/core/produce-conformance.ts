@@ -39,6 +39,7 @@ import {
   checkLabelDataIntegrity,
   checkMarkContrastOnBg,
   type MarkOnBg,
+  type BrandConcern,
 } from "./conformance";
 import {
   resolveConformanceColors,
@@ -120,6 +121,16 @@ export interface ConformanceRunResult {
    * Empty on the clean auto path (no brand-explicit colours, no shortened label).
    */
   concerns: string[];
+  /**
+   * The STRUCTURED subset of `concerns` — only the CVD/contrast brand-colour tradeoffs
+   * (reconcileBrandViolations), each carrying its hex, its kind, and (for CVD) the nearest
+   * accessible hue. `concerns` above stays the flattened, human-readable list every existing
+   * caller already reads (produce.mjs's console log, the .test.ts assertions on plain
+   * strings); this is the RECORD produce.mjs writes to brand-concerns.json so the tradeoff
+   * has a reader instead of being re-parsed out of English prose. Empty whenever `concerns`
+   * carries no brand-colour item (auto path, or only integrity/mark-contrast advisories).
+   */
+  brandConcerns: BrandConcern[];
 }
 
 // F2 — the DATA MARK colours a brand-explicit config declares BY HAND, so the guards
@@ -256,7 +267,8 @@ export function runProduceConformance(
   config: Record<string, unknown>,
 ): ConformanceRunResult {
   const raw = computeRawConformance(type, config);
-  if (!raw.checked) return { checked: false, violations: [], concerns: [] };
+  if (!raw.checked)
+    return { checked: false, violations: [], concerns: [], brandConcerns: [] };
   // WCAG 1.1.1 — the produce boundary REQUIRES a non-empty altInsight on EVERY
   // produced chart, parity with dw-chart/map-dw whose spec validation hard-requires
   // it. checkGlobalConformance keeps its opt-in gate ("altInsight" in input) for
@@ -267,7 +279,7 @@ export function runProduceConformance(
     ...raw.violations,
     ...requireAltInsight(config.altInsight),
   ];
-  const { violations, concerns } = reconcileBrandViolations(
+  const { violations, concerns: brandConcerns } = reconcileBrandViolations(
     rawViolations,
     brandExplicitColors(config),
   );
@@ -294,7 +306,12 @@ export function runProduceConformance(
   return {
     checked: true,
     violations,
-    concerns: [...concerns, ...integrity, ...markContrast],
+    concerns: [
+      ...brandConcerns.map((c) => c.reason),
+      ...integrity,
+      ...markContrast,
+    ],
+    brandConcerns,
   };
 }
 

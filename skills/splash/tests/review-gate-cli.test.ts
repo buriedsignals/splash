@@ -73,6 +73,39 @@ describe("review-gate CLI — probes ledger", () => {
     expect(written.results[0].reviewed).toBeUndefined();
   });
 
+  it("reads brand-concerns.json next to the report and folds it into reviewConcerns — the reader the file never had", () => {
+    const reportPath = freshReport();
+    const dir = join(reportPath, "..");
+    writeFileSync(
+      join(dir, "brand-concerns.json"),
+      JSON.stringify({
+        type: "bar",
+        concerns: [
+          {
+            kind: "cvd",
+            colour: "#2E7D57",
+            reason:
+              "brand colour #2E7D57 is not colour-blind-safe (outside the Okabe-Ito set) — kept per the newsroom's house style (render-review concern)",
+            nearestAccessible: "#009E73",
+          },
+        ],
+      }),
+    );
+    const probes = JSON.stringify([
+      { check: "title matches the confirmed takeaway", outcome: "pass" },
+    ]);
+    // No concerns on argv at all — the whole point: the concern reaches the report from
+    // the FILE produce.mjs already wrote, not from a hand-typed CLI argument.
+    const { code } = runReviewGate([reportPath, "p1", "--probes", probes]);
+    expect(code).toBe(0);
+    const written = JSON.parse(readFileSync(reportPath, "utf8"));
+    expect(written.results[0].reviewConcerns).toHaveLength(1);
+    expect(written.results[0].reviewConcerns[0]).toContain("#2E7D57");
+    expect(written.results[0].reviewConcerns[0]).toContain(
+      "closest accessible hue: #009E73",
+    );
+  });
+
   it("accepts when a resolved probe carries the failure with evidence (inline JSON probes)", () => {
     const reportPath = freshReport();
     const probes = JSON.stringify([

@@ -13,7 +13,11 @@ import {
 } from "../../../../lib/core/contrast";
 import { conformanceL0 } from "../../../../lib/core/conformance-l0";
 import { rampUniformityIssues } from "../../../../lib/core/house-ramp";
+import { nearestOkabeIto } from "../../../../lib/core/nearest-okabe-ito";
+import type { BrandConcern } from "../../../../lib/core/brand-concern";
 import type { SourceKind } from "../../../../lib/source/vocabulary";
+
+export type { BrandConcern };
 
 export const OKABE_ITO_SET = new Set([
   "#0072B2",
@@ -103,8 +107,10 @@ export interface ConformanceColors {
 export interface BrandReconciliation {
   /** hard failures — the auto path, unchanged (produce must refuse on these) */
   violations: string[];
-  /** downgraded brand-colour a11y issues — recorded for the render-review (policy b) */
-  concerns: string[];
+  /** downgraded brand-colour a11y issues — recorded for the render-review (policy b). A
+   *  RECORD, not prose: it used to be a bare string, which is exactly why nothing
+   *  downstream could read it — the hex was only recoverable by re-parsing English prose. */
+  concerns: BrandConcern[];
 }
 
 // The two a11y violation shapes the bypass is scoped to. Both embed the exact hex,
@@ -132,20 +138,30 @@ export function reconcileBrandViolations(
   if (brand.size === 0) return { violations: [...rawViolations], concerns: [] };
 
   const violations: string[] = [];
-  const concerns: string[] = [];
+  const concerns: BrandConcern[] = [];
   for (const raw of rawViolations) {
     const cvd = CVD_VIOLATION.exec(raw);
     if (cvd && brand.has(cvd[1].toUpperCase())) {
-      concerns.push(
-        `brand colour ${cvd[1]} is not colour-blind-safe (outside the Okabe-Ito set) — kept per the newsroom's house style (render-review concern)`,
-      );
+      concerns.push({
+        kind: "cvd",
+        colour: cvd[1],
+        reason:
+          `brand colour ${cvd[1]} is not colour-blind-safe (outside the Okabe-Ito set) — ` +
+          `kept per the newsroom's house style (render-review concern)`,
+        nearestAccessible: nearestOkabeIto(cvd[1]).hex,
+      });
       continue;
     }
     const contrast = CONTRAST_VIOLATION.exec(raw);
     if (contrast && brand.has(contrast[1].toUpperCase())) {
-      concerns.push(
-        `brand colour ${contrast[1]} is ${contrast[2]}:1 on ${contrast[3]}, below WCAG 4.5:1 — kept per the newsroom's house style (render-review concern)`,
-      );
+      // No `nearestAccessible`: a contrast tradeoff is not fixed by swapping hue.
+      concerns.push({
+        kind: "contrast",
+        colour: contrast[1],
+        reason:
+          `brand colour ${contrast[1]} is ${contrast[2]}:1 on ${contrast[3]}, below WCAG 4.5:1 — ` +
+          `kept per the newsroom's house style (render-review concern)`,
+      });
       continue;
     }
     violations.push(raw);

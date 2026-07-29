@@ -14,6 +14,8 @@
 import { renderedTitleOf } from "./capture";
 import { makeFinding } from "./severity";
 import { detectTasteRisks } from "./taste";
+import { announcedColourFindings } from "./colour-announcement";
+import type { BrandConcern } from "../core/brand-concern";
 import {
   assertNoInternals,
   buildReviewerInput,
@@ -68,6 +70,16 @@ export type ReviewRequest = {
    *  journalist deciding whether to override. */
   captureUnavailable?: string;
   adapter?: ReviewerAdapter;
+  /** The house-colour tradeoffs recorded at produce-time (produce.mjs's
+   *  brand-concerns.json, skills/chart-native/src/core/conformance.ts's BrandConcern) —
+   *  D25: shipped, never blocking, always announced. Absent/empty is the ordinary case
+   *  (auto path, no brand profile, or a brand colour that already clears CVD/contrast). */
+  brandConcerns?: BrandConcern[];
+  /** The baseColor the journalist was told about for this element, and (task 13) whether
+   *  the produced type actually painted its marks with it. Absent until a caller threads
+   *  the comparison — an absent/true `honoured` is a silent no-op (D26). */
+  announcedColour?: string;
+  honoured?: boolean;
 };
 
 // The criteria a review is conducted against, shared by every caller so the same defect is
@@ -241,6 +253,11 @@ export async function runReview(req: ReviewRequest): Promise<ReviewRecord> {
   const mechanical = [
     ...findingsFromChecks(req.checks),
     ...findingsFromEvidence(req),
+    ...announcedColourFindings({
+      concerns: req.brandConcerns ?? [],
+      announced: req.announcedColour,
+      honoured: req.honoured,
+    }),
   ];
 
   let attribution: ReviewerAttribution = {
