@@ -38,6 +38,7 @@ import {
   droppedSourceHintWarning,
 } from "./source-guard";
 import { guardrailParityViolations } from "./guardrail-parity";
+import { engineTypes, isRenderable } from "../../../lib/core/registry";
 
 export type ValidationOutcome =
   { ok: true; warnings: string[] } | { ok: false; errors: string[] };
@@ -593,6 +594,31 @@ function skillsInvokedIssues(p: AcceptedProposal): {
   return { errors: [], warnings: [] };
 }
 
+// GUARD — a deferred type is a MAINTAINER's door, not a journalist's. The registry already
+// answers this (`isRenderable` = declared by that engine AND not deferred, registry.ts:123);
+// nothing consulted it on this path. The engines' own validators stay unchanged on purpose:
+// dw-chart's manifest DECLARES that deferred types remain producible "if asked for by name"
+// (manifest.ts:18-20), and that door is kept. What closes here is the entry a journalist uses.
+// The refusal quotes the manifest's OWN prose reason, so the offer's mark and this refusal are
+// one wording.
+function deferredTypeError(p: AcceptedProposal): string | null {
+  const typeId =
+    typeof (p.spec as { nativeType?: unknown })?.nativeType === "string"
+      ? (p.spec as { nativeType: string }).nativeType
+      : typeof (p.spec as { type?: unknown })?.type === "string"
+        ? (p.spec as { type: string }).type
+        : null;
+  if (!typeId) return null;
+  const declared = engineTypes(p.producer).some((t) => t.id === typeId);
+  if (!declared) return null; // an undeclared type is another guard's business
+  if (isRenderable(p.producer, typeId)) return null;
+  const reason = engineTypes(p.producer).find((t) => t.id === typeId)?.deferred;
+  return (
+    `"${typeId}" is not an offerable ${p.producer} type: ${reason ?? "it is deferred"}. ` +
+    "Choose a type the knowledge base models, or ask a maintainer to call the engine directly."
+  );
+}
+
 // Run the producer-appropriate validator on an accepted proposal's spec, then the
 // cross-producer source-URL guard (GUARD 2), then the deterministic guardrail-parity gate
 // (ENFORCEMENT SLICE 2 — the deterministic guardrails that lived only in suggest-chart's
@@ -606,6 +632,8 @@ export function validateAccepted(
   p: AcceptedProposal,
   batch: AcceptedProposal[] = [],
 ): ValidationOutcome {
+  const deferred = deferredTypeError(p);
+  if (deferred) return { ok: false, errors: [deferred] };
   const outcome = validateByProducer(p);
   const extraErrors: string[] = [];
   const missingTakeaway = missingConfirmedTakeawayError(p);

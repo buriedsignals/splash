@@ -1,6 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { validateAccepted } from "./validate-gate";
 import type { AcceptedProposal } from "./producer-spec";
+import { validateChartSpec } from "../../dw-chart/src/chart-spec";
+import { nativeSpecErrors } from "../../chart-native/src/spec-to-config";
+// Side-effect import — the registry the deferred-type guard reads (lib/core/registry.ts) is
+// populated by each engine's manifest at import time. In production this happens because
+// produce-all.mjs imports adapters.ts, which imports this same file, before validateAccepted
+// ever runs (adapters.ts:33); the test process has no such entry point, so it is imported here
+// directly (idempotent — module caching runs each manifest's registerProducer exactly once).
+import "./register-producers";
 
 const base = {
   id: "x",
@@ -42,10 +50,16 @@ describe("validateAccepted — the spine validation gate", () => {
     expect(r.ok).toBe(true);
   });
 
-  it("passes a chart-native spec whose type is UNMAPPED (FALLBACK_TO_DW, not a validation failure)", () => {
+  // "sankey" moved out of this test (see "the journalist spine refuses a deferred type by
+  // name" below): it is DECLARED in NATIVE_TYPES with a `deferred` reason (family-B, no
+  // MAPPERS entry) — the exact case that guard now refuses BY NAME. This test keeps the
+  // FALLBACK_TO_DW/UnsupportedNativeType pass-through for a type that is not declared AT
+  // ALL (a typo, never in NATIVE_TYPES) — the deferred guard's `declared` check is false for
+  // it, so it is untouched, someone else's business (Task 8).
+  it("passes a chart-native spec whose type is UNDECLARED (FALLBACK_TO_DW, not a validation failure)", () => {
     const r = validateAccepted(
       accept("chart-native", {
-        nativeType: "sankey",
+        nativeType: "widget-xyz",
         title: "x",
         source: { name: "s" },
         unit: "u",
@@ -586,5 +600,94 @@ describe("validateAccepted — the spine validation gate", () => {
           ).toHaveLength(1);
       });
     });
+  });
+});
+
+describe("the journalist spine refuses a deferred type by name", () => {
+  // `multiple-lines` EXISTS in CHART_TYPES (chart-spec.ts) — the engine validator is right
+  // to accept it. It is marked deferred in the manifest (dw-chart/src/manifest.ts) because no
+  // KB sheet models it, and `deferred` was consulted by no validator. A journalist must never
+  // receive a type the KB does not model.
+  // `multiple-lines` is also a MULTI_SERIES_TYPES entry (chart-spec.ts), which requires >=3
+  // data columns — a 2-column fixture would fail validateChartSpec on shape alone, which
+  // would mask the guard under test; the fixture below carries 3 columns so the ONLY thing
+  // that can fail it is the deferred-type guard.
+  const multipleLinesSpec = {
+    type: "multiple-lines",
+    title: "T",
+    data: "category,seriesA,seriesB\n2020,1,2\n2021,3,4",
+    altInsight: "a",
+    source: { name: "S" },
+  };
+
+  it("should refuse a dw-chart proposal for a deferred type", () => {
+    const out = validateAccepted({
+      ...accept("dw-chart", multipleLinesSpec),
+      channel: "article-web",
+    });
+    expect(out.ok).toBe(false);
+    if (!out.ok) {
+      expect(out.errors.join(" ")).toContain("multiple-lines");
+      // the manifest's own prose reason, not a maintainer's paraphrase
+      expect(out.errors.join(" ")).toContain("small-multiples");
+    }
+  });
+
+  it("should leave the ENGINE validator's maintainer door open", () => {
+    // Same spec, straight to the engine: still accepted. That door is declared
+    // (dw-chart/src/manifest.ts) and is deliberately kept.
+    const r = validateChartSpec(multipleLinesSpec);
+    expect(r.ok).toBe(true);
+  });
+
+  it("should pass a non-deferred type through unchanged", () => {
+    const out = validateAccepted({
+      ...accept("dw-chart", {
+        type: "d3-lines",
+        title: "T",
+        data: "a,b\n1,2",
+        altInsight: "a",
+        source: { name: "S" },
+      }),
+      channel: "article-web",
+    });
+    expect(out.ok).toBe(true);
+  });
+
+  // The guard reads the shared registry (lib/core/registry.ts), not a dw-chart special case —
+  // it refuses ANY producer's declared-deferred type. chart-native's own family-B entries
+  // (native-types.ts) are declared with a `deferred` reason and no MAPPERS implementation
+  // ("sankey": "family-B: needs nodes+links") — the same shape of fact dw-chart's
+  // NOT_KB_MODELED table states, on a different engine.
+  it("should refuse a chart-native proposal for a declared, deferred nativeType (family-B)", () => {
+    const out = validateAccepted({
+      ...accept("chart-native", {
+        nativeType: "sankey",
+        title: "x",
+        source: { name: "s" },
+        unit: "u",
+        data: "a,b\n1,2",
+      }),
+      channel: "article-web",
+    });
+    expect(out.ok).toBe(false);
+    if (!out.ok) {
+      expect(out.errors.join(" ")).toContain("sankey");
+      expect(out.errors.join(" ")).toContain("family-B");
+    }
+  });
+
+  it("should leave chart-native's own maintainer door open for the same type", () => {
+    // nativeSpecErrors/specToNativeConfig are UNCHANGED by this task (the decision's whole
+    // point) — a maintainer calling the engine directly still gets the FALLBACK_TO_DW pass,
+    // not a validation error.
+    const errors = nativeSpecErrors({
+      nativeType: "sankey",
+      title: "x",
+      source: { name: "s" },
+      unit: "u",
+      data: "a,b\n1,2",
+    });
+    expect(errors).toEqual([]);
   });
 });
