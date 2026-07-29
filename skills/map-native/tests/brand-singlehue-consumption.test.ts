@@ -238,7 +238,13 @@ describe("low-contrast house fill is KEPT and raises a review concern (never rej
       type: "symbol",
       basemap: "world",
       ...cleanFurniture,
-      points: [{ lon: 2.35, lat: 48.85, value: 5, label: "Paris" }],
+      // ≥2 distinct points: a single point gives symbolGeometry a degenerate (zero-area)
+      // bbox, which checkSymbolConformance correctly refuses as "basemap-fit impossible" —
+      // orthogonal to what this test actually checks (the contrast concern below).
+      points: [
+        { lon: 2.35, lat: 48.85, value: 5, label: "Paris" },
+        { lon: -0.12, lat: 51.5, value: 3, label: "London" },
+      ],
       brandHue: PALE,
       brandExplicit: true,
     });

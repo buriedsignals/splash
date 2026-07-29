@@ -33,7 +33,9 @@ import { HEX_GRID_SCALE_TYPE } from "../hex-grid-geo";
 import {
   checkGlobalMapConformance,
   checkPaletteConformance,
+  checkSymbolConformance,
 } from "../conformance";
+import { symbolGeometry } from "../symbol-geo";
 
 // The 3 types whose colour scale is a resolvePalette() ramp (not a fixed qualitative set).
 export const RAMP_TYPES = ["choropleth", "hex-grid", "cartogram"] as const;
@@ -280,6 +282,62 @@ export function runProduceMapConformance(
     } catch (e) {
       violations.push(`brandHue: ${(e as Error).message}`);
     }
+  }
+
+  // SYMBOL — the per-type rules that were written and never called (the only callers were
+  // their own tests, plus a COMMENT in skills/map-dw/src/map-spec.ts:432). The geometry core
+  // is pure (symbol-geo.ts:71, no basemap, no MapTiler), so the legend stops, the max radius
+  // and the bounds are all config-provable HERE, before a render costs anything.
+  // DELIBERATELY NOT fed: `strokeContrast` and `staticFallbackLabeled`. They are render facts,
+  // and inventing them would be an unmeasured refusal — the render snaps keep them.
+  if (type === "symbol") {
+    const points = Array.isArray(config.points)
+      ? (config.points as { lon: number; lat: number; value: number }[])
+      : [];
+    const fmt = config.format as { width: number; height: number } | undefined;
+    const maxRadius =
+      typeof config.maxRadius === "number" ? config.maxRadius : 30;
+    let legendStops = 0;
+    let boundsNonEmpty = false;
+    if (points.length > 0) {
+      const geo = symbolGeometry(
+        { points } as Parameters<typeof symbolGeometry>[0],
+        maxRadius,
+      );
+      legendStops = geo.legend.length;
+      boundsNonEmpty =
+        geo.bounds[0] !== geo.bounds[2] || geo.bounds[1] !== geo.bounds[3];
+    }
+    violations.push(
+      ...checkSymbolConformance(
+        {
+          title,
+          description,
+          source,
+          sizingMode: config.sizingMode === "radius" ? "radius" : "area",
+          hasLegend: config.hasLegend !== false,
+          legendStops,
+          maxRadiusPx: maxRadius,
+          viewportMinPx: fmt ? Math.min(fmt.width, fmt.height) : 675,
+          pointsWithData: points.length,
+          boundsNonEmpty,
+          // Render-only inputs: give the values the rules treat as "not my business here" —
+          // strokeContrast and staticFallbackLabeled are render facts the snap scripts own
+          // (see the file header + the brief this task follows); inventing them here would be
+          // an unmeasured refusal.
+          strokeContrast: Infinity,
+          labeled: config.labeled !== false,
+          valueUnit:
+            typeof config.valueUnit === "string" ? config.valueUnit : undefined,
+          labelHasUnit:
+            typeof config.labelHasUnit === "boolean"
+              ? config.labelHasUnit
+              : undefined,
+          ...(fmt ? { format: fmt } : {}),
+        },
+        textColors,
+      ),
+    );
   }
 
   return { checked: true, violations, concerns };

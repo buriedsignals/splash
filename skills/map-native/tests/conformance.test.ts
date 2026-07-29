@@ -515,7 +515,10 @@ describe("FRAME_COLORS_DARK — WCAG contrast ≥ 4.5:1", () => {
 // composited over the worst basemap it can overlay), not an assumed themeBg.
 import { readFileSync } from "fs";
 import { join } from "path";
-import { furnitureGround } from "../src/core/map-produce-conformance";
+import {
+  furnitureGround,
+  runProduceMapConformance,
+} from "../src/core/map-produce-conformance";
 
 describe("map furniture stands on a ground, not on a basemap tile", () => {
   it("should keep the source text legible over the WORST basemap the pill can sit on", () => {
@@ -539,5 +542,56 @@ describe("map furniture stands on a ground, not on a basemap tile", () => {
     );
     // two spreads of pillStyle now: the title band and the source band
     expect(src.match(/\.\.\.pillStyle/g)?.length).toBe(2);
+  });
+});
+
+// checkSymbolConformance was written and never called by anything except its own tests and
+// a COMMENT (skills/map-dw/src/map-spec.ts:432). This proves runProduceMapConformance now
+// actually asks it — a symbol map's legend/sizing/radius rules must be able to REFUSE, not
+// just silently pass because the guard was never wired.
+describe("runProduceMapConformance actually asks the symbol rules", () => {
+  const base = {
+    type: "symbol",
+    // Long enough / not ALL CAPS / not a bare year range, and carries a description — the
+    // furniture rules `checkGlobalMapConformance` already enforces for every guarded type are
+    // NOT what this task closes (they were already wired); a "well-formed" fixture has to
+    // clear them too, or the last case below could never legitimately equal [].
+    title: "Geneva outpaces Bern in this symbol comparison",
+    description:
+      "Value by point location, sample data for the conformance check",
+    altInsight: "a",
+    source: { name: "S" },
+    points: [
+      { lon: 6.1, lat: 46.2, label: "Genève", value: 100 },
+      { lon: 7.4, lat: 46.9, label: "Berne", value: 40 },
+    ],
+    maxRadius: 30,
+    format: { width: 1200, height: 675 },
+  };
+
+  it("should refuse a symbol map with no legend", () => {
+    const r = runProduceMapConformance("symbol", { ...base, hasLegend: false });
+    expect(r.checked).toBe(true);
+    expect(r.violations.join(" ")).toContain("legend");
+  });
+
+  it("should refuse radius-proportional sizing", () => {
+    const r = runProduceMapConformance("symbol", {
+      ...base,
+      sizingMode: "radius",
+    });
+    expect(r.violations.join(" ")).toContain("area-proportional");
+  });
+
+  it("should refuse a symbol that swallows the map", () => {
+    // SYMBOL_MAX_VIEWPORT_FRACTION = 0.25 (conformance.ts:198): 30px max radius is fine in a
+    // 675px-tall frame, 300px is not.
+    const r = runProduceMapConformance("symbol", { ...base, maxRadius: 300 });
+    expect(r.violations.join(" ")).toContain("too large");
+  });
+
+  it("should pass a well-formed symbol config", () => {
+    const r = runProduceMapConformance("symbol", base);
+    expect(r.violations).toEqual([]);
   });
 });
