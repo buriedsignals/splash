@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { exportProposalCopy, sourceQuestionCopy } from "./ui-copy";
+import { exportProposalCopy, signoffCopy, sourceQuestionCopy } from "./ui-copy";
 import { EN_SOURCE_QUESTIONS, sourceQuestion } from "../source/policy";
 
 describe("the interface-copy locale layer", () => {
@@ -24,6 +24,59 @@ describe("the interface-copy locale layer", () => {
   it("offers the same set of lines in every language it declares", () => {
     const en = Object.keys(exportProposalCopy("en")).sort();
     expect(Object.keys(exportProposalCopy("fr")).sort()).toEqual(en);
+  });
+});
+
+// The sign-off state a journalist is handed at EXPORT. The scripts keep printing the machine
+// token (`EDITORIAL: unsigned — LLM render-approval only`); this is the sentence printed beside
+// it, so relaying the machine line verbatim is no longer the only thing the code makes possible.
+describe("the sign-off state, said to a person", () => {
+  const LANGS = ["en", "fr", "de", "it"] as const;
+
+  it("answers in English for an unknown language", () => {
+    expect(signoffCopy("rm-CH").unsigned).toBe(signoffCopy("en").unsigned);
+  });
+
+  it("resolves a regional tag to its base language", () => {
+    expect(signoffCopy("fr-CH").unsigned).toBe(signoffCopy("fr").unsigned);
+  });
+
+  // Two DIFFERENT reasons a sign-off could not be bound, and they must not share a sentence:
+  // a folder delivery has no single file, a hosted embed has no file the newsroom OWNS. Since
+  // SKILL.md relays the SIGNOFF line and never the machine one, reusing `skipped` on the hosted
+  // path told the journalist « cette livraison est un dossier » about something that has no
+  // folder — a false explanation, on the routine hosted-DW interactive path.
+  it("keeps the hosted reason distinct from the folder reason, in every language", () => {
+    for (const lang of LANGS) {
+      const copy = signoffCopy(lang);
+      expect(copy.skippedHosted).not.toBe(copy.skipped);
+      expect(copy.skippedHosted.startsWith("SIGNOFF:")).toBe(true);
+    }
+    expect(signoffCopy("en").skipped).toContain("folder");
+    expect(signoffCopy("en").skippedHosted).not.toContain("folder");
+    expect(signoffCopy("fr").skippedHosted).not.toContain("dossier");
+  });
+
+  it("offers the same lines, translated, in every declared language", () => {
+    for (const lang of LANGS) {
+      const copy = signoffCopy(lang);
+      expect(Object.keys(copy).sort()).toEqual(
+        Object.keys(signoffCopy("en")).sort(),
+      );
+      expect(copy.signed("yvan")).toContain("yvan");
+    }
+    for (const lang of ["fr", "de", "it"] as const)
+      expect(signoffCopy(lang).unsigned).not.toBe(signoffCopy("en").unsigned);
+  });
+
+  it("states the FACT, never the mechanism the machine line names", () => {
+    for (const lang of LANGS) {
+      const line = signoffCopy(lang).unsigned;
+      expect(line.startsWith("SIGNOFF:")).toBe(true);
+      expect(line).not.toContain("LLM");
+      expect(line).not.toContain("EDITORIAL");
+      expect(line).not.toContain("render-approval");
+    }
   });
 });
 

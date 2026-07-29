@@ -47,7 +47,10 @@ import { embedDeliveryStatus } from "../src/preflight.ts";
 import { resolveProfile, resolveProfilePath } from "../src/resolve-profile.ts";
 import { readDecorState } from "../../../lib/newsroom/decor.ts";
 import { resolveLanguage } from "../../../lib/newsroom/language.ts";
-import { exportProposalCopy } from "../../../lib/newsroom/ui-copy.ts";
+import {
+  exportProposalCopy,
+  signoffCopy,
+} from "../../../lib/newsroom/ui-copy.ts";
 
 const SELF = fileURLToPath(import.meta.url);
 // The interface language for everything this script PRINTS. A fresh install resolves to
@@ -63,13 +66,16 @@ const SELF = fileURLToPath(import.meta.url);
 // migration — so a French newsroom driven through the skill printed English until something else
 // happened to call `loadDecor` (P1 parked finding #3). The read-only derivation applies that
 // migration and still writes nothing: this script must never create state as a side effect.
-function uiCopy() {
+function uiLang() {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-  const { ui } = resolveLanguage({
+  return resolveLanguage({
     override: { ui: process.env.SPLASH_UI_LANG },
     uiLang: readDecorState(root).uiLang,
-  });
-  return exportProposalCopy(ui);
+  }).ui;
+}
+
+function uiCopy() {
+  return exportProposalCopy(uiLang());
 }
 
 // The chart-native source-bundle generator — form "code-source" for chart-native is a
@@ -226,11 +232,16 @@ function main() {
         profile,
         artifactBytes,
       );
+      // TWO lines, one state: the machine token (guards, transcript and QA checks key on it)
+      // and the sentence a person can read. SKILL.md's voice rule relays the second, never
+      // the first — "LLM render-approval only" is the orchestrator talking to itself.
+      const say = signoffCopy(uiLang());
       console.log(
         unsigned
           ? "EDITORIAL: unsigned — LLM render-approval only"
           : `EDITORIAL: signed by ${signedBy.join(", ")}`,
       );
+      console.log(unsigned ? say.unsigned : say.signed(signedBy.join(", ")));
     } catch (e) {
       fail(e.message);
     }
@@ -417,6 +428,11 @@ function main() {
       console.log(
         "EDITORIAL: skipped (hosted embed — no owned bytes to re-verify; see S4d follow-up)",
       );
+      // `skippedHosted`, never `skipped`: this delivery is not a folder, it is bytes the
+      // newsroom does not own. SKILL.md relays the SIGNOFF line and not the machine one, so a
+      // reused wrong reason here would be the ONLY thing the journalist is told, on the routine
+      // hosted-DW interactive path.
+      console.log(signoffCopy(uiLang()).skippedHosted);
     } else {
       if (!interactive)
         fail(`${format} form=embed found no html to deploy in ${outDir}`);

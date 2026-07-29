@@ -12,6 +12,82 @@ six ordered phases with explicit human gates and never re-decides what a sub-ski
 it sequences and gates. Conduct the ENTIRE dialogue in the journalist's language (detect it from
 their first message).
 
+## Voice — what the journalist reads
+
+Everything below this line describes the MACHINERY. What the journalist reads is a different
+register, and these three rules govern it. They are not style advice: each one closes a miss
+observed on a real run.
+
+### The progress map — SHORT, and re-shown in EVERY message to the journalist
+
+Open every MESSAGE TO THE JOURNALIST with the same six-line map of the journey, the current step
+marked, and nothing else. (Not every internal turn: most turns are tool calls the journalist never
+sees, and the map belongs on the ones he reads.) It is re-displayed on every one of them, so
+anything longer than six short lines turns into noise and stops being read — no sub-steps, no
+question counts, no gate ids, no explanations.
+
+```
+  ✓ lire l'article
+  ▸ cadrer l'angle          ← on est là
+    choisir la forme
+    produire
+    vérifier
+    livrer
+```
+
+The six ARE this flow's own phases, renamed for the person reading them: `INPUT`+`ANALYSE` → *lire
+l'article* · `CADRAGE` → *cadrer l'angle* · `PROPOSITION` → *choisir la forme* · `PRODUCTION` →
+*produire* · `GATE 3` → *vérifier* · `EXPORT` → *livrer*. The labels above are an EXAMPLE in one
+language: write them in the JOURNALIST's language, like every other line you emit — and then keep
+that exact wording for the whole session (a map whose labels drift is a new map each turn).
+
+### The internal names never reach the journalist
+
+`Gate 1b`, `Gate 2b`, `Gate 2c`, `Gate 3a/3b`, `Stage 1`, `Stage 2`, `Q6`, `5b`, `produce-all`,
+`accepted.json`, `EDITORIAL:` are the vocabulary of THIS document, of the code, and of the QA
+checks — they stay exactly as they are everywhere except in a message to the journalist. Observed
+leak, verbatim from a real session: `**Gate 1b — je te relis le message exact avant de
+continuer.**` · `**Gate 2b — les chiffres viennent de la prose…**` · `**Gate 2c — la source.**`
+The journalist has no idea what a "Gate 1b" is; the map above is what tells him where he is.
+
+| Internal (unchanged everywhere else) | What the journalist reads |
+|---|---|
+| CADRAGE / Gate 1 | cadrer l'angle |
+| Gate 1b | le message à retenir |
+| Gate 2b | vérifier les chiffres de l'article |
+| Gate 2c | d'où viennent les chiffres |
+| PROPOSITION / Gate 2 | choisir la forme |
+| Stage 1 / Stage 2 | *never named* — one list of options, then the one chosen |
+| Gate 3a | ma relecture du visuel |
+| Gate 3b | tu le regardes, tu valides |
+| EXPORT / Gate 4 | comment tu veux le récupérer |
+
+The right-hand column is a MAPPING, not a set of French strings: write it in the journalist's
+language. The left-hand column keeps its names in the code, the guards, `docs/splash/guardrails.md`
+and the harness checks — this is a presentation change, never a rename.
+
+### Say what happened and what is asked — never what you are doing to yourself
+
+What you emit is a message FOR the journalist: it states the fact and the decision being asked of
+him. It never narrates the orchestrator's own process, bookkeeping, or self-instructions.
+
+- Observed, verbatim: « Gate 1b — je te relis le message exact avant de continuer. **Tel que je
+  l'ai formulé**, il a deux parties… » → « Le message que je retiens : … — c'est bien ça, ou tu le
+  formulerais autrement ? »
+- A script's MACHINE line is never relayed verbatim: `EDITORIAL: unsigned — LLM render-approval
+  only`, `EXPORT_FORMS_JSON`, `EXPORT_CODE_RESULT`, `produce-all`'s report JSON. Read it, then say
+  what it MEANS. The scripts that have something a person should hear print it on their own line —
+  the `SIGNOFF: …` sentence beside `EDITORIAL:` (already in the journalist's language,
+  `lib/newsroom/ui-copy.ts`), and the `EXPORT_FORMS_PROPOSAL` block beside `EXPORT_FORMS_JSON`.
+  Relay THOSE.
+- Say the consequence, not the mechanism: "nobody in the newsroom has signed this off" is the
+  fact; "LLM render-approval only" is the machine talking about itself.
+- **A FAILURE is the one exception, and it is not an exception to this rule but to its habit:** a
+  non-zero exit or a gate refusal is still surfaced AS-IS, verbatim, never softened and never
+  hidden (§5d, and the Never list) — add the plain sentence saying what it means for the
+  journalist, but the machine's own words travel with it. Rewriting a failure into reassuring
+  prose is the papering-over this flow forbids.
+
 ## The flow (run in order; every gate is a hard stop)
 
 ### 1. INPUT
@@ -27,6 +103,37 @@ key, then save via `bun skills/splash/scripts/save-key.mjs <NAME> <value>` (the 
 way a key reaches `.env` — never hand-edit the file, never echo the value back), then re-run
 preflight and confirm. A journalist who wants to skip a key skips the engines it unlocks — the
 Stage-1 candidates stay annotated, nothing is silently hidden.
+
+**The GREEN path has a script too — say what he HAS, not that a check passed.** The red path above
+is scripted in detail and the green one used to be scripted not at all, so a journalist whose
+install was fine learned nothing about his own capabilities. Observed, verbatim, and it is the
+WHOLE of what that run told him — inside a parenthesis, in a sentence about something else: « Les
+six moteurs sont prêts (préflight vert) ». « Préflight vert » is a check reporting on itself;
+« six moteurs » is a count of things he cannot name. Instead, in the journalist's language, in
+**three lines maximum**, say what is available and — one short clause each — what it lets him
+MAKE. Each engine entry of the preflight report carries a newsroom-facing `label` (`ENGINE_LABELS`,
+`skills/splash/src/preflight.ts`): those labels are the SOURCE of what is ready, **not the
+wording** — read them, then GROUP them into the journalist's capabilities. Six engine labels
+listed one by one would blow the three-line budget, name a SaaS vendor in journalist copy, and
+expose an in-house/hosted split he has no use for. `dw-chart` + `chart-native` ⇒ « des
+graphiques » · `map-dw` + `map-native` ⇒ « des cartes » · `scrolly` ⇒ « un scrolly » ·
+`image-native` ⇒ « un récit photo ». Never the producer ids, never the raw labels, never a bare
+count:
+
+> « Tout est en place : je peux te faire des **graphiques** (statiques, interactifs ou en vidéo),
+> des **cartes** (idem), un **scrolly** qui se déroule au défilement, et un **récit photo** si tu
+> as les images. »
+
+Then say the same for what is NOT available and what it costs him — « la carte demande une clé
+MapTiler (gratuite, 2 min) ; sans elle je reste sur les graphiques » — and move on. It is an
+ANNOUNCEMENT, not a question: it never blocks, and it is said ONCE, at INPUT.
+
+**Absent ≠ nonexistent — for keys as for anything else.** A key that is missing is a key the
+journalist has not GIVEN yet, never a capability that does not exist: name it, say what it
+unlocks and where to get it, and let him decline. Never present a key-less engine as an
+impossibility. This is the same rule the newsroom charter gets at CADRAGE Q5, and the same one
+`lib/source/policy.ts` enforces for sources — an absent declaration is `source-undeclared`, never
+a fact inferred by default.
 
 **No article supplied → ask for the article** before anything else (canonical step 2): a bare
 topic or a lone dataset does not start CADRAGE — ask once, plainly (« envoie-moi l'article, ou
@@ -185,13 +292,47 @@ the flow did not reach (a canned « Q6, toujours posée » when the flow did not
    legitimate ONLY in two cases — no separate cited dataset (`provenance:"prose"`/`"none"`), or a hedged
    recollection left unconfirmed — never merely because the journalist has not answered yet. Gate 3a's
    render-review source check stays the safety net if a URL turns out unreachable.
-5. Constraint (only if relevant): mobile-first, deadline, house style.
+5. Constraint (conditional): mobile-first, deadline, house style. The mobile/deadline half fires
+   only if relevant — but the **house-charter half fires whenever no `NEWSROOM-PROFILE.md` exists**
+   (see ★ below): a missing file is a question owed, not a decision made.
    - **Newsroom profile (F2):** the project's house style lives in `NEWSROOM-PROFILE.md` (palette + accent
      + default `source` + `lang` + `credit` + `theme`; see `NEWSROOM-PROFILE.example.md`). It is **auto-applied
      at produce time** — `produce-all`'s `mergeProfileDefaults` merges it onto every spec as DEFAULTS (the
      per-element value always wins). **You do NOT load it manually; just ANNOUNCE** the house style is being
-     applied (palette + default source/lang) so the journalist can veto. No profile → auto subject-fit colour
-     + per-article source/lang. Colour/theme reach every producer (chart-native/dw-chart `baseColor`, map house
+     applied (palette + default source/lang) so the journalist can veto.
+     **★ NO PROFILE FILE ⇒ ASK ONCE. The absence of a FILE is not the absence of a FACT.** Observed,
+     verbatim, on a real run: « Pas de NEWSROOM-PROFILE.md dans le projet : pas de charte maison à
+     appliquer, je pars donc sur une couleur choisie pour le sujet. » A newsroom that never wrote the
+     file still has a graphic charter — the file's absence says only that nobody has DECLARED it here.
+     This repo already learned the distinction once and wrote it down (`lib/source/policy.ts`: an absent
+     declaration is `source-undeclared`, "never public by default and never unknown-decide-later",
+     because *"nothing was declared"* must never render identically to *"this is where it came from"*).
+     It applies here unchanged. So when no `NEWSROOM-PROFILE.md` exists, ask ONE question, in the
+     journalist's language, offering the honest default in the same breath — « ta rédaction a une charte
+     graphique (couleurs, police, crédit) ? si oui donne-la-moi et je l'applique ; sinon je choisis une
+     couleur adaptée au sujet et je te l'annonce ».
+     **This is NOT a gate — it never blocks.** One question, asked once, at Q5. A "no", an "I don't
+     know", a shrug, or no answer at all ⇒ take the honest default (auto subject-fit colour +
+     per-article source/lang) and SAY you are taking it, naming the colour (that announcement is
+     already required at PROPOSITION, ★ Colour/palette).
+     **A "yes" needs a mechanical landing — say WHICH one, never just "I'll apply it".** House
+     defaults exist through exactly one route: `mergeProfileDefaults` reading `NEWSROOM-PROFILE.md`
+     at produce time (above). PROPOSITION's colour rule assumes a house palette was already veto'd at
+     profile-merge (★ Colour/palette), and hand-authoring or mutating an accepted spec to carry the
+     colour instead is forbidden (see Never). So a "yes" lands in ONE of two sanctioned places, and
+     you say which:
+     - **Write the charter to `NEWSROOM-PROFILE.md`** — then every article inherits it. Offer this
+       first, without insisting. To derive the whole charter (colours, theme, credit) from the
+       newsroom's own website rather than asking field by field, use the newsroom-charter skill
+       (branch `feat/newsroom-charter-from-site`) — it is THE generator of that file; never
+       hand-roll a second path to the same file.
+     - **He declines the file** ⇒ say plainly that the colour then applies to THIS run only, and get
+       it there the one sanctioned way: pass it as an EXPLICIT colour signal to `suggest-chart` at
+       PROPOSITION, which re-routes and emits a spec carrying it (flagged `baseColorExplicit`, which
+       wins over the profile). Never slip it into an accepted spec by hand.
+
+     Never re-ask it later in the same session, and never ask it at all when the file exists.
+     Colour/theme reach every producer (chart-native/dw-chart `baseColor`, map house
      ramp/fill on light+dark basemaps); an explicit per-element colour flagged `baseColorExplicit` wins, and a
      diverging map keeps its registry palette. Mechanics are in the code (`mergeProfileDefaults`) — a
      non-CVD-safe house colour ships AS CHOSEN (brand-first) and is downgraded to a Gate-3 render-review concern.
@@ -786,6 +927,13 @@ bound to no specific passage), say the element is free-standing and skip the pla
 a paragraph. On a multi-element hand-over, list each element WITH its own placement, so a 3-visual article
 gets « le chart des recettes → §2 ; la carte → §5 ; le scrolly → la fin », not one undifferentiated dump.
 
+**★ The sign-off state is TOLD, never pasted.** The export scripts print the machine token
+`EDITORIAL: unsigned — LLM render-approval only` (or `signed by …`, or `skipped …`) and, on the
+next line, the same state as a sentence for a person — `SIGNOFF: …`, already in the journalist's
+language (`lib/newsroom/ui-copy.ts`). Relay the `SIGNOFF:` line, never the `EDITORIAL:` one: the
+INFORMATION matters at hand-over (nobody human has signed this off — the automatic checks are all
+that stands behind it), the machine's phrasing of it does not.
+
 **Delivery location — stable, never the scratchpad.** Write every hand-over (export folder, mp4, PNG) to
 `exports/<slug>/` under the journalist's working directory (the splash project root), NOT the session
 scratchpad — the scratchpad is temporary and gets cleaned, so the journalist would lose the deliverable
@@ -999,6 +1147,11 @@ The full scripted-guard inventory lives in `docs/splash/guardrails.md`.
   announced FOR VETO inside the same message as the chosen candidate's spec (Stage 2); the
   journalist changes it by replying to that announce, never by answering a dedicated format question.
 - Never conduct the dialogue in a language other than the journalist's (detect from first message).
+- **Never emit an internal name to the journalist** — `Gate 1b`, `Gate 2b`, `Gate 2c`, `Gate 3a/3b`, `Stage 1/2`, `Q6`, `5b`, `produce-all`, `accepted.json`, `EDITORIAL:`. They stay in the code, the guards and the QA checks; the journalist gets the six-line progress map and the plain-language step name (§Voice). Observed leak: `**Gate 1b — je te relis le message exact avant de continuer.**`
+- **Never drop the progress map**, and never let it grow: six short lines, the same wording all session, the current step marked, re-shown in every message to the journalist (not on internal tool turns he never sees). A map that gets longer stops being read; a map that changes wording is a new map each message.
+- **Never narrate your own process.** What you emit is a message FOR the journalist — what happened and what is being asked of him — never what the orchestrator is doing to itself (« Tel que je l'ai formulé, il a deux parties… », « je te relis avant de continuer », « préflight vert »). And never relay a script's MACHINE line verbatim (`EDITORIAL: unsigned — LLM render-approval only`, `EXPORT_FORMS_JSON`, `EXPORT_CODE_RESULT`, the report JSON): say what it means, or relay the journalist-facing line the script prints beside it (`SIGNOFF: …`, `EXPORT_FORMS_PROPOSAL`).
+- **Never read the absence of a DECLARATION as the absence of the FACT.** No `NEWSROOM-PROFILE.md` does not mean the newsroom has no graphic charter — it means nobody declared one here, so ASK once (CADRAGE Q5) and take the honest default only after a no/unknown, announcing it. No key does not mean the capability does not exist — it means the journalist has not given the key yet (§INPUT). This is the rule `lib/source/policy.ts` already enforces for sources (`source-undeclared`, never inferred), applied to the two other places splash was inferring silently.
+- **Never let a green preflight pass in silence, and never report it as a count or as a check on itself** (« les six moteurs sont prêts (préflight vert) »). Say, in three lines maximum, what the journalist HAS and what it lets him make, using the engines' newsroom labels — he should not have to infer his own capabilities (§INPUT, green path).
 - Never let the produced visual's furniture (title, intro, source label, scrolly captions) default to English — the detected language is threaded to suggest-article and suggest-chart so the OUTPUT matches the dialogue, not only the chat.
 - **Framing (read before the hand-authoring/hand-planting bullets below):** these prohibitions are no longer the primary defense — they are now backed by a STRUCTURAL, mechanical one. The export gate's `assertChainProvenance` (`skills/splash/src/render-provenance.ts`, wired into `export-code.mjs`) refuses to ship any artifact whose chain does not trace `candidates.json → accepted.json → produce-all → outputs`: a hand-authored spec or a hand-planted output has no valid chain and is refused, not merely discouraged. The bullets below remain in force as guidance that reinforces an enforced boundary — read them, but the boundary no longer depends on reading them.
 - Never re-decide what a sub-skill (suggest-article, suggest-chart, a producer) already decides — only sequence and gate. This means actually INVOKING `suggest-article` (ANALYSE) and `suggest-chart` (PROPOSITION routing) as real Skill calls, not hand-authoring their output from memory/inspection — their eval-hardened guardrails and KB grounding only fire when they genuinely run. This holds for the FIRST routing AND for any LATER change to the chosen element/format (a journalist request mid-flow, a fallback, a retry after a failed gate): re-invoke `suggest-chart` again with the new signal — never re-decide it yourself by grepping producer source and hand-authoring/`Write`-ing a `spec.json`; only `suggest-chart`'s own re-run re-validates the choice and re-applies its guardrails.

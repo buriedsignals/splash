@@ -240,6 +240,72 @@ describe("placement at delivery (2026-07-18)", () => {
   });
 });
 
+// Journalist-facing voice (2026-07-28) — the four misses from the first hand-run of the flow on
+// a real article. Every one of them is prose-only by nature (nothing mechanical can tell "Gate
+// 1b — je te relis…" from a well-worded message), so these pins ARE the enforcement.
+describe("journalist-facing voice (2026-07-28)", () => {
+  const voice = splash.slice(
+    splash.indexOf("## Voice — what the journalist reads"),
+    splash.indexOf("## The flow"),
+  );
+
+  it("has a Voice section before the flow", () => {
+    expect(voice.length).toBeGreaterThan(0);
+  });
+
+  it("the progress map is the loop's six real steps, marked, short, re-shown every turn", () => {
+    // "every turn" is undefined for an orchestrator whose turns are mostly tool calls the
+    // journalist never sees — the map belongs on the messages he actually reads.
+    expect(voice).toContain("re-shown in EVERY message to the journalist");
+    expect(voice).not.toContain("re-shown EVERY turn");
+    for (const step of [
+      "lire l'article",
+      "cadrer l'angle",
+      "choisir la forme",
+      "produire",
+      "vérifier",
+      "livrer",
+    ])
+      expect(voice).toContain(step);
+    // the map is the flow's own phases, not a parallel invention
+    expect(voice).toContain("`PROPOSITION` → *choisir la forme*");
+    expect(splash).toContain("never let it grow: six short lines");
+  });
+
+  it("internal gate names are kept internally and mapped to journalist words", () => {
+    expect(voice).toContain("The internal names never reach the journalist");
+    expect(voice).toContain("le message à retenir"); // Gate 1b
+    expect(voice).toContain("d'où viennent les chiffres"); // Gate 2c
+    expect(voice).toContain("presentation change, never a rename");
+    expect(splash).toContain("Never emit an internal name to the journalist");
+  });
+
+  it("emitted text is a message FOR the journalist, never self-narration or a machine line", () => {
+    expect(voice).toContain(
+      "Say what happened and what is asked — never what you are doing to yourself",
+    );
+    expect(splash).toContain("Never narrate your own process");
+    expect(splash).toContain("SIGNOFF:");
+  });
+
+  it("the GREEN preflight path is scripted: what he HAS and what it lets him make", () => {
+    expect(input).toContain("The GREEN path has a script too");
+    expect(input).toContain("ENGINE_LABELS");
+    expect(splash).toContain("Never let a green preflight pass in silence");
+  });
+
+  it("a missing NEWSROOM-PROFILE.md is a question owed, asked once, never a gate", () => {
+    expect(cadrage).toContain(
+      "The absence of a FILE is not the absence of a FACT",
+    );
+    expect(cadrage).toContain("ta rédaction a une charte");
+    expect(cadrage).toContain("This is NOT a gate — it never blocks");
+    expect(splash).toContain(
+      "Never read the absence of a DECLARATION as the absence of the FACT",
+    );
+  });
+});
+
 describe("survivor rules — load-bearing, no mechanical backstop, MUST survive any slim", () => {
   // Each pin asserts the ACTIONABLE CLAUSE of the rule, not a lone keyword whose token recurs
   // elsewhere — a gutted rule whose keyword survives in a comment/reference would keep a weak

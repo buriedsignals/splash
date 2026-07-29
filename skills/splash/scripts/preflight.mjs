@@ -17,6 +17,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  ENGINE_LABELS,
   ENGINE_REQUIREMENTS,
   enginePreflightStatus,
   preflightFindings,
@@ -56,7 +57,15 @@ for (const producer of producers) {
   }
   const findings = preflightFindings(producer, { env });
   const status = enginePreflightStatus(producer, { env });
-  engines[producer] = { ready: findings.length === 0, status, findings };
+  // `label` travels with every entry, ready or not: the GREEN path has to be able to name what
+  // the journalist can MAKE, and a report keyed only on producer ids cannot (SKILL.md §1 INPUT,
+  // green-path script). Same source as the red path's envHelp — the capability registry.
+  engines[producer] = {
+    label: ENGINE_LABELS[producer],
+    ready: findings.length === 0,
+    status,
+    findings,
+  };
 }
 
 console.log(JSON.stringify({ engines }, null, 2));
