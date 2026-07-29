@@ -1,7 +1,7 @@
 ---
 id: parallel
-engines:
-  chart-native: parallel
+engines: {}
+unreachable: "chart-native has no MAPPERS entry for parallel (deferred: \"family-B: rare in a small newsroom\", native-types.ts) — no spec can reach it today"
 intent: [magnitude]
 shape: wide
 limits: { minPoints: 3 }

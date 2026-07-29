@@ -1,7 +1,7 @@
 ---
 id: gantt
-engines:
-  chart-native: gantt
+engines: {}
+unreachable: "chart-native has no MAPPERS entry for gantt (deferred: \"family-B: needs start/end intervals\", native-types.ts) — no spec can reach it today"
 intent: [change-over-time]
 shape: structural
 limits: {}
