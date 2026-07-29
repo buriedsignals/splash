@@ -245,6 +245,217 @@ describe("proposeCharter — typography", () => {
   });
 });
 
+// ── Regression guards. Each of these FAILS on the implementation that shipped before it, which
+// is the only thing that makes it a guard rather than a description.
+
+describe("regression — frequency is a tiebreak, never an argument", () => {
+  it("should keep a declared theme-color ahead of a link colour repeated sixty times", () => {
+    const css = Array.from(
+      { length: 60 },
+      (_, i) => `a.n${i} { color: #1a5fb4 }`,
+    ).join("\n");
+    const p = proposeCharter({
+      html: '<meta name="theme-color" content="#c8102e">',
+      sheets: [{ href: "s.css", css }],
+    });
+    expect(p.candidates[0]!.value).toBe("#c8102e");
+    expect(p.confidence).toBe("declared");
+  });
+
+  it("should keep a theme-color ahead of a --brand property repeated twenty times", () => {
+    const css = Array.from(
+      { length: 20 },
+      (_, i) => `.n${i} { --brand: #0a5c36 }`,
+    ).join("\n");
+    const p = proposeCharter({
+      html: '<meta name="theme-color" content="#c8102e">',
+      sheets: [{ href: "s.css", css }],
+    });
+    expect(p.candidates[0]!.value).toBe("#c8102e");
+  });
+
+  it("should still order two equally-declared colours by how often they occur", () => {
+    const css = [
+      ".a { --primary: #c8102e }",
+      ...Array.from({ length: 9 }, (_, i) => `.b${i} { --primary: #0a5c36 }`),
+    ].join("\n");
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates[0]!.value).toBe("#0a5c36");
+  });
+
+  it("should count every reading even past the evidence cap", () => {
+    const css = Array.from(
+      { length: 50 },
+      (_, i) => `.n${i} { --primary: #0a5c36 }`,
+    ).join("\n");
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates[0]!.count).toBe(50);
+    expect(p.candidates[0]!.evidence.length).toBeLessThanOrEqual(12);
+  });
+
+  it("should rank a hundred thousand identical declarations without stalling", () => {
+    const css = Array.from(
+      { length: 100_000 },
+      (_, i) => `.n${i} { --primary: #0a5c36 }`,
+    ).join("\n");
+    const started = Date.now();
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates[0]!.value).toBe("#0a5c36");
+    expect(Date.now() - started).toBeLessThan(10_000);
+  });
+});
+
+describe("regression — the Guardian's loose brand property", () => {
+  it("should NOT treat --article-link-border-hover as a brand declaration", () => {
+    const p = proposeCharter(
+      bare({
+        sheets: [
+          {
+            href: "s.css",
+            css: ":root { --article-link-border-hover: #c70000 }",
+          },
+        ],
+      }),
+    );
+    expect(p.confidence).not.toBe("declared");
+  });
+
+  it("should NOT treat --key-event-button-hover as a brand declaration", () => {
+    const p = proposeCharter(
+      bare({
+        sheets: [
+          { href: "s.css", css: ":root { --key-event-button-hover: #c70000 }" },
+        ],
+      }),
+    );
+    expect(p.confidence).not.toBe("declared");
+  });
+
+  it("should score a --accent property below the link colour", () => {
+    const css = ":root { --accent: #c8102e } a { color: #1a5fb4 }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates[0]!.value).toBe("#1a5fb4");
+    expect(p.confidence).toBe("inferred");
+  });
+});
+
+describe("regression — the masthead window must not swallow the page", () => {
+  it("should NOT credit a share icon that sits far below an <img> logo", () => {
+    const html = `<a class="site-logo"><img src="/logo.png"></a>${"<p>filler</p>".repeat(220)}<svg class="share"><path fill="#7b2fbe"/></svg>`;
+    const p = proposeCharter(bare({ html }));
+    expect(p.candidates).toEqual([]);
+    expect(p.confidence).toBe("none");
+  });
+
+  it("should still credit the logo's own SVG", () => {
+    const html = `<a class="site-logo"><svg><path fill="#c8102e"/></svg></a>`;
+    const p = proposeCharter(bare({ html }));
+    expect(p.candidates[0]!.value).toBe("#c8102e");
+  });
+
+  it("should NOT read a fill that sits after the logo SVG closes", () => {
+    const html = `<a class="site-logo"><svg><path fill="#c8102e"/></svg><svg class="share"><path fill="#7b2fbe"/></svg></a>`;
+    const p = proposeCharter(bare({ html }));
+    expect(p.candidates.map((c) => c.value)).toEqual(["#c8102e"]);
+  });
+
+  it("should name the anchoring element in the receipt", () => {
+    const html = `<a class="site-logo"><svg><path fill="#c8102e"/></svg></a>`;
+    const p = proposeCharter(bare({ html }));
+    expect(p.candidates[0]!.evidence[0]!.token).toContain("site-logo");
+  });
+});
+
+describe("regression — the score floor", () => {
+  it("should refuse a colour that only appears in hashed utility classes", () => {
+    const css =
+      ".css-1ab { color: #e00000 } .css-2cd { background-color: #e00000 } .css-3ef { border-top-color: #e00000 }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates).toEqual([]);
+    expect(p.confidence).toBe("none");
+  });
+
+  it("should name the colour it refused, so the journalist can recognise it", () => {
+    const css = ".css-1ab { color: #e00000 }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.notes.join(" ")).toContain("#e00000");
+    expect(p.notes.join(" ")).toContain("nothing is proposed");
+  });
+});
+
+describe("regression — the ground", () => {
+  it("should take the LAST background declaration, the way CSS does", () => {
+    const css = "body { background: #0b0b0b } body { background: #ffffff }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.ground?.value).toBe("#ffffff");
+    expect(groundTheme(p)).toBeNull();
+  });
+
+  it("should let a linked stylesheet override an inline <style>", () => {
+    const p = proposeCharter({
+      html: "<style>body{background:#0b0b0b}</style>",
+      sheets: [{ href: "s.css", css: "body{background:#ffffff}" }],
+    });
+    expect(p.ground?.dark).toBe(false);
+  });
+
+  it("should not read a ten-percent wash as the page ground", () => {
+    const css = ":root { --ds-color-background-faible: rgba(0,0,0,.1) }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.ground).toBeUndefined();
+  });
+
+  it("should warn that a dark ground is the least reliable reading", () => {
+    const css = "body { background: #12161c } :root { --brand: #e8b100 }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.notes.join(" ")).toContain("least reliable");
+  });
+});
+
+describe("regression — theme variants are not the default", () => {
+  it("should skip a [data-color-mode=dark] rule", () => {
+    const css =
+      "body{background:#ffffff} html[data-color-mode=dark] body { background: #0b0b0b }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.ground?.value).toBe("#ffffff");
+  });
+
+  it("should skip a [data-theme=dark] rule", () => {
+    const css =
+      ':root{--brand:#0a5c36} [data-theme="dark"] { --brand: #e8b100 }';
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates.map((c) => c.value)).toEqual(["#0a5c36"]);
+  });
+
+  it("should skip a .dark class scope", () => {
+    const css = ":root{--brand:#0a5c36} html.dark { --brand: #e8b100 }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates.map((c) => c.value)).toEqual(["#0a5c36"]);
+  });
+
+  it("should not skip a rule that merely mentions a word containing dark", () => {
+    const css = ".darkroom { --brand: #0a5c36 }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates[0]!.value).toBe("#0a5c36");
+  });
+});
+
+describe("regression — !important is not a typeface", () => {
+  it("should not report serif!important as the newsroom's font", () => {
+    const css =
+      ".ds-card__title { font-family: var(--font-antiqua-b-bold),serif!important }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.typography.map((t) => t.family)).not.toContain("serif!important");
+    expect(p.typography).toEqual([]);
+  });
+
+  it("should still read a real family that carries !important", () => {
+    const css = "body { font-family: 'Publico Text', serif !important }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.typography[0]!.family).toBe("Publico Text");
+  });
+});
+
 describe("accentCandidate", () => {
   it("should offer a second candidate only when its hue is genuinely different", () => {
     const css = ":root{--brand:#0a5c36;--accent:#c8102e}";

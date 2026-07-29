@@ -6,11 +6,18 @@
 //       --palette "#c8102e,#0a5c36" [--accent "#…"] [--theme "#…"|dark] \
 //       [--name "Heidi.news"] [--site-url https://…] [--lang fr] [--typeface "Publico Text"]
 //
-// The split is the whole design. `read` MEASURES a site and prints what it found with receipts;
-// it writes nothing, anywhere. `write` takes VALUES on the command line and never sees the site,
-// the proposal, or any file `read` produced — so there is no path from "a colour was measured" to
-// "a colour is the house colour" that does not go through a human typing it back. A measurement
-// and a decision are different things, and this is the mechanism that keeps them different.
+// The split exists so the two cannot couple by ACCIDENT. `read` measures a site and prints what
+// it found with receipts; it writes nothing, anywhere. `write` takes VALUES on the command line
+// and never sees the site, the proposal, or any file `read` produced, so no code path carries a
+// measurement into the profile on its own.
+//
+// What it does NOT do — stated plainly, because the first draft of this comment overstated it:
+// it cannot prove a human was involved. An agent that just ran `read` can read the hex off the
+// screen and type it into `write --confirmed` on its next tool call. `--confirmed` is
+// self-attested. That is why `read` prints no machine-parseable blob shaped for these flags —
+// removing it raises the cost of silent auto-piping instead of lowering it — and why the real
+// answer, if this ever needs to be evidence rather than a guard, is the existing sign-off
+// primitive (`apply-signoff.mjs` / `requiredSigners`), not a boolean.
 //
 // `write` additionally refuses without `--confirmed`, and refuses to overwrite an existing
 // NEWSROOM-PROFILE.md without `--replace`: after creation that file belongs to the newsroom.
@@ -83,7 +90,7 @@ function renderProposal(proposal, fetchNotes) {
     );
     out.push("");
     proposal.candidates.forEach((c, i) => {
-      out.push(`${i + 1}. ${c.value}  (score ${c.score})`);
+      out.push(`${i + 1}. ${c.value}  (score ${c.score}, read ${c.count}×)`);
       const seen = new Set();
       for (const e of c.evidence) {
         if (seen.has(e.signal)) continue;
@@ -92,6 +99,12 @@ function renderProposal(proposal, fetchNotes) {
         out.push(`       ${e.token}`);
       }
     });
+    // A near-tie is not a ranking. Say so rather than let the order imply a winner.
+    const [first, second] = proposal.candidates;
+    if (second && first.score - second.score <= 1)
+      out.push(
+        `\n   ⚠ ${first.value} and ${second.value} are within a point of each other — this ranking does not choose between them. Ask which one is theirs.`,
+      );
     const accent = accentCandidate(proposal);
     if (accent) {
       out.push("");
@@ -128,9 +141,6 @@ function renderProposal(proposal, fetchNotes) {
     out.push("");
     for (const n of notes) out.push(`- ${n}`);
   }
-  out.push("");
-  out.push("MEASUREMENT_JSON");
-  out.push(JSON.stringify({ ...proposal, fetchNotes: fetchNotes ?? [] }));
   return out.join("\n");
 }
 

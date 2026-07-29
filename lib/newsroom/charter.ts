@@ -33,10 +33,37 @@ export const NEUTRAL_SATURATION = 0.18;
 export const NEUTRAL_LIGHTNESS_MAX = 0.94;
 /** Below this HSL lightness a colour is a near-black — body text or UI chrome, not a brand hue. */
 export const NEUTRAL_LIGHTNESS_MIN = 0.09;
-/** The most a colour can earn from merely being FREQUENT. Deliberately below `control` (55). */
-export const FREQUENCY_BONUS_CAP = 40;
+/**
+ * The most a colour can earn from merely being FREQUENT.
+ *
+ * It must stay UNDER the smallest gap between two adjacent signal weights, or frequency stops
+ * being a tiebreak and becomes an argument again. The first cut used 40 — larger than every gap
+ * in the top four (100/90/85/75) — so a link colour repeated 60 times scored 105 and beat
+ * `<meta theme-color>` at 102, silently dropping a `declared` reading to `inferred`. Sixty
+ * `a{color:…}` rules is an ordinary newsroom stylesheet, so this was reachable, not theoretical.
+ * The ORDERING no longer depends on this number at all (see `rank`); the cap keeps the printed
+ * score honest too.
+ */
+export const FREQUENCY_BONUS_CAP = 4;
 /** Occurrences at which the frequency bonus reaches half its cap. */
 export const FREQUENCY_HALF = 20;
+/**
+ * A candidate below this score is not proposed at all.
+ *
+ * `WEIGHT.control` is the floor because everything under it comes from UNLABELLED stylesheet
+ * declarations — "the first saturated hex in the bundle", which is not evidence of anything.
+ * Live proof: bbc.com yields `#e00000` at score 13 from three hashed Emotion classes, with no
+ * theme-color, no `--brand` and no masthead anywhere. The honest answer there is to ask the
+ * question, not to head a ranked list with a colour picked out of a bundle.
+ */
+export const MIN_CANDIDATE_SCORE = 55;
+/** Evidence kept per candidate. Bounds both the ranking cost and what is printed. */
+export const EVIDENCE_CAP = 12;
+/**
+ * How far after a `logo`/`masthead` attribute the SVG is still believed to be the masthead.
+ * Was 4000, which reached a share icon 2.6 kB down the page — see `mastheadColours`.
+ */
+export const MASTHEAD_WINDOW = 1200;
 /** Euclidean RGB distance under which two declared colours are the SAME house colour. */
 export const MERGE_DISTANCE = 12;
 /** Relative luminance under which the page ground counts as dark. */
@@ -51,7 +78,8 @@ export const CANDIDATE_CAP = 5;
 /** Which kind of declaration a colour was read from. Ordered loosely by deliberateness. */
 export type ColourSignal =
   | "theme-color" // <meta name="theme-color">
-  | "brand-property" // --brand / --primary / --accent custom property
+  | "brand-property" // --brand / --primary custom property
+  | "accent-property" // --accent custom property: a UI accent, not necessarily the masthead
   | "masthead" // fill/stroke of the logo or masthead SVG
   | "link" // the colour of a link
   | "control" // a button / CTA / tag background
@@ -70,7 +98,9 @@ export type ColourCandidate = {
   /** #rrggbb, lowercase — the best-declared representative of this colour. */
   value: string;
   score: number;
-  /** Every place this colour (or one within MERGE_DISTANCE of it) was read. */
+  /** How many times this colour (or one within MERGE_DISTANCE of it) was read. */
+  count: number;
+  /** Where it was read — capped at EVIDENCE_CAP, so this is a sample, not the whole tally. */
   evidence: Measurement[];
 };
 
@@ -390,9 +420,15 @@ const WEIGHT: Record<ColourSignal, number> = {
   "brand-property": 90,
   masthead: 85,
   link: 75,
+  // `--accent` is usually a UI accent — a hover, a badge — not the masthead colour. It is a real
+  // declaration, so it outranks an unlabelled one, but it does not outrank the link colour and it
+  // does not license `declared` confidence.
+  "accent-property": 70,
   control: 55,
   declared: 8,
 };
+/** The smallest gap between two adjacent weights above. The frequency bonus must stay under it. */
+const SMALLEST_SIGNAL_GAP = 5;
 
 // A custom property counts as a BRAND declaration only when the brand word is what the property
 // is ABOUT — its first meaningful segment, after at most one namespace prefix.
@@ -403,7 +439,10 @@ const WEIGHT: Record<ColourSignal, number> = {
 // confidence from `inferred` to `declared` on a value that is neither. Overclaiming confidence is
 // worse than finding nothing — it is the one thing the journalist cannot check.
 const BRAND_PROPERTY =
-  /^--(?:(?:color|colour|c|clr|ds|site|global|theme|token)-)?(?:brand|primary|accent|main|highlight)(?:-(?:colou?r|hue|bg|background|base|default|dark|light|hover|[0-9]{1,3}))?$/;
+  /^--(?:(?:color|colour|c|clr|ds|site|global|theme|token)-)?(?:brand|primary|main|highlight)(?:-(?:colou?r|hue|bg|background|base|default|dark|light|hover|[0-9]{1,3}))?$/;
+/** `--accent` and friends, scored below the link colour — see WEIGHT. */
+const ACCENT_PROPERTY =
+  /^--(?:(?:color|colour|c|clr|ds|site|global|theme|token)-)?accent(?:-(?:colou?r|hue|bg|background|base|default|dark|light|hover|[0-9]{1,3}))?$/;
 /** The link colour as a NAMED property (`--link`, `--color-link`), not any name containing "link". */
 const LINK_PROPERTY =
   /^--(?:(?:color|colour|c|clr|ds|site|global|theme|token)-)?link(?:-colou?r)?$/;
@@ -460,13 +499,29 @@ function mastheadColours(html: string): Measurement[] {
     /(class|id)\s*=\s*["'][^"']*(?:logo|masthead|wordmark|site-?title|brand)[^"']*["']/gi;
   for (const a of html.matchAll(anchors)) {
     const start = a.index ?? 0;
-    const window = html.slice(start, start + 4000);
-    if (!/<svg/i.test(window) && !/fill\s*[:=]/i.test(window)) continue;
-    for (const f of window.matchAll(
+    const window = html.slice(start, start + MASTHEAD_WINDOW);
+    // The window must contain an actual `<svg`, and only what is INSIDE that element is read.
+    // The first cut credited any `fill=` within 4000 characters of a `logo` attribute — so a page
+    // whose logo is an <img> and whose SHARE ICON sits 2.6 kB later reported the share icon's
+    // purple as "the fill of the masthead/logo artwork", at `declared` confidence. That is the
+    // same defect as the loose brand-property regex, and the same rule condemns it: overclaiming
+    // confidence is worse than finding nothing, because the journalist cannot check it.
+    const svgAt = window.search(/<svg[\s>]/i);
+    if (svgAt < 0) continue;
+    const close = window.toLowerCase().indexOf("</svg>", svgAt);
+    const svg = window.slice(svgAt, close < 0 ? window.length : close + 6);
+    for (const f of svg.matchAll(
       /(?:fill|stroke)\s*[:=]\s*["']?(#[0-9a-fA-F]{3,8}|(?:rgba?|hsla?)\([^)]*\))/gi,
     )) {
       const hex = parseCssColour(f[1]!);
-      if (hex) out.push({ value: hex, signal: "masthead", token: f[0].trim() });
+      // The receipt carries the ANCHOR — `class="site-logo"` — not a bare `fill="#…"`. A receipt
+      // that does not say which element it came from is not a receipt the journalist can audit.
+      if (hex)
+        out.push({
+          value: hex,
+          signal: "masthead",
+          token: `${a[0].trim()} … <svg> ${f[0].trim()}`,
+        });
     }
   }
   return out;
@@ -539,7 +594,12 @@ function scanCss(css: string, raw: Raw): void {
           // A wash is not the ground. `rgba(0,0,0,.1)` is a hairline border over whatever is
           // behind it; taken at face value it turns a white newsroom black — which is exactly
           // what a live read of Le Monde produced before this guard.
-          if (!raw.ground && alphaOf(tok) >= GROUND_MIN_ALPHA)
+          //
+          // The LAST declaration wins, because that is what CSS does. The first cut locked in
+          // whichever was scanned first, so `body{background:#0b0b0b} body{background:#fff}`
+          // reported a dark ground — and inline <style> is scanned before the linked sheets that
+          // normally override it.
+          if (alphaOf(tok) >= GROUND_MIN_ALPHA)
             raw.ground = { value: hex, signal: "declared", token };
           continue;
         }
@@ -548,6 +608,12 @@ function scanCss(css: string, raw: Raw): void {
             raw.measurements.push({
               value: hex,
               signal: "brand-property",
+              token,
+            });
+          else if (ACCENT_PROPERTY.test(prop))
+            raw.measurements.push({
+              value: hex,
+              signal: "accent-property",
               token,
             });
           else if (LINK_PROPERTY.test(prop))
@@ -616,32 +682,108 @@ export function firstFamily(value: string): string | null {
  * (75), or a declaration (85-100). The bonus saturates instead of clipping, so two
  * frequency-only candidates still order by how common they are.
  */
-function scoreOf(evidence: Measurement[]): number {
-  const best = evidence.reduce((w, e) => Math.max(w, WEIGHT[e.signal]), 0);
-  const n = evidence.length;
-  return best + (FREQUENCY_BONUS_CAP * n) / (n + FREQUENCY_HALF);
+function bestWeight(evidence: Measurement[]): number {
+  return evidence.reduce((w, e) => Math.max(w, WEIGHT[e.signal]), 0);
 }
 
+/** How many readings a candidate has, for the frequency bonus and the tiebreak. */
+function occurrences(g: ColourCandidate): number {
+  return g.count;
+}
+
+function scoreOf(g: ColourCandidate): number {
+  const n = g.count;
+  return (
+    bestWeight(g.evidence) + (FREQUENCY_BONUS_CAP * n) / (n + FREQUENCY_HALF)
+  );
+}
+
+/**
+ * Rank the candidates.
+ *
+ * The order is LEXICOGRAPHIC — best signal first, then how often it recurs, then the hex, so it
+ * is fully deterministic — and NOT a comparison of the summed scores. That is deliberate: an
+ * additive order silently depends on the bonus staying smaller than every inter-signal gap, and
+ * the first cut got that wrong (a 60× link colour outranked a `<meta theme-color>`). Sorting on
+ * the tuple makes "frequency can never outrank a deliberate declaration" a structural property
+ * of the comparator instead of an arithmetic coincidence. The printed `score` is for the
+ * journalist; nothing depends on it.
+ *
+ * Grouping is bucketed by exact hex first (a Map) and only then merged across near-identical
+ * hexes, so a stylesheet declaring one colour a hundred thousand times is linear in the readings
+ * and quadratic only in the number of DISTINCT colours. The unbucketed first cut took 17.9 s on
+ * 100k identical declarations.
+ */
 function rank(measurements: Measurement[]): ColourCandidate[] {
-  const groups: ColourCandidate[] = [];
+  const buckets = new Map<string, ColourCandidate>();
   for (const m of measurements) {
     if (isNeutral(m.value)) continue;
-    const hit = groups.find(
-      (g) => distance(g.value, m.value) <= MERGE_DISTANCE,
-    );
-    if (hit) {
-      hit.evidence.push(m);
-      // The representative is the best-DECLARED reading, not the first one seen.
-      const best = hit.evidence.reduce((a, b) =>
-        WEIGHT[b.signal] > WEIGHT[a.signal] ? b : a,
-      );
-      hit.value = best.value;
+    const b = buckets.get(m.value);
+    if (b) {
+      b.count++;
+      if (b.evidence.length < EVIDENCE_CAP) b.evidence.push(m);
+      else if (WEIGHT[m.signal] > bestWeight(b.evidence))
+        b.evidence[EVIDENCE_CAP - 1] = m;
     } else {
-      groups.push({ value: m.value, score: 0, evidence: [m] });
+      buckets.set(m.value, {
+        value: m.value,
+        score: 0,
+        count: 1,
+        evidence: [m],
+      });
     }
   }
-  for (const g of groups) g.score = Math.round(scoreOf(g.evidence));
-  return groups.sort((a, b) => b.score - a.score).slice(0, CANDIDATE_CAP);
+  const groups: ColourCandidate[] = [];
+  for (const b of buckets.values()) {
+    const hit = groups.find(
+      (g) => distance(g.value, b.value) <= MERGE_DISTANCE,
+    );
+    if (!hit) {
+      groups.push(b);
+      continue;
+    }
+    hit.count += b.count;
+    for (const e of b.evidence)
+      if (hit.evidence.length < EVIDENCE_CAP) hit.evidence.push(e);
+    // The representative is the best-DECLARED reading, not the first one seen.
+    hit.value = hit.evidence.reduce((a, c) =>
+      WEIGHT[c.signal] > WEIGHT[a.signal] ? c : a,
+    ).value;
+  }
+  for (const g of groups) g.score = Math.round(scoreOf(g));
+  groups.sort(
+    (a, b) =>
+      bestWeight(b.evidence) - bestWeight(a.evidence) ||
+      occurrences(b) - occurrences(a) ||
+      a.value.localeCompare(b.value),
+  );
+  // Below the floor, a "candidate" is just the first saturated hex in a bundle — see
+  // MIN_CANDIDATE_SCORE. Those are reported in `notes`, never proposed.
+  return groups
+    .filter((g) => g.score >= MIN_CANDIDATE_SCORE)
+    .slice(0, CANDIDATE_CAP);
+}
+
+/** The best reading that did NOT clear the floor, so the refusal can name what it saw. */
+function belowFloor(
+  measurements: Measurement[],
+): { value: string; score: number } | null {
+  const buckets = new Map<string, number>();
+  const signals = new Map<string, number>();
+  for (const m of measurements) {
+    if (isNeutral(m.value)) continue;
+    buckets.set(m.value, (buckets.get(m.value) ?? 0) + 1);
+    signals.set(m.value, Math.max(signals.get(m.value) ?? 0, WEIGHT[m.signal]));
+  }
+  let best: { value: string; score: number } | null = null;
+  for (const [value, n] of buckets) {
+    const score = Math.round(
+      (signals.get(value) ?? 0) +
+        (FREQUENCY_BONUS_CAP * n) / (n + FREQUENCY_HALF),
+    );
+    if (!best || score > best.score) best = { value, score };
+  }
+  return best;
 }
 
 const DECLARED_SIGNALS = new Set<ColourSignal>([
@@ -703,6 +845,16 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
       ? "declared"
       : "inferred";
 
+  // A reading that did not clear the floor is NAMED but not proposed — hiding it would be as
+  // dishonest as proposing it, and the journalist may recognise their own colour in it.
+  if (!top) {
+    const weak = belowFloor(raw.measurements);
+    if (weak)
+      notes.push(
+        `the strongest colour read was ${weak.value}, but it comes only from unlabelled stylesheet declarations (score ${weak.score}, under the floor of ${MIN_CANDIDATE_SCORE}) — that is not evidence of a brand colour, so nothing is proposed`,
+      );
+  }
+
   if (!sources.sheets?.length && !inlineStyles(sources.html ?? "").trim())
     notes.push(
       "no stylesheet was read — the page may build its styles in JavaScript, in which case nothing here is reliable",
@@ -717,7 +869,7 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
     );
   if (confidence === "none")
     notes.push(
-      "the site declares no non-grey colour at all — there is nothing to propose, and the house colour has to be asked for",
+      "the site names no brand colour this reading can trust — there is nothing to propose, and the house colour has to be asked for",
     );
 
   if (raw.ground && luminanceOf(raw.ground.value) < DARK_GROUND_LUMINANCE)

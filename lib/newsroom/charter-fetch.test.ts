@@ -32,6 +32,68 @@ describe("normalizeSiteUrl", () => {
   });
 });
 
+describe("normalizeSiteUrl — server-side request forgery", () => {
+  it("should refuse the loopback and the cloud metadata address", () => {
+    expect(normalizeSiteUrl("http://127.0.0.1/")).toBeNull();
+    expect(normalizeSiteUrl("http://169.254.169.254/")).toBeNull();
+  });
+
+  it("should refuse the private ranges", () => {
+    expect(normalizeSiteUrl("http://192.168.1.1/")).toBeNull();
+    expect(normalizeSiteUrl("http://10.0.0.5/")).toBeNull();
+    expect(normalizeSiteUrl("http://172.16.4.4/")).toBeNull();
+  });
+
+  it("should refuse a rebinding host that embeds a private quad", () => {
+    expect(normalizeSiteUrl("http://10.0.0.5.nip.io/")).toBeNull();
+    expect(normalizeSiteUrl("http://127-0-0-1.nip.io/")).toBeNull();
+  });
+
+  it("should refuse an IPv6 literal and a .internal name", () => {
+    expect(normalizeSiteUrl("http://[::1]/")).toBeNull();
+    expect(normalizeSiteUrl("http://metadata.internal/")).toBeNull();
+  });
+
+  it("should still accept an ordinary newsroom host", () => {
+    expect(normalizeSiteUrl("https://www.heidi.news")).toBe(
+      "https://www.heidi.news/",
+    );
+  });
+});
+
+describe("collectSiteSources — redirects", () => {
+  it("should refuse a public host that bounces to the loopback", async () => {
+    const fetchImpl = (async () => {
+      const res = new Response("<html>secrets</html>", { status: 200 });
+      Object.defineProperty(res, "url", { value: "http://127.0.0.1/admin" });
+      return res;
+    }) as unknown as typeof fetch;
+    const got = await collectSiteSources("https://example.org/", { fetchImpl });
+    expect("error" in got).toBe(true);
+    if ("error" in got) expect(got.error).toContain("non-public");
+  });
+
+  it("should keep the site's own stylesheets across an apex to www redirect", async () => {
+    const fetchImpl = (async (input: string | URL) => {
+      const u = String(input);
+      if (u === "https://heidi.news/") {
+        const res = new Response('<link rel="stylesheet" href="/a.css">', {
+          status: 200,
+        });
+        Object.defineProperty(res, "url", { value: "https://www.heidi.news/" });
+        return res;
+      }
+      if (u === "https://www.heidi.news/a.css")
+        return new Response("a{color:#d5121e}", { status: 200 });
+      return new Response("", { status: 404 });
+    }) as unknown as typeof fetch;
+    const got = await collectSiteSources("https://heidi.news/", { fetchImpl });
+    if ("error" in got) throw new Error(got.error);
+    expect(got.sheets.length).toBe(1);
+    expect(got.url).toBe("https://www.heidi.news/");
+  });
+});
+
 describe("stylesheetHrefs", () => {
   it("should resolve a relative href against the page", () => {
     const html = '<link rel="stylesheet" href="/css/site.css">';

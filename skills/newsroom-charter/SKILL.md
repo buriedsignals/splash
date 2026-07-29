@@ -42,8 +42,12 @@ Non-negotiable, and the reason this skill exists in two halves:
 - **Never raise the confidence the extractor states.** `inferred` means the site names nothing and
   the value is a guess; relay it as a guess. `declared` means the site literally states it.
 - The two subcommands **cannot reach each other**: `read` writes nothing, and `write` never sees
-  the site or the proposal — it takes values on the command line. That is structural, not a
-  convention; there is no way to skip the human.
+  the site or the proposal — it takes values on the command line. That is a guard against the two
+  coupling SILENTLY; it is not proof a human was involved. `--confirmed` is self-attested, and
+  nothing stops an agent from reading a hex off `read`'s output and typing it into `write` on the
+  next call. **The gate below is the control, not the flag.** If the newsroom ever needs evidence
+  rather than a guard, that is the sign-off primitive (`apply-signoff.mjs` / `requiredSigners`),
+  not this boolean.
 
 ## Architecture
 
@@ -101,6 +105,9 @@ the setup page uses, so a charter-written profile and a hand-filled one are the 
    silence; never treat the proposal itself as approval; the journalist's edits win verbatim.
 
 5. **When the site answers nothing** (`confidence: none`, no candidates) — do not improvise.
+   This also fires when a colour WAS read but only from unlabelled declarations (bbc.com's
+   `#e00000`, out of hashed Emotion classes). The notes name that colour; relay it as « la seule
+   couleur que j'ai vue, sans que le site la désigne comme la vôtre », never as a proposal.
    Say it: « Votre site n'affiche aucune couleur de marque que je puisse lire (fond blanc, texte
    noir, logo en image). Quelle est votre couleur ? Si vous ne savez pas, dites-le : Splash
    choisira une couleur adaptée au sujet de chaque visuel, ce qui est un bon défaut. » A profile
@@ -136,11 +143,19 @@ bun skills/splash/scripts/propose-charter.mjs write . --confirmed \
 
 All in `lib/newsroom/charter.ts` unless noted.
 
-- **signal weights**: theme-color 100 · brand-property 90 · masthead 85 · link 75 · control 55 ·
-  any other declared colour 8 (`WEIGHT`) — the method IS this ordering
-- **FREQUENCY_BONUS_CAP**: 40 — the most a colour can earn from merely being common, kept below
-  `control` so frequency can never outrank a deliberate declaration
+- **signal weights**: theme-color 100 · brand-property 90 · masthead 85 · link 75 ·
+  accent-property 70 · control 55 · any other declared colour 8 (`WEIGHT`) — the method IS this
+  ordering
+- **FREQUENCY_BONUS_CAP**: 4 — the most a colour can earn from merely being common. It is kept
+  under the SMALLEST gap between two adjacent weights (5); nothing bigger is a tiebreak. The
+  ordering itself does not depend on it — candidates sort lexicographically on
+  (best signal, occurrences, hex), so frequency structurally cannot outrank a declaration
 - **FREQUENCY_HALF**: 20 occurrences — where the frequency bonus reaches half its cap
+- **MIN_CANDIDATE_SCORE**: 55 — under it nothing is proposed at all (an unlabelled hex out of a
+  bundle is not evidence); the colour is named in the notes and the question is asked instead
+- **MASTHEAD_WINDOW**: 1200 characters after a `logo`/`masthead` attribute, and only inside an
+  actual `<svg>` — a wider window credited a share icon as the masthead
+- **EVIDENCE_CAP**: 12 receipts kept per candidate (the count is still exact)
 - **NEUTRAL_SATURATION**: 0.18 — below it, a colour is a grey and cannot be a brand hue
 - **NEUTRAL_LIGHTNESS_MIN / MAX**: 0.09 / 0.94 — the near-black and near-white cut-offs
 - **MERGE_DISTANCE**: 12 (RGB) — two readings closer than this are the same house colour
