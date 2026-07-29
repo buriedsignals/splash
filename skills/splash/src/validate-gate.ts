@@ -97,21 +97,29 @@ function validateMapNative(spec: unknown): ValidationOutcome {
 // passes here; only a genuinely malformed spec (bad shape) is rejected. But a silent pass
 // is what §6④ forbids: a typo'd nativeType went through with not even a warning. NOT an
 // error — promoting this to a failure would close the measured FALLBACK_TO_DW capability —
-// so name the type and the fallback it takes, as a warning.
-function validateNative(spec: unknown): ValidationOutcome {
+// so name the type and the fallback it takes, as a warning. The fallback differs by producer:
+// chart-native has an automatic Datawrapper fallback; scrolly does not.
+function validateNative(
+  spec: unknown,
+  producer: "chart-native" | "scrolly",
+): ValidationOutcome {
   try {
     specToNativeConfig(spec as NativeSpec);
     return { ok: true, warnings: [] };
   } catch (e) {
     if (e instanceof UnsupportedNativeType) {
       const t = (spec as { nativeType?: unknown } | null)?.nativeType;
+      const warningText =
+        producer === "chart-native"
+          ? `nativeType "${String(t)}" has no chart-native mapper — this element will be ` +
+            "routed to Datawrapper instead. If that was a typo, fix it; if it was " +
+            "deliberate, nothing to do."
+          : `nativeType "${String(t)}" has no chart-native mapper — scrolly chart tracks ` +
+            "do not have an automatic Datawrapper fallback. The type must be mapped or the " +
+            "element produced differently.";
       return {
         ok: true,
-        warnings: [
-          `nativeType "${String(t)}" has no chart-native mapper — this element will be ` +
-            "routed to Datawrapper instead. If that was a typo, fix it; if it was " +
-            "deliberate, nothing to do.",
-        ],
+        warnings: [warningText],
       };
     }
     return { ok: false, errors: [e instanceof Error ? e.message : String(e)] };
@@ -131,7 +139,7 @@ function validateScrolly(spec: unknown): ValidationOutcome {
   const hasNativeType =
     typeof (spec as { nativeType?: unknown } | null)?.nativeType === "string";
   if (hasNativeType) {
-    const outcome = validateNative(spec);
+    const outcome = validateNative(spec, "scrolly");
     const beatErrors = narrativeBeatErrors(spec as NativeSpec);
     if (beatErrors.length)
       return {
@@ -744,7 +752,7 @@ function validateByProducer(p: AcceptedProposal): ValidationOutcome {
     case "scrolly":
       return validateScrolly(p.spec);
     case "chart-native":
-      return validateNative(p.spec);
+      return validateNative(p.spec, "chart-native");
     case "image-native":
       return validateImageNative(p.spec, p.format);
     default: {

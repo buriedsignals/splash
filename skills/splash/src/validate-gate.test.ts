@@ -877,7 +877,30 @@ describe("an unknown nativeType is not a silent pass (Task 8)", () => {
     expect(out.ok).toBe(true);
     if (out.ok) {
       expect(out.warnings.join(" ")).toContain("sankey");
-      expect(out.warnings.join(" ")).toContain("Datawrapper");
+      // Scrolly does NOT have an automatic Datawrapper fallback, so the warning must NOT claim one
+      expect(out.warnings.join(" ")).not.toContain(
+        "routed to Datawrapper instead",
+      );
+      // The warning should instead describe the actual constraint
+      expect(out.warnings.join(" ")).toContain("do not have an automatic");
+    }
+  });
+
+  // Regression: the chart-native path still gets the Datawrapper fallback wording
+  it("the chart-native path still promises an automatic Datawrapper fallback for an unknown type", () => {
+    const out = validateAccepted(
+      accept("chart-native", {
+        nativeType: "bra", // a typo for "bar"
+        title: "T",
+        data: "a,b\n1,2",
+        altInsight: "a",
+        source: { name: "S" },
+      }),
+    );
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.warnings.join(" ")).toContain("bra");
+      expect(out.warnings.join(" ")).toContain("routed to Datawrapper instead");
     }
   });
 });
