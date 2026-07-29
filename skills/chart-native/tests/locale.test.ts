@@ -172,13 +172,24 @@ describe("localizeValueLabel — the shared chart-native value-label helper", ()
 // bare-integer branch) and calls `localizeNumberString` directly — see its own case.
 describe("chart-native value labels reach the locale table (task 8)", () => {
   it("BoxplotChart: median/IQR labels, bare integer + one-decimal, fr separators", () => {
+    // Cadres carries a real outlier BLOCK (not a single stray point) so
+    // `s5.outliers.length` crosses the thousands boundary and is locale-VISIBLE —
+    // a lone outlier (count 1) renders identically in every language, which is
+    // exactly why the original 4x-identical fixture never exercised the fixed
+    // `fmt(s5.outliers.length)` line at all (outliers.length was always 0 for a
+    // constant sample). 5000 values at 3200 keep Q1/median/Q3/whiskerHi pinned at
+    // 3200 (well within the bulk), 1005 values at 9000 sit past the (zero-width,
+    // since IQR=0) upper fence — a real, measured 1005-point outlier count
+    // (verified via computeBoxStats directly, not assumed).
+    const bulk = Array(5000).fill(3200);
+    const spike = Array(1005).fill(9000);
     const config: BoxplotConfig = {
       title: "T",
       source: SRC,
       lang: "fr",
       valueLabel: "unit",
       categories: [
-        { label: "Cadres", values: [3200, 3200, 3200, 3200] },
+        { label: "Cadres", values: [...bulk, ...spike] },
         { label: "Ouvriers", values: [52.4, 52.4, 52.4, 52.4] },
       ],
     };
@@ -189,6 +200,10 @@ describe("chart-native value labels reach the locale table (task 8)", () => {
     expect(svg).toContain("52,4");
     expect(svg).not.toContain("3200.0");
     expect(svg).not.toContain("52.0");
+    // the outlier-count field ff8ae2f3 fixed (`fmt(s5.outliers.length)`) — blind
+    // in the original fixture, now locale-visible and asserted.
+    expect(svg).toContain(`1${NBSP}005 outlier`);
+    expect(svg).not.toContain("1005 outlier");
   });
 
   it("BulletChart: measure value label, bare integer + one-decimal, fr separators", () => {
@@ -262,6 +277,12 @@ describe("chart-native value labels reach the locale table (task 8)", () => {
   });
 
   it("DotStripChart: min/max/mean aria-label, bare integer + one-decimal, fr separators", () => {
+    // Category A carries 1005 rows (not 1) so `r.dots.length` — the observation
+    // count `ff8ae2f3` routed through `fmt` — crosses the thousands boundary and
+    // is locale-VISIBLE; a single-row category (dots.length=1) is asserted
+    // nowhere and can never cross a locale boundary regardless (the audit's
+    // finding). Every A row is 3200, so min/max/mean stay pinned at 3200 — the
+    // existing assertions below are unaffected.
     const config: DotStripConfig = {
       title: "T",
       source: SRC,
@@ -270,7 +291,7 @@ describe("chart-native value labels reach the locale table (task 8)", () => {
       categoryField: "cat",
       valueField: "val",
       rows: [
-        { cat: "A", val: 3200 },
+        ...Array.from({ length: 1005 }, () => ({ cat: "A", val: 3200 })),
         { cat: "B", val: 52.4 },
       ],
     };
@@ -281,6 +302,10 @@ describe("chart-native value labels reach the locale table (task 8)", () => {
     expect(svg).toContain("52,4");
     expect(svg).not.toContain("3200.0");
     expect(svg).not.toContain("52.0");
+    // the dots-count field ff8ae2f3 fixed (`fmt(r.dots.length)`) — blind in the
+    // original fixture, now locale-visible and asserted.
+    expect(svg).toContain(`1${NBSP}005 pupils`);
+    expect(svg).not.toContain("1005 pupils");
   });
 
   it("LollipopChart: dot value label, bare integer + one-decimal, fr separators", () => {
@@ -400,13 +425,19 @@ describe("chart-native value labels reach the locale table (task 8)", () => {
   });
 
   it("ViolinChart: median/quartile aria-label, bare integer + one-decimal, fr separators", () => {
+    // Cadres carries 1005 points (not 5) so `r.n` — the sample count `ff8ae2f3`
+    // routed through `fmt` — crosses the thousands boundary and is locale-VISIBLE;
+    // n=5 is asserted nowhere and can never cross a locale boundary regardless
+    // (the audit's finding). All 1005 values equal 3200 so median/Q1/Q3 stay
+    // pinned at 3200 (verified via computeViolinLayout directly) — the existing
+    // assertions below are unaffected.
     const config: ViolinConfig = {
       title: "T",
       source: SRC,
       lang: "fr",
       unit: "pts",
       categories: [
-        { label: "Cadres", values: [3200, 3200, 3200, 3200, 3200] },
+        { label: "Cadres", values: Array(1005).fill(3200) },
         { label: "Ouvriers", values: [52.4, 52.4, 52.4, 52.4, 52.4] },
       ],
     };
@@ -417,23 +448,56 @@ describe("chart-native value labels reach the locale table (task 8)", () => {
     expect(svg).toContain("52,4");
     expect(svg).not.toContain("3200.0");
     expect(svg).not.toContain("52.0");
+    // the sample-count field ff8ae2f3 fixed (`fmt(r.n)`) — blind in the original
+    // fixture, now locale-visible and asserted.
+    expect(svg).toContain(`1${NBSP}005 values`);
+    expect(svg).not.toContain("1005 values");
   });
 
   it("WaffleChart: legend value label, bare integer + one-decimal, fr separators", () => {
+    // `interactive: true` is REQUIRED — the aria-label carrying
+    // `fmt(categories[i].cells)` (a field `ff8ae2f3` fixed) is gated
+    // `interactive ? ... : undefined`; the original fixture omitted it, so that
+    // fixed field never rendered at all (the audit's strongest finding here: dead
+    // code, not just an under-asserted one). Item A's value also moves from 32 →
+    // 3200, matching every one of its ten task-8 siblings — a bare "32" renders
+    // byte-identically in every language and was never locale-visible either.
+    // gridN:40 (1600 total cells, not the 100-cell default) so A's own cell
+    // allocation crosses the thousands boundary too (measured via allocateCells
+    // directly: [3200, 52.4] over 1600 cells → [1574, 26], not assumed).
     const config: WaffleConfig = {
       title: "T",
       source: SRC,
       lang: "fr",
       unit: "%",
+      gridN: 40,
       items: [
-        { label: "A", value: 32 },
+        { label: "A", value: 3200 },
         { label: "B", value: 52.4 },
       ],
     };
-    const svg = renderToStaticMarkup(createElement(WaffleChart, { config }));
-    expect(svg).toContain("32");
+    const svg = renderToStaticMarkup(
+      createElement(WaffleChart, { config, interactive: true }),
+    );
+    expect(svg).toContain(`3${NBSP}200`);
     expect(svg).toContain("52,4");
-    expect(svg).not.toContain("32.0");
+    expect(svg).not.toContain("3200.0");
     expect(svg).not.toContain("52.0");
+    // the cells-count field ff8ae2f3 fixed (`fmt(categories[i].cells)`), now
+    // actually reachable (interactive:true) and locale-visible (A gets 1574 of
+    // the 1600 cells).
+    expect(svg).toContain(`1${NBSP}574% (1${NBSP}574 squares)`);
+    expect(svg).not.toContain("1574%");
+    // The Tooltip's OTHER fixed field, `fmt(layout.gridN * layout.gridN)`, has no
+    // reachable render path in this suite: Tooltip only mounts when
+    // `hover !== null` (a `useState` set by a real pointer/focus event), and this
+    // file — like every other chart-native locale test — renders via
+    // `renderToStaticMarkup` with no DOM/event simulation, so no chart's Tooltip
+    // is ever exercised anywhere in this file (not a gap introduced by this
+    // fixture; see the follow-up report). This is a helper-level proof of the
+    // exact string that call site would produce for THIS fixture's denominator
+    // (gridN=40 → 40*40=1600), so a regression in `localizeValueLabel` itself
+    // would still be caught here, even though the call site is unguarded.
+    expect(localizeValueLabel(1600, "fr")).toBe(`1${NBSP}600`);
   });
 });
