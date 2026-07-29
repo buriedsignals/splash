@@ -81,6 +81,18 @@ Splash = **un skill open-source MIT, installable, agnostique runtime, local-firs
 - **Format skill-autonome** (canon Tom) : `SKILL.md` (8 sections : Overview · When to use · gotcha · Architecture · How it works · Quick start · Tuning knobs (chacun = un nombre) · Files) + `references/` + `scripts/` (prep déterministe) + `assets/` (1 composant battle-tested + sample-data + preview) + `output-proof`.
 - Discipline vidéo (bug-free, façon Tom) : stack en couches · **frame-gating** sur la vraie disponibilité · données pré-cuites · valider 1 still avant le mp4 · plomberie (`preserveDrawingBuffer`, `--gl=angle`, timeouts).
 
+## ★ État courant — 2026-07-29 (branche `feat/family-b-what-reaches-the-reader`, famille B fermée)
+
+Famille B du registre (« ce qui arrive au lecteur est faux » — langue, unité, couleur
+annoncée≠rendue, titre/takeaway) fermée côté **porteur/lecteur/comparaison** : les 18 tâches du
+plan `docs/superpowers/plans/2026-07-29-family-b-what-reaches-the-reader.md` (spec
+`docs/superpowers/specs/2026-07-28-family-b-what-reaches-the-reader-design.md`) sont mergées sur
+cette branche, avec le registre `docs/splash/sweep-2026-07-28-triage.md` corrigé sur 8 points où
+sa lecture contredisait le code. Gate **21/22** (le seul échec, `test lib`, porte les deux ambiants
+nommés depuis avant le premier commit — non une régression ; réserve : `.env` racine non lu par
+`bun test` par paquet, donc ce chiffre ne prouve pas que Datawrapper/MapTiler ont tourné). Détail
+et mesures : `docs/splash/CHANGELOG.md`, session 2026-07-29.
+
 ## ★ État courant — 2026-07-28 (LIS CECI en priorité)
 
 `main` = `splash-merge/`, gate **22/22** (le seul échec vu est le flake de contention
