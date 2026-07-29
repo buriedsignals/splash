@@ -303,7 +303,14 @@ export function deriveMapStory(
       const copy =
         pattern === "temporal" || rank === undefined
           ? calloutText(key, value)
-          : magnitudeCaption(nameOf(key), fmt(value), rank, seqTotal, rankRole);
+          : magnitudeCaption(
+              nameOf(key),
+              fmt(value),
+              rank,
+              seqTotal,
+              rankRole,
+              meta.lang,
+            );
       beats.push({
         kind: "reveal",
         camera: cameraOf(key),
@@ -469,24 +476,24 @@ export function magnitudeRevealRows(
   return leaders;
 }
 
-function ordinal(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
-}
-
 // A rank-aware, data-tied caption for a magnitude reveal. Never invents — it states
 // the region, its formatted value, and its factual rank/role in the distribution.
+// `lang` picks the shared story-copy row — this was English-only for EVERY language,
+// French included, before this fix (its own local `ordinal()` took no lang parameter
+// at all); it is verified live-consumed as visible video caption text (`beat.copy`,
+// rendered by every map-native *Story.tsx component's <CaptionCard>).
 export function magnitudeCaption(
   name: string,
   valueStr: string,
   rank: number,
   revealCount: number,
   role?: "leader" | "tail",
+  lang?: string,
 ): string {
-  if (role === "tail") return `The long tail — ${name}, ${valueStr}`;
-  if (rank === 1) return `${name} leads — ${valueStr}`;
-  return `${name} — ${valueStr}, ${ordinal(rank)}`;
+  const copy = storyCopy(lang);
+  if (role === "tail") return copy.longTail(name, valueStr);
+  if (rank === 1) return copy.leads(name, valueStr);
+  return copy.ranked(name, valueStr, rank);
 }
 
 // GUARDRAIL. A magnitude story must ADAPT to the data, not collapse to "highest &

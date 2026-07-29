@@ -85,6 +85,30 @@ describe("deriveChartStory (bar) — ranked highlight walk", () => {
     expect(reveals[reveals.length - 1].rankRole).toBe("tail");
     expect(reveals[reveals.length - 1].copy).toContain("The lowest");
   });
+
+  it("walks a German deliverable in German — no English leak (the measured leak)", () => {
+    const deBeats = deriveChartStory(
+      { ...barSpec, lang: "de" } as any,
+      "The gap is vast",
+    );
+    const reveals = deBeats.filter((b) => b.kind === "reveal");
+    expect(reveals[0].copy).toBe("Qatar führt — 35 t");
+    expect(reveals[1].copy).toBe("USA — 15 t, 2.");
+    expect(reveals[reveals.length - 1].copy).toBe(
+      "Am niedrigsten — Kenya, 1 t",
+    );
+  });
+
+  it("walks an Italian deliverable in Italian — no English leak (the measured leak)", () => {
+    const itBeats = deriveChartStory(
+      { ...barSpec, lang: "it" } as any,
+      "The gap is vast",
+    );
+    const reveals = itBeats.filter((b) => b.kind === "reveal");
+    expect(reveals[0].copy).toBe("Qatar in testa — 35 t");
+    expect(reveals[1].copy).toBe("USA — 15 t, 2º");
+    expect(reveals[reveals.length - 1].copy).toBe("Il più basso — Kenya, 1 t");
+  });
 });
 
 describe("deriveChartStory (bar) — highlightIndex matches the chart's display order on ties", () => {
