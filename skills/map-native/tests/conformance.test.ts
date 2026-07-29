@@ -668,3 +668,25 @@ describe("runProduceMapConformance actually asks the symbol rules", () => {
     expect(r.violations).toEqual([]);
   });
 });
+
+// Fix-round-3 (task 17 re-review #2): the round-2 tests above all call
+// `runProduceMapConformance` DIRECTLY and pass `mediaSize` themselves, which locks that the
+// GUARD honors the param when given it — but nothing locked that produce.mjs's ONE real call
+// site actually PASSES it. The re-reviewer proved this: dropping the 3rd argument at that call
+// site left the full suite (880/0) fully green — the headline fix of round 2 could be silently
+// reverted at its only real integration point and nothing would notice. `runProduceMapConformance`
+// can't be executed against produce.mjs under a test (module-scope side effects — reads argv,
+// exits on bad input), so this is a textual lock on the source, same technique
+// channel-gated-interactive.test.ts and arc-beats-threading.test.ts already use for other
+// produce.mjs/component wiring facts this package can't exercise by import.
+describe("produce.mjs threads its real mediaSize into the symbol conformance guard", () => {
+  it("passes mediaSize as runProduceMapConformance's 3rd argument at its call site", () => {
+    const src = readFileSync(
+      join(import.meta.dir, "..", "scripts", "produce.mjs"),
+      "utf8",
+    );
+    expect(src).toContain(
+      "runProduceMapConformance(parsedConfig.type, parsedConfig, mediaSize)",
+    );
+  });
+});
