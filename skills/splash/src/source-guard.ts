@@ -1,3 +1,9 @@
+import {
+  SOURCE_KINDS,
+  requirementsFor,
+  type SourceKind,
+} from "../../../lib/source";
+
 // GUARD 2 — reject placeholder / reserved-domain source URLs. A real QA finding: splash
 // accepted `https://…example.com` placeholder URLs as the citable source. The SKILL.md
 // rule (~line 399) already forbids homepages / unverifiable URLs, but nothing
@@ -155,6 +161,53 @@ export function sourceUrlFidelityReason(
     `shipped source URL "${shippedUrlRaw.trim()}" does not match the journalist-provided URL ` +
     `"${hintUrl}" — cite the URL the journalist gave (or a subpath they explicitly confirmed ` +
     `in-turn), never silently upgrade a homepage to a deeper, unconfirmed path`
+  );
+}
+
+// D18 — what the JOURNALIST answered at CADRAGE Q4 / Gate 2c — NOT what the article named
+// (that is `SourceHint`, above). Two different questions with two different answers, and until
+// now only the first had a field: the journalist's answer was recomposed by hand into
+// `spec.source` by the orchestrator, which is exactly why a URL given TWICE could ship as a
+// name-only source and no guard could see it — `sourceUrlFidelityReason` compares two URLs and
+// returns null the moment one of them is missing (the "name-only ship" line above), by design.
+// Absence was invisible because absence had no counterpart to be absent FROM.
+export interface SourceAnswer {
+  name?: string;
+  url?: string;
+  /** The class, when the journalist stated it. Read through lib/source/requirements.ts — a URL
+   *  is only OWED for classes whose row says so. */
+  kind?: string;
+}
+
+// GUARD 2d — dropped-URL comparison (Defect D18). A COMPARISON between what the journalist
+// answered and what shipped, not a new detection guard: it reads the same requirements table
+// every other source gate reads (lib/source/requirements.ts) rather than deciding on its own
+// which classes need a URL. `null` when there is nothing to say — including for the classes
+// whose row FORBIDS a URL, where dropping it is the correct behaviour and flagging it would be a
+// false block (a false block kills a journalist's legitimate run).
+//
+// `shipped` is the shipped SOURCE OBJECT itself (`p.spec.source`), unlike `sourceUrlFidelityReason`
+// above (which takes the whole spec and unwraps `.source` via `shippedSource`) — the caller
+// already holds the narrower value, so this stays a pure comparison over it.
+export function droppedSourceUrlReason(
+  shipped: unknown,
+  answered: SourceAnswer | undefined,
+): string | null {
+  const given = answered?.url?.trim();
+  if (!given) return null;
+  const kind = answered?.kind;
+  if (
+    kind &&
+    (SOURCE_KINDS as readonly string[]).includes(kind) &&
+    requirementsFor(kind as SourceKind).url === "forbidden"
+  )
+    return null;
+  const shippedUrl = (shipped as { url?: unknown } | null | undefined)?.url;
+  if (typeof shippedUrl === "string" && shippedUrl.trim()) return null;
+  return (
+    `the source URL you gave — ${given} — is not on the shipped source: the deliverable ` +
+    `credits "${answered?.name ?? "the source"}" by name only, so a reader cannot reach the ` +
+    `dataset`
   );
 }
 

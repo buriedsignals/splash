@@ -214,6 +214,12 @@ export async function produce(
   const verdict = validateSourcePolicy(declared, {
     mode: run.sources?.mode,
     carriesFactualData: true,
+    // The run's language (resolved once, at init) drives the credit's own FURNITURE — the
+    // prose qualifier and the synthetic notice (lib/source/furniture.ts's PROSE_QUALIFIER /
+    // SYNTHETIC_NOTICE), not merely the config.lang the assembler injects separately below.
+    // Left unthreaded, `publishedSourceFor` always fell back to English regardless of
+    // run.lang: a carrier gap distinct from briefFor's own `lang` field.
+    lang: run.lang,
   });
   // THE REFUSAL CARRIES THE QUESTION. `sourceQuestion` is the ONE targeted question the flow owes
   // a journalist whose source cannot be determined (lib/source/policy.ts) — the kind first, then

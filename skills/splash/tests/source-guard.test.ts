@@ -4,6 +4,7 @@ import {
   sourceNamePreservedReason,
   sourceUrlFidelityReason,
   droppedSourceHintWarning,
+  droppedSourceUrlReason,
 } from "../src/source-guard";
 
 const FR_FALLBACK = { name: "Chiffres tels que rapportés dans cet article" };
@@ -325,5 +326,85 @@ describe("droppedSourceHintWarning", () => {
     );
     expect(w).toContain("sourceHint");
     expect(w).toContain("accepted.json");
+  });
+});
+
+// D18 — the journalist's CADRAGE Q4 / Gate 2c answer (`SourceAnswer`, distinct from
+// `SourceHint`: the article's own naming) had no carrier at all, so the orchestrator recomposed
+// `spec.source` by hand and no guard could compare "given" against "absent". A URL that
+// DIVERGES is caught by sourceUrlFidelityReason above; a URL that DISAPPEARS is not —
+// `sourceUrlFidelityReason` returns null the moment the ship carries no URL at all (the
+// "name-only ship" branch), by design, since it compares two URLs. This is the missing
+// comparison: what the journalist ANSWERED versus what actually shipped.
+describe("droppedSourceUrlReason", () => {
+  it("catches a URL the journalist gave that the shipped spec no longer has", () => {
+    // The measured failure: the journalist supplied the URL TWICE and `source` shipped with
+    // the name alone. sourceUrlFidelityReason returns null on a name-only ship (:152, by
+    // design — it compares two URLs). Nothing compared "given" against "absent" until now.
+    expect(
+      droppedSourceUrlReason(
+        { name: "OFS" },
+        { name: "OFS", url: "https://www.bfs.admin.ch/x", kind: "public" },
+      ),
+    ).toContain("https://www.bfs.admin.ch/x");
+  });
+
+  it("says nothing when the URL survived", () => {
+    expect(
+      droppedSourceUrlReason(
+        { name: "OFS", url: "https://www.bfs.admin.ch/x" },
+        { name: "OFS", url: "https://www.bfs.admin.ch/x", kind: "public" },
+      ),
+    ).toBeNull();
+  });
+
+  it("says nothing for a class whose URL is forbidden", () => {
+    // private/synthetic: requirements.ts sets url "forbidden" for these rows. Dropping a URL
+    // that was never publishable is CORRECT, not a defect — flagging it would be a false block.
+    expect(
+      droppedSourceUrlReason(
+        { name: "Internal desk figures" },
+        {
+          name: "Internal desk figures",
+          url: "https://intranet/x",
+          kind: "private",
+        },
+      ),
+    ).toBeNull();
+  });
+
+  it("says nothing when the journalist gave no URL to begin with", () => {
+    expect(
+      droppedSourceUrlReason({ name: "OFS" }, { name: "OFS", kind: "local" }),
+    ).toBeNull();
+  });
+
+  it("says nothing when the shipped spec is not an object at all", () => {
+    expect(
+      droppedSourceUrlReason(null, {
+        name: "OFS",
+        url: "https://www.bfs.admin.ch/x",
+        kind: "public",
+      }),
+    ).toContain("https://www.bfs.admin.ch/x");
+    expect(
+      droppedSourceUrlReason(undefined, {
+        name: "OFS",
+        url: "https://www.bfs.admin.ch/x",
+        kind: "public",
+      }),
+    ).toContain("https://www.bfs.admin.ch/x");
+  });
+
+  it("says nothing when there is no answer at all", () => {
+    expect(droppedSourceUrlReason({ name: "OFS" }, undefined)).toBeNull();
+  });
+
+  it("names the source by name when composing the reason", () => {
+    const reason = droppedSourceUrlReason(
+      { name: "OFS" },
+      { name: "OFS", url: "https://www.bfs.admin.ch/x", kind: "public" },
+    );
+    expect(reason).toContain("OFS");
   });
 });
