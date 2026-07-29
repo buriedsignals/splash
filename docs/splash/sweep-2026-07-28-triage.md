@@ -169,6 +169,17 @@ Le scrolly livre sa chute dès la première marche. **OUVERT.**
 `check:conformance-no-fabrication` variante « une URL de source placeholder a été utilisée au lieu
 d'une source réelle et grondable ». **OUVERT.**
 
+**Fixed in the family-B effort (2026-07-29):** this entry was misclassified. Its guard is already
+TERMINAL in V1 — `placeholderSourceError` fires and is pushed into `extraErrors` inside
+`validateAccepted`, BEFORE any producer runs (`skills/splash/src/validate-gate.ts:616-617`,
+verified against the current file — the design spec's own citation, `:615-616`, had drifted by
+one line). The 4 recorded cases mean a bypass of that terminal refusal, or a run that never
+reached the gate at all — family A's territory (a refusal that does not stop the run), not a
+missing check in family B. The one piece of this defect that WAS family B's — the source-guard's
+placeholder list and the source-fidelity guard's own list silently disagreeing with each other —
+is closed: one consolidated list (`lib/core/placeholder-host.ts`, zero imports) now backs both
+`lib/core/contract.ts`'s `isHostedUrl` and `skills/splash/src/source-guard.ts` (Task 17).
+
 ---
 
 ## 4. Registre — défauts OUVERTS, famille jugement
@@ -197,6 +208,18 @@ la langue anglaise confirmée) ; `gen-geographic-social-vertical-fr-video-defaul
 **Cause racine : établie ailleurs** — il n'existe aucune détection de langue dans le code, et
 `ProductionBrief` ne porte pas de champ `lang`. Vérifié dans `main` : `grep` de
 `detectLang|detectLanguage|ProductionBrief` ne ramène rien. **OUVERT.**
+
+**Fixed in the family-B effort (2026-07-29):** the file this entry names, `symbol-story.ts`,
+carries no superlative and no fr/en branch at all — a wrong citation. The real sites are
+`skills/scrolly/src/chapters.ts:118-127` (`temporalDescriptor` + word ordinals),
+`skills/chart-native/src/chart-story.ts:467-480`, `skills/map-native/src/map-story.ts:382-405`
+(`magnitudeCaption`), and `skills/map-native/src/cartogram-story.ts` (no `lang` parameter
+anywhere — the worst of the four). All four now thread `lang` through `storyCopy` /
+`localizeDecimal` / `localizeValueLabel`, with German and Italian engine tests added at each call
+site (verified present in the current source). `ProductionBrief.lang` now exists end to end —
+`resolveLanguage` (`lib/newsroom/language.ts`) → `initRun` (`lib/loop/init.ts`) →
+`ProductionBrief.lang` → every one of the six loop assemblers — closing the carrier gap this
+entry's own root-cause paragraph named.
 
 ### D13 — Le champ `accent` d'une charte maison casse dw-chart · **8 / 83 cas** — *re-vérifié dans le code*
 Toute rédaction qui déclare une couleur d'accent maison casse le producteur par défaut : `produce`
@@ -325,6 +348,18 @@ que sa charte maison casse l'accessibilité (`gen-composition-article-web-fr-sta
 `gen-geo-point-magnitude-social-feed-en-static-themed`, `gen-change-over-time-social-feed-en-static-themed`).
 L'artefact d'alerte existe — c'est le chemin de remontée qui manque. **OUVERT.**
 
+**Fixed in the family-B effort (2026-07-29):** D25 and D26 were read as one "colour" concern; the
+code shows two DISJOINT sets. The 11 furniture-only chart types (`grouped`, `stacked`,
+`stacked-area`, `pie`, `diverging`, `dumbbell`, `slope`, `bullet`, `diverging-stacked`, `pyramid`,
+`waterfall` — `skills/chart-native/src/base-colour-reach.ts`) never write a house-colour
+`brand-concerns.json` entry in the first place, because they encode with a fixed role palette and
+never paint marks with the house hue — so D25's missing-warning problem applies only to the other
+16 types, which DO paint with it. Its reader path is now closed: `announcedColourFindings`
+(`lib/core/brand-concern.ts`) turns a written `brand-concerns.json` into a real `colour-semantics`
+finding, and `review-gate.mjs` now resolves it at the path the producer actually writes to
+(`join(dirname(reportPath), id, "brand-concerns.json")` — a wrong-directory bug the review itself
+caught and the fix round corrected) instead of silently finding nothing (Task 12).
+
 ### D26 — La couleur annoncée n'est pas la couleur rendue · **5 / 83 cas**
 `gen-flow-article-web-it-scrolly-default` (major) : `baseColor` magenta `#CC79A7` proposé **et
 explicitement confirmé** par le journaliste pour un waterfall — le chart livré rend la palette de
@@ -332,6 +367,17 @@ rôles increase/decrease/total. Même écart sur `budget-ville-waterfall` (vert/
 Okabe-Ito bleu/orange rendu). `gen-comparison-social-feed-de-video-themed` : la spec de référence
 porte `#CC79A7`, les sondes de review parlent de `#2E7D57` — l'`accepted.json` ne décrit pas ce qui
 a été rendu. **OUVERT.**
+
+**Fixed in the family-B effort (2026-07-29):** the root cause D26's magenta-waterfall case named
+is exactly the set of 11 furniture-only types D25's correction above lists (cross-referenced
+there, same `base-colour-reach.ts`) — `mergeProfileDefaults` no longer stamps
+`baseColor`/`brandExplicit` on a type that cannot paint marks with it (`honoursBaseColor`, wired
+through a narrower `paintsMarksWithHue` guard rather than the plan's broader `colourKind` gate, a
+deliberate deviation that avoids also silencing the unrelated accent-highlight stamp), so a house
+colour is never announced-and-confirmed for a chart that was always going to render its fixed role
+palette regardless (Task 13). Re-derived by the review with the ELEVEN-type list read straight out
+of `spec-to-config.ts` (11 furniture-only + 16 honouring = 27 builders), set-diffed empty in both
+directions against the committed constant.
 
 ### D27 — Trous de validateur · **3 / 83 cas** · *nouveau*
 `validateChartSpec` accepte un `source` **plat** (chaîne au lieu de `{name, url?}`) avec `ok: true`,
@@ -349,11 +395,28 @@ anglais. **Cause racine établie et confirmée dans `main` :** `skills/chart-nat
 `ComboChart`/`SankeyChart` gèrent au moins le cas entier (`Number.isInteger(v) ? String(v) : …`).
 Le slope est le seul à ne faire ni l'un ni l'autre. **OUVERT, correctif d'une ligne.**
 
+**Fixed in the family-B effort (2026-07-29):** not a one-line fix. The symptom named
+(`SlopeChart.tsx`'s bare `toFixed(1)`) was one instance of a class of **22 visible blind files**
+(11 chart-native, 9 map-native, 2 scrolly), **11 of which imported no locale helper at all** —
+raw-enumerated, not estimated. All 22 are paid down to 0 (Tasks 7-9), behind one shared
+`localizeValueLabel(v, lang)` helper (`lib/core/locale.ts`) that a file-level drift guard
+recognizes and enforces per engine (`lib/core/locale-reach.ts` plus its three per-engine test
+copies). Re-confirmed still green in this session: `locale-reach.test.ts` in `skills/chart-native`,
+`skills/map-native` and `skills/scrolly` each pass 2/2 with 0 fail.
+
 ### D29 — L'unité n'apparaît pas sur les libellés visibles · **4 / 83 cas**
 La spec porte une `unit` qui n'atteint pas le lecteur : labels de valeur bruts (« +218 », « -99 »,
 « 15.0 ») avec l'unité reléguée au tooltip ou à l'`altInsight` — donc invisible pour qui ne survole
 pas, et pour tout lecteur voyant. Un cas où le correctif d'un débordement a **supprimé** `valueUnit`
 de la légende (`cafe-production-symbol`). **OUVERT.**
+
+**Fixed in the family-B effort (2026-07-29):** the `cafe-production-symbol` case is NOT
+reproducible in `main` — `skills/map-native/src/SymbolMap.tsx:528` still calls `labelWithUnit`
+unconditionally on its legend value (verified against the current file). The registered defect was
+a run-time bypass captured in one session's transcript, not a shipped code regression — the
+register recorded an artefact of a run as a defect of the code. The real, code-level half of D29
+(the unit actually reaching the reader on every map-native render surface) is closed across all
+seven map-native branches, each now emitting `valueUnit` (Task 10).
 
 ---
 
@@ -465,6 +528,35 @@ zéro en dehors). Un refus terminal sur un fait de disque ne se discute pas.
 D12 (langue, 8 — aucune détection dans le code, pas de champ `lang` sur `ProductionBrief`),
 D16 (titre partiel, 13), D17 (ledger source-fidelity, 19), D18 (7), D10 (4), D25/D26 (couleur
 annoncée ≠ rendue), D28, D29.
+
+**Fixed in the family-B effort (2026-07-29) — prose vs. loop:** this registry never distinguishes
+the PROSE chain (the one every sweep case above ran through) from the V2 LOOP (`lib/loop/`). D16
+(title/takeaway partial coverage) is STRUCTURALLY IMPOSSIBLE to close in the loop's own terms — it
+is a semantic-divergence risk that depends on human sign-off reading two lines side by side, not a
+mechanism the loop can enforce (see `skills/splash/SKILL.md`'s new D16 passage, Task 18 §2).
+D17 (source-fidelity false negatives), D18 (dropped source URL) and D10 (placeholder source) are
+already closed in the loop, each by a mechanism DIFFERENT from what this registry's counts assume
+— a typed refusal plus a real comparison table, never the exact-substring match the prose chain's
+tooling used (Tasks 14, 15, 17). Counting D17 alone as 19/83 without saying WHICH chain a case ran
+through OVERSTATES the work remaining: a case that already cannot happen in the loop is not open
+work, it is a chain the case never took.
+
+**§8.7 — the family-B design spec's own point 7 was wrong, and the correction holds
+(2026-07-29):** the spec claimed `lib/loop/assemble/scrolly.ts` carries no `source` field, so a
+loop-built scrolly ships unattributed. Re-checked at Task 10: `scrolly.ts` is a PURE DISPATCHER
+(confirmed: no `source` string literal anywhere in the file) that hands its config straight to
+`assembleChartNative` or `assembleMapNative`, and BOTH already build `source`
+(`chart-native.ts:23-25`, `map-native.ts:171-173`/`258-260`). No scrolly built by the loop ships
+unattributed. The regression proof lives in `lib/loop/assemble/scrolly.test.ts`: breaking the
+DELEGATION (not the delegate) reddens 10 of 11 tests, restored 103 pass / 0 fail — the
+dispatcher-not-composer design is tested, not merely read.
+
+**§8.8 — the design spec's point 8 was right, and it is closed (2026-07-29):** the choropleth
+branch of `lib/loop/assemble/map-native.ts` emitted `unit` where `ChoroplethMap.tsx` reads
+`valueUnit` for its bin ranges (`:355`) and tooltip (`:388`/`:393`) — a real gap. Closed at Task
+10: the choropleth branch now emits BOTH `unit` (for its own legend-header reader) and `valueUnit`
+(for the bin ranges and tooltip) — verified in the current source,
+`lib/loop/assemble/map-native.ts:242`.
 
 ### C — Capacité et validation · ~8 défauts
 D13 (`accent` casse dw-chart — correctif d'une ligne identifié), D22, D24 (dérive KB↔code),
