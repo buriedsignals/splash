@@ -354,11 +354,26 @@ code shows two DISJOINT sets. The 11 furniture-only chart types (`grouped`, `sta
 `waterfall` — `skills/chart-native/src/base-colour-reach.ts`) never write a house-colour
 `brand-concerns.json` entry in the first place, because they encode with a fixed role palette and
 never paint marks with the house hue — so D25's missing-warning problem applies only to the other
-16 types, which DO paint with it. Its reader path is now closed: `announcedColourFindings`
-(`lib/core/brand-concern.ts`) turns a written `brand-concerns.json` into a real `colour-semantics`
-finding, and `review-gate.mjs` now resolves it at the path the producer actually writes to
-(`join(dirname(reportPath), id, "brand-concerns.json")` — a wrong-directory bug the review itself
-caught and the fix round corrected) instead of silently finding nothing (Task 12).
+16 types, which DO paint with it.
+
+Its reader path is closed by **two distinct mechanisms** — worth separating, because only one of
+them runs on the journalist's path today:
+
+1. **The file-based route, live.** `skills/splash/scripts/review-gate.mjs` opens
+   `brand-concerns.json` itself and folds its entries into the report's `reviewConcerns`, at the
+   path the producer actually writes to (`join(dirname(reportPath), id, "brand-concerns.json")` —
+   a wrong-directory bug the review itself caught and the fix round corrected) instead of silently
+   finding nothing (Task 12). This is the only path that reaches a journalist today. The final
+   review round also found the file was recording ONLY the CVD/contrast subset, dropping the
+   label-integrity tripwire and the mark-contrast advisory; both now travel in an `advisories`
+   field the gate folds in at the same severity.
+2. **The prose-chain review, no production writer yet.** `announcedColourFindings`
+   (`lib/verify/colour-announcement.ts` — `lib/core/brand-concern.ts` holds only the
+   `BrandConcern` *type*) turns concerns into a real `colour-semantics` finding, but it reads them
+   from `ReviewRequest.brandConcerns`, and the V2 loop's only `ReviewRequest` construction site
+   (`lib/loop/verify.ts`) sets neither `brandConcerns` nor `announcedColour`/`honoured`. So that
+   finding is structurally unreachable from `lib/loop` until a caller threads the record; the
+   fields are the seam, not a working path.
 
 ### D26 — La couleur annoncée n'est pas la couleur rendue · **5 / 83 cas**
 `gen-flow-article-web-it-scrolly-default` (major) : `baseColor` magenta `#CC79A7` proposé **et
@@ -368,16 +383,28 @@ Okabe-Ito bleu/orange rendu). `gen-comparison-social-feed-de-video-themed` : la 
 porte `#CC79A7`, les sondes de review parlent de `#2E7D57` — l'`accepted.json` ne décrit pas ce qui
 a été rendu. **OUVERT.**
 
-**Fixed in the family-B effort (2026-07-29):** the root cause D26's magenta-waterfall case named
-is exactly the set of 11 furniture-only types D25's correction above lists (cross-referenced
-there, same `base-colour-reach.ts`) — `mergeProfileDefaults` no longer stamps
-`baseColor`/`brandExplicit` on a type that cannot paint marks with it (`honoursBaseColor`, wired
-through a narrower `paintsMarksWithHue` guard rather than the plan's broader `colourKind` gate, a
-deliberate deviation that avoids also silencing the unrelated accent-highlight stamp), so a house
-colour is never announced-and-confirmed for a chart that was always going to render its fixed role
-palette regardless (Task 13). Re-derived by the review with the ELEVEN-type list read straight out
-of `spec-to-config.ts` (11 furniture-only + 16 honouring = 27 builders), set-diffed empty in both
-directions against the committed constant.
+**Partly addressed in the family-B effort (2026-07-29) — the cited case is NOT closed.** The type
+set the root cause turns on is exactly the 11 furniture-only types D25's correction above lists
+(cross-referenced there, same `base-colour-reach.ts`); re-derived by the review with the
+ELEVEN-type list read straight out of `spec-to-config.ts` (11 furniture-only + 16 honouring = 27
+builders), set-diffed empty in both directions against the committed constant.
+
+What changed (Task 13, narrowed again by the final review round): on the **auto** path
+`mergeProfileDefaults` no longer marks a furniture-only type `brandExplicit` — it no longer grants
+the house hue the permission to paint DATA MARKS, so the house palette is not auto-announced as
+the colour of a chart that renders a fixed role palette. The hue itself is still stamped as
+`baseColor`, deliberately: these types thread it into their FURNITURE tint (greys/frame band, via
+`themeColors(themeBg, baseColor)`), and withholding it left them dead-grey under a house profile —
+a regression the final review caught and reverted.
+
+**What remains OPEN — the case this entry actually cites.**
+`gen-flow-article-web-it-scrolly-default`'s magenta `#CC79A7` was *explicitly confirmed by the
+journalist*, which routes through `baseColorExplicit === true` in `brand-profile.ts` — a branch the
+`paintsMarksWithHue` guard skips entirely. A journalist-confirmed colour on a waterfall therefore
+still reaches the spec and still goes unpainted on the marks, exactly as before this effort. Only
+the AUTO-stamp half of D26 is addressed; announcing a *confirmed* colour the type cannot honour is
+untouched and needs its own decision (refuse the confirmation at the offer, or say at confirmation
+time that the hue will tint the frame rather than the marks).
 
 ### D27 — Trous de validateur · **3 / 83 cas** · *nouveau*
 `validateChartSpec` accepte un `source` **plat** (chaîne au lieu de `{name, url?}`) avec `ok: true`,
