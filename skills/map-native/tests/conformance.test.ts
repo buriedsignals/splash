@@ -469,7 +469,11 @@ describe("per-type guards — optional format hook", () => {
 
 // FRAME_COLORS / FRAME_COLORS_DARK WCAG contrast assertions
 import { relativeLuminance, contrastRatio } from "../src/conformance";
-import { FRAME_COLORS, FRAME_COLORS_DARK } from "../src/theme/map-tokens";
+import {
+  FRAME_COLORS,
+  FRAME_COLORS_DARK,
+  resolveFrameColors,
+} from "../src/theme/map-tokens";
 
 describe("FRAME_COLORS light — WCAG contrast ≥ 4.5:1", () => {
   // pill is translucent; for contrast purposes we use its opaque solid equivalent (#ffffff)
@@ -504,5 +508,36 @@ describe("FRAME_COLORS_DARK — WCAG contrast ≥ 4.5:1", () => {
     expect(relativeLuminance(FRAME_COLORS_DARK.ink)).toBeGreaterThan(
       relativeLuminance(pillSolid),
     );
+  });
+});
+
+// furnitureGround — the ground the map furniture text ACTUALLY stands on (the pill,
+// composited over the worst basemap it can overlay), not an assumed themeBg.
+import { readFileSync } from "fs";
+import { join } from "path";
+import { furnitureGround } from "../src/core/map-produce-conformance";
+
+describe("map furniture stands on a ground, not on a basemap tile", () => {
+  it("should keep the source text legible over the WORST basemap the pill can sit on", () => {
+    // The light pill is rgba(255,255,255,0.92): over a black tile it composites to ~#EBEBEB.
+    // muted #5f5f5f must still clear 4.5:1 THERE, not only against the assumed white.
+    const g = furnitureGround(undefined);
+    const { muted } = resolveFrameColors(undefined);
+    expect(contrastRatio(muted, g)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("should not answer plain white for the light default", () => {
+    // furnitureGround returned `resolveThemeBg(bg) ?? "#ffffff"` — the assumption, not the
+    // composite. #5f5f5f on pure white is 6.38:1 and PASSES; on a real light tile it does not.
+    expect(furnitureGround(undefined).toLowerCase()).not.toBe("#ffffff");
+  });
+
+  it("should give the responsive source band the same pill the title band has", () => {
+    const src = readFileSync(
+      join(import.meta.dir, "..", "src", "core", "MapFrame.tsx"),
+      "utf8",
+    );
+    // two spreads of pillStyle now: the title band and the source band
+    expect(src.match(/\.\.\.pillStyle/g)?.length).toBe(2);
   });
 });

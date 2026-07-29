@@ -26,6 +26,7 @@ import {
   resolveFrameColors,
   resolveThemeBg,
 } from "../theme/map-tokens";
+import { contrastRatio } from "../../../../lib/core/contrast";
 import { resolvePalette } from "../theme/scale";
 import { contrastOk, houseRamp } from "../theme/house-ramp";
 import { HEX_GRID_SCALE_TYPE } from "../hex-grid-geo";
@@ -106,16 +107,37 @@ function paintsSingleHouseFill(
   return false;
 }
 
-// Opaque solid equivalent of the (translucent) resolveFrameColors().pill — the same convention
-// `tests/conformance.test.ts` uses for the WCAG-contrast assertions on these tokens. `contrastRatio`
-// requires a #rrggbb hex, and the pill is an `rgba(...)` string, so the opaque backdrop it visually
-// reads as (the ground itself) is what gets checked — not a literal CSS value. Resolved from the
-// SAME `furnitureBg` that resolveFrameColors derives the pill/ink from (NOT `themeBg` alone), so the
-// guard always measures the ink against the ground it is ACTUALLY painted on. A truthy-but-null-
-// resolving furnitureBg (a per-element "#FFFFFF"/"light"/malformed override) → the white light pill,
-// matching MapFrame — never a divergent dark ground that would spuriously fail a legible render.
-function furnitureGround(furnitureBg: string | undefined): string {
-  return resolveThemeBg(furnitureBg) ?? "#ffffff";
+/** The ground the furniture text actually stands on: the pill, composited over the WORST
+ *  basemap it can overlay. `resolveThemeBg(bg) ?? "#ffffff"` was the ASSUMPTION — true only
+ *  because MapFrame now gives the source band that pill (see MapFrame.tsx), and still wrong by
+ *  the pill's alpha. Measuring the composite is what makes the guard's answer the render's. */
+export function furnitureGround(
+  furnitureBg: string | undefined,
+  houseHue?: string,
+): string {
+  const { pill } = resolveFrameColors(furnitureBg, houseHue);
+  // rgba(r,g,b,a) → composite over both extremes; keep the one with the LEAST headroom.
+  const m =
+    /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/.exec(
+      pill,
+    );
+  if (!m) return resolveThemeBg(furnitureBg) ?? "#ffffff";
+  const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const a = m[4] === undefined ? 1 : Number(m[4]);
+  const composite = (under: number) =>
+    `#${[r, g, b]
+      .map((c) =>
+        Math.round(a * c + (1 - a) * under)
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("")}`;
+  const onBlack = composite(0);
+  const onWhite = composite(255);
+  const ink = resolveFrameColors(furnitureBg, houseHue).muted;
+  return contrastRatio(ink, onBlack) <= contrastRatio(ink, onWhite)
+    ? onBlack
+    : onWhite;
 }
 
 // Best-effort numeric-column extraction for the palette semantic check (diverging vs
@@ -177,10 +199,12 @@ export function runProduceMapConformance(
   const themeBg =
     typeof config.themeBg === "string" ? config.themeBg : undefined;
   const furnitureBg = themeBg ?? (dark ? DARK_FRAME_BG : undefined);
+  const houseHue =
+    typeof config.brandHue === "string" ? config.brandHue : undefined;
   const fc = furnitureColorsFor(config);
   const textColors = {
     text: [fc.ink, fc.muted],
-    bg: furnitureGround(furnitureBg),
+    bg: furnitureGround(furnitureBg, houseHue),
   };
 
   const title = typeof config.title === "string" ? config.title : "";
@@ -240,8 +264,6 @@ export function runProduceMapConformance(
   // human verifies legibility at render-review. brandHue is only ever set for a genuine house
   // colour (the merge sets it with brandExplicit), so its presence is the signal.
   const concerns: string[] = [];
-  const houseHue =
-    typeof config.brandHue === "string" ? config.brandHue : undefined;
   if (houseHue && paintsSingleHouseFill(type, config)) {
     // Defense-in-depth: `contrastOk` → `relativeLuminance` THROWS on a malformed hex.
     // In the normal orchestrator flow this never fires — validate-gate's `brandHueError`

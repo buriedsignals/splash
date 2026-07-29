@@ -179,13 +179,10 @@ export function MapFrame({
           opacity: furnitureOpacity,
           fontSize: frame.type.source,
           color: colors.muted,
-          ...(responsive
-            ? {}
-            : {
-                textShadow: furnitureDark
-                  ? "0 1px 4px rgba(0,0,0,0.9)"
-                  : "0 1px 4px rgba(255,255,255,0.9)",
-              }),
+          // The source band gets the SAME ground the title band has. Without it the muted text
+          // sat bare on the basemap while the config-time guard measured it against an assumed
+          // one — the two never agreed, and neither was wrong on its own terms.
+          ...pillStyle,
         }}
       >
         {sourceLabel(lang)}{" "}
