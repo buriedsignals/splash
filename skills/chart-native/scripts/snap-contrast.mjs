@@ -13,6 +13,7 @@ import { readFile } from "node:fs/promises";
 import { worstContrast, MIN_CONTRAST, wcagMinContrast } from "../src/core/contrast-scan.ts";
 import { chartDistSub } from "../src/build-paths.ts";
 import { sampleTextContrast } from "./lib/sample-text-contrast.mjs";
+import { groundOf } from "./lib/ground-of.mjs";
 import {
   checkFurnitureI18n,
   collectFurnitureI18n,
@@ -61,7 +62,8 @@ await page.waitForTimeout(2100); // let the reveal settle to progress=1
 // points (glyph hidden first), returning {text, fill, bgs[]}. Contrast is computed
 // in node with the shared helper. The sampler itself lives in ./lib/sample-text-
 // contrast.mjs, shared with snap-interactive-contrast.mjs (same engine, different dist).
-const samples = await page.evaluate(sampleTextContrast);
+const ground = groundOf(process.env.CONFIG);
+const samples = await page.evaluate(sampleTextContrast, ground);
 
 // i18n FURNITURE GATE (P5) — reuses THIS already-loaded page (no extra browser
 // session): when the produced config's lang renders non-English furniture, the

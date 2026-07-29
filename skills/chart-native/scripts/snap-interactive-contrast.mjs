@@ -29,6 +29,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { worstContrast, MIN_CONTRAST, wcagMinContrast } from "../src/core/contrast-scan.ts";
 import { chartDistSub } from "../src/build-paths.ts";
 import { sampleTextContrast } from "./lib/sample-text-contrast.mjs";
+import { groundOf } from "./lib/ground-of.mjs";
 import {
   checkFurnitureI18n,
   collectFurnitureI18n,
@@ -67,7 +68,8 @@ await page.waitForTimeout(2500);
 // Same sampling engine snap-contrast.mjs uses (./lib/sample-text-contrast.mjs) — for
 // every visible <text>, hide the glyph and sample the real background behind it at 3
 // points, worst-case. Contrast is computed in node below.
-const samples = await page.evaluate(sampleTextContrast);
+const ground = groundOf(process.env.CONFIG);
+const samples = await page.evaluate(sampleTextContrast, ground);
 
 // i18n FURNITURE GATE (P5) — same engine as snap-contrast.mjs, on THIS already-
 // loaded interactive page (the most common delivery path): a non-English config's

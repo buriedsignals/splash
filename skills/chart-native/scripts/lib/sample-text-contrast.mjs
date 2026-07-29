@@ -11,7 +11,9 @@
 // MUST stay a closure-free, browser-only function: Playwright's page.evaluate(fn)
 // serialises this via fn.toString() and runs it inside the page — it cannot close
 // over any Node-side variable, only `document` / `window` / other DOM globals.
-export function sampleTextContrast() {
+// `ground` is passed IN (page.evaluate(fn, arg)) rather than closed over — the module stays
+// closure-free, which is what Playwright's fn.toString() serialisation requires (:11-13).
+export function sampleTextContrast(ground) {
   const toHex = (rgb) => {
     const m = rgb && rgb.match(/[\d.]+/g);
     if (!m) return null;
@@ -21,8 +23,8 @@ export function sampleTextContrast() {
     return `#${h(r)}${h(g)}${h(b)}`;
   };
   // Known limitations: (1) reads mark fill from inline fill ATTRIBUTE only; a mark
-  // filled via CSS class falls through to paper #ffffff fallback. (2) the whole <text>
-  // (glyph + halo) is hidden before sampling; a label relying on halo legibility OVER
+  // filled via CSS class falls through to the derived-ground fallback below. (2) the whole
+  // <text> (glyph + halo) is hidden before sampling; a label relying on halo legibility OVER
   // a coloured mark could be false-positive flagged against the mark alone.
   const bgAt = (x, y, glyph) => {
     for (const el of document.elementsFromPoint(x, y)) {
@@ -35,7 +37,7 @@ export function sampleTextContrast() {
       const bc = toHex(getComputedStyle(el).backgroundColor);
       if (bc) return bc;
     }
-    return "#ffffff"; // the paper
+    return ground; // the REAL ground of this page, not an assumed sheet of paper
   };
   const out = [];
   for (const t of Array.from(document.querySelectorAll("text"))) {
