@@ -37,13 +37,23 @@ describe("the scrolly CLI does not bypass the validator", () => {
     try {
       const configPath = join(workDir, "config.json");
       const outDir = join(workDir, "out");
+      // Otherwise-VALID route config (real basemap, a 2-point route, an insight-length
+      // title) — measured: without `arcBeats` this exact object produces zero errors.
+      // arcBeats is therefore the SOLE fault; a fixture with unrelated holes (a 1-char
+      // title, a missing basemap, no route) would still refuse with arcBeats deleted
+      // entirely, and this test would stay green while proving nothing about arcBeats.
       writeFileSync(
         configPath,
         JSON.stringify({
           type: "route",
-          title: "T",
+          title: "Refugee route across three borders",
           altInsight: "alt",
           source: { name: "S" },
+          basemap: "world",
+          route: [
+            [2.35, 48.85],
+            [13.4, 52.52],
+          ],
           arcBeats: [{ region: "FR", role: "context", text: "x" }],
         }),
       );
@@ -54,16 +64,21 @@ describe("the scrolly CLI does not bypass the validator", () => {
           cwd: scrollyRoot,
           stdout: "pipe",
           stderr: "pipe",
-          // A refusal exits before any vite build work, so it returns in well under a
-          // second. If validation is ever removed, the build would run for many seconds —
-          // this bound turns "hangs for the length of a vite build" into a hard failure
-          // instead of a slow test.
-          timeout: 15_000,
+          // Measured: a real refusal returns in 31-37ms (validation runs before any vite
+          // work). This bound must stay below bun:test's own per-test timeout (the third
+          // `it()` argument below) so IT fires first if validation is ever removed —
+          // otherwise the test framework kills the test before the spawn bound does, and
+          // the failure reads as a generic test timeout rather than a clean assertion.
+          timeout: 4_000,
         },
       );
 
       expect(proc.exitCode).not.toBe(0);
-      expect(proc.stderr.toString()).toContain("INVALID CONFIG");
+      const stderr = proc.stderr.toString();
+      expect(stderr).toContain("INVALID CONFIG");
+      // Not just "the CLI refused something" — the refusal must name the fault this
+      // fixture actually carries.
+      expect(stderr).toContain("arcBeats");
 
       // No artifact of any kind — a refusal must leave nothing behind. produce.mjs only
       // creates outDir AFTER validation passes, so a correctly-refusing CLI never even
@@ -72,5 +87,5 @@ describe("the scrolly CLI does not bypass the validator", () => {
     } finally {
       rmSync(workDir, { recursive: true, force: true });
     }
-  });
+  }, 10_000);
 });
