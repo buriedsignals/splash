@@ -220,6 +220,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
       description,
       source,
       ...(brief.lang ? { lang: brief.lang } : {}),
+      ...(unit ? { valueUnit: unit } : {}),
     });
   }
 
@@ -233,7 +234,12 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     description,
     source,
     ...(brief.lang ? { lang: brief.lang } : {}),
-    ...(unit ? { unit } : {}),
+    // TWO fields, TWO readers, and they are not interchangeable: ChoroplethMap.tsx:53-54
+    // documents `unit` as the long legend HEADER and `valueUnit` as the SHORT suffix its
+    // tooltip (:393) and bin ranges (:355) print. Emitting only `unit` showed the unit in a
+    // heading and on no value — the sibling branches (:189, :333, :368) already emit
+    // `valueUnit`; this one was the odd one out.
+    ...(unit ? { unit, valueUnit: unit } : {}),
   });
 }
 
@@ -280,6 +286,7 @@ function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
       description,
       source,
       ...(brief.lang ? { lang: brief.lang } : {}),
+      ...(unit ? { valueUnit: unit } : {}),
     });
   }
 
@@ -303,6 +310,7 @@ function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
       description,
       source,
       ...(brief.lang ? { lang: brief.lang } : {}),
+      ...(unit ? { valueUnit: unit } : {}),
     });
   }
 

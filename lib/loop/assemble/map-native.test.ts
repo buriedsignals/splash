@@ -343,3 +343,41 @@ test("a dot-density against any basemap but world is refused, not silently rende
   expect(r.message).toContain("us-states");
   expect(r.message).toContain("world");
 });
+
+// § 8.8 — ChoroplethMap.tsx (skills/map-native/src/ChoroplethMap.tsx:53-54) types the two
+// fields apart: `unit` is the long legend HEADER (:341), `valueUnit` is the SHORT suffix its
+// bin ranges (:355, via fmtBinRange) and its tooltip (:388, :393) print. The assembler emitted
+// `unit` alone on the choropleth branch, so a loop-built choropleth showed its unit once, in a
+// heading, and on no value a reader hovers or reads off the legend scale. "%" is the fixture
+// value on purpose: it is the exact unit the constraints call out as language-dependently
+// spaced (French/German "70 %" vs English "70%") — the same string the render-layer spacing
+// rule (fmtBinRange, unitSuffix) actually branches on, even though this test itself only
+// checks that the assembler hands the string to both fields, not the render spacing.
+test("gives the choropleth the field its tooltip and bins actually read", () => {
+  const r = assembleMapNative(REGION_BRIEF);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  const v = r.value as { unit?: string; valueUnit?: string };
+  expect(v.unit).toBe("%");
+  expect(v.valueUnit).toBe("%");
+});
+
+// The sibling branches (cartogram :189, symbol/hex-grid :333/:368) already emit `valueUnit`.
+// Three point-family branches dropped the unit entirely: dot-density had no unit field at all,
+// and route/locator never even read `brief.angle.unit` into a local. "km" is a realistic
+// distance unit for a route/locator brief and a realistic magnitude-adjacent one for
+// dot-density's access-rate CSV — chosen over a placeholder string so the fixture exercises a
+// unit a reader would actually see, not an inert label nothing downstream ever prints.
+for (const nativeType of ["dot-density", "route", "locator"]) {
+  test(`carries the unit onto a ${nativeType} map instead of dropping it`, () => {
+    const base = nativeType === "dot-density" ? REGION_BRIEF : POINT_BRIEF;
+    const r = assembleMapNative({
+      ...base,
+      nativeType,
+      angle: { ...base.angle, unit: "km" },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect((r.value as { valueUnit?: string }).valueUnit).toBe("km");
+  });
+}
