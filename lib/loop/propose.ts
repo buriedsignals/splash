@@ -68,14 +68,12 @@ export function propose(
     ...(element.requestedFormat
       ? { requestedFormat: element.requestedFormat }
       : {}),
-    // `contentLang` is NOT threaded yet: eligible()'s refusal (lib/core/language-coverage.ts)
-    // needs the run's own DECLARED content language, and neither `RunElement` nor
-    // `RunManifest` carries a `lang` field today (checked: no such field in either zod schema,
-    // lib/loop/manifest.ts) — that is task 5's addition. `decor.language.content` exists
-    // already, but it resolves the HOUSE default (uiLang / NEWSROOM-PROFILE.md's `lang`), never
-    // a per-run override — wiring it here would be a different, unrequested behaviour change,
-    // not this field. Until task 5 lands, `eligible()` sees `contentLang: undefined`, which
-    // `isCoveredLang` treats as covered — inert, not a regression.
+    // The run's OWN declared content language (lib/loop/manifest.ts's `lang`, resolved once at
+    // init from the article's declared language and the house profile — task 5), never
+    // `decor.language.content`: that resolves the house DEFAULT, and a run that declared its
+    // own language must not have it overridden by the newsroom's. Absent `m.lang` reaches
+    // eligible() as `contentLang: undefined`, which `isCoveredLang` treats as covered.
+    ...(m.lang ? { contentLang: m.lang } : {}),
     intents: orderingIntents(element).intents,
   });
   return {

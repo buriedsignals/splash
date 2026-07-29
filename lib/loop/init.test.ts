@@ -310,6 +310,52 @@ for (const escaping of [
   });
 }
 
+// --- the language the run's deliverables are made in --------------------------------------
+//
+// No detection anywhere in this repo, and none added here (spec §5). The step that reads the
+// article DECLARES the language it read there; initRun resolves that declaration, together
+// with the house profile passed in by the caller, into the ONE language the run records.
+
+test("records the language the article was declared to be in", () => {
+  const { dir, csv } = scene();
+  const r = initRun(dir, {
+    ...declaration(csv),
+    input: { data: csv, articleLang: "it" },
+  });
+  expect(r.ok).toBe(true);
+  if (r.ok) expect(r.value.lang).toBe("it");
+});
+
+test("falls back to the house profile only when no article language was declared", () => {
+  const { dir, csv } = scene();
+  const r = initRun(dir, declaration(csv), { profileLang: "fr" });
+  expect(r.ok).toBe(true);
+  if (r.ok) expect(r.value.lang).toBe("fr");
+});
+
+test("does not let the house profile overwrite the article's language", () => {
+  const { dir, csv } = scene();
+  const r = initRun(
+    dir,
+    { ...declaration(csv), input: { data: csv, articleLang: "en" } },
+    { profileLang: "fr" },
+  );
+  expect(r.ok).toBe(true);
+  if (r.ok) expect(r.value.lang).toBe("en");
+});
+
+// The identity claim: a run that declares no article language and is initialised with no house
+// profile either records NOTHING — the manifest stays byte-identical to one written before this
+// field existed, rather than growing a `"lang": "en"` nobody established.
+test("writes no lang field at all when nothing was declared and no profile was given", () => {
+  const { dir, csv } = scene();
+  const r = initRun(dir, declaration(csv));
+  expect(r.ok).toBe(true);
+  if (r.ok) expect(r.value.lang).toBeUndefined();
+  const raw = readFileSync(join(dir, "run.json"), "utf8");
+  expect(raw).not.toContain('"lang"');
+});
+
 test("initRun freezes an article input too, and declares it", () => {
   const { dir, csv } = scene();
   const article = join(dir, "piece.txt");

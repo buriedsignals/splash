@@ -1482,3 +1482,19 @@ describe("routing a narrative page through its beats", () => {
     expect(nextActions(base())).toEqual(["produce"]);
   });
 });
+
+describe("RunManifestSchema.lang — the run's own recorded language", () => {
+  it("accepts a manifest that carries a lang", () => {
+    const parsed = RunManifestSchema.safeParse({ ...base(), lang: "it" });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.lang).toBe("it");
+  });
+
+  // Every manifest already on disk was written with no such field — optional is what keeps
+  // them readable rather than forcing a migration for a field that did not exist yet.
+  it("still accepts a manifest with no lang at all (nothing on disk migrates)", () => {
+    const parsed = RunManifestSchema.safeParse(base());
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.lang).toBeUndefined();
+  });
+});

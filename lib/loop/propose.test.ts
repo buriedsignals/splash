@@ -202,6 +202,28 @@ test("an angle with no declared intent falls back on the suggestion", () => {
   expect(legacy.options[0]!.intent).toContain("spatial");
 });
 
+// The wiring task 5 exists to land: task 4's refusal (lib/core/language-coverage.ts) is inert
+// until the run's OWN declared language actually reaches buildOffer. Before this wiring,
+// `m.lang` was read by nothing here, so a run recorded in an uncovered language sailed through
+// to a normal offer — the exact "green for nothing" shape this whole plan is about.
+test("a run recorded in an uncovered language reaches the offer as a refusal", () => {
+  const m = run(["2019", "2024"]);
+  const uncovered: RunManifest = { ...m, lang: "es" };
+  const { options, refusal } = propose(uncovered, uncovered.elements[0]!);
+  expect(options).toEqual([]);
+  expect(refusal).toBeTruthy();
+  expect(refusal).toContain("es");
+});
+
+// The complement: a run in a COVERED language (or none at all) is untouched by this wiring.
+test("a run recorded in a covered language is offered normally", () => {
+  const m = run(["2019", "2024"]);
+  const covered: RunManifest = { ...m, lang: "fr" };
+  const { options, refusal } = propose(covered, covered.elements[0]!);
+  expect(options.length).toBeGreaterThan(0);
+  expect(refusal).toBeUndefined();
+});
+
 test("two deliverables of one run are offered at their own channels", () => {
   const m = run(["2019", "2024"]);
   const web = {

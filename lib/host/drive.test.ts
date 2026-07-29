@@ -151,7 +151,9 @@ describe("initRunIn — the question a run cannot begin without", () => {
     });
     expect(r).toEqual({
       ok: true,
-      value: { runId: "premiums", nextActions: ["orient"] },
+      // No article language declared and no house profile installed (this worktree carries no
+      // NEWSROOM-PROFILE.md): the confirm-back reports the house default, "en".
+      value: { runId: "premiums", nextActions: ["orient"], lang: "en" },
     });
   });
 
@@ -177,6 +179,24 @@ describe("initRunIn — the question a run cannot begin without", () => {
     if (r.ok) throw new Error("unreachable");
     expect(r.message).toContain("URL");
     expect(existsSync(join(dir, "run.json"))).toBe(false);
+  });
+
+  // The confirm-back this task exists for (D20): no seventh CADRAGE question, just the language
+  // the deliverables will be made in, reported alongside what to do next.
+  it("reports the declared article language in the confirm-back", () => {
+    const { dir, csv } = undeclared();
+    const r = initRunIn(dir, {
+      runId: "premiums",
+      input: { data: csv, articleLang: "it" },
+      sources: {
+        mode: "real",
+        data: { kind: "local", label: "Relevés cantonaux 2024" },
+      },
+    });
+    expect(r).toEqual({
+      ok: true,
+      value: { runId: "premiums", nextActions: ["orient"], lang: "it" },
+    });
   });
 
   it("keeps the loop's own refusal for a declaration that is not even shaped right", () => {

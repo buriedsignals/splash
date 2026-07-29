@@ -199,7 +199,12 @@ export function initRunIn(runDir: string, declaration: unknown): HostResponse {
   const owed = undeclaredSourceQuestion(declaration);
   if (owed) return { ok: false, code: "invalid-request", message: owed };
 
-  const created = initRun(runDir, declaration);
+  // The house language, as the LAST resort under the declared article language. tryLoadDecor
+  // is already this file's way of reaching the install's own facts (see below).
+  const decor = tryLoadDecor();
+  const created = initRun(runDir, declaration, {
+    profileLang: decor.language.content,
+  });
   if (!created.ok) return refusedDecision(created);
   // Same breath as every acting command: what it did, plus what became valid. The run was just
   // written by initRun itself, so there is nothing to persist here — which is why this is the
@@ -208,6 +213,10 @@ export function initRunIn(runDir: string, declaration: unknown): HostResponse {
     ok: true,
     value: {
       runId: created.value.runId,
+      // The confirm-back, attached to an exchange that already exists rather than a seventh
+      // CADRAGE question (the cap of six is already exceeded — D20): the journalist reads the
+      // language the deliverables will be made in alongside what to do next, and vetoes it there.
+      lang: created.value.lang ?? "en",
       nextActions: nextActions(created.value),
     },
   };
