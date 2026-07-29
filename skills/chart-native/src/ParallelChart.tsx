@@ -27,7 +27,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
 import { truncate } from "./core/text";
@@ -62,8 +62,6 @@ export interface ParallelChartProps {
 }
 
 const ACCENTS = [OKABE_ITO.blue, OKABE_ITO.orange, OKABE_ITO.green];
-
-const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
 export function ParallelChart({
   config,
@@ -204,6 +202,9 @@ function ParallelSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const { innerWidth, innerHeight, axes, lines } = layout;
   const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.18);

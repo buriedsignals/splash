@@ -5,11 +5,13 @@
 import type { Beat } from "./map-story";
 import type { CartogramLayout } from "./cartogram-geo";
 import { bbox } from "@turf/turf";
+import { localizeValueLabel } from "./core/locale";
 
 export interface CartogramStoryMeta {
   title: string;
   description?: string;
   insight?: string;
+  lang?: string;
 }
 
 const DEFAULT_MAX_REVEALS = 5;
@@ -38,7 +40,7 @@ export function deriveCartogramStory(
   const cap = Math.max(1, opts.maxReveals ?? DEFAULT_MAX_REVEALS);
   const full = layout.bounds;
 
-  const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+  const fmt = (v: number) => localizeValueLabel(v, meta.lang);
 
   const beats: Beat[] = [];
 

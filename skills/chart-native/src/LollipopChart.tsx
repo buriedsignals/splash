@@ -27,7 +27,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate, leftLabelGutterPx } from "./core/text";
 
@@ -64,8 +64,6 @@ export interface LollipopChartProps {
 const BASE = OKABE_ITO.blue; // neutral series colour
 const ACCENT = OKABE_ITO.vermillion; // the one highlight
 
-const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
-
 export function LollipopChart({
   config,
   progress = 1,
@@ -75,6 +73,9 @@ export function LollipopChart({
   responsive = false,
   scale = 1,
 }: LollipopChartProps) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const p = clamp01(progress);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
@@ -202,6 +203,9 @@ function LollipopSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const C = themeColors(config.themeBg, config.baseColor);
   const { innerWidth, innerHeight, rows } = layout;
   const n = rows.length;
@@ -341,6 +345,7 @@ function Tooltip({
   hover: number;
   config: LollipopConfig;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const r = layout.rows.find((x) => x.index === hover);
   if (!r) return null;
   const left = padding.left + r.dotX;

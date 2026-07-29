@@ -320,6 +320,26 @@ describe("mapStoryToChapters — temporal pattern", () => {
       }
     }
   });
+
+  it("words temporal reveals in German when meta.lang is de — no English leak (the measured leak)", () => {
+    const story = mapStoryToChapters(temporalBeats, { ...meta, lang: "de" });
+    const reveals = story.steps.filter((s) => s.prose.includes("—"));
+    expect(reveals[0].prose).toBe("Netherlands — 2001, der erste");
+    expect(reveals[1].prose).toBe("France — 2013, der zweite, 12 Jahre später");
+    expect(reveals[2].prose).toBe(
+      "Thailand — 2025, der neueste, 24 Jahre nach dem ersten",
+    );
+  });
+
+  it("words temporal reveals in Italian when meta.lang is it — no English leak (the measured leak)", () => {
+    const story = mapStoryToChapters(temporalBeats, { ...meta, lang: "it" });
+    const reveals = story.steps.filter((s) => s.prose.includes("—"));
+    expect(reveals[0].prose).toBe("Netherlands — 2001, il primo");
+    expect(reveals[1].prose).toBe("France — 2013, il secondo, 12 anni dopo");
+    expect(reveals[2].prose).toBe(
+      "Thailand — 2025, il più recente, 24 anni dopo il primo",
+    );
+  });
 });
 
 describe("mapStoryToChapters — French magnitude descriptors (lang: fr)", () => {
@@ -400,6 +420,98 @@ describe("mapStoryToChapters — French magnitude descriptors (lang: fr)", () =>
       "Cyprus — 74 nights, le deuxième",
       "Greece — 71 nights, le troisième",
       "Norway — 1 night, le plus bas",
+    ]);
+  });
+});
+
+describe("mapStoryToChapters — German and Italian magnitude descriptors (the measured leak)", () => {
+  const mk = (
+    name: string,
+    value: string,
+    rank: number,
+    rankRole: "leader" | "tail",
+  ): Beat => ({
+    kind: "reveal",
+    camera: [0, 0, 1, 1],
+    highlight: [name],
+    dim: true,
+    callout: { region: name, name, value, text: `${name} — ${value}` },
+    copy: `${name} — ${value}`,
+    pattern: "magnitude",
+    rank,
+    rankRole,
+  });
+  const ranked: Beat[] = [
+    {
+      kind: "title",
+      camera: [0, 0, 1, 1],
+      highlight: [],
+      dim: false,
+      callout: null,
+      copy: "T",
+    },
+    {
+      kind: "establish",
+      camera: [0, 0, 1, 1],
+      highlight: [],
+      dim: false,
+      callout: null,
+      copy: "",
+    },
+    mk("Malta", "82 nights", 1, "leader"),
+    mk("Cyprus", "74 nights", 2, "leader"),
+    mk("Greece", "71 nights", 3, "leader"),
+    mk("Norway", "1 night", 16, "tail"),
+    {
+      kind: "takeaway",
+      camera: [0, 0, 1, 1],
+      highlight: [],
+      dim: false,
+      callout: null,
+      copy: "",
+    },
+  ];
+  const proseOf = (story: ReturnType<typeof mapStoryToChapters>) =>
+    story.steps
+      .filter(
+        (s) =>
+          typeof s.ref === "number" &&
+          (s.ref as number) >= 2 &&
+          (s.ref as number) <= 5,
+      )
+      .map((s) => s.prose);
+
+  it("translates the highest/lowest/middle-leader ordinal into German, no English leak", () => {
+    const meta = {
+      title: "Renewables across Europe",
+      description: "Share of electricity from renewables, 2024",
+      source: { name: "Ember", url: "https://example.org" },
+      regionsWithData: 16,
+      lang: "de",
+    };
+    const story = mapStoryToChapters(ranked, meta);
+    expect(proseOf(story)).toEqual([
+      "Malta — 82 nights, der höchste von 16",
+      "Cyprus — 74 nights, der zweite",
+      "Greece — 71 nights, der dritte",
+      "Norway — 1 night, der niedrigste",
+    ]);
+  });
+
+  it("translates the highest/lowest/middle-leader ordinal into Italian, no English leak", () => {
+    const meta = {
+      title: "Renewables across Europe",
+      description: "Share of electricity from renewables, 2024",
+      source: { name: "Ember", url: "https://example.org" },
+      regionsWithData: 16,
+      lang: "it",
+    };
+    const story = mapStoryToChapters(ranked, meta);
+    expect(proseOf(story)).toEqual([
+      "Malta — 82 nights, il più alto dei 16",
+      "Cyprus — 74 nights, il secondo",
+      "Greece — 71 nights, il terzo",
+      "Norway — 1 night, il più basso",
     ]);
   });
 });

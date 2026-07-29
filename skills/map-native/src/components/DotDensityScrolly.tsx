@@ -208,6 +208,7 @@ export const DotDensityScrolly: React.FC<{ config: DotDensityConfigShape }> = ({
               "",
             unit:
               ((config as Record<string, unknown>).valueUnit as string) ?? "",
+            lang: config.lang,
           };
           const beats = deriveDotDensityStory(layout, meta);
 

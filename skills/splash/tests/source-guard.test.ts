@@ -4,6 +4,7 @@ import {
   sourceNamePreservedReason,
   sourceUrlFidelityReason,
   droppedSourceHintWarning,
+  droppedSourceUrlReason,
 } from "../src/source-guard";
 
 const FR_FALLBACK = { name: "Chiffres tels que rapportés dans cet article" };
@@ -325,5 +326,101 @@ describe("droppedSourceHintWarning", () => {
     );
     expect(w).toContain("sourceHint");
     expect(w).toContain("accepted.json");
+  });
+});
+
+// D18 — the journalist's CADRAGE Q4 / Gate 2c answer (`SourceAnswer`, distinct from
+// `SourceHint`: the article's own naming) had no carrier at all, so the orchestrator recomposed
+// `spec.source` by hand and no guard could compare "given" against "absent". A URL that
+// DIVERGES is caught by sourceUrlFidelityReason above; a URL that DISAPPEARS is not —
+// `sourceUrlFidelityReason` returns null the moment the ship carries no URL at all (the
+// "name-only ship" branch), by design, since it compares two URLs. This is the missing
+// comparison: what the journalist ANSWERED versus what actually shipped.
+describe("droppedSourceUrlReason", () => {
+  it("catches a URL the journalist gave that the shipped spec no longer has", () => {
+    // The measured failure: the journalist supplied the URL TWICE and `source` shipped with
+    // the name alone. sourceUrlFidelityReason returns null on a name-only ship (:152, by
+    // design — it compares two URLs). Nothing compared "given" against "absent" until now.
+    expect(
+      droppedSourceUrlReason(
+        { name: "OFS" },
+        { name: "OFS", url: "https://www.bfs.admin.ch/x", kind: "public" },
+      ),
+    ).toContain("https://www.bfs.admin.ch/x");
+  });
+
+  it("says nothing when the URL survived", () => {
+    expect(
+      droppedSourceUrlReason(
+        { name: "OFS", url: "https://www.bfs.admin.ch/x" },
+        { name: "OFS", url: "https://www.bfs.admin.ch/x", kind: "public" },
+      ),
+    ).toBeNull();
+  });
+
+  it("says nothing for a class whose URL is forbidden", () => {
+    // private/synthetic: requirements.ts sets url "forbidden" for these rows. Dropping a URL
+    // that was never publishable is CORRECT, not a defect — flagging it would be a false block.
+    expect(
+      droppedSourceUrlReason(
+        { name: "Internal desk figures" },
+        {
+          name: "Internal desk figures",
+          url: "https://intranet/x",
+          kind: "private",
+        },
+      ),
+    ).toBeNull();
+  });
+
+  it("says nothing when the journalist gave no URL to begin with", () => {
+    expect(
+      droppedSourceUrlReason({ name: "OFS" }, { name: "OFS", kind: "local" }),
+    ).toBeNull();
+  });
+
+  it("says nothing when the shipped spec is not an object at all", () => {
+    expect(
+      droppedSourceUrlReason(null, {
+        name: "OFS",
+        url: "https://www.bfs.admin.ch/x",
+        kind: "public",
+      }),
+    ).toContain("https://www.bfs.admin.ch/x");
+    expect(
+      droppedSourceUrlReason(undefined, {
+        name: "OFS",
+        url: "https://www.bfs.admin.ch/x",
+        kind: "public",
+      }),
+    ).toContain("https://www.bfs.admin.ch/x");
+  });
+
+  it("says nothing when there is no answer at all", () => {
+    expect(droppedSourceUrlReason({ name: "OFS" }, undefined)).toBeNull();
+  });
+
+  it("names the source by name when composing the reason", () => {
+    const reason = droppedSourceUrlReason(
+      { name: "OFS" },
+      { name: "OFS", url: "https://www.bfs.admin.ch/x", kind: "public" },
+    );
+    expect(reason).toContain("OFS");
+  });
+});
+
+// Task 17 — one shared placeholder list (lib/core/placeholder-host.ts), the strictest of the
+// two independently-maintained lists this guard and lib/core/contract.ts's isHostedUrl used to
+// carry. Two lists let two cross-leaks through: `https://data.test/x` passed the old V2
+// alternation (contract.ts) but failed this V1 TLD guard; `https://todo.com/x` did the
+// opposite. Both must now be rejected AT THIS CALL SITE (placeholderSourceReason), not just in
+// the shared module's own unit tests — this is the delegation, verified.
+describe("placeholderSourceReason — closes the two cross-leaks via the shared list", () => {
+  it("rejects data.test (the leak V1's old TLD-only check missed before .test was a TLD entry)", () => {
+    expect(placeholderSourceReason("https://data.test/x")).not.toBeNull();
+  });
+
+  it("rejects todo.com (the leak V1's old TLD/domain-only check never covered)", () => {
+    expect(placeholderSourceReason("https://todo.com/x")).not.toBeNull();
   });
 });

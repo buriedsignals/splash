@@ -68,6 +68,12 @@ export function propose(
     ...(element.requestedFormat
       ? { requestedFormat: element.requestedFormat }
       : {}),
+    // The run's OWN declared content language (lib/loop/manifest.ts's `lang`, resolved once at
+    // init from the article's declared language and the house profile — task 5), never
+    // `decor.language.content`: that resolves the house DEFAULT, and a run that declared its
+    // own language must not have it overridden by the newsroom's. Absent `m.lang` reaches
+    // eligible() as `contentLang: undefined`, which `isCoveredLang` treats as covered.
+    ...(m.lang ? { contentLang: m.lang } : {}),
     intents: orderingIntents(element).intents,
   });
   return {

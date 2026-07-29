@@ -86,6 +86,10 @@ export function decorEnv(root: string): Record<string, string | undefined> {
 export type LoadDecorOpts = {
   /** The environment to judge readiness against. Defaults to `decorEnv(root)`. */
   env?: Record<string, string | undefined>;
+  /** The language of the article this decor is being loaded FOR, when there is one.
+   *  Absent for every decor read that is not about a specific run — which is why it is an
+   *  option and not a field of the install's own state. */
+  articleLang?: string;
 };
 
 /**
@@ -108,6 +112,7 @@ export function loadDecor(dir?: string, opts: LoadDecorOpts = {}): Decor {
   const profile = resolveProfile(root, mayWrite);
   const language = resolveLanguage({
     uiLang: state.uiLang,
+    ...(opts.articleLang ? { articleLang: opts.articleLang } : {}),
     profileLang: profile?.lang,
   });
   return {

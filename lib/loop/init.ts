@@ -26,6 +26,7 @@ import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger, EN_SOURCE_QUESTIONS } from "../source/policy";
 import { freezeInput } from "./freeze";
 import { ImageInputSchema, writeManifest, type RunManifest } from "./manifest";
+import { DEFAULT_UI_LANG, resolveLanguage } from "../newsroom/language";
 
 // WHAT A RUN MAY BE CREATED WITH — and, far more importantly, what it may NOT.
 //
@@ -57,6 +58,11 @@ export const RunDeclarationSchema = z.strictObject({
   input: z.strictObject({
     data: z.string().min(1).optional(),
     article: z.string().min(1).optional(),
+    /** The language the ARTICLE is written in, DECLARED by whoever read it. NEVER detected:
+     *  no detection dependency exists in this repo and none is added — a wrong guess would
+     *  produce a wrong deliverable that nobody decided, which is the exact defect shape this
+     *  tranche removes. The step that reads the article states what it read. */
+    articleLang: z.string().trim().min(2).optional(),
     /** The journalist's own photographs — declared here verbatim (dir + per-frame alt and
      *  credit), never generated and never defaulted. See ImageInputSchema's own header. */
     images: ImageInputSchema.optional(),
@@ -98,7 +104,11 @@ function imageFrameRefViolation(frameRef: string): string | undefined {
  * init leaves the directory byte-identical — including the case where the declaration is legal
  * but its ledger is not, which is what fixes the order of the steps below.
  */
-export function initRun(runDir: string, raw: unknown): VerbResult<RunManifest> {
+export function initRun(
+  runDir: string,
+  raw: unknown,
+  opts: { profileLang?: string } = {},
+): VerbResult<RunManifest> {
   // 1. The declaration itself. zod's message names the offending field, which is the whole
   //    point of the strict schema: a host that mistypes `chanel` learns which word was wrong.
   const parsed = RunDeclarationSchema.safeParse(raw);
@@ -210,11 +220,27 @@ export function initRun(runDir: string, raw: unknown): VerbResult<RunManifest> {
       // where the journalist keeps it, declared verbatim, never copied or hashed.
       ...(decl.input.images ? { images: decl.input.images } : {}),
     };
+    // Resolved HERE and nowhere else. produce() gets a manifest, not ambient state — the
+    // discipline lib/core/production-brief.ts:7 states — so resolving per-produce would give the
+    // same run two languages depending on when it ran.
+    const language = resolveLanguage({
+      ...(decl.input.articleLang
+        ? { articleLang: decl.input.articleLang }
+        : {}),
+      ...(opts.profileLang ? { profileLang: opts.profileLang } : {}),
+    }).content;
     const run: RunManifest = {
       runId: decl.runId.trim(),
       schemaVersion: 4,
       route: decl.route,
       channel: decl.channel,
+      // Written only once a language was actually ESTABLISHED by someone — an article language
+      // or a non-empty house profile — so a run started with neither stays byte-identical to
+      // a manifest written before this field existed, rather than growing a `"lang": "en"`
+      // nobody declared.
+      ...(language !== DEFAULT_UI_LANG || decl.input.articleLang
+        ? { lang: language }
+        : {}),
       input,
       ...(decl.sources ? { sources: decl.sources } : {}),
       elements: decl.elements.map((el) => ({

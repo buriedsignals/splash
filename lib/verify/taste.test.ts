@@ -1,10 +1,15 @@
 import { describe, it, expect } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   DENSITY_MARKS_PER_100PX,
+  MAP_NATIVE_TITLE_PREFIX,
   MIN_COLOUR_SEPARATION,
+  TAKEAWAY_COVERAGE_FLOOR,
   TAKEAWAY_OVERLAP_FLOOR,
   WHITESPACE_FILL_FLOOR,
   detectTasteRisks,
+  juxtaposeTitleAndTakeaway,
 } from "./taste";
 import { runReview } from "./review";
 import type { CaptureRecord } from "./types";
@@ -264,6 +269,141 @@ describe("title/takeaway calibration, on real strings", () => {
         risks.some((r) => r.dimension === "title-takeaway-divergence"),
       ).toBe(c.fires);
     });
+});
+
+// D16 (spec §4.2): SIGNAL, never block — a title carrying only PART of the confirmed takeaway,
+// or ADDING a claim nobody confirmed, is a decision for the journalist, shown side by side with
+// no score (a percentage invites a fight about the metric instead of a look at the title).
+describe("title coverage and overrun — D16, the confirmed takeaway is only PART of the title", () => {
+  it("sees a title that carries half the confirmed takeaway", () => {
+    // Measured (fix-scatter-snake-headers, frontaliers-dots, …): half the takeaway. Overlap is
+    // WELL above the 0.3 divergence floor, so the existing detector says nothing.
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway:
+        "Rents rose fastest in Geneva while wages stagnated across the whole canton",
+      renderedTitle: "Rents rose fastest in Geneva",
+    });
+    expect(signals.map((s) => s.dimension)).toContain("title-partial-coverage");
+    expect(TAKEAWAY_COVERAGE_FLOOR).toBeGreaterThan(TAKEAWAY_OVERLAP_FLOOR);
+  });
+
+  it("sees a title that says MORE than was confirmed", () => {
+    // Measured (cloudflare-embed-scrolly): "9 biennial years" became "decade after decade" —
+    // words ADDED, none removed. Overlap-based detection is structurally blind to this.
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway: "Nine biennial years of measurements",
+      renderedTitle:
+        "Nine biennial years of measurements, decade after decade of decline",
+    });
+    expect(signals.map((s) => s.dimension)).toContain("title-overrun");
+  });
+
+  it("does not fire title-overrun on map-native's own accessible-name prefix", () => {
+    // Controller ruling (task 16, round 1): the reviewer reproduced this exact input firing
+    // title-overrun on the pre-existing "engine prefix" calibration case above (same pair) —
+    // "Interactive map: " is furniture five map-native components hand-copy
+    // (ChoroplethMap.tsx:486, CartogramMap.tsx:353, RouteMap.tsx:516, HexGridMap.tsx:368,
+    // DotDensityMap.tsx:420), never journalist content, and firing on it would train the
+    // journalist to ignore the line on nearly every map-native approve. The fixture element
+    // carrying the (would-be) failure is the "Interactive map: " prefix itself: strip it and
+    // the title carries the takeaway exactly, nothing added.
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway: "Les primes ont augmenté dans les six cantons",
+      renderedTitle:
+        "Interactive map: Les primes ont augmenté dans les six cantons",
+    });
+    expect(signals.map((s) => s.dimension)).not.toContain("title-overrun");
+  });
+
+  it("MAP_NATIVE_TITLE_PREFIX still matches every production site it is a copy of", () => {
+    // The exemption above is only correct while the constant equals what the engine actually
+    // renders. The value is hand-copied in five map-native components with no shared symbol,
+    // and lib/verify may not import from skills/ (spec §4.1) — so the drift guard is a READ of
+    // the production sources, the same technique lib/host/drive.test.ts uses for
+    // DEFAULT_UI_LANG. Reword the prefix on the engine side and this reddens, instead of
+    // silently re-enabling the title-overrun false positive the exemption exists to prevent.
+    const components = [
+      "ChoroplethMap.tsx",
+      "CartogramMap.tsx",
+      "RouteMap.tsx",
+      "HexGridMap.tsx",
+      "DotDensityMap.tsx",
+    ];
+    const srcDir = join(
+      import.meta.dir,
+      "..",
+      "..",
+      "skills",
+      "map-native",
+      "src",
+    );
+    // The trailing space is part of the constant but not of the template literal, so compare
+    // against the interpolated form the components really write.
+    const literal = `\`${MAP_NATIVE_TITLE_PREFIX}\${config.title}\``;
+    for (const file of components) {
+      const src = readFileSync(join(srcDir, file), "utf8");
+      expect(src).toContain(literal);
+    }
+    // And the count is pinned too: a SIXTH interactive map component that prepends its own
+    // accessible name must be added to this list rather than going unguarded.
+    expect(components).toHaveLength(5);
+  });
+
+  it("still fires title-overrun when a real addition follows the engine prefix", () => {
+    // The exemption above must stay narrow: it strips a literal LEADING match, never a
+    // mid-string word. The fixture element carrying the failure is ", decade after decade" —
+    // appended AFTER the confirmed takeaway, itself appended after the "Interactive map: "
+    // prefix — proving the strip does not swallow a genuine addition placed past it.
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway: "Rents rose fastest in Geneva while wages stagnated",
+      renderedTitle:
+        "Interactive map: Rents rose fastest in Geneva while wages stagnated, decade after decade",
+    });
+    expect(signals.map((s) => s.dimension)).toContain("title-overrun");
+  });
+
+  it("says nothing when the title is the takeaway", () => {
+    const t = "Rents rose fastest in Geneva";
+    expect(
+      detectTasteRisks({
+        captures: [],
+        confirmedTakeaway: t,
+        renderedTitle: t,
+      }).map((s) => s.dimension),
+    ).not.toContain("title-partial-coverage");
+  });
+
+  it("shows the two strings side by side, and no score", () => {
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway: "Rents rose fastest in Geneva while wages stagnated",
+      renderedTitle: "Rents rose fastest in Geneva",
+    });
+    const lines = juxtaposeTitleAndTakeaway(signals);
+    expect(lines.join("\n")).toContain(
+      "Rents rose fastest in Geneva while wages stagnated",
+    );
+    expect(lines.join("\n")).toContain("Rents rose fastest in Geneva");
+    expect(lines.join("\n")).not.toMatch(/\d+\s?%/);
+  });
+
+  it("is never handed a score-bearing dimension — the caller filters, juxtapose never grades", () => {
+    // A signal from an unrelated dimension (e.g. density) must never leak into the juxtaposition:
+    // the function's whole contract is "these two strings, nothing else".
+    const lines = juxtaposeTitleAndTakeaway([
+      {
+        dimension: "density",
+        detector: "marks per 100px > 8",
+        evidence: ["[primary] 4000 marks across 1152px"],
+        routedTo: "human-signoff",
+      },
+    ]);
+    expect(lines).toStrictEqual([]);
+  });
 });
 
 describe("whitespace", () => {

@@ -307,6 +307,104 @@ describe("validateAccepted — source guards wired (Defects B & D)", () => {
   });
 });
 
+// D18 — GUARD 2d, dropped-URL comparison. `sourceAnswer` is the journalist's CADRAGE Q4 /
+// Gate 2c answer — a DIFFERENT capture from `sourceHint` above (what the ARTICLE named).
+// sourceUrlFidelityReason (Defect D, above) only fires when the ship carries a DIVERGENT URL;
+// a ship that drops the URL entirely (name-only) is explicitly its "not this guard's concern"
+// branch. This is the missing comparison: what the journalist ANSWERED versus what shipped.
+describe("validateAccepted — GUARD 2d dropped-URL comparison (D18)", () => {
+  const base = {
+    id: "x",
+    producer: "chart-native" as const,
+    format: "static" as const,
+    confirmedTakeaway: "A confirmed takeaway with no numbers in it",
+    provenance: "table" as const,
+  };
+
+  it("fails when the journalist's answered URL vanished from a name-only ship", () => {
+    const outcome = validateAccepted({
+      ...base,
+      spec: {
+        producer: "chart-native",
+        nativeType: "bar",
+        title: "Un titre",
+        data: "cat,val\nA,1\nB,2",
+        source: { name: "OFS" },
+        altInsight: "insight",
+        lang: "fr",
+      },
+      sourceAnswer: {
+        name: "OFS",
+        url: "https://www.bfs.admin.ch/x",
+        kind: "public",
+      },
+    } as AcceptedProposal);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) throw new Error("unreachable");
+    expect(
+      outcome.errors.some((e) => e.includes("https://www.bfs.admin.ch/x")),
+    ).toBe(true);
+  });
+
+  it("passes when the answered URL survived on the shipped source", () => {
+    const outcome = validateAccepted({
+      ...base,
+      spec: {
+        producer: "chart-native",
+        nativeType: "bar",
+        title: "Un titre",
+        data: "cat,val\nA,1\nB,2",
+        source: { name: "OFS", url: "https://www.bfs.admin.ch/x" },
+        altInsight: "insight",
+        lang: "fr",
+      },
+      sourceAnswer: {
+        name: "OFS",
+        url: "https://www.bfs.admin.ch/x",
+        kind: "public",
+      },
+    } as AcceptedProposal);
+    expect(outcome.ok).toBe(true);
+  });
+
+  it("passes when the answered class forbids a URL (private) — dropping it is correct", () => {
+    const outcome = validateAccepted({
+      ...base,
+      spec: {
+        producer: "chart-native",
+        nativeType: "bar",
+        title: "Un titre",
+        data: "cat,val\nA,1\nB,2",
+        source: { name: "Internal desk figures" },
+        altInsight: "insight",
+        lang: "fr",
+      },
+      sourceAnswer: {
+        name: "Internal desk figures",
+        url: "https://intranet/x",
+        kind: "private",
+      },
+    } as AcceptedProposal);
+    expect(outcome.ok).toBe(true);
+  });
+
+  it("passes when no sourceAnswer was threaded at all (dormant, legacy-safe)", () => {
+    const outcome = validateAccepted({
+      ...base,
+      spec: {
+        producer: "chart-native",
+        nativeType: "bar",
+        title: "Un titre",
+        data: "cat,val\nA,1\nB,2",
+        source: { name: "OFS" },
+        altInsight: "insight",
+        lang: "fr",
+      },
+    } as AcceptedProposal);
+    expect(outcome.ok).toBe(true);
+  });
+});
+
 // OBSERVABILITY — dropped-hint render-gate warning. Threading sourceHint onto accepted.json is
 // prose-enforced (no script transforms the in-context ProposalSet — the orchestrator LLM assembles
 // accepted.json, like channel/confirmedTakeaway), so a dropped hint silently disarms guard B. This

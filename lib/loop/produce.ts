@@ -208,13 +208,18 @@ export async function produce(
   // `carriesFactualData: true` unconditionally — a data visual built by this loop asserts facts,
   // so `none` is refused here, which is the abuse that row is written for.
   //
-  // No `lang`: the loop carries no language axis yet (the manifest has no locale, and produce
-  // sets no `NativeSpec.lang` either, so the engine already renders English furniture).
-  // Inventing one here would put a French qualifier under an English "Source:".
+  // The language is on the MANIFEST (run.lang, resolved once at init) and reaches the engines
+  // through briefFor. It is not resolved here: produce() gets a manifest, never ambient state.
   const declared = run.sources?.data;
   const verdict = validateSourcePolicy(declared, {
     mode: run.sources?.mode,
     carriesFactualData: true,
+    // The run's language (resolved once, at init) drives the credit's own FURNITURE — the
+    // prose qualifier and the synthetic notice (lib/source/furniture.ts's PROSE_QUALIFIER /
+    // SYNTHETIC_NOTICE), not merely the config.lang the assembler injects separately below.
+    // Left unthreaded, `publishedSourceFor` always fell back to English regardless of
+    // run.lang: a carrier gap distinct from briefFor's own `lang` field.
+    lang: run.lang,
   });
   // THE REFUSAL CARRIES THE QUESTION. `sourceQuestion` is the ONE targeted question the flow owes
   // a journalist whose source cannot be determined (lib/source/policy.ts) — the kind first, then

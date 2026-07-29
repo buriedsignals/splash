@@ -36,6 +36,7 @@ import {
   sourceNamePreservedReason,
   sourceUrlFidelityReason,
   droppedSourceHintWarning,
+  droppedSourceUrlReason,
 } from "./source-guard";
 import { guardrailParityViolations } from "./guardrail-parity";
 
@@ -625,6 +626,18 @@ export function validateAccepted(
   if (namePreserved) extraErrors.push(namePreserved);
   const urlFidelity = sourceUrlFidelityReason(p.spec, p.sourceHint);
   if (urlFidelity) extraErrors.push(urlFidelity);
+  // GUARD 2d — dropped-URL comparison (Defect D18). `sourceHint` (above) is what the ARTICLE
+  // named; `sourceAnswer` is the DIFFERENT question — what the journalist answered at CADRAGE
+  // Q4 / Gate 2c — and until now had no carrier at all, so a URL given TWICE could ship
+  // name-only and no guard could see it (sourceUrlFidelityReason returns null on a name-only
+  // ship, by design — it compares two URLs, not "given" against "absent"). Same
+  // prose-enforced threading as sourceHint/channel/confirmedTakeaway (§5b); absent
+  // sourceAnswer ⇒ dormant, exactly like sourceHint's absence above.
+  const droppedUrl = droppedSourceUrlReason(
+    (p.spec as { source?: unknown } | null)?.source,
+    p.sourceAnswer,
+  );
+  if (droppedUrl) extraErrors.push(droppedUrl);
   // OBSERVABILITY (non-blocking). Threading sourceHint onto accepted.json is prose-enforced (no
   // script transforms the LLM's ProposalSet — see source-guard.ts), so a dropped hint silently
   // disarms the guard above. Surface that disarm as a render-gate WARNING (never a hard error):

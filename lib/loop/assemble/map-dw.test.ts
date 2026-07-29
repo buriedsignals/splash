@@ -55,6 +55,20 @@ test("a choropleth spec clears the engine's own validator", () => {
   expect("channel" in spec).toBe(false);
 });
 
+test("carries the run's language onto the engine spec", () => {
+  const r = assembleMapDw({ ...REGION_BRIEF, lang: "de" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect((r.value as { lang?: string }).lang).toBe("de");
+});
+
+test("omits lang entirely when the run has none — byte-identical to before", () => {
+  const r = assembleMapDw(REGION_BRIEF);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect("lang" in (r.value as object)).toBe(false);
+});
+
 test("the unit is not doubled when the number format already renders a percent", () => {
   // The measured DW behaviour (map-spec.ts:235): DW APPENDS the unit without multiplying.
   // Emitting both a "%" unit and a "%" numberFormat token shipped a doubled "10% %" legend.

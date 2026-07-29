@@ -344,6 +344,14 @@ export const RunManifestSchema = z.object({
    *  question "what channel is THIS element rendered at" is answered in one place only:
    *  channelForElement(). */
   channel: z.enum(CHANNEL_KEYS).default("article-web"),
+  /** The language this run's DELIVERABLES are made in — resolved ONCE, at init, from the
+   *  declared article language and the house profile (lib/newsroom/language.ts's priority:
+   *  explicit override > article > profile). One writer (initRun), one reader (propose.ts's
+   *  `contentLang`, threaded to lib/brain/eligibility.ts).
+   *
+   *  Optional so every manifest already on disk stays readable; absent means "English
+   *  furniture", which is exactly what the loop rendered before this field existed. */
+  lang: z.string().min(2).optional(),
   input: z.object({
     data: HashRef.optional(),
     article: HashRef.optional(),

@@ -26,7 +26,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
 
@@ -59,8 +59,6 @@ export interface WaffleChartProps {
 
 const WAFFLE_COLORS = WAFFLE_CATEGORY_COLORS;
 
-const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
-
 export function WaffleChart({
   config,
   progress = 1,
@@ -70,6 +68,9 @@ export function WaffleChart({
   responsive = false,
   scale = 1,
 }: WaffleChartProps) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const p = clamp01(progress);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
@@ -192,6 +193,9 @@ function WaffleSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const { cells, categories, gridN, gridX, gridY, cellStep } = layout;
   const n = cells.length;
   const chrome = easeOutCubic(p / 0.16);
@@ -253,7 +257,7 @@ function WaffleSvg({
             role={interactive ? "img" : undefined}
             aria-label={
               interactive
-                ? `${categories[i].label}: ${fmt(categories[i].value)}, ${categories[i].cells}% (${categories[i].cells} squares)`
+                ? `${categories[i].label}: ${fmt(categories[i].value)}, ${fmt(categories[i].cells)}% (${fmt(categories[i].cells)} squares)`
                 : undefined
             }
             onMouseEnter={interactive ? () => setHover(i) : undefined}
@@ -299,6 +303,7 @@ function Tooltip({
   config: WaffleConfig;
   colorOf: (i: number) => string;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const cat = layout.categories[hover];
   if (!cat) return null;
   // anchor at the centre of this category's cells
@@ -339,7 +344,7 @@ function Tooltip({
             waffle is a percentage grid (default gridN=10 → 100 cells, one cell = 1%);
             a `unit` subtitle implying a different denominator (e.g. "1 square = 1 in 10")
             is a semantic mismatch the component can't police — see WaffleConfig.gridN. */}
-        {cat.cells} of {layout.gridN * layout.gridN} squares
+        {fmt(cat.cells)} of {fmt(layout.gridN * layout.gridN)} squares
       </div>
     </div>
   );

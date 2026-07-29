@@ -29,7 +29,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { textWidth, truncate } from "./core/text";
 
@@ -60,8 +60,6 @@ export interface DotStripChartProps {
 }
 
 const DOT_COLOR = OKABE_ITO.blue; // the single data colour
-
-const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
 // The legend's second item (sample dot + this label). The legend is hand-laid
 // (heterogeneous markers: a mean TICK LINE and a sample DOT, so the shared
@@ -233,6 +231,9 @@ function DotStripSvg({
   sc: number;
   legendWraps: boolean;
 }) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const C = themeColors(config.themeBg, config.baseColor);
   const MEAN_COLOR = C.ink; // neutral reference marker
   const dotColor = config.baseColor ?? DOT_COLOR; // subject-fit hue, else default
@@ -319,7 +320,7 @@ function DotStripSvg({
                 role={interactive ? "img" : undefined}
                 aria-label={
                   interactive
-                    ? `${r.category}: ${r.dots.length} pupils, ${fmt(r.min)} to ${fmt(r.max)} ${config.unit}, mean ${fmt(r.mean)}`
+                    ? `${r.category}: ${fmt(r.dots.length)} pupils, ${fmt(r.min)} to ${fmt(r.max)} ${config.unit}, mean ${fmt(r.mean)}`
                     : undefined
                 }
                 style={interactive ? { cursor: "pointer" } : undefined}
@@ -418,6 +419,7 @@ function Tooltip({
   hover: number;
   config: DotStripConfig;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const r = layout.rows.find((x) => x.index === hover);
   if (!r) return null;
   const left = padding.left + r.meanX;
@@ -443,8 +445,8 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{r.category}</strong>
       <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>
-        {r.dots.length} pupils · {fmt(r.min)}–{fmt(r.max)} · mean {fmt(r.mean)}{" "}
-        {config.unit}
+        {fmt(r.dots.length)} pupils · {fmt(r.min)}–{fmt(r.max)} · mean{" "}
+        {fmt(r.mean)} {config.unit}
       </div>
     </div>
   );

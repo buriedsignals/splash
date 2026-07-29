@@ -28,7 +28,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate, leftLabelGutterPx } from "./core/text";
 
@@ -56,9 +56,6 @@ export interface BoxplotChartProps {
 }
 
 const BOX = OKABE_ITO.blue;
-
-const fmt = (v: number) =>
-  Number.isInteger(v) ? String(v) : (Math.round(v * 10) / 10).toFixed(1);
 
 export function BoxplotChart({
   config,
@@ -186,6 +183,9 @@ function BoxplotSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const C = themeColors(config.themeBg, config.baseColor);
   const boxFill = config.baseColor ?? BOX; // subject-fit hue, else default
   const { innerWidth, innerHeight, rows } = layout;
@@ -365,7 +365,7 @@ function BoxplotSvg({
                     s5.q1,
                   )} to ${fmt(s5.q3)}, range ${fmt(s5.whiskerLo)} to ${fmt(
                     s5.whiskerHi,
-                  )}${s5.outliers.length ? `, ${s5.outliers.length} outlier${s5.outliers.length > 1 ? "s" : ""}` : ""} ${config.valueLabel}`}
+                  )}${s5.outliers.length ? `, ${fmt(s5.outliers.length)} outlier${s5.outliers.length > 1 ? "s" : ""}` : ""} ${config.valueLabel}`}
                   style={{ cursor: "pointer", outline: "none" }}
                   onMouseEnter={() => setHover(r.index)}
                   onMouseLeave={() => setHover(null)}
@@ -392,6 +392,7 @@ function Tooltip({
   hover: number;
   config: BoxplotConfig;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const r = layout.rows.find((x) => x.index === hover);
   if (!r) return null;
   const s = r.stats;
@@ -427,7 +428,7 @@ function Tooltip({
             ? ` · outlier${s.outliers.length > 1 ? "s" : ""} ${s.outliers
                 .map(fmt)
                 .join(", ")}`
-            : ` · ${s.outliers.length} outliers`
+            : ` · ${fmt(s.outliers.length)} outliers`
           : ""}
       </div>
     </div>

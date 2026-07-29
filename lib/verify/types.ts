@@ -240,6 +240,12 @@ export const TASTE_DIMENSIONS = [
   "whitespace",
   "palette-adjacency",
   "title-takeaway-divergence",
+  // D16 (spec §4.2, SIGNAL not block): the title-vs-takeaway divergence detector above measures
+  // OVERLAP against a low floor, so it is structurally blind to a title that carries only PART
+  // of the confirmed takeaway (overlap stays well above the divergence floor) and to a title
+  // that ADDS a claim nobody confirmed (overlap-based measures cannot see additions at all).
+  "title-partial-coverage",
+  "title-overrun",
 ] as const;
 export type TasteDimension = (typeof TASTE_DIMENSIONS)[number];
 

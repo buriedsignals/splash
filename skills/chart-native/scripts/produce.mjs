@@ -15,7 +15,7 @@ import { mkdirSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chartDistSub } from "../src/build-paths.ts";
-import { runProduceConformance } from "../src/core/produce-conformance.ts";
+import { runProduceConformance, brandConcernsFile } from "../src/core/produce-conformance.ts";
 import { REMOTION_PREFIX } from "../src/native-types.ts";
 import { snapCommand } from "../src/platform-runners.ts";
 import { readCompDims, readCompTiming } from "./lib/comp-registry.mjs";
@@ -132,7 +132,11 @@ const brandColors =
         (c) => typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c),
       )
     : [];
-let brandConcerns = [];
+// The brand-concerns.json payload (null = nothing to record). Built by brandConcernsFile so the
+// write gate lives next to the concern classes it must not drop: the STRUCTURED brand subset AND
+// the advisories (label-integrity tripwire, house-mark contrast), which otherwise reach only
+// stdout — and stdout is discarded (lib/core/verbs/exec.ts) unless the run fails.
+let concernsFile = null;
 {
   const result = runProduceConformance(type, config);
   if (!result.checked) {
@@ -145,8 +149,10 @@ let brandConcerns = [];
     process.exit(1);
   } else if (result.concerns.length > 0) {
     // policy (b): the brand colour is KEPT (not rewritten); the a11y tradeoff is
-    // recorded for the render-review instead of failing the run.
-    brandConcerns = result.concerns;
+    // recorded for the render-review instead of failing the run. The file carries BOTH
+    // classes — the structured brand subset (kind/colour/reason/nearestAccessible) under
+    // `concerns`, and the label-integrity / mark-contrast advisories under `advisories`.
+    concernsFile = brandConcernsFile(type, result);
     console.log(
       `[produce ${type}] conformance: OK — surfaced ${result.concerns.length} non-fatal render-review concern(s) (e.g. a kept house colour, or a possible label-fit data-integrity flag):`,
     );
@@ -167,12 +173,14 @@ writeFileSync(
   join(outDir, "native-source.json"),
   JSON.stringify({ type }, null, 2) + "\n",
 );
-// Record the brand render-review concerns next to the outputs so the render gate /
-// the journalist see the surfaced a11y tradeoff (they are never silently dropped).
-if (brandConcerns.length > 0) {
+// Record the render-review concerns next to the outputs so the render gate / the journalist
+// see every surfaced tradeoff (they are never silently dropped). Written whenever there is
+// ANYTHING to record — an advisory-only run (a shortened data label, no brand colour at all)
+// used to write no file.
+if (concernsFile) {
   writeFileSync(
     join(outDir, "brand-concerns.json"),
-    JSON.stringify({ type, concerns: brandConcerns }, null, 2),
+    JSON.stringify(concernsFile, null, 2),
   );
 }
 // Re-assert the validated channel (rawChannel may have been absent/empty — an

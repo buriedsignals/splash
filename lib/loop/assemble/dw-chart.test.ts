@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { assembleDwChart } from "./dw-chart";
+import { assembleDwChart, introWithUnit } from "./dw-chart";
 import {
   CHART_TYPES,
   validateChartSpec,
@@ -35,6 +35,20 @@ test("a dw chart spec clears the engine's own validator", () => {
   const v = validateChartSpec(r.value);
   // The REAL return shape: { ok: true, spec, warnings } — errors only on the failure arm.
   expect(v.ok ? v.warnings : v.errors).toEqual([]);
+});
+
+test("carries the run's language onto the engine spec", () => {
+  const r = assembleDwChart({ ...CHART_BRIEF, lang: "de" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect((r.value as ChartSpec).lang).toBe("de");
+});
+
+test("omits lang entirely when the run has none — byte-identical to before", () => {
+  const r = assembleDwChart(CHART_BRIEF);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect("lang" in (r.value as object)).toBe(false);
 });
 
 test("a type Datawrapper does not build is refused, listing what it does", () => {
@@ -138,4 +152,171 @@ test("a brief with nothing in it comes back as a value, never as a throw", () =>
   };
   expect(() => assembleDwChart(empty)).not.toThrow();
   expect(assembleDwChart(empty).ok).toBe(false);
+});
+
+// ChartSpec has no `unit` field and the unit cannot be smuggled in as `numberFormat` (a number
+// FORMAT token, not a unit — "%" on 0-1 data is a hard error the engine raises by name). The
+// reader-reaching path is the SUBTITLE — the same decision BarChart.tsx:98-101 made for the
+// native standalone renders. Without it the unit reached nothing at all on a hosted chart.
+test("states the unit once in the printed subtitle, the way the native engines do", () => {
+  const r = assembleDwChart({
+    ...CHART_BRIEF,
+    nativeType: "d3-bars",
+    angle: {
+      confirmedTakeaway: "T",
+      altInsight: "Cantons compared",
+      unit: "€/m²",
+    },
+  });
+  expect(r.ok).toBe(true);
+  if (r.ok)
+    expect((r.value as { intro?: string }).intro).toBe(
+      "Cantons compared (€/m²)",
+    );
+});
+
+test("does not repeat a unit the subtitle already states", () => {
+  expect(introWithUnit("Rents in €/m²", "€/m²")).toBe("Rents in €/m²");
+});
+
+test("says the unit alone when there is no subtitle to hang it on", () => {
+  expect(introWithUnit("", "km")).toBe("km");
+});
+
+test("changes nothing when there is no unit", () => {
+  expect(introWithUnit("Cantons compared", undefined)).toBe("Cantons compared");
+});
+
+// Locale visibility (constraints: a fixture must make the locale VISIBLE). "%" is the exact
+// unit lib/core/locale.ts spaces differently per language ("70 %" fr/de vs "70%" en) — chosen
+// here, the way task 10's map-native fixture chose "%" for the same reason, to prove the
+// de-dup guard that keeps the unit stated ONCE is not fooled by whichever spacing convention
+// the journalist's own prose already used. introWithUnit takes no `lang`: it composes a
+// PARENTHETICAL annotation onto a sentence, a different question from "how do I space a unit
+// onto a numeric value" (labelWithUnit/unitSuffix's job) — there is no per-language spacing
+// rule for "(unit)" to apply here in the first place, only a substring check, and these two
+// tests are the evidence that the check holds under both spacing conventions.
+test("a French-spaced unit already in the subtitle isn't handed a second, parenthetical one", () => {
+  expect(introWithUnit("Le recyclage atteint 54 %", "%")).toBe(
+    "Le recyclage atteint 54 %",
+  );
+});
+
+test("an English-spaced unit already in the subtitle is caught the same way", () => {
+  expect(introWithUnit("Recycling reaches 54%", "%")).toBe(
+    "Recycling reaches 54%",
+  );
+});
+
+// Single-letter units ("m", "t", "h", "g") are the shape the naked `.includes()` guard got
+// wrong: almost any ordinary sentence contains that letter buried inside some unrelated word,
+// and the old check read that as "already stated" and silently dropped the unit. Every fixture
+// below carries the letter under test embedded in an ordinary word — precisely the string that
+// WOULD have tripped `base.toLowerCase().includes(u.toLowerCase())` into a false "already
+// stated" — so a regression back to the naked substring check turns these red.
+test("a bare 'm' embedded in an ordinary word is not mistaken for the unit already stated", () => {
+  // "m" fixture element: the "m" inside "moyen" and "logements" — no standalone "m" token here.
+  expect(introWithUnit("Loyer moyen des logements", "m")).toBe(
+    "Loyer moyen des logements (m)",
+  );
+});
+
+test("a bare 't' embedded in an ordinary word is not mistaken for the unit already stated", () => {
+  // "t" fixture element: the "t" inside "Tonnage" and "traitées" — no standalone "t" token here.
+  expect(introWithUnit("Tonnage des déchets traitées", "t")).toBe(
+    "Tonnage des déchets traitées (t)",
+  );
+});
+
+test("a bare 'h' embedded in an ordinary word is not mistaken for the unit already stated", () => {
+  // "h" fixture element: the "h" inside "Horaires" and "chantier" — no standalone "h" token.
+  expect(introWithUnit("Horaires du chantier", "h")).toBe(
+    "Horaires du chantier (h)",
+  );
+});
+
+test("a bare 'g' embedded in an ordinary word is not mistaken for the unit already stated", () => {
+  // "g" fixture element: the "g" inside "Grammage" and "logements" — no standalone "g" token.
+  expect(introWithUnit("Grammage des emballages", "g")).toBe(
+    "Grammage des emballages (g)",
+  );
+});
+
+test("a bare 'm' that stands alone as its own token is genuinely already stated", () => {
+  // Fixture element: trailing " m" is its own token (space before, string-end after) — the
+  // property the fix is meant to still honour, distinct from the embedded-letter cases above.
+  expect(introWithUnit("Surface exprimée en m", "m")).toBe(
+    "Surface exprimée en m",
+  );
+});
+
+test("a bare 't' that stands alone as its own token is genuinely already stated", () => {
+  expect(introWithUnit("Poids exprimé en t", "t")).toBe("Poids exprimé en t");
+});
+
+test("a bare 'h' that stands alone as its own token is genuinely already stated", () => {
+  expect(introWithUnit("Durée exprimée en h", "h")).toBe("Durée exprimée en h");
+});
+
+test("a bare 'g' that stands alone as its own token is genuinely already stated", () => {
+  expect(introWithUnit("Masse exprimée en g", "g")).toBe("Masse exprimée en g");
+});
+
+// A number glued directly onto the unit — "12km", "500g", "3h30" — is the ordinary,
+// no-space value+unit convention, and is exactly the shape that already states the unit;
+// it is not a coincidental digit run that happens to end in a letter. Every fixture below
+// carries the unit attached to a digit on at least one side, which is precisely what a
+// boundary class that (wrongly) treats digits as word-forming would misread as "not a
+// standalone token" and append a second, redundant unit — the regression this guards
+// against. "3h30" additionally exercises the RIGHT edge the same way as the left: the
+// digit immediately after "h" does not block the match either, by the same convention.
+test("a unit glued to a preceding number ('12km') is already stated, not repeated", () => {
+  expect(introWithUnit("Distance moyenne de 12km", "km")).toBe(
+    "Distance moyenne de 12km",
+  );
+});
+
+test("a unit glued to a preceding number ('500g') is already stated, not repeated", () => {
+  expect(introWithUnit("Poids de 500g par colis", "g")).toBe(
+    "Poids de 500g par colis",
+  );
+});
+
+test("a unit glued between two numbers ('3h30') is already stated on both edges", () => {
+  expect(introWithUnit("Durée de 3h30 par jour", "h")).toBe(
+    "Durée de 3h30 par jour",
+  );
+});
+
+// The unit string comes from a brief — untrusted input — and can carry regex
+// metacharacters ("^", "(", "/", …). Escaping is a guard no other fixture exercises (every
+// other unit under test is metacharacter-free, so an unescaped pattern would coincidentally
+// behave the same). "m/s^2" is the fixture that makes escaping load-bearing: unescaped, the
+// bare "^" asserts line-start mid-pattern, the match can never succeed, and the unit would
+// be silently appended a second time even though the subtitle already states it verbatim.
+test("a unit containing regex metacharacters is matched literally, not as a pattern", () => {
+  expect(introWithUnit("Vitesse en m/s^2", "m/s^2")).toBe("Vitesse en m/s^2");
+});
+
+// The composed subtitle must not silently start varying with the run's language — `intro` is
+// prose, not a numeric label, so `lang` (emitted separately, :49) and the unit-in-parens
+// composition are independent. This would fail if introWithUnit were rewritten to route
+// through unitSuffix/labelWithUnit (which DO vary by lang) instead of staying a plain,
+// language-invariant parenthetical.
+test("the composed subtitle is identical with and without a French run language", () => {
+  const angle = {
+    ...CHART_BRIEF.angle,
+    unit: "%",
+    altInsight: "A ranking of four cities",
+  };
+  const withoutLang = assembleDwChart({ ...CHART_BRIEF, angle });
+  const withFrLang = assembleDwChart({ ...CHART_BRIEF, lang: "fr", angle });
+  expect(withoutLang.ok && withFrLang.ok).toBe(true);
+  if (!withoutLang.ok || !withFrLang.ok) return;
+  expect((withFrLang.value as { intro?: string }).intro).toBe(
+    "A ranking of four cities (%)",
+  );
+  expect((withFrLang.value as { intro?: string }).intro).toBe(
+    (withoutLang.value as { intro?: string }).intro,
+  );
 });

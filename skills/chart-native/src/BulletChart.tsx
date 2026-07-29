@@ -23,9 +23,11 @@ import {
   FONT,
   TYPE,
   BULLET_MEASURE_COLORS,
-  themeColors, tooltipBorder } from "./core/tokens";
+  themeColors,
+  tooltipBorder,
+} from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
 
@@ -65,8 +67,6 @@ export interface BulletChartProps {
 const HIT = BULLET_MEASURE_COLORS[0]; // met the target
 const MISS = BULLET_MEASURE_COLORS[1]; // missed the target
 
-const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
-
 export function BulletChart({
   config,
   progress = 1,
@@ -76,6 +76,9 @@ export function BulletChart({
   responsive = false,
   scale = 1,
 }: BulletChartProps) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const p = clamp01(progress);
   const s = responsive ? 1 : scale;
   const charsPerLine = Math.max(
@@ -185,6 +188,7 @@ function BulletSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const { rows } = layout;
   const n = rows.length;
   const C = themeColors(config.themeBg, config.baseColor);
@@ -327,6 +331,7 @@ function Tooltip({
   hover: number;
   config: BulletConfig;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const r = layout.rows[hover];
   const left = padding.left + r.targetX;
   const top = padding.top + r.y - 4;

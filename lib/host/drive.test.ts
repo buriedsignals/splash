@@ -17,6 +17,7 @@ import {
   fileArtifact,
 } from "../loop/manifest";
 import { freezeInput } from "../loop/freeze";
+import { DEFAULT_UI_LANG } from "../newsroom/language";
 
 function emptyDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix));
@@ -151,7 +152,9 @@ describe("initRunIn — the question a run cannot begin without", () => {
     });
     expect(r).toEqual({
       ok: true,
-      value: { runId: "premiums", nextActions: ["orient"] },
+      // No article language declared and no house profile installed (this worktree carries no
+      // NEWSROOM-PROFILE.md): the confirm-back reports the house default, "en".
+      value: { runId: "premiums", nextActions: ["orient"], lang: "en" },
     });
   });
 
@@ -177,6 +180,46 @@ describe("initRunIn — the question a run cannot begin without", () => {
     if (r.ok) throw new Error("unreachable");
     expect(r.message).toContain("URL");
     expect(existsSync(join(dir, "run.json"))).toBe(false);
+  });
+
+  // The confirm-back this task exists for (D20): no seventh CADRAGE question, just the language
+  // the deliverables will be made in, reported alongside what to do next.
+  it("reports the declared article language in the confirm-back", () => {
+    const { dir, csv } = undeclared();
+    const r = initRunIn(dir, {
+      runId: "premiums",
+      input: { data: csv, articleLang: "it" },
+      sources: {
+        mode: "real",
+        data: { kind: "local", label: "Relevés cantonaux 2024" },
+      },
+    });
+    expect(r).toEqual({
+      ok: true,
+      value: { runId: "premiums", nextActions: ["orient"], lang: "it" },
+    });
+  });
+
+  // Review finding on Task 5: `initRunIn`'s confirm-back used to fall back to a hardcoded
+  // `"en"` where it should defer to DEFAULT_UI_LANG — harmless only because the constant's
+  // CURRENT value happens to be "en" too. Asserting `lang === "en"` here (as the test above
+  // does, legitimately, to pin the observable behaviour) would not catch a regression back to
+  // the literal: the literal and the constant agree today, so equality holds either way. What
+  // is missing is a check that the fallback is wired to the SYMBOL, not a snapshot of what it
+  // currently equals — read the real source of the site (the same technique
+  // readme-parity.test.ts uses for cli.ts) and require the constant's own name to appear in the
+  // fallback expression.
+  it("the confirm-back's default is wired to DEFAULT_UI_LANG itself, not a copy of its value", () => {
+    const src = readFileSync(join(import.meta.dir, "drive.ts"), "utf8");
+    const fallback = src.match(
+      /lang:\s*created\.value\.lang\s*\?\?\s*([^,\n]+),/,
+    );
+    expect(fallback).not.toBeNull();
+    expect(fallback![1].trim()).toBe("DEFAULT_UI_LANG");
+    // And the symbol it names really is the constant this file imports, not a same-named
+    // decoy — the value-level assertion the sibling test above already makes, restated with
+    // the import rather than the literal so the two can never quietly drift apart again.
+    expect(DEFAULT_UI_LANG).toBe("en");
   });
 
   it("keeps the loop's own refusal for a declaration that is not even shaped right", () => {
@@ -730,5 +773,111 @@ describe("advanceRun — the human turn it cannot perform", () => {
     const r = await advanceRun(dir);
     expect(r).toMatchObject({ ok: false, code: "step-refused" });
     expect((r as { message: string }).message).toContain("approve --run <dir>");
+  });
+
+  it("puts the juxtaposition where the journalist has to act", async () => {
+    // needsHumanEye was carried all the way to the approval decision (lib/verify/approval.ts:158)
+    // and rendered by NOBODY — its only non-test sinks were signoffs/<id>.json and a report
+    // object nothing prints. A signal nobody sees is not a signal: this proves the approve
+    // command's own message now carries the confirmed takeaway and the rendered title side by
+    // side, the moment the journalist is told to act.
+    const dir = mkdtempSync(join(tmpdir(), "drive-approve-partial-title-"));
+    const src = join(dir, "src.csv");
+    writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
+    const confirmedTakeaway =
+      "Rents rose fastest in Geneva while wages stagnated across the whole canton";
+    const renderedTitle = "Rents rose fastest in Geneva";
+    const run: RunManifest = {
+      runId: "approve-partial-title",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: { data: freezeInput(dir, src, "data") },
+      orient: {
+        profile: {
+          columns: ["canton", "2015", "2024"],
+          numericColumns: ["2015", "2024"],
+          rowCount: 2,
+        },
+        supportsPoint: true,
+      },
+      elements: [
+        {
+          id: "e1",
+          angle: {
+            confirmedTakeaway,
+            altInsight:
+              "Rents in Geneva rose faster than wages across the canton.",
+            unit: "CHF",
+          },
+          proposal: {
+            options: [
+              {
+                id: "slope",
+                nativeType: "slope",
+                engine: "chart-native",
+                format: "static",
+                why: "two points, one line each",
+              },
+            ],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+      events: [],
+    };
+    const el = run.elements[0]!;
+    const provenance = provenanceHash(run, el);
+    writeManifest(join(dir, "run.json"), {
+      ...run,
+      elements: [
+        {
+          ...el,
+          artifact: {
+            path: "elements/e1/static.png",
+            sha256: "abc",
+            provenanceHash: provenance,
+            producedAt: "2026-07-27T09:00:00.000Z",
+          },
+          delivery: { requested: ["zip"], delivered: [] },
+          capture: {
+            images: [],
+            checks: [],
+            capturedProvenanceHash: provenance,
+          },
+          review: {
+            findings: [],
+            reviewedProvenanceHash: provenance,
+            // The element the fixture carries the failure in: a taste-risk row a real review
+            // step would have produced, standing in for that step so this test's own subject
+            // stays "does the approve message render it" rather than "does detection fire".
+            tasteRisk: [
+              {
+                dimension: "title-partial-coverage",
+                detector: "title-covers-takeaway",
+                evidence: [confirmedTakeaway, renderedTitle],
+                routedTo: "human-signoff",
+              },
+            ],
+            preview: {
+              deliverablePath: "/tmp/x/static.png",
+              deliverableSha256: "abc",
+              presentedAs: "path-printed",
+              presentedAt: "2026-07-27T09:00:00.000Z",
+              fallbackReason: "no viewer",
+            },
+          },
+        },
+      ],
+    });
+
+    const r = await advanceRun(dir);
+    expect(r).toMatchObject({ ok: false, code: "step-refused" });
+    const message = (r as { message: string }).message;
+    expect(message).toContain("you confirmed:");
+    expect(message).toContain("the title reads:");
+    expect(message).toContain(confirmedTakeaway);
+    expect(message).toContain(renderedTitle);
   });
 });

@@ -1,5 +1,5 @@
 import type { Beat } from "../../map-native/src/map-story";
-import { isFrench } from "../../../lib/core/locale";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 export type VisualKind = "map" | "chart" | "image";
 export type StepAction = "flyTo" | "drawTo" | "crossfade";
@@ -61,7 +61,6 @@ export function mapStoryToChapters(
     lang?: string;
   },
 ): ScrollyStory {
-  const fr = isFrench(meta.lang);
   const revealIdx: number[] = [];
   beats.forEach((b, i) => {
     if (b.kind === "reveal") revealIdx.push(i);
@@ -115,16 +114,11 @@ export function mapStoryToChapters(
         // the distribution instead of jumping max→min. Falls back to the old max/min
         // labelling if a beat lacks rank tags (older stories). Localized per meta.lang —
         // the auto-generated words must never leak English into a French deliverable.
-        if (b.rankRole === "tail" || i === minBeat)
-          descriptor = fr ? "le plus bas" : "the lowest";
+        const copy = storyCopy(meta.lang);
+        if (b.rankRole === "tail" || i === minBeat) descriptor = copy.lowest;
         else if (b.rank === 1 || i === maxBeat)
-          descriptor = fr
-            ? `le plus élevé des ${meta.regionsWithData}`
-            : `the highest of the ${meta.regionsWithData} shown`;
-        else if (b.rank !== undefined)
-          descriptor = fr
-            ? `le ${ordinal(b.rank, meta.lang)}`
-            : `the ${ordinal(b.rank, meta.lang)}`;
+          descriptor = copy.highestOf(meta.regionsWithData);
+        else if (b.rank !== undefined) descriptor = copy.ordinalWord(b.rank);
       }
       prose = `${b.callout.name} — ${b.callout.value}${descriptor ? ", " + descriptor : ""}`;
     } else {
@@ -150,73 +144,20 @@ export function mapStoryToChapters(
   };
 }
 
-// Ordinal words for the small ranks the sequence uses ("the first" reads better
-// than "the 1st"), keyed by language; numeric ordinals with the right suffix beyond
-// that (French has no st/nd/rd — just "Ne").
-const ORDINAL_WORDS_EN = [
-  "first",
-  "second",
-  "third",
-  "fourth",
-  "fifth",
-  "sixth",
-  "seventh",
-  "eighth",
-  "ninth",
-  "tenth",
-];
-const ORDINAL_WORDS_FR = [
-  "premier",
-  "deuxième",
-  "troisième",
-  "quatrième",
-  "cinquième",
-  "sixième",
-  "septième",
-  "huitième",
-  "neuvième",
-  "dixième",
-];
-
-function ordinal(n: number, lang?: string): string {
-  const fr = isFrench(lang);
-  const words = fr ? ORDINAL_WORDS_FR : ORDINAL_WORDS_EN;
-  if (n >= 1 && n <= words.length) return words[n - 1];
-  if (fr) return `${n}e`;
-  const rem100 = n % 100;
-  const rem10 = n % 10;
-  const suffix =
-    rem100 >= 11 && rem100 <= 13
-      ? "th"
-      : rem10 === 1
-        ? "st"
-        : rem10 === 2
-          ? "nd"
-          : rem10 === 3
-            ? "rd"
-            : "th";
-  return `${n}${suffix}`;
-}
-
-function years(n: number, lang?: string): string {
-  if (isFrench(lang)) return `${n} an${n === 1 ? "" : "s"}`;
-  return `${n} year${n === 1 ? "" : "s"}`;
-}
-
 // Compose the data-tied descriptor for a temporal reveal. Uses only facts
 // deriveMapStory computed from the data: the reveal's ordinal position in the
 // earliest→latest sequence, and the interval (in years) to the previous reveal
 // or since the first reveal. NEVER a bare connective, NEVER an invented fact.
-// `lang` picks the FR/EN phrasing — an auto-generated caption must never leak
-// English words into a French deliverable (or vice versa).
+// `lang` picks the shared story-copy row — an auto-generated caption must never leak
+// English words into a non-English deliverable (or vice versa).
 export function temporalDescriptor(b: Beat, lang?: string): string {
-  const fr = isFrench(lang);
+  const copy = storyCopy(lang);
   const idx = b.seqIndex ?? 0;
   const total = b.seqTotal ?? 0;
   if (total <= 1) return "";
 
   // First reveal — the earliest in the sequence.
-  if (idx === 0) return fr ? "le premier" : "the first";
+  if (idx === 0) return copy.first;
 
   // Interval to the previously revealed step, when we know both years.
   const gapPrev =
@@ -231,21 +172,15 @@ export function temporalDescriptor(b: Beat, lang?: string): string {
         ? b.seqYear - b.seqYearFirst
         : undefined;
     if (sinceFirst && sinceFirst > 0) {
-      return fr
-        ? `le plus récent, ${years(sinceFirst, lang)} après le premier`
-        : `the most recent, ${years(sinceFirst, lang)} after the first`;
+      return copy.mostRecentSince(copy.years(sinceFirst));
     }
-    return fr ? "le plus récent" : "the most recent";
+    return copy.mostRecent;
   }
 
   // Interior reveal — ordinal position plus the gap to the previous reveal.
-  const ord = fr
-    ? `le ${ordinal(idx + 1, lang)}`
-    : `the ${ordinal(idx + 1, lang)}`;
+  const ord = copy.ordinalWord(idx + 1);
   if (gapPrev && gapPrev > 0) {
-    return fr
-      ? `${ord}, ${years(gapPrev, lang)} plus tard`
-      : `${ord}, ${years(gapPrev, lang)} later`;
+    return copy.laterBy(ord, copy.years(gapPrev));
   }
   return ord;
 }

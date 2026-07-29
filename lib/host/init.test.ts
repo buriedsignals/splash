@@ -46,7 +46,9 @@ describe("init: the façade can begin a run", () => {
     expect(r.code).toBe(0);
     expect(r.body).toEqual({
       ok: true,
-      value: { runId: "premiums", nextActions: ["orient"] },
+      // No article language declared and no house profile installed for this spawned process
+      // (this worktree carries no NEWSROOM-PROFILE.md): the confirm-back reports "en".
+      value: { runId: "premiums", nextActions: ["orient"], lang: "en" },
     });
     expect(existsSync(join(dir, "run.json"))).toBe(true);
   });

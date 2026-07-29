@@ -30,6 +30,7 @@ export function assembleChartNative(
     // optional" rule). Omitted when absent, so a brief with no class assembles a byte-identical
     // spec.
     ...(brief.sourceKind ? { sourceKind: brief.sourceKind } : {}),
+    ...(brief.lang ? { lang: brief.lang } : {}),
     ...(brief.angle.emphasis ? { highlight: brief.angle.emphasis } : {}),
     ...(brief.format ? { format: brief.format } : {}),
     data: brief.dataCsv,

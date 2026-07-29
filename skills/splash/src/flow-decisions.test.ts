@@ -123,6 +123,76 @@ describe("source-fidelity decision", () => {
       }),
     ).toEqual({ ok: true });
   });
+
+  // The case above is 4 characters, so it never exercised the no-significant-token branch of
+  // nameAppearsIn. A 3-letter statistical-office acronym (OFS/BFS — this repo's own canonical
+  // fixture source names) does, and refusing it here is run-blocking: save-decision.mjs turns
+  // this reason into a non-zero exit surfaced to the journalist.
+  it("accepts a three-letter source acronym present in the article", () => {
+    const d = getDecision("source-fidelity")!;
+    expect(
+      d.artifactCheck!("/unused", {
+        article: "Selon l'OFS, les primes montent.",
+        sourceName: "OFS",
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      d.artifactCheck!("/unused", {
+        article: "Laut BFS stieg der Wert.",
+        sourceName: "BFS",
+      }),
+    ).toEqual({ ok: true });
+  });
+
+  // Regression guard for the D17 asymmetry: toLowerCase()+trim() alone (the old comparison)
+  // does not fold accents, so an article that respells "fédéral" as "federal" (a CLI mangling
+  // case, measured on `co2-secteurs-grouped`) was refused even though it is the same source.
+  it("accepts a source name whose accents the article spells differently", () => {
+    const d = getDecision("source-fidelity")!;
+    const r = d.artifactCheck!("/unused", {
+      article: "Chiffres publiés par l'Office federal de l'energie.",
+      sourceName: "Office fédéral de l'énergie",
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("accepts a name-only source whose class allows no URL", () => {
+    // lib/source/requirements.ts: prose.url and local.url are "optional"; private/synthetic/
+    // none are "forbidden". A name without a URL is a fully legal state for three classes of
+    // six — refusing it is the guard being wrong, not the source being bad.
+    const d = getDecision("source-fidelity")!;
+    const r = d.artifactCheck!("/tmp/run", {
+      article: "Chiffres cités dans l'article.",
+      sourceName: "Chiffres cités dans l'article",
+      sourceKind: "prose",
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("skips the name check entirely for a 'none' source — the class forbids a label at all", () => {
+    // lib/source/requirements.ts:96 (inside the `none: {` block opened at :95) is the ONLY row
+    // whose label is "forbidden" — every other kind's label is "required" (:51/:60/:69/:78/:87).
+    // A `none` citation asserts no facts and carries no reader-facing name, so there is nothing
+    // to compare against the article. sourceName here does NOT appear in the article on purpose:
+    // without the label==="forbidden" exemption this would (wrongly) raise source-fidelity.
+    const d = getDecision("source-fidelity")!;
+    const r = d.artifactCheck!("/tmp/run", {
+      article: "Une illustration purement décorative, sans donnée.",
+      sourceName: "Ce nom n'apparaît nulle part dans le texte",
+      sourceKind: "none",
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("still refuses a name the article never states", () => {
+    const d = getDecision("source-fidelity")!;
+    const r = d.artifactCheck!("/tmp/run", {
+      article: "Un texte qui ne cite personne.",
+      sourceName: "Institut Pasteur",
+      sourceKind: "public",
+    });
+    expect(r.ok).toBe(false);
+  });
 });
 
 describe("producer-escalation decision", () => {
@@ -284,7 +354,9 @@ describe("spineAutoRecordableIds — the spine records artifact decisions it can
     try {
       writeFileSync(join(runDir, "candidates.json"), "[]");
       // suggest-chart-invoked not in the applicable set → not recorded even with evidence present
-      expect(spineAutoRecordableIds(runDir, ["source-fidelity"], new Set())).toEqual([]);
+      expect(
+        spineAutoRecordableIds(runDir, ["source-fidelity"], new Set()),
+      ).toEqual([]);
     } finally {
       rmSync(runDir, { recursive: true, force: true });
     }

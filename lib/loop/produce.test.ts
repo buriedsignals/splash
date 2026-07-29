@@ -900,3 +900,157 @@ test("a scrolly-format option dispatches to the scrolly producer, not to the cho
     "scrolly",
   );
 });
+
+// --- the run's language reaches the rendered config (task 6) --------------------------------
+//
+// Before this task, produce() carried no language axis at all: run.lang (task 5) existed on
+// the manifest, but briefFor never read it and no assembler ever emitted it, so
+// specToNativeConfig's `if (spec.lang) out.config.lang = spec.lang;` injection point was always
+// fed `undefined` — every chart-native render's config.json had no `lang` key, whatever the
+// run's declared language. This is the end-to-end proof that a French run now reaches the
+// PRODUCED config, through the real render pipeline (no stub, no mock): the same seam this
+// file's other tests already exercise for the source class (A21) and the credit, now exercised
+// for the language.
+//
+// This ALSO feeds chart-native's i18n furniture gate (skills/chart-native/scripts/lib/
+// furniture-i18n.mjs's `furnitureGateApplies`), wired into snap-contrast.mjs — before this task
+// that gate was fed `lang: undefined` on every real produce() call, so `furnitureGateApplies`
+// always returned false and the gate's own `checkFurnitureI18n` never ran on a real render, for
+// any run, ever. A real produce() SUCCEEDING here means that check ran for the first time (a
+// French chart, real render, real headless browser) and found nothing to flag — the story-copy
+// migration (task 2) is what makes this the actual result rather than a red one.
+test("a French run's language reaches the produced config, and the real i18n furniture gate passes on it", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-lang-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(
+    src,
+    "canton,2015,2024\nGenève,449,583\nVaud,412,531\nAppenzell RI,289,352",
+  );
+  const run: RunManifest = {
+    runId: "t-lang-fr",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    lang: "fr",
+    input: { data: freezeInput(runDir, src, "data") },
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 3,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Les primes santé ont augmenté dans chaque canton",
+          altInsight:
+            "Entre 2015 et 2024 la prime adulte a augmenté dans les trois cantons ; Genève reste la plus chère.",
+          unit: "Prime mensuelle adulte (CHF)",
+        },
+        proposal: {
+          options: [
+            { id: "slope", nativeType: "slope", why: "two points in time" },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+  const result = await produce(run, run.elements[0], runDir);
+  if (!result.ok) throw new Error(result.message);
+  const config = JSON.parse(
+    readFileSync(join(runDir, "elements", "e1", "config.json"), "utf8"),
+  ) as { lang?: string };
+  // The carrier reached the produced config — the exact field the furniture gate reads.
+  expect(config.lang).toBe("fr");
+  rmSync(runDir, { recursive: true, force: true });
+}, 60000);
+
+// --- run.lang reaches the source FURNITURE, not just config.lang (task 15's inherited gap) ---
+//
+// task 6 (above) proved run.lang reaches config.lang, through briefFor/assembleChartNative. It
+// did NOT prove the run's language reaches the CREDIT TEXT itself: produce() composes
+// `published.attribution` (PROSE_QUALIFIER / SYNTHETIC_NOTICE, lib/source/furniture.ts) via
+// `validateSourcePolicy(declared, { mode, carriesFactualData })` — a call that never threaded
+// `lang`, so `publishedSourceFor(decl, ctx.lang)` always ran with `ctx.lang === undefined` and
+// `forLang` fell back to English on every run, whatever run.lang said. A French run rendering a
+// `prose`-sourced element is the fixture that makes this visible: PROSE_QUALIFIER's French row
+// ("chiffres cités dans l'article") visibly differs from its English row ("figures quoted in
+// the article") — a fixture over values that happen to read the same in both languages would
+// stay green regardless of whether the carrier works.
+test("a French run's language reaches the prose-source credit furniture, not just config.lang", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-lang-furniture-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(
+    src,
+    "canton,2015,2024\nGenève,449,583\nVaud,412,531\nAppenzell RI,289,352",
+  );
+  const articlePath = join(runDir, "article.txt");
+  const article =
+    "Entre 2015 et 2024, la prime mensuelle adulte est passée de 449 à 583 francs à Genève, " +
+    "de 412 à 531 francs dans le canton de Vaud et de 289 à 352 francs en Appenzell " +
+    "Rhodes-Intérieures.";
+  writeFileSync(articlePath, article);
+  const run: RunManifest = {
+    runId: "t-lang-furniture-fr",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    lang: "fr",
+    input: {
+      data: freezeInput(runDir, src, "data"),
+      article: freezeInput(runDir, articlePath, "article"),
+    },
+    sources: {
+      mode: "real",
+      data: { kind: "prose", label: "Heidi.news" },
+    },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 3,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Les primes santé ont augmenté dans chaque canton",
+          altInsight:
+            "Entre 2015 et 2024 la prime adulte a augmenté dans les trois cantons ; Genève reste la plus chère.",
+          unit: "Prime mensuelle adulte (CHF)",
+        },
+        proposal: {
+          options: [
+            { id: "slope", nativeType: "slope", why: "two points in time" },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+  const result = await produce(run, run.elements[0], runDir);
+  if (!result.ok) throw new Error(result.message);
+  const config = JSON.parse(
+    readFileSync(join(runDir, "elements", "e1", "config.json"), "utf8"),
+  ) as { source: { name: string } };
+  // The fixture element that CARRIES the failure: PROSE_QUALIFIER's French row, which reads
+  // differently from English. A run.lang that never reached ctx.lang would print the English
+  // qualifier here no matter what the run declared.
+  expect(config.source.name).toContain("chiffres cités dans l'article");
+  expect(config.source.name).not.toContain("figures quoted in the article");
+  rmSync(runDir, { recursive: true, force: true });
+}, 60000);

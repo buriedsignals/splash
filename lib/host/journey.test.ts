@@ -180,7 +180,11 @@ describe("a non-JS host carries a run from NOTHING to a delivered artifact", () 
     expect(started.code).toBe(0);
     expect(
       (started.body as { value: { nextActions: string[] } }).value,
-    ).toEqual({ runId: "primes-maladie", nextActions: ["orient"] });
+    ).toEqual({
+      runId: "primes-maladie",
+      nextActions: ["orient"],
+      lang: "en",
+    });
 
     // 2. ORIENT — the first deterministic step.
     const oriented = await cli(["advance", "--run", dir]);

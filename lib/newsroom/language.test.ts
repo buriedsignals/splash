@@ -41,4 +41,35 @@ describe("resolving the newsroom's language", () => {
       content: "en",
     });
   });
+
+  it("keeps the article's own language when the house profile prefers another", () => {
+    // The measured failure mode: a confirmed English article under a French house
+    // profile shipped French furniture. The profile is the LAST resort, never a writer
+    // over a language somebody established.
+    expect(
+      resolveLanguage({ uiLang: "fr", articleLang: "en", profileLang: "fr" }),
+    ).toEqual({ ui: "fr", content: "en" });
+  });
+
+  it("falls back to the house profile only when no article language was declared", () => {
+    expect(resolveLanguage({ uiLang: "en", profileLang: "de" }).content).toBe(
+      "de",
+    );
+  });
+
+  it("lets an explicit override outrank the article's own language", () => {
+    expect(
+      resolveLanguage({
+        articleLang: "de",
+        profileLang: "fr",
+        override: { content: "it" },
+      }).content,
+    ).toBe("it");
+  });
+
+  it("ignores a blank article language instead of letting it win", () => {
+    expect(
+      resolveLanguage({ articleLang: "   ", profileLang: "de" }).content,
+    ).toBe("de");
+  });
 });

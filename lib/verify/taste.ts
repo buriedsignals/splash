@@ -29,6 +29,27 @@ export const MIN_COLOUR_SEPARATION = 90;
 // a distinction no token count can make, which is why it is a risk and not a finding.
 export const TAKEAWAY_OVERLAP_FLOOR = 0.3;
 
+// Below this share of the confirmed takeaway's content words, the title carries a PART of what
+// was confirmed. Distinct from TAKEAWAY_OVERLAP_FLOOR, which measures DIVERGENCE: "half the
+// takeaway" shares far more than 30% of its words with the whole, so the divergence floor is
+// structurally blind to it — as is any overlap measure to a title that ADDS words. Both forms
+// the sweep measured (13/83) pass the existing threshold.
+export const TAKEAWAY_COVERAGE_FLOOR = 0.6;
+
+// The accessible-name prefix map-native's own components always prepend to a rendered title —
+// furniture the reader never confirmed anything about, not a journalist's claim. Construction
+// sites, all five identical (verified 2026-07-29, `grep -n "Interactive map:"
+// skills/map-native/src/*.tsx`): ChoroplethMap.tsx:486, CartogramMap.tsx:353, RouteMap.tsx:516,
+// HexGridMap.tsx:368, DotDensityMap.tsx:420 — each `config.title ? \`Interactive map:
+// ${config.title}\` : ...`. Not a named export anywhere: the value is hand-copied five times in
+// skills/map-native/src with no shared symbol to import, and lib/verify may not reach into
+// skills/ regardless (spec §4.1, lib/core/channel-policy.ts:3-4) — so this constant is the
+// closest thing to one, cited at its real construction sites rather than invented blind.
+// Exempted from title-overrun ONLY (stripped before the ADDED-words check below): it must not
+// touch title-partial-coverage or title-takeaway-divergence, and a genuine overrun appearing
+// AFTER the prefix must still fire (bench: "carries the engine prefix AND still overruns").
+export const MAP_NATIVE_TITLE_PREFIX = "Interactive map: ";
+
 // Share of the publication container the component actually fills.
 export const WHITESPACE_FILL_FLOOR = 0.35;
 
@@ -302,8 +323,75 @@ export function detectTasteRisks(input: TasteInput): TasteRiskSignal[] {
           ],
           routedTo: "human-signoff",
         });
+
+      // D16 (spec §4.2): SIGNAL, never block. The divergence check above measures OVERLAP
+      // against a low floor (0.3) — it detects a title that has drifted OFF the confirmed
+      // point, not one that carries only PART of it: "half the takeaway" shares well over 30%
+      // of its words with the whole, so the divergence floor stays quiet. Nor can an overlap
+      // measure see a title that ADDS a claim ("9 biennial years" → "decade after decade") —
+      // words gained, none lost, overlap unchanged. Both forms the sweep measured (13/83) pass
+      // the existing threshold, which is why this is a second check, not a lower floor.
+      if (shared / takeaway.size < TAKEAWAY_COVERAGE_FLOOR)
+        out.push({
+          dimension: "title-partial-coverage",
+          detector: `shared content words < ${TAKEAWAY_COVERAGE_FLOOR} of the confirmed takeaway`,
+          evidence: [input.confirmedTakeaway, input.renderedTitle],
+          routedTo: "human-signoff",
+        });
+      // A title may legitimately be SHORTER. It may not legitimately assert MORE than was
+      // confirmed: "9 biennial years" → "decade after decade" is a claim nobody signed.
+      //
+      // The engine's own accessible-name prefix (MAP_NATIVE_TITLE_PREFIX) is exempted here,
+      // and only here: it is stripped before tokenizing the "added" side, so it never counts
+      // as an addition — but a real addition AFTER the prefix still does, because the strip
+      // only ever removes a literal leading match, never a mid-string word.
+      const titleBeyondEnginePrefix = input.renderedTitle.startsWith(
+        MAP_NATIVE_TITLE_PREFIX,
+      )
+        ? input.renderedTitle.slice(MAP_NATIVE_TITLE_PREFIX.length)
+        : input.renderedTitle;
+      const added = [...contentWords(titleBeyondEnginePrefix)].filter(
+        (w) => !takeaway.has(w),
+      );
+      if (added.length > 0 && shared === takeaway.size)
+        out.push({
+          dimension: "title-overrun",
+          detector:
+            "title adds content words the confirmed takeaway does not have",
+          evidence: [input.confirmedTakeaway, input.renderedTitle],
+          routedTo: "human-signoff",
+        });
     }
   }
 
+  return out;
+}
+
+/** The two strings, one under the other, for a human to read at the moment they decide.
+ *
+ *  No percentage: a coverage number invites an argument about the metric instead of a look at
+ *  the title, and the decision belongs to the journalist either way (spec §4.2). Filters its
+ *  own input rather than trusting the caller to pre-filter — the two title dimensions are the
+ *  only ones with evidence shaped `[takeaway, title]`; any other dimension's evidence would be
+ *  read wrong here. */
+export function juxtaposeTitleAndTakeaway(
+  signals: TasteRiskSignal[],
+): string[] {
+  const out: string[] = [];
+  for (const s of signals) {
+    if (
+      s.dimension !== "title-partial-coverage" &&
+      s.dimension !== "title-overrun"
+    )
+      continue;
+    const [takeaway, title] = s.evidence;
+    out.push(
+      s.dimension === "title-overrun"
+        ? "the title says more than you confirmed — read both:"
+        : "the title carries part of what you confirmed — read both:",
+      `  you confirmed: ${takeaway}`,
+      `  the title reads: ${title}`,
+    );
+  }
   return out;
 }

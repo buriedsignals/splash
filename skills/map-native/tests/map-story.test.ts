@@ -293,6 +293,55 @@ describe("deriveMapStory", () => {
     );
   });
 
+  it("magnitudeCaption threads lang — was English-only for EVERY language before this fix, French included (`ordinal()` took no lang parameter at all)", () => {
+    expect(magnitudeCaption("Chile", "22%", 1, 4, "leader", "fr")).toBe(
+      "Chile en tête — 22%",
+    );
+    expect(magnitudeCaption("Spain", "21%", 2, 4, "leader", "fr")).toBe(
+      "Spain — 21%, 2e",
+    );
+    expect(magnitudeCaption("South Africa", "4%", 16, 4, "tail", "fr")).toBe(
+      "La longue traîne — South Africa, 4%",
+    );
+    expect(magnitudeCaption("Chile", "22%", 1, 4, "leader", "de")).toBe(
+      "Chile führt — 22%",
+    );
+    expect(magnitudeCaption("Spain", "21%", 2, 4, "leader", "de")).toBe(
+      "Spain — 21%, 2.",
+    );
+    expect(magnitudeCaption("South Africa", "4%", 16, 4, "tail", "de")).toBe(
+      "Der lange Schwanz — South Africa, 4%",
+    );
+    expect(magnitudeCaption("Chile", "22%", 1, 4, "leader", "it")).toBe(
+      "Chile in testa — 22%",
+    );
+    expect(magnitudeCaption("Spain", "21%", 2, 4, "leader", "it")).toBe(
+      "Spain — 21%, 2º",
+    );
+    expect(magnitudeCaption("South Africa", "4%", 16, 4, "tail", "it")).toBe(
+      "La coda lunga — South Africa, 4%",
+    );
+  });
+
+  it("deriveMapStory threads meta.lang into the magnitude walk — no English leak (the measured leak)", () => {
+    const layout = computeChoropleth(data, features, "iso_a3");
+    const deBeats = deriveMapStory(layout, features, "iso_a3", {
+      ...meta,
+      lang: "de",
+    });
+    const deReveals = deBeats.filter((b) => b.kind === "reveal");
+    expect(deReveals[0].copy).toBe("Norway führt — 99%");
+    expect(deReveals[1].copy).toBe("Germany — 59%, 2.");
+
+    const itBeats = deriveMapStory(layout, features, "iso_a3", {
+      ...meta,
+      lang: "it",
+    });
+    const itReveals = itBeats.filter((b) => b.kind === "reveal");
+    expect(itReveals[0].copy).toBe("Norway in testa — 99%");
+    expect(itReveals[1].copy).toBe("Germany — 59%, 2º");
+  });
+
   it("takeaway returns to full bounds with the insight copy", () => {
     const layout = computeChoropleth(data, features, "iso_a3");
     const beats = deriveMapStory(layout, features, "iso_a3", meta);

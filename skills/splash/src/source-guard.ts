@@ -1,3 +1,10 @@
+import {
+  SOURCE_KINDS,
+  requirementsFor,
+  type SourceKind,
+} from "../../../lib/source";
+import { placeholderHostReason } from "../../../lib/core/placeholder-host";
+
 // GUARD 2 — reject placeholder / reserved-domain source URLs. A real QA finding: splash
 // accepted `https://…example.com` placeholder URLs as the citable source. The SKILL.md
 // rule (~line 399) already forbids homepages / unverifiable URLs, but nothing
@@ -7,12 +14,9 @@
 // style; wired into the spine's validate-gate so a placeholder fails validation before
 // any producer runs, for EVERY producer.
 //
-// Reserved per RFC 2606 / RFC 6761:
-//   - TLDs: .example, .test, .invalid, .localhost
-//   - second-level domains: example.com, example.org, example.net
-
-const RESERVED_TLDS = new Set(["example", "test", "invalid", "localhost"]);
-const RESERVED_DOMAINS = new Set(["example.com", "example.org", "example.net"]);
+// The reserved-label list itself lives in lib/core/placeholder-host.ts — ONE list, shared
+// with lib/core/contract.ts's isHostedUrl. Two lists is what let `https://data.test/x`
+// through the policy and `https://todo.com/x` through this guard (both fixed by the union).
 
 // Best-effort host extraction. Accepts a full URL (with scheme) or a scheme-less host
 // (e.g. a value pasted without https://). Returns a lowercased hostname, or null when
@@ -32,22 +36,14 @@ function extractHost(url: string): string | null {
   return null;
 }
 
-// Returns a human-readable reason when the URL's host is a reserved placeholder domain,
-// or null when it is a real host (or unparseable — see extractHost). Only the EXACT
-// reserved registrable domain (or a subdomain of it) is rejected, so a real domain that
-// merely contains a reserved label (myexample.com, example-data.fr, testing.gov.uk) is
-// NOT false-rejected.
+// Returns a human-readable reason when the URL's host is a reserved placeholder label,
+// or null when it is a real host (or unparseable — see extractHost). Label-bounded, not
+// substring: a real domain that merely contains a reserved label (myexample.com,
+// example-data.fr, testing.gov.uk) is NOT false-rejected — see placeholder-host.ts.
 export function placeholderSourceReason(url: string): string | null {
   const host = extractHost(url);
   if (!host) return null;
-  const labels = host.split(".");
-  const tld = labels[labels.length - 1];
-  if (RESERVED_TLDS.has(tld))
-    return `source URL host "${host}" uses the reserved placeholder TLD ".${tld}" (RFC 2606/6761) — not a real, citable dataset URL`;
-  const registrable = labels.slice(-2).join(".");
-  if (RESERVED_DOMAINS.has(registrable))
-    return `source URL host "${host}" is the reserved placeholder domain "${registrable}" (RFC 2606/6761) — not a real, citable dataset URL`;
-  return null;
+  return placeholderHostReason(host);
 }
 
 // What `suggest-article` captures verbatim when the ARTICLE itself names where the figures
@@ -155,6 +151,53 @@ export function sourceUrlFidelityReason(
     `shipped source URL "${shippedUrlRaw.trim()}" does not match the journalist-provided URL ` +
     `"${hintUrl}" — cite the URL the journalist gave (or a subpath they explicitly confirmed ` +
     `in-turn), never silently upgrade a homepage to a deeper, unconfirmed path`
+  );
+}
+
+// D18 — what the JOURNALIST answered at CADRAGE Q4 / Gate 2c — NOT what the article named
+// (that is `SourceHint`, above). Two different questions with two different answers, and until
+// now only the first had a field: the journalist's answer was recomposed by hand into
+// `spec.source` by the orchestrator, which is exactly why a URL given TWICE could ship as a
+// name-only source and no guard could see it — `sourceUrlFidelityReason` compares two URLs and
+// returns null the moment one of them is missing (the "name-only ship" line above), by design.
+// Absence was invisible because absence had no counterpart to be absent FROM.
+export interface SourceAnswer {
+  name?: string;
+  url?: string;
+  /** The class, when the journalist stated it. Read through lib/source/requirements.ts — a URL
+   *  is only OWED for classes whose row says so. */
+  kind?: string;
+}
+
+// GUARD 2d — dropped-URL comparison (Defect D18). A COMPARISON between what the journalist
+// answered and what shipped, not a new detection guard: it reads the same requirements table
+// every other source gate reads (lib/source/requirements.ts) rather than deciding on its own
+// which classes need a URL. `null` when there is nothing to say — including for the classes
+// whose row FORBIDS a URL, where dropping it is the correct behaviour and flagging it would be a
+// false block (a false block kills a journalist's legitimate run).
+//
+// `shipped` is the shipped SOURCE OBJECT itself (`p.spec.source`), unlike `sourceUrlFidelityReason`
+// above (which takes the whole spec and unwraps `.source` via `shippedSource`) — the caller
+// already holds the narrower value, so this stays a pure comparison over it.
+export function droppedSourceUrlReason(
+  shipped: unknown,
+  answered: SourceAnswer | undefined,
+): string | null {
+  const given = answered?.url?.trim();
+  if (!given) return null;
+  const kind = answered?.kind;
+  if (
+    kind &&
+    (SOURCE_KINDS as readonly string[]).includes(kind) &&
+    requirementsFor(kind as SourceKind).url === "forbidden"
+  )
+    return null;
+  const shippedUrl = (shipped as { url?: unknown } | null | undefined)?.url;
+  if (typeof shippedUrl === "string" && shippedUrl.trim()) return null;
+  return (
+    `the source URL you gave — ${given} — is not on the shipped source: the deliverable ` +
+    `credits "${answered?.name ?? "the source"}" by name only, so a reader cannot reach the ` +
+    `dataset`
   );
 }
 

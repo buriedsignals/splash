@@ -7,6 +7,9 @@ import { join } from "node:path";
 import type { AcceptedProposal } from "./producer-spec";
 import { isDirectBranch } from "./candidate-provenance";
 import { canonicalUrl } from "./source-guard";
+import { nameAppearsIn, normalizeName } from "../../../lib/source/name-match";
+import { requirementsFor } from "../../../lib/source/requirements";
+import { SOURCE_KINDS, type SourceKind } from "../../../lib/source/vocabulary";
 
 export type CheckResult = { ok: true } | { ok: false; reason: string };
 
@@ -93,21 +96,39 @@ export const FLOW_DECISIONS: FlowDecision[] = [
     // article never contains is a fabricated/upgraded citation (finding class
     // source-url-unconfirmed).
     artifactCheck: (_runDir, payload) => {
-      const haystack = String(payload.article ?? "").toLowerCase();
+      const article = String(payload.article ?? "");
       const url = payload.sourceUrl ? String(payload.sourceUrl) : "";
       const name = payload.sourceName ? String(payload.sourceName) : "";
+      // WHAT KIND of source this is, when the caller says. lib/source/requirements.ts is the
+      // one table that answers "is a URL owed here" — public: required, local/prose: optional,
+      // private/synthetic/none: forbidden. A name-only ship is a fully legal state for three
+      // classes of six, and refusing it was the guard being wrong about the SOURCE POLICY, not
+      // the source being bad.
+      const kind =
+        typeof payload.sourceKind === "string" ? payload.sourceKind : undefined;
+      const rules =
+        kind && (SOURCE_KINDS as readonly string[]).includes(kind)
+          ? requirementsFor(kind as SourceKind)
+          : undefined;
+
       // Match the URL on its canonical HOST (protocol/case/trailing-slash-insensitive, shared with
       // source-guard) — M3: the anti-fabrication signal is whether the cited domain appears in the
       // article at all, so a legitimate citation is never refused for a cosmetic difference.
       if (url) {
         const host = canonicalUrl(url).split("/")[0];
-        if (host && !haystack.includes(host))
+        if (host && !normalizeName(article).includes(normalizeName(host)))
           return {
             ok: false,
             reason: `cited source URL "${url}" (host ${host}) does not appear in the article text`,
           };
       }
-      if (name && !haystack.includes(name.trim().toLowerCase()))
+      // `label: "forbidden"` singles out exactly one kind — `none` (lib/source/requirements.ts:96,
+      // inside the `none: {` block opened at :95); every other kind's `label` is "required"
+      // (:51 public, :60 local, :69 private, :78 synthetic, :87 prose). A `none` citation asserts
+      // no facts and carries no reader-facing name at all, so there is nothing here to compare
+      // against the article — skip the check rather than fail a class that structurally has no
+      // legitimate name to match.
+      if (name && rules?.label !== "forbidden" && !nameAppearsIn(name, article))
         return {
           ok: false,
           reason: `cited source name "${name}" does not appear in the article text`,

@@ -6,11 +6,14 @@
 import type { Beat } from "./map-story";
 import type { HexGridLayout } from "./hex-grid-geo";
 import { bbox } from "@turf/turf";
+import { localizeValueLabel } from "./core/locale";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 export interface HexGridStoryMeta {
   title: string;
   description?: string;
   insight?: string;
+  lang?: string;
 }
 
 const DEFAULT_MAX_REVEALS = 5;
@@ -42,12 +45,13 @@ export function deriveHexGridStory(
   // unit describes (e.g. "kWh"). "count" aggregates the points THEMSELVES, already named by
   // the "points" word below; appending a value unit there would misdescribe the number.
   const unit = layout.valueUnit ?? "";
+  const copy = storyCopy(meta.lang);
   const fmt = (v: number) =>
     layout.aggregate === "mean"
-      ? `${v.toFixed(1)}${unit} avg`
+      ? copy.meanOf(`${localizeValueLabel(v, meta.lang)}${unit}`)
       : layout.aggregate === "sum"
-        ? `${Math.round(v)}${unit}`
-        : `${Math.round(v)} points`;
+        ? `${localizeValueLabel(Math.round(v), meta.lang)}${unit}`
+        : copy.pointCount(localizeValueLabel(Math.round(v), meta.lang));
 
   const beats: Beat[] = [];
   beats.push({

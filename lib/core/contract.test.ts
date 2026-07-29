@@ -128,6 +128,13 @@ describe("isHostedUrl", () => {
     expect(isHostedUrl("http://foo.example.com/")).toBe(false);
     expect(isHostedUrl(undefined)).toBe(false);
   });
+  // Task 17 — isHostedUrl now shares its placeholder list with source-guard.ts's
+  // placeholderSourceReason (lib/core/placeholder-host.ts). Before the union, this alternation
+  // covered "todo" but not "test", so `https://data.test/x` slipped through this check while
+  // being rejected by the V1 source guard — a cross-leak. It must reject here too, now.
+  it("rejects a reserved .test host (the cross-leak V1's guard caught but this check missed)", () => {
+    expect(isHostedUrl("https://data.test/x")).toBe(false);
+  });
 });
 
 describe("manifest.validate — spec-in validation returns errors, never throws", () => {

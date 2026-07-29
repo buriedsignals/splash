@@ -29,7 +29,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate, textWidth } from "./core/text";
 
@@ -58,8 +58,6 @@ export interface ViolinChartProps {
 }
 
 const FILL = OKABE_ITO.blue;
-
-const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
 export function ViolinChart({
   config,
@@ -205,6 +203,9 @@ function ViolinSvg({
   legendTwoRows: boolean;
   legRow: number;
 }) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const C = themeColors(config.themeBg, config.baseColor);
   const violinFill = config.baseColor ?? FILL; // subject-fit hue, else default
   // the inner median tick punches the BACKGROUND colour through the (dark→light on
@@ -296,7 +297,7 @@ function ViolinSvg({
                 role={interactive ? "img" : undefined}
                 aria-label={
                   interactive
-                    ? `${r.label}: ${r.n} values, median ${fmt(r.median)}, middle half ${fmt(r.q1)} to ${fmt(r.q3)} ${config.unit}`
+                    ? `${r.label}: ${fmt(r.n)} values, median ${fmt(r.median)}, middle half ${fmt(r.q1)} to ${fmt(r.q3)} ${config.unit}`
                     : undefined
                 }
                 style={interactive ? { cursor: "pointer" } : undefined}
@@ -403,6 +404,7 @@ function Tooltip({
   hover: number;
   config: ViolinConfig;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const r = layout.rows.find((x) => x.index === hover);
   if (!r) return null;
   const left = padding.left + r.medianX;
@@ -428,7 +430,7 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{r.label}</strong>
       <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>
-        {r.n} values · median {fmt(r.median)} · middle half {fmt(r.q1)}–
+        {fmt(r.n)} values · median {fmt(r.median)} · middle half {fmt(r.q1)}–
         {fmt(r.q3)} {config.unit}
       </div>
     </div>

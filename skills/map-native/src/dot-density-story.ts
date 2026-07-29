@@ -6,23 +6,28 @@ import type { DotDensityLayout } from "./dot-density-geo";
 import type { StagedEntrance } from "./core/staged-reveal";
 import { regionBounds } from "./choropleth-geo";
 import { area } from "@turf/turf";
+import { localizeDecimal, localizeNumberString } from "./core/locale";
 
 export interface DotDensityStoryMeta {
   title: string;
   description?: string;
   insight?: string;
   unit?: string;
+  lang?: string;
 }
 
 const DEFAULT_MAX_REVEALS = 5;
 
-function formatCompact(v: number): string {
+function formatCompact(v: number, lang?: string): string {
   const abs = Math.abs(v);
   const trim = (s: string) => (s.endsWith(".0") ? s.slice(0, -2) : s);
-  if (abs >= 1e9) return trim((v / 1e9).toFixed(1)) + "B";
-  if (abs >= 1e6) return trim((v / 1e6).toFixed(1)) + "M";
-  if (abs >= 1e3) return trim((v / 1e3).toFixed(1)) + "k";
-  return String(Math.round(v));
+  if (abs >= 1e9)
+    return localizeDecimal(trim((v / 1e9).toFixed(1)) + "B", lang);
+  if (abs >= 1e6)
+    return localizeDecimal(trim((v / 1e6).toFixed(1)) + "M", lang);
+  if (abs >= 1e3)
+    return localizeDecimal(trim((v / 1e3).toFixed(1)) + "k", lang);
+  return localizeNumberString(String(Math.round(v)), lang);
 }
 
 export function deriveDotDensityStory(
@@ -72,7 +77,7 @@ export function deriveDotDensityStory(
     .sort((a, b) => b.density - a.density || (a.r.key < b.r.key ? -1 : 1));
 
   for (const x of ranked.slice(0, cap)) {
-    const valText = `${formatCompact(x.totalCount * layout.dotValue)}${unit ? " " + unit : ""}`;
+    const valText = `${formatCompact(x.totalCount * layout.dotValue, meta.lang)}${unit ? " " + unit : ""}`;
     const text =
       layout.hasCategories && x.dominant
         ? `${x.name} — ${valText}, mostly ${x.dominant}`

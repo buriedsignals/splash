@@ -1,5 +1,6 @@
 // The orchestration contract: what the agent hands the spine, and what it gets back.
 import type { Channel } from "./channel";
+import type { SourceAnswer } from "./source-guard";
 
 export type Producer =
   | "dw-chart"
@@ -43,6 +44,15 @@ export interface AcceptedProposal {
   // warning in validate-gate.ts), so the guards stay dormant and the honest name-only/prose
   // fallback passes.
   sourceHint?: { name?: string; url?: string };
+  // D18 (Gate 2c dropped-URL comparison): what the JOURNALIST ANSWERED at CADRAGE Q4/Gate 2c —
+  // a DIFFERENT question from sourceHint above, which is what the ARTICLE named. Until this
+  // carrier existed the journalist's answer was recomposed by hand into `spec.source` by the
+  // orchestrator, and a URL given TWICE could ship name-only with no guard able to see it
+  // (sourceUrlFidelityReason compares two URLs and stays dormant the moment one is simply
+  // absent). Threaded at §5b like sourceHint/channel/confirmedTakeaway — prose-enforced by
+  // necessity, same reasoning as sourceHint above. OPTIONAL: absent ⇒ the guard stays dormant,
+  // exactly like sourceHint's absence.
+  sourceAnswer?: SourceAnswer;
   // Mechanical sub-skill proof (Spotlight practice A5): which skills the orchestrator
   // actually invoked to build this proposal, emitted at §5b like channel/confirmedTakeaway.
   // First entry declares the branch ("splash:cadrage-guided" | "splash:cadrage-direct").

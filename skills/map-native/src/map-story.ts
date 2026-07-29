@@ -1,6 +1,7 @@
 import type { ChoroplethLayout } from "./choropleth-geo";
 import { regionBounds } from "./choropleth-geo";
-import { formatLocaleNumber, isFrench } from "./core/locale";
+import { formatLocaleNumber } from "./core/locale";
+import { storyCopy } from "../../../lib/core/story-copy";
 import {
   classifyNarrativePattern,
   type NarrativePattern,
@@ -302,7 +303,14 @@ export function deriveMapStory(
       const copy =
         pattern === "temporal" || rank === undefined
           ? calloutText(key, value)
-          : magnitudeCaption(nameOf(key), fmt(value), rank, seqTotal, rankRole);
+          : magnitudeCaption(
+              nameOf(key),
+              fmt(value),
+              rank,
+              seqTotal,
+              rankRole,
+              meta.lang,
+            );
       beats.push({
         kind: "reveal",
         camera: cameraOf(key),
@@ -379,18 +387,13 @@ export function deriveTakeawayCopy(input: {
   const { maxName, maxLabel, minName, minLabel } = input;
   // Single-region (or all-equal) story — nothing to contrast; no distinct takeaway.
   if (maxName === minName && maxLabel === minLabel) return "";
-  const fr = isFrench(input.lang);
-  const sep = fr ? " : " : ": ";
+  const copy = storyCopy(input.lang);
+  const sep = copy.captionSep;
 
   if (input.pattern === "temporal") {
     // Temporal: value = a year; min = earliest, max = latest. Close on the span.
     const span = Math.abs(Math.round(input.maxValue - input.minValue));
-    const spanClause =
-      span > 0
-        ? fr
-          ? ` — ${span} an${span === 1 ? "" : "s"} d'écart`
-          : ` — a ${span}-year span`
-        : "";
+    const spanClause = span > 0 ? copy.yearSpan(span) : "";
     // minLabel is the earliest year, maxLabel the most recent.
     return `${minName}${sep}${minLabel}, ${maxName}${sep}${maxLabel}${spanClause}`;
   }
@@ -398,12 +401,7 @@ export function deriveTakeawayCopy(input: {
   // Magnitude: leader vs tail. Add a "1 to N" ratio when it is meaningful.
   const ratio =
     input.minValue > 0 ? Math.round(input.maxValue / input.minValue) : 0;
-  const gapClause =
-    ratio >= 2
-      ? fr
-        ? ` — un écart de 1 à ${ratio}`
-        : ` — a ${ratio}-fold gap`
-      : "";
+  const gapClause = ratio >= 2 ? copy.foldGap(ratio) : "";
   return `${maxName}${sep}${maxLabel}, ${minName}${sep}${minLabel}${gapClause}`;
 }
 
@@ -478,24 +476,24 @@ export function magnitudeRevealRows(
   return leaders;
 }
 
-function ordinal(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
-}
-
 // A rank-aware, data-tied caption for a magnitude reveal. Never invents — it states
 // the region, its formatted value, and its factual rank/role in the distribution.
+// `lang` picks the shared story-copy row — this was English-only for EVERY language,
+// French included, before this fix (its own local `ordinal()` took no lang parameter
+// at all); it is verified live-consumed as visible video caption text (`beat.copy`,
+// rendered by every map-native *Story.tsx component's <CaptionCard>).
 export function magnitudeCaption(
   name: string,
   valueStr: string,
   rank: number,
   revealCount: number,
   role?: "leader" | "tail",
+  lang?: string,
 ): string {
-  if (role === "tail") return `The long tail — ${name}, ${valueStr}`;
-  if (rank === 1) return `${name} leads — ${valueStr}`;
-  return `${name} — ${valueStr}, ${ordinal(rank)}`;
+  const copy = storyCopy(lang);
+  if (role === "tail") return copy.longTail(name, valueStr);
+  if (rank === 1) return copy.leads(name, valueStr);
+  return copy.ranked(name, valueStr, rank);
 }
 
 // GUARDRAIL. A magnitude story must ADAPT to the data, not collapse to "highest &

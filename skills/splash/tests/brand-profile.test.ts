@@ -16,6 +16,7 @@ import {
   type BrandProfile,
 } from "../src/brand-profile";
 import { existsSync, readFileSync } from "node:fs";
+import { themeColors } from "../../chart-native/src/core/tokens";
 import { computeChoropleth } from "../../map-native/src/choropleth-geo";
 import { houseRamp } from "../../map-native/src/theme/house-ramp";
 
@@ -243,6 +244,52 @@ describe("mergeProfileDefaults", () => {
     );
     expect(out.baseColor).toBeUndefined();
     expect(out.source).toEqual({ name: "RTS" });
+  });
+
+  it("does not announce a house colour on a type that paints with a role palette", () => {
+    // Measured: a magenta #CC79A7 was proposed AND confirmed for a waterfall, and the chart
+    // shipped the increase/decrease/total palette. The announcement was made anyway.
+    // What the gate must suppress is the MARK-PAINT permission (`brandExplicit`) — NOT the
+    // baseColor stamp, which these types thread into their furniture tint (see below).
+    const out = mergeProfileDefaults(
+      { nativeType: "waterfall", title: "T" },
+      { palette: ["#2E7D57"], accent: "#2E7D57" },
+      { producer: "chart-native" },
+    ) as { baseColor?: string; brandExplicit?: boolean };
+    expect(out.brandExplicit).toBeUndefined();
+  });
+
+  it("still tints a furniture-only type's neutrals with the house hue", () => {
+    // baseColor on the eleven FURNITURE_ONLY_TYPES was never only about painting marks:
+    // spec-to-config threads it ("FURNITURE only. The house hue tints the greys and the frame
+    // band") and every one of those components resolves it via
+    // themeColors(config.themeBg, config.baseColor) -> deriveFurniture -> tintNeutral. Gating
+    // the whole colour block on paintsMarksWithHue left them with dead-grey neutrals under a
+    // house profile — a regression of the arbitrary-theme work.
+    const out = mergeProfileDefaults(
+      { nativeType: "waterfall", title: "T" },
+      { palette: ["#2E7D57"], accent: "#2E7D57" },
+      { producer: "chart-native" },
+    ) as { baseColor?: string; brandExplicit?: boolean };
+    expect(out.baseColor).toBe("#2E7D57");
+    // …and the tint actually reaches the furniture the reader sees.
+    const tinted = themeColors(out.themeBg, out.baseColor);
+    const flat = themeColors(out.themeBg, undefined);
+    expect(tinted.axis).not.toBe(flat.axis);
+    expect(tinted.grid).not.toBe(flat.grid);
+    expect(tinted.muted).not.toBe(flat.muted);
+    // The mark-paint permission stays withheld, so houseMarks() (brandExplicit-gated) is
+    // still empty for this type and no CVD/contrast bypass is opened.
+    expect(out.brandExplicit).toBeUndefined();
+  });
+
+  it("still announces it on a type that does paint with it", () => {
+    const out = mergeProfileDefaults(
+      { nativeType: "bar", title: "T" },
+      { palette: ["#2E7D57"], accent: "#2E7D57" },
+      { producer: "chart-native" },
+    ) as { baseColor?: string };
+    expect(out.baseColor).toBe("#2E7D57");
   });
 
   it("a null profile leaves the spec unchanged", () => {

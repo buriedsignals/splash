@@ -26,7 +26,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeNumberString, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
 import { layoutLegend, legendRowCount } from "./core/legend";
@@ -280,7 +280,15 @@ function LorenzSvg({
           </text>
           {/* legend BELOW the plot (a line swatch + label · Gini per curve) */}
           {layoutLegend(
-            series.map((srs) => `${srs.label} · Gini ${srs.gini.toFixed(2)}`),
+            series.map(
+              (srs) =>
+                // The Gini legend is a genuinely different shape from the other ten
+                // charts' value labels: always 2 decimals (a coefficient in [0,1],
+                // never meant to drop to a bare integer), so it calls
+                // localizeNumberString directly rather than localizeValueLabel's
+                // integer-bare/one-decimal rule.
+                `${srs.label} · Gini ${localizeNumberString(srs.gini.toFixed(2), config.lang)}`,
+            ),
             series.map((srs) => color(srs.index)),
             innerWidth,
             0,

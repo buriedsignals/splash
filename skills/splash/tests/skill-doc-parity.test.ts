@@ -348,3 +348,43 @@ describe("survivor rules — load-bearing, no mechanical backstop, MUST survive 
     expect(splash).toContain("Never omit it");
   });
 });
+
+// Family-B closing pins (2026-07-29 plan, task 18): four passages the SKILL.md prose gained to
+// match what the carrier/reader code now actually does. Each pins the ACTIONABLE clause, not a
+// keyword alone — the same discipline as the block above.
+describe("Family B — carrier/reader passages match the code", () => {
+  it("language is declared at INPUT and never asked as a CADRAGE question", () => {
+    expect(cadrage).toContain("Language is never one of these six");
+    expect(cadrage).toContain("DECLARED at INPUT");
+    expect(cadrage).toContain("never as its own question");
+  });
+
+  it("the language authority order is explicit signal > article > house profile, profile never overwrites", () => {
+    expect(cadrage).toContain(
+      "explicit signal from the journalist wins over the article's own declared language, which wins",
+    );
+    expect(cadrage).toContain(
+      "never overwrites a language the other two already",
+    );
+  });
+
+  it("a fifth language is refused at the offer, pointing at language-debt.md", () => {
+    expect(proposition).toContain(
+      "A fifth language is refused HERE, at the offer",
+    );
+    expect(proposition).toContain("docs/splash/language-debt.md");
+  });
+
+  it("the unit is stated once in the subtitle, cited at its real BarChart.tsx location", () => {
+    expect(splash).toContain("The unit is stated ONCE, in the subtitle");
+    expect(splash).toContain("BarChart.tsx:98-101");
+    expect(splash).toContain("valueUnit");
+  });
+
+  it("D16: splash ships and juxtaposes title+takeaway; no forced moment in prose is a family-A dependency", () => {
+    expect(splash).toContain("still SHIPS it and shows BOTH");
+    expect(splash).toContain("juxtaposeTitleAndTakeaway");
+    expect(splash).toContain("no forced moment");
+    expect(splash).toContain("family-A dependency");
+  });
+});

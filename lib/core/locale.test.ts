@@ -264,6 +264,15 @@ describe("core/locale — golden output on map-native's historically-tested rang
     }
   });
 
+  it("spaces a short unit the German way, like unitSuffix already does", () => {
+    // labelWithUnit was `isFrench`-binary while its twin unitSuffix (locale.ts:167-174)
+    // already handled `de` — two helpers of the same file disagreeing about German.
+    expect(core.labelWithUnit("70", "%", "de")).toBe(
+      core.labelWithUnit("70", "%", "fr"),
+    );
+    expect(core.labelWithUnit("70", "%", "de")).not.toBe("70%");
+  });
+
   it("decimalSep/sourceLabel/formatLocaleNumber match golden fr/en output (no regression on the tested range)", () => {
     const golden: Record<
       string,

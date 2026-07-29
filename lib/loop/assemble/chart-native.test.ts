@@ -51,6 +51,20 @@ test("no url, no unit, no emphasis, no beats — the optional fields stay absent
   expect(spec.unit).toBe("");
 });
 
+test("carries the run's language onto the engine spec", () => {
+  const r = assembleChartNative({ ...BRIEF, lang: "de" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect((r.value as { lang?: string }).lang).toBe("de");
+});
+
+test("omits lang entirely when the run has none — byte-identical to before", () => {
+  const r = assembleChartNative(BRIEF);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect("lang" in (r.value as object)).toBe(false);
+});
+
 test("the moved assembler produces the spec the pre-move code produced, field for field", () => {
   // The expected object is the one recorded from the pre-move implementation, pasted here
   // rather than recomputed: a regression proof compares against HISTORY, not against itself.

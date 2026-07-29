@@ -30,7 +30,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import {
   leftLabelGutterPx,
@@ -96,10 +96,11 @@ export function SlopeChart({
   const titleLines = responsive
     ? 1
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
-  // Left labels are END-anchored "name value" (e.g. "Cadres 38.0"); the right labels
-  // are the bare value ("52.0"). The SAME toFixed(1) the SVG renders with, so the
-  // gutters are sized from the exact strings drawn.
-  const fmtVal = (v: number) => Number(v).toFixed(1);
+  // Left labels are END-anchored "name value" (e.g. "Cadres 38"); the right labels
+  // are the bare value ("52"/"52,4"). The SAME expression the SVG renders with
+  // (localizeValueLabel — integer stays bare, a decimal keeps one place, then
+  // config.lang's separators), so the gutters are sized from the exact strings drawn.
+  const fmtVal = (v: number) => localizeValueLabel(v, config.lang);
   const leftLabelStrings = config.rows.map(
     (r) =>
       `${String(r[config.labelField])} ${fmtVal(Number(r[config.leftField]))}`,
@@ -213,6 +214,7 @@ function Tooltip({
   hover: number;
   config: SlopeConfig;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const l = layout.lines.find((x) => x.index === hover);
   if (!l) return null;
   const left = padding.left + (l.x1 + l.x2) / 2;
@@ -241,11 +243,11 @@ function Tooltip({
     >
       <strong>{l.rawLabel}</strong>{" "}
       <span style={{ opacity: 0.8 }}>
-        {config.leftPeriod} {l.leftVal.toFixed(1)} → {config.rightPeriod}{" "}
-        {l.rightVal.toFixed(1)}
+        {config.leftPeriod} {fmt(l.leftVal)} → {config.rightPeriod}{" "}
+        {fmt(l.rightVal)}
       </span>
       <div style={{ opacity: 0.7, fontSize: 11 }}>
-        {arrow} {Math.abs(delta).toFixed(1)} {config.unit}
+        {arrow} {fmt(Math.abs(delta))} {config.unit}
       </div>
     </div>
   );
@@ -290,7 +292,7 @@ function SlopeSvg({
   const isHi = (l: { rawLabel: string }) =>
     config.highlightLabel != null && l.rawLabel === config.highlightLabel;
 
-  const fmt = (v: number) => v.toFixed(1);
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
 
   // Left "name value" labels: the gutter (padding.left) is sized to the widest label
   // (leftLabelGutterPx) but CAPPED so the plot isn't starved, so a genuinely extreme name

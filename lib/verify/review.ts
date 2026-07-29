@@ -14,6 +14,8 @@
 import { renderedTitleOf } from "./capture";
 import { makeFinding } from "./severity";
 import { detectTasteRisks } from "./taste";
+import { announcedColourFindings } from "./colour-announcement";
+import type { BrandConcern } from "../core/brand-concern";
 import {
   assertNoInternals,
   buildReviewerInput,
@@ -68,6 +70,25 @@ export type ReviewRequest = {
    *  journalist deciding whether to override. */
   captureUnavailable?: string;
   adapter?: ReviewerAdapter;
+  /** The house-colour tradeoffs recorded at produce-time (produce.mjs's
+   *  brand-concerns.json, skills/chart-native/src/core/conformance.ts's BrandConcern) —
+   *  D25: shipped, never blocking, always announced.
+   *
+   *  NO PRODUCTION WRITER YET. The V2 loop's only ReviewRequest construction site
+   *  (lib/loop/verify.ts's runVerb("review", …)) sets none of `brandConcerns`,
+   *  `announcedColour` or `honoured`, so on that path they are always absent. The
+   *  file-based route — produce.mjs writing brand-concerns.json and
+   *  skills/splash/scripts/review-gate.mjs reading it into `reviewConcerns` — is what
+   *  actually carries these to a journalist today. These three fields are the seam for
+   *  threading the same record through the loop; until a caller fills them, the findings
+   *  below are structurally unreachable from lib/loop. */
+  brandConcerns?: BrandConcern[];
+  /** The baseColor the journalist was told about for this element, and (task 13) whether
+   *  the produced type actually painted its marks with it. See `brandConcerns` above: no
+   *  production caller threads this yet, and an absent/true `honoured` is a silent no-op
+   *  (D26). */
+  announcedColour?: string;
+  honoured?: boolean;
 };
 
 // The criteria a review is conducted against, shared by every caller so the same defect is
@@ -241,6 +262,11 @@ export async function runReview(req: ReviewRequest): Promise<ReviewRecord> {
   const mechanical = [
     ...findingsFromChecks(req.checks),
     ...findingsFromEvidence(req),
+    ...announcedColourFindings({
+      concerns: req.brandConcerns ?? [],
+      announced: req.announcedColour,
+      honoured: req.honoured,
+    }),
   ];
 
   let attribution: ReviewerAttribution = {
