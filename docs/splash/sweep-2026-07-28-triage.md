@@ -472,3 +472,58 @@ D27, D21, D08, D23, D05.
 
 ### D — La livraison · 2 défauts
 D03 (le placement jamais dit, 24 cas — troisième plus prévalent du sweep), D09.
+
+---
+
+## 9. Ce qu'un brainstorming du sous-projet A doit trancher
+
+Le § 8 dit par quoi commencer. Cette section porte la **matière de conception** — les tensions
+relevées en séance et les contraintes mesurées, pour qu'une spec puisse s'écrire sans re-découvrir.
+
+### Le fait de départ
+
+La règle EXISTE et est bien écrite. `SKILL.md:1178` : « une sortie non-zéro de `produce-all` (ou
+tout refus de garde) est un ARRÊT DUR remonté au journaliste TEL QUEL ». `SKILL.md:1166` porte la
+règle de D02 — **et l'admet elle-même : aucun signal mécanique live n'existe** pour établir qu'un
+rendu a été montré avant qu'on en demande la validation.
+
+Donc le sous-projet A n'est PAS « écrire les bonnes règles ». Elles sont écrites. C'est
+**« qu'est-ce qui les fait respecter »**, et c'est un problème d'architecture, pas de rédaction.
+
+### Les trois questions à trancher, dans cet ordre
+
+**1. Un refus mécanique en cours de run ARRÊTE-t-il le parcours, ou le DÉVIE-t-il ?**
+Arrêter est sûr et brutal : le journaliste se retrouve devant un mur qu'il ne sait pas franchir.
+Dévier demande de savoir vers quoi — et c'est ce que la boucle V2 sait déjà faire
+(`nextActionsForElement` route vers l'étape qui débloque). C'est le point où A rencontre la
+décision « peau et socle » (voir `two-chains-gap-2026-07-28.md`).
+
+**2. Quelles règles sont vérifiables comme des FAITS SUR LE DISQUE, et lesquelles demandent un
+signal live ?** La distinction décide de ce qui est traitable tout de suite.
+- Faits sur le disque, donc exigibles sans juge ni modèle : l'absence de `candidates.json` prouve
+  que `suggest-chart` n'a pas tourné ; la présence de `config.json`/`native-source.json` parmi les
+  livrables prouve qu'on a remis le dossier de production au lieu d'un export (les 16 non-livraisons
+  prouvées sont TOUTES dans ces 36 cas, zéro en dehors — un check de trois lignes remplace l'opinion
+  du juge).
+- Pas de fait disponible aujourd'hui : D02 (le rendu a-t-il été MONTRÉ ?) — le `SKILL.md` l'avoue.
+  Une spec honnête doit soit inventer ce signal, soit dire que la règle n'est pas applicable et
+  cesser de la promettre.
+
+**3. La relecture de rendu doit-elle être conduite par quelqu'un d'AUTRE que l'auteur de la spec ?**
+D15 : le gate s'auto-atteste — l'agent qui a écrit la spec conduit, note et enregistre sa propre
+revue, et deux cas enregistrent un `pass` alors que le test avait planté ou n'avait jamais tourné.
+Séparer coûte un aller-retour par visuel. Ne pas séparer laisse la revue sans valeur. C'est une
+décision de produit, pas d'implémentation.
+
+### Contraintes à ne pas perdre
+
+- **La chaîne qui tourne est celle EN PROSE.** Dans la boucle V2 ces défauts sont impossibles par
+  construction (spec composée par la table d'assembleurs, refus typés, `produce()` qui ne s'exécute
+  pas). Donc A a deux formes possibles : rendre les refus de la prose terminaux, OU faire descendre
+  les gates concernés dans la boucle. La seconde résout A et le chantier du pont d'un même geste.
+- **Ne pas ajouter un garde de plus.** Les gardes existants DÉTECTENT correctement — ils refusent, ils
+  enregistrent. Le défaut est qu'un refus n'arrête rien. Une spec qui ajoute un contrôle sans
+  répondre à la question 1 reproduira exactement le défaut qu'elle prétend corriger.
+- **Prévalences, pour arbitrer** : D02 56/83 · D01 50/83 (37 specs écrites à la main, 17 `produce`
+  non-zéro contournés, 5 violations ignorées, 3 sans `candidates.json`, 1 sans `produce`) ·
+  D03 24/83 · D16 13/83 · D15 10/83 · D04 10/83 · D20 9/83.
