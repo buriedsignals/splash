@@ -32,10 +32,24 @@ export function contrastRatio(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-/** WCAG SC 1.4.3 minimum contrast for text of a given rendered size (CSS px) and weight. */
-export function wcagMinContrast(fontPx: number, bold: boolean): number {
+/**
+ * WCAG SC 1.4.3 minimum contrast for text of a given rendered size (CSS px) and
+ * weight. `deviceScale` is the factor the DELIVERABLE is exported at
+ * (STATIC_DEVICE_SCALE = 2 for the media path, vite.config.ts:52). SC 1.4.3's
+ * large-text provision is about the text the reader sees; for a fixed-size PNG that
+ * is the delivered pixel, not the CSS px the layout was authored in. Defaults to 1 —
+ * the interactive path is responsive, where the CSS px IS what the reader gets, so
+ * every existing caller is unchanged.
+ */
+export function wcagMinContrast(
+  fontPx: number,
+  bold: boolean,
+  deviceScale = 1,
+): number {
+  const delivered = fontPx * deviceScale;
   const isLarge =
-    fontPx >= LARGE_TEXT_NORMAL_PX || (bold && fontPx >= LARGE_TEXT_BOLD_PX);
+    delivered >= LARGE_TEXT_NORMAL_PX ||
+    (bold && delivered >= LARGE_TEXT_BOLD_PX);
   return isLarge ? LARGE_TEXT_CONTRAST : MIN_CONTRAST;
 }
 

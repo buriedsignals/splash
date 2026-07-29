@@ -91,7 +91,7 @@ for (const s of samples) {
   // WCAG SC 1.4.3: large text (≥24px, or ≥18.66px bold) is conformant at 3:1, not
   // 4.5:1 — the heatmap's in-cell value labels are large bold numbers on a continuous
   // ramp whose mid-tones have no 4.5:1 text colour but always clear 3:1.
-  const min = wcagMinContrast(s.fontPx ?? 0, s.bold ?? false);
+  const min = wcagMinContrast(s.fontPx ?? 0, s.bold ?? false, STATIC_DEVICE_SCALE);
   if (worst >= min) continue;
   const flagged = { ...s, worst: Number(worst.toFixed(2)), min };
   // A failing label in a brand-explicit fill is downgraded to a concern (policy b).

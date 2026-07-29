@@ -5,6 +5,8 @@ import {
   wcagMinContrast,
   LARGE_TEXT_BOLD_PX,
   LARGE_TEXT_NORMAL_PX,
+  MIN_CONTRAST,
+  LARGE_TEXT_CONTRAST,
 } from "../src/core/contrast-scan";
 
 describe("contrast-scan", () => {
@@ -58,5 +60,29 @@ describe("contrast-scan — WCAG large-text 3:1 provision (SC 1.4.3)", () => {
     expect(isContrastViolation("#1a1a1a", bg, wcagMinContrast(20, true))).toBe(
       false,
     );
+  });
+});
+
+// The static deliverable renders at deviceScaleFactor 2 (vite.config.ts:52): a 44px
+// label in the delivered PNG is authored at 22px CSS, which sits just under the 24px
+// large-text threshold. SC 1.4.3's large-text provision is about what the reader
+// sees — for a fixed-size PNG export that's the delivered pixel, not the CSS px the
+// layout was authored in. Bounded to the caller that passes a scale (the static
+// path); the interactive path stays responsive and keeps its 2-arg call.
+describe("wcagMinContrast accounts for the delivered scale", () => {
+  it("should treat a 22px CSS label delivered at 2x as large text", () => {
+    // The delivered PNG carries it at 44px. SC 1.4.3's large-text provision is about what the
+    // reader sees, and for a fixed-size media export that is the delivered pixel.
+    expect(wcagMinContrast(22, false, 2)).toBe(LARGE_TEXT_CONTRAST);
+  });
+
+  it("should keep the strict floor for a genuinely small label", () => {
+    expect(wcagMinContrast(11, false, 2)).toBe(MIN_CONTRAST);
+  });
+
+  it("should be byte-identical when no scale is given (the interactive path)", () => {
+    expect(wcagMinContrast(22, false)).toBe(MIN_CONTRAST);
+    expect(wcagMinContrast(24, false)).toBe(LARGE_TEXT_CONTRAST);
+    expect(wcagMinContrast(19, true)).toBe(LARGE_TEXT_CONTRAST);
   });
 });
