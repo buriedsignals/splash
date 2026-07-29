@@ -297,6 +297,38 @@ describe("title coverage and overrun — D16, the confirmed takeaway is only PAR
     expect(signals.map((s) => s.dimension)).toContain("title-overrun");
   });
 
+  it("does not fire title-overrun on map-native's own accessible-name prefix", () => {
+    // Controller ruling (task 16, round 1): the reviewer reproduced this exact input firing
+    // title-overrun on the pre-existing "engine prefix" calibration case above (same pair) —
+    // "Interactive map: " is furniture five map-native components hand-copy
+    // (ChoroplethMap.tsx:486, CartogramMap.tsx:353, RouteMap.tsx:516, HexGridMap.tsx:368,
+    // DotDensityMap.tsx:420), never journalist content, and firing on it would train the
+    // journalist to ignore the line on nearly every map-native approve. The fixture element
+    // carrying the (would-be) failure is the "Interactive map: " prefix itself: strip it and
+    // the title carries the takeaway exactly, nothing added.
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway: "Les primes ont augmenté dans les six cantons",
+      renderedTitle:
+        "Interactive map: Les primes ont augmenté dans les six cantons",
+    });
+    expect(signals.map((s) => s.dimension)).not.toContain("title-overrun");
+  });
+
+  it("still fires title-overrun when a real addition follows the engine prefix", () => {
+    // The exemption above must stay narrow: it strips a literal LEADING match, never a
+    // mid-string word. The fixture element carrying the failure is ", decade after decade" —
+    // appended AFTER the confirmed takeaway, itself appended after the "Interactive map: "
+    // prefix — proving the strip does not swallow a genuine addition placed past it.
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway: "Rents rose fastest in Geneva while wages stagnated",
+      renderedTitle:
+        "Interactive map: Rents rose fastest in Geneva while wages stagnated, decade after decade",
+    });
+    expect(signals.map((s) => s.dimension)).toContain("title-overrun");
+  });
+
   it("says nothing when the title is the takeaway", () => {
     const t = "Rents rose fastest in Geneva";
     expect(

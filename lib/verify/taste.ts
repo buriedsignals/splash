@@ -36,6 +36,20 @@ export const TAKEAWAY_OVERLAP_FLOOR = 0.3;
 // the sweep measured (13/83) pass the existing threshold.
 export const TAKEAWAY_COVERAGE_FLOOR = 0.6;
 
+// The accessible-name prefix map-native's own components always prepend to a rendered title —
+// furniture the reader never confirmed anything about, not a journalist's claim. Construction
+// sites, all five identical (verified 2026-07-29, `grep -n "Interactive map:"
+// skills/map-native/src/*.tsx`): ChoroplethMap.tsx:486, CartogramMap.tsx:353, RouteMap.tsx:516,
+// HexGridMap.tsx:368, DotDensityMap.tsx:420 — each `config.title ? \`Interactive map:
+// ${config.title}\` : ...`. Not a named export anywhere: the value is hand-copied five times in
+// skills/map-native/src with no shared symbol to import, and lib/verify may not reach into
+// skills/ regardless (spec §4.1, lib/core/channel-policy.ts:3-4) — so this constant is the
+// closest thing to one, cited at its real construction sites rather than invented blind.
+// Exempted from title-overrun ONLY (stripped before the ADDED-words check below): it must not
+// touch title-partial-coverage or title-takeaway-divergence, and a genuine overrun appearing
+// AFTER the prefix must still fire (bench: "carries the engine prefix AND still overruns").
+export const MAP_NATIVE_TITLE_PREFIX = "Interactive map: ";
+
 // Share of the publication container the component actually fills.
 export const WHITESPACE_FILL_FLOOR = 0.35;
 
@@ -317,7 +331,6 @@ export function detectTasteRisks(input: TasteInput): TasteRiskSignal[] {
       // measure see a title that ADDS a claim ("9 biennial years" → "decade after decade") —
       // words gained, none lost, overlap unchanged. Both forms the sweep measured (13/83) pass
       // the existing threshold, which is why this is a second check, not a lower floor.
-      const added = [...title].filter((w) => !takeaway.has(w));
       if (shared / takeaway.size < TAKEAWAY_COVERAGE_FLOOR)
         out.push({
           dimension: "title-partial-coverage",
@@ -327,6 +340,19 @@ export function detectTasteRisks(input: TasteInput): TasteRiskSignal[] {
         });
       // A title may legitimately be SHORTER. It may not legitimately assert MORE than was
       // confirmed: "9 biennial years" → "decade after decade" is a claim nobody signed.
+      //
+      // The engine's own accessible-name prefix (MAP_NATIVE_TITLE_PREFIX) is exempted here,
+      // and only here: it is stripped before tokenizing the "added" side, so it never counts
+      // as an addition — but a real addition AFTER the prefix still does, because the strip
+      // only ever removes a literal leading match, never a mid-string word.
+      const titleBeyondEnginePrefix = input.renderedTitle.startsWith(
+        MAP_NATIVE_TITLE_PREFIX,
+      )
+        ? input.renderedTitle.slice(MAP_NATIVE_TITLE_PREFIX.length)
+        : input.renderedTitle;
+      const added = [...contentWords(titleBeyondEnginePrefix)].filter(
+        (w) => !takeaway.has(w),
+      );
       if (added.length > 0 && shared === takeaway.size)
         out.push({
           dimension: "title-overrun",
