@@ -249,3 +249,44 @@ test("deferral narrows a TYPE, never the engine", () => {
     "family-B: needs nodes+links",
   );
 });
+
+// ── The four chart types whose VIDEO cannot ship (2026-07-28 grid pass) ────────────────────────
+//
+// Measured, not assumed: the brain offered all four of these video forms CLEAN and the producer's
+// own reveal contract refused every one of them after encoding the mp4 — the "offered but not
+// producible" trap. The restriction is per-(type, format) precisely because the same four types
+// render a static and an interactive chart perfectly well; a manifest `deferred` flag would have
+// closed three working forms to close one broken one, and this test is what stops that from
+// happening by accident later.
+test("a video-unreachable chart type is refused in VIDEO and untouched in every other format", () => {
+  for (const type of ["pyramid", "treemap", "waffle", "dot-strip"]) {
+    expect(`${type}/video → ${isLoopBuildable("chart-native", type, "video")}`).toBe(
+      `${type}/video → false`,
+    );
+    expect(`${type}/static → ${isLoopBuildable("chart-native", type, "static")}`).toBe(
+      `${type}/static → true`,
+    );
+    expect(
+      `${type}/interactive → ${isLoopBuildable("chart-native", type, "interactive")}`,
+    ).toBe(`${type}/interactive → true`);
+  }
+});
+
+test("the refusal a journalist reads names the form and the way out, never the guard", () => {
+  const reason = declineReason("chart-native", "treemap", "video");
+  expect(reason).toContain("cannot be shipped as a video yet");
+  expect(reason).toContain("static or interactive");
+  // Never the self-contradicting generic sentence, and never a maintainer's vocabulary.
+  expect(reason).not.toContain("nothing can build a");
+  expect(reason).not.toContain("snap-video");
+  expect(reason).not.toContain("%");
+});
+
+// The restriction must not leak onto the types that DO animate — the whole video family would
+// otherwise be closed by a typo in the map.
+test("every other chart type still builds a video", () => {
+  for (const type of ["line", "bar", "heatmap", "stacked-area", "beeswarm", "violin"])
+    expect(`${type} → ${isLoopBuildable("chart-native", type, "video")}`).toBe(
+      `${type} → true`,
+    );
+});
