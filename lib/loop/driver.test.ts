@@ -28,6 +28,7 @@ import {
 } from "./manifest";
 import { freezeInput } from "./freeze";
 import { applyPhrasing } from "./phrase";
+import { applyBeats } from "./beats";
 import { resumeReport } from "./resume";
 import type { Decor } from "../newsroom/decor";
 import { registerAllPublishers } from "../delivery";
@@ -1092,13 +1093,125 @@ test("advance() carries capture then review on the road to a requested delivery"
 // The article branch's two turns (article beats) — see docs/superpowers/specs/
 // 2026-07-27-article-beats-design.md §8.
 //
-// `author-beats` is a HUMAN turn and it is REACHABLE today: any element carrying a plan with an
-// unwritten beat routes to it. `draft-beats` is NOT — it sits below the buildability gate and
-// scrolly is not in LOOP_BUILDABLE_ENGINES, so advanceStep is deliberately left WITHOUT a
-// `case "draft-beats"`: an unreachable switch arm is dead code, and this codebase has just spent
-// a slice curing "the mechanism exists and nothing invokes it". Wiring it is three lines in the
-// shape of `case "propose"`, on the day the whole-article branch lands.
+// BOTH are reachable, and they are reachable in different registers. `draft-beats` is
+// DETERMINISTIC: scrolly is in LOOP_BUILDABLE_ENGINES (lib/loop/assemble/scrolly.ts composes the
+// chosen host engine's track), so a chosen chart-track scrolly with no plan lands on it and the
+// driver runs it like propose. `author-beats` is the JOURNALIST's: any element carrying a plan
+// with an unwritten claim routes to it, and the driver deliberately runs nothing.
+//
+// This block used to say the opposite — that `draft-beats` was unreachable, so advanceStep was
+// "deliberately" left without a case for it. That justification outlived the fact: with scrolly
+// buildable, `nextActions` answered `draft-beats` and NOTHING could perform it, so the run froze
+// with no error at all. The proof below drives the DRIVER precisely because the existing beats
+// proof calls produce() directly and therefore never met the missing arm.
 // ---------------------------------------------------------------------------
+
+// A chosen chart-track scrolly with no plan — the state that used to freeze the loop.
+function scrollyAwaitingItsWalk(runDir: string): RunManifest {
+  const src = join(runDir, "src.csv");
+  writeFileSync(
+    src,
+    "year,extent\n1979,7.05\n1990,6.24\n2000,6.32\n2007,4.28\n2012,3.57\n2020,3.92\n2025,4.31\n",
+  );
+  return {
+    runId: "d-draft-beats",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    sources: {
+      mode: "real",
+      data: {
+        kind: "public",
+        label: "NSIDC Sea Ice Index",
+        url: "https://nsidc.org/data/seaice_index",
+      },
+    },
+    orient: {
+      profile: {
+        columns: ["year", "extent"],
+        numericColumns: ["year", "extent"],
+        rowCount: 7,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway:
+            "La banquise arctique de septembre ne s'est jamais reconstituée",
+          altInsight:
+            "L'étendue minimale de septembre est passée de 7 à 4,3 millions de km² entre 1979 et 2025.",
+          unit: "million km²",
+        },
+        proposal: {
+          options: [
+            {
+              id: "line-scrolly",
+              nativeType: "line",
+              engine: "chart-native",
+              format: "scrolly",
+              why: "une série dont la forme se raconte au fil du défilement",
+            },
+          ],
+          excluded: [],
+          chosenId: "line-scrolly",
+        },
+      },
+    ],
+    events: [],
+  };
+}
+
+test("the driver drafts the walk, stops at the authoring turn, and reaches produce once it is written", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-driver-draft-beats-"));
+  let run = scrollyAwaitingItsWalk(runDir);
+
+  // 1. THE STATE THAT FROZE. `next` says draft-beats, and the driver PERFORMS it.
+  expect(nextActions(run)).toEqual(["draft-beats"]);
+  const drafted = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(drafted.failure).toBeUndefined();
+  expect(drafted.ran).toBe("draft-beats");
+  run = drafted.run;
+
+  // The plan is on the element, and every claim is UNWRITTEN — the whole point of the seam.
+  const plan = run.elements[0]!.narrative!.beats;
+  expect(plan.length).toBeGreaterThanOrEqual(3);
+  expect(plan.every((b) => b.text === "")).toBe(true);
+  expect(plan.every((b) => b.draftText.length > 0)).toBe(true);
+
+  // 2. THE AUTHORING TURN IS THE JOURNALIST'S. The driver runs nothing and changes nothing —
+  //    an unwritten plan must never slide into produce.
+  expect(nextActions(run)).toEqual(["author-beats"]);
+  const human = await advanceStep(run, runDir, NEUTRAL_DECOR);
+  expect(human.ran).toBeNull();
+  expect(human.failure).toBeUndefined();
+  expect(human.run).toEqual(run);
+
+  // 3. THE JOURNALIST WRITES IT, through the one production caller of the guard.
+  run = applyBeats(
+    run,
+    "e1",
+    plan.map((b, i) => ({
+      id: b.id,
+      role: b.role,
+      text:
+        i === 0
+          ? "En 1979, la banquise de septembre couvrait encore 7.05 millions de km²."
+          : i === plan.length - 1
+            ? "En 2025 elle plafonne à 4.31 : la reconstitution n'a jamais eu lieu."
+            : `Le recul se creuse : ${b.beatSource.facts.value}.`,
+    })),
+  );
+
+  // 4. …and the run is at produce, which is where a plan nobody wrote could never arrive.
+  expect(nextActions(run)).toEqual(["produce"]);
+  expect(run.elements[0]!.narrative!.beats.every((b) => b.text !== "")).toBe(
+    true,
+  );
+  rmSync(runDir, { recursive: true, force: true });
+});
 
 test("author-beats is a human turn — the driver runs nothing and changes nothing", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-driver-beats-"));

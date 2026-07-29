@@ -236,6 +236,18 @@ un autre plan) et aucun test ni aucune fixture sur disque ne fige une valeur lit
 > `author-beats`, lui, **est** atteignable (n'importe quel élément portant un plan non écrit y
 > route) et son comportement de tour humain est testé pour de vrai.
 
+> **CORRECTIF 2026-07-28 — le paragraphe ci-dessus est périmé, et son omission était un défaut.**
+> `scrolly` est devenu constructible le jour même, donc `nextActionsForElement` s'est mis à
+> répondre `draft-beats` sur un scrolly chart-track sans plan — pendant qu'`advanceStep` n'avait
+> toujours pas de `case`, et que la façade n'exposait aucune commande pour le tour d'écriture. Le
+> run **gelait sans erreur** : `next` répondait `draft-beats` à l'infini et rien ne pouvait
+> l'exécuter. La preuve existante (`lib/loop/beats-render-proof.test.ts`) appelait `produce()`
+> directement et contournait donc le driver, ce qui est précisément pourquoi le trou a survécu.
+> Câblé depuis : `case "draft-beats"` dans `advanceStep` (forme de `preview`, verbe synchrone) et
+> commande `author-beats --run <dir> < walk.json` (forme de `phrase`, document sur stdin, garde
+> `verifyBeats` en refus `invalid-request`). Preuve : `lib/host/author-beats.test.ts` pilote le
+> CLI de bout en bout, `lib/loop/driver.test.ts` pilote le driver.
+
 **Leur position dans `nextActionsForElement`, et pourquoi elle est là :** *sous* le contrôle de
 constructibilité et *sous* `confirm-aspect`, *au-dessus* de `produce`.
 

@@ -17,6 +17,9 @@ import {
 } from "../../skills/splash/src/brand-profile";
 import { confirmAngle, inheritAngle, type AngleParts } from "../loop/angle";
 import { approve, type ApprovalCeremony } from "../loop/approve";
+import { applyBeats } from "../loop/beats";
+import { ARC_ROLES, type ArcRole } from "../core/claim-arc";
+import { type AuthoredBeat } from "../brain/verify-beats";
 import { chooseForm } from "../loop/choose";
 import { advanceStep } from "../loop/driver";
 import { initRun, RunDeclarationSchema } from "../loop/init";
@@ -274,6 +277,13 @@ function nothingToRun(
     );
   if (action === "choose-form")
     return 'advance: the next act is the journalist\'s — choose a form with "choose-form --run <dir> --option <id>"';
+  if (action === "author-beats")
+    return (
+      "advance: the next act is the journalist's — the walk is drafted and its claims are still " +
+      'unwritten, so write each beat in their own words with "author-beats --run <dir> < ' +
+      "walk.json\" (read the plan, including each beat's draftText and beatSource, from state " +
+      "--run <dir>)"
+    );
   if (action === "confirm-angle")
     return (
       "advance: the next act is the journalist's — confirm the angle with " +
@@ -382,6 +392,76 @@ export function phraseOfferIn(
     };
   }
   return persist(runDir, run, { phrased: selected.el.id });
+}
+
+/**
+ * WRITE THE WALK's claims, and persist it — the production caller `applyBeats` never had.
+ *
+ * THE SAME SHAPE AS `phrase`, deliberately, because it is the same kind of turn. The brain drafts
+ * the walk as data (ids, an order, anchors, the numbers each claim may cite) with every claim
+ * UNWRITTEN; the journalist writes them; `verifyBeats` keeps the turn to authoring. A document on
+ * stdin rather than flags for `phrase`'s own reason: the list's length and order are fixed by the
+ * plan, one claim per beat, and no set of flags expresses "one value per beat, in the plan's
+ * order" — which is exactly what the guard beneath verifies.
+ *
+ * WHY A COMMAND AND NOT AN `advance`: `draft-beats` is deterministic and the driver runs it;
+ * `author-beats` is the journalist's, like `phrase` and `approve`. Splitting them is what the
+ * seam is FOR — a beat plan the loop wrote and the loop filled in would be the machine's sentence
+ * under a journalist's byline, which `produce` refuses on purpose. Until this command existed the
+ * refusal could not even be reached: `next` answered `author-beats` and nothing on this surface
+ * could perform it.
+ *
+ * `role` travels with the text because naming the pivot is part of the authoring: the draft never
+ * guesses `turn` (lib/brain/beats.ts), and arcErrors inside the guard keeps the result a
+ * well-formed arc.
+ */
+export function authorBeatsIn(
+  runDir: string,
+  authored: unknown,
+  elementId?: string,
+): HostResponse {
+  const loaded = loadRun(runDir);
+  if ("fail" in loaded) return loaded.fail;
+  const selected = selectElement(loaded.run, elementId);
+  if ("fail" in selected) return { ok: false, ...selected.fail };
+
+  // Shape first, so the guard is met with the list it expects rather than with a TypeError.
+  if (
+    !Array.isArray(authored) ||
+    authored.some(
+      (b) =>
+        b == null ||
+        typeof b !== "object" ||
+        typeof (b as { id?: unknown }).id !== "string" ||
+        typeof (b as { text?: unknown }).text !== "string" ||
+        !ARC_ROLES.includes((b as { role?: ArcRole }).role!),
+    )
+  )
+    return {
+      ok: false,
+      code: "invalid-request",
+      message:
+        "author-beats reads a LIST of authored beats on stdin — one per drafted beat, in the " +
+        `plan's order: [{"id": "<drafted id>", "role": "<${ARC_ROLES.join("|")}>", ` +
+        '"text": "<the claim, in the journalist\'s words>"}] (read the plan, including each ' +
+        "beat's draftText and beatSource, from state --run <dir>)",
+    };
+
+  let run: RunManifest;
+  try {
+    // applyBeats THROWS by design, and so does verifyBeats beneath it — the same contract
+    // applyPhrasing has, for the same stated reason. The façade never throws, so the guard's own
+    // words become the refusal: it names the precise thing that was wrong with the walk (an id,
+    // the order, a blank claim, a number nothing grounds), and re-wording it would lose that.
+    run = applyBeats(loaded.run, selected.el.id, authored as AuthoredBeat[]);
+  } catch (e) {
+    return {
+      ok: false,
+      code: "invalid-request",
+      message: (e as Error)?.message ?? String(e),
+    };
+  }
+  return persist(runDir, run, { authored: selected.el.id });
 }
 
 /**
