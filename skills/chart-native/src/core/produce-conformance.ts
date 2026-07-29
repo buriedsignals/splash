@@ -125,7 +125,7 @@ export interface ConformanceRunResult {
 // F2 — the DATA MARK colours a brand-explicit config declares BY HAND, so the guards
 // know which hues are the journalist's own (never a global relaxation). Reads the
 // first-cut colour fields (baseColor is what line/bar/scatter actually paint;
-// seriesColors/accent are threaded for completeness), each tagged with a role for the
+// seriesColors is threaded for completeness), each tagged with a role for the
 // mark-contrast concern message. The set is empty unless `brandExplicit` — the auto/
 // subject-fit path carries no house marks here, keeping both the CVD/contrast bypass
 // (reconcileBrandViolations) and the ground-contrast screen (checkMarkContrastOnBg)
@@ -137,8 +137,6 @@ function houseMarks(config: Record<string, unknown>): MarkOnBg[] {
     typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v);
   const base = config.baseColor;
   if (isHex(base)) marks.push({ color: base, role: "baseColor" });
-  const accent = config.accent;
-  if (isHex(accent)) marks.push({ color: accent, role: "accent" });
   const series = config.seriesColors;
   if (Array.isArray(series))
     series.forEach((c, i) => {

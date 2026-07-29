@@ -45,8 +45,6 @@ export interface RadialBarConfig {
   /** subject-fit hue for the ring bars (the orange PEAK accent is unchanged).
    *  Absent → the OKABE_ITO.blue default. */
   baseColor?: string;
-  /** subject-fit hue for the peak ring bars. Absent → the OKABE_ITO.orange default. */
-  accent?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -247,11 +245,7 @@ function RadialBarSvg({
               <path
                 key={`b${b.index}`}
                 d={radialBarPath(b, 0, 0, innerR, clamp01(grow))}
-                fill={
-                  isPeak
-                    ? (config.accent ?? PEAK_COLOR)
-                    : (config.baseColor ?? BASE_COLOR)
-                }
+                fill={isPeak ? PEAK_COLOR : (config.baseColor ?? BASE_COLOR)}
                 opacity={dim ? 0.35 : 1}
                 tabIndex={interactive ? 0 : undefined}
                 role={interactive ? "img" : undefined}
