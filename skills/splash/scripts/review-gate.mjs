@@ -46,7 +46,13 @@ try {
 // delete-safety allowlist, opened by nothing — while this gate took its concerns as
 // hand-typed argv. A journalist signed "ship it" without ever learning their house colour
 // breaks accessibility (D25, 4/83).
-const concernsPath = join(dirname(reportPath), "brand-concerns.json");
+//
+// It lives in the proposal's OWN outDir, one level BELOW where report.json sits: report.json
+// is exports/<slug>/report.json (SKILL.md §5c), while produce.mjs writes brand-concerns.json
+// into the per-proposal exports/<slug>/<id>/ (SKILL.md §5c/§6, render-provenance.ts:155-160's
+// same "outDir = exports/<slug>/<id>/" convention) — so the lookup joins dirname(reportPath)
+// with `id`, not just dirname(reportPath).
+const concernsPath = join(dirname(reportPath), id, "brand-concerns.json");
 let fileConcerns = [];
 if (existsSync(concernsPath)) {
   const parsed = JSON.parse(readFileSync(concernsPath, "utf8"));

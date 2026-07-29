@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -73,11 +73,18 @@ describe("review-gate CLI — probes ledger", () => {
     expect(written.results[0].reviewed).toBeUndefined();
   });
 
-  it("reads brand-concerns.json next to the report and folds it into reviewConcerns — the reader the file never had", () => {
+  it("reads brand-concerns.json from the proposal's OWN outDir (exports/<slug>/<id>/), not the run dir report.json sits in — folds it into reviewConcerns, the reader the file never had", () => {
     const reportPath = freshReport();
-    const dir = join(reportPath, "..");
+    // The real nesting (SKILL.md §5c/§6, render-provenance.ts:155-160): report.json lives
+    // at exports/<slug>/report.json, one level ABOVE the per-proposal outDir
+    // exports/<slug>/<id>/ that produce.mjs actually writes brand-concerns.json into. A
+    // flat co-located fixture (report.json and brand-concerns.json as siblings) cannot
+    // express that gap — it would pass under a `dirname(reportPath)` lookup too.
+    const runDir = join(reportPath, "..");
+    const outDir = join(runDir, "p1");
+    mkdirSync(outDir, { recursive: true });
     writeFileSync(
-      join(dir, "brand-concerns.json"),
+      join(outDir, "brand-concerns.json"),
       JSON.stringify({
         type: "bar",
         concerns: [
