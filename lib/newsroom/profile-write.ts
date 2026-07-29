@@ -25,7 +25,6 @@ export type NewsroomFacts = {
   lang?: string;
   /** An ordered house palette; when present it supersedes `color`. */
   palette?: string[];
-  accent?: string;
   /** "light" | "dark" | "#rrggbb" — the house ground. */
   theme?: string;
   /** Prose lines appended to the body: what was measured but is not yet a frontmatter field. */
@@ -61,7 +60,6 @@ export function profileMarkdown(facts: NewsroomFacts): string {
       );
     });
   }
-  if (isSet(facts.accent)) lines.push(`accent: "${scalar(facts.accent!)}"`);
   if (isSet(facts.name)) {
     lines.push("source:");
     lines.push(`  name: "${scalar(facts.name!)}"`);

@@ -3,7 +3,7 @@
 //   bun skills/splash/scripts/propose-charter.mjs read <site-url>
 //   bun skills/splash/scripts/propose-charter.mjs read --html-file <path> [--url <url>]
 //   bun skills/splash/scripts/propose-charter.mjs write <projectDir> --confirmed \
-//       --palette "#c8102e,#0a5c36" [--accent "#…"] [--theme "#…"|dark] \
+//       --palette "#c8102e,#0a5c36" [--theme "#…"|dark] \
 //       [--name "Heidi.news"] [--site-url https://…] [--lang fr] [--typeface "Publico Text"]
 //
 // The split exists so the two cannot couple by ACCIDENT. `read` measures a site and prints what
@@ -25,7 +25,6 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   proposeCharter,
-  accentCandidate,
   groundTheme,
   SIGNAL_LABEL,
 } from "../../../lib/newsroom/charter.ts";
@@ -98,11 +97,6 @@ function renderProposal(proposal, fetchNotes) {
       out.push(
         `\n   ⚠ ${first.value} and ${second.value} are within a point of each other — this ranking does not choose between them. Ask which one is theirs.`,
       );
-    const accent = accentCandidate(proposal);
-    if (accent) {
-      out.push("");
-      out.push(`Second, distinct hue (a possible accent): ${accent.value}`);
-    }
   }
   const theme = groundTheme(proposal);
   out.push("");
@@ -186,8 +180,6 @@ function cmdWrite(flags, rest) {
     .filter(Boolean);
   for (const c of palette)
     if (!HEX.test(c)) die(`not a #rrggbb colour: ${c}`);
-  const accent = typeof flags.accent === "string" ? flags.accent.trim() : "";
-  if (accent && !HEX.test(accent)) die(`not a #rrggbb colour: ${accent}`);
   const theme = typeof flags.theme === "string" ? flags.theme.trim() : "";
   if (theme && theme !== "dark" && theme !== "light" && !HEX.test(theme))
     die(`theme must be "dark", "light" or a #rrggbb colour: ${theme}`);
@@ -203,7 +195,6 @@ function cmdWrite(flags, rest) {
 
   const md = profileMarkdown({
     ...(palette.length ? { palette } : {}),
-    ...(accent ? { accent } : {}),
     ...(typeof flags.name === "string" && flags.name.trim()
       ? { name: flags.name.trim() }
       : {}),
@@ -227,5 +218,5 @@ if (cmd === "read") await cmdRead(flags, rest);
 else if (cmd === "write") cmdWrite(flags, rest);
 else
   die(
-    "usage:\n  propose-charter.mjs read <site-url>\n  propose-charter.mjs read --html-file <path> [--url <url>]\n  propose-charter.mjs write <projectDir> --confirmed --palette '#rrggbb[,#rrggbb]' [--accent …] [--theme …] [--name …] [--site-url …] [--lang …] [--typeface …]",
+    "usage:\n  propose-charter.mjs read <site-url>\n  propose-charter.mjs read --html-file <path> [--url <url>]\n  propose-charter.mjs write <projectDir> --confirmed --palette '#rrggbb[,#rrggbb]' [--theme …] [--name …] [--site-url …] [--lang …] [--typeface …]",
   );

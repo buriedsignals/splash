@@ -68,8 +68,6 @@ export const MASTHEAD_WINDOW = 1200;
 export const MERGE_DISTANCE = 12;
 /** Relative luminance under which the page ground counts as dark. */
 export const DARK_GROUND_LUMINANCE = 0.2;
-/** Minimum hue separation (degrees) for a second candidate to be offered as a distinct accent. */
-export const ACCENT_HUE_SEPARATION = 25;
 /** How many ranked candidates the proposal carries. */
 export const CANDIDATE_CAP = 5;
 
@@ -79,6 +77,10 @@ export const CANDIDATE_CAP = 5;
 export type ColourSignal =
   | "theme-color" // <meta name="theme-color">
   | "brand-property" // --brand / --primary custom property
+  // NOTE: `accent-property` is an INPUT signal (a site's `--accent` custom property, scored below
+  // the link colour), not the removed output field. The house charter stopped OFFERING an accent
+  // on 2026-07-29 — nothing in the product rendered it — but a site that declares one is still
+  // evidence about its palette.
   | "accent-property" // --accent custom property: a UI accent, not necessarily the masthead
   | "masthead" // fill/stroke of the logo or masthead SVG
   | "link" // the colour of a link
@@ -937,24 +939,6 @@ function dedupeType(list: TypeMeasurement[]): TypeMeasurement[] {
     out.push(t);
   }
   return out.slice(0, 6);
-}
-
-/**
- * The second candidate worth offering as an ACCENT: the best-ranked one whose hue is far enough
- * from the primary to read as a different colour. A near-shade of the primary is a tint, not an
- * accent, and offering it would be noise. Returns null when there is no such candidate.
- */
-export function accentCandidate(
-  proposal: CharterProposal,
-): ColourCandidate | null {
-  const [primary, ...rest] = proposal.candidates;
-  if (!primary) return null;
-  const h0 = saturationLightness(primary.value).h;
-  for (const c of rest) {
-    const dh = Math.abs(saturationLightness(c.value).h - h0);
-    if (Math.min(dh, 360 - dh) >= ACCENT_HUE_SEPARATION) return c;
-  }
-  return null;
 }
 
 /**
