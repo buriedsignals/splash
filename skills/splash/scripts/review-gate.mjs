@@ -52,15 +52,27 @@ try {
 // into the per-proposal exports/<slug>/<id>/ (SKILL.md §5c/§6, render-provenance.ts:155-160's
 // same "outDir = exports/<slug>/<id>/" convention) — so the lookup joins dirname(reportPath)
 // with `id`, not just dirname(reportPath).
+//
+// The file carries TWO classes and both are folded in at the same severity (an advisory
+// render-review concern): `concerns` = the structured brand CVD/contrast tradeoffs, and
+// `advisories` = the label-integrity tripwire (the "Interm." data-shortening class) plus the
+// house-mark contrast screen. The advisories are already prose, so they need no reason/hue
+// formatting. Reading `advisories` defensively keeps this compatible with a file written before
+// the field existed.
 const concernsPath = join(dirname(reportPath), id, "brand-concerns.json");
 let fileConcerns = [];
 if (existsSync(concernsPath)) {
   const parsed = JSON.parse(readFileSync(concernsPath, "utf8"));
-  fileConcerns = (parsed.concerns ?? []).map((c) =>
-    c.nearestAccessible
-      ? `${c.reason} — closest accessible hue: ${c.nearestAccessible}`
-      : c.reason,
-  );
+  fileConcerns = [
+    ...(parsed.concerns ?? []).map((c) =>
+      c.nearestAccessible
+        ? `${c.reason} — closest accessible hue: ${c.nearestAccessible}`
+        : c.reason,
+    ),
+    ...(Array.isArray(parsed.advisories) ? parsed.advisories : []).filter(
+      (a) => typeof a === "string" && a.trim(),
+    ),
+  ];
 }
 const allConcerns = [...fileConcerns, ...concerns];
 try {

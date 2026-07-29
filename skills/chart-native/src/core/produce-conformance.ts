@@ -131,6 +131,33 @@ export interface ConformanceRunResult {
    * carries no brand-colour item (auto path, or only integrity/mark-contrast advisories).
    */
   brandConcerns: BrandConcern[];
+  /**
+   * The OTHER half of `concerns` — the two advisory classes that carry no brand colour and so
+   * have no structured record: the label-integrity tripwire (checkLabelDataIntegrity) and the
+   * house-mark-contrast-on-ground screen (checkMarkContrastOnBg). Split out because
+   * brand-concerns.json used to record `brandConcerns` alone, which left these two reaching
+   * only produce stdout — and stdout is discarded (lib/core/verbs/exec.ts) unless the run fails.
+   * `concerns` above remains the flattened union of both, unchanged for every existing caller.
+   */
+  advisories: string[];
+}
+
+/** The brand-concerns.json payload, or null when the run recorded nothing worth a file.
+ *  Split out of produce.mjs so the write gate is testable: it must fire for an
+ *  advisory-ONLY run too (a shortened data label with no brand colour anywhere), which the
+ *  original `brandConcerns.length > 0` condition silently skipped. `concerns` keeps its
+ *  name and shape — review-gate.mjs already reads `.concerns[].reason`. */
+export function brandConcernsFile(
+  type: string,
+  result: ConformanceRunResult,
+): { type: string; concerns: BrandConcern[]; advisories: string[] } | null {
+  if (result.brandConcerns.length === 0 && result.advisories.length === 0)
+    return null;
+  return {
+    type,
+    concerns: result.brandConcerns,
+    advisories: result.advisories,
+  };
 }
 
 // F2 — the DATA MARK colours a brand-explicit config declares BY HAND, so the guards
@@ -268,7 +295,13 @@ export function runProduceConformance(
 ): ConformanceRunResult {
   const raw = computeRawConformance(type, config);
   if (!raw.checked)
-    return { checked: false, violations: [], concerns: [], brandConcerns: [] };
+    return {
+      checked: false,
+      violations: [],
+      concerns: [],
+      brandConcerns: [],
+      advisories: [],
+    };
   // WCAG 1.1.1 — the produce boundary REQUIRES a non-empty altInsight on EVERY
   // produced chart, parity with dw-chart/map-dw whose spec validation hard-requires
   // it. checkGlobalConformance keeps its opt-in gate ("altInsight" in input) for
@@ -303,15 +336,13 @@ export function runProduceConformance(
     houseMarks(config),
     typeof config.themeBg === "string" ? config.themeBg : undefined,
   );
+  const advisories = [...integrity, ...markContrast];
   return {
     checked: true,
     violations,
-    concerns: [
-      ...brandConcerns.map((c) => c.reason),
-      ...integrity,
-      ...markContrast,
-    ],
+    concerns: [...brandConcerns.map((c) => c.reason), ...advisories],
     brandConcerns,
+    advisories,
   };
 }
 

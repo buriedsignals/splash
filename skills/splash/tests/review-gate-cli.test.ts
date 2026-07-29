@@ -113,6 +113,37 @@ describe("review-gate CLI — probes ledger", () => {
     );
   });
 
+  it("folds the file's `advisories` in too — a label-integrity-only run must reach the review", () => {
+    // IMPORTANT-5: brand-concerns.json gained a reader but recorded only the CVD/contrast
+    // subset. The label-integrity tripwire (the "Interm." data-shortening class) went to
+    // produce stdout, which lib/core/verbs/exec.ts discards except on failure — so a run whose
+    // ONLY finding was a shortened data label reached nobody. `concerns` here is EMPTY: the
+    // advisory has to carry itself.
+    const reportPath = freshReport();
+    const outDir = join(reportPath, "..", "p1");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(
+      join(outDir, "brand-concerns.json"),
+      JSON.stringify({
+        type: "bar",
+        concerns: [],
+        advisories: [
+          'labelField value "Interm." looks like a truncated data field — its expansion appears in full in the title/alt-text; label-fit must widen the gutter or wrap, never shorten the data',
+        ],
+      }),
+    );
+    const probes = JSON.stringify([
+      { check: "title matches the confirmed takeaway", outcome: "pass" },
+    ]);
+    const { code } = runReviewGate([reportPath, "p1", "--probes", probes]);
+    expect(code).toBe(0);
+    const written = JSON.parse(readFileSync(reportPath, "utf8"));
+    expect(written.results[0].reviewConcerns).toHaveLength(1);
+    expect(written.results[0].reviewConcerns[0]).toContain(
+      "truncated data field",
+    );
+  });
+
   it("accepts when a resolved probe carries the failure with evidence (inline JSON probes)", () => {
     const reportPath = freshReport();
     const probes = JSON.stringify([
