@@ -460,27 +460,40 @@ export function mergeProfileDefaults<
   let out = spec;
   const kind = colourKind(opts?.producer, out);
   // A chart-native type that encodes with a frozen role/categorical palette (waterfall,
-  // diverging, pie, …) cannot paint its MARKS with the house hue — stamping baseColor/
-  // brandExplicit for one announces a colour the render structurally cannot honour on its
-  // data marks (D26: a magenta waterfall was proposed AND confirmed, and the chart shipped
-  // the increase/decrease/total role palette instead). Read from the engine
-  // (honoursBaseColor), never restated here. This narrows ONLY the baseColor/brandExplicit
-  // stamp below — accent (a separate editorial-highlight hue Slope also reads, even though
-  // Slope is furniture-only for baseColor) and themeBg (furniture, not marks) must still
-  // derive from the house profile for these types, so `kind` itself stays untouched.
+  // diverging, pie, …) cannot paint its MARKS with the house hue — announcing one for it
+  // promises a colour the render structurally cannot honour on its data marks (D26: a magenta
+  // waterfall was proposed AND confirmed, and the chart shipped the increase/decrease/total
+  // role palette instead). Read from the engine (honoursBaseColor), never restated here.
+  //
+  // What this gates is the MARK-PAINT PERMISSION (`brandExplicit`) — NOT the `baseColor` stamp.
+  // baseColor on those eleven types was never only about marks: spec-to-config threads it as
+  // "FURNITURE only. The house hue tints the greys and the frame band", and each of their
+  // components resolves it via themeColors(config.themeBg, config.baseColor) → deriveFurniture
+  // → tintNeutral. Withholding the stamp would leave them dead-grey under a house profile.
+  // So the hue is still handed over (furniture tint survives) while `brandExplicit` is withheld,
+  // which also keeps houseMarks() — brandExplicit-gated in core/produce-conformance.ts — empty
+  // for these types, so no CVD/contrast bypass is opened by the restored stamp. `accent` (a
+  // separate editorial-highlight hue Slope reads even though it is furniture-only for baseColor)
+  // and themeBg are unaffected, so `kind` itself stays untouched.
   const paintsMarksWithHue =
     opts?.producer !== "chart-native" ||
     typeof out.nativeType !== "string" ||
     honoursBaseColor(out.nativeType);
-  if (profile.palette.length > 0 && kind !== "none" && paintsMarksWithHue) {
+  if (profile.palette.length > 0 && kind !== "none") {
     if (out.baseColorExplicit === true) {
       // The journalist named a colour for THIS element — keep it. For a chart, seedBrandColor
       // keeps the baseColor (brandExplicit if it's a house hue). For a map, the journalist's own
-      // palette is already on the spec — leave it untouched.
-      if (kind === "chart") out = seedBrandColor(out, profile);
+      // palette is already on the spec — leave it untouched. A furniture-only type is skipped:
+      // its baseColor is already on the spec (the journalist's own), and marking it brandExplicit
+      // would grant the mark-paint permission the render cannot honour.
+      if (kind === "chart" && paintsMarksWithHue)
+        out = seedBrandColor(out, profile);
     } else if (kind === "chart") {
       // Auto subject-fit colour (or none) → the house palette is the default and overrides it.
-      out = { ...out, baseColor: profile.palette[0], brandExplicit: true };
+      // A furniture-only type takes the hue for its neutrals but not the mark-paint permission.
+      out = paintsMarksWithHue
+        ? { ...out, baseColor: profile.palette[0], brandExplicit: true }
+        : { ...out, baseColor: profile.palette[0] };
     } else {
       // Map. The house hue/palette OVERRIDES the suggester's AUTO subject-fit `palette` — an auto
       // pick is not an editorial choice (mirrors the chart branch overriding the auto baseColor).
