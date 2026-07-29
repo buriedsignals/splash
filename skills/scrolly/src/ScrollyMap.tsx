@@ -11,7 +11,11 @@ import {
   type ChoroplethData,
 } from "../../map-native/src/choropleth-geo";
 import { deriveFurniture, bgIsDark } from "../../../lib/core/theme";
-import { deriveMapStory, type Beat } from "../../map-native/src/map-story";
+import {
+  deriveMapStory,
+  type Beat,
+  type MapArcBeat,
+} from "../../map-native/src/map-story";
 import { formatLocaleNumber } from "../../../lib/core/locale";
 import { NO_DATA_COLOR } from "../../map-native/src/theme/colors";
 import {
@@ -67,6 +71,9 @@ export interface ScrollyMapConfig extends ChoroplethData {
   // Narrative pattern hint (② sets it): "temporal" → tell the sequence, never
   // "highest/lowest"; "magnitude" → keep the ranking; "categorical" → fallback.
   valueKind?: "temporal" | "magnitude" | "categorical";
+  /** Journalist-confirmed claim-arc (S2), region-anchored on the join key — validated by
+   *  validateChoroplethConfig and honoured by deriveMapStory. Absent ⇒ the salience walk. */
+  arcBeats?: MapArcBeat[];
 }
 
 interface CameraPoint {
@@ -210,6 +217,10 @@ export const ScrollyMap: React.FC<{
         valueField: config.valueField,
         narrativePattern: config.valueKind,
         lang: config.lang,
+        // The confirmed claim-arc. The CAMERA track needs it as much as the caption track
+        // does: these beats are what each scroll step flies to, so a dropped plan here shows
+        // the reader a different region than the caption above it names.
+        arcBeats: config.arcBeats,
       };
       const beats = deriveMapStory(layout, world, "iso_a3", meta);
 

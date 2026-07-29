@@ -245,7 +245,11 @@ the flow did not reach (a canned « Q6, toujours posée » when the flow did not
    `cartogram`, `dot-density`, `hex-grid`, `locator` — do NOT accept a confirmed arc yet; their beats
    still derive from the data alone (the existing salience picker, `deriveMapStory`). Never tell a
    journalist one of those five types can be confirmed beat-by-beat the way a chart-scrolly or a
-   choropleth/symbol map-scrolly now can.
+   choropleth/symbol map-scrolly now can. That boundary is now MECHANICAL, not just documented:
+   `arcBeats` submitted on one of those five is REFUSED by name at validation
+   (`unsupportedArcBeatsErrors`, `skills/map-native/src/map-arc.ts`) rather than accepted and then
+   dropped at the render — which is what used to happen, and is how a validated plan came to produce
+   a walk nobody confirmed.
 3. **Prose table — GATE 2b (prose-extracted figures only):** when the figures come from the
    article's prose, show the reconstructed table (verbatim quotes) and get an explicit
    confirmation BEFORE anything is routed — a wrong table must never invalidate an

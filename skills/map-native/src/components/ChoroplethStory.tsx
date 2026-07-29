@@ -27,6 +27,7 @@ import {
   resolveRevealMode,
   beatsForMode,
   type Beat,
+  type MapArcBeat,
 } from "../map-story";
 import { poleOfInaccessibility } from "../core/label-anchor";
 import {
@@ -125,6 +126,9 @@ export type ChoroplethStoryConfig = ChoroplethData & {
   revealMode?: string;
   /** Newsroom house hue — tints frame/legend furniture toward the house colour. */
   brandHue?: string;
+  /** Journalist-confirmed claim-arc (S2) — honoured by deriveMapStory. Dropping it here would render a
+   *  validated plan as the salience default, silently: see map-arc.ts. */
+  arcBeats?: MapArcBeat[];
   brandPalette?: string[];
 };
 
@@ -222,6 +226,8 @@ export const ChoroplethStory: React.FC<{
             valueField: config.valueField,
             narrativePattern: config.valueKind,
             lang: config.lang,
+            // The confirmed walk reaches the deriver — see map-arc.ts.
+            arcBeats: config.arcBeats,
           };
           // Drop the establish beat in `sequential` (dead air on an empty map) — shared
           // rule with Root.tsx's duration calc so the video length matches the animation.

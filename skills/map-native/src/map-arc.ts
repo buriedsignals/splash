@@ -51,12 +51,54 @@ export function mapArcErrors(
   return [...errors, ...arcErrors(arcBeats)];
 }
 
+// The two map story types whose derivers have a seam for a confirmed arc: deriveMapStory
+// (choropleth) and deriveSymbolStory (symbol) both branch on `meta.arcBeats` and walk it
+// through applyMapArc. The other five (route, locator, dot-density, hex-grid, cartogram)
+// derive their walk from the data unconditionally — there is nowhere to put a plan.
+export const ARC_CAPABLE_MAP_TYPES = ["choropleth", "symbol"] as const;
+
+/**
+ * REFUSE a confirmed claim-arc on a map type that cannot honour it.
+ *
+ * The field used to be accepted here and dropped at the render: only validateChoroplethConfig
+ * and validateSymbolConfig ever LOOKED at `arcBeats`, so on the other five types it passed
+ * validation untouched and then vanished into a deriver that never reads it. A journalist got
+ * a green light on a plan the engine had already decided to ignore.
+ *
+ * The precedent is the neighbouring rule — a chart `beats` field on a map track is refused by
+ * name rather than dropped (scrolly-types.ts's MAP_TRACK_BEATS_REFUSAL, manifest.ts,
+ * validate-gate.ts). Same discipline, different sentence, because this is a different fix: the
+ * plan is in the right FIELD, it is the TYPE that cannot carry it. So the message names the two
+ * types that can, which is the actual way out.
+ *
+ * `type` is passed by the CALLING validator rather than read off the config, so the refusal
+ * cannot be dodged by a config that omits its own discriminant — each validator already knows
+ * which type it is, and only a dispatch would have to guess.
+ *
+ * Pure and throw-free; `[]` when the type is arc-capable or no plan was submitted.
+ */
+export function unsupportedArcBeatsErrors(
+  config: unknown,
+  type: string,
+): string[] {
+  const c = config as { arcBeats?: unknown } | null;
+  if (c?.arcBeats === undefined) return [];
+  if ((ARC_CAPABLE_MAP_TYPES as readonly string[]).includes(type)) return [];
+  return [
+    `a "${type}" map derives its own walk from the data — it cannot carry a confirmed ` +
+      "claim-arc, so `arcBeats` would be ignored here rather than honoured. A region-anchored " +
+      `arc is walked by a ${ARC_CAPABLE_MAP_TYPES.join(" or a ")} map; bring the same argument ` +
+      "as one of those, or drop `arcBeats` and let this map narrate its own data.",
+  ];
+}
+
 // S2 flagged fallback — mirrors chart-native's narrativeFallbackWarning (chart-story.ts).
 // A choropleth/symbol map story with NO confirmed `arcBeats` derives its narrative from
 // data salience (deriveMapStory's own ranking), not a journalist-confirmed claim-arc —
 // never a hard fail, but never silent either. Only choropleth/symbol support an arcBeats
 // override (validate-config.ts) — route/locator/dot-density/hex-grid/cartogram derive
-// their own story unconditionally and never carry the field, so they never warn here.
+// their own story unconditionally and are REFUSED the field outright
+// (unsupportedArcBeatsErrors above), so they never warn here.
 export function mapNarrativeFallbackWarning(config: unknown): string | null {
   const c = config as { type?: string; arcBeats?: unknown } | null;
   // Mirror the deriver's gate exactly (`meta.arcBeats?.length`): a confirmed, NON-EMPTY

@@ -15,7 +15,7 @@ import {
   labelRadialOffset,
 } from "../../map-native/src/symbol-labels";
 import { deriveSymbolStory } from "../../map-native/src/symbol-story";
-import type { Beat } from "../../map-native/src/map-story";
+import type { Beat, MapArcBeat } from "../../map-native/src/map-story";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
 import { houseFill } from "../../../lib/core/house-ramp";
 
@@ -57,6 +57,9 @@ export interface ScrollySymbolConfig {
   // yet for this single-hue symbol map, so brandHue is the only override path today).
   brandHue?: string;
   brandPalette?: string[];
+  /** Journalist-confirmed claim-arc (S2), anchored on the point LABELS — validated by
+   *  validateSymbolConfig and honoured by deriveSymbolStory. Absent ⇒ the salience walk. */
+  arcBeats?: MapArcBeat[];
 }
 
 interface CameraPoint {
@@ -96,6 +99,10 @@ export const ScrollySymbolMap: React.FC<{
     insight: config.insight ?? config.title,
     unit: config.valueUnit ?? "",
     lang: config.lang,
+    // The confirmed claim-arc drives the camera flight, exactly as it drives the captions in
+    // Scrolly.tsx. Both had to forward it: one without the other puts the right words over
+    // the wrong region.
+    arcBeats: config.arcBeats,
   });
 
   // ---------------------------------------------------------------------------

@@ -170,6 +170,12 @@ export function scrollyStepCount(
         title: config.title ?? "",
         insight: config.insight ?? config.title ?? "",
         unit: config.valueUnit ?? "",
+        // The SIZER must derive the same walk the renderer does. A confirmed arc changes the
+        // beat COUNT (it is the journalist's selection, not the salience cap), so a sizer blind
+        // to it sizes the composition for a different story than the one that renders — the
+        // mp4 cuts before his payoff, or freezes on a tail. That is worse than either half
+        // being wrong alone, which is why this mirror exists at all.
+        arcBeats: config.arcBeats,
       },
       { maxReveals: config.maxReveals },
     );
@@ -189,6 +195,8 @@ export function scrollyStepCount(
     insight: config.insight ?? config.title ?? "",
     unit: config.valueUnit ?? "",
     lang: config.lang,
+    // Same mirror as the symbol branch above — size the walk that will actually render.
+    arcBeats: config.arcBeats,
   });
   return mapStoryToChapters(beats, {
     title: config.title ?? "",

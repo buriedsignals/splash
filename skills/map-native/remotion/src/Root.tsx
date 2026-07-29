@@ -118,6 +118,11 @@ const storyMeta = makeStoryMeta((cfg: ChoroplethStoryConfig) => {
       valueField: cfg.valueField,
       narrativePattern: cfg.valueKind,
       lang: cfg.lang,
+      // The DURATION must be sized from the walk that renders. A confirmed arc changes the
+      // beat count (it is the journalist's selection, not the salience cap), so a sizer blind
+      // to it cuts the mp4 before his payoff — or, for an arc shorter than the salience walk,
+      // leaves exactly the frozen tail this mirror was written to prevent.
+      arcBeats: cfg.arcBeats,
     }),
     resolveRevealMode(cfg),
   );
@@ -169,6 +174,8 @@ const symbolStoryMeta = makeStoryMeta((cfg: SymbolConfig) => {
         title: cfg.title ?? "",
         insight: cfg.insight ?? cfg.title ?? "",
         unit: cfg.valueUnit ?? "",
+        // Same mirror as storyMeta above — size the walk that will actually render.
+        arcBeats: cfg.arcBeats,
       },
       { maxReveals: cfg.maxReveals },
     ),

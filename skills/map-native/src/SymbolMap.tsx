@@ -33,6 +33,7 @@ import {
   type FilterState,
   type MapFilter,
 } from "./core/map-filter";
+import type { MapArcBeat } from "./map-arc";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -71,6 +72,9 @@ export interface SymbolConfig extends SymbolData {
   // interactive map + video (*Reveal/*Story) + scrolly renderers.
   brandHue?: string;
   brandPalette?: string[];
+  /** Journalist-confirmed claim-arc (S2) — honoured by deriveSymbolStory. Dropping it here
+   *  would render a validated plan as the salience default, silently: see map-arc.ts. */
+  arcBeats?: MapArcBeat[];
   brandExplicit?: boolean;
 }
 

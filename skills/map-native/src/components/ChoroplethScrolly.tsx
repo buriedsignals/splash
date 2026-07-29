@@ -20,6 +20,7 @@ import { continueWhenMapSettles } from "../core/frame-ready";
 import { computeChoropleth, type ChoroplethData } from "../choropleth-geo";
 import { NO_DATA_COLOR } from "../theme/colors";
 import { deriveMapStory, type Beat } from "../map-story";
+import type { MapArcBeat } from "../map-arc";
 import {
   buildTimeline,
   cameraForFrame,
@@ -133,6 +134,9 @@ export const ChoroplethScrolly: React.FC<{
     lang?: string;
     /** Newsroom house hue — tints frame/legend furniture toward the house colour. */
     brandHue?: string;
+  /** Journalist-confirmed claim-arc (S2) — honoured by deriveMapStory. Dropping it here would render a
+   *  validated plan as the salience default, silently: see map-arc.ts. */
+  arcBeats?: MapArcBeat[];
     brandPalette?: string[];
   };
 }> = ({ config }) => {
@@ -212,6 +216,8 @@ export const ChoroplethScrolly: React.FC<{
             valueField: config.valueField,
             narrativePattern: config.valueKind,
             lang: config.lang,
+            // The confirmed walk reaches the deriver — see map-arc.ts.
+            arcBeats: config.arcBeats,
           };
           const beats = deriveMapStory(layout, worldGeoJson, "iso_a3", meta);
 

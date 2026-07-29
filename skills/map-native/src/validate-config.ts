@@ -5,7 +5,11 @@ import type { LocatorMarker } from "./locator-geo";
 import { PALETTES, isCvdSafeRamp } from "./theme/scale";
 import { BASEMAP_NAMES } from "./basemaps";
 import { validateMapFilters, type MapFilter } from "./core/map-filter";
-import { mapArcErrors, type MapArcBeat } from "./map-arc";
+import {
+  mapArcErrors,
+  unsupportedArcBeatsErrors,
+  type MapArcBeat,
+} from "./map-arc";
 import type { RevealMode } from "./map-story";
 
 // Shared palette/scaleType validation for any config that carries a colour scale.
@@ -402,6 +406,10 @@ export function validateRouteConfig(
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
 
+  // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
+  // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
+  errors.push(...unsupportedArcBeatsErrors(s, "route"));
+
   validateBasemap(s.basemap, errors);
 
   if (s.mapStyle !== undefined) {
@@ -485,6 +493,10 @@ export function validateLocatorConfig(
   const errors: string[] = [];
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
+
+  // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
+  // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
+  errors.push(...unsupportedArcBeatsErrors(s, "locator"));
 
   validateBasemap(s.basemap, errors);
 
@@ -606,6 +618,10 @@ export function validateDotDensityConfig(
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
 
+  // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
+  // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
+  errors.push(...unsupportedArcBeatsErrors(s, "dot-density"));
+
   if (typeof s.regionKey !== "string" || !s.regionKey.trim())
     errors.push("regionKey must be a non-empty string");
   validateBasemap(s.basemap, errors);
@@ -720,6 +736,10 @@ export function validateHexGridConfig(
   const errors: string[] = [];
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
+
+  // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
+  // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
+  errors.push(...unsupportedArcBeatsErrors(s, "hex-grid"));
 
   validateBasemap(s.basemap, errors);
   if (
@@ -849,6 +869,10 @@ export function validateCartogramConfig(
   const errors: string[] = [];
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
+
+  // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
+  // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
+  errors.push(...unsupportedArcBeatsErrors(s, "cartogram"));
 
   if (
     s.mapStyle !== undefined &&
