@@ -23,6 +23,15 @@ import type {
 } from "../../lib/newsroom/state.ts";
 import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
 
+// The profile writer moved to lib/newsroom/profile-write.ts — the charter path (a `lib` caller)
+// needs the same one, and install/ may import lib/, never the reverse. Re-exported here so every
+// existing importer of this module is unaffected.
+export {
+  profileMarkdown,
+  type NewsroomFacts,
+} from "../../lib/newsroom/profile-write.ts";
+import type { NewsroomFacts } from "../../lib/newsroom/profile-write.ts";
+
 export type PreflightSubmission = {
   runtime: string;
   uiLang: string;
@@ -37,13 +46,6 @@ export type PreflightSubmission = {
   /** Live check verdicts gathered by the page, per capability id. */
   verified?: Record<string, VerifyOutcome>;
   newsroom?: NewsroomFacts;
-};
-
-export type NewsroomFacts = {
-  name?: string;
-  url?: string;
-  color?: string;
-  lang?: string;
 };
 
 /** Every field the registry declares, with the capability that declared it. */
@@ -205,7 +207,8 @@ export function submittedState(
     sub.publisher && NEWSROOM_CAPABILITIES[sub.publisher]?.kind === "delivery"
       ? sub.publisher
       : undefined;
-  const runtime = sub.runtime && RUNTIMES[sub.runtime] ? sub.runtime : undefined;
+  const runtime =
+    sub.runtime && RUNTIMES[sub.runtime] ? sub.runtime : undefined;
   return {
     ...previous,
     schemaVersion: 1,
@@ -214,41 +217,4 @@ export function submittedState(
     capabilities,
     ...(publisher ? { publisher } : {}),
   };
-}
-
-/**
- * NEWSROOM-PROFILE.md, created ONCE from the shape of the shipped template. It is never
- * round-tripped: after creation the file belongs to the newsroom, comments and all (spec
- * 2026-07-24 decision 6), so this only has to produce something the parser reads and a human
- * can keep editing.
- */
-export function profileMarkdown(facts: NewsroomFacts): string {
-  // Same reflex as the .env quoting: a value that carries a quote or a newline would not corrupt
-  // a shell here, it would forge EXTRA FRONTMATTER FIELDS in a file that governs what gets
-  // published (requiredSigners lives in it). Both characters go.
-  const scalar = (raw: string): string =>
-    raw.trim().replace(/[\r\n"]/g, "");
-  const lines = ["---"];
-  if (isSet(facts.color)) {
-    lines.push("palette:");
-    lines.push(`  - "${scalar(facts.color!)}"   # your house colour`);
-  }
-  if (isSet(facts.name)) {
-    lines.push("source:");
-    lines.push(`  name: "${scalar(facts.name!)}"`);
-    if (isSet(facts.url)) lines.push(`  url: "${scalar(facts.url!)}"`);
-  }
-  lines.push(`lang: "${scalar(facts.lang || "en")}"`);
-  lines.push("---");
-  lines.push("");
-  lines.push("# Newsroom profile");
-  lines.push("");
-  lines.push(
-    "Splash reuses this house style on every visual. Edit it whenever you like — this file is",
-  );
-  lines.push(
-    "yours; Splash only created it. See NEWSROOM-PROFILE.example.md for every supported field.",
-  );
-  lines.push("");
-  return lines.join("\n");
 }

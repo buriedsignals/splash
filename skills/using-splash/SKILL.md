@@ -24,6 +24,11 @@ website, no backend.
   human gates: INPUT → ANALYSE → CADRAGE → PROPOSITION → PRODUCTION → EXPORT. It sequences and
   gates; it never re-decides what a sub-skill below already decides.
 
+- **`newsroom-charter`** — for a newsroom that has no `NEWSROOM-PROFILE.md` and no idea what its
+  own hex codes are: reads the newsroom's website, proposes a house colour / accent / ground /
+  typefaces with the origin of each value, and writes the profile only after the journalist
+  validates it. Refuses and asks the question when the site declares nothing.
+
 ### Internal — invoked by the flow, not directly
 
 - **`suggest-article`** — reads the article + data, proposes WHERE a visual serves the narrative
