@@ -801,3 +801,83 @@ describe("the journalist spine refuses a deferred type by name", () => {
     expect(out.ok).toBe(true);
   });
 });
+
+describe("an unknown nativeType is not a silent pass (Task 8)", () => {
+  // Fixture element carrying the failure: "bra" is a typo for "bar" — it is not in
+  // NATIVE_TYPES at all (undeclared), so deferredTypeError's `declared` check is false and
+  // this is entirely validateNative's business, never task 7's deferred-type refusal.
+  it("should warn, naming the type and the fallback it takes", () => {
+    const out = validateAccepted(
+      accept("chart-native", {
+        nativeType: "bra", // a typo for "bar"
+        title: "T",
+        data: "a,b\n1,2",
+        altInsight: "a",
+        source: { name: "S" },
+      }),
+    );
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.warnings.join(" ")).toContain("bra");
+      expect(out.warnings.join(" ")).toContain("Datawrapper");
+    }
+  });
+
+  // GREEN PATH — the mutation this guard must never cause: a normal, KNOWN nativeType (the
+  // healthy path every real chart-native proposal takes) must produce NO warning at all. A
+  // warning that fires on every run trains people to ignore it. `skillsInvoked` is set here
+  // (unlike most fixtures in this file) to suppress the unrelated GUARD-5 observability
+  // warning, so the empty-array assertion below is isolated to THIS guard, not a coincidence
+  // of which other warnings happen not to fire.
+  it("does NOT warn on a normal, known nativeType (the healthy path)", () => {
+    const out = validateAccepted({
+      ...accept("chart-native", {
+        nativeType: "bar",
+        title: "T",
+        data: "category,value\nA,1\nB,2",
+        altInsight: "a",
+        source: { name: "S" },
+      }),
+      skillsInvoked: ["splash:cadrage-direct"],
+    });
+    expect(out.ok).toBe(true);
+    if (out.ok) expect(out.warnings).toEqual([]);
+  });
+
+  // The gap Task 7 left open, ADJUDICATED here with a measurement (not assumed): a scrolly
+  // proposal carries its chart type on `spec.nativeType`, but `deferredTypeError` (Task 7)
+  // keys its `declared` check on `engineTypes(p.producer)`, and `engineTypes("scrolly")` is
+  // EMPTY by design (registry.ts — scrolly owns no type of its own) — so a scrolly whose
+  // underlying chart type is DEFERRED (declared, family-B, no MAPPERS entry — "sankey" is
+  // chart-native's own family-B example, same as the "should refuse a chart-native proposal
+  // for a declared, deferred nativeType" test above) sails past task 7's guard untouched.
+  // Measured on the unpatched base (probe script, see task-8-report.md): that scrolly
+  // returned `{ok: true, warnings: [...only the unrelated skillsInvoked warning...]}` —
+  // completely silent about "sankey". After this task's fix, validateScrolly's chart track
+  // calls validateNative (same function as the top-level chart-native producer; scrolly does
+  // NOT have its own copy), and specToNativeConfig throws UnsupportedNativeType for "sankey"
+  // exactly as it does for a genuine typo (no MAPPERS entry either way) — so THIS guard now
+  // fires and the silence is closed to a WARNING (verdict (a); it does not upgrade to task 7's
+  // hard refusal — a scrolly-embedded deferred type is not currently pinnable to that harder
+  // path without teaching deferredTypeError to look inside `producer: "scrolly"` specs, which
+  // is explicitly out of scope per this task's brief and per the "scrolly is NOT a fourth
+  // engine to cover" note above).
+  it("ADJUDICATION: closes the scrolly gap — a scrolly with a deferred chart nativeType now WARNS instead of passing in total silence", () => {
+    const out = validateAccepted(
+      accept("scrolly", {
+        nativeType: "sankey",
+        title: "x",
+        source: { name: "s" },
+        unit: "u",
+        data: "a,b\n1,2",
+      }),
+    );
+    // Still NOT a hard refusal (task 7's guard does not see it — see comment above); the gap
+    // is closed from "total silence" to "warned", not upgraded to an error.
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.warnings.join(" ")).toContain("sankey");
+      expect(out.warnings.join(" ")).toContain("Datawrapper");
+    }
+  });
+});

@@ -94,13 +94,26 @@ function validateMapNative(spec: unknown): ValidationOutcome {
 // chart-native validates by construction: specToNativeConfig runs validateShape and
 // throws UnsupportedNativeType for a type it cannot map. An unmapped type is NOT a
 // validation failure — it is the FALLBACK_TO_DW path the dispatch already handles — so it
-// passes here; only a genuinely malformed spec (bad shape) is rejected.
+// passes here; only a genuinely malformed spec (bad shape) is rejected. But a silent pass
+// is what §6④ forbids: a typo'd nativeType went through with not even a warning. NOT an
+// error — promoting this to a failure would close the measured FALLBACK_TO_DW capability —
+// so name the type and the fallback it takes, as a warning.
 function validateNative(spec: unknown): ValidationOutcome {
   try {
     specToNativeConfig(spec as NativeSpec);
     return { ok: true, warnings: [] };
   } catch (e) {
-    if (e instanceof UnsupportedNativeType) return { ok: true, warnings: [] };
+    if (e instanceof UnsupportedNativeType) {
+      const t = (spec as { nativeType?: unknown } | null)?.nativeType;
+      return {
+        ok: true,
+        warnings: [
+          `nativeType "${String(t)}" has no chart-native mapper — this element will be ` +
+            "routed to Datawrapper instead. If that was a typo, fix it; if it was " +
+            "deliberate, nothing to do.",
+        ],
+      };
+    }
     return { ok: false, errors: [e instanceof Error ? e.message : String(e)] };
   }
 }
