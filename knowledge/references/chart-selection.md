@@ -146,9 +146,9 @@ numeric column is a value of the COLUMN dimension — a value over TWO categoric
 where **colour encodes the value** (e.g. `day,06-10,10-14,14-18,18-22` then `Mon,52,38,41,60`). Route it
 when the story is a PATTERN over two dimensions — activity by day×hour, intensity over region×year, a
 correlation matrix — and the eye should scan the grid for hot/cold clusters. This is the ONE native type
-where colour is the quantitative channel: it paints a **sequential CVD-safe ramp** (single-hue Blues,
-monotonic luminance), NOT the Okabe-Ito categorical palette, so do NOT set `baseColor` (it is ignored —
-the ramp is the encoding); a colourbar legend + optional in-cell value labels come built in. For a value
+where colour is the quantitative channel: it paints a **sequential CVD-safe ramp** with monotonic
+luminance, NOT the Okabe-Ito categorical palette — the ramp IS the encoding; a colourbar legend +
+optional in-cell value labels come built in. For a value
 over ONE dimension prefer `bar` (length reads more precisely than colour); for too-fine grids, aggregate
 the bins first. `unit` names the value the colour encodes (e.g. "median wait (minutes)"). Ships static +
 interactive (per-cell hover/focus) + video (a diagonal fade-in reveal).
