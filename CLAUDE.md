@@ -115,6 +115,25 @@ franchissable par le driver et la CLI (`author-beats`).
   n'applique » — D01 50/83, D02 56/83, D15 10/83 ; une seule cause : la règle est dans le SKILL.md,
   rien ne l'applique en run). Brainstorming de A entamé, spec PAS écrite.
 
+**PROCHAIN PAS EXACT — le plan du sous-projet A.** La spec est écrite, relue et **approuvée par
+Rémy** : `docs/superpowers/specs/2026-07-28-refusals-that-bite-design.md`. Il ne reste qu'à invoquer
+`superpowers:writing-plans` dessus. Les trois décisions y sont gravées : un refus **dévie** vers le
+pas qui débloque · avant toute validation splash doit avoir **partagé ET ouvert** l'artefact (média
+affiché, HTML **lancé** — lire la source d'un HTML ne montre rien) · les **probes décident**, un
+relecteur **distinct** juge l'éditorial. Et l'implantation : les trois mécanismes vivent dans la
+BOUCLE, la prose les appelle — premier segment du pont.
+
+**Grille mouvement+narration : FAITE** (branche `chore/motion-narrative-grid`, rapport
+`docs/splash/motion-narrative-grid-2026-07-28.md`, non fusionnée). 71 cases, 62 `produce` réels.
+Quadrant piège 4 → **0** : le format vidéo de `pyramid`/`treemap`/`waffle` (le still approuvé ≠ la
+vidéo livrée) et de `dot-strip` (*two-state pop*, animation finie avant la moitié du clip) fermés
+par `skills/chart-native/src/video-reach.ts`, per-(type,format) et non par un `deferred`. Quadrant
+gaspillé : **9**, dont 6 `*Reveal` map inatteignables (et il y a **6** `*Story`, pas 7 — `route`
+n'en a pas). **PORTE DÉROBÉE À FERMER** : `skills/scrolly/scripts/produce.mjs` ne valide pas — un
+`arcBeats` y est silencieusement abandonné et la page part avec une légende dérivée sous la
+signature (0/3 phrases, mesuré au navigateur). **NON MESURÉ** : les canaux carré et portrait — le
+pin exact de taille n'est asserté QUE là et n'a jamais été exercé (~15 min, 34 rendus).
+
 **Sweep QA du 2026-07-28** : arrêté volontairement à **83 cas sur 163** (rendement effondré, mêmes
 classes répétées ; ~4,8 h de quota économisées). Journal complet conservé :
 `../splash-harness/reports/sweep-2026-07-28-83cases.log`. Réglages validés par calibration :
