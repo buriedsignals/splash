@@ -124,6 +124,26 @@ describe("source-fidelity decision", () => {
     ).toEqual({ ok: true });
   });
 
+  // The case above is 4 characters, so it never exercised the no-significant-token branch of
+  // nameAppearsIn. A 3-letter statistical-office acronym (OFS/BFS — this repo's own canonical
+  // fixture source names) does, and refusing it here is run-blocking: save-decision.mjs turns
+  // this reason into a non-zero exit surfaced to the journalist.
+  it("accepts a three-letter source acronym present in the article", () => {
+    const d = getDecision("source-fidelity")!;
+    expect(
+      d.artifactCheck!("/unused", {
+        article: "Selon l'OFS, les primes montent.",
+        sourceName: "OFS",
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      d.artifactCheck!("/unused", {
+        article: "Laut BFS stieg der Wert.",
+        sourceName: "BFS",
+      }),
+    ).toEqual({ ok: true });
+  });
+
   // Regression guard for the D17 asymmetry: toLowerCase()+trim() alone (the old comparison)
   // does not fold accents, so an article that respells "fédéral" as "federal" (a CLI mangling
   // case, measured on `co2-secteurs-grouped`) was refused even though it is the same source.

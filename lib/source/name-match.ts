@@ -31,16 +31,24 @@ export function normalizeName(s: string): string {
 /** True when every SIGNIFICANT token of `name` appears in `article` — as a whole token, or as
  *  a stem of one (which is what makes "Bundesamt" match "Bundesamtes"). Tokens shorter than
  *  MIN_STEM are dropped, not matched loosely: "de", "of", "la" would otherwise carry a match
- *  on their own. A name with NO significant token (every one of its tokens is a short common
- *  word) has nothing that can safely stand for it, so it does not match at all — a whole-string
- *  substring fallback here would readmit exactly the bug this function exists to close: a short
- *  needle is trivially "included" in almost any haystack that happens to contain that word. */
+ *  on their own. A name with NO significant token falls back to whole-TOKEN equality at a floor
+ *  of 3 — enough for an acronym that IS the whole name, too strict for a bare short word. What
+ *  is NOT allowed there is a whole-string SUBSTRING fallback: it would readmit exactly the bug
+ *  this function exists to close, since a short needle is trivially "included" in almost any
+ *  haystack that happens to contain that word inside a longer one. */
 export function nameAppearsIn(name: string, article: string): boolean {
   const hay = normalizeName(article);
   const needle = normalizeName(name);
   if (!needle) return false;
   const tokens = needle.split(" ").filter((t) => t.length >= MIN_STEM);
-  if (tokens.length === 0) return false;
+  // A name made only of short words has no stem to match on — but a 3-letter ACRONYM ("OFS",
+  // "ONS", "IEA") is a legitimate WHOLE source name, and the statistical offices this domain
+  // cites most are named that way. Require whole-TOKEN equality (never substring) and a floor
+  // of 3, so "OFS" matches "selon l'OFS" while "de"/"il"/"la" still carry nothing: a bare
+  // two-letter word is under the floor, and the match must be a full token rather than a
+  // fragment embedded in a longer word ("ONS" must not match "responsible").
+  if (tokens.length === 0)
+    return needle.length >= 3 && hay.split(" ").includes(needle);
   const hayTokens = hay.split(" ");
   return tokens.every((t) =>
     hayTokens.some(
