@@ -81,6 +81,67 @@ Splash = **un skill open-source MIT, installable, agnostique runtime, local-firs
 - **Format skill-autonome** (canon Tom) : `SKILL.md` (8 sections : Overview · When to use · gotcha · Architecture · How it works · Quick start · Tuning knobs (chacun = un nombre) · Files) + `references/` + `scripts/` (prep déterministe) + `assets/` (1 composant battle-tested + sample-data + preview) + `output-proof`.
 - Discipline vidéo (bug-free, façon Tom) : stack en couches · **frame-gating** sur la vraie disponibilité · données pré-cuites · valider 1 still avant le mp4 · plomberie (`preserveDrawingBuffer`, `--gl=angle`, timeouts).
 
+## ★ État courant — 2026-07-28 (LIS CECI en priorité)
+
+`main` = `splash-merge/`, gate **22/22** (le seul échec vu est le flake de contention
+`lib/verify/capture-html` : 120 s en suite complète, 20 tests en 7,7 s en isolation).
+
+**LE FAIT QUI STRUCTURE TOUT LE RESTE — deux chaînes de production coexistent.**
+`/splash` (et le harness) conduisent la chaîne EN PROSE : `skills/splash/SKILL.md` → `suggest-*`
+jouées par le modèle → `produce-all.mjs`. La boucle V2 (`lib/loop` + `lib/brain` + `lib/core/verbs`,
+pilotée par `lib/host`) est une SECONDE chaîne, mesurée par le gate et les preuves, et **aucun pont
+exécutable ne les relie** (zéro import de `lib/loop` depuis `skills/`). Tout le travail V2 du
+2026-07-27/28 vit dans une boucle qu'un journaliste n'emprunte pas encore. C'est LE chantier restant.
+Mesure : `docs/splash/two-chains-gap-2026-07-28.md` (verdict phase par phase, la boucle gagne sur
+tout ce qui se contraint, la prose sur tout ce qui se converse ; recommandation : la prose reste la
+peau, les gates de la boucle descendent dessous phase par phase).
+
+**Livré et fusionné aujourd'hui** : les six moteurs assemblables par la boucle (chacun entré dans
+`lib/loop/assemble/` avec sa preuve de rendu, jamais avant) · la livraison hébergée enregistrée et
+traversant capture→preview→approve→deliver · le scrolly traité comme un composant intégrable (le
+marquage « branche article » retiré après un parcours complet, ce qui a démasqué deux gardes cassés
+sur TOUT scrolly) · les 9 types DW « row-driven » rendus à l'offre · la voix journaliste (5 retours
+de Rémy) · la charte dérivable du site d'une rédaction (`skills/newsroom-charter`) · l'export embed
+réparé · l'arc narratif transmis aux pistes carte + la durée vidéo resynchronisée · `draft-beats`
+franchissable par le driver et la CLI (`author-beats`).
+
+**Trois documents mesurés, à lire avant de décider quoi que ce soit :**
+- `docs/splash/what-splash-can-make-2026-07-28.md` — 107 marchent / 23 sortent défectueux / 63 ne
+  sortent pas. ATTENTION : lecture MÉCANIQUE (la boucle compose + l'offre porte sans marque), rien
+  n'y est rendu.
+- `docs/splash/two-chains-gap-2026-07-28.md` — l'écart entre les deux chaînes.
+- `docs/splash/sweep-2026-07-28-triage.md` — 484 constats → **32 défauts distincts**, avec au §8 le
+  **découpage en 4 sous-projets et l'ordre** (commencer par A : « les règles écrites que rien
+  n'applique » — D01 50/83, D02 56/83, D15 10/83 ; une seule cause : la règle est dans le SKILL.md,
+  rien ne l'applique en run). Brainstorming de A entamé, spec PAS écrite.
+
+**Sweep QA du 2026-07-28** : arrêté volontairement à **83 cas sur 163** (rendement effondré, mêmes
+classes répétées ; ~4,8 h de quota économisées). Journal complet conservé :
+`../splash-harness/reports/sweep-2026-07-28-83cases.log`. Réglages validés par calibration :
+`--concurrency 4` + `timeoutMs` porté à 1 800 000 — la contention ne dégradait PAS la durée par cas
+(médiane 10,5 min contre 12 en séquentiel), c'est le plafond à 900 s qui fabriquait les faux
+timeouts de la session précédente. Coût : l'ACTEUR domine (12 min de session agentique par cas) ;
+le juge se rejoue seul sur les runs stockés (`../splash-harness/scripts/dimension-kappa.mjs`) ;
+les contrôles `check:` sont déterministes et gratuits.
+
+**Le sweep ne couvre PAS la grille** : mesuré, il n'a touché que **21 cases (type × format) sur ~138**,
+et une seule vidéo. Une passe de grille mouvement+narration était en cours à la fin de la session
+(branche `chore/motion-narrative-grid`) : deux jambes (offerte ? produit ?), fermeture immédiate des
+cases offertes-mais-non-produisibles, rapport attendu dans `docs/splash/motion-narrative-grid-2026-07-28.md`.
+Inventaire narratif exact : chart = `Reveal` seulement (123 compositions = 41 types × 3 cadrages,
+AUCUNE narrative) ; map = `Story` (vidéo narrée) + `Reveal` + `Scrolly`, 7 types chacune ; le skill
+`scrolly` n'a PAS de Remotion (build Vite). Chaque scrolly a deux variantes à éprouver : marche
+dérivée, et beats RÉDIGÉS — c'est là que vivaient tous les défauts du jour.
+
+**Motif à surveiller plus que n'importe quel défaut** : trois fois ce jour-là, un défaut a survécu
+parce que le CHEMIN DE VÉRIFICATION évitait l'endroit qui casse — la preuve des beats court-circuitait
+le driver ; un test de fréquence était vert avant comme après le correctif ; une garde i18n était verte
+parce qu'affamée. Et trois fois un agent a affirmé faux avec assurance (« 8 appelants » = 12, « 25
+échecs réels » = environnementaux, un plafond qui ne plafonnait pas). La relecture adversariale les a
+tous attrapés ; la bonne foi, aucun.
+
+---
+
 ## ★ État courant — 2026-07-21 (LIS CECI pour l'état de `main`)
 
 `main` (voir `git log --oneline -15` pour le HEAD exact), gate `bun run check` **22/22** (tsc skills + install + image-native + installer, suites de test — vert ; le produce map-native interactif/vidéo ET le map-dw e2e API-réelle peuvent timeout/flaker sous contention réseau, rotent, passent en isolation). 0 mention vendor attributive. Le **journal daté complet** = `docs/splash/CHANGELOG.md`.
