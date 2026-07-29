@@ -579,7 +579,7 @@ function realPair(id: string) {
   return {
     sheet,
     engine: "chart-native",
-    key: sheet.engines["chart-native"][0],
+    key: sheet.id,
   };
 }
 
