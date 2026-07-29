@@ -13,6 +13,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { resolveThemeBg, bgIsDark } from "../../chart-native/src/core/tokens";
+import { honoursBaseColor } from "../../chart-native/src/base-colour-reach";
 import { importSignerPublicKey, type EditorSigner } from "./editorial-signoff";
 
 export interface BrandProfile {
@@ -458,7 +459,20 @@ export function mergeProfileDefaults<
     return spec;
   let out = spec;
   const kind = colourKind(opts?.producer, out);
-  if (profile.palette.length > 0 && kind !== "none") {
+  // A chart-native type that encodes with a frozen role/categorical palette (waterfall,
+  // diverging, pie, …) cannot paint its MARKS with the house hue — stamping baseColor/
+  // brandExplicit for one announces a colour the render structurally cannot honour on its
+  // data marks (D26: a magenta waterfall was proposed AND confirmed, and the chart shipped
+  // the increase/decrease/total role palette instead). Read from the engine
+  // (honoursBaseColor), never restated here. This narrows ONLY the baseColor/brandExplicit
+  // stamp below — accent (a separate editorial-highlight hue Slope also reads, even though
+  // Slope is furniture-only for baseColor) and themeBg (furniture, not marks) must still
+  // derive from the house profile for these types, so `kind` itself stays untouched.
+  const paintsMarksWithHue =
+    opts?.producer !== "chart-native" ||
+    typeof out.nativeType !== "string" ||
+    honoursBaseColor(out.nativeType);
+  if (profile.palette.length > 0 && kind !== "none" && paintsMarksWithHue) {
     if (out.baseColorExplicit === true) {
       // The journalist named a colour for THIS element — keep it. For a chart, seedBrandColor
       // keeps the baseColor (brandExplicit if it's a house hue). For a map, the journalist's own

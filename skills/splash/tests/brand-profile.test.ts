@@ -245,6 +245,27 @@ describe("mergeProfileDefaults", () => {
     expect(out.source).toEqual({ name: "RTS" });
   });
 
+  it("does not announce a house colour on a type that paints with a role palette", () => {
+    // Measured: a magenta #CC79A7 was proposed AND confirmed for a waterfall, and the chart
+    // shipped the increase/decrease/total palette. The announcement was made anyway.
+    const out = mergeProfileDefaults(
+      { nativeType: "waterfall", title: "T" },
+      { palette: ["#2E7D57"], accent: "#2E7D57" },
+      { producer: "chart-native" },
+    ) as { baseColor?: string; brandExplicit?: boolean };
+    expect(out.baseColor).toBeUndefined();
+    expect(out.brandExplicit).toBeUndefined();
+  });
+
+  it("still announces it on a type that does paint with it", () => {
+    const out = mergeProfileDefaults(
+      { nativeType: "bar", title: "T" },
+      { palette: ["#2E7D57"], accent: "#2E7D57" },
+      { producer: "chart-native" },
+    ) as { baseColor?: string };
+    expect(out.baseColor).toBe("#2E7D57");
+  });
+
   it("a null profile leaves the spec unchanged", () => {
     const spec = { title: "t" };
     expect(mergeProfileDefaults(spec, null)).toBe(spec);
