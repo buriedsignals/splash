@@ -254,7 +254,10 @@ describe("journalist-facing voice (2026-07-28)", () => {
   });
 
   it("the progress map is the loop's six real steps, marked, short, re-shown every turn", () => {
-    expect(voice).toContain("re-shown EVERY turn");
+    // "every turn" is undefined for an orchestrator whose turns are mostly tool calls the
+    // journalist never sees — the map belongs on the messages he actually reads.
+    expect(voice).toContain("re-shown in EVERY message to the journalist");
+    expect(voice).not.toContain("re-shown EVERY turn");
     for (const step of [
       "lire l'article",
       "cadrer l'angle",

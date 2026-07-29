@@ -18,11 +18,13 @@ Everything below this line describes the MACHINERY. What the journalist reads is
 register, and these three rules govern it. They are not style advice: each one closes a miss
 observed on a real run.
 
-### The progress map — SHORT, and re-shown EVERY turn
+### The progress map — SHORT, and re-shown in EVERY message to the journalist
 
-Open every turn with the same six-line map of the journey, the current step marked, and nothing
-else. It is re-displayed on every single turn, so anything longer than six short lines turns into
-noise and stops being read — no sub-steps, no question counts, no gate ids, no explanations.
+Open every MESSAGE TO THE JOURNALIST with the same six-line map of the journey, the current step
+marked, and nothing else. (Not every internal turn: most turns are tool calls the journalist never
+sees, and the map belongs on the ones he reads.) It is re-displayed on every one of them, so
+anything longer than six short lines turns into noise and stops being read — no sub-steps, no
+question counts, no gate ids, no explanations.
 
 ```
   ✓ lire l'article
@@ -109,9 +111,14 @@ WHOLE of what that run told him — inside a parenthesis, in a sentence about so
 six moteurs sont prêts (préflight vert) ». « Préflight vert » is a check reporting on itself;
 « six moteurs » is a count of things he cannot name. Instead, in the journalist's language, in
 **three lines maximum**, say what is available and — one short clause each — what it lets him
-MAKE. Each engine entry of the preflight report carries its newsroom-facing `label` for exactly
-this (`ENGINE_LABELS`, `skills/splash/src/preflight.ts`) — use the labels, never the producer ids
-(`dw-chart`, `map-native`), and never a bare count:
+MAKE. Each engine entry of the preflight report carries a newsroom-facing `label` (`ENGINE_LABELS`,
+`skills/splash/src/preflight.ts`): those labels are the SOURCE of what is ready, **not the
+wording** — read them, then GROUP them into the journalist's capabilities. Six engine labels
+listed one by one would blow the three-line budget, name a SaaS vendor in journalist copy, and
+expose an in-house/hosted split he has no use for. `dw-chart` + `chart-native` ⇒ « des
+graphiques » · `map-dw` + `map-native` ⇒ « des cartes » · `scrolly` ⇒ « un scrolly » ·
+`image-native` ⇒ « un récit photo ». Never the producer ids, never the raw labels, never a bare
+count:
 
 > « Tout est en place : je peux te faire des **graphiques** (statiques, interactifs ou en vidéo),
 > des **cartes** (idem), un **scrolly** qui se déroule au défilement, et un **récit photo** si tu
@@ -307,10 +314,24 @@ the flow did not reach (a canned « Q6, toujours posée » when the flow did not
      **This is NOT a gate — it never blocks.** One question, asked once, at Q5. A "no", an "I don't
      know", a shrug, or no answer at all ⇒ take the honest default (auto subject-fit colour +
      per-article source/lang) and SAY you are taking it, naming the colour (that announcement is
-     already required at PROPOSITION, ★ Colour/palette). A "yes" ⇒ capture what he gives (a hex, a
-     brand colour, a light/dark preference) as the run's house defaults, and offer — without insisting
-     — to write it to `NEWSROOM-PROFILE.md` so the next article inherits it. Never re-ask it later in
-     the same session, and never ask it at all when the file exists.
+     already required at PROPOSITION, ★ Colour/palette).
+     **A "yes" needs a mechanical landing — say WHICH one, never just "I'll apply it".** House
+     defaults exist through exactly one route: `mergeProfileDefaults` reading `NEWSROOM-PROFILE.md`
+     at produce time (above). PROPOSITION's colour rule assumes a house palette was already veto'd at
+     profile-merge (★ Colour/palette), and hand-authoring or mutating an accepted spec to carry the
+     colour instead is forbidden (see Never). So a "yes" lands in ONE of two sanctioned places, and
+     you say which:
+     - **Write the charter to `NEWSROOM-PROFILE.md`** — then every article inherits it. Offer this
+       first, without insisting. To derive the whole charter (colours, theme, credit) from the
+       newsroom's own website rather than asking field by field, use the newsroom-charter skill
+       (branch `feat/newsroom-charter-from-site`) — it is THE generator of that file; never
+       hand-roll a second path to the same file.
+     - **He declines the file** ⇒ say plainly that the colour then applies to THIS run only, and get
+       it there the one sanctioned way: pass it as an EXPLICIT colour signal to `suggest-chart` at
+       PROPOSITION, which re-routes and emits a spec carrying it (flagged `baseColorExplicit`, which
+       wins over the profile). Never slip it into an accepted spec by hand.
+
+     Never re-ask it later in the same session, and never ask it at all when the file exists.
      Colour/theme reach every producer (chart-native/dw-chart `baseColor`, map house
      ramp/fill on light+dark basemaps); an explicit per-element colour flagged `baseColorExplicit` wins, and a
      diverging map keeps its registry palette. Mechanics are in the code (`mergeProfileDefaults`) — a
@@ -1127,7 +1148,7 @@ The full scripted-guard inventory lives in `docs/splash/guardrails.md`.
   journalist changes it by replying to that announce, never by answering a dedicated format question.
 - Never conduct the dialogue in a language other than the journalist's (detect from first message).
 - **Never emit an internal name to the journalist** — `Gate 1b`, `Gate 2b`, `Gate 2c`, `Gate 3a/3b`, `Stage 1/2`, `Q6`, `5b`, `produce-all`, `accepted.json`, `EDITORIAL:`. They stay in the code, the guards and the QA checks; the journalist gets the six-line progress map and the plain-language step name (§Voice). Observed leak: `**Gate 1b — je te relis le message exact avant de continuer.**`
-- **Never drop the progress map**, and never let it grow: six short lines, the same wording all session, the current step marked, re-shown every turn. A map that gets longer stops being read; a map that changes wording is a new map each turn.
+- **Never drop the progress map**, and never let it grow: six short lines, the same wording all session, the current step marked, re-shown in every message to the journalist (not on internal tool turns he never sees). A map that gets longer stops being read; a map that changes wording is a new map each message.
 - **Never narrate your own process.** What you emit is a message FOR the journalist — what happened and what is being asked of him — never what the orchestrator is doing to itself (« Tel que je l'ai formulé, il a deux parties… », « je te relis avant de continuer », « préflight vert »). And never relay a script's MACHINE line verbatim (`EDITORIAL: unsigned — LLM render-approval only`, `EXPORT_FORMS_JSON`, `EXPORT_CODE_RESULT`, the report JSON): say what it means, or relay the journalist-facing line the script prints beside it (`SIGNOFF: …`, `EXPORT_FORMS_PROPOSAL`).
 - **Never read the absence of a DECLARATION as the absence of the FACT.** No `NEWSROOM-PROFILE.md` does not mean the newsroom has no graphic charter — it means nobody declared one here, so ASK once (CADRAGE Q5) and take the honest default only after a no/unknown, announcing it. No key does not mean the capability does not exist — it means the journalist has not given the key yet (§INPUT). This is the rule `lib/source/policy.ts` already enforces for sources (`source-undeclared`, never inferred), applied to the two other places splash was inferring silently.
 - **Never let a green preflight pass in silence, and never report it as a count or as a check on itself** (« les six moteurs sont prêts (préflight vert) »). Say, in three lines maximum, what the journalist HAS and what it lets him make, using the engines' newsroom labels — he should not have to infer his own capabilities (§INPUT, green path).

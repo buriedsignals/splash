@@ -428,7 +428,11 @@ function main() {
       console.log(
         "EDITORIAL: skipped (hosted embed — no owned bytes to re-verify; see S4d follow-up)",
       );
-      console.log(signoffCopy(uiLang()).skipped);
+      // `skippedHosted`, never `skipped`: this delivery is not a folder, it is bytes the
+      // newsroom does not own. SKILL.md relays the SIGNOFF line and not the machine one, so a
+      // reused wrong reason here would be the ONLY thing the journalist is told, on the routine
+      // hosted-DW interactive path.
+      console.log(signoffCopy(uiLang()).skippedHosted);
     } else {
       if (!interactive)
         fail(`${format} form=embed found no html to deploy in ${outDir}`);

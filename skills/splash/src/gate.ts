@@ -21,9 +21,15 @@ export function applyRenderGate(
       );
     // Enforce 3a → 3b: the render-review must be recorded before an approval can be, so a
     // journalist never approves without the review's concerns having been surfaced.
+    //
+    // The message names the ACTION, not the gate ids. A refusal is surfaced to the journalist
+    // VERBATIM (SKILL.md §5d — never softened, never papered over), and this one fires on a
+    // routine live path (re-produce then 3b), so "(Gate 3a before 3b)" would have put internal
+    // vocabulary in front of him through the one door the voice rules deliberately leave open.
+    // Naming the action keeps the refusal exactly as actionable and as machine-stable.
     if (!r.reviewed)
       throw new Error(
-        `cannot approve proposal ${id}: not render-reviewed — run review-gate first (Gate 3a before 3b)`,
+        `cannot approve proposal ${id}: not render-reviewed — run the render review first`,
       );
     const approvedHash = createHash("sha256")
       .update(artifactBytes)

@@ -135,6 +135,15 @@ export type SignoffCopy = {
   signed: (names: string) => string;
   /** There was no single artifact to bind a sign-off to (a folder delivery). */
   skipped: string;
+  /**
+   * The OTHER reason a sign-off could not be bound: a hosted embed, whose bytes live on the
+   * provider's servers and which the newsroom therefore owns none of. A separate line, not a
+   * reuse of `skipped`: that one says "this delivery is a folder", which is FALSE of a hosted
+   * embed (there is no folder) — and since SKILL.md relays the SIGNOFF line and never the
+   * machine one, a wrong reason here is the only thing the journalist would be told, on the
+   * routine hosted-DW interactive path.
+   */
+  skippedHosted: string;
 };
 
 const EN_SIGNOFF: SignoffCopy = {
@@ -143,6 +152,8 @@ const EN_SIGNOFF: SignoffCopy = {
   signed: (names) => `SIGNOFF: signed off by ${names}.`,
   skipped:
     "SIGNOFF: this delivery is a folder, not one file, so there is nothing to bind a sign-off to — nobody has signed it off.",
+  skippedHosted:
+    "SIGNOFF: this visual is hosted by the provider, so the newsroom owns no file to bind a sign-off to — nobody has signed it off.",
 };
 
 const FR_SIGNOFF: SignoffCopy = {
@@ -151,6 +162,8 @@ const FR_SIGNOFF: SignoffCopy = {
   signed: (names) => `SIGNOFF: validé par ${names}.`,
   skipped:
     "SIGNOFF: cette livraison est un dossier, pas un fichier unique : il n'y a rien à quoi rattacher une validation — personne ne l'a validée.",
+  skippedHosted:
+    "SIGNOFF: ce visuel est hébergé chez le prestataire : la rédaction ne possède aucun fichier auquel rattacher une validation — personne ne l'a validé.",
 };
 
 const DE_SIGNOFF: SignoffCopy = {
@@ -159,6 +172,8 @@ const DE_SIGNOFF: SignoffCopy = {
   signed: (names) => `SIGNOFF: freigegeben von ${names}.`,
   skipped:
     "SIGNOFF: diese Lieferung ist ein Ordner, keine einzelne Datei — es gibt nichts, woran eine Freigabe gebunden werden könnte; niemand hat sie freigegeben.",
+  skippedHosted:
+    "SIGNOFF: dieses Visual liegt beim Anbieter — die Redaktion besitzt keine Datei, an die eine Freigabe gebunden werden könnte; niemand hat es freigegeben.",
 };
 
 const IT_SIGNOFF: SignoffCopy = {
@@ -167,6 +182,8 @@ const IT_SIGNOFF: SignoffCopy = {
   signed: (names) => `SIGNOFF: convalidato da ${names}.`,
   skipped:
     "SIGNOFF: questa consegna è una cartella, non un singolo file: non c'è nulla a cui legare una convalida — nessuno l'ha convalidata.",
+  skippedHosted:
+    "SIGNOFF: questo visual è ospitato dal fornitore: la redazione non possiede alcun file a cui legare una convalida — nessuno l'ha convalidato.",
 };
 
 const SIGNOFF_TABLE: Record<string, SignoffCopy> = {

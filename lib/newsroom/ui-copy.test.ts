@@ -41,7 +41,23 @@ describe("the sign-off state, said to a person", () => {
     expect(signoffCopy("fr-CH").unsigned).toBe(signoffCopy("fr").unsigned);
   });
 
-  it("offers the same three lines, translated, in every declared language", () => {
+  // Two DIFFERENT reasons a sign-off could not be bound, and they must not share a sentence:
+  // a folder delivery has no single file, a hosted embed has no file the newsroom OWNS. Since
+  // SKILL.md relays the SIGNOFF line and never the machine one, reusing `skipped` on the hosted
+  // path told the journalist « cette livraison est un dossier » about something that has no
+  // folder — a false explanation, on the routine hosted-DW interactive path.
+  it("keeps the hosted reason distinct from the folder reason, in every language", () => {
+    for (const lang of LANGS) {
+      const copy = signoffCopy(lang);
+      expect(copy.skippedHosted).not.toBe(copy.skipped);
+      expect(copy.skippedHosted.startsWith("SIGNOFF:")).toBe(true);
+    }
+    expect(signoffCopy("en").skipped).toContain("folder");
+    expect(signoffCopy("en").skippedHosted).not.toContain("folder");
+    expect(signoffCopy("fr").skippedHosted).not.toContain("dossier");
+  });
+
+  it("offers the same lines, translated, in every declared language", () => {
     for (const lang of LANGS) {
       const copy = signoffCopy(lang);
       expect(Object.keys(copy).sort()).toEqual(
