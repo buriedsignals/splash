@@ -35,6 +35,7 @@ import {
 import { applyPhrasing } from "../loop/phrase";
 import { requestDelivery } from "../loop/request-delivery";
 import { tryLoadDecor } from "../newsroom/decor";
+import { DEFAULT_UI_LANG } from "../newsroom/language";
 import { sourceQuestionCopy } from "../newsroom/ui-copy";
 import { sourceQuestion } from "../source/policy";
 import { loadRun, readOnlyUiLanguage, type HostResponse } from "./state";
@@ -216,7 +217,13 @@ export function initRunIn(runDir: string, declaration: unknown): HostResponse {
       // The confirm-back, attached to an exchange that already exists rather than a seventh
       // CADRAGE question (the cap of six is already exceeded — D20): the journalist reads the
       // language the deliverables will be made in alongside what to do next, and vetoes it there.
-      lang: created.value.lang ?? "en",
+      //
+      // Falls back to DEFAULT_UI_LANG itself, never a copy of its current value: initRun omits
+      // `lang` from the manifest for exactly the runs where nothing was established (see its own
+      // header), and this is the one other place that has to agree on what "nothing established"
+      // means — a hardcoded "en" would silently stop tracking the house default the day
+      // lib/newsroom/language.ts's own constant changes.
+      lang: created.value.lang ?? DEFAULT_UI_LANG,
       nextActions: nextActions(created.value),
     },
   };

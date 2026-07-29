@@ -17,6 +17,7 @@ import {
   fileArtifact,
 } from "../loop/manifest";
 import { freezeInput } from "../loop/freeze";
+import { DEFAULT_UI_LANG } from "../newsroom/language";
 
 function emptyDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix));
@@ -197,6 +198,28 @@ describe("initRunIn — the question a run cannot begin without", () => {
       ok: true,
       value: { runId: "premiums", nextActions: ["orient"], lang: "it" },
     });
+  });
+
+  // Review finding on Task 5: `initRunIn`'s confirm-back used to fall back to a hardcoded
+  // `"en"` where it should defer to DEFAULT_UI_LANG — harmless only because the constant's
+  // CURRENT value happens to be "en" too. Asserting `lang === "en"` here (as the test above
+  // does, legitimately, to pin the observable behaviour) would not catch a regression back to
+  // the literal: the literal and the constant agree today, so equality holds either way. What
+  // is missing is a check that the fallback is wired to the SYMBOL, not a snapshot of what it
+  // currently equals — read the real source of the site (the same technique
+  // readme-parity.test.ts uses for cli.ts) and require the constant's own name to appear in the
+  // fallback expression.
+  it("the confirm-back's default is wired to DEFAULT_UI_LANG itself, not a copy of its value", () => {
+    const src = readFileSync(join(import.meta.dir, "drive.ts"), "utf8");
+    const fallback = src.match(
+      /lang:\s*created\.value\.lang\s*\?\?\s*([^,\n]+),/,
+    );
+    expect(fallback).not.toBeNull();
+    expect(fallback![1].trim()).toBe("DEFAULT_UI_LANG");
+    // And the symbol it names really is the constant this file imports, not a same-named
+    // decoy — the value-level assertion the sibling test above already makes, restated with
+    // the import rather than the literal so the two can never quietly drift apart again.
+    expect(DEFAULT_UI_LANG).toBe("en");
   });
 
   it("keeps the loop's own refusal for a declaration that is not even shaped right", () => {
