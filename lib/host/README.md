@@ -516,9 +516,9 @@ Same exit codes as `state`.
 
 ### `advance --run <dir>`
 
-Performs the ONE deterministic step `next` says is valid — `orient`, `propose`, `produce` or
-`deliver` — and persists it. One step per call: a host reads the run between two of them, which
-is the point of a loop the journalist can turn back in.
+Performs the ONE deterministic step `next` says is valid — `orient`, `propose`, `draft-beats`,
+`produce`, the verification chain, or `deliver` — and persists it. One step per call: a host reads
+the run between two of them, which is the point of a loop the journalist can turn back in.
 
 ```
 $ bun lib/host/cli.ts advance --run /tmp/host-readme-drive
@@ -788,6 +788,64 @@ A form the offer **marked** is still choosable: a mark warns, it does not forbid
 journalist read it before choosing (the tool offers, the journalist decides). The single
 exception is a form nothing in the loop can build — choosing it would strand the run on its own
 dead end, so it is refused **in the words the offer displayed**.
+
+### `author-beats --run <dir> [--element <id>]`
+
+The article branch's human turn: the journalist writes the claims of a scrolly's walk. `advance`
+performs the half before it — `draft-beats` is deterministic, and it hands over a walk as **data**
+(ids, an order, an anchor per beat, and the numbers each claim is allowed to cite) with every
+claim deliberately **unwritten**, exactly as `propose` leaves every `why` empty. This command is
+where those claims get written.
+
+Read the plan from `state` (each beat's `draftText` says what the beat is ABOUT, `beatSource`
+holds the numbers it may cite), then send one claim per beat, **in the plan's order**:
+
+```
+$ bun lib/host/cli.ts author-beats --run /tmp/host-readme-journey < walk.json
+```
+
+```json
+[
+  { "id": "beat-1", "role": "establish", "text": "En 1979, la banquise de septembre couvrait encore 7.05 millions de km²." },
+  { "id": "beat-2", "role": "build", "text": "Le recul se creuse : 4.28 en 2007." },
+  { "id": "beat-3", "role": "turn", "text": "2012 touche le fond, à 3.57." },
+  { "id": "beat-4", "role": "payoff", "text": "En 2025 elle plafonne à 4.31 : la reconstitution n'a jamais eu lieu." }
+]
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "authored": "e1",
+    "nextActions": [
+      "produce"
+    ]
+  }
+}
+```
+
+**Why this is a command and not something `advance` does.** A plan the loop wrote and the loop
+filled in would be the machine's sentence under a journalist's byline — the whole defect this
+seam exists to remove. `produce` refuses a plan nobody wrote, and the split is what lets that
+refusal be honest. `role` travels with the text because naming the pivot is part of the
+authoring: the draft never guesses `turn`.
+
+The guard beneath (`verifyBeats`) checks the ids, the count, the **exact order**, a well-formed
+claim-arc (which is what refuses a blank claim), and that every NUMBER in a claim is grounded in
+that beat's own facts or the plan's. Every violation is exit `1`, in the guard's own words, and
+the run is left untouched:
+
+```json
+{
+  "ok": false,
+  "code": "invalid-request",
+  "message": "verifyBeats: \"beat-3\" claims the number 1.8, which is in neither this beat's facts nor the plan's"
+}
+```
+
+The walk's ORDER is not edited here — a plan whose order changed is refused. Changing the walk
+has its own door: name your own anchors and get a new draft.
 
 ### `approve --run <dir> [--element <id>]`
 

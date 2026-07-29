@@ -26,6 +26,7 @@ import { capabilities, HOST_ONLY_VERBS } from "./capabilities";
 import {
   advanceRun,
   approveIn,
+  authorBeatsIn,
   chooseFormIn,
   confirmAngleIn,
   initRunIn,
@@ -301,6 +302,22 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 
+  if (command === "author-beats") {
+    // A DOCUMENT on stdin, exactly like `phrase` and for the same reason: the list's length and
+    // order are fixed by the drafted plan, one claim per beat, and that order is what the guard
+    // beneath verifies. Flags cannot express "one value per beat, in the plan's order".
+    const parsed = parseFlags(rest, ["--run", "--element"]);
+    if (!parsed.ok) usage(parsed.message);
+    const runDir = parsed.flags["--run"];
+    if (!runDir) usage("author-beats needs --run <dir>");
+    const authored = await readJsonRequest(
+      "author-beats",
+      "author-beats --run <dir> < walk.json",
+    );
+    const r = authorBeatsIn(runDir, authored, parsed.flags["--element"]);
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
   if (command === "choose-form") {
     // --element is OPTIONAL and its absence is meaningful: without it the decision lands on the
     // element `next` is talking about (lib/host/drive.ts's selectElement), which is the loop's
@@ -435,8 +452,8 @@ async function main(): Promise<never> {
 
   usage(
     `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, init, ` +
-      `advance, suggest-intent, confirm-angle, phrase, choose-form, approve, request-delivery, ` +
-      `verb or newsroom`,
+      `advance, suggest-intent, confirm-angle, phrase, choose-form, author-beats, approve, ` +
+      `request-delivery, verb or newsroom`,
   );
 }
 

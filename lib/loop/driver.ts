@@ -10,6 +10,7 @@ import {
   type RunManifest,
 } from "./manifest";
 import { tryLoadDecor, type Decor } from "../newsroom/decor";
+import { draftBeats } from "./beats";
 import { deliver } from "./deliver";
 import { orient } from "./orient";
 import { propose } from "./propose";
@@ -170,6 +171,23 @@ export async function advanceStep(
         ran: "propose",
       };
     }
+    // THE ARTICLE BRANCH's deterministic half. `draft-beats` hands over a walk whose every claim
+    // is UNWRITTEN — the brain grounds, the desk writes — so running it here can never put a
+    // machine's sentence under a journalist's byline. Its human half, `author-beats`, falls
+    // through to the `default:` below with confirm-angle and choose-form, exactly like `approve`.
+    //
+    // Synchronous, in the shape of `preview`: drafting is a read of the frozen input and a pass
+    // over the brain's own salience, never an engine.
+    case "draft-beats": {
+      if (!live) return { run, ran: null };
+      const result = draftBeats(run, live, runDir);
+      if (result.ok)
+        return {
+          run: { ...run, elements: withLive(result.value) },
+          ran: "draft-beats",
+        };
+      return refused("draft-beats", result.message, live.id);
+    }
     case "produce": {
       if (!live) return { run, ran: null };
       const result = await produce(run, live, runDir);
@@ -230,7 +248,8 @@ export async function advanceStep(
       return refused("deliver", result.message, live.id);
     }
     default: {
-      // confirm-angle / choose-form / confirm-aspect / approve / show / [] are human turns —
+      // confirm-angle / phrase / choose-form / confirm-aspect / author-beats / approve / show /
+      // [] are human turns —
       // EXCEPT one, which only looks like one. A chosen form nothing can build routes back to
       // "choose-form", and reported as a plain human turn it is indistinguishable from an offer
       // waiting to be chosen from: a runner looping on advance waits forever on a journalist who
