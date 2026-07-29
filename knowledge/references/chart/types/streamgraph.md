@@ -1,7 +1,7 @@
 ---
 id: streamgraph
-engines:
-  chart-native: streamgraph
+engines: {}
+unreachable: "chart-native ships the components (StreamgraphChart / InteractiveStreamgraphChart / StreamgraphReveal) but MAPPERS has no streamgraph entry, so no spec can reach them; the type is deferred in native-types.ts (family B)"
 intent: [change-over-time, part-to-whole]
 shape: wide
 limits: { maxSeries: 7 }
