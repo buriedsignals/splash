@@ -5,6 +5,10 @@
 import type { Assembler } from "../../core/production-brief";
 import type { VisualFormat } from "../../core/vocabulary";
 import { assembleChartNative } from "./chart-native";
+import {
+  chartNativeSupports,
+  chartNativeDeclineReason,
+} from "../../../skills/chart-native/src/video-reach";
 import { assembleMapNative } from "./map-native";
 import { assembleImageNative } from "./image-native";
 import {
@@ -44,7 +48,21 @@ export type AssemblerEntry = {
 };
 
 export const ASSEMBLERS: Record<string, AssemblerEntry> = {
-  "chart-native": { assemble: assembleChartNative },
+  // chart-native's `supports` restricts ONE format and nothing else: four of its types render a
+  // static and an interactive chart perfectly well and cannot be shipped as a VIDEO, because the
+  // producer's own reveal contract refuses the mp4 it has just encoded (skills/chart-native/src/
+  // video-reach.ts carries the list, the measurements and the journalist's sentence for each).
+  //
+  // It is here, per-(type, format), rather than as a `deferred` flag on the producer manifest,
+  // because `deferred` takes a type out of EVERY format at once — closing one broken form by
+  // deleting three working ones. The measurement that put it here: on 2026-07-28 the brain
+  // offered all four of these video forms CLEAN and produce refused every one, which is the
+  // "offered but not producible" trap this table exists to make impossible.
+  "chart-native": {
+    assemble: assembleChartNative,
+    supports: chartNativeSupports,
+    declines: chartNativeDeclineReason,
+  },
   // All seven of map-native's types (Task 6). `supports` is the engine's own type list, not a
   // hand-kept copy — see MAP_TYPES's header for the single-source-of-truth it drift-tests
   // against mount.tsx.
