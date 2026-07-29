@@ -165,6 +165,17 @@ is asked openly on GUIDED but folded into a confirm-back on DIRECT. So the numbe
 journalist actually answers VARIES — announce the REAL running count, never a hardcoded number
 the flow did not reach (a canned « Q6, toujours posée » when the flow did not reach it).
 
+**Language is never one of these six — the budget is already spoken for.** The journalist is NOT
+asked which language to work in; that would be a seventh turn on a flow already capped at six.
+The article's language is DECLARED at INPUT (`articleLang` on the run declaration, resolved once
+by `initRun`, `lib/loop/init.ts`) and confirmed back FOLDED INTO the very next thing you say —
+never as its own question (« compris, je pars sur l'anglais — je cadre l'angle », not a separate
+« quelle langue veux-tu ? » turn). The order of authority is fixed and never inverted: an
+explicit signal from the journalist wins over the article's own declared language, which wins
+over the newsroom's house-profile default (`resolveLanguage`, `lib/newsroom/language.ts`) — the
+profile is the LAST resort, and it never overwrites a language the other two already
+established.
+
 1. **Branch (DIRECT vs GUIDED) — an EXPLICIT journalist-facing turn, never a branch you pick silently
    from their opening message and merely announce as decided.** When the opening names no specific
    visual, ask it openly — "Do you already have a visual in mind, or should I guide you?". When the
@@ -404,7 +415,15 @@ stages, and the presentation is BATCHED:
 why ("why it can be interesting" for THIS claim), the first one recommended. Reachable = a
 mapper exists × the data shape fits × every deterministic guardrail passes × the channel
 (known since CADRAGE Q6) allows at least one of its formats — a barred candidate NEVER
-appears. An engine that fails preflight (C2) is annotated, never hidden. **If `suggest-chart`
+appears. An engine that fails preflight (C2) is annotated, never hidden.
+
+**A fifth language is refused HERE, at the offer — never later, at delivery.** A run whose
+declared language has no furniture row (`isCoveredLang`, `lib/core/language-coverage.ts` — today
+`en`/`fr`/`de`/`it`) returns ZERO candidates and one honest refusal naming the languages that ARE
+covered, before a single candidate is even considered — never a chart that ships mixed (its
+numbers in the run's language under a caption still reading the English "Source:"). Point the
+journalist at `docs/splash/language-debt.md` if they want to see what closing that gap for their
+language would actually take — it is a debt list, not a promise. **If `suggest-chart`
 returns a single decision with NO candidates payload, re-invoke it ONCE demanding Stage 1
 explicitly** (« return the candidates JSON first — every reachable type with its why ») — the
 bounded-retry rules apply; never relay a take-it-or-leave-it decision to the journalist.
@@ -644,6 +663,19 @@ below is now reachable from a host that is not JavaScript.
 | which form gets built | `chooseForm(el, id)` (`lib/loop/choose.ts`) — host: `choose-form --run <dir> --option <id>` | an id that is not in the offer (naming the ones that are) · an empty offer (carrying the brain's own refusal) · a form nothing can build |
 | where it goes | `requestDelivery(run, el, decor, opts)` (`lib/loop/request-delivery.ts`) — host: `request-delivery --run <dir> [--to <id,id>]` | nothing produced yet · a stale artifact · a destination this install does not know |
 | shipping it | `approve(run, el, runDir, ceremony, policy)` (`lib/loop/approve.ts`) — host: `approve --run <dir> [< ceremony.json]` | an artifact nobody CAPTURED, REVIEWED or was SHOWN · a blocking finding still open without a valid override · a warning nobody acknowledged · an override with no reason or no actor, or naming a finding the review does not carry · under `requiredSigners`, a missing/foreign/invalid Ed25519 signature over the artifact's exact bytes |
+
+**The unit is stated ONCE, in the subtitle — never repeated onto every value label.** A standalone
+static/interactive/video chart-native render states it once, right above the plot
+(`BarChart.tsx:98-101`, the pattern every chart-native component's `subtitle={config.unit}`
+repeats); the one exception is a scrolly-embedded chart, whose walked bar's DIRECT value label
+must read complete on its own with nobody having scrolled past the subtitle, so it appends a
+short unit there instead (same file). The rule holds for a Datawrapper chart too, despite
+`ChartSpec` having no `unit` field of its own: the assembler states it once in the printed
+subtitle, and never lets a subtitle the journalist already wrote swallow it silently — matched on
+a real token boundary, not a raw substring, so a single-letter unit ("m", "t", "h", "g") is not
+lost inside an unrelated word (`lib/loop/assemble/dw-chart.ts`). A map has no subtitle slot for
+it: the unit travels WITH the values themselves, via `valueUnit` (every map-native branch), with
+the choropleth additionally emitting a distinct `unit` for its own legend-header reader.
 
 Then the deterministic steps run themselves: `advance()` (`lib/loop/driver.ts`), or
 `advance --run <dir>` from a host that is not JavaScript. Deciding and sending are TWO acts —
@@ -1183,6 +1215,7 @@ The full scripted-guard inventory lives in `docs/splash/guardrails.md`.
 - Never ship a source that is name-only for a NAMED dataset/publication (e.g. "Eurostat") — it MUST carry both a label and a real, verifiable URL; never fabricate a URL to fill the field. (The honest prose fallback — "Figures as reported in this article" / the outlet's own name — is the legitimate name-only case: when the data names no separate dataset to link, or when the journalist's hedged recollection of a source stays unconfirmed, per Gate 2c's uncertainty rule.) Establish this proactively at Gate 2c (CADRAGE Q4), before PRODUCTION — never wait for the render-review to be the first thing that catches it, and never reach for the prose fallback just because the journalist has not answered yet. And never ship a flat, confident-looking citation over a source the journalist only HEDGED at (« je crois », « de mémoire ») — confirmed exactly, or the honest fallback (Gate 2c). A *fabricated* placeholder URL is worse than none and is now MECHANICALLY refused: the spine's validation gate (GUARD 2, `src/source-guard.ts`) rejects any source URL on a reserved placeholder domain (`example.com`/`.org`/`.net`, or the `.example`/`.test`/`.invalid`/`.localhost` TLDs, RFC 2606/6761) — the proposal fails to produce rather than shipping a fake citation.
 - Never accept a generic organisation homepage (e.g. `eurostat.ec.europa.eu`, `insee.fr`) or an unverifiable/404 URL as the source — it must be treated exactly like a missing URL. The source MUST point to the SPECIFIC, traceable dataset/page the figures come from (the Eurostat dataset page for the exact table, the Insee series page, …). If the journalist only gives an organisation name or its homepage, ASK for the specific dataset/page reference rather than shipping the generic one (see Gate 2c) — in the SAME free-text turn, never as a separate follow-up question.
 - Never ship a title that narrows or diverges from the takeaway the journalist confirmed at CADRAGE (Gate 1b) — e.g. a specific multiplier ("2x") standing in for a confirmed "widening gap" insight, a scope word ("Nordic") that excludes an entity the visual actually shows, or ONE HALF of a two-part takeaway standing in for the whole (the fall without the confirmed "only riser", a regrouping that contradicts the confirmed grouping). If the data supports more than the title states, widen the title or flag it at Gate 3. The confirmed wording lives VERBATIM in each proposal's `confirmedTakeaway` (5b) precisely so Gate 3a can quote it and check every part — a render-review that skips that quote is invalid (see 3a).
+- **D16 — when the title can't carry the whole confirmed takeaway, splash still SHIPS it and shows BOTH.** A title carrying only part of what was confirmed, or a title that says more than was confirmed, is never a block on its own — `detectTasteRisks` (`lib/verify/taste.ts`) routes both to the verdict-free `human-signoff` lane as a SIGNAL, and `juxtaposeTitleAndTakeaway` prints the two lines side by side at sign-off (« you confirmed: … » / « the title reads: … ») so the journalist reads both and decides — never a machine guessing which one is right. State this plainly, because it is a real limit, not an oversight left to close later: in the PROSE chain (no loop, no mechanical gate), that juxtaposition depends on the same actor who wrote the title in the first place being the one who also reads it back — there is no forced moment putting the two side by side before a DIFFERENT set of eyes. There is therefore **no forced moment** in prose for this signal, by construction — closing that is a **family-A dependency** (an editorial forced-moment mechanism at sign-off), not a gap family B's carrier/reader work can close on its own.
 - Never silently substitute a value from a prior/stale export when it disagrees with the journalist's current article/data — the values used (and shown at Gate 2b) MUST always be the ones the journalist provided in the current session.
 - Never offer the journalist an element/format (or sub-format) option before confirming — via `suggest-chart`'s reachability, not from memory — that it is actually producible. Retracting an offered option as infeasible forces the journalist to re-answer the same decision multiple times; check first, propose only what's confirmed.
 - Never keep the conversation going after the journalist signs off. Once the deliverable is handed over and the journalist signals completion (a pure thanks/goodbye with no new request), send AT MOST ONE brief closing message and treat the session as ENDED — no new questions, no repeated farewells, no re-engagement, no echoing further goodbyes back.
