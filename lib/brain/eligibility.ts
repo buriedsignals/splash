@@ -8,6 +8,10 @@ import {
   destinationOf,
   isFormatAllowed,
 } from "../core/channel-policy";
+import {
+  isCoveredLang,
+  uncoveredLanguageRefusal,
+} from "../core/language-coverage";
 import { getProducer, producerForFormat } from "../core/registry";
 import { bgIsDark } from "../core/theme";
 import type { CapabilityReadiness } from "../newsroom/readiness";
@@ -56,6 +60,11 @@ export type EligibilityInput = {
    *  prose — so it constrains legality, not order (CLAUDE.md, Wave 7: "an explicit journalist
    *  format signal WINS"). Absent ⇒ no constraint. */
   requestedFormat?: VisualFormat;
+  /** The deliverable's CONTENT language (lib/newsroom/language.ts's `content`, not `ui`) — the
+   *  language its furniture (numbers, "Source:") would be rendered in. Absent ⇒ no constraint;
+   *  a run that has not declared one yet is not a run in a fifth language (isCoveredLang treats
+   *  `undefined` as covered). */
+  contentLang?: string;
 };
 
 // ── WHAT USED TO BE HERE, and why it is not ────────────────────────────────────────────────────
@@ -88,6 +97,15 @@ export function eligible(
   input: EligibilityInput,
   pairs: RenderableSheet[] = renderableSheets(),
 ): { eligible: Candidate[]; excluded: Excluded[]; refusal?: string } {
+  // A language with no furniture is one refusal about the RUN, exactly like a channel that
+  // does not carry the requested format — and for the same reason: it is a fact about the run,
+  // not about 45 sheets.
+  if (!isCoveredLang(input.contentLang))
+    return {
+      eligible: [],
+      excluded: [],
+      refusal: uncoveredLanguageRefusal(input.contentLang!),
+    };
   // A format the channel does not allow is one refusal about the run, not 45 identical
   // refusals about 45 sheets. Named loudly; never silently downgraded to the default.
   if (

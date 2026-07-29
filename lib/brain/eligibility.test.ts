@@ -63,6 +63,15 @@ test("a limit the data breaks excludes the form WITH its reason", () => {
   expect(why?.reason).toMatch(/40/);
 });
 
+test("refuses the whole run when its language has no furniture", () => {
+  const { eligible: legal, refusal } = eligible({
+    ...BASE,
+    contentLang: "es",
+  });
+  expect(legal).toEqual([]);
+  expect(refusal ?? "").toContain("es");
+});
+
 test("a channel that forbids a format excludes it, with the channel named", () => {
   const { eligible: ok, excluded } = eligible({
     ...BASE,
