@@ -187,6 +187,11 @@ export const Scrolly: React.FC<{
         insight: config.insight ?? config.title,
         unit: config.valueUnit ?? "",
         lang: config.lang,
+        // The journalist's CONFIRMED walk. Dropping it here (and in ScrollySymbolMap's own
+        // camera computation) let a validated arc collapse back to the salience default —
+        // silently, which is the one outcome this seam may not have. The types that cannot
+        // honour a plan refuse it by name at validation instead (validate-config.ts).
+        arcBeats: config.arcBeats,
       });
       return mapStoryToChapters(beats, {
         title: config.title ?? "",
@@ -291,6 +296,8 @@ export const Scrolly: React.FC<{
       narrativePattern: (config as unknown as Record<string, unknown>)
         .valueKind as "temporal" | "magnitude" | "categorical" | undefined,
       lang: config.lang,
+      // See the symbol branch above: the confirmed arc reaches the deriver, or it is refused.
+      arcBeats: config.arcBeats,
     });
     const regionsWithData = layout.joined.filter(
       (j) => j.value !== null,

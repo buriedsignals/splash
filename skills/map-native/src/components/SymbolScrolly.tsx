@@ -186,6 +186,8 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
         title: config.title ?? "",
         insight: config.insight ?? config.title ?? "",
         unit: config.valueUnit ?? "",
+        // The confirmed walk reaches the deriver — see map-arc.ts.
+        arcBeats: config.arcBeats,
       };
       const beats = deriveSymbolStory(config.points, meta, {
         maxReveals: config.maxReveals,

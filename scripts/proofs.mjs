@@ -70,6 +70,14 @@ const PROOFS = [
     env: { SPLASH_PROVE_BEATS: "1" },
   },
   {
+    // The map track's counterpart to beats-render-proof: same question (are the beats on the
+    // page the journalist's?), asked of the engine where the answer was NO. A QA sweep found a
+    // validated `arcBeats` plan silently replaced by the salience walk on the built page.
+    file: "lib/loop/map-arc-render-proof.test.ts",
+    what: "a map scrolly walks the CONFIRMED regions, in order, in the journalist's words, read off the built page",
+    env: { SPLASH_PROVE_MAP_ARC: "1" },
+  },
+  {
     file: "lib/loop/map-e2e.test.ts",
     what: "a chosen map is assembled by the loop and rendered by the engine",
     env: { SPLASH_MAP_E2E: "1" },

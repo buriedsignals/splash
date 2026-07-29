@@ -79,6 +79,25 @@ export function mapStoryToChapters(
       prose = desc; // intro caption = the figure's description
     } else if (b.kind === "establish") {
       prose = desc; // OVERVIEW caption = the figure's description (see all the data)
+    } else if (b.kind === "reveal" && b.authored) {
+      // A journalist-CONFIRMED arc beat (applyMapArc). Its caption is the claim the
+      // journalist wrote, shipped as written — the chart track has always done this
+      // (chart-chapters.ts: `else prose = b.copy`), and the map track did not, which is the
+      // whole defect: it rebuilt every caption as "<name> — <value>, <descriptor>" and read
+      // the descriptor off the beat's POSITION among the reveals. Under an arc that position
+      // is the order of the argument, so the last beat of a geographic walk was captioned
+      // "the lowest" while another region held the minimum. Two rules broken at once — the
+      // journalist's words shipping as the machine's, and a validated plan producing a
+      // materially different artifact.
+      //
+      // An arc beat with no claim text (roles are optional, so a plan MAY be anchors only)
+      // still gets the data-tied caption — but never a rank descriptor, because nothing here
+      // computed a rank.
+      prose = hasCopy
+        ? b.copy
+        : b.callout
+          ? `${b.callout.name} — ${b.callout.value}`
+          : desc;
     } else if (b.kind === "reveal" && b.callout) {
       let descriptor = "";
       if (b.pattern === "temporal") {

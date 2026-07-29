@@ -157,6 +157,8 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         title: config.title ?? "",
         insight: config.insight ?? config.title ?? "",
         unit: config.valueUnit ?? "",
+        // The confirmed walk reaches the deriver — see map-arc.ts.
+        arcBeats: config.arcBeats,
       };
       const beats = beatsForMode(
         deriveSymbolStory(config.points, meta, {

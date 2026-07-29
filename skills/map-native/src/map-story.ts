@@ -55,6 +55,16 @@ export interface Beat {
   // Claim-arc role (S2), threaded from a journalist-confirmed `arcBeats` override —
   // see MapArcBeat/mapArcErrors below. Optional: absent = no arc claimed.
   role?: ArcRole;
+  // Set by applyMapArc, and by nothing else: this reveal came from a journalist-CONFIRMED
+  // arc, not from the deriver's own salience walk. It is the one bit a caption composer
+  // needs, because the two walks mean different things by "position": in the salience walk
+  // position IS rank (first = the highest, last = the lowest), and in an arc it is the
+  // ORDER OF THE ARGUMENT. A composer that reads rank off position under an arc asserts a
+  // ranking nothing computed — which is how a region that was merely last in a geographic
+  // walk got captioned "the lowest" while another region held the minimum. `role` cannot
+  // stand in for this: roles are optional on an arc (arcErrors permits an anchor-only plan),
+  // so their absence does not mean "derived".
+  authored?: true;
 }
 
 // The anchor facts a deriver resolves for one arcBeat's region — enough to build a
@@ -101,6 +111,7 @@ export function applyMapArc(
       },
       copy: text,
       role: arcBeat.role,
+      authored: true,
     };
   });
 }
