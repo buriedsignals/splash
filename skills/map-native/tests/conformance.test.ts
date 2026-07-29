@@ -569,6 +569,19 @@ describe("runProduceMapConformance actually asks the symbol rules", () => {
     format: { width: 1200, height: 675 },
   };
 
+  // Fix-round-2 (task 17 re-review, Finding A): every case above spreads `base`, which pins
+  // BOTH `maxRadius` and `format` explicitly on every call — so the guard's DEFAULT/fallback
+  // paths (MAX_RADIUS_PX, the real per-channel `mediaSize` param, and the
+  // ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX fallback) were never exercised by any test: reverting
+  // MAX_RADIUS_PX to a stale value, or the assumed-viewport constant to something absurd, left
+  // the whole suite green. `baseNoOverrides` strips those two config-only fields (neither is a
+  // real SymbolConfigShape field anyway) so the tests below actually reach the defaults.
+  const {
+    maxRadius: _pinnedMaxRadius,
+    format: _pinnedFormat,
+    ...baseNoOverrides
+  } = base;
+
   it("should refuse a symbol map with no legend", () => {
     const r = runProduceMapConformance("symbol", { ...base, hasLegend: false });
     expect(r.checked).toBe(true);
@@ -608,5 +621,50 @@ describe("runProduceMapConformance actually asks the symbol rules", () => {
     expect(r.violations.join(" ")).toContain("empty data bounds");
     // Actionable, not just diagnostic — tells the journalist what to do instead.
     expect(r.violations.join(" ")).toContain("locator map");
+  });
+
+  it("should default maxRadiusPx to the real MAX_RADIUS_PX (40), not a stale lower value", () => {
+    // baseNoOverrides carries no `maxRadius` — a real config never does either. A narrow
+    // 150px mediaSize makes the threshold (0.25×150=37.5) sit BETWEEN 30 and 40: the true
+    // default (40) trips "too large" here, a stale default of 30 would not — this proves
+    // the actual number in use, not just that *some* default exists (review N1.4/Finding A).
+    const r = runProduceMapConformance("symbol", baseNoOverrides, {
+      width: 150,
+      height: 150,
+    });
+    expect(r.violations.join(" ")).toContain("too large");
+  });
+
+  it("should fall back to the assumed article-web viewport when neither mediaSize nor a config format is given", () => {
+    // No 3rd `mediaSize` arg, no config `format` field — the legacy/no-data path. Must stay
+    // green: 0.25×675=168.75 comfortably clears the real 40px default.
+    const r = runProduceMapConformance("symbol", baseNoOverrides);
+    expect(r.violations).toEqual([]);
+  });
+
+  it("should refuse a maxRadius that only trips at exactly the 675 assumption (pins the VALUE, not just that some fallback exists)", () => {
+    // 170px clears MAX_RADIUS_PX(40) trivially, so the previous test alone can't tell 675
+    // from an arbitrarily large fallback — both would pass a 40px radius. 0.25×170=42.5, so
+    // 170px only refuses because the fallback is genuinely ~675 (0.25×675=168.75 < 170); a
+    // fallback of, say, 999999 (0.25×999999≈250000) would silently let this through.
+    const r = runProduceMapConformance("symbol", {
+      ...baseNoOverrides,
+      maxRadius: 170,
+    });
+    expect(r.violations.join(" ")).toContain("too large");
+  });
+
+  it("should measure against the REAL per-channel viewport when mediaSize is passed, not the 675 assumption", () => {
+    // social-vertical's real raw media size (CHANNEL_POLICY, lib/core/channel-policy.ts):
+    // 1080x1920. 0.25×1080=270, so a 200px max radius PASSES against the real 1080 min
+    // dimension — but would have WRONGLY FAILED under the old 675-only logic
+    // (0.25×675=168.75 < 200). Direct proof review finding B (viewportMinPx was reachable on
+    // EVERY channel, not just when data is missing) is closed.
+    const r = runProduceMapConformance(
+      "symbol",
+      { ...baseNoOverrides, maxRadius: 200 },
+      { width: 1080, height: 1920 },
+    );
+    expect(r.violations).toEqual([]);
   });
 });

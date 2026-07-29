@@ -175,7 +175,10 @@ if (parsedConfig.mapStyle === "dataviz-dark" && format === "video") {
 // fails the run here; nothing is built, nothing is rendered. Mirrors chart-native's produce.mjs gate.
 {
   const { runProduceMapConformance } = await import("../src/core/map-produce-conformance.ts");
-  const res = runProduceMapConformance(parsedConfig.type, parsedConfig);
+  // mediaSize was already computed above (the channel's real renderSize) — thread it through
+  // so the symbol guard's viewportMinPx measures the REAL per-channel viewport instead of
+  // falling back to a fixed article-web-sized assumption for every channel.
+  const res = runProduceMapConformance(parsedConfig.type, parsedConfig, mediaSize);
   if (!res.checked) {
     console.log(`[produce map] conformance: no guard wired for "${parsedConfig.type ?? "choropleth"}" — skipping.`);
   } else if (res.violations.length > 0) {

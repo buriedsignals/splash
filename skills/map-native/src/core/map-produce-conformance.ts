@@ -16,9 +16,10 @@
 //     ARE now in scope (task 17, `checkSymbolConformance`) — `symbolGeometry` is pure (no
 //     basemap), so those are config-provable here. `viewportMinPx` is checked against
 //     `MAX_RADIUS_PX` (symbol-geo.ts, the literal every symbol renderer actually paints — not
-//     an invented config default), but falls back to an ASSUMED article-web viewport when no
-//     real channel/media-size is threaded into this call (see the symbol block below) — a
-//     disclosed gap, not a verified one.
+//     an invented config default), and measured against the REAL per-channel media size when
+//     the caller passes `mediaSize` (produce.mjs does — it already computes
+//     `renderSize(channel)` before calling this) — falling back to a conservative ASSUMED
+//     viewport only when neither `mediaSize` nor a config `format` is available.
 //   - GL-rendered labels (symbol direct-labels, dot-density dot counts) are out of scope —
 //     a separate spike, not config-time-checkable.
 //   - The furniture-contrast check here is drift-defense on the pre-vetted
@@ -46,14 +47,16 @@ import { symbolGeometry, MAX_RADIUS_PX } from "../symbol-geo";
 // The 3 types whose colour scale is a resolvePalette() ramp (not a fixed qualitative set).
 export const RAMP_TYPES = ["choropleth", "hex-grid", "cartogram"] as const;
 
-// No channel/media-size is threaded into this config-time guard (produce.mjs resolves the
-// real channel + `renderSize(channel)` AFTER calling `runProduceMapConformance`, and no
-// other type-check in this file consumes it either — threading it in is a bigger change than
-// this task's scope). article-web is produce.mjs's DEFAULT_CHANNEL
-// (skills/splash/src/channel.ts) and its landscape media size is 1200×675 — 675 is that
-// height, the smaller dimension. A symbol map actually produced under a DIFFERENT channel
-// (e.g. a narrower social-portrait format) is NOT verified against its true viewport here —
-// this is a disclosed assumption, not a measured fact.
+// Fallback ONLY for a caller that omits `runProduceMapConformance`'s optional `mediaSize`
+// param (below) and whose config carries no `format` either — e.g. a direct unit-test call.
+// produce.mjs (the real caller) already computes the real per-channel `renderSize(channel)`
+// and now passes it through, so this fallback is not on the normal path.
+// article-web (675) is CONSERVATIVE, not arbitrary: every `CHANNEL_POLICY` entry's min
+// media-size dimension is ≥ 675 (social-vertical 1080, social-feed 1080, article-web 675,
+// print-page 1748 — lib/core/channel-policy.ts) — so 675 is the smallest real viewport any
+// channel ever produces, meaning this fallback can only be too STRICT (false-refuse a large
+// symbol on a bigger real canvas), never too permissive (false-pass one that would swallow a
+// smaller real canvas).
 const ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX = 675;
 
 // Resolves the scaleType the SAME way the renderer actually paints it, per ramp type — so
@@ -187,6 +190,12 @@ function extractValues(config: Record<string, unknown>): number[] | undefined {
 export function runProduceMapConformance(
   rawType: string | undefined,
   config: Record<string, unknown>,
+  // The REAL raw pixel size for the channel this config is actually being produced for
+  // (produce.mjs's `renderSize(channel)`, e.g. social-vertical 1080×1920, article-web
+  // 1200×675). Optional — takes priority over a config `format` field (which no real
+  // SymbolConfigShape carries today) when both are present, since it is the more trustworthy
+  // source; falls back to ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX when neither is given.
+  mediaSize?: { width: number; height: number },
 ): MapConformanceRunResult {
   // CRITICAL: choropleth is the mount.tsx default (its sample configs carry no `type`
   // field at all) — without this normalization it would ship unguarded.
@@ -344,9 +353,14 @@ export function runProduceMapConformance(
           hasLegend: config.hasLegend !== false,
           legendStops,
           maxRadiusPx: maxRadius,
-          viewportMinPx: fmt
-            ? Math.min(fmt.width, fmt.height)
-            : ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX,
+          // Priority: real `mediaSize` (produce.mjs's actual renderSize(channel)) > config
+          // `format` (kept for a future caller that emits one) > the conservative ASSUMED
+          // fallback. Was `fmt ? … : ASSUMED_…` only — mediaSize is new (fix round 2, Finding B).
+          viewportMinPx: mediaSize
+            ? Math.min(mediaSize.width, mediaSize.height)
+            : fmt
+              ? Math.min(fmt.width, fmt.height)
+              : ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX,
           pointsWithData: points.length,
           boundsNonEmpty,
           // Render-only inputs: give the values the rules treat as "not my business here" —
