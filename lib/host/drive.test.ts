@@ -774,4 +774,110 @@ describe("advanceRun — the human turn it cannot perform", () => {
     expect(r).toMatchObject({ ok: false, code: "step-refused" });
     expect((r as { message: string }).message).toContain("approve --run <dir>");
   });
+
+  it("puts the juxtaposition where the journalist has to act", async () => {
+    // needsHumanEye was carried all the way to the approval decision (lib/verify/approval.ts:158)
+    // and rendered by NOBODY — its only non-test sinks were signoffs/<id>.json and a report
+    // object nothing prints. A signal nobody sees is not a signal: this proves the approve
+    // command's own message now carries the confirmed takeaway and the rendered title side by
+    // side, the moment the journalist is told to act.
+    const dir = mkdtempSync(join(tmpdir(), "drive-approve-partial-title-"));
+    const src = join(dir, "src.csv");
+    writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
+    const confirmedTakeaway =
+      "Rents rose fastest in Geneva while wages stagnated across the whole canton";
+    const renderedTitle = "Rents rose fastest in Geneva";
+    const run: RunManifest = {
+      runId: "approve-partial-title",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: { data: freezeInput(dir, src, "data") },
+      orient: {
+        profile: {
+          columns: ["canton", "2015", "2024"],
+          numericColumns: ["2015", "2024"],
+          rowCount: 2,
+        },
+        supportsPoint: true,
+      },
+      elements: [
+        {
+          id: "e1",
+          angle: {
+            confirmedTakeaway,
+            altInsight:
+              "Rents in Geneva rose faster than wages across the canton.",
+            unit: "CHF",
+          },
+          proposal: {
+            options: [
+              {
+                id: "slope",
+                nativeType: "slope",
+                engine: "chart-native",
+                format: "static",
+                why: "two points, one line each",
+              },
+            ],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+      events: [],
+    };
+    const el = run.elements[0]!;
+    const provenance = provenanceHash(run, el);
+    writeManifest(join(dir, "run.json"), {
+      ...run,
+      elements: [
+        {
+          ...el,
+          artifact: {
+            path: "elements/e1/static.png",
+            sha256: "abc",
+            provenanceHash: provenance,
+            producedAt: "2026-07-27T09:00:00.000Z",
+          },
+          delivery: { requested: ["zip"], delivered: [] },
+          capture: {
+            images: [],
+            checks: [],
+            capturedProvenanceHash: provenance,
+          },
+          review: {
+            findings: [],
+            reviewedProvenanceHash: provenance,
+            // The element the fixture carries the failure in: a taste-risk row a real review
+            // step would have produced, standing in for that step so this test's own subject
+            // stays "does the approve message render it" rather than "does detection fire".
+            tasteRisk: [
+              {
+                dimension: "title-partial-coverage",
+                detector: "title-covers-takeaway",
+                evidence: [confirmedTakeaway, renderedTitle],
+                routedTo: "human-signoff",
+              },
+            ],
+            preview: {
+              deliverablePath: "/tmp/x/static.png",
+              deliverableSha256: "abc",
+              presentedAs: "path-printed",
+              presentedAt: "2026-07-27T09:00:00.000Z",
+              fallbackReason: "no viewer",
+            },
+          },
+        },
+      ],
+    });
+
+    const r = await advanceRun(dir);
+    expect(r).toMatchObject({ ok: false, code: "step-refused" });
+    const message = (r as { message: string }).message;
+    expect(message).toContain("you confirmed:");
+    expect(message).toContain("the title reads:");
+    expect(message).toContain(confirmedTakeaway);
+    expect(message).toContain(renderedTitle);
+  });
 });

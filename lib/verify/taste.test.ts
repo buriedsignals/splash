@@ -2,9 +2,11 @@ import { describe, it, expect } from "bun:test";
 import {
   DENSITY_MARKS_PER_100PX,
   MIN_COLOUR_SEPARATION,
+  TAKEAWAY_COVERAGE_FLOOR,
   TAKEAWAY_OVERLAP_FLOOR,
   WHITESPACE_FILL_FLOOR,
   detectTasteRisks,
+  juxtaposeTitleAndTakeaway,
 } from "./taste";
 import { runReview } from "./review";
 import type { CaptureRecord } from "./types";
@@ -264,6 +266,75 @@ describe("title/takeaway calibration, on real strings", () => {
         risks.some((r) => r.dimension === "title-takeaway-divergence"),
       ).toBe(c.fires);
     });
+});
+
+// D16 (spec §4.2): SIGNAL, never block — a title carrying only PART of the confirmed takeaway,
+// or ADDING a claim nobody confirmed, is a decision for the journalist, shown side by side with
+// no score (a percentage invites a fight about the metric instead of a look at the title).
+describe("title coverage and overrun — D16, the confirmed takeaway is only PART of the title", () => {
+  it("sees a title that carries half the confirmed takeaway", () => {
+    // Measured (fix-scatter-snake-headers, frontaliers-dots, …): half the takeaway. Overlap is
+    // WELL above the 0.3 divergence floor, so the existing detector says nothing.
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway:
+        "Rents rose fastest in Geneva while wages stagnated across the whole canton",
+      renderedTitle: "Rents rose fastest in Geneva",
+    });
+    expect(signals.map((s) => s.dimension)).toContain("title-partial-coverage");
+    expect(TAKEAWAY_COVERAGE_FLOOR).toBeGreaterThan(TAKEAWAY_OVERLAP_FLOOR);
+  });
+
+  it("sees a title that says MORE than was confirmed", () => {
+    // Measured (cloudflare-embed-scrolly): "9 biennial years" became "decade after decade" —
+    // words ADDED, none removed. Overlap-based detection is structurally blind to this.
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway: "Nine biennial years of measurements",
+      renderedTitle:
+        "Nine biennial years of measurements, decade after decade of decline",
+    });
+    expect(signals.map((s) => s.dimension)).toContain("title-overrun");
+  });
+
+  it("says nothing when the title is the takeaway", () => {
+    const t = "Rents rose fastest in Geneva";
+    expect(
+      detectTasteRisks({
+        captures: [],
+        confirmedTakeaway: t,
+        renderedTitle: t,
+      }).map((s) => s.dimension),
+    ).not.toContain("title-partial-coverage");
+  });
+
+  it("shows the two strings side by side, and no score", () => {
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway: "Rents rose fastest in Geneva while wages stagnated",
+      renderedTitle: "Rents rose fastest in Geneva",
+    });
+    const lines = juxtaposeTitleAndTakeaway(signals);
+    expect(lines.join("\n")).toContain(
+      "Rents rose fastest in Geneva while wages stagnated",
+    );
+    expect(lines.join("\n")).toContain("Rents rose fastest in Geneva");
+    expect(lines.join("\n")).not.toMatch(/\d+\s?%/);
+  });
+
+  it("is never handed a score-bearing dimension — the caller filters, juxtapose never grades", () => {
+    // A signal from an unrelated dimension (e.g. density) must never leak into the juxtaposition:
+    // the function's whole contract is "these two strings, nothing else".
+    const lines = juxtaposeTitleAndTakeaway([
+      {
+        dimension: "density",
+        detector: "marks per 100px > 8",
+        evidence: ["[primary] 4000 marks across 1152px"],
+        routedTo: "human-signoff",
+      },
+    ]);
+    expect(lines).toStrictEqual([]);
+  });
 });
 
 describe("whitespace", () => {

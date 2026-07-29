@@ -38,6 +38,8 @@ import { tryLoadDecor } from "../newsroom/decor";
 import { DEFAULT_UI_LANG } from "../newsroom/language";
 import { sourceQuestionCopy } from "../newsroom/ui-copy";
 import { sourceQuestion } from "../source/policy";
+import { juxtaposeTitleAndTakeaway } from "../verify/taste";
+import type { TasteRiskSignal } from "../verify/types";
 import { loadRun, readOnlyUiLanguage, type HostResponse } from "./state";
 import type { VerbResult } from "../core/verbs/types";
 
@@ -276,6 +278,14 @@ export async function advanceRun(runDir: string): Promise<HostResponse> {
   return persist(runDir, outcome.run, { ran: outcome.ran });
 }
 
+// The taste-risk lane an element's review carries, or none — lib/verify/approval.ts:158 already
+// transports `needsHumanEye: review.tasteRisk` into the approval decision, but until this file
+// read it, its only non-test sinks were a JSON file (`signoffs/<id>.json`, lib/loop/approve.ts)
+// and a report object (lib/loop/resume.ts) nothing prints: a signal nobody sees is not a signal.
+function tasteRiskOf(el: RunElement | undefined): TasteRiskSignal[] {
+  return el?.review?.tasteRisk ?? [];
+}
+
 // Which human turn is owed, in the host's own vocabulary. `next` already told the host what is
 // valid; this says who PERFORMS it, which is the piece a host cannot derive from the action name
 // alone. Every human turn now has a command behind it — `confirm-angle` used to end with "and no
@@ -305,12 +315,20 @@ function nothingToRun(
       "advance: the next act is the journalist's — confirm the angle with " +
       '"confirm-angle --run <dir> --takeaway <s> --alt-insight <s> --unit <s>"'
     );
-  if (action === "approve")
+  if (action === "approve") {
+    // D16 (spec §4.2): SIGNAL, never block. The title can legitimately be a shorter, rewritten
+    // point — the journalist decides that, not this function — so the lines below are appended
+    // to the same sentence rather than refusing anything: juxtaposeTitleAndTakeaway returns []
+    // when the review carries no title-coverage risk, so an element with nothing to flag reads
+    // exactly as it did before this lane existed.
+    const lines = juxtaposeTitleAndTakeaway(tasteRiskOf(liveElementFor(run)));
     return (
       "advance: the next act is the journalist's — the visual has been captured, reviewed and " +
       'presented, and publishing it is a human decision: "approve --run <dir>" (read the ' +
-      "findings and what the gate will ask for from state --run <dir>)"
+      "findings and what the gate will ask for from state --run <dir>)" +
+      (lines.length ? `\n${lines.join("\n")}` : "")
     );
+  }
   if (action === "show") {
     // "show" covers two very different situations, and telling them apart is the difference
     // between a useful answer and a wrong one: an element that has already been published sits
