@@ -171,11 +171,21 @@ proof(
     const walk = steps.join(" • ");
     expect(walk).not.toMatch(/le plus bas|le plus élevé/);
 
-    // 4. …and no region the journalist left OUT of the argument narrates itself.
-    for (const code of ["GBR", "ESP"])
-      expect(walk).not.toContain(
-        ROWS.find((r) => r.code === code)!.share + " %",
-      );
+    // 4. …and the confirmed arc is the WHOLE walk, not a walk with his claims mixed into it:
+    //    the six claims occupy six CONSECUTIVE steps (nothing derived interleaved), and
+    //    exactly one step follows them — the takeaway. So no salience reveal survives beside
+    //    the arc, and no region he left OUT of the argument narrates itself.
+    //
+    //    This replaces an assertion that checked the walk did not contain `${share} %`. With
+    //    `valueUnit: "%"` the deriver concatenates without a space (`99%`), so that string
+    //    never appeared whatever the page did — it could not go red. It was weak twice over:
+    //    the regions it named are not in the salience walk either, so it would have passed on
+    //    the broken render too. A green assertion that cannot go red is worse than none.
+    const first = steps.findIndex((s) => s.includes(ARC[0]!.text));
+    expect(steps.slice(first, first + ARC.length)).toEqual(
+      ARC.map((b) => b.text),
+    );
+    expect(steps.length).toBe(first + ARC.length + 1);
 
     rmSync(runDir, { recursive: true, force: true });
   },
