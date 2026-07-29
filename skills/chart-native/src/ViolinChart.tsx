@@ -29,7 +29,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate, textWidth } from "./core/text";
 
@@ -58,8 +58,6 @@ export interface ViolinChartProps {
 }
 
 const FILL = OKABE_ITO.blue;
-
-const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
 export function ViolinChart({
   config,
@@ -205,6 +203,9 @@ function ViolinSvg({
   legendTwoRows: boolean;
   legRow: number;
 }) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const C = themeColors(config.themeBg, config.baseColor);
   const violinFill = config.baseColor ?? FILL; // subject-fit hue, else default
   // the inner median tick punches the BACKGROUND colour through the (dark→light on
@@ -403,6 +404,7 @@ function Tooltip({
   hover: number;
   config: ViolinConfig;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const r = layout.rows.find((x) => x.index === hover);
   if (!r) return null;
   const left = padding.left + r.medianX;

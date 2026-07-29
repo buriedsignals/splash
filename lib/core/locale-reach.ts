@@ -17,11 +17,12 @@ export type SourceFile = { path: string; source: string };
 // id or a pixel coordinate without types. A guard that fires on pixel maths is a guard people
 // disable.
 const PAINT = /\.toFixed\s*\(/;
-// HELPERS names are those lib/core/locale.ts exports today. Task 8 (chart-native) extracts a
-// shared number-painting helper — when it lands, add its name here; do not hard-code an
-// assumption elsewhere about there being exactly these four.
+// HELPERS names are those lib/core/locale.ts exports today. Task 8 (chart-native) extracted
+// localizeValueLabel as the shared number-painting helper for its ten uniform call sites — add
+// a name here whenever core/locale.ts grows another one; do not hard-code an assumption
+// elsewhere about there being exactly these five.
 const HELPERS =
-  /\b(formatLocaleNumber|localizeDecimal|localizeNumberString|labelWithUnit)\s*\(/;
+  /\b(formatLocaleNumber|localizeDecimal|localizeNumberString|labelWithUnit|localizeValueLabel)\s*\(/;
 
 export function numberPaintSites(source: string): NumberPaintSite[] {
   const out: NumberPaintSite[] = [];

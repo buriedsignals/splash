@@ -27,7 +27,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate } from "./core/text";
 
@@ -68,8 +68,6 @@ export interface ComboChartProps {
 const COLUMN_COLOR = OKABE_ITO.blue;
 const LINE_COLOR = OKABE_ITO.orange;
 
-const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
-
 export function ComboChart({
   config,
   progress = 1,
@@ -96,7 +94,16 @@ export function ComboChart({
     bottom: 24 + LEG_ROW + 24, // category labels + legend + source
     left: 56, // left-axis tick labels + axis title
   };
-  const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, undefined, responsive);
+  const frame = resolveFrameWithHeader(
+    config.title,
+    config.unit,
+    width,
+    height,
+    basePad,
+    scale,
+    undefined,
+    responsive,
+  );
   const padding = frame.pad;
   const ts = frame.type;
   const sc = frame.scale;
@@ -181,6 +188,9 @@ function ComboSvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const {
     innerWidth,
     innerHeight,
@@ -446,6 +456,7 @@ function Tooltip({
   hover: number;
   config: ComboConfig;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const c = layout.columns[hover];
   const pt = layout.linePoints[hover];
   if (!c) return null;

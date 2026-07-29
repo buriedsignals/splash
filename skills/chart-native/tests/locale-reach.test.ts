@@ -19,22 +19,12 @@ const SRC = join(import.meta.dir, "..", "src");
 const DIAGNOSTIC_ONLY = ["core/conformance.ts"];
 
 /** THE DEBT. Every entry here paints a number a reader sees, in whatever language the browser's
- *  default happens to be. It must shrink to [] — task 8 of
- *  docs/superpowers/plans/2026-07-29-family-b-what-reaches-the-reader.md empties it. An entry
- *  that no longer applies fails `staleExemptions`, so the list cannot rot either. */
-const KNOWN_BLIND: string[] = [
-  "BoxplotChart.tsx",
-  "BulletChart.tsx",
-  "ComboChart.tsx",
-  "DotStripChart.tsx",
-  "LollipopChart.tsx",
-  "LorenzChart.tsx",
-  "ParallelChart.tsx",
-  "SankeyChart.tsx",
-  "SlopeChart.tsx",
-  "ViolinChart.tsx",
-  "WaffleChart.tsx",
-];
+ *  default happens to be. Task 8 of docs/superpowers/plans/2026-07-29-family-b-what-reaches-the-reader.md
+ *  emptied it: all eleven files now route their value labels through `localizeValueLabel`
+ *  (lib/core/locale.ts) — ten via a per-function `fmt`/`fmtVal` closure that binds their own
+ *  config's `lang`, LorenzChart's Gini legend directly via `localizeNumberString`. An entry that
+ *  no longer applies fails `staleExemptions`, so the list cannot rot either. */
+const KNOWN_BLIND: string[] = [];
 
 function walk(dir: string, prefix = ""): SourceFile[] {
   const out: SourceFile[] = [];

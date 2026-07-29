@@ -1,4 +1,6 @@
 import { describe, it, expect } from "bun:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   isFrench,
   decimalSep,
@@ -6,13 +8,26 @@ import {
   formatLocaleNumber,
   localizeDecimal,
   sourceLabel,
+  localizeValueLabel,
 } from "../src/core/locale";
 import { formatNumber } from "../src/core/math";
+import { BoxplotChart, type BoxplotConfig } from "../src/BoxplotChart";
+import { BulletChart, type BulletConfig } from "../src/BulletChart";
+import { ComboChart, type ComboConfig } from "../src/ComboChart";
+import { DotStripChart, type DotStripConfig } from "../src/DotStripChart";
+import { LollipopChart, type LollipopConfig } from "../src/LollipopChart";
+import { LorenzChart, type LorenzConfig } from "../src/LorenzChart";
+import { ParallelChart, type ParallelConfig } from "../src/ParallelChart";
+import { SankeyChart, type SankeyConfig } from "../src/SankeyChart";
+import { SlopeChart, type SlopeConfig } from "../src/SlopeChart";
+import { ViolinChart, type ViolinConfig } from "../src/ViolinChart";
+import { WaffleChart, type WaffleConfig } from "../src/WaffleChart";
 
 // French uses a narrow no-break space (U+202F) for thousands and a comma decimal —
 // the same output Intl.NumberFormat('fr-FR') produces, but computed by an explicit,
 // deterministic formatter (no Intl locale-data drift across Node/Remotion/browser).
 const NBSP = " ";
+const SRC = { name: "INSEE", url: "https://insee.fr" };
 
 describe("locale — language detection", () => {
   it("treats fr / fr-FR / FR as French, everything else as not", () => {
@@ -133,5 +148,281 @@ describe("locale — unknown language falls back to English", () => {
     expect(groupSep("pt")).toBe(",");
     expect(formatLocaleNumber(1900, "pt")).toBe("1,900");
     expect(sourceLabel("pt")).toBe("Source:");
+  });
+});
+
+describe("localizeValueLabel — the shared chart-native value-label helper", () => {
+  it("an integer stays bare, a decimal keeps one place, both take the locale", () => {
+    expect(localizeValueLabel(52, "fr")).toBe("52");
+    expect(localizeValueLabel(52.4, "fr")).toBe("52,4");
+    expect(localizeValueLabel(3200, "fr")).toBe(`3${NBSP}200`);
+    expect(localizeValueLabel(52, "en")).toBe("52");
+    expect(localizeValueLabel(52.4, "en")).toBe("52.4");
+    expect(localizeValueLabel(3200)).toBe("3,200"); // default = en
+  });
+});
+
+// Task 8: the eleven chart-native files that printed a value label without going
+// through the locale table (the measured defect — a French chart showed "52.0" and
+// "3200.0": a parasitic decimal on an integer AND an English decimal point). Each
+// case below renders the REAL component in French with one integer value and one
+// decimal value, and checks BOTH halves of the defect are gone. Ten route through
+// `localizeValueLabel` (a per-function `fmt`/`fmtVal` closure binding config.lang);
+// LorenzChart's Gini legend is a genuinely different shape (always 2 decimals, no
+// bare-integer branch) and calls `localizeNumberString` directly — see its own case.
+describe("chart-native value labels reach the locale table (task 8)", () => {
+  it("BoxplotChart: median/IQR labels, bare integer + one-decimal, fr separators", () => {
+    const config: BoxplotConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      valueLabel: "unit",
+      categories: [
+        { label: "Cadres", values: [3200, 3200, 3200, 3200] },
+        { label: "Ouvriers", values: [52.4, 52.4, 52.4, 52.4] },
+      ],
+    };
+    const svg = renderToStaticMarkup(
+      createElement(BoxplotChart, { config, interactive: true }),
+    );
+    expect(svg).toContain(`3${NBSP}200`);
+    expect(svg).toContain("52,4");
+    expect(svg).not.toContain("3200.0");
+    expect(svg).not.toContain("52.0");
+  });
+
+  it("BulletChart: measure value label, bare integer + one-decimal, fr separators", () => {
+    const config: BulletConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      unit: "pts",
+      rows: [
+        {
+          label: "A",
+          unit: "pts",
+          value: 3200,
+          target: 3000,
+          max: 5000,
+          bands: [1000, 3000, 5000],
+        },
+        {
+          label: "B",
+          unit: "pts",
+          value: 52.4,
+          target: 50,
+          max: 100,
+          bands: [30, 70, 100],
+        },
+      ],
+    };
+    const svg = renderToStaticMarkup(createElement(BulletChart, { config }));
+    expect(svg).toContain(`3${NBSP}200`);
+    expect(svg).toContain("52,4");
+    expect(svg).not.toContain("3200.0");
+    expect(svg).not.toContain("52.0");
+  });
+
+  it("ComboChart: line-series aria-label value, bare integer + one-decimal, fr separators", () => {
+    const config: ComboConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      unit: "u",
+      categoryField: "cat",
+      columnField: "col",
+      lineField: "line",
+      leftAxisLabel: "L",
+      rightAxisLabel: "R",
+      columnSeriesLabel: "Columns",
+      lineSeriesLabel: "Line",
+      rows: [
+        { cat: "A", col: 10, line: 3200 },
+        { cat: "B", col: 20, line: 52.4 },
+      ],
+    };
+    const svg = renderToStaticMarkup(
+      createElement(ComboChart, { config, interactive: true }),
+    );
+    expect(svg).toContain(`3${NBSP}200`);
+    expect(svg).toContain("52,4");
+    expect(svg).not.toContain("3200.0");
+    expect(svg).not.toContain("52.0");
+  });
+
+  it("DotStripChart: min/max/mean aria-label, bare integer + one-decimal, fr separators", () => {
+    const config: DotStripConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      unit: "pts",
+      categoryField: "cat",
+      valueField: "val",
+      rows: [
+        { cat: "A", val: 3200 },
+        { cat: "B", val: 52.4 },
+      ],
+    };
+    const svg = renderToStaticMarkup(
+      createElement(DotStripChart, { config, interactive: true }),
+    );
+    expect(svg).toContain(`3${NBSP}200`);
+    expect(svg).toContain("52,4");
+    expect(svg).not.toContain("3200.0");
+    expect(svg).not.toContain("52.0");
+  });
+
+  it("LollipopChart: dot value label, bare integer + one-decimal, fr separators", () => {
+    const config: LollipopConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      unit: "pts",
+      catField: "cat",
+      valField: "val",
+      rows: [
+        { cat: "A", val: 3200 },
+        { cat: "B", val: 52.4 },
+      ],
+    };
+    const svg = renderToStaticMarkup(createElement(LollipopChart, { config }));
+    expect(svg).toContain(`3${NBSP}200`);
+    expect(svg).toContain("52,4");
+    expect(svg).not.toContain("3200.0");
+    expect(svg).not.toContain("52.0");
+  });
+
+  it("LorenzChart: Gini legend, English decimal point becomes a comma (fr) — different shape (2dp, no bare-integer)", () => {
+    const config: LorenzConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      unit: "u",
+      xLabel: "Population",
+      yLabel: "Income",
+      series: [
+        {
+          label: "Country",
+          points: [
+            { x: 0, y: 0 },
+            { x: 0.5, y: 0 },
+            { x: 1, y: 1 },
+          ], // trapezoid rule → gini = 0.50 exactly
+        },
+      ],
+    };
+    const svg = renderToStaticMarkup(createElement(LorenzChart, { config }));
+    expect(svg).toContain("0,50");
+    expect(svg).not.toContain("0.50");
+  });
+
+  it("ParallelChart: axis min/max labels, bare integer + one-decimal, fr separators", () => {
+    const config: ParallelConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      unit: "u",
+      dimensions: [
+        { key: "d1", label: "D1" },
+        { key: "d2", label: "D2" },
+      ],
+      items: [
+        { label: "Item A", d1: 3200, d2: 100 },
+        { label: "Item B", d1: 52.4, d2: 200 },
+      ],
+    };
+    const svg = renderToStaticMarkup(createElement(ParallelChart, { config }));
+    expect(svg).toContain(`3${NBSP}200`);
+    expect(svg).toContain("52,4");
+    expect(svg).not.toContain("3200.0");
+    expect(svg).not.toContain("52.0");
+  });
+
+  it("SankeyChart: link aria-label value, bare integer + one-decimal, fr separators", () => {
+    // Node labels truncate to fit their gutter at this default width (unrelated to
+    // locale), so this reads the link aria-label instead — same `fmt`, untruncated.
+    const config: SankeyConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      unit: "u",
+      nodes: [
+        { id: "a", label: "A", column: 0 },
+        { id: "b", label: "B", column: 1 },
+        { id: "c", label: "C", column: 0 },
+        { id: "d", label: "D", column: 1 },
+      ],
+      links: [
+        { source: "a", target: "b", value: 3200 },
+        { source: "c", target: "d", value: 52.4 },
+      ],
+    };
+    const svg = renderToStaticMarkup(
+      createElement(SankeyChart, { config, interactive: true }),
+    );
+    expect(svg).toContain(`3${NBSP}200`);
+    expect(svg).toContain("52,4");
+    expect(svg).not.toContain("3200.0");
+    expect(svg).not.toContain("52.0");
+  });
+
+  it("SlopeChart: left/right value labels, bare integer + one-decimal, fr separators", () => {
+    // The measured defect: a French chart showed "52.0" and "3200.0" — a parasitic
+    // decimal on an integer AND an English decimal point. Both halves, one expression.
+    const config: SlopeConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      unit: "u",
+      labelField: "label",
+      leftField: "left",
+      rightField: "right",
+      leftPeriod: "2015",
+      rightPeriod: "2024",
+      rows: [{ label: "Cadres", left: 3200, right: 52.4 }],
+    };
+    const svg = renderToStaticMarkup(createElement(SlopeChart, { config }));
+    expect(svg).toContain(`3${NBSP}200`);
+    expect(svg).toContain("52,4");
+    expect(svg).not.toContain("3200.0");
+    expect(svg).not.toContain("52.0");
+  });
+
+  it("ViolinChart: median/quartile aria-label, bare integer + one-decimal, fr separators", () => {
+    const config: ViolinConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      unit: "pts",
+      categories: [
+        { label: "Cadres", values: [3200, 3200, 3200, 3200, 3200] },
+        { label: "Ouvriers", values: [52.4, 52.4, 52.4, 52.4, 52.4] },
+      ],
+    };
+    const svg = renderToStaticMarkup(
+      createElement(ViolinChart, { config, interactive: true }),
+    );
+    expect(svg).toContain(`3${NBSP}200`);
+    expect(svg).toContain("52,4");
+    expect(svg).not.toContain("3200.0");
+    expect(svg).not.toContain("52.0");
+  });
+
+  it("WaffleChart: legend value label, bare integer + one-decimal, fr separators", () => {
+    const config: WaffleConfig = {
+      title: "T",
+      source: SRC,
+      lang: "fr",
+      unit: "%",
+      items: [
+        { label: "A", value: 32 },
+        { label: "B", value: 52.4 },
+      ],
+    };
+    const svg = renderToStaticMarkup(createElement(WaffleChart, { config }));
+    expect(svg).toContain("32");
+    expect(svg).toContain("52,4");
+    expect(svg).not.toContain("32.0");
+    expect(svg).not.toContain("52.0");
   });
 });

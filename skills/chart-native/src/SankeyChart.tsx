@@ -27,7 +27,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate, textWidth } from "./core/text";
 
@@ -70,8 +70,6 @@ const RAMP = [
 ];
 const NEUTRAL_NODE = "#8A8A8A";
 const NEUTRAL_LINK = "#C2C2C2";
-
-const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
 export function SankeyChart({
   config,
@@ -243,6 +241,9 @@ function SankeySvg({
   ts: { title: number; axis: number; label: number; source: number };
   sc: number;
 }) {
+  // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
+  // take config.lang's separators — the ONE expression lives in core/locale.
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const { nodes, links } = layout;
   const C = themeColors(config.themeBg, config.baseColor);
   const nCol = columns.length;
@@ -383,6 +384,7 @@ function Tooltip({
   catById: Map<string, string | undefined>;
   linkColor: (cat?: string) => string;
 }) {
+  const fmt = (v: number) => localizeValueLabel(v, config.lang);
   const lk = layout.links[hover];
   if (!lk) return null;
   const nodeById = new Map(layout.nodes.map((n) => [n.id, n]));

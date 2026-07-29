@@ -140,6 +140,25 @@ export function sourceLabel(lang?: Lang): string {
   return localeFor(lang).source;
 }
 
+/**
+ * A direct chart-mark value label: an integer prints bare — "52", never a
+ * parasitic "52.0" — a fractional value keeps ONE decimal place, and both then
+ * take the language's separators ("3 200" fr / "3.200" de / "3,200" en... the
+ * grouping half; "52,4" fr / "52.4" en for the decimal half). This is the ONE
+ * expression behind chart-native's ten locally-bound `fmt`/`fmtVal` closures
+ * (Boxplot, Bullet, Combo, DotStrip, Lollipop, Parallel, Sankey, Slope, Violin,
+ * Waffle each write `(v) => localizeValueLabel(v, config.lang)` once, binding
+ * their own config's `lang` — not re-implementing the bare-integer/one-decimal
+ * rule) instead of repeating this body across eleven files, which is exactly
+ * the duplication a French chart's "52.0" bug and this function close.
+ */
+export function localizeValueLabel(v: number, lang?: Lang): string {
+  return localizeNumberString(
+    Number.isInteger(v) ? String(v) : v.toFixed(1),
+    lang,
+  );
+}
+
 // A direct value label only carries its unit when the unit is SHORT ("%", "€",
 // "km") — a walked/highlighted value must read complete on its own ("34,2 %",
 // the rule map-native's conformance already enforces for symbol labels). A LONG
