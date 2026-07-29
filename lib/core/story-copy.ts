@@ -57,6 +57,12 @@ export type StoryCopy = {
   /** An interior temporal step, WITH the known gap to the previous step ("the second, 12 years
    *  later"). Takes the already-computed ordinal (`ordinalWord`) and `years` strings. */
   laterBy: (ord: string, yearsStr: string) => string;
+  /** "12 avg" — a mean-aggregated hex/cartogram cell's callout. Takes the ALREADY-localized
+   *  value string (number + unit), same convention as `lowestRow`/`leads`. */
+  meanOf: (value: string) => string;
+  /** "1 200 points" — a count-aggregated hex cell's callout. Takes the already-localized
+   *  value string. */
+  pointCount: (value: string) => string;
 };
 
 function enOrdinal(n: number): string {
@@ -169,6 +175,8 @@ const EN: StoryCopy = {
   mostRecent: "the most recent",
   mostRecentSince: (yearsStr) => `the most recent, ${yearsStr} after the first`,
   laterBy: (ord, yearsStr) => `${ord}, ${yearsStr} later`,
+  meanOf: (value) => `${value} avg`,
+  pointCount: (value) => `${value} points`,
 };
 
 const FR: StoryCopy = {
@@ -201,6 +209,8 @@ const FR: StoryCopy = {
   mostRecent: "le plus récent",
   mostRecentSince: (yearsStr) => `le plus récent, ${yearsStr} après le premier`,
   laterBy: (ord, yearsStr) => `${ord}, ${yearsStr} plus tard`,
+  meanOf: (value) => `${value} en moyenne`,
+  pointCount: (value) => `${value} points`,
 };
 
 const DE: StoryCopy = {
@@ -230,6 +240,8 @@ const DE: StoryCopy = {
   mostRecent: "der neueste",
   mostRecentSince: (yearsStr) => `der neueste, ${yearsStr} nach dem ersten`,
   laterBy: (ord, yearsStr) => `${ord}, ${yearsStr} später`,
+  meanOf: (value) => `${value} im Mittel`,
+  pointCount: (value) => `${value} Punkte`,
 };
 
 const IT: StoryCopy = {
@@ -255,6 +267,8 @@ const IT: StoryCopy = {
   mostRecent: "il più recente",
   mostRecentSince: (yearsStr) => `il più recente, ${yearsStr} dopo il primo`,
   laterBy: (ord, yearsStr) => `${ord}, ${yearsStr} dopo`,
+  meanOf: (value) => `${value} in media`,
+  pointCount: (value) => `${value} punti`,
 };
 
 export const STORY_COPY: Record<"en" | "fr" | "de" | "it", StoryCopy> = {

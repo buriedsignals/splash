@@ -80,4 +80,31 @@ describe("the auto-generated story copy is quaternary, not binary", () => {
       expect(c.longTail("X", "1")).not.toBe(STORY_COPY.en.longTail("X", "1"));
     }
   });
+
+  it("never leaks English 'avg'/'points' into a German or Italian hex-grid callout", () => {
+    // hex-grid-story.ts's aggregate wording ("12 avg", "1,200 points") was English-only for
+    // every language — no lang parameter reached it at all.
+    for (const lang of ["fr", "de", "it"] as const) {
+      const c = storyCopy(lang);
+      expect(c.meanOf("12")).not.toBe(STORY_COPY.en.meanOf("12"));
+    }
+    // "points" is the correct FRENCH word too (not a false-cognate leak) — only German/Italian
+    // diverge from the English wording.
+    for (const lang of ["de", "it"] as const) {
+      const c = storyCopy(lang);
+      expect(c.pointCount("1200")).not.toBe(STORY_COPY.en.pointCount("1200"));
+    }
+    expect(storyCopy("fr").pointCount("1200")).toBe("1200 points");
+  });
+
+  it("meanOf/pointCount wrap the already-localized value string unchanged", () => {
+    expect(STORY_COPY.en.meanOf("12,4")).toBe("12,4 avg");
+    expect(STORY_COPY.fr.meanOf("12,4")).toBe("12,4 en moyenne");
+    expect(STORY_COPY.de.meanOf("12,4")).toBe("12,4 im Mittel");
+    expect(STORY_COPY.it.meanOf("12,4")).toBe("12,4 in media");
+    expect(STORY_COPY.en.pointCount("1 200")).toBe("1 200 points");
+    expect(STORY_COPY.fr.pointCount("1 200")).toBe("1 200 points");
+    expect(STORY_COPY.de.pointCount("1 200")).toBe("1 200 Punkte");
+    expect(STORY_COPY.it.pointCount("1 200")).toBe("1 200 punti");
+  });
 });

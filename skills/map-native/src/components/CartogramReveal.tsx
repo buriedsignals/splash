@@ -29,6 +29,7 @@ import { applyCartogramBasemap } from "../theme/cartogram-basemap";
 import { resolveMapStyle } from "../route-geo";
 import type { CartogramConfigShape } from "../validate-config";
 import { resolveMapFrame } from "../core/map-format";
+import { fmtBin } from "../core/legend-format";
 import { MapFrame } from "../core/MapFrame";
 import { easedRevealProgress, revealCameraPlan } from "../reveal";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
@@ -204,7 +205,6 @@ export const CartogramReveal: React.FC<{ config: CartogramConfigShape }> = ({
     if (!el || !legendState) return;
     const ink = dark ? "#f4f4f5" : "#444";
     const sub = dark ? "#c8c8cf" : "#555";
-    const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
     const header = `
       <div style="font:600 11px/1.2 sans-serif;color:${ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
         ${legendState.valueLabel}
@@ -214,7 +214,7 @@ export const CartogramReveal: React.FC<{ config: CartogramConfigShape }> = ({
         (b) => `
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
           <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);flex-shrink:0"></span>
-          <span style="font:11px/1.2 sans-serif;color:${sub}">${fmt(b.min)}–${fmt(b.max)}</span>
+          <span style="font:11px/1.2 sans-serif;color:${sub}">${fmtBin(b.min, { lang: config.lang })}–${fmtBin(b.max, { lang: config.lang })}</span>
         </div>`,
       )
       .join("");

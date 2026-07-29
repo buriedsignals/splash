@@ -100,7 +100,12 @@ describe("deriveHexGridStory — valueUnit", () => {
     const meanReveals = deriveHexGridStory(meanLayout, {
       title: "Where consumption is highest",
     }).filter((b) => b.kind === "reveal");
-    expect(meanReveals[0].callout?.value).toBe("18.0kWh avg");
+    // Was "18.0kWh avg" — the parasitic ".0" on a whole-number mean. Routing through
+    // localizeValueLabel (task 9) applies its bare-integer rule here too ("an integer
+    // prints bare, never a parasitic 52.0" — lib/core/locale.ts), the same convention
+    // chart-native's ten value-label call sites already follow. Deliberate byte change,
+    // not a drift: matches the brief's own reference implementation exactly.
+    expect(meanReveals[0].callout?.value).toBe("18kWh avg");
   });
   it("never applies valueUnit to a count aggregate (count is of points, not the value)", () => {
     const countLayout: HexGridLayout = { ...layout, valueUnit: "kWh" };

@@ -10,6 +10,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { flyToBeat } from "./scrolly-camera";
+import { fmtBin } from "../../map-native/src/core/legend-format";
 import { computeCartogram } from "../../map-native/src/cartogram-geo";
 import { deriveCartogramStory } from "../../map-native/src/cartogram-story";
 import { applyCartogramBasemap } from "../../map-native/src/theme/cartogram-basemap";
@@ -99,8 +100,9 @@ export const ScrollyCartogramMap: React.FC<{
       deriveCartogramStory(layout, {
         title: config.title ?? "",
         insight: config.insight ?? config.title ?? "",
+        lang: config.lang,
       }),
-    [layout],
+    [layout, config.lang],
   );
 
   // ---------------------------------------------------------------------------
@@ -270,7 +272,6 @@ export const ScrollyCartogramMap: React.FC<{
     if (!el || !legendBins) return;
     const ink = dark ? "#f4f4f5" : "#444";
     const sub = dark ? "#c8c8cf" : "#555";
-    const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
     const header = `
       <div style="font:600 11px/1.2 sans-serif;color:${ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
         ${valueLabel}
@@ -280,7 +281,7 @@ export const ScrollyCartogramMap: React.FC<{
         (b) => `
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
           <span style="display:inline-block;width:14px;height:14px;background:${b.color};border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15);flex-shrink:0"></span>
-          <span style="font:11px/1.2 sans-serif;color:${sub}">${fmt(b.min)}–${fmt(b.max)}</span>
+          <span style="font:11px/1.2 sans-serif;color:${sub}">${fmtBin(b.min, { lang: config.lang })}–${fmtBin(b.max, { lang: config.lang })}</span>
         </div>`,
       )
       .join("");

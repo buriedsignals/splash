@@ -17,7 +17,7 @@ const DIAGNOSTIC_ONLY: string[] = [];
  *  default happens to be. It must shrink to [] — task 8 of
  *  docs/superpowers/plans/2026-07-29-family-b-what-reaches-the-reader.md empties it. An entry
  *  that no longer applies fails `staleExemptions`, so the list cannot rot either. */
-const KNOWN_BLIND: string[] = ["ScrollyCartogramMap.tsx", "ScrollyHexMap.tsx"];
+const KNOWN_BLIND: string[] = [];
 
 function walk(dir: string, prefix = ""): SourceFile[] {
   const out: SourceFile[] = [];

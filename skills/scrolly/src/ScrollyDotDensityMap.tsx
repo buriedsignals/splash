@@ -104,6 +104,7 @@ export const ScrollyDotDensityMap: React.FC<{
     unit:
       ((config as unknown as Record<string, unknown>).valueUnit as string) ??
       "",
+    lang: config.lang,
   };
   const beats = deriveDotDensityStory(layout, meta);
 

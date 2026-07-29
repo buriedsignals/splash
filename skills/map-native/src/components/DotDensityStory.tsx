@@ -274,6 +274,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
               "",
             unit:
               ((config as Record<string, unknown>).valueUnit as string) ?? "",
+            lang: config.lang,
           };
           const beats = beatsForMode(deriveDotDensityStory(layout, meta), mode);
 

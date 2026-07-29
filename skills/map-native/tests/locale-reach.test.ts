@@ -18,17 +18,7 @@ const DIAGNOSTIC_ONLY = ["conformance.ts"];
  *  default happens to be. It must shrink to [] — task 8 of
  *  docs/superpowers/plans/2026-07-29-family-b-what-reaches-the-reader.md empties it. An entry
  *  that no longer applies fails `staleExemptions`, so the list cannot rot either. */
-const KNOWN_BLIND: string[] = [
-  "cartogram-story.ts",
-  "hex-grid-story.ts",
-  "dot-density-story.ts",
-  "components/CartogramStory.tsx",
-  "components/CartogramScrolly.tsx",
-  "components/CartogramReveal.tsx",
-  "components/HexGridStory.tsx",
-  "components/HexGridScrolly.tsx",
-  "components/HexGridReveal.tsx",
-];
+const KNOWN_BLIND: string[] = [];
 
 function walk(dir: string, prefix = ""): SourceFile[] {
   const out: SourceFile[] = [];

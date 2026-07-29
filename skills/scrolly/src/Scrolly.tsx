@@ -208,6 +208,7 @@ export const Scrolly: React.FC<{
       const beats = deriveHexGridStory(layout, {
         title: config.title ?? "",
         insight: config.insight ?? config.title ?? "",
+        lang: config.lang,
       });
       return mapStoryToChapters(beats, {
         title: config.title ?? "",
@@ -231,6 +232,7 @@ export const Scrolly: React.FC<{
         unit:
           ((config as unknown as Record<string, unknown>).valueUnit as
             string | undefined) ?? "",
+        lang: config.lang,
       });
       return mapStoryToChapters(beats, {
         title: config.title ?? "",
@@ -269,6 +271,7 @@ export const Scrolly: React.FC<{
       const beats = deriveCartogramStory(layout, {
         title: config.title ?? "",
         insight: config.insight ?? config.title ?? "",
+        lang: config.lang,
       });
       return mapStoryToChapters(beats, {
         title: config.title ?? "",
