@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { writeFileSync } from "node:fs";
 import { scrollySourceManifest } from "../src/source-manifest.ts";
+import { scrollySpecErrors } from "../src/manifest.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -44,6 +45,19 @@ mkdirSync(outDir, { recursive: true });
 // Vite single-file build bakes. Chart/map configs pass through untouched.
 let buildConfigPath = configPath;
 const rawConfig = JSON.parse(readFS(configPath, "utf8"));
+
+// VALIDATE FIRST — this CLI is a journalist-reachable entry point, and it used to be the only
+// one that reached the renderer without asking the validator. An `arcBeats` plan pushed through
+// here was accepted and then silently dropped (measured: none of the three authored sentences
+// reached the page). No new rule: scrollySpecErrors is the SAME function the producer manifest
+// registers, so the CLI and the spine refuse identically.
+const specErrors = scrollySpecErrors(rawConfig);
+if (specErrors.length > 0) {
+  console.error("[produce scrolly] INVALID CONFIG — refusing to build:");
+  for (const e of specErrors) console.error(`  ✗ ${e}`);
+  process.exit(1);
+}
+
 if (rawConfig.visual === "image" && rawConfig.framesDir && !rawConfig.frameSrcs) {
   const { readFileSync: readBin, mkdtempSync } = await import("node:fs");
   const { tmpdir } = await import("node:os");

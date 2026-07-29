@@ -22,7 +22,7 @@ import { MAP_TRACK_BEATS_REFUSAL } from "./scrolly-types";
 
 const skillDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-function scrollySpecErrors(spec: unknown): string[] {
+export function scrollySpecErrors(spec: unknown): string[] {
   const hasNativeType =
     typeof (spec as { nativeType?: unknown } | null)?.nativeType === "string";
   if (hasNativeType) {
