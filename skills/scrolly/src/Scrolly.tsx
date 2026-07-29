@@ -43,7 +43,8 @@ import {
 } from "./ScrollyCartogramMap";
 
 import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
-import { sourceLabel, isFrench } from "../../../lib/core/locale";
+import { sourceLabel } from "../../../lib/core/locale";
+import { storyCopy } from "../../../lib/core/story-copy";
 const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
 // The types each track actually hosts, defined in a leaf module (imports nothing) so they can be
@@ -325,7 +326,7 @@ export const Scrolly: React.FC<{
   // prose; the per-frame photo CREDIT — a different axis from the module source — is
   // rendered under it, spec §10). null on the chart/map tracks.
   const imageFrames = "visual" in config ? config.story.frames : null;
-  const photoLabel = isFrench(config.lang) ? "Photo :" : "Photo:";
+  const photoLabel = storyCopy(config.lang).photoLabel;
 
   // Graceful degradation flag (pure, not a hook) — set when a chart config carries an
   // unsupported nativeType. The render shows a clear message instead of an empty scaffold.

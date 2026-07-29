@@ -201,7 +201,13 @@ export function labelWithUnit(
   const u = unit?.trim();
   if (!u) return valueText;
   const short = u.length <= SHORT_UNIT_MAX_CHARS;
-  if (short && isFrench(lang)) return `${valueText}${FR_GROUP}${u}`;
+  // The SAME base-language test `unitSuffix` uses (:171-173). These two were the only two
+  // helpers of this file that disagreed about German: unitSuffix spaced "70 %" and
+  // labelWithUnit printed "70%", on the same deliverable.
+  const base =
+    typeof lang === "string" ? lang.toLowerCase().split("-")[0] : "en";
+  if (short && (base === "fr" || base === "de"))
+    return `${valueText}${FR_GROUP}${u}`;
   if (short && SYMBOL_UNIT_WITH_CURRENCY.test(u)) return `${valueText}${u}`;
   return `${valueText} ${u}`;
 }

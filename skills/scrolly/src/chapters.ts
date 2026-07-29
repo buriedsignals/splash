@@ -1,5 +1,6 @@
 import type { Beat } from "../../map-native/src/map-story";
 import { isFrench } from "../../../lib/core/locale";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 export type VisualKind = "map" | "chart" | "image";
 export type StepAction = "flyTo" | "drawTo" | "crossfade";
@@ -115,12 +116,10 @@ export function mapStoryToChapters(
         // the distribution instead of jumping max→min. Falls back to the old max/min
         // labelling if a beat lacks rank tags (older stories). Localized per meta.lang —
         // the auto-generated words must never leak English into a French deliverable.
-        if (b.rankRole === "tail" || i === minBeat)
-          descriptor = fr ? "le plus bas" : "the lowest";
+        const copy = storyCopy(meta.lang);
+        if (b.rankRole === "tail" || i === minBeat) descriptor = copy.lowest;
         else if (b.rank === 1 || i === maxBeat)
-          descriptor = fr
-            ? `le plus élevé des ${meta.regionsWithData}`
-            : `the highest of the ${meta.regionsWithData} shown`;
+          descriptor = copy.highestOf(meta.regionsWithData);
         else if (b.rank !== undefined)
           descriptor = fr
             ? `le ${ordinal(b.rank, meta.lang)}`

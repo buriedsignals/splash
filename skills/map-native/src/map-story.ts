@@ -1,6 +1,7 @@
 import type { ChoroplethLayout } from "./choropleth-geo";
 import { regionBounds } from "./choropleth-geo";
-import { formatLocaleNumber, isFrench } from "./core/locale";
+import { formatLocaleNumber } from "./core/locale";
+import { storyCopy } from "../../../lib/core/story-copy";
 import {
   classifyNarrativePattern,
   type NarrativePattern,
@@ -379,18 +380,13 @@ export function deriveTakeawayCopy(input: {
   const { maxName, maxLabel, minName, minLabel } = input;
   // Single-region (or all-equal) story — nothing to contrast; no distinct takeaway.
   if (maxName === minName && maxLabel === minLabel) return "";
-  const fr = isFrench(input.lang);
-  const sep = fr ? " : " : ": ";
+  const copy = storyCopy(input.lang);
+  const sep = copy.captionSep;
 
   if (input.pattern === "temporal") {
     // Temporal: value = a year; min = earliest, max = latest. Close on the span.
     const span = Math.abs(Math.round(input.maxValue - input.minValue));
-    const spanClause =
-      span > 0
-        ? fr
-          ? ` — ${span} an${span === 1 ? "" : "s"} d'écart`
-          : ` — a ${span}-year span`
-        : "";
+    const spanClause = span > 0 ? copy.yearSpan(span) : "";
     // minLabel is the earliest year, maxLabel the most recent.
     return `${minName}${sep}${minLabel}, ${maxName}${sep}${maxLabel}${spanClause}`;
   }
@@ -398,12 +394,7 @@ export function deriveTakeawayCopy(input: {
   // Magnitude: leader vs tail. Add a "1 to N" ratio when it is meaningful.
   const ratio =
     input.minValue > 0 ? Math.round(input.maxValue / input.minValue) : 0;
-  const gapClause =
-    ratio >= 2
-      ? fr
-        ? ` — un écart de 1 à ${ratio}`
-        : ` — a ${ratio}-fold gap`
-      : "";
+  const gapClause = ratio >= 2 ? copy.foldGap(ratio) : "";
   return `${maxName}${sep}${maxLabel}, ${minName}${sep}${minLabel}${gapClause}`;
 }
 
