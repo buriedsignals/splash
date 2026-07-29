@@ -91,3 +91,27 @@ test("an element with a narrative plan carries its beats, anchor kind preserved"
     { category: "Basel", role: "turn", text: "Then Basel broke away." },
   ]);
 });
+
+test("takes the language off the manifest, never off ambient state", () => {
+  const b = briefFor(
+    { ...RUN, lang: "it" },
+    RUN.elements[0]!,
+    "year,extent\n1979,7",
+    "NSIDC",
+    undefined,
+    "static",
+  );
+  expect(b.lang).toBe("it");
+});
+
+test("omits lang entirely when the run has none — byte-identical to before", () => {
+  const b = briefFor(
+    RUN,
+    RUN.elements[0]!,
+    "year,extent\n1979,7",
+    "NSIDC",
+    undefined,
+    "static",
+  );
+  expect("lang" in b).toBe(false);
+});

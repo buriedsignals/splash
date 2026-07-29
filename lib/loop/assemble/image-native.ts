@@ -65,6 +65,7 @@ export function assembleImageNative(
       name: brief.attribution,
       ...(brief.sourceUrl ? { url: brief.sourceUrl } : {}),
     },
+    ...(brief.lang ? { lang: brief.lang } : {}),
     // Absolute — the spine writes specs to a tmp config, so a relative imageDir would resolve
     // against that tmp directory instead of where the photographs actually live.
     imageDir: brief.images.dir,

@@ -208,9 +208,8 @@ export async function produce(
   // `carriesFactualData: true` unconditionally — a data visual built by this loop asserts facts,
   // so `none` is refused here, which is the abuse that row is written for.
   //
-  // No `lang`: the loop carries no language axis yet (the manifest has no locale, and produce
-  // sets no `NativeSpec.lang` either, so the engine already renders English furniture).
-  // Inventing one here would put a French qualifier under an English "Source:".
+  // The language is on the MANIFEST (run.lang, resolved once at init) and reaches the engines
+  // through briefFor. It is not resolved here: produce() gets a manifest, never ambient state.
   const declared = run.sources?.data;
   const verdict = validateSourcePolicy(declared, {
     mode: run.sources?.mode,

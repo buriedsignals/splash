@@ -61,6 +61,20 @@ test("captions are the authored beats, alt and credit are the journalist's, verb
   expect(story.frames[0]!.credit.name).toBe("M. Rossi");
 });
 
+test("carries the run's language onto the engine spec", () => {
+  const r = assembleImageNative({ ...IMAGE_BRIEF, lang: "de" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect((r.value as ImageStory).lang).toBe("de");
+});
+
+test("omits lang entirely when the run has none — byte-identical to before", () => {
+  const r = assembleImageNative(IMAGE_BRIEF);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect("lang" in (r.value as object)).toBe(false);
+});
+
 test("more photographs than authored beats — refused, naming the count on each side", () => {
   const r = assembleImageNative({
     ...IMAGE_BRIEF,

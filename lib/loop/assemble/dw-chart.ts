@@ -46,13 +46,11 @@ export function assembleDwChart(brief: ProductionBrief): VerbResult<unknown> {
     ...(brief.angle.emphasis && takesHighlight(brief.nativeType)
       ? { highlight: brief.angle.emphasis }
       : {}),
+    ...(brief.lang ? { lang: brief.lang } : {}),
     // DELIBERATELY ABSENT, each one a fact with an owner elsewhere:
     //   channel — the spine injects the canonical one before dispatch (withProposalChannel,
     //     skills/splash/src/adapters.ts). A second writer here is the defect this tranche is
     //     removing.
-    //   lang — the loop carries no language axis (produce.ts says so where it declines to invent
-    //     one for the native engines); a guessed `lang` localizes Datawrapper's number and date
-    //     furniture into a language nobody chose.
     //   baseColor / subject — a subject-fit hue is the suggester's judgment, and chart-spec.ts's
     //     guardrail is written to fire when a DECLARED subject sits on the default blue. Naming a
     //     subject here without a colour to go with it would refuse every chart.

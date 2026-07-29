@@ -165,6 +165,7 @@ export function assembleMapDw(brief: ProductionBrief): VerbResult<unknown> {
       name: brief.attribution,
       ...(brief.sourceUrl ? { url: brief.sourceUrl } : {}),
     },
+    ...(brief.lang ? { lang: brief.lang } : {}),
     // THE UNIT IS APPENDED, NEVER MULTIPLIED (map-spec.ts's own `unit` doc, probed live
     // 2026-07-12). Datawrapper suffixes this string to the legend value as-is, so a "%" unit
     // AND a "%" numberFormat token both render a percent sign and the legend reads "10% %".

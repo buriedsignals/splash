@@ -62,6 +62,11 @@ export type ProductionBrief = {
   attribution: string;
   sourceUrl?: string;
   sourceKind?: SourceKind;
+  /** The language this deliverable is made in — resolved ONCE at init (lib/loop/init.ts) and
+   *  carried here. produce() used to decline to set it, with a comment saying the loop had no
+   *  language axis; the axis is the manifest's `lang` field and this is where it lands.
+   *  Absent means English furniture, which is what the engines rendered before. */
+  lang?: string;
   beats?: BriefBeat[];
   geo?: GeoMatch;
   images?: ImageInput;

@@ -41,6 +41,20 @@ test("a choropleth config clears the engine's own validator", () => {
   });
 });
 
+test("carries the run's language onto the engine spec (region family)", () => {
+  const r = assembleMapNative({ ...REGION_BRIEF, lang: "de" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect((r.value as { lang?: string }).lang).toBe("de");
+});
+
+test("omits lang entirely when the run has none — byte-identical to before (region family)", () => {
+  const r = assembleMapNative(REGION_BRIEF);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect("lang" in (r.value as object)).toBe(false);
+});
+
 test("no geography measured — the refusal names the shipped basemaps, so the fix is knowable", () => {
   const r = assembleMapNative({ ...REGION_BRIEF, geo: undefined });
   expect(r.ok).toBe(false);
@@ -268,6 +282,30 @@ test("the widened guard accepts the point family alongside the region family, an
   if (r.ok) return;
   expect(r.code).toBe("invalid-request");
   expect(r.message).toContain("pie");
+});
+
+// map-native has no single ok() return — seven, one per type across the region and point
+// families (choropleth/cartogram/dot-density, symbol/hex-grid/locator/route). "all the ok
+// returns in the file" (the brief's own correction of its stale "four branches" anchor) means
+// every one of the seven, not the first the guard happens to reach.
+test("every one of the seven native types carries the run's language onto its own spec", () => {
+  for (const nativeType of [
+    "choropleth",
+    "cartogram",
+    "dot-density",
+    "symbol",
+    "hex-grid",
+    "locator",
+    "route",
+  ]) {
+    const base = ["symbol", "hex-grid", "locator", "route"].includes(nativeType)
+      ? POINT_BRIEF
+      : REGION_BRIEF;
+    const r = assembleMapNative({ ...base, nativeType, lang: "fr" });
+    expect(r.ok).toBe(true);
+    if (!r.ok) continue;
+    expect((r.value as { lang?: string }).lang).toBe("fr");
+  }
 });
 
 test("a dot-density config against the world basemap clears the engine's own validator", () => {

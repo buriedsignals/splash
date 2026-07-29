@@ -93,6 +93,29 @@ describe("core/i18n-furniture SOURCE_LABELS — single source (Tier 2)", () => {
   });
 });
 
+describe("core/i18n-furniture — starved vs fed (task 6: the carrier now reaches this gate)", () => {
+  it("is starved without a language and bites with one", () => {
+    const englishPatch = {
+      "source-name": "OFS",
+      "source-url": "https://x.ch/y",
+    };
+    // Starved: no lang → nothing to compare against, so nothing is ever reported.
+    expect(
+      core.localizedSourceViolations(
+        { metadata: { describe: englishPatch } },
+        {},
+      ),
+    ).toEqual([]);
+    // Fed: a French deliverable whose metadata still carries the English caption fields.
+    expect(
+      core.localizedSourceViolations(
+        { metadata: { describe: englishPatch } },
+        { lang: "fr", source: { name: "OFS" } },
+      ),
+    ).not.toEqual([]);
+  });
+});
+
 describe("core/i18n-furniture parity with dw-chart (canonical)", () => {
   it("localizedSourceViolations matches on a clean patch, every lang", () => {
     for (const lang of LANGS) {

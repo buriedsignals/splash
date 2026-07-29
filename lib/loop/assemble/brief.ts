@@ -51,5 +51,6 @@ export function briefFor(
     ...(el.narrative ? { beats: beatsFor(el) } : {}),
     ...(run.orient?.geo ? { geo: run.orient.geo } : {}),
     ...(run.input.images ? { images: run.input.images } : {}),
+    ...(run.lang ? { lang: run.lang } : {}),
   };
 }

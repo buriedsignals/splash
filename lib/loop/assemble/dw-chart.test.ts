@@ -37,6 +37,20 @@ test("a dw chart spec clears the engine's own validator", () => {
   expect(v.ok ? v.warnings : v.errors).toEqual([]);
 });
 
+test("carries the run's language onto the engine spec", () => {
+  const r = assembleDwChart({ ...CHART_BRIEF, lang: "de" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect((r.value as ChartSpec).lang).toBe("de");
+});
+
+test("omits lang entirely when the run has none — byte-identical to before", () => {
+  const r = assembleDwChart(CHART_BRIEF);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect("lang" in (r.value as object)).toBe(false);
+});
+
 test("a type Datawrapper does not build is refused, listing what it does", () => {
   const r = assembleDwChart({ ...CHART_BRIEF, nativeType: "beeswarm" });
   expect(r.ok).toBe(false);

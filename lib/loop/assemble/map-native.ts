@@ -185,6 +185,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
       title,
       description,
       source,
+      ...(brief.lang ? { lang: brief.lang } : {}),
       ...(unit ? { valueUnit: unit } : {}),
     });
   }
@@ -218,6 +219,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
       title,
       description,
       source,
+      ...(brief.lang ? { lang: brief.lang } : {}),
     });
   }
 
@@ -230,6 +232,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     title,
     description,
     source,
+    ...(brief.lang ? { lang: brief.lang } : {}),
     ...(unit ? { unit } : {}),
   });
 }
@@ -269,7 +272,15 @@ function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
       (row) =>
         [Number(row[coords.lon]), Number(row[coords.lat])] as [number, number],
     );
-    return ok({ type: "route", route, basemap, title, description, source });
+    return ok({
+      type: "route",
+      route,
+      basemap,
+      title,
+      description,
+      source,
+      ...(brief.lang ? { lang: brief.lang } : {}),
+    });
   }
 
   if (brief.nativeType === "locator") {
@@ -291,6 +302,7 @@ function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
       title,
       description,
       source,
+      ...(brief.lang ? { lang: brief.lang } : {}),
     });
   }
 
@@ -317,6 +329,7 @@ function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
       title,
       description,
       source,
+      ...(brief.lang ? { lang: brief.lang } : {}),
       ...(unit ? { valueUnit: unit } : {}),
     });
   }
@@ -351,6 +364,7 @@ function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
     title,
     description,
     source,
+    ...(brief.lang ? { lang: brief.lang } : {}),
     ...(unit ? { valueUnit: unit } : {}),
   });
 }
