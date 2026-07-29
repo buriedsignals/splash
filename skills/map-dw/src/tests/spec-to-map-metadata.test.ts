@@ -294,7 +294,9 @@ describe("specToMapMetadata — language & source furniture", () => {
     expect(d["source-name"]).toBe("");
     expect(d["source-url"]).toBe("");
     const a = p.metadata.annotate as Record<string, unknown>;
-    expect(a.notes).toBe("Source : Insee"); // narrow space before the colon (French typography)
+    // narrow space before the colon (French typography); the URL rides along in plain
+    // text after an em dash, since describe.source-url is blanked on this path.
+    expect(a.notes).toBe("Source : Insee — https://insee.fr");
   });
 
   it("keeps the native source-name/source-url (with its working hyperlink) for English/absent lang", () => {
@@ -331,6 +333,34 @@ describe("specToMapMetadata — language & source furniture", () => {
     const a = specToMapMetadata({ ...base, lang: "fr" }).metadata
       .annotate as Record<string, unknown>;
     expect(a.notes).toBe("");
+  });
+
+  it("keeps the source URL on a non-English chart instead of dropping it", () => {
+    // Deterministic loss, measured: for fr/de/it the native caption is blanked and the
+    // self-built annotate.notes line was composed NAME-ONLY, so the URL the journalist gave
+    // reached no reader at all.
+    const patch = specToMapMetadata({
+      ...base,
+      lang: "fr",
+      source: { name: "OFS", url: "https://www.bfs.admin.ch/x" },
+    });
+    const notes =
+      (patch.metadata as { annotate?: { notes?: string } }).annotate?.notes ??
+      "";
+    expect(notes).toContain("OFS");
+    expect(notes).toContain("https://www.bfs.admin.ch/x");
+  });
+
+  it("still says the name alone when there is no URL", () => {
+    const patch = specToMapMetadata({
+      ...base,
+      lang: "de",
+      source: { name: "Destatis" },
+    });
+    const notes =
+      (patch.metadata as { annotate?: { notes?: string } }).annotate?.notes ??
+      "";
+    expect(notes).toBe("Quelle: Destatis");
   });
 });
 

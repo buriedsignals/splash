@@ -467,7 +467,15 @@ function sourceNotes(spec: {
 }): string {
   if (usesNativeSourceCaption(spec.lang)) return "";
   if (!spec.source?.name) return "";
-  return `${sourceLabel(spec.lang)} ${spec.source.name}`;
+  const line = `${sourceLabel(spec.lang)} ${spec.source.name}`;
+  // The URL, in PLAIN TEXT after an em dash. On the English path Datawrapper's own
+  // `source-url` field carries it; on the localized path that field is blanked (else the
+  // footer prints BOTH captions), so without this the URL reaches no reader at all — a
+  // deterministic loss on every fr/de/it deliverable. Plain text rather than markdown: the
+  // notes band is not a link surface on every DW theme, and a dead `[]()` is worse than a
+  // readable address.
+  const url = spec.source.url?.trim();
+  return url ? `${line} — ${url}` : line;
 }
 
 // Map a deliverable language to the regional locale tag Datawrapper reads (verified

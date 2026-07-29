@@ -70,7 +70,9 @@ describe("specToMetadata — source i18n", () => {
     expect(d["source-name"]).toBe("");
     expect(d["source-url"]).toBe("");
     const a = p.metadata.annotate as Record<string, unknown>;
-    expect(a.notes).toBe("Source : ONS"); // narrow space before the colon (French typography)
+    // narrow space before the colon (French typography); the URL rides along in plain
+    // text after an em dash, since describe.source-url is blanked on this path.
+    expect(a.notes).toBe("Source : ONS — https://ons.gov.uk");
   });
 
   it("keeps the native source-name/source-url (with its working hyperlink) for English/absent lang", () => {
@@ -108,7 +110,7 @@ describe("specToMetadata — source i18n", () => {
     const p = specToMetadata({ ...spec, lang: "fr-CH" });
     expect(p.metadata.describe["source-name"]).toBe("");
     expect((p.metadata.annotate as Record<string, unknown>).notes).toBe(
-      "Source : ONS",
+      "Source : ONS — https://ons.gov.uk",
     );
   });
 
@@ -117,6 +119,40 @@ describe("specToMetadata — source i18n", () => {
     const p = specToMetadata({ ...noSource, lang: "fr" });
     expect((p.metadata.annotate as Record<string, unknown>).notes).toBe("");
     expect(p.metadata.describe["source-name"]).toBe("");
+  });
+
+  it("keeps the source URL on a non-English chart instead of dropping it", () => {
+    // Deterministic loss, measured: for fr/de/it the native caption is blanked and the
+    // self-built annotate.notes line was composed NAME-ONLY, so the URL the journalist gave
+    // reached no reader at all.
+    const patch = specToMetadata({
+      type: "d3-bars",
+      title: "T",
+      altInsight: "A",
+      lang: "fr",
+      data: "a,b\n1,2\n",
+      source: { name: "OFS", url: "https://www.bfs.admin.ch/x" },
+    } as never);
+    const notes =
+      (patch.metadata as { annotate?: { notes?: string } }).annotate?.notes ??
+      "";
+    expect(notes).toContain("OFS");
+    expect(notes).toContain("https://www.bfs.admin.ch/x");
+  });
+
+  it("still says the name alone when there is no URL", () => {
+    const patch = specToMetadata({
+      type: "d3-bars",
+      title: "T",
+      altInsight: "A",
+      lang: "de",
+      data: "a,b\n1,2\n",
+      source: { name: "Destatis" },
+    } as never);
+    const notes =
+      (patch.metadata as { annotate?: { notes?: string } }).annotate?.notes ??
+      "";
+    expect(notes).toBe("Quelle: Destatis");
   });
 });
 
