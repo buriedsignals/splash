@@ -5,6 +5,13 @@ import { existsSync, rmSync, readFileSync } from "node:fs";
 import { produceChart } from "../src/produce";
 import { deleteChart } from "../src/datawrapper";
 import type { ChartSpec } from "../src/chart-spec";
+// The LOOP's own assembler (lib/loop/assemble/dw-chart.ts), not a second copy of the
+// carrier — skills/ is allowed to import lib/ (never the reverse). This is what proves
+// the segment a live-API regression could otherwise silently break: brief.lang's OUTPUT
+// reaching THIS FILE's produceChart, not a hand-built ChartSpec that never went through
+// the loop's own translation.
+import { assembleDwChart } from "../../../lib/loop/assemble/dw-chart";
+import type { ProductionBrief } from "../../../lib/core/production-brief";
 
 const spec = JSON.parse(
   readFileSync(
@@ -18,6 +25,7 @@ let annId = "";
 let frId = "";
 let interactiveId = "";
 let barId = "";
+let carrierFrId = "";
 
 // Real Datawrapper API round-trips. Requires DATAWRAPPER_API_TOKEN; skipped without it
 // so a clean checkout / CI stays green (mirrors map-dw's live-test gating).
@@ -127,6 +135,57 @@ d("produceChart (real API)", () => {
     rmSync(out, { force: true });
   }, 60000);
 
+  // THE CARRIER, not a hand-built spec (task 6, family-b "what reaches the reader"): every
+  // test above this one constructs a ChartSpec directly, so none of them would notice a
+  // regression in the loop's OWN wiring — lib/loop/assemble/dw-chart.ts's
+  // `...(brief.lang ? { lang: brief.lang } : {})` line, the one place `ProductionBrief.lang`
+  // actually reaches a ChartSpec. This starts from a ProductionBrief (what produce() actually
+  // hands the assembler), runs it through assembleDwChart, and only THEN through the real
+  // produceChart — so a future edit that drops the assembler's lang line fails THIS test,
+  // not just a unit test against the assembler in isolation.
+  it("a French ProductionBrief's language survives assembleDwChart into a real published chart", async () => {
+    const brief: ProductionBrief = {
+      elementId: "e1",
+      nativeType: "column-chart",
+      format: "static",
+      angle: {
+        confirmedTakeaway: "Le chômage recule depuis 2021",
+        altInsight:
+          "Le taux de chômage est passé de 7,9 % en 2021 à 7,1 % en 2023",
+      },
+      dataCsv: "année,taux\n2021,7.9\n2022,7.3\n2023,7.1",
+      attribution: "Insee",
+      sourceUrl: "https://insee.fr",
+      lang: "fr",
+    };
+    const assembled = assembleDwChart(brief);
+    expect(assembled.ok).toBe(true);
+    if (!assembled.ok) return;
+    const carrierSpec = assembled.value as ChartSpec;
+    expect(carrierSpec.lang).toBe("fr");
+
+    const out = join(tmpdir(), "splash-carrier-fr.png");
+    const res = await produceChart(carrierSpec, out);
+    carrierFrId = res.chartId;
+    expect(existsSync(out)).toBe(true);
+    const r = await fetch(
+      `https://api.datawrapper.de/v3/charts/${carrierFrId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.DATAWRAPPER_API_TOKEN}`,
+        },
+      },
+    );
+    const chart = await r.json();
+    expect(chart.language).toBe("fr-FR");
+    expect(chart.metadata.annotate.notes).toBe(
+      "Source : Insee — https://insee.fr",
+    );
+    expect(chart.metadata.describe["source-name"]).toBe("");
+    expect(chart.metadata.describe["source-url"]).toBe("");
+    rmSync(out, { force: true });
+  }, 60000);
+
   // DIRECT VALUE LABELS ON BAR-FAMILY CHARTS (FT/data-to-viz best-practice #3, QA Wave
   // 13 gap). A ranked d3-bars must ship with the value printed ON/beside each bar, not
   // leave the reader estimating off the gridlines. The metadata lever is verified LIVE
@@ -212,4 +271,5 @@ afterAll(async () => {
   if (frId) await deleteChart(frId);
   if (interactiveId) await deleteChart(interactiveId);
   if (barId) await deleteChart(barId);
+  if (carrierFrId) await deleteChart(carrierFrId);
 }, 60000);
