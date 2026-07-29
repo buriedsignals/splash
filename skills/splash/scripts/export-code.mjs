@@ -472,7 +472,27 @@ function main() {
       fail(
         `${format} form=embed did not resolve a hosted https URL (got ${JSON.stringify(url)})`,
       );
-    writeFileSync(join(exportDir, "EMBED_URL.txt"), url + "\n");
+    // The embed is ALREADY LIVE at `url` by this point (either just deployed, or the hosted
+    // producer's pre-existing publicUrl) — mkdir + write are only local bookkeeping standing
+    // between "live" and "recorded as delivered". Every other delivery form mkdirs exportDir
+    // right before its write; mirror that here instead of inventing a different shape. But
+    // unlike a local media copy, losing THIS write does not just mean "no file" — it means a
+    // live, untracked public deployment nobody can find. True atomicity across a network
+    // deploy and a local fs write is not achievable (two different systems, no shared
+    // transaction), so the goal is narrower: never let that URL vanish into an uncaught crash.
+    // Any failure here (still possible after the mkdir fix — a full disk, a permission error)
+    // is caught and reported through the same fail() path as every other refusal in this
+    // script, with the live URL spelled out, instead of an unhandled exception whose raw stack
+    // trace does not say "this is already public" or "here is the link to save".
+    try {
+      mkdirSync(exportDir, { recursive: true });
+      writeFileSync(join(exportDir, "EMBED_URL.txt"), url + "\n");
+    } catch (e) {
+      fail(
+        `${format} form=embed: the embed is LIVE at ${url} but recording it under ${absExportDir} failed (${e.message}) — ` +
+          `this is a live, UNTRACKED deployment: save the URL now, then re-run the --form embed delivery to retry recording it locally.`,
+      );
+    }
     assertDelivered(readdirSync(exportDir), {
       format,
       form: "embed",

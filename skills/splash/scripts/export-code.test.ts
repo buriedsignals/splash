@@ -528,6 +528,75 @@ describe("export-code CLI — hosted Datawrapper interactive (embed-only)", () =
       rmSync(outDir, { recursive: true, force: true });
     }
   });
+
+  // QA sweep regression: unlike every other delivery form (static/video/html/code-source,
+  // all of which mkdirSync(exportDir, { recursive: true }) right before their write), the
+  // embed branch wrote EMBED_URL.txt straight into exportDir with no mkdir first. Every
+  // OTHER export-code.mjs test in this file pre-creates exportDir via mkdtempSync — masking
+  // the bug — so this test deliberately passes a NESTED exportDir that has never been
+  // created, exactly like a first-time export to a fresh `exports/<slug>/<id>-export` path.
+  it("creates exportDir before writing EMBED_URL.txt, even when exportDir does not already exist (no mkdir masking)", () => {
+    const { outDir, resultsPath, hostedUrl } = setupHostedDw();
+    const root = mkdtempSync(join(import.meta.dir, "export-dw-embed-nodir-"));
+    const exportDir = join(root, "fresh-slug", "wage-price-gap-export");
+    expect(existsSync(exportDir)).toBe(false);
+    try {
+      const out = run(
+        outDir,
+        exportDir,
+        resultsPath,
+        "wage-price-gap",
+        "embed",
+      );
+      expect(out).toContain("EXPORT_CODE_RESULT");
+      const urlFile = join(exportDir, "EMBED_URL.txt");
+      expect(existsSync(urlFile)).toBe(true);
+      expect(readFileSync(urlFile, "utf8")).toContain(hostedUrl);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+
+  // Fixing the mkdir removes the COMMON way to lose a live, untracked deployment — it does
+  // not make recording impossible to fail: a full disk or a permission error at the write
+  // step is the same hole through a different door. Simulate that by blocking exportDir's
+  // parent with a FILE (mkdirSync recursive then throws ENOTDIR, not ENOENT) — proving the
+  // failure is caught and reported with the live URL rather than crashing raw/uncaught.
+  it("on a write failure AFTER the URL is known, exits non-zero with the live URL in the message instead of crashing raw", () => {
+    const { outDir, resultsPath, hostedUrl } = setupHostedDw();
+    const root = mkdtempSync(join(import.meta.dir, "export-dw-embed-blocked-"));
+    const blocker = join(root, "blocked-by-a-file");
+    writeFileSync(blocker, "not a directory");
+    const exportDir = join(blocker, "wage-price-gap-export");
+    try {
+      const proc = Bun.spawnSync(
+        [
+          "bun",
+          scriptPath,
+          outDir,
+          exportDir,
+          "--results",
+          resultsPath,
+          "--id",
+          "wage-price-gap",
+          "--form",
+          "embed",
+        ],
+        { stdout: "pipe", stderr: "pipe" },
+      );
+      expect(proc.exitCode).not.toBe(0);
+      const stderr = proc.stderr.toString();
+      // The live URL must survive the failure — this IS the "untracked deployment" guard.
+      expect(stderr).toContain(hostedUrl);
+      // A controlled refusal (this script's own fail() message), not a raw Node stack trace.
+      expect(stderr).not.toMatch(/at Object\.\w+ \(node:fs/);
+      expect(existsSync(join(exportDir, "EMBED_URL.txt"))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("export-code CLI — the mechanical shippability gate", () => {
