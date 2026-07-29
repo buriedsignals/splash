@@ -10,6 +10,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import {
   symbolGeometry,
   nearestSymbolIndex,
+  MAX_RADIUS_PX,
   type SymbolData,
 } from "./symbol-geo";
 import type { CameraMode } from "./camera-mode";
@@ -42,7 +43,8 @@ maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 // Single hue — size is the encoding. The newsroom house hue (config.brandHue) wins when set;
 // else the CVD-safe default (houseFill). Computed per-render inside the component (config scope).
 const SYMBOL_STROKE = "#ffffff"; // white halo separates symbols from the basemap
-const MAX_RADIUS_PX = 40;
+// MAX_RADIUS_PX now imported from ./symbol-geo — the single source every symbol renderer
+// and the produce-time conformance guard share (was 4 independent literal duplicates).
 // Px clearance between a circle's edge and its label — matches labelRadialOffset's
 // default `gap`, so the pixel offset used for edge-aware placement equals the ems
 // radial offset MapLibre actually renders.

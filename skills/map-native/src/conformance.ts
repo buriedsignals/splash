@@ -250,7 +250,14 @@ export function checkSymbolConformance(
     );
   if (input.pointsWithData < 1) v.push("no point has data");
   if (!input.boundsNonEmpty)
-    v.push("empty data bounds — basemap-fit impossible");
+    // A single point (or several points stacked on identical coordinates) gives a
+    // zero-area bbox — MapLibre's fitBounds() zooms to max zoom on that instead of framing
+    // the phenomenon (SymbolMap.tsx's clampBounds only clamps latitude, it never expands a
+    // degenerate box). Name the fix, not just the failure — "basemap-fit impossible" alone
+    // tells a journalist nothing actionable.
+    v.push(
+      "empty data bounds — needs ≥2 distinct locations (basemap-fit impossible); for a single location use a locator map",
+    );
   if (input.strokeContrast < 2)
     v.push(
       `symbol stroke contrast ${input.strokeContrast.toFixed(2)} too faint to separate symbols from the basemap`,

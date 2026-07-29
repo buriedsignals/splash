@@ -594,4 +594,19 @@ describe("runProduceMapConformance actually asks the symbol rules", () => {
     const r = runProduceMapConformance("symbol", base);
     expect(r.violations).toEqual([]);
   });
+
+  it("should refuse a symbol map with fewer than 2 distinct locations (degenerate bounds)", () => {
+    // A single point gives symbolGeometry a zero-area bbox: MapLibre's fitBounds() zooms to
+    // max zoom on that instead of framing the phenomenon (SymbolMap.tsx's clampBounds only
+    // clamps latitude, it never expands a degenerate box) — a real, reachable refusal
+    // (review finding §5.2), locked here so it is intentional and tested, not an untested
+    // side effect of the fixture used elsewhere.
+    const r = runProduceMapConformance("symbol", {
+      ...base,
+      points: [{ lon: 6.1, lat: 46.2, label: "Genève", value: 100 }],
+    });
+    expect(r.violations.join(" ")).toContain("empty data bounds");
+    // Actionable, not just diagnostic — tells the journalist what to do instead.
+    expect(r.violations.join(" ")).toContain("locator map");
+  });
 });

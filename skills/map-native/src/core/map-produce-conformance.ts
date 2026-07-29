@@ -10,9 +10,15 @@
 //   - Palette CVD-safety (+ a best-effort sequential/diverging semantic match) is checked
 //     for the 3 ramp-driven types (choropleth, hex-grid, cartogram) via
 //     `checkPaletteConformance`. `resolvePalette` is pure — no geometry, no basemap.
-//   - Structural rules that need the basemap GeoJSON (bounds, region-join, legend geometry,
-//     symbol max-radius, story-beat counts) are OUT of scope here — they stay covered by
-//     the existing render-time snap harnesses (snap-responsive, snap-a11y, snap-contrast).
+//   - Structural rules that need the basemap GeoJSON (region-join, story-beat counts) are OUT
+//     of scope here — they stay covered by the existing render-time snap harnesses
+//     (snap-responsive, snap-a11y, snap-contrast). Symbol's legend/bounds/sizing-mode/max-radius
+//     ARE now in scope (task 17, `checkSymbolConformance`) — `symbolGeometry` is pure (no
+//     basemap), so those are config-provable here. `viewportMinPx` is checked against
+//     `MAX_RADIUS_PX` (symbol-geo.ts, the literal every symbol renderer actually paints — not
+//     an invented config default), but falls back to an ASSUMED article-web viewport when no
+//     real channel/media-size is threaded into this call (see the symbol block below) — a
+//     disclosed gap, not a verified one.
 //   - GL-rendered labels (symbol direct-labels, dot-density dot counts) are out of scope —
 //     a separate spike, not config-time-checkable.
 //   - The furniture-contrast check here is drift-defense on the pre-vetted
@@ -35,10 +41,20 @@ import {
   checkPaletteConformance,
   checkSymbolConformance,
 } from "../conformance";
-import { symbolGeometry } from "../symbol-geo";
+import { symbolGeometry, MAX_RADIUS_PX } from "../symbol-geo";
 
 // The 3 types whose colour scale is a resolvePalette() ramp (not a fixed qualitative set).
 export const RAMP_TYPES = ["choropleth", "hex-grid", "cartogram"] as const;
+
+// No channel/media-size is threaded into this config-time guard (produce.mjs resolves the
+// real channel + `renderSize(channel)` AFTER calling `runProduceMapConformance`, and no
+// other type-check in this file consumes it either — threading it in is a bigger change than
+// this task's scope). article-web is produce.mjs's DEFAULT_CHANNEL
+// (skills/splash/src/channel.ts) and its landscape media size is 1200×675 — 675 is that
+// height, the smaller dimension. A symbol map actually produced under a DIFFERENT channel
+// (e.g. a narrower social-portrait format) is NOT verified against its true viewport here —
+// this is a disclosed assumption, not a measured fact.
+const ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX = 675;
 
 // Resolves the scaleType the SAME way the renderer actually paints it, per ramp type — so
 // this guard can never validate a ramp the map never renders (bug #6). hex-grid always
@@ -214,10 +230,15 @@ export function runProduceMapConformance(
     typeof config.description === "string" ? config.description : undefined;
   const source = (config.source ?? {}) as { name?: string; url?: string };
 
-  const violations = checkGlobalMapConformance(
-    { title, description, source },
-    textColors,
-  );
+  // `checkSymbolConformance` (called below, for type "symbol" only) already composes
+  // `checkGlobalMapConformance` internally with these exact same `title`/`description`/
+  // `source`/`textColors` — calling it again here would duplicate every furniture violation
+  // verbatim (e.g. "missing source name" twice) for symbol maps only. Every other type has
+  // no per-type check in this file, so this IS their only furniture guard and must run.
+  const violations =
+    type === "symbol"
+      ? []
+      : checkGlobalMapConformance({ title, description, source }, textColors);
 
   if ((RAMP_TYPES as readonly string[]).includes(type)) {
     try {
@@ -295,8 +316,13 @@ export function runProduceMapConformance(
       ? (config.points as { lon: number; lat: number; value: number }[])
       : [];
     const fmt = config.format as { width: number; height: number } | undefined;
+    // `config.maxRadius` is not a real SymbolConfigShape field today — no config emits it —
+    // so this default is what actually matters: MAX_RADIUS_PX (symbol-geo.ts) is the literal
+    // every symbol renderer paints (40px), not an invented config default. Checking a number
+    // the renderer never paints would be the exact "guard validates what never renders"
+    // defect `resolveRampScaleType`'s comment above already warns about.
     const maxRadius =
-      typeof config.maxRadius === "number" ? config.maxRadius : 30;
+      typeof config.maxRadius === "number" ? config.maxRadius : MAX_RADIUS_PX;
     let legendStops = 0;
     let boundsNonEmpty = false;
     if (points.length > 0) {
@@ -318,7 +344,9 @@ export function runProduceMapConformance(
           hasLegend: config.hasLegend !== false,
           legendStops,
           maxRadiusPx: maxRadius,
-          viewportMinPx: fmt ? Math.min(fmt.width, fmt.height) : 675,
+          viewportMinPx: fmt
+            ? Math.min(fmt.width, fmt.height)
+            : ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX,
           pointsWithData: points.length,
           boundsNonEmpty,
           // Render-only inputs: give the values the rules treat as "not my business here" —

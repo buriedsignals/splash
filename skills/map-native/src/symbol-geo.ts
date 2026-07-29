@@ -27,6 +27,16 @@ export interface SymbolGeometry {
   bounds: [number, number, number, number]; // [west, south, east, north]
 }
 
+// The single source of truth for the largest symbol radius every renderer paints
+// (SymbolMap.tsx, SymbolScrolly.tsx, SymbolStory.tsx, SymbolReveal.tsx all import this
+// instead of redeclaring the literal — previously 4 independent `const MAX_RADIUS_PX = 40`
+// duplicates). `symbol.maxRadius` is NOT a real SymbolConfigShape field (no config can
+// override this), so the produce-time conformance guard (map-produce-conformance.ts) must
+// check THIS constant, not an invented config default — checking a number the renderer
+// never paints is the exact "guard validates what never renders" defect class this file's
+// sibling `resolveRampScaleType` comment already warns about.
+export const MAX_RADIUS_PX = 40;
+
 // Area-proportional radius: a symbol's AREA (πr²) scales with value, so r ∝ √value.
 // Radius-proportional sizing (r ∝ value) exaggerates large values quadratically — banned.
 export function symbolRadius(

@@ -18,7 +18,7 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
-import { symbolGeometry } from "../symbol-geo";
+import { symbolGeometry, MAX_RADIUS_PX } from "../symbol-geo";
 import {
   symbolLabels,
   labelRadialOffset,
@@ -40,7 +40,8 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 // Single hue — the newsroom house hue (config.brandHue) wins when set, else the CVD-safe default
 // (houseFill). Resolved per-render inside the component (config scope).
 const SYMBOL_STROKE = "#ffffff";
-const MAX_RADIUS_PX = 40;
+// MAX_RADIUS_PX imported from ../symbol-geo — shared with the other symbol renderers and
+// the produce-time conformance guard.
 // Px clearance between a circle's edge and its label — matches labelRadialOffset's
 // default `gap`, so the edge-clamp pixel offset equals the ems radial offset MapLibre renders.
 const LABEL_GAP = 6;
