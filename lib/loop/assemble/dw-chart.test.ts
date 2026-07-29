@@ -208,6 +208,60 @@ test("an English-spaced unit already in the subtitle is caught the same way", ()
   );
 });
 
+// Single-letter units ("m", "t", "h", "g") are the shape the naked `.includes()` guard got
+// wrong: almost any ordinary sentence contains that letter buried inside some unrelated word,
+// and the old check read that as "already stated" and silently dropped the unit. Every fixture
+// below carries the letter under test embedded in an ordinary word — precisely the string that
+// WOULD have tripped `base.toLowerCase().includes(u.toLowerCase())` into a false "already
+// stated" — so a regression back to the naked substring check turns these red.
+test("a bare 'm' embedded in an ordinary word is not mistaken for the unit already stated", () => {
+  // "m" fixture element: the "m" inside "moyen" and "logements" — no standalone "m" token here.
+  expect(introWithUnit("Loyer moyen des logements", "m")).toBe(
+    "Loyer moyen des logements (m)",
+  );
+});
+
+test("a bare 't' embedded in an ordinary word is not mistaken for the unit already stated", () => {
+  // "t" fixture element: the "t" inside "Tonnage" and "traitées" — no standalone "t" token here.
+  expect(introWithUnit("Tonnage des déchets traitées", "t")).toBe(
+    "Tonnage des déchets traitées (t)",
+  );
+});
+
+test("a bare 'h' embedded in an ordinary word is not mistaken for the unit already stated", () => {
+  // "h" fixture element: the "h" inside "Horaires" and "chantier" — no standalone "h" token.
+  expect(introWithUnit("Horaires du chantier", "h")).toBe(
+    "Horaires du chantier (h)",
+  );
+});
+
+test("a bare 'g' embedded in an ordinary word is not mistaken for the unit already stated", () => {
+  // "g" fixture element: the "g" inside "Grammage" and "logements" — no standalone "g" token.
+  expect(introWithUnit("Grammage des emballages", "g")).toBe(
+    "Grammage des emballages (g)",
+  );
+});
+
+test("a bare 'm' that stands alone as its own token is genuinely already stated", () => {
+  // Fixture element: trailing " m" is its own token (space before, string-end after) — the
+  // property the fix is meant to still honour, distinct from the embedded-letter cases above.
+  expect(introWithUnit("Surface exprimée en m", "m")).toBe(
+    "Surface exprimée en m",
+  );
+});
+
+test("a bare 't' that stands alone as its own token is genuinely already stated", () => {
+  expect(introWithUnit("Poids exprimé en t", "t")).toBe("Poids exprimé en t");
+});
+
+test("a bare 'h' that stands alone as its own token is genuinely already stated", () => {
+  expect(introWithUnit("Durée exprimée en h", "h")).toBe("Durée exprimée en h");
+});
+
+test("a bare 'g' that stands alone as its own token is genuinely already stated", () => {
+  expect(introWithUnit("Masse exprimée en g", "g")).toBe("Masse exprimée en g");
+});
+
 // The composed subtitle must not silently start varying with the run's language — `intro` is
 // prose, not a numeric label, so `lang` (emitted separately, :49) and the unit-in-parens
 // composition are independent. This would fail if introWithUnit were rewritten to route

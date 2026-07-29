@@ -19,6 +19,12 @@ function takesHighlight(nativeType: string): boolean {
   return HIGHLIGHT_TYPES.has(nativeType as ChartType);
 }
 
+const WORD_CHAR = /[\p{L}\p{N}]/u;
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /** The unit, stated ONCE, in the printed subtitle.
  *
  *  ChartSpec has no `unit` field and never will get one here: the strict validator refuses an
@@ -30,13 +36,27 @@ function takesHighlight(nativeType: string): boolean {
  *  No `lang` parameter, on purpose: this composes a PARENTHETICAL annotation onto a sentence,
  *  not a numeric value label, so there is no per-language spacing rule to apply (that is
  *  labelWithUnit/unitSuffix's job, lib/core/locale.ts, for a different call site). Never
- *  repeated: a subtitle the journalist already wrote with the unit in it stays as it is. */
+ *  repeated: a subtitle the journalist already wrote with the unit in it stays as it is —
+ *  but "already wrote" means the unit appears as its own TOKEN, not merely as a run of
+ *  characters somewhere inside another word. A naked substring test is wrong for any unit
+ *  that is a single ordinary letter ("m", "t", "h", "g"): almost every sentence contains that
+ *  letter buried in some unrelated word, and the old check silently swallowed the unit every
+ *  time, never appending it. The boundary here is Unicode-letter/number aware (`\p{L}`,
+ *  `\p{N}`), checked only at the edges of the unit that are themselves letters/numbers — a
+ *  unit like "€/m²" or "%" that opens or closes on a symbol needs no boundary there, since a
+ *  symbol can't run on into an adjacent word in the first place. */
 export function introWithUnit(intro: string, unit: string | undefined): string {
   const u = unit?.trim();
   if (!u) return intro;
   const base = intro.trim();
   if (!base) return u;
-  if (base.toLowerCase().includes(u.toLowerCase())) return base;
+  const escaped = escapeRegExp(u);
+  const left = WORD_CHAR.test(u[0]!) ? String.raw`(?<![\p{L}\p{N}])` : "";
+  const right = WORD_CHAR.test(u[u.length - 1]!)
+    ? String.raw`(?![\p{L}\p{N}])`
+    : "";
+  const alreadyStated = new RegExp(`${left}${escaped}${right}`, "iu");
+  if (alreadyStated.test(base)) return base;
   return `${base} (${u})`;
 }
 
