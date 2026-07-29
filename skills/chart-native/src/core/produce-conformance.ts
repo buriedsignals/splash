@@ -114,7 +114,7 @@ export interface ConformanceRunResult {
    *  (2) the data-immutability tripwire (checkLabelDataIntegrity) — a labelField value
    *      that looks like it was SHORTENED to fit the layout (its expansion still appears
    *      in the title/alt-text), the "Interm." ⟶ "professions intermédiaires" class, and
-   *  (3) F2 — a HOUSE-SET data mark (baseColor/accent/explicit series) that does not
+   *  (3) F2 — a HOUSE-SET data mark (baseColor/explicit series) that does not
    *      clear the WCAG non-text contrast floor (3:1) against the chart's theme ground
    *      (checkMarkContrastOnBg), the mark-side twin of the map house-fill concern.
    * Empty on the clean auto path (no brand-explicit colours, no shortened label).

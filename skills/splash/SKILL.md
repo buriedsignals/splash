@@ -299,7 +299,7 @@ the flow did not reach (a canned « Q6, toujours posée » when the flow did not
 5. Constraint (conditional): mobile-first, deadline, house style. The mobile/deadline half fires
    only if relevant — but the **house-charter half fires whenever no `NEWSROOM-PROFILE.md` exists**
    (see ★ below): a missing file is a question owed, not a decision made.
-   - **Newsroom profile (F2):** the project's house style lives in `NEWSROOM-PROFILE.md` (palette + accent
+   - **Newsroom profile (F2):** the project's house style lives in `NEWSROOM-PROFILE.md` (palette
      + default `source` + `lang` + `credit` + `theme`; see `NEWSROOM-PROFILE.example.md`). It is **auto-applied
      at produce time** — `produce-all`'s `mergeProfileDefaults` merges it onto every spec as DEFAULTS (the
      per-element value always wins). **You do NOT load it manually; just ANNOUNCE** the house style is being

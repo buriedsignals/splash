@@ -128,7 +128,7 @@ const config = JSON.parse(readFileSync(configPath, "utf8"));
 // concern; every other colour stays hard-guarded. Empty on the auto path.
 const brandColors =
   config.brandExplicit === true
-    ? [config.baseColor, config.accent, ...(Array.isArray(config.seriesColors) ? config.seriesColors : [])].filter(
+    ? [config.baseColor, ...(Array.isArray(config.seriesColors) ? config.seriesColors : [])].filter(
         (c) => typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c),
       )
     : [];
