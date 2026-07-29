@@ -112,7 +112,7 @@ Trois propriétés à ne pas perdre, toutes trois déjà écrites dans `SKILL.md
 Et un filet, calqué sur le précédent mesuré : un avertissement d'observabilité
 « ancre non threadée » quand un parcours guidé issu d'un article livre sans ancre — le pendant
 exact de `droppedSourceHintWarning`. Il **ne peut pas** prouver que l'article portait une ancre
-(la sortie de `suggest-article` n'est pas un fichier, § 6 décision 4) ; il dit ce qu'il voit et
+(la sortie de `suggest-article` n'est pas un fichier, § 7 décision 3) ; il dit ce qu'il voit et
 ce qu'il ne peut pas voir.
 
 ---
@@ -157,22 +157,47 @@ la peau ; ce qui descend, c'est la garantie que ce qu'elle a trouvé **arrive ju
 
 ---
 
-## 6. Décisions qui appartiennent à Rémy
+## 6. Décision prise (2026-07-29) — le placement est OBLIGATOIRE dès qu'un article existe
 
-Aucune n'est tranchée ici. Chacune est posée avec ses options et ce qu'elles coûtent, mesuré.
+**La décision.** Dire le placement n'est pas une politesse : **c'est exigé dès lors qu'un article
+existe.** Sans article — parcours sur sujet nu — la question ne se pose pas.
 
-**1. Le placement manquant BLOQUE-t-il la livraison, ou est-il seulement dit ?**
-- *(a) Consultatif mécanisé* — la livraison porte toujours une ligne : le placement, ou
-  explicitement « élément autonome ». Rien ne s'arrête. Ferme la classe « le journaliste ne sait
-  pas où le mettre » sans jamais bloquer un parcours légitime sans ancre.
-- *(b) Bloquant* — la livraison refuse tant qu'un parcours issu d'un article n'a pas d'ancre.
-  Conséquence mesurée : l'ancre est **optionnelle par conception** aux deux bouts
-  (`suggest-article/SKILL.md:124` la dit *advisory* ; `producer-spec.ts:54-60` dit
-  « absent ⇒ no placement stated at delivery, **no error** ») — donc (b) transforme en arrêt des
-  parcours que la conception déclare normaux (sujet nu, opportunité sans passage).
-- Rappel de dépendance : sous famille A non faite, (b) est nominal — un refus n'arrête rien.
+**La raison, et elle tient à un fait mesuré : la capacité existe déjà, elle n'est simplement pas
+tenue.** En test manuel, splash a énoncé spontanément « autour du §5, près de tel passage » : au
+moment où il parle, l'information **est** calculée. Exiger qu'il la dise ne coûte donc **rien
+d'autre qu'un peu de rigueur** — pas un calcul neuf, pas un étage neuf, pas un tour de dialogue de
+plus. Et elle sert le journaliste **à chaque livraison**, ce qui est rare : 24 cas sur 83 où elle
+n'a pas été dite, dans un produit dont la promesse est qu'une petite rédaction publie sans équipe
+graphique.
 
-**2. Le placement voyage-t-il DANS ce que la rédaction possède, ou seulement dans le message ?**
+**Ce que « obligatoire » veut dire précisément**, pour ne pas transformer une exigence en arrêt
+absurde :
+
+- **un article existe et l'opportunité porte une ancre** → la livraison énonce le placement ;
+- **un article existe et l'opportunité n'est liée à aucun passage** → la livraison dit que l'élément
+  est **autonome**, explicitement (`SKILL.md:924-932` porte déjà cette branche : *« never invent a
+  paragraph »*). Le silence, lui, n'est plus une sortie valable ;
+- **aucun article** → rien à énoncer, aucune exigence.
+
+**Ce que ça n'est pas.** Ce n'est pas rendre le **positionnement** obligatoire : le placement reste
+**consultatif pour le journaliste**, qui décide où va son visuel (`suggest-article/SKILL.md:124`,
+*advisory*). Ce qui devient obligatoire, c'est **que Splash le dise**.
+
+**Ce que ça implique pour le mécanisme du § 3.** L'énoncé ne peut plus reposer sur la mémoire du
+modèle, puisque c'est exactement ce qui a échoué 24 fois : il est **émis par le code** dans le bloc
+de hand-over, à côté des formes a/b/c. Et l'exigence rend le filet du § 3 nécessaire plutôt
+qu'optionnel — sans lui, rien ne distingue « l'article n'avait pas d'ancre » de « l'ancre n'a pas
+été recopiée ». *(Rappel de dépendance : tant que la famille A n'a pas rendu les refus terminaux,
+une exigence reste une exigence qu'un orchestrateur peut enjamber.)*
+
+---
+
+## 7. Décisions qui appartiennent à Rémy
+
+Ce qui reste ouvert après le § 6. Aucune n'est tranchée ici ; chacune est posée avec ses options et
+ce qu'elles coûtent, mesuré.
+
+**1. Le placement voyage-t-il DANS ce que la rédaction possède, ou seulement dans le message ?**
 - *(a) Message seul* — zéro changement de contrat, mais rien de durable : dans six mois, le
   dossier livré ne dit plus où l'élément allait.
 - *(b) Un fichier de placement dans le dossier livré* — **coût mesuré, et ce n'est pas un détail :**
@@ -183,13 +208,13 @@ Aucune n'est tranchée ici. Chacune est posée avec ses options et ce qu'elles c
   ne dispose d'aucune ancre : `DeliveryMetadata` (`lib/core/publishers.ts:14-24`) n'a pas le champ,
   et l'ajouter revient à ouvrir le § 5.
 
-**3. Quelle granularité d'ancre le produit promet-il ?** `{ paragraphIndex, quote }` aujourd'hui.
+**2. Quelle granularité d'ancre le produit promet-il ?** `{ paragraphIndex, quote }` aujourd'hui.
 Le numéro de paragraphe **pourrit** si l'article est édité entre l'analyse et la livraison — ce qui
 est le cas normal d'un article vivant ; la citation survit à une réorganisation mais casse à une
 réécriture. Garder les deux (aujourd'hui), n'en promettre qu'un, ou dire au journaliste lequel fait
 foi : c'est un arbitrage éditorial, pas un choix d'implémentation.
 
-**4. L'ancre doit-elle devenir un FAIT SUR LE DISQUE ?** Aujourd'hui la recopie §5b est
+**3. L'ancre doit-elle devenir un FAIT SUR LE DISQUE ?** Aujourd'hui la recopie §5b est
 prose-enforced parce qu'**aucun script ne transforme le `ProposalSet` en contexte**
 (`producer-spec.ts:57-58`).
 - *(a) Statu quo + filet d'observabilité* (§ 3) — bon marché, et honnête sur ce qu'il ne prouve pas.
@@ -198,7 +223,7 @@ prose-enforced parce qu'**aucun script ne transforme le `ProposalSet` en context
   (« les faits sur le disque sont des pré-conditions dures ») s'applique. Coût : un artefact neuf
   dans l'étape ANALYSE, qui n'en produit aucun aujourd'hui, et un contrat de plus à tenir.
 
-**5. D09 : que fait-on d'un scrolly qui ouvre sur sa chute ?**
+**4. D09 : que fait-on d'un scrolly qui ouvre sur sa chute ?**
 - *(a) Rien de mécanique* — l'égalité reste un constat de relecture éditoriale.
 - *(b) Refus mécanique* de `intro === takeaway`. Conséquence mesurée, et elle n'est pas neutre :
   la boucle pose **par défaut** `title = confirmedTakeaway` (`lib/loop/assemble/chart-native.ts:20`)
@@ -210,7 +235,7 @@ prose-enforced parce qu'**aucun script ne transforme le `ProposalSet` en context
 
 ---
 
-## 7. Hors périmètre, dit explicitement
+## 8. Hors périmètre, dit explicitement
 
 - **Les familles A, B et C.** En particulier : la fidélité titre↔takeaway (D16) est de la famille B
   et n'est pas touchée ici, même si D09 la frôle.
@@ -225,7 +250,7 @@ prose-enforced parce qu'**aucun script ne transforme le `ProposalSet` en context
 
 ---
 
-## 8. Risques assumés
+## 9. Risques assumés
 
 1. **Le 24/83 est une borne haute.** Le contrôle du harness
    (`../splash-harness/src/checks.ts:1321-1372`) décide qu'« une ancre existait » par un
