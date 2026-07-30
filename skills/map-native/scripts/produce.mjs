@@ -288,7 +288,15 @@ switch (format) {
     // Left to its own default, the debug PNG lands in this skill's persistent
     // output-proof/contrast/ instead.
     console.log(`[produce map] snapping contrast (furniture text WCAG)…`);
-    snap("scripts/snap-contrast.mjs", { SERVE_DIR: staticDir, MODE: "static" });
+    // MAP_WIDTH/MAP_HEIGHT — same channel-exact box snap-static.mjs above already used to
+    // render static.png, so this guard samples the SAME geometry that was actually
+    // delivered, not a fixed 1200x700 landscape window (see snap-contrast.mjs's own note).
+    snap("scripts/snap-contrast.mjs", {
+      SERVE_DIR: staticDir,
+      MODE: "static",
+      MAP_WIDTH: String(mediaSize.width),
+      MAP_HEIGHT: String(mediaSize.height),
+    });
 
     // Render-size conformance (Slice 2, Task 4) — the produced static.png's pixel
     // dimensions must equal the channel's exact media size. Fail-hard before export.

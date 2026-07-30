@@ -71,6 +71,7 @@ import {
   readPixelsAtPoints,
 } from "./lib/furniture-contrast-browser.mjs";
 import { lateRefusalSentence, recordLateRefusal } from "../../splash/src/late-refusal.ts";
+import { contrastViewportFor } from "./lib/contrast-viewport.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -125,8 +126,16 @@ if (mode === "static") {
   pageUrl = pathToFileURL(join(serveDir, "index.html")).href;
 }
 
+// Channel-driven viewport — see ./lib/contrast-viewport.mjs for why this matters (a fixed
+// 1200x700 window used to check a landscape layout no channel other than article-web ever
+// delivers, and silently sample nothing below y=700 on a taller portrait render).
+const { viewport, deviceScaleFactor } = contrastViewportFor(
+  process.env.MAP_WIDTH,
+  process.env.MAP_HEIGHT,
+);
+
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1200, height: 700 }, deviceScaleFactor: 2 });
+const page = await browser.newPage({ viewport, deviceScaleFactor });
 
 console.log(`[snap-contrast map ${mode}] loading:`, pageUrl);
 await page.goto(pageUrl);
