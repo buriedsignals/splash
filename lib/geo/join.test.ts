@@ -32,7 +32,7 @@ describe("unresolvedGeoJoins", () => {
           basis: "journalist",
         },
       ],
-      pending: [],
+      pending: ["Buenos Aires"],
     };
     expect(unresolvedGeoJoins(ledger)).toEqual([]);
   });
