@@ -775,8 +775,19 @@ source; if it did, thread the hint and re-produce". It is advisory only; it neve
   entry without `suggest-chart` (GUARD 5).
 - **`anchor`** (copy it across when `suggest-article` provided one): the element's placement in
   the article — `{ paragraphIndex, quote }`, the passage this visual serves. Copied verbatim
-  like `sourceHint`; EXPORT surfaces it at hand-over (§6, delivery placement). OPTIONAL —
-  absent on a bare-topic run or an opportunity bound to no specific passage.
+  like `sourceHint`; EXPORT emits it at hand-over (§6, delivery placement).
+- **`freeStanding: true`** — the OTHER way to declare a placement, and it is a declaration, not a
+  blank. It says this element belongs to the piece as a whole rather than to one passage: an
+  opening visual, a closing one, a standalone card. Use it whenever there is no passage to anchor
+  on, instead of leaving both fields out.
+
+  **Once an article was read, silence is not an option: the export REFUSES an element that declares
+  neither.** An `anchor` or `freeStanding: true` — one of the two, per element. This is the one
+  place the flow makes you say something you could previously omit, and the reason is that an
+  omitted placement is indistinguishable from a forgotten one: the journalist receives a finished
+  visual with no idea where it goes, which is exactly what suggest-article did the work to prevent.
+  A run with no article at all (a bare topic) is unaffected — nothing to place it in, nothing
+  refused. Neither is a direct-branch run that never read one.
 
 **`confirmedTakeaway` is REQUIRED** — the spine's validation gate (`src/validate-gate.ts`) FAILS any
 proposal missing/empty it (GUARD 3), on both branches. It is the Gate-1b presence lever: Gate 3a quotes
@@ -982,15 +993,22 @@ the full video set.)_
 
 ### 6. EXPORT — GATE 4 (delivery depends on the visual's format)
 
-**★ State the PLACEMENT of each delivered element — WHERE it goes in the article.** When you hand over a
-finished element (each one, on a multi-element article), tell the journalist where it belongs in their
-piece, using the proposal's `anchor`: « à placer autour du §{paragraphIndex}, près de « {quote} » ». This
-is the payoff of suggest-article having found WHERE each visual serves the narrative — surfaced at the
-moment it is actionable (the finished visual in hand), not buried at proposition time. Placement is
-ADVISORY (the journalist does the final positioning); absent an `anchor` (bare topic, or an opportunity
-bound to no specific passage), say the element is free-standing and skip the placement line — never invent
-a paragraph. On a multi-element hand-over, list each element WITH its own placement, so a 3-visual article
-gets « le chart des recettes → §2 ; la carte → §5 ; le scrolly → la fin », not one undifferentiated dump.
+**★ State the PLACEMENT of each delivered element — WHERE it goes in the article. You RELAY it; you do
+not compose it.** The export scripts emit the placement themselves, per element, between the markers
+`SPLASH_PLACEMENT <proposalId>` and `END_SPLASH_PLACEMENT` (plus a machine `PLACEMENT_JSON` line for
+anything that parses). **Relay it VERBATIM.** Do not rewrite those lines into your own sentence, do not
+translate them, and do not assemble a placement from the proposal yourself — `skills/splash/src/placement.ts`
+resolves it from the accepted entry and `export-code.mjs` prints it at every hand-over, so a hand-written
+version can only drift from what the code decided.
+
+Two things to carry when you relay. First, **the quote is what to trust** and the paragraph number is
+only an indication: a journalist edits their piece between the analysis and the delivery, so §4 may have
+become §5 while « les frontaliers de Bonneville » is still exactly where the visual belongs. Say it that
+way round. Second, placement stays ADVISORY — the journalist does the final positioning.
+
+On a multi-element hand-over, relay each element's own block, so a 3-visual article gets « le chart des
+recettes → §2 ; la carte → §5 ; le scrolly → la fin », not one undifferentiated dump. Absent an anchor,
+the emitted block says the element is free-standing — relay that too, and never invent a paragraph.
 
 **★ The sign-off state is TOLD, never pasted.** The export scripts print the machine token
 `EDITORIAL: unsigned — LLM render-approval only` (or `signed by …`, or `skipped …`) and, on the

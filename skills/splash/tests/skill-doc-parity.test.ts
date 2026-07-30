@@ -229,14 +229,28 @@ describe("C5 — image-scrolly recognition + suggest-image", () => {
 // the SKILL.md prose stops the miss they guard. They are pinned FIRST (before any prose
 // slim) so the moment a cut drops a survivor, its pin goes red. They must stay GREEN through
 // the whole slim.
-describe("placement at delivery (2026-07-18)", () => {
-  it("EXPORT states each delivered element's placement from its anchor", () => {
-    expect(splash).toContain("State the PLACEMENT of each delivered element");
-    expect(splash).toContain("à placer autour du");
-    expect(splash).toContain("paragraphIndex");
+// Placement at delivery — NO LONGER a survivor rule. It was one until 2026-07-29: the anchor
+// (producer-spec.ts) had no reader, so only this prose stood between the journalist and a visual
+// with no idea where it goes. It now has a mechanical backstop — skills/splash/src/placement.ts
+// resolves it, export-code.mjs emits it at every hand-over, and an undeclared placement on an
+// article run is REFUSED. These pins guard the prose that must stay in step with that code: what
+// the orchestrator relays, and what §5b must carry for it to work.
+describe("placement at delivery (mechanical since 2026-07-29)", () => {
+  it("§6 relays the emitted block and never composes the sentence itself", () => {
+    expect(splash).toContain("SPLASH_PLACEMENT");
+    expect(splash).toContain("END_SPLASH_PLACEMENT");
+    expect(splash).toContain("Relay it VERBATIM");
   });
-  it("§5b copies the anchor across when suggest-article provided one", () => {
+  it("§6 names the quote as authoritative and the paragraph number as an indication", () => {
+    expect(splash).toContain("the quote is what to trust");
+  });
+  it("§5b carries BOTH declarations — an anchor, or an explicit free-standing", () => {
     expect(splash).toMatch(/\*\*`anchor`\*\*/);
+    expect(splash).toMatch(/\*\*`freeStanding/);
+    expect(splash).toContain("never invent a paragraph");
+  });
+  it("§5b states that silence is refused at export once an article was read", () => {
+    expect(splash).toContain("the export REFUSES");
   });
 });
 
