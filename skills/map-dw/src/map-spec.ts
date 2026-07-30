@@ -429,9 +429,14 @@ export function validateMapSpec(
     // readable without hover — which violates the project rule "the data must be legible WITHOUT
     // hover" (render-confirmed on aeroports-trafic + frontaliers-dots: not one symbol labeled).
     // It is therefore NOT a producible map-dw output: route it to map-native, whose STATIC
-    // symbol render directly labels its circles by name + value and whose conformance asserts
-    // `labeled` (skills/map-native/src/conformance.ts checkSymbolConformance, wired at produce
-    // since 2026-07-29). The INTERACTIVE map-native render is hover-only — that limit is
+    // symbol renderer mounts the direct-label layer UNCONDITIONALLY (name + value per circle;
+    // SymbolMap.tsx's `if (!interactive || staticFallbackLabels)` is always taken on the static
+    // path) — that renderer, not a guard, is what makes the claim true. The conformance cannot check it today: checkSymbolConformance IS wired at produce
+    // since 2026-07-29 (skills/map-native/src/core/map-produce-conformance.ts), but it is fed
+    // `labeled: config.labeled !== false` and `labeled` is not a real config field (same status
+    // the neighbouring comment grants `maxRadius`), so the value is always true and the
+    // `!input.labeled` rule can never fire on a real config. It ASSUMES labeled; it does not
+    // assert it. The INTERACTIVE map-native render is hover-only — that limit is
     // declared once, in map-native's own words (feature-limits.ts), and quoted here rather
     // than restated: this refusal used to promise the render selectively labels a top-ranked
     // subset of circles — no such ranking/limiting exists anywhere (symbol-geo.ts maps every

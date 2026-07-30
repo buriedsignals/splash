@@ -126,7 +126,12 @@ if (violations.length) {
       "ground), then produce again — this is measured on the render, so it cannot be told at the offer",
   };
   console.error(lateRefusalSentence(r));
-  for (const v of violations) console.error(`  ✗ ${v}`);
+  // Named FIELDS, not the object — same defect and same shape as snap-contrast.mjs's
+  // list (which see): `${v}` on a sample printed "✗ [object Object]".
+  for (const v of violations)
+    console.error(
+      `  ✗ "${v.text}" (${v.fill}, ${v.fontPx}px${v.bold ? " bold" : ""}) — ${v.worst}:1 < ${v.min}:1`,
+    );
   if (process.env.OUTDIR) recordLateRefusal(process.env.OUTDIR, r);
   process.exit(1);
 }

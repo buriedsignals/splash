@@ -2,3 +2,9 @@ node_modules
 dist
 out
 .DS_Store
+
+# Late-refusal records, never repo content. scripts/snap-contrast.mjs defaults its OUTDIR
+# to output-proof/contrast/ (a TRACKED directory) when produce.mjs does not thread one — a
+# disclosed gap, CLAUDE.md follow-up #8 — so a real failing run appends its refusal record
+# inside the repo. Ignored here so it cannot be committed by accident while the gap is open.
+output-proof/**/late-refusals.jsonl
