@@ -3047,3 +3047,129 @@ git add skills/map-native/src/choropleth-geo.ts skills/map-native/src/choropleth
   skills/map-native/tests/choropleth-geo.test.ts skills/map-native/tests/choropleth-map-imports.test.ts
 git commit -m "feat(map-native): ChoroplethMap reads injected geometry; join via feature-state, never properties (D5, D8)"
 ```
+
+### Task 17: `CartogramMap.tsx`, `DotDensityMap.tsx`, `RouteMap.tsx` — the same de-inlining, three files
+
+**Files:**
+- Modify: `skills/map-native/src/CartogramMap.tsx` (`?raw` import at `:10`, verified while
+  writing this plan).
+- Modify: `skills/map-native/src/DotDensityMap.tsx` (`?raw` import at `:10`).
+- Modify: `skills/map-native/src/RouteMap.tsx` (`?raw` import at `:4`).
+- Modify: `lib/loop/assemble/map-native.ts` — the `route` branch of `assemblePointFamily`
+  (`:276-290`, verified while writing this plan) gains `geography: resolveGeographyRef("world")`.
+  The `symbol`/`hex-grid`/`locator` branches do NOT change — grep confirms (`grep -n
+  "geojson" skills/map-native/src/SymbolMap.tsx skills/map-native/src/HexGridMap.tsx
+  skills/map-native/src/LocatorMap.tsx`, run while writing this plan, zero hits) that none of
+  the three imports a basemap geojson at all; they plot directly onto the MapLibre tile
+  basemap and are correctly named out of scope by spec §6 ("ils ne joignent aucun polygone, ils
+  ne sont pas concernés — à ceci près que leur basemap = 'world' en dur bénéficiera du
+  ré-encodage de D10 sans rien changer d'autre" — that re-encoding benefit is automatic once
+  Task 7's smaller `world` TopoJSON exists; no code in those three files reads it).
+- Test: `skills/map-native/tests/choropleth-map-imports.test.ts` (rename to
+  `no-static-geojson-imports.test.ts` if you prefer — but EXTEND the existing file from Task 16
+  rather than duplicating it; three more `it(...)` blocks, one per file).
+
+**Interfaces:**
+- Consumes: `applyChoroplethJoin`-adjacent pattern is NOT reused here — Cartogram/DotDensity
+  neither one needs a feature-state table (Cartogram distorts SHAPES by joined value, it does not
+  paint a fill; DotDensity scatters POINTS inside a matched polygon, it never paints the polygon
+  itself) — only the geometry-decoding half of Task 16's pattern applies. `resolveGeographyRef`
+  (Task 4).
+- Produces: nothing new exported. Consumed by Task 19 (bundle-source.mjs must trace
+  `topojson-client` into these three components' closures too, not just ChoroplethMap's).
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// skills/map-native/tests/choropleth-map-imports.test.ts (extend from Task 16)
+it("CartogramMap.tsx does not import world.geojson as ?raw", () => {
+  const src = readFileSync("skills/map-native/src/CartogramMap.tsx", "utf8");
+  expect(src).not.toMatch(/\.geojson\?raw/);
+});
+it("DotDensityMap.tsx does not import world.geojson as ?raw", () => {
+  const src = readFileSync("skills/map-native/src/DotDensityMap.tsx", "utf8");
+  expect(src).not.toMatch(/\.geojson\?raw/);
+});
+it("RouteMap.tsx does not import world.geojson as ?raw", () => {
+  const src = readFileSync("skills/map-native/src/RouteMap.tsx", "utf8");
+  expect(src).not.toMatch(/\.geojson\?raw/);
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd skills/map-native && bun test tests/choropleth-map-imports.test.ts`
+Expected: FAIL — all three still import `?raw`.
+
+- [ ] **Step 3: Implement**
+
+`lib/loop/assemble/map-native.ts` — in the `route` branch of `assemblePointFamily` (`:276-290`),
+add one line to the emitted config:
+
+```ts
+  if (brief.nativeType === "route") {
+    const route = rows.map(
+      (row) =>
+        [Number(row[coords.lon]), Number(row[coords.lat])] as [number, number],
+    );
+    return ok({
+      type: "route",
+      route,
+      basemap,
+      geography: resolveGeographyRef(basemap), // basemap is the literal "world" set above
+      title,
+      // ...unchanged below
+```
+
+(import `resolveGeographyRef` from `../../../skills/map-native/src/basemaps` alongside the
+existing `BASEMAP_NAMES` import at `:13`.)
+
+`CartogramMap.tsx` — remove `:10-11` (the `?raw` import + `JSON.parse` line). Add
+`import { feature as topoFeature } from "topojson-client";` and `import type { Topology } from
+"topojson-specification";`. Find this component's own use of `worldGeoJson` (inside its render
+effect, likely near where `computeCartogram` is called — read the file's full render effect
+before editing, it was not read in full while writing this plan) and replace it with:
+
+```ts
+      const topology = config.geometry as Topology;
+      const objectName = Object.keys(topology.objects)[0]!;
+      const world = topoFeature(topology, topology.objects[objectName]!) as GeoJSON.FeatureCollection;
+```
+
+`DotDensityMap.tsx` — identical replacement (remove `:10-11`, add the same two imports, replace
+its own `worldGeoJson` usage the same way — again, read this component's render effect in full
+before editing; this task only verified the import lines, not the body).
+
+`RouteMap.tsx` — identical replacement (remove `:4-5`, add the same two imports, replace its own
+`worldGeoJson` usage). Since `route`'s config now carries `geography` (Step 3's assemble change),
+this component can read `config.geography` the same way `ChoroplethMap.tsx` does, defaulting to
+the `"world"` shipped ref when `config.geography` is absent (a config built before this task).
+
+Add `"topojson-client"`/`"@types/topojson-client"`/`"topojson-specification"` to
+`skills/map-native/package.json` if Task 16 has not already landed them (it should have — this
+task does not re-add them, just confirm with `grep topojson skills/map-native/package.json`
+before assuming they are missing).
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd skills/map-native && bunx tsc --noEmit && bun test tests/choropleth-map-imports.test.ts`
+Expected: PASS, all 4 (the one from Task 16 plus these 3).
+
+- [ ] **Step 5: Mutation — prove the RouteMap test depends on the import actually being gone,
+  not on a filename coincidence**
+
+Temporarily re-add `import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";` as a dead,
+unused line at the top of `RouteMap.tsx`.
+
+Run: `cd skills/map-native && bun test tests/choropleth-map-imports.test.ts`
+Expected: "RouteMap.tsx does not import world.geojson as ?raw" FAILS (the regex matches the
+re-added dead import). Report the count. Revert before continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add skills/map-native/src/CartogramMap.tsx skills/map-native/src/DotDensityMap.tsx \
+  skills/map-native/src/RouteMap.tsx lib/loop/assemble/map-native.ts \
+  skills/map-native/tests/choropleth-map-imports.test.ts
+git commit -m "feat(map-native): Cartogram/DotDensity/Route read injected geometry, no static geojson import"
+```
